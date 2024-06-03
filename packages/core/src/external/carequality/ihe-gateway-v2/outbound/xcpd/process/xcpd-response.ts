@@ -230,6 +230,14 @@ function handlePatientErrorResponse({
         "unknown",
     },
   };
+
+  const msg = "Error in XCPD Soap Response";
+  log(
+    `${msg}, jsonObj: ${JSON.stringify(jsonObj)}, outboundRequest: ${JSON.stringify(
+      outboundRequest
+    )}`
+  );
+
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
     id: outboundRequest.id,

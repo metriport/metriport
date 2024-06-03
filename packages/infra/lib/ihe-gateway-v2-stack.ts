@@ -5,16 +5,23 @@ import { Construct } from "constructs";
 import { EnvType } from "./env-type";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { Secrets } from "./shared/secrets";
+import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { createLambda } from "./shared/lambda";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Duration } from "aws-cdk-lib";
 import { NetworkLoadBalancedFargateService } from "aws-cdk-lib/aws-ecs-patterns";
+import * as events from "aws-cdk-lib/aws-events";
+import * as targets from "aws-cdk-lib/aws-events-targets";
+import * as rds from "aws-cdk-lib/aws-rds";
 
 interface IHEGatewayV2LambdasNestedStackProps extends NestedStackProps {
   lambdaLayers: LambdaLayers;
   apiService: NetworkLoadBalancedFargateService;
   vpc: ec2.IVpc;
   secrets: Secrets;
+  dbCredsSecret: secret.ISecret;
+  dbCluster: rds.IDatabaseCluster;
+  dbReadOnlyEndpoint: rds.Endpoint;
   cqOrgCertificate: string | undefined;
   cqOrgPrivateKey: string | undefined;
   cqOrgPrivateKeyPassword: string | undefined;
@@ -33,6 +40,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     const patientDiscoveryLambda = this.setupIHEGatewayV2PatientDiscoveryLambda(props);
     const documentQueryLambda = this.setupIHEGatewayV2DocumentQueryLambda(props);
     const documentRetrievalLambda = this.setupIHEGatewayV2DocumentRetrievalLambda(props);
+    this.setupScheduledReportLambda(props);
 
     // granting lambda invoke access to api service
     patientDiscoveryLambda.grantInvoke(props.apiService.taskDefinition.taskRole);
@@ -258,5 +266,55 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     cqTrustBundleBucket.grantRead(documentRetrievalLambda);
 
     return documentRetrievalLambda;
+  }
+
+  private setupScheduledReportLambda(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    secrets: Secrets;
+    apiURL: string;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+    dbCredsSecret: secret.ISecret;
+    dbCluster: rds.IDatabaseCluster;
+    dbReadOnlyEndpoint: rds.Endpoint;
+  }): Lambda {
+    const {
+      lambdaLayers,
+      vpc,
+      apiURL,
+      envType,
+      sentryDsn,
+      dbCredsSecret,
+      dbCluster,
+      dbReadOnlyEndpoint,
+    } = ownProps;
+
+    const scheduledReportLambda = createLambda({
+      stack: this,
+      name: "IHEGatewayV2ScheduledReport",
+      entry: "ihe-gateway-v2-scheduled-report",
+      envType: envType,
+      envVars: {
+        DB_CREDS: dbCredsSecret.secretArn,
+        API_URL: apiURL,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        DB_READ_REPLICA_ENDPOINT: JSON.stringify(dbReadOnlyEndpoint),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 512,
+      timeout: Duration.minutes(5),
+      vpc,
+    });
+
+    dbCluster.connections.allowDefaultPortFrom(scheduledReportLambda);
+    dbCredsSecret.grantRead(scheduledReportLambda);
+
+    const rule = new events.Rule(this, "ScheduledReportRule", {
+      schedule: events.Schedule.rate(Duration.hours(12)),
+    });
+    rule.addTarget(new targets.LambdaFunction(scheduledReportLambda));
+
+    return scheduledReportLambda;
   }
 }
