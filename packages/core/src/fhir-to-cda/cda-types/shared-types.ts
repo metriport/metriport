@@ -42,6 +42,7 @@ export type CdaPeriod = {
 };
 
 export type CdaAddress = {
+  _use?: string;
   streetAddressLine?: Entry | undefined;
   city?: string | undefined;
   state?: string | undefined;
@@ -167,6 +168,12 @@ export type ObservationTableRow = {
     }[];
   };
 };
+
+export type EffectiveTime = {
+  low?: EntryObject;
+  high?: EntryObject;
+};
+
 export type ObservationEntry = {
   _inversionInd?: boolean;
   _typeCode?: string;
@@ -182,12 +189,7 @@ export type ObservationEntry = {
       _root?: string;
       _extension?: string;
     };
-    code?: {
-      _code?: string | undefined;
-      _codeSystem?: string | undefined;
-      _codeSystemName?: string | undefined;
-      _displayName?: string | undefined;
-    };
+    code?: CdaCodeCe | CdaCodeCv;
     text?: {
       reference: {
         _value: string;
@@ -199,7 +201,7 @@ export type ObservationEntry = {
     effectiveTime?: {
       _value?: string | undefined;
     };
-    value?: CdaValueCd | undefined;
+    value?: CdaValueCd | CdaValueCd[] | undefined;
     entryRelationship?: ObservationEntryRelationship[];
     interpretationCode?: CdaCodeCe;
   };
@@ -207,6 +209,8 @@ export type ObservationEntry = {
 
 export type ObservationEntryRelationship = ObservationEntry & {
   _typeCode?: string;
+  code?: CdaCodeCv | undefined;
+  value?: CdaValueCd[] | undefined;
 };
 
 export type SubstanceAdministationEntry = {
@@ -256,19 +260,52 @@ export type SubstanceAdministationEntry = {
 };
 
 export type ConcernActEntry = {
+  _typeCode?: string;
   act: {
     _classCode: string;
     _moodCode: string;
     templateId: CdaInstanceIdentifier;
-    id: CdaInstanceIdentifier;
-    code: CdaCodeCe;
-    statusCode: {
+    id?: CdaInstanceIdentifier;
+    code?: CdaCodeCe;
+    statusCode?: {
       _code: string;
     };
-    effectiveTime: {
+    effectiveTime?: {
       low?: EntryObject;
       high?: EntryObject;
     };
     entryRelationship: ObservationEntryRelationship;
+  };
+};
+
+export type EncounterEntry = {
+  encounter: {
+    _classCode?: string;
+    _moodCode?: string;
+    templateId?: CdaInstanceIdentifier;
+    id?: CdaInstanceIdentifier;
+    code?: CdaCodeCe | undefined;
+    statusCode?: {
+      _code: string;
+    };
+    effectiveTime?: EffectiveTime;
+    performer?: AssignedEntity[];
+
+    entryRelationship: ConcernActEntry | ConcernActEntry[];
+  };
+};
+
+export type AssignedPerson = {
+  name: {
+    given?: string | undefined;
+    family?: string | undefined;
+  };
+};
+
+export type AssignedEntity = {
+  assignedEntity: {
+    id?: CdaInstanceIdentifier | undefined;
+    addr?: CdaAddress[] | undefined;
+    assignedPerson?: AssignedPerson | undefined;
   };
 };

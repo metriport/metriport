@@ -2,8 +2,9 @@ import { CdaTable } from "../cda-templates/table";
 import {
   CdaCodeCe,
   CdaInstanceIdentifier,
-  ObservationEntry,
   ConcernActEntry,
+  EncounterEntry,
+  ObservationEntry,
   SubstanceAdministationEntry,
 } from "./shared-types";
 
@@ -21,3 +22,4 @@ export type MedicationSection = CdaSection<SubstanceAdministationEntry>;
 export type MentalStatusSection = CdaSection<ObservationEntry>;
 export type ProblemsSection = CdaSection<ConcernActEntry>;
 export type AllergiesSection = CdaSection<ConcernActEntry>;
+export type EncountersSection = CdaSection<EncounterEntry>;
