@@ -1,6 +1,8 @@
-import { XMLBuilder } from "fast-xml-parser";
+import { Composition } from "@medplum/fhirtypes";
+import { xmlBuilder } from "./shared";
 import {
   CdaAuthor,
+  CdaCodeCe,
   CdaCustodian,
   CdaRecordTarget,
   ClinicalDocument,
@@ -8,10 +10,11 @@ import {
 import {
   buildCodeCe,
   buildInstanceIdentifier,
+  formatDateToCdaTimestamp,
   withNullFlavor,
   withoutNullFlavorObject,
 } from "../commons";
-import { clinicalDocumentConstants, _namespaceAttribute, _valueAttribute } from "../constants";
+import { _xmlnsSdtcAttribute, _xmlnsXsiAttribute, clinicalDocumentConstants } from "../constants";
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function removeEmptyFields(obj: any): unknown {
@@ -32,16 +35,22 @@ export function removeEmptyFields(obj: any): unknown {
   return obj;
 }
 
-// see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ClinicalDocument.html
+/**
+ * @see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ClinicalDocument.html
+ */
 export function buildClinicalDocumentXml(
   recordTarget: CdaRecordTarget,
   author: CdaAuthor,
   custodian: CdaCustodian,
-  structuredBody: unknown
+  structuredBody: unknown,
+  composition: Composition | undefined
 ): string {
   const jsonObj: ClinicalDocument = {
     ClinicalDocument: {
-      [_namespaceAttribute]: "urn:hl7-org:v3",
+      _xmlns: "urn:hl7-org:v3",
+      [_xmlnsSdtcAttribute]: "urn:hl7-org:sdtc",
+      [_xmlnsXsiAttribute]: "http://www.w3.org/2001/XMLSchema-instance",
+      _moodCode: "EVN",
       realmCode: buildCodeCe({ code: clinicalDocumentConstants.realmCode }),
       typeId: buildInstanceIdentifier({
         extension: clinicalDocumentConstants.typeIdExtension,
@@ -55,16 +64,11 @@ export function buildClinicalDocumentXml(
       ),
       id: buildInstanceIdentifier({
         assigningAuthorityName: clinicalDocumentConstants.assigningAuthorityName,
-        root: clinicalDocumentConstants.idRoot,
+        root: clinicalDocumentConstants.rootOid,
       }),
-      code: buildCodeCe({
-        code: clinicalDocumentConstants.code.code,
-        codeSystem: clinicalDocumentConstants.code.codeSystem,
-        codeSystemName: clinicalDocumentConstants.code.codeSystemName,
-        displayName: clinicalDocumentConstants.code.displayName,
-      }),
-      title: clinicalDocumentConstants.title,
-      effectiveTime: withNullFlavor(clinicalDocumentConstants.effectiveTime, _valueAttribute),
+      code: getDocumentTypeCode(composition),
+      title: getDocumentTitle(composition),
+      effectiveTime: withNullFlavor(formatDateToCdaTimestamp(new Date().toISOString()), "_value"),
       confidentialityCode: buildCodeCe({
         code: clinicalDocumentConstants.confidentialityCode.code,
         codeSystem: clinicalDocumentConstants.confidentialityCode.codeSystem,
@@ -74,14 +78,10 @@ export function buildClinicalDocumentXml(
         code: clinicalDocumentConstants.languageCode,
       }),
       setId: buildInstanceIdentifier({
-        assigningAuthorityName: clinicalDocumentConstants.setId.assigningAuthorityName,
-        extension: clinicalDocumentConstants.setId.extension,
-        root: clinicalDocumentConstants.setId.root,
+        assigningAuthorityName: clinicalDocumentConstants.assigningAuthorityName,
+        root: clinicalDocumentConstants.rootOid,
       }),
-      versionNumber: withoutNullFlavorObject(
-        clinicalDocumentConstants.versionNumber,
-        _valueAttribute
-      ),
+      versionNumber: withoutNullFlavorObject(clinicalDocumentConstants.versionNumber, "_value"),
       recordTarget,
       author,
       custodian,
@@ -89,18 +89,32 @@ export function buildClinicalDocumentXml(
     },
   };
   const cleanedJsonObj = removeEmptyFields(jsonObj);
-  const builder = new XMLBuilder({
-    format: false,
-    attributeNamePrefix: "_",
-    textNodeName: "_text",
-    ignoreAttributes: false,
-  });
-
-  const generatedXml = builder.build(cleanedJsonObj);
-  return postProcessXml(generatedXml);
+  return xmlBuilder.build(cleanedJsonObj);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function postProcessXml(xml: any): string {
-  return xml.replaceAll("<br>", "").replaceAll("</br>", "<br />");
+function getDocumentTypeCode(composition: Composition | undefined): CdaCodeCe {
+  if (composition && composition.type?.coding) {
+    const primaryCoding = composition.type?.coding[0];
+    return buildCodeCe({
+      code: primaryCoding?.code,
+      codeSystem: clinicalDocumentConstants.code.codeSystem,
+      codeSystemName: clinicalDocumentConstants.code.codeSystemName,
+      displayName: primaryCoding?.display,
+    });
+  }
+  // TODO: Write a more robust backup option
+  return buildCodeCe({
+    code: "34133-9",
+    codeSystem: clinicalDocumentConstants.code.codeSystem,
+    codeSystemName: clinicalDocumentConstants.code.codeSystemName,
+    displayName: "Summarization of Episode Note",
+  });
+}
+
+function getDocumentTitle(composition: Composition | undefined): string {
+  if (composition && composition.type?.text) {
+    return composition.type?.text;
+  }
+  // TODO: Write a more robust backup option
+  return "Continuity of Care Document";
 }

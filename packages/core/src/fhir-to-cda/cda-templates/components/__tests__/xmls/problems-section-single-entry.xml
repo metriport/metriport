@@ -1,0 +1,83 @@
+<templateId root="2.16.840.1.113883.10.20.22.2.5.1" extension="2015-08-01">
+</templateId>
+<code code="11450-4" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Problem list - Reported">
+</code>
+<title>
+	PROBLEMS
+</title>
+<text>
+	<table ID="problems">
+		<thead>
+			<tr>
+				<th>
+					ICD Code
+				</th>
+				<th>
+					Diagnosis
+				</th>
+				<th>
+					Provider Response
+				</th>
+				<th>
+					Status
+				</th>
+				<th>
+					Treatment Plan
+				</th>
+				<th>
+					Comments
+				</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr ID="problems1">
+				<td>
+					F17.200
+				</td>
+				<td>
+					NICOTINE DEPENDENCE, UNSP, UNCOMPLI
+				</td>
+				<td>
+					Not Specified
+				</td>
+				<td>
+					Not Specified
+				</td>
+				<td>
+					Not Specified
+				</td>
+				<td>
+					Not Specified
+				</td>
+			</tr>
+		</tbody>
+	</table>
+</text>
+<entry>
+	<act classCode="ACT" moodCode="EVN">
+		<templateId root="2.16.840.1.113883.10.20.22.4.3" extension="2014-06-09">
+		</templateId>
+		<id root="placeholder-ORG-OID" extension="${params.conditionId}">
+		</id>
+		<code code="CONC" codeSystem="2.16.840.1.113883.5.6" displayName="Concern">
+		</code>
+		<statusCode code="active">
+		</statusCode>
+		<entryRelationship typeCode="SUBJ">
+			<observation classCode="OBS" moodCode="EVN">
+				<templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2015-08-01">
+				</templateId>
+				<id root="placeholder-ORG-OID" extension="${params.conditionId}">
+				</id>
+				<code code="F17.200" codeSystem="2.16.840.1.113883.6.90" displayName="NICOTINE DEPENDENCE, UNSP, UNCOMPLI">
+				</code>
+				<value xsi:type="CD" code="F17.200" codeSystem="2.16.840.1.113883.6.90" displayName="NICOTINE DEPENDENCE, UNSP, UNCOMPLI">
+					<originalText>
+						<reference value="problems1">
+						</reference>
+					</originalText>
+				</value>
+			</observation>
+		</entryRelationship>
+	</act>
+</entry>

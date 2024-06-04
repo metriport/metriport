@@ -6,13 +6,12 @@ import {
   buildTelecom,
   withNullFlavor,
 } from "./commons";
-import { _rootAttribute, _valueAttribute } from "./constants";
 
 export function buildAuthor(organization: Organization): CdaAuthor {
   const author = {
-    time: withNullFlavor(undefined, _valueAttribute),
+    time: withNullFlavor(undefined, "_value"),
     assignedAuthor: {
-      id: withNullFlavor(organization.id, _rootAttribute),
+      id: withNullFlavor(organization.id, "_root"),
       addr: buildAddress(organization.address),
       telecom: buildTelecom(organization.telecom),
       representedOrganization: buildRepresentedOrganization(organization),

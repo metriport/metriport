@@ -1,6 +1,10 @@
 import { Bundle, DiagnosticReport, Observation } from "@medplum/fhirtypes";
+import {
+  findResourceInBundle,
+  isDiagnosticReport,
+  isObservation,
+} from "../../../external/fhir/shared";
 import { base64ToString } from "../../../util/base64";
-import { findResourceInBundle, isDiagnosticReport, isObservation } from "../../fhir";
 import {
   TIMESTAMP_CLEANUP_REGEX,
   buildCodeCe,
@@ -8,14 +12,8 @@ import {
   buildInstanceIdentifier,
   withoutNullFlavorObject,
 } from "../commons";
-import {
-  _classCodeAttribute,
-  _idAttribute,
-  _moodCodeAttribute,
-  _typeCodeAttribute,
-  _valueAttribute,
-} from "../constants";
-import { buildObservations } from "./observations";
+import { extensionValue2015, oids, placeholderOrgOid } from "../constants";
+import { createObservations } from "./observations";
 
 function buildEntriesFromDiagnosticReports(
   diagnosticReports: DiagnosticReport[],
@@ -35,14 +33,15 @@ function buildEntriesFromDiagnosticReports(
     });
 
     const organizer = {
-      [_classCodeAttribute]: "BATTERY",
-      [_moodCodeAttribute]: "EVN",
+      _classCode: "BATTERY",
+      _moodCode: "EVN",
       templateId: buildInstanceIdentifier({
-        root: "2.16.840.1.113883.10.20.22.4.1",
-        extension: "2015-08-01",
+        root: oids.resultOrganizer,
+        extension: extensionValue2015,
       }),
       id: buildInstanceIdentifier({
-        root: report.id,
+        root: placeholderOrgOid,
+        extension: report.id,
       }),
       code: codeElement,
       statusCode: buildCodeCe({
@@ -50,21 +49,21 @@ function buildEntriesFromDiagnosticReports(
       }),
       effectiveTime: withoutNullFlavorObject(
         report.effectiveDateTime?.replace(TIMESTAMP_CLEANUP_REGEX, ""),
-        _valueAttribute
+        "_value"
       ),
-      component: buildObservations(observations).map(o => o.component),
+      component: createObservations(observations).map(o => o.component),
     };
 
     return {
       entry: {
-        [_typeCodeAttribute]: "DRIV",
+        _typeCode: "DRIV",
         organizer,
       },
     };
   });
 }
 
-export function buildResult(fhirBundle: Bundle): unknown {
+export function buildResult(fhirBundle: Bundle) {
   const diagnosticReports: DiagnosticReport[] =
     fhirBundle.entry?.flatMap(entry =>
       isDiagnosticReport(entry.resource) ? [entry.resource] : []
@@ -75,22 +74,18 @@ export function buildResult(fhirBundle: Bundle): unknown {
   const text = getTextItemsFromDiagnosticReports(diagnosticReports);
 
   const resultsSection = {
-    component: {
-      section: {
-        templateId: buildInstanceIdentifier({
-          root: "2.16.840.1.113883.10.20.22.2.3.1",
-        }),
-        code: buildCodeCe({
-          code: "30954-2",
-          codeSystem: "2.16.840.1.113883.6.1",
-          codeSystemName: "LOINC",
-          displayName: "Diagnostic Results",
-        }),
-        title: "Diagnostic Results",
-        text: text.map(t => t && t.item),
-        entry: buildEntriesFromDiagnosticReports(diagnosticReports, fhirBundle).map(e => e.entry),
-      },
-    },
+    templateId: buildInstanceIdentifier({
+      root: oids.resultsSection,
+    }),
+    code: buildCodeCe({
+      code: "30954-2",
+      codeSystem: "2.16.840.1.113883.6.1",
+      codeSystemName: "LOINC",
+      displayName: "Diagnostic Results",
+    }),
+    title: "Diagnostic Results",
+    text: text.map(t => t && t.item),
+    entry: buildEntriesFromDiagnosticReports(diagnosticReports, fhirBundle).map(e => e.entry),
   };
   return resultsSection;
 }
@@ -108,7 +103,7 @@ function getTextItemsFromDiagnosticReports(diagnosticReports: DiagnosticReport[]
         return {
           item: {
             content: {
-              [_idAttribute]: `_${report.id}`,
+              _ID: `_${report.id}`,
               br: contentObjects.map(o => o.br),
             },
           },
