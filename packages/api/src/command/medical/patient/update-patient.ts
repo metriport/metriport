@@ -21,14 +21,12 @@ export type PatientUpdateCmd = BaseUpdateCmdWithCustomer &
 // See: https://metriport.slack.com/archives/C04DMKE9DME/p1686779391180389
 export async function updatePatient({
   patientUpdate,
-  requestId,
   rerunPdOnNewDemographics,
   forceCommonwell,
   forceCarequality,
   emit = true,
 }: {
   patientUpdate: PatientUpdateCmd;
-  requestId: string;
   rerunPdOnNewDemographics?: boolean;
   // START TODO #1572 - remove
   forceCommonwell?: boolean;
@@ -49,7 +47,6 @@ export async function updatePatient({
   runOrSchedulePatientDiscoveryAcrossHies({
     patient,
     facilityId,
-    requestId,
     rerunPdOnNewDemographics,
     forceCommonwell,
     forceCarequality,

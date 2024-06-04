@@ -5,7 +5,7 @@ export type CwPatientDataDelete = BaseUpdateCmdWithCustomer;
 
 export async function deleteCwPatientData(patientDelete: CwPatientDataDelete): Promise<void> {
   const { id, cxId } = patientDelete;
-  const cwData = await getCwPatientData({ id, cxId });
+  const cwData = await getCwPatientData({ id, cxId, lock: true });
   if (!cwData) return;
   await cwData.destroy();
 }

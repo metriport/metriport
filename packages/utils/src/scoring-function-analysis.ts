@@ -84,7 +84,7 @@ async function main() {
 
 async function loadData(rows: Row[]) {
   const { log: totalLog } = out("Total");
-  console.log(`Loaded ${rows.length} patients from the CSV file to be scored`);
+  totalLog(`Loaded ${rows.length} patients from the CSV file to be scored`);
 
   const basePatient = {
     id: "",

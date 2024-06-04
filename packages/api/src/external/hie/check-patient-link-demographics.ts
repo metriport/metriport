@@ -7,7 +7,7 @@ export async function checkLinkDemographicsAcrossHies({
   patient,
   requestId,
 }: {
-  patient: Patient;
+  patient: Pick<Patient, "id" | "cxId">;
   requestId: string;
 }): Promise<boolean> {
   const existingPatient = await getPatientOrFail({

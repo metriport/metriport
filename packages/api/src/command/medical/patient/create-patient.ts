@@ -16,19 +16,17 @@ type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientCreateCmd = PatientNoExternalData & Identifier;
 
-export const createPatient = async ({
+export async function createPatient({
   patient,
-  requestId,
   rerunPdOnNewDemographics,
   forceCommonwell,
   forceCarequality,
 }: {
   patient: PatientCreateCmd;
-  requestId: string;
   rerunPdOnNewDemographics?: boolean;
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
-}): Promise<Patient> => {
+}): Promise<Patient> {
   const { cxId, facilityId, externalId } = patient;
 
   const sanitized = sanitize(patient);
@@ -76,13 +74,12 @@ export const createPatient = async ({
   const newPatient = await PatientModel.create(patientCreate);
 
   runInitialPatientDiscoveryAcrossHies({
-    patient: newPatient,
+    patient: newPatient.dataValues,
     facilityId,
-    requestId,
     rerunPdOnNewDemographics,
     forceCarequality,
     forceCommonwell,
   });
 
   return newPatient;
-};
+}

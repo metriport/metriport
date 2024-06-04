@@ -17,6 +17,7 @@ export async function updateCwPatientData(
       id,
       cxId,
       transaction,
+      lock: true,
     });
 
     return updateCwPatientDataWithinDBTx(cwData, cwPatientData, transaction);
