@@ -176,7 +176,7 @@ export async function runNextPdOnNewDemographics({
     });
     analytics({
       distinctId: updatedPatient.cxId,
-      event: EventTypes.patientDiscovery,
+      event: EventTypes.rerunOnNewDemographics,
       properties: {
         hie: MedicalDataSource.CAREQUALITY,
         patientId: updatedPatient.id,
@@ -202,16 +202,16 @@ export async function runNexPdIfScheduled({
   const scheduledPdRequest = getCQData(updatedPatient.data.externalData)?.scheduledPdRequest;
 
   if (scheduledPdRequest) {
+    await resetPatientScheduledPatientDiscoveryRequestId({
+      patient: updatedPatient,
+      source: MedicalDataSource.CAREQUALITY,
+    });
     await discover({
       patient: updatedPatient,
       facilityId: scheduledPdRequest.facilityId,
       requestId: scheduledPdRequest.requestId,
       forceEnabled: scheduledPdRequest.forceCarequality,
       rerunPdOnNewDemographics: scheduledPdRequest.rerunPdOnNewDemographics,
-    });
-    await resetPatientScheduledPatientDiscoveryRequestId({
-      patient: updatedPatient,
-      source: MedicalDataSource.CAREQUALITY,
     });
     analytics({
       distinctId: updatedPatient.cxId,
