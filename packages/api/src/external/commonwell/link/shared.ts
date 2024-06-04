@@ -87,6 +87,7 @@ export async function autoUpgradeNetworkLinks(
     commonWell.getNetworkLinks(queryMeta, commonwellPatientId),
     getOrgIdExcludeList(),
   ]);
+  log(`resp getNetworkLinks`, JSON.stringify(networkLinks));
 
   if (networkLinks._embedded && networkLinks._embedded.networkLink?.length) {
     const lola1Links = networkLinks._embedded.networkLink.flatMap(filterTruthy).filter(isLOLA1);
