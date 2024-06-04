@@ -1,5 +1,7 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { Coordinates } from "@metriport/core/external/aws/location";
+import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
 import convert from "convert-units";
 import { Sequelize } from "sequelize";
 import { Config } from "../../../../shared/config";
@@ -31,17 +33,25 @@ export async function searchCQDirectoriesAroundPatientAddresses({
   patient,
   radiusInMiles = DEFAULT_RADIUS_IN_MILES,
   mustHaveXcpdLink = false,
+  _searchCQDirectoriesByRadius = searchCQDirectoriesByRadius,
 }: {
   patient: Patient;
   radiusInMiles?: number;
   mustHaveXcpdLink?: boolean;
+  _searchCQDirectoriesByRadius?: typeof searchCQDirectoriesByRadius;
 }): Promise<CQDirectoryEntryModel[]> {
+  const { log } = out(`searchCQDirectoriesAroundPatientAddresses, patient ${patient.id}`);
   const radiusInMeters = convert(radiusInMiles).from("mi").to("m");
 
   const coordinates = patient.data.address.flatMap(address => address.coordinates ?? []);
-  if (!coordinates.length) throw new Error("Failed to get patient coordinates");
+  if (!coordinates.length) {
+    const msg = "Patient address doesn't contain coordinates";
+    log(`${msg}, addresses: ${JSON.stringify(patient.data.address)}`);
+    capture.error(msg, { extra: { patient: patient.id, address: patient.data.address } });
+    return [];
+  }
 
-  const orgs = await searchCQDirectoriesByRadius({
+  const orgs = await _searchCQDirectoriesByRadius({
     coordinates,
     radiusInMeters,
     mustHaveXcpdLink,

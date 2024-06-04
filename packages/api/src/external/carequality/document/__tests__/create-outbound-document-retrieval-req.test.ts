@@ -15,7 +15,7 @@ import {
   createOutboundDocumentRetrievalReqs,
   maxDocRefsPerDocRetrievalRequest,
 } from "../create-outbound-document-retrieval-req";
-import { makeDocumentReferenceWithMetriporId } from "./make-document-reference-with-metriport-id";
+import { makeDocumentReferenceWithMetriportId } from "./make-document-reference-with-metriport-id";
 import { makeOutboundDocumentQueryResp, makeXcaGateway } from "./shared";
 
 let requestId: string;
@@ -43,32 +43,36 @@ describe("outboundDocumentRetrievalRequest", () => {
     homeCommunityId = faker.string.uuid();
   });
 
-  it("returns zero req when no doc refs matching GW homeCommunityId", async () => {
-    const documentReferences = [
-      makeDocumentReferenceWithMetriporId(),
-      makeDocumentReferenceWithMetriporId(),
-    ];
+  it("returns 1 req with 2 doc refs when no doc refs match GW homeCommunityId", async () => {
     const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
-      makeOutboundDocumentQueryResp({ gateway: makeXcaGateway({ homeCommunityId }) }),
+      makeOutboundDocumentQueryResp({
+        gateway: makeXcaGateway({ homeCommunityId }),
+        documentReference: [
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+        ],
+      }),
     ];
     const res: OutboundDocumentRetrievalReq[] = createOutboundDocumentRetrievalReqs({
       patient,
       requestId,
       initiator,
-      documentReferences,
-      outboundDocumentQueryResps,
+      outboundDocumentQueryResults: outboundDocumentQueryResps,
     });
     expect(res).toBeTruthy();
-    expect(res.length).toEqual(0);
+    expect(res.length).toEqual(1);
+    expect(res[0].documentReference.length).toEqual(2);
   });
 
   it("returns one req when doc refs within limit", async () => {
-    const documentReferences = [
-      makeDocumentReferenceWithMetriporId({ homeCommunityId }),
-      makeDocumentReferenceWithMetriporId({ homeCommunityId }),
-    ];
     const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
-      makeOutboundDocumentQueryResp({ gateway: makeXcaGateway({ homeCommunityId }) }),
+      makeOutboundDocumentQueryResp({
+        gateway: makeXcaGateway({ homeCommunityId }),
+        documentReference: [
+          makeDocumentReferenceWithMetriportId({ homeCommunityId }),
+          makeDocumentReferenceWithMetriportId({ homeCommunityId }),
+        ],
+      }),
     ];
     facility = makeFacility({
       id: facilityId,
@@ -79,8 +83,7 @@ describe("outboundDocumentRetrievalRequest", () => {
       patient,
       requestId,
       initiator,
-      documentReferences,
-      outboundDocumentQueryResps,
+      outboundDocumentQueryResults: outboundDocumentQueryResps,
     });
 
     expect(res).toBeTruthy();
@@ -88,48 +91,52 @@ describe("outboundDocumentRetrievalRequest", () => {
   });
 
   it("returns two req when it gets doc refs for two reqs", async () => {
-    const documentReferences = [...Array(maxDocRefsPerDocRetrievalRequest + 1).keys()].map(() =>
-      makeDocumentReferenceWithMetriporId({ homeCommunityId })
-    );
     const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
-      makeOutboundDocumentQueryResp({ gateway: makeXcaGateway({ homeCommunityId }) }),
+      makeOutboundDocumentQueryResp({
+        gateway: makeXcaGateway({ homeCommunityId }),
+        documentReference: [...Array(maxDocRefsPerDocRetrievalRequest + 1).keys()].map(() =>
+          makeDocumentReferenceWithMetriportId({ homeCommunityId })
+        ),
+      }),
     ];
     const res: OutboundDocumentRetrievalReq[] = createOutboundDocumentRetrievalReqs({
       requestId,
       patient,
       initiator,
-      documentReferences,
-      outboundDocumentQueryResps,
+      outboundDocumentQueryResults: outboundDocumentQueryResps,
     });
     expect(res).toBeTruthy();
     expect(res.length).toEqual(2);
   });
 
   it("returns three req when it gets doc refs for three reqs", async () => {
-    const documentReferences = [...Array(maxDocRefsPerDocRetrievalRequest * 2 + 1).keys()].map(() =>
-      makeDocumentReferenceWithMetriporId({ homeCommunityId })
-    );
     const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
-      makeOutboundDocumentQueryResp({ gateway: makeXcaGateway({ homeCommunityId }) }),
+      makeOutboundDocumentQueryResp({
+        gateway: makeXcaGateway({ homeCommunityId }),
+        documentReference: [...Array(maxDocRefsPerDocRetrievalRequest * 2 + 1).keys()].map(() =>
+          makeDocumentReferenceWithMetriportId({ homeCommunityId })
+        ),
+      }),
     ];
     const res: OutboundDocumentRetrievalReq[] = createOutboundDocumentRetrievalReqs({
       requestId,
       patient,
       initiator,
-      documentReferences,
-      outboundDocumentQueryResps,
+      outboundDocumentQueryResults: outboundDocumentQueryResps,
     });
     expect(res).toBeTruthy();
     expect(res.length).toEqual(3);
   });
 
   it("uses facility details for saml attributes for obo facilities", async () => {
-    const documentReferences = [
-      makeDocumentReferenceWithMetriporId({ homeCommunityId }),
-      makeDocumentReferenceWithMetriporId({ homeCommunityId }),
-    ];
     const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
-      makeOutboundDocumentQueryResp({ gateway: makeXcaGateway({ homeCommunityId }) }),
+      makeOutboundDocumentQueryResp({
+        gateway: makeXcaGateway({ homeCommunityId }),
+        documentReference: [
+          makeDocumentReferenceWithMetriportId({ homeCommunityId }),
+          makeDocumentReferenceWithMetriportId({ homeCommunityId }),
+        ],
+      }),
     ];
     facility = makeFacility({
       ...facility,
@@ -141,8 +148,7 @@ describe("outboundDocumentRetrievalRequest", () => {
       patient,
       requestId,
       initiator,
-      documentReferences,
-      outboundDocumentQueryResps,
+      outboundDocumentQueryResults: outboundDocumentQueryResps,
     });
 
     expect(res[0].samlAttributes.organization).toEqual(facility.data.name);
@@ -151,12 +157,14 @@ describe("outboundDocumentRetrievalRequest", () => {
   });
 
   it("uses org details for saml attributes for non-obo facilities", async () => {
-    const documentReferences = [
-      makeDocumentReferenceWithMetriporId({ homeCommunityId }),
-      makeDocumentReferenceWithMetriporId({ homeCommunityId }),
-    ];
     const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
-      makeOutboundDocumentQueryResp({ gateway: makeXcaGateway({ homeCommunityId }) }),
+      makeOutboundDocumentQueryResp({
+        gateway: makeXcaGateway({ homeCommunityId }),
+        documentReference: [
+          makeDocumentReferenceWithMetriportId({ homeCommunityId }),
+          makeDocumentReferenceWithMetriportId({ homeCommunityId }),
+        ],
+      }),
     ];
     facility = makeFacility({
       ...facility,
@@ -167,12 +175,87 @@ describe("outboundDocumentRetrievalRequest", () => {
       patient,
       requestId,
       initiator,
-      documentReferences,
-      outboundDocumentQueryResps,
+      outboundDocumentQueryResults: outboundDocumentQueryResps,
     });
 
     expect(res[0].samlAttributes.organization).toEqual(organization.data.name);
     expect(res[0].samlAttributes.organizationId).toEqual(organization.oid);
     expect(res[0].samlAttributes.homeCommunityId).toEqual(organization.oid);
+  });
+});
+
+describe("correct responses with multiple outboundDocumentQueryResps, where the doc refs have the same homeCommunityId as their respective gateways", () => {
+  it("returns correct data for each query response", async () => {
+    const homeCommunityId1 = faker.string.uuid();
+    const homeCommunityId2 = faker.string.uuid();
+    const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
+      makeOutboundDocumentQueryResp({
+        gateway: makeXcaGateway({ homeCommunityId: homeCommunityId1 }),
+        documentReference: [
+          makeDocumentReferenceWithMetriportId({ homeCommunityId: homeCommunityId1 }),
+          makeDocumentReferenceWithMetriportId({ homeCommunityId: homeCommunityId1 }),
+        ],
+      }),
+      makeOutboundDocumentQueryResp({
+        gateway: makeXcaGateway({ homeCommunityId: homeCommunityId2 }),
+        documentReference: [
+          makeDocumentReferenceWithMetriportId({ homeCommunityId: homeCommunityId2 }),
+          makeDocumentReferenceWithMetriportId({ homeCommunityId: homeCommunityId2 }),
+        ],
+      }),
+    ];
+
+    const res: OutboundDocumentRetrievalReq[] = createOutboundDocumentRetrievalReqs({
+      patient,
+      requestId,
+      initiator,
+      outboundDocumentQueryResults: outboundDocumentQueryResps,
+    });
+
+    expect(res).toBeTruthy();
+    expect(res.length).toEqual(2);
+
+    expect(res[0]?.documentReference?.length).toEqual(2);
+    expect(res[0]?.documentReference).toEqual(outboundDocumentQueryResps[0]?.documentReference);
+
+    expect(res[1]?.documentReference?.length).toEqual(2);
+    expect(res[1]?.documentReference).toEqual(outboundDocumentQueryResps[1]?.documentReference);
+  });
+  it("correct responses with multiple outboundDocumentQueryResps, where the doc refs for one gateway have different home community ids", async () => {
+    const homeCommunityId1 = faker.string.uuid();
+    const homeCommunityId2 = faker.string.uuid();
+    const homeCommunityId3 = faker.string.uuid();
+    const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
+      makeOutboundDocumentQueryResp({
+        gateway: makeXcaGateway({ homeCommunityId: homeCommunityId1 }),
+        documentReference: [
+          makeDocumentReferenceWithMetriportId({ homeCommunityId: homeCommunityId3 }),
+          makeDocumentReferenceWithMetriportId({ homeCommunityId: homeCommunityId3 }),
+        ],
+      }),
+      makeOutboundDocumentQueryResp({
+        gateway: makeXcaGateway({ homeCommunityId: homeCommunityId2 }),
+        documentReference: [
+          makeDocumentReferenceWithMetriportId({ homeCommunityId: homeCommunityId2 }),
+          makeDocumentReferenceWithMetriportId({ homeCommunityId: homeCommunityId2 }),
+        ],
+      }),
+    ];
+
+    const res: OutboundDocumentRetrievalReq[] = createOutboundDocumentRetrievalReqs({
+      patient,
+      requestId,
+      initiator,
+      outboundDocumentQueryResults: outboundDocumentQueryResps,
+    });
+
+    expect(res).toBeTruthy();
+    expect(res.length).toEqual(2);
+
+    expect(res[0]?.documentReference?.length).toEqual(2);
+    expect(res[0]?.documentReference).toEqual(outboundDocumentQueryResps[0]?.documentReference);
+
+    expect(res[1]?.documentReference?.length).toEqual(2);
+    expect(res[1]?.documentReference).toEqual(outboundDocumentQueryResps[1]?.documentReference);
   });
 });

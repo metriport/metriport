@@ -94,3 +94,15 @@ export interface Patient extends BaseDomain, PatientCreate {}
 export function getStatesFromAddresses(patient: Patient): USState[] {
   return patient.data.address.map(getState);
 }
+
+export function createDriversLicensePersonalIdentifier(
+  value: string,
+  state: USState
+): PersonalIdentifier {
+  const personalIdentifier: PersonalIdentifier = {
+    type: "driversLicense",
+    value: value,
+    state: state,
+  };
+  return personalIdentifier;
+}

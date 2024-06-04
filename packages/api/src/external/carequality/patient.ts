@@ -1,5 +1,5 @@
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
-import { toFHIR } from "@metriport/core/external/fhir/patient/index";
+import { toIheGatewayPatientResource } from "@metriport/core/external/carequality/ihe-gateway-v2/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
@@ -109,7 +109,7 @@ async function prepareForPatientDiscovery(
   pdRequestGatewayV1: OutboundPatientDiscoveryReq;
   pdRequestGatewayV2: OutboundPatientDiscoveryReq;
 }> {
-  const fhirPatient = toFHIR(patient);
+  const patientResource = toIheGatewayPatientResource(patient);
 
   const [{ v1Gateways, v2Gateways }, initiator] = await Promise.all([
     gatherXCPDGateways(patient),
@@ -117,7 +117,7 @@ async function prepareForPatientDiscovery(
   ]);
 
   const pdRequestGatewayV1 = createOutboundPatientDiscoveryReq({
-    patient: fhirPatient,
+    patientResource,
     cxId: patient.cxId,
     patientId: patient.id,
     xcpdGateways: v1Gateways,
@@ -126,7 +126,7 @@ async function prepareForPatientDiscovery(
   });
 
   const pdRequestGatewayV2 = createOutboundPatientDiscoveryReq({
-    patient: fhirPatient,
+    patientResource,
     cxId: patient.cxId,
     patientId: patient.id,
     xcpdGateways: v2Gateways,
