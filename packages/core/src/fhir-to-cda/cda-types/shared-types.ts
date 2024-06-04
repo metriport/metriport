@@ -118,7 +118,9 @@ export interface CdaCodeCv extends CdaCodeCe {
   translation?: CdaCodeCe[] | undefined;
 }
 
-// see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-II.html
+/**
+ * @see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-II.html
+ */
 export type CdaInstanceIdentifier = {
   _root?: string;
   _extension?: string;
