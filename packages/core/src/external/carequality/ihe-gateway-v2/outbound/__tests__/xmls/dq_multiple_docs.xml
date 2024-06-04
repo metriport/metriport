@@ -18,7 +18,7 @@
                 <ExtrinsicObject home="urn:oid:2.16.840.1.113883.3.9621" id="018e81dd-ddaf-7d7c-b02c-d8a145ebb0c8" isOpaque="false" mimeType="application/pdf" objectType="urn:uuid:34268e47-fdf5-41a6-ba33-82133c465248" status="urn:oasis:names:tc:ebxml-regrep:StatusType:Approved">
                     <Slot name="creationTime">
                         <ValueList>
-                            <Value>2024-03-27T21:43:04.878Z</Value>
+                            <Value>2024-03-27T21:43:04</Value>
                         </ValueList>
                     </Slot>
                     <Slot name="languageCode">
@@ -130,7 +130,7 @@
                 <ExtrinsicObject home="urn:oid:2.16.840.1.113883.3.9621" id="018e8b0d-91fb-732b-b9a1-f476a940642c" isOpaque="false" mimeType="application/pdf" objectType="urn:uuid:34268e47-fdf5-41a6-ba33-82133c465248" status="urn:oasis:names:tc:ebxml-regrep:StatusType:Approved">
                     <Slot name="creationTime">
                         <ValueList>
-                            <Value>2024-03-29T16:31:46.171Z</Value>
+                            <Value>20240329163146</Value>
                         </ValueList>
                     </Slot>
                     <Slot name="languageCode">

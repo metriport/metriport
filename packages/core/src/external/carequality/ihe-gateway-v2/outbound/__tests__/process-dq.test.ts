@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { processDQResponse } from "../xca/process/dq-response";
+import { processDQResponse, parseCreationTime } from "../xca/process/dq-response";
 import { outboundDqRequest, expectedDqDocumentReference } from "./constants";
 
 describe("processDQResponse", () => {
@@ -58,5 +58,70 @@ describe("processDQResponse", () => {
     });
     expect(response.operationOutcome).toBeTruthy();
     expect(response.operationOutcome?.issue[0]?.severity).toEqual("information");
+  });
+});
+
+describe("parseCreationTime", () => {
+  it("should return the iso date correctly", () => {
+    const input = "2023-10-01T12:34:56";
+    const result = parseCreationTime(input);
+    expect(result).toBe(input);
+  });
+
+  it("should format the string correctly", () => {
+    const input = "20231001123456";
+    const expectedOutput = "2023-10-01T12:34:56";
+    const result = parseCreationTime(input);
+    expect(result).toBe(expectedOutput);
+  });
+
+  it("should format the date correctly for no dashes in date", () => {
+    const input = "20231001";
+    const expectedOutput = "2023-10-01T00:00:00";
+    const result = parseCreationTime(input);
+    expect(result).toBe(expectedOutput);
+  });
+
+  it("should format the date correctly for dash date format", () => {
+    const input = "2023-10-01";
+    const expectedOutput = "2023-10-01T00:00:00";
+    const result = parseCreationTime(input);
+    expect(result).toBe(expectedOutput);
+  });
+
+  it("should return undefined for a random number", () => {
+    const input = "123456";
+    const result = parseCreationTime(input);
+    expect(result).toBeUndefined();
+  });
+
+  it("should return undefined for an invalid date string", () => {
+    const input = "invalid-date-string";
+    const result = parseCreationTime(input);
+    expect(result).toBeUndefined();
+  });
+
+  it("should return undefined for an empty string", () => {
+    const input = "";
+    const result = parseCreationTime(input);
+    expect(result).toBeUndefined();
+  });
+
+  it("should return undefined for a date with a space in it", () => {
+    const input = "2023-10-01 12:34:56";
+    const result = parseCreationTime(input);
+    expect(result).toBeUndefined();
+  });
+
+  it("should return undefined for a string with only time part", () => {
+    const input = "12:34:56";
+    const result = parseCreationTime(input);
+    expect(result).toBeUndefined();
+  });
+
+  it("should return undefined for a string with invalid characters", () => {
+    const input = "2023-10-01T12:34:56@";
+    const result = parseCreationTime(input);
+    expect(result).toBeUndefined();
   });
 });

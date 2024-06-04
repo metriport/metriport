@@ -1,5 +1,6 @@
 import { XMLParser } from "fast-xml-parser";
 import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 import {
   OutboundDocumentQueryReq,
   OutboundDocumentQueryResp,
@@ -16,6 +17,8 @@ import {
 } from "../../../../shared";
 import { successStatus, partialSuccessStatus } from "./constants";
 import { capture } from "../../../../../../util/notifications";
+
+dayjs.extend(customParseFormat);
 
 type Identifier = {
   _identificationScheme: string;
@@ -44,6 +47,28 @@ function getResponseHomeCommunityId(
   extrinsicObject: any
 ): string {
   return stripUrnPrefix(extrinsicObject?._home);
+}
+
+export function parseCreationTime(created: string): string | undefined {
+  try {
+    const isValidISO = dayjs(created, "YYYY-MM-DDTHH:mm:ss", true).isValid();
+    const isValid1 = dayjs(created, "YYYY-MM-DD", true).isValid();
+    const isValid2 = dayjs(created, "YYYYMMDDHHmmss", true).isValid();
+    const isValid3 = dayjs(created, "YYYYMMDD", true).isValid();
+
+    if (isValidISO) {
+      return created;
+    } else if (isValid1) {
+      return dayjs(created, "YYYY-MM-DD").format("YYYY-MM-DDTHH:mm:ss");
+    } else if (isValid2) {
+      return dayjs(created, "YYYYMMDDHHmmss").format("YYYY-MM-DDTHH:mm:ss");
+    } else if (isValid3) {
+      return dayjs(created, "YYYYMMDD").format("YYYY-MM-DDTHH:mm:ss");
+    }
+    return undefined;
+  } catch (ex) {
+    return undefined;
+  }
 }
 
 function getHomeCommunityIdForDr(
@@ -132,6 +157,8 @@ function parseDocumentReference(
     return undefined;
   }
 
+  const creationTime = findSlotValue("creationTime");
+
   const documentReference: DocumentReference = {
     homeCommunityId: getHomeCommunityIdForDr(outboundRequest, extrinsicObject),
     repositoryUniqueId,
@@ -140,9 +167,7 @@ function parseDocumentReference(
     language: findSlotValue("languageCode"),
     size: sizeValue ? parseInt(sizeValue) : undefined,
     title: findClassificationName(XDSDocumentEntryClassCode),
-    creation: findSlotValue("creationTime")
-      ? dayjs(findSlotValue("creationTime")).toISOString()
-      : undefined,
+    creation: creationTime ? parseCreationTime(String(creationTime)) : undefined,
     authorInstitution: findClassificationSlotValue(XDSDocumentEntryAuthor, "authorInstitution"),
   };
   return documentReference;
