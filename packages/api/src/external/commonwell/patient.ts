@@ -205,6 +205,17 @@ async function registerAndLinkPatientInCW({
       cwLinks = await createCwLinks(patient, networkLinks);
     }
 
+    if (rerunPdOnNewDemographics) {
+      const startedNewPd = await runNextPdOnNewDemographics({
+        patient,
+        facilityId,
+        getOrgIdExcludeList,
+        requestId,
+        cwLinks,
+      });
+      if (startedNewPd) return;
+    }
+
     analytics({
       distinctId: patient.cxId,
       event: EventTypes.patientDiscovery,
@@ -216,17 +227,6 @@ async function registerAndLinkPatientInCW({
         duration: elapsedTimeFromNow(startedAt),
       },
     });
-
-    if (rerunPdOnNewDemographics) {
-      const startedNewPd = await runNextPdOnNewDemographics({
-        patient,
-        facilityId,
-        getOrgIdExcludeList,
-        requestId,
-        cwLinks,
-      });
-      if (startedNewPd) return;
-    }
 
     const startedNewPd = await runNexPdIfScheduled({
       patient,
@@ -375,6 +375,17 @@ async function updatePatientAndLinksInCw({
       cwLinks = await createCwLinks(patient, networkLinks);
     }
 
+    if (rerunPdOnNewDemographics) {
+      const startedNewPd = await runNextPdOnNewDemographics({
+        patient,
+        facilityId,
+        getOrgIdExcludeList,
+        requestId,
+        cwLinks,
+      });
+      if (startedNewPd) return;
+    }
+
     analytics({
       distinctId: patient.cxId,
       event: EventTypes.patientDiscovery,
@@ -386,17 +397,6 @@ async function updatePatientAndLinksInCw({
         duration: elapsedTimeFromNow(startedAt),
       },
     });
-
-    if (rerunPdOnNewDemographics) {
-      const startedNewPd = await runNextPdOnNewDemographics({
-        patient,
-        facilityId,
-        getOrgIdExcludeList,
-        requestId,
-        cwLinks,
-      });
-      if (startedNewPd) return;
-    }
 
     const startedNewPd = await runNexPdIfScheduled({
       patient,

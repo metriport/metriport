@@ -58,6 +58,18 @@ export async function processOutboundPatientDiscoveryResps({
     const patient = await getPatientOrFail({ id: patientId, cxId });
     const cqData = getCQData(patient.data.externalData);
 
+    const facilityId = cqData?.discoveryFacilityId;
+    const rerunPdOnNewDemographics = cqData?.discoveryRerunPdOnNewDemographics;
+    if (facilityId && rerunPdOnNewDemographics) {
+      const startedNewPd = await runNextPdOnNewDemographics({
+        patient,
+        facilityId,
+        requestId,
+        cqLinks,
+      });
+      if (startedNewPd) return;
+    }
+
     const startedAt = cqData?.discoveryStartedAt;
     analytics({
       distinctId: patient.cxId,
@@ -70,18 +82,6 @@ export async function processOutboundPatientDiscoveryResps({
         duration: elapsedTimeFromNow(startedAt),
       },
     });
-
-    const facilityId = cqData?.discoveryFacilityId;
-    const rerunPdOnNewDemographics = cqData?.discoveryRerunPdOnNewDemographics;
-    if (facilityId && rerunPdOnNewDemographics) {
-      const startedNewPd = await runNextPdOnNewDemographics({
-        patient,
-        facilityId,
-        requestId,
-        cqLinks,
-      });
-      if (startedNewPd) return;
-    }
 
     const startedNewPd = await runNexPdIfScheduled({
       patient,
