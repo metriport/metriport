@@ -60,11 +60,13 @@ export const registryError = z.object({
   _errorCode: z.string().optional(),
   _severity: z.string().optional(),
 });
+export type RegistryError = z.infer<typeof registryError>;
 
 const registryErrorList = z.object({
   RegistryError: z.union([registryError, z.array(registryError)]),
   _highestSeverity: z.string(),
 });
+export type RegistryErrorList = z.infer<typeof registryErrorList>;
 
 export const iti38Body = z.object({
   AdhocQueryResponse: z.object({
@@ -74,7 +76,7 @@ export const iti38Body = z.object({
         z.object({
           ExtrinsicObject: z.union([extrinsicObject, z.array(extrinsicObject)]),
         }),
-        z.string(), //for empty response
+        z.literal(""),
       ])
       .optional(),
     _status: z.string(),
@@ -88,3 +90,5 @@ export const iti38Schema = z.object({
     Body: iti38Body,
   }),
 });
+
+export type Iti38Response = z.infer<typeof iti38Schema>;

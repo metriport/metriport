@@ -9,12 +9,12 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import { capture } from "../../../../../../util/notifications";
 import { out } from "../../../../../../util/log";
+import { RegistryErrorList, RegistryError } from "./schema";
 
 const { log } = out("XCA Error Handling");
 
 export function processRegistryErrorList(
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  registryErrorList: any,
+  registryErrorList: RegistryErrorList,
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq
 ): OperationOutcome | undefined {
   const operationOutcome: OperationOutcome = {
@@ -27,13 +27,13 @@ export function processRegistryErrorList(
     const registryErrors = Array.isArray(registryErrorList?.RegistryError)
       ? registryErrorList.RegistryError
       : [registryErrorList?.RegistryError];
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    registryErrors.forEach((entry: any) => {
+
+    registryErrors.forEach((entry: RegistryError) => {
       const issue = {
-        severity: entry?._severity?.toString().toLowerCase().split(":").pop(),
-        code: entry?._errorCode?.toString(),
+        severity: entry?._severity?.toString().toLowerCase().split(":").pop() ?? "error",
+        code: entry?._errorCode?.toString() ?? "unknown-error",
         details: {
-          text: entry?._codeContext?.toString(),
+          text: entry?._codeContext?.toString() ?? "No details",
         },
       };
 
@@ -68,8 +68,7 @@ export function handleRegistryErrorResponse({
   outboundRequest,
   gateway,
 }: {
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  registryErrorList: any;
+  registryErrorList: RegistryErrorList;
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
 }): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
@@ -132,6 +131,38 @@ export function handleEmptyResponse({
       {
         severity: "information",
         code: "no-documents-found",
+        details: {
+          text,
+        },
+      },
+    ],
+  };
+  return {
+    id: outboundRequest.id,
+    patientId: outboundRequest.patientId,
+    timestamp: outboundRequest.timestamp,
+    responseTimestamp: dayjs().toISOString(),
+    gateway,
+    operationOutcome,
+  };
+}
+
+export function handleSchemaErrorResponse({
+  outboundRequest,
+  gateway,
+  text = "Zod Schema Error",
+}: {
+  outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
+  gateway: XCAGateway;
+  text?: string;
+}): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
+  const operationOutcome: OperationOutcome = {
+    resourceType: "OperationOutcome",
+    id: outboundRequest.id,
+    issue: [
+      {
+        severity: "error",
+        code: "schema-error",
         details: {
           text,
         },
