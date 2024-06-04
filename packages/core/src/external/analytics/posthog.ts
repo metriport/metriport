@@ -23,10 +23,14 @@ export const analytics = (
   posthogOptions?: PostHogOptions,
   postApiKey?: string
 ) => {
+  console.log("analytics", params, posthogOptions, postApiKey);
   const apiKey = postApiKey ?? defaultPostHogApiKey;
   if (!apiKey) return;
 
+  console.log("apiKey", apiKey);
   const posthog = new PostHog(apiKey, posthogOptions);
+
+  console.log("posthog", posthog);
 
   params.properties = {
     ...(params.properties ? { ...params.properties } : undefined),
@@ -38,6 +42,8 @@ export const analytics = (
   };
 
   posthog.capture(params);
+
+  console.log("posthog.capture");
 };
 
 export enum EventTypes {

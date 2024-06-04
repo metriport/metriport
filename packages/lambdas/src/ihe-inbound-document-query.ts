@@ -23,7 +23,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
     const postHogApiKey = await getSecretValue(postHogSecretName, region);
 
     if (postHogApiKey && engineeringCxId) {
-      result.externalGatewayPatient?.system;
       analytics(
         {
           distinctId: engineeringCxId,
