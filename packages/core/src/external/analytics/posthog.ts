@@ -23,6 +23,28 @@ export const analytics = (
   posthogOptions?: PostHogOptions,
   postApiKey?: string
 ) => {
+  const apiKey = postApiKey ?? defaultPostHogApiKey;
+  if (!apiKey) return;
+
+  const posthog = new PostHog(apiKey, posthogOptions);
+
+  params.properties = {
+    ...(params.properties ? { ...params.properties } : undefined),
+    environment: Config.getEnvType(),
+    platform: "oss-api",
+    $set_once: {
+      cxId: params.distinctId,
+    },
+  };
+
+  posthog.capture(params);
+};
+
+export const analyticsAsync = async (
+  params: EventMessageV1,
+  posthogOptions?: PostHogOptions,
+  postApiKey?: string
+) => {
   console.log("analytics", params, posthogOptions, postApiKey);
   const apiKey = postApiKey ?? defaultPostHogApiKey;
   if (!apiKey) return;
@@ -42,6 +64,8 @@ export const analytics = (
   };
 
   posthog.capture(params);
+
+  await posthog.shutdown();
 
   console.log("posthog.capture");
 };
