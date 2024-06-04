@@ -11,6 +11,7 @@ import {
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
 import { ConsolidatedQuery, resourcesSearchableByPatient } from "@metriport/api-sdk";
+import { intersection } from "lodash";
 import {
   buildBundle,
   getReferencesFromResources,
@@ -78,7 +79,9 @@ export async function startConsolidatedQuery({
   );
 
   if (currentConsolidatedProgress) {
-    log(`Patient ${patientId} consolidatedQuery is already 'processing', skipping...`);
+    log(
+      `Patient ${patientId} consolidatedQuery is already 'processing' with params: ${currentConsolidatedProgress}, skipping...`
+    );
     return currentConsolidatedProgress;
   }
 
@@ -151,7 +154,7 @@ export function getCurrentConsolidatedProgress(
   const { resources, dateFrom, dateTo, conversionType } = queryParams;
 
   for (const progress of consolidatedQueriesProgress) {
-    const isSameResources = getIsSameResources(progress, resources);
+    const isSameResources = getIsSameResources(resources, progress.resources);
     const isSameDateFrom = progress.dateFrom === dateFrom;
     const isSameDateTo = progress.dateTo === dateTo;
     const isSameConversionType = progress.conversionType === conversionType;
@@ -163,24 +166,28 @@ export function getCurrentConsolidatedProgress(
   }
 }
 
-function getIsSameResources(
-  progress: ConsolidatedQuery,
-  resources: ResourceTypeForConsolidation[] | undefined
+export function getIsSameResources(
+  queryResources: ResourceTypeForConsolidation[] | undefined,
+  currentResources: ResourceTypeForConsolidation[] | undefined
 ): boolean {
-  const areResourceMatching = progress.resources?.toString() === resources?.toString();
+  const haveSameLength = queryResources?.length === currentResources?.length;
+  const intersectedResources = intersection(queryResources, currentResources);
+  const usingAllQueryResources = queryResources?.length === intersectedResources.length;
 
-  const areResourcesSearchableByPatient =
-    resources?.toString() === resourcesSearchableByPatient.toString();
-  const areResourcesEmpty = !resources || resources.length === 0;
+  const areQueryResourcesSearchableByPatient =
+    intersection(queryResources, resourcesSearchableByPatient).length ===
+    resourcesSearchableByPatient.length;
+  const areQueryResourcesEmpty = !queryResources || queryResources.length === 0;
 
-  const isProgressSearchableByPatient =
-    progress.resources?.toString() === resourcesSearchableByPatient.toString();
-  const isProgressEmpty = !progress.resources || progress.resources.length === 0;
+  const isCurrentProgressSearchableByPatient =
+    intersection(currentResources, resourcesSearchableByPatient).length ===
+    resourcesSearchableByPatient.length;
+  const isCurrentProgressEmpty = !currentResources || currentResources.length === 0;
 
   return (
-    areResourceMatching ||
-    (isProgressEmpty && areResourcesSearchableByPatient) ||
-    (isProgressSearchableByPatient && areResourcesEmpty)
+    (haveSameLength && usingAllQueryResources) ||
+    (isCurrentProgressEmpty && areQueryResourcesSearchableByPatient) ||
+    (areQueryResourcesEmpty && isCurrentProgressSearchableByPatient)
   );
 }
 

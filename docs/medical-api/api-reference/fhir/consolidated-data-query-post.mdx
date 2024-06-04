@@ -11,6 +11,10 @@ Once the data is consolidated and ready for consumption, a [Webhook request](/me
 is sent to [your configured URL](/home/api-reference/settings/post-settings) containing the Patient's
 data in FHIR-compliant format, based on the [parameters](#query-params) used to trigger the query.
 
+You'll be able to query multiple times for the same Patient which will be added to the queue and
+processed in order. If the parameters are the same as a previous query that is still processing,
+the new query will be ignored.
+
 You can check the status of the data query by calling [get consolidated data query](/medical-api/api-reference/fhir/consolidated-data-query-get).
 
 This endpoint also provides the ability to render a [Medical Record Summary](/medical-api/more-info/medical-record-summary)

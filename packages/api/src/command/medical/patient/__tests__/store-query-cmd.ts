@@ -1,5 +1,7 @@
 import { ConsolidatedQuery } from "@metriport/api-sdk";
+import dayjs from "dayjs";
 import * as uuidv7_file from "@metriport/core/util/uuid-v7";
+import { ISO_DATE } from "@metriport/shared/common/date";
 import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
 import { makeProgress } from "../../../../domain/medical/__tests__/document-query";
 import { StoreQueryParams } from "../query-init";
@@ -51,8 +53,8 @@ export function makeConsolidatedQueryProgress(
     startedAt: params?.startedAt ?? new Date(),
     resources: params?.resources ?? [],
     conversionType: params?.conversionType ?? "json",
-    dateFrom: params?.dateFrom ?? new Date().toISOString(),
-    dateTo: params?.dateTo ?? new Date().toISOString(),
+    dateFrom: params?.dateFrom ?? dayjs().subtract(10, "years").format(ISO_DATE),
+    dateTo: params?.dateTo ?? dayjs().add(1, "day").format(ISO_DATE),
   };
 }
 
