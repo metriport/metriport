@@ -77,7 +77,7 @@ export function buildCodeCeFromCoding(coding: Coding[] | undefined): CdaCodeCe |
 
 /**
  * CE stands for CodedWithEquivalents
- * See https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CE.html for more details
+ * @see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CE.html for more details
  */
 export function buildCodeCe({
   code,
@@ -110,7 +110,7 @@ export function buildOriginalTextReference(value: string): CDAOriginalText {
 
 /**
  * CV stands for CodedValue
- * See https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CV.html for more details
+ * @see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CV.html for more details
  */
 export function buildCodeCvFromCodeableConcept(
   codeableConcept: CodeableConcept | undefined,
@@ -267,7 +267,7 @@ export function formatDateToHumanReadableFormat(
 
 /**
  * ST stands for SimpleText
- * See https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ST.html for more details
+ * @see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ST.html for more details
  */
 export function buildValueSt(value: string | undefined): CdaValueSt | undefined {
   if (!value) return undefined;
@@ -281,7 +281,7 @@ export function buildValueSt(value: string | undefined): CdaValueSt | undefined 
 
 /**
  * CD stands for ConceptDescriptor
- * See https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CD.html for more details
+ * @see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CD.html for more details
  */
 export function buildValueCd(
   codeableConcept: CodeableConcept | undefined,

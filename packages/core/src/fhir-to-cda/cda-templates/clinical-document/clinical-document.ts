@@ -35,7 +35,9 @@ export function removeEmptyFields(obj: any): unknown {
   return obj;
 }
 
-// see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ClinicalDocument.html
+/**
+ * @see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ClinicalDocument.html
+ */
 export function buildClinicalDocumentXml(
   recordTarget: CdaRecordTarget,
   author: CdaAuthor,
