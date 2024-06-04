@@ -54,14 +54,14 @@ export function patientResourceToNormalizedLinkDemographics(
     );
   });
   const telephoneNumbers = (patientResource.telecom ?? []).flatMap(tc => {
-    if (!tc.value || !tc.system) return [];
-    if (tc.system !== "phone") return [];
-    return [normalizeTelephone(tc.value)];
+    if (!tc.value) return [];
+    if (tc.system === "phone" || !tc.value.includes("@")) return [normalizeTelephone(tc.value)];
+    return [];
   });
   const emails = (patientResource.telecom ?? []).flatMap(tc => {
-    if (!tc.value || !tc.system) return [];
-    if (tc.system !== "email") return [];
-    return [normalizeEmail(tc.value)];
+    if (!tc.value) return [];
+    if (tc.system === "email" || tc.value.includes("@")) return [normalizeEmail(tc.value)];
+    return [];
   });
   /* TODO
   const driversLicenses = (patientResource.personalIdentifiers ?? []).flatMap(p => { 

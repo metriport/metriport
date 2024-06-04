@@ -278,14 +278,7 @@ export function normalizeAddress({
             .replaceAll("street", "st")
             .replaceAll("drive", "dr")
             .replaceAll("road", "rd")
-            .replaceAll("court", "ct")
-            .replaceAll("avenue", "ave")
-            .replaceAll("lane", "ln")
-            .replaceAll("highway", "hwy")
-            .replaceAll("east", "e")
-            .replaceAll("west", "w")
-            .replaceAll("north", "n")
-            .replaceAll("south", "s");
+            .replaceAll("avenue", "ave");
         }) ?? [],
     city: city?.trim().toLowerCase() ?? "",
     state: state?.trim().toLowerCase().slice(0, 2) ?? "",
