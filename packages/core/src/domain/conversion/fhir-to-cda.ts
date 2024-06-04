@@ -6,4 +6,5 @@ export type Input = {
   docId: string;
   organization: Organization;
   bundle: Bundle;
+  orgOid: string;
 };
