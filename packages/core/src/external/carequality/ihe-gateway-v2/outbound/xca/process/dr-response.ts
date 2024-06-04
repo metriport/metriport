@@ -10,7 +10,7 @@ import {
   handleRegistryErrorResponse,
   handleHttpErrorResponse,
   handleEmptyResponse,
-  handleSoapFaultResponse,
+  handleSchemaErrorResponse,
 } from "./error";
 import { parseFileFromString, parseFileFromBuffer } from "./parse-file-from-string";
 import { stripUrnPrefix } from "../../../../../../util/urn";
@@ -23,25 +23,13 @@ import { createDocumentFilePath } from "../../../../../../domain/document/filena
 import { MetriportError } from "../../../../../../util/error/metriport-error";
 import { getCidReference } from "../mtom/cid";
 import { out } from "../../../../../../util/log";
+import { toArray } from "../../..//utils";
+import { iti39Schema, DocumentResponse } from "./schema";
 
 const { log } = out("DR Processing");
 
 const region = Config.getAWSRegion();
 const bucket = Config.getMedicalDocumentsBucketName();
-
-export type DocumentResponse = {
-  size?: string;
-  title?: string;
-  creation?: string;
-  language?: string;
-  mimeType: string;
-  DocumentUniqueId: string;
-  HomeCommunityId: string;
-  RepositoryUniqueId: string;
-  NewDocumentUniqueId: string;
-  NewRepositoryUniqueId: string;
-  Document: string | { Include: { _href: string } };
-};
 
 let s3UtilsInstance = new S3Utils(region);
 export function getS3UtilsInstance(): S3Utils {
@@ -135,16 +123,16 @@ async function parseDocumentReference({
     size: documentResponse.size ? parseInt(documentResponse.size) : undefined,
     title: documentResponse?.title,
     fileName: filePath,
-    creation: documentResponse.creation,
-    language: documentResponse.language,
+    creation: documentResponse?.creation,
+    language: documentResponse?.language,
     contentType: mimeType,
     docUniqueId: documentResponse.DocumentUniqueId.toString(),
     metriportId: metriportId,
     fileLocation: bucket,
     homeCommunityId: outboundRequest.gateway.homeCommunityId,
     repositoryUniqueId: documentResponse.RepositoryUniqueId,
-    newDocumentUniqueId: documentResponse.NewDocumentUniqueId,
-    newRepositoryUniqueId: documentResponse.NewRepositoryUniqueId,
+    newDocumentUniqueId: documentResponse?.NewDocumentUniqueId,
+    newRepositoryUniqueId: documentResponse?.NewRepositoryUniqueId,
     isNew: !fileInfo.exists,
   };
 }
@@ -171,20 +159,11 @@ async function handleSuccessResponse({
 }): Promise<OutboundDocumentRetrievalResp> {
   try {
     const idMapping = generateIdMapping(outboundRequest.documentReference);
-    const documentReferences = Array.isArray(documentResponses)
-      ? await Promise.all(
-          documentResponses.map(async (documentResponse: DocumentResponse) =>
-            parseDocumentReference({ documentResponse, outboundRequest, idMapping, mtomResponse })
-          )
-        )
-      : [
-          await parseDocumentReference({
-            documentResponse: documentResponses,
-            outboundRequest,
-            idMapping,
-            mtomResponse,
-          }),
-        ];
+    const documentReferences = await Promise.all(
+      documentResponses.map(async (documentResponse: DocumentResponse) =>
+        parseDocumentReference({ documentResponse, outboundRequest, idMapping, mtomResponse })
+      )
+    );
 
     const response: OutboundDocumentRetrievalResp = {
       id: outboundRequest.id,
@@ -226,35 +205,40 @@ export async function processDrResponse({
   });
   const jsonObj = parser.parse(soapData.toString());
 
-  const status = jsonObj?.Envelope?.Body?.RetrieveDocumentSetResponse?.RegistryResponse?._status
-    ?.split(":")
-    .pop();
-  const registryErrorList =
-    jsonObj?.Envelope?.Body?.RetrieveDocumentSetResponse?.RegistryResponse?.RegistryErrorList;
-  const documentResponses = jsonObj?.Envelope?.Body?.RetrieveDocumentSetResponse?.DocumentResponse;
-  const soapFault = jsonObj?.Envelope?.Body?.Fault;
+  try {
+    console.log("jsonObj", jsonObj);
+    const iti39Response = iti39Schema.parse(jsonObj);
 
-  if ((status === successStatus || status === partialSuccessStatus) && documentResponses) {
-    return await handleSuccessResponse({
-      documentResponses,
-      outboundRequest,
-      gateway,
-      mtomResponse,
-    });
-  } else if (registryErrorList) {
-    return handleRegistryErrorResponse({
-      registryErrorList,
-      outboundRequest,
-      gateway,
-    });
-  } else if (soapFault) {
-    return handleSoapFaultResponse({
-      soapFault,
-      outboundRequest,
-      gateway,
-    });
-  } else {
-    return handleEmptyResponse({
+    const status = iti39Response.Envelope.Body.RetrieveDocumentSetResponse.RegistryResponse._status
+      ?.split(":")
+      .pop();
+    const registryErrorList =
+      iti39Response.Envelope.Body.RetrieveDocumentSetResponse.RegistryResponse.RegistryErrorList;
+    const documentResponses =
+      iti39Response.Envelope.Body.RetrieveDocumentSetResponse.DocumentResponse;
+
+    if ((status === successStatus || status === partialSuccessStatus) && documentResponses) {
+      return await handleSuccessResponse({
+        documentResponses: toArray(documentResponses),
+        outboundRequest,
+        gateway,
+        mtomResponse,
+      });
+    } else if (registryErrorList) {
+      return handleRegistryErrorResponse({
+        registryErrorList,
+        outboundRequest,
+        gateway,
+      });
+    } else {
+      return handleEmptyResponse({
+        outboundRequest,
+        gateway,
+      });
+    }
+  } catch (error) {
+    console.log("error", error);
+    return handleSchemaErrorResponse({
       outboundRequest,
       gateway,
     });

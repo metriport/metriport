@@ -6,6 +6,7 @@
                 <HomeCommunityId>urn:oid:urn:oid:2.16.840.1.113883.3.9621</HomeCommunityId>
                 <RepositoryUniqueId>urn:oid:2.16.840.1.113883.3.9621</RepositoryUniqueId>
                 <DocumentUniqueId>987654321</DocumentUniqueId>
+                <mimeType>undefined</mimeType>
                 <Document></Document>
             </DocumentResponse>
         </ihe:RetrieveDocumentSetResponse>

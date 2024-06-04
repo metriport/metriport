@@ -169,7 +169,6 @@ export function processDQResponse({
   const jsonObj = parser.parse(response);
 
   try {
-    console.log("jsonObj", JSON.stringify(jsonObj, null, 2));
     const iti38Response = iti38Schema.parse(jsonObj);
 
     const status = iti38Response.Envelope.Body.AdhocQueryResponse._status.split(":").pop();
@@ -197,7 +196,6 @@ export function processDQResponse({
       });
     }
   } catch (error) {
-    console.log("error", error);
     return handleSchemaErrorResponse({
       outboundRequest,
       gateway,

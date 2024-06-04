@@ -92,3 +92,129 @@ export const iti38Schema = z.object({
 });
 
 export type Iti38Response = z.infer<typeof iti38Schema>;
+
+const includeSchema = z.object({
+  Include: z.object({
+    _href: z.string(),
+  }),
+});
+
+export const DocumentResponse = z.object({
+  size: z.string().optional(),
+  title: z.string().optional(),
+  creation: z.string().optional(),
+  language: z.string().optional(),
+  mimeType: z.string(),
+  HomeCommunityId: z.string(),
+  RepositoryUniqueId: z.string(),
+  NewDocumentUniqueId: z.string().optional(),
+  NewRepositoryUniqueId: z.string().optional(),
+  DocumentUniqueId: z.union([z.string(), z.number()]),
+  Document: z.union([z.string(), includeSchema]),
+});
+
+export type DocumentResponse = z.infer<typeof DocumentResponse>;
+
+export const iti39Body = z.object({
+  RetrieveDocumentSetResponse: z.object({
+    RegistryResponse: z.object({
+      _status: z.string(),
+      RegistryErrorList: registryErrorList.optional(),
+    }),
+    DocumentResponse: z.union([DocumentResponse, z.array(DocumentResponse)]).optional(),
+  }),
+});
+
+export const iti39Schema = z.object({
+  Envelope: z.object({
+    Header: z.any(),
+    Body: iti39Body,
+  }),
+});
+
+export const AddressSchema = z.object({
+  line: z.union([z.string(), z.array(z.string())]).optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  postalCode: z.string().optional(),
+  country: z.string().optional(),
+  county: z.string().optional(),
+});
+
+export const NameSchema = z.object({
+  given: z.union([z.string(), z.array(z.string())]),
+  family: z.string(),
+  delimiter: z.string().optional(),
+});
+export type IheName = z.infer<typeof NameSchema>;
+
+export const TelecomSchema = z.object({
+  _use: z.string().optional(),
+  _value: z.string().optional(),
+});
+export type IheTelecom = z.infer<typeof TelecomSchema>;
+
+export const IdentifierSchema = z.object({
+  _root: z.string().optional(),
+  _extension: z.string(),
+});
+export type IheIdentifier = z.infer<typeof IdentifierSchema>;
+
+export const PatientRegistryProfileSchema = z.object({
+  acknowledgement: z.object({
+    typeCode: z.object({
+      _code: z.string(),
+    }),
+  }),
+  controlId: z.object({
+    queryAck: z.object({
+      queryResponseCode: z.object({
+        _code: z.string(),
+      }),
+    }),
+  }),
+  controlActProcess: z.object({
+    subject: z.object({
+      registrationEvent: z.object({
+        subject1: z.object({
+          patient: z.object({
+            id: z.object({
+              _root: z.string().optional(),
+              _extension: z.string(),
+            }),
+            patientPerson: z.object({
+              addr: AddressSchema.optional(),
+              name: NameSchema,
+              telecom: TelecomSchema.optional(),
+              asOtherIDs: z
+                .object({
+                  id: IdentifierSchema.optional(),
+                })
+                .optional(),
+              administrativeGenderCode: z
+                .object({
+                  _code: z.string(),
+                })
+                .optional(),
+              birthTime: z.object({
+                _value: z.string(),
+              }),
+            }),
+          }),
+        }),
+      }),
+    }),
+  }),
+});
+export type PatientRegistryProfile = z.infer<typeof PatientRegistryProfileSchema>;
+
+export const iti55Body = z.object({
+  PRPA_IN201306UV02: PatientRegistryProfileSchema,
+});
+
+export const iti55Schema = z.object({
+  Envelope: z.object({
+    Header: z.any(),
+    Body: iti55Body,
+  }),
+});

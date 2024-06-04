@@ -51,7 +51,7 @@ describe("processDRResponse for MTOM with/without attachments and for different 
 
   testFiles.forEach(({ name, mimeType, fileExtension }) => {
     it(`[mtom with attachments]: should process the ${fileExtension} DR response correctly`, async () => {
-      const xmlTemplatePath = path.join(__dirname, "./xmls/dr-no-mime-type.xml");
+      const xmlTemplatePath = path.join(__dirname, "./xmls/dr-insert-b64.xml");
       const xmlTemplate = fs.readFileSync(xmlTemplatePath, "utf8");
 
       const fileContent = fs.readFileSync(path.join(__dirname, `./files/${name}`));
@@ -173,7 +173,7 @@ describe("processDRResponse", () => {
       },
     });
 
-    expect(response?.operationOutcome?.issue[0]?.code).toBe("soap:Sender");
+    expect(response?.operationOutcome?.issue[0]?.code).toBe("schema-error");
   });
 
   it("should process the registry error DR response correctly", async () => {
@@ -211,6 +211,6 @@ describe("processDRResponse", () => {
         outboundRequest: outboundDrRequest,
       },
     });
-    expect(response.operationOutcome?.issue[0]?.severity).toEqual("information");
+    expect(response.operationOutcome?.issue[0]?.code).toEqual("schema-error");
   });
 });
