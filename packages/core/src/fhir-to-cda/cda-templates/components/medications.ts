@@ -1,10 +1,4 @@
-import {
-  Bundle,
-  CodeableConcept,
-  Dosage,
-  DosageDoseAndRate,
-  MedicationStatement,
-} from "@medplum/fhirtypes";
+import { Bundle, Dosage, DosageDoseAndRate, MedicationStatement } from "@medplum/fhirtypes";
 import {
   findResourceInBundle,
   isMedication,
@@ -24,6 +18,7 @@ import {
   buildInstanceIdentifier,
   formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
+  getDisplaysFromCodeableConcepts,
   withoutNullFlavorObject,
 } from "../commons";
 import {
@@ -125,7 +120,7 @@ function createTableRowsFromMedicationStatement(
             "#text": formatDateToHumanReadableFormat(period.end) ?? NOT_SPECIFIED,
           },
           {
-            "#text": getPrescriptionReasons(statement.resource.reasonCode),
+            "#text": getDisplaysFromCodeableConcepts(statement.resource.reasonCode),
           },
         ],
       },
@@ -235,21 +230,6 @@ function buildMedicationCode(code: CdaCodeCe | undefined): string {
   if (code?._code) {
     if (code._codeSystem) return `${code._code} - ${code._codeSystem}`;
     if (code._codeSystemName) return `${code._code} - ${code._codeSystemName}`;
-  }
-  return NOT_SPECIFIED;
-}
-
-function getPrescriptionReasons(concepts: CodeableConcept[] | undefined): string {
-  if (!concepts) return NOT_SPECIFIED;
-  if (concepts.length > 0) {
-    return concepts
-      .map(concept => {
-        const code = buildCodeCeFromCoding(concept.coding);
-        if (code?._displayName) return code._displayName.trim();
-        if (concept.text) return concept.text.trim();
-        return;
-      })
-      .join(", ");
   }
   return NOT_SPECIFIED;
 }

@@ -3,7 +3,7 @@ import {
   CdaCodeCe,
   CdaInstanceIdentifier,
   ObservationEntry,
-  ProblemsConcernActEntry,
+  ConcernActEntry,
   SubstanceAdministationEntry,
 } from "./shared-types";
 
@@ -19,4 +19,5 @@ type CdaSection<T> =
 
 export type MedicationSection = CdaSection<SubstanceAdministationEntry>;
 export type MentalStatusSection = CdaSection<ObservationEntry>;
-export type ProblemsSection = CdaSection<ProblemsConcernActEntry>;
+export type ProblemsSection = CdaSection<ConcernActEntry>;
+export type AllergiesSection = CdaSection<ConcernActEntry>;

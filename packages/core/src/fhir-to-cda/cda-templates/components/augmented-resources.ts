@@ -1,9 +1,12 @@
 import {
   AllergyIntolerance,
   Condition,
+  Encounter,
+  Location,
   Medication,
   MedicationStatement,
   Observation,
+  Practitioner,
   Resource,
 } from "@medplum/fhirtypes";
 import { oids } from "../constants";
@@ -38,4 +41,14 @@ export class AugmentedMedicationStatement implements AugmentedResource<Medicatio
 export class AugmentedAllergy implements AugmentedResource<AllergyIntolerance> {
   public readonly typeOid = oids.allergyConcernAct;
   constructor(public readonly sectionName: string, public readonly resource: AllergyIntolerance) {}
+}
+
+export class AugmentedEncounter implements AugmentedResource<Encounter> {
+  public readonly typeOid = oids.encounterActivity;
+  constructor(
+    public readonly sectionName: string,
+    public readonly resource: Encounter,
+    public readonly practitioners: Practitioner[],
+    public readonly locations: Location[]
+  ) {}
 }

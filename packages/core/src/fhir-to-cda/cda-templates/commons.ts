@@ -415,3 +415,18 @@ export function getTextFromCode(code: CodeableConcept | undefined): string {
   const primaryCoding = code.coding?.[0];
   return primaryCoding?.display ?? code.text ?? NOT_SPECIFIED;
 }
+
+export function getDisplaysFromCodeableConcepts(concepts: CodeableConcept[] | undefined): string {
+  if (!concepts) return NOT_SPECIFIED;
+  if (concepts.length > 0) {
+    return concepts
+      .map(concept => {
+        const code = buildCodeCeFromCoding(concept.coding);
+        if (code?._displayName) return code._displayName.trim();
+        if (concept.text) return concept.text.trim();
+        return;
+      })
+      .join(", ");
+  }
+  return NOT_SPECIFIED;
+}

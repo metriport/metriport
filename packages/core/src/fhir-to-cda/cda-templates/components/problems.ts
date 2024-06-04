@@ -2,9 +2,9 @@ import { Bundle, CodeableConcept, Condition } from "@medplum/fhirtypes";
 import { isCondition } from "../../../external/fhir/shared";
 import { ProblemsSection } from "../../cda-types/sections";
 import {
-  ObservationEntry,
+  ConcernActEntry,
+  ObservationEntryRelationship,
   ObservationTableRow,
-  ProblemsConcernActEntry,
 } from "../../cda-types/shared-types";
 import {
   buildCodeCe,
@@ -26,8 +26,8 @@ import {
   placeholderOrgOid,
 } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
-import { AugmentedCondition } from "./augmented-resources";
 import { initiateSectionTable } from "../table";
+import { AugmentedCondition } from "./augmented-resources";
 
 const problemsSectionName = "problems";
 const tableHeaders = [
@@ -114,7 +114,7 @@ function createTableRowFromCondition(
 function createEntryFromCondition(
   condition: AugmentedCondition,
   referenceId: string
-): ProblemsConcernActEntry {
+): ConcernActEntry {
   return {
     act: {
       _classCode: "ACT",
@@ -159,7 +159,10 @@ function getIcdCode(code: CodeableConcept | undefined): string {
   return icdCoding?.code ?? NOT_SPECIFIED;
 }
 
-function createEntryRelationship(condition: Condition, referenceId: string): ObservationEntry {
+function createEntryRelationship(
+  condition: Condition,
+  referenceId: string
+): ObservationEntryRelationship {
   const codeSystem = condition.code?.coding?.[0]?.system;
   const systemIsLoinc = isLoinc(codeSystem);
   return {

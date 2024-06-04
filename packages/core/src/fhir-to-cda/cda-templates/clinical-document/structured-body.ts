@@ -1,6 +1,7 @@
 import { Bundle } from "@medplum/fhirtypes";
 import { buildAllergies } from "../components/allergies";
 import { buildMedications } from "../components/medications";
+import { buildEncounters } from "../components/encounters";
 import { buildMentalStatus } from "../components/mental-status";
 import { buildProblems } from "../components/problems";
 import { buildResult } from "../components/results";
@@ -14,6 +15,7 @@ export function buildStructuredBody(fhirBundle: Bundle): unknown {
     buildMedications(fhirBundle),
     buildProblems(fhirBundle),
     buildAllergies(fhirBundle),
+    buildEncounters(fhirBundle),
   ];
 
   return {

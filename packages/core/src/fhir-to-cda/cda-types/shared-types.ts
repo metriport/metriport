@@ -168,6 +168,7 @@ export type ObservationTableRow = {
   };
 };
 export type ObservationEntry = {
+  _inversionInd?: boolean;
   _typeCode?: string;
   observation: {
     _classCode: string;
@@ -177,6 +178,7 @@ export type ObservationEntry = {
       _extension?: string;
     };
     id?: {
+      _nullFlavor?: string;
       _root?: string;
       _extension?: string;
     };
@@ -204,7 +206,7 @@ export type ObservationEntry = {
 };
 
 export type ObservationEntryRelationship = ObservationEntry & {
-  _typeCode: string;
+  _typeCode?: string;
 };
 
 export type SubstanceAdministationEntry = {
@@ -253,7 +255,7 @@ export type SubstanceAdministationEntry = {
   };
 };
 
-export type ProblemsConcernActEntry = {
+export type ConcernActEntry = {
   act: {
     _classCode: string;
     _moodCode: string;
@@ -267,6 +269,6 @@ export type ProblemsConcernActEntry = {
       low?: EntryObject;
       high?: EntryObject;
     };
-    entryRelationship: ObservationEntry;
+    entryRelationship: ObservationEntryRelationship;
   };
 };
