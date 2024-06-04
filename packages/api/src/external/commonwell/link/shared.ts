@@ -82,12 +82,12 @@ export async function autoUpgradeNetworkLinks(
   executionContext: string,
   getOrgIdExcludeList: () => Promise<string[]>
 ): Promise<NetworkLink[] | undefined> {
-  const { log } = out("cw.autoUpgradeNetworkLinks");
+  const { log, debug } = out("CW autoUpgradeNetworkLinks");
   const [networkLinks, orgIdExcludeList] = await Promise.all([
     commonWell.getNetworkLinks(queryMeta, commonwellPatientId),
     getOrgIdExcludeList(),
   ]);
-  log(`resp getNetworkLinks`, JSON.stringify(networkLinks));
+  debug(`resp getNetworkLinks: `, JSON.stringify(networkLinks));
 
   if (networkLinks._embedded && networkLinks._embedded.networkLink?.length) {
     const lola1Links = networkLinks._embedded.networkLink.flatMap(filterTruthy).filter(isLOLA1);

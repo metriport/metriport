@@ -527,7 +527,7 @@ export async function runNextPdOnNewDemographics({
     });
     analytics({
       distinctId: updatedPatient.cxId,
-      event: EventTypes.patientDiscovery,
+      event: EventTypes.rerunOnNewDemographics,
       properties: {
         hie: MedicalDataSource.COMMONWELL,
         patientId: updatedPatient.id,
@@ -553,6 +553,10 @@ export async function runNexPdIfScheduled({
   const scheduledPdRequest = getCWData(updatedPatient.data.externalData)?.scheduledPdRequest;
 
   if (scheduledPdRequest) {
+    await resetPatientScheduledPatientDiscoveryRequestId({
+      patient,
+      source: MedicalDataSource.COMMONWELL,
+    });
     await update({
       patient: updatedPatient,
       facilityId: scheduledPdRequest.facilityId,
@@ -560,10 +564,6 @@ export async function runNexPdIfScheduled({
       requestId: scheduledPdRequest.requestId,
       forceCWUpdate: scheduledPdRequest.forceCommonwell,
       rerunPdOnNewDemographics: scheduledPdRequest.rerunPdOnNewDemographics,
-    });
-    await resetPatientScheduledPatientDiscoveryRequestId({
-      patient,
-      source: MedicalDataSource.COMMONWELL,
     });
     analytics({
       distinctId: updatedPatient.cxId,
@@ -783,7 +783,7 @@ async function findOrCreatePersonAndLink({
       // safe to get the first one, just need to match one of the person's strong IDs
       strongIds.length > 0 ? strongIds[0] : undefined
     );
-    debug(`resp patientLink: `, JSON.stringify(respLink));
+    debug(`resp addPatientLink: `, JSON.stringify(respLink));
   } catch (err) {
     log(`Error linking Patient<>Person @ CW - personId: ${personId}`);
     throw err;
@@ -883,7 +883,7 @@ async function updatePersonAndLink({
         // safe to get the first one, just need to match one of the person's strong IDs
         strongIds.length > 0 ? strongIds[0] : undefined
       );
-      debug(`resp patientLink: `, JSON.stringify(respLink));
+      debug(`resp addPatientLink: `, JSON.stringify(respLink));
     }
   } catch (err) {
     log(
@@ -994,7 +994,7 @@ async function getLinkInfo({
   const { debug } = out(`CW getLinkInfo - CW patientId ${commonwellPatientId}`);
 
   const respLinks = await commonWell.getPatientLinks(queryMeta, personId);
-  debug(`resp getPatientLinks: ${JSON.stringify(respLinks)}`);
+  debug(`resp getPatientLinks: `, JSON.stringify(respLinks));
 
   const linkToPatient = respLinks._embedded.patientLink.find(l =>
     l.patient ? l.patient.includes(commonwellPatientId) : false
