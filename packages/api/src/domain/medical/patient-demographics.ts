@@ -17,9 +17,8 @@ import { Address } from "@metriport/core/domain/address";
 import { Contact, stripNonNumericChars } from "@metriport/core/domain/contact";
 import { USState } from "@metriport/core/domain/geographic-locations";
 import { mapGenderAtBirthToFhir } from "@metriport/core/external/fhir/patient/index";
+import { ISO_DATE } from "../../shared/date";
 import dayjs from "dayjs";
-
-const ISO_DATE = "YYYY-MM-DD";
 
 /**
  * Evaluates whether the input linked demographics are similar enough to the Patient to be considered a usable "match".
