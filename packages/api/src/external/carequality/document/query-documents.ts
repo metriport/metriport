@@ -146,17 +146,20 @@ export async function getDocumentsFromCQ({
     // We send the request to IHE Gateway to initiate the doc query.
     // Then as they are processed by each gateway it will start
     // sending them to the internal route one by one
-    log(`Starting document query - Gateway V1`);
-    await iheGateway.startDocumentsQuery({ outboundDocumentQueryReq: documentQueryRequestsV1 });
-
-    log(`Starting document query - Gateway V2`);
-    const iheGatewayV2 = makeIHEGatewayV2();
-    await iheGatewayV2.startDocumentQueryGatewayV2({
-      dqRequestsGatewayV2: documentQueryRequestsV2,
-      requestId,
-      patientId,
-      cxId,
-    });
+    if (documentQueryRequestsV1.length > 0) {
+      log(`Starting document query - Gateway V1`);
+      await iheGateway.startDocumentsQuery({ outboundDocumentQueryReq: documentQueryRequestsV1 });
+    }
+    if (documentQueryRequestsV2.length > 0) {
+      log(`Starting document query - Gateway V2`);
+      const iheGatewayV2 = makeIHEGatewayV2();
+      await iheGatewayV2.startDocumentQueryGatewayV2({
+        dqRequestsGatewayV2: documentQueryRequestsV2,
+        requestId,
+        patientId,
+        cxId,
+      });
+    }
 
     await resultPoller.pollOutboundDocQueryResults({
       requestId,
