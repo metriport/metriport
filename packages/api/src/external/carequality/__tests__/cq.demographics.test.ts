@@ -35,10 +35,6 @@ describe("CQ demographics", () => {
         system: "email",
         value: " katy2020@GMAIL.COM",
       },
-      {
-        system: "fax",
-        value: "8887779",
-      },
     ],
     identifier: [],
   };

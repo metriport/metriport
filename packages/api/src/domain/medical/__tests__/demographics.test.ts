@@ -1,5 +1,4 @@
 import { Patient, PatientDemoData, GenderAtBirth, splitDob } from "@metriport/core/domain/patient";
-//import { stripNonNumericChars } from "@metriport/core/domain/contact";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { USState } from "@metriport/core/domain/geographic-locations";
 import {
@@ -23,13 +22,6 @@ describe("normalization", () => {
     const dobSplit = splitDob(dobValidValue);
     expect(dobSplit).toMatchObject(["2023", "08", "01"]);
   });
-  /* TODO
-  it("check strip non numeric chars", async () => {
-    const dobValidValue = "2023-08-01";
-    const dobSplit = splitDob(dobValidValue);
-    expect(dobSplit).toMatchObject(["2023", "08", "01"]);
-  });
-  */
   it("check dob normalization", async () => {
     const dobValidValue = "2023-08-01";
     const dobValid = normalizeDob(dobValidValue);
@@ -125,6 +117,56 @@ describe("normalization", () => {
       city: "",
       state: "",
       zip: "",
+      country: "usa",
+    });
+    const addressStreet = normalizeAddress({
+      line: [" 1 mordhaus street ", " apt 1a ", " 2 "],
+      city: " mordhaus ",
+      state: " ny ",
+      zip: " 66666 ",
+      country: " usa ",
+    });
+    expect(addressStreet).toMatchObject(addressValidValue);
+    const addressRoad = normalizeAddress({
+      line: [" 1 mordhaus road ", " apt 1a ", " 2 "],
+      city: " mordhaus ",
+      state: " ny ",
+      zip: " 66666 ",
+      country: " usa ",
+    });
+    expect(addressRoad).toMatchObject({
+      line: ["1 mordhaus rd", "apt 1a", "2"],
+      city: "mordhaus",
+      state: "ny",
+      zip: "66666",
+      country: "usa",
+    });
+    const addressDrive = normalizeAddress({
+      line: [" 1 mordhaus drive ", " apt 1a ", " 2 "],
+      city: " mordhaus ",
+      state: " ny ",
+      zip: " 66666 ",
+      country: " usa ",
+    });
+    expect(addressDrive).toMatchObject({
+      line: ["1 mordhaus dr", "apt 1a", "2"],
+      city: "mordhaus",
+      state: "ny",
+      zip: "66666",
+      country: "usa",
+    });
+    const addressAveneue = normalizeAddress({
+      line: [" 1 mordhaus avenue ", " apt 1a ", " 2 "],
+      city: " mordhaus ",
+      state: " ny ",
+      zip: " 66666 ",
+      country: " usa ",
+    });
+    expect(addressAveneue).toMatchObject({
+      line: ["1 mordhaus ave", "apt 1a", "2"],
+      city: "mordhaus",
+      state: "ny",
+      zip: "66666",
       country: "usa",
     });
     const addressValidValueString = JSON.stringify(
