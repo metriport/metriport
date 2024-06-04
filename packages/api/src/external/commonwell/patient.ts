@@ -480,13 +480,13 @@ async function validateCWEnabled({
 
 async function createCwLinks(
   patient: Pick<Patient, "id" | "cxId">,
-  pdResults: CwLink[]
+  cwLinks: CwLink[]
 ): Promise<CwLink[]> {
   const { id, cxId } = patient;
 
-  if (pdResults.length) await createOrUpdateCwPatientData({ id, cxId, cwLinks: pdResults });
+  if (cwLinks.length) await createOrUpdateCwPatientData({ id, cxId, cwLinks });
 
-  return pdResults;
+  return cwLinks;
 }
 
 export async function runNextPdOnNewDemographics({
