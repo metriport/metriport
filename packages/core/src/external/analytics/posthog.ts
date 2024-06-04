@@ -1,4 +1,4 @@
-import { PostHog, PostHogOptions } from "posthog-node";
+import { PostHog } from "posthog-node";
 import { Config } from "../../util/config";
 
 // TEMPORARY FIX - CANT EXPORT THE TYPE FROM MODULE
@@ -18,15 +18,11 @@ export interface EventMessageV1 extends IdentifyMessageV1 {
 
 const defaultPostHogApiKey = Config.getPostHogApiKey();
 
-export const analytics = (
-  params: EventMessageV1,
-  posthogOptions?: PostHogOptions,
-  postApiKey?: string
-) => {
+export const analytics = (params: EventMessageV1, postApiKey?: string): PostHog | void => {
   const apiKey = postApiKey ?? defaultPostHogApiKey;
   if (!apiKey) return;
 
-  const posthog = new PostHog(apiKey, posthogOptions);
+  const posthog = new PostHog(apiKey);
 
   params.properties = {
     ...(params.properties ? { ...params.properties } : undefined),
@@ -38,36 +34,18 @@ export const analytics = (
   };
 
   posthog.capture(params);
+
+  return posthog;
 };
 
-export const analyticsAsync = async (
-  params: EventMessageV1,
-  posthogOptions?: PostHogOptions,
-  postApiKey?: string
-) => {
-  console.log("analytics", params, posthogOptions, postApiKey);
-  const apiKey = postApiKey ?? defaultPostHogApiKey;
-  if (!apiKey) return;
+export const analyticsAsync = async (params: EventMessageV1, postApiKey?: string) => {
+  const posthog = analytics(params, postApiKey);
 
-  console.log("apiKey", apiKey);
-  const posthog = new PostHog(apiKey, posthogOptions);
+  if (!posthog) return;
 
-  console.log("posthog", posthog);
-
-  params.properties = {
-    ...(params.properties ? { ...params.properties } : undefined),
-    environment: Config.getEnvType(),
-    platform: "oss-api",
-    $set_once: {
-      cxId: params.distinctId,
-    },
-  };
-
-  posthog.capture(params);
-
+  // Needed to send requests to PostHog in lambda
+  // https://posthog.com/docs/libraries/node#using-in-a-short-lived-process-like-aws-lambda
   await posthog.shutdown();
-
-  console.log("posthog.capture");
 };
 
 export enum EventTypes {
