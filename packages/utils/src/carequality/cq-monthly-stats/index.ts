@@ -21,14 +21,23 @@ dayjs.extend(duration);
 // USE STORED RESULTS ON SUBSEQUENT RUNS TO AVOID REPEATEDLY RUNNING THE SAME EXPENSIVE QUERIES
 
 async function main() {
-  const sqlCQDirectory = `SELECT * FROM cq_directory_entry`;
-  const cqDirectory = await readOnlyDBPool.query(sqlCQDirectory, {
-    type: QueryTypes.SELECT,
-  });
+  let cqDirectory: object[] = [];
+
+  if (fs.existsSync("./runs/cq-directory.json")) {
+    console.log("Using stored CQ directory");
+    cqDirectory = JSON.parse(fs.readFileSync("./runs/cq-directory.json", "utf8"));
+  } else {
+    const sqlCQDirectory = `SELECT * FROM cq_directory_entry`;
+    const cqDirectory = await readOnlyDBPool.query(sqlCQDirectory, {
+      type: QueryTypes.SELECT,
+    });
+
+    fs.writeFileSync("./runs/cq-directory.json", JSON.stringify(cqDirectory, null, 2));
+  }
 
   console.log("cqDirectory:", cqDirectory.length);
 
-  const previousMonth = dayjs().subtract(1, "month");
+  const previousMonth = dayjs().subtract(2, "month");
   const previousMonthYear = previousMonth.year();
   const daysInPreviousMonth = previousMonth.daysInMonth();
   const endOfPreviousMonth = previousMonth.endOf("month").format("YYYY-MM-DD");
@@ -38,7 +47,7 @@ async function main() {
   const xcaDRByDate: ImplementerStatsByDay = {};
 
   for (let i = 0; i < daysInPreviousMonth; i++) {
-    const day = previousMonth.subtract(i, "day").format("YYYY-MM-DD");
+    const day = previousMonth.endOf("month").subtract(i, "day").format("YYYY-MM-DD");
     const baseDir = `./runs`;
     const baseDirDay = `${baseDir}/${day}`;
     fs.mkdirSync(baseDirDay, { recursive: true });
@@ -47,19 +56,36 @@ async function main() {
 
     const params = { cqDirectory, endOfPreviousMonth, dayIndex: i };
 
-    const xcpd = await xcpdStats(params);
-    const xcaDQ = await xcaDQStats(params);
-    const xcaDR = await xcaDRStats(params);
+    console.log(`${baseDirDay}/xcpd.json`);
+    if (fs.existsSync(`${baseDirDay}/xcpd.json`)) {
+      console.log("Using stored XCPD results");
+      xcpdByDate[day] = JSON.parse(fs.readFileSync(`${baseDirDay}/xcpd.json`, "utf8"));
+    } else {
+      const xcpd = await xcpdStats(params);
+      xcpdByDate[day] = xcpd;
+      fs.writeFileSync(`${baseDirDay}/xcpd.json`, JSON.stringify(xcpd, null, 2));
+      await sleep(20000);
+    }
 
-    xcpdByDate[day] = xcpd;
-    xcaDQByDate[day] = xcaDQ;
-    xcaDRByDate[day] = xcaDR;
+    if (fs.existsSync(`${baseDirDay}/xca-dq.json`)) {
+      console.log("Using stored XCA-DQ results");
+      xcaDQByDate[day] = JSON.parse(fs.readFileSync(`${baseDirDay}/xca-dq.json`, "utf8"));
+    } else {
+      const xcaDQ = await xcaDQStats(params);
+      xcaDQByDate[day] = xcaDQ;
+      fs.writeFileSync(`${baseDirDay}/xca-dq.json`, JSON.stringify(xcaDQ, null, 2));
+      await sleep(20000);
+    }
 
-    fs.writeFileSync(`${baseDirDay}/xcpd.json`, JSON.stringify(xcpd, null, 2));
-    fs.writeFileSync(`${baseDirDay}/xca-dq.json`, JSON.stringify(xcaDQ, null, 2));
-    fs.writeFileSync(`${baseDirDay}/xca-dr.json`, JSON.stringify(xcaDR, null, 2));
-
-    await sleep(60000);
+    if (fs.existsSync(`${baseDirDay}/xca-dr.json`)) {
+      console.log("Using stored XCA-DR results");
+      xcaDRByDate[day] = JSON.parse(fs.readFileSync(`${baseDirDay}/xca-dr.json`, "utf8"));
+    } else {
+      const xcaDR = await xcaDRStats(params);
+      xcaDRByDate[day] = xcaDR;
+      fs.writeFileSync(`${baseDirDay}/xca-dr.json`, JSON.stringify(xcaDR, null, 2));
+      await sleep(20000);
+    }
   }
 
   const xcpdMonthlyStats = aggregateNonXcpdErrRespByMonth(xcpdByDate);

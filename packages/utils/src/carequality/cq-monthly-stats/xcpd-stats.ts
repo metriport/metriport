@@ -99,7 +99,7 @@ export function aggregateNonXcpdErrRespByMonth(
 
       const nonErroredResponses = aggregateGwNonErroredResponses(gwStats);
 
-      if (existingStat && existingStat.nonErroredResponses) {
+      if (existingStat && existingStat.nonErroredResponses !== undefined) {
         existingStat.nonErroredResponses += nonErroredResponses;
       } else {
         monthlyStats.push({

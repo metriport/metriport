@@ -217,14 +217,14 @@ export function aggregateDurationAvgByMonth(
     );
 
     if (existingStat) {
-      existingStat.xcpdAvgResponseTimeMs = avgResponseTimeMs;
+      existingStat.xcaDQAvgResponseTimeMs = avgResponseTimeMs;
     } else {
       monthlyStats.push({
         year,
         month,
         implementerId,
         implementerName,
-        xcpdAvgResponseTimeMs: avgResponseTimeMs,
+        xcaDQAvgResponseTimeMs: avgResponseTimeMs,
       });
     }
   });
@@ -237,19 +237,17 @@ export function aggregateDurationAvgByMonth(
     );
 
     if (existingStat) {
-      existingStat.xcpdAvgResponseTimeMs = avgResponseTimeMs;
+      existingStat.xcaDRAvgResponseTimeMs = avgResponseTimeMs;
     } else {
       monthlyStats.push({
         year,
         month,
         implementerId,
         implementerName,
-        xcpdAvgResponseTimeMs: avgResponseTimeMs,
+        xcaDRAvgResponseTimeMs: avgResponseTimeMs,
       });
     }
   });
-
-  console.log(JSON.stringify(monthlyStats, null, 2));
 
   return monthlyStats;
 }
