@@ -1,4 +1,4 @@
-import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { getEnvVarOrFail } from "@metriport/shared";
 import { spawn } from "child_process";
 import { Command } from "commander";
 import dayjs from "dayjs";

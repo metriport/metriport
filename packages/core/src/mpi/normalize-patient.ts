@@ -1,5 +1,7 @@
+import { errorToString, normalizeZipCode } from "@metriport/shared";
 import { Address } from "../domain/address";
 import { PatientData } from "../domain/patient";
+import { out } from "../util/log";
 
 /**
  * Takes in patient data and normalizes it by splitting the first and last names,
@@ -11,6 +13,7 @@ import { PatientData } from "../domain/patient";
  *    return null.
  */
 export function normalizePatient<T extends PatientData>(patient: T): T {
+  const { log } = out(`MPI normalize patient, request id - ${patient.requestId}`);
   // array destructuring to extract the first element of the array with defaults
   const [firstName = patient.firstName] = splitName(normalizeString(patient.firstName));
   const [lastName = patient.lastName] = splitName(normalizeString(patient.lastName));
@@ -25,29 +28,26 @@ export function normalizePatient<T extends PatientData>(patient: T): T {
       phone: contact.phone ? normalizePhoneNumber(contact.phone) : contact.phone,
     })),
     address: (patient.address ?? []).map(addr => {
-      const newAddress: Address = {
-        addressLine1: normalizeAddress(addr.addressLine1),
-        city: normalizeString(addr.city),
-        zip: normalizeZipCode(addr.zip),
-        state: addr.state,
-        country: addr.country || "USA",
-      };
-      if (addr.addressLine2) {
-        newAddress.addressLine2 = normalizeAddress(addr.addressLine2);
+      try {
+        const newAddress: Address = {
+          addressLine1: normalizeAddress(addr.addressLine1),
+          city: normalizeString(addr.city),
+          zip: normalizeZipCode(addr.zip),
+          state: addr.state,
+          country: addr.country || "USA",
+        };
+        if (addr.addressLine2) {
+          newAddress.addressLine2 = normalizeAddress(addr.addressLine2);
+        }
+        return newAddress;
+      } catch (err) {
+        const msg = `Failed to parse the address for MPI`;
+        log(`${msg} - error ${errorToString(err)}`);
       }
-      return newAddress;
+      return;
     }),
   };
   return normalizedPatient;
-}
-
-/**
- * Normalizes a zip code by taking the first 5 characters.
- * @param zipCode - The zip code to be normalized.
- * @returns The normalized zip code as a string.
- */
-function normalizeZipCode(zipCode: string): string {
-  return zipCode.slice(0, 5);
 }
 
 /**

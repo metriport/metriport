@@ -18,7 +18,7 @@ const bundleEntrySchema = z.array(
 
 export const bundleSchema = z.object({
   resourceType: z.enum(["Bundle"]),
-  type: typeSchema.optional(),
+  type: typeSchema,
   entry: bundleEntrySchema,
 });
 

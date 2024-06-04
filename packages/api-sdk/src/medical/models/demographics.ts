@@ -8,6 +8,11 @@ import {
   stripNonNumericChars,
 } from "../../shared";
 
+export const generalPersonalIdentifiers = ["ssn"] as const;
+export const driversLicensePersonalIdentifier = ["driversLicense"] as const;
+export type GeneralPersonalIdentifiers = (typeof generalPersonalIdentifiers)[number];
+export type DriversLicensePersonalIdentifier = (typeof driversLicensePersonalIdentifier)[number];
+
 const basePersonalIdentifierSchema = z.object({
   value: z.string(),
   period: z
@@ -26,13 +31,17 @@ const basePersonalIdentifierSchema = z.object({
 });
 
 export const driverLicenseIdentifierSchema = z.object({
-  type: z.literal("driversLicense"), // If another type is added, the UI forms for patient creation/updates will need to be updated to support these types
+  type: z.enum(driversLicensePersonalIdentifier),
   state: usStateSchema,
 });
 
-export const personalIdentifierSchema = basePersonalIdentifierSchema.merge(
-  driverLicenseIdentifierSchema
-);
+export const generalTypeIdentifierSchema = z.object({
+  type: z.enum(generalPersonalIdentifiers),
+});
+
+export const personalIdentifierSchema = basePersonalIdentifierSchema
+  .merge(driverLicenseIdentifierSchema)
+  .or(basePersonalIdentifierSchema.merge(generalTypeIdentifierSchema));
 export type PersonalIdentifier = z.infer<typeof personalIdentifierSchema>;
 
 export const genderAtBirthSchema = z.enum(["F", "M"]);

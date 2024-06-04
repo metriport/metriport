@@ -1,7 +1,7 @@
 import { Address, combineAddresses } from "@metriport/core/domain/address";
 import { capture } from "@metriport/core/util/notifications";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { AddressGeocodingResult, geocodeAddress } from "../../../external/aws/address";
-import { analytics, EventTypes } from "../../../shared/analytics";
 import { Config } from "../../../shared/config";
 
 const ADDRESS_MATCH_RELEVANCE_THRESHOLD = 0.9;

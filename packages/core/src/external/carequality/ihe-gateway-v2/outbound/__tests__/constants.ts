@@ -5,7 +5,7 @@ import {
   OutboundPatientDiscoveryRespSuccessfulSchema,
 } from "@metriport/ihe-gateway-sdk";
 
-export const outboundXCPDRequest: OutboundPatientDiscoveryReq = {
+export const outboundXcpdRequest: OutboundPatientDiscoveryReq = {
   id: uuidv4(),
   cxId: uuidv4(),
   patientId: uuidv4(),
@@ -50,12 +50,48 @@ export const outboundXCPDRequest: OutboundPatientDiscoveryReq = {
   ],
 };
 
-export const expectedXCPDResponse: OutboundPatientDiscoveryRespSuccessfulSchema = {
-  id: outboundXCPDRequest.id,
-  patientId: outboundXCPDRequest.patientId,
-  timestamp: outboundXCPDRequest.timestamp,
+export const outboundXcpdRequestMissingFields: OutboundPatientDiscoveryReq = {
+  id: uuidv4(),
+  cxId: uuidv4(),
+  patientId: uuidv4(),
+  timestamp: "2024-04-04T19:11:55.879Z",
+  principalCareProviderIds: ["1234567890"],
+  samlAttributes: {
+    subjectId: "America Inc",
+    subjectRole: {
+      code: "106331006",
+      display: "Administrative AND/OR managerial worker",
+    },
+    organization: "White House Medical Inc",
+    organizationId: "2.16.840.1.113883.3.9621.5.213",
+    homeCommunityId: "2.16.840.1.113883.3.9621.5.213",
+    purposeOfUse: "TREATMENT",
+  },
+  patientResource: {
+    name: [
+      {
+        given: ["NWHINONE"],
+        family: "NWHINZZZTESTPATIENT",
+      },
+    ],
+    gender: "male",
+    birthDate: "19810101",
+  },
+  gateways: [
+    {
+      url: "https://mock-metriport/soap/iti55",
+      oid: "2.16.840.1.113883.3.787.0.0",
+      id: "018ea97e-7b1c-78e9-8aa1-47c7caf85afe",
+    },
+  ],
+};
+
+export const expectedXcpdResponse: OutboundPatientDiscoveryRespSuccessfulSchema = {
+  id: outboundXcpdRequest.id,
+  patientId: outboundXcpdRequest.patientId,
+  timestamp: outboundXcpdRequest.timestamp,
   responseTimestamp: dayjs().toISOString(),
-  gatewayHomeCommunityId: outboundXCPDRequest.samlAttributes.homeCommunityId,
+  gatewayHomeCommunityId: outboundXcpdRequest.samlAttributes.homeCommunityId,
   gateway: {
     id: "018ea97e-7b1c-78e9-8aa1-47c7caf85afe",
     url: "https://mock-metriport/soap/iti55",
@@ -87,12 +123,53 @@ export const expectedXCPDResponse: OutboundPatientDiscoveryRespSuccessfulSchema 
   },
 };
 
-export const outboundDQRequest = {
+export const expectedMultiNameAddressResponse: OutboundPatientDiscoveryRespSuccessfulSchema = {
+  ...expectedXcpdResponse,
+  patientResource: {
+    ...expectedXcpdResponse.patientResource,
+    birthDate: expectedXcpdResponse.patientResource.birthDate,
+    name: [
+      ...expectedXcpdResponse.patientResource.name,
+      {
+        given: ["nwhinone", "bartholomew"],
+        family: "nwhinzzztestpatient",
+      },
+    ],
+    address: [
+      ...(expectedXcpdResponse.patientResource?.address ?? []),
+      {
+        line: ["1200 Test Street", "APT 1A"],
+        city: "Helena",
+        state: "AL",
+        postalCode: "35080",
+        country: "USA",
+      },
+    ],
+    telecom: [
+      {
+        system: "MC",
+        value: "tel:+1310-000-0000",
+      },
+      {
+        system: "H",
+        value: "mailto:test@test.com",
+      },
+    ],
+    identifier: [
+      {
+        value: "987564321",
+        system: "2.16.840.1.113883.3.9621",
+      },
+    ],
+  },
+};
+
+export const outboundDqRequest = {
   id: uuidv4(),
   cxId: uuidv4(),
   timestamp: "2023-12-01T08:44:00Z",
   gateway: {
-    homeCommunityId: "1.16.840.1.113883.3.9801.2.17",
+    homeCommunityId: "2.16.840.1.113883.3.9621",
     url: "http://localhost:9092/Gateway/DocumentQuery/3_0/NhinService/RespondingGateway_Query_Service/DocQuery",
   },
   externalGatewayPatient: {
@@ -133,7 +210,7 @@ export const outboundDQRequest = {
   },
 };
 
-export const expectedDQDocumentReference = [
+export const expectedDqDocumentReference = [
   {
     homeCommunityId: "2.16.840.1.113883.3.9621",
     repositoryUniqueId: "2.16.840.1.113883.3.9621",
@@ -158,11 +235,11 @@ export const expectedDQDocumentReference = [
   },
 ];
 
-export const outboundDRRequest = {
+export const outboundDrRequest = {
   id: "c3734e97-69ba-48e4-a102-03a5e1219fa4",
   cxId: "aeb4767b-ea11-4bbc-ba61-2274b5c9e4e9",
   gateway: {
-    url: "https://carequality.particlehealth.com/services/xca-iti38",
+    url: "https://carequality.test123health.com/services/xca-iti38",
     homeCommunityId: "2.16.840.1.113883.3.8391",
   },
   timestamp: "2023-12-01T08:44:00Z",
@@ -204,6 +281,75 @@ export const outboundDRRequest = {
   ],
 };
 
+export const outboundDrRequestMtom = {
+  id: "c3734e97-69ba-48e4-a102-03a5e1219fa4",
+  cxId: "aeb4767b-ea11-4bbc-ba61-2274b5c9e4e9",
+  gateway: {
+    url: "https://carequality.test123health.com/services/xca-iti38",
+    homeCommunityId: "2.16.840.1.113883.3.8391",
+  },
+  timestamp: "2023-12-01T08:44:00Z",
+  patientId: "7f518b03-2ef0-4785-9f0c-dd295458df06",
+  samlAttributes: {
+    subjectId: "Walter H.Brattain IV",
+    subjectRole: {
+      code: "46255001",
+      display: "Pharmacist",
+    },
+    organization: "Family Medical Clinic",
+    organizationId: "http://familymedicalclinic.org",
+    homeCommunityId: "2.16.840.1.113883.3.8391",
+    purposeOfUse: "TREATMENT",
+  },
+  documentReference: [
+    {
+      contentType: "text/xml",
+      docUniqueId: "123456789",
+      metriportId: uuidv4(),
+      homeCommunityId: "urn:oid:987654321",
+      repositoryUniqueId: "987654321",
+    },
+  ],
+};
+
+export const outboundDrRequestMultiMtom = {
+  id: "c3734e97-69ba-48e4-a102-03a5e1219fa4",
+  cxId: "aeb4767b-ea11-4bbc-ba61-2274b5c9e4e9",
+  gateway: {
+    url: "https://carequality.test123health.com/services/xca-iti38",
+    homeCommunityId: "2.16.840.1.113883.3.8391",
+  },
+  timestamp: "2023-12-01T08:44:00Z",
+  patientId: "7f518b03-2ef0-4785-9f0c-dd295458df06",
+  samlAttributes: {
+    subjectId: "Walter H.Brattain IV",
+    subjectRole: {
+      code: "46255001",
+      display: "Pharmacist",
+    },
+    organization: "Family Medical Clinic",
+    organizationId: "http://familymedicalclinic.org",
+    homeCommunityId: "2.16.840.1.113883.3.8391",
+    purposeOfUse: "TREATMENT",
+  },
+  documentReference: [
+    {
+      contentType: "text/xml",
+      docUniqueId: "1.2.840.114350.1.13.79.2.7.8.688883.556269592",
+      metriportId: uuidv4(),
+      homeCommunityId: "urn:oid:987654321",
+      repositoryUniqueId: "987654321",
+    },
+    {
+      contentType: "text/xml",
+      docUniqueId: "1.2.840.114350.1.13.79.2.7.8.688883.556269594",
+      metriportId: uuidv4(),
+      homeCommunityId: "urn:oid:987654321",
+      repositoryUniqueId: "987654321",
+    },
+  ],
+};
+
 export const testFiles = [
   { name: "test.pdf", mimeType: "application/pdf", fileExtension: ".pdf" },
   { name: "test-little-endian.tiff", mimeType: "image/tiff", fileExtension: ".tiff" },
@@ -224,3 +370,16 @@ export const testFilesForUploadVerification = [
   { name: "test.txt", mimeType: "text/plain", fileExtension: ".txt" },
   { name: "test.jpeg", mimeType: "image/jpeg", fileExtension: ".jpeg" },
 ];
+
+export const TEST_CERT = `-----BEGIN CERTIFICATE-----
+MIIBxDCCAW6gAwIBAgIQxUSXFzWJYYtOZnmmuOMKkjANBgkqhkiG9w0BAQQFADAW
+MRQwEgYDVQQDEwtSb290IEFnZW5jeTAeFw0wMzA3MDgxODQ3NTlaFw0zOTEyMzEy
+MzU5NTlaMB8xHTAbBgNVBAMTFFdTRTJRdWlja1N0YXJ0Q2xpZW50MIGfMA0GCSqG
+SIb3DQEBAQUAA4GNADCBiQKBgQC+L6aB9x928noY4+0QBsXnxkQE4quJl7c3PUPd
+Vu7k9A02hRG481XIfWhrDY5i7OEB7KGW7qFJotLLeMec/UkKUwCgv3VvJrs2nE9x
+O3SSWIdNzADukYh+Cxt+FUU6tUkDeqg7dqwivOXhuOTRyOI3HqbWTbumaLdc8juf
+z2LhaQIDAQABo0swSTBHBgNVHQEEQDA+gBAS5AktBh0dTwCNYSHcFmRjoRgwFjEU
+MBIGA1UEAxMLUm9vdCBBZ2VuY3mCEAY3bACqAGSKEc+41KpcNfQwDQYJKoZIhvcN
+AQEEBQADQQAfIbnMPVYkNNfX1tG1F+qfLhHwJdfDUZuPyRPucWF5qkh6sSdWVBY5
+sT/txBnVJGziyO8DPYdu2fPMER8ajJfl
+-----END CERTIFICATE-----`;

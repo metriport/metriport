@@ -5,8 +5,6 @@ import { MetriportDataSourceExtension } from "@metriport/core/external/fhir/shar
 import {
   DocumentReference,
   DocumentReference as IHEGWDocumentReference,
-  OutboundDocumentQueryResp,
-  OutboundDocumentRetrievalResp,
 } from "@metriport/ihe-gateway-sdk";
 import { DocumentReferenceWithId, createDocReferenceContent } from "../../fhir/document";
 import { formatDate } from "../shared";
@@ -17,24 +15,17 @@ export type DocumentReferenceWithMetriportId = DocumentReference & {
   metriportId: string;
 };
 
-type IHEResults = OutboundDocumentQueryResp | OutboundDocumentRetrievalResp;
-
 export function containsMetriportId(
   docRef: IHEGWDocumentReference
 ): docRef is DocumentReferenceWithMetriportId {
   return docRef.metriportId != undefined;
 }
 
-/**
- * Converts the IHE Gateway results to a IHE DocumentReference Schema
- */
-export function toDocumentReference(documentQueryResult: IHEResults): DocumentReference[] {
-  const documentReferences = documentQueryResult.documentReference ?? [];
-  return documentReferences.map(docRef => {
-    return {
-      ...docRef,
-      url: documentQueryResult.gateway.url,
-    };
+export function filterDocRefsWithMetriportId(
+  documentReferences: DocumentReference[]
+): DocumentReferenceWithMetriportId[] {
+  return documentReferences.filter((docRef): docRef is DocumentReferenceWithMetriportId => {
+    return docRef.metriportId != undefined;
   });
 }
 
@@ -154,4 +145,8 @@ export function dedupeContainedResources(combined: Resource[]): Resource[] | und
   });
 
   return deduped;
+}
+
+export function getContentTypeOrUnknown(docRef: DocumentReference) {
+  return docRef.contentType ?? "unknown";
 }

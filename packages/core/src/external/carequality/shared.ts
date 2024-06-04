@@ -20,14 +20,14 @@ export const DEFAULT_PRACTICE_SETTING_CODE_NODE = "394802001";
 export const DEFAULT_PRACTICE_SETTING_CODE_DISPLAY = "General Medicine";
 export const DEFAULT_HEALTHCARE_FACILITY_TYPE_CODE_NODE = "394777002";
 export const DEFAULT_HEALTHCARE_FACILITY_TYPE_CODE_DISPLAY = "Health Encounter Site";
-export const CODE_SYSTEM_ERROR = "1.3.6.1.4.1.19376.1.2.27.1";
 export const NHIN_PURPOSE_CODE_SYSTEM = "2.16.840.1.113883.3.18.7.1";
 
 export const ORGANIZATION_NAME_DEFAULT = "Metriport";
 export const METRIPORT_HOME_COMMUNITY_ID = "urn:oid:2.16.840.1.113883.3.9621";
 export const METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX = "2.16.840.1.113883.3.9621";
 export const METRIPORT_REPOSITORY_UNIQUE_ID = "urn:oid:2.16.840.1.113883.3.9621";
-
+export const CODE_SYSTEM_ERROR = "1.3.6.1.4.1.19376.1.2.27.1";
+export const DEFAULT_TITLE = "Clinical Document";
 export const replyTo = "http://www.w3.org/2005/08/addressing/anonymous";
 
 export const XDSDocumentEntryAuthor = "urn:uuid:93606bcf-9494-43ec-9b4e-a7748d1a838d";

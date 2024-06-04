@@ -10,6 +10,8 @@ import { OrganizationModel } from "../../../../models/medical/organization";
 import { makeOrganizationOID } from "../../../../shared/oid";
 import * as createId from "../../customer-sequence/create-id";
 import { createOrganization } from "../create-organization";
+import * as upsertOrgToFHIRServer from "../../../../external/fhir/organization/upsert-organization";
+import * as cwCommands from "../../../../external/commonwell";
 
 let createOrganizationId_mock: jest.SpyInstance;
 let createTenantIfNotExistsMock: jest.SpyInstance;
@@ -24,6 +26,8 @@ beforeAll(() => {
   createTenantIfNotExistsMock = jest
     .spyOn(createTenant, "createTenantIfNotExists")
     .mockImplementation(async () => {});
+  jest.spyOn(upsertOrgToFHIRServer, "upsertOrgToFHIRServer").mockImplementation(async () => {});
+  jest.spyOn(cwCommands.default.organization, "create").mockImplementation(async () => {});
 });
 beforeEach(() => {
   jest.clearAllMocks();

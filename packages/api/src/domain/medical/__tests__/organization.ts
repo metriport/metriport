@@ -2,7 +2,7 @@ import { faker } from "@faker-js/faker";
 import {
   Organization,
   OrganizationData,
-  OrganizationType,
+  OrganizationBizType,
   OrgType,
 } from "@metriport/core/domain/organization";
 import { makeBaseDomain } from "../../__tests__/base-domain";
@@ -28,7 +28,7 @@ export const makeOrganization = ({
     oid: oid ?? faker.string.uuid(),
     cxId: faker.string.uuid(),
     organizationNumber: organizationNumber != null ? organizationNumber : makeOrgNumber(),
-    type: type ?? faker.helpers.arrayElement(Object.values(OrganizationType)),
+    type: type ?? faker.helpers.arrayElement(Object.values(OrganizationBizType)),
     data: makeOrganizationData(),
   };
 };

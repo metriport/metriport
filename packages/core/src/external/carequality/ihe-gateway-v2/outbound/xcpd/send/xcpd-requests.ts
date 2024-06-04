@@ -1,13 +1,11 @@
 import { XCPDGateway, OutboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
 import { errorToString } from "../../../../../../util/error/shared";
-import { capture } from "../../../../../../util/notifications";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
 import { getTrustedKeyStore, SamlClientResponse, sendSignedXml } from "../../../saml/saml-client";
 import { BulkSignedXCPD } from "../create/iti55-envelope";
 import { out } from "../../../../../../util/log";
 
 const { log } = out("Sending XCPD Requests");
-const context = "ihe-gateway-v2-xcpd-saml-client";
 
 export type XCPDSamlClientResponse = SamlClientResponse & {
   gateway: XCPDGateway;
@@ -28,7 +26,7 @@ export async function sendSignedXCPDRequests({
   const trustedKeyStore = await getTrustedKeyStore();
   const requestPromises = signedRequests.map(async (request, index) => {
     try {
-      const response = await sendSignedXml({
+      const { response } = await sendSignedXml({
         signedXml: request.signedRequest,
         url: request.gateway.url,
         samlCertsAndKeys,
@@ -45,23 +43,17 @@ export async function sendSignedXCPDRequests({
         success: true,
         outboundRequest: request.outboundRequest,
       };
-    } catch (error) {
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
       const msg = "HTTP/SSL Failure Sending Signed XCPD SAML Request";
-      log(`${msg}, error: ${error}`);
+      log(
+        `${msg}, cxId: ${cxId}, patientId: ${patientId}, gateway: ${request.gateway.oid}, error: ${error}`
+      );
+      if (error?.response?.data) {
+        log(`error details: ${JSON.stringify(error?.response?.data)}`);
+      }
 
       const errorString: string = errorToString(error);
-      const extra = {
-        errorString,
-        request,
-        patientId,
-        cxId,
-      };
-      capture.error(msg, {
-        extra: {
-          context,
-          extra,
-        },
-      });
       return {
         gateway: request.gateway,
         outboundRequest: request.outboundRequest,

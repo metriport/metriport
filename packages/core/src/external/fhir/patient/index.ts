@@ -1,28 +1,32 @@
 import {
+  ContactPoint,
+  DocumentReference,
   Identifier,
   Patient as FHIRPatient,
-  ContactPoint,
   Reference,
-  DocumentReference,
 } from "@medplum/fhirtypes";
-import { driversLicenseURIs } from "../../../domain/oid";
-import { ContactTypes, Contact } from "../../../domain/contact";
 import { Address } from "../../../domain/address";
-import { GenderAtBirth, Patient, PersonalIdentifier, splitName } from "../../../domain/patient";
+import { Contact, ContactTypes } from "../../../domain/contact";
+import { driversLicenseURIs, identifierSytemByType } from "../../../domain/oid";
+import { GenderAtBirth, Patient, splitName } from "../../../domain/patient";
 import { getIdFromSubjectId, getIdFromSubjectRef } from "../shared";
 
-export const genderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
+export type PatientIdAndData = Pick<Patient, "id" | "data">;
+
+const genderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
   F: "female",
   M: "male",
 };
 
-export const toFHIR = (patient: Pick<Patient, "id" | "data">): FHIRPatient => {
+export function mapGenderAtBirthToFhir(k: GenderAtBirth): Required<FHIRPatient>["gender"] {
+  return genderMapping[k];
+}
+
+export function mapPatientDataToResource(patient: PatientIdAndData) {
   return {
-    resourceType: "Patient",
+    resourceType: "Patient" as const,
     id: patient.id,
-    identifier: patient.data.personalIdentifiers
-      ? convertDriversLicenseToIdentifier(patient.data.personalIdentifiers)
-      : [],
+    identifier: getFhirIdentifersFromPatient(patient),
     name: [
       {
         family: patient.data.lastName,
@@ -45,10 +49,10 @@ export const toFHIR = (patient: Pick<Patient, "id" | "data">): FHIRPatient => {
               }
             }
           }
-          return telecoms; // Moved return statement outside of the for loop
+          return telecoms;
         })
         .reduce((prev, curr) => prev.concat(curr), []) || [],
-    gender: genderMapping[patient.data.genderAtBirth],
+    gender: mapGenderAtBirthToFhir(patient.data.genderAtBirth),
     birthDate: patient.data.dob,
     address:
       patient.data.address.map((addr: Address) => {
@@ -61,18 +65,20 @@ export const toFHIR = (patient: Pick<Patient, "id" | "data">): FHIRPatient => {
         };
       }) || [],
   };
-};
+}
 
-const convertDriversLicenseToIdentifier = (
-  personalIdentifiers: PersonalIdentifier[]
-): Identifier[] => {
-  return personalIdentifiers.map(identifier => {
-    return {
-      system: driversLicenseURIs[identifier.state],
-      value: identifier.value,
-    };
+export function toFHIR(patient: PatientIdAndData): FHIRPatient {
+  return mapPatientDataToResource(patient);
+}
+
+export function getFhirIdentifersFromPatient(patient: PatientIdAndData): Identifier[] {
+  return (patient.data.personalIdentifiers ?? []).map(id => {
+    if (id.type === "driversLicense") {
+      return { value: id.value, system: driversLicenseURIs[id.state] };
+    }
+    return { value: id.value, system: identifierSytemByType[id.type] };
   });
-};
+}
 
 export function toFHIRSubject(patientId: string): Reference<FHIRPatient> {
   const subject: Reference<FHIRPatient> = {

@@ -2,7 +2,7 @@ import type { Config } from "@jest/types";
 
 const isE2E = process.env.E2E === "true";
 
-process.env.ENV_TYPE = "development";
+process.env.ENV_TYPE = "dev";
 
 const config: Config.InitialOptions = {
   preset: "ts-jest",

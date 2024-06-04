@@ -1,3 +1,29 @@
+{{!-- 
+  // ------------------------------------------------------------------------------------------------- 
+  // Copyright (c) 2022-present Metriport Inc.   
+  //  
+  // Licensed under AGPLv3. See LICENSE in the repo root for license information.
+  //  
+  // This file incorporates work covered by the following copyright and  
+  // permission notice:  
+  //  
+  //     Copyright (c) Microsoft Corporation. All rights reserved. 
+  //  
+  //     Permission to use, copy, modify, and/or distribute this software  
+  //     for any purpose with or without fee is hereby granted, provided  
+  //     that the above copyright notice and this permission notice appear  
+  //     in all copies.  
+  //  
+  //     THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL  
+  //     WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED  
+  //     WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE  
+  //     AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR  
+  //     CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS  
+  //     OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,  
+  //     NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN  
+  //     CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  
+  // -------------------------------------------------------------------------------------------------
+--}}
 {
     "fullUrl":"urn:uuid:{{ID}}",
     "resource":{
@@ -47,7 +73,6 @@
         {{/if}}
         
         "bodySite":{{>DataType/CodeableConcept.hbs code=observationEntry.targetSiteCode}},
-        
         {{#if observationEntry.value.code}}
             "valueCodeableConcept":{{>DataType/CodeableConcept.hbs code=observationEntry.value}},
         {{else if observationEntry.value.value}}
@@ -60,15 +85,25 @@
             {{/with}}
         {{else if observationEntry.value._}}
             "valueString":"{{{parseReferenceData observationEntry.value._}}}",
-        {{!-- in some cases text is here in the b64 field. Adding so no data loss but not sure if thats the way its supposed to be. also how it renders I do not know         --}}
+        {{!-- in some cases text is here in the b64 field. Adding so no data loss but not sure if thats the way its supposed to be. also how it renders I do not know      --}}
         {{else if observationEntry.value._b64}}
             "valueString":"{{observationEntry.value._b64}}",
+        {{else if observationEntry.value.translation.value}}
+            {{#if observationEntry.value.translation.originalText._}}
+                "valueString":"{{observationEntry.value.translation.value}} {{observationEntry.value.translation.originalText._}}"
+            {{else}}
+                "valueString":"{{observationEntry.value.translation.value}}
+            {{/if}}
         {{/if}}
         
-        "referenceRange":
-        [
-          {{>DataType/Range.hbs referenceRange=observationEntry.referenceRange.observationRange.value}}
-        ],
+        {{#if observationEntry.referenceRange.observationRange}}
+             "referenceRange":
+            [
+                {{>DataType/Range.hbs range=observationEntry.referenceRange.observationRange}}
+            ],
+        {{/if}}
+
+        
         "interpretation":
         [
             {{>DataType/CodeableConcept.hbs code=observationEntry.interpretationCode}},

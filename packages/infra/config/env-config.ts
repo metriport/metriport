@@ -87,7 +87,7 @@ type EnvConfigBase = {
   medicalDocumentsUploadBucketName: string;
   fhirConverterBucketName?: string;
   analyticsSecretNames?: {
-    POST_HOG_API_KEY: string;
+    POST_HOG_API_KEY_SECRET: string;
   };
   locationService?: {
     stackName: string;
@@ -180,12 +180,14 @@ export type EnvConfigNonSandbox = EnvConfigBase & {
     nodeRuntimeArn: string;
   };
   connectWidget: ConnectWidgetConfig;
+  engineeringCxId: string;
 };
 
 export type EnvConfigSandbox = EnvConfigBase & {
   environmentType: EnvType.sandbox;
   connectWidgetUrl: string;
   sandboxSeedDataBucketName: string;
+  engineeringCxId?: never;
 };
 
 export type EnvConfig = EnvConfigSandbox | EnvConfigNonSandbox;

@@ -1,6 +1,26 @@
 // -------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License (MIT). See LICENSE in the repo root for license information.
+// Copyright (c) 2022-present Metriport Inc.
+//
+// Licensed under AGPLv3. See LICENSE in the repo root for license information.
+//
+// This file incorporates work covered by the following copyright and
+// permission notice:
+//
+//     Copyright (c) Microsoft Corporation. All rights reserved.
+//
+//     Permission to use, copy, modify, and/or distribute this software
+//     for any purpose with or without fee is hereby granted, provided
+//     that the above copyright notice and this permission notice appear
+//     in all copies.
+//
+//     THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+//     WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+//     WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+//     AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR
+//     CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+//     OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
+//     NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+//     CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 // -------------------------------------------------------------------------------------------------
 
 var path = require("path");
@@ -13,7 +33,10 @@ var errorMessage = require("../error/error").errorMessage;
 var HandlebarsConverter = require("../handlebars-converter/handlebars-converter");
 var WorkerUtils = require("./workerUtils");
 var dataHandlerFactory = require("../dataHandler/dataHandlerFactory");
-var { extractEncounterTimePeriod } = require('../inputProcessor/dateProcessor');
+var {
+  extractEncounterTimePeriod,
+  getEncompassingEncounterId,
+} = require("../inputProcessor/dateProcessor");
 
 const { createNamespace } = require("cls-hooked");
 var session = createNamespace(constants.CLS_NAMESPACE);
@@ -40,9 +63,18 @@ function expireCache() {
   compileCache.clear();
 }
 
-function generateResult(dataTypeHandler, dataContext, template, patientId, encounterTimePeriod) {
+function generateResult(
+  dataTypeHandler,
+  dataContext,
+  template,
+  patientId,
+  encounterTimePeriod,
+  encompassingEncounterIds
+) {
   var result = dataTypeHandler.postProcessResult(
-    template(dataContext, { data: { metriportPatientId: patientId, encounterTimePeriod }})
+    template(dataContext, {
+      data: { metriportPatientId: patientId, encounterTimePeriod, encompassingEncounterIds },
+    })
   );
   return Object.assign(dataTypeHandler.getConversionResultMetadata(dataContext.msg), {
     fhirResource: result,
@@ -53,122 +85,6 @@ WorkerUtils.workerTaskProcessor(msg => {
   return new Promise((fulfill, reject) => {
     session.run(() => {
       switch (msg.type) {
-        case "/api/convert/:srcDataType":
-          {
-            try {
-              const base64RegEx = /^[a-zA-Z0-9/\r\n+]*={0,2}$/;
-
-              if (!base64RegEx.test(msg.srcDataBase64)) {
-                reject({
-                  status: 400,
-                  resultMsg: errorMessage(
-                    errorCodes.BadRequest,
-                    "srcData is not a base 64 encoded string."
-                  ),
-                });
-              }
-
-              if (!base64RegEx.test(msg.templateBase64)) {
-                reject({
-                  status: 400,
-                  resultMsg: errorMessage(
-                    errorCodes.BadRequest,
-                    "Template is not a base 64 encoded string."
-                  ),
-                });
-              }
-
-              var templatesMap = undefined;
-              if (msg.templatesOverrideBase64) {
-                if (!base64RegEx.test(msg.templatesOverrideBase64)) {
-                  reject({
-                    status: 400,
-                    resultMsg: errorMessage(
-                      errorCodes.BadRequest,
-                      "templatesOverride is not a base 64 encoded string."
-                    ),
-                  });
-                }
-                templatesMap = JSON.parse(
-                  Buffer.from(msg.templatesOverrideBase64, "base64").toString()
-                );
-              }
-
-              var templateString = "";
-              if (msg.templateBase64) {
-                templateString = Buffer.from(msg.templateBase64, "base64").toString();
-              }
-
-              try {
-                var b = Buffer.from(msg.srcDataBase64, "base64");
-                var s = b.toString();
-              } catch (err) {
-                reject({
-                  status: 400,
-                  resultMsg: errorMessage(
-                    errorCodes.BadRequest,
-                    `Unable to parse input data from b64. ${err.message}`
-                  ),
-                });
-              }
-              var dataTypeHandler = dataHandlerFactory.createDataHandler(msg.srcDataType);
-              let handlebarInstance = GetHandlebarsInstance(dataTypeHandler, templatesMap);
-              session.set(constants.CLS_KEY_HANDLEBAR_INSTANCE, handlebarInstance);
-              session.set(
-                constants.CLS_KEY_TEMPLATE_LOCATION,
-                path.join(constants.TEMPLATE_FILES_LOCATION, dataTypeHandler.dataType)
-              );
-
-              dataTypeHandler
-                .parseSrcData(s)
-                .then(parsedData => {
-                  var dataContext = { msg: parsedData };
-                  if (templateString == null || templateString.length == 0) {
-                    var result = Object.assign(
-                      dataTypeHandler.getConversionResultMetadata(dataContext.msg),
-                      JSON.parse(JSON.stringify(dataContext.msg))
-                    );
-
-                    fulfill({ status: 200, resultMsg: result });
-                  } else {
-                    var template = handlebarInstance.compile(
-                      dataTypeHandler.preProcessTemplate(templateString)
-                    );
-
-                    try {
-                      fulfill({
-                        status: 200,
-                        resultMsg: generateResult(dataTypeHandler, dataContext, template),
-                      });
-                    } catch (err) {
-                      reject({
-                        status: 400,
-                        resultMsg: errorMessage(
-                          errorCodes.BadRequest,
-                          "Unable to create result: " + err.toString()
-                        ),
-                      });
-                    }
-                  }
-                })
-                .catch(err => {
-                  reject({
-                    status: 400,
-                    resultMsg: errorMessage(
-                      errorCodes.BadRequest,
-                      `Unable to parse input data for data type ${dataTypeHandler.dataType}. ${err.toString()}`
-                    ),
-                  });
-                });
-            } catch (err) {
-              reject({
-                status: 400,
-                resultMsg: errorMessage(errorCodes.BadRequest, `${err.toString()}`),
-              });
-            }
-          }
-          break;
-
         case "/api/convert/:srcDataType/:template":
           {
             let srcData = msg.srcData;
@@ -178,6 +94,7 @@ WorkerUtils.workerTaskProcessor(msg => {
             let encounterTimePeriod = extractEncounterTimePeriod(srcData);
             let dataTypeHandler = dataHandlerFactory.createDataHandler(srcDataType);
             let handlebarInstance = GetHandlebarsInstance(dataTypeHandler);
+            let encompassingEncounterIds = getEncompassingEncounterId(srcData);
             session.set(constants.CLS_KEY_HANDLEBAR_INSTANCE, handlebarInstance);
             session.set(
               constants.CLS_KEY_TEMPLATE_LOCATION,
@@ -245,7 +162,8 @@ WorkerUtils.workerTaskProcessor(msg => {
                           dataContext,
                           compiledTemplate,
                           patientId,
-                          encounterTimePeriod
+                          encounterTimePeriod,
+                          encompassingEncounterIds
                         ),
                       });
                     } catch (convertErr) {

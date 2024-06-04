@@ -16,6 +16,7 @@ import NotFoundError from "@metriport/core/util/error/not-found";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import httpStatus from "http-status";
 import { chunk, partition } from "lodash";
 import { removeDocRefMapping } from "../../../command/medical/docref-mapping/remove-docref-mapping";
@@ -25,7 +26,6 @@ import {
   getUrl,
   S3Info,
 } from "../../../command/medical/document/document-query-storage-info";
-import { analytics, EventTypes } from "../../../shared/analytics";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { Util } from "../../../shared/util";
@@ -33,7 +33,7 @@ import {
   isCQDirectEnabledForCx,
   isCWEnabledForCx,
   isEnhancedCoverageEnabledForCx,
-} from "../../aws/appConfig";
+} from "../../aws/app-config";
 import { reportMetric } from "../../aws/cloudwatch";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
@@ -44,6 +44,7 @@ import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-re
 import { reportFHIRError } from "../../fhir/shared/error-mapping";
 import { getAllPages } from "../../fhir/shared/paginated";
 import { HieInitiator } from "../../hie/get-hie-initiator";
+import { isFacilityEnabledToQueryCW } from "../../commonwell/shared";
 import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
@@ -60,7 +61,9 @@ import {
   DocumentWithLocation,
   DocumentWithMetriportId,
   getFileName,
+  getContentTypeOrUnknown,
 } from "./shared";
+import { getDocumentReferenceContentTypeCounts } from "../../hie/get-docr-content-type-counts";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -115,10 +118,17 @@ export async function queryAndProcessDocuments({
     return;
   }
 
-  const interrupt = buildInterrupt({ patientId, cxId, source: MedicalDataSource.COMMONWELL, log });
-  if (!(await isCWEnabledForCx(cxId))) {
-    return interrupt(`CW disabled for cx ${cxId}`);
-  }
+  const interrupt = buildInterrupt({
+    patientId,
+    cxId,
+    requestId,
+    source: MedicalDataSource.COMMONWELL,
+    log,
+  });
+  const isCwEnabledForCx = await isCWEnabledForCx(cxId);
+  if (!isCwEnabledForCx) return interrupt(`CW disabled for cx ${cxId}`);
+  const isCwQueryEnabled = await isFacilityEnabledToQueryCW(facilityId, patientParam);
+  if (!isCwQueryEnabled) return interrupt(`CW disabled for facility ${facilityId}`);
 
   try {
     const initiator = await getCwInitiator(patientParam, facilityId);
@@ -148,6 +158,8 @@ export async function queryAndProcessDocuments({
 
       return;
     }
+
+    const startedAt = new Date();
 
     const [patient, isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all([
       getPatientWithCWData(patientParam),
@@ -181,8 +193,9 @@ export async function queryAndProcessDocuments({
     });
     log(`Got ${cwDocuments.length} documents from CW`);
 
-    const docQueryStartedAt = patient.data.documentQueryProgress?.startedAt;
-    const duration = elapsedTimeFromNow(docQueryStartedAt);
+    const duration = elapsedTimeFromNow(startedAt);
+    const contentTypes = cwDocuments.map(getContentTypeOrUnknown);
+    const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
 
     analytics({
       distinctId: cxId,
@@ -193,6 +206,7 @@ export async function queryAndProcessDocuments({
         hie: MedicalDataSource.COMMONWELL,
         duration,
         documentCount: cwDocuments.length,
+        ...contentTypeCounts,
       },
     });
 
@@ -553,7 +567,7 @@ async function downloadDocsAndUpsertFHIR({
             } else {
               // Get info from existing S3 file
               uploadToS3 = async () => {
-                const signedUrl = getUrl(fileInfo.fileName, fileInfo.fileLocation);
+                const signedUrl = await getUrl(fileInfo.fileName, fileInfo.fileLocation);
                 const url = new URL(signedUrl);
                 const s3Location = url.origin + url.pathname;
                 return {

@@ -1,6 +1,6 @@
 {
   "name": "@metriport/core",
-  "version": "1.12.0-alpha.0",
+  "version": "1.12.6",
   "private": true,
   "description": "Metriport helps you access and manage health and medical data, through a single open source API. Common code shared across packages.",
   "author": "Metriport Inc. <contact@metriport.com>",
@@ -20,7 +20,9 @@
     "./command/*": "./dist/command/*.js",
     "./external/*": "./dist/external/*.js",
     "./util/*": "./dist/util/*.js",
-    "./mpi/*": "./dist/mpi/*.js"
+    "./mpi/*": "./dist/mpi/*.js",
+    "./fhir-to-cda/*": "./dist/fhir-to-cda/*.js",
+    "./shareback/*": "./dist/shareback/*.js"
   },
   "typesVersions": {
     "*": {
@@ -41,6 +43,12 @@
       ],
       "mpi/*": [
         "dist/mpi/*"
+      ],
+      "fhir-to-cda/*": [
+        "dist/fhir-to-cda/*"
+      ],
+      "shareback/*": [
+        "dist/shareback/*"
       ]
     }
   },
@@ -60,6 +68,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.435.0",
     "@aws-sdk/s3-request-presigner": "^3.435.0",
+    "@faker-js/faker": "^8.0.2",
     "@metriport/api-sdk": "file:packages/api-sdk",
     "@metriport/commonwell-sdk": "file:packages/commonwell-sdk",
     "@metriport/ihe-gateway-sdk": "file:packages/ihe-gateway-sdk",
@@ -67,6 +76,7 @@
     "asn1js": "^3.0.5",
     "aws-sdk": "^2.1243.0",
     "dayjs": "^1.11.9",
+    "formidable": "^3.5.1",
     "http-status": "^1.7.0",
     "jaro-winkler": "^0.2.8",
     "json-stringify-safe": "^5.0.1",
@@ -76,16 +86,18 @@
     "playwright": "^1.39.0",
     "pvutils": "^1.1.3",
     "sequelize": "^6.37.1",
+    "whatwg-mimetype": "^4.0.0",
     "xml-crypto": "^6.0.0",
     "xml2js": "^0.6.2",
     "xmldom": "^0.6.0"
   },
   "devDependencies": {
-    "@faker-js/faker": "^8.0.2",
     "@medplum/fhirtypes": "^2.0.32",
     "@tsconfig/recommended": "^1.0.2",
+    "@types/formidable": "^3.4.5",
     "@types/jest": "29.5.3",
     "@types/json-stringify-safe": "^5.0.0",
+    "@types/whatwg-mimetype": "^3.0.2",
     "@types/xml2js": "^0.4.14",
     "@types/xmldom": "^0.1.32",
     "@typescript-eslint/eslint-plugin": "^5.48.2",

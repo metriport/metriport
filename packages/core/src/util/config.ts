@@ -58,6 +58,9 @@ export class Config {
   static getSearchIngestionQueueUrl(): string {
     return getEnvVarOrFail("SEARCH_INGESTION_QUEUE_URL");
   }
+  static getSystemRootOID(): string {
+    return getEnvVarOrFail("SYSTEM_ROOT_OID");
+  }
 
   static getFHIRServerUrl(): string {
     return getEnvVarOrFail("FHIR_SERVER_URL");
@@ -87,5 +90,8 @@ export class Config {
   }
   static getApiUrl(): string {
     return getEnvVarOrFail("API_URL");
+  }
+  static getPostHogApiKey(): string | undefined {
+    return getEnvVar("POST_HOG_API_KEY_SECRET");
   }
 }

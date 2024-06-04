@@ -1,6 +1,6 @@
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
-import { getFeatureFlagValue } from "@metriport/core/external/aws/appConfig";
+import { getFeatureFlagValueStringArray } from "@metriport/core/external/aws/app-config";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import { bundleToHtmlADHD } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-adhd";
 import { getSignedUrl as coreGetSignedUrl, makeS3Client } from "@metriport/core/external/aws/s3";
@@ -81,8 +81,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       return { url, hasContents };
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      log(`Error processing bundle: ${error.message}`);
-      capture.error(error, {
+      const msg = `Error converting FHIR to MR Summary`;
+      log(`${msg} - error: ${error.message}`);
+      capture.error(msg, {
         extra: {
           error,
           patientId,
@@ -200,7 +201,7 @@ const convertStoreAndReturnPdfUrl = async ({
 
 async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {
   try {
-    const featureFlag = await getFeatureFlagValue(
+    const featureFlag = await getFeatureFlagValueStringArray(
       region,
       appConfigAppID,
       appConfigConfigID,

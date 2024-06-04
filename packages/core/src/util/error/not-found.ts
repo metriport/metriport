@@ -3,6 +3,9 @@ import { AdditionalInfo, MetriportError } from "./metriport-error";
 
 const numericStatus = httpStatus.NOT_FOUND;
 
+/**
+ * @deprecated User @metriport/shared instead
+ */
 export default class NotFoundError extends MetriportError {
   constructor(
     message = "Could not find the requested resource",

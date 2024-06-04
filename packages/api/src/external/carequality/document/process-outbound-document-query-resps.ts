@@ -2,15 +2,15 @@ import { cqExtension } from "@metriport/core/external/carequality/extension";
 import { OutboundDocQueryRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { DocumentReference, OutboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
-import { EventTypes, analytics } from "../../../shared/analytics";
 import { mapDocRefToMetriport } from "../../../shared/external";
-import { isCQDirectEnabledForCx } from "../../aws/appConfig";
+import { isCQDirectEnabledForCx } from "../../aws/app-config";
 import { isConvertible } from "../../fhir-converter/converter";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
@@ -20,10 +20,19 @@ import { getCQDirectoryEntry } from "../command/cq-directory/get-cq-directory-en
 import { getCqInitiator } from "../shared";
 import { createOutboundDocumentRetrievalReqs } from "./create-outbound-document-retrieval-req";
 import { getNonExistentDocRefs } from "./get-non-existent-doc-refs";
-import { cqToFHIR, DocumentReferenceWithMetriportId, toDocumentReference } from "./shared";
+import { getCQData } from "../patient";
+import {
+  cqToFHIR,
+  DocumentReferenceWithMetriportId,
+  filterDocRefsWithMetriportId,
+  getContentTypeOrUnknown,
+} from "./shared";
+import { getDocumentReferenceContentTypeCounts } from "../../hie/get-docr-content-type-counts";
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
-import { getOidsWithIHEGatewayV2Enabled } from "../../aws/appConfig";
-import { Config } from "../../../shared/config";
+import {
+  getOrgOidsWithIHEGatewayV2Enabled,
+  isIHEGatewayV2EnabledForCx,
+} from "../../aws/app-config";
 
 const parallelUpsertsToFhir = 10;
 const iheGateway = makeIheGatewayAPIForDocRetrieval();
@@ -33,7 +42,7 @@ export async function processOutboundDocumentQueryResps({
   requestId,
   patientId,
   cxId,
-  results,
+  response,
 }: OutboundDocQueryRespParam): Promise<void> {
   const { log } = out(`CQ DR - requestId ${requestId}, patient ${patientId}`);
 
@@ -44,10 +53,37 @@ export async function processOutboundDocumentQueryResps({
 
   try {
     const patient = await getPatientOrFail({ id: patientId, cxId: cxId });
-    const docQueryStartedAt = patient.data.documentQueryProgress?.startedAt;
+    const cqData = getCQData(patient.data.externalData);
+    const docQueryStartedAt = cqData?.documentQueryProgress?.startedAt;
     const duration = elapsedTimeFromNow(docQueryStartedAt);
 
-    const docRefs = results.map(toDocumentReference).flat();
+    const addDocRefId = addMetriportDocRefID({ cxId, patientId, requestId });
+    const resultsWithMetriportId: OutboundDocumentQueryResp[] = [];
+
+    const updateResponseDocumentReferencesWithMetriportId = async (
+      response: OutboundDocumentQueryResp
+    ): Promise<void> => {
+      const updatedDocumentReferences = response.documentReference
+        ? await Promise.all(
+            response.documentReference.map(async docRef => {
+              return await addDocRefId(docRef);
+            })
+          )
+        : response.documentReference;
+
+      resultsWithMetriportId.push({
+        ...response,
+        documentReference: updatedDocumentReferences,
+      });
+    };
+
+    await executeAsynchronously(response, updateResponseDocumentReferencesWithMetriportId, {
+      numberOfParallelExecutions: 20,
+    });
+
+    const docRefs = resultsWithMetriportId.flatMap(result => result.documentReference ?? []);
+    const contentTypes = docRefs.map(getContentTypeOrUnknown);
+    const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
 
     analytics({
       distinctId: cxId,
@@ -58,15 +94,13 @@ export async function processOutboundDocumentQueryResps({
         hie: MedicalDataSource.CAREQUALITY,
         duration,
         documentCount: docRefs.length,
+        ...contentTypeCounts,
       },
     });
 
-    const docRefsWithMetriportId = await Promise.all(
-      docRefs.map(addMetriportDocRefID({ cxId, patientId, requestId }))
-    );
+    const docRefsWithMetriportId = filterDocRefsWithMetriportId(docRefs);
 
     const docsToDownload = await getNonExistentDocRefs(docRefsWithMetriportId, patientId, cxId);
-
     const convertibleDocCount = docsToDownload.filter(doc =>
       isConvertible(doc.contentType || undefined)
     ).length;
@@ -115,7 +149,7 @@ export async function processOutboundDocumentQueryResps({
     // when doing the doc retrieval
     await storeInitDocRefInFHIR(docRefsWithMetriportId, cxId, patientId, log);
 
-    const respWithDRUrl: OutboundDocumentQueryResp[] = [];
+    const resultsWithMetriportIdAndDrUrl: OutboundDocumentQueryResp[] = [];
 
     const replaceDqUrlWithDrUrl = async (
       outboundDocumentQueryResp: OutboundDocumentQueryResp
@@ -140,7 +174,7 @@ export async function processOutboundDocumentQueryResps({
         return;
       }
 
-      respWithDRUrl.push({
+      resultsWithMetriportIdAndDrUrl.push({
         ...outboundDocumentQueryResp,
         gateway: {
           ...outboundDocumentQueryResp.gateway,
@@ -149,22 +183,21 @@ export async function processOutboundDocumentQueryResps({
       });
     };
 
-    await executeAsynchronously(results, replaceDqUrlWithDrUrl, {
+    await executeAsynchronously(resultsWithMetriportId, replaceDqUrlWithDrUrl, {
       numberOfParallelExecutions: 20,
     });
 
-    const docsWithDqUrlV1Gateway: DocumentReferenceWithMetriportId[] = [];
-    const docsWithDqUrlV2Gateway: DocumentReferenceWithMetriportId[] = [];
+    const outboundDocumentQueryResultsV1: OutboundDocumentQueryResp[] = [];
+    const outboundDocumentQueryResultsV2: OutboundDocumentQueryResp[] = [];
 
-    const v2GatewayOIDs = Config.isDev()
-      ? Config.getOidsWithIHEGatewayV2Enabled().split(",")
-      : await getOidsWithIHEGatewayV2Enabled();
+    const v2GatewayOIDs = await getOrgOidsWithIHEGatewayV2Enabled();
+    const isV2EnabledForCx = await isIHEGatewayV2EnabledForCx(cxId);
 
-    for (const doc of docsToDownload) {
-      if (v2GatewayOIDs.includes(doc.homeCommunityId)) {
-        docsWithDqUrlV2Gateway.push(doc);
+    for (const result of resultsWithMetriportIdAndDrUrl) {
+      if (isV2EnabledForCx || v2GatewayOIDs.includes(result.gateway.homeCommunityId)) {
+        outboundDocumentQueryResultsV2.push(result);
       } else {
-        docsWithDqUrlV1Gateway.push(doc);
+        outboundDocumentQueryResultsV1.push(result);
       }
     }
 
@@ -174,34 +207,36 @@ export async function processOutboundDocumentQueryResps({
       requestId,
       patient,
       initiator,
-      documentReferences: docsWithDqUrlV1Gateway,
-      outboundDocumentQueryResps: respWithDRUrl,
+      outboundDocumentQueryResults: outboundDocumentQueryResultsV1,
     });
 
     const documentRetrievalRequestsV2 = createOutboundDocumentRetrievalReqs({
       requestId,
       patient,
       initiator,
-      documentReferences: docsWithDqUrlV2Gateway,
-      outboundDocumentQueryResps: respWithDRUrl,
+      outboundDocumentQueryResults: outboundDocumentQueryResultsV2,
     });
 
     // We send the request to IHE Gateway to initiate the doc retrieval with doc references by each respective gateway.
     log(`Starting document retrieval, ${docsToDownload.length} docs to download`);
 
-    log(`Starting document retrieval - Gateway V1`);
-    await iheGateway.startDocumentsRetrieval({
-      outboundDocumentRetrievalReq: documentRetrievalRequestsV1,
-    });
+    if (documentRetrievalRequestsV1.length > 0) {
+      log(`Starting document retrieval - Gateway V1`);
+      await iheGateway.startDocumentsRetrieval({
+        outboundDocumentRetrievalReq: documentRetrievalRequestsV1,
+      });
+    }
 
-    log(`Starting document retrieval - Gateway V2`);
-    const iheGatewayV2 = makeIHEGatewayV2();
-    await iheGatewayV2.startDocumentRetrievalGatewayV2({
-      drRequestsGatewayV2: documentRetrievalRequestsV2,
-      requestId,
-      patientId,
-      cxId,
-    });
+    if (documentRetrievalRequestsV2.length > 0) {
+      log(`Starting document retrieval - Gateway V2`);
+      const iheGatewayV2 = makeIHEGatewayV2();
+      await iheGatewayV2.startDocumentRetrievalGatewayV2({
+        drRequestsGatewayV2: documentRetrievalRequestsV2,
+        requestId,
+        patientId,
+        cxId,
+      });
+    }
 
     await resultPoller.pollOutboundDocRetrievalResults({
       requestId,
