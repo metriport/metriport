@@ -624,10 +624,9 @@ export async function get(
   patient: Patient,
   facilityId: string
 ): Promise<CommonwellPatient | undefined> {
+  const { log, debug } = out(`CW get - M patientId ${patient.id}`);
   let commonWell: CommonWellAPI | undefined;
   try {
-    const { log, debug } = out(`CW get - M patientId ${patient.id}`);
-
     const cwEnabled = await validateCWEnabled({
       patient,
       facilityId,
@@ -646,17 +645,21 @@ export async function get(
     debug(`resp getPatient: `, JSON.stringify(respPatient));
 
     return respPatient;
-  } catch (err) {
-    console.error(`Failed to get patient ${patient.id} @ CW: `, err);
-    capture.error(err, {
+  } catch (error) {
+    const msg = `Failed to get patient @ CW`;
+    const cwRef = commonWell?.lastReferenceHeader;
+    log(
+      `${msg}. Patient ID: ${patient.id}. Cause: ${errorToString(error)}. CW Reference: ${cwRef}`
+    );
+    capture.error(msg, {
       extra: {
         facilityId,
         patientId: patient.id,
-        cwReference: commonWell?.lastReferenceHeader,
+        cwReference: cwRef,
         context: getContext,
       },
     });
-    throw err;
+    throw error;
   }
 }
 
