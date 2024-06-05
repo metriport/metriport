@@ -113,7 +113,7 @@ describe("updatePatientDiscoveryStatus", () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       expect(error.message).toBe(
-        `Cannot update discovery status before assining discovery params @ CW`
+        `Cannot update discovery status before assigning discovery params @ CW`
       );
     }
   });
