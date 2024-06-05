@@ -120,7 +120,8 @@ function createTableRowsFromMedicationStatement(
             "#text": formatDateToHumanReadableFormat(period.end) ?? NOT_SPECIFIED,
           },
           {
-            "#text": getDisplaysFromCodeableConcepts(statement.resource.reasonCode),
+            "#text":
+              getDisplaysFromCodeableConcepts(statement.resource.reasonCode) ?? NOT_SPECIFIED,
           },
         ],
       },

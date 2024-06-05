@@ -127,10 +127,11 @@ function createTableRowFromEncounter(
         _ID: referenceId,
         ["td"]: [
           {
-            "#text": getDisplaysFromCodeableConcepts(encounter.resource.reasonCode),
+            "#text":
+              getDisplaysFromCodeableConcepts(encounter.resource.reasonCode) ?? NOT_SPECIFIED,
           },
           {
-            "#text": getDisplaysFromCodeableConcepts(encounter.resource.type),
+            "#text": getDisplaysFromCodeableConcepts(encounter.resource.type) ?? NOT_SPECIFIED,
           },
           {
             "#text": getPractitionerInformation(encounter.practitioners),
@@ -204,7 +205,7 @@ function createEntryFromEncounter(
       }),
       code: buildCodeCeFromCoding(encounter.resource.type),
       statusCode: {
-        _code: mapEncounterStatusCode(encounter.resource.status), // TODO: Check if this is the correct approach
+        _code: mapEncounterStatusCode(encounter.resource.status),
       },
       effectiveTime: {
         low: withoutNullFlavorObject(

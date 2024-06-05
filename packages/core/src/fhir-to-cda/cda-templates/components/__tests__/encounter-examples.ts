@@ -16,12 +16,6 @@ export const encounter1: Partial<Encounter> = {
           display: "OV EST PT LEV 4",
           system: "http://www.ama-assn.org/go/cpt",
         },
-        {
-          code: "AMB",
-          display: "Ambulatory",
-          system: "http://terminology.hl7.org/CodeSystem/v3-ActCode",
-        },
-        { code: "4", system: "urn:oid:1.2.840.114350.1.72.1.30.1" },
       ],
     },
   ],

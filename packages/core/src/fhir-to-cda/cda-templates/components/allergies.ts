@@ -1,4 +1,4 @@
-import { AllergyIntolerance, Bundle } from "@medplum/fhirtypes";
+import { AllergyIntolerance, Bundle, Coding } from "@medplum/fhirtypes";
 import { isAllergyIntolerance } from "../../../external/fhir/shared";
 import { AllergiesSection } from "../../cda-types/sections";
 import {
@@ -138,7 +138,7 @@ function createEntryFromAllergy(allergy: AugmentedAllergy, referenceId: string):
         displayName: "Concern",
       }),
       statusCode: {
-        _code: allergy.resource.clinicalStatus?.coding?.[0]?.code ?? "active", // TODO: Check if this is the correct approach
+        _code: mapAllergyStatusCode(allergy.resource.clinicalStatus?.coding) ?? "active",
       },
       effectiveTime: {
         low: withoutNullFlavorObject(
@@ -213,4 +213,27 @@ function createReactionEntryRelationship(
       value: buildValueCd(allergy.code, `${referenceId}-reaction`),
     },
   };
+}
+
+/**
+ * For FHIR statuses:
+ * @see https://hl7.org/fhir/R4/valueset-allergyintolerance-clinical.html
+ * For CDA statuses:
+ * @see https://terminology.hl7.org/5.2.0/ValueSet-v3-ActStatus.html
+ */
+function mapAllergyStatusCode(coding: Coding[] | undefined): string | undefined {
+  if (!coding) return undefined;
+  for (const c of coding) {
+    if (c.code) {
+      switch (c.code) {
+        case "active":
+          return "active";
+        case "inactive":
+          return "suspended";
+        case "resolved":
+          return "completed";
+      }
+    }
+  }
+  return undefined;
 }
