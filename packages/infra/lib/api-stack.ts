@@ -821,47 +821,16 @@ export class APIStack extends Stack {
         backupPlanName: "APIDB",
         resources: [BackupResource.fromRdsDatabaseCluster(dbCluster)],
       });
-      const medicalBackupPlan = new DailyBackup(this, "APIMedicalDocsBucketBackup", {
+      new DailyBackup(this, "APIMedicalDocsBucketBackup", {
         backupPlanName: "MedicalDocsBucket",
         resources: [BackupResource.fromArn(medicalDocumentsBucket.bucketArn)],
       });
-
-      // Create an IAM policy granting read access to the S3 bucket
-      const s3ReadPolicy = new iam.Policy(this, "S3ReadPolicy", {
-        statements: [
-          new iam.PolicyStatement({
-            actions: ["s3:GetObject", "s3:ListBucket"],
-            resources: [medicalDocumentsBucket.bucketArn, `${medicalDocumentsBucket.bucketArn}/*`],
-          }),
-        ],
-      });
-
-      // Attach the IAM policy to the backup plan's service role
-      const backupServiceRole = medicalBackupPlan.backupPlan.node.findChild(
-        "ServiceRole"
-      ) as iam.Role;
-      s3ReadPolicy.attachToRole(backupServiceRole);
     }
-
     if (isSandbox(props.config) && sandboxSeedDataBucket) {
       new DailyBackup(this, "APISandboxSeedDataBucketBackup", {
         backupPlanName: "SandboxSeedDataBucket",
         resources: [BackupResource.fromArn(sandboxSeedDataBucket.bucketArn)],
       });
-
-      // Create an IAM policy granting read access to the S3 bucket
-      const s3ReadPolicy = new iam.Policy(this, "S3ReadPolicy", {
-        statements: [
-          new iam.PolicyStatement({
-            actions: ["s3:GetObject", "s3:ListBucket"],
-            resources: [sandboxSeedDataBucket.bucketArn, `${sandboxSeedDataBucket.bucketArn}/*`],
-          }),
-        ],
-      });
-
-      // Attach the IAM policy to the backup plan's service role
-      const backupServiceRole = sandboxSeedDataBucket.node.findChild("ServiceRole") as iam.Role;
-      s3ReadPolicy.attachToRole(backupServiceRole);
     }
 
     //-------------------------------------------

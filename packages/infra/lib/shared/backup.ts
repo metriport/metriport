@@ -122,6 +122,7 @@ export class DailyBackup extends Construct {
 
     this.backupPlan.addSelection("BackupSelection", {
       resources: props.resources,
+      allowRestores: true,
     });
 
     // Outputs
