@@ -95,7 +95,7 @@ export class Config {
     return getEnvVar("POST_HOG_API_KEY_SECRET");
   }
 
-  static getIheResponsesBucketName(): string {
-    return getEnvVarOrFail("IHE_RESPONSES_BUCKET_NAME");
+  static getIheResponsesBucketName(): string | undefined {
+    return getEnvVar("IHE_RESPONSES_BUCKET_NAME");
   }
 }

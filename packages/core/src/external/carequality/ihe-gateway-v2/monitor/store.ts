@@ -27,6 +27,9 @@ export async function storeXcpdResponses({
   outboundRequest: OutboundPatientDiscoveryReq;
   gateway: XCPDGateway;
 }) {
+  if (!bucket) {
+    return;
+  }
   const s3Utils = getS3UtilsInstance();
   const { cxId, patientId, id: requestId } = outboundRequest;
   const key = buildIheResponseKey({ type: "xcpd", cxId, patientId, requestId, oid: gateway.oid });
@@ -47,6 +50,9 @@ export async function storeDqResponses({
   outboundRequest: OutboundDocumentQueryReq;
   gateway: XCAGateway;
 }) {
+  if (!bucket) {
+    return;
+  }
   const s3Utils = getS3UtilsInstance();
   const { cxId, patientId, id: requestId } = outboundRequest;
   const key = buildIheResponseKey({
@@ -73,6 +79,9 @@ export async function storeDrResponses({
   outboundRequest: OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
 }) {
+  if (!bucket) {
+    return;
+  }
   const s3Utils = getS3UtilsInstance();
   const { cxId, patientId, id: requestId } = outboundRequest;
   const key = buildIheResponseKey({
