@@ -4,7 +4,7 @@ import { MPIMetriportAPI } from "@metriport/core/mpi/patient-mpi-metriport-api";
 import { getEnvVarOrFail, getEnvVar } from "@metriport/core/util/env-var";
 import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
 import { inboundPatientDiscoveryReqSchema } from "@metriport/ihe-gateway-sdk";
-import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { analyticsAsync, EventTypes } from "@metriport/core/external/analytics/posthog";
 import * as Sentry from "@sentry/serverless";
 
 const apiUrl = getEnvVarOrFail("API_URL");
@@ -27,7 +27,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
     const postHogApiKey = await getSecretValue(postHogSecretName, region);
 
     if (postHogApiKey && engineeringCxId) {
-      analytics(
+      await analyticsAsync(
         {
           distinctId: engineeringCxId,
           event: EventTypes.inboundPatientDiscovery,
