@@ -1,5 +1,10 @@
 import { Address, Bundle, Encounter, HumanName, Location, Practitioner } from "@medplum/fhirtypes";
-import { isEncounter, isLocation, isPractitioner } from "../../../external/fhir/shared";
+import {
+  findResourceInBundle,
+  isEncounter,
+  isLocation,
+  isPractitioner,
+} from "../../../external/fhir/shared";
 import { EncountersSection } from "../../cda-types/sections";
 import {
   AssignedEntity,
@@ -84,25 +89,20 @@ function createAugmentedEncounters(
       p.individual?.reference?.includes("Practitioner") ? p.individual?.reference : []
     );
 
-    const allPractitioners =
-      fhirBundle.entry?.flatMap(entry =>
-        isPractitioner(entry.resource) ? [entry.resource] : []
-      ) || [];
-
-    const involvedPractitioners = allPractitioners.filter(p => {
-      return p.id && practitionerIds?.includes(`Practitioner/${p.id}`);
+    const involvedPractitioners: Practitioner[] = [];
+    practitionerIds?.forEach(id => {
+      const practitioner = findResourceInBundle(fhirBundle, id);
+      if (isPractitioner(practitioner)) involvedPractitioners.push(practitioner);
     });
 
     const locationIds = encounter.location?.flatMap(l =>
       l.location?.reference?.includes("Location") ? l.location?.reference : []
     );
 
-    const allLocations =
-      fhirBundle.entry?.flatMap(entry => (isLocation(entry.resource) ? [entry.resource] : [])) ||
-      [];
-
-    const involvedLocations = allLocations?.filter(l => {
-      return l.id && locationIds?.includes(`Location/${l.id}`);
+    const involvedLocations: Location[] = [];
+    locationIds?.forEach(id => {
+      const location = findResourceInBundle(fhirBundle, id);
+      if (isLocation(location)) involvedLocations.push(location);
     });
 
     return new AugmentedEncounter(
