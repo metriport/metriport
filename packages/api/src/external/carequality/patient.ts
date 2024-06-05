@@ -98,16 +98,20 @@ async function prepareAndTriggerPD({
       `${baseLogMessage}, requestIdV1: ${pdRequestGatewayV1.id}, requestIdV2: ${pdRequestGatewayV2.id}`
     );
 
-    log(`Kicking off patient discovery Gateway V1`);
-    await enabledIHEGW.startPatientDiscovery(pdRequestGatewayV1);
+    if (numGatewaysV1 > 0) {
+      log(`Kicking off patient discovery Gateway V1`);
+      await enabledIHEGW.startPatientDiscovery(pdRequestGatewayV1);
+    }
 
-    log(`Kicking off patient discovery Gateway V2`);
-    const iheGatewayV2 = makeIHEGatewayV2();
-    await iheGatewayV2.startPatientDiscovery({
-      pdRequestGatewayV2,
-      patientId: patient.id,
-      cxId: patient.cxId,
-    });
+    if (numGatewaysV2 > 0) {
+      log(`Kicking off patient discovery Gateway V2`);
+      const iheGatewayV2 = makeIHEGatewayV2();
+      await iheGatewayV2.startPatientDiscovery({
+        pdRequestGatewayV2,
+        patientId: patient.id,
+        cxId: patient.cxId,
+      });
+    }
 
     // only poll for the Gateway V1 request
     await resultPoller.pollOutboundPatientDiscoveryResults({

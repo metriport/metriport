@@ -29,8 +29,10 @@ import {
 } from "./shared";
 import { getDocumentReferenceContentTypeCounts } from "../../hie/get-docr-content-type-counts";
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
-import { getOidsWithIHEGatewayV2Enabled } from "../../aws/app-config";
-import { Config } from "../../../shared/config";
+import {
+  getOrgOidsWithIHEGatewayV2Enabled,
+  isIHEGatewayV2EnabledForCx,
+} from "../../aws/app-config";
 
 const parallelUpsertsToFhir = 10;
 const iheGateway = makeIheGatewayAPIForDocRetrieval();
@@ -188,12 +190,11 @@ export async function processOutboundDocumentQueryResps({
     const outboundDocumentQueryResultsV1: OutboundDocumentQueryResp[] = [];
     const outboundDocumentQueryResultsV2: OutboundDocumentQueryResp[] = [];
 
-    const v2GatewayOIDs = Config.isDev()
-      ? Config.getOidsWithIHEGatewayV2Enabled().split(",")
-      : await getOidsWithIHEGatewayV2Enabled();
+    const v2GatewayOIDs = await getOrgOidsWithIHEGatewayV2Enabled();
+    const isV2EnabledForCx = await isIHEGatewayV2EnabledForCx(cxId);
 
     for (const result of resultsWithMetriportIdAndDrUrl) {
-      if (v2GatewayOIDs.includes(result.gateway.homeCommunityId)) {
+      if (isV2EnabledForCx || v2GatewayOIDs.includes(result.gateway.homeCommunityId)) {
         outboundDocumentQueryResultsV2.push(result);
       } else {
         outboundDocumentQueryResultsV1.push(result);
@@ -219,19 +220,23 @@ export async function processOutboundDocumentQueryResps({
     // We send the request to IHE Gateway to initiate the doc retrieval with doc references by each respective gateway.
     log(`Starting document retrieval, ${docsToDownload.length} docs to download`);
 
-    log(`Starting document retrieval - Gateway V1`);
-    await iheGateway.startDocumentsRetrieval({
-      outboundDocumentRetrievalReq: documentRetrievalRequestsV1,
-    });
+    if (documentRetrievalRequestsV1.length > 0) {
+      log(`Starting document retrieval - Gateway V1`);
+      await iheGateway.startDocumentsRetrieval({
+        outboundDocumentRetrievalReq: documentRetrievalRequestsV1,
+      });
+    }
 
-    log(`Starting document retrieval - Gateway V2`);
-    const iheGatewayV2 = makeIHEGatewayV2();
-    await iheGatewayV2.startDocumentRetrievalGatewayV2({
-      drRequestsGatewayV2: documentRetrievalRequestsV2,
-      requestId,
-      patientId,
-      cxId,
-    });
+    if (documentRetrievalRequestsV2.length > 0) {
+      log(`Starting document retrieval - Gateway V2`);
+      const iheGatewayV2 = makeIHEGatewayV2();
+      await iheGatewayV2.startDocumentRetrievalGatewayV2({
+        drRequestsGatewayV2: documentRetrievalRequestsV2,
+        requestId,
+        patientId,
+        cxId,
+      });
+    }
 
     await resultPoller.pollOutboundDocRetrievalResults({
       requestId,

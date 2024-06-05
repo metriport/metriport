@@ -32,7 +32,9 @@ export function makePatientData(data: Partial<PatientData> = {}): PatientData {
   };
 }
 
-export function makePatient(params: Partial<Patient> = {}): Patient {
+export function makePatient(
+  params: Partial<Omit<Patient, "data"> & { data: Partial<PatientData> }> = {}
+): Patient {
   return {
     ...makeBaseDomain(),
     ...(params.id ? { id: params.id } : {}),

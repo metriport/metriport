@@ -28,6 +28,7 @@ export async function convertFhirToCda({
       docId,
       bundle: validatedBundle,
       organization: fhirOrganization,
+      orgOid: organization.oid,
     });
   } catch (error) {
     const msg = `Error converting FHIR to CDA`;

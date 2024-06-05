@@ -13,14 +13,14 @@ import { analytics, EventTypes } from "@metriport/core/external/analytics/postho
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { errorToString } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
-import { errorToString } from "@metriport/shared/common/error";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { createAugmentedPatient } from "../../domain/medical/patient-demographics";
 import MetriportError from "../../errors/metriport-error";
 import { Config } from "../../shared/config";
-import { capture } from "@metriport/core/util/notifications";
 import {
   isCommonwellEnabled,
   isCWEnabledForCx,
@@ -158,8 +158,8 @@ async function registerAndLinkPatientInCW({
   debug: typeof console.log;
   initiator?: HieInitiator;
 }): Promise<{ commonwellPatientId: string; personId: string } | void> {
+  const { log } = out(`registerAndLinkPatientInCW - patientId ${patient.id}`);
   let commonWell: CommonWellAPI | undefined;
-
   try {
     const { commonWellAPI, queryMeta, commonwellPatient } = await setupApiAndCwPatient({
       patient,
@@ -239,16 +239,18 @@ async function registerAndLinkPatientInCW({
     await updatePatientDiscoveryStatus({ patient, status: "failed" });
     await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList, isFailed: true });
     const msg = `Failure while creating patient @ CW`;
-    console.error(`${msg}. Patient ID: ${patient.id}. Cause: ${error}`);
-    capture.message(msg, {
+    const cwRef = commonWell?.lastReferenceHeader;
+    log(
+      `${msg}. Patient ID: ${patient.id}. Cause: ${errorToString(error)}. CW Reference: ${cwRef}`
+    );
+    capture.error(msg, {
       extra: {
         facilityId,
         patientId: patient.id,
-        cwReference: commonWell?.lastReferenceHeader,
+        cwReference: cwRef,
         context: createContext,
         error,
       },
-      level: "error",
     });
     throw error;
   }
@@ -321,6 +323,7 @@ async function updatePatientAndLinksInCw({
   startedAt: Date;
   debug: typeof console.log;
 }): Promise<void> {
+  const { log } = out(`updatePatientAndLinksInCw - patientId ${patient.id}`);
   let commonWell: CommonWellAPI | undefined;
   try {
     const updateData = await setupPatient({ patient });
@@ -409,12 +412,14 @@ async function updatePatientAndLinksInCw({
     });
     await updatePatientDiscoveryStatus({ patient, status: "failed" });
     await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList, isFailed: true });
-    console.error(`Failed to update patient ${patient.id} @ CW: ${errorToString(error)}`);
-    capture.error(error, {
+    const msg = `Failed to update patient @ CW`;
+    const cwRef = commonWell?.lastReferenceHeader;
+    log(`${msg} ${patient.id}:. Cause: ${errorToString(error)}. CW Reference: ${cwRef}`);
+    capture.error(msg, {
       extra: {
         facilityId,
         patientId: patient.id,
-        cwReference: commonWell?.lastReferenceHeader,
+        cwReference: cwRef,
         context: updateContext,
         error,
       },
@@ -467,6 +472,7 @@ async function validateCWEnabled({
     capture.error(msg, {
       extra: {
         cxId,
+        patientId: patient.id,
         error,
       },
     });
@@ -663,10 +669,9 @@ export async function get(
 }
 
 export async function remove(patient: Patient, facilityId: string): Promise<void> {
+  const { log } = out(`CW delete - M patientId ${patient.id}`);
   let commonWell: CommonWellAPI | undefined;
   try {
-    const { log } = out(`CW delete - M patientId ${patient.id}`);
-
     const cwEnabled = await validateCWEnabled({
       patient,
       facilityId,
@@ -685,17 +690,22 @@ export async function remove(patient: Patient, facilityId: string): Promise<void
       await commonWell.deletePatient(queryMeta, commonwellPatientId),
       await deleteCwPatientData({ id: patient.id, cxId: patient.cxId }),
     ]);
-  } catch (err) {
-    console.error(`Failed to delete patient ${patient.id} @ CW: `, err);
-    capture.error(err, {
+  } catch (error) {
+    const msg = `Failed to delete patient @ CW`;
+    const cwRef = commonWell?.lastReferenceHeader;
+    log(
+      `${msg}. Patient ID: ${patient.id}. Cause: ${errorToString(error)}. CW Reference: ${cwRef}`
+    );
+    capture.error(msg, {
       extra: {
         facilityId,
         patientId: patient.id,
-        cwReference: commonWell?.lastReferenceHeader,
+        cwReference: cwRef,
         context: deleteContext,
+        error,
       },
     });
-    throw err;
+    throw error;
   }
 }
 
@@ -825,7 +835,6 @@ async function updatePersonAndLink({
   getOrgIdExcludeList: () => Promise<string[]>;
 }): Promise<NetworkLink[] | undefined> {
   const { log, debug } = out(`CW updatePersonAndLink - CW patientId ${commonwellPatientId}`);
-
   const person = makePersonForPatient(commonwellPatient);
   try {
     try {
@@ -840,12 +849,13 @@ async function updatePersonAndLink({
     } catch (err: any) {
       if (err.response?.status !== 404) throw err;
       const subject = "Got 404 when trying to update person @ CW, trying to find/create it";
-      log(`${subject} - CW Person ID ${personId}`);
+      const cwRef = commonWell.lastReferenceHeader;
+      log(`${subject} - CW Person ID ${personId}. CW Reference: ${cwRef}`);
       capture.message(subject, {
         extra: {
           commonwellPatientId,
           personId,
-          cwReference: commonWell.lastReferenceHeader,
+          cwReference: cwRef,
           context: updateContext,
         },
       });
@@ -887,7 +897,7 @@ async function updatePersonAndLink({
         // safe to get the first one, just need to match one of the person's strong IDs
         strongIds[0]
       );
-      debug(`resp addPatientLink: `, JSON.stringify(respLink));
+      debug(`resp patientLink: `, JSON.stringify(respLink));
     }
   } catch (err) {
     log(
