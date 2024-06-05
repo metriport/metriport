@@ -1,6 +1,7 @@
 import { USState } from "./geographic-locations";
 import { BaseDomain, BaseDomainCreate } from "./base-domain";
 import { DocumentQueryProgress } from "./document-query";
+import { DiscoveryParams, ScheduledPatientDiscovery } from "./patient-discovery";
 import { BulkGetDocumentsUrlProgress } from "./bulk-get-document-url";
 import { QueryProgress } from "./query-status";
 import { MedicalDataSource } from "../external";
@@ -46,6 +47,8 @@ export type GenderAtBirth = (typeof genderAtBirthTypes)[number];
 export abstract class PatientExternalDataEntry {
   documentQueryProgress?: DocumentQueryProgress;
   linkDemographics?: LinkDemographicsHistory;
+  scheduledPdRequest?: ScheduledPatientDiscovery;
+  discoveryParams?: DiscoveryParams;
 }
 
 export type PatientExternalData = Partial<Record<MedicalDataSource, PatientExternalDataEntry>>;

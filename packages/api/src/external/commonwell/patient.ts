@@ -35,7 +35,7 @@ import { LinkStatus } from "../patient-link";
 import { makeCommonWellAPI } from "./api";
 import { queryAndProcessDocuments } from "./document/document-query";
 import { setDocQueryProgress } from "../hie/set-doc-query-progress";
-import { resetPatientScheduledPatientDiscoveryRequestId } from "../hie/reset-scheduled-patient-discovery-request";
+import { resetScheduledPatientDiscovery } from "../hie/reset-scheduled-patient-discovery-request";
 import { autoUpgradeNetworkLinks } from "./link/shared";
 import { makePersonForPatient, patientToCommonwell } from "./patient-conversion";
 import {
@@ -54,7 +54,6 @@ import { getNewDemographics } from "./patient-demographics";
 import { createOrUpdateCwPatientData } from "./command/cw-patient-data/create-cw-data";
 import { deleteCwPatientData } from "./command/cw-patient-data/delete-cw-data";
 import { CwLink } from "./cw-patient-data";
-import { getCqOrgIdsToDenyOnCw } from "../hie/cross-hie-ids";
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
@@ -91,7 +90,7 @@ export async function create({
   patient,
   facilityId,
   getOrgIdExcludeList,
-  requestId,
+  requestId: inputRequestId,
   forceCWCreate = false,
   rerunPdOnNewDemographics = false,
   callSynchronous = false,
@@ -116,15 +115,17 @@ export async function create({
   });
 
   if (cwCreateEnabled) {
-    const discoveryRequestId = requestId ?? uuidv7();
-    const discoveryStartedAt = new Date();
+    const requestId = inputRequestId ?? uuidv7();
+    const startedAt = new Date();
     const updatedPatient = await updatePatientDiscoveryStatus({
       patient,
       status: "processing",
-      discoveryRequestId,
-      discoveryFacilityId: facilityId,
-      discoveryStartedAt,
-      discoveryRerunPdOnNewDemographics: rerunPdOnNewDemographics,
+      params: {
+        requestId,
+        facilityId,
+        startedAt,
+        rerunPdOnNewDemographics,
+      },
     });
 
     const registerParams = {
@@ -132,8 +133,8 @@ export async function create({
       facilityId,
       getOrgIdExcludeList,
       rerunPdOnNewDemographics,
-      requestId: discoveryRequestId,
-      startedAt: discoveryStartedAt,
+      requestId,
+      startedAt,
       debug,
       initiator,
     };
@@ -238,7 +239,8 @@ async function registerAndLinkPatientInCW({
     debug("Completed.");
     return { commonwellPatientId, personId };
   } catch (error) {
-    await resetPatientScheduledPatientDiscoveryRequestId({
+    // TODO 1646 Move to a single hit to the DB
+    await resetScheduledPatientDiscovery({
       patient,
       source: MedicalDataSource.COMMONWELL,
     });
@@ -264,7 +266,7 @@ export async function update({
   patient,
   facilityId,
   getOrgIdExcludeList,
-  requestId,
+  requestId: inputRequestId,
   forceCWUpdate = false,
   rerunPdOnNewDemographics = false,
 }: {
@@ -285,15 +287,17 @@ export async function update({
   });
 
   if (cwUpdateEnabled) {
-    const discoveryRequestId = requestId ?? uuidv7();
-    const discoveryStartedAt = new Date();
+    const requestId = inputRequestId ?? uuidv7();
+    const startedAt = new Date();
     const updatedPatient = await updatePatientDiscoveryStatus({
       patient,
       status: "processing",
-      discoveryRequestId,
-      discoveryFacilityId: facilityId,
-      discoveryStartedAt,
-      discoveryRerunPdOnNewDemographics: rerunPdOnNewDemographics,
+      params: {
+        requestId,
+        facilityId,
+        startedAt,
+        rerunPdOnNewDemographics,
+      },
     });
 
     // intentionally async
@@ -302,8 +306,8 @@ export async function update({
       facilityId,
       getOrgIdExcludeList,
       rerunPdOnNewDemographics,
-      requestId: discoveryRequestId,
-      startedAt: discoveryStartedAt,
+      requestId,
+      startedAt,
       debug,
     }).catch(processAsyncError(updateContext));
   }
@@ -407,7 +411,8 @@ async function updatePatientAndLinksInCw({
     await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList });
     debug("Completed.");
   } catch (error) {
-    await resetPatientScheduledPatientDiscoveryRequestId({
+    // TODO 1646 Move to a single hit to the DB
+    await resetScheduledPatientDiscovery({
       patient,
       source: MedicalDataSource.COMMONWELL,
     });
@@ -556,14 +561,17 @@ export async function runNexPdIfScheduled({
     return false;
   }
 
-  await resetPatientScheduledPatientDiscoveryRequestId({
+  await resetScheduledPatientDiscovery({
     patient,
     source: MedicalDataSource.COMMONWELL,
   });
   await update({
     patient: updatedPatient,
     facilityId: scheduledPdRequest.facilityId,
-    getOrgIdExcludeList: scheduledPdRequest.getOrgIdExcludeList ?? getCqOrgIdsToDenyOnCw,
+    getOrgIdExcludeList: () =>
+      new Promise(resolve => {
+        resolve(scheduledPdRequest.orgIdExcludeList ?? []);
+      }),
     requestId: scheduledPdRequest.requestId,
     forceCWUpdate: scheduledPdRequest.forceCommonwell,
     rerunPdOnNewDemographics: scheduledPdRequest.rerunPdOnNewDemographics,

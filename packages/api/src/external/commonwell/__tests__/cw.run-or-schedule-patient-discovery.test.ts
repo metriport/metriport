@@ -1,19 +1,24 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { MedicalDataSource } from "@metriport/core/external/index";
+import {
+  DiscoveryParams,
+  ScheduledPatientDiscovery,
+} from "@metriport/core/domain/patient-discovery";
 import { makePatient, makePatientData } from "../../../domain/medical/__tests__/patient";
 import { PatientModel } from "../../../models/medical/patient";
+import { CQDirectoryEntryModel } from "../../carequality/models/cq-directory";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import * as cwPatient from "../patient";
 import * as schedulePatientDiscovery from "../../hie/schedule-patient-discovery";
 import { runOrScheduleCwPatientDiscovery } from "../command/run-or-schedule-patient-discovery";
-import { PatientDataCommonwell } from "../patient-shared";
-import { ScheduledPatientDiscovery } from "../../hie/schedule-patient-discovery";
 import { getCqOrgIdsToDenyOnCw } from "../../hie/cross-hie-ids";
 
 let patientModel: PatientModel;
 let patientModel_findOne: jest.SpyInstance;
 let cwUpdate_mock: jest.SpyInstance;
 let schedulePatientDiscovery_mock: jest.SpyInstance;
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+let directoryModel_findAll: jest.SpyInstance;
 
 beforeEach(() => {
   mockStartTransaction();
@@ -26,6 +31,9 @@ beforeEach(() => {
     .mockImplementation(async () => {
       return;
     });
+  directoryModel_findAll = jest
+    .spyOn(CQDirectoryEntryModel, "findAll")
+    .mockImplementation(async () => []);
 });
 
 afterEach(() => {
@@ -33,12 +41,26 @@ afterEach(() => {
 });
 
 describe("run or schedule patient discovery", () => {
-  const baseCqExternalData: PatientDataCommonwell = {
-    patientId: "base",
-    discoveryRequestId: "base",
-    discoveryFacilityId: "base",
-    discoveryStartedAt: new Date(),
-    discoveryRerunPdOnNewDemographics: false,
+  it("runs with no previous patient discovery", async () => {
+    const patient = makePatient();
+    patientModel_findOne.mockResolvedValueOnce(patient);
+    const params = {
+      patient,
+      facilityId: "toRun",
+      requestId: "toRun",
+      getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
+      rerunPdOnNewDemographics: undefined,
+      forceCommonwell: undefined,
+    };
+    await runOrScheduleCwPatientDiscovery(params);
+    expect(cwUpdate_mock).toBeCalledWith(params);
+    expect(schedulePatientDiscovery_mock).not.toBeCalled();
+  });
+  const baseDiscoveryParams: DiscoveryParams = {
+    requestId: "base",
+    facilityId: "base",
+    startedAt: new Date(),
+    rerunPdOnNewDemographics: false,
   };
   it("runs with previous patient discovery completed", async () => {
     const status = "completed";
@@ -46,16 +68,16 @@ describe("run or schedule patient discovery", () => {
       externalData: {
         COMMONWELL: {
           ...{
-            ...baseCqExternalData,
             status,
           },
+          discoveryParams: baseDiscoveryParams,
         },
       },
     });
-    const mockedPatient = makePatient({ data: patientData });
-    patientModel_findOne.mockResolvedValueOnce(mockedPatient);
+    const patient = makePatient({ data: patientData });
+    patientModel_findOne.mockResolvedValueOnce(patient);
     const params = {
-      patient: mockedPatient,
+      patient,
       facilityId: "toRun",
       requestId: "toRun",
       getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
@@ -72,16 +94,16 @@ describe("run or schedule patient discovery", () => {
       externalData: {
         COMMONWELL: {
           ...{
-            ...baseCqExternalData,
             status,
           },
+          discoveryParams: baseDiscoveryParams,
         },
       },
     });
-    const mockedPatient = makePatient({ data: patientData });
-    patientModel_findOne.mockResolvedValueOnce(mockedPatient);
+    const patient = makePatient({ data: patientData });
+    patientModel_findOne.mockResolvedValueOnce(patient);
     const params = {
-      patient: mockedPatient,
+      patient,
       facilityId: "toRun",
       requestId: "toRun",
       getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
@@ -98,26 +120,29 @@ describe("run or schedule patient discovery", () => {
       externalData: {
         COMMONWELL: {
           ...{
-            ...baseCqExternalData,
             status,
           },
+          discoveryParams: baseDiscoveryParams,
         },
       },
     });
-    const mockedPatient = makePatient({ data: patientData });
-    patientModel_findOne.mockResolvedValueOnce(mockedPatient);
+    const patient = makePatient({ data: patientData });
+    patientModel_findOne.mockResolvedValueOnce(patient);
     const params = {
-      patient: mockedPatient,
+      patient,
       facilityId: "toBeScheduled",
       requestId: "toBeScheduled",
-      getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
       rerunPdOnNewDemographics: undefined,
       forceCommonwell: undefined,
     };
-    await runOrScheduleCwPatientDiscovery(params);
+    await runOrScheduleCwPatientDiscovery({
+      ...params,
+      getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
+    });
     expect(cwUpdate_mock).not.toBeCalled();
     expect(schedulePatientDiscovery_mock).toBeCalledWith({
       ...params,
+      orgIdExcludeList: await getCqOrgIdsToDenyOnCw(),
       source: MedicalDataSource.COMMONWELL,
     });
   });
@@ -125,24 +150,28 @@ describe("run or schedule patient discovery", () => {
     const scheduledPd: ScheduledPatientDiscovery = {
       requestId: "scheduled",
       facilityId: "scheduled",
+      orgIdExcludeList: [],
       rerunPdOnNewDemographics: undefined,
+      forceCommonwell: undefined,
     };
     const status = "processing";
     const patientData = makePatientData({
       externalData: {
         COMMONWELL: {
           ...{
-            ...baseCqExternalData,
-            status,
+            ...{
+              status,
+            },
+            discoveryParams: baseDiscoveryParams,
             scheduledPdRequest: scheduledPd,
           },
         },
       },
     });
-    const mockedPatient = makePatient({ data: patientData });
-    patientModel_findOne.mockResolvedValueOnce(mockedPatient);
+    const patient = makePatient({ data: patientData });
+    patientModel_findOne.mockResolvedValueOnce(patient);
     const params = {
-      patient: mockedPatient,
+      patient,
       facilityId: "toNotSchedule",
       requestId: "toNotSchedule",
       getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,

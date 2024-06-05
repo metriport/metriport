@@ -15,7 +15,7 @@ import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { getDocumentsFromCQ } from "./document/query-documents";
 import { setDocQueryProgress } from "../hie/set-doc-query-progress";
-import { resetPatientScheduledPatientDiscoveryRequestId } from "../hie/reset-scheduled-patient-discovery-request";
+import { resetScheduledPatientDiscovery } from "../hie/reset-scheduled-patient-discovery-request";
 import { updatePatientLinkDemographics } from "../hie/update-patient-link-demographics";
 import { checkLinkDemographicsAcrossHies } from "../hie/check-patient-link-demographics";
 import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
@@ -56,21 +56,23 @@ export async function processOutboundPatientDiscoveryResps({
     );
 
     const patient = await getPatientOrFail({ id: patientId, cxId });
-    const cqData = getCQData(patient.data.externalData);
+    const discoveryParams = getCQData(patient.data.externalData)?.discoveryParams;
+    if (!discoveryParams) {
+      const msg = `Failed to find discovery params @ CQ`;
+      log(`${msg}. Patient ID: ${patient.id}.`);
+      throw new Error(msg);
+    }
 
-    const facilityId = cqData?.discoveryFacilityId;
-    const rerunPdOnNewDemographics = cqData?.discoveryRerunPdOnNewDemographics;
-    if (facilityId && rerunPdOnNewDemographics) {
+    if (discoveryParams.rerunPdOnNewDemographics) {
       const startedNewPd = await runNextPdOnNewDemographics({
         patient,
-        facilityId,
+        facilityId: discoveryParams.facilityId,
         requestId,
         cqLinks,
       });
       if (startedNewPd) return;
     }
 
-    const startedAt = cqData?.discoveryStartedAt;
     analytics({
       distinctId: patient.cxId,
       event: EventTypes.patientDiscovery,
@@ -79,7 +81,7 @@ export async function processOutboundPatientDiscoveryResps({
         patientId: patient.id,
         requestId,
         pdLinks: cqLinks.length,
-        duration: elapsedTimeFromNow(startedAt),
+        duration: elapsedTimeFromNow(discoveryParams.startedAt),
       },
     });
 
@@ -92,7 +94,8 @@ export async function processOutboundPatientDiscoveryResps({
     await queryDocsIfScheduled({ patientIds: patient });
     log("Completed.");
   } catch (error) {
-    await resetPatientScheduledPatientDiscoveryRequestId({
+    // TODO 1646 Move to a single hit to the DB
+    await resetScheduledPatientDiscovery({
       patient: patientIds,
       source: MedicalDataSource.CAREQUALITY,
     });
@@ -204,7 +207,7 @@ export async function runNexPdIfScheduled({
     return false;
   }
 
-  await resetPatientScheduledPatientDiscoveryRequestId({
+  await resetScheduledPatientDiscovery({
     patient: updatedPatient,
     source: MedicalDataSource.CAREQUALITY,
   });

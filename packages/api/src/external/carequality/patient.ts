@@ -19,7 +19,7 @@ import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery
 import { getCqInitiator, validateCQEnabledAndInitGW } from "./shared";
 import { queryDocsIfScheduled } from "./process-outbound-patient-discovery-resps";
 import { createAugmentedPatient } from "../../domain/medical/patient-demographics";
-import { resetPatientScheduledPatientDiscoveryRequestId } from "../hie/reset-scheduled-patient-discovery-request";
+import { resetScheduledPatientDiscovery } from "../hie/reset-scheduled-patient-discovery-request";
 
 dayjs.extend(duration);
 
@@ -29,7 +29,7 @@ const resultPoller = makeOutboundResultPoller();
 export async function discover({
   patient,
   facilityId,
-  requestId,
+  requestId: inputRequestId,
   forceEnabled = false,
   rerunPdOnNewDemographics = false,
 }: {
@@ -50,15 +50,17 @@ export async function discover({
   );
 
   if (enabledIHEGW) {
-    const discoveryRequestId = requestId ?? uuidv7();
-    const discoveryStartedAt = new Date();
+    const requestId = inputRequestId ?? uuidv7();
+    const startedAt = new Date();
     const updatedPatient = await updatePatientDiscoveryStatus({
       patient,
       status: "processing",
-      discoveryRequestId,
-      discoveryFacilityId: facilityId,
-      discoveryStartedAt,
-      discoveryRerunPdOnNewDemographics: rerunPdOnNewDemographics,
+      params: {
+        requestId,
+        facilityId,
+        startedAt,
+        rerunPdOnNewDemographics,
+      },
     });
 
     // Intentionally asynchronous
@@ -66,7 +68,7 @@ export async function discover({
       patient: createAugmentedPatient(updatedPatient),
       facilityId,
       enabledIHEGW,
-      requestId: discoveryRequestId,
+      requestId,
       baseLogMessage,
     }).catch(processAsyncError(context));
   }
@@ -117,7 +119,8 @@ async function prepareAndTriggerPD({
       numOfGateways: numGatewaysV1 + numGatewaysV2,
     });
   } catch (error) {
-    await resetPatientScheduledPatientDiscoveryRequestId({
+    // TODO 1646 Move to a single hit to the DB
+    await resetScheduledPatientDiscovery({
       patient,
       source: MedicalDataSource.CAREQUALITY,
     });

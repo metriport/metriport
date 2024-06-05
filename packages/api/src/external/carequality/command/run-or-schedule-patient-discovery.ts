@@ -30,9 +30,9 @@ export async function runOrScheduleCqPatientDiscovery({
 
   if (discoveryStatusCq === "processing" && !scheduledPdRequestCq) {
     await schedulePatientDiscovery({
-      requestId,
       patient: existingPatient,
       source: MedicalDataSource.CAREQUALITY,
+      requestId,
       facilityId,
       rerunPdOnNewDemographics,
       forceCarequality,

@@ -5,35 +5,24 @@ import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 
-export type ScheduledPatientDiscovery = {
-  requestId: string;
-  facilityId: string;
-  getOrgIdExcludeList?: () => Promise<string[]>;
-  rerunPdOnNewDemographics?: boolean;
-  // START TODO #1572 - remove
-  forceCommonwell?: boolean;
-  forceCarequality?: boolean;
-  // END TODO #1572 - remove
-};
-
 /**
  * Stores the scheduled patient discovery to be executed when the current patient discovery is completed.
  */
 export async function schedulePatientDiscovery({
-  requestId,
   patient,
   source,
+  requestId,
   facilityId,
-  getOrgIdExcludeList,
+  orgIdExcludeList,
   rerunPdOnNewDemographics,
   forceCarequality,
   forceCommonwell,
 }: {
-  requestId: string;
   patient: Pick<Patient, "id" | "cxId">;
   source: MedicalDataSource;
+  requestId: string;
   facilityId: string;
-  getOrgIdExcludeList?: () => Promise<string[]>;
+  orgIdExcludeList?: string[];
   rerunPdOnNewDemographics?: boolean;
   // START TODO #1572 - remove
   forceCommonwell?: boolean;
@@ -65,7 +54,7 @@ export async function schedulePatientDiscovery({
         scheduledPdRequest: {
           requestId,
           facilityId,
-          getOrgIdExcludeList,
+          orgIdExcludeList,
           rerunPdOnNewDemographics,
           forceCommonwell,
           forceCarequality,

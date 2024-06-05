@@ -16,7 +16,6 @@ import { intersectionBy, minBy } from "lodash";
 import { filterTruthy } from "../../shared/filter-map-utils";
 import { LinkStatus } from "../patient-link";
 import { makePersonForPatient } from "./patient-conversion";
-import { ScheduledPatientDiscovery } from "../hie/schedule-patient-discovery";
 
 export const cqLinkStatus = ["unlinked", "processing", "linked"] as const;
 /**
@@ -29,11 +28,6 @@ export class PatientDataCommonwell extends PatientExternalDataEntry {
     public patientId: string,
     public personId?: string | undefined,
     public status?: LinkStatus | undefined,
-    public discoveryRequestId?: string,
-    public discoveryFacilityId?: string,
-    public discoveryStartedAt?: Date,
-    public discoveryRerunPdOnNewDemographics?: boolean,
-    public scheduledPdRequest?: ScheduledPatientDiscovery,
     public cqLinkStatus?: CQLinkStatus,
     public scheduledDocQueryRequestId?: string | undefined
   ) {
@@ -210,7 +204,7 @@ export async function searchPersonIds({
       })
     )
   );
-  debug(`respSearches: `, JSON.stringify(respSearches));
+  debug(`resp searchPerson: `, JSON.stringify(respSearches));
   const fulfilledPersons = respSearches
     .flatMap(r => (r.status === "fulfilled" ? r.value._embedded?.person : []))
     .flatMap(filterTruthy);

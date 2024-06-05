@@ -43,14 +43,13 @@ afterEach(() => {
 });
 
 describe("run initial patient discovery", () => {
-  const mockedPatient = makePatient();
+  const patient = makePatient();
   const baseParams = {
-    patient: mockedPatient,
+    patient,
     facilityId: "test",
-    requestId: "test",
   };
   it("runs initial patient discovery with flags undefineds", async () => {
-    patientModel_findOne.mockResolvedValueOnce(mockedPatient);
+    patientModel_findOne.mockResolvedValueOnce(patient);
     const sharedParams = {
       ...baseParams,
       rerunPdOnNewDemographics: undefined,
@@ -62,18 +61,22 @@ describe("run initial patient discovery", () => {
       forceCarequality,
       forceCommonwell,
     });
-    expect(cqDiscoer_mock).toHaveBeenCalledWith({
-      ...sharedParams,
-      forceEnabled: forceCarequality,
-    });
-    expect(cwCreate_mock).toHaveBeenCalledWith({
-      ...sharedParams,
-      getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
-      forceCWCreate: forceCommonwell,
-    });
+    expect(cqDiscoer_mock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ...sharedParams,
+        forceEnabled: forceCarequality,
+      })
+    );
+    expect(cwCreate_mock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ...sharedParams,
+        getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
+        forceCWCreate: forceCommonwell,
+      })
+    );
   });
   it("runs initial patient discovery with flags defined false", async () => {
-    patientModel_findOne.mockResolvedValueOnce(mockedPatient);
+    patientModel_findOne.mockResolvedValueOnce(patient);
     const sharedParams = {
       ...baseParams,
       rerunPdOnNewDemographics: false,
@@ -85,18 +88,22 @@ describe("run initial patient discovery", () => {
       forceCarequality,
       forceCommonwell,
     });
-    expect(cqDiscoer_mock).toHaveBeenCalledWith({
-      ...sharedParams,
-      forceEnabled: forceCarequality,
-    });
-    expect(cwCreate_mock).toHaveBeenCalledWith({
-      ...sharedParams,
-      getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
-      forceCWCreate: forceCommonwell,
-    });
+    expect(cqDiscoer_mock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ...sharedParams,
+        forceEnabled: forceCarequality,
+      })
+    );
+    expect(cwCreate_mock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ...sharedParams,
+        getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
+        forceCWCreate: forceCommonwell,
+      })
+    );
   });
   it("runs initial patient discovery with flags defined true", async () => {
-    patientModel_findOne.mockResolvedValueOnce(mockedPatient);
+    patientModel_findOne.mockResolvedValueOnce(patient);
     const sharedParams = {
       ...baseParams,
       rerunPdOnNewDemographics: true,
@@ -108,27 +115,30 @@ describe("run initial patient discovery", () => {
       forceCarequality,
       forceCommonwell,
     });
-    expect(cqDiscoer_mock).toHaveBeenCalledWith({
-      ...sharedParams,
-      forceEnabled: forceCarequality,
-    });
-    expect(cwCreate_mock).toHaveBeenCalledWith({
-      ...sharedParams,
-      getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
-      forceCWCreate: forceCommonwell,
-    });
+    expect(cqDiscoer_mock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ...sharedParams,
+        forceEnabled: forceCarequality,
+      })
+    );
+    expect(cwCreate_mock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ...sharedParams,
+        getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
+        forceCWCreate: forceCommonwell,
+      })
+    );
   });
 });
 
 describe("run initial patient discovery", () => {
-  const mockedPatient = makePatient();
+  const patient = makePatient();
   const baseParams = {
-    patient: mockedPatient,
+    patient: patient,
     facilityId: "test",
-    requestId: "test",
   };
   it("runs initial patient discovery with flags undefineds", async () => {
-    patientModel_findOne.mockResolvedValueOnce(mockedPatient);
+    patientModel_findOne.mockResolvedValueOnce(patient);
     const sharedParams = {
       ...baseParams,
       rerunPdOnNewDemographics: undefined,
@@ -140,18 +150,22 @@ describe("run initial patient discovery", () => {
       forceCarequality,
       forceCommonwell,
     });
-    expect(cqRunOrSchedule_mock).toHaveBeenCalledWith({
-      ...sharedParams,
-      forceCarequality,
-    });
-    expect(cwRunOrSchedule_mock).toHaveBeenCalledWith({
-      ...sharedParams,
-      getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
-      forceCommonwell,
-    });
+    expect(cqRunOrSchedule_mock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ...sharedParams,
+        forceCarequality,
+      })
+    );
+    expect(cwRunOrSchedule_mock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ...sharedParams,
+        getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
+        forceCommonwell,
+      })
+    );
   });
   it("runs initial patient discovery with flags defined false", async () => {
-    patientModel_findOne.mockResolvedValueOnce(mockedPatient);
+    patientModel_findOne.mockResolvedValueOnce(patient);
     const sharedParams = {
       ...baseParams,
       rerunPdOnNewDemographics: false,
@@ -163,18 +177,22 @@ describe("run initial patient discovery", () => {
       forceCarequality,
       forceCommonwell,
     });
-    expect(cqRunOrSchedule_mock).toHaveBeenCalledWith({
-      ...sharedParams,
-      forceCarequality,
-    });
-    expect(cwRunOrSchedule_mock).toHaveBeenCalledWith({
-      ...sharedParams,
-      getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
-      forceCommonwell,
-    });
+    expect(cqRunOrSchedule_mock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ...sharedParams,
+        forceCarequality,
+      })
+    );
+    expect(cwRunOrSchedule_mock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ...sharedParams,
+        getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
+        forceCommonwell,
+      })
+    );
   });
   it("runs initial patient discovery with flags defined true", async () => {
-    patientModel_findOne.mockResolvedValueOnce(mockedPatient);
+    patientModel_findOne.mockResolvedValueOnce(patient);
     const sharedParams = {
       ...baseParams,
       rerunPdOnNewDemographics: true,
@@ -186,14 +204,18 @@ describe("run initial patient discovery", () => {
       forceCarequality,
       forceCommonwell,
     });
-    expect(cqRunOrSchedule_mock).toHaveBeenCalledWith({
-      ...sharedParams,
-      forceCarequality,
-    });
-    expect(cwRunOrSchedule_mock).toHaveBeenCalledWith({
-      ...sharedParams,
-      getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
-      forceCommonwell,
-    });
+    expect(cqRunOrSchedule_mock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ...sharedParams,
+        forceCarequality,
+      })
+    );
+    expect(cwRunOrSchedule_mock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ...sharedParams,
+        getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
+        forceCommonwell,
+      })
+    );
   });
 });

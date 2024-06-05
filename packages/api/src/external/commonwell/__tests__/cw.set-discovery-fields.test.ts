@@ -1,9 +1,9 @@
 import { Patient } from "@metriport/core/domain/patient";
+import { DiscoveryParams } from "@metriport/core/domain/patient-discovery";
 import { updatePatientDiscoveryStatus } from "../patient-external-data";
 import { PatientModel } from "../../../models/medical/patient";
 import { makePatient, makePatientData } from "../../../domain/medical/__tests__/patient";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
-import { PatientDataCommonwell } from "../patient-shared";
 import { LinkStatus } from "../../patient-link";
 
 let patient: Patient;
@@ -25,19 +25,22 @@ afterEach(() => {
 
 type cwParams = {
   status?: LinkStatus;
-  discoveryRequestId?: string;
-  discoveryFacilityId?: string;
-  discoveryStartedAt?: Date;
-  discoveryRerunPdOnNewDemographics?: boolean;
+  params?: {
+    requestId: string;
+    facilityId: string;
+    startedAt: Date;
+    rerunPdOnNewDemographics: boolean;
+  };
 };
 
-const checkPatientUpdateWith = (newValues?: cwParams) => {
+const checkPatientUpdateWith = (newParams: cwParams) => {
   expect(patientModel_update).toHaveBeenCalledWith(
     expect.objectContaining({
       data: expect.objectContaining({
         externalData: expect.objectContaining({
           COMMONWELL: expect.objectContaining({
-            ...newValues,
+            status: newParams.status,
+            ...(newParams.params && { discoveryParams: newParams.params }),
           }),
         }),
       }),
@@ -50,58 +53,63 @@ describe("updatePatientDiscoveryStatus", () => {
   it("setting all possible values", async () => {
     const patient = makePatient();
     patientModel_findOne.mockResolvedValue(patient);
-    const newValues = {
-      status: "processing" as LinkStatus,
-      discoveryRequestId: "test",
-      discoveryFacilityId: "test",
-      discoveryStartedAt: new Date(),
-      discoveryRerunPdOnNewDemographics: false,
+    const status = "processing" as LinkStatus;
+    const newParams: DiscoveryParams = {
+      requestId: "test",
+      facilityId: "test",
+      startedAt: new Date(),
+      rerunPdOnNewDemographics: false,
     };
-    const resultIds = await updatePatientDiscoveryStatus({
+    const results = await updatePatientDiscoveryStatus({
       patient,
-      ...newValues,
+      status: status,
+      params: newParams,
     });
-    expect(resultIds).toBeTruthy();
+    expect(results).toBeTruthy();
     checkPatientUpdateWith({
-      ...newValues,
+      status,
+      params: newParams,
     });
   });
   it("setting only status w/ previous values", async () => {
-    const baseCwExternalData: PatientDataCommonwell = {
-      patientId: "base",
-      status: "processing",
-      discoveryRequestId: "base",
-      discoveryFacilityId: "base",
-      discoveryStartedAt: new Date(),
-      discoveryRerunPdOnNewDemographics: false,
+    const baseParams: DiscoveryParams = {
+      requestId: "base",
+      facilityId: "base",
+      startedAt: new Date(),
+      rerunPdOnNewDemographics: false,
     };
     const patientData = makePatientData({
       externalData: {
-        COMMONWELL: baseCwExternalData,
+        COMMONWELL: {
+          ...{
+            status: "processing",
+          },
+          discoveryParams: baseParams,
+        },
       },
     });
     const patient = makePatient({ data: patientData });
     patientModel_findOne.mockResolvedValue(patient);
     const status = "completed" as LinkStatus;
-    const resultIds = await updatePatientDiscoveryStatus({
+    const results = await updatePatientDiscoveryStatus({
       patient,
       status,
     });
-    expect(resultIds).toBeTruthy();
+    expect(results).toBeTruthy();
     checkPatientUpdateWith({
-      ...baseCwExternalData,
       status,
+      params: baseParams,
     });
   });
   it("setting only status w/ no previous values", async () => {
     const patient = makePatient();
     patientModel_findOne.mockResolvedValue(patient);
     const status = "completed" as LinkStatus;
-    const resultIds = await updatePatientDiscoveryStatus({
+    const results = await updatePatientDiscoveryStatus({
       patient,
       status,
     });
-    expect(resultIds).toBeTruthy();
+    expect(results).toBeTruthy();
     checkPatientUpdateWith({
       status,
     });

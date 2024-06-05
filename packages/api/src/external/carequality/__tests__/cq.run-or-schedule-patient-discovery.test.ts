@@ -1,13 +1,15 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { MedicalDataSource } from "@metriport/core/external/index";
+import {
+  DiscoveryParams,
+  ScheduledPatientDiscovery,
+} from "@metriport/core/domain/patient-discovery";
 import { makePatient, makePatientData } from "../../../domain/medical/__tests__/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import * as cqPatient from "../patient";
 import * as schedulePatientDiscovery from "../../hie/schedule-patient-discovery";
 import { runOrScheduleCqPatientDiscovery } from "../command/run-or-schedule-patient-discovery";
-import { PatientDataCarequality } from "../patient-shared";
-import { ScheduledPatientDiscovery } from "../../hie/schedule-patient-discovery";
 
 let patientModel: PatientModel;
 let patientModel_findOne: jest.SpyInstance;
@@ -32,11 +34,25 @@ afterEach(() => {
 });
 
 describe("run or schedule patient discovery", () => {
-  const baseCqExternalData: PatientDataCarequality = {
-    discoveryRequestId: "base",
-    discoveryFacilityId: "base",
-    discoveryStartedAt: new Date(),
-    discoveryRerunPdOnNewDemographics: false,
+  it("runs with no previous patient discovery", async () => {
+    const patient = makePatient();
+    patientModel_findOne.mockResolvedValueOnce(patient);
+    const params = {
+      patient,
+      facilityId: "toRun",
+      requestId: "toRun",
+      rerunPdOnNewDemographics: undefined,
+      forceCarequality: undefined,
+    };
+    await runOrScheduleCqPatientDiscovery(params);
+    expect(cqDiscover_mock).toBeCalledWith(params);
+    expect(schedulePatientDiscovery_mock).not.toBeCalled();
+  });
+  const baseDiscoveryParams: DiscoveryParams = {
+    requestId: "base",
+    facilityId: "base",
+    startedAt: new Date(),
+    rerunPdOnNewDemographics: false,
   };
   it("runs with previous patient discovery completed", async () => {
     const discoveryStatus = "completed";
@@ -44,16 +60,16 @@ describe("run or schedule patient discovery", () => {
       externalData: {
         CAREQUALITY: {
           ...{
-            ...baseCqExternalData,
             discoveryStatus,
           },
+          discoveryParams: baseDiscoveryParams,
         },
       },
     });
-    const mockedPatient = makePatient({ data: patientData });
-    patientModel_findOne.mockResolvedValueOnce(mockedPatient);
+    const patient = makePatient({ data: patientData });
+    patientModel_findOne.mockResolvedValueOnce(patient);
     const params = {
-      patient: mockedPatient,
+      patient,
       facilityId: "toRun",
       requestId: "toRun",
       rerunPdOnNewDemographics: undefined,
@@ -69,16 +85,16 @@ describe("run or schedule patient discovery", () => {
       externalData: {
         CAREQUALITY: {
           ...{
-            ...baseCqExternalData,
             discoveryStatus,
           },
+          discoveryParams: baseDiscoveryParams,
         },
       },
     });
-    const mockedPatient = makePatient({ data: patientData });
-    patientModel_findOne.mockResolvedValueOnce(mockedPatient);
+    const patient = makePatient({ data: patientData });
+    patientModel_findOne.mockResolvedValueOnce(patient);
     const params = {
-      patient: mockedPatient,
+      patient,
       facilityId: "toRun",
       requestId: "toRun",
       rerunPdOnNewDemographics: undefined,
@@ -94,16 +110,16 @@ describe("run or schedule patient discovery", () => {
       externalData: {
         CAREQUALITY: {
           ...{
-            ...baseCqExternalData,
             discoveryStatus,
           },
+          discoveryParams: baseDiscoveryParams,
         },
       },
     });
-    const mockedPatient = makePatient({ data: patientData });
-    patientModel_findOne.mockResolvedValueOnce(mockedPatient);
+    const patient = makePatient({ data: patientData });
+    patientModel_findOne.mockResolvedValueOnce(patient);
     const params = {
-      patient: mockedPatient,
+      patient,
       facilityId: "toBeScheduled",
       requestId: "toBeScheduled",
       rerunPdOnNewDemographics: undefined,
@@ -127,17 +143,19 @@ describe("run or schedule patient discovery", () => {
       externalData: {
         CAREQUALITY: {
           ...{
-            ...baseCqExternalData,
-            discoveryStatus,
+            ...{
+              discoveryStatus,
+            },
+            discoveryParams: baseDiscoveryParams,
             scheduledPdRequest: scheduledPd,
           },
         },
       },
     });
-    const mockedPatient = makePatient({ data: patientData });
-    patientModel_findOne.mockResolvedValueOnce(mockedPatient);
+    const patient = makePatient({ data: patientData });
+    patientModel_findOne.mockResolvedValueOnce(patient);
     const params = {
-      patient: mockedPatient,
+      patient,
       facilityId: "toNotSchedule",
       requestId: "toNotSchedule",
       rerunPdOnNewDemographics: undefined,

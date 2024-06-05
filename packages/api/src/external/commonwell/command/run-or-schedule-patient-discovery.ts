@@ -32,11 +32,11 @@ export async function runOrScheduleCwPatientDiscovery({
 
   if (statusCw === "processing" && !scheduledPdRequestCw) {
     await schedulePatientDiscovery({
-      requestId,
       patient: existingPatient,
       source: MedicalDataSource.COMMONWELL,
       facilityId,
-      getOrgIdExcludeList,
+      requestId,
+      orgIdExcludeList: await getOrgIdExcludeList(),
       rerunPdOnNewDemographics,
       forceCommonwell,
     });

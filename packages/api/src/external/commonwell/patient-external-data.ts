@@ -119,26 +119,25 @@ export const updateCommonwellIdsAndStatus = async ({
  *
  * @param patient The patient @ Metriport.
  * @param status The status of integrating/synchronizing the patient @ CommonWell.
- * @param discoveryRequestId The request ID of integrating/synchronizing the patient @ CommonWell.
- * @param discoveryFacilityId The facility ID of integrating/synchronizing the patient @ CommonWell.
- * @param discoveryStartedAt The start date of integrating/synchronizing the patient @ CommonWell.
- * @param discoveryRerunPdOnNewDemographics The flag for determining whether to re-run pattient discovery again if new demographic data is found.
+ * @param params.requestId The request ID of integrating/synchronizing the patient @ CommonWell.
+ * @param params.facilityId The facility ID of integrating/synchronizing the patient @ CommonWell.
+ * @param params.startedAt The start date of integrating/synchronizing the patient @ CommonWell.
+ * @param params.rerunPdOnNewDemographics The flag for determining whether to re-run pattient discovery again if new demographic data is found.
  * @returns
  */
 export const updatePatientDiscoveryStatus = async ({
   patient,
   status,
-  discoveryRequestId,
-  discoveryFacilityId,
-  discoveryStartedAt,
-  discoveryRerunPdOnNewDemographics,
+  params,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
-  status?: LinkStatus;
-  discoveryRequestId?: string;
-  discoveryFacilityId?: string;
-  discoveryStartedAt?: Date;
-  discoveryRerunPdOnNewDemographics?: boolean;
+  status: LinkStatus;
+  params?: {
+    requestId: string;
+    facilityId: string;
+    startedAt: Date;
+    rerunPdOnNewDemographics: boolean;
+  };
 }): Promise<Patient> => {
   const patientFilter = {
     id: patient.id,
@@ -158,13 +157,8 @@ export const updatePatientDiscoveryStatus = async ({
       ...externalData,
       COMMONWELL: {
         ...externalData.COMMONWELL,
-        ...(status && { status }),
-        ...(discoveryRequestId && { discoveryRequestId }),
-        ...(discoveryFacilityId && { discoveryFacilityId }),
-        ...(discoveryStartedAt && { discoveryStartedAt }),
-        ...(discoveryRerunPdOnNewDemographics !== undefined
-          ? { discoveryRerunPdOnNewDemographics }
-          : undefined),
+        status,
+        ...(params && { discoveryParams: params }),
       },
     };
 

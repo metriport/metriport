@@ -1,4 +1,5 @@
 import { Patient } from "@metriport/core/domain/patient";
+import { DiscoveryParams } from "@metriport/core/domain/patient-discovery";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
@@ -9,26 +10,20 @@ import { LinkStatus } from "../../patient-link";
  *
  * @param patient The patient @ Metriport.
  * @param status The status of integrating/synchronizing the patient across CareQuality.
- * @param discoveryRequestId The request ID of integrating/synchronizing the patient across CareQuality.
- * @param discoveryFacilityId The facility ID of integrating/synchronizing the patient across CareQuality.
- * @param discoveryStartedAt The start date of integrating/synchronizing the patient across CareQuality.
- * @param discoveryRerunPdOnNewDemographics The flag for determining whether to re-run pattient discovery again if new demographic data is found.
+ * @param params.requestId The request ID of integrating/synchronizing the patient across CareQuality.
+ * @param params.facilityId The facility ID of integrating/synchronizing the patient across CareQuality.
+ * @param params.startedAt The start date of integrating/synchronizing the patient across CareQuality.
+ * @param params.rerunPdOnNewDemographics The flag for determining whether to re-run pattient discovery again if new demographic data is found.
  * @returns
  */
 export async function updatePatientDiscoveryStatus({
   patient,
   status,
-  discoveryRequestId,
-  discoveryFacilityId,
-  discoveryStartedAt,
-  discoveryRerunPdOnNewDemographics,
+  params,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
-  status?: LinkStatus;
-  discoveryRequestId?: string;
-  discoveryFacilityId?: string;
-  discoveryStartedAt?: Date;
-  discoveryRerunPdOnNewDemographics?: boolean;
+  status: LinkStatus;
+  params?: DiscoveryParams;
 }): Promise<Patient> {
   const patientFilter = {
     id: patient.id,
@@ -48,13 +43,8 @@ export async function updatePatientDiscoveryStatus({
       ...externalData,
       CAREQUALITY: {
         ...externalData.CAREQUALITY,
-        ...(status && { discoveryStatus: status }),
-        ...(discoveryRequestId && { discoveryRequestId }),
-        ...(discoveryFacilityId && { discoveryFacilityId }),
-        ...(discoveryStartedAt && { discoveryStartedAt }),
-        ...(discoveryRerunPdOnNewDemographics !== undefined
-          ? { discoveryRerunPdOnNewDemographics }
-          : undefined),
+        discoveryStatus: status,
+        ...(params && { discoveryParams: params }),
       },
     };
 
