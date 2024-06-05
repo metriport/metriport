@@ -897,7 +897,7 @@ async function updatePersonAndLink({
         // safe to get the first one, just need to match one of the person's strong IDs
         strongIds[0]
       );
-      debug(`resp patientLink: `, JSON.stringify(respLink));
+      debug(`resp addPatientLink: `, JSON.stringify(respLink));
     }
   } catch (err) {
     log(
