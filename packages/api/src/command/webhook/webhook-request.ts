@@ -1,7 +1,8 @@
+import { limitStringLength, NotFoundError } from "@metriport/shared";
 import { v4 as uuidv4 } from "uuid";
-import { WebhookType } from "../../domain/webhook";
-import NotFoundError from "../../errors/not-found";
-import { WebhookRequest, WebhookRequestStatus } from "../../models/webhook-request";
+import { WebhookRequestStatus, WebhookType } from "../../domain/webhook";
+import { WebhookRequest } from "../../models/webhook-request";
+import { MAX_VARCHAR_LENGTH } from "../../models/_default";
 
 export type CreateWebhookRequestCommand = {
   cxId: string;
@@ -11,16 +12,17 @@ export type CreateWebhookRequestCommand = {
   status?: WebhookRequestStatus;
 };
 
-export const createWebhookRequest = async (
+export async function createWebhookRequest(
   create: CreateWebhookRequestCommand
-): Promise<WebhookRequest> => {
+): Promise<WebhookRequest> {
   return WebhookRequest.create({
     ...create,
     id: uuidv4(),
     status: create.status ? create.status : "processing",
   });
-};
+}
 
+// TODO: 1411 - remove when DAPI is fully discontinued
 export type WebhookRequestData = {
   id: string;
   cxId: string;
@@ -42,22 +44,41 @@ export function buildWebhookRequestData(create: CreateWebhookRequestCommand): We
   };
 }
 
-export type UpdateWebhookLogStatusCommand = {
+export type UpdateWebhookRequestCommand = {
   id: string;
   status: WebhookRequestStatus;
+  statusDetail?: string;
+  requestUrl?: string;
+  httpStatus?: number;
+  durationMillis?: number;
 };
 
-export const updateWebhookRequestStatus = async ({
+export async function updateWebhookRequest({
   id,
   status,
-}: UpdateWebhookLogStatusCommand): Promise<void> => {
-  const log = await WebhookRequest.findOne({ where: { id } });
-  if (!log) throw new NotFoundError(`Could not find webhook requst ${id}`);
-  await WebhookRequest.update({ status }, { where: { id } });
-};
+  statusDetail,
+  requestUrl,
+  httpStatus,
+  durationMillis,
+}: UpdateWebhookRequestCommand): Promise<void> {
+  const whRequest = await WebhookRequest.findOne({ where: { id } });
+  if (!whRequest) throw new NotFoundError(`Could not find webhook request ${id}`);
+  const statusDetailParsed = limitStringLength(statusDetail, MAX_VARCHAR_LENGTH);
+  const requestUrlParsed = limitStringLength(requestUrl, MAX_VARCHAR_LENGTH);
+  await WebhookRequest.update(
+    {
+      status,
+      statusDetail: statusDetailParsed,
+      requestUrl: requestUrlParsed,
+      httpStatus,
+      durationMillis,
+    },
+    { where: { id } }
+  );
+}
 
-export const getAllWebhookRequestByRequestId = async (
+export async function getAllWebhookRequestByRequestId(
   requestId: string
-): Promise<WebhookRequest[]> => {
+): Promise<WebhookRequest[]> {
   return WebhookRequest.findAll({ where: { requestId } });
-};
+}
