@@ -93,7 +93,6 @@ export async function create({
   requestId: inputRequestId,
   forceCWCreate = false,
   rerunPdOnNewDemographics = false,
-  callSynchronous = false,
   initiator,
 }: {
   patient: Patient;
@@ -102,7 +101,6 @@ export async function create({
   requestId?: string;
   forceCWCreate?: boolean;
   rerunPdOnNewDemographics?: boolean;
-  callSynchronous?: boolean;
   initiator?: HieInitiator;
 }): Promise<{ commonwellPatientId: string; personId: string } | void> {
   const { log, debug } = out(`CW create - M patientId ${patient.id}`);
@@ -128,7 +126,7 @@ export async function create({
       },
     });
 
-    const registerParams = {
+    return await registerAndLinkPatientInCW({
       patient: createAugmentedPatient(updatedPatient),
       facilityId,
       getOrgIdExcludeList,
@@ -137,13 +135,7 @@ export async function create({
       startedAt,
       debug,
       initiator,
-    };
-    if (callSynchronous) {
-      await registerAndLinkPatientInCW(registerParams);
-    } else {
-      // intentionally async
-      registerAndLinkPatientInCW(registerParams).catch(processAsyncError(createContext));
-    }
+    });
   }
 }
 
@@ -300,8 +292,7 @@ export async function update({
       },
     });
 
-    // intentionally async
-    updatePatientAndLinksInCw({
+    await updatePatientAndLinksInCw({
       patient: createAugmentedPatient(updatedPatient),
       facilityId,
       getOrgIdExcludeList,
@@ -309,7 +300,7 @@ export async function update({
       requestId,
       startedAt,
       debug,
-    }).catch(processAsyncError(updateContext));
+    });
   }
 }
 
@@ -527,12 +518,12 @@ export async function runNextPdOnNewDemographics({
       links: newDemographicsHere,
     });
   }
-  await update({
+  update({
     patient: updatedPatient,
     facilityId,
     getOrgIdExcludeList,
     rerunPdOnNewDemographics: false,
-  });
+  }).catch(processAsyncError("CW update"));
   analytics({
     distinctId: updatedPatient.cxId,
     event: EventTypes.rerunOnNewDemographics,
@@ -565,7 +556,7 @@ export async function runNexPdIfScheduled({
     patient,
     source: MedicalDataSource.COMMONWELL,
   });
-  await update({
+  update({
     patient: updatedPatient,
     facilityId: scheduledPdRequest.facilityId,
     getOrgIdExcludeList: () =>
@@ -575,7 +566,7 @@ export async function runNexPdIfScheduled({
     requestId: scheduledPdRequest.requestId,
     forceCWUpdate: scheduledPdRequest.forceCommonwell,
     rerunPdOnNewDemographics: scheduledPdRequest.rerunPdOnNewDemographics,
-  });
+  }).catch(processAsyncError("CW update"));
   analytics({
     distinctId: updatedPatient.cxId,
     event: EventTypes.runScheduledPatientDiscovery,
@@ -620,11 +611,11 @@ export async function queryDocsIfScheduled({
       convertProgress: { status: "failed", total: 0 },
     });
   } else {
-    await queryAndProcessDocuments({
+    queryAndProcessDocuments({
       patient,
       requestId: scheduledDocQueryRequestId,
       getOrgIdExcludeList,
-    });
+    }).catch(processAsyncError("CW queryAndProcessDocuments"));
   }
 }
 

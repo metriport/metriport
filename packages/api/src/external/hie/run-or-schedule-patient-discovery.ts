@@ -4,6 +4,7 @@ import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { getCqOrgIdsToDenyOnCw } from "./cross-hie-ids";
 import { runOrScheduleCqPatientDiscovery } from "../carequality/command/run-or-schedule-patient-discovery";
 import { runOrScheduleCwPatientDiscovery } from "../commonwell/command/run-or-schedule-patient-discovery";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 
 export async function runOrSchedulePatientDiscoveryAcrossHies({
   patient,
@@ -22,23 +23,21 @@ export async function runOrSchedulePatientDiscoveryAcrossHies({
 }): Promise<void> {
   const existingPatient = await getPatientOrFail(patient);
   const requestId = uuidv7();
-  await Promise.all([
-    // CAREQUALITY
-    await runOrScheduleCqPatientDiscovery({
-      patient: existingPatient,
-      facilityId,
-      requestId,
-      rerunPdOnNewDemographics,
-      forceCarequality,
-    }),
-    // COMMONWELL
-    await runOrScheduleCwPatientDiscovery({
-      patient: existingPatient,
-      facilityId,
-      requestId,
-      getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
-      rerunPdOnNewDemographics,
-      forceCommonwell,
-    }),
-  ]);
+  // CAREQUALITY
+  runOrScheduleCqPatientDiscovery({
+    patient: existingPatient,
+    facilityId,
+    requestId,
+    rerunPdOnNewDemographics,
+    forceCarequality,
+  }).catch(processAsyncError("runOrScheduleCqPatientDiscovery"));
+  // COMMONWELL
+  runOrScheduleCwPatientDiscovery({
+    patient: existingPatient,
+    facilityId,
+    requestId,
+    getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
+    rerunPdOnNewDemographics,
+    forceCommonwell,
+  }).catch(processAsyncError("runOrScheduleCwPatientDiscovery"));
 }

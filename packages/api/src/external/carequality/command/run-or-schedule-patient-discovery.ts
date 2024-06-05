@@ -3,6 +3,7 @@ import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { schedulePatientDiscovery } from "../../hie/schedule-patient-discovery";
 import { getCQData, discover } from "../patient";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 
 export async function runOrScheduleCqPatientDiscovery({
   patient,
@@ -38,12 +39,12 @@ export async function runOrScheduleCqPatientDiscovery({
       forceCarequality,
     });
   } else if (discoveryStatusCq !== "processing") {
-    await discover({
+    discover({
       patient: existingPatient,
       facilityId,
       requestId,
       forceEnabled: forceCarequality,
       rerunPdOnNewDemographics,
-    });
+    }).catch(processAsyncError("CQ discovery"));
   }
 }

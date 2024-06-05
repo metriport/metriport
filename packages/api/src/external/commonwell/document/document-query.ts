@@ -64,6 +64,7 @@ import {
   getContentTypeOrUnknown,
 } from "./shared";
 import { getDocumentReferenceContentTypeCounts } from "../../hie/get-docr-content-type-counts";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -153,12 +154,12 @@ export async function queryAndProcessDocuments({
       });
 
       if (hasNoCWStatus) {
-        await update({
+        update({
           patient: patientParam,
           facilityId: initiator.facilityId,
           getOrgIdExcludeList,
           requestId,
-        });
+        }).catch(processAsyncError("CW update"));
       }
 
       return;

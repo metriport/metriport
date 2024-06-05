@@ -1,7 +1,6 @@
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import { toIheGatewayPatientResource } from "@metriport/core/external/carequality/ihe-gateway-v2/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
@@ -63,14 +62,13 @@ export async function discover({
       },
     });
 
-    // Intentionally asynchronous
-    prepareAndTriggerPD({
+    await prepareAndTriggerPD({
       patient: createAugmentedPatient(updatedPatient),
       facilityId,
       enabledIHEGW,
       requestId,
       baseLogMessage,
-    }).catch(processAsyncError(context));
+    });
   }
 }
 

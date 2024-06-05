@@ -2,6 +2,7 @@ import { PatientUpdater } from "@metriport/core/command/patient-updater";
 import { Patient } from "@metriport/core/domain/patient";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getPatients } from "../../command/medical/patient/get-patient";
+import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import { update } from "./patient";
 import { errorToString } from "../../shared/log";
@@ -32,6 +33,7 @@ export class PatientUpdaterCommonWell extends PatientUpdater {
     const updatePatient = async (patient: Patient) => {
       try {
         const facilityId = getFacilityIdOrFail(patient);
+        await getFacilityOrFail({ cxId, id: facilityId });
         // WARNING This could overwrite the status for any currently running PD
         // TODO Internal #1832 (rework)
         await update({

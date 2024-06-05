@@ -21,6 +21,7 @@ import { checkLinkDemographicsAcrossHies } from "../hie/check-patient-link-demog
 import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
 import { getCQData, discover } from "./patient";
 import { getNewDemographics } from "./patient-demographics";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 
 dayjs.extend(duration);
 
@@ -174,11 +175,11 @@ export async function runNextPdOnNewDemographics({
       links: newDemographicsHere,
     });
   }
-  await discover({
+  discover({
     patient: updatedPatient,
     facilityId,
     rerunPdOnNewDemographics: false,
-  });
+  }).catch(processAsyncError("CQ discover"));
   analytics({
     distinctId: updatedPatient.cxId,
     event: EventTypes.rerunOnNewDemographics,
@@ -211,13 +212,13 @@ export async function runNexPdIfScheduled({
     patient: updatedPatient,
     source: MedicalDataSource.CAREQUALITY,
   });
-  await discover({
+  discover({
     patient: updatedPatient,
     facilityId: scheduledPdRequest.facilityId,
     requestId: scheduledPdRequest.requestId,
     forceEnabled: scheduledPdRequest.forceCarequality,
     rerunPdOnNewDemographics: scheduledPdRequest.rerunPdOnNewDemographics,
-  });
+  }).catch(processAsyncError("CQ discover"));
   analytics({
     distinctId: updatedPatient.cxId,
     event: EventTypes.runScheduledPatientDiscovery,
@@ -260,9 +261,9 @@ export async function queryDocsIfScheduled({
       convertProgress: { status: "failed", total: 0 },
     });
   } else {
-    await getDocumentsFromCQ({
+    getDocumentsFromCQ({
       patient,
       requestId: scheduledDocQueryRequestId,
-    });
+    }).catch(processAsyncError("CQ getDocumentsFromCQ"));
   }
 }

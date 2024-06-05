@@ -3,6 +3,7 @@ import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { schedulePatientDiscovery } from "../../hie/schedule-patient-discovery";
 import { getCWData, update } from "../patient";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 
 export async function runOrScheduleCwPatientDiscovery({
   patient,
@@ -41,13 +42,13 @@ export async function runOrScheduleCwPatientDiscovery({
       forceCommonwell,
     });
   } else if (statusCw !== "processing") {
-    await update({
+    update({
       patient: existingPatient,
       facilityId,
       requestId,
       getOrgIdExcludeList,
       forceCWUpdate: forceCommonwell,
       rerunPdOnNewDemographics,
-    });
+    }).catch(processAsyncError("CW create"));
   }
 }
