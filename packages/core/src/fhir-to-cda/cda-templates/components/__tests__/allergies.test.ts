@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+import _ from "lodash";
 import { Bundle, AllergyIntolerance } from "@medplum/fhirtypes";
 import path from "path";
 import { removeEmptyFields } from "../../clinical-document/clinical-document";
@@ -27,15 +28,8 @@ describe("buildAllergies", () => {
     bundle.entry?.push({ resource: { ...allergy, note: [] } });
 
     const filePath = path.join(__dirname, "./xmls/allergy-section-single-entry.xml");
-
-    const params = {
-      conditionId: allergyId,
-    };
-    // TODO: Remove the console.log after we fix the tsconfig to ignore "unused" vars,
-    // since `eval()` isn't explicitly using them
-    console.log("params", params);
-
-    const xmlContent = eval("`" + getXmlContentFromFile(filePath) + "`");
+    const xmlTemplate = _.template(getXmlContentFromFile(filePath));
+    const xmlContent = xmlTemplate({ allergyId });
     const res = buildAllergies(bundle);
     const cleanedJsonObj = removeEmptyFields(res);
     const xmlRes = xmlBuilder.build(cleanedJsonObj);
@@ -58,11 +52,8 @@ describe("buildAllergies", () => {
       allergyId,
       allergyId2,
     };
-    // TODO: Remove the console.log after we fix the tsconfig to ignore "unused" vars,
-    // since `eval()` isn't explicitly using them
-    console.log("params", params);
-
-    const xmlContent = eval("`" + getXmlContentFromFile(filePath) + "`");
+    const xmlTemplate = _.template(getXmlContentFromFile(filePath));
+    const xmlContent = xmlTemplate(params);
     const res = buildAllergies(bundle);
     const cleanedJsonObj = removeEmptyFields(res);
     const xmlRes = xmlBuilder.build(cleanedJsonObj);

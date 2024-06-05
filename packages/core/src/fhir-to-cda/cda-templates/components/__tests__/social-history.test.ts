@@ -7,6 +7,7 @@ import { buildSocialHistory } from "../social-history";
 import { makeObservation } from "./make-observation";
 import { createEmptyBundle, getXmlContentFromFile } from "./shared";
 import { observationMentalStatus } from "./social-history-examples";
+import _ from "lodash";
 
 let observationId: string;
 let bundle: Bundle;
@@ -53,11 +54,8 @@ describe("buildSocialHistory", () => {
     const params = {
       observationId,
     };
-    // TODO: Remove the console.log after we fix the tsconfig to ignore "unused" vars,
-    // since `eval()` isn't explicitly using them
-    console.log("params", params);
-
-    const xmlContent = eval("`" + getXmlContentFromFile(filePath) + "`");
+    const xmlTemplate = _.template(getXmlContentFromFile(filePath));
+    const xmlContent = xmlTemplate(params);
     const res = buildSocialHistory(bundle);
     const cleanedJsonObj = removeEmptyFields(res);
     const xmlRes = xmlBuilder.build(cleanedJsonObj);

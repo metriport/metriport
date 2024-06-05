@@ -1,6 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { Bundle, Encounter, Practitioner, Location } from "@medplum/fhirtypes";
 import path from "path";
+import _ from "lodash";
 import { removeEmptyFields } from "../../clinical-document/clinical-document";
 import { xmlBuilder } from "../../clinical-document/shared";
 import { buildEncounters } from "../encounters";
@@ -47,11 +48,8 @@ describe("buildEncounters", () => {
       encounterId,
       practitionerId,
     };
-    // TODO: Remove the console.log after we fix the tsconfig to ignore "unused" vars,
-    // since `eval()` isn't explicitly using them
-    console.log("params", params);
-
-    const xmlContent = eval("`" + getXmlContentFromFile(filePath) + "`");
+    const xmlTemplate = _.template(getXmlContentFromFile(filePath));
+    const xmlContent = xmlTemplate(params);
     const res = buildEncounters(bundle);
     const cleanedJsonObj = removeEmptyFields(res);
     const xmlRes = xmlBuilder.build(cleanedJsonObj);
@@ -90,11 +88,8 @@ describe("buildEncounters", () => {
       encounterId2,
       practitionerId2,
     };
-    // TODO: Remove the console.log after we fix the tsconfig to ignore "unused" vars,
-    // since `eval()` isn't explicitly using them
-    console.log("params", params);
-
-    const xmlContent = eval("`" + getXmlContentFromFile(filePath) + "`");
+    const xmlTemplate = _.template(getXmlContentFromFile(filePath));
+    const xmlContent = xmlTemplate(params);
     const res = buildEncounters(bundle);
     const cleanedJsonObj = removeEmptyFields(res);
     const xmlRes = xmlBuilder.build(cleanedJsonObj);

@@ -7,6 +7,7 @@ import { buildMentalStatus } from "../mental-status";
 import { makeObservation } from "./make-observation";
 import { observationMentalStatus } from "./mental-status-examples";
 import { createEmptyBundle, getXmlContentFromFile } from "./shared";
+import _ from "lodash";
 
 let observationId: string;
 let bundle: Bundle;
@@ -53,11 +54,8 @@ describe("buildMentalStatus", () => {
     const params = {
       observationId,
     };
-    // TODO: Remove the console.log after we fix the tsconfig to ignore "unused" vars,
-    // since `eval()` isn't explicitly using them
-    console.log("params", params);
-
-    const xmlContent = eval("`" + getXmlContentFromFile(filePath) + "`");
+    const xmlTemplate = _.template(getXmlContentFromFile(filePath));
+    const xmlContent = xmlTemplate(params);
     const res = buildMentalStatus(bundle);
     const cleanedJsonObj = removeEmptyFields(res);
     const xmlRes = xmlBuilder.build(cleanedJsonObj);

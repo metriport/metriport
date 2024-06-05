@@ -47,10 +47,10 @@
 					1 pill/day
 				</td>
 				<td>
-					${params.pastDateHumanReadable}
+					${pastDateHumanReadable}
 				</td>
 				<td>
-					${params.NOT_SPECIFIED}
+					${NOT_SPECIFIED}
 				</td>
 				<td>
 					heart, weakness
@@ -70,10 +70,10 @@
 					2 capsule/day
 				</td>
 				<td>
-					${params.pastDateHumanReadable2}
+					${pastDateHumanReadable2}
 				</td>
 				<td>
-					${params.endDateHumanReadable}
+					${endDateHumanReadable}
 				</td>
 				<td>
 					GERD, Migraine
@@ -86,12 +86,12 @@
 	<substanceAdministration classCode="SBADM" moodCode="INT">
 		<templateId root="2.16.840.1.113883.10.20.22.4.16" extension="2014-06-09">
 		</templateId>
-		<id root="placeholder-ORG-OID" extension="${params.medStmntId}">
+		<id root="placeholder-ORG-OID" extension="${medStmntId}">
 		</id>
 		<statusCode code="active">
 		</statusCode>
 		<effectiveTime xsi:type="IVL_TS">
-			<low value="${params.pastDateCda}">
+			<low value="${pastDateCda}">
 			</low>
 		</effectiveTime>
 		<consumable typeCode="CSM">
@@ -118,14 +118,14 @@
 	<substanceAdministration classCode="SBADM" moodCode="INT">
 		<templateId root="2.16.840.1.113883.10.20.22.4.16" extension="2014-06-09">
 		</templateId>
-		<id root="placeholder-ORG-OID" extension="${params.medStmntId2}">
+		<id root="placeholder-ORG-OID" extension="${medStmntId2}">
 		</id>
 		<statusCode code="completed">
 		</statusCode>
 		<effectiveTime xsi:type="IVL_TS">
-			<low value="${params.pastDateCda2}">
+			<low value="${pastDateCda2}">
 			</low>
-			<high value="${params.endDateXml}">
+			<high value="${endDateXml}">
 			</high>
 		</effectiveTime>
 		<consumable typeCode="CSM">
