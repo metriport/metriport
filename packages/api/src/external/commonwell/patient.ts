@@ -885,7 +885,7 @@ async function updatePersonAndLink({
         personId,
         patientRefLink,
         // safe to get the first one, just need to match one of the person's strong IDs
-        strongIds.length > 0 ? strongIds[0] : undefined
+        strongIds[0]
       );
       debug(`resp addPatientLink: `, JSON.stringify(respLink));
     }
