@@ -1,5 +1,6 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { ConsolidatedQuery } from "@metriport/api-sdk";
+import { capture } from "@metriport/core/util/notifications";
 import { QueryProgress } from "@metriport/core/domain/query-status";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
@@ -12,7 +13,7 @@ export type SetDocQueryProgress = {
 };
 
 /**
- * Update a patient's consolidated query progress.
+ * Update a single patient's consolidated query progress.
  * Keeps existing sibling properties when those are not provided
  * @returns the updated Patient
  */
@@ -56,6 +57,17 @@ function generateUpdateConsolidatedProgress(
   requestId: string
 ): ConsolidatedQuery[] {
   if (!consolidatedQueries) {
+    const msg = `No consolidated queries found`;
+    console.log(`${msg} requestId: ${requestId}`);
+    capture.message(msg, {
+      extra: {
+        context: "generateUpdateConsolidatedProgress",
+        requestId,
+        updatedProgress,
+      },
+      level: "warning",
+    });
+
     return [];
   }
 

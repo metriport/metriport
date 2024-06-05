@@ -147,7 +147,8 @@ function appendProgressToProcessingQueries(
 
 export function getCurrentConsolidatedProgress(
   consolidatedQueriesProgress: ConsolidatedQuery[] | undefined,
-  queryParams: GetConsolidatedFilters
+  queryParams: GetConsolidatedFilters,
+  progressStatus = "processing"
 ): ConsolidatedQuery | undefined {
   if (!consolidatedQueriesProgress) return undefined;
 
@@ -158,7 +159,7 @@ export function getCurrentConsolidatedProgress(
     const isSameDateFrom = progress.dateFrom === dateFrom;
     const isSameDateTo = progress.dateTo === dateTo;
     const isSameConversionType = progress.conversionType === conversionType;
-    const isProcessing = progress.status === "processing";
+    const isProcessing = progress.status === progressStatus;
 
     if (isSameResources && isSameDateFrom && isSameDateTo && isSameConversionType && isProcessing) {
       return progress;
@@ -245,7 +246,6 @@ export async function getConsolidated({
     const currentConsolidatedProgress = patient.data.consolidatedQueries?.find(
       q => q.requestId === requestId
     );
-    const startedAt = requestId ? currentConsolidatedProgress?.startedAt : undefined;
 
     const defaultAnalyticsProps = {
       distinctId: patient.cxId,
@@ -253,7 +253,7 @@ export async function getConsolidated({
       properties: {
         patientId: patient.id,
         conversionType: "bundle",
-        duration: elapsedTimeFromNow(startedAt),
+        duration: elapsedTimeFromNow(currentConsolidatedProgress?.startedAt),
         resourceCount: bundle.entry?.length,
       },
     };
@@ -276,7 +276,7 @@ export async function getConsolidated({
         ...defaultAnalyticsProps,
         properties: {
           ...defaultAnalyticsProps.properties,
-          duration: elapsedTimeFromNow(startedAt),
+          duration: elapsedTimeFromNow(currentConsolidatedProgress?.startedAt),
           conversionType,
         },
       });

@@ -1,4 +1,5 @@
 import { ConsolidatedQuery } from "@metriport/api-sdk";
+import { faker } from "@faker-js/faker";
 import dayjs from "dayjs";
 import * as uuidv7_file from "@metriport/core/util/uuid-v7";
 import { ISO_DATE } from "@metriport/shared/common/date";
@@ -47,14 +48,20 @@ export const documentQueryProgress: DocumentQueryProgress = {
 export function makeConsolidatedQueryProgress(
   params?: Partial<ConsolidatedQuery>
 ): ConsolidatedQuery {
+  const dateTo = dayjs(faker.date.recent()).format(ISO_DATE);
+
   return {
     requestId: params?.requestId ?? requestId,
     status: params?.status ?? "processing",
     startedAt: params?.startedAt ?? new Date(),
     resources: params?.resources ?? [],
     conversionType: params?.conversionType ?? "json",
-    dateFrom: params?.dateFrom ?? dayjs().subtract(10, "years").format(ISO_DATE),
-    dateTo: params?.dateTo ?? dayjs().add(1, "day").format(ISO_DATE),
+    dateFrom: dayjs(
+      faker.date.past({
+        refDate: dateTo,
+      })
+    ).format(ISO_DATE),
+    dateTo,
   };
 }
 

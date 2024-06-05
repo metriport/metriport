@@ -87,7 +87,7 @@ export const consolidationConversionType = ["html", "pdf", "json"] as const;
 export type ConsolidationConversionType = (typeof consolidationConversionType)[number];
 
 export const consolidatedFilterSchema = z.object({
-  resources: z.string(),
+  resources: z.string().optional(),
   dateFrom: z.date().optional(),
   dateTo: z.date().optional(),
 });
@@ -101,7 +101,7 @@ export const consolidatedCountSchema = z.object({
 
 export type ConsolidatedCountResponse = z.infer<typeof consolidatedCountSchema>;
 
-export const getConsolidatedFiltersSchema = z.object({
+export const getConsolidatedFiltersSchema = consolidatedFilterSchema.extend({
   resources: z.enum(resourceTypeForConsolidation).array().optional(),
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
@@ -112,7 +112,7 @@ export type GetConsolidatedFilters = z.infer<typeof getConsolidatedFiltersSchema
 
 export const consolidatedQuerySchema = getConsolidatedFiltersSchema.extend({
   requestId: z.string(),
-  startedAt: z.date().optional(),
+  startedAt: z.date(),
   status: queryStatusSchema,
 });
 
