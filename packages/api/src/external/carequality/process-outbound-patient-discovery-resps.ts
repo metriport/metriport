@@ -39,12 +39,17 @@ export async function processOutboundPatientDiscoveryResps({
   const patientIds = { id: patientId, cxId };
 
   try {
-    // BUG This prevents analytics from firing for valid cases of no links
+    const patient = await getPatientOrFail({ id: patientId, cxId });
+    // ANALYTICS BUG This prevents analytics from firing for valid cases of no results
     if (results.length === 0) {
       log(`No patient discovery results found.`);
+      const startedNewPd = await runNexPdIfScheduled({
+        patient,
+        requestId,
+      });
+      if (startedNewPd) return;
       await updatePatientDiscoveryStatus({ patient: patientIds, status: "completed" });
       await queryDocsIfScheduled({ patientIds });
-      return;
     }
 
     log(`Starting to handle patient discovery results`);
@@ -56,7 +61,6 @@ export async function processOutboundPatientDiscoveryResps({
       results
     );
 
-    const patient = await getPatientOrFail({ id: patientId, cxId });
     const discoveryParams = getCQData(patient.data.externalData)?.discoveryParams;
     if (!discoveryParams) {
       const msg = `Failed to find discovery params @ CQ`;
@@ -90,8 +94,8 @@ export async function processOutboundPatientDiscoveryResps({
       patient,
       requestId,
     });
-    if (!startedNewPd) await updatePatientDiscoveryStatus({ patient, status: "completed" });
-
+    if (startedNewPd) return;
+    await updatePatientDiscoveryStatus({ patient, status: "completed" });
     await queryDocsIfScheduled({ patientIds: patient });
     log("Completed.");
   } catch (error) {

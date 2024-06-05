@@ -225,8 +225,8 @@ async function registerAndLinkPatientInCW({
       patient,
       requestId,
     });
-    if (!startedNewPd) await updatePatientDiscoveryStatus({ patient, status: "completed" });
-
+    if (startedNewPd) return;
+    await updatePatientDiscoveryStatus({ patient, status: "completed" });
     await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList });
     debug("Completed.");
     return { commonwellPatientId, personId };
@@ -397,8 +397,8 @@ async function updatePatientAndLinksInCw({
       patient,
       requestId,
     });
-    if (!startedNewPd) await updatePatientDiscoveryStatus({ patient, status: "completed" });
-
+    if (startedNewPd) return;
+    await updatePatientDiscoveryStatus({ patient, status: "completed" });
     await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList });
     debug("Completed.");
   } catch (error) {
