@@ -150,9 +150,7 @@ export const updatePatientDiscoveryStatus = async ({
     const externalData = existingPatient.data.externalData ?? {};
 
     if (!params && !externalData.COMMONWELL?.discoveryParams) {
-      throw new MetriportError(
-        `Cannot update discovery status before assining discovery params @ CW`
-      );
+      throw new Error(`Cannot update discovery status before assigning discovery params @ CW`);
     }
 
     const updatePatientDiscoveryStatus = {
