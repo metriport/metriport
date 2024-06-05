@@ -1,0 +1,126 @@
+<templateId root="2.16.840.1.113883.10.20.22.2.22" extension="2015-08-01">
+</templateId>
+<code code="46240-8" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="History of encounters">
+</code>
+<title>
+	ENCOUNTERS
+</title>
+<text>
+	<table ID="encounters">
+		<thead>
+			<tr>
+				<th>
+					Reason for Visit
+				</th>
+				<th>
+					Encounter Type
+				</th>
+				<th>
+					Attending Provider
+				</th>
+				<th>
+					Location
+				</th>
+				<th>
+					Date
+				</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr ID="encounters1">
+				<td>
+					Viral sinusitis (disorder), Chronic pain (finding)
+				</td>
+				<td>
+					OV EST PT LEV 4
+				</td>
+				<td>
+					MD Zoidberg, John A.
+				</td>
+				<td>
+					Planet Express Medical Office - 1111 Sample Street, Suite 987, Springfield, CA 12123
+				</td>
+				<td>
+					07/23/2012 4:45 PM
+				</td>
+			</tr>
+		</tbody>
+	</table>
+</text>
+<entry>
+	<encounter classCode="ENC" moodCode="EVN">
+		<templateId root="2.16.840.1.113883.10.20.22.4.49" extension="2015-08-01">
+		</templateId>
+		<id root="placeholder-ORG-OID" extension="${encounterId}">
+		</id>
+		<statusCode code="completed">
+		</statusCode>
+		<effectiveTime>
+			<low value="20120723164500">
+			</low>
+			<high value="20120723170000">
+			</high>
+		</effectiveTime>
+		<performer>
+			<assignedEntity>
+				<id root="placeholder-ORG-OID" extension="${practitionerId}">
+				</id>
+				<addr use="WP">
+					<streetAddressLine>
+						1111 Sample Street, Suite 987
+					</streetAddressLine>
+					<city>
+						Springfield
+					</city>
+					<state>
+						CA
+					</state>
+					<postalCode>
+						12123
+					</postalCode>
+					<country>
+						USA
+					</country>
+				</addr>
+				<assignedPerson>
+					<name>
+						<given>
+							John A., MD
+						</given>
+						<family>
+							Zoidberg
+						</family>
+					</name>
+				</assignedPerson>
+			</assignedEntity>
+		</performer>
+		<entryRelationship typeCode="RSON">
+			<act classCode="ACT" moodCode="EVN">
+				<templateId root="2.16.840.1.113883.10.20.22.4.80">
+				</templateId>
+				<code code="29308-4" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Encounter Diagnosis">
+				</code>
+				<entryRelationship inversionInd="false" typeCode="SUBJ">
+					<observation classCode="OBS" moodCode="EVN">
+						<code code="282291009" codeSystem="2.16.840.1.113883.3.88.12.3221.7.2" codeSystemName="SNOMED CT" displayName="Diagnosis">
+							<translation code="29308-4" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Diagnosis">
+							</translation>
+						</code>
+						<value xsi:type="CD" code="444814009" codeSystem="2.16.840.1.113883.6.96" displayName="Viral sinusitis (disorder)">
+							<originalText>
+								<reference value="encounters1">
+								</reference>
+							</originalText>
+						</value>
+						<value xsi:type="CD" code="82423001" codeSystem="2.16.840.1.113883.6.96" displayName="Chronic pain (finding)">
+							<originalText>
+								<reference value="encounters1">
+								</reference>
+							</originalText>
+						</value>
+					</observation>
+				</entryRelationship>
+			</act>
+		</entryRelationship>
+	</encounter>
+</entry>

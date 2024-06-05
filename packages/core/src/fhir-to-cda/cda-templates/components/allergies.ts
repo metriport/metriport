@@ -98,10 +98,10 @@ function createTableRowFromAllergyIntolerance(
             "#text": allergy.resource.category?.[0] ?? NOT_SPECIFIED,
           },
           {
+            _ID: `${referenceId}-reaction`,
             "#text": manifestation,
           },
           {
-            _ID: `${referenceId}-reaction`,
             "#text":
               formatDateToHumanReadableFormat(allergy.resource.reaction?.[0]?.onset) ??
               NOT_SPECIFIED,

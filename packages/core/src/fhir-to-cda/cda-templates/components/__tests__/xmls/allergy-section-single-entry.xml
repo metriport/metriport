@@ -1,0 +1,103 @@
+<templateId root="2.16.840.1.113883.10.20.22.2.6.1" extension="2015-08-01">
+</templateId>
+<code code="48765-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Allergies and Adverse Reactions">
+</code>
+<title>
+	ALLERGIES, ADVERSE REACTIONS, ALERTS
+</title>
+<text>
+	<table ID="allergies">
+		<thead>
+			<tr>
+				<th>
+					Substance
+				</th>
+				<th>
+					Category
+				</th>
+				<th>
+					Reaction
+				</th>
+				<th>
+					Date of Occurrence
+				</th>
+				<th>
+					Date of First Onset
+				</th>
+				<th>
+					Comments
+				</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr ID="allergies1">
+				<td>
+					Penicillin G
+				</td>
+				<td>
+					medication
+				</td>
+				<td ID="allergies1-reaction">
+					Hives
+				</td>
+				<td>
+					02/26/2008 8:05 AM
+				</td>
+				<td>
+					05/01/1998 12:00 AM
+				</td>
+				<td>
+					Not Specified
+				</td>
+			</tr>
+		</tbody>
+	</table>
+</text>
+<entry>
+	<act classCode="ACT" moodCode="EVN">
+		<templateId root="2.16.840.1.113883.10.20.22.4.30" extension="2014-06-09">
+		</templateId>
+		<id root="placeholder-ORG-OID" extension="${allergyId}">
+		</id>
+		<code code="CONC" codeSystem="2.16.840.1.113883.5.6" displayName="Concern">
+		</code>
+		<statusCode code="active">
+		</statusCode>
+		<entryRelationship typeCode="SUBJ">
+			<observation classCode="OBS" moodCode="EVN">
+				<templateId root="2.16.840.1.113883.10.20.22.4.7" extension="2014-06-09">
+				</templateId>
+				<id root="placeholder-ORG-OID" extension="${allergyId}">
+				</id>
+				<code code="7980" codeSystem="2.16.840.1.113883.6.88" displayName="Penicillin G">
+				</code>
+				<value xsi:type="CD" code="7980" codeSystem="2.16.840.1.113883.6.88" displayName="Penicillin G">
+					<originalText>
+						<reference value="allergies1">
+						</reference>
+					</originalText>
+				</value>
+				<entryRelationship typeCode="MFST" inversionInd="true">
+					<observation classCode="OBS" moodCode="EVN">
+						<templateId root="2.16.840.1.113883.10.20.22.4.9" extension="2014-06-09">
+						</templateId>
+						<id nullFlavor="NI">
+						</id>
+						<code code="7980" codeSystem="2.16.840.1.113883.6.88" displayName="Penicillin G">
+						</code>
+						<text>
+							<reference value="allergies1-reaction">
+							</reference>
+						</text>
+						<value xsi:type="CD" code="7980" codeSystem="2.16.840.1.113883.6.88" displayName="Penicillin G">
+							<originalText>
+								<reference value="allergies1-reaction">
+								</reference>
+							</originalText>
+						</value>
+					</observation>
+				</entryRelationship>
+			</observation>
+		</entryRelationship>
+	</act>
+</entry>

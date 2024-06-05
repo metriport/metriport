@@ -23,19 +23,10 @@ beforeEach(() => {
 });
 
 describe("buildAllergies", () => {
-  it("correctly includes the text note into the Problems table", () => {
-    // bundle.entry?.push({ resource: allergy });
-    // const res = buildAllergies(bundle);
-    // const cleanedJsonObj = removeEmptyFields(res);
-    // const xmlRes = xmlBuilder.build(cleanedJsonObj);
-    // /* eslint-disable @typescript-eslint/no-non-null-assertion */
-    // expect(xmlRes).toContain(`<td>${conditionNicotine.note![0]?.text}</td>`);
-  });
-
   it("correctly maps a single AllergyIntolerance", () => {
     bundle.entry?.push({ resource: { ...allergy, note: [] } });
 
-    const filePath = path.join(__dirname, "./xmls/problems-section-single-entry.xml");
+    const filePath = path.join(__dirname, "./xmls/allergy-section-single-entry.xml");
 
     const params = {
       conditionId: allergyId,
@@ -61,9 +52,8 @@ describe("buildAllergies", () => {
     });
 
     bundle.entry?.push({ resource: allergy2 });
-    const filePath = path.join(__dirname, "./xmls/problems-section-two-entries.xml");
+    const filePath = path.join(__dirname, "./xmls/allergy-section-two-entries.xml");
 
-    /* eslint-disable @typescript-eslint/no-unused-vars */
     const params = {
       allergyId,
       allergyId2,
