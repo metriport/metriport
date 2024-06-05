@@ -18,8 +18,9 @@ import { createAndSignBulkDRRequests } from "@metriport/core/external/carequalit
 import { sendSignedDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dr-requests";
 import {
   processDrResponse,
-  setS3UtilsInstance,
+  setS3UtilsInstanceForStoringDrResponse,
 } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
+import { setS3UtilsInstanceForStoringIheResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/monitor/store";
 import { Config } from "@metriport/core/util/config";
 import { setRejectUnauthorized } from "@metriport/core/external/carequality/ihe-gateway-v2/saml/saml-client";
 import { MockS3Utils } from "./mock-s3";
@@ -31,6 +32,9 @@ the db.
 */
 
 setRejectUnauthorized(false);
+const s3utils = new MockS3Utils(Config.getAWSRegion());
+setS3UtilsInstanceForStoringDrResponse(s3utils);
+setS3UtilsInstanceForStoringIheResponse(s3utils);
 
 const samlAttributes = {
   subjectId: "System User",
@@ -300,8 +304,6 @@ async function queryDR(
       cxId: drRequest.cxId,
     });
 
-    const s3utils = new MockS3Utils(Config.getAWSRegion());
-    setS3UtilsInstance(s3utils);
     return processDrResponse({
       drResponse: response[0],
     });

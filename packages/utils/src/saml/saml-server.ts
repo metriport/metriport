@@ -16,8 +16,9 @@ import { processXCPDResponse } from "@metriport/core/external/carequality/ihe-ga
 import { processDQResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dq-response";
 import {
   processDrResponse,
-  setS3UtilsInstance,
+  setS3UtilsInstanceForStoringDrResponse,
 } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
+import { setS3UtilsInstanceForStoringIheResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/monitor/store";
 import { setRejectUnauthorized } from "@metriport/core/external/carequality/ihe-gateway-v2/saml/saml-client";
 import { Config } from "@metriport/core/util/config";
 import { MockS3Utils } from "./mock-s3";
@@ -39,6 +40,9 @@ const app = express();
 const port = 8043;
 app.use(json());
 setRejectUnauthorized(false);
+const s3utils = new MockS3Utils(Config.getAWSRegion());
+setS3UtilsInstanceForStoringDrResponse(s3utils);
+setS3UtilsInstanceForStoringIheResponse(s3utils);
 
 const samlCertsAndKeys = {
   publicCert: getEnvVarOrFail(`CQ_ORG_CERTIFICATE_${env}`),
@@ -128,8 +132,6 @@ app.post("/xcadr", async (req: Request, res: Response) => {
       cxId: uuidv4(),
     });
 
-    const s3utils = new MockS3Utils(Config.getAWSRegion());
-    setS3UtilsInstance(s3utils);
     const results = await Promise.all(
       response.map(async response => {
         return processDrResponse({
