@@ -17,8 +17,6 @@ let patientModel: PatientModel;
 let patientModel_findOne: jest.SpyInstance;
 let cwUpdate_mock: jest.SpyInstance;
 let schedulePatientDiscovery_mock: jest.SpyInstance;
-/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-let directoryModel_findAll: jest.SpyInstance;
 
 beforeEach(() => {
   mockStartTransaction();
@@ -31,9 +29,7 @@ beforeEach(() => {
     .mockImplementation(async () => {
       return;
     });
-  directoryModel_findAll = jest
-    .spyOn(CQDirectoryEntryModel, "findAll")
-    .mockImplementation(async () => []);
+  jest.spyOn(CQDirectoryEntryModel, "findAll").mockImplementation(async () => []);
 });
 
 afterEach(() => {

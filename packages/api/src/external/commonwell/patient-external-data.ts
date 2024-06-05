@@ -4,6 +4,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { Patient } from "@metriport/core/domain/patient";
+import { DiscoveryParams } from "@metriport/core/domain/patient-discovery";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { LinkStatus } from "../patient-link";
@@ -132,12 +133,7 @@ export const updatePatientDiscoveryStatus = async ({
 }: {
   patient: Pick<Patient, "id" | "cxId">;
   status: LinkStatus;
-  params?: {
-    requestId: string;
-    facilityId: string;
-    startedAt: Date;
-    rerunPdOnNewDemographics: boolean;
-  };
+  params?: DiscoveryParams;
 }): Promise<Patient> => {
   const patientFilter = {
     id: patient.id,
@@ -152,6 +148,12 @@ export const updatePatientDiscoveryStatus = async ({
     });
 
     const externalData = existingPatient.data.externalData ?? {};
+
+    if (!params && !externalData.COMMONWELL?.discoveryParams) {
+      throw new MetriportError(
+        `Cannot update discovery status before assining discovery params @ CW`
+      );
+    }
 
     const updatePatientDiscoveryStatus = {
       ...externalData,

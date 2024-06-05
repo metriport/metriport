@@ -16,17 +16,13 @@ let patientModel: PatientModel;
 
 let patientModel_findOne: jest.SpyInstance;
 let patientModel_update: jest.SpyInstance;
-/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-let directoryModel_findAll: jest.SpyInstance;
 
 beforeEach(() => {
   mockStartTransaction();
   patientModel = patient as unknown as PatientModel;
   patientModel_findOne = jest.spyOn(PatientModel, "findOne").mockResolvedValue(patientModel);
   patientModel_update = jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
-  directoryModel_findAll = jest
-    .spyOn(CQDirectoryEntryModel, "findAll")
-    .mockImplementation(async () => []);
+  jest.spyOn(CQDirectoryEntryModel, "findAll").mockImplementation(async () => []);
 });
 
 afterEach(() => {

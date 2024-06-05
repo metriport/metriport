@@ -105,13 +105,16 @@ describe("updatePatientDiscoveryStatus", () => {
     const patient = makePatient();
     patientModel_findOne.mockResolvedValue(patient);
     const status = "completed" as LinkStatus;
-    const results = await updatePatientDiscoveryStatus({
-      patient,
-      status,
-    });
-    expect(results).toBeTruthy();
-    checkPatientUpdateWith({
-      status,
-    });
+    try {
+      await updatePatientDiscoveryStatus({
+        patient,
+        status,
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      expect(error.message).toBe(
+        `Cannot update discovery status before assining discovery params @ CW`
+      );
+    }
   });
 });

@@ -1,3 +1,4 @@
+import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { Patient } from "@metriport/core/domain/patient";
 import { DiscoveryParams } from "@metriport/core/domain/patient-discovery";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
@@ -38,6 +39,12 @@ export async function updatePatientDiscoveryStatus({
     });
 
     const externalData = existingPatient.data.externalData ?? {};
+
+    if (!params && !externalData.CAREQUALITY?.discoveryParams) {
+      throw new MetriportError(
+        `Cannot update discovery status before assining discovery params @ CQ`
+      );
+    }
 
     const updatePatientDiscoveryStatus = {
       ...externalData,

@@ -121,7 +121,7 @@ async function createCQLinks(
   const { id, cxId } = patient;
   const cqLinks = buildCQLinks(pdResults);
 
-  if (cqLinks.length) await createOrUpdateCQPatientData({ id, cxId, cqLinks });
+  if (cqLinks.length > 0) await createOrUpdateCQPatientData({ id, cxId, cqLinks });
 
   return cqLinks;
 }

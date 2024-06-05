@@ -489,7 +489,7 @@ async function createCwLinks(
 ): Promise<CwLink[]> {
   const { id, cxId } = patient;
 
-  if (cwLinks.length) await createOrUpdateCwPatientData({ id, cxId, cwLinks });
+  if (cwLinks.length > 0) await createOrUpdateCwPatientData({ id, cxId, cwLinks });
 
   return cwLinks;
 }
