@@ -1,5 +1,5 @@
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
-import { toFHIR } from "@metriport/core/external/fhir/patient/index";
+import { toIheGatewayPatientResource } from "@metriport/core/external/carequality/ihe-gateway-v2/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
@@ -68,16 +68,20 @@ async function prepareAndTriggerPD(
       `${baseLogMessage}, requestIdV1: ${pdRequestGatewayV1.id}, requestIdV2: ${pdRequestGatewayV2.id}`
     );
 
-    log(`Kicking off patient discovery Gateway V1`);
-    await enabledIHEGW.startPatientDiscovery(pdRequestGatewayV1);
+    if (numGatewaysV1 > 0) {
+      log(`Kicking off patient discovery Gateway V1`);
+      await enabledIHEGW.startPatientDiscovery(pdRequestGatewayV1);
+    }
 
-    log(`Kicking off patient discovery Gateway V2`);
-    const iheGatewayV2 = makeIHEGatewayV2();
-    await iheGatewayV2.startPatientDiscovery({
-      pdRequestGatewayV2,
-      patientId: patient.id,
-      cxId: patient.cxId,
-    });
+    if (numGatewaysV2 > 0) {
+      log(`Kicking off patient discovery Gateway V2`);
+      const iheGatewayV2 = makeIHEGatewayV2();
+      await iheGatewayV2.startPatientDiscovery({
+        pdRequestGatewayV2,
+        patientId: patient.id,
+        cxId: patient.cxId,
+      });
+    }
 
     // only poll for the Gateway V1 request
     await resultPoller.pollOutboundPatientDiscoveryResults({
@@ -109,7 +113,7 @@ async function prepareForPatientDiscovery(
   pdRequestGatewayV1: OutboundPatientDiscoveryReq;
   pdRequestGatewayV2: OutboundPatientDiscoveryReq;
 }> {
-  const fhirPatient = toFHIR(patient);
+  const patientResource = toIheGatewayPatientResource(patient);
 
   const [{ v1Gateways, v2Gateways }, initiator] = await Promise.all([
     gatherXCPDGateways(patient),
@@ -117,7 +121,7 @@ async function prepareForPatientDiscovery(
   ]);
 
   const pdRequestGatewayV1 = createOutboundPatientDiscoveryReq({
-    patient: fhirPatient,
+    patientResource,
     cxId: patient.cxId,
     patientId: patient.id,
     xcpdGateways: v1Gateways,
@@ -126,7 +130,7 @@ async function prepareForPatientDiscovery(
   });
 
   const pdRequestGatewayV2 = createOutboundPatientDiscoveryReq({
-    patient: fhirPatient,
+    patientResource,
     cxId: patient.cxId,
     patientId: patient.id,
     xcpdGateways: v2Gateways,

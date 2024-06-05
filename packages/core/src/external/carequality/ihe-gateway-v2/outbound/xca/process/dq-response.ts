@@ -16,7 +16,6 @@ import {
 } from "../../../../shared";
 import { successStatus, partialSuccessStatus } from "./constants";
 import { capture } from "../../../../../../util/notifications";
-import { requiresRequestHomeCommunityId } from "../../../gateways";
 
 type Identifier = {
   _identificationScheme: string;
@@ -40,10 +39,6 @@ type Slot = {
   };
 };
 
-function getRequestHomeCommunityId(request: OutboundDocumentQueryReq): string {
-  return request.gateway.homeCommunityId;
-}
-
 function getResponseHomeCommunityId(
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
   extrinsicObject: any
@@ -56,9 +51,6 @@ function getHomeCommunityIdForDr(
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
   extrinsicObject: any
 ): string {
-  if (requiresRequestHomeCommunityId(request.gateway)) {
-    return getRequestHomeCommunityId(request);
-  }
   return getResponseHomeCommunityId(extrinsicObject);
 }
 

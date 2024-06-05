@@ -56,7 +56,7 @@ async function queryDatabaseForDQs() {
     FROM document_query_result dqr
     WHERE dqr.status = 'success'
     ORDER BY RANDOM()
-    LIMIT 100;
+    LIMIT 5;
   `;
 
   try {

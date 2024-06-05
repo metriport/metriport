@@ -31,11 +31,13 @@
     "completed"
   {{else if (eq normalizedCode "active")}}
     "completed"
-  {{else if (eq normalizedCode "abandonded")}}
+  {{else if (eq normalizedCode "abandoned")}}
     "not-done"
   {{else if (eq normalizedCode "cancelled")}}
     "not-done"
   {{else if (eq normalizedCode "held")}}
+    "not-done"
+  {{else if (eq normalizedCode "not administered")}}
     "not-done"
   {{else if (eq normalizedCode "aborted")}}
     "not-done"

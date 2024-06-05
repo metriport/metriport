@@ -1,3 +1,4 @@
+export { toArray } from "./common/array";
 export { optionalDateSchema } from "./common/date";
 export { getDomainFromEmailWithoutTld } from "./common/email";
 export * from "./common/env-var";
