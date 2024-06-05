@@ -22,13 +22,7 @@ import {
 import { successStatus, partialSuccessStatus } from "./constants";
 import { capture } from "../../../../../../util/notifications";
 import { toArray } from "../../..//utils";
-import {
-  iti38Schema,
-  Slot,
-  ExternalIdentifier,
-  Classification,
-  ExtrinsicObject,
-} from "../../schema";
+import { iti38Schema, Slot, ExternalIdentifier, Classification, ExtrinsicObject } from "./schema";
 
 function getResponseHomeCommunityId(extrinsicObject: ExtrinsicObject): string {
   return stripUrnPrefix(extrinsicObject?._home);
@@ -39,23 +33,13 @@ function getHomeCommunityIdForDr(extrinsicObject: ExtrinsicObject): string {
 }
 
 function parseDocumentReference(extrinsicObject: ExtrinsicObject): DocumentReference | undefined {
-  const slots = Array.isArray(extrinsicObject?.Slot)
-    ? extrinsicObject?.Slot
-    : [extrinsicObject?.Slot];
-  const externalIdentifiers = Array.isArray(extrinsicObject?.ExternalIdentifier)
-    ? extrinsicObject?.ExternalIdentifier
-    : [extrinsicObject?.ExternalIdentifier];
-  const classifications = Array.isArray(extrinsicObject?.Classification)
-    ? extrinsicObject?.Classification
-    : [extrinsicObject?.Classification];
+  const slots = toArray(extrinsicObject?.Slot);
+  const externalIdentifiers = toArray(extrinsicObject?.ExternalIdentifier);
+  const classifications = toArray(extrinsicObject?.Classification);
 
   const findSlotValue = (name: string): string | undefined => {
     const slot = slots.find((slot: Slot) => slot._name === name);
-    return slot
-      ? Array.isArray(slot.ValueList.Value)
-        ? slot.ValueList.Value.map(String).join(", ")
-        : String(slot.ValueList.Value)
-      : undefined;
+    return slot ? String(slot.ValueList.Value) : undefined;
   };
 
   const findExternalIdentifierValue = (scheme: string): string | undefined => {
@@ -74,17 +58,11 @@ function parseDocumentReference(extrinsicObject: ExtrinsicObject): DocumentRefer
     );
     if (!classification) return undefined;
 
-    const slotArray = Array.isArray(classification.Slot)
-      ? classification.Slot
-      : [classification.Slot];
+    const slotArray = toArray(classification.Slot);
     const classificationSlots = slotArray.flatMap((slot: Slot) => slot ?? []);
 
     const slot = classificationSlots.find((s: Slot) => s._name === slotName);
-    return slot
-      ? Array.isArray(slot.ValueList.Value)
-        ? slot.ValueList.Value.map(String).join(", ")
-        : String(slot.ValueList.Value)
-      : undefined;
+    return slot ? String(slot.ValueList.Value) : undefined;
   };
 
   const findClassificationName = (scheme: string): string | undefined => {
@@ -179,8 +157,7 @@ export function processDQResponse({
 
     const status = iti38Response.Envelope.Body.AdhocQueryResponse._status.split(":").pop();
     const registryObjectList = iti38Response.Envelope.Body.AdhocQueryResponse.RegistryObjectList;
-    const extrinsicObjects =
-      typeof registryObjectList === "string" ? undefined : registryObjectList?.ExtrinsicObject;
+    const extrinsicObjects = registryObjectList ? registryObjectList.ExtrinsicObject : undefined;
     const registryErrorList = iti38Response.Envelope.Body.AdhocQueryResponse?.RegistryErrorList;
 
     if ((status === successStatus || status === partialSuccessStatus) && extrinsicObjects) {

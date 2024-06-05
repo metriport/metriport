@@ -5,7 +5,8 @@ import {
   OutboundPatientDiscoveryRespFaultSchema,
   OperationOutcome,
 } from "@metriport/ihe-gateway-sdk";
-import { PatientRegistryProfile } from "../../schema";
+import { PatientRegistryProfile } from "./schema";
+import { extractText } from "../../../utils";
 
 export function handleHTTPErrorResponse({
   httpError,
@@ -56,12 +57,9 @@ export function handlePatientErrorResponse({
     severity: "error",
     code: acknowledgementDetail?.code?._code ?? "UK",
     details: {
-      text:
-        typeof acknowledgementDetail?.text === "object" && "_text" in acknowledgementDetail.text
-          ? acknowledgementDetail.text._text ?? "unknown"
-          : typeof acknowledgementDetail?.text === "string"
-          ? acknowledgementDetail.text
-          : acknowledgementDetail?.location ?? "unknown",
+      text: acknowledgementDetail?.text
+        ? extractText(acknowledgementDetail.text)
+        : acknowledgementDetail?.location ?? "unknown",
     },
   };
   const operationOutcome: OperationOutcome = {

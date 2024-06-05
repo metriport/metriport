@@ -2,7 +2,6 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { v4 as uuidv4 } from "uuid";
-import fs from "fs";
 import express from "express";
 import { json, Request, Response } from "express";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
@@ -35,7 +34,7 @@ import { MockS3Utils } from "./mock-s3";
  * Metriport-IHE GW / XML + SAML Constructor - Postman collection
  */
 
-const env = "PRODUCTION";
+const env = "STAGING";
 const app = express();
 const port = 8043;
 app.use(json());
@@ -61,7 +60,6 @@ app.post("/xcpd", async (req: Request, res: Response) => {
       patientId: uuidv4(),
       cxId: uuidv4(),
     });
-    fs.writeFileSync("../../scratch/xcpd/xcpd-response.xml", response[0].response);
     const results = response.map(response => {
       return processXCPDResponse({
         xcpdResponse: response,

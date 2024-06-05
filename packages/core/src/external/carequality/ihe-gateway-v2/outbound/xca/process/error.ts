@@ -9,7 +9,8 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import { capture } from "../../../../../../util/notifications";
 import { out } from "../../../../../../util/log";
-import { RegistryErrorList, RegistryError } from "../../schema";
+import { RegistryErrorList, RegistryError } from "./schema";
+import { toArray } from "../../..//utils";
 
 const { log } = out("XCA Error Handling");
 
@@ -24,10 +25,7 @@ export function processRegistryErrorList(
   };
 
   try {
-    const registryErrors = Array.isArray(registryErrorList?.RegistryError)
-      ? registryErrorList.RegistryError
-      : [registryErrorList?.RegistryError];
-
+    const registryErrors = toArray(registryErrorList?.RegistryError);
     registryErrors.forEach((entry: RegistryError) => {
       const issue = {
         severity: entry?._severity?.toString().toLowerCase().split(":").pop() ?? "error",

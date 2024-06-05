@@ -21,7 +21,7 @@ import {
   iti55Schema,
   Iti55Response,
   PatientRegistryProfile,
-} from "../../schema";
+} from "./schema";
 import {
   handleHTTPErrorResponse,
   handleSchemaErrorResponse,

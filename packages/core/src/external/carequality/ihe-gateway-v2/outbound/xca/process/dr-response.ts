@@ -24,7 +24,7 @@ import { MetriportError } from "../../../../../../util/error/metriport-error";
 import { getCidReference } from "../mtom/cid";
 import { out } from "../../../../../../util/log";
 import { toArray } from "../../..//utils";
-import { iti39Schema, DocumentResponse } from "../../schema";
+import { iti39Schema, DocumentResponse } from "./schema";
 
 const { log } = out("DR Processing");
 
@@ -115,7 +115,7 @@ async function parseDocumentReference({
 
   const msg = "Downloaded a document with mime type";
   log(
-    `${msg}: ${mimeType} for patient: ${outboundRequest.patientId} andrequest: ${outboundRequest.id}`
+    `${msg}: ${mimeType} for patient: ${outboundRequest.patientId} and request: ${outboundRequest.id}`
   );
 
   return {
@@ -206,7 +206,6 @@ export async function processDrResponse({
   const jsonObj = parser.parse(soapData.toString());
 
   try {
-    console.log("jsonObj", jsonObj);
     const iti39Response = iti39Schema.parse(jsonObj);
 
     const status = iti39Response.Envelope.Body.RetrieveDocumentSetResponse.RegistryResponse._status
@@ -237,7 +236,6 @@ export async function processDrResponse({
       });
     }
   } catch (error) {
-    console.log("error", error);
     return handleSchemaErrorResponse({
       outboundRequest,
       gateway,
