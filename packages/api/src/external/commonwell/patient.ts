@@ -15,13 +15,13 @@ import { analytics, EventTypes } from "@metriport/core/external/analytics/postho
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { errorToString } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
-import { errorToString } from "@metriport/shared/common/error";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import MetriportError from "../../errors/metriport-error";
 import { Config } from "../../shared/config";
-import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import {
   isCommonwellEnabled,
@@ -172,8 +172,8 @@ export async function registerAndLinkPatientInCW(
   requestId?: string,
   initiator?: HieInitiator
 ): Promise<{ commonwellPatientId: string; personId: string } | undefined> {
+  const { log } = out(`registerAndLinkPatientInCW - patientId ${patient.id}`);
   let commonWell: CommonWellAPI | undefined;
-
   try {
     const _initiator = initiator ?? (await getCwInitiator(patient, facilityId));
     const initiatorName = _initiator.name;
@@ -238,18 +238,19 @@ export async function registerAndLinkPatientInCW(
       cxId: patient.cxId,
       status: "failed",
     });
-
     const msg = `Failure while creating patient @ CW`;
-    console.error(`${msg}. Patient ID: ${patient.id}. Cause: ${error}`);
-    capture.message(msg, {
+    const cwRef = commonWell?.lastReferenceHeader;
+    log(
+      `${msg}. Patient ID: ${patient.id}. Cause: ${errorToString(error)}. CW Reference: ${cwRef}`
+    );
+    capture.error(msg, {
       extra: {
         facilityId,
         patientId: patient.id,
-        cwReference: commonWell?.lastReferenceHeader,
+        cwReference: cwRef,
         context: createContext,
         error,
       },
-      level: "error",
     });
     throw error;
   }
@@ -348,12 +349,13 @@ async function updatePatientAndLinksInCw(
       } catch (err: any) {
         if (err.response?.status !== 404) throw err;
         const subject = "Got 404 when trying to update person @ CW, trying to find/create it";
-        log(`${subject} - CW Person ID ${personId}`);
+        const cwRef = commonWell.lastReferenceHeader;
+        log(`${subject} - CW Person ID ${personId}. CW Reference: ${cwRef}`);
         capture.message(subject, {
           extra: {
             commonwellPatientId,
             personId,
-            cwReference: commonWell.lastReferenceHeader,
+            cwReference: cwRef,
             context: updateContext,
           },
         });
@@ -443,12 +445,14 @@ async function updatePatientAndLinksInCw(
       cxId: patient.cxId,
       status: "failed",
     });
-    console.error(`Failed to update patient ${patient.id} @ CW: ${errorToString(error)}`);
-    capture.error(error, {
+    const msg = `Failed to update patient @ CW`;
+    const cwRef = commonWell?.lastReferenceHeader;
+    log(`${msg} ${patient.id}:. Cause: ${errorToString(error)}. CW Reference: ${cwRef}`);
+    capture.error(msg, {
       extra: {
         facilityId,
         patientId: patient.id,
-        cwReference: commonWell?.lastReferenceHeader,
+        cwReference: cwRef,
         context: updateContext,
         error,
       },
@@ -501,6 +505,7 @@ async function validateCWEnabled({
     capture.error(msg, {
       extra: {
         cxId,
+        patientId: patient.id,
         error,
       },
     });
@@ -533,10 +538,9 @@ async function queryDocsIfScheduled(
 }
 
 export async function remove(patient: Patient, facilityId: string): Promise<void> {
+  const { log, debug } = out(`CW delete - M patientId ${patient.id}`);
   let commonWell: CommonWellAPI | undefined;
   try {
-    const { log, debug } = out(`CW delete - M patientId ${patient.id}`);
-
     const isCwEnabledForCx = await isCWEnabledForCx(patient.cxId);
     if (!isCwEnabledForCx) {
       log(`CW disabled for cx ${patient.cxId}, skipping...`);
@@ -553,17 +557,22 @@ export async function remove(patient: Patient, facilityId: string): Promise<void
 
     const resp = await commonWell.deletePatient(queryMeta, commonwellPatientId);
     debug(`resp deletePatient: `, JSON.stringify(resp));
-  } catch (err) {
-    console.error(`Failed to delete patient ${patient.id} @ CW: `, err);
-    capture.error(err, {
+  } catch (error) {
+    const msg = `Failed to delete patient @ CW`;
+    const cwRef = commonWell?.lastReferenceHeader;
+    log(
+      `${msg}. Patient ID: ${patient.id}. Cause: ${errorToString(error)}. CW Reference: ${cwRef}`
+    );
+    capture.error(msg, {
       extra: {
         facilityId,
         patientId: patient.id,
-        cwReference: commonWell?.lastReferenceHeader,
+        cwReference: cwRef,
         context: deleteContext,
+        error,
       },
     });
-    throw err;
+    throw error;
   }
 }
 
