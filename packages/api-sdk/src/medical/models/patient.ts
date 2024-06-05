@@ -26,6 +26,7 @@ export const queryStatusSchema = z.enum(["processing", "completed", "failed"]);
 export type QueryStatus = z.infer<typeof queryStatusSchema>;
 
 export type GetConsolidatedQueryProgressResponse = {
+  status: QueryStatus;
   queries: ConsolidatedQuery[] | null;
   message?: string;
 };

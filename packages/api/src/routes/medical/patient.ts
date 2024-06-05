@@ -16,6 +16,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { z } from "zod";
+import { orderBy } from "lodash";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
 import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/consolidated-create";
 import {
@@ -274,7 +275,7 @@ router.get(
  *
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient whose data is to be returned.
- * @return array of statuses for querying the Patient's consolidated data.
+ * @returns all consolidated queries for the patient that have been triggered.
  */
 router.get(
   "/:id/consolidated/query",
@@ -284,8 +285,11 @@ router.get(
     const patientId = getFrom("params").orFail("id", req);
     const patient = await getPatientOrFail({ cxId, id: patientId });
     const consolidatedQueries = patient.data.consolidatedQueries ?? null;
+    const mostRecentQuery = orderBy(consolidatedQueries, "startedAt", "desc")[0];
 
     const respPayload: GetConsolidatedQueryProgressResponse = {
+      /** @deprecated status should no longer be used. Refer to queries in the consolidatedQueries array instead. */
+      status: mostRecentQuery?.status ?? null,
       queries: consolidatedQueries ?? null,
       message:
         "Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook",

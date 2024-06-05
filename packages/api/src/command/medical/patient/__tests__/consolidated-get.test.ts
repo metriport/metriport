@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { Observation } from "@medplum/fhirtypes";
 import { HapiFhirClient } from "@metriport/core/external/fhir/api/api-hapi";
-import { resourcesSearchableByPatient, ConsolidatedQuery } from "@metriport/api-sdk";
+import { resourcesSearchableByPatient } from "@metriport/api-sdk";
 import { ISO_DATE } from "@metriport/shared/common/date";
 import dayjs from "dayjs";
 import { v4 as uuidv4 } from "uuid";
@@ -16,22 +16,22 @@ import * as getPatient from "../get-patient";
 
 let getPatientOrFailMock: jest.SpyInstance;
 let fhir_searchResourcePages: jest.SpyInstance;
-let defaultConsolidatedProgress: ConsolidatedQuery;
+const defaultConsolidatedProgress = makeConsolidatedQueryProgress({
+  requestId: requestId,
+  status: "processing",
+  startedAt: new Date(),
+  resources: [],
+  conversionType: "json",
+  dateFrom: dayjs().subtract(10, "years").format(ISO_DATE),
+  dateTo: dayjs().add(1, "day").format(ISO_DATE),
+});
+
 jest.mock("../../../../models/medical/patient");
 
 beforeEach(() => {
   jest.restoreAllMocks();
   getPatientOrFailMock = jest.spyOn(getPatient, "getPatientOrFail");
   fhir_searchResourcePages = jest.spyOn(HapiFhirClient.prototype, "searchResourcePages");
-  defaultConsolidatedProgress = makeConsolidatedQueryProgress({
-    requestId: requestId,
-    status: "processing",
-    startedAt: new Date(),
-    resources: [],
-    conversionType: "json",
-    dateFrom: dayjs().subtract(10, "years").format(ISO_DATE),
-    dateTo: dayjs().add(1, "day").format(ISO_DATE),
-  });
 });
 
 describe("getConsolidatedPatientData", () => {
