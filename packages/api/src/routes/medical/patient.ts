@@ -342,9 +342,7 @@ router.post(
       cxConsolidatedRequestMetadata: cxConsolidatedRequestMetadata?.metadata,
     });
 
-    const respPayload: StartConsolidatedQueryProgressResponse = {
-      query: queryResponse,
-    };
+    const respPayload: StartConsolidatedQueryProgressResponse = queryResponse;
 
     return res.json(respPayload);
   })

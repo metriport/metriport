@@ -224,7 +224,7 @@ describe("MAPI E2E Tests", () => {
       "html"
     );
     expect(conversionProgress).toBeTruthy();
-    expect(conversionProgress.query.status).toEqual("processing");
+    expect(conversionProgress.status).toEqual("processing");
   });
 
   it("completes conversion successfully", async () => {
