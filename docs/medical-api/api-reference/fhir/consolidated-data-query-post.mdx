@@ -13,7 +13,7 @@ data in FHIR-compliant format, based on the [parameters](#query-params) used to 
 
 You'll be able to query multiple times for the same Patient which will be added to the queue and
 processed in order. If the parameters are the same as a previous query that is still processing,
-the new query will be ignored.
+the new query will be ignored and you'll get the status and request ID of the previous one.
 
 You can check the status of the data query by calling [get consolidated data query](/medical-api/api-reference/fhir/consolidated-data-query-get).
 
@@ -81,7 +81,7 @@ Otherwise, the data will be returned in JSON format in the Webhook payload (defa
 
 ## Response
 
-Returns an array of `queries` with the following fields: `requestId`, `status`, `startedAt`, `dateFrom`, `dateTo`, `resources`, and `conversionType`.
+Returns the filters used for this query, in addition to the identifier used by the system to uniquely identify this query (property `requestId`).
 
 <ResponseExample>
 
@@ -89,27 +89,17 @@ Returns an array of `queries` with the following fields: `requestId`, `status`, 
 
 </ResponseExample>
 
-<ResponseField name="query" type="ConsolidatedQuery" required>
-  <Expandable title="ConsolidatedQuery properties">
-    <Snippet file="consolidated-query.mdx" />
-  </Expandable>
-</ResponseField>
-
-<ResponseField name="message" type="string">
-  An optional message for the request.
-</ResponseField>
+<Snippet file="consolidated-query.mdx" />
 
 ```json
 {
-  "query": {
-    "requestId": "5f4b3b4b-4b3b-4b3b-4b3b-4b3b4b3b4b3b",
-    "status": "processing",
-    "startedAt": "2021-01-01T00:00:00Z",
-    "dateFrom": "2021-01-01",
-    "dateTo": "2021-01-31",
-    "resources": ["Observation", "MedicationRequest"],
-    "conversionType": "pdf"
-  }
+  "requestId": "5f4b3b4b-4b3b-4b3b-4b3b-4b3b4b3b4b3b",
+  "status": "processing",
+  "startedAt": "2021-01-01T00:00:00Z",
+  "dateFrom": "2021-01-01",
+  "dateTo": "2021-01-31",
+  "resources": ["Observation", "MedicationRequest"],
+  "conversionType": "pdf"
 }
 ```
 

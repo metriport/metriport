@@ -18,7 +18,7 @@ service:
           based on the parameters used to trigger the query.
           You'll be able to query multiple times for the same Patient which will be added to the queue and
           processed in order. If the parameters are the same as a previous query that is still processing,
-          the new query will be ignored.
+          the new query will be ignored and you'll get the status and request ID of the previous one.
           You can check the status of the data query by calling get consolidated data query.
           This endpoint also provides the ability to render a Medical Record Summary
           from the FHIR bundle as a PDF or HTML document. This will be returned via a webhook
@@ -63,7 +63,7 @@ service:
 
       response:
         type: StartConsolidatedQueryResponse
-        docs: Returns a Bundle that contains a property entry which is simply an array of FHIR resources.
+        docs: Returns the filters used for this query, in addition to the identifier used by the system to uniquely identify this query (property `requestId`).
       examples:
         - path-parameters:
             id: "12345678"
@@ -168,8 +168,7 @@ types:
       message: optional<string>
     examples:
       - name: Example0
-        value:
-          query: $PatientConsolidatedDataStatus.Example0
+        value: $PatientConsolidatedDataStatus.Example0
 
   PatientConsolidatedDataStatus:
     properties:
