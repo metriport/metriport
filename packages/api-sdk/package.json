@@ -1,6 +1,6 @@
 {
   "name": "@metriport/api-sdk",
-  "version": "7.19.0-alpha.0",
+  "version": "7.19.1-alpha.0",
   "description": "Metriport helps you access and manage health and medical data, through a single open source API.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
