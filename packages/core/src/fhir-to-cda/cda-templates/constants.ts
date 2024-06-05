@@ -26,6 +26,7 @@ export const oids = {
   resultsSection: "2.16.840.1.113883.10.20.22.2.3.1",
   socialHistorySection: "2.16.840.1.113883.10.20.22.2.17",
   encountersSection: "2.16.840.1.113883.10.20.22.2.22",
+  immunizationsSection: "2.16.840.1.113883.10.20.22.2.2.1",
   allergiesSection: "2.16.840.1.113883.10.20.22.2.6.1",
   problemConcernAct: "2.16.840.1.113883.10.20.22.4.3",
   socialHistoryObs: "2.16.840.1.113883.10.20.22.4.38",
