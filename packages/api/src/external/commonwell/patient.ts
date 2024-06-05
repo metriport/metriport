@@ -879,7 +879,7 @@ async function updatePersonAndLink({
       personId,
       commonwellPatientId,
     });
-    if (!hasLink || !isLinkLola3Plus) {
+    if (!hasLink || (!isLinkLola3Plus && strongIds.length > 0)) {
       const respLink = await commonWell.addPatientLink(
         queryMeta,
         personId,
