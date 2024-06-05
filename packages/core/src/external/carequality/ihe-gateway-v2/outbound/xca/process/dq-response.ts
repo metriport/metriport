@@ -22,7 +22,13 @@ import {
 import { successStatus, partialSuccessStatus } from "./constants";
 import { capture } from "../../../../../../util/notifications";
 import { toArray } from "../../..//utils";
-import { iti38Schema, Slot, ExternalIdentifier, Classification, ExtrinsicObject } from "./schema";
+import {
+  iti38Schema,
+  Slot,
+  ExternalIdentifier,
+  Classification,
+  ExtrinsicObject,
+} from "../../schema";
 
 function getResponseHomeCommunityId(extrinsicObject: ExtrinsicObject): string {
   return stripUrnPrefix(extrinsicObject?._home);

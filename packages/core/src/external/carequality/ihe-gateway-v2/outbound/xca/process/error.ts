@@ -9,7 +9,7 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import { capture } from "../../../../../../util/notifications";
 import { out } from "../../../../../../util/log";
-import { RegistryErrorList, RegistryError } from "./schema";
+import { RegistryErrorList, RegistryError } from "../../schema";
 
 const { log } = out("XCA Error Handling");
 

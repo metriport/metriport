@@ -66,6 +66,10 @@
                                         <given>bartholomew</given>
                                         <family>nwhinzzztestpatient</family>
                                     </name>
+                                    <name>
+										<family partType="FAM">NWHINZZZTESTPATIENT</family>
+										<given partType="GIV">NWHINONE</given>
+									</name>
                                     <administrativeGenderCode code="M"/>
                                     <birthTime value="19810101"/>
                                     <addr>

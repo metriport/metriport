@@ -1,5 +1,19 @@
 import { z } from "zod";
 
+const schemaOrArray = <T extends z.ZodTypeAny>(schema: T) => z.union([schema, z.array(schema)]);
+const schemaOrArrayOrEmpty = <T extends z.ZodTypeAny>(schema: T) =>
+  z.union([schema, z.array(schema), z.literal("")]);
+const TextSchema = z.union([
+  z.string(),
+  z.object({
+    _text: z.string(),
+    _partType: z.string().optional(),
+  }),
+]);
+export type TextOrTextObject = z.infer<typeof TextSchema>;
+
+export const StringOrNumberSchema = z.union([z.string(), z.number()]);
+
 const slot = z.object({
   ValueList: z.object({
     Value: z.union([z.string(), z.number()]), // this should probably support a list too
@@ -133,18 +147,18 @@ export const iti39Schema = z.object({
 });
 
 export const AddressSchema = z.object({
-  line: z.union([z.string(), z.array(z.string())]).optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  postalCode: z.string().optional(),
-  country: z.string().optional(),
-  county: z.string().optional(),
+  streetAddressLine: z.union([StringOrNumberSchema, z.array(StringOrNumberSchema)]).optional(),
+  city: StringOrNumberSchema.optional(),
+  state: StringOrNumberSchema.optional(),
+  postalCode: StringOrNumberSchema.optional(),
+  country: StringOrNumberSchema.optional(),
+  county: StringOrNumberSchema.optional(),
 });
+export type IheAddress = z.infer<typeof AddressSchema>;
 
 export const NameSchema = z.object({
-  given: z.union([z.string(), z.array(z.string())]),
-  family: z.string(),
-  delimiter: z.string().optional(),
+  given: schemaOrArray(TextSchema),
+  family: TextSchema,
 });
 export type IheName = z.infer<typeof NameSchema>;
 
@@ -165,13 +179,23 @@ export const PatientRegistryProfileSchema = z.object({
     typeCode: z.object({
       _code: z.string(),
     }),
-  }),
-  controlId: z.object({
-    queryAck: z.object({
-      queryResponseCode: z.object({
-        _code: z.string(),
-      }),
-    }),
+    acknowledgementDetail: z
+      .object({
+        code: z.object({
+          _code: z.string().optional(),
+          _codeSystem: z.string().optional(),
+        }),
+        text: z.union([
+          z.string().optional(),
+          z
+            .object({
+              _text: z.string().optional(),
+            })
+            .optional(),
+        ]),
+        location: z.string().optional(),
+      })
+      .optional(),
   }),
   controlActProcess: z.object({
     subject: z.object({
@@ -179,21 +203,19 @@ export const PatientRegistryProfileSchema = z.object({
         subject1: z.object({
           patient: z.object({
             id: z.object({
-              _root: z.string().optional(),
+              _root: z.string(),
               _extension: z.string(),
             }),
             patientPerson: z.object({
-              addr: AddressSchema.optional(),
-              name: NameSchema,
-              telecom: TelecomSchema.optional(),
-              asOtherIDs: z
-                .object({
-                  id: IdentifierSchema.optional(),
-                })
-                .optional(),
+              addr: schemaOrArrayOrEmpty(AddressSchema).optional(),
+              name: schemaOrArray(NameSchema),
+              telecom: schemaOrArrayOrEmpty(TelecomSchema).optional(),
+              asOtherIDs: z.object({
+                id: schemaOrArrayOrEmpty(IdentifierSchema).optional(),
+              }),
               administrativeGenderCode: z
                 .object({
-                  _code: z.string(),
+                  _code: z.union([z.literal("F"), z.literal("M")]),
                 })
                 .optional(),
               birthTime: z.object({
@@ -204,6 +226,11 @@ export const PatientRegistryProfileSchema = z.object({
         }),
       }),
     }),
+    queryAck: z.object({
+      queryResponseCode: z.object({
+        _code: z.string(),
+      }),
+    }),
   }),
 });
 export type PatientRegistryProfile = z.infer<typeof PatientRegistryProfileSchema>;
@@ -211,6 +238,7 @@ export type PatientRegistryProfile = z.infer<typeof PatientRegistryProfileSchema
 export const iti55Body = z.object({
   PRPA_IN201306UV02: PatientRegistryProfileSchema,
 });
+export type Iti55Body = z.infer<typeof iti55Body>;
 
 export const iti55Schema = z.object({
   Envelope: z.object({
@@ -218,3 +246,4 @@ export const iti55Schema = z.object({
     Body: iti55Body,
   }),
 });
+export type Iti55Response = z.infer<typeof iti55Schema>;
