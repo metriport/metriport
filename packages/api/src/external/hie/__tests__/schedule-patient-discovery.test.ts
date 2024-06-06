@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { Patient } from "@metriport/core/domain/patient";
 import { ScheduledPatientDiscovery } from "@metriport/core/domain/patient-discovery";
 import { PatientModel } from "../../../models/medical/patient";
 import { CQDirectoryEntryModel } from "../../carequality/models/cq-directory";
@@ -11,16 +10,12 @@ import { schedulePatientDiscovery } from "../schedule-patient-discovery";
 import { resetScheduledPatientDiscovery } from "../reset-scheduled-patient-discovery-request";
 import { getCqOrgIdsToDenyOnCw } from "../cross-hie-ids";
 
-let patient: Patient;
-let patientModel: PatientModel;
-
 let patientModel_findOne: jest.SpyInstance;
 let patientModel_update: jest.SpyInstance;
 
 beforeEach(() => {
   mockStartTransaction();
-  patientModel = patient as unknown as PatientModel;
-  patientModel_findOne = jest.spyOn(PatientModel, "findOne").mockResolvedValue(patientModel);
+  patientModel_findOne = jest.spyOn(PatientModel, "findOne");
   patientModel_update = jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
   jest.spyOn(CQDirectoryEntryModel, "findAll").mockImplementation(async () => []);
 });

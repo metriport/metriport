@@ -7,7 +7,7 @@ import { QueryProgress } from "./query-status";
 import { MedicalDataSource } from "../external";
 import { Address, getState } from "./address";
 import { Contact } from "./contact";
-import { LinkDemographicsHistory, LinkDemographics } from "./patient-demographics";
+import { LinkDemographics } from "./patient-demographics";
 
 export const generalPersonalIdentifiers = ["ssn"] as const;
 export const driversLicensePersonalIdentifier = ["driversLicense"] as const;
@@ -46,7 +46,6 @@ export type GenderAtBirth = (typeof genderAtBirthTypes)[number];
 
 export abstract class PatientExternalDataEntry {
   documentQueryProgress?: DocumentQueryProgress;
-  linkDemographics?: LinkDemographicsHistory;
   scheduledPdRequest?: ScheduledPatientDiscovery;
   discoveryParams?: DiscoveryParams;
 }

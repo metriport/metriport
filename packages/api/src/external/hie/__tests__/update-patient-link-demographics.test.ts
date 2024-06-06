@@ -1,23 +1,19 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { Patient, ConsolidatedLinkDemographics } from "@metriport/core/domain/patient";
+import { ConsolidatedLinkDemographics } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { makePatient, makePatientData } from "../../../domain/medical/__tests__/patient";
-import { linkDemographics } from "../../../domain/medical/__tests__/deomgraphics.const";
+import { linkDemographics } from "../../../domain/medical/__tests__/demographics.const";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { updatePatientLinkDemographics } from "../update-patient-link-demographics";
-
-let patient: Patient;
-let patientModel: PatientModel;
 
 let patientModel_findOne: jest.SpyInstance;
 let patientModel_update: jest.SpyInstance;
 
 beforeEach(() => {
   mockStartTransaction();
-  patientModel = patient as unknown as PatientModel;
-  patientModel_findOne = jest.spyOn(PatientModel, "findOne").mockResolvedValue(patientModel);
+  patientModel_findOne = jest.spyOn(PatientModel, "findOne");
   patientModel_update = jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
 });
 
@@ -39,7 +35,7 @@ const checkPatientUpdateWith = (newConsolidatedValue: ConsolidatedLinkDemographi
 describe("update patient link demographics", () => {
   const source = MedicalDataSource.COMMONWELL;
   const newRequestId = "test";
-  it("update patient with no existing link demograhpics", async () => {
+  it("update patient with no existing link demographics", async () => {
     const patient = makePatient();
     patientModel_findOne.mockResolvedValueOnce(patient);
     const links: LinkDemographics[] = [linkDemographics];
@@ -58,7 +54,7 @@ describe("update patient link demographics", () => {
       ssns: links[0].ssns.sort(),
     });
   });
-  it("update patient with existing initial link demograhpics", async () => {
+  it("update patient with existing initial link demographics", async () => {
     const existingLinkDemographcsics: ConsolidatedLinkDemographics = {
       names: [
         { firstName: "john", lastName: "smith" },

@@ -1,7 +1,6 @@
 import { Patient } from "@metriport/core/domain/patient";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { getCQData } from "../carequality/patient";
-import { getCWData } from "../commonwell/patient";
+import { getCQPatientData } from "../../external/carequality/command/cq-patient-data/get-cq-data";
+import { getCwPatientData } from "../../external/commonwell/command/cw-patient-data/get-cw-data";
 
 export async function checkLinkDemographicsAcrossHies({
   patient,
@@ -10,16 +9,14 @@ export async function checkLinkDemographicsAcrossHies({
   patient: Pick<Patient, "id" | "cxId">;
   requestId: string;
 }): Promise<boolean> {
-  const existingPatient = await getPatientOrFail({
-    id: patient.id,
-    cxId: patient.cxId,
-  });
-  // CAREQUALITY
-  const cqLinkDemographics = getCQData(existingPatient.data.externalData)?.linkDemographics;
-  const cqNewDemographicsFound = requestId in (cqLinkDemographics ?? {});
-  // COMMONWELL
-  const cwLinkDemographics = getCWData(existingPatient.data.externalData)?.linkDemographics;
-  const cwNewDemographicFound = requestId in (cwLinkDemographics ?? {});
+  const [cqData, cwData] = await Promise.all([
+    // CAREQUALITY
+    getCQPatientData(patient),
+    // COMMONWELL
+    getCwPatientData(patient),
+  ]);
+  const cqNewDemographicsFound = requestId in (cqData?.data.linkDemographicsHistory ?? {});
+  const cwNewDemographicFound = requestId in (cwData?.data.linkDemographicsHistory ?? {});
 
   return cqNewDemographicsFound || cwNewDemographicFound;
 }

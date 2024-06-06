@@ -1,3 +1,4 @@
+import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { executeOnDBTx } from "../../../../models/transaction-wrapper";
 import { CwLink, CwPatientData, CwPatientDataCreate } from "../../cw-patient-data";
 import { CwPatientDataModel } from "../../models/cw-patient-data";
@@ -8,15 +9,27 @@ export async function createOrUpdateCwPatientData({
   id,
   cxId,
   cwLinks,
+  requestLinksDemographics,
 }: {
   id: string;
   cxId: string;
   cwLinks: CwLink[];
+  requestLinksDemographics?: {
+    requestId: string;
+    linksDemographics: LinkDemographics[];
+  };
 }): Promise<CwPatientData> {
   const cwPatientData: CwPatientDataCreate = {
     id,
     cxId,
-    data: { links: cwLinks },
+    data: {
+      links: cwLinks,
+      ...(requestLinksDemographics && {
+        linkDemographicsHistory: {
+          [requestLinksDemographics.requestId]: requestLinksDemographics.linksDemographics,
+        },
+      }),
+    },
   };
 
   const updateResult = await executeOnDBTx(CwPatientDataModel.prototype, async transaction => {

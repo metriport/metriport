@@ -10,7 +10,6 @@ import { runInitialPatientDiscoveryAcrossHies } from "../run-initial-patient-dis
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../run-or-schedule-patient-discovery";
 import { getCqOrgIdsToDenyOnCw } from "../cross-hie-ids";
 
-let patientModel: PatientModel;
 let patientModel_findOne: jest.SpyInstance;
 let cqDiscoer_mock: jest.SpyInstance;
 let cwCreate_mock: jest.SpyInstance;
@@ -19,7 +18,7 @@ let cwRunOrSchedule_mock: jest.SpyInstance;
 
 beforeEach(() => {
   mockStartTransaction();
-  patientModel_findOne = jest.spyOn(PatientModel, "findOne").mockResolvedValue(patientModel);
+  patientModel_findOne = jest.spyOn(PatientModel, "findOne");
   cqDiscoer_mock = jest.spyOn(cqPatient, "discover").mockImplementation(async () => {
     return;
   });

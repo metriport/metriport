@@ -1,20 +1,15 @@
-import { Patient } from "@metriport/core/domain/patient";
 import { updateCommonwellIdsAndStatus, CWParams } from "../patient-external-data";
 import { PatientModel } from "../../../models/medical/patient";
 import { makePatient, makePatientData } from "../../../domain/medical/__tests__/patient";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { PatientDataCommonwell } from "../patient-shared";
 
-let patient: Patient;
-let patientModel: PatientModel;
-
 let patientModel_findOne: jest.SpyInstance;
 let patientModel_update: jest.SpyInstance;
 
 beforeEach(() => {
   mockStartTransaction();
-  patientModel = patient as unknown as PatientModel;
-  patientModel_findOne = jest.spyOn(PatientModel, "findOne").mockResolvedValue(patientModel);
+  patientModel_findOne = jest.spyOn(PatientModel, "findOne");
   patientModel_update = jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
 });
 

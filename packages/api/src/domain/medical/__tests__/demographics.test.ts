@@ -16,7 +16,7 @@ import {
   linkHasNewDemographics,
   checkDemoMatch,
 } from "../patient-demographics";
-import { patient, consolidatedLinkDemographics, coreDemographics } from "./deomgraphics.const";
+import { patient, consolidatedLinkDemographics, coreDemographics } from "./demographics.const";
 
 describe("normalization", () => {
   const dobValid = "2023-08-01";
@@ -216,7 +216,7 @@ describe("create augmented patient", () => {
   });
 });
 
-describe("link has new demogrpahics", () => {
+describe("link has new demographics", () => {
   it("new dob", async () => {
     const newDob = "1901-04-28";
     const newData = linkHasNewDemographics({
@@ -332,7 +332,7 @@ describe("link has new demogrpahics", () => {
     });
     expect(newData.hasNewDemographics).toBe(true);
   });
-  it("link has no new demogrpahics", async () => {
+  it("link has no new demographics", async () => {
     const noNewPatient = linkHasNewDemographics({
       coreDemographics,
       consolidatedLinkDemographics,

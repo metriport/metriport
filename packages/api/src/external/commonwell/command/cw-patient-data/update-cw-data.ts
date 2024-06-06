@@ -24,7 +24,6 @@ export async function updateCwPatientData(
   });
 }
 
-// TODO export this and use it in the createOrUpdateCwPatientData function, need a DB tx there though
 export async function updateCwPatientDataWithinDBTx(
   update: CwPatientDataUpdate,
   existing: CwPatientDataModel,
@@ -32,15 +31,22 @@ export async function updateCwPatientDataWithinDBTx(
 ): Promise<CwPatientDataModel> {
   const { data: newData } = update;
   const updatedLinks = [...existing.data.links, ...newData.links];
-  const uniqueLinks = uniqBy(updatedLinks, function (nl) {
+  const uniqueUpdatedLinks = uniqBy(updatedLinks, function (nl) {
     return nl._links?.self?.href;
   });
+  const updatedLinkDemographicsHistory = {
+    ...existing.data.linkDemographicsHistory,
+    ...newData.linkDemographicsHistory,
+  };
   return existing.update(
     {
       data: {
         ...existing.data,
         ...newData,
-        links: uniqueLinks,
+        links: uniqueUpdatedLinks,
+        ...(newData.linkDemographicsHistory && {
+          linkDemographicsHistory: updatedLinkDemographicsHistory,
+        }),
       },
     },
     { transaction }

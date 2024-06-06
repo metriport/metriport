@@ -11,14 +11,13 @@ import * as cqPatient from "../patient";
 import * as schedulePatientDiscovery from "../../hie/schedule-patient-discovery";
 import { runOrScheduleCqPatientDiscovery } from "../command/run-or-schedule-patient-discovery";
 
-let patientModel: PatientModel;
 let patientModel_findOne: jest.SpyInstance;
 let cqDiscover_mock: jest.SpyInstance;
 let schedulePatientDiscovery_mock: jest.SpyInstance;
 
 beforeEach(() => {
   mockStartTransaction();
-  patientModel_findOne = jest.spyOn(PatientModel, "findOne").mockResolvedValue(patientModel);
+  patientModel_findOne = jest.spyOn(PatientModel, "findOne");
   cqDiscover_mock = jest.spyOn(cqPatient, "discover").mockImplementation(async () => {
     return;
   });

@@ -1,168 +1,136 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
-import { makePatient, makePatientData } from "../../../domain/medical/__tests__/patient";
+import { makePatient } from "../../../domain/medical/__tests__/patient";
+import { coreDemographics } from "../../../domain/medical/__tests__/demographics.const";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
-import { PatientDataCommonwell } from "../../commonwell/patient-shared";
-import { PatientDataCarequality } from "../../carequality/patient-shared";
-import {
-  normalizeDob,
-  normalizeGender,
-  normalizeAndStringifyNames,
-  normalizeAddress,
-  stringifyAddress,
-  normalizeTelephone,
-  normalizeSsn,
-  normalizeEmail,
-  normalizeAndStringifyDriversLicense,
-} from "../../../domain/medical/patient-demographics";
+import { makeCqPatientData } from "../../carequality/__tests__/cq-patient-data";
+import { makeCwPatientData } from "../../commonwell/__tests__/cw-patient-data";
+import { CQPatientDataModel } from "../../carequality/models/cq-patient-data";
+import { CwPatientDataModel } from "../../commonwell/models/cw-patient-data";
 import { checkLinkDemographicsAcrossHies } from "../check-patient-link-demographics";
 
-let patient: Patient;
-let patientModel: PatientModel;
-
 let patientModel_findOne: jest.SpyInstance;
+let cqPatientDatatModel_findOne: jest.SpyInstance;
+let cwPatientDatatModel_findOne: jest.SpyInstance;
 
 beforeEach(() => {
   mockStartTransaction();
-  patientModel = patient as unknown as PatientModel;
-  patientModel_findOne = jest.spyOn(PatientModel, "findOne").mockResolvedValue(patientModel);
+  patientModel_findOne = jest.spyOn(PatientModel, "findOne");
+  cqPatientDatatModel_findOne = jest.spyOn(CQPatientDataModel, "findOne");
+  cwPatientDatatModel_findOne = jest.spyOn(CwPatientDataModel, "findOne");
 });
 
 afterEach(() => {
   jest.clearAllMocks();
 });
 
-describe("check for patient link demograhpics", () => {
+describe("check for patient link demographics", () => {
   const existingRequestId = "0000-0000";
   const secondExistingRequestId = "1111-1111";
-  const existingLinkDemographcsics = {
-    dob: normalizeDob("1900-01-01"),
-    gender: normalizeGender("male"),
-    names: [normalizeAndStringifyNames({ firstName: "jon", lastName: "smith" })],
-    addresses: [
-      stringifyAddress(
-        normalizeAddress({
-          line: ["777 bedlam st"],
-          city: "san francisco",
-          state: "ca",
-          zip: "98765",
-          country: "usa",
-        })
-      ),
-    ],
-    telephoneNumbers: [normalizeTelephone("+1(415)100-1010")],
-    emails: [normalizeEmail("john.smith@gmail.com")],
-    driversLicenses: [normalizeAndStringifyDriversLicense({ value: "I1234567", state: "CA" })],
-    ssns: [normalizeSsn("000-00-0000")],
-  };
-  it("check for patient link demograhpics w/ cw yes, cq no", async () => {
-    const existingCwExternalData: PatientDataCommonwell = {
-      patientId: "base",
-      linkDemographics: {
-        [existingRequestId]: [existingLinkDemographcsics],
-      },
-    };
-    const existingCqExternalData: PatientDataCarequality = {
-      linkDemographics: {
-        [secondExistingRequestId]: [existingLinkDemographcsics],
-      },
-    };
-    const patientData = makePatientData({
-      externalData: {
-        COMMONWELL: existingCwExternalData,
-        CAREQUALITY: existingCqExternalData,
-      },
-    });
-    const patient = makePatient({ data: patientData });
-    patientModel_findOne.mockResolvedValueOnce(patient);
-    const foundData = await checkLinkDemographicsAcrossHies({
-      patient,
-      requestId: existingRequestId,
-    });
-    expect(foundData).toBe(true);
-  });
-  it("check for patient link demograhpics w/ cw no, cq yes", async () => {
-    const existingCwExternalData: PatientDataCommonwell = {
-      patientId: "base",
-      linkDemographics: {
-        [secondExistingRequestId]: [existingLinkDemographcsics],
-      },
-    };
-    const existingCqExternalData: PatientDataCarequality = {
-      linkDemographics: {
-        [existingRequestId]: [existingLinkDemographcsics],
-      },
-    };
-    const patientData = makePatientData({
-      externalData: {
-        COMMONWELL: existingCwExternalData,
-        CAREQUALITY: existingCqExternalData,
-      },
-    });
-    const patient = makePatient({ data: patientData });
-    patientModel_findOne.mockResolvedValueOnce(patient);
-    const foundData = await checkLinkDemographicsAcrossHies({
-      patient,
-      requestId: existingRequestId,
-    });
-    expect(foundData).toBe(true);
-  });
-  it("check for patient link demograhpics w/ cw yes, cq yes", async () => {
-    const existingCwExternalData: PatientDataCommonwell = {
-      patientId: "base",
-      linkDemographics: {
-        [existingRequestId]: [existingLinkDemographcsics],
-      },
-    };
-    const existingCqExternalData: PatientDataCarequality = {
-      linkDemographics: {
-        [existingRequestId]: [existingLinkDemographcsics],
-      },
-    };
-    const patientData = makePatientData({
-      externalData: {
-        COMMONWELL: existingCwExternalData,
-        CAREQUALITY: existingCqExternalData,
-      },
-    });
-    const patient = makePatient({ data: patientData });
-    patientModel_findOne.mockResolvedValueOnce(patient);
-    const foundData = await checkLinkDemographicsAcrossHies({
-      patient,
-      requestId: existingRequestId,
-    });
-    expect(foundData).toBe(true);
-  });
-  it("check for patient link demograhpics w/ cw no, cq no (new patient)", async () => {
+  const existingLinkDemographcsics = coreDemographics;
+  it("check for patient link demographics w/ cw yes, cq no", async () => {
     const patient = makePatient();
     patientModel_findOne.mockResolvedValueOnce(patient);
+    const cwData = makeCwPatientData({
+      id: patient.id,
+      cxId: patient.cxId,
+      data: {
+        linkDemographicsHistory: {
+          [existingRequestId]: [existingLinkDemographcsics],
+        },
+      },
+    });
+    cwPatientDatatModel_findOne.mockResolvedValueOnce(cwData);
+    const cqData = makeCqPatientData({
+      id: patient.id,
+      cxId: patient.cxId,
+      data: {
+        linkDemographicsHistory: {
+          [secondExistingRequestId]: [existingLinkDemographcsics],
+        },
+      },
+    });
+    cqPatientDatatModel_findOne.mockResolvedValueOnce(cqData);
+    const foundData = await checkLinkDemographicsAcrossHies({
+      patient,
+      requestId: existingRequestId,
+    });
+    expect(foundData).toBe(true);
+  });
+  it("check for patient link demographics w/ cw no, cq yes", async () => {
+    const patient = makePatient();
+    patientModel_findOne.mockResolvedValueOnce(patient);
+    cwPatientDatatModel_findOne.mockResolvedValueOnce(undefined);
+    const cqData = makeCqPatientData({
+      id: patient.id,
+      cxId: patient.cxId,
+      data: {
+        linkDemographicsHistory: {
+          [secondExistingRequestId]: [existingLinkDemographcsics],
+        },
+      },
+    });
+    cqPatientDatatModel_findOne.mockResolvedValueOnce(cqData);
+    const foundData = await checkLinkDemographicsAcrossHies({
+      patient,
+      requestId: secondExistingRequestId,
+    });
+    expect(foundData).toBe(true);
+  });
+  it("check for patient link demographics w/ cw yes, cq no", async () => {
+    const patient = makePatient();
+    patientModel_findOne.mockResolvedValueOnce(patient);
+    const cwData = makeCwPatientData({
+      id: patient.id,
+      cxId: patient.cxId,
+      data: {
+        linkDemographicsHistory: {
+          [existingRequestId]: [existingLinkDemographcsics],
+        },
+      },
+    });
+    cwPatientDatatModel_findOne.mockResolvedValueOnce(cwData);
+    cqPatientDatatModel_findOne.mockResolvedValueOnce(undefined);
+    const foundData = await checkLinkDemographicsAcrossHies({
+      patient,
+      requestId: existingRequestId,
+    });
+    expect(foundData).toBe(true);
+  });
+  it("check for patient link demographics w/ cw no, cq no (new patient)", async () => {
+    const patient = makePatient();
+    patientModel_findOne.mockResolvedValueOnce(patient);
+    cwPatientDatatModel_findOne.mockResolvedValueOnce(undefined);
+    cqPatientDatatModel_findOne.mockResolvedValueOnce(undefined);
     const foundData = await checkLinkDemographicsAcrossHies({
       patient,
       requestId: existingRequestId,
     });
     expect(foundData).toBe(false);
   });
-  it("check for patient link demograhpics w/ cw no, cq no (wrong ids)", async () => {
-    const existingCwExternalData: PatientDataCommonwell = {
-      patientId: "base",
-      linkDemographics: {
-        [secondExistingRequestId]: [existingLinkDemographcsics],
-      },
-    };
-    const existingCqExternalData: PatientDataCarequality = {
-      linkDemographics: {
-        [secondExistingRequestId]: [existingLinkDemographcsics],
-      },
-    };
-    const patientData = makePatientData({
-      externalData: {
-        COMMONWELL: existingCwExternalData,
-        CAREQUALITY: existingCqExternalData,
+  it("check for patient link demographics w/ cw no, cq no (wrong ids)", async () => {
+    const patient = makePatient();
+    patientModel_findOne.mockResolvedValueOnce(patient);
+    const cwData = makeCwPatientData({
+      id: patient.id,
+      cxId: patient.cxId,
+      data: {
+        linkDemographicsHistory: {
+          [secondExistingRequestId]: [existingLinkDemographcsics],
+        },
       },
     });
-    const patient = makePatient({ data: patientData });
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    cwPatientDatatModel_findOne.mockResolvedValueOnce(cwData);
+    const cqData = makeCqPatientData({
+      id: patient.id,
+      cxId: patient.cxId,
+      data: {
+        linkDemographicsHistory: {
+          [secondExistingRequestId]: [existingLinkDemographcsics],
+        },
+      },
+    });
+    cqPatientDatatModel_findOne.mockResolvedValueOnce(cqData);
     const foundData = await checkLinkDemographicsAcrossHies({
       patient,
       requestId: existingRequestId,

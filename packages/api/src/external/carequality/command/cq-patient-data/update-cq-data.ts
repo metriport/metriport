@@ -24,7 +24,6 @@ export async function updateCQPatientData(
   });
 }
 
-// TODO export this and use it in the createOrUpdateCQPatientData function, need a DB tx there though
 export async function updateCQPatientDataWithinDBTx(
   update: CQPatientDataUpdate,
   existing: CQPatientDataModel,
@@ -32,13 +31,20 @@ export async function updateCQPatientDataWithinDBTx(
 ): Promise<CQPatientDataModel> {
   const { data: newData } = update;
   const updatedLinks = [...existing.data.links, ...newData.links];
-  const uniqueLinks = uniqBy(updatedLinks, "oid");
+  const uniqueUpdatedLinks = uniqBy(updatedLinks, "oid");
+  const updatedLinkDemographicsHistory = {
+    ...existing.data.linkDemographicsHistory,
+    ...newData.linkDemographicsHistory,
+  };
   return existing.update(
     {
       data: {
         ...existing.data,
         ...newData,
-        links: uniqueLinks,
+        links: uniqueUpdatedLinks,
+        ...(newData.linkDemographicsHistory && {
+          linkDemographicsHistory: updatedLinkDemographicsHistory,
+        }),
       },
     },
     { transaction }

@@ -13,14 +13,13 @@ import * as schedulePatientDiscovery from "../../hie/schedule-patient-discovery"
 import { runOrScheduleCwPatientDiscovery } from "../command/run-or-schedule-patient-discovery";
 import { getCqOrgIdsToDenyOnCw } from "../../hie/cross-hie-ids";
 
-let patientModel: PatientModel;
 let patientModel_findOne: jest.SpyInstance;
 let cwUpdate_mock: jest.SpyInstance;
 let schedulePatientDiscovery_mock: jest.SpyInstance;
 
 beforeEach(() => {
   mockStartTransaction();
-  patientModel_findOne = jest.spyOn(PatientModel, "findOne").mockResolvedValue(patientModel);
+  patientModel_findOne = jest.spyOn(PatientModel, "findOne");
   cwUpdate_mock = jest.spyOn(cwPatient, "update").mockImplementation(async () => {
     return;
   });
