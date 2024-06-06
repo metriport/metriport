@@ -55,7 +55,7 @@ export class AugmentedEncounter implements AugmentedResource<Encounter> {
 }
 
 export class AugmentedImmunization implements AugmentedResource<Immunization> {
-  public readonly typeOid = oids.encounterActivity;
+  public readonly typeOid = oids.immunizationActivity;
   constructor(
     public readonly sectionName: string,
     public readonly resource: Immunization,

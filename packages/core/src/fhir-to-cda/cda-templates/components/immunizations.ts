@@ -1,14 +1,24 @@
 import { Bundle, Immunization, Location } from "@medplum/fhirtypes";
 import { findResourceInBundle, isImmunization, isLocation } from "../../../external/fhir/shared";
-import { ConcernActEntry, ObservationTableRow } from "../../cda-types/shared-types";
+import { ObservationTableRow } from "../../cda-types/shared-types";
 import {
   buildCodeCe,
+  buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
-  buildValueCd,
+  formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
   getDisplaysFromCodeableConcepts,
+  withoutNullFlavorObject,
 } from "../commons";
-import { NOT_SPECIFIED, loincCodeSystem, loincSystemName, oids } from "../constants";
+import {
+  NOT_SPECIFIED,
+  extensionValue2015,
+  hl7actCode,
+  loincCodeSystem,
+  loincSystemName,
+  oids,
+  placeholderOrgOid,
+} from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { initiateSectionTable } from "../table";
 import { AugmentedImmunization } from "./augmented-resources";
@@ -96,7 +106,7 @@ function createTableRowFromImmunization(
               : NOT_SPECIFIED,
           },
           {
-            "#text": mapImmunizationStatus(immunization.resource.status) ?? NOT_SPECIFIED,
+            "#text": mapImmunizationStatusCode(immunization.resource.status) ?? NOT_SPECIFIED,
           },
           {
             "#text": locationInfo ?? immunization.locationName ?? NOT_SPECIFIED,
@@ -117,7 +127,7 @@ function getLocationInformation(location: Location | undefined): string | undefi
   return `${location.name} - ${location.address}`;
 }
 
-function mapImmunizationStatus(status: string | undefined): string | undefined {
+function mapImmunizationStatusCode(status: string | undefined): string | undefined {
   if (!status) return undefined;
   switch (status) {
     case "completed":
@@ -133,81 +143,82 @@ function mapImmunizationStatus(status: string | undefined): string | undefined {
 
 function createEntryFromEncounter(immunization: AugmentedImmunization, referenceId: string) {
   console.log(immunization, referenceId);
-  // return {
-  //   encounter: {
-  //     _classCode: "ENC",
-  //     _moodCode: "EVN",
-  //     templateId: buildInstanceIdentifier({
-  //       root: encounter.typeOid,
-  //       extension: extensionValue2015,
-  //     }),
-  //     id: buildInstanceIdentifier({
-  //       root: placeholderOrgOid,
-  //       extension: encounter.resource.id,
-  //     }),
-  //     code: buildCodeCeFromCoding(encounter.resource.type),
-  //     statusCode: {
-  //       _code: mapEncounterStatusCode(encounter.resource.status),
-  //     },
-  //     effectiveTime: {
-  //       low: withoutNullFlavorObject(
-  //         formatDateToCdaTimestamp(encounter.resource.period?.start),
-  //         "_value"
-  //       ),
-  //       high: withoutNullFlavorObject(
-  //         formatDateToCdaTimestamp(encounter.resource.period?.end),
-  //         "_value"
-  //       ),
-  //     },
-  //     performer: createPerformer(encounter.practitioners),
-  //     entryRelationship: createEntryRelationshipObservation(encounter.resource, referenceId),
-  //   },
-  // };
-}
-
-export function createEntryRelationshipObservation(
-  encounter: Immunization,
-  referenceId: string
-): ConcernActEntry {
   return {
-    _typeCode: "RSON",
-    act: {
-      _classCode: "ACT",
+    substanceAdministration: {
+      _classCode: "SBADM",
       _moodCode: "EVN",
+      _negationInd: "false",
       templateId: buildInstanceIdentifier({
-        root: oids.encounterDiagnosis,
+        root: immunization.typeOid,
+        extension: extensionValue2015,
+      }),
+      id: buildInstanceIdentifier({
+        root: placeholderOrgOid,
+        extension: immunization.resource.id,
       }),
       code: buildCodeCe({
-        code: "29308-4",
-        codeSystem: loincCodeSystem,
-        codeSystemName: loincSystemName,
-        displayName: "Encounter Diagnosis",
+        code: "IMMUNIZ",
+        codeSystem: hl7actCode,
+        codeSystemName: "ActCode",
       }),
-      entryRelationship: {
-        _inversionInd: false,
-        _typeCode: "SUBJ",
-        observation: {
-          _classCode: "OBS",
-          _moodCode: "EVN",
-          code: {
-            ...buildCodeCe({
-              code: "282291009",
-              codeSystem: "2.16.840.1.113883.3.88.12.3221.7.2",
-              codeSystemName: "SNOMED CT",
-              displayName: "Diagnosis",
-            }),
-            translation: [
-              buildCodeCe({
-                code: "29308-4",
-                codeSystem: loincCodeSystem,
-                codeSystemName: loincSystemName,
-                displayName: "Diagnosis",
-              }),
-            ],
-          },
-          value: encounter.reasonCode?.flatMap(reason => buildValueCd(reason, referenceId) || []),
+      text: buildSimpleReference(referenceId),
+      statusCode: {
+        _code: mapImmunizationStatusCode(immunization.resource.status),
+      },
+      effectiveTime: {
+        _value: withoutNullFlavorObject(
+          formatDateToCdaTimestamp(immunization.resource.occurrenceDateTime),
+          "_value"
+        ),
+      },
+      consumable: buildConsumable(immunization.resource),
+      // performer: buildPerformer(immunization.location)
+    },
+  };
+}
+
+function buildConsumable(immunization: Immunization) {
+  return {
+    consumable: {
+      _typeCode: "CSM",
+      manufacturedProduct: {
+        _classCode: "MANU",
+        templateId: buildInstanceIdentifier({
+          root: oids.immunizationMedicationInformation,
+          extension: extensionValue2015,
+        }),
+        manufacturedMaterial: {
+          code: buildCodeCvFromCodeableConcept(immunization.vaccineCode),
         },
       },
+    },
+  };
+  // <consumable typeCode="CSM">
+  //   <manufacturedProduct classCode="MANU">
+  //     <templateId root="2.16.840.1.113883.10.20.22.4.54" />
+  //     <templateId root="2.16.840.1.113883.10.20.22.4.54" extension="2014-06-09" />
+  //     <manufacturedMaterial>
+  //       <code code="20" codeSystem="2.16.840.1.113883.12.292" codeSystemName="CVX">
+  //         <originalText>
+  //           <reference value="#immunization34Name" />
+  //         </originalText>
+  //       </code>
+  //       <lotNumberText nullFlavor="UNK" />
+  //     </manufacturedMaterial>
+  //   </manufacturedProduct>
+  // </consumable>
+}
+
+type CdaSimpleReference = {
+  reference: {
+    _value: string;
+  };
+};
+
+function buildSimpleReference(referenceId: string): CdaSimpleReference {
+  return {
+    reference: {
+      _value: referenceId,
     },
   };
 }
