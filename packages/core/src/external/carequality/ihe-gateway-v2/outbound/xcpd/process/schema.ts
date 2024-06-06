@@ -3,36 +3,12 @@ import {
   schemaOrArray,
   schemaOrArrayOrEmpty,
   TextSchema,
-  StringOrNumberSchema,
-} from "../../schema";
-
-export const AddressSchema = z.object({
-  streetAddressLine: schemaOrArray(StringOrNumberSchema).optional(),
-  city: StringOrNumberSchema.optional(),
-  state: StringOrNumberSchema.optional(),
-  postalCode: StringOrNumberSchema.optional(),
-  country: StringOrNumberSchema.optional(),
-  county: StringOrNumberSchema.optional(),
-});
-export type IheAddress = z.infer<typeof AddressSchema>;
-
-export const NameSchema = z.object({
-  given: schemaOrArray(TextSchema),
-  family: TextSchema,
-});
-export type IheName = z.infer<typeof NameSchema>;
-
-export const TelecomSchema = z.object({
-  _use: z.string().optional(),
-  _value: z.string().optional(),
-});
-export type IheTelecom = z.infer<typeof TelecomSchema>;
-
-export const IdentifierSchema = z.object({
-  _root: z.string().optional(),
-  _extension: z.string().optional(),
-});
-export type IheIdentifier = z.infer<typeof IdentifierSchema>;
+  AddressSchema,
+  NameSchema,
+  TelecomSchema,
+  IdentifierSchema,
+  genderSchema,
+} from "../../../schema";
 
 export const PatientRegistryProfileSchema = z.object({
   acknowledgement: z.object({
@@ -66,11 +42,7 @@ export const PatientRegistryProfileSchema = z.object({
               asOtherIDs: z.object({
                 id: schemaOrArrayOrEmpty(IdentifierSchema).optional(),
               }),
-              administrativeGenderCode: z
-                .object({
-                  _code: z.union([z.literal("F"), z.literal("M")]),
-                })
-                .optional(),
+              administrativeGenderCode: genderSchema.optional(),
               birthTime: z.object({
                 _value: z.string(),
               }),
@@ -88,14 +60,14 @@ export const PatientRegistryProfileSchema = z.object({
 });
 export type PatientRegistryProfile = z.infer<typeof PatientRegistryProfileSchema>;
 
-export const iti55Body = z.object({
+export const iti55ResponseBody = z.object({
   PRPA_IN201306UV02: PatientRegistryProfileSchema,
 });
 
-export const iti55Schema = z.object({
+export const iti55ResponseSchema = z.object({
   Envelope: z.object({
     Header: z.any(),
-    Body: iti55Body,
+    Body: iti55ResponseBody,
   }),
 });
-export type Iti55Response = z.infer<typeof iti55Schema>;
+export type Iti55Response = z.infer<typeof iti55ResponseSchema>;

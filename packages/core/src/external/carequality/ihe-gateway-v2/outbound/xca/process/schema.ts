@@ -4,7 +4,7 @@ import {
   schemaOrArray,
   schemaOrArrayOrEmpty,
   StringOrNumberSchema,
-} from "../../schema";
+} from "../../../schema";
 
 const slot = z.object({
   // even though this is called list, the IHE spec specifies its never a list: https://www.ihe-j.org/file2/docs/RFD/IHE_ITI_TF_R14_Vol3.pdf, Page 48

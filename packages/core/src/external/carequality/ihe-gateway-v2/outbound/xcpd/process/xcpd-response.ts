@@ -13,15 +13,8 @@ import { normalizeGender } from "../../../utils";
 import { XCPDSamlClientResponse } from "../send/xcpd-requests";
 import { out } from "../../../../../../util/log";
 import { toArray, extractText } from "../../../utils";
-import {
-  IheAddress,
-  IheIdentifier,
-  IheName,
-  IheTelecom,
-  iti55Schema,
-  Iti55Response,
-  PatientRegistryProfile,
-} from "./schema";
+import { IheAddress, IheIdentifier, IheName, IheTelecom } from "../../../schema";
+import { Iti55Response, iti55ResponseSchema, PatientRegistryProfile } from "./schema";
 import {
   handleHTTPErrorResponse,
   handleSchemaErrorResponse,
@@ -216,7 +209,7 @@ export function processXCPDResponse({
 
   const jsonObj = parser.parse(response);
   try {
-    const iti55Response = iti55Schema.parse(jsonObj);
+    const iti55Response = iti55ResponseSchema.parse(jsonObj);
     const patientRegistryProfile = getPatientRegistryProfile(iti55Response);
     const { ack, queryResponseCode } =
       getAckAndQueryResponseCodeFromPatientRegistryProfile(patientRegistryProfile);

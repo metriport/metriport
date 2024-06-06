@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:urn="urn:hl7-org:v3">
+  <soap:Header>
+    <wsa:To xmlns:wsa="http://www.w3.org/2005/08/addressing" soap:mustUnderstand="1">https://sfd-np.et0121.epichosted.com:14430/interconnect-ce-env1/wcf/epic.community.hie/xcpdrespondinggatewaysync.svc/ceq</wsa:To>
+    <wsa:Action xmlns:wsa="http://www.w3.org/2005/08/addressing" soap:mustUnderstand="1">urn:hl7-org:v3:PRPA_IN201305UV02:CrossGatewayPatientDiscovery</wsa:Action>
+    <wsa:MessageID xmlns:wsa="http://www.w3.org/2005/08/addressing">urn:uuid:2e304916-539f-4a0e-8c13-07347b38609a</wsa:MessageID>
+    <wsa:ReplyTo xmlns:wsa="http://www.w3.org/2005/08/addressing">
+      <wsa:Address>http://www.w3.org/2005/08/addressing/anonymous</wsa:Address>
+    </wsa:ReplyTo>
+    <wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
+      <saml2:Assertion xmlns:saml2="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:xs="http://www.w3.org/2001/XMLSchema" ID="_92a20a65-dad6-4920-8d18-2cb72cc10ee8" IssueInstant="2023-12-06T22:46:38.732Z" Version="2.0">
+        <saml2:Issuer Format="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress">support@metriport.com</saml2:Issuer>
+        <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+          <ds:SignedInfo>
+            <ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+            <ds:SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>
+            <ds:Reference URI="#_92a20a65-dad6-4920-8d18-2cb72cc10ee8">
+              <ds:Transforms>
+                <ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+                <ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#">
+                  <ec:InclusiveNamespaces xmlns:ec="http://www.w3.org/2001/10/xml-exc-c14n#" PrefixList="xs"/>
+                </ds:Transform>
+              </ds:Transforms>
+              <ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+              <ds:DigestValue>A+fmWGfEShsjbvJ1h8FqoYlkNrM=</ds:DigestValue>
+            </ds:Reference>
+          </ds:SignedInfo>
+          <ds:SignatureValue>cv+OvBiPi3flRBm4x4ljHm0YlDs7lhbuVvT8Wyev/cnjvRKa8ha54PRrnuCYcIMgBqGYp0hn5Cm2oovqR4sE/OcSZPhe2B23EBppTdle1oVjK/edTRb6axmq93Xd88aNZizQ7ynuDP4TxGiVOaW7qgF3kCZzOOeCoGhSNqgExguT19e9Vhalehqx9jT3BdOjTX5+77VG1EuXJpVRDSdfR4icn7oBzzeoWwvji23CVf4K/DYqf/SV4Ryq3UR9MyiEjd/ofj1jmumCORR8sAPHZekOtpVQh6Gltw9aH2NCrfV65vUxfkNxDj44/eIhRGo0owK/oVQ9KdJ/qaZ9qFGBzQ==</ds:SignatureValue>
+          <ds:KeyInfo>
+            <ds:KeyValue>
+              <ds:RSAKeyValue>
+                <ds:Modulus>4tOa7loCPgXnfXjKJ1k+wWnb9EdZ3LV3J1CfO7Kg4r/1UDEsyg0zNW/D7KpgZIi9b4YWc2YC7LzD
+Nnk1d4sB767rdMk0cIv4ysfpXOVyGFXF4RzoZcGxBU3ZhbqJybjtunDrmvA8NHymD4B/bz28sIVR
+tJDV0H/g4I7jDNyCl6IUeQJKUTBa90UDdJgxFnMD0PmuxjA40injjZ707GuA+StggA0kGCIfhQEV
+n1g7iL3O8zo9Yp0y3QkWtBgrxOTnI/1UPj6Sq0qBlD1C0obh327OJOMU9qLRrJLs6MIUzy7PeZLx
+glQbCKX5zRhtEDe1G/FqQw/5zcxicBsgXtelMQ==</ds:Modulus>
+                <ds:Exponent>AQAB</ds:Exponent>
+              </ds:RSAKeyValue>
+            </ds:KeyValue>
+            <ds:X509Data>
+              <ds:X509Certificate>MIIFHDCCBASgAwIBAgIIUbdr3gSmeh8wDQYJKoZIhvcNAQELBQAwgasxCzAJBgNVBAYTAlVTMRMw
+EQYDVQQIDApDYWxpZm9ybmlhMRIwEAYDVQQHDAlTYW4gRGllZ28xEzARBgNVBAoMCkVNUiBEaXJl
+Y3QxNjA0BgNVBAsMLUNlcnRpZmljYXRpb24gQXV0aG9yaXR5IChjZXJ0cy5lbXJkaXJlY3QuY29t
+KTEmMCQGA1UEAwwdRU1SIERpcmVjdCBUZXN0IERldmljZSBTdWJDQTIwHhcNMjMxMTAyMjEyNTQy
+WhcNMjQxMTAyMjEyNTQyWjB6MQswCQYDVQQGEwJVUzETMBEGA1UECAwKQ2FsaWZvcm5pYTEXMBUG
+A1UECgwOTWV0cmlwb3J0IEluYy4xGTAXBgNVBAsMEENBUkVRVUFMSVRZLVRFU1QxIjAgBgNVBAMM
+GWloZS5zdGFnaW5nLm1ldHJpcG9ydC5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
+AQDi05ruWgI+Bed9eMonWT7Badv0R1nctXcnUJ87sqDiv/VQMSzKDTM1b8PsqmBkiL1vhhZzZgLs
+vMM2eTV3iwHvrut0yTRwi/jKx+lc5XIYVcXhHOhlwbEFTdmFuonJuO26cOua8Dw0fKYPgH9vPbyw
+hVG0kNXQf+DgjuMM3IKXohR5AkpRMFr3RQN0mDEWcwPQ+a7GMDjSKeONnvTsa4D5K2CADSQYIh+F
+ARWfWDuIvc7zOj1inTLdCRa0GCvE5Ocj/VQ+PpKrSoGUPULShuHfbs4k4xT2otGskuzowhTPLs95
+kvGCVBsIpfnNGG0QN7Ub8WpDD/nNzGJwGyBe16UxAgMBAAGjggFyMIIBbjBaBggrBgEFBQcBAQRO
+MEwwSgYIKwYBBQUHMAKGPmh0dHA6Ly9jZXJ0cy5lbXJkaXJlY3QuY29tL2NlcnRzL0VNUkRpcmVj
+dFRlc3REZXZpY2VTdWJDQTIuY3J0MB0GA1UdDgQWBBTHhH0qkOSuubx9pjHaChsgjBffJTAMBgNV
+HRMBAf8EAjAAMB8GA1UdIwQYMBaAFLALWDvFk63Gb2VdEcASrVrch4Y1ME0GA1UdHwRGMEQwQqBA
+oD6GPGh0dHA6Ly9jZXJ0cy5lbXJkaXJlY3QuY29tL2NybC9FTVJEaXJlY3RUZXN0RGV2aWNlU3Vi
+Q0EyLmNybDAOBgNVHQ8BAf8EBAMCBaAwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMEQG
+A1UdEQQ9MDuCGWloZS5zdGFnaW5nLm1ldHJpcG9ydC5jb22GHkhUVFA6Ly9XV1cuQ0FSRVFVQUxJ
+VFkuT1JHL1YwMTANBgkqhkiG9w0BAQsFAAOCAQEACASUTJh9KQhdiksve1sR8cT/bB5Rn12qvlo3
+6kNf0FvK6qxUY+bei3F1xeZ2X+2ALi88EypPwXH9N0CFsUNLG7twnjVtuIEPq/u6NU4dX55XdCIR
+QcTjj6ctSLGoN1aNo2jBD/FtPScuTR95c/Gza43RTqJaPKrVnaWd9QA6TVSBimIodpYDz02ciM2v
+889iK8HqYeGgk3m6SmAyliRQNcM1CM0dnjm3Jwa2dhHYtNNd0UUSd3mHAuqOTy9g9KBFp6pUVcVY
+aDY9m0g9hmEBJqAR4Ua3PYudVAn5ibiu45fxXvfg8ewh9vviw/FPfjqIwEiNA53B24GPnkC9J/n2
+Sw==</ds:X509Certificate>
+            </ds:X509Data>
+          </ds:KeyInfo>
+        </ds:Signature>
+        <saml2:Subject>
+          <saml2:NameID Format="urn:oasis:names:tc:SAML:1.1:nameid-format:X509SubjectName">CN=ihe.staging.metriport.com,OU=CAREQUALITY-TEST,O=Metriport Inc.,ST=California,C=US</saml2:NameID>
+          <saml2:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:holder-of-key">
+            <saml2:SubjectConfirmationData>
+              <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+                <ds:KeyValue>
+                  <ds:RSAKeyValue>
+                    <ds:Modulus>4tOa7loCPgXnfXjKJ1k+wWnb9EdZ3LV3J1CfO7Kg4r/1UDEsyg0zNW/D7KpgZIi9b4YWc2YC7LzD
+Nnk1d4sB767rdMk0cIv4ysfpXOVyGFXF4RzoZcGxBU3ZhbqJybjtunDrmvA8NHymD4B/bz28sIVR
+tJDV0H/g4I7jDNyCl6IUeQJKUTBa90UDdJgxFnMD0PmuxjA40injjZ707GuA+StggA0kGCIfhQEV
+n1g7iL3O8zo9Yp0y3QkWtBgrxOTnI/1UPj6Sq0qBlD1C0obh327OJOMU9qLRrJLs6MIUzy7PeZLx
+glQbCKX5zRhtEDe1G/FqQw/5zcxicBsgXtelMQ==</ds:Modulus>
+                    <ds:Exponent>AQAB</ds:Exponent>
+                  </ds:RSAKeyValue>
+                </ds:KeyValue>
+                <ds:X509Data>
+                  <ds:X509Certificate>MIIFHDCCBASgAwIBAgIIUbdr3gSmeh8wDQYJKoZIhvcNAQELBQAwgasxCzAJBgNVBAYTAlVTMRMw
+EQYDVQQIDApDYWxpZm9ybmlhMRIwEAYDVQQHDAlTYW4gRGllZ28xEzARBgNVBAoMCkVNUiBEaXJl
+Y3QxNjA0BgNVBAsMLUNlcnRpZmljYXRpb24gQXV0aG9yaXR5IChjZXJ0cy5lbXJkaXJlY3QuY29t
+KTEmMCQGA1UEAwwdRU1SIERpcmVjdCBUZXN0IERldmljZSBTdWJDQTIwHhcNMjMxMTAyMjEyNTQy
+WhcNMjQxMTAyMjEyNTQyWjB6MQswCQYDVQQGEwJVUzETMBEGA1UECAwKQ2FsaWZvcm5pYTEXMBUG
+A1UECgwOTWV0cmlwb3J0IEluYy4xGTAXBgNVBAsMEENBUkVRVUFMSVRZLVRFU1QxIjAgBgNVBAMM
+GWloZS5zdGFnaW5nLm1ldHJpcG9ydC5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
+AQDi05ruWgI+Bed9eMonWT7Badv0R1nctXcnUJ87sqDiv/VQMSzKDTM1b8PsqmBkiL1vhhZzZgLs
+vMM2eTV3iwHvrut0yTRwi/jKx+lc5XIYVcXhHOhlwbEFTdmFuonJuO26cOua8Dw0fKYPgH9vPbyw
+hVG0kNXQf+DgjuMM3IKXohR5AkpRMFr3RQN0mDEWcwPQ+a7GMDjSKeONnvTsa4D5K2CADSQYIh+F
+ARWfWDuIvc7zOj1inTLdCRa0GCvE5Ocj/VQ+PpKrSoGUPULShuHfbs4k4xT2otGskuzowhTPLs95
+kvGCVBsIpfnNGG0QN7Ub8WpDD/nNzGJwGyBe16UxAgMBAAGjggFyMIIBbjBaBggrBgEFBQcBAQRO
+MEwwSgYIKwYBBQUHMAKGPmh0dHA6Ly9jZXJ0cy5lbXJkaXJlY3QuY29tL2NlcnRzL0VNUkRpcmVj
+dFRlc3REZXZpY2VTdWJDQTIuY3J0MB0GA1UdDgQWBBTHhH0qkOSuubx9pjHaChsgjBffJTAMBgNV
+HRMBAf8EAjAAMB8GA1UdIwQYMBaAFLALWDvFk63Gb2VdEcASrVrch4Y1ME0GA1UdHwRGMEQwQqBA
+oD6GPGh0dHA6Ly9jZXJ0cy5lbXJkaXJlY3QuY29tL2NybC9FTVJEaXJlY3RUZXN0RGV2aWNlU3Vi
+Q0EyLmNybDAOBgNVHQ8BAf8EBAMCBaAwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMEQG
+A1UdEQQ9MDuCGWloZS5zdGFnaW5nLm1ldHJpcG9ydC5jb22GHkhUVFA6Ly9XV1cuQ0FSRVFVQUxJ
+VFkuT1JHL1YwMTANBgkqhkiG9w0BAQsFAAOCAQEACASUTJh9KQhdiksve1sR8cT/bB5Rn12qvlo3
+6kNf0FvK6qxUY+bei3F1xeZ2X+2ALi88EypPwXH9N0CFsUNLG7twnjVtuIEPq/u6NU4dX55XdCIR
+QcTjj6ctSLGoN1aNo2jBD/FtPScuTR95c/Gza43RTqJaPKrVnaWd9QA6TVSBimIodpYDz02ciM2v
+889iK8HqYeGgk3m6SmAyliRQNcM1CM0dnjm3Jwa2dhHYtNNd0UUSd3mHAuqOTy9g9KBFp6pUVcVY
+aDY9m0g9hmEBJqAR4Ua3PYudVAn5ibiu45fxXvfg8ewh9vviw/FPfjqIwEiNA53B24GPnkC9J/n2
+Sw==</ds:X509Certificate>
+                </ds:X509Data>
+              </ds:KeyInfo>
+            </saml2:SubjectConfirmationData>
+          </saml2:SubjectConfirmation>
+        </saml2:Subject>
+        <saml2:Conditions NotBefore="2023-12-06T22:46:38.732Z" NotOnOrAfter="2023-12-06T22:51:38.732Z">
+          <saml2:AudienceRestriction>
+            <saml2:Audience>https://sfd-np.et0121.epichosted.com:14430/interconnect-ce-env1/wcf/epic.community.hie/xcpdrespondinggatewaysync.svc/ceq</saml2:Audience>
+          </saml2:AudienceRestriction>
+        </saml2:Conditions>
+        <saml2:AuthnStatement AuthnInstant="2023-12-06T22:46:38.741Z">
+          <saml2:SubjectLocality Address="127.0.0.1" DNSName="localhost"/>
+          <saml2:AuthnContext>
+            <saml2:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:X509</saml2:AuthnContextClassRef>
+          </saml2:AuthnContext>
+        </saml2:AuthnStatement>
+        <saml2:AttributeStatement>
+          <saml2:Attribute Name="urn:oasis:names:tc:xspa:1.0:subject:subject-id" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri">
+            <saml2:AttributeValue xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="xs:string">Administrator</saml2:AttributeValue>
+          </saml2:Attribute>
+          <saml2:Attribute Name="urn:oasis:names:tc:xspa:1.0:subject:organization" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri">
+            <saml2:AttributeValue xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="xs:string">Metriport</saml2:AttributeValue>
+          </saml2:Attribute>
+          <saml2:Attribute Name="urn:oasis:names:tc:xspa:1.0:subject:organization-id" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri">
+            <saml2:AttributeValue xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="xs:string">urn:oid:2.16.840.1.113883.3.9621</saml2:AttributeValue>
+          </saml2:Attribute>
+          <saml2:Attribute Name="urn:nhin:names:saml:homeCommunityId" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri">
+            <saml2:AttributeValue xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="xs:string">urn:oid:2.16.840.1.113883.3.9621}</saml2:AttributeValue>
+          </saml2:Attribute>
+          <saml2:Attribute Name="urn:oasis:names:tc:xacml:2.0:subject:role" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri">
+            <saml2:AttributeValue>
+              <hl7:Role xmlns:hl7="urn:hl7-org:v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" code="224608005" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED_CT" displayName="Administrator" xsi:type="hl7:CE"/>
+            </saml2:AttributeValue>
+          </saml2:Attribute>
+          <saml2:Attribute Name="urn:oasis:names:tc:xspa:1.0:subject:purposeofuse" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri">
+            <saml2:AttributeValue>
+              <hl7:PurposeOfUse xmlns:hl7="urn:hl7-org:v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" code="TREATMENT" codeSystem="2.16.840.1.113883.3.18.7.1" codeSystemName="nhin-purpose" displayName="Treatment" xsi:type="hl7:CE"/>
+            </saml2:AttributeValue>
+          </saml2:Attribute>
+        </saml2:AttributeStatement>
+      </saml2:Assertion>
+      <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+        <ds:SignedInfo>
+          <ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+          <ds:SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>
+          <ds:Reference URI="#TS-403c0854-cfef-4fc5-8bf7-4fa2ee641d06">
+            <ds:Transforms>
+              <ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+            </ds:Transforms>
+            <ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+            <ds:DigestValue>eAhh7bgN+Q256kNe2cNTNLnSaK4=</ds:DigestValue>
+          </ds:Reference>
+        </ds:SignedInfo>
+        <ds:SignatureValue>jxZ64DSPeFvt5/Xm3w58elM8DW3qDtRi7qWNqdsvHolCT8FeM1W+FlhWRdkwwd2nC+Bum4SyD+HxtoCLwRZSY5y62Q7bgVVpmKzmgKyO12heTExKsMqp4kMRORZfkHpgvZ1CwkVt44CwPAIoakzSSDEBsDGqh/wrQlUCjZo+qHpnEB5CL4J63tp65mQH9yoFra5pJpJquys35xX829A5+XX5+r2zrB1oFVHhdBuSmFynX5+tlus3rPSVtpyXLPdCZbjz3L+J/a3UXbMirZzPlFHX4l95c1+9ouAiEH1WjLzFD4TkBd37EpjdnZD+3GTkGQzsqKHgcWLAt1EDsGnqpw==</ds:SignatureValue>
+        <ds:KeyInfo>
+          <wsse:SecurityTokenReference xmlns:wsse11="http://docs.oasis-open.org/wss/oasis-wss-wssecurity-secext-1.1.xsd" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" wsse11:TokenType="http://docs.oasis-open.org/wss/oasis-wss-saml-token-profile-1.1#SAMLV2.0" wsu:Id="35f57f2f-9fd8-466c-ad2d-c9f3f9849310">
+            <wsse:KeyIdentifier ValueType="http://docs.oasis-open.org/wss/oasis-wss-saml-token-profile-1.1#SAMLID">_92a20a65-dad6-4920-8d18-2cb72cc10ee8</wsse:KeyIdentifier>
+          </wsse:SecurityTokenReference>
+        </ds:KeyInfo>
+      </ds:Signature>
+      <wsu:Timestamp xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" wsu:Id="TS-403c0854-cfef-4fc5-8bf7-4fa2ee641d06">
+        <wsu:Created>2023-12-06T22:44:58.781Z</wsu:Created>
+        <wsu:Expires>2023-12-06T22:48:18.781Z</wsu:Expires>
+      </wsu:Timestamp>
+    </wsse:Security>
+  </soap:Header>
+  <soap:Body>
+    <urn:PRPA_IN201305UV02 ITSVersion="XML_1.0">
+      <urn:id extension="2e304916-539f-4a0e-8c13-07347b38609a" root="2.16.840.1.113883.3.9621"/>
+      <urn:creationTime value="20231206224636"/>
+      <urn:interactionId extension="PRPA_IN201305UV02" root="2.16.840.1.113883.1.6"/>
+      <urn:processingCode code="P"/>
+      <urn:processingModeCode code="T"/>
+      <urn:acceptAckCode code="AL"/>
+      <receiver typeCode="RCV">
+        <device classCode="DEV" determinerCode="INSTANCE">
+          <id root="2.16.840.1.113883.3.564.1"/>
+          <telecom value="https://sfd-np.et0121.epichosted.com:14430/interconnect-ce-env1/wcf/epic.community.hie/xcpdrespondinggatewaysync.svc/ceq"/>
+          <asAgent classCode="AGNT">
+            <representedOrganization classCode="ORG" determinerCode="INSTANCE">
+              <id root="2.16.840.1.113883.3.564.1"/>
+            </representedOrganization>
+          </asAgent>
+        </device>
+      </receiver>
+      <sender typeCode="SND">
+        <device classCode="DEV" determinerCode="INSTANCE">
+          <id root="2.16.840.1.113883.3.9621"/>
+          <asAgent classCode="AGNT">
+            <representedOrganization classCode="ORG" determinerCode="INSTANCE">
+              <id root="2.16.840.1.113883.3.9621"/>
+              <name>Metriport</name>
+            </representedOrganization>
+          </asAgent>
+        </device>
+      </sender>
+      <urn:controlActProcess classCode="CACT" moodCode="EVN">
+        <urn:code code="PRPA_TE201305UV02" codeSystem="2.16.840.1.113883.1.6"/>
+        <urn:queryByParameter>
+          <urn:queryId extension="2e304916-539f-4a0e-8c13-07347b38609a" root="2.16.840.1.113883.3.9621"/>
+          <urn:statusCode code="new"/>
+          <urn:responseModalityCode code="R"/>
+          <urn:responsePriorityCode code="I"/>
+          <urn:parameterList>
+            <urn:livingSubjectAdministrativeGender>
+              <urn:value code="M" codeSystem="2.16.840.1.113883.5.1"/>
+              <urn:semanticsText>LivingSubject.administrativeGender</urn:semanticsText>
+            </urn:livingSubjectAdministrativeGender>
+            <urn:livingSubjectBirthTime>
+              <urn:value value="19810101"/>
+              <urn:semanticsText>LivingSubject.birthTime</urn:semanticsText>
+            </urn:livingSubjectBirthTime>
+            <urn:livingSubjectId>
+              <urn:value extension="666-10-0001" root="2.16.840.1.113883.4.1"/>
+              <urn:semanticsText>LivingSubject.id</urn:semanticsText>
+            </urn:livingSubjectId>
+            <urn:livingSubjectName>
+              <urn:value>
+                <urn:family>NWHINZZZTESTPATIENT</urn:family>
+                <urn:given>NWHINONE</urn:given>
+              </urn:value>
+              <urn:semanticsText>LivingSubject.name</urn:semanticsText>
+            </urn:livingSubjectName>
+            <urn:patientAddress>
+              <urn:value>
+                <urn:streetAddressLine>1100 Test Street</urn:streetAddressLine>
+                <urn:city>Helena</urn:city>
+                <urn:state>AL</urn:state>
+                <urn:postalCode>35080</urn:postalCode>
+                <urn:country>USA</urn:country>
+              </urn:value>
+              <urn:semanticsText>Patient.addr</urn:semanticsText>
+            </urn:patientAddress>
+            <urn:patientTelecom>
+              <urn:value value="tel:205-111-1111"/>
+              <urn:semanticsText>Patient.telecom</urn:semanticsText>
+            </urn:patientTelecom>
+            <urn:principalCareProviderId>
+              <urn:value extension="1689055451" root="2.16.840.1.113883.4.6"/>
+            </urn:principalCareProviderId>
+            <urn:principalCareProviderId>
+              <urn:value extension="1689055467" root="2.16.840.1.113883.4.6"/>
+            </urn:principalCareProviderId>
+          </urn:parameterList>
+        </urn:queryByParameter>
+      </urn:controlActProcess>
+    </urn:PRPA_IN201305UV02>
+  </soap:Body>
+</soap:Envelope>

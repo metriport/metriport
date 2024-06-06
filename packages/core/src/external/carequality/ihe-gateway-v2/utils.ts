@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { GenderAtBirth } from "../../../domain/patient";
 import { mapGenderAtBirthToFhir } from "../../fhir/patient";
-import { TextOrTextObject } from "./outbound/schema";
+import { TextOrTextObject } from "./schema";
 
 export function normalizeGender(gender: GenderAtBirth | undefined): "male" | "female" | undefined {
   if (gender === undefined) {
