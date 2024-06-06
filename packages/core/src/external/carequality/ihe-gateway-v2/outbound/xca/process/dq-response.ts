@@ -132,6 +132,7 @@ function parseDocumentReference(
     return undefined;
   }
 
+  const creationTime = String(findSlotValue("creationTime"));
   const documentReference: DocumentReference = {
     homeCommunityId: getHomeCommunityIdForDr(outboundRequest, extrinsicObject),
     repositoryUniqueId,
@@ -140,9 +141,7 @@ function parseDocumentReference(
     language: findSlotValue("languageCode"),
     size: sizeValue ? parseInt(sizeValue) : undefined,
     title: findClassificationName(XDSDocumentEntryClassCode),
-    creation: findSlotValue("creationTime")
-      ? dayjs(findSlotValue("creationTime")).toISOString()
-      : undefined,
+    creation: creationTime ? dayjs(creationTime).toISOString() : undefined,
     authorInstitution: findClassificationSlotValue(XDSDocumentEntryAuthor, "authorInstitution"),
   };
   return documentReference;
