@@ -1,4 +1,4 @@
-import { MetriportMedicalApi, WebhookRequestParsingError } from "@metriport/api-sdk";
+import { MetriportMedicalApi } from "@metriport/api-sdk";
 import {
   DocumentBulkDownloadWebhookRequest,
   DocumentConversionWebhookRequest,
@@ -7,7 +7,7 @@ import {
   isDocumentBulkDownloadWebhookRequest,
   isDocumentConversionWebhookRequest,
   isDocumentDownloadWebhookRequest,
-} from "@metriport/api-sdk/medical/models/webhook-request";
+} from "@metriport/shared/medical";
 import { Request, Response } from "express";
 import { handleConsolidated } from "./consolidated";
 
@@ -20,14 +20,7 @@ export async function handleRequest(req: Request, res: Response) {
       throw new Error("Signature verification failed");
     }
     console.log(`[WH] ========> Handling request... type: ${req.body?.meta?.type}`);
-    const parseResp = MetriportMedicalApi.parseWebhookResponse(req.body, false);
-    if (parseResp instanceof WebhookRequestParsingError) {
-      console.log(
-        `[WH] ====> Error parsing WH request: ${JSON.stringify(parseResp.flattened, null, 2)}`
-      );
-      return res.status(400).send({ message: `Invalid WH request`, details: parseResp.flattened });
-    }
-    const whRequest = parseResp;
+    const whRequest = MetriportMedicalApi.parseWebhookResponse(req.body);
     if (whRequest.meta.type === "ping") {
       return handlePing(req, res);
     }
@@ -46,6 +39,7 @@ export async function handleRequest(req: Request, res: Response) {
     return res.status(400).send({ message: `Invalid WH type: ${whRequest.meta.type}` });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
+    console.log(`[WH] ====> Error parsing WH request: ${JSON.stringify(error.cause)}`);
     return res.status(400).send({ message: error.message });
   }
 }

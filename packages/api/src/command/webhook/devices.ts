@@ -1,4 +1,5 @@
 import { MetriportData } from "@metriport/api-sdk/devices/models/metriport-data";
+import { WebhookMetadata } from "@metriport/shared/medical";
 import stringify from "json-stringify-safe";
 import { Product } from "../../domain/product";
 import { ConnectedUser } from "../../models/connected-user";
@@ -6,7 +7,7 @@ import { ProviderOptions } from "../../shared/constants";
 import { errorToString } from "../../shared/log";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { reportUsage as reportUsageCmd } from "../usage/report-usage";
-import { processRequest, WebhookMetadataPayload } from "./webhook";
+import { processRequest } from "./webhook";
 import { buildWebhookRequestData, WebhookRequestData } from "./webhook-request";
 
 export type DataType = "activity" | "sleep" | "body" | "biometrics" | "nutrition";
@@ -17,7 +18,7 @@ export interface TypedData<T extends MetriportData> {
 }
 
 export type WebhookDataPayload = {
-  meta: WebhookMetadataPayload;
+  meta: WebhookMetadata;
   users: WebhookUserPayload[];
 };
 export type WebhookDataPayloadWithoutMessageId = Omit<WebhookDataPayload, "meta">;

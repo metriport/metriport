@@ -1,17 +1,18 @@
+import { PatientData } from "@metriport/core/domain/patient";
+import { WebhookMetadata } from "@metriport/shared/medical";
 import { Product } from "../../../domain/product";
 import { MAPIWebhookType } from "../../../domain/webhook";
-import { DocumentReferenceDTO } from "../../../routes/medical/dtos/documentDTO";
 import { DocumentBulkUrlDTO } from "../../../routes/medical/dtos/document-bulk-downloadDTO";
+import { DocumentReferenceDTO } from "../../../routes/medical/dtos/documentDTO";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getSettingsOrFail } from "../../settings/getSettings";
-import { getPatientOrFail } from "../patient/get-patient";
 import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
-import { processRequest, WebhookMetadataPayload, isWebhookDisabled } from "../../webhook/webhook";
+import { isWebhookDisabled, processRequest } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
-import { DOWNLOAD_WEBHOOK_TYPE, CONVERSION_WEBHOOK_TYPE } from "./process-doc-query-webhook";
 import { updateProgressWebhookSent } from "../patient/append-doc-query-progress";
-import { PatientData } from "@metriport/core/domain/patient";
+import { getPatientOrFail } from "../patient/get-patient";
+import { CONVERSION_WEBHOOK_TYPE, DOWNLOAD_WEBHOOK_TYPE } from "./process-doc-query-webhook";
 
 const log = Util.log(`Document Webhook`);
 
@@ -29,7 +30,7 @@ type WebhookPatientPayload = {
   externalId?: string;
 } & WebhookDocumentDataPayload;
 type WebhookPatientDataPayload = {
-  meta: WebhookMetadataPayload;
+  meta: WebhookMetadata;
   patients: WebhookPatientPayload[];
 };
 type WebhookPatientDataPayloadWithoutMessageId = Omit<WebhookPatientDataPayload, "meta">;
