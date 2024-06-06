@@ -11,12 +11,22 @@ export const up: Migration = async ({ context: queryInterface }) => {
     await Promise.all([
       queryInterface.addIndex(documentQueryResultTable, {
         name: `${documentQueryResultTable}_${createdAtIndex}`,
-        fields: [createdAtIndexFieldName],
+        fields: [
+          {
+            name: createdAtIndexFieldName,
+            order: "DESC",
+          },
+        ],
         transaction,
       }),
       queryInterface.addIndex(documentRetrievalResultTable, {
         name: `${documentRetrievalResultTable}_${createdAtIndex}`,
-        fields: [createdAtIndexFieldName],
+        fields: [
+          {
+            name: createdAtIndexFieldName,
+            order: "DESC",
+          },
+        ],
         transaction,
       }),
     ]);

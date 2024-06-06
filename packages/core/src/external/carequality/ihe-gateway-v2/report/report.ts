@@ -1,4 +1,5 @@
-import { QueryTypes, Sequelize } from "sequelize";
+import { Pool } from "pg";
+import { z } from "zod";
 import dayjs from "dayjs";
 import {
   OutboundPatientDiscoveryResp,
@@ -6,6 +7,9 @@ import {
   OutboundDocumentQueryResp,
   XCAGateway,
   OutboundDocumentRetrievalResp,
+  outboundPatientDiscoveryRespSchema,
+  outboundDocumentQueryRespSchema,
+  outboundDocumentRetrievalRespSchema,
 } from "@metriport/ihe-gateway-sdk";
 
 const patientDiscoveryReportRequests = 10;
@@ -37,92 +41,114 @@ type ReportSummary = {
   errorDetailsMap: { [key: string]: { count: number; details: string } };
 };
 
+export const patientDiscoveryResultRowSchema = z.object({
+  data: outboundPatientDiscoveryRespSchema,
+});
+
+export const documentQueryResultRowSchema = z.object({
+  data: outboundDocumentQueryRespSchema,
+});
+
+export const documentRetrievalResultRowSchema = z.object({
+  data: outboundDocumentRetrievalRespSchema,
+});
+
+enum Tables {
+  PatientDiscoveryResult = "patient_discovery_result",
+  DocumentQueryResult = "document_query_result",
+  DocumentRetrievalResult = "document_retrieval_result",
+}
+
+enum TableColumns {
+  request_id = "request_id",
+  created_at = "created_at",
+}
+
 async function getRandomRequestIds({
-  sequelize,
+  pool,
   tableName,
   since,
   limit,
 }: {
-  sequelize: Sequelize;
-  tableName: string;
+  pool: Pool;
+  tableName: Tables;
   since: string;
   limit: number;
 }): Promise<string[]> {
   const query = `
-      SELECT request_id
-      FROM ${tableName}
-      WHERE created_at >= '${since}'
-      ORDER BY created_at DESC
-      LIMIT ${limit};
-    `;
-  const results = await sequelize.query(query, { type: QueryTypes.SELECT });
-  // eslint-disable-next-line
-  return results.map((row: any) => row.request_id);
+    SELECT request_id
+    FROM ${tableName}
+    WHERE created_at >= $1
+    ORDER BY created_at DESC
+    LIMIT $2;
+  `;
+  const values = [since, limit];
+  const { rows } = await pool.query(query, values);
+  return rows.map(row => row.request_id);
 }
 
-// execute asynch s
 async function getPatientDiscoveryResultsForRequestId({
-  sequelize,
+  pool,
   requestId,
 }: {
-  sequelize: Sequelize;
+  pool: Pool;
   requestId: string;
 }): Promise<OutboundPatientDiscoveryResp[]> {
   const query = `
         SELECT *
-        FROM patient_discovery_result
-        WHERE request_id = '${requestId}';
+        FROM ${Tables.PatientDiscoveryResult}
+        WHERE ${TableColumns.request_id} = $1;
     `;
-  const results = await sequelize.query(query, { type: QueryTypes.SELECT });
-  return results.map(result => {
-    //eslint-disable-next-line
-    return (result as any).data as OutboundPatientDiscoveryResp;
+  const results = await pool.query(query, [requestId]);
+  return results.rows.map(result => {
+    const parsed = patientDiscoveryResultRowSchema.parse(result.data);
+    return parsed.data;
   });
 }
 
 async function getDocumentQueryResultsForRequestId({
-  sequelize,
+  pool,
   requestId,
 }: {
-  sequelize: Sequelize;
+  pool: Pool;
   requestId: string;
 }): Promise<OutboundDocumentQueryResp[]> {
   const query = `
     SELECT *
-    FROM document_query_result
-    WHERE request_id = '${requestId}';
+    FROM ${Tables.DocumentQueryResult}
+    WHERE ${TableColumns.request_id} = $1;
 `;
-  const results = await sequelize.query(query, { type: QueryTypes.SELECT });
-  return results.map(result => {
-    //eslint-disable-next-line
-    return (result as any).data as OutboundDocumentQueryResp;
+  const results = await pool.query(query, [requestId]);
+  return results.rows.map(result => {
+    const parsed = documentQueryResultRowSchema.parse(result.data);
+    return parsed.data;
   });
 }
 
 async function getDocumentRetrievalResultsForRequestId({
-  sequelize,
+  pool,
   requestId,
 }: {
-  sequelize: Sequelize;
+  pool: Pool;
   requestId: string;
 }): Promise<OutboundDocumentRetrievalResp[]> {
   const query = `
     SELECT *
-    FROM document_retrieval_result
-    WHERE request_id = '${requestId}';
+    FROM ${Tables.DocumentRetrievalResult}
+    WHERE ${TableColumns.request_id} = $1;
 `;
-  const results = await sequelize.query(query, { type: QueryTypes.SELECT });
-  return results.map(result => {
-    //eslint-disable-next-line
-    return (result as any).data as OutboundDocumentRetrievalResp;
+  const results = await pool.query(query, [requestId]);
+  return results.rows.map(result => {
+    const parsed = documentRetrievalResultRowSchema.parse(result.data);
+    return parsed.data;
   });
 }
 
 async function generatePatientDiscoveryReportForRequestId(
-  sequelize: Sequelize,
+  pool: Pool,
   requestId: string
 ): Promise<Report> {
-  const results = await getPatientDiscoveryResultsForRequestId({ sequelize, requestId });
+  const results = await getPatientDiscoveryResultsForRequestId({ pool, requestId });
   const total = results.length;
 
   const successes = results.filter(
@@ -155,20 +181,18 @@ async function generatePatientDiscoveryReportForRequestId(
 }
 
 async function generateDocumentQueryReportForRequestId(
-  sequelize: Sequelize,
+  pool: Pool,
   requestId: string
 ): Promise<Report> {
-  const results = await getDocumentQueryResultsForRequestId({ sequelize, requestId });
+  const results = await getDocumentQueryResultsForRequestId({ pool, requestId });
   const total = results.length;
 
   const successes = results.filter(
-    (result: OutboundDocumentQueryResp) =>
-      (result as OutboundDocumentQueryResp).documentReference !== undefined
+    (result: OutboundDocumentQueryResp) => result.documentReference !== undefined
   );
 
   const failures = results.filter(
-    (result: OutboundDocumentQueryResp) =>
-      (result as OutboundDocumentQueryResp).documentReference === undefined
+    (result: OutboundDocumentQueryResp) => result.documentReference === undefined
   );
 
   const errorOids = failures.map((error: OutboundDocumentQueryResp) => ({
@@ -187,20 +211,18 @@ async function generateDocumentQueryReportForRequestId(
 }
 
 async function generateDocumentRetrievalReportForRequestId(
-  sequelize: Sequelize,
+  pool: Pool,
   requestId: string
 ): Promise<Report> {
-  const results = await getDocumentRetrievalResultsForRequestId({ sequelize, requestId });
+  const results = await getDocumentRetrievalResultsForRequestId({ pool, requestId });
   const total = results.length;
 
   const successes = results.filter(
-    (result: OutboundDocumentRetrievalResp) =>
-      (result as OutboundDocumentRetrievalResp).documentReference !== undefined
+    (result: OutboundDocumentRetrievalResp) => result.documentReference !== undefined
   );
 
   const failures = results.filter(
-    (result: OutboundDocumentRetrievalResp) =>
-      (result as OutboundDocumentRetrievalResp).documentReference === undefined
+    (result: OutboundDocumentRetrievalResp) => result.documentReference === undefined
   );
 
   const errorOids = failures.map((error: OutboundDocumentRetrievalResp) => ({
@@ -253,48 +275,46 @@ function summarizeReports(reports: Report[]): ReportSummary {
   };
 }
 
-export async function generatePatientDiscoveryReport(sequelize: Sequelize): Promise<ReportSummary> {
+export async function generatePatientDiscoveryReport(pool: Pool): Promise<ReportSummary> {
   const twelveHoursAgo = dayjs().subtract(12, "hours").toISOString();
   const requestIds = await getRandomRequestIds({
-    sequelize,
-    tableName: "patient_discovery_result",
+    pool,
+    tableName: Tables.PatientDiscoveryResult,
     since: twelveHoursAgo,
     limit: patientDiscoveryReportRequests,
   });
   const reports = await Promise.all(
-    requestIds.map(requestId => generatePatientDiscoveryReportForRequestId(sequelize, requestId))
+    requestIds.map(requestId => generatePatientDiscoveryReportForRequestId(pool, requestId))
   );
 
   return summarizeReports(reports);
 }
 
-export async function generateDocumentQueryReport(sequelize: Sequelize): Promise<ReportSummary> {
+export async function generateDocumentQueryReport(pool: Pool): Promise<ReportSummary> {
   const twelveHoursAgo = dayjs().subtract(12, "hours").toISOString();
   const requestIds = await getRandomRequestIds({
-    sequelize,
-    tableName: "document_query_result",
+    pool,
+    tableName: Tables.DocumentQueryResult,
     since: twelveHoursAgo,
     limit: documentQueryReportRequests,
   });
   const reports = await Promise.all(
-    requestIds.map(requestId => generateDocumentQueryReportForRequestId(sequelize, requestId))
+    requestIds.map(requestId => generateDocumentQueryReportForRequestId(pool, requestId))
   );
 
   return summarizeReports(reports);
 }
 
-export async function generateDocumentRetrievalReport(
-  sequelize: Sequelize
-): Promise<ReportSummary> {
+export async function generateDocumentRetrievalReport(pool: Pool): Promise<ReportSummary> {
   const twelveHoursAgo = dayjs().subtract(12, "hours").toISOString();
   const requestIds = await getRandomRequestIds({
-    sequelize,
-    tableName: "document_retrieval_result",
+    pool,
+    tableName: Tables.DocumentRetrievalResult,
     since: twelveHoursAgo,
     limit: documentRetrievalReportRequests,
   });
   const reports = await Promise.all(
-    requestIds.map(requestId => generateDocumentRetrievalReportForRequestId(sequelize, requestId))
+    requestIds.map(requestId => generateDocumentRetrievalReportForRequestId(pool, requestId))
   );
 
   return summarizeReports(reports);

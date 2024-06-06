@@ -449,7 +449,7 @@ export class APIStack extends Stack {
         envType: props.config.environmentType,
         sentryDsn: props.config.lambdasSentryDSN,
         dbCredsSecret,
-        dbCluster,
+        connections: dbCluster.connections,
         dbReadOnlyEndpoint: dbCluster.clusterReadEndpoint,
       });
     }

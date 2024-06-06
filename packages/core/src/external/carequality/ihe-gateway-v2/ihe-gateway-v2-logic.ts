@@ -56,9 +56,9 @@ export async function createSignSendProcessXCPDRequest({
       log(errorString);
       capture.error("Failed to send PD response to Internal Carequality Endpoint", {
         extra: {
-          errorString,
-          result,
           xcpdRequest,
+          result,
+          error,
         },
       });
     }

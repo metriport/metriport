@@ -20,7 +20,7 @@ interface IHEGatewayV2LambdasNestedStackProps extends NestedStackProps {
   vpc: ec2.IVpc;
   secrets: Secrets;
   dbCredsSecret: secret.ISecret;
-  dbCluster: rds.IDatabaseCluster;
+  connections: ec2.Connections;
   dbReadOnlyEndpoint: rds.Endpoint;
   cqOrgCertificate: string | undefined;
   cqOrgPrivateKey: string | undefined;
@@ -276,7 +276,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     envType: EnvType;
     sentryDsn: string | undefined;
     dbCredsSecret: secret.ISecret;
-    dbCluster: rds.IDatabaseCluster;
+    connections: ec2.Connections;
     dbReadOnlyEndpoint: rds.Endpoint;
   }): Lambda {
     const {
@@ -286,7 +286,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       envType,
       sentryDsn,
       dbCredsSecret,
-      dbCluster,
+      connections,
       dbReadOnlyEndpoint,
     } = ownProps;
 
@@ -307,11 +307,11 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       vpc,
     });
 
-    dbCluster.connections.allowDefaultPortFrom(scheduledReportLambda);
+    connections.allowDefaultPortFrom(scheduledReportLambda);
     dbCredsSecret.grantRead(scheduledReportLambda);
 
     const rule = new events.Rule(this, "ScheduledReportRule", {
-      schedule: events.Schedule.rate(Duration.hours(12)),
+      schedule: events.Schedule.cron({ minute: "0", hour: "0,14" }),
     });
     rule.addTarget(new targets.LambdaFunction(scheduledReportLambda));
 

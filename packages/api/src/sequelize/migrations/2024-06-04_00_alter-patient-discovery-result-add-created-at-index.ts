@@ -8,7 +8,12 @@ export const up: Migration = async ({ context: queryInterface }) => {
   await queryInterface.sequelize.transaction(async transaction => {
     await queryInterface.addIndex(tableName, {
       name: createdAtIndex,
-      fields: [createdAtIndexFieldName],
+      fields: [
+        {
+          name: createdAtIndexFieldName,
+          order: "DESC",
+        },
+      ],
       transaction,
     });
   });
