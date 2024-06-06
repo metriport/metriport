@@ -98,9 +98,7 @@ export type GetConsolidatedFilters = z.infer<typeof getConsolidatedFiltersSchema
 export const consolidatedCountSchema = z.object({
   total: z.number(),
   resources: z.record(z.number()),
-  filter: getConsolidatedFiltersSchema.pick({ dateFrom: true, dateTo: true }).extend({
-    resources: z.string(),
-  }),
+  filter: getConsolidatedFiltersSchema.pick({ dateFrom: true, dateTo: true, resources: true }),
 });
 
 export type ConsolidatedCountResponse = z.infer<typeof consolidatedCountSchema>;
