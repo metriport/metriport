@@ -1,5 +1,8 @@
 import { patientCreateSchema, demographicsSchema } from "@metriport/api-sdk";
-import { QueryProgress as QueryProgressFromSDK } from "@metriport/api-sdk/medical/models/patient";
+import {
+  GetConsolidatedQueryProgressResponse,
+  StartConsolidatedQueryProgressResponse,
+} from "@metriport/api-sdk/medical/models/patient";
 import {
   consolidationConversionType,
   mrFormat,
@@ -13,6 +16,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { z } from "zod";
+import { orderBy } from "lodash";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
 import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/consolidated-create";
 import {
@@ -271,7 +275,7 @@ router.get(
  *
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient whose data is to be returned.
- * @return status of querying for the Patient's consolidated data.
+ * @returns all consolidated queries for the patient that have been triggered.
  */
 router.get(
   "/:id/consolidated/query",
@@ -280,11 +284,17 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
     const patient = await getPatientOrFail({ cxId, id: patientId });
-    const respPayload: QueryProgressFromSDK = {
-      status: patient.data.consolidatedQuery?.status ?? null,
+    const consolidatedQueries = patient.data.consolidatedQueries ?? null;
+    const mostRecentQuery = orderBy(consolidatedQueries, "startedAt", "desc")[0];
+
+    const respPayload: GetConsolidatedQueryProgressResponse = {
+      /** @deprecated status should no longer be used. Refer to queries in the consolidatedQueries array instead. */
+      status: mostRecentQuery?.status ?? null,
+      queries: consolidatedQueries ?? null,
       message:
         "Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook",
     };
+
     return res.json(respPayload);
   })
 );
@@ -307,7 +317,7 @@ const medicalRecordFormatSchema = z.enum(mrFormat);
  *        Accepts "pdf", "html", and "json". If provided, the Webhook payload will contain a signed URL to download
  *        the file, which is active for 3 minutes. If not provided, will send json payload in the webhook.
  * @param req.body Optional metadata to be sent through Webhook.
- * @return status of querying for the Patient's consolidated data.
+ * @return status for querying the Patient's consolidated data.
  */
 router.post(
   "/:id/consolidated/query",
@@ -331,9 +341,9 @@ router.post(
       conversionType,
       cxConsolidatedRequestMetadata: cxConsolidatedRequestMetadata?.metadata,
     });
-    const respPayload: QueryProgressFromSDK = {
-      status: queryResponse.status ?? null,
-    };
+
+    const respPayload: StartConsolidatedQueryProgressResponse = queryResponse;
+
     return res.json(respPayload);
   })
 );

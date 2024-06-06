@@ -8,10 +8,10 @@ import {
   Resource,
   ResourceType,
 } from "@medplum/fhirtypes";
-import { ConsolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
-import { QueryProgress } from "@metriport/core/domain/query-status";
+import { ConsolidatedQuery, resourcesSearchableByPatient } from "@metriport/api-sdk";
+import { intersection } from "lodash";
 import {
   buildBundle,
   getReferencesFromResources,
@@ -20,7 +20,7 @@ import { isResourceDerivedFromDocRef } from "@metriport/core/external/fhir/share
 import { emptyFunction } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
-import { ResourceTypeForConsolidation } from "../../../domain/medical/consolidation-resources";
+import { GetConsolidatedFilters, ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import {
   fullDateQueryForResource,
@@ -41,18 +41,15 @@ import {
 import { getPatientOrFail } from "./get-patient";
 import { storeQueryInit } from "./query-init";
 
-export type GetConsolidatedFilters = {
-  resources?: ResourceTypeForConsolidation[];
-  dateFrom?: string;
-  dateTo?: string;
-  conversionType?: ConsolidationConversionType;
-};
-
 export type GetConsolidatedParams = {
   patient: Pick<Patient, "id" | "cxId" | "data">;
   requestId?: string;
   documentIds?: string[];
 } & GetConsolidatedFilters;
+
+export type GetConsolidatedSendToCxParams = GetConsolidatedParams & {
+  requestId: string;
+};
 
 export type ConsolidatedQueryParams = {
   cxId: string;
@@ -63,22 +60,42 @@ export type ConsolidatedQueryParams = {
 export async function startConsolidatedQuery({
   cxId,
   patientId,
-  resources,
+  resources = [],
   dateFrom,
   dateTo,
   conversionType,
   cxConsolidatedRequestMetadata,
-}: ConsolidatedQueryParams): Promise<QueryProgress> {
+}: ConsolidatedQueryParams): Promise<ConsolidatedQuery> {
   const { log } = Util.out(`startConsolidatedQuery - M patient ${patientId}`);
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  if (patient.data.consolidatedQuery?.status === "processing") {
-    log(`Patient ${patientId} consolidatedQuery is already 'processing', skipping...`);
-    return patient.data.consolidatedQuery;
+  const currentConsolidatedProgress = getCurrentConsolidatedProgress(
+    patient.data.consolidatedQueries,
+    {
+      resources,
+      dateFrom,
+      dateTo,
+      conversionType,
+    }
+  );
+
+  if (currentConsolidatedProgress) {
+    log(
+      `Patient ${patientId} consolidatedQuery is already 'processing' with params: ${currentConsolidatedProgress}, skipping...`
+    );
+    return currentConsolidatedProgress;
   }
 
   const startedAt = new Date();
   const requestId = uuidv7();
-  const progress: QueryProgress = { status: "processing", startedAt };
+  const progress: ConsolidatedQuery = {
+    requestId,
+    status: "processing",
+    startedAt,
+    resources,
+    dateFrom,
+    dateTo,
+    conversionType,
+  };
 
   analytics({
     distinctId: patient.cxId,
@@ -93,7 +110,10 @@ export async function startConsolidatedQuery({
     id: patient.id,
     cxId: patient.cxId,
     cmd: {
-      consolidatedQuery: progress,
+      consolidatedQueries: appendProgressToProcessingQueries(
+        patient.data.consolidatedQueries,
+        progress
+      ),
       cxConsolidatedRequestMetadata,
     },
   });
@@ -110,7 +130,69 @@ export async function startConsolidatedQuery({
   return progress;
 }
 
-async function getConsolidatedAndSendToCx(params: GetConsolidatedParams): Promise<void> {
+function appendProgressToProcessingQueries(
+  currentConsolidatedQueries: ConsolidatedQuery[] | undefined,
+  progress: ConsolidatedQuery
+): ConsolidatedQuery[] {
+  if (currentConsolidatedQueries) {
+    const queriesInProgress = currentConsolidatedQueries.filter(
+      query => query.status === "processing"
+    );
+
+    return [...queriesInProgress, progress];
+  }
+
+  return [progress];
+}
+
+export function getCurrentConsolidatedProgress(
+  consolidatedQueriesProgress: ConsolidatedQuery[] | undefined,
+  queryParams: GetConsolidatedFilters,
+  progressStatus = "processing"
+): ConsolidatedQuery | undefined {
+  if (!consolidatedQueriesProgress) return undefined;
+
+  const { resources, dateFrom, dateTo, conversionType } = queryParams;
+
+  for (const progress of consolidatedQueriesProgress) {
+    const isSameResources = getIsSameResources(resources, progress.resources);
+    const isSameDateFrom = progress.dateFrom === dateFrom;
+    const isSameDateTo = progress.dateTo === dateTo;
+    const isSameConversionType = progress.conversionType === conversionType;
+    const isProcessing = progress.status === progressStatus;
+
+    if (isSameResources && isSameDateFrom && isSameDateTo && isSameConversionType && isProcessing) {
+      return progress;
+    }
+  }
+}
+
+export function getIsSameResources(
+  queryResources: ResourceTypeForConsolidation[] | undefined,
+  currentResources: ResourceTypeForConsolidation[] | undefined
+): boolean {
+  const haveSameLength = queryResources?.length === currentResources?.length;
+  const intersectedResources = intersection(queryResources, currentResources);
+  const usingAllQueryResources = queryResources?.length === intersectedResources.length;
+
+  const areQueryResourcesSearchableByPatient =
+    intersection(queryResources, resourcesSearchableByPatient).length ===
+    resourcesSearchableByPatient.length;
+  const areQueryResourcesEmpty = !queryResources || queryResources.length === 0;
+
+  const isCurrentProgressSearchableByPatient =
+    intersection(currentResources, resourcesSearchableByPatient).length ===
+    resourcesSearchableByPatient.length;
+  const isCurrentProgressEmpty = !currentResources || currentResources.length === 0;
+
+  return (
+    (haveSameLength && usingAllQueryResources) ||
+    (isCurrentProgressEmpty && areQueryResourcesSearchableByPatient) ||
+    (areQueryResourcesEmpty && isCurrentProgressSearchableByPatient)
+  );
+}
+
+async function getConsolidatedAndSendToCx(params: GetConsolidatedSendToCxParams): Promise<void> {
   const { patient, requestId, resources, dateFrom, dateTo, conversionType } = params;
   try {
     const { bundle, filters } = await getConsolidated(params);
@@ -143,6 +225,7 @@ export async function getConsolidated({
   resources,
   dateFrom,
   dateTo,
+  requestId,
   conversionType,
 }: GetConsolidatedParams): Promise<{
   bundle: Bundle<Resource>;
@@ -160,7 +243,9 @@ export async function getConsolidated({
     });
     const hasResources = bundle.entry && bundle.entry.length > 0;
     const shouldCreateMedicalRecord = conversionType && conversionType != "json" && hasResources;
-    const startedAt = patient.data.consolidatedQuery?.startedAt;
+    const currentConsolidatedProgress = patient.data.consolidatedQueries?.find(
+      q => q.requestId === requestId
+    );
 
     const defaultAnalyticsProps = {
       distinctId: patient.cxId,
@@ -168,7 +253,7 @@ export async function getConsolidated({
       properties: {
         patientId: patient.id,
         conversionType: "bundle",
-        duration: elapsedTimeFromNow(startedAt),
+        duration: elapsedTimeFromNow(currentConsolidatedProgress?.startedAt),
         resourceCount: bundle.entry?.length,
       },
     };
@@ -191,7 +276,7 @@ export async function getConsolidated({
         ...defaultAnalyticsProps,
         properties: {
           ...defaultAnalyticsProps.properties,
-          duration: elapsedTimeFromNow(startedAt),
+          duration: elapsedTimeFromNow(currentConsolidatedProgress?.startedAt),
           conversionType,
         },
       });
