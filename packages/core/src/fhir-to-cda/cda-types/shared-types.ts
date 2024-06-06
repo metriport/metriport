@@ -220,11 +220,11 @@ export type Participant = {
   _typeCode: string;
   _contextControlCode?: string;
   participantRole: {
+    id?: CdaInstanceIdentifier[] | Entry;
     _classCode?: string;
     templateId?: {
       _root?: string;
     };
-    identifier?: CdaInstanceIdentifier[] | Entry;
     code?: CdaCodeCv | Entry | undefined;
     addr?: CdaAddress[] | undefined;
     telecom?: CdaTelecom[] | undefined;

@@ -68,7 +68,7 @@
 	<encounter classCode="ENC" moodCode="EVN">
 		<templateId root="2.16.840.1.113883.10.20.22.4.49" extension="2015-08-01">
 		</templateId>
-		<id root="placeholder-ORG-OID" extension="9a2cef08-6294-4d03-9d84-ce226c9fdc77">
+		<id root="placeholder-ORG-OID" extension="${encounterId}">
 		</id>
 		<code code="99214" codeSystem="2.16.840.1.113883.6.12">
 			<translation code="99214" codeSystem="2.16.840.1.113883.6.12" displayName="OV EST PT LEV 4">
@@ -84,7 +84,7 @@
 		</effectiveTime>
 		<performer>
 			<assignedEntity>
-				<id root="placeholder-ORG-OID" extension="650a50f5-05f8-41d9-ae7b-c191509176af">
+				<id root="placeholder-ORG-OID" extension="${practitionerId}">
 				</id>
 				<code code="207Q00000X" codeSystem="2.16.840.1.113883.6.101" displayName="FAMILY MEDICINE PHYSICIAN">
 					<originalText>
@@ -126,6 +126,8 @@
 		</performer>
 		<participant typeCode="LOC">
 			<participantRole classCode="SDLOC">
+				<id root="placeholder-ORG-OID" extension="${locationId}">
+				</id>
 				<templateId root="2.16.840.1.113883.10.20.22.4.32">
 				</templateId>
 				<code nullFlavor="NI">
@@ -188,7 +190,7 @@
 	<encounter classCode="ENC" moodCode="EVN">
 		<templateId root="2.16.840.1.113883.10.20.22.4.49" extension="2015-08-01">
 		</templateId>
-		<id root="placeholder-ORG-OID" extension="8d292a87-ac20-439c-be54-af5a2ff83d69">
+		<id root="placeholder-ORG-OID" extension="${encounterId2}">
 		</id>
 		<code code="99214" codeSystem="2.16.840.1.113883.6.12">
 			<translation code="99214" codeSystem="2.16.840.1.113883.6.12" displayName="OV EST PT LEV 4">
@@ -204,7 +206,7 @@
 		</effectiveTime>
 		<performer>
 			<assignedEntity>
-				<id root="placeholder-ORG-OID" extension="193defce-bb1a-44bc-a6bd-edf374767f99">
+				<id root="placeholder-ORG-OID" extension="${practitionerId2}">
 				</id>
 				<code code="207Q00000X" codeSystem="2.16.840.1.113883.6.101" displayName="FAMILY MEDICINE PHYSICIAN">
 					<originalText>
@@ -246,6 +248,8 @@
 		</performer>
 		<participant typeCode="LOC">
 			<participantRole classCode="SDLOC">
+				<id root="placeholder-ORG-OID" extension="${locationId2}">
+				</id>
 				<templateId root="2.16.840.1.113883.10.20.22.4.32">
 				</templateId>
 				<code nullFlavor="NI">

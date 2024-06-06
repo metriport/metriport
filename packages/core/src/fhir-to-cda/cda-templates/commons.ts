@@ -503,10 +503,13 @@ export function buildParticipant(locations: Location[]): Participant[] | undefin
       _typeCode: "LOC",
       participantRole: {
         _classCode: "SDLOC",
+        id: buildInstanceIdentifier({
+          root: placeholderOrgOid,
+          extension: location.id,
+        }),
         templateId: {
           _root: oids.serviceDeliveryLocation,
         },
-        identifier: buildInstanceIdentifiersFromIdentifier(location.identifier),
         code: {
           _nullFlavor: "NI",
         },
