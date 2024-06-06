@@ -21,7 +21,9 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 		// MetriportID mapping
 		var idMapping = {};
 		request.documentReference.forEach(function(entry) {
-			idMapping[entry.docUniqueId.toString()] = entry.metriportId.toString();
+      var docUniqueId = entry.docUniqueId.toString();
+      var strippedDocUniqueId = docUniqueId.replace('urn:uuid:', '');
+			idMapping[strippedDocUniqueId] = entry.metriportId.toString();
 		});
 
 		// Process retrieved documents
@@ -83,7 +85,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 							if (title) attachment.title = title;
 						}
 						var firstEffectiveTime = decodedAsString.split('<effectiveTime')[1];
-						
+
 						if (firstEffectiveTime) {
 							var effectiveTimeValue = firstEffectiveTime.split('value="')[1];
 							if (effectiveTimeValue) {
