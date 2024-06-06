@@ -26,6 +26,7 @@ export function makePatientData(data: Partial<PatientData> = {}): PatientData {
     consolidatedLinkDemographics: data.consolidatedLinkDemographics,
     documentQueryProgress: data.documentQueryProgress,
     consolidatedQuery: data.consolidatedQuery,
+    consolidatedQueries: data.consolidatedQueries,
     cxDocumentRequestMetadata: data.cxDocumentRequestMetadata,
     cxConsolidatedRequestMetadata: data.cxConsolidatedRequestMetadata,
     externalData: data.externalData,

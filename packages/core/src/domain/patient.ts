@@ -1,3 +1,4 @@
+import { ConsolidatedQuery } from "@metriport/api-sdk";
 import { USState } from "./geographic-locations";
 import { BaseDomain, BaseDomainCreate } from "./base-domain";
 import { DocumentQueryProgress } from "./document-query";
@@ -66,6 +67,7 @@ export type PatientData = {
   consolidatedLinkDemographics?: ConsolidatedLinkDemographics;
   documentQueryProgress?: DocumentQueryProgress;
   consolidatedQuery?: QueryProgress;
+  consolidatedQueries?: ConsolidatedQuery[];
   bulkGetDocumentsUrlProgress?: BulkGetDocumentsUrlProgress;
   externalData?: PatientExternalData;
   cxDocumentRequestMetadata?: unknown;
