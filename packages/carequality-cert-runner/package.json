@@ -42,6 +42,6 @@
   },
   "dependencies": {
     "@metriport/ihe-gateway-sdk": "^0.9.1-alpha.0",
-    "@metriport/shared": "^0.8.0"
+    "@metriport/shared": "^0.9.3-alpha.0"
   }
 }
