@@ -3,6 +3,7 @@ import { analytics, EventTypes } from "@metriport/core/external/analytics/postho
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString, isTrue } from "@metriport/shared";
+import { PingWebhookRequest, WebhookMetadata } from "@metriport/shared/medical";
 import Axios from "axios";
 import crypto from "crypto";
 import dayjs from "dayjs";
@@ -32,25 +33,6 @@ const axios = Axios.create({
   },
 });
 const { log } = out(`Webhook`);
-
-// General
-type WebhookPingPayload = {
-  ping: string;
-  meta: WebhookMetadataPayload;
-};
-
-/**
- * @param {messageId}  - The ID of the webhook request
- * @param {when}  - The date and time when the webhook request was created
- * @param {type}  - The type of the webhook request, either document-download or consolidated-request
- * @param {data}  - Any data the customer pases to the webhook request
- */
-export type WebhookMetadataPayload = {
-  messageId: string;
-  when: string;
-  type: string;
-  data?: unknown;
-};
 
 async function missingWHSettings(
   webhookRequest: WebhookRequest | WebhookRequestData,
@@ -107,7 +89,7 @@ export async function processRequest(
 
   const payload = webhookRequest.payload;
   try {
-    const meta: WebhookMetadataPayload = {
+    const meta: WebhookMetadata = {
       messageId: webhookRequest.id,
       when: dayjs(webhookRequest.createdAt).toISOString(),
       type: webhookRequest.type,
@@ -241,7 +223,7 @@ const webhookResponseSchema = z
 
 type WebhookResponse = z.infer<typeof webhookResponseSchema>;
 
-export const sendPayload = async (
+export async function sendPayload(
   payload: unknown,
   url: string,
   apiKey: string,
@@ -251,7 +233,7 @@ export const sendPayload = async (
   webhookResponse: WebhookResponse;
   url: string;
   durationMillis: number;
-}> => {
+}> {
   try {
     const hmac = crypto.createHmac("sha256", apiKey).update(JSON.stringify(payload)).digest("hex");
     const before = Date.now();
@@ -282,12 +264,12 @@ export const sendPayload = async (
       httpMessage: errorToString(err),
     });
   }
-};
+}
 
-export const sendTestPayload = async (url: string, key: string, cxId: string): Promise<boolean> => {
+export async function sendTestPayload(url: string, key: string, cxId: string): Promise<boolean> {
   const ping = nanoid();
   const when = dayjs().toISOString();
-  const payload: WebhookPingPayload = {
+  const payload: PingWebhookRequest = {
     ping,
     meta: {
       messageId: uuidv4(),
@@ -305,7 +287,7 @@ export const sendTestPayload = async (url: string, key: string, cxId: string): P
   return typeof whResponse !== "string" && whResponse.pong && whResponse.pong === ping
     ? true
     : false;
-};
+}
 
 async function isWebhookPongDisabledForCxSafe(cxId: string): Promise<boolean> {
   try {

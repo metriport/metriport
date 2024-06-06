@@ -1,15 +1,15 @@
-import { ConsolidatedWebhookRequest } from "@metriport/api-sdk/medical/models/webhook-request";
+import { ConsolidatedWebhookPatient } from "@metriport/shared/medical";
+import { ConsolidatedWebhookRequest } from "@metriport/shared/src/medical/webhook/webhook-request";
 import { Response } from "express";
-import { PayloadPatient } from "../../../../command/medical/patient/consolidated-webhook";
 
-let consolidatedPatientsData: PayloadPatient[] | undefined = undefined;
+let consolidatedPatientsData: ConsolidatedWebhookPatient[] | undefined = undefined;
 
-export function getConsolidatedData(): PayloadPatient[] | undefined {
+export function getConsolidatedData(): ConsolidatedWebhookPatient[] | undefined {
   return consolidatedPatientsData;
 }
 
 export function handleConsolidated(whRequest: ConsolidatedWebhookRequest, res: Response) {
-  consolidatedPatientsData = whRequest.patients as PayloadPatient[];
+  consolidatedPatientsData = whRequest.patients as ConsolidatedWebhookPatient[];
   console.log(
     `[WH] ================> Handle Consolidated WH... ${JSON.stringify(
       consolidatedPatientsData,

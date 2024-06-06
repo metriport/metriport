@@ -19,3 +19,4 @@ export { BadRequestError } from "./error/bad-request";
 export { MetriportError } from "./error/metriport-error";
 export { NotFoundError } from "./error/not-found";
 export { errorToString } from "./error/shared";
+export * as medical from "./medical";
