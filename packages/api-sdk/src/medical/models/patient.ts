@@ -26,7 +26,7 @@ export const queryStatusSchema = z.enum(["processing", "completed", "failed"]);
 export type QueryStatus = z.infer<typeof queryStatusSchema>;
 
 export type GetConsolidatedQueryProgressResponse = {
-  /** @deprecated status should no longer be used. Refer to queries in the consolidatedQueries array instead. */
+  /** @deprecated status should no longer be used. Refer to queries array instead. */
   status: QueryStatus;
   queries: ConsolidatedQuery[] | null;
   message?: string;
