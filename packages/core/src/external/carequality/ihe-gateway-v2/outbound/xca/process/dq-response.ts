@@ -135,7 +135,7 @@ function parseDocumentReference(
   const documentReference: DocumentReference = {
     homeCommunityId: getHomeCommunityIdForDr(outboundRequest, extrinsicObject),
     repositoryUniqueId,
-    docUniqueId,
+    docUniqueId: stripUrnPrefix(docUniqueId),
     contentType: extrinsicObject?._mimeType,
     language: findSlotValue("languageCode"),
     size: sizeValue ? parseInt(sizeValue) : undefined,
