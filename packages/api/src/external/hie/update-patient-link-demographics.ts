@@ -36,19 +36,7 @@ export async function updatePatientLinkDemographics({
       transaction,
     });
 
-    const externalData = existingPatient.data.externalData ?? {};
     const consolidatedLinkDemographics = existingPatient.data.consolidatedLinkDemographics;
-
-    const updatedExternalData = {
-      ...externalData,
-      [source]: {
-        ...externalData[source],
-        linkDemographics: {
-          ...(externalData[source]?.linkDemographics ?? {}),
-          [requestId]: links,
-        },
-      },
-    };
 
     const updatedPatient = {
       ...existingPatient.dataValues,
@@ -92,7 +80,6 @@ export async function updatePatientLinkDemographics({
             ]),
           ].sort(),
         },
-        externalData: updatedExternalData,
       },
     };
 

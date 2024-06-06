@@ -1,25 +1,11 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { Patient, ConsolidatedLinkDemographics } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
-import {
-  LinkDemographics,
-  LinkDemographicsHistory,
-} from "@metriport/core/domain/patient-demographics";
+import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { makePatient, makePatientData } from "../../../domain/medical/__tests__/patient";
+import { linkDemographics } from "../../../domain/medical/__tests__/deomgraphics.const";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
-import { PatientDataCommonwell } from "../../commonwell/patient-shared";
-import {
-  normalizeDob,
-  normalizeGender,
-  normalizeAndStringifyNames,
-  normalizeAddress,
-  stringifyAddress,
-  normalizeTelephone,
-  normalizeSsn,
-  normalizeEmail,
-  normalizeAndStringifyDriversLicense,
-} from "../../../domain/medical/patient-demographics";
 import { updatePatientLinkDemographics } from "../update-patient-link-demographics";
 
 let patient: Patient;
@@ -39,55 +25,24 @@ afterEach(() => {
   jest.clearAllMocks();
 });
 
-const checkPatientUpdateWith = ({
-  newHieValues,
-  newConsolidatedValue,
-}: {
-  newHieValues: LinkDemographicsHistory;
-  newConsolidatedValue: ConsolidatedLinkDemographics;
-}) => {
+const checkPatientUpdateWith = (newConsolidatedValue: ConsolidatedLinkDemographics) => {
   expect(patientModel_update).toHaveBeenCalledWith(
     expect.objectContaining({
       data: expect.objectContaining({
-        externalData: expect.objectContaining({
-          COMMONWELL: expect.objectContaining({
-            linkDemographics: expect.objectContaining(newHieValues),
-          }),
-        }),
-        consolidatedLinkDemographics: expect.objectContaining(newConsolidatedValue),
+        consolidatedLinkDemographics: newConsolidatedValue,
       }),
     }),
     expect.anything()
   );
 };
 
-describe("update patient demographics", () => {
+describe("update patient link demographics", () => {
   const source = MedicalDataSource.COMMONWELL;
   const newRequestId = "test";
-  const newLinkDemographics = {
-    dob: normalizeDob("1900-01-01"),
-    gender: normalizeGender("male"),
-    names: [normalizeAndStringifyNames({ firstName: "john", lastName: "smith" })],
-    addresses: [
-      stringifyAddress(
-        normalizeAddress({
-          line: ["1 mordhaus st", "apt 1a", "2"],
-          city: "mordhaus",
-          state: "ny",
-          zip: "66666",
-          country: "usa",
-        })
-      ),
-    ],
-    telephoneNumbers: [normalizeTelephone("+1(999)999-9999")],
-    emails: [normalizeEmail("john.smith@gmail.com")],
-    driversLicenses: [normalizeAndStringifyDriversLicense({ value: "I1234567", state: "CA" })],
-    ssns: [normalizeSsn("000-00-0000")],
-  };
-  it("update patient with no link demograhpics", async () => {
+  it("update patient with no existing link demograhpics", async () => {
     const patient = makePatient();
     patientModel_findOne.mockResolvedValueOnce(patient);
-    const links: LinkDemographics[] = [newLinkDemographics];
+    const links: LinkDemographics[] = [linkDemographics];
     await updatePatientLinkDemographics({
       requestId: newRequestId,
       patient,
@@ -95,62 +50,42 @@ describe("update patient demographics", () => {
       links,
     });
     checkPatientUpdateWith({
-      newHieValues: {
-        [newRequestId]: links,
-      },
-      newConsolidatedValue: {
-        names: links[0].names.sort(),
-        addresses: links[0].addresses.sort(),
-        telephoneNumbers: links[0].telephoneNumbers.sort(),
-        emails: links[0].emails.sort(),
-        driversLicenses: links[0].driversLicenses.sort(),
-        ssns: links[0].ssns.sort(),
-      },
+      names: links[0].names.sort(),
+      addresses: links[0].addresses.sort(),
+      telephoneNumbers: links[0].telephoneNumbers.sort(),
+      emails: links[0].emails.sort(),
+      driversLicenses: links[0].driversLicenses.sort(),
+      ssns: links[0].ssns.sort(),
     });
   });
   it("update patient with existing initial link demograhpics", async () => {
-    const existingLinkDemographcsics = {
-      dob: normalizeDob("1900-01-01"),
-      gender: normalizeGender("male"),
-      names: [normalizeAndStringifyNames({ firstName: "jon", lastName: "smith" })],
+    const existingLinkDemographcsics: ConsolidatedLinkDemographics = {
+      names: [
+        { firstName: "john", lastName: "smith" },
+        { firstName: "johnathan", lastName: "smith" },
+      ].map(name => JSON.stringify(name, Object.keys(name).sort())),
       addresses: [
-        stringifyAddress(
-          normalizeAddress({
-            line: ["777 bedlam st"],
-            city: "san francisco",
-            state: "ca",
-            zip: "98765",
-            country: "usa",
-          })
-        ),
-      ],
-      telephoneNumbers: [normalizeTelephone("+1(415)100-1010")],
-      emails: [normalizeEmail("john.smith@gmail.com")],
-      driversLicenses: [normalizeAndStringifyDriversLicense({ value: "I1234567", state: "CA" })],
-      ssns: [normalizeSsn("000-00-0000")],
-    };
-    const existingCwExternalData: PatientDataCommonwell = {
-      patientId: "base",
-      linkDemographics: {
-        existing: [existingLinkDemographcsics],
-      },
+        {
+          line: ["88 75th st.", "apt 8"],
+          city: "san francisco",
+          state: "ca",
+          zip: "99999",
+          country: "usa",
+        },
+      ].map(address => JSON.stringify(address, Object.keys(address).sort())),
+      telephoneNumbers: ["4150000000"],
+      emails: ["johnathan.smith@gmail.com"],
+      driversLicenses: [{ value: "ny1234", state: "ny" }].map(dl =>
+        JSON.stringify(dl, Object.keys(dl).sort())
+      ),
+      ssns: ["123456789"],
     };
     const patientData = makePatientData({
-      externalData: {
-        COMMONWELL: existingCwExternalData,
-      },
-      consolidatedLinkDemographics: {
-        names: existingLinkDemographcsics.names,
-        addresses: existingLinkDemographcsics.addresses,
-        telephoneNumbers: existingLinkDemographcsics.telephoneNumbers,
-        emails: existingLinkDemographcsics.emails,
-        driversLicenses: existingLinkDemographcsics.driversLicenses,
-        ssns: existingLinkDemographcsics.ssns,
-      },
+      consolidatedLinkDemographics: existingLinkDemographcsics,
     });
     const patient = makePatient({ data: patientData });
     patientModel_findOne.mockResolvedValueOnce(patient);
-    const links: LinkDemographics[] = [newLinkDemographics];
+    const links: LinkDemographics[] = [linkDemographics];
     await updatePatientLinkDemographics({
       requestId: newRequestId,
       patient,
@@ -158,48 +93,42 @@ describe("update patient demographics", () => {
       links,
     });
     checkPatientUpdateWith({
-      newHieValues: {
-        [newRequestId]: links,
-        existing: [existingLinkDemographcsics],
-      },
-      newConsolidatedValue: {
-        names: [
-          ...new Set([
-            ...links.flatMap(ld => ld.names),
-            ...(patient.data.consolidatedLinkDemographics?.names ?? []),
-          ]),
-        ].sort(),
-        addresses: [
-          ...new Set([
-            ...links.flatMap(ld => ld.addresses),
-            ...(patient.data.consolidatedLinkDemographics?.addresses ?? []),
-          ]),
-        ].sort(),
-        telephoneNumbers: [
-          ...new Set([
-            ...links.flatMap(ld => ld.telephoneNumbers),
-            ...(patient.data.consolidatedLinkDemographics?.telephoneNumbers ?? []),
-          ]),
-        ].sort(),
-        emails: [
-          ...new Set([
-            ...links.flatMap(ld => ld.emails),
-            ...(patient.data.consolidatedLinkDemographics?.emails ?? []),
-          ]),
-        ].sort(),
-        driversLicenses: [
-          ...new Set([
-            ...links.flatMap(ld => ld.driversLicenses),
-            ...(patient.data.consolidatedLinkDemographics?.driversLicenses ?? []),
-          ]),
-        ].sort(),
-        ssns: [
-          ...new Set([
-            ...links.flatMap(ld => ld.ssns),
-            ...(patient.data.consolidatedLinkDemographics?.ssns ?? []),
-          ]),
-        ].sort(),
-      },
+      names: [
+        ...new Set([
+          ...links.flatMap(ld => ld.names),
+          ...(patient.data.consolidatedLinkDemographics?.names ?? []),
+        ]),
+      ].sort(),
+      addresses: [
+        ...new Set([
+          ...links.flatMap(ld => ld.addresses),
+          ...(patient.data.consolidatedLinkDemographics?.addresses ?? []),
+        ]),
+      ].sort(),
+      telephoneNumbers: [
+        ...new Set([
+          ...links.flatMap(ld => ld.telephoneNumbers),
+          ...(patient.data.consolidatedLinkDemographics?.telephoneNumbers ?? []),
+        ]),
+      ].sort(),
+      emails: [
+        ...new Set([
+          ...links.flatMap(ld => ld.emails),
+          ...(patient.data.consolidatedLinkDemographics?.emails ?? []),
+        ]),
+      ].sort(),
+      driversLicenses: [
+        ...new Set([
+          ...links.flatMap(ld => ld.driversLicenses),
+          ...(patient.data.consolidatedLinkDemographics?.driversLicenses ?? []),
+        ]),
+      ].sort(),
+      ssns: [
+        ...new Set([
+          ...links.flatMap(ld => ld.ssns),
+          ...(patient.data.consolidatedLinkDemographics?.ssns ?? []),
+        ]),
+      ].sort(),
     });
   });
 });

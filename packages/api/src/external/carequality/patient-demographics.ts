@@ -26,8 +26,8 @@ export function getNewDemographics(patient: Patient, links: CQLink[]): LinkDemog
       linkDemographics =>
         linkHasNewDemographics({
           coreDemographics,
-          consolidatedLinkDemographics,
           linkDemographics,
+          consolidatedLinkDemographics,
         }).hasNewDemographics
     );
 }

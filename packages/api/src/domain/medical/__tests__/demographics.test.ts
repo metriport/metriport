@@ -170,40 +170,8 @@ describe("normalization", () => {
 
 describe("total patient normalization", () => {
   it("check patient normalization", async () => {
-    const patientDemoToLinkDemographics: LinkDemographics = {
-      dob: "1900-02-28",
-      gender: "male",
-      names: [
-        { firstName: "john", lastName: "smith" },
-        { firstName: "johnathan", lastName: "smith" },
-        { firstName: "john", lastName: "douglas" },
-        { firstName: "johnathan", lastName: "douglas" },
-      ].map(name => JSON.stringify(name, Object.keys(name).sort())),
-      addresses: [
-        {
-          line: ["1 mordhaus st", "apt 1a"],
-          city: "mordhaus",
-          state: "ny",
-          zip: "66666",
-          country: "usa",
-        },
-        {
-          line: ["777 elm ave"],
-          city: "los angeles",
-          state: "ca",
-          zip: "12345",
-          country: "usa",
-        },
-      ].map(address => JSON.stringify(address, Object.keys(address).sort())),
-      telephoneNumbers: ["4150000000", "4157770000"],
-      emails: ["john.smith@gmail.com", "john.douglas@yahoo.com"],
-      driversLicenses: [{ value: "i1234568", state: "ca" }].map(dl =>
-        JSON.stringify(dl, Object.keys(dl).sort())
-      ),
-      ssns: ["123014442"],
-    };
-    const coreDemographics = patientToNormalizedCoreDemographics(patient);
-    expect(coreDemographics).toMatchObject(patientDemoToLinkDemographics);
+    const coreDemographicsTest = patientToNormalizedCoreDemographics(patient);
+    expect(coreDemographicsTest).toMatchObject(coreDemographics);
   });
 });
 
@@ -251,27 +219,25 @@ describe("create augmented patient", () => {
 describe("link has new demogrpahics", () => {
   it("new dob", async () => {
     const newDob = "1901-04-28";
-    const newLinkDemographics: LinkDemographics = {
-      ...coreDemographics,
-      dob: newDob,
-    };
     const newData = linkHasNewDemographics({
       coreDemographics,
       consolidatedLinkDemographics,
-      linkDemographics: newLinkDemographics,
+      linkDemographics: {
+        ...coreDemographics,
+        dob: newDob,
+      },
     });
     expect(newData.hasNewDemographics).toBe(true);
   });
   it("new gender", async () => {
     const newGender = "female";
-    const newLinkDemographics: LinkDemographics = {
-      ...coreDemographics,
-      gender: newGender,
-    };
     const newData = linkHasNewDemographics({
       coreDemographics,
       consolidatedLinkDemographics,
-      linkDemographics: newLinkDemographics,
+      linkDemographics: {
+        ...coreDemographics,
+        gender: newGender,
+      },
     });
     expect(newData.hasNewDemographics).toBe(true);
   });
@@ -282,14 +248,13 @@ describe("link has new demogrpahics", () => {
         JSON.stringify(name, Object.keys(name).sort())
       ),
     ];
-    const newLinkDemographics: LinkDemographics = {
-      ...coreDemographics,
-      names: newNames,
-    };
     const newData = linkHasNewDemographics({
       coreDemographics,
       consolidatedLinkDemographics,
-      linkDemographics: newLinkDemographics,
+      linkDemographics: {
+        ...coreDemographics,
+        names: newNames,
+      },
     });
     expect(newData.hasNewDemographics).toBe(true);
   });
@@ -306,40 +271,37 @@ describe("link has new demogrpahics", () => {
         },
       ].map(address => JSON.stringify(address, Object.keys(address).sort())),
     ];
-    const newLinkDemographics: LinkDemographics = {
-      ...coreDemographics,
-      addresses: newAddresses,
-    };
     const newData = linkHasNewDemographics({
       coreDemographics,
       consolidatedLinkDemographics,
-      linkDemographics: newLinkDemographics,
+      linkDemographics: {
+        ...coreDemographics,
+        addresses: newAddresses,
+      },
     });
     expect(newData.hasNewDemographics).toBe(true);
   });
   it("new telephone", async () => {
     const newTelephone = [...consolidatedLinkDemographics.telephoneNumbers, "00000000"];
-    const newLinkDemographics: LinkDemographics = {
-      ...coreDemographics,
-      telephoneNumbers: newTelephone,
-    };
     const newData = linkHasNewDemographics({
       coreDemographics,
       consolidatedLinkDemographics,
-      linkDemographics: newLinkDemographics,
+      linkDemographics: {
+        ...coreDemographics,
+        telephoneNumbers: newTelephone,
+      },
     });
     expect(newData.hasNewDemographics).toBe(true);
   });
   it("new email", async () => {
     const newEmail = [...consolidatedLinkDemographics.emails, "test@gmail.com"];
-    const newLinkDemographics: LinkDemographics = {
-      ...coreDemographics,
-      emails: newEmail,
-    };
     const newData = linkHasNewDemographics({
       coreDemographics,
       consolidatedLinkDemographics,
-      linkDemographics: newLinkDemographics,
+      linkDemographics: {
+        ...coreDemographics,
+        emails: newEmail,
+      },
     });
     expect(newData.hasNewDemographics).toBe(true);
   });
@@ -348,27 +310,25 @@ describe("link has new demogrpahics", () => {
       ...consolidatedLinkDemographics.driversLicenses,
       ...[{ value: "p234212", state: "ri" }].map(dl => JSON.stringify(dl, Object.keys(dl).sort())),
     ];
-    const newLinkDemographics: LinkDemographics = {
-      ...coreDemographics,
-      driversLicenses: newDl,
-    };
     const newData = linkHasNewDemographics({
       coreDemographics,
       consolidatedLinkDemographics,
-      linkDemographics: newLinkDemographics,
+      linkDemographics: {
+        ...coreDemographics,
+        driversLicenses: newDl,
+      },
     });
     expect(newData.hasNewDemographics).toBe(true);
   });
   it("new ssn", async () => {
     const newSsn = [...consolidatedLinkDemographics.ssns, "999999999"];
-    const newLinkDemographics: LinkDemographics = {
-      ...coreDemographics,
-      ssns: newSsn,
-    };
     const newData = linkHasNewDemographics({
       coreDemographics,
       consolidatedLinkDemographics,
-      linkDemographics: newLinkDemographics,
+      linkDemographics: {
+        ...coreDemographics,
+        ssns: newSsn,
+      },
     });
     expect(newData.hasNewDemographics).toBe(true);
   });

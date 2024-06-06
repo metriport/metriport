@@ -381,18 +381,18 @@ export function createAugmentedPatient(patient: Patient): Patient {
  * Currently checks values exactly.
  *
  * @param coreDemographics The patient core demographics.
- * @param consolidatedLinkDemographics The patient consolidated link demographics.
  * @param linkDemographics The incoming link demographics from CQ or CW.
+ * @param consolidatedLinkDemographics The patient consolidated link demographics history.
  * @returns boolean representing whether or not the link demographics has new values, and the comparison if yes.
  */
 export function linkHasNewDemographics({
   coreDemographics,
-  consolidatedLinkDemographics,
   linkDemographics,
+  consolidatedLinkDemographics,
 }: {
   coreDemographics: LinkDemographics;
-  consolidatedLinkDemographics?: ConsolidatedLinkDemographics;
   linkDemographics: LinkDemographics;
+  consolidatedLinkDemographics?: ConsolidatedLinkDemographics;
 }):
   | { hasNewDemographics: true; comparison: LinkDemographicsComparison }
   | { hasNewDemographics: false; comparison: undefined } {
