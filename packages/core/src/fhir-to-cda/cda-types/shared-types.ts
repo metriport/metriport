@@ -327,6 +327,15 @@ export type AssignedPerson = {
   };
 };
 
+export type RepresentedOrganization = {
+  _classCode: string;
+  name?: {
+    "#text": string;
+  };
+  addr?: CdaAddress[] | undefined;
+  telecom?: CdaTelecom[] | undefined;
+};
+
 export type AssignedEntity = {
   assignedEntity: {
     id?: CdaInstanceIdentifier | undefined;
@@ -334,5 +343,12 @@ export type AssignedEntity = {
     code?: CdaCodeCv | CdaCodeCv[] | undefined;
     telecom?: CdaTelecom[] | undefined;
     assignedPerson?: AssignedPerson | undefined;
+    representedOrganization?: RepresentedOrganization;
+  };
+};
+
+export type CdaSimpleReference = {
+  reference: {
+    _value: string;
   };
 };

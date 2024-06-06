@@ -1,6 +1,6 @@
 import { Bundle, Immunization, Location } from "@medplum/fhirtypes";
 import { findResourceInBundle, isImmunization, isLocation } from "../../../external/fhir/shared";
-import { ObservationTableRow } from "../../cda-types/shared-types";
+import { CdaSimpleReference, ObservationTableRow } from "../../cda-types/shared-types";
 import {
   buildAddressText,
   buildCodeCe,
@@ -180,12 +180,6 @@ function buildConsumable(immunization: Immunization, referenceId: string) {
     },
   };
 }
-
-type CdaSimpleReference = {
-  reference: {
-    _value: string;
-  };
-};
 
 function buildSimpleReference(referenceId: string): CdaSimpleReference {
   return {
