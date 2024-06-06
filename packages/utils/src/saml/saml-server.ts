@@ -16,9 +16,9 @@ import { processXCPDResponse } from "@metriport/core/external/carequality/ihe-ga
 import { processDQResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dq-response";
 import {
   processDrResponse,
-  setS3UtilsInstanceForStoringDrResponse,
+  setS3UtilsInstance as setS3UtilsInstanceForStoringDrResponse,
 } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
-import { setS3UtilsInstanceForStoringIheResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/monitor/store";
+import { setS3UtilsInstance as setS3UtilsInstanceForStoringIheResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/monitor/store";
 import { setRejectUnauthorized } from "@metriport/core/external/carequality/ihe-gateway-v2/saml/saml-client";
 import { Config } from "@metriport/core/util/config";
 import { MockS3Utils } from "./mock-s3";

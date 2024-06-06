@@ -14,7 +14,7 @@ let s3UtilsInstance = new S3Utils(Config.getAWSRegion());
 function getS3UtilsInstance(): S3Utils {
   return s3UtilsInstance;
 }
-export function setS3UtilsInstanceForStoringIheResponse(s3Utils: S3Utils): void {
+export function setS3UtilsInstance(s3Utils: S3Utils): void {
   s3UtilsInstance = s3Utils;
 }
 

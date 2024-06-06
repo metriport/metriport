@@ -18,9 +18,9 @@ import { createAndSignBulkDRRequests } from "@metriport/core/external/carequalit
 import { sendSignedDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dr-requests";
 import {
   processDrResponse,
-  setS3UtilsInstanceForStoringDrResponse,
+  setS3UtilsInstance as setS3UtilsInstanceForStoringDrResponse,
 } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
-import { setS3UtilsInstanceForStoringIheResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/monitor/store";
+import { setS3UtilsInstance as setS3UtilsInstanceForStoringIheResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/monitor/store";
 import { Config } from "@metriport/core/util/config";
 import { setRejectUnauthorized } from "@metriport/core/external/carequality/ihe-gateway-v2/saml/saml-client";
 import { MockS3Utils } from "./mock-s3";
