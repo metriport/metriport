@@ -1,4 +1,5 @@
 import { Patient } from "@metriport/core/domain/patient";
+import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { out } from "@metriport/core/util/log";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
@@ -13,6 +14,7 @@ import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq
 import { CQLink } from "./cq-patient-data";
 import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { getNewDemographics } from "../../domain/medical/patient-demographics";
 import { getDocumentsFromCQ } from "./document/query-documents";
 import { setDocQueryProgress } from "../hie/set-doc-query-progress";
 import { resetScheduledPatientDiscovery } from "../hie/reset-scheduled-patient-discovery-request";
@@ -20,7 +22,10 @@ import { updatePatientLinkDemographics } from "../hie/update-patient-link-demogr
 import { checkLinkDemographicsAcrossHies } from "../hie/check-patient-link-demographics";
 import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
 import { getCQData, discover } from "./patient";
-import { getNewDemographics } from "./patient-demographics";
+import {
+  getPatientResources,
+  patientResourceToNormalizedLinkDemographics,
+} from "./patient-demographics";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 
 dayjs.extend(duration);
@@ -54,12 +59,17 @@ export async function processOutboundPatientDiscoveryResps({
     }
 
     log(`Starting to handle patient discovery results`);
+    const cqLinksDemographics = getPatientResources(results).map(
+      patientResourceToNormalizedLinkDemographics
+    );
     const cqLinks = await createCQLinks(
       {
         id: patientId,
         cxId,
       },
-      results
+      results,
+      requestId,
+      cqLinksDemographics
     );
 
     const discoveryParams = getCQData(patient.data.externalData)?.discoveryParams;
@@ -78,7 +88,7 @@ export async function processOutboundPatientDiscoveryResps({
         patient,
         facilityId: discoveryParams.facilityId,
         requestId,
-        cqLinks,
+        links: cqLinksDemographics,
       });
       if (startedNewPd) return;
     }
@@ -126,12 +136,24 @@ export async function processOutboundPatientDiscoveryResps({
 
 async function createCQLinks(
   patient: Pick<Patient, "id" | "cxId">,
-  pdResults: OutboundPatientDiscoveryResp[]
+  pdResults: OutboundPatientDiscoveryResp[],
+  requestId: string,
+  linksDemographics: LinkDemographics[]
 ): Promise<CQLink[]> {
   const { id, cxId } = patient;
   const cqLinks = buildCQLinks(pdResults);
 
-  if (cqLinks.length > 0) await createOrUpdateCQPatientData({ id, cxId, cqLinks });
+  if (cqLinks.length > 0) {
+    await createOrUpdateCQPatientData({
+      id,
+      cxId,
+      cqLinks,
+      requestLinksDemographics: {
+        requestId,
+        linksDemographics,
+      },
+    });
+  }
 
   return cqLinks;
 }
@@ -157,16 +179,16 @@ export async function runNextPdOnNewDemographics({
   patient,
   facilityId,
   requestId,
-  cqLinks,
+  links,
 }: {
   patient: Patient;
   facilityId: string;
   requestId: string;
-  cqLinks: CQLink[];
+  links: LinkDemographics[];
 }): Promise<boolean> {
   const updatedPatient = await getPatientOrFail(patient);
 
-  const newDemographicsHere = getNewDemographics(updatedPatient, cqLinks);
+  const newDemographicsHere = getNewDemographics(updatedPatient, links);
   const foundNewDemographicsHere = newDemographicsHere.length > 0;
   const foundNewDemographicsAcrossHies = await checkLinkDemographicsAcrossHies({
     patient: updatedPatient,

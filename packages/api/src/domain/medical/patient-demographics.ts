@@ -464,3 +464,28 @@ export function linkHasNewDemographics({
   }
   return { hasNewDemographics, comparison: undefined };
 }
+
+/**
+ * Combines checkDemoMatch and linkHasNewDemographics to return the set of link demographics with usable new data.
+ *
+ * @param patient The Patient @ Metriport.
+ * @param links The incoming link demographics from CQ or CW converted from their raw state.
+ * @returns the set of link demographics that pass checkDemoMatch and pass linkHasNewDemographics
+ */
+export function getNewDemographics(
+  patient: Patient,
+  links: LinkDemographics[]
+): LinkDemographics[] {
+  const coreDemographics = patientToNormalizedCoreDemographics(patient);
+  const consolidatedLinkDemographics = patient.data.consolidatedLinkDemographics;
+  return links
+    .filter(linkDemographics => checkDemoMatch({ coreDemographics, linkDemographics }).isMatched)
+    .filter(
+      linkDemographics =>
+        linkHasNewDemographics({
+          coreDemographics,
+          linkDemographics,
+          consolidatedLinkDemographics,
+        }).hasNewDemographics
+    );
+}

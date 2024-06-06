@@ -1,10 +1,7 @@
-import { Patient } from "@metriport/core/domain/patient";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
+import { NetworkLink } from "@metriport/commonwell-sdk";
 import { PatientNetworkLink } from "@metriport/commonwell-sdk";
 import {
-  checkDemoMatch,
-  linkHasNewDemographics,
-  patientToNormalizedCoreDemographics,
   removeInvalidArrayValues,
   normalizeDob,
   normalizeGender,
@@ -14,23 +11,6 @@ import {
   normalizeTelephone,
   normalizeEmail,
 } from "../../domain/medical/patient-demographics";
-import { CwLink } from "./cw-patient-data";
-
-export function getNewDemographics(patient: Patient, links: CwLink[]): LinkDemographics[] {
-  const coreDemographics = patientToNormalizedCoreDemographics(patient);
-  const consolidatedLinkDemographics = patient.data.consolidatedLinkDemographics;
-  return getPatientNetworkLinks(links)
-    .map(patientNetworkLinkToNormalizedLinkDemographics)
-    .filter(linkDemographics => checkDemoMatch({ coreDemographics, linkDemographics }).isMatched)
-    .filter(
-      linkDemographics =>
-        linkHasNewDemographics({
-          coreDemographics,
-          linkDemographics,
-          consolidatedLinkDemographics,
-        }).hasNewDemographics
-    );
-}
 
 export function patientNetworkLinkToNormalizedLinkDemographics(
   patientNetworkLink: PatientNetworkLink
@@ -83,7 +63,7 @@ export function patientNetworkLinkToNormalizedLinkDemographics(
   });
 }
 
-function getPatientNetworkLinks(linkResults: CwLink[]): PatientNetworkLink[] {
+export function getPatientNetworkLinks(linkResults: NetworkLink[]): PatientNetworkLink[] {
   return linkResults.flatMap(lr => {
     const patientNetworkLink = lr.patient;
     if (!patientNetworkLink) return [];

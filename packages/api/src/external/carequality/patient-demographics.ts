@@ -1,10 +1,7 @@
-import { Patient } from "@metriport/core/domain/patient";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { PatientResource } from "@metriport/ihe-gateway-sdk";
+import { OutboundPatientDiscoveryResp } from "@metriport/ihe-gateway-sdk";
 import {
-  checkDemoMatch,
-  linkHasNewDemographics,
-  patientToNormalizedCoreDemographics,
   removeInvalidArrayValues,
   normalizeDob,
   normalizeGender,
@@ -14,23 +11,6 @@ import {
   normalizeTelephone,
   normalizeEmail,
 } from "../../domain/medical/patient-demographics";
-import { CQLink } from "./cq-patient-data";
-
-export function getNewDemographics(patient: Patient, links: CQLink[]): LinkDemographics[] {
-  const coreDemographics = patientToNormalizedCoreDemographics(patient);
-  const consolidatedLinkDemographics = patient.data.consolidatedLinkDemographics;
-  return getPatientResources(links)
-    .map(patientResourceToNormalizedLinkDemographics)
-    .filter(linkDemographics => checkDemoMatch({ coreDemographics, linkDemographics }).isMatched)
-    .filter(
-      linkDemographics =>
-        linkHasNewDemographics({
-          coreDemographics,
-          linkDemographics,
-          consolidatedLinkDemographics,
-        }).hasNewDemographics
-    );
-}
 
 export function patientResourceToNormalizedLinkDemographics(
   patientResource: PatientResource
@@ -81,8 +61,11 @@ export function patientResourceToNormalizedLinkDemographics(
   });
 }
 
-function getPatientResources(linkResults: CQLink[]): PatientResource[] {
+export function getPatientResources(
+  linkResults: OutboundPatientDiscoveryResp[]
+): PatientResource[] {
   return linkResults.flatMap(lr => {
+    if (!lr.patientMatch) return [];
     const patientResource = lr.patientResource;
     if (!patientResource) return [];
     return patientResource;
