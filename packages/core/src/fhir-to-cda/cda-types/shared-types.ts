@@ -32,8 +32,8 @@ export type Entry = { [key: string]: string } | string;
 export type EntryObject = { [key: string]: string };
 
 export type CdaTelecom = {
-  use?: EntryObject;
-  value?: EntryObject;
+  _use?: EntryObject;
+  _value?: EntryObject;
 };
 
 export type CdaPeriod = {
@@ -204,6 +204,7 @@ export type ObservationEntry = {
       _value?: string | undefined;
     };
     value?: CdaValueCd | CdaValueCd[] | undefined;
+    participant?: Participant | undefined;
     entryRelationship?: ObservationEntryRelationship[];
     interpretationCode?: CdaCodeCe;
   };
@@ -213,6 +214,28 @@ export type ObservationEntryRelationship = ObservationEntry & {
   _typeCode?: string;
   code?: CdaCodeCv | undefined;
   value?: CdaValueCd[] | undefined;
+};
+
+export type Participant = {
+  _typeCode: string;
+  _contextControlCode?: string;
+  participantRole: {
+    id?: CdaInstanceIdentifier[] | Entry;
+    _classCode?: string;
+    templateId?: {
+      _root?: string;
+    };
+    code?: CdaCodeCv | Entry | undefined;
+    addr?: CdaAddress[] | undefined;
+    telecom?: CdaTelecom[] | undefined;
+    playingEntity?: {
+      _classCode?: string;
+      code?: CdaCodeCv | undefined;
+      name?: {
+        "#text": string;
+      };
+    };
+  };
 };
 
 export type SubstanceAdministationEntry = {
@@ -242,16 +265,16 @@ export type SubstanceAdministationEntry = {
     consumable: {
       _typeCode: string;
       manufacturedProduct: {
-        // _code: string;
         templateId?: {
           _root?: string;
           _extension?: string;
         };
-        manufacturedMaterial: {
-          code: CdaCodeCv | Entry;
+        manufacturedMaterial?: {
+          code: CdaCodeCv | undefined;
         };
       };
     };
+    // participant: Participant;
     entryRelationship?: {
       supply?: {
         _classCode: string;
@@ -286,13 +309,13 @@ export type EncounterEntry = {
     _moodCode?: string;
     templateId?: CdaInstanceIdentifier;
     id?: CdaInstanceIdentifier;
-    code?: CdaCodeCe | undefined;
+    code: CdaCodeCv;
     statusCode?: {
       _code: string;
     };
     effectiveTime?: EffectiveTime;
     performer?: AssignedEntity[];
-
+    participant?: Participant[] | undefined;
     entryRelationship: ConcernActEntry | ConcernActEntry[];
   };
 };
@@ -308,6 +331,8 @@ export type AssignedEntity = {
   assignedEntity: {
     id?: CdaInstanceIdentifier | undefined;
     addr?: CdaAddress[] | undefined;
+    code?: CdaCodeCv | CdaCodeCv[] | undefined;
+    telecom?: CdaTelecom[] | undefined;
     assignedPerson?: AssignedPerson | undefined;
   };
 };

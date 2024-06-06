@@ -70,6 +70,10 @@
 		</templateId>
 		<id root="placeholder-ORG-OID" extension="${encounterId}">
 		</id>
+		<code code="99214" codeSystem="2.16.840.1.113883.6.12">
+			<translation code="99214" codeSystem="2.16.840.1.113883.6.12" displayName="OV EST PT LEV 4">
+			</translation>
+		</code>
 		<statusCode code="completed">
 		</statusCode>
 		<effectiveTime>
@@ -82,6 +86,13 @@
 			<assignedEntity>
 				<id root="placeholder-ORG-OID" extension="${practitionerId}">
 				</id>
+				<code code="207Q00000X" codeSystem="2.16.840.1.113883.6.101" displayName="FAMILY MEDICINE PHYSICIAN">
+					<originalText>
+						FAMILY MEDICINE PHYSICIAN
+					</originalText>
+					<translation code="207Q00000X" codeSystem="2.16.840.1.113883.6.101" displayName="FAMILY MEDICINE PHYSICIAN">
+					</translation>
+				</code>
 				<addr use="WP">
 					<streetAddressLine>
 						1111 Sample Street, Suite 987
@@ -99,6 +110,8 @@
 						USA
 					</country>
 				</addr>
+				<telecom use="WP" value="+1-600-700-8000">
+				</telecom>
 				<assignedPerson>
 					<name>
 						<given>
@@ -111,6 +124,38 @@
 				</assignedPerson>
 			</assignedEntity>
 		</performer>
+		<participant typeCode="LOC">
+			<participantRole classCode="SDLOC">
+				<id root="placeholder-ORG-OID" extension="${locationId}">
+				</id>
+				<templateId root="2.16.840.1.113883.10.20.22.4.32">
+				</templateId>
+				<code nullFlavor="NI">
+				</code>
+				<addr use="WP">
+					<streetAddressLine>
+						1111 Sample Street, Suite 987
+					</streetAddressLine>
+					<city>
+						Springfield
+					</city>
+					<state>
+						CA
+					</state>
+					<postalCode>
+						12123
+					</postalCode>
+					<country>
+						USA
+					</country>
+				</addr>
+				<playingEntity classCode="PLC">
+					<name>
+						Planet Express Medical Office
+					</name>
+				</playingEntity>
+			</participantRole>
+		</participant>
 		<entryRelationship typeCode="RSON">
 			<act classCode="ACT" moodCode="EVN">
 				<templateId root="2.16.840.1.113883.10.20.22.4.80">
@@ -147,6 +192,10 @@
 		</templateId>
 		<id root="placeholder-ORG-OID" extension="${encounterId2}">
 		</id>
+		<code code="99214" codeSystem="2.16.840.1.113883.6.12">
+			<translation code="99214" codeSystem="2.16.840.1.113883.6.12" displayName="OV EST PT LEV 4">
+			</translation>
+		</code>
 		<statusCode code="completed">
 		</statusCode>
 		<effectiveTime>
@@ -159,6 +208,13 @@
 			<assignedEntity>
 				<id root="placeholder-ORG-OID" extension="${practitionerId2}">
 				</id>
+				<code code="207Q00000X" codeSystem="2.16.840.1.113883.6.101" displayName="FAMILY MEDICINE PHYSICIAN">
+					<originalText>
+						FAMILY MEDICINE PHYSICIAN
+					</originalText>
+					<translation code="207Q00000X" codeSystem="2.16.840.1.113883.6.101" displayName="FAMILY MEDICINE PHYSICIAN">
+					</translation>
+				</code>
 				<addr use="WP">
 					<streetAddressLine>
 						1111 Sample Street, Suite 987
@@ -176,6 +232,8 @@
 						USA
 					</country>
 				</addr>
+				<telecom use="WP" value="+1-600-700-8000">
+				</telecom>
 				<assignedPerson>
 					<name>
 						<given>
@@ -188,6 +246,38 @@
 				</assignedPerson>
 			</assignedEntity>
 		</performer>
+		<participant typeCode="LOC">
+			<participantRole classCode="SDLOC">
+				<id root="placeholder-ORG-OID" extension="${locationId2}">
+				</id>
+				<templateId root="2.16.840.1.113883.10.20.22.4.32">
+				</templateId>
+				<code nullFlavor="NI">
+				</code>
+				<addr use="WP">
+					<streetAddressLine>
+						1111 Sample Street, Suite 987
+					</streetAddressLine>
+					<city>
+						Springfield
+					</city>
+					<state>
+						CA
+					</state>
+					<postalCode>
+						12123
+					</postalCode>
+					<country>
+						USA
+					</country>
+				</addr>
+				<playingEntity classCode="PLC">
+					<name>
+						Planet Express Medical Office
+					</name>
+				</playingEntity>
+			</participantRole>
+		</participant>
 		<entryRelationship typeCode="RSON">
 			<act classCode="ACT" moodCode="EVN">
 				<templateId root="2.16.840.1.113883.10.20.22.4.80">

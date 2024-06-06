@@ -94,7 +94,7 @@ export const allergyFood: Partial<AllergyIntolerance> = {
           ],
         },
       ],
-      onset: "2012-06-12",
+      onset: "2012-06-12T00:00:00.000Z",
     },
   ],
   onsetDateTime: "2012-06-12T00:00:00.000Z",

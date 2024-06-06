@@ -36,7 +36,7 @@ export interface CDAObservation {
       _classCode: Entry;
       _moodCode: Entry;
       id?: CdaInstanceIdentifier[] | Entry;
-      code: CdaCodeCv | Entry;
+      code: CdaCodeCv | undefined;
       text?: Entry;
       statusCode?: EntryObject;
       effectiveTime?: {

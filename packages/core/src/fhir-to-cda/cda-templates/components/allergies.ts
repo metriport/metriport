@@ -1,13 +1,15 @@
-import { AllergyIntolerance, Bundle, Coding } from "@medplum/fhirtypes";
+import { AllergyIntolerance, AllergyIntoleranceReaction, Bundle, Coding } from "@medplum/fhirtypes";
 import { isAllergyIntolerance } from "../../../external/fhir/shared";
 import { AllergiesSection } from "../../cda-types/sections";
 import {
   ConcernActEntry,
   ObservationEntryRelationship,
   ObservationTableRow,
+  Participant,
 } from "../../cda-types/shared-types";
 import {
   buildCodeCe,
+  buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
   buildValueCd,
   formatDateToCdaTimestamp,
@@ -83,19 +85,30 @@ function createTableRowFromAllergyIntolerance(
   allergy: AugmentedAllergy,
   referenceId: string
 ): ObservationTableRow[] {
+  const allergenName = allergy.resource.reaction
+    ?.flatMap(reaction => {
+      return (
+        reaction.substance?.coding
+          ?.flatMap(coding => {
+            return coding.display || [];
+          })
+          .join(", ") || []
+      );
+    })
+    .join(", ");
   const name = getTextFromCode(allergy.resource.code);
   const manifestation = getTextFromCode(allergy.resource.reaction?.[0]?.manifestation?.[0]);
-
   return [
     {
       tr: {
         _ID: referenceId,
         ["td"]: [
           {
-            "#text": allergy.resource.reaction?.[0]?.substance?.text ?? name,
+            _ID: `${referenceId}-substance`,
+            "#text": allergenName ?? name,
           },
           {
-            "#text": allergy.resource.category?.[0] ?? NOT_SPECIFIED,
+            "#text": allergy.resource.category?.join(", ") ?? NOT_SPECIFIED,
           },
           {
             _ID: `${referenceId}-reaction`,
@@ -177,11 +190,41 @@ function createEntryRelationship(
         displayName: allergy.code?.coding?.[0]?.display,
       }),
       value: buildValueCd(allergy.code, referenceId),
+      // <participant typeCode="CSM" contextControlCode="OP">
+      //   <participantRole classCode="MANU">
+      //     <playingEntity classCode="MMAT">
+      //       <code code="372665008" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Non-steroidal anti-inflammatory agent (substance)">
+      //         <originalText>
+      //           <reference value="#ALLERGEN61746603" />
+      //         </originalText>
+      //         <translation code="385" codeSystem="2.16.840.1.113883.6.313" codeSystemName="MUL.ALGCAT" displayName="NSAIDs" />
+      //       </code>
+      //     </playingEntity>
+      //   </participantRole>
+      // </participant>
+      participant: createParticipant(allergy.reaction?.[0], referenceId),
       entryRelationship: [createReactionEntryRelationship(allergy, referenceId)],
     },
   };
 }
 
+function createParticipant(
+  reaction: AllergyIntoleranceReaction | undefined,
+  referenceId: string
+): Participant | undefined {
+  if (!reaction) return undefined;
+  return {
+    _typeCode: "CSM",
+    _contextControlCode: "OP",
+    participantRole: {
+      _classCode: "MANU",
+      playingEntity: {
+        _classCode: "MMAT",
+        code: buildCodeCvFromCodeableConcept(reaction.substance, `${referenceId}-substance`),
+      },
+    },
+  };
+}
 function createReactionEntryRelationship(
   allergy: AllergyIntolerance,
   referenceId: string
@@ -200,10 +243,10 @@ function createReactionEntryRelationship(
       }),
       id: { _nullFlavor: "NI" },
       code: buildCodeCe({
-        code: allergy.code?.coding?.[0]?.code,
+        code: allergy.reaction?.[0]?.manifestation?.[0]?.coding?.[0]?.code,
         codeSystem: systemIsLoinc ? loincCodeSystem : codeSystem,
         codeSystemName: systemIsLoinc ? loincSystemName : undefined,
-        displayName: allergy.code?.coding?.[0]?.display,
+        displayName: allergy.reaction?.[0]?.manifestation?.[0]?.coding?.[0]?.display,
       }),
       text: {
         reference: {

@@ -47,6 +47,7 @@ describe("buildEncounters", () => {
     const params = {
       encounterId,
       practitionerId,
+      locationId,
     };
     const xmlTemplate = _.template(getXmlContentFromFile(filePath));
     const xmlContent = xmlTemplate(params);
@@ -85,8 +86,10 @@ describe("buildEncounters", () => {
     const params = {
       encounterId,
       practitionerId,
+      locationId,
       encounterId2,
       practitionerId2,
+      locationId2,
     };
     const xmlTemplate = _.template(getXmlContentFromFile(filePath));
     const xmlContent = xmlTemplate(params);
