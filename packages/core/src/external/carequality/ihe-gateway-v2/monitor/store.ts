@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import {
   OutboundPatientDiscoveryReq,
   OutboundDocumentQueryReq,
@@ -7,6 +8,9 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import { S3Utils } from "../../../aws/s3";
 import { Config } from "../../../../util/config";
+import { out } from "../../../../util/log";
+
+const { log } = out("Storing IHE Responses");
 
 const bucket = Config.getIheResponsesBucketName();
 let s3UtilsInstance = new S3Utils(Config.getAWSRegion());
@@ -27,18 +31,29 @@ export async function storeXcpdResponses({
   outboundRequest: OutboundPatientDiscoveryReq;
   gateway: XCPDGateway;
 }) {
-  if (!bucket) {
-    return;
+  try {
+    if (!bucket) {
+      return;
+    }
+    const s3Utils = getS3UtilsInstance();
+    const { cxId, patientId, id: requestId, timestamp } = outboundRequest;
+    const key = buildIheResponseKey({
+      type: "xcpd",
+      cxId,
+      patientId,
+      requestId,
+      oid: gateway.oid,
+      timestamp,
+    });
+    await s3Utils.uploadFile({
+      bucket,
+      key,
+      file: Buffer.from(response),
+      contentType: "application/xml",
+    });
+  } catch (error) {
+    log(`Error storing XCPD response: ${error}`);
   }
-  const s3Utils = getS3UtilsInstance();
-  const { cxId, patientId, id: requestId } = outboundRequest;
-  const key = buildIheResponseKey({ type: "xcpd", cxId, patientId, requestId, oid: gateway.oid });
-  await s3Utils.uploadFile({
-    bucket,
-    key,
-    file: Buffer.from(response),
-    contentType: "application/xml",
-  });
 }
 
 export async function storeDqResponses({
@@ -50,24 +65,29 @@ export async function storeDqResponses({
   outboundRequest: OutboundDocumentQueryReq;
   gateway: XCAGateway;
 }) {
-  if (!bucket) {
-    return;
+  try {
+    if (!bucket) {
+      return;
+    }
+    const s3Utils = getS3UtilsInstance();
+    const { cxId, patientId, id: requestId, timestamp } = outboundRequest;
+    const key = buildIheResponseKey({
+      type: "dq",
+      cxId,
+      patientId,
+      requestId,
+      oid: gateway.homeCommunityId,
+      timestamp,
+    });
+    await s3Utils.uploadFile({
+      bucket,
+      key,
+      file: Buffer.from(response),
+      contentType: "application/xml",
+    });
+  } catch (error) {
+    log(`Error storing DQ response: ${error}`);
   }
-  const s3Utils = getS3UtilsInstance();
-  const { cxId, patientId, id: requestId } = outboundRequest;
-  const key = buildIheResponseKey({
-    type: "dq",
-    cxId,
-    patientId,
-    requestId,
-    oid: gateway.homeCommunityId,
-  });
-  await s3Utils.uploadFile({
-    bucket,
-    key,
-    file: Buffer.from(response),
-    contentType: "application/xml",
-  });
 }
 
 export async function storeDrResponses({
@@ -79,33 +99,41 @@ export async function storeDrResponses({
   outboundRequest: OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
 }) {
-  if (!bucket) {
-    return;
+  try {
+    if (!bucket) {
+      return;
+    }
+    const s3Utils = getS3UtilsInstance();
+    const { cxId, patientId, id: requestId, timestamp } = outboundRequest;
+    const key = buildIheResponseKey({
+      type: "dr",
+      cxId,
+      patientId,
+      requestId,
+      oid: gateway.homeCommunityId,
+      timestamp,
+    });
+    await s3Utils.uploadFile({ bucket, key, file: response, contentType: "application/xml" });
+  } catch (error) {
+    log(`Error storing DR response: ${error}`);
   }
-  const s3Utils = getS3UtilsInstance();
-  const { cxId, patientId, id: requestId } = outboundRequest;
-  const key = buildIheResponseKey({
-    type: "dr",
-    cxId,
-    patientId,
-    requestId,
-    oid: gateway.homeCommunityId,
-  });
-  await s3Utils.uploadFile({ bucket, key, file: response, contentType: "application/xml" });
 }
 
-function buildIheResponseKey({
+export function buildIheResponseKey({
   type,
   cxId,
   patientId,
   requestId,
   oid,
+  timestamp,
 }: {
   type: "xcpd" | "dq" | "dr";
   cxId: string;
   patientId: string;
   requestId: string;
   oid: string;
+  timestamp: string;
 }) {
-  return `${type}/${cxId}/${patientId}/${requestId}/${oid}.xml`;
+  const date = dayjs(timestamp).format("YYYY-MM-DD");
+  return `${cxId}/${patientId}/${type}/${requestId}_${date}/${oid}.xml`;
 }
