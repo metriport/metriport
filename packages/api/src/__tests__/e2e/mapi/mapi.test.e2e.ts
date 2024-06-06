@@ -232,7 +232,7 @@ describe("MAPI E2E Tests", () => {
   it("gets MR in HTML format", async () => {
     const consolidatedData = getConsolidatedData();
     if (consolidatedData) {
-      console.log(`Webhook was called, data`);
+      console.log(`Webhook was called`);
     } else {
       console.log("Webhook was NOT called");
     }
@@ -243,7 +243,7 @@ describe("MAPI E2E Tests", () => {
     const bundle = consolidatedData[0].bundle;
     expect(bundle).toBeTruthy();
     if (!bundle) throw new Error("Missing Bundle");
-    expect(bundle.type).toEqual("collection");
+    expect(bundle.type).toEqual("searchset");
     expect(bundle.resourceType).toEqual("Bundle");
     expect(bundle.total).toEqual(1);
     expect(bundle.entry).toEqual(

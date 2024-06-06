@@ -2,13 +2,14 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import {
   ConsolidationConversionType,
   Input as ConversionInput,
-  Output as ConversionOutput,
   MedicalRecordFormat,
+  Output as ConversionOutput,
 } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
 import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
-import { S3Utils, makeS3Client } from "@metriport/core/external/aws/s3";
+import { makeS3Client, S3Utils } from "@metriport/core/external/aws/s3";
+import { SearchSetBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
@@ -45,7 +46,7 @@ export async function handleBundleToMedicalRecord({
   dateFrom?: string;
   dateTo?: string;
   conversionType: MedicalRecordFormat;
-}): Promise<Bundle<Resource>> {
+}): Promise<SearchSetBundle<Resource>> {
   const bucketName = Config.getSandboxSeedBucketName();
   if (Config.isSandbox() && bucketName) {
     const patientMatch = getSandboxSeedData(patient.data.firstName);
@@ -81,11 +82,11 @@ export function buildDocRefBundleWithAttachment(
   patientId: string,
   attachmentUrl: string,
   mimeType: ConsolidationConversionType
-): Bundle<Resource> {
+): SearchSetBundle<Resource> {
   return {
     resourceType: "Bundle",
     total: 1,
-    type: "collection",
+    type: "searchset",
     entry: [
       {
         resource: {

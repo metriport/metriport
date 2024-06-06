@@ -1,10 +1,11 @@
-import { Bundle, Resource } from "@medplum/fhirtypes";
+import { Resource } from "@medplum/fhirtypes";
 import { Patient } from "@metriport/core/domain/patient";
+import { ConsolidatedWebhookRequest, SearchSetBundle } from "@metriport/shared/medical";
 import { errorToString } from "../../../shared/log";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getSettingsOrFail } from "../../settings/getSettings";
-import { processRequest, WebhookMetadataPayload, isWebhookDisabled } from "../../webhook/webhook";
+import { isWebhookDisabled, processRequest } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
 import { updateConsolidatedQueryProgress } from "./append-consolidated-query-progress";
 import { getPatientOrFail } from "./get-patient";
@@ -16,18 +17,7 @@ export type ConsolidatedWebhookStatus = (typeof consolidatedWebhookStatus)[numbe
 
 type Filters = Record<string, string | undefined>;
 
-export type PayloadPatient = {
-  patientId: string;
-  externalId?: string;
-  status: ConsolidatedWebhookStatus;
-  bundle?: Bundle<Resource>;
-  filters?: Filters;
-};
-type Payload = {
-  meta: WebhookMetadataPayload;
-  patients: PayloadPatient[];
-};
-type PayloadWithoutMeta = Omit<Payload, "meta">;
+type PayloadWithoutMeta = Omit<ConsolidatedWebhookRequest, "meta">;
 
 /**
  * Sends a FHIR bundle with a Patient's consolidated data to the customer's
@@ -37,7 +27,7 @@ type PayloadWithoutMeta = Omit<Payload, "meta">;
  * Callers are not notified of issues/errors while processing the request -
  * nothing is thrown. Instead, the error is logged and captured (Sentry).
  */
-export const processConsolidatedDataWebhook = async ({
+export async function processConsolidatedDataWebhook({
   patient,
   status,
   requestId,
@@ -47,16 +37,15 @@ export const processConsolidatedDataWebhook = async ({
   patient: Pick<Patient, "id" | "cxId" | "externalId">;
   status: ConsolidatedWebhookStatus;
   requestId: string;
-  bundle?: Bundle<Resource>;
+  bundle?: SearchSetBundle<Resource>;
   filters?: Filters;
-}): Promise<void> => {
+}): Promise<void> {
   const { id: patientId, cxId, externalId } = patient;
   try {
     const [settings, currentPatient] = await Promise.all([
       getSettingsOrFail({ id: cxId }),
       getPatientOrFail({ id: patientId, cxId }),
     ]);
-
     // create a representation of this request and store on the DB
     const payload: PayloadWithoutMeta = {
       patients: [
@@ -120,7 +109,7 @@ export const processConsolidatedDataWebhook = async ({
     });
     throw err;
   }
-};
+}
 
 const optionalToString = (
   v: string | number | boolean | object | undefined

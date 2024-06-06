@@ -14,10 +14,10 @@ export { User } from "./devices/models/user";
 // Medical API
 export {
   WebhookRequestParsingError,
-  WebhookRequest as WebhookRequestData,
+  WebhookRequest,
   WebhookRequestStatus,
   WebhookType,
-} from "./medical/models/webhook-request";
+} from "@metriport/shared/medical";
 export { MetriportMedicalApi } from "./medical/client/metriport";
 export { Address, addressSchema } from "./medical/models/common/address";
 export { BaseUpdate, baseUpdateSchema } from "./medical/models/common/base-update";
