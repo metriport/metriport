@@ -1,4 +1,4 @@
-import { Address, Bundle, Encounter, HumanName, Location, Practitioner } from "@medplum/fhirtypes";
+import { Bundle, Encounter, HumanName, Location, Practitioner } from "@medplum/fhirtypes";
 import {
   findResourceInBundle,
   isEncounter,
@@ -8,6 +8,7 @@ import {
 import { EncountersSection } from "../../cda-types/sections";
 import { ConcernActEntry, EncounterEntry, ObservationTableRow } from "../../cda-types/shared-types";
 import {
+  buildAddressText,
   buildCodeCe,
   buildCodeCvFromCodeCe,
   buildInstanceIdentifier,
@@ -143,11 +144,6 @@ function createTableRowFromEncounter(
       },
     },
   ];
-}
-
-function buildAddressText(address: Address | undefined): string | undefined {
-  if (!address) return undefined;
-  return `${address.line?.join(", ")}, ${address.city}, ${address.state} ${address.postalCode}`;
 }
 
 function getPractitionerInformation(participant: Practitioner[] | undefined): string {

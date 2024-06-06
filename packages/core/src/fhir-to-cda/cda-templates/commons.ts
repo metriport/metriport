@@ -563,3 +563,8 @@ export function buildParticipant(locations: Location[] | undefined): Participant
     return participant;
   });
 }
+
+export function buildAddressText(address: Address | undefined): string | undefined {
+  if (!address) return undefined;
+  return `${address.line?.join(", ")}, ${address.city}, ${address.state} ${address.postalCode}`;
+}

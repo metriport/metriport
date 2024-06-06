@@ -2,6 +2,7 @@ import { Bundle, Immunization, Location } from "@medplum/fhirtypes";
 import { findResourceInBundle, isImmunization, isLocation } from "../../../external/fhir/shared";
 import { ObservationTableRow } from "../../cda-types/shared-types";
 import {
+  buildAddressText,
   buildCodeCe,
   buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
@@ -114,7 +115,7 @@ function createTableRowFromImmunization(
 
 function getLocationInformation(location: Location | undefined): string | undefined {
   if (!location) return undefined;
-  return `${location.name} - ${location.address}`;
+  return `${location.name} - ${buildAddressText(location.address)}`;
 }
 
 function mapImmunizationStatusCode(status: string | undefined): string | undefined {

@@ -1,0 +1,119 @@
+<templateId root="2.16.840.1.113883.10.20.22.2.2.1">
+</templateId>
+<code code="11369-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="History of immunizations">
+</code>
+<title>
+	IMMUNIZATIONS
+</title>
+<text>
+	<table ID="immunizations">
+		<thead>
+			<tr>
+				<th>
+					Immunization
+				</th>
+				<th>
+					Status
+				</th>
+				<th>
+					Location
+				</th>
+				<th>
+					Date
+				</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr ID="immunizations1">
+				<td ID="immunizations1-material">
+					Influenza, seasonal, injectable, preservative free
+				</td>
+				<td>
+					completed
+				</td>
+				<td>
+					Planet Express Medical Office - 1111 Sample Street, Suite 987, Springfield, CA 12123
+				</td>
+				<td>
+					09/20/2013 1:14 AM
+				</td>
+			</tr>
+		</tbody>
+	</table>
+</text>
+<entry>
+	<substanceAdministration classCode="SBADM" moodCode="EVN" negationInd="false">
+		<templateId root="2.16.840.1.113883.10.20.22.4.52" extension="2015-08-01">
+		</templateId>
+		<id root="placeholder-ORG-OID" extension="${immunizationId}">
+		</id>
+		<code code="IMMUNIZ" codeSystem="2.16.840.1.113883.5.4" codeSystemName="ActCode">
+		</code>
+		<text>
+			<reference value="immunizations1">
+			</reference>
+		</text>
+		<statusCode code="completed">
+		</statusCode>
+		<effectiveTime value="20130920011430">
+		</effectiveTime>
+		<consumable typeCode="CSM">
+			<manufacturedProduct classCode="MANU">
+				<templateId root="2.16.840.1.113883.10.20.22.4.54" extension="2015-08-01">
+				</templateId>
+				<manufacturedMaterial>
+					<code code="140" codeSystem="2.16.840.1.113883.12.292" displayName="Influenza, seasonal, injectable, preservative free">
+						<originalText>
+							<reference value="immunizations1-material">
+							</reference>
+						</originalText>
+						<translation code="140" codeSystem="2.16.840.1.113883.12.292" displayName="Influenza, seasonal, injectable, preservative free">
+						</translation>
+					</code>
+				</manufacturedMaterial>
+			</manufacturedProduct>
+		</consumable>
+		<performer>
+			<assignedEntity>
+				<id root="placeholder-ORG-OID" extension="${locationId}">
+				</id>
+				<addr use="WP">
+					<streetAddressLine>
+						1111 Sample Street, Suite 987
+					</streetAddressLine>
+					<city>
+						Springfield
+					</city>
+					<state>
+						CA
+					</state>
+					<postalCode>
+						12123
+					</postalCode>
+					<country>
+						USA
+					</country>
+				</addr>
+				<representedOrganization classCode="ORG">
+					<addr use="WP">
+						<streetAddressLine>
+							1111 Sample Street, Suite 987
+						</streetAddressLine>
+						<city>
+							Springfield
+						</city>
+						<state>
+							CA
+						</state>
+						<postalCode>
+							12123
+						</postalCode>
+						<country>
+							USA
+						</country>
+					</addr>
+				</representedOrganization>
+			</assignedEntity>
+		</performer>
+	</substanceAdministration>
+</entry>
