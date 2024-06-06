@@ -75,6 +75,7 @@ export const processConsolidatedDataWebhook = async ({
         cxId,
         type: "medical.consolidated-data",
         payload,
+        requestId,
       });
 
       const additionalWHRequestMeta: Record<string, string> = {};
@@ -98,6 +99,7 @@ export const processConsolidatedDataWebhook = async ({
         type: "medical.consolidated-data",
         payload,
         status: "success",
+        requestId,
       });
     }
     await updateConsolidatedQueryProgress({

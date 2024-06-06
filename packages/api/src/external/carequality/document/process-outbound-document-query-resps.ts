@@ -220,19 +220,23 @@ export async function processOutboundDocumentQueryResps({
     // We send the request to IHE Gateway to initiate the doc retrieval with doc references by each respective gateway.
     log(`Starting document retrieval, ${docsToDownload.length} docs to download`);
 
-    log(`Starting document retrieval - Gateway V1`);
-    await iheGateway.startDocumentsRetrieval({
-      outboundDocumentRetrievalReq: documentRetrievalRequestsV1,
-    });
+    if (documentRetrievalRequestsV1.length > 0) {
+      log(`Starting document retrieval - Gateway V1`);
+      await iheGateway.startDocumentsRetrieval({
+        outboundDocumentRetrievalReq: documentRetrievalRequestsV1,
+      });
+    }
 
-    log(`Starting document retrieval - Gateway V2`);
-    const iheGatewayV2 = makeIHEGatewayV2();
-    await iheGatewayV2.startDocumentRetrievalGatewayV2({
-      drRequestsGatewayV2: documentRetrievalRequestsV2,
-      requestId,
-      patientId,
-      cxId,
-    });
+    if (documentRetrievalRequestsV2.length > 0) {
+      log(`Starting document retrieval - Gateway V2`);
+      const iheGatewayV2 = makeIHEGatewayV2();
+      await iheGatewayV2.startDocumentRetrievalGatewayV2({
+        drRequestsGatewayV2: documentRetrievalRequestsV2,
+        requestId,
+        patientId,
+        cxId,
+      });
+    }
 
     await resultPoller.pollOutboundDocRetrievalResults({
       requestId,

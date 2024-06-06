@@ -28,20 +28,17 @@ export function buildXmlStringFromTemplate(orgDetails: CQOrgDetailsWithUrls) {
     email,
     role,
     parentOrgOid,
-    organizationBizType,
   } = orgDetails;
 
   const urnOid = "urn:oid:" + oid;
 
   const isImplementer = role === "Implementer";
-  const isHealthItVendor = organizationBizType === "healthcare_it_vendor";
 
-  const endpoints =
-    isImplementer || isHealthItVendor
-      ? getEndpoint(urnOid, XCPD_STRING, urlXCPD) +
-        getEndpoint(urnOid, XCA_DQ_STRING, urlDQ) +
-        getEndpoint(urnOid, XCA_DR_STRING, urlDR)
-      : "";
+  const endpoints = isImplementer
+    ? getEndpoint(urnOid, XCPD_STRING, urlXCPD) +
+      getEndpoint(urnOid, XCA_DQ_STRING, urlDQ) +
+      getEndpoint(urnOid, XCA_DR_STRING, urlDR)
+    : "";
 
   return `<Organization>
     <identifier>
