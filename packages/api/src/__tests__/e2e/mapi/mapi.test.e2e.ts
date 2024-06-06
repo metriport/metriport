@@ -228,20 +228,22 @@ describe("MAPI E2E Tests", () => {
   });
 
   it("completes conversion successfully", async () => {
-    let conversionProgress = await medicalApi.getConsolidatedQueryStatus(patient.id);
+    let conversionProgresses = await medicalApi.getConsolidatedQueryStatus(patient.id);
+    let initConversionProgress = conversionProgresses?.queries?.[0];
     let retryLimit = 0;
     while (
-      conversionProgress.status !== "completed" &&
+      initConversionProgress?.status !== "completed" &&
       retryLimit++ < conversionCheckStatusMaxRetries
     ) {
       console.log(
         `Conversion still processing, retrying in ${conversionCheckStatusWaitTime.asSeconds} seconds...`
       );
       await sleep(conversionCheckStatusWaitTime.asMilliseconds());
-      conversionProgress = await medicalApi.getConsolidatedQueryStatus(patient.id);
+      conversionProgresses = await medicalApi.getConsolidatedQueryStatus(patient.id);
+      initConversionProgress = conversionProgresses?.queries?.[0];
     }
-    expect(conversionProgress).toBeTruthy();
-    expect(conversionProgress.status).toEqual("completed");
+    expect(conversionProgresses).toBeTruthy();
+    expect(initConversionProgress?.status).toEqual("completed");
   });
 
   it.skip("gets MR in HTML format", async () => {

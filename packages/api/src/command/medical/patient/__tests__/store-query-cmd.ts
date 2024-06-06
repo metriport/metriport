@@ -1,6 +1,9 @@
+import { ConsolidatedQuery } from "@metriport/api-sdk";
+import { faker } from "@faker-js/faker";
+import dayjs from "dayjs";
 import * as uuidv7_file from "@metriport/core/util/uuid-v7";
+import { ISO_DATE } from "@metriport/shared/common/date";
 import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
-import { QueryProgress } from "@metriport/core/domain/query-status";
 import { makeProgress } from "../../../../domain/medical/__tests__/document-query";
 import { StoreQueryParams } from "../query-init";
 import { makePatientData } from "../../../../domain/medical/__tests__/patient";
@@ -25,10 +28,13 @@ export const cqParams: StoreQueryParams = {
   id: patient.id,
   cxId: patient.cxId,
   cmd: {
-    consolidatedQuery: {
-      status: "processing",
-      startedAt: new Date(),
-    },
+    consolidatedQueries: [
+      {
+        requestId,
+        status: "processing",
+        startedAt: new Date(),
+      },
+    ],
   },
 };
 
@@ -39,14 +45,29 @@ export const documentQueryProgress: DocumentQueryProgress = {
   convert: makeProgress(),
 };
 
-export const consolidatedQuery: QueryProgress = {
-  status: "processing",
-  startedAt: new Date(),
-};
+export function makeConsolidatedQueryProgress(
+  params?: Partial<ConsolidatedQuery>
+): ConsolidatedQuery {
+  const dateTo = dayjs(faker.date.recent()).format(ISO_DATE);
+
+  return {
+    requestId: params?.requestId ?? requestId,
+    status: params?.status ?? "processing",
+    startedAt: params?.startedAt ?? new Date(),
+    resources: params?.resources ?? [],
+    conversionType: params?.conversionType ?? "json",
+    dateFrom: dayjs(
+      faker.date.past({
+        refDate: dateTo,
+      })
+    ).format(ISO_DATE),
+    dateTo,
+  };
+}
 
 export const mockedPatientAllProgresses = makePatientModel({
   data: makePatientData({
     documentQueryProgress,
-    consolidatedQuery,
+    consolidatedQueries: [makeConsolidatedQueryProgress()],
   }),
 });
