@@ -10,7 +10,7 @@ import {
 import { PatientResource } from "@metriport/ihe-gateway-sdk/src/models/patient-discovery/patient";
 import {
   patientToNormalizedCoreDemographics,
-  scoreLink,
+  checkDemoMatch,
   linkHasNewDemographics,
 } from "../../api/src/domain/medical/patient-demographics";
 import { patientResourceToNormalizedLinkDemographics } from "../../api/src/external/carequality/patient-demographics";
@@ -45,7 +45,9 @@ const scoringFuncs: (({
 }: {
   coreDemographics: LinkDemographics;
   linkDemographics: LinkDemographics;
-}) => [true, LinkDemographicsComparison] | [false, undefined])[] = [scoreLink];
+}) =>
+  | { isMatched: true; comparison: LinkDemographicsComparison }
+  | { isMatched: false; comparison: undefined })[] = [checkDemoMatch];
 
 // csv stuff -- absolute path
 const inputFileName = "/absolute/path/to/csv";
@@ -122,7 +124,7 @@ async function loadData(rows: Row[]) {
       };
       const coreDemographics = patientToNormalizedCoreDemographics(patient);
       const linkDemographics = patientResourceToNormalizedLinkDemographics(row.patientResource);
-      const [hasNewDemographics, newDemographicsDiff] = linkHasNewDemographics({
+      const { hasNewDemographics, comparison: newDeomComparison } = linkHasNewDemographics({
         coreDemographics,
         consolidatedLinkDemographics,
         linkDemographics,
@@ -133,7 +135,7 @@ async function loadData(rows: Row[]) {
             createComparison({
               coreDemographics,
               linkDemographics,
-              comparison: newDemographicsDiff,
+              comparison: newDeomComparison,
               keyword: "Diff",
             })
           );
@@ -147,17 +149,17 @@ async function loadData(rows: Row[]) {
           patientNewDemo[patientId] = false;
         }
       }
-      const [passedScoreFunc, passedDemgraphicsOverlap] = scoreFunc({
+      const { isMatched, comparison: scoreFuncComparison } = scoreFunc({
         coreDemographics,
         linkDemographics,
       });
-      if (passedScoreFunc) {
+      if (isMatched) {
         if (detailedPass) {
           innerLog(
             createComparison({
               coreDemographics,
               linkDemographics,
-              comparison: passedDemgraphicsOverlap,
+              comparison: scoreFuncComparison,
               keyword: "Overlap",
             })
           );

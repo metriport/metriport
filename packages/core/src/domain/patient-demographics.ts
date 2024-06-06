@@ -30,16 +30,7 @@ export type LinkDemographics = {
   ssns: string[];
 };
 
-export type LinkDemographicsComparison = {
-  dob?: string;
-  gender?: LinkGender;
-  names?: string[];
-  addresses?: string[];
-  telephoneNumbers?: string[];
-  emails?: string[];
-  driversLicenses?: string[];
-  ssns?: string[];
-};
+export type LinkDemographicsComparison = Partial<LinkDemographics>;
 
 export type LinkDemographicsHistory = {
   [key: string]: LinkDemographics[];

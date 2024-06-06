@@ -2,7 +2,7 @@ import { Patient } from "@metriport/core/domain/patient";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { PatientResource } from "@metriport/ihe-gateway-sdk";
 import {
-  scoreLink,
+  checkDemoMatch,
   linkHasNewDemographics,
   patientToNormalizedCoreDemographics,
   removeInvalidArrayValues,
@@ -21,14 +21,14 @@ export function getNewDemographics(patient: Patient, links: CQLink[]): LinkDemog
   const consolidatedLinkDemographics = patient.data.consolidatedLinkDemographics;
   return getPatientResources(links)
     .map(patientResourceToNormalizedLinkDemographics)
-    .filter(linkDemographics => scoreLink({ coreDemographics, linkDemographics })[0])
+    .filter(linkDemographics => checkDemoMatch({ coreDemographics, linkDemographics }).isMatched)
     .filter(
       linkDemographics =>
         linkHasNewDemographics({
           coreDemographics,
           consolidatedLinkDemographics,
           linkDemographics,
-        })[0]
+        }).hasNewDemographics
     );
 }
 

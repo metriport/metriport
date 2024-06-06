@@ -1,5 +1,6 @@
 import { Patient, PatientData } from "@metriport/core/domain/patient";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { patientEvents } from "../../../event/medical/patient-event";
 import { upsertPatientToFHIRServer } from "../../../external/fhir/patient/upsert-patient";
 import { PatientModel } from "../../../models/medical/patient";
@@ -50,7 +51,7 @@ export async function updatePatient({
     rerunPdOnNewDemographics,
     forceCommonwell,
     forceCarequality,
-  });
+  }).catch(processAsyncError("runInitialPatientDiscoveryAcrossHies"));
 
   return patient;
 }

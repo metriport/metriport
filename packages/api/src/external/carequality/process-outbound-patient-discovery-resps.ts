@@ -41,6 +41,7 @@ export async function processOutboundPatientDiscoveryResps({
   try {
     const patient = await getPatientOrFail({ id: patientId, cxId });
     // ANALYTICS BUG This prevents analytics from firing for valid cases of no results
+    // TODO Internal 1848 (fix)
     if (results.length === 0) {
       log(`No patient discovery results found.`);
       const startedNewPd = await runNexPdIfScheduled({

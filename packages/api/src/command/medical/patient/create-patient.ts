@@ -5,6 +5,7 @@ import {
   PatientDemoData,
 } from "@metriport/core/domain/patient";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilityOrFail } from "../facility/get-facility";
 import { addCoordinatesToAddresses } from "./add-coordinates";
@@ -79,7 +80,7 @@ export async function createPatient({
     rerunPdOnNewDemographics,
     forceCarequality,
     forceCommonwell,
-  });
+  }).catch(processAsyncError("runInitialPatientDiscoveryAcrossHies"));
 
   return newPatient;
 }

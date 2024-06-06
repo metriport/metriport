@@ -1,8 +1,8 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
-import { PatientNetworkLink, GenderCodes } from "@metriport/commonwell-sdk";
+import { PatientNetworkLink } from "@metriport/commonwell-sdk";
 import {
-  scoreLink,
+  checkDemoMatch,
   linkHasNewDemographics,
   patientToNormalizedCoreDemographics,
   removeInvalidArrayValues,
@@ -16,21 +16,19 @@ import {
 } from "../../domain/medical/patient-demographics";
 import { CwLink } from "./cw-patient-data";
 
-type CwGenderCode = `${GenderCodes}`;
-
 export function getNewDemographics(patient: Patient, links: CwLink[]): LinkDemographics[] {
   const coreDemographics = patientToNormalizedCoreDemographics(patient);
   const consolidatedLinkDemographics = patient.data.consolidatedLinkDemographics;
   return getPatientNetworkLinks(links)
     .map(patientNetworkLinkToNormalizedLinkDemographics)
-    .filter(linkDemographics => scoreLink({ coreDemographics, linkDemographics })[0])
+    .filter(linkDemographics => checkDemoMatch({ coreDemographics, linkDemographics }).isMatched)
     .filter(
       linkDemographics =>
         linkHasNewDemographics({
           coreDemographics,
           consolidatedLinkDemographics,
           linkDemographics,
-        })[0]
+        }).hasNewDemographics
     );
 }
 
@@ -38,8 +36,7 @@ export function patientNetworkLinkToNormalizedLinkDemographics(
   patientNetworkLink: PatientNetworkLink
 ): LinkDemographics {
   const dob = normalizeDob(patientNetworkLink.details.birthDate);
-  const cwGender = patientNetworkLink.details.gender.code as CwGenderCode;
-  const gender = normalizeGender(cwGender);
+  const gender = normalizeGender(patientNetworkLink.details.gender.code);
   const names = patientNetworkLink.details.name.flatMap(name => {
     return name.family.flatMap(lastName => {
       return (name.given ?? []).map(firstName => {

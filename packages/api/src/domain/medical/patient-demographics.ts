@@ -31,13 +31,15 @@ import dayjs from "dayjs";
  * @param linkDemographics The incoming link demographics from CQ or CW.
  * @returns boolean representing whether or not the link demographics match the patient, and the comparison object if yes.
  */
-export function scoreLink({
+export function checkDemoMatch({
   coreDemographics,
   linkDemographics,
 }: {
   coreDemographics: LinkDemographics;
   linkDemographics: LinkDemographics;
-}): [true, LinkDemographicsComparison] | [false, undefined] {
+}):
+  | { isMatched: true; comparison: LinkDemographicsComparison }
+  | { isMatched: false; comparison: undefined } {
   const matchedFields: LinkDemographicsComparison = {};
   let scoreThreshold = 20;
   let score = 0;
@@ -136,8 +138,10 @@ export function scoreLink({
     // SSN approximate match
     // TODO
   }
-  const pass = score >= scoreThreshold;
-  return pass ? [pass, matchedFields] : [pass, undefined];
+  const isMatched = score >= scoreThreshold;
+  return isMatched
+    ? { isMatched, comparison: matchedFields }
+    : { isMatched, comparison: undefined };
 }
 
 /**
@@ -389,7 +393,9 @@ export function linkHasNewDemographics({
   coreDemographics: LinkDemographics;
   consolidatedLinkDemographics?: ConsolidatedLinkDemographics;
   linkDemographics: LinkDemographics;
-}): [true, LinkDemographicsComparison] | [false, undefined] {
+}):
+  | { hasNewDemographics: true; comparison: LinkDemographicsComparison }
+  | { hasNewDemographics: false; comparison: undefined } {
   const hasNewDob =
     coreDemographics.dob && linkDemographics.dob && linkDemographics.dob !== coreDemographics.dob;
   const hasNewGender =
@@ -442,9 +448,9 @@ export function linkHasNewDemographics({
     hasNewDriversLicenses ||
     hasNewSsn;
   if (hasNewDemographics) {
-    return [
+    return {
       hasNewDemographics,
-      {
+      comparison: {
         ...(hasNewDob ? { dob: linkDemographics.dob } : undefined),
         ...(hasNewGender ? { gender: linkDemographics.gender } : undefined),
         ...(hasNewNames ? { names: newNames } : undefined),
@@ -454,7 +460,7 @@ export function linkHasNewDemographics({
         ...(hasNewDriversLicenses ? { driversLicenses: newDriversLicenses } : undefined),
         ...(hasNewSsn ? { ssns: newSsn } : undefined),
       },
-    ];
+    };
   }
-  return [hasNewDemographics, undefined];
+  return { hasNewDemographics, comparison: undefined };
 }

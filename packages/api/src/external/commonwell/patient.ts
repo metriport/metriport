@@ -687,8 +687,8 @@ export async function remove(patient: Patient, facilityId: string): Promise<void
     commonWell = commonWellAPI;
 
     await Promise.all([
-      await commonWell.deletePatient(queryMeta, commonwellPatientId),
-      await deleteCwPatientData({ id: patient.id, cxId: patient.cxId }),
+      commonWell.deletePatient(queryMeta, commonwellPatientId),
+      deleteCwPatientData({ id: patient.id, cxId: patient.cxId }),
     ]);
   } catch (error) {
     const msg = `Failed to delete patient @ CW`;
