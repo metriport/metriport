@@ -12,6 +12,7 @@ export const amaAssnSystemCode = "2.16.840.1.113883.6.12";
 export const fdasisSystemCode = "2.16.840.1.113883.4.9";
 export const hl7ActCode = "2.16.840.1.113883.5.4";
 export const providerTaxonomy = "2.16.840.1.113883.6.101";
+export const vaccineAdministeredCodeSet = "2.16.840.1.113883.12.292";
 export const icd10SystemCode = "2.16.840.1.113883.6.90";
 export const hl7actCode = "2.16.840.1.113883.5.4";
 export const extensionValue2014 = "2014-06-09";

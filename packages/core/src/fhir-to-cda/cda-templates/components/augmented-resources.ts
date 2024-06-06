@@ -60,6 +60,6 @@ export class AugmentedImmunization implements AugmentedResource<Immunization> {
     public readonly sectionName: string,
     public readonly resource: Immunization,
     public readonly location?: Location,
-    public readonly locationName?: string
+    public readonly locationName?: string | undefined
   ) {}
 }

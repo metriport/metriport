@@ -41,6 +41,7 @@ import {
   placeholderOrgOid,
   providerTaxonomy,
   snomedSystemCode,
+  vaccineAdministeredCodeSet,
 } from "./constants";
 
 dayjs.extend(localizedFormat);
@@ -54,6 +55,8 @@ CODING_MAP.set("http://www.ama-assn.org/go/cpt", amaAssnSystemCode);
 CODING_MAP.set("http://fdasis.nlm.nih.gov", fdasisSystemCode);
 CODING_MAP.set("http://terminology.hl7.org/codesystem/v3-actcode", hl7ActCode);
 CODING_MAP.set("http://nucc.org/provider-taxonomy", providerTaxonomy);
+CODING_MAP.set("http://hl7.org/fhir/sid/cvx", vaccineAdministeredCodeSet);
+
 CODING_MAP.set("icd-10", icd10SystemCode);
 
 export const TIMESTAMP_CLEANUP_REGEX = /-|T|:|\.\d+Z$/g;
@@ -488,6 +491,14 @@ export function buildPerformer(practitioners: Practitioner[] | undefined): Assig
                 family: p.name?.flatMap(n => n.family).join(", "),
               },
             },
+            representedOrganization: {
+              _classCode: "ORG",
+              name: {
+                "#text": "",
+              },
+              addr: buildAddress(p.address),
+              telecom: buildTelecom(p.telecom),
+            },
           },
         } || []
       );
@@ -495,7 +506,31 @@ export function buildPerformer(practitioners: Practitioner[] | undefined): Assig
   );
 }
 
-export function buildParticipant(locations: Location[]): Participant[] | undefined {
+export function buildPerformerFromLocation(
+  location: Location | undefined
+): AssignedEntity | undefined {
+  if (!location) return undefined;
+  return {
+    assignedEntity: {
+      id: buildInstanceIdentifier({
+        root: placeholderOrgOid,
+        extension: location.id,
+      }),
+      addr: buildAddress(location.address),
+      telecom: buildTelecom(location.telecom),
+      representedOrganization: {
+        _classCode: "ORG",
+        name: {
+          "#text": "",
+        },
+        addr: buildAddress(location.address),
+        telecom: buildTelecom(location.telecom),
+      },
+    },
+  };
+}
+
+export function buildParticipant(locations: Location[] | undefined): Participant[] | undefined {
   if (!locations) return undefined;
 
   return locations.map(location => {
