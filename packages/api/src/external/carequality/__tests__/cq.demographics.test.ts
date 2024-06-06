@@ -13,7 +13,7 @@ describe("CQ demographics", () => {
     ],
     address: [
       {
-        line: ["400 Awesome Rd."],
+        line: ["400 Awesome Road"],
         city: "San Francisco",
         state: "CA",
         postalCode: "99999-4040",
@@ -32,8 +32,14 @@ describe("CQ demographics", () => {
         value: "(888)8887777",
       },
       {
+        value: "(888)8886666",
+      },
+      {
         system: "email",
         value: " katy2020@GMAIL.COM",
+      },
+      {
+        value: " queenkaty2020@GMAIL.COM",
       },
     ],
     identifier: [],
@@ -49,7 +55,7 @@ describe("CQ demographics", () => {
       ].map(name => JSON.stringify(name, Object.keys(name).sort())),
       addresses: [
         {
-          line: ["400 awesome rd."],
+          line: ["400 awesome rd"],
           city: "san francisco",
           state: "ca",
           zip: "99999",
@@ -63,8 +69,8 @@ describe("CQ demographics", () => {
           country: "usa",
         },
       ].map(address => JSON.stringify(address, Object.keys(address).sort())),
-      telephoneNumbers: ["8888887777"],
-      emails: ["katy2020@gmail.com"],
+      telephoneNumbers: ["8888887777", "8888886666"],
+      emails: ["katy2020@gmail.com", "queenkaty2020@gmail.com"],
       driversLicenses: [],
       ssns: [],
     });

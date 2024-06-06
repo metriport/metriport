@@ -14,7 +14,7 @@ describe("CW demographics", () => {
       ],
       address: [
         {
-          line: ["400 Awesome Rd."],
+          line: ["400 Awesome Road"],
           city: "San Francisco",
           state: "CA",
           zip: "99999-4040",
@@ -55,7 +55,7 @@ describe("CW demographics", () => {
       ].map(name => JSON.stringify(name, Object.keys(name).sort())),
       addresses: [
         {
-          line: ["400 awesome rd."],
+          line: ["400 awesome rd"],
           city: "san francisco",
           state: "ca",
           zip: "99999",
