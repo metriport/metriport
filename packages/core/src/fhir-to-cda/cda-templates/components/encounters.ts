@@ -6,17 +6,13 @@ import {
   isPractitioner,
 } from "../../../external/fhir/shared";
 import { EncountersSection } from "../../cda-types/sections";
+import { ConcernActEntry, EncounterEntry, ObservationTableRow } from "../../cda-types/shared-types";
 import {
-  AssignedEntity,
-  ConcernActEntry,
-  EncounterEntry,
-  ObservationTableRow,
-} from "../../cda-types/shared-types";
-import {
-  buildAddress,
   buildCodeCe,
-  buildCodeCeFromCoding,
+  buildCodeCvFromCodeCe,
   buildInstanceIdentifier,
+  buildParticipant,
+  buildPerformer,
   buildValueCd,
   formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
@@ -191,6 +187,12 @@ function createEntryFromEncounter(
   encounter: AugmentedEncounter,
   referenceId: string
 ): EncounterEntry {
+  const classCode = buildCodeCe({
+    code: encounter.resource.class?.code,
+    codeSystem: encounter.resource.class?.system,
+  });
+  const code = buildCodeCvFromCodeCe(classCode, encounter.resource.type);
+
   return {
     encounter: {
       _classCode: "ENC",
@@ -203,7 +205,7 @@ function createEntryFromEncounter(
         root: placeholderOrgOid,
         extension: encounter.resource.id,
       }),
-      code: buildCodeCeFromCoding(encounter.resource.type),
+      code,
       statusCode: {
         _code: mapEncounterStatusCode(encounter.resource.status),
       },
@@ -217,36 +219,11 @@ function createEntryFromEncounter(
           "_value"
         ),
       },
-      performer: createPerformer(encounter.practitioners),
+      performer: buildPerformer(encounter.practitioners),
+      participant: buildParticipant(encounter.locations),
       entryRelationship: createEntryRelationshipObservation(encounter.resource, referenceId),
     },
   };
-}
-
-function createPerformer(practitioners: Practitioner[] | undefined): AssignedEntity[] {
-  return (
-    practitioners?.flatMap(p => {
-      return (
-        {
-          assignedEntity: {
-            id: buildInstanceIdentifier({
-              root: placeholderOrgOid,
-              extension: p.id,
-            }),
-            addr: buildAddress(p.address),
-            assignedPerson: {
-              name: {
-                given: p.name
-                  ?.flatMap(n => `${n.given}${n.suffix ? `, ${n.suffix}` : ""}`)
-                  .join(", "),
-                family: p.name?.flatMap(n => n.family).join(", "),
-              },
-            },
-          },
-        } || []
-      );
-    }) || []
-  );
 }
 
 /**

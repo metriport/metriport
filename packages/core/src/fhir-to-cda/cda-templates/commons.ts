@@ -4,13 +4,16 @@ import {
   Coding,
   ContactPoint,
   Identifier,
+  Location,
   Organization,
+  Practitioner,
 } from "@medplum/fhirtypes";
-import { normalizeOid } from "@metriport/shared";
+import { normalizeOid, toArray } from "@metriport/shared";
 import dayjs from "dayjs";
 import localizedFormat from "dayjs/plugin/localizedFormat";
 import utc from "dayjs/plugin/utc";
 import {
+  AssignedEntity,
   CDAOriginalText,
   CdaAddress,
   CdaCodeCe,
@@ -22,6 +25,7 @@ import {
   CdaValueSt,
   Entry,
   EntryObject,
+  Participant,
 } from "../cda-types/shared-types";
 import {
   NOT_SPECIFIED,
@@ -29,10 +33,13 @@ import {
   _xsiTypeAttribute,
   amaAssnSystemCode,
   fdasisSystemCode,
+  hl7ActCode,
   icd10SystemCode,
   loincSystemCode,
   nlmNihSystemCode,
+  oids,
   placeholderOrgOid,
+  providerTaxonomy,
   snomedSystemCode,
 } from "./constants";
 
@@ -45,6 +52,8 @@ CODING_MAP.set("http://snomed.info/sct", snomedSystemCode);
 CODING_MAP.set("http://www.nlm.nih.gov/research/umls/rxnorm", nlmNihSystemCode);
 CODING_MAP.set("http://www.ama-assn.org/go/cpt", amaAssnSystemCode);
 CODING_MAP.set("http://fdasis.nlm.nih.gov", fdasisSystemCode);
+CODING_MAP.set("http://terminology.hl7.org/codesystem/v3-actcode", hl7ActCode);
+CODING_MAP.set("http://nucc.org/provider-taxonomy", providerTaxonomy);
 CODING_MAP.set("icd-10", icd10SystemCode);
 
 export const TIMESTAMP_CLEANUP_REGEX = /-|T|:|\.\d+Z$/g;
@@ -115,9 +124,9 @@ export function buildOriginalTextReference(value: string): CDAOriginalText {
 export function buildCodeCvFromCodeableConcept(
   codeableConcept: CodeableConcept | undefined,
   textReference?: string
-): CdaCodeCv | Entry {
+): CdaCodeCv | undefined {
   if (!codeableConcept) {
-    return withoutNullFlavorString(codeableConcept);
+    return undefined;
   }
 
   const primaryCodingRaw = codeableConcept.coding?.[0];
@@ -149,6 +158,28 @@ export function buildCodeCvFromCodeableConcept(
   return codeCV;
 }
 
+export function buildCodeCvFromCodeCe(codeCe: CdaCodeCe, concepts: CodeableConcept[] | undefined) {
+  const codeCv: CdaCodeCv = {
+    ...codeCe,
+  };
+
+  if (!concepts) return codeCv;
+
+  const translations = concepts.flatMap(
+    concept =>
+      concept.coding?.map(coding => {
+        return buildCodeCe({
+          code: coding.code,
+          codeSystem: mapCodingSystem(coding.system),
+          codeSystemName: undefined,
+          displayName: coding.display,
+        });
+      }) || []
+  );
+  codeCv.translation = translations;
+  return codeCv;
+}
+
 export function buildInstanceIdentifier({
   root,
   extension,
@@ -173,11 +204,7 @@ export function buildInstanceIdentifiersFromIdentifier(
     return withNullFlavor(undefined, "_root");
   }
 
-  const identifiersArray = Array.isArray(identifiers)
-    ? identifiers
-    : identifiers
-    ? [identifiers]
-    : [];
+  const identifiersArray = toArray(identifiers);
   return identifiersArray.map(identifier =>
     buildInstanceIdentifier({
       root: placeholderOrgOid,
@@ -200,8 +227,10 @@ export function buildTelecom(telecoms: ContactPoint[] | undefined): CdaTelecom[]
   });
 }
 
-export function buildAddress(address?: Address[]): CdaAddress[] | undefined {
-  return address?.map(addr => ({
+export function buildAddress(address: Address | Address[] | undefined): CdaAddress[] | undefined {
+  if (!address) return undefined;
+  const addressArray = toArray(address);
+  return addressArray?.map(addr => ({
     ...withoutNullFlavorObject(mapAddressUse(addr.use), "_use"),
     streetAddressLine: addr.line?.join(", "),
     city: addr.city,
@@ -381,6 +410,12 @@ function cleanUpCoding(primaryCodingRaw: Coding | undefined) {
         code: primaryCodingRaw.code ?? "RXNORM",
         display: primaryCodingRaw.display,
       };
+    case "http://nucc.org/provider-taxonomy":
+      return {
+        system: CODING_MAP.get(system),
+        code: primaryCodingRaw.code ?? "NUCC",
+        display: primaryCodingRaw.display,
+      };
     default:
       return {
         system: codingSystem ?? system,
@@ -428,4 +463,65 @@ export function getDisplaysFromCodeableConcepts(
       return;
     })
     .join(", ");
+}
+
+export function buildPerformer(practitioners: Practitioner[] | undefined): AssignedEntity[] {
+  return (
+    practitioners?.flatMap(p => {
+      return (
+        {
+          assignedEntity: {
+            id: buildInstanceIdentifier({
+              root: placeholderOrgOid,
+              extension: p.id,
+            }),
+            code: p.qualification?.flatMap(
+              qualif => buildCodeCvFromCodeableConcept(qualif.code) || []
+            ),
+            addr: buildAddress(p.address),
+            telecom: buildTelecom(p.telecom),
+            assignedPerson: {
+              name: {
+                given: p.name
+                  ?.flatMap(n => `${n.given}${n.suffix ? `, ${n.suffix}` : ""}`)
+                  .join(", "),
+                family: p.name?.flatMap(n => n.family).join(", "),
+              },
+            },
+          },
+        } || []
+      );
+    }) || []
+  );
+}
+
+export function buildParticipant(locations: Location[]): Participant[] | undefined {
+  if (!locations) return undefined;
+
+  return locations.map(location => {
+    const participant: Participant = {
+      _typeCode: "LOC",
+      participantRole: {
+        _classCode: "SDLOC",
+        templateId: {
+          _root: oids.serviceDeliveryLocation,
+        },
+        identifier: buildInstanceIdentifiersFromIdentifier(location.identifier),
+        code: {
+          _nullFlavor: "NI",
+        },
+        addr: buildAddress(location.address),
+        telecom: buildTelecom(location.telecom),
+        playingEntity: {
+          _classCode: "PLC",
+          ...(location.name && {
+            name: {
+              "#text": location.name,
+            },
+          }),
+        },
+      },
+    };
+    return participant;
+  });
 }

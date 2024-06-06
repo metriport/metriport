@@ -10,6 +10,8 @@ export const snomedSystemCode = "2.16.840.1.113883.6.96";
 export const nlmNihSystemCode = "2.16.840.1.113883.6.88";
 export const amaAssnSystemCode = "2.16.840.1.113883.6.12";
 export const fdasisSystemCode = "2.16.840.1.113883.4.9";
+export const hl7ActCode = "2.16.840.1.113883.5.4";
+export const providerTaxonomy = "2.16.840.1.113883.6.101";
 export const icd10SystemCode = "2.16.840.1.113883.6.90";
 export const extensionValue2014 = "2014-06-09";
 export const extensionValue2015 = "2015-08-01";
@@ -40,6 +42,7 @@ export const oids = {
   reactionObservation: "2.16.840.1.113883.10.20.22.4.9",
   encounterActivity: "2.16.840.1.113883.10.20.22.4.49",
   encounterDiagnosis: "2.16.840.1.113883.10.20.22.4.80",
+  serviceDeliveryLocation: "2.16.840.1.113883.10.20.22.4.32",
 };
 
 export const mentalHealthSurveyCodes = ["44249-1"];

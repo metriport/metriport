@@ -31,8 +31,8 @@
 		</thead>
 		<tbody>
 			<tr ID="allergies1">
-				<td>
-					Penicillin G
+				<td ID="allergies1-substance">
+					Penicillin
 				</td>
 				<td>
 					medication
@@ -77,13 +77,27 @@
 						</reference>
 					</originalText>
 				</value>
+				<participant typeCode="CSM" contextControlCode="OP">
+					<participantRole classCode="MANU">
+						<playingEntity classCode="MMAT">
+							<code code="70618" codeSystem="2.16.840.1.113883.6.88" displayName="Penicillin">
+								<originalText>
+									<reference value="allergies1-substance">
+									</reference>
+								</originalText>
+								<translation code="70618" codeSystem="2.16.840.1.113883.6.88" displayName="Penicillin">
+								</translation>
+							</code>
+						</playingEntity>
+					</participantRole>
+				</participant>
 				<entryRelationship typeCode="MFST" inversionInd="true">
 					<observation classCode="OBS" moodCode="EVN">
 						<templateId root="2.16.840.1.113883.10.20.22.4.9" extension="2014-06-09">
 						</templateId>
 						<id nullFlavor="NI">
 						</id>
-						<code code="7980" codeSystem="2.16.840.1.113883.6.88" displayName="Penicillin G">
+						<code code="247472004" codeSystem="2.16.840.1.113883.6.88" displayName="Hives">
 						</code>
 						<text>
 							<reference value="allergies1-reaction">
