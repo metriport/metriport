@@ -144,6 +144,9 @@ jobs:
         working-directory: "metriport/packages/infra"
 
       # TESTS
+      - name: Test root dependencies
+        run: npm run test
+        working-directory: "metriport/"
       - name: Infra test
         run: npm run test
         working-directory: "metriport/packages/infra"

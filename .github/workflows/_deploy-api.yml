@@ -91,7 +91,7 @@ jobs:
 
       - name: Run Tests
         run: npm run test
-        working-directory: ${{ inputs.path }}
+        working-directory: "./"
 
       - name: Create Sentry release
         uses: getsentry/action-release@v1
