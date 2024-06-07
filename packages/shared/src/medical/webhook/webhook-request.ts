@@ -33,6 +33,9 @@ export type WebhookRequestStatus = (typeof webhookRequestStatus)[number];
 export const baseWebhookMetadataSchema = z.object({
   messageId: z.string(),
   when: dateSchema,
+  /**
+   * The metadata sent by the customer when they triggered the operation that resulted in this webhook.
+   */
   data: z.unknown().nullish(),
 });
 export const webhookMetadataSchema = baseWebhookMetadataSchema.merge(

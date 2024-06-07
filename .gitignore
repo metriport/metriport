@@ -31,3 +31,7 @@ workspaceConfiguration/
 packages/utils/opensearch-root-ca.pem
 packages/utils/cq-org-builder.failed
 JSON.json
+packages/api/consolidated-expected.json
+packages/api/consolidated-received.json
+packages/api/src/__tests__/e2e/mapi/consolidated/consolidated-expected.html
+packages/api/src/__tests__/e2e/mapi/consolidated/consolidated-received.html
