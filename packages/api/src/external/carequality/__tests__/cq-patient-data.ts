@@ -10,6 +10,9 @@ import {
   normalizeAndStringifyNames,
   normalizeAddress,
   stringifyAddress,
+  normalizeTelephone,
+  normalizeEmail,
+  normalizeSsn,
 } from "../../../domain/medical/patient-demographics";
 
 export function makeCqDataLink(): CQLink {
@@ -76,10 +79,10 @@ export function makeLinksHistory(): LinkDemographicsHistory {
             })
           ),
         ],
-        telephoneNumbers: [faker.phone.number("##########")],
-        emails: [faker.internet.email()],
+        telephoneNumbers: [normalizeTelephone(faker.phone.number("##########"))],
+        emails: [normalizeEmail(faker.internet.email())],
         driversLicenses: [], // TODO
-        ssns: [faker.phone.number("#########")],
+        ssns: [normalizeSsn(faker.phone.number("#########"))],
       },
     ],
   };

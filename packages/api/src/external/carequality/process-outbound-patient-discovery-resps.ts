@@ -185,20 +185,22 @@ export async function runNextPdOnNewDemographics({
   }
 
   if (foundNewDemographicsHere) {
-    await updateCQPatientData({
-      id: updatedPatient.id,
-      cxId: updatedPatient.cxId,
-      requestLinksDemographics: {
+    await Promise.all([
+      updateCQPatientData({
+        id: updatedPatient.id,
+        cxId: updatedPatient.cxId,
+        requestLinksDemographics: {
+          requestId,
+          linksDemographics: newDemographicsHere,
+        },
+      }),
+      updatePatientLinkDemographics({
         requestId,
-        linksDemographics: newDemographicsHere,
-      },
-    });
-    await updatePatientLinkDemographics({
-      requestId,
-      patient: updatedPatient,
-      source: MedicalDataSource.CAREQUALITY,
-      links: newDemographicsHere,
-    });
+        patient: updatedPatient,
+        source: MedicalDataSource.CAREQUALITY,
+        links: newDemographicsHere,
+      }),
+    ]);
   }
   discover({
     patient: updatedPatient,
