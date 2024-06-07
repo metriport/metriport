@@ -16,6 +16,9 @@ import {
 } from "../../../../shared";
 import { successStatus, partialSuccessStatus } from "./constants";
 import { capture } from "../../../../../../util/notifications";
+import { out } from "../../../../../../util/log";
+
+const { log } = out("DQ Processing");
 
 type Identifier = {
   _identificationScheme: string;
@@ -52,6 +55,15 @@ function getHomeCommunityIdForDr(
   extrinsicObject: any
 ): string {
   return getResponseHomeCommunityId(extrinsicObject);
+}
+
+function getCreationTime(time: string | undefined): string | undefined {
+  try {
+    return time ? dayjs(time).toISOString() : undefined;
+  } catch (error) {
+    log(`Error parsing creation time: ${time}, error: ${error}`);
+    return undefined;
+  }
 }
 
 function parseDocumentReference(
@@ -125,14 +137,14 @@ function parseDocumentReference(
     capture.error(msg, {
       extra: {
         extrinsicObject,
-        repositoryUniqueId,
-        docUniqueId,
+        outboundRequest,
       },
     });
     return undefined;
   }
 
   const creationTime = String(findSlotValue("creationTime"));
+
   const documentReference: DocumentReference = {
     homeCommunityId: getHomeCommunityIdForDr(outboundRequest, extrinsicObject),
     repositoryUniqueId,
@@ -141,7 +153,7 @@ function parseDocumentReference(
     language: findSlotValue("languageCode"),
     size: sizeValue ? parseInt(sizeValue) : undefined,
     title: findClassificationName(XDSDocumentEntryClassCode),
-    creation: creationTime ? dayjs(creationTime).toISOString() : undefined,
+    creation: getCreationTime(creationTime),
     authorInstitution: findClassificationSlotValue(XDSDocumentEntryAuthor, "authorInstitution"),
   };
   return documentReference;
