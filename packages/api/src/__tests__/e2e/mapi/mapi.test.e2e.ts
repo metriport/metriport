@@ -8,6 +8,7 @@ import { detectFileType } from "@metriport/core/util/file-type";
 import { PDF_MIME_TYPE } from "@metriport/core/util/mime";
 import { downloadToMemory, isValidUrl, sleep } from "@metriport/shared";
 import assert from "assert";
+import { AxiosError } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import isBetween from "dayjs/plugin/isBetween";
@@ -27,6 +28,7 @@ import {
 } from "./patient";
 import { fhirApi, fhirHeaders, medicalApi } from "./shared";
 import { getConsolidatedWebhookRequest, resetConsolidatedData } from "./webhook/consolidated";
+import { getPingWebhookRequest } from "./webhook/settings";
 import whServer from "./webhook/webhook-server";
 
 dayjs.extend(isBetween);
@@ -44,6 +46,9 @@ const dqCheckStatusWaitTime = dayjs.duration({ seconds: 10 });
 const conversionCheckStatusMaxRetries = 12;
 const conversionCheckStatusWaitTime = dayjs.duration({ seconds: 10 });
 
+const pingWebhookCheckMaxRetries = 5;
+const pingWebhookCheckStatusWaitTime = dayjs.duration({ seconds: 2 });
+
 jest.setTimeout(maxTotalTestDuration.asMilliseconds());
 
 beforeAll(async () => {
@@ -60,6 +65,7 @@ describe("MAPI E2E Tests", () => {
   let consolidatedPayload: Bundle<Resource>;
   let url: string | undefined;
   let mrContentBuffer: Buffer | undefined;
+  let expectedWebhookMeta: Record<string, string> | undefined;
 
   const getOrg = async () => {
     return await medicalApi.getOrganization();
@@ -79,6 +85,10 @@ describe("MAPI E2E Tests", () => {
     return await fhirApi.readResource("Patient", patientId, fhirHeaders);
   };
 
+  /*************************************************************
+   * Settings
+   *************************************************************/
+
   it("gets settings", async () => {
     const settings = await medicalApi.getSettings();
     expect(settings).toBeTruthy();
@@ -96,6 +106,48 @@ describe("MAPI E2E Tests", () => {
     expect(settings.webhookUrl).toEqual(whUrl);
     whServer.storeWebhookKey(updateResp.webhookKey);
   });
+
+  it("receives ping WH request", async () => {
+    let retryLimit = 0;
+    let whRequest = getPingWebhookRequest();
+    while (!whRequest && retryLimit++ < pingWebhookCheckMaxRetries) {
+      console.log(
+        `Waiting for ping, retrying in ${pingWebhookCheckStatusWaitTime.asSeconds()} seconds...`
+      );
+      await sleep(pingWebhookCheckStatusWaitTime.asMilliseconds());
+      whRequest = getPingWebhookRequest();
+    }
+    expect(whRequest).toBeTruthy();
+  });
+
+  it("receives ping WH with correct data", async () => {
+    const whRequest = getPingWebhookRequest();
+    expect(whRequest).toBeTruthy();
+    if (!whRequest) throw new Error("Missing WH request");
+    expect(whRequest.meta).toBeTruthy();
+    expect(whRequest.meta).toEqual(
+      expect.objectContaining({
+        type: "ping",
+        messageId: expect.anything(),
+        when: expect.anything(),
+      })
+    );
+    expect(validateUuid(whRequest.meta.messageId)).toBeTrue();
+    const minDate = dayjs().subtract(1, "minute").toDate();
+    const maxDate = dayjs().add(1, "minute").toDate();
+    expect(dayjs(whRequest.meta.when).isBetween(minDate, maxDate)).toBeTrue();
+    expect(whRequest.meta).not.toEqual(
+      expect.objectContaining({
+        data: expect.toBeFalsy,
+      })
+    );
+    expect(whRequest.ping).toBeTruthy();
+    expect(whRequest.ping.length).toEqual(21); // default nanoid length
+  });
+
+  /*************************************************************
+   * MAPI Starts
+   *************************************************************/
 
   it("gets an organization", async () => {
     const org = await medicalApi.getOrganization();
@@ -168,9 +220,9 @@ describe("MAPI E2E Tests", () => {
     await sleep(waitTimeBetweenPdAndDq.asMilliseconds());
   });
 
-  // ###########################################################
-  // # Add Consolidated Data
-  // ###########################################################
+  /*************************************************************
+   * Add Consolidated Data
+   *************************************************************/
 
   it("creates consolidated data", async () => {
     consolidatedPayload = createConsolidated(patientFhir);
@@ -247,23 +299,18 @@ describe("MAPI E2E Tests", () => {
     expect(consolidatedWithoutPatient).toEqual(expect.arrayContaining(expectedContents));
   });
 
-  // ###########################################################
-  // # Consolidated Query - HTML
-  // ###########################################################
+  /*************************************************************
+   * Consolidated Query - HTML
+   *************************************************************/
 
-  it("triggers a conversion of consolidated into HTML format", async () => {
-    const conversionProgress = await medicalApi.startConsolidatedQuery(
-      patient.id,
-      undefined,
-      undefined,
-      undefined,
-      "html"
-    );
-    expect(conversionProgress).toBeTruthy();
-    expect(conversionProgress.status).toEqual("processing");
-  });
+  function resetWebhook() {
+    resetConsolidatedData();
+    url = undefined;
+    mrContentBuffer = undefined;
+    expectedWebhookMeta = undefined;
+  }
 
-  it("completes conversion successfully", async () => {
+  async function waitAndCheckConversion(): Promise<void> {
     let conversionProgresses = await medicalApi.getConsolidatedQueryStatus(patient.id);
     let initConversionProgress = conversionProgresses?.queries?.[0];
     let retryLimit = 0;
@@ -280,9 +327,25 @@ describe("MAPI E2E Tests", () => {
     }
     expect(conversionProgresses).toBeTruthy();
     expect(initConversionProgress?.status).toEqual("completed");
+  }
+
+  it("triggers a conversion of consolidated into HTML format", async () => {
+    const conversionProgress = await medicalApi.startConsolidatedQuery(
+      patient.id,
+      undefined,
+      undefined,
+      undefined,
+      "html"
+    );
+    expect(conversionProgress).toBeTruthy();
+    expect(conversionProgress.status).toEqual("processing");
   });
 
-  it("received WH with correct meta", async () => {
+  it("completes HTML conversion successfully", async () => {
+    await waitAndCheckConversion();
+  });
+
+  it("receives consolidated HTML WH with correct meta", async () => {
     const whRequest = getConsolidatedWebhookRequest();
     expect(whRequest).toBeTruthy();
     if (!whRequest) throw new Error("Missing WH request");
@@ -305,7 +368,7 @@ describe("MAPI E2E Tests", () => {
     );
   });
 
-  it("received WH with MR in HTML format", async () => {
+  it("receives consolidated HTML WH with MR in HTML format", async () => {
     const whRequest = getConsolidatedWebhookRequest();
     const consolidatedData = whRequest?.patients;
     expect(consolidatedData).toBeTruthy();
@@ -346,7 +409,7 @@ describe("MAPI E2E Tests", () => {
     expect(isValidUrl(url)).toEqual(true);
   });
 
-  test("can download MR", async () => {
+  test("can download HTML MR", async () => {
     if (!url) return;
     const fileBuffer = await downloadToMemory({ url });
     expect(fileBuffer).toBeTruthy();
@@ -365,16 +428,14 @@ describe("MAPI E2E Tests", () => {
     ).toBeTrue();
   });
 
-  it("resets WH handler", async () => {
-    resetConsolidatedData();
-    url = undefined;
-    mrContentBuffer = undefined;
+  it("resets HTML WH handler", async () => {
+    resetWebhook();
     expect(true).toBeTrue();
   });
 
-  // ###########################################################
-  // # Consolidated Query - PDF
-  // ###########################################################
+  /*************************************************************
+   * Consolidated Query - PDF
+   *************************************************************/
 
   // TODO Add filters
   it("triggers a conversion of consolidated into PDF format", async () => {
@@ -389,26 +450,11 @@ describe("MAPI E2E Tests", () => {
     expect(conversionProgress.status).toEqual("processing");
   });
 
-  it("completes conversion successfully", async () => {
-    let conversionProgresses = await medicalApi.getConsolidatedQueryStatus(patient.id);
-    let initConversionProgress = conversionProgresses?.queries?.[0];
-    let retryLimit = 0;
-    while (
-      initConversionProgress?.status !== "completed" &&
-      retryLimit++ < conversionCheckStatusMaxRetries
-    ) {
-      console.log(
-        `Conversion still processing, retrying in ${conversionCheckStatusWaitTime.asSeconds()} seconds...`
-      );
-      await sleep(conversionCheckStatusWaitTime.asMilliseconds());
-      conversionProgresses = await medicalApi.getConsolidatedQueryStatus(patient.id);
-      initConversionProgress = conversionProgresses?.queries?.[0];
-    }
-    expect(conversionProgresses).toBeTruthy();
-    expect(initConversionProgress?.status).toEqual("completed");
+  it("completes PDF conversion successfully", async () => {
+    await waitAndCheckConversion();
   });
 
-  it("received WH with correct meta", async () => {
+  it("receives consolidated PDF WH with correct meta", async () => {
     const whRequest = getConsolidatedWebhookRequest();
     expect(whRequest).toBeTruthy();
     if (!whRequest) throw new Error("Missing WH request");
@@ -431,7 +477,7 @@ describe("MAPI E2E Tests", () => {
     );
   });
 
-  it("received WH with MR in PDF format", async () => {
+  it("receives consolidated PDF WH with MR in PDF format", async () => {
     const whRequest = getConsolidatedWebhookRequest();
     const consolidatedData = whRequest?.patients;
     expect(consolidatedData).toBeTruthy();
@@ -472,7 +518,7 @@ describe("MAPI E2E Tests", () => {
     expect(isValidUrl(url)).toEqual(true);
   });
 
-  test("can download MR", async () => {
+  test("can download PDF MR", async () => {
     if (!url) return;
     const fileBuffer = await downloadToMemory({ url });
     expect(fileBuffer).toBeTruthy();
@@ -486,16 +532,121 @@ describe("MAPI E2E Tests", () => {
     expect(fileType.mimeType).toEqual(PDF_MIME_TYPE);
   });
 
-  it("resets WH handler", async () => {
+  it("resets PDF WH handler", async () => {
     resetConsolidatedData();
     url = undefined;
     mrContentBuffer = undefined;
     expect(true).toBeTrue();
   });
 
-  // ###########################################################
-  // # Document Query
-  // ###########################################################
+  it("resets HTML WH handler", async () => {
+    resetWebhook();
+    expect(true).toBeTrue();
+  });
+
+  /*************************************************************
+   * Consolidated Query - Customer parameters are sent with WH
+   *************************************************************/
+
+  it("triggers a conversion of consolidated with custom meta", async () => {
+    expectedWebhookMeta = {
+      prop1: faker.string.uuid(),
+      prop2: faker.string.uuid(),
+    };
+    const conversionProgress = await medicalApi.startConsolidatedQuery(
+      patient.id,
+      undefined,
+      undefined,
+      undefined,
+      "json",
+      expectedWebhookMeta
+    );
+    expect(conversionProgress).toBeTruthy();
+    expect(conversionProgress.status).toEqual("processing");
+  });
+
+  it("completes conversion successfully", async () => {
+    await waitAndCheckConversion();
+  });
+
+  it("receives consolidated WH with custom meta", async () => {
+    const whRequest = getConsolidatedWebhookRequest();
+    expect(whRequest).toBeTruthy();
+    if (!whRequest) throw new Error("Missing WH request");
+    expect(whRequest.meta).toBeTruthy();
+    expect(whRequest.meta.data).toBeTruthy();
+    expect(whRequest.meta.data).toEqual(expectedWebhookMeta);
+  });
+
+  it("resets HTML WH handler", async () => {
+    resetWebhook();
+    expect(true).toBeTrue();
+  });
+
+  /*************************************************************
+   * Consolidated Query - Customer parameters are sent with WH
+   *************************************************************/
+
+  it("fails if custom meta has +50 properties", async () => {
+    expectedWebhookMeta = {};
+    for (let i = 0; i < 51; i++) {
+      expectedWebhookMeta[`prop${i}`] = faker.string.uuid();
+    }
+    expect(
+      async () =>
+        await medicalApi.startConsolidatedQuery(
+          patient.id,
+          undefined,
+          undefined,
+          undefined,
+          "json",
+          expectedWebhookMeta
+        )
+    ).rejects.toThrow(AxiosError);
+  });
+
+  it("resets failed WH handler", async () => {
+    resetWebhook();
+    expect(true).toBeTrue();
+  });
+
+  /*************************************************************
+   * Consolidated Query - Don't get WH when disabled
+   *************************************************************/
+
+  it("triggers a conversion with WHs disabled", async () => {
+    expectedWebhookMeta = {
+      disableWHFlag: "true",
+    };
+    const conversionProgress = await medicalApi.startConsolidatedQuery(
+      patient.id,
+      undefined,
+      undefined,
+      undefined,
+      "json",
+      expectedWebhookMeta
+    );
+    expect(conversionProgress).toBeTruthy();
+    expect(conversionProgress.status).toEqual("processing");
+  });
+
+  it("completes conversion w/ disabled WH successfully", async () => {
+    await waitAndCheckConversion();
+  });
+
+  it("does not receive consolidated WH with custom meta", async () => {
+    const whRequest = getConsolidatedWebhookRequest();
+    expect(whRequest).toBeFalsy();
+  });
+
+  it("resets disabled WH handler", async () => {
+    resetWebhook();
+    expect(true).toBeTrue();
+  });
+
+  /*************************************************************
+   * Document Query
+   *************************************************************/
 
   it("triggers a document query", async () => {
     const docQueryProgress = await medicalApi.startDocumentQuery(patient.id, facility.id);
