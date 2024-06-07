@@ -16,6 +16,9 @@
 					Code
 				</th>
 				<th>
+					Code System
+				</th>
+				<th>
 					Dosage
 				</th>
 				<th>
@@ -38,7 +41,10 @@
 					CARVEDILOL
 				</td>
 				<td>
-					315577 - 2.16.840.1.113883.6.88
+					315577
+				</td>
+				<td>
+					2.16.840.1.113883.6.88
 				</td>
 				<td>
 					6.25 mg (milligram)

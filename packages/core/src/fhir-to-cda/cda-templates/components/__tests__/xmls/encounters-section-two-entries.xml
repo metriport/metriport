@@ -126,10 +126,10 @@
 		</performer>
 		<participant typeCode="LOC">
 			<participantRole classCode="SDLOC">
-				<id root="placeholder-ORG-OID" extension="${locationId}">
-				</id>
 				<templateId root="2.16.840.1.113883.10.20.22.4.32">
 				</templateId>
+				<id root="placeholder-ORG-OID" extension="${locationId}">
+				</id>
 				<code nullFlavor="NI">
 				</code>
 				<addr use="WP">
@@ -248,10 +248,10 @@
 		</performer>
 		<participant typeCode="LOC">
 			<participantRole classCode="SDLOC">
-				<id root="placeholder-ORG-OID" extension="${locationId2}">
-				</id>
 				<templateId root="2.16.840.1.113883.10.20.22.4.32">
 				</templateId>
+				<id root="placeholder-ORG-OID" extension="${locationId2}">
+				</id>
 				<code nullFlavor="NI">
 				</code>
 				<addr use="WP">
