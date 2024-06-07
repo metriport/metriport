@@ -72,9 +72,11 @@ export function withNullFlavor(value: string | undefined, key: string): Entry {
   return { [key]: value };
 }
 
-export function buildCodeCeFromCoding(coding: Coding[] | undefined): CdaCodeCe | undefined {
+export function buildCodeCeFromCoding(
+  coding: Coding | Coding[] | undefined
+): CdaCodeCe | undefined {
   if (!coding) return;
-  const primaryCoding = coding[0];
+  const primaryCoding = toArray(coding)[0];
   if (!primaryCoding) return;
   const cleanedUpCoding = cleanUpCoding(primaryCoding);
   return buildCodeCe({
@@ -503,13 +505,13 @@ export function buildParticipant(locations: Location[]): Participant[] | undefin
       _typeCode: "LOC",
       participantRole: {
         _classCode: "SDLOC",
+        templateId: {
+          _root: oids.serviceDeliveryLocation,
+        },
         id: buildInstanceIdentifier({
           root: placeholderOrgOid,
           extension: location.id,
         }),
-        templateId: {
-          _root: oids.serviceDeliveryLocation,
-        },
         code: {
           _nullFlavor: "NI",
         },

@@ -6,10 +6,10 @@ import {
 } from "../../../external/fhir/shared";
 import { base64ToString } from "../../../util/base64";
 import {
-  TIMESTAMP_CLEANUP_REGEX,
   buildCodeCe,
   buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
+  formatDateToCdaTimestamp,
   withoutNullFlavorObject,
 } from "../commons";
 import { extensionValue2015, oids, placeholderOrgOid } from "../constants";
@@ -48,7 +48,7 @@ function buildEntriesFromDiagnosticReports(
         code: report.status,
       }),
       effectiveTime: withoutNullFlavorObject(
-        report.effectiveDateTime?.replace(TIMESTAMP_CLEANUP_REGEX, ""),
+        formatDateToCdaTimestamp(report.effectiveDateTime),
         "_value"
       ),
       component: createObservations(observations).map(o => o.component),

@@ -11,6 +11,7 @@ import { buildCustodian } from "./cda-templates/clinical-document/custodian";
 import { buildRecordTargetFromFhirPatient } from "./cda-templates/clinical-document/record-target";
 import { buildStructuredBody } from "./cda-templates/clinical-document/structured-body";
 import { placeholderOrgOid } from "./cda-templates/constants";
+import { buildComponentOf } from "./cda-templates/components/component-of";
 
 export function generateCdaFromFhirBundle(fhirBundle: Bundle, oid: string): string {
   const patientResource = findPatientResource(fhirBundle);
@@ -29,6 +30,7 @@ export function generateCdaFromFhirBundle(fhirBundle: Bundle, oid: string): stri
   const recordTarget = buildRecordTargetFromFhirPatient(patientResource);
   const author = buildAuthor(organizationResources);
   const custodian = buildCustodian();
+  const componentOf = buildComponentOf(fhirBundle);
   const structuredBody = buildStructuredBody(fhirBundle);
   const composition = findCompositionResource(fhirBundle);
 
@@ -42,6 +44,7 @@ export function generateCdaFromFhirBundle(fhirBundle: Bundle, oid: string): stri
     recordTarget,
     author,
     custodian,
+    componentOf,
     structuredBody,
     composition
   );

@@ -1,4 +1,5 @@
 import { Address, Bundle, Encounter, HumanName, Location, Practitioner } from "@medplum/fhirtypes";
+import { toArray } from "@metriport/shared";
 import {
   findResourceInBundle,
   isEncounter,
@@ -76,11 +77,12 @@ export function buildEncounters(fhirBundle: Bundle): EncountersSection {
   };
 }
 
-function createAugmentedEncounters(
-  encounters: Encounter[],
+export function createAugmentedEncounters(
+  encounters: Encounter | Encounter[],
   fhirBundle: Bundle
 ): AugmentedEncounter[] {
-  const augEncs = encounters.map(encounter => {
+  const encountersArray = toArray(encounters);
+  const augEncs = encountersArray.map(encounter => {
     const practitionerIds = encounter.participant?.flatMap(p =>
       p.individual?.reference?.includes("Practitioner") ? p.individual?.reference : []
     );

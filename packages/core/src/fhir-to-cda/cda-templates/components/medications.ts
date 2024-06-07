@@ -6,11 +6,7 @@ import {
 } from "../../../external/fhir/shared";
 import BadRequestError from "../../../util/error/bad-request";
 import { MedicationSection } from "../../cda-types/sections";
-import {
-  CdaCodeCe,
-  ObservationTableRow,
-  SubstanceAdministationEntry,
-} from "../../cda-types/shared-types";
+import { ObservationTableRow, SubstanceAdministationEntry } from "../../cda-types/shared-types";
 import {
   buildCodeCe,
   buildCodeCeFromCoding,
@@ -38,6 +34,7 @@ const medicationsSectionName = "medications";
 const tableHeaders = [
   "Medication",
   "Code",
+  "Code System",
   "Dosage",
   "Frequency",
   "Start Date",
@@ -95,17 +92,19 @@ function createTableRowsFromMedicationStatement(
   };
   const code = buildCodeCeFromCoding(statement.medication?.code?.coding);
   const medicationName = statement.medication?.code?.text ?? code?._displayName;
-  const medicationCode = buildMedicationCode(code);
   return [
     {
       tr: {
         _ID: referenceId,
         ["td"]: [
           {
-            "#text": medicationName,
+            "#text": medicationName ?? NOT_SPECIFIED,
           },
           {
-            "#text": medicationCode, // TODO: Improve this to show the human readable system name alongside the system
+            "#text": code?._code,
+          },
+          {
+            "#text": code?._codeSystem ?? code?._codeSystemName,
           },
           {
             "#text": getDosageFromMedicationStatement(statement.resource),
@@ -225,12 +224,4 @@ function createEntryFromStatement(
       },
     },
   };
-}
-
-function buildMedicationCode(code: CdaCodeCe | undefined): string {
-  if (code?._code) {
-    if (code._codeSystem) return `${code._code} - ${code._codeSystem}`;
-    if (code._codeSystemName) return `${code._code} - ${code._codeSystemName}`;
-  }
-  return NOT_SPECIFIED;
 }

@@ -24,6 +24,7 @@ export type ClinicalDocument = {
     recordTarget: CdaRecordTarget;
     author: CdaAuthor;
     custodian: CdaCustodian;
+    componentOf: EncompassingEncounter | undefined;
     component: unknown;
   };
 };
@@ -334,5 +335,40 @@ export type AssignedEntity = {
     code?: CdaCodeCv | CdaCodeCv[] | undefined;
     telecom?: CdaTelecom[] | undefined;
     assignedPerson?: AssignedPerson | undefined;
+  };
+};
+
+export type ResponsibleParty = {
+  assignedEntity: {
+    id: CdaInstanceIdentifier;
+    addr?: CdaAddress[] | undefined;
+    telecom?: CdaTelecom[] | undefined;
+    assignedPerson?: AssignedPerson | undefined;
+    representedOrganization?: {
+      name?: string;
+    };
+  };
+};
+
+export type HealthCareFacility = {
+  id: CdaInstanceIdentifier;
+  location: {
+    name: string | undefined;
+    addr: CdaAddress[] | undefined;
+  };
+};
+
+export type EncompassingEncounter = {
+  encompassingEncounter: {
+    id: CdaInstanceIdentifier;
+    code: CdaCodeCv;
+    effectiveTime: {
+      low: EntryObject;
+      high: EntryObject;
+    };
+    responsibleParty: ResponsibleParty | undefined;
+    location: {
+      healthCareFacility: HealthCareFacility;
+    };
   };
 };
