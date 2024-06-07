@@ -60,3 +60,7 @@ describe("processDQResponse", () => {
     expect(response.operationOutcome?.issue[0]?.severity).toEqual("information");
   });
 });
+
+it("fake test", async () => {
+  expect(false).toBe(true);
+});
