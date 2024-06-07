@@ -230,7 +230,7 @@ export const expectedDqDocumentReference = [
     language: "en-US",
     size: 163264,
     title: "Continuity of Care Document",
-    creation: "2024-03-29T16:31:46.171Z",
+    creation: "2024-03-29T20:31:46.000Z",
     authorInstitution: "Metriport^^^^^^^^^2.16.840.1.113883.3.9621",
   },
 ];
