@@ -443,7 +443,7 @@ async function putConsolidated(req: Request, res: Response) {
   const docId = uuidv7();
   await uploadFhirBundleToS3({ cxId, patientId, fhirBundle: validatedBundle, docId });
   const patientDataPromise = async () => {
-    createOrUpdateConsolidatedPatientData({
+    return createOrUpdateConsolidatedPatientData({
       cxId,
       patientId: patient.id,
       fhirBundle: validatedBundle,
@@ -456,8 +456,8 @@ async function putConsolidated(req: Request, res: Response) {
     }
   };
 
-  await Promise.all([patientDataPromise(), convertAndUploadCdaPromise()]);
-  return res.sendStatus(status.OK);
+  const [result] = await Promise.all([patientDataPromise(), convertAndUploadCdaPromise()]);
+  return res.status(status.OK).json(result);
 }
 
 async function checkResourceLimit(incomingAmount: number, patient: Patient) {

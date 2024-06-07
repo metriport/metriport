@@ -4,12 +4,15 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import { Facility, Organization, PatientDTO } from "@metriport/api-sdk";
 import { isDocumentReference } from "@metriport/core/external/fhir/document/document-reference";
 import { PatientWithId } from "@metriport/core/external/fhir/__tests__/patient";
-import { isValidUrl, sleep } from "@metriport/shared";
+import { downloadToMemory, isValidUrl, sleep } from "@metriport/shared";
 import assert from "assert";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import isBetween from "dayjs/plugin/isBetween";
+import fs from "fs";
+import { validate as validateUuid } from "uuid";
 import { areDocumentsProcessing } from "../../../command/medical/document/document-status";
-import { createConsolidated } from "./consolidated";
+import { checkConsolidatedHtml, createConsolidated } from "./consolidated/consolidated";
 import { createFacility, validateFacility } from "./facility";
 import { initMapiE2e, tearDownMapiE2e } from "./init";
 import { validateFhirOrg, validateLocalOrg } from "./organization";
@@ -20,9 +23,10 @@ import {
   validateLocalPatient,
 } from "./patient";
 import { fhirApi, fhirHeaders, medicalApi } from "./shared";
-import { getConsolidatedData } from "./webhook/consolidated";
+import { getConsolidatedWebhookRequest } from "./webhook/consolidated";
 import whServer from "./webhook/webhook-server";
 
+dayjs.extend(isBetween);
 dayjs.extend(duration);
 
 const maxTotalTestDuration = dayjs.duration({ minutes: 12 });
@@ -167,7 +171,38 @@ describe("MAPI E2E Tests", () => {
       consolidatedPayload
     );
     expect(consolidated).toBeTruthy();
-    // TODO 1634 compare consolidated vs. consolidatedPayload
+    try {
+      expect(consolidated.type).toEqual("transaction-response");
+      expect(consolidated.entry).toBeTruthy();
+      if (!consolidated.entry) throw new Error("Missing entry");
+      expect(consolidated.entry.length).toEqual(2);
+      expect(consolidated.entry).toEqual(
+        expect.arrayContaining([
+          {
+            response: expect.objectContaining({
+              status: "201 Created",
+              location: expect.stringMatching(/AllergyIntolerance\/.+/),
+              outcome: expect.objectContaining({
+                resourceType: "OperationOutcome",
+              }),
+            }),
+          },
+          {
+            response: expect.objectContaining({
+              status: "201 Created",
+              location: expect.stringMatching(/DocumentReference\/.+/),
+              outcome: expect.objectContaining({
+                resourceType: "OperationOutcome",
+              }),
+            }),
+          },
+        ])
+      );
+    } catch (err) {
+      fs.writeFileSync("consolidated-received.json", JSON.stringify(consolidated, null, 2));
+      fs.writeFileSync("consolidated-expected.json", JSON.stringify(consolidatedPayload, null, 2));
+      throw err;
+    }
   });
 
   it("awaits data to be replicated to FHIR server", async () => {
@@ -229,13 +264,32 @@ describe("MAPI E2E Tests", () => {
     expect(initConversionProgress?.status).toEqual("completed");
   });
 
-  it("gets MR in HTML format", async () => {
-    const consolidatedData = getConsolidatedData();
-    if (consolidatedData) {
-      console.log(`Webhook was called`);
-    } else {
-      console.log("Webhook was NOT called");
-    }
+  it("received WH with correct meta", async () => {
+    const whRequest = getConsolidatedWebhookRequest();
+    expect(whRequest).toBeTruthy();
+    if (!whRequest) throw new Error("Missing WH request");
+    expect(whRequest.meta).toBeTruthy();
+    expect(whRequest.meta).toEqual(
+      expect.objectContaining({
+        type: "medical.consolidated-data",
+        messageId: expect.anything(),
+        when: expect.anything(),
+      })
+    );
+    expect(validateUuid(whRequest.meta.messageId)).toBeTrue();
+    const minDate = dayjs().subtract(1, "minute").toDate();
+    const maxDate = dayjs().add(1, "minute").toDate();
+    expect(dayjs(whRequest.meta.when).isBetween(minDate, maxDate)).toBeTrue();
+    expect(whRequest.meta).not.toEqual(
+      expect.objectContaining({
+        data: expect.toBeFalsy,
+      })
+    );
+  });
+
+  it("received WH with MR in HTML format", async () => {
+    const whRequest = getConsolidatedWebhookRequest();
+    const consolidatedData = whRequest?.patients;
     expect(consolidatedData).toBeTruthy();
     if (!consolidatedData) throw new Error("Missing consolidated data");
     expect(consolidatedData.length).toEqual(1);
@@ -275,10 +329,17 @@ describe("MAPI E2E Tests", () => {
   });
 
   test("MR in HTML format has expected contents", async () => {
-    // TODO Download the file and check its contents
-    // TODO Download the file and check its contents
-    // TODO Download the file and check its contents
-    // TODO Download the file and check its contents
+    if (!url) return;
+    const fileBuffer = await downloadToMemory({ url });
+    expect(fileBuffer).toBeTruthy();
+    const contents = fileBuffer.toString("utf-8");
+    expect(contents).toBeTruthy();
+    expect(
+      checkConsolidatedHtml({
+        html: contents,
+        patientId: patient.id,
+      })
+    ).toBeTrue();
   });
 
   it.skip("gets MR in PDF format", async () => {
