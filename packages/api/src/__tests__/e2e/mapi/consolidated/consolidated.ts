@@ -7,6 +7,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import fs from "fs";
 import { template } from "lodash";
+import { e2eResultsFolderName } from "../../shared";
 
 dayjs.extend(utc);
 
@@ -115,8 +116,8 @@ export function checkConsolidatedHtml({
 
   const isMatch = receivedContent === expectedContent;
   if (!isMatch) {
-    fs.writeFileSync(`${__dirname}/${outputExpectedFileName}.html`, expectedContent);
-    fs.writeFileSync(`${__dirname}/${outputReceivedFileName}.html`, receivedContent);
+    fs.writeFileSync(`${e2eResultsFolderName}/${outputExpectedFileName}.html`, expectedContent);
+    fs.writeFileSync(`${e2eResultsFolderName}/${outputReceivedFileName}.html`, receivedContent);
   }
   return isMatch;
 }

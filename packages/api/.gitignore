@@ -130,3 +130,5 @@ dist
 metriport-api.tar.gz
 
 *.pem
+
+e2e-test-results

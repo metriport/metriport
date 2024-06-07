@@ -14,6 +14,7 @@ import isBetween from "dayjs/plugin/isBetween";
 import fs from "fs";
 import { validate as validateUuid } from "uuid";
 import { areDocumentsProcessing } from "../../../command/medical/document/document-status";
+import { e2eResultsFolderName } from "../shared";
 import { checkConsolidatedHtml, createConsolidated } from "./consolidated/consolidated";
 import { createFacility, validateFacility } from "./facility";
 import { initMapiE2e, tearDownMapiE2e } from "./init";
@@ -206,8 +207,14 @@ describe("MAPI E2E Tests", () => {
         ])
       );
     } catch (err) {
-      fs.writeFileSync("consolidated-received.json", JSON.stringify(consolidated, null, 2));
-      fs.writeFileSync("consolidated-expected.json", JSON.stringify(consolidatedPayload, null, 2));
+      fs.writeFileSync(
+        e2eResultsFolderName + "/consolidated-received.json",
+        JSON.stringify(consolidated, null, 2)
+      );
+      fs.writeFileSync(
+        e2eResultsFolderName + "/consolidated-expected.json",
+        JSON.stringify(consolidatedPayload, null, 2)
+      );
       throw err;
     }
   });

@@ -96,3 +96,10 @@ jobs:
           API_URL: ${{ inputs.api_url }}
           FHIR_SERVER_URL: ${{ inputs.fhir_url }}
           ENV_TYPE: ${{ inputs.deploy_env }}
+
+      - name: Store Test Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results
+          path: |
+            packages/api/e2e-test-results/
