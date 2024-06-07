@@ -51,7 +51,7 @@ export async function updatePatient({
     rerunPdOnNewDemographics,
     forceCommonwell,
     forceCarequality,
-  }).catch(processAsyncError("runInitialPatientDiscoveryAcrossHies"));
+  }).catch(processAsyncError("runOrSchedulePatientDiscoveryAcrossHies"));
 
   return patient;
 }
