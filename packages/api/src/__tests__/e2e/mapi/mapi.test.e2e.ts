@@ -4,6 +4,8 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import { Facility, Organization, PatientDTO } from "@metriport/api-sdk";
 import { isDocumentReference } from "@metriport/core/external/fhir/document/document-reference";
 import { PatientWithId } from "@metriport/core/external/fhir/__tests__/patient";
+import { detectFileType } from "@metriport/core/util/file-type";
+import { PDF_MIME_TYPE } from "@metriport/core/util/mime";
 import { downloadToMemory, isValidUrl, sleep } from "@metriport/shared";
 import assert from "assert";
 import dayjs from "dayjs";
@@ -23,7 +25,7 @@ import {
   validateLocalPatient,
 } from "./patient";
 import { fhirApi, fhirHeaders, medicalApi } from "./shared";
-import { getConsolidatedWebhookRequest } from "./webhook/consolidated";
+import { getConsolidatedWebhookRequest, resetConsolidatedData } from "./webhook/consolidated";
 import whServer from "./webhook/webhook-server";
 
 dayjs.extend(isBetween);
@@ -56,6 +58,7 @@ describe("MAPI E2E Tests", () => {
   let patientFhir: PatientWithId;
   let consolidatedPayload: Bundle<Resource>;
   let url: string | undefined;
+  let mrContentBuffer: Buffer | undefined;
 
   const getOrg = async () => {
     return await medicalApi.getOrganization();
@@ -164,6 +167,10 @@ describe("MAPI E2E Tests", () => {
     await sleep(waitTimeBetweenPdAndDq.asMilliseconds());
   });
 
+  // ###########################################################
+  // # Add Consolidated Data
+  // ###########################################################
+
   it("creates consolidated data", async () => {
     consolidatedPayload = createConsolidated(patientFhir);
     const consolidated = await medicalApi.createPatientConsolidated(
@@ -232,6 +239,10 @@ describe("MAPI E2E Tests", () => {
     expect(consolidatedWithoutPatient?.length).toEqual(consolidatedPayload.entry?.length);
     expect(consolidatedWithoutPatient).toEqual(expect.arrayContaining(expectedContents));
   });
+
+  // ###########################################################
+  // # Consolidated Query - HTML
+  // ###########################################################
 
   it("triggers a conversion of consolidated into HTML format", async () => {
     const conversionProgress = await medicalApi.startConsolidatedQuery(
@@ -328,11 +339,16 @@ describe("MAPI E2E Tests", () => {
     expect(isValidUrl(url)).toEqual(true);
   });
 
-  test("MR in HTML format has expected contents", async () => {
+  test("can download MR", async () => {
     if (!url) return;
     const fileBuffer = await downloadToMemory({ url });
     expect(fileBuffer).toBeTruthy();
-    const contents = fileBuffer.toString("utf-8");
+    mrContentBuffer = fileBuffer;
+  });
+
+  test("MR in HTML format has expected contents", async () => {
+    if (!mrContentBuffer) return;
+    const contents = mrContentBuffer.toString("utf-8");
     expect(contents).toBeTruthy();
     expect(
       checkConsolidatedHtml({
@@ -342,28 +358,137 @@ describe("MAPI E2E Tests", () => {
     ).toBeTrue();
   });
 
-  it.skip("gets MR in PDF format", async () => {
-    // TODO 1634 implement this
-    // needs WH server
-    // const startResp = await medicalApi.startConsolidatedQuery(
-    //   patient.id,
-    //   undefined,
-    //   undefined,
-    //   undefined,
-    //   "html"
-    // );
-    // expect(startResp).toBeTruthy();
-    // expect(startResp.status).toEqual("processing");
-    // const startTime = Date.now();
-    // while (Date.now() - startTime < 10_000) {
-    //   if (wasItCalled()) {
-    //     console.log("Webhook was called");
-    //   } else {
-    //     console.log("Webhook was NOT called, sleeping...");
-    //   }
-    //   await sleep(500);
-    // }
+  it("resets WH handler", async () => {
+    resetConsolidatedData();
+    url = undefined;
+    mrContentBuffer = undefined;
+    expect(true).toBeTrue();
   });
+
+  // ###########################################################
+  // # Consolidated Query - PDF
+  // ###########################################################
+
+  // TODO Add filters
+  it("triggers a conversion of consolidated into PDF format", async () => {
+    const conversionProgress = await medicalApi.startConsolidatedQuery(
+      patient.id,
+      undefined,
+      undefined,
+      undefined,
+      "pdf"
+    );
+    expect(conversionProgress).toBeTruthy();
+    expect(conversionProgress.status).toEqual("processing");
+  });
+
+  it("completes conversion successfully", async () => {
+    let conversionProgresses = await medicalApi.getConsolidatedQueryStatus(patient.id);
+    let initConversionProgress = conversionProgresses?.queries?.[0];
+    let retryLimit = 0;
+    while (
+      initConversionProgress?.status !== "completed" &&
+      retryLimit++ < conversionCheckStatusMaxRetries
+    ) {
+      console.log(
+        `Conversion still processing, retrying in ${conversionCheckStatusWaitTime.asSeconds()} seconds...`
+      );
+      await sleep(conversionCheckStatusWaitTime.asMilliseconds());
+      conversionProgresses = await medicalApi.getConsolidatedQueryStatus(patient.id);
+      initConversionProgress = conversionProgresses?.queries?.[0];
+    }
+    expect(conversionProgresses).toBeTruthy();
+    expect(initConversionProgress?.status).toEqual("completed");
+  });
+
+  it("received WH with correct meta", async () => {
+    const whRequest = getConsolidatedWebhookRequest();
+    expect(whRequest).toBeTruthy();
+    if (!whRequest) throw new Error("Missing WH request");
+    expect(whRequest.meta).toBeTruthy();
+    expect(whRequest.meta).toEqual(
+      expect.objectContaining({
+        type: "medical.consolidated-data",
+        messageId: expect.anything(),
+        when: expect.anything(),
+      })
+    );
+    expect(validateUuid(whRequest.meta.messageId)).toBeTrue();
+    const minDate = dayjs().subtract(1, "minute").toDate();
+    const maxDate = dayjs().add(1, "minute").toDate();
+    expect(dayjs(whRequest.meta.when).isBetween(minDate, maxDate)).toBeTrue();
+    expect(whRequest.meta).not.toEqual(
+      expect.objectContaining({
+        data: expect.toBeFalsy,
+      })
+    );
+  });
+
+  it("received WH with MR in PDF format", async () => {
+    const whRequest = getConsolidatedWebhookRequest();
+    const consolidatedData = whRequest?.patients;
+    expect(consolidatedData).toBeTruthy();
+    if (!consolidatedData) throw new Error("Missing consolidated data");
+    expect(consolidatedData.length).toEqual(1);
+    expect(consolidatedData[0].status).toEqual("completed");
+    const bundle = consolidatedData[0].bundle;
+    expect(bundle).toBeTruthy();
+    if (!bundle) throw new Error("Missing Bundle");
+    expect(bundle.type).toEqual("searchset");
+    expect(bundle.resourceType).toEqual("Bundle");
+    expect(bundle.total).toEqual(1);
+    expect(bundle.entry).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          resource: expect.objectContaining({
+            resourceType: "DocumentReference",
+            content: expect.arrayContaining([
+              expect.objectContaining({
+                attachment: expect.objectContaining({
+                  contentType: "application/pdf",
+                }),
+              }),
+            ]),
+          }),
+        }),
+      ])
+    );
+    const resource = bundle.entry?.[0]?.resource;
+    if (!resource || resource.resourceType !== "DocumentReference") {
+      throw new Error("Missing DocumentReference");
+    }
+    const patientRef = resource.subject?.reference;
+    expect(patientRef).toBeTruthy();
+    expect(patientRef).toEqual(`Patient/${patient.id}`);
+    url = resource.content?.[0].attachment?.url;
+    expect(url).toBeTruthy();
+    expect(isValidUrl(url)).toEqual(true);
+  });
+
+  test("can download MR", async () => {
+    if (!url) return;
+    const fileBuffer = await downloadToMemory({ url });
+    expect(fileBuffer).toBeTruthy();
+    mrContentBuffer = fileBuffer;
+  });
+
+  test("MR in PDF format has expected contents", async () => {
+    if (!mrContentBuffer) return;
+    const fileType = detectFileType(mrContentBuffer);
+    expect(fileType).toBeTruthy();
+    expect(fileType.mimeType).toEqual(PDF_MIME_TYPE);
+  });
+
+  it("resets WH handler", async () => {
+    resetConsolidatedData();
+    url = undefined;
+    mrContentBuffer = undefined;
+    expect(true).toBeTrue();
+  });
+
+  // ###########################################################
+  // # Document Query
+  // ###########################################################
 
   it("triggers a document query", async () => {
     const docQueryProgress = await medicalApi.startDocumentQuery(patient.id, facility.id);
