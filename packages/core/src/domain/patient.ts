@@ -2,11 +2,12 @@ import { ConsolidatedQuery } from "@metriport/api-sdk";
 import { USState } from "./geographic-locations";
 import { BaseDomain, BaseDomainCreate } from "./base-domain";
 import { DocumentQueryProgress } from "./document-query";
+import { DiscoveryParams, ScheduledPatientDiscovery } from "./patient-discovery";
 import { BulkGetDocumentsUrlProgress } from "./bulk-get-document-url";
-import { PatientDiscovery } from "./query-status";
 import { MedicalDataSource } from "../external";
 import { Address, getState } from "./address";
 import { Contact } from "./contact";
+import { LinkDemographics } from "./patient-demographics";
 
 export const generalPersonalIdentifiers = ["ssn"] as const;
 export const driversLicensePersonalIdentifier = ["driversLicense"] as const;
@@ -45,9 +46,13 @@ export type GenderAtBirth = (typeof genderAtBirthTypes)[number];
 
 export abstract class PatientExternalDataEntry {
   documentQueryProgress?: DocumentQueryProgress;
+  scheduledPdRequest?: ScheduledPatientDiscovery;
+  discoveryParams?: DiscoveryParams;
 }
 
 export type PatientExternalData = Partial<Record<MedicalDataSource, PatientExternalDataEntry>>;
+
+export type ConsolidatedLinkDemographics = Omit<LinkDemographics, "dob" | "gender">;
 
 export type PatientData = {
   firstName: string;
@@ -58,9 +63,9 @@ export type PatientData = {
   address: Address[];
   contact?: Contact[];
   requestId?: string;
+  consolidatedLinkDemographics?: ConsolidatedLinkDemographics;
   documentQueryProgress?: DocumentQueryProgress;
   consolidatedQueries?: ConsolidatedQuery[];
-  patientDiscovery?: PatientDiscovery;
   bulkGetDocumentsUrlProgress?: BulkGetDocumentsUrlProgress;
   externalData?: PatientExternalData;
   cxDocumentRequestMetadata?: unknown;
@@ -83,6 +88,11 @@ export interface PatientCreate extends BaseDomainCreate {
 export function splitName(name: string): string[] {
   // splits by comma delimiter and filters out empty strings
   return name.split(/[\s,]+/).filter(str => str);
+}
+
+export function splitDob(dob: string): string[] {
+  // splits by dash delimiter and filters out empty strings
+  return dob.split(/[\s-]+/).filter(str => str);
 }
 
 export function joinName(name: string[]): string {
