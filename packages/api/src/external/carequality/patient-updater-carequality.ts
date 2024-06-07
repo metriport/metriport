@@ -1,27 +1,14 @@
 import { PatientUpdater } from "@metriport/core/command/patient-updater";
-import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { Patient } from "@metriport/core/domain/patient";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import dayjs from "dayjs";
-import duration from "dayjs/plugin/duration";
-import {
-  checkIfRaceIsComplete,
-  RaceControl,
-  controlDuration,
-} from "@metriport/core/util/race-control";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { getPatients } from "../../command/medical/patient/get-patient";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
-import cqCommands from ".";
+import { discover } from "./patient";
 import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
-import { getPatients, getPatient } from "../../command/medical/patient/get-patient";
-import { getCQData } from "./patient";
-
-dayjs.extend(duration);
 
 const maxNumberOfParallelRequestsToCQ = 10;
-const CONTROL_TIMEOUT = dayjs.duration({ minutes: 15 });
-const CHECK_DB_INTERVAL = dayjs.duration({ seconds: 60 });
 
 /**
  * Implementation of the PatientUpdater that executes the logic on Carequality.
@@ -42,10 +29,10 @@ export class PatientUpdaterCarequality extends PatientUpdater {
     const updatePatient = async (patient: Patient) => {
       try {
         const facilityId = getFacilityIdOrFail(patient);
-        const facility = await getFacilityOrFail({ cxId, id: facilityId });
-        const requestId = uuidv7();
-        await cqCommands.patient.discover(patient, facility.id, requestId);
-        await this.isPatientDiscoveryComplete(patient);
+        await getFacilityOrFail({ cxId, id: facilityId });
+        // WARNING This could overwrite the status for any currently running PD
+        // TODO Internal #1832 (rework)
+        await discover({ patient, facilityId });
       } catch (error) {
         failedUpdateCount++;
         const msg = `Failed to update CQ patient`;
@@ -59,49 +46,5 @@ export class PatientUpdaterCarequality extends PatientUpdater {
     });
 
     return { failedUpdateCount };
-  }
-
-  private async isPatientDiscoveryComplete(patient: Patient): Promise<boolean> {
-    const raceControl: RaceControl = { isRaceInProgress: true };
-
-    try {
-      const successMessage = "CQ discovery polling status complete";
-      const timeoutMessage = "CQ discovery polling status reached timeout";
-
-      const raceResult = await Promise.race([
-        controlDuration(CONTROL_TIMEOUT.asMilliseconds(), timeoutMessage),
-        checkIfRaceIsComplete(
-          () => this.getPatientDiscoveryStatus(patient),
-          raceControl,
-          successMessage,
-          CHECK_DB_INTERVAL.asMilliseconds()
-        ),
-      ]);
-
-      if (raceResult === successMessage) {
-        console.log(`CQ discovery polling status complete for patient ${patient.id}.`);
-        return true;
-      }
-
-      throw new Error(timeoutMessage);
-    } catch (error) {
-      throw new Error(`CQ discovery polling failed`);
-    }
-  }
-
-  private async getPatientDiscoveryStatus(patient: Patient): Promise<boolean> {
-    const updatedPatient = await getPatient({ id: patient.id, cxId: patient.cxId });
-
-    if (!updatedPatient) {
-      return false;
-    }
-
-    const cqExternalData = getCQData(updatedPatient.data.externalData);
-
-    if (!cqExternalData) {
-      return false;
-    }
-
-    return cqExternalData.discoveryStatus === "completed";
   }
 }

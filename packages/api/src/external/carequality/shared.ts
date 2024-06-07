@@ -23,7 +23,7 @@ export async function validateCQEnabledAndInitGW(
   patient: Pick<Patient, "id" | "cxId">,
   facilityId: string,
   forceEnabled: boolean,
-  outerLog: typeof console.log
+  log: typeof console.log
 ): Promise<IHEGateway | undefined> {
   const { cxId } = patient;
 
@@ -38,23 +38,23 @@ export async function validateCQEnabledAndInitGW(
     const cqDirectIsDisabledForCx = !isCQDirectEnabled;
 
     if (iheGWNotPresent) {
-      outerLog(`IHE GW not available, skipping PD`);
+      log(`IHE GW not available, skipping PD`);
       return undefined;
     } else if (cqIsDisabled) {
-      outerLog(`CQ not enabled, skipping PD`);
+      log(`CQ not enabled, skipping PD`);
       return undefined;
     } else if (cqDirectIsDisabledForCx) {
-      outerLog(`CQ disabled for cx ${cxId}, skipping PD`);
+      log(`CQ disabled for cx ${cxId}, skipping PD`);
       return undefined;
     } else if (!isCqQueryEnabled) {
-      outerLog(`CQ querying not enabled for facility, skipping PD`);
+      log(`CQ querying not enabled for facility, skipping PD`);
       return undefined;
     }
 
     return iheGateway;
   } catch (error) {
     const msg = `Error validating PD enabled`;
-    outerLog(`${msg} - ${errorToString(error)}`);
+    log(`${msg} - ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         cxId,

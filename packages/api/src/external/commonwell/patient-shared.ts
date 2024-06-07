@@ -193,7 +193,7 @@ export async function searchPersonIds({
   queryMeta: RequestMetadata;
   strongIds: StrongId[];
 }): Promise<string[]> {
-  const { log } = out(`CW searchPersonIds`);
+  const { log, debug } = out(`CW searchPersonIds`);
   const respSearches = await Promise.allSettled(
     strongIds.map(id =>
       commonWell.searchPerson(queryMeta, id.key, id.system).catch(error => {
@@ -204,6 +204,7 @@ export async function searchPersonIds({
       })
     )
   );
+  debug(`resp searchPerson: `, JSON.stringify(respSearches));
   const fulfilledPersons = respSearches
     .flatMap(r => (r.status === "fulfilled" ? r.value._embedded?.person : []))
     .flatMap(filterTruthy);

@@ -5,8 +5,3 @@ export type QueryProgress = {
   status: QueryStatus;
   startedAt?: Date;
 };
-
-export type PatientDiscovery = {
-  startedAt: Date;
-  requestId: string;
-};

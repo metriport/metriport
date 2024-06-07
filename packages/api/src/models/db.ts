@@ -2,6 +2,7 @@ import * as AWS from "aws-sdk";
 import { Sequelize } from "sequelize";
 import { CQDirectoryEntryModel } from "../external/carequality/models/cq-directory";
 import { CQPatientDataModel } from "../external/carequality/models/cq-patient-data";
+import { CwPatientDataModel } from "../external/commonwell/models/cw-patient-data";
 import { FacilityModel } from "../models/medical/facility";
 import { OrganizationModel } from "../models/medical/organization";
 import updateDB from "../sequelize";
@@ -27,6 +28,7 @@ const models: ModelSetup[] = [
   OrganizationModel.setup,
   CQDirectoryEntryModel.setup,
   CQPatientDataModel.setup,
+  CwPatientDataModel.setup,
   FacilityModel.setup,
   PatientModel.setup,
   MAPIAccess.setup,

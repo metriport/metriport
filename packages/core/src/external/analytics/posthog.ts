@@ -54,6 +54,8 @@ export enum EventTypes {
   error = "error",
   addressRelevance = "addressRelevance",
   patientDiscovery = "patientDiscovery",
+  rerunOnNewDemographics = "rerunOnNewDemographics",
+  runScheduledPatientDiscovery = "runScheduledPatientDiscovery",
   documentQuery = "documentQuery",
   documentConversion = "documentConversion",
   consolidatedQuery = "consolidatedQuery",

@@ -1,20 +1,15 @@
-import { Patient } from "@metriport/core/domain/patient";
-import { setCommonwellIdsAndStatus, CWParams } from "../patient-external-data";
+import { updateCommonwellIdsAndStatus, CWParams } from "../patient-external-data";
 import { PatientModel } from "../../../models/medical/patient";
 import { makePatient, makePatientData } from "../../../domain/medical/__tests__/patient";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { PatientDataCommonwell } from "../patient-shared";
-
-let patient: Patient;
-let patientModel: PatientModel;
 
 let patientModel_findOne: jest.SpyInstance;
 let patientModel_update: jest.SpyInstance;
 
 beforeEach(() => {
   mockStartTransaction();
-  patientModel = patient as unknown as PatientModel;
-  patientModel_findOne = jest.spyOn(PatientModel, "findOne").mockResolvedValue(patientModel);
+  patientModel_findOne = jest.spyOn(PatientModel, "findOne");
   patientModel_update = jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
 });
 
@@ -27,12 +22,11 @@ const checkPatientUpdateWith = (cwParams: Partial<CWParams>) => {
     expect.objectContaining({
       data: expect.objectContaining({
         externalData: expect.objectContaining({
-          COMMONWELL: {
+          COMMONWELL: expect.objectContaining({
             ...(cwParams.commonwellPatientId && { patientId: cwParams.commonwellPatientId }),
             ...(cwParams.commonwellPersonId && { personId: cwParams.commonwellPersonId }),
-            ...(cwParams.commonwellStatus && { status: cwParams.commonwellStatus }),
             ...(cwParams.cqLinkStatus && { cqLinkStatus: cwParams.cqLinkStatus }),
-          },
+          }),
         }),
       }),
     }),
@@ -44,18 +38,16 @@ describe("setCommonwellIdsAndStatus", () => {
   it("has CW externalData set to newValues when CW externalData is empty and we set newValues", async () => {
     const patient = makePatient();
 
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValue(patient);
 
     const newValues: CWParams = {
       commonwellPatientId: "commonwellPatientId",
       commonwellPersonId: "commonwellPersonId",
-      commonwellStatus: "processing",
       cqLinkStatus: "processing",
     };
 
-    const result = await setCommonwellIdsAndStatus({
-      patientId: patient.id,
-      cxId: patient.cxId,
+    const result = await updateCommonwellIdsAndStatus({
+      patient,
       ...newValues,
     });
 
@@ -67,7 +59,6 @@ describe("setCommonwellIdsAndStatus", () => {
     const oldValues: PatientDataCommonwell = {
       patientId: "oldCommonwellPatientId",
       personId: "oldCommonwellPersonId",
-      status: "processing",
       cqLinkStatus: "processing",
     };
 
@@ -86,13 +77,11 @@ describe("setCommonwellIdsAndStatus", () => {
     const newValues: CWParams = {
       commonwellPatientId: "newCommonwellPatientId",
       commonwellPersonId: "newCommonwellPersonId",
-      commonwellStatus: "completed",
       cqLinkStatus: "linked",
     };
 
-    const result = await setCommonwellIdsAndStatus({
-      patientId: patient.id,
-      cxId: patient.cxId,
+    const result = await updateCommonwellIdsAndStatus({
+      patient,
       ...newValues,
     });
 
@@ -104,7 +93,6 @@ describe("setCommonwellIdsAndStatus", () => {
     const oldValues: PatientDataCommonwell = {
       patientId: "oldCommonwellPatientId",
       personId: "oldCommonwellPersonId",
-      status: "processing",
       cqLinkStatus: "processing",
     };
 
@@ -123,13 +111,11 @@ describe("setCommonwellIdsAndStatus", () => {
     const newStatus: CWParams = {
       commonwellPatientId: "newCommonwellPatientId",
       commonwellPersonId: undefined,
-      commonwellStatus: "completed",
       cqLinkStatus: undefined,
     };
 
-    const result = await setCommonwellIdsAndStatus({
-      patientId: patient.id,
-      cxId: patient.cxId,
+    const result = await updateCommonwellIdsAndStatus({
+      patient,
       ...newStatus,
     });
 
@@ -137,7 +123,6 @@ describe("setCommonwellIdsAndStatus", () => {
     checkPatientUpdateWith({
       commonwellPatientId: newStatus.commonwellPatientId,
       commonwellPersonId: oldValues.personId,
-      commonwellStatus: newStatus.commonwellStatus,
       cqLinkStatus: oldValues.cqLinkStatus,
     });
   });
@@ -150,15 +135,10 @@ describe("setCommonwellIdsAndStatus", () => {
     const onlyPatientId: CWParams = {
       commonwellPatientId: "newCommonwellPatientId",
       commonwellPersonId: undefined,
-      commonwellStatus: undefined,
       cqLinkStatus: undefined,
     };
 
-    const result = await setCommonwellIdsAndStatus({
-      patientId: patient.id,
-      cxId: patient.cxId,
-      ...onlyPatientId,
-    });
+    const result = await updateCommonwellIdsAndStatus({ patient, ...onlyPatientId });
 
     expect(result).toBeTruthy();
     checkPatientUpdateWith({
