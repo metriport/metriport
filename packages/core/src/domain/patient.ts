@@ -4,7 +4,6 @@ import { BaseDomain, BaseDomainCreate } from "./base-domain";
 import { DocumentQueryProgress } from "./document-query";
 import { DiscoveryParams, ScheduledPatientDiscovery } from "./patient-discovery";
 import { BulkGetDocumentsUrlProgress } from "./bulk-get-document-url";
-import { QueryProgress } from "./query-status";
 import { MedicalDataSource } from "../external";
 import { Address, getState } from "./address";
 import { Contact } from "./contact";
@@ -66,7 +65,6 @@ export type PatientData = {
   requestId?: string;
   consolidatedLinkDemographics?: ConsolidatedLinkDemographics;
   documentQueryProgress?: DocumentQueryProgress;
-  consolidatedQuery?: QueryProgress;
   consolidatedQueries?: ConsolidatedQuery[];
   bulkGetDocumentsUrlProgress?: BulkGetDocumentsUrlProgress;
   externalData?: PatientExternalData;
