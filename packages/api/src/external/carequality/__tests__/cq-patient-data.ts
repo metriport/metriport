@@ -2,7 +2,6 @@ import { faker } from "@faker-js/faker";
 import { LinkDemographicsHistory } from "@metriport/core/domain/patient-demographics";
 import dayjs from "dayjs";
 import { ISO_DATE } from "../../../shared/date";
-//import { CQPatientDataModel } from "../models/cq-patient-data";
 import { makeBaseDomain } from "../../../domain/__tests__/base-domain";
 import { CQLink, CQData, CQPatientData } from "../cq-patient-data";
 import { makeAddressStrict } from "../../../domain/medical/__tests__/location-address";
