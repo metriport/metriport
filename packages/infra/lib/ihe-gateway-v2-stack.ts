@@ -286,7 +286,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     ]);
 
     iheResponsesBucket.grantReadWrite(documentRetrievalLambda);
-    medicalDocumentsBucket.grantRead(documentRetrievalLambda);
+    medicalDocumentsBucket.grantReadWrite(documentRetrievalLambda);
     cqTrustBundleBucket.grantRead(documentRetrievalLambda);
 
     return documentRetrievalLambda;

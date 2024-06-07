@@ -1,9 +1,9 @@
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import { toIheGatewayPatientResource } from "@metriport/core/external/carequality/ihe-gateway-v2/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { IHEGateway, OutboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
 import { errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
@@ -14,20 +14,30 @@ import { deleteCQPatientData } from "./command/cq-patient-data/delete-cq-data";
 import { createOutboundPatientDiscoveryReq } from "./create-outbound-patient-discovery-req";
 import { gatherXCPDGateways } from "./gateway";
 import { PatientDataCarequality } from "./patient-shared";
-import { processPatientDiscoveryProgress } from "./process-patient-discovery-progress";
+import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 import { getCqInitiator, validateCQEnabledAndInitGW } from "./shared";
+import { queryDocsIfScheduled } from "./process-outbound-patient-discovery-resps";
+import { createAugmentedPatient } from "../../domain/medical/patient-demographics";
+import { resetScheduledPatientDiscovery } from "../hie/reset-scheduled-patient-discovery-request";
 
 dayjs.extend(duration);
 
 const context = "cq.patient.discover";
 const resultPoller = makeOutboundResultPoller();
 
-export async function discover(
-  patient: Patient,
-  facilityId: string,
-  requestId: string,
-  forceEnabled = false
-): Promise<void> {
+export async function discover({
+  patient,
+  facilityId,
+  requestId: inputRequestId,
+  forceEnabled = false,
+  rerunPdOnNewDemographics = false,
+}: {
+  patient: Patient;
+  facilityId: string;
+  requestId?: string;
+  forceEnabled?: boolean;
+  rerunPdOnNewDemographics?: boolean;
+}): Promise<void> {
   const baseLogMessage = `CQ PD - patientId ${patient.id}`;
   const { log: outerLog } = out(baseLogMessage);
 
@@ -39,22 +49,42 @@ export async function discover(
   );
 
   if (enabledIHEGW) {
-    await processPatientDiscoveryProgress({ patient, status: "processing" });
+    const requestId = inputRequestId ?? uuidv7();
+    const startedAt = new Date();
+    const updatedPatient = await updatePatientDiscoveryStatus({
+      patient,
+      status: "processing",
+      params: {
+        requestId,
+        facilityId,
+        startedAt,
+        rerunPdOnNewDemographics,
+      },
+    });
 
-    // Intentionally asynchronous
-    prepareAndTriggerPD(patient, facilityId, enabledIHEGW, requestId, baseLogMessage).catch(
-      processAsyncError(context)
-    );
+    await prepareAndTriggerPD({
+      patient: createAugmentedPatient(updatedPatient),
+      facilityId,
+      enabledIHEGW,
+      requestId,
+      baseLogMessage,
+    });
   }
 }
 
-async function prepareAndTriggerPD(
-  patient: Patient,
-  facilityId: string,
-  enabledIHEGW: IHEGateway,
-  requestId: string,
-  baseLogMessage: string
-): Promise<void> {
+async function prepareAndTriggerPD({
+  patient,
+  facilityId,
+  enabledIHEGW,
+  requestId,
+  baseLogMessage,
+}: {
+  patient: Patient;
+  facilityId: string;
+  enabledIHEGW: IHEGateway;
+  requestId: string;
+  baseLogMessage: string;
+}): Promise<void> {
   try {
     const { pdRequestGatewayV1, pdRequestGatewayV2 } = await prepareForPatientDiscovery(
       patient,
@@ -91,9 +121,15 @@ async function prepareAndTriggerPD(
       numOfGateways: numGatewaysV1 + numGatewaysV2,
     });
   } catch (error) {
+    // TODO 1646 Move to a single hit to the DB
+    await resetScheduledPatientDiscovery({
+      patient,
+      source: MedicalDataSource.CAREQUALITY,
+    });
+    await updatePatientDiscoveryStatus({ patient, status: "failed" });
+    await queryDocsIfScheduled({ patientIds: patient, isFailed: true });
     const msg = `Error on Patient Discovery`;
     out(baseLogMessage).log(`${msg} - ${errorToString(error)}`);
-    await processPatientDiscoveryProgress({ patient, status: "failed" });
     capture.error(msg, {
       extra: {
         facilityId,
