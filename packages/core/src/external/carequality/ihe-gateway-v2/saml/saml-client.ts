@@ -99,7 +99,7 @@ export async function sendSignedXmlMtom({
   url: string;
   samlCertsAndKeys: SamlCertsAndKeys;
   trustedKeyStore: string;
-}): Promise<MtomAttachments> {
+}): Promise<{ mtomParts: MtomAttachments; rawResponse: Buffer }> {
   const agent = new https.Agent({
     rejectUnauthorized: getRejectUnauthorized(),
     requestCert: true,
@@ -129,7 +129,7 @@ export async function sendSignedXmlMtom({
 
   const boundary = getBoundaryFromMtomResponse(response.headers["content-type"]);
   if (boundary) {
-    return await parseMtomResponse(binaryData, boundary);
+    return { mtomParts: await parseMtomResponse(binaryData, boundary), rawResponse: binaryData };
   }
-  return convertSoapResponseToMtomResponse(binaryData);
+  return { mtomParts: convertSoapResponseToMtomResponse(binaryData), rawResponse: binaryData };
 }
