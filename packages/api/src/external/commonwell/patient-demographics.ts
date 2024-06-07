@@ -1,5 +1,4 @@
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
-import { NetworkLink } from "@metriport/commonwell-sdk";
 import { PatientNetworkLink } from "@metriport/commonwell-sdk";
 import {
   removeInvalidArrayValues,
@@ -11,6 +10,7 @@ import {
   normalizeTelephone,
   normalizeEmail,
 } from "../../domain/medical/patient-demographics";
+import { CwLink } from "./cw-patient-data";
 
 export function patientNetworkLinkToNormalizedLinkDemographics(
   patientNetworkLink: PatientNetworkLink
@@ -63,7 +63,7 @@ export function patientNetworkLinkToNormalizedLinkDemographics(
   });
 }
 
-export function getPatientNetworkLinks(linkResults: NetworkLink[]): PatientNetworkLink[] {
+export function getPatientNetworkLinks(linkResults: CwLink[]): PatientNetworkLink[] {
   return linkResults.flatMap(lr => {
     const patientNetworkLink = lr.patient;
     if (!patientNetworkLink) return [];

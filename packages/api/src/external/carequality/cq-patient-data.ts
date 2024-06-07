@@ -26,4 +26,9 @@ export interface CQPatientDataCreate extends BaseDomainCreate {
   data: CQData;
 }
 
+export interface CQPatientDataCreatePartial extends BaseDomainCreate {
+  cxId: string;
+  data: Partial<CQData>;
+}
+
 export interface CQPatientData extends BaseDomain, CQPatientDataCreate {}

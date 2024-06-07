@@ -15,4 +15,9 @@ export interface CwPatientDataCreate extends BaseDomainCreate {
   data: CwData;
 }
 
+export interface CwPatientDataCreatePartial extends BaseDomainCreate {
+  cxId: string;
+  data: Partial<CwData>;
+}
+
 export interface CwPatientData extends BaseDomain, CwPatientDataCreate {}

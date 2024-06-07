@@ -9,7 +9,6 @@ import {
 } from "@metriport/commonwell-sdk";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
-import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -59,6 +58,7 @@ import {
   patientNetworkLinkToNormalizedLinkDemographics,
 } from "./patient-demographics";
 import { createOrUpdateCwPatientData } from "./command/cw-patient-data/create-cw-data";
+import { updateCwPatientData } from "./command/cw-patient-data/update-cw-data";
 import { deleteCwPatientData } from "./command/cw-patient-data/delete-cw-data";
 import { CwLink } from "./cw-patient-data";
 
@@ -200,13 +200,9 @@ async function registerAndLinkPatientInCW({
       getOrgIdExcludeList,
     });
 
-    let cwLinksDemographics: LinkDemographics[] = [];
     let cwLinks: CwLink[] = [];
     if (networkLinks) {
-      cwLinksDemographics = getPatientNetworkLinks(networkLinks).map(
-        patientNetworkLinkToNormalizedLinkDemographics
-      );
-      cwLinks = await createCwLinks(patient, networkLinks, requestId, cwLinksDemographics);
+      cwLinks = await createCwLinks(patient, networkLinks);
     }
 
     if (rerunPdOnNewDemographics) {
@@ -215,7 +211,7 @@ async function registerAndLinkPatientInCW({
         facilityId,
         getOrgIdExcludeList,
         requestId,
-        links: cwLinksDemographics,
+        cwLinks,
       });
       if (startedNewPd) return;
     }
@@ -379,13 +375,9 @@ async function updatePatientAndLinksInCw({
       getOrgIdExcludeList,
     });
 
-    let cwLinksDemographics: LinkDemographics[] = [];
     let cwLinks: CwLink[] = [];
     if (networkLinks) {
-      cwLinksDemographics = getPatientNetworkLinks(networkLinks).map(
-        patientNetworkLinkToNormalizedLinkDemographics
-      );
-      cwLinks = await createCwLinks(patient, networkLinks, requestId, cwLinksDemographics);
+      cwLinks = await createCwLinks(patient, networkLinks);
     }
 
     if (rerunPdOnNewDemographics) {
@@ -394,7 +386,7 @@ async function updatePatientAndLinksInCw({
         facilityId,
         getOrgIdExcludeList,
         requestId,
-        links: cwLinksDemographics,
+        cwLinks,
       });
       if (startedNewPd) return;
     }
@@ -497,24 +489,12 @@ async function validateCWEnabled({
 
 async function createCwLinks(
   patient: Pick<Patient, "id" | "cxId">,
-  pdResults: NetworkLink[],
-  requestId: string,
-  linksDemographics: LinkDemographics[]
+  pdResults: NetworkLink[]
 ): Promise<CwLink[]> {
   const { id, cxId } = patient;
   const cwLinks = pdResults;
 
-  if (cwLinks.length > 0) {
-    await createOrUpdateCwPatientData({
-      id,
-      cxId,
-      cwLinks,
-      requestLinksDemographics: {
-        requestId,
-        linksDemographics,
-      },
-    });
-  }
+  if (cwLinks.length > 0) await createOrUpdateCwPatientData({ id, cxId, cwLinks });
 
   return cwLinks;
 }
@@ -524,17 +504,20 @@ export async function runNextPdOnNewDemographics({
   facilityId,
   getOrgIdExcludeList,
   requestId,
-  links,
+  cwLinks,
 }: {
   patient: Patient;
   facilityId: string;
   getOrgIdExcludeList: () => Promise<string[]>;
   requestId: string;
-  links: LinkDemographics[];
+  cwLinks: CwLink[];
 }): Promise<boolean> {
   const updatedPatient = await getPatientOrFail(patient);
 
-  const newDemographicsHere = getNewDemographics(updatedPatient, links);
+  const linksDemographics = getPatientNetworkLinks(cwLinks).map(
+    patientNetworkLinkToNormalizedLinkDemographics
+  );
+  const newDemographicsHere = getNewDemographics(updatedPatient, linksDemographics);
   const foundNewDemographicsHere = newDemographicsHere.length > 0;
   const foundNewDemographicsAcrossHies = await checkLinkDemographicsAcrossHies({
     patient: updatedPatient,
@@ -545,6 +528,14 @@ export async function runNextPdOnNewDemographics({
   }
 
   if (foundNewDemographicsHere) {
+    await updateCwPatientData({
+      id: updatedPatient.id,
+      cxId: updatedPatient.cxId,
+      requestLinksDemographics: {
+        requestId,
+        linksDemographics: newDemographicsHere,
+      },
+    });
     await updatePatientLinkDemographics({
       requestId,
       patient: updatedPatient,

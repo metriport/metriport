@@ -1,6 +1,5 @@
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { PatientResource } from "@metriport/ihe-gateway-sdk";
-import { OutboundPatientDiscoveryResp } from "@metriport/ihe-gateway-sdk";
 import {
   removeInvalidArrayValues,
   normalizeDob,
@@ -11,6 +10,7 @@ import {
   normalizeTelephone,
   normalizeEmail,
 } from "../../domain/medical/patient-demographics";
+import { CQLink } from "./cq-patient-data";
 
 export function patientResourceToNormalizedLinkDemographics(
   patientResource: PatientResource
@@ -61,11 +61,8 @@ export function patientResourceToNormalizedLinkDemographics(
   });
 }
 
-export function getPatientResources(
-  linkResults: OutboundPatientDiscoveryResp[]
-): PatientResource[] {
+export function getPatientResources(linkResults: CQLink[]): PatientResource[] {
   return linkResults.flatMap(lr => {
-    if (!lr.patientMatch) return [];
     const patientResource = lr.patientResource;
     if (!patientResource) return [];
     return patientResource;

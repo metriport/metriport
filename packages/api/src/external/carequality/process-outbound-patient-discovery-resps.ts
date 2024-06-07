@@ -1,5 +1,4 @@
 import { Patient } from "@metriport/core/domain/patient";
-import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { out } from "@metriport/core/util/log";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
@@ -11,6 +10,7 @@ import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq-data";
+import { updateCQPatientData } from "./command/cq-patient-data/update-cq-data";
 import { CQLink } from "./cq-patient-data";
 import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
@@ -59,17 +59,12 @@ export async function processOutboundPatientDiscoveryResps({
     }
 
     log(`Starting to handle patient discovery results`);
-    const cqLinksDemographics = getPatientResources(results).map(
-      patientResourceToNormalizedLinkDemographics
-    );
     const cqLinks = await createCQLinks(
       {
         id: patientId,
         cxId,
       },
-      results,
-      requestId,
-      cqLinksDemographics
+      results
     );
 
     const discoveryParams = getCQData(patient.data.externalData)?.discoveryParams;
@@ -88,7 +83,7 @@ export async function processOutboundPatientDiscoveryResps({
         patient,
         facilityId: discoveryParams.facilityId,
         requestId,
-        links: cqLinksDemographics,
+        cqLinks,
       });
       if (startedNewPd) return;
     }
@@ -136,24 +131,12 @@ export async function processOutboundPatientDiscoveryResps({
 
 async function createCQLinks(
   patient: Pick<Patient, "id" | "cxId">,
-  pdResults: OutboundPatientDiscoveryResp[],
-  requestId: string,
-  linksDemographics: LinkDemographics[]
+  pdResults: OutboundPatientDiscoveryResp[]
 ): Promise<CQLink[]> {
   const { id, cxId } = patient;
   const cqLinks = buildCQLinks(pdResults);
 
-  if (cqLinks.length > 0) {
-    await createOrUpdateCQPatientData({
-      id,
-      cxId,
-      cqLinks,
-      requestLinksDemographics: {
-        requestId,
-        linksDemographics,
-      },
-    });
-  }
+  if (cqLinks.length > 0) await createOrUpdateCQPatientData({ id, cxId, cqLinks });
 
   return cqLinks;
 }
@@ -179,16 +162,19 @@ export async function runNextPdOnNewDemographics({
   patient,
   facilityId,
   requestId,
-  links,
+  cqLinks,
 }: {
   patient: Patient;
   facilityId: string;
   requestId: string;
-  links: LinkDemographics[];
+  cqLinks: CQLink[];
 }): Promise<boolean> {
   const updatedPatient = await getPatientOrFail(patient);
 
-  const newDemographicsHere = getNewDemographics(updatedPatient, links);
+  const linksDemographics = getPatientResources(cqLinks).map(
+    patientResourceToNormalizedLinkDemographics
+  );
+  const newDemographicsHere = getNewDemographics(updatedPatient, linksDemographics);
   const foundNewDemographicsHere = newDemographicsHere.length > 0;
   const foundNewDemographicsAcrossHies = await checkLinkDemographicsAcrossHies({
     patient: updatedPatient,
@@ -199,6 +185,14 @@ export async function runNextPdOnNewDemographics({
   }
 
   if (foundNewDemographicsHere) {
+    await updateCQPatientData({
+      id: updatedPatient.id,
+      cxId: updatedPatient.cxId,
+      requestLinksDemographics: {
+        requestId,
+        linksDemographics: newDemographicsHere,
+      },
+    });
     await updatePatientLinkDemographics({
       requestId,
       patient: updatedPatient,

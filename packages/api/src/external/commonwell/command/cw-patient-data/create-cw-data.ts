@@ -42,7 +42,7 @@ export async function createOrUpdateCwPatientData({
     if (!existingPatient) return undefined;
     return updateCwPatientDataWithinDBTx(cwPatientData, existingPatient, transaction);
   });
-  if (updateResult) return updateResult;
+  if (updateResult) return updateResult.dataValues;
 
   return await CwPatientDataModel.create(cwPatientData);
 }
