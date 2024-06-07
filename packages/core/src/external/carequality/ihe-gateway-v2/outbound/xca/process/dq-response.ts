@@ -23,6 +23,9 @@ import { successStatus, partialSuccessStatus } from "./constants";
 import { capture } from "../../../../../../util/notifications";
 import { toArray } from "../../..//utils";
 import { iti38Schema, Slot, ExternalIdentifier, Classification, ExtrinsicObject } from "./schema";
+import { out } from "../../../../../../util/log";
+
+const { log } = out("DQ Processing");
 
 function getResponseHomeCommunityId(extrinsicObject: ExtrinsicObject): string {
   return stripUrnPrefix(extrinsicObject?._home);
@@ -32,10 +35,31 @@ function getHomeCommunityIdForDr(extrinsicObject: ExtrinsicObject): string {
   return getResponseHomeCommunityId(extrinsicObject);
 }
 
-function parseDocumentReference(extrinsicObject: ExtrinsicObject): DocumentReference | undefined {
-  const slots = toArray(extrinsicObject?.Slot);
-  const externalIdentifiers = toArray(extrinsicObject?.ExternalIdentifier);
-  const classifications = toArray(extrinsicObject?.Classification);
+function getCreationTime(time: string | undefined): string | undefined {
+  try {
+    return time ? dayjs(time).toISOString() : undefined;
+  } catch (error) {
+    log(`Error parsing creation time: ${time}, error: ${error}`);
+    return undefined;
+  }
+}
+
+function parseDocumentReference({
+  extrinsicObject,
+  outboundRequest,
+}: {
+  extrinsicObject: ExtrinsicObject;
+  outboundRequest: OutboundDocumentQueryReq;
+}): DocumentReference | undefined {
+  const slots = Array.isArray(extrinsicObject?.Slot)
+    ? extrinsicObject?.Slot
+    : [extrinsicObject?.Slot];
+  const externalIdentifiers = Array.isArray(extrinsicObject?.ExternalIdentifier)
+    ? extrinsicObject?.ExternalIdentifier
+    : [extrinsicObject?.ExternalIdentifier];
+  const classifications = Array.isArray(extrinsicObject?.Classification)
+    ? extrinsicObject?.Classification
+    : [extrinsicObject?.Classification];
 
   const findSlotValue = (name: string): string | undefined => {
     const slot = slots.find((slot: Slot) => slot._name === name);
@@ -83,24 +107,23 @@ function parseDocumentReference(extrinsicObject: ExtrinsicObject): DocumentRefer
     capture.error(msg, {
       extra: {
         extrinsicObject,
-        repositoryUniqueId,
-        docUniqueId,
+        outboundRequest,
       },
     });
     return undefined;
   }
 
+  const creationTime = String(findSlotValue("creationTime"));
+
   const documentReference: DocumentReference = {
     homeCommunityId: getHomeCommunityIdForDr(extrinsicObject),
     repositoryUniqueId,
-    docUniqueId,
+    docUniqueId: stripUrnPrefix(docUniqueId),
     contentType: extrinsicObject?._mimeType,
     language: findSlotValue("languageCode"),
     size: sizeValue ? parseInt(sizeValue) : undefined,
     title: findClassificationName(XDSDocumentEntryClassCode),
-    creation: findSlotValue("creationTime")
-      ? dayjs(findSlotValue("creationTime")).toISOString()
-      : undefined,
+    creation: getCreationTime(creationTime),
     authorInstitution: findClassificationSlotValue(XDSDocumentEntryAuthor, "authorInstitution"),
   };
   return documentReference;
@@ -116,7 +139,7 @@ function handleSuccessResponse({
   gateway: XCAGateway;
 }): OutboundDocumentQueryResp {
   const documentReferences = extrinsicObjects.flatMap(
-    extrinsicObject => parseDocumentReference(extrinsicObject) ?? []
+    extrinsicObject => parseDocumentReference({ extrinsicObject, outboundRequest }) ?? []
   );
 
   const response: OutboundDocumentQueryResp = {

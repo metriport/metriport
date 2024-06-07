@@ -5,6 +5,7 @@ import { SamlCertsAndKeys } from "../../../saml/security/types";
 import { getTrustedKeyStore, SamlClientResponse, sendSignedXml } from "../../../saml/saml-client";
 import { BulkSignedDQ } from "../create/iti38-envelope";
 import { out } from "../../../../../../util/log";
+import { storeDqResponses } from "../../../monitor/store";
 
 const { log } = out("Sending DQ Requests");
 const context = "ihe-gateway-v2-dq-saml-client";
@@ -39,6 +40,11 @@ export async function sendSignedDQRequests({
           request.gateway.homeCommunityId
         }`
       );
+      await storeDqResponses({
+        response,
+        outboundRequest: request.outboundRequest,
+        gateway: request.gateway,
+      });
       return {
         gateway: request.gateway,
         response,

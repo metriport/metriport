@@ -1,4 +1,5 @@
 export { toArray } from "./common/array";
+export { isTrue } from "./common/boolean";
 export { optionalDateSchema } from "./common/date";
 export { getDomainFromEmailWithoutTld } from "./common/email";
 export * from "./common/env-var";

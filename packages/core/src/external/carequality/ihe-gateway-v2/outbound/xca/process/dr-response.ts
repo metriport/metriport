@@ -32,7 +32,7 @@ const region = Config.getAWSRegion();
 const bucket = Config.getMedicalDocumentsBucketName();
 
 let s3UtilsInstance = new S3Utils(region);
-export function getS3UtilsInstance(): S3Utils {
+function getS3UtilsInstance(): S3Utils {
   return s3UtilsInstance;
 }
 export function setS3UtilsInstance(s3Utils: S3Utils): void {

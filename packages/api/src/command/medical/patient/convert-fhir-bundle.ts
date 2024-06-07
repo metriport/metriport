@@ -11,7 +11,7 @@ import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/extern
 import { S3Utils, makeS3Client } from "@metriport/core/external/aws/s3";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { ResourceTypeForConsolidation } from "../../../domain/medical/consolidation-resources";
+import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import { Config } from "../../../shared/config";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
 import { createSandboxMRSummaryFileName } from "./shared";

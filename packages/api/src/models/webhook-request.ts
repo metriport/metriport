@@ -1,7 +1,6 @@
 import { DataTypes, Sequelize } from "sequelize";
+import { WebhookRequestStatus } from "../domain/webhook";
 import { BaseModel, ModelSetup } from "./_default";
-
-export type WebhookRequestStatus = "processing" | "success" | "failure";
 
 export class WebhookRequest extends BaseModel<WebhookRequest> {
   static NAME = "webhook_request";
@@ -11,6 +10,10 @@ export class WebhookRequest extends BaseModel<WebhookRequest> {
   declare type: string; // intentionally 'string' to avoid circular dependency and coupling
   declare payload: object;
   declare status: WebhookRequestStatus;
+  declare statusDetail?: string;
+  declare requestUrl?: string;
+  declare httpStatus?: number;
+  declare durationMillis?: number;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     WebhookRequest.init(
@@ -21,7 +24,6 @@ export class WebhookRequest extends BaseModel<WebhookRequest> {
         },
         requestId: {
           type: DataTypes.STRING,
-          allowNull: true,
         },
         type: {
           type: DataTypes.STRING,
@@ -31,6 +33,18 @@ export class WebhookRequest extends BaseModel<WebhookRequest> {
         },
         status: {
           type: DataTypes.STRING,
+        },
+        statusDetail: {
+          type: DataTypes.STRING,
+        },
+        requestUrl: {
+          type: DataTypes.STRING,
+        },
+        httpStatus: {
+          type: DataTypes.INTEGER,
+        },
+        durationMillis: {
+          type: DataTypes.INTEGER,
         },
       },
       {
