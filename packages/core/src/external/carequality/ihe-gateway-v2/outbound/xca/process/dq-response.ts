@@ -137,8 +137,7 @@ function parseDocumentReference(
     capture.error(msg, {
       extra: {
         extrinsicObject,
-        repositoryUniqueId,
-        docUniqueId,
+        outboundRequest,
       },
     });
     return undefined;

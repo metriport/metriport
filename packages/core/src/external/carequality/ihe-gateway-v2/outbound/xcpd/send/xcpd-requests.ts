@@ -4,6 +4,7 @@ import { SamlCertsAndKeys } from "../../../saml/security/types";
 import { getTrustedKeyStore, SamlClientResponse, sendSignedXml } from "../../../saml/saml-client";
 import { BulkSignedXCPD } from "../create/iti55-envelope";
 import { out } from "../../../../../../util/log";
+import { storeXcpdResponses } from "../../../monitor/store";
 
 const { log } = out("Sending XCPD Requests");
 
@@ -37,6 +38,11 @@ export async function sendSignedXCPDRequests({
           request.gateway.oid
         }`
       );
+      await storeXcpdResponses({
+        response,
+        outboundRequest: request.outboundRequest,
+        gateway: request.gateway,
+      });
       return {
         gateway: request.gateway,
         response,
