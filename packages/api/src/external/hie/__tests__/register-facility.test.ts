@@ -49,9 +49,6 @@ beforeEach(() => {
   jest
     .spyOn(createOrUpdateFacility, "createOrUpdateFacility")
     .mockImplementation(async () => mockedFacility);
-  doesOrganizationExistInCQMock = jest
-    .spyOn(createOrUpdateCqOrg, "doesOrganizationExistInCQ")
-    .mockImplementation(async () => true);
   createOrUpdateCqOrganizationMock = jest
     .spyOn(createOrUpdateCqOrg, "createOrUpdateCQOrganization")
     .mockImplementation(async () => "");
