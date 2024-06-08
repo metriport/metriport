@@ -8,7 +8,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import fs from "fs";
 import { template } from "lodash";
-import { e2eResultsFolderName } from "../../shared";
+import { e2eResultsFolderName } from "../../../shared";
 
 dayjs.extend(utc);
 
@@ -48,6 +48,7 @@ export function createConsolidatedPayloads(patient: PatientWithId): {
  */
 export function checkConsolidatedJson({
   patientId,
+  lastName,
   phone,
   email,
   allergyId,
@@ -56,13 +57,14 @@ export function checkConsolidatedJson({
   ...params
 }: {
   patientId: string;
+  lastName: string;
   phone: string;
   email: string;
   allergyId: string;
   documentId: string;
   binaryId: string;
 } & Consolidated): boolean {
-  const templateParams = { patientId, phone, email, allergyId, documentId, binaryId };
+  const templateParams = { patientId, lastName, phone, email, allergyId, documentId, binaryId };
   const contentProcessor = (template: string) => {
     // Removes the "meta" field from the JSON, it contains dynamic data that we can't predict
     return template.replace(/"meta":\s*\{[^}]+\},/g, "");
@@ -77,11 +79,13 @@ export function checkConsolidatedJson({
 
 export function checkConsolidatedHtml({
   patientId,
+  lastName,
   ...params
 }: {
   patientId: string;
+  lastName: string;
 } & Consolidated): boolean {
-  const templateParams = { patientId };
+  const templateParams = { patientId, lastName };
   return checkConsolidated({ ...params, templateParams, extension: "html" });
 }
 
