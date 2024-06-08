@@ -1,8 +1,9 @@
-import { AllergyIntolerance, Bundle } from "@medplum/fhirtypes";
+import { AllergyIntolerance, Binary, Bundle, DocumentReference } from "@medplum/fhirtypes";
 import { makeDocumentReference } from "@metriport/core/external/fhir/document/__tests__/document-reference";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
+import { makeAllergyIntollerance } from "@metriport/core/external/fhir/__tests__/allergy-intolerance";
+import { makeBinary } from "@metriport/core/external/fhir/__tests__/binary";
 import { PatientWithId } from "@metriport/core/external/fhir/__tests__/patient";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import fs from "fs";
@@ -11,113 +12,121 @@ import { e2eResultsFolderName } from "../../shared";
 
 dayjs.extend(utc);
 
-export function createConsolidated(patient: PatientWithId): Bundle {
+export function createConsolidatedPayloads(patient: PatientWithId): {
+  consolidated: Bundle;
+  allergyIntolerance: AllergyIntolerance;
+  documentReference: DocumentReference;
+  binary: Binary;
+} {
   const extension = [metriportDataSourceExtension];
+  const allergyIntolerance = makeAllergyIntollerance({ patient });
+  const binary = makeBinary();
+  const documentReference = makeDocumentReference({ patient, extension, binary });
   const entry: Bundle["entry"] = [
     {
-      resource: { ...makeAllergyIntollerance({ patient }) },
+      resource: { ...allergyIntolerance },
     },
     {
-      resource: { ...makeDocumentReference({ patient, extension }) },
+      resource: { ...documentReference },
     },
   ];
   return {
-    resourceType: "Bundle",
-    type: "collection",
-    total: entry.length,
-    entry,
+    consolidated: {
+      resourceType: "Bundle",
+      type: "collection",
+      total: entry.length,
+      entry,
+    },
+    allergyIntolerance,
+    documentReference,
+    binary,
   };
 }
 
-// TODO move to its own file, like `makeDocumentReference()`
-export function makeAllergyIntollerance({
-  patient,
+/**
+ * Ignores the "meta" field in all resources.
+ */
+export function checkConsolidatedJson({
+  patientId,
+  phone,
+  email,
+  allergyId,
+  documentId,
+  binaryId,
+  ...params
 }: {
-  patient: PatientWithId;
-}): AllergyIntolerance {
-  return {
-    resourceType: "AllergyIntolerance",
-    id: uuidv7(),
-    meta: {
-      profile: ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-allergyintolerance"],
-    },
-    clinicalStatus: {
-      coding: [
-        {
-          system: "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
-          code: "active",
-        },
-      ],
-    },
-    verificationStatus: {
-      coding: [
-        {
-          system: "http://terminology.hl7.org/CodeSystem/allergyintolerance-verification",
-          code: "confirmed",
-        },
-      ],
-    },
-    type: "allergy",
-    category: ["environment"],
-    criticality: "low",
-    reaction: [
-      {
-        manifestation: [
-          {
-            coding: [
-              {
-                system: "http://snomed.info/sct",
-                code: "271807003",
-                display: "Eruption of skin (disorder)",
-              },
-            ],
-            text: "Eruption of skin (disorder)",
-          },
-        ],
-        substance: {
-          text: "Pollen",
-        },
-      },
-    ],
-    code: {
-      coding: [
-        {
-          system: "http://snomed.info/sct",
-          code: "419199007",
-          display: "Allergy to substance (finding)",
-        },
-      ],
-      text: "Allergy to substance (finding)",
-    },
-    patient: {
-      reference: `Patient/${patient.id}`,
-    },
-    recordedDate: "2010-09-03T03:10:10-05:00",
+  patientId: string;
+  phone: string;
+  email: string;
+  allergyId: string;
+  documentId: string;
+  binaryId: string;
+} & Consolidated): boolean {
+  const templateParams = { patientId, phone, email, allergyId, documentId, binaryId };
+  const contentProcessor = (template: string) => {
+    // Removes the "meta" field from the JSON, it contains dynamic data that we can't predict
+    return template.replace(/"meta":\s*\{[^}]+\},/g, "");
   };
+  return checkConsolidated({
+    ...params,
+    templateParams,
+    contentProcessor,
+    extension: "json",
+  });
 }
 
 export function checkConsolidatedHtml({
-  html,
   patientId,
+  ...params
+}: {
+  patientId: string;
+} & Consolidated): boolean {
+  const templateParams = { patientId };
+  return checkConsolidated({ ...params, templateParams, extension: "html" });
+}
+
+type Consolidated = {
+  contents: string;
+  outputExpectedFileName?: string;
+  outputReceivedFileName?: string;
+};
+
+export function checkConsolidated({
+  contents,
+  templateParams,
+  contentProcessor,
+  extension,
   outputExpectedFileName = "consolidated-expected",
   outputReceivedFileName = "consolidated-received",
 }: {
-  html: string;
-  patientId: string;
-  outputExpectedFileName?: string;
-  outputReceivedFileName?: string;
-}): boolean {
+  templateParams: Record<string, string>;
+  contentProcessor?: (template: string) => string;
+  extension: string;
+} & Consolidated): boolean {
   const date = dayjs().utc().format("YYYY-MM-DD");
 
-  const consolidatedHtmlFile = fs.readFileSync(`${__dirname}/consolidated-template.html`, "utf8");
-  const compiled = template(consolidatedHtmlFile);
-  const expectedContent = compiled({ date, patientId }).toString().trim();
-  const receivedContent = html.trim();
+  const templateContents = fs.readFileSync(`${__dirname}/consolidated-template.${extension}`, {
+    encoding: "utf8",
+  });
+  const interpolate = template(templateContents);
+  const interpolatedContents = interpolate({ date, ...templateParams })
+    .toString()
+    .trim();
+  const expectedContents = (
+    contentProcessor ? contentProcessor(interpolatedContents) : interpolatedContents
+  ).trim();
+  const receivedContents = (contentProcessor ? contentProcessor(contents) : contents).trim();
 
-  const isMatch = receivedContent === expectedContent;
+  const isMatch = receivedContents === expectedContents;
   if (!isMatch) {
-    fs.writeFileSync(`${e2eResultsFolderName}/${outputExpectedFileName}.html`, expectedContent);
-    fs.writeFileSync(`${e2eResultsFolderName}/${outputReceivedFileName}.html`, receivedContent);
+    fs.writeFileSync(
+      `${e2eResultsFolderName}/${outputExpectedFileName}.${extension}`,
+      expectedContents
+    );
+    fs.writeFileSync(
+      `${e2eResultsFolderName}/${outputReceivedFileName}.${extension}`,
+      receivedContents
+    );
   }
   return isMatch;
 }

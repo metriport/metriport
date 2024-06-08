@@ -20,7 +20,7 @@ const receivedFileName = "consolidated-received";
 const html = fs.readFileSync(`${__dirname}/${receivedFileName}.html`, "utf8");
 
 const isMatch = checkConsolidatedHtml({
-  html,
+  contents: html,
   patientId,
   // send a diff name so we don't override the default received one that might exist on the filesystem
   outputReceivedFileName: `${receivedFileName}_validate`,
