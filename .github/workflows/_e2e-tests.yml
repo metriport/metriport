@@ -19,7 +19,6 @@ on:
         description: "the ID of a test patient for e2e tests"
         required: false
         type: string
-
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -31,6 +30,8 @@ on:
         required: true
       DOCKERHUB_TOKEN:
         required: true
+      NGROK_AUTHTOKEN:
+        required: false
       CW_CERTIFICATE:
         required: false
       CW_PRIVATE_KEY:
@@ -87,6 +88,7 @@ jobs:
         env:
           TEST_API_KEY: ${{ secrets.TEST_API_KEY }}
           TEST_PATIENT_ID: ${{ inputs.test_patient_id }}
+          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
           CW_CERTIFICATE: ${{ secrets.CW_CERTIFICATE }}
           CW_PRIVATE_KEY: ${{ secrets.CW_PRIVATE_KEY }}
           CW_MEMBER_CERTIFICATE: ${{ secrets.CW_MEMBER_CERTIFICATE }}
