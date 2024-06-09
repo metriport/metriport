@@ -95,7 +95,7 @@ type Consolidated = {
   outputReceivedFileName?: string;
 };
 
-export function checkConsolidated({
+function checkConsolidated({
   contents,
   templateParams,
   contentProcessor,
