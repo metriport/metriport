@@ -4,3 +4,7 @@ dist
 
 # dotenv environment variable files
 .env
+
+file_direct.json
+file_from_memory.json
+file_from_stream.json
