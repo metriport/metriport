@@ -1,5 +1,6 @@
 import { XMLParser } from "fast-xml-parser";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
 import {
   OutboundDocumentQueryReq,
   OutboundDocumentQueryResp,
@@ -17,6 +18,8 @@ import {
 import { successStatus, partialSuccessStatus } from "./constants";
 import { capture } from "../../../../../../util/notifications";
 import { out } from "../../../../../../util/log";
+
+dayjs.extend(utc);
 
 const { log } = out("DQ Processing");
 
@@ -59,7 +62,7 @@ function getHomeCommunityIdForDr(
 
 function getCreationTime(time: string | undefined): string | undefined {
   try {
-    return time ? dayjs(time).toISOString() : undefined;
+    return time ? dayjs.utc(time).toISOString() : undefined;
   } catch (error) {
     log(`Error parsing creation time: ${time}, error: ${error}`);
     return undefined;
