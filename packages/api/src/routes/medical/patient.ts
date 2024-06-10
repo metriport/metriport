@@ -1,4 +1,4 @@
-import { patientCreateSchema, demographicsSchema } from "@metriport/api-sdk";
+import { demographicsSchema, patientCreateSchema } from "@metriport/api-sdk";
 import {
   GetConsolidatedQueryProgressResponse,
   StartConsolidatedQueryProgressResponse,
@@ -15,8 +15,8 @@ import { stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import { z } from "zod";
 import { orderBy } from "lodash";
+import { z } from "zod";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
 import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/consolidated-create";
 import {
@@ -28,13 +28,13 @@ import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
-import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
+import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getPatientOrFail,
   getPatients,
-  PatientMatchCmd,
   matchPatient,
+  PatientMatchCmd,
 } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
@@ -61,8 +61,8 @@ import { Bundle as ValidBundle, bundleSchema, getResourcesQueryParam } from "./s
 import {
   patientUpdateSchema,
   schemaCreateToPatient,
-  schemaUpdateToPatient,
   schemaDemographicsToPatient,
+  schemaUpdateToPatient,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
@@ -85,6 +85,9 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityId = getFromQueryOrFail("facilityId", req);
+    const rerunPdOnNewDemographics = stringToBoolean(
+      getFrom("query").optional("rerunPdOnNewDemographics", req)
+    );
     const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
     const payload = patientCreateSchema.parse(req.body);
@@ -105,7 +108,12 @@ router.post(
       facilityId,
     };
 
-    const patient = await createPatient(patientCreate, forceCommonwell, forceCarequality);
+    const patient = await createPatient({
+      patient: patientCreate,
+      rerunPdOnNewDemographics,
+      forceCommonwell,
+      forceCarequality,
+    });
 
     // temp solution until we migrate to FHIR
     const fhirPatient = toFHIR(patient);
@@ -130,6 +138,9 @@ router.put(
     const cxId = getCxIdOrFail(req);
     const id = getFromParamsOrFail("id", req);
     const facilityIdParam = getFrom("query").optional("facilityId", req);
+    const rerunPdOnNewDemographics = stringToBoolean(
+      getFrom("query").optional("rerunPdOnNewDemographics", req)
+    );
     const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
     const payload = patientUpdateSchema.parse(req.body);
@@ -147,12 +158,12 @@ router.put(
       facilityId,
     };
 
-    const updatedPatient = await updatePatient(
+    const updatedPatient = await updatePatient({
       patientUpdate,
-      true,
+      rerunPdOnNewDemographics,
       forceCommonwell,
-      forceCarequality
-    );
+      forceCarequality,
+    });
 
     return res.status(status.OK).json(dtoFromModel(updatedPatient));
   })
@@ -432,7 +443,7 @@ async function putConsolidated(req: Request, res: Response) {
   const docId = uuidv7();
   await uploadFhirBundleToS3({ cxId, patientId, fhirBundle: validatedBundle, docId });
   const patientDataPromise = async () => {
-    createOrUpdateConsolidatedPatientData({
+    return createOrUpdateConsolidatedPatientData({
       cxId,
       patientId: patient.id,
       fhirBundle: validatedBundle,
@@ -445,8 +456,8 @@ async function putConsolidated(req: Request, res: Response) {
     }
   };
 
-  await Promise.all([patientDataPromise(), convertAndUploadCdaPromise()]);
-  return res.sendStatus(status.OK);
+  const [result] = await Promise.all([patientDataPromise(), convertAndUploadCdaPromise()]);
+  return res.status(status.OK).json(result);
 }
 
 async function checkResourceLimit(incomingAmount: number, patient: Patient) {
