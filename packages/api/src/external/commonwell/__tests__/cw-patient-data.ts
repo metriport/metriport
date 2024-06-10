@@ -18,7 +18,7 @@ export function makeCwDataLink(): CwLink {
   const address = makeAddressStrict();
   return {
     _links: {
-      self: {
+      [faker.helpers.arrayElement(["upgrade", "downgrade"])]: {
         href: faker.internet.url(),
       },
     },
@@ -56,6 +56,25 @@ export function makeCwDataLink(): CwLink {
           },
         ],
       },
+      provider: {
+        type: "organization",
+        display: faker.company.name(),
+        reference: faker.string.uuid(),
+      },
+      identifier: [
+        {
+          key: faker.string.uuid(),
+          use: "unspecified",
+          system: faker.string.uuid(),
+        },
+        {
+          key: faker.string.uuid(),
+          use: "official",
+          label: faker.string.uuid(),
+          system: faker.string.uuid(),
+          assigner: "CommonWell",
+        },
+      ],
     },
   };
 }
