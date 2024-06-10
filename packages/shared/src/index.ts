@@ -20,3 +20,5 @@ export { MetriportError } from "./error/metriport-error";
 export { NotFoundError } from "./error/not-found";
 export { errorToString } from "./error/shared";
 export * as medical from "./medical";
+export * from "./net/file-downloader";
+export * from "./net/url";

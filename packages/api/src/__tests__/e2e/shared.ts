@@ -13,3 +13,5 @@ export const api = Axios.create({
   baseURL,
   headers: { "x-api-key": testApiKey, "Content-Type": "application/json" },
 });
+
+export const e2eResultsFolderName = "e2e-test-results";

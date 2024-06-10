@@ -1,6 +1,5 @@
+import { dateSchema } from "@metriport/shared";
 import { z, ZodError, ZodFormattedError } from "zod";
-import { dateSchema } from "../../common/date";
-import { SearchSetBundle } from "../fhir/bundle";
 
 export const pingWebhookTypeSchema = z.literal(`ping`);
 export type PingWebhookType = z.infer<typeof pingWebhookTypeSchema>;
@@ -30,79 +29,72 @@ export type WebhookType = z.infer<typeof webhookTypeSchema>;
 export const webhookRequestStatus = ["processing", "success", "failure"] as const;
 export type WebhookRequestStatus = (typeof webhookRequestStatus)[number];
 
-export const baseWebhookMetadataSchema = z.object({
-  messageId: z.string(),
-  when: dateSchema,
-  /**
-   * The metadata sent by the customer when they triggered the operation that resulted in this webhook.
-   */
-  data: z.unknown().nullish(),
-});
-export const webhookMetadataSchema = baseWebhookMetadataSchema.merge(
-  z.object({
-    type: z.string(),
-  })
-);
-export type WebhookMetadata = z.infer<typeof webhookMetadataSchema>;
-
 function createWebhookMetadataSchema<T extends z.ZodType<WebhookType>>(itemSchema: T) {
-  return baseWebhookMetadataSchema.merge(
-    z.object({
-      type: itemSchema,
-    })
-  );
+  return z.object({
+    messageId: z.string(),
+    when: dateSchema,
+    type: itemSchema,
+    data: z.unknown().nullish(),
+  });
 }
 
-export const pingWebhookRequestDataSchema = z.object({
+const pingWebhookRequestDataSchema = z.object({
   meta: createWebhookMetadataSchema(pingWebhookTypeSchema),
   ping: z.string(),
 });
-export type PingWebhookRequest = z.infer<typeof pingWebhookRequestDataSchema>;
 
-export const filtersSchema = z.record(z.string(), z.string().nullish());
+const filtersSchema = z.record(z.string(), z.string().nullish());
 
-export const consolidatedWebhookPatientSchema = z.object({
-  patientId: z.string(),
-  status: z.enum(["completed", "failed"]),
-  bundle: z.custom<SearchSetBundle | undefined>(),
-  filters: filtersSchema.nullish(),
-});
-export type ConsolidatedWebhookPatient = z.infer<typeof consolidatedWebhookPatientSchema>;
-
-export const consolidatedWebhookRequestSchema = z.object({
+const consolidatedWebhookRequestSchema = z.object({
   meta: createWebhookMetadataSchema(consolidatedWebhookTypeSchema),
-  patients: consolidatedWebhookPatientSchema.array(),
+  patients: z
+    .object({
+      patientId: z.string(),
+      status: z.enum(["completed", "failed"]),
+      // TODO Do we want to import the FHIR lib so we can return a Bundle<Resource>?
+      // bundle: z.unknown().refine(value => value as Bundle<Resource>),
+      bundle: z.unknown(),
+      filters: filtersSchema,
+    })
+    .array(),
 });
 export type ConsolidatedWebhookRequest = z.infer<typeof consolidatedWebhookRequestSchema>;
 
 // TODO Implement
-export const documentDownloadWebhookRequestSchema = z.object({
+// TODO Implement
+// TODO Implement
+// TODO Implement
+const docDownloadWebhookRequestSchema = z.object({
   meta: createWebhookMetadataSchema(docDownloadWebhookTypeSchema),
 });
-export type DocumentDownloadWebhookRequest = z.infer<typeof documentDownloadWebhookRequestSchema>;
+export type DocumentDownloadWebhookRequest = z.infer<typeof docDownloadWebhookRequestSchema>;
 
 // TODO Implement
-export const documentConversionWebhookRequestSchema = z.object({
+// TODO Implement
+// TODO Implement
+// TODO Implement
+const docConversionWebhookRequestSchema = z.object({
   meta: createWebhookMetadataSchema(docConversionWebhookTypeSchema),
 });
-export type DocumentConversionWebhookRequest = z.infer<
-  typeof documentConversionWebhookRequestSchema
->;
+export type DocumentConversionWebhookRequest = z.infer<typeof docConversionWebhookRequestSchema>;
 
 // TODO Implement
-export const documentBulkDownloadWebhookRequestSchema = z.object({
+// TODO Implement
+// TODO Implement
+// TODO Implement
+const docBulkDownloadWebhookRequestSchema = z.object({
   meta: createWebhookMetadataSchema(docBulkDownloadWebhookTypeSchema),
 });
 export type DocumentBulkDownloadWebhookRequest = z.infer<
-  typeof documentBulkDownloadWebhookRequestSchema
+  typeof docBulkDownloadWebhookRequestSchema
 >;
 
 export const webhookRequestSchema = z.union([
   pingWebhookRequestDataSchema,
   consolidatedWebhookRequestSchema,
-  documentDownloadWebhookRequestSchema,
-  documentConversionWebhookRequestSchema,
-  documentBulkDownloadWebhookRequestSchema,
+  docDownloadWebhookRequestSchema,
+  docConversionWebhookRequestSchema,
+  docBulkDownloadWebhookRequestSchema,
 ]);
 export type WebhookRequest = z.infer<typeof webhookRequestSchema>;
 
@@ -111,11 +103,6 @@ export class WebhookRequestParsingError {
     readonly errors: ZodError<WebhookRequest>,
     readonly flattened: ZodFormattedError<WebhookRequest>
   ) {}
-}
-
-export function isPingWebhookRequest(whRequest: WebhookRequest): whRequest is PingWebhookRequest {
-  if (whRequest.meta.type === "ping") return true;
-  return false;
 }
 
 export function isConsolidatedWebhookRequest(
