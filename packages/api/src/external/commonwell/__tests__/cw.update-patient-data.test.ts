@@ -95,7 +95,7 @@ describe("update cq data", () => {
       },
     });
     checkPatientUpdateWith({
-      newLinks: [...existingCwLinks, ...newLinks],
+      newLinks: [...newLinks, ...existingCwLinks],
       newLinksDemographicsHistory: {
         ...existingLinksDemographicsHistory,
         ...newLinksDemographicsHistory,
