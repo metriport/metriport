@@ -173,7 +173,7 @@ describe("processDRResponse", () => {
       },
     });
 
-    expect(response?.operationOutcome?.issue[0]?.code).toBe("schema-error");
+    expect(response?.operationOutcome?.issue[0]?.code).toEqual("schema-error");
   });
 
   it("should process the registry error DR response correctly", async () => {

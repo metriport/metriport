@@ -51,34 +51,38 @@ export const PatientRegistryProfileSchema = z.object({
       .optional(),
   }),
   controlActProcess: z.object({
-    subject: z.object({
-      registrationEvent: z.object({
-        subject1: z.object({
-          patient: z.object({
-            id: z.object({
-              _root: z.string(),
-              _extension: z.string(),
-            }),
-            patientPerson: z.object({
-              addr: schemaOrArrayOrEmpty(AddressSchema).optional(),
-              name: schemaOrArray(NameSchema),
-              telecom: schemaOrArrayOrEmpty(TelecomSchema).optional(),
-              asOtherIDs: z.object({
-                id: schemaOrArrayOrEmpty(IdentifierSchema).optional(),
+    subject: z
+      .object({
+        registrationEvent: z.object({
+          subject1: z.object({
+            patient: z.object({
+              id: z.object({
+                _root: z.string(),
+                _extension: z.string(),
               }),
-              administrativeGenderCode: z
-                .object({
-                  _code: z.union([z.literal("F"), z.literal("M")]),
-                })
-                .optional(),
-              birthTime: z.object({
-                _value: z.string(),
+              patientPerson: z.object({
+                addr: schemaOrArrayOrEmpty(AddressSchema).optional(),
+                name: schemaOrArray(NameSchema),
+                telecom: schemaOrArrayOrEmpty(TelecomSchema).optional(),
+                asOtherIDs: schemaOrArrayOrEmpty(
+                  z.object({
+                    id: schemaOrArrayOrEmpty(IdentifierSchema).optional(),
+                  })
+                ).optional(),
+                administrativeGenderCode: z
+                  .object({
+                    _code: z.union([z.literal("F"), z.literal("M"), z.literal("UN")]),
+                  })
+                  .optional(),
+                birthTime: z.object({
+                  _value: z.string(),
+                }),
               }),
             }),
           }),
         }),
-      }),
-    }),
+      })
+      .optional(),
     queryAck: z.object({
       queryResponseCode: z.object({
         _code: z.string(),
@@ -94,7 +98,6 @@ export const iti55Body = z.object({
 
 export const iti55Schema = z.object({
   Envelope: z.object({
-    Header: z.any(),
     Body: iti55Body,
   }),
 });

@@ -14,6 +14,7 @@ import { Patient, splitName, GenderAtBirth } from "@metriport/core/domain/patien
 const genderMapping: { [k in GenderAtBirth]: string } = {
   F: "F",
   M: "M",
+  UN: "UN",
 };
 
 export function mapGenderAtBirthToCw(k: GenderAtBirth): string {

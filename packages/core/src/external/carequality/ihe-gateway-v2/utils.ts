@@ -3,12 +3,14 @@ import { GenderAtBirth } from "../../../domain/patient";
 import { mapGenderAtBirthToFhir } from "../../fhir/patient";
 import { TextOrTextObject } from "./outbound/schema";
 
-export function normalizeGender(gender: GenderAtBirth | undefined): "male" | "female" | undefined {
+export function normalizeGender(
+  gender: GenderAtBirth | undefined
+): "male" | "female" | "unknown" | undefined {
   if (gender === undefined) {
     return undefined;
   }
   const mappedGender = mapGenderAtBirthToFhir(gender);
-  if (mappedGender === "other" || mappedGender === "unknown") {
+  if (mappedGender === "other") {
     return undefined;
   }
   return mappedGender;
@@ -16,13 +18,6 @@ export function normalizeGender(gender: GenderAtBirth | undefined): "male" | "fe
 
 export function timestampToSoapBody(createdTimestamp: string): string {
   return dayjs(createdTimestamp).toISOString();
-}
-
-export function toArray<T>(input: T | T[] | "" | undefined): T[] {
-  if (input == undefined || input === "") {
-    return [];
-  }
-  return Array.isArray(input) ? input : [input];
 }
 
 export const extractText = (textOrTextObject: TextOrTextObject): string => {

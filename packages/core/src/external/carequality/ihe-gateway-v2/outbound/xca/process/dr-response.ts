@@ -23,7 +23,7 @@ import { createDocumentFilePath } from "../../../../../../domain/document/filena
 import { MetriportError } from "../../../../../../util/error/metriport-error";
 import { getCidReference } from "../mtom/cid";
 import { out } from "../../../../../../util/log";
-import { toArray } from "../../..//utils";
+import { toArray } from "@metriport/shared";
 import { iti39Schema, DocumentResponse } from "./schema";
 
 const { log } = out("DR Processing");

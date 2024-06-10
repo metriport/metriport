@@ -21,7 +21,7 @@ import {
 } from "../../../../shared";
 import { successStatus, partialSuccessStatus } from "./constants";
 import { capture } from "../../../../../../util/notifications";
-import { toArray } from "../../..//utils";
+import { toArray } from "@metriport/shared";
 import { iti38Schema, Slot, ExternalIdentifier, Classification, ExtrinsicObject } from "./schema";
 import { out } from "../../../../../../util/log";
 
