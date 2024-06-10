@@ -1,4 +1,4 @@
-import { patientCreateSchema, demographicsSchema } from "@metriport/api-sdk";
+import { demographicsSchema, patientCreateSchema } from "@metriport/api-sdk";
 import {
   GetConsolidatedQueryProgressResponse,
   StartConsolidatedQueryProgressResponse,
@@ -15,8 +15,8 @@ import { stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import { z } from "zod";
 import { orderBy } from "lodash";
+import { z } from "zod";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
 import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/consolidated-create";
 import {
@@ -28,13 +28,13 @@ import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
-import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
+import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getPatientOrFail,
   getPatients,
-  PatientMatchCmd,
   matchPatient,
+  PatientMatchCmd,
 } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
@@ -61,8 +61,8 @@ import { Bundle as ValidBundle, bundleSchema, getResourcesQueryParam } from "./s
 import {
   patientUpdateSchema,
   schemaCreateToPatient,
-  schemaUpdateToPatient,
   schemaDemographicsToPatient,
+  schemaUpdateToPatient,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 

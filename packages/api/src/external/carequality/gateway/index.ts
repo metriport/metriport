@@ -3,7 +3,7 @@ import { out } from "@metriport/core/util/log";
 import { XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import { MetriportError } from "@metriport/shared";
 import { Config } from "../../../shared/config";
-import { getE2eCxIds as getE2eCxIds } from "../../aws/app-config";
+import { isE2eCx } from "../../aws/app-config";
 import { getCQDirectoryEntryOrFail } from "../command/cq-directory/get-cq-directory-entry";
 import { getOrganizationsForXCPD } from "../command/cq-directory/get-organizations-for-xcpd";
 import {
@@ -25,8 +25,8 @@ export async function gatherXCPDGateways(patient: Patient): Promise<Gateways> {
    * This is dedicated to E2E testing: limits the XCPD to the System Root's E2E Gateway.
    * Avoid this approach as much as possible.
    */
-  const e2eCxId = await getE2eCxIds();
-  if (e2eCxId === patient.cxId) {
+  const isE2e = await isE2eCx(patient.cxId);
+  if (isE2e) {
     log("Limiting to E2E Gateways");
     return getE2eGateways();
   }
