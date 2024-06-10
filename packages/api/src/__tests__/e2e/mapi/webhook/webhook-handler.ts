@@ -7,9 +7,11 @@ import {
   isDocumentBulkDownloadWebhookRequest,
   isDocumentConversionWebhookRequest,
   isDocumentDownloadWebhookRequest,
+  isPingWebhookRequest,
 } from "@metriport/shared/medical";
 import { Request, Response } from "express";
 import { handleConsolidated } from "./consolidated";
+import { handlePing } from "./settings";
 
 let whKey: string | undefined = undefined;
 
@@ -21,8 +23,8 @@ export async function handleRequest(req: Request, res: Response) {
     }
     console.log(`[WH] ========> Handling request... type: ${req.body?.meta?.type}`);
     const whRequest = MetriportMedicalApi.parseWebhookResponse(req.body);
-    if (whRequest.meta.type === "ping") {
-      return handlePing(req, res);
+    if (isPingWebhookRequest(whRequest)) {
+      return handlePing(whRequest, res);
     }
     if (isConsolidatedWebhookRequest(whRequest)) {
       return handleConsolidated(whRequest, res);
@@ -36,16 +38,12 @@ export async function handleRequest(req: Request, res: Response) {
     if (isDocumentBulkDownloadWebhookRequest(whRequest)) {
       return handleBulkDownloadUrls(whRequest, res);
     }
-    return res.status(400).send({ message: `Invalid WH type: ${whRequest.meta.type}` });
+    return res.status(400).send({ message: `Invalid WH` });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.log(`[WH] ====> Error parsing WH request: ${JSON.stringify(error.cause)}`);
     return res.status(400).send({ message: error.message });
   }
-}
-
-function handlePing(req: Request, res: Response) {
-  return res.status(200).send({ pong: req.body.ping });
 }
 
 function handleDocConversion(whRequest: DocumentConversionWebhookRequest, res: Response) {

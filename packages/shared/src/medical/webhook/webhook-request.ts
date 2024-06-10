@@ -113,6 +113,11 @@ export class WebhookRequestParsingError {
   ) {}
 }
 
+export function isPingWebhookRequest(whRequest: WebhookRequest): whRequest is PingWebhookRequest {
+  if (whRequest.meta.type === "ping") return true;
+  return false;
+}
+
 export function isConsolidatedWebhookRequest(
   whRequest: WebhookRequest
 ): whRequest is ConsolidatedWebhookRequest {
