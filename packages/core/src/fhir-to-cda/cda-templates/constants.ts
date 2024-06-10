@@ -34,6 +34,8 @@ export const oids = {
   allergiesSection: "2.16.840.1.113883.10.20.22.2.6.1",
   problemConcernAct: "2.16.840.1.113883.10.20.22.4.3",
   socialHistoryObs: "2.16.840.1.113883.10.20.22.4.38",
+  vitalSignsObs: "2.16.840.1.113883.10.20.22.4.27",
+  vitalSignsSection: "2.16.840.1.113883.10.20.22.2.4.1",
   medicationActivity: "2.16.840.1.113883.10.20.22.4.16",
   mentalStatusObs: "2.16.840.1.113883.10.20.22.4.74",
   problemObs: "2.16.840.1.113883.10.20.22.4.4",

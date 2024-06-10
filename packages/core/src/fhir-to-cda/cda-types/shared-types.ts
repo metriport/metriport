@@ -106,11 +106,17 @@ export type CdaValueSt = {
 
 // Cd (CD) stands for Concept Descriptor
 export type CdaValueCd = {
-  [_xsiTypeAttribute]?: "CD";
+  [_xsiTypeAttribute]: "CD";
   _code?: string | undefined;
   _displayName?: string | undefined;
   _codeSystem?: string | undefined;
   originalText?: CDAOriginalText;
+};
+
+export type CdaValuePq = {
+  [_xsiTypeAttribute]: "PQ";
+  _unit?: string | undefined;
+  _value: number;
 };
 
 // Cv (CV) stands for Coded Value
@@ -203,7 +209,7 @@ export type ObservationEntry = {
     effectiveTime?: {
       _value?: string | undefined;
     };
-    value?: CdaValueCd | CdaValueCd[] | undefined;
+    value?: CdaValuePq | undefined;
     participant?: Participant | undefined;
     entryRelationship?: ObservationEntryRelationship[];
     interpretationCode?: CdaCodeCe;

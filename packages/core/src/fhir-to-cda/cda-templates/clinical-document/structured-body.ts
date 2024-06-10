@@ -7,6 +7,7 @@ import { buildMentalStatus } from "../components/mental-status";
 import { buildProblems } from "../components/problems";
 import { buildResult } from "../components/results";
 import { buildSocialHistory } from "../components/social-history";
+import { buildVitalSigns } from "../components/vital-signs";
 
 export function buildStructuredBody(fhirBundle: Bundle): unknown {
   const structuredBodySections = [
@@ -18,6 +19,7 @@ export function buildStructuredBody(fhirBundle: Bundle): unknown {
     buildAllergies(fhirBundle),
     buildEncounters(fhirBundle),
     buildImmunizations(fhirBundle),
+    buildVitalSigns(fhirBundle),
   ];
 
   return {

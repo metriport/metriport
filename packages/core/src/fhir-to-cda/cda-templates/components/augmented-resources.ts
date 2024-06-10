@@ -17,11 +17,20 @@ export interface AugmentedResource<T extends Resource> {
   resource: T;
   readonly typeOid: string;
 }
+
+export type VitalObservation = {
+  value: string;
+  date: string;
+  dateTime: string | undefined;
+  category: string;
+};
+
 export class AugmentedObservation implements AugmentedResource<Observation> {
   constructor(
     public readonly sectionName: string,
     public readonly resource: Observation,
-    public readonly typeOid: string
+    public readonly typeOid: string,
+    public readonly measurement?: VitalObservation
   ) {}
 }
 

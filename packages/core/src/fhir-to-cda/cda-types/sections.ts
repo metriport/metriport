@@ -23,3 +23,4 @@ export type MentalStatusSection = CdaSection<ObservationEntry>;
 export type ProblemsSection = CdaSection<ConcernActEntry>;
 export type AllergiesSection = CdaSection<ConcernActEntry>;
 export type EncountersSection = CdaSection<EncounterEntry>;
+export type VitalSignsSection = CdaSection<ObservationEntry>;

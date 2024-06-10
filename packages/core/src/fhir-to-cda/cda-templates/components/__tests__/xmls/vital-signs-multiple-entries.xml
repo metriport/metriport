@@ -1,0 +1,165 @@
+<templateId root="2.16.840.1.113883.10.20.22.2.4.1">
+</templateId>
+<code code="8716-3" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Vital Signs">
+</code>
+<title>
+	VITAL SIGNS
+</title>
+<text>
+	<table ID="vitalsigns">
+		<thead>
+			<tr>
+				<th>
+					Date Recorded
+				</th>
+				<th>
+					Temperature
+				</th>
+				<th>
+					Pulse
+				</th>
+				<th>
+					Respiratory Rate
+				</th>
+				<th>
+					Oxygen Saturation (SpO2)
+				</th>
+				<th>
+					Diastolic Blood Pressure
+				</th>
+				<th>
+					Systolic Blood Pressure
+				</th>
+				<th>
+					Weight
+				</th>
+				<th>
+					Height
+				</th>
+				<th>
+					Body Mass Index (BMI)
+				</th>
+				<th>
+					Pain Severity
+				</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr ID="vitalsigns0">
+				<td>
+					09/20/2013
+				</td>
+				<td>
+					36.72 Cel
+				</td>
+				<td>
+					92 /min
+				</td>
+				<td>
+					16 /min
+				</td>
+				<td>
+					-
+				</td>
+				<td>
+					-
+				</td>
+				<td>
+					-
+				</td>
+				<td>
+					-
+				</td>
+				<td>
+					-
+				</td>
+				<td>
+					-
+				</td>
+				<td>
+					0 {score}
+				</td>
+			</tr>
+		</tbody>
+	</table>
+</text>
+<entry>
+	<observation classCode="OBS" moodCode="EVN">
+		<templateId root="2.16.840.1.113883.10.20.22.4.27" extension="2015-08-01">
+		</templateId>
+		<id root="placeholder-ORG-OID" extension="${observationId}">
+		</id>
+		<code code="72514-3" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Pain severity - 0-10 verbal numeric rating [Score] - Reported">
+		</code>
+		<text>
+			<reference value="vitalsigns0">
+			</reference>
+		</text>
+		<statusCode code="completed">
+		</statusCode>
+		<effectiveTime value="20130920011430">
+		</effectiveTime>
+		<value xsi:type="PQ" unit="{score}" value="0">
+		</value>
+	</observation>
+</entry>
+<entry>
+	<observation classCode="OBS" moodCode="EVN">
+		<templateId root="2.16.840.1.113883.10.20.22.4.27" extension="2015-08-01">
+		</templateId>
+		<id root="placeholder-ORG-OID" extension="${observationId2}">
+		</id>
+		<code code="8867-4" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC">
+		</code>
+		<text>
+			<reference value="vitalsigns1">
+			</reference>
+		</text>
+		<statusCode code="completed">
+		</statusCode>
+		<effectiveTime value="20130920011430">
+		</effectiveTime>
+		<value xsi:type="PQ" unit="/min" value="92">
+		</value>
+	</observation>
+</entry>
+<entry>
+	<observation classCode="OBS" moodCode="EVN">
+		<templateId root="2.16.840.1.113883.10.20.22.4.27" extension="2015-08-01">
+		</templateId>
+		<id root="placeholder-ORG-OID" extension="${observationId3}">
+		</id>
+		<code code="8310-5" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC">
+		</code>
+		<text>
+			<reference value="vitalsigns2">
+			</reference>
+		</text>
+		<statusCode code="completed">
+		</statusCode>
+		<effectiveTime value="20130920011430">
+		</effectiveTime>
+		<value xsi:type="PQ" unit="Cel" value="36.72">
+		</value>
+	</observation>
+</entry>
+<entry>
+	<observation classCode="OBS" moodCode="EVN">
+		<templateId root="2.16.840.1.113883.10.20.22.4.27" extension="2015-08-01">
+		</templateId>
+		<id root="placeholder-ORG-OID" extension="${observationId4}">
+		</id>
+		<code code="9279-1" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC">
+		</code>
+		<text>
+			<reference value="vitalsigns3">
+			</reference>
+		</text>
+		<statusCode code="completed">
+		</statusCode>
+		<effectiveTime value="20130920011430">
+		</effectiveTime>
+		<value xsi:type="PQ" unit="/min" value="16">
+		</value>
+	</observation>
+</entry>
