@@ -12,7 +12,7 @@ dayjs.extend(duration);
 
 const pingWebhookCheckMaxRetries = 5;
 const pingWebhookCheckStatusWaitTime = dayjs.duration({ seconds: 2 });
-const waitTimeBetweenUpdateAndWhCheck = dayjs.duration({ milliseconds: 100 });
+const waitTimeBetweenUpdateAndWhCheck = dayjs.duration({ milliseconds: 500 });
 
 const NANO_ID_LENGTH = 21;
 
@@ -28,11 +28,11 @@ export function runSettingsTests() {
     expect(updateResp).toBeTruthy();
     expect(updateResp.webhookUrl).toEqual(whUrl);
     expect(updateResp.webhookKey).toBeTruthy();
+    whServer.storeWebhookKey(updateResp.webhookKey);
     const settings = await medicalApi.getSettings();
     expect(settings).toBeTruthy();
     expect(settings.webhookUrl).toBeTruthy();
     expect(settings.webhookUrl).toEqual(whUrl);
-    whServer.storeWebhookKey(updateResp.webhookKey);
   });
 
   it("makes sure we were able to process ping WH", async () => {
