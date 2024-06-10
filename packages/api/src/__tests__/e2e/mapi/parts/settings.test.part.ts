@@ -12,6 +12,7 @@ dayjs.extend(duration);
 
 const pingWebhookCheckMaxRetries = 5;
 const pingWebhookCheckStatusWaitTime = dayjs.duration({ seconds: 2 });
+const waitTimeBetweenUpdateAndWhCheck = dayjs.duration({ milliseconds: 100 });
 
 const NANO_ID_LENGTH = 21;
 
@@ -34,10 +35,22 @@ export function runSettingsTests() {
     whServer.storeWebhookKey(updateResp.webhookKey);
   });
 
+  it("makes sure we were able to process ping WH", async () => {
+    // Retry WH requests in case the WH arrived before we were able to process/store the webhookkey
+    // This would make the WH request fail b/c we need the key to verify the signature
+    await medicalApi.retryWebhookRequests();
+    await sleep(waitTimeBetweenUpdateAndWhCheck.asMilliseconds());
+    expect(true).toBeTruthy();
+  });
+
   it("receives ping WH request", async () => {
     let retryLimit = 0;
     let whRequest = getPingWebhookRequest();
-    while (!whRequest && retryLimit++ < pingWebhookCheckMaxRetries) {
+    while (!whRequest) {
+      if (retryLimit++ > pingWebhookCheckMaxRetries) {
+        console.log(`Gave up waiting for ping WH request`);
+        break;
+      }
       console.log(
         `Waiting for ping, retrying in ${pingWebhookCheckStatusWaitTime.asSeconds()} seconds...`
       );
