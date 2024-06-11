@@ -113,26 +113,25 @@ async function parseDocumentReference({
     });
   }
 
-  const msg = "Downloaded a document with mime type";
   log(
-    `${msg}: ${mimeType} for patient: ${outboundRequest.patientId} and request: ${outboundRequest.id}`
+    `Downloaded a document with mime type: ${mimeType} for patient: ${outboundRequest.patientId} and request: ${outboundRequest.id}`
   );
 
   return {
     url: s3Utils.buildFileUrl(bucket, filePath),
     size: documentResponse.size ? parseInt(documentResponse.size) : undefined,
-    title: documentResponse?.title,
+    title: documentResponse.title,
     fileName: filePath,
-    creation: documentResponse?.creation,
-    language: documentResponse?.language,
+    creation: documentResponse.creation,
+    language: documentResponse.language,
     contentType: mimeType,
     docUniqueId: documentResponse.DocumentUniqueId.toString(),
     metriportId: metriportId,
     fileLocation: bucket,
     homeCommunityId: outboundRequest.gateway.homeCommunityId,
     repositoryUniqueId: documentResponse.RepositoryUniqueId,
-    newDocumentUniqueId: documentResponse?.NewDocumentUniqueId,
-    newRepositoryUniqueId: documentResponse?.NewRepositoryUniqueId,
+    newDocumentUniqueId: documentResponse.NewDocumentUniqueId,
+    newRepositoryUniqueId: documentResponse.NewRepositoryUniqueId,
     isNew: !fileInfo.exists,
   };
 }

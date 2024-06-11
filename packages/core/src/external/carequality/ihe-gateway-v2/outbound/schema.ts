@@ -6,12 +6,12 @@ export const schemaOrArray = <T extends z.ZodTypeAny>(schema: T) =>
   z.union([schema, z.array(schema)]);
 export const schemaOrArrayOrEmpty = <T extends z.ZodTypeAny>(schema: T) =>
   z.union([schema, z.array(schema), z.literal("")]);
-export const TextSchema = z.union([
+export const textSchema = z.union([
   z.string(),
   z.object({
     _text: z.string(),
   }),
 ]);
-export type TextOrTextObject = z.infer<typeof TextSchema>;
+export type TextOrTextObject = z.infer<typeof textSchema>;
 
-export const StringOrNumberSchema = z.union([z.string(), z.number()]);
+export const stringOrNumberSchema = z.union([z.string(), z.number()]);

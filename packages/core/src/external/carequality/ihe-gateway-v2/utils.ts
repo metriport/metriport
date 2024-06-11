@@ -20,9 +20,9 @@ export function timestampToSoapBody(createdTimestamp: string): string {
   return dayjs(createdTimestamp).toISOString();
 }
 
-export const extractText = (textOrTextObject: TextOrTextObject): string => {
+export function extractText(textOrTextObject: TextOrTextObject): string {
   if (typeof textOrTextObject === "string") {
     return textOrTextObject;
   }
   return textOrTextObject._text;
-};
+}

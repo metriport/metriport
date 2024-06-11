@@ -3,12 +3,12 @@ import {
   schemaOrEmpty,
   schemaOrArray,
   schemaOrArrayOrEmpty,
-  StringOrNumberSchema,
+  stringOrNumberSchema,
 } from "../../schema";
 
 const slot = z.object({
   ValueList: z.object({
-    Value: schemaOrArray(StringOrNumberSchema),
+    Value: schemaOrArray(stringOrNumberSchema),
   }),
   _name: z.string(),
 });
@@ -97,7 +97,7 @@ const includeSchema = z.object({
   }),
 });
 
-export const DocumentResponse = z.object({
+export const documentResponse = z.object({
   size: z.string().optional(),
   title: z.string().optional(),
   creation: z.string().optional(),
@@ -107,11 +107,11 @@ export const DocumentResponse = z.object({
   RepositoryUniqueId: z.string(),
   NewDocumentUniqueId: z.string().optional(),
   NewRepositoryUniqueId: z.string().optional(),
-  DocumentUniqueId: StringOrNumberSchema,
+  DocumentUniqueId: stringOrNumberSchema,
   Document: z.union([z.string(), includeSchema]),
 });
 
-export type DocumentResponse = z.infer<typeof DocumentResponse>;
+export type DocumentResponse = z.infer<typeof documentResponse>;
 
 export const iti39Body = z.object({
   RetrieveDocumentSetResponse: z.object({
@@ -119,7 +119,7 @@ export const iti39Body = z.object({
       _status: z.string(),
       RegistryErrorList: registryErrorList.optional(),
     }),
-    DocumentResponse: schemaOrArrayOrEmpty(DocumentResponse).optional(),
+    DocumentResponse: schemaOrArrayOrEmpty(documentResponse).optional(),
   }),
 });
 

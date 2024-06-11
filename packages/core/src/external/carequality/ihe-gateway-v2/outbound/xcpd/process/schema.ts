@@ -2,39 +2,39 @@ import { z } from "zod";
 import {
   schemaOrArray,
   schemaOrArrayOrEmpty,
-  TextSchema,
-  StringOrNumberSchema,
+  textSchema,
+  stringOrNumberSchema,
 } from "../../schema";
 
-export const AddressSchema = z.object({
-  streetAddressLine: schemaOrArray(StringOrNumberSchema).optional(),
-  city: StringOrNumberSchema.optional(),
-  state: StringOrNumberSchema.optional(),
-  postalCode: StringOrNumberSchema.optional(),
-  country: StringOrNumberSchema.optional(),
-  county: StringOrNumberSchema.optional(),
+export const addressSchema = z.object({
+  streetAddressLine: schemaOrArray(stringOrNumberSchema).optional(),
+  city: stringOrNumberSchema.optional(),
+  state: stringOrNumberSchema.optional(),
+  postalCode: stringOrNumberSchema.optional(),
+  country: stringOrNumberSchema.optional(),
+  county: stringOrNumberSchema.optional(),
 });
-export type IheAddress = z.infer<typeof AddressSchema>;
+export type IheAddress = z.infer<typeof addressSchema>;
 
-export const NameSchema = z.object({
-  given: schemaOrArray(TextSchema),
-  family: TextSchema,
+export const nameSchema = z.object({
+  given: schemaOrArray(textSchema),
+  family: textSchema,
 });
-export type IheName = z.infer<typeof NameSchema>;
+export type IheName = z.infer<typeof nameSchema>;
 
-export const TelecomSchema = z.object({
+export const telecomSchema = z.object({
   _use: z.string().optional(),
   _value: z.string().optional(),
 });
-export type IheTelecom = z.infer<typeof TelecomSchema>;
+export type IheTelecom = z.infer<typeof telecomSchema>;
 
-export const IdentifierSchema = z.object({
+export const identifierSchema = z.object({
   _root: z.string().optional(),
   _extension: z.string().optional(),
 });
-export type IheIdentifier = z.infer<typeof IdentifierSchema>;
+export type IheIdentifier = z.infer<typeof identifierSchema>;
 
-export const PatientRegistryProfileSchema = z.object({
+export const patientRegistryProfileSchema = z.object({
   acknowledgement: z.object({
     typeCode: z.object({
       _code: z.string(),
@@ -45,7 +45,7 @@ export const PatientRegistryProfileSchema = z.object({
           _code: z.string().optional(),
           _codeSystem: z.string().optional(),
         }),
-        text: TextSchema.optional(),
+        text: textSchema.optional(),
         location: z.string().optional(),
       })
       .optional(),
@@ -61,12 +61,12 @@ export const PatientRegistryProfileSchema = z.object({
                 _extension: z.string(),
               }),
               patientPerson: z.object({
-                addr: schemaOrArrayOrEmpty(AddressSchema).optional(),
-                name: schemaOrArray(NameSchema),
-                telecom: schemaOrArrayOrEmpty(TelecomSchema).optional(),
+                addr: schemaOrArrayOrEmpty(addressSchema).optional(),
+                name: schemaOrArray(nameSchema),
+                telecom: schemaOrArrayOrEmpty(telecomSchema).optional(),
                 asOtherIDs: schemaOrArrayOrEmpty(
                   z.object({
-                    id: schemaOrArrayOrEmpty(IdentifierSchema).optional(),
+                    id: schemaOrArrayOrEmpty(identifierSchema).optional(),
                   })
                 ).optional(),
                 administrativeGenderCode: z
@@ -90,10 +90,10 @@ export const PatientRegistryProfileSchema = z.object({
     }),
   }),
 });
-export type PatientRegistryProfile = z.infer<typeof PatientRegistryProfileSchema>;
+export type PatientRegistryProfile = z.infer<typeof patientRegistryProfileSchema>;
 
 export const iti55Body = z.object({
-  PRPA_IN201306UV02: PatientRegistryProfileSchema,
+  PRPA_IN201306UV02: patientRegistryProfileSchema,
 });
 
 export const iti55Schema = z.object({

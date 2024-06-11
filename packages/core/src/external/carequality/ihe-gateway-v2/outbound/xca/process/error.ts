@@ -148,7 +148,7 @@ export function handleEmptyResponse({
 export function handleSchemaErrorResponse({
   outboundRequest,
   gateway,
-  text = "Zod Schema Error",
+  text = "Schema Error",
 }: {
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
