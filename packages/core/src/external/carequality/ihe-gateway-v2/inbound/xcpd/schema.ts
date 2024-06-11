@@ -5,6 +5,7 @@ import {
   AddressSchema,
   samlHeaderSchema,
   genderSchema,
+  schemaOrArrayOrEmpty,
 } from "../../schema";
 
 export const QueryByParameterSchema = z.object({
@@ -19,7 +20,7 @@ export const QueryByParameterSchema = z.object({
       }),
       semanticsText: z.literal("LivingSubject.birthTime"),
     }),
-    livingSubjectId: schemaOrArray(
+    livingSubjectId: schemaOrArrayOrEmpty(
       z.object({
         value: z.object({
           _extension: z.string(),
@@ -37,13 +38,13 @@ export const QueryByParameterSchema = z.object({
         semanticsText: z.literal("LivingSubject.name"),
       })
     ),
-    patientAddress: schemaOrArray(
+    patientAddress: schemaOrArrayOrEmpty(
       z.object({
         value: AddressSchema,
         semanticsText: z.literal("Patient.addr"),
       })
     ).optional(),
-    patientTelecom: schemaOrArray(
+    patientTelecom: schemaOrArrayOrEmpty(
       z.object({
         value: z.object({
           _value: z.string(),
@@ -51,7 +52,7 @@ export const QueryByParameterSchema = z.object({
         semanticsText: z.literal("Patient.telecom"),
       })
     ).optional(),
-    principalCareProviderId: schemaOrArray(
+    principalCareProviderId: schemaOrArrayOrEmpty(
       z.object({
         value: z.object({
           _extension: z.string(),

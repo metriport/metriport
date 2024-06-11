@@ -80,34 +80,34 @@ export const samlHeaderSchema = z.object({
         Attribute: z.tuple([
           z.object({
             _Name: z.literal("urn:oasis:names:tc:xspa:1.0:subject:subject-id"),
-            _NameFormat: z.string(),
+            _NameFormat: z.string().optional(),
             AttributeValue: TextSchema,
           }),
           z.object({
             _Name: z.literal("urn:oasis:names:tc:xspa:1.0:subject:organization"),
-            _NameFormat: z.string(),
+            _NameFormat: z.string().optional(),
             AttributeValue: TextSchema,
           }),
           z.object({
             _Name: z.literal("urn:oasis:names:tc:xspa:1.0:subject:organization-id"),
-            _NameFormat: z.string(),
+            _NameFormat: z.string().optional(),
             AttributeValue: TextSchema,
           }),
           z.object({
             _Name: z.literal("urn:nhin:names:saml:homeCommunityId"),
-            _NameFormat: z.string(),
+            _NameFormat: z.string().optional(),
             AttributeValue: TextSchema,
           }),
           z.object({
             _Name: z.literal("urn:oasis:names:tc:xacml:2.0:subject:role"),
-            _NameFormat: z.string(),
+            _NameFormat: z.string().optional(),
             AttributeValue: z.object({
               Role: codeSchema,
             }),
           }),
           z.object({
             _Name: z.literal("urn:oasis:names:tc:xspa:1.0:subject:purposeofuse"),
-            _NameFormat: z.string(),
+            _NameFormat: z.string().optional(),
             AttributeValue: z.object({
               PurposeOfUse: codeSchema,
             }),

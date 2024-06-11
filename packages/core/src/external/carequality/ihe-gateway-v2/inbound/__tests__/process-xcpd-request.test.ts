@@ -1,14 +1,24 @@
-import fs from "fs";
-import path from "path";
 import { processXcpdRequest } from "../xcpd/process-xcpd";
-
-const request = fs.readFileSync(path.join(__dirname, "xmls/epic-iti-55-request.xml"), "utf8");
+import { TEST_CERT, iti55BodyData } from "../../saml/__tests__/constants";
+import { createITI5SoapEnvelope } from "../../outbound/xcpd/create/iti55-envelope";
 
 it("should process ITI-55 request", () => {
   try {
-    const iti55Request = processXcpdRequest(request);
-    console.log(JSON.stringify(iti55Request, null, 2));
-    expect(iti55Request).toBeDefined();
+    const soapEnvelope = createITI5SoapEnvelope({
+      bodyData: iti55BodyData,
+      publicCert: TEST_CERT,
+    });
+
+    const iti55InboundRequest = processXcpdRequest(soapEnvelope);
+    const updatedIti55InboundRequest = {
+      ...iti55InboundRequest,
+      patientResource: {
+        ...iti55InboundRequest.patientResource,
+        id: iti55BodyData.patientResource.id,
+      },
+    };
+
+    expect(iti55BodyData.patientResource).toEqual(updatedIti55InboundRequest.patientResource);
   } catch (error) {
     console.log(error);
     expect(true).toBe(false);

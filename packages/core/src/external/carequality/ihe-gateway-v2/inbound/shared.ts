@@ -80,8 +80,6 @@ export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttribute
   const purposeOfUse = getPurposeOfUseAttributeValue(
     "urn:oasis:names:tc:xspa:1.0:subject:purposeofuse"
   );
-  console.log("purposeOfUse", purposeOfUse);
-  console.log("treatmentPurposeOfUse", treatmentPurposeOfUse);
   if (purposeOfUse != treatmentPurposeOfUse) {
     throw new Error("A treatment purpose of use is required");
   }
