@@ -50,6 +50,7 @@ export const oids = {
   encounterDiagnosis: "2.16.840.1.113883.10.20.22.4.80",
   immunizationMedicationInformation: "2.16.840.1.113883.10.20.22.4.54",
   serviceDeliveryLocation: "2.16.840.1.113883.10.20.22.4.32",
+  vitalSignsOrganizer: "2.16.840.1.113883.10.20.22.4.26",
 };
 
 export const mentalHealthSurveyCodes = ["44249-1"];

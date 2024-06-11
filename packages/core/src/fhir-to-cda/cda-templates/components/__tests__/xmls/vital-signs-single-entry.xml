@@ -83,23 +83,35 @@
 		</tbody>
 	</table>
 </text>
-<entry>
-	<observation classCode="OBS" moodCode="EVN">
-		<templateId root="2.16.840.1.113883.10.20.22.4.27" extension="2015-08-01">
+<entry typeCode="DRIV">
+	<organizer classCode="CLUSTER" moodCode="EVN">
+		<templateId root="2.16.840.1.113883.10.20.22.4.26">
 		</templateId>
-		<id root="placeholder-ORG-OID" extension="${observationId}">
-		</id>
-		<code code="72514-3" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Pain severity - 0-10 verbal numeric rating [Score] - Reported">
+		<code code="46680005" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Vital sings">
 		</code>
-		<text>
-			<reference value="vitalsigns0">
-			</reference>
-		</text>
 		<statusCode code="completed">
 		</statusCode>
-		<effectiveTime value="20130920011430">
+		<effectiveTime value="20130920">
 		</effectiveTime>
-		<value xsi:type="PQ" unit="{score}" value="0">
-		</value>
-	</observation>
+		<component>
+			<observation classCode="OBS" moodCode="EVN">
+				<templateId root="2.16.840.1.113883.10.20.22.4.27" extension="2015-08-01">
+				</templateId>
+				<id root="placeholder-ORG-OID" extension="${observationId}">
+				</id>
+				<code code="72514-3" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Pain severity - 0-10 verbal numeric rating [Score] - Reported">
+				</code>
+				<text>
+					<reference value="vitalsigns0">
+					</reference>
+				</text>
+				<statusCode code="completed">
+				</statusCode>
+				<effectiveTime value="20130920011430">
+				</effectiveTime>
+				<value xsi:type="PQ" unit="{score}" value="0">
+				</value>
+			</observation>
+		</component>
+	</organizer>
 </entry>

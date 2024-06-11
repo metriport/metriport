@@ -6,6 +6,7 @@ import {
   EncounterEntry,
   ObservationEntry,
   SubstanceAdministationEntry,
+  VitalObservationOrganizer,
 } from "./shared-types";
 
 type CdaSection<T> =
@@ -23,4 +24,4 @@ export type MentalStatusSection = CdaSection<ObservationEntry>;
 export type ProblemsSection = CdaSection<ConcernActEntry>;
 export type AllergiesSection = CdaSection<ConcernActEntry>;
 export type EncountersSection = CdaSection<EncounterEntry>;
-export type VitalSignsSection = CdaSection<ObservationEntry>;
+export type VitalSignsSection = CdaSection<VitalObservationOrganizer>;

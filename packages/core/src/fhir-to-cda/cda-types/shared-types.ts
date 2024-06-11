@@ -209,7 +209,7 @@ export type ObservationEntry = {
     effectiveTime?: {
       _value?: string | undefined;
     };
-    value?: CdaValuePq | undefined;
+    value?: CdaValuePq | CdaValuePq[] | CdaValueCd | CdaValueCd[] | undefined;
     participant?: Participant | undefined;
     entryRelationship?: ObservationEntryRelationship[];
     interpretationCode?: CdaCodeCe;
@@ -356,5 +356,22 @@ export type AssignedEntity = {
 export type CdaSimpleReference = {
   reference: {
     _value: string;
+  };
+};
+
+export type VitalObservationOrganizer = {
+  _typeCode: string;
+  organizer: {
+    _classCode: string;
+    _moodCode: string;
+    templateId: CdaInstanceIdentifier;
+    code: CdaCodeCe;
+    statusCode: {
+      _code: string;
+    };
+    effectiveTime: {
+      _value?: string | undefined;
+    };
+    component: ObservationEntry[];
   };
 };

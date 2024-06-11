@@ -1,6 +1,6 @@
 import { Bundle, Observation, Quantity } from "@medplum/fhirtypes";
 import { VitalSignsSection } from "../../cda-types/sections";
-import { ObservationTableRow } from "../../cda-types/shared-types";
+import { ObservationTableRow, VitalObservationOrganizer } from "../../cda-types/shared-types";
 import { isVitalSignsObservation } from "../../fhir";
 import {
   buildCodeCe,
@@ -51,12 +51,8 @@ export function buildVitalSigns(fhirBundle: Bundle): VitalSignsSection {
   }
 
   const augmentedObservations = createAugmentedVitalObservations(vitalSignsObservations);
-  const trs = createTableRows(augmentedObservations);
+  const { trs, entries } = createTableRowsAndEntries(augmentedObservations);
   const table = initiateSectionTable(sectionName, tableHeaders, trs);
-
-  const entries = augmentedObservations.map((obs, index) =>
-    createEntriesFromObservation(obs, `${sectionName}${index}`)
-  ); // TODO: Wrap this in a vital signs organizer: 2.16.840.1.113883.10.20.22.4.26
 
   const vitalSignsSection = {
     templateId: buildInstanceIdentifier({
@@ -75,70 +71,118 @@ export function buildVitalSigns(fhirBundle: Bundle): VitalSignsSection {
   return vitalSignsSection;
 }
 
-function createTableRows(augObs: AugmentedObservation[]) {
-  const mapByDate = new Map<string, VitalObservation[]>();
+function createTableRowsAndEntries(augObs: AugmentedObservation[]): {
+  trs: ObservationTableRow[];
+  entries: VitalObservationOrganizer[];
+} {
+  const obsGroupedByDateMap = new Map<string, AugmentedObservation[]>();
 
   augObs.map(obs => {
     if (!obs.measurement?.date) return;
-    if (mapByDate.get(obs.measurement.date)) {
-      const vitals = mapByDate.get(obs.measurement.date);
-      const vitalsSoFar = vitals ? [...vitals, obs.measurement] : [obs.measurement];
-      mapByDate.set(obs.measurement.date, vitalsSoFar);
+    if (obsGroupedByDateMap.get(obs.measurement.date)) {
+      const vitals = obsGroupedByDateMap.get(obs.measurement.date);
+      const vitalsSoFar = vitals ? [...vitals, obs] : [obs];
+      obsGroupedByDateMap.set(obs.measurement.date, vitalsSoFar);
     } else {
-      mapByDate.set(obs.measurement.date, [obs.measurement]);
+      obsGroupedByDateMap.set(obs.measurement.date, [obs]);
     }
   });
 
   const trs: ObservationTableRow[] = [];
+  const entries: VitalObservationOrganizer[] = [];
   let index = -1;
-  mapByDate.forEach((set, date) => {
+  obsGroupedByDateMap.forEach((set, date) => {
     index++;
     const referenceId = `${sectionName}${index}`;
-    const row = {
-      tr: {
-        _ID: referenceId,
-        ["td"]: [
-          {
-            "#text": date,
-          },
-          {
-            "#text": set.find(obs => obs.category === "body temperature")?.value ?? "-",
-          },
-          {
-            "#text": set.find(obs => obs.category === "heart rate")?.value ?? "-",
-          },
-          {
-            "#text": set.find(obs => obs.category === "respiratory rate")?.value ?? "-",
-          },
-          {
-            "#text": set.find(obs => obs.category === "spo2")?.value ?? "-",
-          },
-          {
-            "#text": set.find(obs => obs.category === "diastolic blood pressure")?.value ?? "-",
-          },
-          {
-            "#text": set.find(obs => obs.category === "systolic blood pressure")?.value ?? "-",
-          },
-          {
-            "#text": set.find(obs => obs.category === "body weight")?.value ?? "-",
-          },
-          {
-            "#text": set.find(obs => obs.category === "body height")?.value ?? "-",
-          },
-          {
-            "#text": set.find(obs => obs.category === "bmi")?.value ?? "-",
-          },
-          {
-            "#text": set.find(obs => obs.category === "pain severity")?.value ?? "-",
-          },
-        ],
-      },
-    };
-
-    trs.push(row);
+    trs.push(createTableRow(set, date, referenceId));
+    entries.push(createOrganizedEntryFromSet(set, date, referenceId));
   });
 
-  return trs;
+  return { trs, entries };
+}
+
+function createTableRow(set: AugmentedObservation[], date: string, referenceId: string) {
+  return {
+    tr: {
+      _ID: referenceId,
+      ["td"]: [
+        {
+          "#text": date,
+        },
+        {
+          "#text":
+            set.find(obs => obs.measurement?.category === "body temperature")?.measurement?.value ??
+            "-",
+        },
+        {
+          "#text":
+            set.find(obs => obs.measurement?.category === "heart rate")?.measurement?.value ?? "-",
+        },
+        {
+          "#text":
+            set.find(obs => obs.measurement?.category === "respiratory rate")?.measurement?.value ??
+            "-",
+        },
+        {
+          "#text": set.find(obs => obs.measurement?.category === "spo2")?.measurement?.value ?? "-",
+        },
+        {
+          "#text":
+            set.find(obs => obs.measurement?.category === "diastolic blood pressure")?.measurement
+              ?.value ?? "-",
+        },
+        {
+          "#text":
+            set.find(obs => obs.measurement?.category === "systolic blood pressure")?.measurement
+              ?.value ?? "-",
+        },
+        {
+          "#text":
+            set.find(obs => obs.measurement?.category === "body weight")?.measurement?.value ?? "-",
+        },
+        {
+          "#text":
+            set.find(obs => obs.measurement?.category === "body height")?.measurement?.value ?? "-",
+        },
+        {
+          "#text": set.find(obs => obs.measurement?.category === "bmi")?.measurement?.value ?? "-",
+        },
+        {
+          "#text":
+            set.find(obs => obs.measurement?.category === "pain severity")?.measurement?.value ??
+            "-",
+        },
+      ],
+    },
+  };
+}
+
+function createOrganizedEntryFromSet(
+  set: AugmentedObservation[],
+  date: string,
+  referenceId: string
+): VitalObservationOrganizer {
+  return {
+    _typeCode: "DRIV",
+    organizer: {
+      _classCode: "CLUSTER",
+      _moodCode: "EVN",
+      templateId: buildInstanceIdentifier({ root: oids.vitalSignsOrganizer }),
+      code: buildCodeCe({
+        code: "46680005",
+        codeSystem: "2.16.840.1.113883.6.96",
+        codeSystemName: "SNOMED CT",
+        displayName: "Vital sings",
+      }),
+      statusCode: {
+        _code: "completed",
+      },
+      effectiveTime: {
+        _value: formatDateToCdaTimestamp(date),
+      },
+      component: set.map(obs => createEntriesFromObservation(obs, referenceId)),
+    },
+  };
 }
 
 function createAugmentedVitalObservations(observations: Observation[]): AugmentedObservation[] {
