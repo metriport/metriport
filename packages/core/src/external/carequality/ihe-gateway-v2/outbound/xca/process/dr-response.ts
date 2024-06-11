@@ -23,7 +23,7 @@ import { createDocumentFilePath } from "../../../../../../domain/document/filena
 import { MetriportError } from "../../../../../../util/error/metriport-error";
 import { getCidReference } from "../mtom/cid";
 import { out } from "../../../../../../util/log";
-import { toArray } from "../../..//utils";
+import { toArray } from "@metriport/shared";
 import { iti39Schema, DocumentResponse } from "./schema";
 
 const { log } = out("DR Processing");
@@ -32,7 +32,7 @@ const region = Config.getAWSRegion();
 const bucket = Config.getMedicalDocumentsBucketName();
 
 let s3UtilsInstance = new S3Utils(region);
-export function getS3UtilsInstance(): S3Utils {
+function getS3UtilsInstance(): S3Utils {
   return s3UtilsInstance;
 }
 export function setS3UtilsInstance(s3Utils: S3Utils): void {

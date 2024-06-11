@@ -9,14 +9,15 @@ import {
   Telecom,
   PersonalIdentifier,
 } from "@metriport/ihe-gateway-sdk";
+import { toArray } from "@metriport/shared";
 import { normalizeGender } from "../../../utils";
 import { XCPDSamlClientResponse } from "../send/xcpd-requests";
 import { out } from "../../../../../../util/log";
-import { toArray, extractText } from "../../../utils";
+import { extractText } from "../../../utils";
 import { IheAddress, IheIdentifier, IheName, IheTelecom } from "../../../schema";
 import { Iti55Response, iti55ResponseSchema, PatientRegistryProfile } from "./schema";
 import {
-  handleHTTPErrorResponse,
+  handleHttpErrorResponse,
   handleSchemaErrorResponse,
   handlePatientErrorResponse,
 } from "./error";
@@ -114,11 +115,19 @@ function handlePatientMatchResponse({
   gateway: XCPDGateway;
 }): OutboundPatientDiscoveryResp {
   const subject1 = patientRegistryProfile.controlActProcess?.subject?.registrationEvent?.subject1;
+
+  if (!subject1) {
+    return handlePatientNoMatchResponse({
+      outboundRequest,
+      gateway,
+    });
+  }
   const addr = toArray(subject1?.patient?.patientPerson?.addr);
   const names = toArray(subject1?.patient?.patientPerson?.name);
   const telecoms = toArray(subject1?.patient?.patientPerson?.telecom);
-  const otherIds = toArray(subject1?.patient?.patientPerson?.asOtherIDs?.id);
-
+  const otherIds = toArray(subject1?.patient?.patientPerson?.asOtherIDs).flatMap(otherID =>
+    toArray(otherID?.id)
+  );
   const addresses = iheAddressesToAddresses(addr);
   const patientNames = iheNamesToNames(names);
   const patientTelecoms = iheTelecomsToTelecoms(telecoms);
@@ -192,7 +201,7 @@ export function processXCPDResponse({
   cxId?: string;
 }): OutboundPatientDiscoveryResp {
   if (success === false) {
-    return handleHTTPErrorResponse({
+    return handleHttpErrorResponse({
       httpError: response,
       outboundRequest,
       gateway,

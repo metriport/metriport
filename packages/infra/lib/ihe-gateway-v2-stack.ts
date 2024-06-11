@@ -24,15 +24,32 @@ interface IHEGatewayV2LambdasNestedStackProps extends NestedStackProps {
   apiURL: string;
   envType: EnvType;
   sentryDsn: string | undefined;
+  iheResponsesBucketName: string;
 }
 
 export class IHEGatewayV2LambdasNestedStack extends NestedStack {
   constructor(scope: Construct, id: string, props: IHEGatewayV2LambdasNestedStackProps) {
     super(scope, id, props);
 
-    const patientDiscoveryLambda = this.setupIHEGatewayV2PatientDiscoveryLambda(props);
-    const documentQueryLambda = this.setupIHEGatewayV2DocumentQueryLambda(props);
-    const documentRetrievalLambda = this.setupIHEGatewayV2DocumentRetrievalLambda(props);
+    const iheResponsesBucket = new s3.Bucket(this, "IHEResponsesBucket", {
+      bucketName: props.iheResponsesBucketName,
+      publicReadAccess: false,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      versioned: true,
+    });
+
+    const patientDiscoveryLambda = this.setupIHEGatewayV2PatientDiscoveryLambda(
+      props,
+      iheResponsesBucket
+    );
+    const documentQueryLambda = this.setupIHEGatewayV2DocumentQueryLambda(
+      props,
+      iheResponsesBucket
+    );
+    const documentRetrievalLambda = this.setupIHEGatewayV2DocumentRetrievalLambda(
+      props,
+      iheResponsesBucket
+    );
 
     // granting lambda invoke access to api service
     patientDiscoveryLambda.grantInvoke(props.apiService.taskDefinition.taskRole);
@@ -53,21 +70,24 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     });
   }
 
-  private setupIHEGatewayV2PatientDiscoveryLambda(ownProps: {
-    lambdaLayers: LambdaLayers;
-    vpc: ec2.IVpc;
-    apiService: NetworkLoadBalancedFargateService;
-    secrets: Secrets;
-    cqOrgCertificate: string | undefined;
-    cqOrgPrivateKey: string | undefined;
-    cqOrgPrivateKeyPassword: string | undefined;
-    cqOrgCertificateIntermediate: string | undefined;
-    medicalDocumentsBucket: s3.Bucket;
-    cqTrustBundleBucket: s3.IBucket;
-    apiURL: string;
-    envType: EnvType;
-    sentryDsn: string | undefined;
-  }): Lambda {
+  private setupIHEGatewayV2PatientDiscoveryLambda(
+    ownProps: {
+      lambdaLayers: LambdaLayers;
+      vpc: ec2.IVpc;
+      apiService: NetworkLoadBalancedFargateService;
+      secrets: Secrets;
+      cqOrgCertificate: string | undefined;
+      cqOrgPrivateKey: string | undefined;
+      cqOrgPrivateKeyPassword: string | undefined;
+      cqOrgCertificateIntermediate: string | undefined;
+      medicalDocumentsBucket: s3.Bucket;
+      cqTrustBundleBucket: s3.IBucket;
+      apiURL: string;
+      envType: EnvType;
+      sentryDsn: string | undefined;
+    },
+    iheResponsesBucket: s3.Bucket
+  ): Lambda {
     const {
       lambdaLayers,
       vpc,
@@ -103,6 +123,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         API_URL: apiURL,
         MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        IHE_RESPONSES_BUCKET_NAME: iheResponsesBucket.bucketName,
       },
       layers: [lambdaLayers.shared],
       memory: 4096,
@@ -117,25 +138,29 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       "CQ_ORG_PRIVATE_KEY_PASSWORD",
     ]);
 
+    iheResponsesBucket.grantReadWrite(patientDiscoveryLambda);
     medicalDocumentsBucket.grantRead(patientDiscoveryLambda);
     cqTrustBundleBucket.grantRead(patientDiscoveryLambda);
     return patientDiscoveryLambda;
   }
 
-  private setupIHEGatewayV2DocumentQueryLambda(ownProps: {
-    lambdaLayers: LambdaLayers;
-    vpc: ec2.IVpc;
-    secrets: Secrets;
-    cqOrgCertificate: string | undefined;
-    cqOrgPrivateKey: string | undefined;
-    cqOrgPrivateKeyPassword: string | undefined;
-    cqOrgCertificateIntermediate: string | undefined;
-    cqTrustBundleBucket: s3.IBucket;
-    medicalDocumentsBucket: s3.Bucket;
-    apiURL: string;
-    envType: EnvType;
-    sentryDsn: string | undefined;
-  }): Lambda {
+  private setupIHEGatewayV2DocumentQueryLambda(
+    ownProps: {
+      lambdaLayers: LambdaLayers;
+      vpc: ec2.IVpc;
+      secrets: Secrets;
+      cqOrgCertificate: string | undefined;
+      cqOrgPrivateKey: string | undefined;
+      cqOrgPrivateKeyPassword: string | undefined;
+      cqOrgCertificateIntermediate: string | undefined;
+      cqTrustBundleBucket: s3.IBucket;
+      medicalDocumentsBucket: s3.Bucket;
+      apiURL: string;
+      envType: EnvType;
+      sentryDsn: string | undefined;
+    },
+    iheResponsesBucket: s3.Bucket
+  ): Lambda {
     const {
       lambdaLayers,
       vpc,
@@ -171,6 +196,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         API_URL: apiURL,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
+        IHE_RESPONSES_BUCKET_NAME: iheResponsesBucket.bucketName,
       },
       layers: [lambdaLayers.shared],
       memory: 1024,
@@ -185,26 +211,30 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       "CQ_ORG_PRIVATE_KEY_PASSWORD",
     ]);
 
+    iheResponsesBucket.grantReadWrite(documentQueryLambda);
     medicalDocumentsBucket.grantRead(documentQueryLambda);
     cqTrustBundleBucket.grantRead(documentQueryLambda);
 
     return documentQueryLambda;
   }
 
-  private setupIHEGatewayV2DocumentRetrievalLambda(ownProps: {
-    lambdaLayers: LambdaLayers;
-    vpc: ec2.IVpc;
-    secrets: Secrets;
-    cqOrgCertificate: string | undefined;
-    cqOrgPrivateKey: string | undefined;
-    cqOrgPrivateKeyPassword: string | undefined;
-    cqOrgCertificateIntermediate: string | undefined;
-    cqTrustBundleBucket: s3.IBucket;
-    medicalDocumentsBucket: s3.Bucket;
-    apiURL: string;
-    envType: EnvType;
-    sentryDsn: string | undefined;
-  }): Lambda {
+  private setupIHEGatewayV2DocumentRetrievalLambda(
+    ownProps: {
+      lambdaLayers: LambdaLayers;
+      vpc: ec2.IVpc;
+      secrets: Secrets;
+      cqOrgCertificate: string | undefined;
+      cqOrgPrivateKey: string | undefined;
+      cqOrgPrivateKeyPassword: string | undefined;
+      cqOrgCertificateIntermediate: string | undefined;
+      cqTrustBundleBucket: s3.IBucket;
+      medicalDocumentsBucket: s3.Bucket;
+      apiURL: string;
+      envType: EnvType;
+      sentryDsn: string | undefined;
+    },
+    iheResponsesBucket: s3.Bucket
+  ): Lambda {
     const {
       lambdaLayers,
       vpc,
@@ -240,6 +270,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         API_URL: apiURL,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
+        IHE_RESPONSES_BUCKET_NAME: iheResponsesBucket.bucketName,
       },
       layers: [lambdaLayers.shared],
       memory: 1024,
@@ -254,7 +285,8 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       "CQ_ORG_PRIVATE_KEY_PASSWORD",
     ]);
 
-    medicalDocumentsBucket.grantReadWrite(documentRetrievalLambda);
+    iheResponsesBucket.grantReadWrite(documentRetrievalLambda);
+    medicalDocumentsBucket.grantRead(documentRetrievalLambda);
     cqTrustBundleBucket.grantRead(documentRetrievalLambda);
 
     return documentRetrievalLambda;

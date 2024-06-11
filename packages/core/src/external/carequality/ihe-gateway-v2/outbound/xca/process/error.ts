@@ -10,7 +10,7 @@ import {
 import { capture } from "../../../../../../util/notifications";
 import { out } from "../../../../../../util/log";
 import { RegistryErrorList, RegistryError } from "./schema";
-import { toArray } from "../../..//utils";
+import { toArray } from "@metriport/shared";
 
 const { log } = out("XCA Error Handling");
 

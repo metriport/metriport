@@ -18,7 +18,7 @@ export interface EventMessageV1 extends IdentifyMessageV1 {
 
 const defaultPostHogApiKey = Config.getPostHogApiKey();
 
-export const analytics = (params: EventMessageV1, postApiKey?: string) => {
+export function analytics(params: EventMessageV1, postApiKey?: string): PostHog | void {
   const apiKey = postApiKey ?? defaultPostHogApiKey;
   if (!apiKey) return;
 
@@ -34,7 +34,19 @@ export const analytics = (params: EventMessageV1, postApiKey?: string) => {
   };
 
   posthog.capture(params);
-};
+
+  return posthog;
+}
+
+export async function analyticsAsync(params: EventMessageV1, postApiKey?: string) {
+  const posthog = analytics(params, postApiKey);
+
+  if (!posthog) return;
+
+  // Needed to send requests to PostHog in lambda
+  // https://posthog.com/docs/libraries/node#using-in-a-short-lived-process-like-aws-lambda
+  await posthog.shutdown();
+}
 
 export enum EventTypes {
   query = "query",

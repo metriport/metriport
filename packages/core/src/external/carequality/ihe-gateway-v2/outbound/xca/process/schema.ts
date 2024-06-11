@@ -7,9 +7,8 @@ import {
 } from "../../../schema";
 
 const slot = z.object({
-  // even though this is called list, the IHE spec specifies its never a list: https://www.ihe-j.org/file2/docs/RFD/IHE_ITI_TF_R14_Vol3.pdf, Page 48
   ValueList: z.object({
-    Value: StringOrNumberSchema,
+    Value: schemaOrArray(StringOrNumberSchema),
   }),
   _name: z.string(),
 });
@@ -17,7 +16,7 @@ export type Slot = z.infer<typeof slot>;
 
 const name = z.object({
   LocalizedString: z.object({
-    _charset: z.string(),
+    _charset: z.string().optional(),
     _value: z.string(),
   }),
 });
@@ -40,25 +39,21 @@ const externalIdentifier = z.object({
   Name: name.optional(),
   _id: z.string(),
   _identificationScheme: z.string(),
-  _objectType: z.literal(
-    "urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier"
-  ),
-  _registryObject: z.string(),
-  _value: z.string(),
+  _objectType: z
+    .literal("urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier")
+    .optional(),
+  _registryObject: z.string().optional(),
+  _value: z.string().optional(),
 });
 export type ExternalIdentifier = z.infer<typeof externalIdentifier>;
 
 export const extrinsicObject = z.object({
-  Slot: z.union([slot, z.array(slot)]),
+  Slot: schemaOrArray(slot),
   Name: name.optional(),
   Classification: schemaOrArray(classification),
   ExternalIdentifier: z.array(externalIdentifier),
   _home: z.string(),
-  _id: z.string(),
-  _isOpaque: z.string(),
   _mimeType: z.string(),
-  _objectType: z.string(),
-  _status: z.string(),
 });
 export type ExtrinsicObject = z.infer<typeof extrinsicObject>;
 
@@ -90,7 +85,6 @@ export const iti38Body = z.object({
 
 export const iti38Schema = z.object({
   Envelope: z.object({
-    Header: z.any(),
     Body: iti38Body,
   }),
 });
@@ -131,7 +125,6 @@ export const iti39Body = z.object({
 
 export const iti39Schema = z.object({
   Envelope: z.object({
-    Header: z.any(),
     Body: iti39Body,
   }),
 });

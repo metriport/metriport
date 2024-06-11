@@ -46,7 +46,7 @@ export const IdentifierSchema = z.object({
 export type IheIdentifier = z.infer<typeof IdentifierSchema>;
 
 export const genderSchema = z.object({
-  _code: z.union([z.literal("F"), z.literal("M")]),
+  _code: z.union([z.literal("F"), z.literal("M"), z.literal("UN")]),
 });
 
 export const samlHeaderSchema = z.object({

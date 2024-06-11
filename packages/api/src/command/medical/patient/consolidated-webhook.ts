@@ -45,7 +45,7 @@ export const processConsolidatedDataWebhook = async ({
 }: {
   patient: Pick<Patient, "id" | "cxId" | "externalId">;
   status: ConsolidatedWebhookStatus;
-  requestId?: string;
+  requestId: string;
   bundle?: Bundle<Resource>;
   filters?: Filters;
 }): Promise<void> => {
@@ -75,6 +75,7 @@ export const processConsolidatedDataWebhook = async ({
         cxId,
         type: "medical.consolidated-data",
         payload,
+        requestId,
       });
 
       const additionalWHRequestMeta: Record<string, string> = {};
@@ -98,10 +99,12 @@ export const processConsolidatedDataWebhook = async ({
         type: "medical.consolidated-data",
         payload,
         status: "success",
+        requestId,
       });
     }
     await updateConsolidatedQueryProgress({
       patient,
+      requestId,
       progress: { status },
     });
   } catch (err) {
@@ -111,6 +114,7 @@ export const processConsolidatedDataWebhook = async ({
     });
     await updateConsolidatedQueryProgress({
       patient,
+      requestId,
       progress: { status: "failed" },
     });
     throw err;

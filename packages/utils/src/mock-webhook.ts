@@ -1,9 +1,9 @@
 import * as dotenv from "dotenv";
 dotenv.config();
-
+// keep dotenv.config() at the top of the file
 import { MetriportMedicalApi } from "@metriport/api-sdk";
-import express, { Application, Request, Response } from "express";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+import express, { Application, Request, Response } from "express";
 
 const app: Application = express();
 
@@ -23,7 +23,7 @@ const metriportApi = new MetriportMedicalApi(apiKey, {
   baseAddress: apiUrl,
 });
 
-app.post("/", (req: Request, res: Response) => {
+app.post("/", async (req: Request, res: Response) => {
   console.log(`BODY: ${JSON.stringify(req.body, undefined, 2)}`);
 
   const signature = req.headers["x-metriport-signature"];

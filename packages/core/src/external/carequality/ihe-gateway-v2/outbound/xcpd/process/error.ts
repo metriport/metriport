@@ -8,7 +8,7 @@ import {
 import { PatientRegistryProfile } from "./schema";
 import { extractText } from "../../../utils";
 
-export function handleHTTPErrorResponse({
+export function handleHttpErrorResponse({
   httpError,
   outboundRequest,
   gateway,
@@ -34,10 +34,10 @@ export function handleHTTPErrorResponse({
     id: outboundRequest.id,
     timestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
-    gateway: gateway,
+    gateway,
     patientId: outboundRequest?.patientId,
     patientMatch: null,
-    operationOutcome: operationOutcome,
+    operationOutcome,
   };
 }
 
@@ -71,10 +71,10 @@ export function handlePatientErrorResponse({
     id: outboundRequest.id,
     timestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
-    gateway: gateway,
+    gateway,
     patientId: outboundRequest.patientId,
     patientMatch: null,
-    operationOutcome: operationOutcome,
+    operationOutcome,
   };
   return response;
 }
@@ -105,10 +105,10 @@ export function handleSchemaErrorResponse({
     id: outboundRequest.id,
     timestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
-    gateway: gateway,
+    gateway,
     patientId: outboundRequest.patientId,
     patientMatch: null,
-    operationOutcome: operationOutcome,
+    operationOutcome,
   };
   return response;
 }
