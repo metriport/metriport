@@ -12,6 +12,7 @@ export type PatientDTO = {
 export function dtoFromModel(patient: Patient): PatientDTO {
   const { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact } =
     patient.data;
+  const dtoGenderAtBirth = genderAtBirth === "UN" ? "U" : genderAtBirth;
   return {
     ...toBaseDTO(patient),
     facilityIds: patient.facilityIds,
@@ -20,7 +21,7 @@ export function dtoFromModel(patient: Patient): PatientDTO {
     firstName,
     lastName,
     dob,
-    genderAtBirth,
+    genderAtBirth: dtoGenderAtBirth,
     personalIdentifiers,
     address,
     contact,

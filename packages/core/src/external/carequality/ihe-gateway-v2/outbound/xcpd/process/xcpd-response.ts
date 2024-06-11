@@ -9,8 +9,7 @@ import {
   Telecom,
   PersonalIdentifier,
 } from "@metriport/ihe-gateway-sdk";
-import { toArray } from "@metriport/shared";
-import { normalizeGender } from "../../../utils";
+import { errorToString, toArray } from "@metriport/shared";
 import { XCPDSamlClientResponse } from "../send/xcpd-requests";
 import { out } from "../../../../../../util/log";
 import { extractText } from "../../../utils";
@@ -28,6 +27,8 @@ import {
   handleSchemaErrorResponse,
   handlePatientErrorResponse,
 } from "./error";
+import { mapGenderAtBirthToFhir } from "../../../../../fhir/patient";
+import { IheGender } from "./schema";
 
 const { log } = out("Processing XCPD Requests");
 
@@ -110,6 +111,10 @@ function iheTelecomsToTelecoms(iheTelecom: IheTelecom[]): Telecom[] | undefined 
     .filter((telecom): telecom is Telecom => telecom !== undefined);
 
   return telecoms.length > 0 ? telecoms : undefined;
+}
+
+export function normalizeGender(gender: IheGender): "male" | "female" | "unknown" | "other" {
+  return mapGenderAtBirthToFhir(gender);
 }
 
 function handlePatientMatchResponse({
@@ -254,6 +259,7 @@ export function processXCPDResponse({
     return handleSchemaErrorResponse({
       outboundRequest,
       gateway,
+      text: errorToString(error),
     });
   }
 }

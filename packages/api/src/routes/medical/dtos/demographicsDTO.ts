@@ -3,7 +3,7 @@ import { AddressDTO } from "./addressDTO";
 import { ContactDTO } from "./contact-dto";
 import { PersonalIdentifierDTO } from "./personal-identifier-dto";
 
-export type GenderDTO = "F" | "M" | "U" | "UN"; // U = unspecified
+export type GenderDTO = "F" | "M" | "U"; // U = unspecified
 
 export type DemographicsDTO = {
   firstName: string;
@@ -18,11 +18,12 @@ export type DemographicsDTO = {
 export function dtoFromModel(patient: Pick<Patient, "data">): DemographicsDTO {
   const { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact } =
     patient.data;
+  const dtoGenderAtBirth = genderAtBirth === "UN" ? "U" : genderAtBirth;
   return {
     firstName,
     lastName,
     dob,
-    genderAtBirth,
+    genderAtBirth: dtoGenderAtBirth,
     personalIdentifiers,
     address,
     contact,

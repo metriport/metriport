@@ -34,6 +34,9 @@ export const identifierSchema = z.object({
 });
 export type IheIdentifier = z.infer<typeof identifierSchema>;
 
+const genderCodeSchema = z.union([z.literal("F"), z.literal("M"), z.literal("UN")]);
+export type IheGender = z.infer<typeof genderCodeSchema>;
+
 export const patientRegistryProfileSchema = z.object({
   acknowledgement: z.object({
     typeCode: z.object({
@@ -69,11 +72,9 @@ export const patientRegistryProfileSchema = z.object({
                     id: schemaOrArrayOrEmpty(identifierSchema).optional(),
                   })
                 ).optional(),
-                administrativeGenderCode: z
-                  .object({
-                    _code: z.union([z.literal("F"), z.literal("M"), z.literal("UN")]),
-                  })
-                  .optional(),
+                administrativeGenderCode: z.object({
+                  _code: genderCodeSchema,
+                }),
                 birthTime: z.object({
                   _value: z.string(),
                 }),
