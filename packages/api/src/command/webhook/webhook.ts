@@ -85,63 +85,77 @@ export async function processRequest(
     sendAnalytics("failure", { reason: "missing-webhook-settings" });
     return missingWHSettings(webhookRequest, webhookUrl, webhookKey);
   }
-  const productType = getProductFromWebhookRequest(webhookRequest);
-
-  const payload = webhookRequest.payload;
   try {
+    const productType = getProductFromWebhookRequest(webhookRequest);
+
+    const payload = webhookRequest.payload;
     const meta: WebhookMetadata = {
       messageId: webhookRequest.id,
       when: dayjs(webhookRequest.createdAt).toISOString(),
       type: webhookRequest.type,
       data: cxWHRequestMeta,
     };
+    const fullPayload = {
+      meta,
+      ...payload,
+    };
+    try {
+      const sendResponse = await sendPayload(fullPayload, webhookUrl, webhookKey);
 
-    const sendResponse = await sendPayload(
-      {
-        meta,
-        ...payload,
-      },
-      webhookUrl,
-      webhookKey
-    );
-
-    // TODO: 1411 - remove when DAPI is fully discontinued
-    if (productType === Product.medical) {
-      // mark this request as successful on the DB
-      const status = "success";
-      await updateWebhookRequest({
-        id: webhookRequest.id,
-        status,
-        statusDetail: successfulStatusDetail,
-        durationMillis: sendResponse.durationMillis,
-        httpStatus: sendResponse.status,
-        requestUrl: sendResponse.url,
-      });
-
-      // if the webhook was not working before, update the status to successful since we were able to send the payload
-      if (!webhookEnabled) {
-        await updateWebhookStatus({
-          cxId: settings.id,
-          webhookEnabled: true,
-          webhookStatusDetail: WEBHOOK_STATUS_OK,
+      // TODO: 1411 - remove when DAPI is fully discontinued
+      if (productType === Product.medical) {
+        // mark this request as successful on the DB
+        const status = "success";
+        await updateWebhookRequest({
+          id: webhookRequest.id,
+          status,
+          statusDetail: successfulStatusDetail,
+          durationMillis: sendResponse.durationMillis,
+          httpStatus: sendResponse.status,
+          requestUrl: sendResponse.url,
         });
+
+        // if the webhook was not working before, update the status to successful since we were able to send the payload
+        if (!webhookEnabled) {
+          await updateWebhookStatus({
+            cxId: settings.id,
+            webhookEnabled: true,
+            webhookStatusDetail: WEBHOOK_STATUS_OK,
+          });
+        }
+        sendAnalytics(status);
       }
-      sendAnalytics(status);
+      return true;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      // TODO: 1411 - remove the conditional and keep the code inside it when DAPI is fully discontinued
+      if (productType === Product.medical) {
+        log(
+          `Failed to process WH request: ${errorToString(error)}, cause ${errorToString(
+            error.cause
+          )}`
+        );
+        const status = "failure";
+        const [, , isE2e] = await Promise.all([
+          updateWhRequestWithError(error, webhookRequest.id, webhookUrl, status),
+          updateWhStatusWithError(error, webhookRequest.id, webhookUrl, settings.id),
+          isE2eCx(webhookRequest.cxId),
+        ]);
+        if (isE2e) {
+          log(`[E2E] WH Payload: ${JSON.stringify(fullPayload)}`);
+          log(
+            `[E2E] Error details: ${
+              "cause" in error && "response" in error.cause
+                ? JSON.stringify(error.cause.response)
+                : JSON.stringify(error)
+            }`
+          );
+        }
+        sendAnalytics(status);
+      }
     }
-    return true;
   } catch (error) {
-    // TODO: 1411 - remove the conditional and keep the code inside it when DAPI is fully discontinued
-    if (productType === Product.medical) {
-      log(`Failed to process WH request: ${errorToString(error)}`);
-      const status = "failure";
-      const [, , isE2e] = await Promise.all([
-        updateWhRequestWithError(error, webhookRequest.id, webhookUrl, status),
-        updateWhStatusWithError(error, webhookRequest.id, webhookUrl, settings.id),
-        isE2eCx(webhookRequest.cxId),
-      ]);
-      if (isE2e) log(`[E2E] WH Payload: ${JSON.stringify(payload)}`);
-      sendAnalytics(status);
-    }
+    log(`(Outer) Failed to process WH request: ${errorToString(error)}`);
   }
   return false;
 }
