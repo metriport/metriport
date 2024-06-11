@@ -29,7 +29,7 @@ const gatewaysThatAcceptOneDocRefPerRequest = [pointClickCareOid, redoxOid, redo
 
 const surescriptsOid = "2.16.840.1.113883.3.2054.2.1.1";
 /*
- * These gateways require a urn:uuid prefix before document Uniwue ids formatted as lowercause uuids
+ * These gateways require a urn:uuid prefix before document Unique ids formatted as lowercase uuids
  */
 
 const getDocumentUniqueIdMapping: Record<string, GetDocumentUniqueIdFn> = {
