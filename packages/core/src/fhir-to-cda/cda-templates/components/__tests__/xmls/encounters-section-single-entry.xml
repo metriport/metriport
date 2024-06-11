@@ -73,7 +73,7 @@
 					<originalText>
 						FAMILY MEDICINE PHYSICIAN
 					</originalText>
-					<translation code="207Q00000X" codeSystem="2.16.840.1.113883.6.101" displayName="FAMILY MEDICINE PHYSICIAN">
+					<translation code="319" codeSystem="1.2.840.114350.1.13.76.2.7.10.836982.1050" displayName="Physician Assistant">
 					</translation>
 				</code>
 				<addr use="WP">

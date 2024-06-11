@@ -140,7 +140,7 @@ export function buildCodeCvFromCodeableConcept(
       })
     : {};
 
-  const translations = (codeableConcept.coding || []).map(coding =>
+  const translations = (codeableConcept.coding?.slice(1) || []).map(coding =>
     buildCodeCe({
       code: coding.code,
       codeSystem: mapCodingSystem(coding.system),

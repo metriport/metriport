@@ -105,8 +105,6 @@
 									<reference value="allergies1-substance">
 									</reference>
 								</originalText>
-								<translation code="70618" codeSystem="2.16.840.1.113883.6.88" displayName="Penicillin">
-								</translation>
 							</code>
 						</playingEntity>
 					</participantRole>
@@ -167,8 +165,6 @@
 									<reference value="allergies2-substance">
 									</reference>
 								</originalText>
-								<translation code="1160593" codeSystem="2.16.840.1.113883.6.88" displayName="cashew nut allergenic extract Injectable Product">
-								</translation>
 							</code>
 						</playingEntity>
 					</participantRole>

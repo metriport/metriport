@@ -85,8 +85,6 @@
 									<reference value="allergies1-substance">
 									</reference>
 								</originalText>
-								<translation code="70618" codeSystem="2.16.840.1.113883.6.88" displayName="Penicillin">
-								</translation>
 							</code>
 						</playingEntity>
 					</participantRole>

@@ -66,6 +66,11 @@ export const practitioner1: Partial<Practitioner> = {
             display: "FAMILY MEDICINE PHYSICIAN",
             system: "http://nucc.org/provider-taxonomy",
           },
+          {
+            code: "319",
+            display: "Physician Assistant",
+            system: "urn:oid:1.2.840.114350.1.13.76.2.7.10.836982.1050",
+          },
         ],
       },
     },
