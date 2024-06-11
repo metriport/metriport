@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { validate } from "uuid";
+import { validate as validateUuid } from "uuid";
 import { chunk } from "lodash";
 import { XMLBuilder } from "fast-xml-parser";
 import { OutboundDocumentRetrievalReq, XCAGateway } from "@metriport/ihe-gateway-sdk";
@@ -23,9 +23,9 @@ export type BulkSignedDR = {
 };
 
 function wrapDocUniqueIdIfLowercaseUuid(docUniqueId: string): string {
-  const valid = validate(docUniqueId);
-  const lowercase = docUniqueId === docUniqueId.toLowerCase();
-  return valid && lowercase ? wrapIdInUrnUuid(docUniqueId) : docUniqueId;
+  const isValidUuid = validateUuid(docUniqueId);
+  const isLowercase = docUniqueId === docUniqueId.toLowerCase();
+  return isValidUuid && isLowercase ? wrapIdInUrnUuid(docUniqueId) : docUniqueId;
 }
 
 export function createITI39SoapEnvelope({
