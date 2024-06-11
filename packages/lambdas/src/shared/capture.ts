@@ -22,7 +22,7 @@ export const capture = {
    *
    * @param tracesSampleRate Sample rate to determine trace sampling.
    */
-  init: (tracesSampleRate = 0.5): void => {
+  init: (tracesSampleRate = 0.1): void => {
     Sentry.init({
       dsn: sentryDsn,
       enabled: sentryDsn != null,
