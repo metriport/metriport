@@ -9,7 +9,11 @@ import { SamlCertsAndKeys } from "../../../saml/security/types";
 import { namespaces, expiresIn } from "../../../constants";
 import { ORGANIZATION_NAME_DEFAULT as metriportOrganization, replyTo } from "../../../../shared";
 import { wrapIdInUrnUuid, wrapIdInUrnOid } from "../../../../../../util/urn";
-import { requiresOnlyOneDocRefPerRequest, getHomeCommunityId } from "../../../gateways";
+import {
+  requiresOnlyOneDocRefPerRequest,
+  getHomeCommunityId,
+  requiresUrnUuidPrefix,
+} from "../../../gateways";
 
 const action = "urn:ihe:iti:2007:CrossGatewayRetrieve";
 
@@ -22,10 +26,16 @@ export type BulkSignedDR = {
   outboundRequest: OutboundDocumentRetrievalReq;
 };
 
-function wrapDocUniqueIdIfLowercaseUuid(docUniqueId: string): string {
+/*
+ * Wraps the document unique id in a urn uuid if the gateway requires it and the document unique id is a lowercase UUID.
+ */
+function wrapDocUniqueIdIfLowercaseUuid(docUniqueId: string, gateway: XCAGateway): string {
   const isValidUuid = validateUuid(docUniqueId);
   const isLowercase = docUniqueId === docUniqueId.toLowerCase();
-  return isValidUuid && isLowercase ? wrapIdInUrnUuid(docUniqueId) : docUniqueId;
+  const isUrnUuidRequired = requiresUrnUuidPrefix(gateway);
+  return isValidUuid && isLowercase && isUrnUuidRequired
+    ? wrapIdInUrnUuid(docUniqueId)
+    : docUniqueId;
 }
 
 export function createITI39SoapEnvelope({
@@ -72,7 +82,10 @@ export function createITI39SoapEnvelope({
         "urn:DocumentRequest": documentReferences.map(docRef => ({
           "urn:HomeCommunityId": wrapIdInUrnOid(docRef.homeCommunityId),
           "urn:RepositoryUniqueId": docRef.repositoryUniqueId,
-          "urn:DocumentUniqueId": wrapDocUniqueIdIfLowercaseUuid(docRef.documentUniqueId),
+          "urn:DocumentUniqueId": wrapDocUniqueIdIfLowercaseUuid(
+            docRef.documentUniqueId,
+            bodyData.gateway
+          ),
         })),
       },
     },

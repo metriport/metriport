@@ -24,6 +24,16 @@ const redoxGatewayOid = "2.16.840.1.113883.3.6147.458.2";
  */
 const gatewaysThatAcceptOneDocRefPerRequest = [pointClickCareOid, redoxOid, redoxGatewayOid];
 
+const surescriptsOid = "2.16.840.1.113883.3.2054.2.1.1";
+/*
+ * These gateways require a urn:uuid prefix before document Uniwue ids formatted as lowercause uuids
+ */
+const gatewaysThatRequireUrnUuidPrefix = [surescriptsOid];
+
+export function requiresUrnUuidPrefix(gateway: XCAGateway): boolean {
+  return gatewaysThatRequireUrnUuidPrefix.includes(gateway.homeCommunityId);
+}
+
 function requiresMetriportOidInsteadOfInitiatorOid(gateway: XCPDGateway | XCAGateway): boolean {
   return requiresMetriportOidUrl.includes(gateway.url);
 }
