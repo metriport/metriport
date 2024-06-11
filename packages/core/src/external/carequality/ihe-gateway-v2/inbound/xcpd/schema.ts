@@ -1,13 +1,16 @@
 import { z } from "zod";
-import { schemaOrArray, TextSchema, AddressSchema, samlHeaderSchema } from "../../schema";
+import {
+  schemaOrArray,
+  TextSchema,
+  AddressSchema,
+  samlHeaderSchema,
+  genderSchema,
+} from "../../schema";
 
 export const QueryByParameterSchema = z.object({
   parameterList: z.object({
     livingSubjectAdministrativeGender: z.object({
-      value: z.object({
-        _code: z.string(),
-        _codeSystem: z.string(),
-      }),
+      value: genderSchema,
       semanticsText: z.literal("LivingSubject.administrativeGender"),
     }),
     livingSubjectBirthTime: z.object({

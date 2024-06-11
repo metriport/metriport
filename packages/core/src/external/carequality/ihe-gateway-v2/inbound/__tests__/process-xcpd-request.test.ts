@@ -7,6 +7,7 @@ const request = fs.readFileSync(path.join(__dirname, "xmls/epic-iti-55-request.x
 it("should process ITI-55 request", () => {
   try {
     const iti55Request = processXcpdRequest(request);
+    console.log(JSON.stringify(iti55Request, null, 2));
     expect(iti55Request).toBeDefined();
   } catch (error) {
     console.log(error);

@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { NHIN_PURPOSE_CODE_SYSTEM } from "../shared";
 
 export const schemaOrEmpty = <T extends z.ZodTypeAny>(schema: T) =>
   z.union([schema, z.literal("")]);
@@ -49,6 +48,31 @@ export const genderSchema = z.object({
   _code: z.union([z.literal("F"), z.literal("M"), z.literal("UN")]),
 });
 
+export const slot = z.object({
+  ValueList: z.object({
+    Value: schemaOrArray(StringOrNumberSchema),
+  }),
+  _name: z.string(),
+});
+export type Slot = z.infer<typeof slot>;
+
+const codeSchema = z.object({
+  _code: z.string(),
+  _displayName: z.string(),
+});
+export type Code = z.infer<typeof codeSchema>;
+
+export const AttributeSchema = z.union([
+  z.object({
+    Role: codeSchema,
+  }),
+  z.object({
+    PurposeOfUse: codeSchema,
+  }),
+  TextSchema,
+]);
+export type AttributeValue = z.infer<typeof AttributeSchema>;
+
 export const samlHeaderSchema = z.object({
   Security: z.object({
     Assertion: z.object({
@@ -57,53 +81,47 @@ export const samlHeaderSchema = z.object({
           z.object({
             _Name: z.literal("urn:oasis:names:tc:xspa:1.0:subject:subject-id"),
             _NameFormat: z.string(),
-            AttributeValue: z.string(),
+            AttributeValue: TextSchema,
           }),
           z.object({
             _Name: z.literal("urn:oasis:names:tc:xspa:1.0:subject:organization"),
             _NameFormat: z.string(),
-            AttributeValue: z.string(),
+            AttributeValue: TextSchema,
           }),
           z.object({
             _Name: z.literal("urn:oasis:names:tc:xspa:1.0:subject:organization-id"),
             _NameFormat: z.string(),
-            AttributeValue: z.string(),
+            AttributeValue: TextSchema,
           }),
           z.object({
             _Name: z.literal("urn:nhin:names:saml:homeCommunityId"),
             _NameFormat: z.string(),
-            AttributeValue: z.string(),
+            AttributeValue: TextSchema,
           }),
           z.object({
             _Name: z.literal("urn:oasis:names:tc:xacml:2.0:subject:role"),
             _NameFormat: z.string(),
             AttributeValue: z.object({
-              Role: z.object({
-                _xmlns: z.string().optional(),
-                _code: z.string(),
-                _codeSystem: z.string().optional(),
-                _codeSystemName: z.string().optional(),
-                _displayName: z.string(),
-              }),
+              Role: codeSchema,
             }),
           }),
           z.object({
             _Name: z.literal("urn:oasis:names:tc:xspa:1.0:subject:purposeofuse"),
             _NameFormat: z.string(),
             AttributeValue: z.object({
-              PurposeOfUse: z.object({
-                _xmlns: z.string().optional(),
-                _xsi: z.string().optional(),
-                _type: z.string().optional(),
-                _code: z.literal("TREATMENT"),
-                _codeSystem: z.literal(NHIN_PURPOSE_CODE_SYSTEM),
-                _codeSystemName: z.literal("nhin-purpose"),
-                _displayName: z.literal("Treatment"),
-              }),
+              PurposeOfUse: codeSchema,
             }),
           }),
         ]),
       }),
     }),
+    Timestamp: z.object({
+      Created: z.string(),
+      Expires: z.string(),
+    }),
   }),
 });
+
+export type SamlHeader = z.infer<typeof samlHeaderSchema>;
+
+export const treatmentPurposeOfUse = "TREATMENT";
