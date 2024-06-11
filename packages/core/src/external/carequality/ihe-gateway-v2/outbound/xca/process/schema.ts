@@ -6,10 +6,6 @@ import {
   StringOrNumberSchema,
 } from "../../schema";
 
-/**
- * @see https://www.ihe-j.org/file2/docs/RFD/IHE_ITI_TF_R14_Vol3.pdf, Page 48
- * Even though this is called list, the IHE spec specifies it's never a list.
- */
 const slot = z.object({
   ValueList: z.object({
     Value: schemaOrArray(StringOrNumberSchema),
