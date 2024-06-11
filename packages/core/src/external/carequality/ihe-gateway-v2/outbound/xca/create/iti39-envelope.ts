@@ -1,5 +1,4 @@
 import dayjs from "dayjs";
-import { validate as validateUuid } from "uuid";
 import { chunk } from "lodash";
 import { XMLBuilder } from "fast-xml-parser";
 import { OutboundDocumentRetrievalReq, XCAGateway } from "@metriport/ihe-gateway-sdk";
@@ -12,7 +11,7 @@ import { wrapIdInUrnUuid, wrapIdInUrnOid } from "../../../../../../util/urn";
 import {
   requiresOnlyOneDocRefPerRequest,
   getHomeCommunityId,
-  requiresUrnUuidPrefix,
+  getDocumentUniqueIdFunctionByGateway,
 } from "../../../gateways";
 
 const action = "urn:ihe:iti:2007:CrossGatewayRetrieve";
@@ -25,18 +24,6 @@ export type BulkSignedDR = {
   signedRequest: string;
   outboundRequest: OutboundDocumentRetrievalReq;
 };
-
-/*
- * Wraps the document unique id in a urn uuid if the gateway requires it and the document unique id is a lowercase UUID.
- */
-function wrapDocUniqueIdIfLowercaseUuid(docUniqueId: string, gateway: XCAGateway): string {
-  const isValidUuid = validateUuid(docUniqueId);
-  const isLowercase = docUniqueId === docUniqueId.toLowerCase();
-  const isUrnUuidRequired = requiresUrnUuidPrefix(gateway);
-  return isValidUuid && isLowercase && isUrnUuidRequired
-    ? wrapIdInUrnUuid(docUniqueId)
-    : docUniqueId;
-}
 
 export function createITI39SoapEnvelope({
   bodyData,
@@ -73,6 +60,7 @@ export function createITI39SoapEnvelope({
     purposeOfUse,
   });
 
+  const getDocumentUniqueIdFn = getDocumentUniqueIdFunctionByGateway(bodyData.gateway);
   const soapBody = {
     "soap:Body": {
       "@_xmlns:xsd": namespaces.xs,
@@ -82,10 +70,7 @@ export function createITI39SoapEnvelope({
         "urn:DocumentRequest": documentReferences.map(docRef => ({
           "urn:HomeCommunityId": wrapIdInUrnOid(docRef.homeCommunityId),
           "urn:RepositoryUniqueId": docRef.repositoryUniqueId,
-          "urn:DocumentUniqueId": wrapDocUniqueIdIfLowercaseUuid(
-            docRef.documentUniqueId,
-            bodyData.gateway
-          ),
+          "urn:DocumentUniqueId": getDocumentUniqueIdFn(docRef.documentUniqueId),
         })),
       },
     },
