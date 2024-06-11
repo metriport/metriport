@@ -165,7 +165,7 @@ export function buildCodeCvFromCodeCe(codeCe: CdaCodeCe, concepts: CodeableConce
 
   if (!concepts) return codeCv;
 
-  const translations = concepts.flatMap(
+  const translations = concepts.slice(1).flatMap(
     concept =>
       concept.coding?.map(coding => {
         return buildCodeCe({

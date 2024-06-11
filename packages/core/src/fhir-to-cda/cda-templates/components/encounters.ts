@@ -187,9 +187,11 @@ function createEntryFromEncounter(
   encounter: AugmentedEncounter,
   referenceId: string
 ): EncounterEntry {
+  const resClass = encounter.resource.class;
   const classCode = buildCodeCe({
-    code: encounter.resource.class?.code,
-    codeSystem: encounter.resource.class?.system,
+    code: resClass?.code,
+    codeSystem: resClass?.system,
+    displayName: resClass?.display,
   });
   const code = buildCodeCvFromCodeCe(classCode, encounter.resource.type);
 

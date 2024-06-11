@@ -53,9 +53,7 @@
 		</templateId>
 		<id root="placeholder-ORG-OID" extension="${encounterId}">
 		</id>
-		<code code="99214" codeSystem="2.16.840.1.113883.6.12">
-			<translation code="99214" codeSystem="2.16.840.1.113883.6.12" displayName="OV EST PT LEV 4">
-			</translation>
+		<code code="99214" codeSystem="2.16.840.1.113883.6.12" displayName="OV EST PT LEV 4">
 		</code>
 		<statusCode code="completed">
 		</statusCode>
