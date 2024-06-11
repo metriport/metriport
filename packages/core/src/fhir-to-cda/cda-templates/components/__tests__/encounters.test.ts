@@ -17,7 +17,7 @@ let encounter: Encounter;
 let practitioner: Practitioner;
 let location: Location;
 
-beforeEach(() => {
+beforeAll(() => {
   encounterId = faker.string.uuid();
   practitionerId = faker.string.uuid();
   locationId = faker.string.uuid();
@@ -32,25 +32,25 @@ beforeEach(() => {
   );
   practitioner = makePractitioner({ ...practitioner1, id: practitionerId });
   location = makeLocation({ ...location1, id: locationId });
+});
 
+beforeEach(() => {
   bundle = createEmptyBundle();
+  bundle.entry?.push({ resource: encounter });
+  bundle.entry?.push({ resource: practitioner });
+  bundle.entry?.push({ resource: location });
 });
 
 describe("buildEncounters", () => {
   it("correctly maps a single Encounter", () => {
-    bundle.entry?.push({ resource: encounter });
-    bundle.entry?.push({ resource: practitioner });
-    bundle.entry?.push({ resource: location });
-
     const filePath = path.join(__dirname, "./xmls/encounters-section-single-entry.xml");
-
     const params = {
       encounterId,
       practitionerId,
       locationId,
     };
-    const xmlTemplate = _.template(getXmlContentFromFile(filePath));
-    const xmlContent = xmlTemplate(params);
+    const applyToTemplate = _.template(getXmlContentFromFile(filePath));
+    const xmlContent = applyToTemplate(params);
     const res = buildEncounters(bundle);
     const cleanedJsonObj = removeEmptyFields(res);
     const xmlRes = xmlBuilder.build(cleanedJsonObj);
@@ -58,10 +58,6 @@ describe("buildEncounters", () => {
   });
 
   it("correctly maps two Encounters", () => {
-    bundle.entry?.push({ resource: encounter });
-    bundle.entry?.push({ resource: practitioner });
-    bundle.entry?.push({ resource: location });
-
     const encounterId2 = faker.string.uuid();
     const practitionerId2 = faker.string.uuid();
     const locationId2 = faker.string.uuid();
@@ -91,8 +87,8 @@ describe("buildEncounters", () => {
       practitionerId2,
       locationId2,
     };
-    const xmlTemplate = _.template(getXmlContentFromFile(filePath));
-    const xmlContent = xmlTemplate(params);
+    const applyToTemplate = _.template(getXmlContentFromFile(filePath));
+    const xmlContent = applyToTemplate(params);
     const res = buildEncounters(bundle);
     const cleanedJsonObj = removeEmptyFields(res);
     const xmlRes = xmlBuilder.build(cleanedJsonObj);
