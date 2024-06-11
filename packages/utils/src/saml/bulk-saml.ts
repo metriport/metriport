@@ -10,6 +10,9 @@ import { createAndSignBulkXCPDRequests } from "@metriport/core/external/carequal
 import { sendSignedXCPDRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/send/xcpd-requests";
 import { processXCPDResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/process/xcpd-response";
 import { setRejectUnauthorized } from "@metriport/core/external/carequality/ihe-gateway-v2/saml/saml-client";
+import { setS3UtilsInstance as setS3UtilsInstanceForStoringIheResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/monitor/store";
+import { MockS3Utils } from "./mock-s3";
+import { Config } from "@metriport/core/util/config";
 
 /** This is a helper script to test constructing your own SOAP+SAML requests. It creates the SOAP 
 Envelope and sends it to the gateway specified in the request body. It logs the output into the 
@@ -21,6 +24,8 @@ Metriport-IHE GW / XML + SAML Constructor - Postman collection.
 const timestamp = dayjs().toISOString();
 const env = "STAGING";
 setRejectUnauthorized(false);
+const s3utils = new MockS3Utils(Config.getAWSRegion());
+setS3UtilsInstanceForStoringIheResponse(s3utils);
 
 // Set these to staging if you want to actually test the endpoints in a pre-prod env
 const samlCertsAndKeys = {

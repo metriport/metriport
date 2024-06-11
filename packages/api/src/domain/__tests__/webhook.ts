@@ -1,8 +1,7 @@
 import { faker } from "@faker-js/faker";
-import { WebhookRequestStatus } from "../../models/webhook-request";
 import { WebhookRequest } from "../webhook";
 import { makeBaseDomain } from "./base-domain";
-import { WebhookType } from "../webhook";
+import { WebhookType, WebhookRequestStatus } from "../webhook";
 
 export const makeWebhook = ({
   id,

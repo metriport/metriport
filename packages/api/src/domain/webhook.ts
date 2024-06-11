@@ -1,6 +1,9 @@
-import { Product } from "./product";
 import { BaseDomain, BaseDomainCreate } from "@metriport/core/domain/base-domain";
-import { WebhookRequestStatus } from "../models/webhook-request";
+import {
+  MAPIWebhookType as MAPIWebhookTypeFromShared,
+  WebhookType as WebhookTypeFromShared,
+} from "@metriport/shared/medical";
+import { Product } from "./product";
 
 // TODO: 1411 - remove this section when DAPI is fully discontinued
 export const dapiWHPrefix = Product.devices;
@@ -11,16 +14,10 @@ export const dapiWebhookType = [
 ] as const;
 export type DAPIWebhookType = (typeof dapiWebhookType)[number];
 
-export const mapiWHPrefix = Product.medical;
-export const mapiWebhookType = [
-  `${mapiWHPrefix}.document-download`,
-  `${mapiWHPrefix}.document-conversion`,
-  `${mapiWHPrefix}.consolidated-data`,
-  `${mapiWHPrefix}.document-bulk-download-urls`,
-] as const;
-export type MAPIWebhookType = (typeof mapiWebhookType)[number];
-export type PingWebhookType = "ping";
-export type WebhookType = DAPIWebhookType | MAPIWebhookType | PingWebhookType;
+export type MAPIWebhookType = MAPIWebhookTypeFromShared;
+export type WebhookType = WebhookTypeFromShared | DAPIWebhookType;
+
+export type WebhookRequestStatus = "processing" | "success" | "failure";
 
 export interface WebhookRequestCreate extends Omit<BaseDomainCreate, "id"> {
   cxId: string;
@@ -28,6 +25,10 @@ export interface WebhookRequestCreate extends Omit<BaseDomainCreate, "id"> {
   type: WebhookType;
   payload: object;
   status?: WebhookRequestStatus;
+  statusDetail?: string;
+  requestUrl?: string;
+  httpStatus?: number;
+  durationMillis?: number;
 }
 
 export interface WebhookRequest extends BaseDomain, WebhookRequestCreate {}
