@@ -22,7 +22,8 @@ import {
 import { successStatus, partialSuccessStatus } from "./constants";
 import { capture } from "../../../../../../util/notifications";
 import { toArray } from "@metriport/shared";
-import { iti38Schema, Slot, ExternalIdentifier, Classification, ExtrinsicObject } from "./schema";
+import { iti38Schema, ExternalIdentifier, Classification, ExtrinsicObject } from "./schema";
+import { Slot } from "../../../schema";
 import { out } from "../../../../../../util/log";
 
 const { log } = out("DQ Processing");
