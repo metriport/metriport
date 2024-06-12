@@ -455,10 +455,10 @@ export function getTextFromCode(code: CodeableConcept | undefined): string {
 }
 
 export function getDisplaysFromCodeableConcepts(
-  concepts: CodeableConcept[] | undefined
+  concepts: CodeableConcept | CodeableConcept[] | undefined
 ): string | undefined {
   if (!concepts) return undefined;
-  return concepts
+  return toArray(concepts)
     .map(concept => {
       const code = buildCodeCeFromCoding(concept.coding);
       if (code?._displayName) return code._displayName.trim();

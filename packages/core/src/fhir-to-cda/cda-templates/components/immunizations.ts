@@ -25,7 +25,7 @@ import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { initiateSectionTable } from "../table";
 import { AugmentedImmunization } from "./augmented-resources";
 
-export const encountersSectionName = "immunizations";
+const immunizationsSectionName = "immunizations";
 
 const tableHeaders = ["Immunization", "Status", "Location", "Date"];
 
@@ -46,7 +46,7 @@ export function buildImmunizations(fhirBundle: Bundle) {
     createEntryFromEncounter
   );
 
-  const table = initiateSectionTable(encountersSectionName, tableHeaders, trs);
+  const table = initiateSectionTable(immunizationsSectionName, tableHeaders, trs);
 
   return {
     templateId: buildInstanceIdentifier({
@@ -73,9 +73,19 @@ function createAugmentedImmunizations(
     const locationId = immunization.location?.reference;
     const location = locationId ? findResourceInBundle(fhirBundle, locationId) : undefined;
     if (isLocation(location)) {
-      return new AugmentedImmunization(encountersSectionName, immunization, location, locationName);
+      return new AugmentedImmunization(
+        immunizationsSectionName,
+        immunization,
+        location,
+        locationName
+      );
     }
-    return new AugmentedImmunization(encountersSectionName, immunization, undefined, locationName);
+    return new AugmentedImmunization(
+      immunizationsSectionName,
+      immunization,
+      undefined,
+      locationName
+    );
   });
 }
 

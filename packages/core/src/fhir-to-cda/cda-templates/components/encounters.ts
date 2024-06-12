@@ -32,7 +32,7 @@ import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { initiateSectionTable } from "../table";
 import { AugmentedEncounter } from "./augmented-resources";
 
-export const encountersSectionName = "encounters";
+const encountersSectionName = "encounters";
 
 const tableHeaders = [
   "Reason for Visit",
