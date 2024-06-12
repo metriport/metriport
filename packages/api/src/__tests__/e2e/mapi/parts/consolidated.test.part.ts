@@ -9,10 +9,10 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import isBetween from "dayjs/plugin/isBetween";
 import fs from "fs";
-import { validate as validateUuid } from "uuid";
 import { e2eResultsFolderName } from "../../shared";
 import { E2eContext, medicalApi } from "../shared";
 import { getConsolidatedWebhookRequest, resetConsolidatedData } from "../webhook/consolidated";
+import { checkWebhookRequestMeta } from "../webhook/shared";
 import {
   checkConsolidatedHtml,
   checkConsolidatedJson,
@@ -130,10 +130,11 @@ export function runConsolidatedTests(e2e: E2eContext) {
     let conversionProgresses = await medicalApi.getConsolidatedQueryStatus(e2e.patient.id);
     let initConversionProgress = conversionProgresses?.queries?.[0];
     let retryLimit = 0;
-    while (
-      initConversionProgress?.status !== "completed" &&
-      retryLimit++ < conversionCheckStatusMaxRetries
-    ) {
+    while (initConversionProgress?.status !== "completed") {
+      if (retryLimit++ > conversionCheckStatusMaxRetries) {
+        console.log(`Gave up waiting for Conversion`);
+        break;
+      }
       console.log(
         `Conversion still processing, retrying in ${conversionCheckStatusWaitTime.asSeconds()} seconds...`
       );
@@ -165,25 +166,7 @@ export function runConsolidatedTests(e2e: E2eContext) {
 
     it(`receives consolidated ${format} WH with correct meta`, async () => {
       const whRequest = getConsolidatedWebhookRequest();
-      expect(whRequest).toBeTruthy();
-      if (!whRequest) throw new Error("Missing WH request");
-      expect(whRequest.meta).toBeTruthy();
-      expect(whRequest.meta).toEqual(
-        expect.objectContaining({
-          type: "medical.consolidated-data",
-          messageId: expect.anything(),
-          when: expect.anything(),
-        })
-      );
-      expect(validateUuid(whRequest.meta.messageId)).toBeTrue();
-      const minDate = dayjs().subtract(1, "minute").toDate();
-      const maxDate = dayjs().add(1, "minute").toDate();
-      expect(dayjs(whRequest.meta.when).isBetween(minDate, maxDate)).toBeTrue();
-      expect(whRequest.meta).not.toEqual(
-        expect.objectContaining({
-          data: expect.toBeFalsy,
-        })
-      );
+      checkWebhookRequestMeta(whRequest, "medical.consolidated-data");
     });
 
     it(`receives consolidated ${format} WH with MR in ${format} format`, async () => {

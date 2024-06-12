@@ -41,7 +41,7 @@ export async function handleRequest(req: Request, res: Response) {
     return res.status(400).send({ message: `Invalid WH` });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    console.log(`[WH] ====> Error parsing WH request - cause: ${error.cause} - error: ${error}`);
+    console.log(`[WH] ######> ERROR parsing WH request - cause: ${error.cause} - error: ${error}`);
     return res.status(400).send({ message: error.message });
   }
 }
