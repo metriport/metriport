@@ -137,7 +137,7 @@ export async function processOutboundDocumentQueryResps({
       patientId,
       requestId,
       cxId,
-      resultsWithMetriportId: responseWithDocsToDownload,
+      responseWithDocsToDownload,
       log,
     });
 
@@ -356,19 +356,19 @@ async function replaceDqUrlWithDrUrl({
   patientId,
   requestId,
   cxId,
-  resultsWithMetriportId,
+  responseWithDocsToDownload,
   log,
 }: {
   patientId: string;
   requestId: string;
   cxId: string;
-  resultsWithMetriportId: OutboundDocumentQueryResp[];
+  responseWithDocsToDownload: OutboundDocumentQueryResp[];
   log: typeof console.log;
 }): Promise<OutboundDocumentQueryResp[]> {
   const resultsWithMetriportIdAndDrUrl: OutboundDocumentQueryResp[] = [];
 
   await executeAsynchronously(
-    resultsWithMetriportId,
+    responseWithDocsToDownload,
     async outboundDocumentQueryResp => {
       const gateway = await getCQDirectoryEntry(outboundDocumentQueryResp.gateway.homeCommunityId);
 
