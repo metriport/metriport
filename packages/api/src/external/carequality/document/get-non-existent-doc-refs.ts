@@ -1,10 +1,9 @@
-import { createFilePath } from "@metriport/core/domain/filename";
+import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { getFileExtension } from "@metriport/core/util/mime";
 import { DocumentReferenceWithMetriportId } from "../../../external/carequality/document/shared";
 import { Config } from "../../../shared/config";
 import { getDocumentsFromFHIR } from "../../fhir/document/get-documents";
@@ -50,8 +49,12 @@ async function checkDocRefsExistInS3(
     documents,
     async doc => {
       try {
-        const fileExtension = getFileExtension(doc.contentType || undefined);
-        const fileName = createFilePath(cxId, patientId, `${doc.metriportId}${fileExtension}`);
+        const fileName = createDocumentFilePath(
+          cxId,
+          patientId,
+          doc.metriportId,
+          doc.contentType || undefined
+        );
 
         const { exists } = await s3Utils.getFileInfoFromS3(fileName, s3BucketName);
 
