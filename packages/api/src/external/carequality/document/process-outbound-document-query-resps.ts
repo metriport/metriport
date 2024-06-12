@@ -73,20 +73,18 @@ export async function processOutboundDocumentQueryResps({
       },
     });
 
-    const responseWithDocsToDownload = await getRespWithDocsToDownload({
+    const responsesWithDocsToDownload = await getRespWithDocsToDownload({
       cxId,
       patientId,
       requestId,
       response,
     });
 
-    const docsToDownload = responseWithDocsToDownload.flatMap(
+    const docsToDownload = responsesWithDocsToDownload.flatMap(
       result => result.documentReference ?? []
     );
 
-    const convertibleDocCount = docsToDownload.filter(doc =>
-      isConvertible(doc.contentType || undefined)
-    ).length;
+    const convertibleDocCount = docsToDownload.filter(doc => isConvertible(doc.contentType)).length;
 
     log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
 
@@ -130,14 +128,13 @@ export async function processOutboundDocumentQueryResps({
     // Since we have most of the document contents when doing the document query,
     // we will store this in FHIR and then upsert the reference to the s3 object in FHIR
     // when doing the doc retrieval
-    const docRefsWithMetriportId = filterDocRefsWithMetriportId(docsToDownload);
-    await storeInitDocRefInFHIR(docRefsWithMetriportId, cxId, patientId, log);
+    await storeInitDocRefInFHIR(docsToDownload, cxId, patientId, log);
 
     const resultsWithMetriportIdAndDrUrl = await replaceDqUrlWithDrUrl({
       patientId,
       requestId,
       cxId,
-      responseWithDocsToDownload,
+      responsesWithDocsToDownload,
       log,
     });
 
@@ -252,18 +249,22 @@ function buildInterrupt({
   };
 }
 
+type DqRespWithDocRefsWithMetriportId = OutboundDocumentQueryResp & {
+  documentReference: DocumentReferenceWithMetriportId[];
+};
+
 async function getRespWithDocsToDownload({
   cxId,
   patientId,
   requestId,
   response,
-}: OutboundDocQueryRespParam): Promise<OutboundDocumentQueryResp[]> {
-  const respWithDocsToDownload: OutboundDocumentQueryResp[] = [];
+}: OutboundDocQueryRespParam): Promise<DqRespWithDocRefsWithMetriportId[]> {
+  const respWithDocsToDownload: DqRespWithDocRefsWithMetriportId[] = [];
 
   await executeAsynchronously(
     response,
     async gwResp => {
-      const resultsWithMetriportId = await updateDocumentReferencesWithMetriportId({
+      const resultsWithMetriportId = await getDocumentReferencesWithMetriportId({
         cxId,
         patientId,
         requestId,
@@ -290,7 +291,7 @@ async function getRespWithDocsToDownload({
   return respWithDocsToDownload;
 }
 
-async function updateDocumentReferencesWithMetriportId({
+async function getDocumentReferencesWithMetriportId({
   cxId,
   patientId,
   requestId,
@@ -356,19 +357,19 @@ async function replaceDqUrlWithDrUrl({
   patientId,
   requestId,
   cxId,
-  responseWithDocsToDownload,
+  responsesWithDocsToDownload,
   log,
 }: {
   patientId: string;
   requestId: string;
   cxId: string;
-  responseWithDocsToDownload: OutboundDocumentQueryResp[];
+  responsesWithDocsToDownload: OutboundDocumentQueryResp[];
   log: typeof console.log;
 }): Promise<OutboundDocumentQueryResp[]> {
   const resultsWithMetriportIdAndDrUrl: OutboundDocumentQueryResp[] = [];
 
   await executeAsynchronously(
-    responseWithDocsToDownload,
+    responsesWithDocsToDownload,
     async outboundDocumentQueryResp => {
       const gateway = await getCQDirectoryEntry(outboundDocumentQueryResp.gateway.homeCommunityId);
 
