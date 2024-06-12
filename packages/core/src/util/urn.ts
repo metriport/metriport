@@ -1,4 +1,4 @@
-const urnRegex = /^urn:oid:/;
+const urnRegex = /^urn:(oid|uuid):/;
 
 export function wrapIdInUrnUuid(id: string): string {
   return `urn:uuid:${id}`;

@@ -29,6 +29,30 @@ export type ClinicalDocument = {
   };
 };
 
+export type ActStatusCode =
+  | "new"
+  | "active"
+  | "held"
+  | "completed"
+  | "nullified"
+  | "completed"
+  | "suspended";
+
+export type CdaAddressUse =
+  | "BAD"
+  | "CONF"
+  | "DIR"
+  | "H"
+  | "HP"
+  | "HV"
+  | "PHYS"
+  | "PST"
+  | "PUB"
+  | "TMP"
+  | "WP";
+
+export type CdaTelecomUse = "AS" | "EC" | "HP" | "HV" | "MC" | "PG" | "WP";
+
 export type Entry = { [key: string]: string } | string;
 export type EntryObject = { [key: string]: string };
 

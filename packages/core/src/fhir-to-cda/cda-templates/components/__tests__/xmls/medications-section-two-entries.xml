@@ -113,8 +113,6 @@
 							<reference value="medications1">
 							</reference>
 						</originalText>
-						<translation code="315577" codeSystem="2.16.840.1.113883.6.88" displayName="carvedilol 6.25 MG">
-						</translation>
 						<translation code="51407-040" codeSystem="2.16.840.1.113883.6.69" displayName="Carvedilol">
 						</translation>
 					</code>
@@ -147,8 +145,6 @@
 							<reference value="medications2">
 							</reference>
 						</originalText>
-						<translation code="646344" codeSystem="2.16.840.1.113883.6.88" displayName="omeprazole 20 MG / sodium bicarbonate 1100 MG Oral Capsule">
-						</translation>
 					</code>
 				</manufacturedMaterial>
 			</manufacturedProduct>

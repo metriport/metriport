@@ -4,6 +4,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { Patient } from "@metriport/core/domain/patient";
+import { DiscoveryParams } from "@metriport/core/domain/patient-discovery";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { LinkStatus } from "../patient-link";
@@ -46,40 +47,34 @@ export async function getPatientWithCWData(
 }
 
 export type CWParams = {
-  commonwellPatientId: string;
-  commonwellPersonId: string | undefined;
-  commonwellStatus: LinkStatus | undefined;
-  cqLinkStatus: CQLinkStatus | undefined;
+  commonwellPatientId?: string;
+  commonwellPersonId?: string;
+  cqLinkStatus?: CQLinkStatus;
 };
 
 export type SetCommonwellIdParams = CWParams & {
-  patientId: string;
-  cxId: string;
+  patient: Pick<Patient, "id" | "cxId">;
 };
 
 /**
  * Sets the CommonWell (CW) IDs and integration status on the patient.
  *
- * @param patientId The patient ID @ Metriport.
- * @param cxId The customer ID @ Metriport.
+ * @param patient The patient @ Metriport.
  * @param commonwellPatientId The patient ID @ CommonWell.
  * @param commonwellPersonId The person ID @ CommonWell.
- * @param commonwellStatus The status of integrating/synchronizing the patient @ CommonWell.
  * @param cqLinkStatus The status of linking the patient with CareQuality orgs using CW's
  *        bridge with CQ. If not provided, it will keep the current CQ link status.
  * @returns
  */
-export const setCommonwellIdsAndStatus = async ({
-  patientId,
-  cxId,
+export const updateCommonwellIdsAndStatus = async ({
+  patient,
   commonwellPatientId,
   commonwellPersonId,
-  commonwellStatus,
   cqLinkStatus,
 }: SetCommonwellIdParams): Promise<Patient> => {
   const patientFilter = {
-    id: patientId,
-    cxId,
+    id: patient.id,
+    cxId: patient.cxId,
   };
 
   return executeOnDBTx(PatientModel.prototype, async transaction => {
@@ -99,7 +94,6 @@ export const setCommonwellIdsAndStatus = async ({
         ...externalData.COMMONWELL,
         ...(commonwellPatientId && { patientId: commonwellPatientId }),
         ...(commonwellPersonId && { personId: commonwellPersonId }),
-        ...(commonwellStatus && { status: commonwellStatus }),
         ...(updatedCQLinkStatus && { cqLinkStatus: updatedCQLinkStatus }),
       },
     };
@@ -124,23 +118,26 @@ export const setCommonwellIdsAndStatus = async ({
 /**
  * Sets the CommonWell (CW) integration status on the patient.
  *
- * @param patientId The patient ID @ Metriport.
- * @param cxId The customer ID @ Metriport.
+ * @param patient The patient @ Metriport.
  * @param status The status of integrating/synchronizing the patient @ CommonWell.
+ * @param params.requestId The request ID of integrating/synchronizing the patient @ CommonWell.
+ * @param params.facilityId The facility ID of integrating/synchronizing the patient @ CommonWell.
+ * @param params.startedAt The start date of integrating/synchronizing the patient @ CommonWell.
+ * @param params.rerunPdOnNewDemographics The flag for determining whether to re-run pattient discovery again if new demographic data is found.
  * @returns
  */
-export const setPatientDiscoveryStatus = async ({
-  patientId,
-  cxId,
+export const updatePatientDiscoveryStatus = async ({
+  patient,
   status,
+  params,
 }: {
-  patientId: string;
-  cxId: string;
+  patient: Pick<Patient, "id" | "cxId">;
   status: LinkStatus;
+  params?: DiscoveryParams;
 }): Promise<Patient> => {
   const patientFilter = {
-    id: patientId,
-    cxId,
+    id: patient.id,
+    cxId: patient.cxId,
   };
 
   return await executeOnDBTx(PatientModel.prototype, async transaction => {
@@ -152,11 +149,16 @@ export const setPatientDiscoveryStatus = async ({
 
     const externalData = existingPatient.data.externalData ?? {};
 
+    if (!params && !externalData.COMMONWELL?.discoveryParams) {
+      throw new Error(`Cannot update discovery status before assigning discovery params @ CW`);
+    }
+
     const updatePatientDiscoveryStatus = {
       ...externalData,
       COMMONWELL: {
         ...externalData.COMMONWELL,
         status,
+        ...(params && { discoveryParams: params }),
       },
     };
 

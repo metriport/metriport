@@ -8,6 +8,9 @@ export function stringToBoolean(value?: string): boolean | undefined {
   return stringToBooleanRequired(value);
 }
 
+/**
+ * @deprecated Use isTrue() instead
+ */
 export function stringToBooleanRequired(value: string): boolean {
   return value.toLowerCase().trim() === "true";
 }

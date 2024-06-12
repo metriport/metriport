@@ -7,7 +7,12 @@ import {
   isPractitioner,
 } from "../../../external/fhir/shared";
 import { EncountersSection } from "../../cda-types/sections";
-import { ConcernActEntry, EncounterEntry, ObservationTableRow } from "../../cda-types/shared-types";
+import {
+  ActStatusCode,
+  ConcernActEntry,
+  EncounterEntry,
+  ObservationTableRow,
+} from "../../cda-types/shared-types";
 import {
   buildCodeCe,
   buildCodeCvFromCodeCe,
@@ -135,7 +140,7 @@ function createTableRowFromEncounter(
             "#text": getPractitionerInformation(encounter.practitioners),
           },
           {
-            "#text": locationInfo?.map(l => `${l.name} - ${l.address}`).join("\n") ?? NOT_SPECIFIED,
+            "#text": locationInfo?.map(l => `${l.name} - ${l.address}`).join("; ") ?? NOT_SPECIFIED,
           },
           {
             "#text":
@@ -154,11 +159,10 @@ function buildAddressText(address: Address | undefined): string | undefined {
 
 function getPractitionerInformation(participant: Practitioner[] | undefined): string {
   if (!participant) return NOT_SPECIFIED;
-
   const practitionerInfo = participant
     .map(p => buildNameText(p.name))
     .filter(Boolean)
-    .join("\n");
+    .join("; ");
 
   return practitionerInfo ?? NOT_SPECIFIED;
 }
@@ -189,9 +193,11 @@ function createEntryFromEncounter(
   encounter: AugmentedEncounter,
   referenceId: string
 ): EncounterEntry {
+  const resClass = encounter.resource.class;
   const classCode = buildCodeCe({
-    code: encounter.resource.class?.code,
-    codeSystem: encounter.resource.class?.system,
+    code: resClass?.code,
+    codeSystem: resClass?.system,
+    displayName: resClass?.display,
   });
   const code = buildCodeCvFromCodeCe(classCode, encounter.resource.type);
 
@@ -229,10 +235,12 @@ function createEntryFromEncounter(
 }
 
 /**
- * For FHIR statuses, see https://hl7.org/fhir/R4/valueset-encounter-status.html
- * For CDA statuses, see https://terminology.hl7.org/5.2.0/ValueSet-v3-ActStatus.html
+ * For FHIR statuses
+ * @see https://hl7.org/fhir/R4/valueset-encounter-status.html
+ * For CDA statuses:
+ * @see https://terminology.hl7.org/5.2.0/ValueSet-v3-ActStatus.html
  */
-function mapEncounterStatusCode(status: string | undefined): string {
+function mapEncounterStatusCode(status: string | undefined): ActStatusCode {
   if (!status) return "completed";
   switch (status) {
     case "planned":
