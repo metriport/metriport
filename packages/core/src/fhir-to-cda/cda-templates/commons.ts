@@ -16,11 +16,13 @@ import {
   AssignedEntity,
   CDAOriginalText,
   CdaAddress,
+  CdaAddressUse,
   CdaCodeCe,
   CdaCodeCv,
   CdaInstanceIdentifier,
   CdaOrganization,
   CdaTelecom,
+  CdaTelecomUse,
   CdaValueCd,
   CdaValueSt,
   Entry,
@@ -75,9 +77,11 @@ export function withNullFlavor(value: string | undefined, key: string): Entry {
   return { [key]: value };
 }
 
-export function buildCodeCeFromCoding(coding: Coding[] | undefined): CdaCodeCe | undefined {
+export function buildCodeCeFromCoding(
+  coding: Coding | Coding[] | undefined
+): CdaCodeCe | undefined {
   if (!coding) return;
-  const primaryCoding = coding[0];
+  const primaryCoding = toArray(coding)[0];
   if (!primaryCoding) return;
   const cleanedUpCoding = cleanUpCoding(primaryCoding);
   return buildCodeCe({
@@ -143,7 +147,7 @@ export function buildCodeCvFromCodeableConcept(
       })
     : {};
 
-  const translations = (codeableConcept.coding || []).map(coding =>
+  const translations = (codeableConcept.coding?.slice(1) || []).map(coding =>
     buildCodeCe({
       code: coding.code,
       codeSystem: mapCodingSystem(coding.system),
@@ -170,7 +174,8 @@ export function buildCodeCvFromCodeCe(codeCe: CdaCodeCe, concepts: CodeableConce
 
   const translations = concepts.flatMap(
     concept =>
-      concept.coding?.map(coding => {
+      concept.coding?.flatMap(coding => {
+        if (coding.code === codeCe._code) return [];
         return buildCodeCe({
           code: coding.code,
           codeSystem: mapCodingSystem(coding.system),
@@ -336,7 +341,7 @@ export function buildValueCd(
 /**
  * Mapping options for the PostalAddressUse from the CDA R2 IG
  */
-function mapAddressUse(use: string | undefined) {
+function mapAddressUse(use: string | undefined): CdaAddressUse | undefined {
   if (!use) return undefined;
   switch (use.toLowerCase()) {
     case "bad address":
@@ -362,14 +367,15 @@ function mapAddressUse(use: string | undefined) {
     // from example CDAs
     case "work":
       return "WP";
+    default:
+      return "BAD";
   }
-  return use;
 }
 
 /**
  * Mapping options from Telecom Use of the CDA R2 IG
  */
-function mapTelecomUse(use: string | undefined) {
+function mapTelecomUse(use: string | undefined): CdaTelecomUse | undefined {
   if (!use) return undefined;
   switch (use.toLowerCase()) {
     case "answering service":
@@ -386,8 +392,9 @@ function mapTelecomUse(use: string | undefined) {
       return "PG";
     case "work" || "work place":
       return "WP";
+    default:
+      return "WP";
   }
-  return use;
 }
 
 function cleanUpCoding(primaryCodingRaw: Coding | undefined) {
@@ -538,13 +545,13 @@ export function buildParticipant(locations: Location[] | undefined): Participant
       _typeCode: "LOC",
       participantRole: {
         _classCode: "SDLOC",
+        templateId: {
+          _root: oids.serviceDeliveryLocation,
+        },
         id: buildInstanceIdentifier({
           root: placeholderOrgOid,
           extension: location.id,
         }),
-        templateId: {
-          _root: oids.serviceDeliveryLocation,
-        },
         code: {
           _nullFlavor: "NI",
         },

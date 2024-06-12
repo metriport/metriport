@@ -130,7 +130,7 @@
                 <ExtrinsicObject home="urn:oid:2.16.840.1.113883.3.9621" id="018e8b0d-91fb-732b-b9a1-f476a940642c" isOpaque="false" mimeType="application/pdf" objectType="urn:uuid:34268e47-fdf5-41a6-ba33-82133c465248" status="urn:oasis:names:tc:ebxml-regrep:StatusType:Approved">
                     <Slot name="creationTime">
                         <ValueList>
-                            <Value>2024-03-29T16:31:46.171Z</Value>
+                            <Value>20240329163146</Value>
                         </ValueList>
                     </Slot>
                     <Slot name="languageCode">

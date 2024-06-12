@@ -13,19 +13,21 @@ let observationId: string;
 let bundle: Bundle;
 let observation: Observation;
 
-beforeEach(() => {
+beforeAll(() => {
   observationId = faker.string.uuid();
   observation = makeObservation({
     id: observationId,
     ...observationMentalStatus,
   });
+});
 
+beforeEach(() => {
   bundle = createEmptyBundle();
+  bundle.entry?.push({ resource: observation });
 });
 
 describe("buildMentalStatus", () => {
   it("does not pick up non-mental-status Observations", () => {
-    bundle.entry?.push({ resource: observation });
     const observation2 = makeObservation({
       ...observationMentalStatus,
       id: faker.string.uuid(),
@@ -49,13 +51,12 @@ describe("buildMentalStatus", () => {
   });
 
   it("correctly maps a single mental status survey Observation", () => {
-    bundle.entry?.push({ resource: observation });
     const filePath = path.join(__dirname, "./xmls/mental-status-section-single-survey.xml");
     const params = {
       observationId,
     };
-    const xmlTemplate = _.template(getXmlContentFromFile(filePath));
-    const xmlContent = xmlTemplate(params);
+    const applyToTemplate = _.template(getXmlContentFromFile(filePath));
+    const xmlContent = applyToTemplate(params);
     const res = buildMentalStatus(bundle);
     const cleanedJsonObj = removeEmptyFields(res);
     const xmlRes = xmlBuilder.build(cleanedJsonObj);

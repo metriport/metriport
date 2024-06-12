@@ -4,12 +4,13 @@ import { MPIMetriportAPI } from "@metriport/core/mpi/patient-mpi-metriport-api";
 import { getEnvVarOrFail, getEnvVar } from "@metriport/core/util/env-var";
 import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
 import { inboundPatientDiscoveryReqSchema } from "@metriport/ihe-gateway-sdk";
-import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { analyticsAsync, EventTypes } from "@metriport/core/external/analytics/posthog";
 import * as Sentry from "@sentry/serverless";
 
 const apiUrl = getEnvVarOrFail("API_URL");
 const region = getEnvVarOrFail("AWS_REGION");
 
+const engineeringCxId = getEnvVar("ENGINEERING_CX_ID");
 const postHogSecretName = getEnvVar("POST_HOG_API_KEY_SECRET");
 const mpi = new MPIMetriportAPI(apiUrl);
 
@@ -22,17 +23,18 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
 
   const result = await processInboundPatientDiscovery(baseRequest.data, mpi);
 
-  if (result.patientMatch && result.cxId && postHogSecretName) {
+  if (result.patientMatch && postHogSecretName) {
     const postHogApiKey = await getSecretValue(postHogSecretName, region);
 
-    if (postHogApiKey) {
-      analytics(
+    if (postHogApiKey && engineeringCxId) {
+      await analyticsAsync(
         {
-          distinctId: result.cxId,
+          distinctId: engineeringCxId,
           event: EventTypes.inboundPatientDiscovery,
           properties: {
             patientId: result.patientId,
             patientMatch: result.patientMatch,
+            homeCommunityId: baseRequest.data.samlAttributes.homeCommunityId,
           },
         },
         postHogApiKey

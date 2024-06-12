@@ -4,7 +4,7 @@ description: "Get the status of querying for patient's consolidated data."
 api: "GET /medical/v1/patient/{id}/consolidated/query"
 ---
 
-This endpoint only returns the status of a consolidated data query. To trigger a new query you can
+This endpoint returns all the queries that are currently in progress. To trigger a new query you can
 [start a consolidated query](/medical-api/api-reference/fhir/consolidated-data-query-post).
 
 The result of the query will be sent through a [Webhook request](/medical-api/more-info/webhooks#patient-consolidated-data)
@@ -32,9 +32,38 @@ const status = await metriport.getConsolidatedQueryStatus(patientId);
 
 </ResponseExample>
 
+<ResponseField name="queries" type="ConsolidatedQuery[]" required>
+  <Expandable title="ConsolidatedQuery properties">
+    <Snippet file="consolidated-query.mdx" />
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  An optional message for the request.
+</ResponseField>
+
 ```json
 {
-    "status": "completed",
-    "message": "Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook"
+  "queries": [
+    {
+      "requestId": "5f4b3b4b-4b3b-4b3b-4b3b-4b3b4b3b4b3b",
+      "status": "processing",
+      "startedAt": "2021-01-01T00:00:00Z",
+      "dateFrom": "2021-01-01",
+      "dateTo": "2021-01-31",
+      "resources": ["Observation", "MedicationRequest"],
+      "conversionType": "pdf"
+    },
+    {
+      "requestId": "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+      "status": "completed",
+      "startedAt": "2023-01-01T00:00:00Z",
+      "dateFrom": "2023-01-01",
+      "dateTo": "2023-01-31",
+      "resources": ["MedicationRequest"],
+      "conversionType": "html"
+    }
+  ],
+  "message": "Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook"
 }
 ```

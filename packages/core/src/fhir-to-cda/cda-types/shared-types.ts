@@ -24,9 +24,34 @@ export type ClinicalDocument = {
     recordTarget: CdaRecordTarget;
     author: CdaAuthor;
     custodian: CdaCustodian;
+    componentOf: EncompassingEncounter | undefined;
     component: unknown;
   };
 };
+
+export type ActStatusCode =
+  | "new"
+  | "active"
+  | "held"
+  | "completed"
+  | "nullified"
+  | "completed"
+  | "suspended";
+
+export type CdaAddressUse =
+  | "BAD"
+  | "CONF"
+  | "DIR"
+  | "H"
+  | "HP"
+  | "HV"
+  | "PHYS"
+  | "PST"
+  | "PUB"
+  | "TMP"
+  | "WP";
+
+export type CdaTelecomUse = "AS" | "EC" | "HP" | "HV" | "MC" | "PG" | "WP";
 
 export type Entry = { [key: string]: string } | string;
 export type EntryObject = { [key: string]: string };
@@ -373,5 +398,40 @@ export type VitalObservationOrganizer = {
       _value?: string | undefined;
     };
     component: ObservationEntry[];
+  };
+};
+
+export type ResponsibleParty = {
+  assignedEntity: {
+    id: CdaInstanceIdentifier;
+    addr?: CdaAddress[] | undefined;
+    telecom?: CdaTelecom[] | undefined;
+    assignedPerson?: AssignedPerson | undefined;
+    representedOrganization?: {
+      name?: string;
+    };
+  };
+};
+
+export type HealthCareFacility = {
+  id: CdaInstanceIdentifier;
+  location: {
+    name: string | undefined;
+    addr: CdaAddress[] | undefined;
+  };
+};
+
+export type EncompassingEncounter = {
+  encompassingEncounter: {
+    id: CdaInstanceIdentifier;
+    code: CdaCodeCv;
+    effectiveTime: {
+      low: EntryObject;
+      high: EntryObject;
+    };
+    responsibleParty: ResponsibleParty | undefined;
+    location: {
+      healthCareFacility: HealthCareFacility;
+    };
   };
 };

@@ -6,6 +6,7 @@ import { getTrustedKeyStore, sendSignedXmlMtom } from "../../../saml/saml-client
 import { MtomAttachments } from "../mtom/parser";
 import { BulkSignedDR } from "../create/iti39-envelope";
 import { out } from "../../../../../../util/log";
+import { storeDrResponses } from "../../../monitor/store";
 
 const { log } = out("Sending DR Requests");
 const context = "ihe-gateway-v2-dr-saml-client";
@@ -31,7 +32,7 @@ export async function sendSignedDRRequests({
   const trustedKeyStore = await getTrustedKeyStore();
   const requestPromises = signedRequests.map(async (request, index) => {
     try {
-      const mtomParts = await sendSignedXmlMtom({
+      const { mtomParts, rawResponse } = await sendSignedXmlMtom({
         signedXml: request.signedRequest,
         url: request.gateway.url,
         samlCertsAndKeys,
@@ -42,6 +43,11 @@ export async function sendSignedDRRequests({
           request.gateway.homeCommunityId
         }`
       );
+      await storeDrResponses({
+        response: rawResponse,
+        outboundRequest: request.outboundRequest,
+        gateway: request.gateway,
+      });
       return {
         gateway: request.gateway,
         mtomResponse: mtomParts,

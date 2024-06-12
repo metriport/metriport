@@ -1,4 +1,5 @@
 import { Bundle, Encounter, HumanName, Location, Practitioner } from "@medplum/fhirtypes";
+import { toArray } from "@metriport/shared";
 import {
   findResourceInBundle,
   isEncounter,
@@ -6,7 +7,12 @@ import {
   isPractitioner,
 } from "../../../external/fhir/shared";
 import { EncountersSection } from "../../cda-types/sections";
-import { ConcernActEntry, EncounterEntry, ObservationTableRow } from "../../cda-types/shared-types";
+import {
+  ActStatusCode,
+  ConcernActEntry,
+  EncounterEntry,
+  ObservationTableRow,
+} from "../../cda-types/shared-types";
 import {
   buildAddressText,
   buildCodeCe,
@@ -77,11 +83,12 @@ export function buildEncounters(fhirBundle: Bundle): EncountersSection {
   };
 }
 
-function createAugmentedEncounters(
-  encounters: Encounter[],
+export function createAugmentedEncounters(
+  encounters: Encounter | Encounter[],
   fhirBundle: Bundle
 ): AugmentedEncounter[] {
-  const augEncs = encounters.map(encounter => {
+  const encountersArray = toArray(encounters);
+  const augEncs = encountersArray.map(encounter => {
     const practitionerIds = encounter.participant?.flatMap(p =>
       p.individual?.reference?.includes("Practitioner") ? p.individual?.reference : []
     );
@@ -134,7 +141,7 @@ function createTableRowFromEncounter(
             "#text": getPractitionerInformation(encounter.practitioners),
           },
           {
-            "#text": locationInfo?.map(l => `${l.name} - ${l.address}`).join("\n") ?? NOT_SPECIFIED,
+            "#text": locationInfo?.map(l => `${l.name} - ${l.address}`).join("; ") ?? NOT_SPECIFIED,
           },
           {
             "#text":
@@ -148,11 +155,10 @@ function createTableRowFromEncounter(
 
 function getPractitionerInformation(participant: Practitioner[] | undefined): string {
   if (!participant) return NOT_SPECIFIED;
-
   const practitionerInfo = participant
     .map(p => buildNameText(p.name))
     .filter(Boolean)
-    .join("\n");
+    .join("; ");
 
   return practitionerInfo ?? NOT_SPECIFIED;
 }
@@ -183,9 +189,11 @@ function createEntryFromEncounter(
   encounter: AugmentedEncounter,
   referenceId: string
 ): EncounterEntry {
+  const resClass = encounter.resource.class;
   const classCode = buildCodeCe({
-    code: encounter.resource.class?.code,
-    codeSystem: encounter.resource.class?.system,
+    code: resClass?.code,
+    codeSystem: resClass?.system,
+    displayName: resClass?.display,
   });
   const code = buildCodeCvFromCodeCe(classCode, encounter.resource.type);
 
@@ -223,10 +231,12 @@ function createEntryFromEncounter(
 }
 
 /**
- * For FHIR statuses, see https://hl7.org/fhir/R4/valueset-encounter-status.html
- * For CDA statuses, see https://terminology.hl7.org/5.2.0/ValueSet-v3-ActStatus.html
+ * For FHIR statuses
+ * @see https://hl7.org/fhir/R4/valueset-encounter-status.html
+ * For CDA statuses:
+ * @see https://terminology.hl7.org/5.2.0/ValueSet-v3-ActStatus.html
  */
-function mapEncounterStatusCode(status: string | undefined): string {
+function mapEncounterStatusCode(status: string | undefined): ActStatusCode {
   if (!status) return "completed";
   switch (status) {
     case "planned":

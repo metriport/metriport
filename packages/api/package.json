@@ -1,6 +1,6 @@
 {
   "name": "api",
-  "version": "1.16.6",
+  "version": "1.18.1",
   "description": "",
   "main": "app.js",
   "private": true,
@@ -17,8 +17,8 @@
     "lint": "npx eslint . --ext .ts",
     "lint-fix": "npm run lint --fix",
     "prettier-fix": "npx prettier '**/*.ts' --write",
-    "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
-    "test:e2e": "E2E=true jest --runInBand --detectOpenHandles",
+    "test": "jest --runInBand",
+    "test:e2e": "E2E=true jest --runInBand --forceExit",
     "db-local": "ts-node src/sequelize/cli",
     "db-local:up": "npm run db-local -- up"
   },
@@ -72,6 +72,7 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^8.0.2",
+    "@ngrok/ngrok": "^1.2.0",
     "@tsconfig/node18": "^1.0.1",
     "@types/convert-units": "^2.3.5",
     "@types/cors": "^2.8.12",

@@ -18,7 +18,7 @@ let bundle: Bundle;
 let medStatement: MedicationStatement;
 let med: Medication;
 
-beforeEach(() => {
+beforeAll(() => {
   medStmntId = faker.string.uuid();
   medId = faker.string.uuid();
   const { dateIso, dateHumanReadable, dateCda } = getPastDateInDifferentFormats();
@@ -33,18 +33,19 @@ beforeEach(() => {
   );
   medStatement = medicationStatement;
   med = medication;
+});
 
+beforeEach(() => {
   bundle = createEmptyBundle();
+  bundle.entry?.push({ resource: medStatement });
 });
 
 describe("buildMedications", () => {
   it("throws an error if the Bundle is missing a Medication", () => {
-    bundle.entry?.push({ resource: medStatement });
     expect(() => buildMedications(bundle)).toThrow();
   });
 
   it("throws an error if MedicationStatement incorrectly references a Medication", () => {
-    bundle.entry?.push({ resource: medStatement });
     const medicationWithAlteredId = {
       ...med,
       id: "SomethingElse",
@@ -54,7 +55,6 @@ describe("buildMedications", () => {
   });
 
   it("correctly maps a single MedicationStatement with a related Medication", () => {
-    bundle.entry?.push({ resource: medStatement });
     bundle.entry?.push({ resource: med });
     const filePath = path.join(__dirname, "./xmls/medications-section-single-entry.xml");
     const params = {
@@ -63,8 +63,8 @@ describe("buildMedications", () => {
       pastDateCda,
       pastDateHumanReadable,
     };
-    const xmlTemplate = _.template(getXmlContentFromFile(filePath));
-    const xmlContent = xmlTemplate(params);
+    const applyToTemplate = _.template(getXmlContentFromFile(filePath));
+    const xmlContent = applyToTemplate(params);
     const res = buildMedications(bundle);
     const cleanedJsonObj = removeEmptyFields(res);
     const xmlRes = xmlBuilder.build(cleanedJsonObj);
@@ -72,7 +72,6 @@ describe("buildMedications", () => {
   });
 
   it("correctly maps two MedicationStatements with related Medications", () => {
-    bundle.entry?.push({ resource: medStatement });
     bundle.entry?.push({ resource: med });
 
     const medStmntId2 = faker.string.uuid();
@@ -109,8 +108,8 @@ describe("buildMedications", () => {
       endDateXml,
       endDateHumanReadable,
     };
-    const xmlTemplate = _.template(getXmlContentFromFile(filePath));
-    const xmlContent = xmlTemplate(params);
+    const applyToTemplate = _.template(getXmlContentFromFile(filePath));
+    const xmlContent = applyToTemplate(params);
     const res = buildMedications(bundle);
     const cleanedJsonObj = removeEmptyFields(res);
     const xmlRes = xmlBuilder.build(cleanedJsonObj);

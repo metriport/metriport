@@ -21,13 +21,18 @@ export const updateSettings = async ({
   webhookUrl,
 }: UpdateSettingsCommand): Promise<Settings> => {
   const originalSettings = await getSettingsOrFail({ id: cxId });
-  const updateWebhook = getWebhookDataForUpdate(originalSettings, cxId, webhookUrl);
+  const updateWebhook = getWebhookDataForUpdate(originalSettings, webhookUrl);
   await Settings.update(
     {
       ...updateWebhook,
     },
     { where: { id: cxId } }
   );
+
+  // if there's a URL, fire a test towards it - intentionally asynchronous
+  updateWebhook.webhookUrl &&
+    testWebhook({ cxId, ...updateWebhook }).catch(processAsyncError(`testWebhook`));
+
   const updatedSettings = await getSettingsOrFail({ id: cxId });
   return updatedSettings;
 };
@@ -54,7 +59,6 @@ export const updateWebhookStatus = async ({
 
 const getWebhookDataForUpdate = (
   settings: Settings,
-  cxId: string,
   newUrl?: string
 ): Pick<Settings, "webhookUrl" | "webhookKey"> => {
   const webhookData = {
@@ -69,9 +73,6 @@ const getWebhookDataForUpdate = (
         }),
     webhookStatus: null,
   };
-  // if there's a URL, fire a test towards it - intentionally asynchronous
-  webhookData.webhookUrl &&
-    testWebhook({ cxId, ...webhookData }).catch(processAsyncError(`testWebhook`));
   return webhookData;
 };
 

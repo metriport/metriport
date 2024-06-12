@@ -1,19 +1,17 @@
 import { Patient, PatientData } from "@metriport/core/domain/patient";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { patientEvents } from "../../../event/medical/patient-event";
-import cqCommands from "../../../external/carequality";
-import cwCommands from "../../../external/commonwell";
 import { upsertPatientToFHIRServer } from "../../../external/fhir/patient/upsert-patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { validateVersionForUpdate } from "../../../models/_default";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getFacilityOrFail } from "../facility/get-facility";
-import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientOrFail } from "./get-patient";
 import { sanitize, validate } from "./shared";
+import { runOrSchedulePatientDiscoveryAcrossHies } from "../../../external/hie/run-or-schedule-patient-discovery";
 
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientUpdateCmd = BaseUpdateCmdWithCustomer &
@@ -22,40 +20,38 @@ export type PatientUpdateCmd = BaseUpdateCmdWithCustomer &
 // TODO build unit test to validate the patient is being sent correctly to Sequelize
 // See: document-query.test.ts, "send a modified object to Sequelize"
 // See: https://metriport.slack.com/archives/C04DMKE9DME/p1686779391180389
-export async function updatePatient(
-  patientUpdate: PatientUpdateCmd,
+export async function updatePatient({
+  patientUpdate,
+  rerunPdOnNewDemographics,
+  forceCommonwell,
+  forceCarequality,
   emit = true,
+}: {
+  patientUpdate: PatientUpdateCmd;
+  rerunPdOnNewDemographics?: boolean;
   // START TODO #1572 - remove
-  forceCommonwell?: boolean,
-  forceCarequality?: boolean
+  forceCommonwell?: boolean;
+  forceCarequality?: boolean;
   // END TODO #1572 - remove
-): Promise<Patient> {
+  emit?: boolean;
+}): Promise<Patient> {
   const { cxId, facilityId } = patientUpdate;
 
   // validate facility exists and cx has access to it
-  const facility = await getFacilityOrFail({ cxId, id: facilityId });
+  await getFacilityOrFail({ cxId, id: facilityId });
 
-  const requestId = uuidv7();
-
-  const patientUpdateWithPD: PatientUpdateCmd = {
-    ...patientUpdate,
-    patientDiscovery: { requestId, startedAt: new Date() },
-  };
-
-  const patient = await updatePatientWithoutHIEs(patientUpdateWithPD, emit);
+  const patient = await updatePatientWithoutHIEs(patientUpdate, emit);
 
   const fhirPatient = toFHIR(patient);
   await upsertPatientToFHIRServer(patientUpdate.cxId, fhirPatient);
 
-  await cqCommands.patient.discover(patient, facility.id, requestId, forceCarequality);
-
-  await cwCommands.patient.update(
+  runOrSchedulePatientDiscoveryAcrossHies({
     patient,
     facilityId,
-    getCqOrgIdsToDenyOnCw,
-    requestId,
-    forceCommonwell
-  );
+    rerunPdOnNewDemographics,
+    forceCommonwell,
+    forceCarequality,
+  }).catch(processAsyncError("runOrSchedulePatientDiscoveryAcrossHies"));
 
   return patient;
 }
@@ -97,7 +93,6 @@ export async function updatePatientWithoutHIEs(
           personalIdentifiers: sanitized.personalIdentifiers,
           address: patientUpdate.address,
           contact: sanitized.contact,
-          patientDiscovery: sanitized.patientDiscovery,
         },
         externalId: sanitized.externalId,
       },

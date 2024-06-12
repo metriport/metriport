@@ -13,13 +13,15 @@ let allergyId: string;
 let bundle: Bundle;
 let allergy: AllergyIntolerance;
 
-beforeEach(() => {
+beforeAll(() => {
   allergyId = faker.string.uuid();
   allergy = makeAllergy({
     id: allergyId,
     ...allergyMedication,
   });
+});
 
+beforeEach(() => {
   bundle = createEmptyBundle();
 });
 
@@ -28,8 +30,8 @@ describe("buildAllergies", () => {
     bundle.entry?.push({ resource: { ...allergy, note: [] } });
 
     const filePath = path.join(__dirname, "./xmls/allergy-section-single-entry.xml");
-    const xmlTemplate = _.template(getXmlContentFromFile(filePath));
-    const xmlContent = xmlTemplate({ allergyId });
+    const applyToTemplate = _.template(getXmlContentFromFile(filePath));
+    const xmlContent = applyToTemplate({ allergyId });
     const res = buildAllergies(bundle);
     const cleanedJsonObj = removeEmptyFields(res);
     const xmlRes = xmlBuilder.build(cleanedJsonObj);
@@ -52,8 +54,8 @@ describe("buildAllergies", () => {
       allergyId,
       allergyId2,
     };
-    const xmlTemplate = _.template(getXmlContentFromFile(filePath));
-    const xmlContent = xmlTemplate(params);
+    const applyToTemplate = _.template(getXmlContentFromFile(filePath));
+    const xmlContent = applyToTemplate(params);
     const res = buildAllergies(bundle);
     const cleanedJsonObj = removeEmptyFields(res);
     const xmlRes = xmlBuilder.build(cleanedJsonObj);
