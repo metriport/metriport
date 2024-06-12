@@ -43,7 +43,7 @@ export function buildClinicalDocumentXml(
   recordTarget: CdaRecordTarget,
   author: CdaAuthor,
   custodian: CdaCustodian,
-  componentOf: EncompassingEncounter | undefined,
+  encompassingEncounter: EncompassingEncounter | undefined,
   structuredBody: unknown,
   composition: Composition | undefined
 ): string {
@@ -87,7 +87,7 @@ export function buildClinicalDocumentXml(
       recordTarget,
       author,
       custodian,
-      componentOf,
+      componentOf: encompassingEncounter,
       component: structuredBody,
     },
   };

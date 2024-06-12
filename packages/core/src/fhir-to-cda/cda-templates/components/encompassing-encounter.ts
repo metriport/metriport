@@ -28,7 +28,7 @@ function findEncounterInBundle(
   return isEncounter(resource) ? resource : undefined;
 }
 
-export function buildComponentOf(fhirBundle: Bundle): EncompassingEncounter | undefined {
+export function buildEncompassingEncounter(fhirBundle: Bundle): EncompassingEncounter | undefined {
   const composition = findCompositionResource(fhirBundle);
   const encompassingEncId = composition?.encounter?.reference;
   const encounter = findEncounterInBundle(fhirBundle, encompassingEncId);
@@ -68,7 +68,7 @@ function createComponentOf(encounter: AugmentedEncounter): EncompassingEncounter
         healthCareFacility: {
           id: buildInstanceIdentifier({
             root: placeholderOrgOid,
-            extension: encounter.resource.id,
+            extension: encounter.locations?.[0]?.id,
           }),
           location: buildLocation(encounter.locations),
         },
