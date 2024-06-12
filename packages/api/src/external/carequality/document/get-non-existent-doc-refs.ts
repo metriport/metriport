@@ -52,7 +52,7 @@ async function checkDocRefsExistInS3(
     documents,
     async doc => {
       try {
-        const fileExtension = getFileExtension(doc.contentType);
+        const fileExtension = getFileExtension(doc.contentType || undefined);
         const fileName = createFileName(cxId, patientId, `${doc.metriportId}.${fileExtension}`);
 
         const { exists } = await s3Utils.getFileInfoFromS3(fileName, s3BucketName);
