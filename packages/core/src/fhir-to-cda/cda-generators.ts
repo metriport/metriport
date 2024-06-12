@@ -10,6 +10,7 @@ import { buildClinicalDocumentXml } from "./cda-templates/clinical-document/clin
 import { buildCustodian } from "./cda-templates/clinical-document/custodian";
 import { buildRecordTargetFromFhirPatient } from "./cda-templates/clinical-document/record-target";
 import { buildStructuredBody } from "./cda-templates/clinical-document/structured-body";
+import { buildEncompassingEncounter } from "./cda-templates/components/encompassing-encounter";
 import { placeholderOrgOid } from "./cda-templates/constants";
 
 export function generateCdaFromFhirBundle(fhirBundle: Bundle, oid: string): string {
@@ -29,6 +30,7 @@ export function generateCdaFromFhirBundle(fhirBundle: Bundle, oid: string): stri
   const recordTarget = buildRecordTargetFromFhirPatient(patientResource);
   const author = buildAuthor(organizationResources);
   const custodian = buildCustodian();
+  const encompassingEncounter = buildEncompassingEncounter(fhirBundle);
   const structuredBody = buildStructuredBody(fhirBundle);
   const composition = findCompositionResource(fhirBundle);
 
@@ -42,6 +44,7 @@ export function generateCdaFromFhirBundle(fhirBundle: Bundle, oid: string): stri
     recordTarget,
     author,
     custodian,
+    encompassingEncounter,
     structuredBody,
     composition
   );
@@ -51,5 +54,10 @@ export function generateCdaFromFhirBundle(fhirBundle: Bundle, oid: string): stri
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function postProcessXml(xml: any, oid: string): string {
+  xml = prependStyling(xml);
   return xml.replaceAll("<br>", "<br/>").replaceAll("</br>", "").replaceAll(placeholderOrgOid, oid);
+}
+
+function prependStyling(xml: string): string {
+  return `<?xml version="1.0" encoding="UTF-8"?>${xml}`;
 }

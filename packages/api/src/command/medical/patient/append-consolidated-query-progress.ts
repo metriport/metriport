@@ -1,4 +1,6 @@
 import { Patient } from "@metriport/core/domain/patient";
+import { ConsolidatedQuery } from "@metriport/api-sdk";
+import { capture } from "@metriport/core/util/notifications";
 import { QueryProgress } from "@metriport/core/domain/query-status";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
@@ -6,20 +8,19 @@ import { getPatientOrFail } from "./get-patient";
 
 export type SetDocQueryProgress = {
   patient: Pick<Patient, "id" | "cxId">;
+  requestId: string;
   progress: QueryProgress;
-  reset?: boolean;
 };
 
 /**
- * Update a patient's consolidated query progress.
- * Keeps existing sibling properties when those are not provided, unless
- * 'reset=true' is provided.
+ * Update a single patient's consolidated query progress.
+ * Keeps existing sibling properties when those are not provided
  * @returns the updated Patient
  */
 export async function updateConsolidatedQueryProgress({
   patient,
+  requestId,
   progress,
-  reset,
 }: SetDocQueryProgress): Promise<void> {
   const patientFilter = {
     id: patient.id,
@@ -32,20 +33,51 @@ export async function updateConsolidatedQueryProgress({
       transaction,
     });
 
-    const consolidatedQuery = reset
-      ? progress
-      : {
-          ...patient.data.consolidatedQuery,
-          ...progress,
-        };
+    const consolidatedQueries = generateUpdateConsolidatedProgress(
+      patient.data.consolidatedQueries,
+      progress,
+      requestId
+    );
 
     const updatedPatient = {
       ...patient.dataValues,
       data: {
         ...patient.data,
-        consolidatedQuery,
+        consolidatedQueries,
       },
     };
+
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
+  });
+}
+
+function generateUpdateConsolidatedProgress(
+  consolidatedQueries: ConsolidatedQuery[] | undefined,
+  updatedProgress: QueryProgress,
+  requestId: string
+): ConsolidatedQuery[] {
+  if (!consolidatedQueries) {
+    const msg = `No consolidated queries found`;
+    console.log(`${msg} requestId: ${requestId}`);
+    capture.message(msg, {
+      extra: {
+        context: "generateUpdateConsolidatedProgress",
+        requestId,
+        updatedProgress,
+      },
+      level: "warning",
+    });
+
+    return [];
+  }
+
+  return consolidatedQueries.map(query => {
+    if (query.requestId === requestId) {
+      return {
+        ...query,
+        status: updatedProgress.status,
+      };
+    }
+    return query;
   });
 }

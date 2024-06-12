@@ -16,10 +16,12 @@ import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
 import { CQLink } from "../cq-patient-data";
 import { getCQData } from "../patient";
 import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
-import { getOidsWithIHEGatewayV2Enabled } from "../../aws/app-config";
+import {
+  getOrgOidsWithIHEGatewayV2Enabled,
+  isIHEGatewayV2EnabledForCx,
+} from "../../aws/app-config";
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { getCqInitiator } from "../shared";
-import { Config } from "../../../shared/config";
 import { isFacilityEnabledToQueryCQ } from "../../carequality/shared";
 
 const iheGateway = makeIheGatewayAPIForDocQuery();
@@ -112,11 +114,11 @@ export async function getDocumentsFromCQ({
 
     const linksWithDqUrlV1Gateway: CQLink[] = [];
     const linksWithDqUrlV2Gateway: CQLink[] = [];
-    const v2GatewayOIDs = (await Config.isDev())
-      ? Config.getOidsWithIHEGatewayV2Enabled().split(",")
-      : await getOidsWithIHEGatewayV2Enabled();
+    const v2GatewayOIDs = await getOrgOidsWithIHEGatewayV2Enabled();
+    const isV2EnabledForCx = await isIHEGatewayV2EnabledForCx(cxId);
+
     for (const link of linksWithDqUrl) {
-      if (v2GatewayOIDs.includes(link.oid)) {
+      if (isV2EnabledForCx || v2GatewayOIDs.includes(link.oid)) {
         linksWithDqUrlV2Gateway.push(link);
       } else {
         linksWithDqUrlV1Gateway.push(link);
@@ -144,17 +146,20 @@ export async function getDocumentsFromCQ({
     // We send the request to IHE Gateway to initiate the doc query.
     // Then as they are processed by each gateway it will start
     // sending them to the internal route one by one
-    log(`Starting document query - Gateway V1`);
-    await iheGateway.startDocumentsQuery({ outboundDocumentQueryReq: documentQueryRequestsV1 });
-
-    log(`Starting document query - Gateway V2`);
-    const iheGatewayV2 = makeIHEGatewayV2();
-    await iheGatewayV2.startDocumentQueryGatewayV2({
-      dqRequestsGatewayV2: documentQueryRequestsV2,
-      requestId,
-      patientId,
-      cxId,
-    });
+    if (documentQueryRequestsV1.length > 0) {
+      log(`Starting document query - Gateway V1`);
+      await iheGateway.startDocumentsQuery({ outboundDocumentQueryReq: documentQueryRequestsV1 });
+    }
+    if (documentQueryRequestsV2.length > 0) {
+      log(`Starting document query - Gateway V2`);
+      const iheGatewayV2 = makeIHEGatewayV2();
+      await iheGatewayV2.startDocumentQueryGatewayV2({
+        dqRequestsGatewayV2: documentQueryRequestsV2,
+        requestId,
+        patientId,
+        cxId,
+      });
+    }
 
     await resultPoller.pollOutboundDocQueryResults({
       requestId,

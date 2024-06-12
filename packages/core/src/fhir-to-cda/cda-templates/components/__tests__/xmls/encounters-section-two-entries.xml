@@ -70,9 +70,7 @@
 		</templateId>
 		<id root="placeholder-ORG-OID" extension="${encounterId}">
 		</id>
-		<code code="99214" codeSystem="2.16.840.1.113883.6.12">
-			<translation code="99214" codeSystem="2.16.840.1.113883.6.12" displayName="OV EST PT LEV 4">
-			</translation>
+		<code code="99214" codeSystem="2.16.840.1.113883.6.12" displayName="OV EST PT LEV 4">
 		</code>
 		<statusCode code="completed">
 		</statusCode>
@@ -90,7 +88,7 @@
 					<originalText>
 						FAMILY MEDICINE PHYSICIAN
 					</originalText>
-					<translation code="207Q00000X" codeSystem="2.16.840.1.113883.6.101" displayName="FAMILY MEDICINE PHYSICIAN">
+					<translation code="319" codeSystem="1.2.840.114350.1.13.76.2.7.10.836982.1050" displayName="Physician Assistant">
 					</translation>
 				</code>
 				<addr use="WP">
@@ -126,10 +124,10 @@
 		</performer>
 		<participant typeCode="LOC">
 			<participantRole classCode="SDLOC">
-				<id root="placeholder-ORG-OID" extension="${locationId}">
-				</id>
 				<templateId root="2.16.840.1.113883.10.20.22.4.32">
 				</templateId>
+				<id root="placeholder-ORG-OID" extension="${locationId}">
+				</id>
 				<code nullFlavor="NI">
 				</code>
 				<addr use="WP">
@@ -192,9 +190,7 @@
 		</templateId>
 		<id root="placeholder-ORG-OID" extension="${encounterId2}">
 		</id>
-		<code code="99214" codeSystem="2.16.840.1.113883.6.12">
-			<translation code="99214" codeSystem="2.16.840.1.113883.6.12" displayName="OV EST PT LEV 4">
-			</translation>
+		<code code="99214" codeSystem="2.16.840.1.113883.6.12" displayName="OV EST PT LEV 4">
 		</code>
 		<statusCode code="completed">
 		</statusCode>
@@ -212,7 +208,7 @@
 					<originalText>
 						FAMILY MEDICINE PHYSICIAN
 					</originalText>
-					<translation code="207Q00000X" codeSystem="2.16.840.1.113883.6.101" displayName="FAMILY MEDICINE PHYSICIAN">
+					<translation code="319" codeSystem="1.2.840.114350.1.13.76.2.7.10.836982.1050" displayName="Physician Assistant">
 					</translation>
 				</code>
 				<addr use="WP">
@@ -248,10 +244,10 @@
 		</performer>
 		<participant typeCode="LOC">
 			<participantRole classCode="SDLOC">
-				<id root="placeholder-ORG-OID" extension="${locationId2}">
-				</id>
 				<templateId root="2.16.840.1.113883.10.20.22.4.32">
 				</templateId>
+				<id root="placeholder-ORG-OID" extension="${locationId2}">
+				</id>
 				<code nullFlavor="NI">
 				</code>
 				<addr use="WP">

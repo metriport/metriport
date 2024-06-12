@@ -2,6 +2,7 @@ import { AllergyIntolerance, AllergyIntoleranceReaction, Bundle, Coding } from "
 import { isAllergyIntolerance } from "../../../external/fhir/shared";
 import { AllergiesSection } from "../../cda-types/sections";
 import {
+  ActStatusCode,
   ConcernActEntry,
   ObservationEntryRelationship,
   ObservationTableRow,
@@ -190,18 +191,6 @@ function createEntryRelationship(
         displayName: allergy.code?.coding?.[0]?.display,
       }),
       value: buildValueCd(allergy.code, referenceId),
-      // <participant typeCode="CSM" contextControlCode="OP">
-      //   <participantRole classCode="MANU">
-      //     <playingEntity classCode="MMAT">
-      //       <code code="372665008" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Non-steroidal anti-inflammatory agent (substance)">
-      //         <originalText>
-      //           <reference value="#ALLERGEN61746603" />
-      //         </originalText>
-      //         <translation code="385" codeSystem="2.16.840.1.113883.6.313" codeSystemName="MUL.ALGCAT" displayName="NSAIDs" />
-      //       </code>
-      //     </playingEntity>
-      //   </participantRole>
-      // </participant>
       participant: createParticipant(allergy.reaction?.[0], referenceId),
       entryRelationship: [createReactionEntryRelationship(allergy, referenceId)],
     },
@@ -225,6 +214,7 @@ function createParticipant(
     },
   };
 }
+
 function createReactionEntryRelationship(
   allergy: AllergyIntolerance,
   referenceId: string
@@ -264,7 +254,7 @@ function createReactionEntryRelationship(
  * For CDA statuses:
  * @see https://terminology.hl7.org/5.2.0/ValueSet-v3-ActStatus.html
  */
-function mapAllergyStatusCode(coding: Coding[] | undefined): string | undefined {
+function mapAllergyStatusCode(coding: Coding[] | undefined): ActStatusCode | undefined {
   if (!coding) return undefined;
   for (const c of coding) {
     if (c.code) {

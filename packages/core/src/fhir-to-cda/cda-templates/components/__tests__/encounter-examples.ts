@@ -43,7 +43,7 @@ export const encounter1: Partial<Encounter> = {
 };
 
 export const practitioner1: Partial<Practitioner> = {
-  identifier: [{ system: "http://hl7.org/fhir/sid/us-npi", value: "1508174129" }],
+  identifier: [{ system: "http://hl7.org/fhir/sid/us-npi", value: "111222333" }],
   name: [{ family: "Zoidberg", given: ["John A."], suffix: ["MD"] }],
   address: [
     {
@@ -56,6 +56,30 @@ export const practitioner1: Partial<Practitioner> = {
     },
   ],
   telecom: [{ system: "phone", value: "+1-600-700-8000", use: "work" }],
+  qualification: [
+    {
+      code: {
+        text: "FAMILY MEDICINE PHYSICIAN",
+        coding: [
+          {
+            code: "207Q00000X",
+            display: "FAMILY MEDICINE PHYSICIAN",
+            system: "http://nucc.org/provider-taxonomy",
+          },
+          {
+            code: "319",
+            display: "Physician Assistant",
+            system: "urn:oid:1.2.840.114350.1.13.76.2.7.10.836982.1050",
+          },
+        ],
+      },
+    },
+  ],
+};
+
+export const practitioner2: Partial<Practitioner> = {
+  ...practitioner1,
+  name: [{ family: "Farnsworth", given: ["Hubert"], suffix: ["MD"] }],
   qualification: [
     {
       code: {

@@ -21,7 +21,6 @@ import { CqOboDetails } from "../../../external/carequality/get-obo-data";
 let mockedFacility: Facility;
 let mockedRegisterFacility: FacilityRegister;
 let getCqOboDataMock: jest.SpyInstance;
-let doesOrganizationExistInCQMock: jest.SpyInstance;
 let createOrUpdateCqOrganizationMock: jest.SpyInstance;
 let createOrUpdateCwOrganizationMock: jest.SpyInstance;
 
@@ -50,9 +49,6 @@ beforeEach(() => {
   jest
     .spyOn(createOrUpdateFacility, "createOrUpdateFacility")
     .mockImplementation(async () => mockedFacility);
-  doesOrganizationExistInCQMock = jest
-    .spyOn(createOrUpdateCqOrg, "doesOrganizationExistInCQ")
-    .mockImplementation(async () => true);
   createOrUpdateCqOrganizationMock = jest
     .spyOn(createOrUpdateCqOrg, "createOrUpdateCQOrganization")
     .mockImplementation(async () => "");
@@ -152,19 +148,6 @@ describe("registerFacility", () => {
         name: expect.not.stringContaining("OBO"),
       })
     );
-  });
-
-  it("returns createOrUpdateInCq early when cxOrg doesnt exist in directory", async () => {
-    doesOrganizationExistInCQMock.mockResolvedValue(false);
-
-    await shared.createOrUpdateInCq(
-      mockedFacility,
-      getCxOrganizationNameAndOidResult,
-      { enabled: true, cqFacilityName: faker.company.name(), cqOboOid: faker.string.uuid() },
-      coordinates
-    );
-
-    expect(createOrUpdateCqOrganizationMock).not.toHaveBeenCalled();
   });
 
   it("returns createOrUpdateInCq early when its an obo but cqObo not enabled", async () => {

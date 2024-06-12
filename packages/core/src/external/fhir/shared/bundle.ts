@@ -1,4 +1,5 @@
-import { Bundle, BundleEntry, Reference, Resource, ResourceType } from "@medplum/fhirtypes";
+import { BundleEntry, Reference, Resource, ResourceType } from "@medplum/fhirtypes";
+import { SearchSetBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { uniq } from "lodash";
@@ -66,6 +67,6 @@ function getReferencesFromRaw(
   );
 }
 
-export function buildBundle(entries: BundleEntry[]): Bundle<Resource> {
+export function buildBundle(entries: BundleEntry[]): SearchSetBundle<Resource> {
   return { resourceType: "Bundle", total: entries.length, type: "searchset", entry: entries };
 }

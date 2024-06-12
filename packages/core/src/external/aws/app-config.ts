@@ -37,6 +37,7 @@ export const stringValueFFsSchema = z.object({
   cxsWithNoWebhookPongFeatureFlag: ffStringValuesSchema,
   cxsWithIncreasedSandboxLimitFeatureFlag: ffStringValuesSchema,
   oidsWithIHEGatewayV2Enabled: ffStringValuesSchema,
+  cxsWithIHEGatewayV2Enabled: ffStringValuesSchema,
   e2eCxIds: ffStringValuesSchema.nullish(),
 });
 export type StringValueFeatureFlags = z.infer<typeof stringValueFFsSchema>;
