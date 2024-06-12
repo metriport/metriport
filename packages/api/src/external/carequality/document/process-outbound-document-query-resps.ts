@@ -84,7 +84,9 @@ export async function processOutboundDocumentQueryResps({
       result => result.documentReference ?? []
     );
 
-    const convertibleDocCount = docsToDownload.filter(doc => isConvertible(doc.contentType)).length;
+    const convertibleDocCount = docsToDownload.filter(doc =>
+      isConvertible(doc.contentType || undefined)
+    ).length;
 
     log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
 
