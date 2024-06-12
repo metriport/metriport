@@ -6,7 +6,12 @@ import {
   isPractitioner,
 } from "../../../external/fhir/shared";
 import { EncountersSection } from "../../cda-types/sections";
-import { ConcernActEntry, EncounterEntry, ObservationTableRow } from "../../cda-types/shared-types";
+import {
+  ActStatusCode,
+  ConcernActEntry,
+  EncounterEntry,
+  ObservationTableRow,
+} from "../../cda-types/shared-types";
 import {
   buildCodeCe,
   buildCodeCvFromCodeCe,
@@ -152,11 +157,10 @@ function buildAddressText(address: Address | undefined): string | undefined {
 
 function getPractitionerInformation(participant: Practitioner[] | undefined): string {
   if (!participant) return NOT_SPECIFIED;
-
   const practitionerInfo = participant
     .map(p => buildNameText(p.name))
     .filter(Boolean)
-    .join("\n");
+    .join("<br>");
 
   return practitionerInfo ?? NOT_SPECIFIED;
 }
@@ -229,10 +233,12 @@ function createEntryFromEncounter(
 }
 
 /**
- * For FHIR statuses, see https://hl7.org/fhir/R4/valueset-encounter-status.html
- * For CDA statuses, see https://terminology.hl7.org/5.2.0/ValueSet-v3-ActStatus.html
+ * For FHIR statuses
+ * @see https://hl7.org/fhir/R4/valueset-encounter-status.html
+ * For CDA statuses:
+ * @see https://terminology.hl7.org/5.2.0/ValueSet-v3-ActStatus.html
  */
-function mapEncounterStatusCode(status: string | undefined): string {
+function mapEncounterStatusCode(status: string | undefined): ActStatusCode {
   if (!status) return "completed";
   switch (status) {
     case "planned":

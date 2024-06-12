@@ -16,11 +16,13 @@ import {
   AssignedEntity,
   CDAOriginalText,
   CdaAddress,
+  CdaAddressUse,
   CdaCodeCe,
   CdaCodeCv,
   CdaInstanceIdentifier,
   CdaOrganization,
   CdaTelecom,
+  CdaTelecomUse,
   CdaValueCd,
   CdaValueSt,
   Entry,
@@ -334,7 +336,7 @@ export function buildValueCd(
 /**
  * Mapping options for the PostalAddressUse from the CDA R2 IG
  */
-function mapAddressUse(use: string | undefined) {
+function mapAddressUse(use: string | undefined): CdaAddressUse | undefined {
   if (!use) return undefined;
   switch (use.toLowerCase()) {
     case "bad address":
@@ -360,14 +362,15 @@ function mapAddressUse(use: string | undefined) {
     // from example CDAs
     case "work":
       return "WP";
+    default:
+      return "BAD";
   }
-  return use;
 }
 
 /**
  * Mapping options from Telecom Use of the CDA R2 IG
  */
-function mapTelecomUse(use: string | undefined) {
+function mapTelecomUse(use: string | undefined): CdaTelecomUse | undefined {
   if (!use) return undefined;
   switch (use.toLowerCase()) {
     case "answering service":
@@ -384,8 +387,9 @@ function mapTelecomUse(use: string | undefined) {
       return "PG";
     case "work" || "work place":
       return "WP";
+    default:
+      return "WP";
   }
-  return use;
 }
 
 function cleanUpCoding(primaryCodingRaw: Coding | undefined) {

@@ -2,6 +2,7 @@ import { AllergyIntolerance, AllergyIntoleranceReaction, Bundle, Coding } from "
 import { isAllergyIntolerance } from "../../../external/fhir/shared";
 import { AllergiesSection } from "../../cda-types/sections";
 import {
+  ActStatusCode,
   ConcernActEntry,
   ObservationEntryRelationship,
   ObservationTableRow,
@@ -253,7 +254,7 @@ function createReactionEntryRelationship(
  * For CDA statuses:
  * @see https://terminology.hl7.org/5.2.0/ValueSet-v3-ActStatus.html
  */
-function mapAllergyStatusCode(coding: Coding[] | undefined): string | undefined {
+function mapAllergyStatusCode(coding: Coding[] | undefined): ActStatusCode | undefined {
   if (!coding) return undefined;
   for (const c of coding) {
     if (c.code) {
