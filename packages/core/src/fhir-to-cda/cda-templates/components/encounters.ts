@@ -138,7 +138,7 @@ function createTableRowFromEncounter(
             "#text": getPractitionerInformation(encounter.practitioners),
           },
           {
-            "#text": locationInfo?.map(l => `${l.name} - ${l.address}`).join("\n") ?? NOT_SPECIFIED,
+            "#text": locationInfo?.map(l => `${l.name} - ${l.address}`).join("; ") ?? NOT_SPECIFIED,
           },
           {
             "#text":
@@ -160,7 +160,7 @@ function getPractitionerInformation(participant: Practitioner[] | undefined): st
   const practitionerInfo = participant
     .map(p => buildNameText(p.name))
     .filter(Boolean)
-    .join("<br>");
+    .join("; ");
 
   return practitionerInfo ?? NOT_SPECIFIED;
 }
