@@ -10,8 +10,8 @@ import { buildClinicalDocumentXml } from "./cda-templates/clinical-document/clin
 import { buildCustodian } from "./cda-templates/clinical-document/custodian";
 import { buildRecordTargetFromFhirPatient } from "./cda-templates/clinical-document/record-target";
 import { buildStructuredBody } from "./cda-templates/clinical-document/structured-body";
+import { buildEncompassingEncounter } from "./cda-templates/components/encompassing-encounter";
 import { placeholderOrgOid } from "./cda-templates/constants";
-import { buildEncompassingEncounter } from "./cda-templates/components/component-of";
 
 export function generateCdaFromFhirBundle(fhirBundle: Bundle, oid: string): string {
   const patientResource = findPatientResource(fhirBundle);
