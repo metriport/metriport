@@ -8,7 +8,11 @@ import { SamlCertsAndKeys } from "../../../saml/security/types";
 import { namespaces, expiresIn } from "../../../constants";
 import { ORGANIZATION_NAME_DEFAULT as metriportOrganization, replyTo } from "../../../../shared";
 import { wrapIdInUrnUuid, wrapIdInUrnOid } from "../../../../../../util/urn";
-import { requiresOnlyOneDocRefPerRequest, getHomeCommunityId } from "../../../gateways";
+import {
+  requiresOnlyOneDocRefPerRequest,
+  getHomeCommunityId,
+  getDocumentUniqueIdFunctionByGateway,
+} from "../../../gateways";
 
 const action = "urn:ihe:iti:2007:CrossGatewayRetrieve";
 
@@ -56,6 +60,7 @@ export function createITI39SoapEnvelope({
     purposeOfUse,
   });
 
+  const getDocumentUniqueIdFn = getDocumentUniqueIdFunctionByGateway(bodyData.gateway);
   const soapBody = {
     "soap:Body": {
       "@_xmlns:xsd": namespaces.xs,
@@ -65,7 +70,7 @@ export function createITI39SoapEnvelope({
         "urn:DocumentRequest": documentReferences.map(docRef => ({
           "urn:HomeCommunityId": wrapIdInUrnOid(docRef.homeCommunityId),
           "urn:RepositoryUniqueId": docRef.repositoryUniqueId,
-          "urn:DocumentUniqueId": docRef.documentUniqueId,
+          "urn:DocumentUniqueId": getDocumentUniqueIdFn(docRef.documentUniqueId),
         })),
       },
     },
