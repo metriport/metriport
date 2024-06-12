@@ -4,6 +4,7 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
+import { getFileExtension } from "@metriport/core/util/mime";
 import { DocumentReferenceWithMetriportId } from "../../../external/carequality/document/shared";
 import { Config } from "../../../shared/config";
 import { getDocumentsFromFHIR } from "../../fhir/document/get-documents";
@@ -51,7 +52,8 @@ async function checkDocRefsExistInS3(
     documents,
     async doc => {
       try {
-        const fileName = createFileName(cxId, patientId, doc.metriportId);
+        const fileExtension = getFileExtension(doc.contentType);
+        const fileName = createFileName(cxId, patientId, `${doc.metriportId}.${fileExtension}`);
 
         const { exists } = await s3Utils.getFileInfoFromS3(fileName, s3BucketName);
 
