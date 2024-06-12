@@ -1,7 +1,7 @@
 import { Bundle, DocumentReference as FHIRDocumentReference, Resource } from "@medplum/fhirtypes";
 import {
   WebhookRequest,
-  WebhookRequestParsingError,
+  WebhookRequestParsingFailure,
   webhookRequestSchema,
   WebhookStatusResponse,
 } from "@metriport/shared/medical";
@@ -709,13 +709,13 @@ export class MetriportMedicalApi {
   static parseWebhookResponse(
     requestBody: unknown,
     throwOnError: false
-  ): WebhookRequest | WebhookRequestParsingError;
+  ): WebhookRequest | WebhookRequestParsingFailure;
   static parseWebhookResponse(reqBody: unknown, throwOnError: true): WebhookRequest;
   static parseWebhookResponse(reqBody: unknown): WebhookRequest;
   static parseWebhookResponse(
     reqBody: unknown,
     throwOnError = true
-  ): WebhookRequest | WebhookRequestParsingError {
+  ): WebhookRequest | WebhookRequestParsingFailure {
     if (throwOnError) {
       try {
         return webhookRequestSchema.parse(reqBody);
@@ -725,6 +725,6 @@ export class MetriportMedicalApi {
     }
     const parse = webhookRequestSchema.safeParse(reqBody);
     if (parse.success) return parse.data;
-    return new WebhookRequestParsingError(parse.error, parse.error.format());
+    return new WebhookRequestParsingFailure(parse.error, parse.error.format());
   }
 }
