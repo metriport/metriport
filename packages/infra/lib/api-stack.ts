@@ -251,12 +251,14 @@ export class APIStack extends Stack {
       bucketName: props.config.medicalDocumentsBucketName,
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
+      versioned: true,
     });
 
     const medicalDocumentsUploadBucket = new s3.Bucket(this, "APIMedicalDocumentsUploadBucket", {
       bucketName: props.config.medicalDocumentsUploadBucketName,
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
+      versioned: true,
     });
 
     const getSandboxSeedDataBucket = (sandboxConfig: EnvConfigSandbox) => {
