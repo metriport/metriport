@@ -103,15 +103,12 @@ export class S3Utils {
     | { exists: false; size?: never; contentType?: never; eTag?: never; createdAt?: never }
   > {
     try {
-      console.log("GETTING FILE INFO", bucket, key);
       const head = await this.s3
         .headObject({
           Bucket: bucket,
           Key: key,
         })
         .promise();
-
-      console.log("HEAD", head);
       return {
         exists: true,
         size: head.ContentLength ?? 0,
@@ -120,7 +117,6 @@ export class S3Utils {
         createdAt: head.LastModified,
       };
     } catch (err) {
-      console.log("Error getting file info from S3", err);
       return { exists: false };
     }
   }

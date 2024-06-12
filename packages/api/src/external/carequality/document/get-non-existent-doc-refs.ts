@@ -28,8 +28,6 @@ export async function getNonExistentDocRefs(
     f => !fhirDocRefs.find(d => d.id === f.metriportId)
   );
 
-  console.log("FOUND ON STORAGE BUT NOT ON FHIR", foundOnStorageButNotOnFHIR);
-
   const docsToDownload = nonExistingDocRefs.concat(foundOnStorageButNotOnFHIR);
 
   return docsToDownload;
@@ -56,8 +54,6 @@ async function checkDocRefsExistInS3(
         const fileName = createFilePath(cxId, patientId, `${doc.metriportId}${fileExtension}`);
 
         const { exists } = await s3Utils.getFileInfoFromS3(fileName, s3BucketName);
-
-        console.log("DOES FILE EXIST", fileName, s3BucketName, exists);
 
         successfulDocs.push({
           docId: doc.metriportId,
