@@ -502,7 +502,7 @@ export function buildPerformer(practitioners: Practitioner[] | undefined): Assig
   );
 }
 
-export function buildParticipant(locations: Location[]): Participant[] | undefined {
+export function buildParticipant(locations: Location[] | undefined): Participant[] | undefined {
   if (!locations) return undefined;
 
   return locations.map(location => {
