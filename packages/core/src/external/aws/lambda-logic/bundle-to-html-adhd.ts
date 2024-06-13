@@ -768,6 +768,19 @@ function buildReports(
 
         return true;
       })
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      .filter(([key, value]) => {
+        const documentation = value.documentation;
+        const validDocumentation = documentation?.filter(doc => {
+          const note = doc.presentedForm?.[0]?.data ?? "";
+          const decodeNote = Buffer.from(note, "base64").toString("utf-8");
+          const containsB64 = decodeNote.includes("^application^pdf^BASE64^");
+
+          return !containsB64;
+        });
+
+        return validDocumentation && validDocumentation.length > 0;
+      })
       .map(([key, value]) => {
         const labs = value.labs;
         const documentation = value.documentation;
@@ -872,7 +885,6 @@ function createWhatWasDocumentedFromDiagnosticReports(
       const note = documentation.presentedForm?.[0]?.data ?? "";
       const decodeNote = Buffer.from(note, "base64").toString("utf-8");
       const cleanNote = decodeNote.replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "");
-      const newNote = removeB64FromString(cleanNote);
 
       const practitionerField = createPractionerField(documentation, mappedPractitioners);
       const organizationField = createOrganiztionField(documentation, mappedOrganizations);
@@ -881,7 +893,7 @@ function createWhatWasDocumentedFromDiagnosticReports(
         <div>
         ${practitionerField}
         ${organizationField}
-          <p style="margin-bottom: 10px; line-height: 25px; white-space: pre-line;">${newNote}</p>
+          <p style="margin-bottom: 10px; line-height: 25px; white-space: pre-line;">${cleanNote}</p>
         </div>
       `;
     })
@@ -891,15 +903,6 @@ function createWhatWasDocumentedFromDiagnosticReports(
     <h4>Notes</h4>
     ${documentations}
   </div>`;
-}
-
-function removeB64FromString(note: string): string {
-  const keyword = "^application^pdf^BASE64^";
-  const words = note.split(" ");
-  const filteredWords = words.filter(word => !word.includes(keyword));
-  const newNote = filteredWords.join(" ");
-
-  return newNote;
 }
 
 function createPractionerField(
