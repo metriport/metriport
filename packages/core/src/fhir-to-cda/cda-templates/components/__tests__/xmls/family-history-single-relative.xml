@@ -1,0 +1,114 @@
+<templateId root="2.16.840.1.113883.10.20.22.2.15" extension="2015-08-01">
+</templateId>
+<code code="10157-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Family History">
+</code>
+<title>
+	FAMILY HISTORY
+</title>
+<text>
+	<table ID="familyhistory">
+		<thead>
+			<tr>
+				<th>
+					Medical History
+				</th>
+				<th>
+					Onset
+				</th>
+				<th>
+					Relation
+				</th>
+				<th>
+					Name
+				</th>
+				<th>
+					Comments
+				</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr ID="familyhistory1">
+				<td>
+					Myocardial Infarction
+				</td>
+				<td>
+					88yr
+				</td>
+				<td>
+					father
+				</td>
+				<td>
+					Sven
+				</td>
+				<td>
+					Went to see the Stanley Cup finals. At least his team won.
+				</td>
+			</tr>
+			<tr ID="familyhistory1">
+				<td>
+					Embolic Stroke
+				</td>
+				<td>
+					56yr
+				</td>
+				<td>
+					father
+				</td>
+				<td>
+					Sven
+				</td>
+				<td>
+					Not Specified
+				</td>
+			</tr>
+		</tbody>
+	</table>
+</text>
+<entry>
+	<organizer classCode="CLUSTER" moodCode="EVN">
+		<templateId root="2.16.840.1.113883.10.20.22.4.45" extension="2015-08-01">
+		</templateId>
+		<id root="placeholder-ORG-OID" extension="${memberHistId}">
+		</id>
+		<statusCode code="completed">
+		</statusCode>
+		<subject>
+			<relatedSubject>
+				<code code="FTH" codeSystem="2.16.840.1.113883.5.111" codeSystemName="RoleCode" displayName="father">
+					<originalText>
+						<reference value="familyhistory1">
+						</reference>
+					</originalText>
+				</code>
+				<subject>
+					<administrativeGenderCode code="M" codeSystem="2.16.840.1.113883.5.1" codeSystemName="AdministrativeGender" displayName="Male">
+					</administrativeGenderCode>
+					<birthTime value="19300101">
+					</birthTime>
+					<deceasedInd value="true" xmlns:sdtc="urn:hl7-org:sdtc">
+					</deceasedInd>
+				</subject>
+			</relatedSubject>
+		</subject>
+		<component>
+			<observation classCode="OBS" moodCode="EVN">
+				<templateId root="2.16.840.1.113883.10.20.22.4.46" extension="2015-08-01">
+				</templateId>
+				<code code="418799008" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Finding reported by subject or history provider (finding)">
+					<translation code="75315-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Condition Family member">
+					</translation>
+				</code>
+			</observation>
+		</component>
+		<component>
+			<observation classCode="OBS" moodCode="EVN">
+				<templateId root="2.16.840.1.113883.10.20.22.4.46" extension="2015-08-01">
+				</templateId>
+				<code code="418799008" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Finding reported by subject or history provider (finding)">
+					<translation code="75315-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Condition Family member">
+					</translation>
+				</code>
+			</observation>
+		</component>
+	</organizer>
+</entry>

@@ -1,10 +1,11 @@
 import {
+  Age,
   Bundle,
   CodeableConcept,
+  Annotation,
   FamilyMemberHistory,
   FamilyMemberHistoryCondition,
 } from "@medplum/fhirtypes";
-import { toArray } from "@metriport/shared";
 import { isFamilyMemberHistory } from "../../../external/fhir/shared";
 import { FamilyHistorySection } from "../../cda-types/sections";
 import {
@@ -43,7 +44,7 @@ import { AugmentedFamilyMemberHistory } from "./augmented-resources";
 
 const familyHistorySectionName = "familyhistory";
 
-const tableHeaders = ["Medical History", "Relation", "Name", "Comments"];
+const tableHeaders = ["Medical History", "Onset", "Relation", "Name", "Comments"];
 
 export function buildFamilyHistory(fhirBundle: Bundle): FamilyHistorySection {
   const familyHistory: FamilyMemberHistory[] =
@@ -61,7 +62,7 @@ export function buildFamilyHistory(fhirBundle: Bundle): FamilyHistorySection {
 
   const { trs, entries } = createTableRowsAndEntries(
     augmentedMemberHistories,
-    createTableRowFromMemberHistory,
+    createTableRowsFromMemberHistory,
     createEntryFromMemberHistory
   );
 
@@ -84,52 +85,64 @@ export function buildFamilyHistory(fhirBundle: Bundle): FamilyHistorySection {
   };
 }
 
-function createTableRowFromMemberHistory(
+function createTableRowsFromMemberHistory(
   augHistory: AugmentedFamilyMemberHistory,
   referenceId: string
-): ObservationTableRow[] {
+): ObservationTableRow | ObservationTableRow[] {
   const relationship = augHistory.resource.relationship;
-  return [
-    {
-      tr: {
-        _ID: referenceId,
-        ["td"]: [
-          {
-            "#text": getMedicalConditions(augHistory.resource.condition) ?? NOT_SPECIFIED,
-          },
-          {
-            "#text": relationship ? getDisplaysFromCodeableConcepts(relationship) : NOT_SPECIFIED,
-          },
-          {
-            "#text": augHistory.resource.patient?.display ?? NOT_SPECIFIED,
-          },
-          {
-            "#text": getNotes(augHistory.resource.condition) ?? NOT_SPECIFIED,
-          },
-        ],
-      },
+  const relationshipString = getDisplaysFromCodeableConcepts(relationship);
+  const name = augHistory.resource.name;
+
+  if (!augHistory.resource.condition) {
+    return createTableRowFromMemberHistory(undefined, relationshipString, name, referenceId);
+  }
+  return augHistory.resource.condition?.map(condition => {
+    return createTableRowFromMemberHistory(condition, relationshipString, name, referenceId);
+  });
+}
+
+function createTableRowFromMemberHistory(
+  condition: FamilyMemberHistoryCondition | undefined,
+  relationship: string | undefined,
+  name: string | undefined,
+  referenceId: string
+): ObservationTableRow {
+  return {
+    tr: {
+      _ID: referenceId,
+      ["td"]: [
+        {
+          "#text": getMedicalCondition(condition?.code) ?? NOT_SPECIFIED,
+        },
+        {
+          "#text": getConditionOnset(condition?.onsetAge) ?? NOT_SPECIFIED,
+        },
+        {
+          "#text": relationship ?? NOT_SPECIFIED,
+        },
+        {
+          "#text": name ?? NOT_SPECIFIED,
+        },
+        {
+          "#text": getNotes(condition?.note) ?? NOT_SPECIFIED,
+        },
+      ],
     },
-  ];
+  };
 }
 
-function getMedicalConditions(
-  conditions: FamilyMemberHistoryCondition[] | undefined
-): string | undefined {
-  if (!conditions) return undefined;
-  return conditions
-    ?.map(condition =>
-      condition.code ? getDisplaysFromCodeableConcepts(toArray(condition.code)) : undefined
-    )
-    .join("; ");
+function getMedicalCondition(concept: CodeableConcept | undefined): string | undefined {
+  return concept ? getDisplaysFromCodeableConcepts(concept) : undefined;
 }
 
-function getNotes(conditions: FamilyMemberHistoryCondition[] | undefined): string | undefined {
-  if (!conditions) return undefined;
-  const combinedNotes = conditions
-    ?.map(condition => condition.note?.map(note => note.text).join("; "))
-    .join("; ");
-  if (!combinedNotes.length) return undefined;
-  return combinedNotes;
+function getConditionOnset(age: Age | undefined): string | undefined {
+  const ageString = `${age?.value ?? ""}${age?.unit ?? ""}`;
+  return ageString.length > 0 ? ageString : undefined;
+}
+
+function getNotes(note: Annotation[] | undefined): string | undefined {
+  const combinedNotes = note?.map(note => note.text).join("; ");
+  return combinedNotes?.length ? combinedNotes : undefined;
 }
 
 function createEntryFromMemberHistory(
@@ -255,7 +268,7 @@ function buildComponents(
         }),
         code: codeCv,
         text: {
-          "#text": getMedicalConditions([condition]),
+          "#text": getMedicalCondition(condition),
         },
       },
     };
