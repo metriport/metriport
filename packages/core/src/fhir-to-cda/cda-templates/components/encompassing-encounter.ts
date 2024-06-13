@@ -63,7 +63,10 @@ function createComponentOf(encounter: AugmentedEncounter): EncompassingEncounter
           "_value"
         ),
       },
-      responsibleParty: buildResponsibleParty(encounter.practitioners[0], encounter.locations[0]),
+      responsibleParty: buildResponsibleParty(
+        encounter.practitioners?.[0],
+        encounter.locations?.[0]
+      ),
       location: {
         healthCareFacility: {
           id: buildInstanceIdentifier({
