@@ -5,6 +5,9 @@ import {
 } from "@metriport/shared/medical";
 import { Product } from "./product";
 
+export const maxRequestUrlLength = 2048;
+export const maxStatusDetailLength = 2048;
+
 // TODO: 1411 - remove this section when DAPI is fully discontinued
 export const dapiWHPrefix = Product.devices;
 export const dapiWebhookType = [
