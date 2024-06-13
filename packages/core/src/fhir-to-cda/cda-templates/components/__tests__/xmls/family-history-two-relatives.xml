@@ -81,6 +81,9 @@
 					</originalText>
 				</code>
 				<subject>
+					<name>
+						Sven
+					</name>
 					<administrativeGenderCode code="M" codeSystem="2.16.840.1.113883.5.1" codeSystemName="AdministrativeGender" displayName="Male">
 					</administrativeGenderCode>
 					<birthTime value="19300101">
@@ -123,7 +126,10 @@
 					</originalText>
 				</code>
 				<subject>
-					<administrativeGenderCode code="M" codeSystem="2.16.840.1.113883.5.1" codeSystemName="AdministrativeGender" displayName="Male">
+					<name>
+						Helga
+					</name>
+					<administrativeGenderCode code="F" codeSystem="2.16.840.1.113883.5.1" codeSystemName="AdministrativeGender" displayName="Female">
 					</administrativeGenderCode>
 					<birthTime value="19300101">
 					</birthTime>

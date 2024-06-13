@@ -446,6 +446,7 @@ export type EncompassingEncounter = {
 };
 
 export type Subject = {
+  name?: string | undefined;
   administrativeGenderCode?: CdaCodeCe | undefined;
   birthTime?: Entry | undefined;
   deceasedInd?:

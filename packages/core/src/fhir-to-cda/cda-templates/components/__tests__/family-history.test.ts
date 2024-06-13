@@ -71,6 +71,15 @@ describe("buildMedications", () => {
           },
         ],
       },
+      sex: {
+        coding: [
+          {
+            system: "http://hl7.org/fhir/administrative-gender",
+            code: "female",
+            display: "Female",
+          },
+        ],
+      },
     });
     bundle.entry?.push({ resource: { ...memberHist2, condition: [condition2] } });
 

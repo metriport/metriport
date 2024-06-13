@@ -199,6 +199,7 @@ function buildSubject(memberHist: FamilyMemberHistory): Subject {
     : undefined;
 
   return {
+    name: memberHist.name,
     administrativeGenderCode: mappedGenderCode,
     birthTime,
     deceasedInd, // TODO: Validator not accepting this even though this looks correct based on the spec..
