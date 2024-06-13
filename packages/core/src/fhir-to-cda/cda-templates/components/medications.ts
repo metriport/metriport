@@ -101,10 +101,10 @@ function createTableRowsFromMedicationStatement(
             "#text": medicationName ?? NOT_SPECIFIED,
           },
           {
-            "#text": code?._code,
+            "#text": code?._code ?? NOT_SPECIFIED,
           },
           {
-            "#text": code?._codeSystem ?? code?._codeSystemName,
+            "#text": code?._codeSystem ?? NOT_SPECIFIED,
           },
           {
             "#text": getDosageFromMedicationStatement(statement.resource),
