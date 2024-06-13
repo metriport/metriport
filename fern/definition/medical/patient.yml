@@ -253,7 +253,7 @@ types:
         docs: The Patient's date of birth (DOB), formatted `YYYY-MM-DD` as per ISO 8601.
       genderAtBirth:
         type: string
-        docs: The Patient's gender at birth, can be one of `M` or `F`.
+        docs: The Patient's gender at birth, can be one of `M` or `F` or 'UN' for undifferentiated.
       personalIdentifiers:
         type: optional<list<PersonalIdentifier>>
         docs: |

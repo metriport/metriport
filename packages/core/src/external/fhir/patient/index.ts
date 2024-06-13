@@ -23,6 +23,15 @@ export function mapGenderAtBirthToFhir(k: GenderAtBirth): "female" | "male" | "o
   return genderMapping[k];
 }
 
+export function mapFhirToGenderAtBirth(gender: "female" | "male" | "other"): GenderAtBirth {
+  const reverseMapping = {
+    female: "F",
+    male: "M",
+    other: "UN",
+  } as const;
+  return reverseMapping[gender];
+}
+
 export function mapPatientDataToResource(patient: PatientIdAndData) {
   return {
     resourceType: "Patient" as const,
