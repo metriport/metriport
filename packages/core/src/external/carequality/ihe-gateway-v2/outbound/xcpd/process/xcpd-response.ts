@@ -153,6 +153,7 @@ function handleHTTPErrorResponse({
     patientId: outboundRequest?.patientId,
     patientMatch: null,
     operationOutcome: operationOutcome,
+    iheGatewayV2: true,
   };
 }
 
@@ -200,6 +201,7 @@ function handlePatientMatchResponse({
     patientMatch: true,
     gatewayHomeCommunityId: outboundRequest.samlAttributes.homeCommunityId,
     patientResource: patientResource,
+    iheGatewayV2: true,
   };
 
   return response;
@@ -243,6 +245,7 @@ function handlePatientErrorResponse({
     patientId: outboundRequest.patientId,
     patientMatch: null,
     operationOutcome: operationOutcome,
+    iheGatewayV2: true,
   };
   return response;
 }
@@ -274,6 +277,7 @@ function handlePatientNoMatchResponse({
     patientId: outboundRequest.patientId,
     patientMatch: false,
     operationOutcome: operationOutcome,
+    iheGatewayV2: true,
   };
   return response;
 }

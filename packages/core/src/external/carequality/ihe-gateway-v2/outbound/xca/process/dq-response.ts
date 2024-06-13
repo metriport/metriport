@@ -17,11 +17,8 @@ import {
 } from "../../../../shared";
 import { successStatus, partialSuccessStatus } from "./constants";
 import { capture } from "../../../../../../util/notifications";
-import { out } from "../../../../../../util/log";
 
 dayjs.extend(utc);
-
-const { log } = out("DQ Processing");
 
 type Identifier = {
   _identificationScheme: string;
@@ -64,7 +61,6 @@ function getCreationTime(time: string | undefined): string | undefined {
   try {
     return time ? dayjs.utc(time).toISOString() : undefined;
   } catch (error) {
-    log(`Error parsing creation time: ${time}, error: ${error}`);
     return undefined;
   }
 }
@@ -166,11 +162,13 @@ function handleSuccessResponse({
   extrinsicObjects,
   outboundRequest,
   gateway,
+  attempt,
 }: {
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
   extrinsicObjects: any;
   outboundRequest: OutboundDocumentQueryReq;
   gateway: XCAGateway;
+  attempt?: number | undefined;
 }): OutboundDocumentQueryResp {
   const documentReferences = Array.isArray(extrinsicObjects)
     ? extrinsicObjects.flatMap(
@@ -186,21 +184,28 @@ function handleSuccessResponse({
     gateway,
     documentReference: documentReferences,
     externalGatewayPatient: outboundRequest.externalGatewayPatient,
+    retried: attempt,
+    iheGatewayV2: true,
   };
   return response;
 }
 
-export function processDQResponse({
-  dqResponse: { response, success, gateway, outboundRequest },
+export function processDqResponse({
+  response: { response, success, gateway, outboundRequest },
+  attempt,
 }: {
-  dqResponse: DQSamlClientResponse;
-}): OutboundDocumentQueryResp {
+  response: DQSamlClientResponse;
+  attempt?: number | undefined;
+}): Promise<OutboundDocumentQueryResp> {
   if (success === false) {
-    return handleHttpErrorResponse({
-      httpError: response,
-      outboundRequest,
-      gateway: gateway,
-    });
+    return Promise.resolve(
+      handleHttpErrorResponse({
+        httpError: response,
+        outboundRequest,
+        gateway: gateway,
+        attempt,
+      })
+    );
   }
   const parser = new XMLParser({
     ignoreAttributes: false,
@@ -217,21 +222,30 @@ export function processDQResponse({
   const registryErrorList = jsonObj?.Envelope?.Body?.AdhocQueryResponse?.RegistryErrorList;
 
   if ((status === successStatus || status === partialSuccessStatus) && extrinsicObjects) {
-    return handleSuccessResponse({
-      extrinsicObjects,
-      outboundRequest,
-      gateway,
-    });
+    return Promise.resolve(
+      handleSuccessResponse({
+        extrinsicObjects,
+        outboundRequest,
+        gateway,
+        attempt,
+      })
+    );
   } else if (registryErrorList) {
-    return handleRegistryErrorResponse({
-      registryErrorList,
-      outboundRequest,
-      gateway,
-    });
+    return Promise.resolve(
+      handleRegistryErrorResponse({
+        registryErrorList,
+        outboundRequest,
+        gateway,
+        attempt,
+      })
+    );
   } else {
-    return handleEmptyResponse({
-      outboundRequest,
-      gateway,
-    });
+    return Promise.resolve(
+      handleEmptyResponse({
+        outboundRequest,
+        gateway,
+        attempt,
+      })
+    );
   }
 }

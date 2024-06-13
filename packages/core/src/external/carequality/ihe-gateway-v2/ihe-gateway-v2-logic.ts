@@ -10,11 +10,11 @@ import { createAndSignBulkXCPDRequests } from "./outbound/xcpd/create/iti55-enve
 import { createAndSignBulkDQRequests } from "./outbound/xca/create/iti38-envelope";
 import { createAndSignBulkDRRequests } from "./outbound/xca/create/iti39-envelope";
 import { sendSignedXCPDRequests } from "./outbound/xcpd/send/xcpd-requests";
-import { sendSignedDQRequests } from "./outbound/xca/send/dq-requests";
-import { sendSignedDRRequests } from "./outbound/xca/send/dr-requests";
 import { processXCPDResponse } from "./outbound/xcpd/process/xcpd-response";
-import { processDQResponse } from "./outbound/xca/process/dq-response";
-import { processDrResponse } from "./outbound/xca/process/dr-response";
+import {
+  sendProcessRetryDqRequests,
+  sendProcessRetryDrRequests,
+} from "./outbound/xca/orchestrate/send-process-retry";
 import { capture } from "../../../util/notifications";
 
 export async function createSignSendProcessXCPDRequest({
@@ -75,17 +75,19 @@ export async function createSignSendProcessDQRequests({
     bulkBodyData: dqRequestsGatewayV2,
     samlCertsAndKeys,
   });
-  const responses = await sendSignedDQRequests({
-    signedRequests,
-    samlCertsAndKeys,
-    patientId,
-    cxId,
-  });
-  const results = responses.map(response => {
-    return processDQResponse({
-      dqResponse: response,
+
+  const resultPromises = signedRequests.map(async (signedRequest, index) => {
+    return sendProcessRetryDqRequests({
+      signedRequest,
+      samlCertsAndKeys,
+      patientId,
+      cxId,
+      index,
     });
   });
+
+  const results = await Promise.all(resultPromises);
+
   for (const result of results) {
     try {
       await axios.post(dqResponseUrl, result);
@@ -117,19 +119,19 @@ export async function createSignSendProcessDRRequests({
     bulkBodyData: drRequestsGatewayV2,
     samlCertsAndKeys,
   });
-  const responses = await sendSignedDRRequests({
-    signedRequests,
-    samlCertsAndKeys,
-    patientId,
-    cxId,
+
+  const resultPromises = signedRequests.map(async (signedRequest, index) => {
+    return sendProcessRetryDrRequests({
+      signedRequest,
+      samlCertsAndKeys,
+      patientId,
+      cxId,
+      index,
+    });
   });
-  const results = await Promise.all(
-    responses.map(async response => {
-      return await processDrResponse({
-        drResponse: response,
-      });
-    })
-  );
+
+  const results = await Promise.all(resultPromises);
+
   for (const result of results) {
     try {
       await axios.post(drResponseUrl, result);

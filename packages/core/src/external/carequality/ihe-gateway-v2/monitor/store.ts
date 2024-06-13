@@ -56,7 +56,7 @@ export async function storeXcpdResponses({
   }
 }
 
-export async function storeDqResponses({
+export async function storeDqResponse({
   response,
   outboundRequest,
   gateway,
@@ -90,7 +90,7 @@ export async function storeDqResponses({
   }
 }
 
-export async function storeDrResponses({
+export async function storeDrResponse({
   response,
   outboundRequest,
   gateway,

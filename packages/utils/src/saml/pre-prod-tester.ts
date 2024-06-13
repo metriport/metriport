@@ -12,14 +12,11 @@ import {
   OutboundDocumentRetrievalResp,
 } from "@metriport/ihe-gateway-sdk";
 import { createAndSignBulkDQRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/create/iti38-envelope";
-import { sendSignedDQRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dq-requests";
-import { processDQResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dq-response";
+import { sendSignedDqRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dq-requests";
+import { processDqResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dq-response";
 import { createAndSignBulkDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/create/iti39-envelope";
-import { sendSignedDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dr-requests";
-import {
-  processDrResponse,
-  setS3UtilsInstance as setS3UtilsInstanceForStoringDrResponse,
-} from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
+import { sendProcessRetryDrRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2-logic";
+import { setS3UtilsInstance as setS3UtilsInstanceForStoringDrResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
 import { setS3UtilsInstance as setS3UtilsInstanceForStoringIheResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/monitor/store";
 import { Config } from "@metriport/core/util/config";
 import { setRejectUnauthorized } from "@metriport/core/external/carequality/ihe-gateway-v2/saml/saml-client";
@@ -35,6 +32,8 @@ setRejectUnauthorized(false);
 const s3utils = new MockS3Utils(Config.getAWSRegion());
 setS3UtilsInstanceForStoringDrResponse(s3utils);
 setS3UtilsInstanceForStoringIheResponse(s3utils);
+
+const athenaOid = "2.16.840.1.113883.3.564.1";
 
 const samlAttributes = {
   subjectId: "System User",
@@ -63,6 +62,33 @@ async function queryDatabaseForDQs() {
     LIMIT 5;
   `;
 
+  try {
+    const results = await sequelize.query(query, {
+      type: QueryTypes.SELECT,
+    });
+    sequelize.close();
+    return results;
+  } catch (error) {
+    console.error("Error executing SQL query:", error);
+    sequelize.close();
+    throw error;
+  }
+}
+
+export async function queryDatabaseForDqsFromFailedDrs() {
+  const sqlDBCreds = getEnvVarOrFail("DB_CREDS");
+  const sequelize = initDbPool(sqlDBCreds);
+  const query = `
+    SELECT dqr.data
+    FROM document_retrieval_result drr
+    JOIN document_query_result dqr ON drr.request_id = dqr.request_id
+    WHERE drr.status = 'failure'
+    AND dqr.status = 'success'
+    AND drr.data->'gateway'->>'homeCommunityId' = '${athenaOid}'
+    AND dqr.data->'gateway'->>'homeCommunityId' = '${athenaOid}'
+    ORDER BY RANDOM()
+    LIMIT 10;
+  `;
   try {
     const results = await sequelize.query(query, {
       type: QueryTypes.SELECT,
@@ -165,7 +191,7 @@ async function DRIntegrationTest() {
   let runTimeErrorCount = 0;
 
   console.log("Querrying DB for DQs...");
-  const results = await queryDatabaseForDQs();
+  const results = await queryDatabaseForDqsFromFailedDrs();
   console.log("Sending DQs and DRs...");
   const promises = results.map(async result => {
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -265,15 +291,17 @@ async function queryDQ(dqRequest: OutboundDocumentQueryReq): Promise<OutboundDoc
       samlCertsAndKeys,
     });
 
-    const response = await sendSignedDQRequests({
-      signedRequests: xmlResponses,
+    const response = await sendSignedDqRequest({
+      request: xmlResponses[0],
       samlCertsAndKeys,
       patientId: dqRequest.patientId,
       cxId: dqRequest.cxId,
+      index: 0,
     });
 
-    return processDQResponse({
-      dqResponse: response[0],
+    return processDqResponse({
+      response,
+      attempt: 0,
     });
   } catch (error) {
     console.log("Erroring dqRequest", dqRequest);
@@ -292,21 +320,22 @@ async function queryDR(
       certChain: getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE_PRODUCTION"),
     };
 
-    const xmlResponses = createAndSignBulkDRRequests({
+    const signedRequests = createAndSignBulkDRRequests({
       bulkBodyData: [drRequest],
       samlCertsAndKeys,
     });
 
-    const response = await sendSignedDRRequests({
-      signedRequests: xmlResponses,
-      samlCertsAndKeys,
-      patientId: drRequest.patientId,
-      cxId: drRequest.cxId,
+    const resultPromises = signedRequests.map(async (signedRequest, index) => {
+      return sendProcessRetryDrRequests({
+        signedRequest,
+        samlCertsAndKeys,
+        patientId: uuidv4(),
+        cxId: uuidv4(),
+        index,
+      });
     });
-
-    return processDrResponse({
-      drResponse: response[0],
-    });
+    const results = await Promise.all(resultPromises);
+    return results[0];
   } catch (error) {
     console.log("Erroring drRequest", drRequest);
     throw error;

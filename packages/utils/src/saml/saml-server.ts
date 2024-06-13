@@ -10,14 +10,12 @@ import { createAndSignBulkXCPDRequests } from "@metriport/core/external/carequal
 import { createAndSignBulkDQRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/create/iti38-envelope";
 import { createAndSignBulkDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/create/iti39-envelope";
 import { sendSignedXCPDRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/send/xcpd-requests";
-import { sendSignedDQRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dq-requests";
-import { sendSignedDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dr-requests";
 import { processXCPDResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/process/xcpd-response";
-import { processDQResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dq-response";
 import {
-  processDrResponse,
-  setS3UtilsInstance as setS3UtilsInstanceForStoringDrResponse,
-} from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
+  sendProcessRetryDrRequests,
+  sendProcessRetryDqRequests,
+} from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2-logic";
+import { setS3UtilsInstance as setS3UtilsInstanceForStoringDrResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
 import { setS3UtilsInstance as setS3UtilsInstanceForStoringIheResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/monitor/store";
 import { setRejectUnauthorized } from "@metriport/core/external/carequality/ihe-gateway-v2/saml/saml-client";
 import { Config } from "@metriport/core/util/config";
@@ -87,22 +85,21 @@ app.post("/xcadq", async (req: Request, res: Response) => {
   }
 
   try {
-    const xmlResponses = createAndSignBulkDQRequests({
+    const signedRequests = createAndSignBulkDQRequests({
       bulkBodyData: req.body,
       samlCertsAndKeys,
     });
-    const responses = await sendSignedDQRequests({
-      signedRequests: xmlResponses,
-      samlCertsAndKeys,
-      patientId: uuidv4(),
-      cxId: uuidv4(),
-    });
 
-    const results = responses.map(response => {
-      return processDQResponse({
-        dqResponse: response,
+    const resultPromises = signedRequests.map(async (signedRequest, index) => {
+      return sendProcessRetryDqRequests({
+        signedRequest,
+        samlCertsAndKeys,
+        patientId: uuidv4(),
+        cxId: uuidv4(),
+        index,
       });
     });
+    const results = await Promise.all(resultPromises);
 
     res.type("application/json").send(results);
   } catch (error) {
@@ -121,24 +118,21 @@ app.post("/xcadr", async (req: Request, res: Response) => {
   }));
 
   try {
-    const xmlResponses = createAndSignBulkDRRequests({
+    const signedRequests = createAndSignBulkDRRequests({
       bulkBodyData: req.body,
       samlCertsAndKeys,
     });
-    const response = await sendSignedDRRequests({
-      signedRequests: xmlResponses,
-      samlCertsAndKeys,
-      patientId: uuidv4(),
-      cxId: uuidv4(),
+    const resultPromises = signedRequests.map(async (signedRequest, index) => {
+      return sendProcessRetryDrRequests({
+        signedRequest,
+        samlCertsAndKeys,
+        patientId: uuidv4(),
+        cxId: uuidv4(),
+        index,
+      });
     });
 
-    const results = await Promise.all(
-      response.map(async response => {
-        return processDrResponse({
-          drResponse: response,
-        });
-      })
-    );
+    const results = await Promise.all(resultPromises);
     res.type("application/json").send(results);
   } catch (error) {
     res.status(500).send({ detail: "Internal Server Error" });

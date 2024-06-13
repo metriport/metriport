@@ -11,6 +11,7 @@ import { capture } from "../../../../../../util/notifications";
 import { out } from "../../../../../../util/log";
 
 const { log } = out("XCA Error Handling");
+const knownNonRetryableErrors = ["No active consent for patient id"];
 
 export function processRegistryErrorList(
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -30,7 +31,7 @@ export function processRegistryErrorList(
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
     registryErrors.forEach((entry: any) => {
       const issue = {
-        severity: entry?._severity?.toString().toLowerCase().split(":").pop(),
+        severity: "error",
         code: entry?._errorCode?.toString(),
         details: {
           text: entry?._codeContext?.toString(),
@@ -67,11 +68,13 @@ export function handleRegistryErrorResponse({
   registryErrorList,
   outboundRequest,
   gateway,
+  attempt,
 }: {
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
   registryErrorList: any;
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
+  attempt?: number | undefined;
 }): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
   const operationOutcome = processRegistryErrorList(registryErrorList, outboundRequest);
   return {
@@ -81,6 +84,8 @@ export function handleRegistryErrorResponse({
     responseTimestamp: dayjs().toISOString(),
     gateway,
     operationOutcome,
+    retried: attempt,
+    iheGatewayV2: true,
   };
 }
 
@@ -88,10 +93,12 @@ export function handleHttpErrorResponse({
   httpError,
   outboundRequest,
   gateway,
+  attempt,
 }: {
   httpError: string;
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
+  attempt?: number | undefined;
 }): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
@@ -113,15 +120,19 @@ export function handleHttpErrorResponse({
     gateway: gateway,
     patientId: outboundRequest.patientId,
     operationOutcome: operationOutcome,
+    retried: attempt,
+    iheGatewayV2: true,
   };
 }
 
 export function handleEmptyResponse({
   outboundRequest,
   gateway,
+  attempt,
 }: {
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
+  attempt?: number | undefined;
 }): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
@@ -143,6 +154,8 @@ export function handleEmptyResponse({
     responseTimestamp: dayjs().toISOString(),
     gateway,
     operationOutcome,
+    retried: attempt,
+    iheGatewayV2: true,
   };
 }
 
@@ -150,11 +163,13 @@ export function handleSoapFaultResponse({
   soapFault,
   outboundRequest,
   gateway,
+  attempt,
 }: {
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
   soapFault: any;
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
+  attempt?: number | undefined;
 }): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
   const faultCode = soapFault?.Code?.Value?.toString() ?? "unknown_fault";
   const faultReason =
@@ -181,5 +196,20 @@ export function handleSoapFaultResponse({
     responseTimestamp: dayjs().toISOString(),
     gateway,
     operationOutcome,
+    retried: attempt,
+    iheGatewayV2: true,
   };
+}
+
+export function isRetryableError(outboundRequest: OutboundDocumentRetrievalResp): boolean {
+  return (
+    outboundRequest.operationOutcome?.issue.some(
+      issue =>
+        issue.severity === "error" &&
+        !knownNonRetryableErrors.some(
+          nonRetryableError =>
+            "text" in issue.details && issue.details.text.includes(nonRetryableError)
+        )
+    ) ?? false
+  );
 }
