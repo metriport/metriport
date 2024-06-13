@@ -768,6 +768,19 @@ function buildReports(
 
         return true;
       })
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      .filter(([key, value]) => {
+        const documentation = value.documentation;
+        const validDocumentation = documentation?.filter(doc => {
+          const note = doc.presentedForm?.[0]?.data ?? "";
+          const decodeNote = Buffer.from(note, "base64").toString("utf-8");
+          const containsB64 = decodeNote.includes("^application^pdf^BASE64^");
+
+          return !containsB64;
+        });
+
+        return validDocumentation && validDocumentation.length > 0;
+      })
       .map(([key, value]) => {
         const labs = value.labs;
         const documentation = value.documentation;
