@@ -12,7 +12,7 @@ import {
   PersonalIdentifier,
   createDriversLicensePersonalIdentifier,
 } from "../../../domain/patient";
-import { isContactType } from "../../fhir/patient/index";
+import { isContactType, mapFhirToGenderAtBirth } from "../../fhir/patient/index";
 import {
   XDSRegistryError,
   LivingSubjectAdministrativeGenderRequestedError,
@@ -35,8 +35,7 @@ export function validateFHIRAndExtractPatient(payload: InboundPatientDiscoveryRe
     throw new XDSRegistryError("Birth date is not defined");
   }
 
-  const genderAtBirth =
-    patient.gender === "male" ? "M" : patient.gender === "female" ? "F" : undefined;
+  const genderAtBirth = mapFhirToGenderAtBirth(patient.gender);
   if (!genderAtBirth) {
     throw new LivingSubjectAdministrativeGenderRequestedError("Gender at Birth is not defined");
   }
