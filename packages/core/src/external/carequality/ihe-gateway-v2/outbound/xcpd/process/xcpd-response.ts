@@ -28,7 +28,6 @@ import {
   handlePatientErrorResponse,
 } from "./error";
 import { mapGenderAtBirthToFhir } from "../../../../../fhir/patient";
-import { IheGender } from "./schema";
 
 const { log } = out("Processing XCPD Requests");
 
@@ -113,10 +112,6 @@ function iheTelecomsToTelecoms(iheTelecom: IheTelecom[]): Telecom[] | undefined 
   return telecoms.length > 0 ? telecoms : undefined;
 }
 
-export function normalizeGender(gender: IheGender): "male" | "female" | "unknown" | "other" {
-  return mapGenderAtBirthToFhir(gender);
-}
-
 function handlePatientMatchResponse({
   patientRegistryProfile,
   outboundRequest,
@@ -147,7 +142,9 @@ function handlePatientMatchResponse({
 
   const patientResource = {
     name: patientNames,
-    gender: normalizeGender(subject1?.patient?.patientPerson?.administrativeGenderCode?._code),
+    gender: mapGenderAtBirthToFhir(
+      subject1?.patient?.patientPerson?.administrativeGenderCode?._code
+    ),
     birthDate: subject1?.patient?.patientPerson?.birthTime?._value,
     ...(addresses && { address: addresses }),
     ...(patientTelecoms && { telecom: patientTelecoms }),

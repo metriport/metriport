@@ -13,13 +13,13 @@ import { getIdFromSubjectId, getIdFromSubjectRef } from "../shared";
 
 export type PatientIdAndData = Pick<Patient, "id" | "data">;
 
-const genderMapping: { [k in GenderAtBirth]: "female" | "male" | "unknown" } = {
+const genderMapping: { [k in GenderAtBirth]: "female" | "male" | "other" } = {
   F: "female",
   M: "male",
-  UN: "unknown",
+  UN: "other",
 };
 
-export function mapGenderAtBirthToFhir(k: GenderAtBirth): Required<FHIRPatient>["gender"] {
+export function mapGenderAtBirthToFhir(k: GenderAtBirth): "female" | "male" | "other" {
   return genderMapping[k];
 }
 
