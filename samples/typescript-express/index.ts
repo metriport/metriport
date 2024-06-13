@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 import { MetriportMedicalApi, USState } from "@metriport/api-sdk";
-import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { getEnvVarOrFail } from "@metriport/shared";
 
 const apiKey = getEnvVarOrFail("METRIPORT_API_KEY");
 const isProd = getEnvVarOrFail("IS_PROD") === "true";
