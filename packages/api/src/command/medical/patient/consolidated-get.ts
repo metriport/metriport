@@ -5,15 +5,20 @@ import {
   ExtractResource,
   OperationOutcomeIssue,
   Resource,
-  ResourceType
+  ResourceType,
 } from "@medplum/fhirtypes";
-import { ConsolidatedQuery, GetConsolidatedFilters, resourcesSearchableByPatient, ResourceTypeForConsolidation } from "@metriport/api-sdk";
+import {
+  ConsolidatedQuery,
+  GetConsolidatedFilters,
+  resourcesSearchableByPatient,
+  ResourceTypeForConsolidation,
+} from "@metriport/api-sdk";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import {
   buildBundle,
-  getReferencesFromResources
+  getReferencesFromResources,
 } from "@metriport/core/external/fhir/shared/bundle";
 import { isResourceDerivedFromDocRef } from "@metriport/core/external/fhir/shared/index";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
@@ -24,7 +29,7 @@ import { intersection } from "lodash";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import {
   fullDateQueryForResource,
-  getPatientFilter
+  getPatientFilter,
 } from "../../../external/fhir/patient/resource-filter";
 import { getReferencesFromFHIR } from "../../../external/fhir/references/get-references";
 import { Config } from "../../../shared/config";
@@ -36,7 +41,7 @@ import {
   buildDocRefBundleWithAttachment,
   emptyMetaProp,
   handleBundleToMedicalRecord,
-  uploadJsonBundleToS3
+  uploadJsonBundleToS3,
 } from "./convert-fhir-bundle";
 import { getPatientOrFail } from "./get-patient";
 import { storeQueryInit } from "./query-init";
@@ -241,6 +246,8 @@ export async function getConsolidated({
       dateFrom,
       dateTo,
     });
+
+    bundle.entry = filterOutPrelimDocRefs(bundle.entry);
     const hasResources = bundle.entry && bundle.entry.length > 0;
     const shouldCreateMedicalRecord = conversionType && conversionType != "json" && hasResources;
     const currentConsolidatedProgress = patient.data.consolidatedQueries?.find(
@@ -303,6 +310,22 @@ export async function getConsolidated({
     });
     throw error;
   }
+}
+
+export function filterOutPrelimDocRefs(
+  entries: BundleEntry<Resource>[] | undefined
+): BundleEntry<Resource>[] | undefined {
+  if (!entries) return entries;
+
+  return entries.filter(entry => {
+    if (entry.resource?.resourceType === "DocumentReference") {
+      const isValidStatus = entry.resource?.docStatus !== "preliminary";
+
+      return isValidStatus;
+    }
+
+    return true;
+  });
 }
 
 async function uploadConsolidatedJsonAndReturnUrl({

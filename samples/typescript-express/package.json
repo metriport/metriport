@@ -13,7 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "@metriport/api-sdk": "^7.7.4",
-    "@metriport/core": "^1.6.5",
+    "@metriport/shared": "^0.9.5",
     "express": "^4.19.2"
   },
   "devDependencies": {
