@@ -96,9 +96,18 @@ function createTableRowsFromMemberHistory(
   if (!augHistory.resource.condition) {
     return createTableRowFromMemberHistory(undefined, relationshipString, name, referenceId);
   }
-  return augHistory.resource.condition?.map(condition => {
-    return createTableRowFromMemberHistory(condition, relationshipString, name, referenceId);
+  return augHistory.resource.condition?.map((condition, index) => {
+    return createTableRowFromMemberHistory(
+      condition,
+      relationshipString,
+      name,
+      createConditionReference(referenceId, index)
+    );
   });
+}
+
+function createConditionReference(ref: string, index: number): string {
+  return `${ref}-condition${index + 1}`;
 }
 
 function createTableRowFromMemberHistory(
@@ -170,7 +179,7 @@ function createEntryFromMemberHistory(
           subject: buildSubject(augHistory.resource),
         },
       },
-      component: buildComponents(augHistory.resource.condition),
+      component: buildComponents(augHistory.resource.condition, referenceId),
     },
   };
 }
@@ -238,7 +247,8 @@ function remapGenderCode(genderCode: CdaCodeCe | undefined): CdaCodeCe | undefin
 }
 
 function buildComponents(
-  conditions: FamilyMemberHistoryCondition[] | undefined
+  conditions: FamilyMemberHistoryCondition[] | undefined,
+  referenceId: string
 ): ObservationEntry[] | undefined {
   if (!conditions) return undefined;
   const codeCe = buildCodeCe({
@@ -257,7 +267,7 @@ function buildComponents(
     }),
   };
 
-  return conditions.map(condition => {
+  return conditions.map((condition, index) => {
     return {
       observation: {
         _classCode: "OBS",
@@ -268,6 +278,9 @@ function buildComponents(
         }),
         code: codeCv,
         text: {
+          reference: {
+            _value: createConditionReference(referenceId, index),
+          },
           "#text": getMedicalCondition(condition),
         },
       },

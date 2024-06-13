@@ -27,7 +27,7 @@
 			</tr>
 		</thead>
 		<tbody>
-			<tr ID="familyhistory1">
+			<tr ID="familyhistory1-condition1">
 				<td>
 					Myocardial Infarction
 				</td>
@@ -44,7 +44,7 @@
 					Went to see the Stanley Cup finals. At least his team won.
 				</td>
 			</tr>
-			<tr ID="familyhistory1">
+			<tr ID="familyhistory1-condition2">
 				<td>
 					Embolic Stroke
 				</td>
@@ -98,6 +98,10 @@
 					<translation code="75315-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Condition Family member">
 					</translation>
 				</code>
+				<text>
+					<reference value="familyhistory1-condition1">
+					</reference>
+				</text>
 			</observation>
 		</component>
 		<component>
@@ -108,6 +112,10 @@
 					<translation code="75315-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Condition Family member">
 					</translation>
 				</code>
+				<text>
+					<reference value="familyhistory1-condition2">
+					</reference>
+				</text>
 			</observation>
 		</component>
 	</organizer>
