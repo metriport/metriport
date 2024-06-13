@@ -769,6 +769,7 @@ function createWhatWasDocumentedFromDiagnosticReports(
       const note = documentation.presentedForm?.[0]?.data ?? "";
       const decodeNote = Buffer.from(note, "base64").toString("utf-8");
       const cleanNote = decodeNote.replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "");
+      const newNote = removeB64FromString(cleanNote);
 
       const practitionerField = createPractionerField(documentation, mappedPractitioners);
       const organizationField = createOrganiztionField(documentation, mappedOrganizations);
@@ -777,7 +778,7 @@ function createWhatWasDocumentedFromDiagnosticReports(
         <div>
         ${practitionerField}
         ${organizationField}
-          <p style="margin-bottom: 10px; line-height: 25px; white-space: pre-line;">${cleanNote}</p>
+          <p style="margin-bottom: 10px; line-height: 25px; white-space: pre-line;">${newNote}</p>
         </div>
       `;
     })
@@ -787,6 +788,15 @@ function createWhatWasDocumentedFromDiagnosticReports(
     <h4>Notes</h4>
     ${documentations}
   </div>`;
+}
+
+function removeB64FromString(note: string): string {
+  const keyword = "^application^pdf^BASE64^";
+  const words = note.split(" ");
+  const filteredWords = words.filter(word => !word.includes(keyword));
+  const newNote = filteredWords.join(" ");
+
+  return newNote;
 }
 
 function createPractionerField(
