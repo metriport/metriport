@@ -21,6 +21,8 @@ import {
   CdaCodeCv,
   CdaInstanceIdentifier,
   CdaOrganization,
+  CdaSexType,
+  CdaSimpleReference,
   CdaTelecom,
   CdaTelecomUse,
   CdaValueCd,
@@ -503,8 +505,8 @@ export function buildPerformer(practitioners: Practitioner[] | undefined): Assig
               name: {
                 "#text": "",
               },
-              addr: buildAddress(p.address),
               telecom: buildTelecom(p.telecom),
+              addr: buildAddress(p.address),
             },
           },
         } || []
@@ -574,4 +576,23 @@ export function buildParticipant(locations: Location[] | undefined): Participant
 export function buildAddressText(address: Address | undefined): string | undefined {
   if (!address) return undefined;
   return `${address.line?.join(", ")}, ${address.city}, ${address.state} ${address.postalCode}`;
+}
+
+export function buildSimpleReference(referenceId: string): CdaSimpleReference {
+  return {
+    reference: {
+      _value: referenceId,
+    },
+  };
+}
+
+export function mapGenderCode(gender: string | undefined): CdaSexType {
+  switch (gender?.toLowerCase()) {
+    case "male":
+      return "M";
+    case "female":
+      return "F";
+    default:
+      return "UK";
+  }
 }

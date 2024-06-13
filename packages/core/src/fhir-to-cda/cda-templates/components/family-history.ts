@@ -1,16 +1,34 @@
-import { Bundle, FamilyMemberHistory, FamilyMemberHistoryCondition } from "@medplum/fhirtypes";
+import {
+  Bundle,
+  CodeableConcept,
+  FamilyMemberHistory,
+  FamilyMemberHistoryCondition,
+} from "@medplum/fhirtypes";
 import { toArray } from "@metriport/shared";
 import { isFamilyMemberHistory } from "../../../external/fhir/shared";
-import { ConcernActEntry, ObservationTableRow } from "../../cda-types/shared-types";
+import { FamilyHistorySection } from "../../cda-types/sections";
+import {
+  ActStatusCode,
+  CdaCodeCe,
+  CdaCodeCv,
+  ObservationEntry,
+  ObservationOrganizer,
+  ObservationTableRow,
+  Subject,
+} from "../../cda-types/shared-types";
 import {
   buildCodeCe,
   buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
-  buildValueCd,
+  buildSimpleReference,
+  formatDateToCdaTimestamp,
   getDisplaysFromCodeableConcepts,
+  mapGenderCode,
+  withNullFlavor,
 } from "../commons";
 import {
   NOT_SPECIFIED,
+  _xmlnsSdtcAttribute,
   extensionValue2015,
   loincCodeSystem,
   loincSystemName,
@@ -27,7 +45,7 @@ const familyHistorySectionName = "familyhistory";
 
 const tableHeaders = ["Medical History", "Relation", "Name", "Comments"];
 
-export function buildFamilyHistory(fhirBundle: Bundle) {
+export function buildFamilyHistory(fhirBundle: Bundle): FamilyHistorySection {
   const familyHistory: FamilyMemberHistory[] =
     fhirBundle.entry?.flatMap(entry =>
       isFamilyMemberHistory(entry.resource) ? [entry.resource] : []
@@ -37,7 +55,6 @@ export function buildFamilyHistory(fhirBundle: Bundle) {
     return undefined;
   }
 
-  console.log(familyHistory);
   const augmentedMemberHistories = familyHistory.map(memberHistory => {
     return new AugmentedFamilyMemberHistory(familyHistorySectionName, memberHistory);
   });
@@ -118,7 +135,7 @@ function getNotes(conditions: FamilyMemberHistoryCondition[] | undefined): strin
 function createEntryFromMemberHistory(
   augHistory: AugmentedFamilyMemberHistory,
   referenceId: string
-) {
+): ObservationOrganizer {
   return {
     organizer: {
       _classCode: "CLUSTER",
@@ -129,34 +146,104 @@ function createEntryFromMemberHistory(
       }),
       id: buildInstanceIdentifier({
         root: placeholderOrgOid,
-        extension: augHistory.resource.id, // TODO: potentially a different ID
+        extension: augHistory.resource.id,
       }),
       statusCode: {
         _code: mapFamilyHistoryStatusCode(augHistory.resource.status),
       },
       subject: {
         relatedSubject: {
-          // _classCode: "PRS",
-          code: buildCodeCvFromCodeableConcept(augHistory.resource.relationship, referenceId),
-          subject: {
-            administrativeGenderCode: buildCodeCvFromCodeableConcept(augHistory.resource.sex),
-          },
+          code: mapRelationship(augHistory.resource.relationship, referenceId),
+          subject: buildSubject(augHistory.resource),
         },
       },
-      ...buildComponents(augHistory.resource.condition),
+      component: buildComponents(augHistory.resource.condition),
     },
   };
 }
 
-function buildComponents(conditions: FamilyMemberHistoryCondition[] | undefined) {
+function buildSubject(memberHist: FamilyMemberHistory): Subject {
+  const genderCode = buildCodeCvFromCodeableConcept(memberHist.sex);
+  const mappedGenderCode = remapGenderCode(genderCode);
+
+  const birthTime = withNullFlavor(formatDateToCdaTimestamp(memberHist.bornDate), "_value");
+
+  const deceasedBoolean = memberHist.deceasedBoolean;
+  const deceasedInd = deceasedBoolean
+    ? {
+        _value: memberHist.deceasedBoolean,
+        [_xmlnsSdtcAttribute]: "urn:hl7-org:sdtc",
+      }
+    : undefined;
+
+  return {
+    administrativeGenderCode: mappedGenderCode,
+    birthTime,
+    deceasedInd, // TODO: Validator not accepting this even though this looks correct based on the spec..
+  };
+}
+
+function mapRelationship(
+  relationship: CodeableConcept | undefined,
+  referenceId: string
+): CdaCodeCv | undefined {
+  const relationshipCoding = relationship?.coding?.[0];
+  if (!relationshipCoding) return undefined;
+
+  const { code, display, system } = relationshipCoding;
+  if (!code || !system) return undefined;
+
+  const codeCe: Partial<CdaCodeCe> = {
+    _code: code,
+  };
+
+  if (system?.toLowerCase().includes("rolecode")) {
+    codeCe._codeSystem = "2.16.840.1.113883.5.111";
+    codeCe._codeSystemName = "RoleCode";
+  } else if (system?.toLowerCase().includes("snomed")) {
+    codeCe._codeSystem = snomedCodeSystem;
+    codeCe._codeSystemName = snomedSystemName;
+  } else {
+    throw new Error("Relationship code must be in SNOMED or HL7 RoleCode coding system");
+  }
+
+  return {
+    ...codeCe,
+    ...(display && { _displayName: display }),
+    originalText: buildSimpleReference(referenceId),
+  };
+}
+
+function remapGenderCode(genderCode: CdaCodeCe | undefined): CdaCodeCe | undefined {
+  if (!genderCode) return undefined;
+  return buildCodeCe({
+    code: mapGenderCode(genderCode._code),
+    codeSystem: "2.16.840.1.113883.5.1",
+    codeSystemName: "AdministrativeGender",
+    displayName: genderCode._displayName,
+  });
+}
+
+function buildComponents(
+  conditions: FamilyMemberHistoryCondition[] | undefined
+): ObservationEntry[] | undefined {
   if (!conditions) return undefined;
-  const code = buildCodeCe({
+  const codeCe = buildCodeCe({
     code: "418799008",
     codeSystem: snomedCodeSystem,
     codeSystemName: snomedSystemName,
     displayName: "Finding reported by subject or history provider (finding)",
   });
-  // const codeCv = buildCodeCeFromCodeCv();
+  const codeCv: CdaCodeCv = {
+    ...codeCe,
+    translation: buildCodeCe({
+      code: "75315-2",
+      codeSystem: loincCodeSystem,
+      codeSystemName: loincSystemName,
+      displayName: "Condition Family member",
+    }),
+  };
+
   return conditions.map(condition => {
     return {
       observation: {
@@ -166,17 +253,16 @@ function buildComponents(conditions: FamilyMemberHistoryCondition[] | undefined)
           root: oids.familyHistoryObservation,
           extension: extensionValue2015,
         }),
-        code,
+        code: codeCv,
         text: {
-          "#text": condition.code?.text,
+          "#text": getMedicalConditions([condition]),
         },
       },
     };
   });
 }
 
-function mapFamilyHistoryStatusCode(status: string | undefined): string | undefined {
-  // function mapFamilyHistoryStatusCode(status: string | undefined): ActStatusCode | undefined {
+function mapFamilyHistoryStatusCode(status: string | undefined): ActStatusCode | undefined {
   if (!status) return undefined;
   switch (status) {
     case "partial":
@@ -190,51 +276,4 @@ function mapFamilyHistoryStatusCode(status: string | undefined): string | undefi
     default:
       return "completed";
   }
-}
-
-export function createEntryRelationshipObservation(
-  encounter: FamilyMemberHistory,
-  referenceId: string
-): ConcernActEntry {
-  return {
-    _typeCode: "RSON",
-    act: {
-      _classCode: "ACT",
-      _moodCode: "EVN",
-      templateId: buildInstanceIdentifier({
-        root: oids.encounterDiagnosis,
-      }),
-      code: buildCodeCe({
-        code: "29308-4",
-        codeSystem: loincCodeSystem,
-        codeSystemName: loincSystemName,
-        displayName: "Encounter Diagnosis",
-      }),
-      entryRelationship: {
-        _inversionInd: false,
-        _typeCode: "SUBJ",
-        observation: {
-          _classCode: "OBS",
-          _moodCode: "EVN",
-          code: {
-            ...buildCodeCe({
-              code: "282291009",
-              codeSystem: "2.16.840.1.113883.3.88.12.3221.7.2", // https://www.findacode.com/snomed/282291009--diagnosis-interpretation.html
-              codeSystemName: "SNOMED CT",
-              displayName: "Diagnosis",
-            }),
-            translation: [
-              buildCodeCe({
-                code: "29308-4",
-                codeSystem: loincCodeSystem,
-                codeSystemName: loincSystemName,
-                displayName: "Diagnosis",
-              }),
-            ],
-          },
-          value: encounter.reasonCode?.flatMap(reason => buildValueCd(reason, referenceId) || []),
-        },
-      },
-    },
-  };
 }
