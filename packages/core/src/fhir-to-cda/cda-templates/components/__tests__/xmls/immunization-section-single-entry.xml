@@ -67,8 +67,6 @@
 							<reference value="immunizations1-material">
 							</reference>
 						</originalText>
-						<translation code="140" codeSystem="2.16.840.1.113883.12.292" displayName="Influenza, seasonal, injectable, preservative free">
-						</translation>
 					</code>
 				</manufacturedMaterial>
 			</manufacturedProduct>
