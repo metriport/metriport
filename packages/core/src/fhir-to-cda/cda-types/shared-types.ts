@@ -28,12 +28,36 @@ export type ClinicalDocument = {
   };
 };
 
+export type ActStatusCode =
+  | "new"
+  | "active"
+  | "held"
+  | "completed"
+  | "nullified"
+  | "completed"
+  | "suspended";
+
+export type CdaAddressUse =
+  | "BAD"
+  | "CONF"
+  | "DIR"
+  | "H"
+  | "HP"
+  | "HV"
+  | "PHYS"
+  | "PST"
+  | "PUB"
+  | "TMP"
+  | "WP";
+
+export type CdaTelecomUse = "AS" | "EC" | "HP" | "HV" | "MC" | "PG" | "WP";
+
 export type Entry = { [key: string]: string } | string;
 export type EntryObject = { [key: string]: string };
 
 export type CdaTelecom = {
-  use?: EntryObject;
-  value?: EntryObject;
+  _use?: EntryObject;
+  _value?: EntryObject;
 };
 
 export type CdaPeriod = {
@@ -42,6 +66,7 @@ export type CdaPeriod = {
 };
 
 export type CdaAddress = {
+  _use?: string;
   streetAddressLine?: Entry | undefined;
   city?: string | undefined;
   state?: string | undefined;
@@ -164,11 +189,19 @@ export type ObservationTableRow = {
   tr: {
     _ID: string;
     td: {
+      _ID?: string;
       "#text"?: string | undefined;
     }[];
   };
 };
+
+export type EffectiveTime = {
+  low?: EntryObject;
+  high?: EntryObject;
+};
+
 export type ObservationEntry = {
+  _inversionInd?: boolean;
   _typeCode?: string;
   observation: {
     _classCode: string;
@@ -178,15 +211,11 @@ export type ObservationEntry = {
       _extension?: string;
     };
     id?: {
+      _nullFlavor?: string;
       _root?: string;
       _extension?: string;
     };
-    code?: {
-      _code?: string | undefined;
-      _codeSystem?: string | undefined;
-      _codeSystemName?: string | undefined;
-      _displayName?: string | undefined;
-    };
+    code?: CdaCodeCe | CdaCodeCv;
     text?: {
       reference: {
         _value: string;
@@ -198,14 +227,39 @@ export type ObservationEntry = {
     effectiveTime?: {
       _value?: string | undefined;
     };
-    value?: CdaValueCd | undefined;
+    value?: CdaValueCd | CdaValueCd[] | undefined;
+    participant?: Participant | undefined;
     entryRelationship?: ObservationEntryRelationship[];
     interpretationCode?: CdaCodeCe;
   };
 };
 
 export type ObservationEntryRelationship = ObservationEntry & {
+  _typeCode?: string;
+  code?: CdaCodeCv | undefined;
+  value?: CdaValueCd[] | undefined;
+};
+
+export type Participant = {
   _typeCode: string;
+  _contextControlCode?: string;
+  participantRole: {
+    id?: CdaInstanceIdentifier[] | Entry;
+    _classCode?: string;
+    templateId?: {
+      _root?: string;
+    };
+    code?: CdaCodeCv | Entry | undefined;
+    addr?: CdaAddress[] | undefined;
+    telecom?: CdaTelecom[] | undefined;
+    playingEntity?: {
+      _classCode?: string;
+      code?: CdaCodeCv | undefined;
+      name?: {
+        "#text": string;
+      };
+    };
+  };
 };
 
 export type SubstanceAdministationEntry = {
@@ -235,16 +289,16 @@ export type SubstanceAdministationEntry = {
     consumable: {
       _typeCode: string;
       manufacturedProduct: {
-        // _code: string;
         templateId?: {
           _root?: string;
           _extension?: string;
         };
-        manufacturedMaterial: {
-          code: CdaCodeCv | Entry;
+        manufacturedMaterial?: {
+          code: CdaCodeCv | undefined;
         };
       };
     };
+    // participant: Participant;
     entryRelationship?: {
       supply?: {
         _classCode: string;
@@ -254,20 +308,55 @@ export type SubstanceAdministationEntry = {
   };
 };
 
-export type ProblemsConcernActEntry = {
+export type ConcernActEntry = {
+  _typeCode?: string;
   act: {
     _classCode: string;
     _moodCode: string;
     templateId: CdaInstanceIdentifier;
-    id: CdaInstanceIdentifier;
-    code: CdaCodeCe;
-    statusCode: {
+    id?: CdaInstanceIdentifier;
+    code?: CdaCodeCe;
+    statusCode?: {
       _code: string;
     };
-    effectiveTime: {
+    effectiveTime?: {
       low?: EntryObject;
       high?: EntryObject;
     };
-    entryRelationship: ObservationEntry;
+    entryRelationship: ObservationEntryRelationship;
+  };
+};
+
+export type EncounterEntry = {
+  encounter: {
+    _classCode?: string;
+    _moodCode?: string;
+    templateId?: CdaInstanceIdentifier;
+    id?: CdaInstanceIdentifier;
+    code: CdaCodeCv;
+    statusCode?: {
+      _code: string;
+    };
+    effectiveTime?: EffectiveTime;
+    performer?: AssignedEntity[];
+    participant?: Participant[] | undefined;
+    entryRelationship: ConcernActEntry | ConcernActEntry[];
+  };
+};
+
+export type AssignedPerson = {
+  name: {
+    given?: string | undefined;
+    family?: string | undefined;
+  };
+};
+
+export type AssignedEntity = {
+  assignedEntity: {
+    id?: CdaInstanceIdentifier | undefined;
+    addr?: CdaAddress[] | undefined;
+    code?: CdaCodeCv | CdaCodeCv[] | undefined;
+    telecom?: CdaTelecom[] | undefined;
+    assignedPerson?: AssignedPerson | undefined;
   };
 };

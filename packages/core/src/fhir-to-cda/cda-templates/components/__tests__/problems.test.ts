@@ -12,20 +12,22 @@ let conditionId: string;
 let bundle: Bundle;
 let condition: Condition;
 
-beforeEach(() => {
+beforeAll(() => {
   conditionId = faker.string.uuid();
   condition = makeCondition({
     id: conditionId,
     /* eslint-disable @typescript-eslint/no-non-null-assertion */
     note: conditionNicotine.note!,
   });
+});
 
+beforeEach(() => {
   bundle = createEmptyBundle();
+  bundle.entry?.push({ resource: condition });
 });
 
 describe("buildProblems", () => {
   it("correctly includes the text note into the Problems table", () => {
-    bundle.entry?.push({ resource: condition });
     const res = buildProblems(bundle);
     const cleanedJsonObj = removeEmptyFields(res);
     const xmlRes = xmlBuilder.build(cleanedJsonObj);
@@ -34,8 +36,7 @@ describe("buildProblems", () => {
   });
 
   it("correctly maps a single Condition without a note", () => {
-    bundle.entry?.push({ resource: { ...condition, note: [] } });
-
+    bundle.entry = [{ resource: { ...condition, note: [] } }];
     const filePath = path.join(__dirname, "./xmls/problems-section-single-entry.xml");
 
     const params = {
@@ -53,8 +54,6 @@ describe("buildProblems", () => {
   });
 
   it("correctly maps two Conditions with notes", () => {
-    bundle.entry?.push({ resource: condition });
-
     const conditionId2 = faker.string.uuid();
     const condition2 = makeCondition({
       id: conditionId2,
