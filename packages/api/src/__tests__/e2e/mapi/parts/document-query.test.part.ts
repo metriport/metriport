@@ -29,7 +29,11 @@ export function runDocumentQueryTests(e2e: E2eContext) {
     );
     let status = await medicalApi.getDocumentQueryStatus(e2e.patient.id);
     let retryLimit = 0;
-    while (areDocumentsProcessing(status) && retryLimit++ < dqCheckStatusMaxRetries) {
+    while (areDocumentsProcessing(status)) {
+      if (retryLimit++ > dqCheckStatusMaxRetries) {
+        console.log(`Gave up waiting for Document Query`);
+        break;
+      }
       console.log(
         `Document query still processing, retrying in ${dqCheckStatusWaitTime.asSeconds} seconds...`
       );

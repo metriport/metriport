@@ -9,12 +9,13 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import { capture } from "../../../../../../util/notifications";
 import { out } from "../../../../../../util/log";
+import { RegistryErrorList, RegistryError } from "./schema";
+import { toArray } from "@metriport/shared";
 
 const { log } = out("XCA Error Handling");
 
 export function processRegistryErrorList(
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  registryErrorList: any,
+  registryErrorList: RegistryErrorList,
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq
 ): OperationOutcome | undefined {
   const operationOutcome: OperationOutcome = {
@@ -24,16 +25,13 @@ export function processRegistryErrorList(
   };
 
   try {
-    const registryErrors = Array.isArray(registryErrorList?.RegistryError)
-      ? registryErrorList.RegistryError
-      : [registryErrorList?.RegistryError];
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    registryErrors.forEach((entry: any) => {
+    const registryErrors = toArray(registryErrorList?.RegistryError);
+    registryErrors.forEach((entry: RegistryError) => {
       const issue = {
-        severity: entry?._severity?.toString().toLowerCase().split(":").pop(),
-        code: entry?._errorCode?.toString(),
+        severity: entry?._severity?.toString().toLowerCase().split(":").pop() ?? "error",
+        code: entry?._errorCode?.toString() ?? "unknown-error",
         details: {
-          text: entry?._codeContext?.toString(),
+          text: entry?._codeContext?.toString() ?? "No details",
         },
       };
 
@@ -68,8 +66,7 @@ export function handleRegistryErrorResponse({
   outboundRequest,
   gateway,
 }: {
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  registryErrorList: any;
+  registryErrorList: RegistryErrorList;
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
 }): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
@@ -119,9 +116,11 @@ export function handleHttpErrorResponse({
 export function handleEmptyResponse({
   outboundRequest,
   gateway,
+  text = "No documents found",
 }: {
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
+  text?: string;
 }): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
@@ -131,7 +130,7 @@ export function handleEmptyResponse({
         severity: "information",
         code: "no-documents-found",
         details: {
-          text: "No documents found",
+          text,
         },
       },
     ],
@@ -146,34 +145,28 @@ export function handleEmptyResponse({
   };
 }
 
-export function handleSoapFaultResponse({
-  soapFault,
+export function handleSchemaErrorResponse({
   outboundRequest,
   gateway,
+  text = "Schema Error",
 }: {
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  soapFault: any;
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
+  text?: string;
 }): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
-  const faultCode = soapFault?.Code?.Value?.toString() ?? "unknown_fault";
-  const faultReason =
-    soapFault?.Reason?.Text?._text.toString().trim() ?? "An unknown error occurred";
-
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
     id: outboundRequest.id,
     issue: [
       {
         severity: "error",
-        code: faultCode,
+        code: "schema-error",
         details: {
-          text: faultReason,
+          text,
         },
       },
     ],
   };
-
   return {
     id: outboundRequest.id,
     patientId: outboundRequest.patientId,

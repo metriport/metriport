@@ -106,7 +106,7 @@ export const webhookRequestSchema = z.union([
 ]);
 export type WebhookRequest = z.infer<typeof webhookRequestSchema>;
 
-export class WebhookRequestParsingError {
+export class WebhookRequestParsingFailure {
   constructor(
     readonly errors: ZodError<WebhookRequest>,
     readonly flattened: ZodFormattedError<WebhookRequest>

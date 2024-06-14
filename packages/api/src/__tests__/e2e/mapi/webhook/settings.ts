@@ -12,7 +12,7 @@ export function resetPingData(value: PingWebhookRequest | undefined = undefined)
 }
 
 export function handlePing(whRequest: PingWebhookRequest, res: Response) {
-  console.log(`[WH] ================> Handle Ping WH running...`);
+  console.log(`[WH] ================> Handle Ping WH running... ping: ${whRequest.ping}`);
   webhookRequest = whRequest;
   return res.status(200).send({ pong: whRequest.ping });
 }

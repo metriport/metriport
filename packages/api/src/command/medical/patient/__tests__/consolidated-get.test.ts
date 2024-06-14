@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { Observation } from "@medplum/fhirtypes";
+import { BundleEntry, Observation, Resource } from "@medplum/fhirtypes";
 import { HapiFhirClient } from "@metriport/core/external/fhir/api/api-hapi";
 import { resourcesSearchableByPatient } from "@metriport/api-sdk";
 import { ISO_DATE } from "@metriport/shared/common/date";
@@ -10,6 +10,7 @@ import {
   getConsolidatedPatientData,
   getCurrentConsolidatedProgress,
   getIsSameResources,
+  filterOutPrelimDocRefs,
 } from "../consolidated-get";
 import { makeConsolidatedQueryProgress, requestId } from "./store-query-cmd";
 import * as getPatient from "../get-patient";
@@ -297,5 +298,63 @@ describe("getIsSameResources", () => {
     const resp = getIsSameResources([...resourcesSearchableByPatient], []);
 
     expect(resp).toBeTruthy();
+  });
+});
+
+describe("filterOutPrelimDocRefs", () => {
+  const prelimDocRef: BundleEntry<Resource> = {
+    resource: {
+      resourceType: "DocumentReference",
+      id: "1",
+      docStatus: "preliminary",
+      content: [
+        {
+          attachment: {
+            contentType: "application/pdf",
+            url: "http://test.com",
+          },
+        },
+      ],
+    },
+  };
+
+  it("return empty array when resources is empty", () => {
+    const resp = filterOutPrelimDocRefs([]);
+
+    expect(resp).toEqual([]);
+  });
+
+  it("return undefined when resources is undefined", () => {
+    const resp = filterOutPrelimDocRefs(undefined);
+
+    expect(resp).toEqual(undefined);
+  });
+
+  it("return empty array when resources has only prelim doc refs", () => {
+    const resp = filterOutPrelimDocRefs([prelimDocRef, { ...prelimDocRef, id: "2" }]);
+
+    expect(resp).toEqual([]);
+  });
+
+  it("return empty array when resources has prelim doc refs", () => {
+    const finalDocRef: BundleEntry<Resource> = {
+      resource: {
+        resourceType: "DocumentReference",
+        id: "2",
+        docStatus: "final",
+        content: [
+          {
+            attachment: {
+              contentType: "application/pdf",
+              url: "http://test.com",
+            },
+          },
+        ],
+      },
+    };
+
+    const resp = filterOutPrelimDocRefs([prelimDocRef, finalDocRef]);
+
+    expect(resp).toEqual([finalDocRef]);
   });
 });
