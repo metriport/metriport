@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // Keep dotenv import and config before everything else.
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util";
 import { sleep } from "@metriport/shared";
 import * as Sentry from "@sentry/node";
 import cors from "cors";

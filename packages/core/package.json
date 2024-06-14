@@ -19,6 +19,7 @@
     "./domain/*": "./dist/domain/*.js",
     "./command/*": "./dist/command/*.js",
     "./external/*": "./dist/external/*.js",
+    "./util": "./dist/util/index.js",
     "./util/*": "./dist/util/*.js",
     "./mpi/*": "./dist/mpi/*.js",
     "./fhir-to-cda/*": "./dist/fhir-to-cda/*.js",
@@ -29,23 +30,44 @@
       "/": [
         "dist/index.d.ts"
       ],
+      "domain": [
+        "dist/domain/index.d.ts"
+      ],
       "domain/*": [
         "dist/domain/*"
+      ],
+      "command": [
+        "dist/command/index.d.ts"
       ],
       "command/*": [
         "dist/command/*"
       ],
+      "external": [
+        "dist/external/index.d.ts"
+      ],
       "external/*": [
         "dist/external/*"
+      ],
+      "util": [
+        "dist/util/index.d.ts"
       ],
       "util/*": [
         "dist/util/*"
       ],
+      "mpi": [
+        "dist/mpi/index.d.ts"
+      ],
       "mpi/*": [
         "dist/mpi/*"
       ],
+      "fhir-to-cda": [
+        "dist/fhir-to-cda/index.d.ts"
+      ],
       "fhir-to-cda/*": [
         "dist/fhir-to-cda/*"
+      ],
+      "shareback": [
+        "dist/shareback/index.d.ts"
       ],
       "shareback/*": [
         "dist/shareback/*"
