@@ -21,7 +21,7 @@ import {
 } from "../../../../shared";
 import { successStatus, partialSuccessStatus } from "./constants";
 import { capture } from "../../../../../../util/notifications";
-import { toArray } from "@metriport/shared";
+import { errorToString, toArray } from "@metriport/shared";
 import { iti38Schema, Slot, ExternalIdentifier, Classification, ExtrinsicObject } from "./schema";
 import { out } from "../../../../../../util/log";
 
@@ -202,9 +202,11 @@ export function processDQResponse({
       });
     }
   } catch (error) {
+    log("Error processing DQ response", error);
     return handleSchemaErrorResponse({
       outboundRequest,
       gateway,
+      text: errorToString(error),
     });
   }
 }

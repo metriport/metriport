@@ -69,11 +69,9 @@ export const patientRegistryProfileSchema = z.object({
                     id: schemaOrArrayOrEmpty(identifierSchema).optional(),
                   })
                 ).optional(),
-                administrativeGenderCode: z
-                  .object({
-                    _code: z.union([z.literal("F"), z.literal("M"), z.literal("UN")]),
-                  })
-                  .optional(),
+                administrativeGenderCode: z.object({
+                  _code: z.union([z.literal("F"), z.literal("M")]),
+                }),
                 birthTime: z.object({
                   _value: z.string(),
                 }),

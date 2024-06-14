@@ -9,7 +9,7 @@ import {
   Telecom,
   PersonalIdentifier,
 } from "@metriport/ihe-gateway-sdk";
-import { toArray } from "@metriport/shared";
+import { errorToString, toArray } from "@metriport/shared";
 import { normalizeGender } from "../../../utils";
 import { XCPDSamlClientResponse } from "../send/xcpd-requests";
 import { out } from "../../../../../../util/log";
@@ -254,6 +254,7 @@ export function processXCPDResponse({
     return handleSchemaErrorResponse({
       outboundRequest,
       gateway,
+      text: errorToString(error),
     });
   }
 }

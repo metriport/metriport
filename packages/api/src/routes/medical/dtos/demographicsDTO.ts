@@ -3,7 +3,7 @@ import { AddressDTO } from "./addressDTO";
 import { ContactDTO } from "./contact-dto";
 import { PersonalIdentifierDTO } from "./personal-identifier-dto";
 
-export type GenderDTO = "F" | "M" | "U" | "UN"; // U = unspecified
+export type GenderDTO = "F" | "M" | "U"; // U = unspecified
 
 export type DemographicsDTO = {
   firstName: string;
