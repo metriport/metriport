@@ -48,7 +48,7 @@ export class AugmentedEncounter implements AugmentedResource<Encounter> {
   constructor(
     public readonly sectionName: string,
     public readonly resource: Encounter,
-    public readonly practitioners: Practitioner[],
-    public readonly locations: Location[]
+    public readonly practitioners?: Practitioner[],
+    public readonly locations?: Location[]
   ) {}
 }
