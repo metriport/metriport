@@ -16,13 +16,26 @@ import {
 
 export function makeCwDataLink(): CwLink {
   const address = makeAddressStrict();
+  const assuranceLevel = faker.helpers.arrayElement(["1", "2", "3"]);
   return {
-    _links: {
-      [faker.helpers.arrayElement(["upgrade", "downgrade"])]: {
-        href: faker.internet.url(),
-      },
-    },
-    assuranceLevel: "2",
+    _links:
+      assuranceLevel === "1"
+        ? {
+            downgrade: {
+              href: faker.internet.url(),
+            },
+            upgrade: {
+              href: faker.internet.url(),
+            },
+          }
+        : assuranceLevel === "2"
+        ? {
+            downgrade: {
+              href: faker.internet.url(),
+            },
+          }
+        : {},
+    assuranceLevel,
     patient: {
       details: {
         name: [
