@@ -134,6 +134,10 @@ export const expectedMultiNameAddressResponse: OutboundPatientDiscoveryRespSucce
         given: ["nwhinone", "bartholomew"],
         family: "nwhinzzztestpatient",
       },
+      {
+        given: ["NWHINONE"],
+        family: "NWHINZZZTESTPATIENT",
+      },
     ],
     address: [
       ...(expectedXcpdResponse.patientResource?.address ?? []),

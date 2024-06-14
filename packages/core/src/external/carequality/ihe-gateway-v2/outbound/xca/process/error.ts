@@ -9,13 +9,14 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import { capture } from "../../../../../../util/notifications";
 import { out } from "../../../../../../util/log";
+import { RegistryErrorList, RegistryError } from "./schema";
+import { toArray } from "@metriport/shared";
 
 const { log } = out("XCA Error Handling");
 const knownNonRetryableErrors = ["No active consent for patient id"];
 
 export function processRegistryErrorList(
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  registryErrorList: any,
+  registryErrorList: RegistryErrorList,
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq
 ): OperationOutcome | undefined {
   const operationOutcome: OperationOutcome = {
@@ -25,16 +26,13 @@ export function processRegistryErrorList(
   };
 
   try {
-    const registryErrors = Array.isArray(registryErrorList?.RegistryError)
-      ? registryErrorList.RegistryError
-      : [registryErrorList?.RegistryError];
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    registryErrors.forEach((entry: any) => {
+    const registryErrors = toArray(registryErrorList?.RegistryError);
+    registryErrors.forEach((entry: RegistryError) => {
       const issue = {
         severity: "error",
-        code: entry?._errorCode?.toString(),
+        code: entry?._errorCode?.toString() ?? "unknown-error",
         details: {
-          text: entry?._codeContext?.toString(),
+          text: entry?._codeContext?.toString() ?? "No details",
         },
       };
 
@@ -70,8 +68,7 @@ export function handleRegistryErrorResponse({
   gateway,
   attempt,
 }: {
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  registryErrorList: any;
+  registryErrorList: RegistryErrorList;
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
   attempt?: number | undefined;
@@ -128,10 +125,12 @@ export function handleHttpErrorResponse({
 export function handleEmptyResponse({
   outboundRequest,
   gateway,
+  text = "No documents found",
   attempt,
 }: {
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
+  text?: string;
   attempt?: number | undefined;
 }): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
   const operationOutcome: OperationOutcome = {
@@ -142,7 +141,7 @@ export function handleEmptyResponse({
         severity: "information",
         code: "no-documents-found",
         details: {
-          text: "No documents found",
+          text,
         },
       },
     ],
@@ -159,36 +158,30 @@ export function handleEmptyResponse({
   };
 }
 
-export function handleSoapFaultResponse({
-  soapFault,
+export function handleSchemaErrorResponse({
   outboundRequest,
   gateway,
   attempt,
+  text = "Schema Error",
 }: {
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  soapFault: any;
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
   attempt?: number | undefined;
+  text?: string;
 }): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
-  const faultCode = soapFault?.Code?.Value?.toString() ?? "unknown_fault";
-  const faultReason =
-    soapFault?.Reason?.Text?._text.toString().trim() ?? "An unknown error occurred";
-
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
     id: outboundRequest.id,
     issue: [
       {
         severity: "error",
-        code: faultCode,
+        code: "schema-error",
         details: {
-          text: faultReason,
+          text,
         },
       },
     ],
   };
-
   return {
     id: outboundRequest.id,
     patientId: outboundRequest.patientId,

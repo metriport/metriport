@@ -57,6 +57,6 @@ describe("processDqResponse", () => {
       },
     });
     expect(response.operationOutcome).toBeTruthy();
-    expect(response.operationOutcome?.issue[0]?.severity).toEqual("information");
+    expect(response.operationOutcome?.issue[0]?.code).toEqual("schema-error");
   });
 });
