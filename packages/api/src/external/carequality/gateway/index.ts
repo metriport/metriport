@@ -64,7 +64,9 @@ export function facilitiesWithEpicFilter(
 ): CQDirectoryEntry[] {
   return isEpicEnabled
     ? cqDirectoryEntries
-    : cqDirectoryEntries.filter(entry => entry.managingOrganization !== EPIC_ORG_NAME);
+    : cqDirectoryEntries.filter(
+        entry => entry.managingOrganization?.trim().toLowerCase() !== EPIC_ORG_NAME.toLowerCase()
+      );
 }
 
 async function getE2eGateways(): Promise<Gateways> {
