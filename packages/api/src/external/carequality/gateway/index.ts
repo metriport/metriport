@@ -62,11 +62,9 @@ export function facilitiesWithEpicFilter(
   cqDirectoryEntries: CQDirectoryEntry[],
   isEpicEnabled: boolean
 ): CQDirectoryEntry[] {
-  if (isEpicEnabled) {
-    return cqDirectoryEntries;
-  }
-
-  return cqDirectoryEntries.filter(entry => entry.managingOrganization !== EPIC_ORG_NAME);
+  return isEpicEnabled
+    ? cqDirectoryEntries
+    : cqDirectoryEntries.filter(entry => entry.managingOrganization !== EPIC_ORG_NAME);
 }
 
 async function getE2eGateways(): Promise<Gateways> {
