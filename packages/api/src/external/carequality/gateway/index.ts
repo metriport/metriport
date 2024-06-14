@@ -36,6 +36,8 @@ export async function gatherXCPDGateways(patient: Patient): Promise<Gateways> {
 
   const isEpicEnabled = await isEpicEnabledForCx(patient.cxId);
 
+  console.log("isEpicEnabled", isEpicEnabled);
+
   const nearbyOrgsWithUrls = await searchCQDirectoriesAroundPatientAddresses({
     patient,
     mustHaveXcpdLink: true,
@@ -51,6 +53,17 @@ export async function gatherXCPDGateways(patient: Patient): Promise<Gateways> {
   const allOrgsWithBasics = filteredOrgs.map(toBasicOrgAttributes);
   const orgsToSearch = filterCQOrgsToSearch(allOrgsWithBasics);
   const { v1Gateways, v2Gateways } = await cqOrgsToXCPDGateways(orgsToSearch, patient.cxId);
+
+  console.log(
+    "v1Gateways",
+    v1Gateways.length,
+    v1Gateways.map(gw => gw.id)
+  );
+  console.log(
+    "v2Gateways",
+    v2Gateways.length,
+    v2Gateways.map(gw => gw.id)
+  );
 
   return {
     v1Gateways,
