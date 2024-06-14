@@ -54,16 +54,8 @@ export async function gatherXCPDGateways(patient: Patient): Promise<Gateways> {
   const orgsToSearch = filterCQOrgsToSearch(allOrgsWithBasics);
   const { v1Gateways, v2Gateways } = await cqOrgsToXCPDGateways(orgsToSearch, patient.cxId);
 
-  console.log(
-    "v1Gateways",
-    v1Gateways.length,
-    v1Gateways.map(gw => gw.id)
-  );
-  console.log(
-    "v2Gateways",
-    v2Gateways.length,
-    v2Gateways.map(gw => gw.id)
-  );
+  console.log("v1Gateways", v1Gateways.length, v1Gateways);
+  console.log("v2Gateways", v2Gateways.length, v2Gateways);
 
   return {
     v1Gateways,
