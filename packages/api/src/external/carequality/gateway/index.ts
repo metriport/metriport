@@ -2,8 +2,9 @@ import { Patient } from "@metriport/core/domain/patient";
 import { out } from "@metriport/core/util/log";
 import { XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import { MetriportError } from "@metriport/shared";
+import { CQDirectoryEntry } from "../cq-directory";
 import { Config } from "../../../shared/config";
-import { isE2eCx } from "../../aws/app-config";
+import { isE2eCx, isEpicEnabledForCx } from "../../aws/app-config";
 import { getCQDirectoryEntryOrFail } from "../command/cq-directory/get-cq-directory-entry";
 import { getOrganizationsForXCPD } from "../command/cq-directory/get-organizations-for-xcpd";
 import {
@@ -18,6 +19,8 @@ type Gateways = {
   v2Gateways: XCPDGateway[];
 };
 
+export const EPIC_ORG_NAME = "Epic";
+
 export async function gatherXCPDGateways(patient: Patient): Promise<Gateways> {
   const { log } = out(`gatherXCPDGateways, cx ${patient.cxId}, patient ${patient.id}`);
 
@@ -31,6 +34,8 @@ export async function gatherXCPDGateways(patient: Patient): Promise<Gateways> {
     return getE2eGateways();
   }
 
+  const isEpicEnabled = await isEpicEnabledForCx(patient.cxId);
+
   const nearbyOrgsWithUrls = await searchCQDirectoriesAroundPatientAddresses({
     patient,
     mustHaveXcpdLink: true,
@@ -42,7 +47,8 @@ export async function gatherXCPDGateways(patient: Patient): Promise<Gateways> {
   });
 
   const allOrgs = await getOrganizationsForXCPD(orgOrderMap);
-  const allOrgsWithBasics = allOrgs.map(toBasicOrgAttributes);
+  const filteredOrgs = facilitiesWithEpicFilter(allOrgs, isEpicEnabled);
+  const allOrgsWithBasics = filteredOrgs.map(toBasicOrgAttributes);
   const orgsToSearch = filterCQOrgsToSearch(allOrgsWithBasics);
   const { v1Gateways, v2Gateways } = await cqOrgsToXCPDGateways(orgsToSearch, patient.cxId);
 
@@ -50,6 +56,17 @@ export async function gatherXCPDGateways(patient: Patient): Promise<Gateways> {
     v1Gateways,
     v2Gateways,
   };
+}
+
+export function facilitiesWithEpicFilter(
+  cqDirectoryEntries: CQDirectoryEntry[],
+  isEpicEnabled: boolean
+): CQDirectoryEntry[] {
+  return isEpicEnabled
+    ? cqDirectoryEntries
+    : cqDirectoryEntries.filter(
+        entry => entry.managingOrganization?.trim().toLowerCase() !== EPIC_ORG_NAME.toLowerCase()
+      );
 }
 
 async function getE2eGateways(): Promise<Gateways> {

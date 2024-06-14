@@ -38,6 +38,7 @@ export const stringValueFFsSchema = z.object({
   cxsWithIncreasedSandboxLimitFeatureFlag: ffStringValuesSchema,
   oidsWithIHEGatewayV2Enabled: ffStringValuesSchema,
   cxsWithIHEGatewayV2Enabled: ffStringValuesSchema,
+  cxsWithEpicEnabled: ffStringValuesSchema,
   e2eCxIds: ffStringValuesSchema.nullish(),
 });
 export type StringValueFeatureFlags = z.infer<typeof stringValueFFsSchema>;
