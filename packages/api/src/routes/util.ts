@@ -1,10 +1,9 @@
+import { out } from "@metriport/core/util/log";
+import { errorToString, stringToBoolean } from "@metriport/shared";
 import { NextFunction, Request, Response } from "express";
 import BadRequestError from "../errors/bad-request";
 import { Config } from "../shared/config";
-import { errorToString } from "../shared/log";
 import { capture } from "../shared/notifications";
-import { stringToBoolean } from "@metriport/shared";
-import { out } from "@metriport/core/util/log";
 
 const { log } = out("asyncHandler");
 
@@ -14,14 +13,15 @@ export function asyncHandler(
     res: Response,
     next: NextFunction
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ) => Promise<Response<any, Record<string, any>> | void>
+  ) => Promise<Response<any, Record<string, any>> | void>,
+  logErrorDetails = !Config.isCloudEnv()
 ) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       await f(req, res, next);
     } catch (err) {
-      if (Config.isCloudEnv()) log(errorToString(err));
-      else log("", err);
+      if (logErrorDetails) log("", err);
+      else log(errorToString(err));
       next(err);
     }
   };

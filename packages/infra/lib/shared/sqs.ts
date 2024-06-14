@@ -183,7 +183,7 @@ export function defaultDLQ(
     retentionPeriod: Duration.days(14),
     deliveryDelay: Duration.millis(0),
     receiveMessageWaitTime: Duration.millis(0),
-    visibilityTimeout: Duration.hours(12), // in case we need time to process this manually
+    visibilityTimeout: Duration.minutes(1),
   });
 
   addMessageCountAlarmToQueue({
