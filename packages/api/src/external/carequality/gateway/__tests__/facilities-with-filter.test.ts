@@ -1,4 +1,4 @@
-import { facilitiesWithEpicFilter, EPIC_ID } from "../index";
+import { facilitiesWithEpicFilter, EPIC_ORG_NAME } from "../index";
 import { makeCQDirectoryEntry } from "../../__tests__/cq-directory";
 
 describe("facilitiesWithEpicFilter", () => {
@@ -6,31 +6,37 @@ describe("facilitiesWithEpicFilter", () => {
     const isEpicEnabled = true;
 
     const epicFacilityEntry = makeCQDirectoryEntry({
-      managingOrganizationId: EPIC_ID,
+      managingOrganization: EPIC_ORG_NAME,
     });
 
-    const epicOrgEntry = makeCQDirectoryEntry({
-      id: EPIC_ID,
+    const nonEpicFacilityEntry = makeCQDirectoryEntry({
+      managingOrganization: "TEST",
     });
 
-    const filteredOrgs = facilitiesWithEpicFilter([epicFacilityEntry, epicOrgEntry], isEpicEnabled);
+    const filteredOrgs = facilitiesWithEpicFilter(
+      [epicFacilityEntry, nonEpicFacilityEntry],
+      isEpicEnabled
+    );
 
     expect(filteredOrgs).toHaveLength(2);
-    expect(filteredOrgs).toEqual([epicFacilityEntry, epicOrgEntry]);
+    expect(filteredOrgs).toEqual([epicFacilityEntry, nonEpicFacilityEntry]);
   });
 
   it("filters out all facilities when epic is enabled and facilities are all epic", async () => {
     const isEpicEnabled = false;
 
     const epicFacilityEntry = makeCQDirectoryEntry({
-      managingOrganizationId: EPIC_ID,
+      managingOrganization: EPIC_ORG_NAME,
     });
 
-    const epicOrgEntry = makeCQDirectoryEntry({
-      id: EPIC_ID,
+    const epicFacilityEntryTwo = makeCQDirectoryEntry({
+      managingOrganization: EPIC_ORG_NAME,
     });
 
-    const filteredOrgs = facilitiesWithEpicFilter([epicFacilityEntry, epicOrgEntry], isEpicEnabled);
+    const filteredOrgs = facilitiesWithEpicFilter(
+      [epicFacilityEntry, epicFacilityEntryTwo],
+      isEpicEnabled
+    );
 
     expect(filteredOrgs).toHaveLength(0);
     expect(filteredOrgs).toEqual([]);
@@ -40,48 +46,19 @@ describe("facilitiesWithEpicFilter", () => {
     const isEpicEnabled = false;
 
     const epicFacilityEntry = makeCQDirectoryEntry({
-      managingOrganizationId: EPIC_ID,
+      managingOrganization: EPIC_ORG_NAME,
     });
 
     const nonEpicFacilityEntry = makeCQDirectoryEntry({
-      managingOrganizationId: "1.2.3.4.5",
-    });
-
-    const epicOrgEntry = makeCQDirectoryEntry({
-      id: EPIC_ID,
+      managingOrganization: "TEST",
     });
 
     const filteredOrgs = facilitiesWithEpicFilter(
-      [epicFacilityEntry, nonEpicFacilityEntry, epicOrgEntry],
+      [epicFacilityEntry, nonEpicFacilityEntry],
       isEpicEnabled
     );
 
     expect(filteredOrgs).toHaveLength(1);
     expect(filteredOrgs).toEqual([nonEpicFacilityEntry]);
-  });
-
-  it("filters out all facilities when epic is enabled and some facilities are under epic nested", async () => {
-    const isEpicEnabled = false;
-
-    const epicOrgEntry = makeCQDirectoryEntry({
-      id: EPIC_ID,
-    });
-
-    const epicFacilityEntry = makeCQDirectoryEntry({
-      id: "1.2.3.4.5",
-      managingOrganizationId: EPIC_ID,
-    });
-
-    const nestedEpicFacilityEntry = makeCQDirectoryEntry({
-      managingOrganizationId: "1.2.3.4.5",
-    });
-
-    const filteredOrgs = facilitiesWithEpicFilter(
-      [epicFacilityEntry, nestedEpicFacilityEntry, epicOrgEntry],
-      isEpicEnabled
-    );
-
-    expect(filteredOrgs).toHaveLength(0);
-    expect(filteredOrgs).toEqual([]);
   });
 });

@@ -19,7 +19,7 @@ type Gateways = {
   v2Gateways: XCPDGateway[];
 };
 
-export const EPIC_ID = "1.2.840.114350";
+export const EPIC_ORG_NAME = "Epic";
 
 export async function gatherXCPDGateways(patient: Patient): Promise<Gateways> {
   const { log } = out(`gatherXCPDGateways, cx ${patient.cxId}, patient ${patient.id}`);
@@ -59,35 +59,14 @@ export async function gatherXCPDGateways(patient: Patient): Promise<Gateways> {
 }
 
 export function facilitiesWithEpicFilter(
-  cqDirectoryEntryModel: CQDirectoryEntry[],
+  cqDirectoryEntries: CQDirectoryEntry[],
   isEpicEnabled: boolean
 ): CQDirectoryEntry[] {
   if (isEpicEnabled) {
-    return cqDirectoryEntryModel;
+    return cqDirectoryEntries;
   }
 
-  return cqDirectoryEntryModel.filter(entry => !isEpicFacility(entry.id, cqDirectoryEntryModel));
-}
-
-function isEpicFacility(gateway: string, cqDirectoryModel: CQDirectoryEntry[]): boolean {
-  const cqDirectoryGW = cqDirectoryModel.find(entry => entry.id === gateway);
-
-  if (cqDirectoryGW) {
-    const managingOrganizationId = cqDirectoryGW.managingOrganizationId;
-    const isImplementer = managingOrganizationId === cqDirectoryGW.id;
-    const isUnderEpic = managingOrganizationId === EPIC_ID;
-    const isEpic = cqDirectoryGW.id === EPIC_ID;
-
-    if (isUnderEpic || isEpic) {
-      return true;
-    } else if (!managingOrganizationId || isImplementer) {
-      return false;
-    }
-
-    return isEpicFacility(managingOrganizationId, cqDirectoryModel);
-  }
-
-  return false;
+  return cqDirectoryEntries.filter(entry => entry.managingOrganization !== EPIC_ORG_NAME);
 }
 
 async function getE2eGateways(): Promise<Gateways> {
