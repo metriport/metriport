@@ -177,11 +177,7 @@ export async function isIHEGatewayV2EnabledForCx(cxId: string): Promise<boolean>
 export async function isEpicEnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithEpicEnabled = await getCxsWithEpicEnabled();
 
-  if (cxIdsWithEpicEnabled.length === 0) {
-    return true;
-  }
-
-  return cxIdsWithEpicEnabled.some(i => i === cxId);
+  return cxIdsWithEpicEnabled.length === 0 ? true : cxIdsWithEpicEnabled.some(i => i === cxId);
 }
 
 export async function isCommonwellEnabled(): Promise<boolean> {
