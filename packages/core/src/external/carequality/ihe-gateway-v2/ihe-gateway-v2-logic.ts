@@ -86,18 +86,20 @@ export async function createSignSendProcessDQRequests({
     });
   });
 
-  const results = await Promise.all(resultPromises);
+  const results = await Promise.allSettled(resultPromises);
 
   for (const result of results) {
-    try {
-      await axios.post(dqResponseUrl, result);
-    } catch (error) {
-      capture.error("Failed to send DQ response to Internal Carequality Endpoint", {
-        extra: {
-          error,
-          result,
-        },
-      });
+    if (result.status === "fulfilled") {
+      try {
+        await axios.post(dqResponseUrl, result.value);
+      } catch (error) {
+        capture.error("Failed to send DQ response to Internal Carequality Endpoint", {
+          extra: {
+            error,
+            result: result.value,
+          },
+        });
+      }
     }
   }
 }
@@ -130,18 +132,20 @@ export async function createSignSendProcessDRRequests({
     });
   });
 
-  const results = await Promise.all(resultPromises);
+  const results = await Promise.allSettled(resultPromises);
 
   for (const result of results) {
-    try {
-      await axios.post(drResponseUrl, result);
-    } catch (error) {
-      capture.error("Failed to send DR response to Internal Carequality Endpoint", {
-        extra: {
-          error,
-          result,
-        },
-      });
+    if (result.status === "fulfilled") {
+      try {
+        await axios.post(drResponseUrl, result.value);
+      } catch (error) {
+        capture.error("Failed to send DR response to Internal Carequality Endpoint", {
+          extra: {
+            error,
+            result: result.value,
+          },
+        });
+      }
     }
   }
 }
