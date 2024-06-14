@@ -34,7 +34,7 @@ export function makeCwDataLink(): CwLink {
               href: faker.internet.url(),
             },
           }
-        : {},
+        : undefined,
     assuranceLevel,
     patient: {
       details: {
