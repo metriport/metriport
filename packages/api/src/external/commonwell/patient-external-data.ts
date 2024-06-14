@@ -1,10 +1,10 @@
+import { Patient } from "@metriport/core/domain/patient";
+import { DiscoveryParams } from "@metriport/core/domain/patient-discovery";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
-import { executeWithRetries } from "@metriport/shared";
+import { executeWithRetriesSafe } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { Patient } from "@metriport/core/domain/patient";
-import { DiscoveryParams } from "@metriport/core/domain/patient-discovery";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { LinkStatus } from "../patient-link";
@@ -39,11 +39,11 @@ const _getPatientWithCWData = async ({
 export async function getPatientWithCWData(
   patient: Patient
 ): Promise<PatientWithCWData | undefined> {
-  return executeWithRetries(
-    () => _getPatientWithCWData(patient),
-    maxAttemptsToGetPatientCWData - 1,
-    waitTimeBetweenAttemptsToGetPatientCWData.asMilliseconds()
-  );
+  return executeWithRetriesSafe(() => _getPatientWithCWData(patient), {
+    maxAttempts: maxAttemptsToGetPatientCWData,
+    initialDelay: waitTimeBetweenAttemptsToGetPatientCWData.asMilliseconds(),
+    backoffMultiplier: 0, // no backoff
+  });
 }
 
 export type CWParams = {

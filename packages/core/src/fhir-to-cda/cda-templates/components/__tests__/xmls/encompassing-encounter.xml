@@ -1,0 +1,80 @@
+<encompassingEncounter>
+	<id root="placeholder-ORG-OID" extension="${encompassingEncId}">
+	</id>
+	<code code="AMB" codeSystem="2.16.840.1.113883.5.4">
+		<translation code="162673000" codeSystem="2.16.840.1.113883.6.96" displayName="General examination of patient (procedure)">
+		</translation>
+	</code>
+	<effectiveTime>
+		<low value="20120723164500">
+		</low>
+		<high value="20120723170000">
+		</high>
+	</effectiveTime>
+	<responsibleParty>
+		<assignedEntity>
+			<id root="placeholder-ORG-OID" extension="${practitionerId}">
+			</id>
+			<addr use="WP">
+				<streetAddressLine>
+					1111 Sample Street, Suite 987
+				</streetAddressLine>
+				<city>
+					Springfield
+				</city>
+				<state>
+					CA
+				</state>
+				<postalCode>
+					12123
+				</postalCode>
+				<country>
+					USA
+				</country>
+			</addr>
+			<assignedPerson>
+				<name>
+					<given>
+						John A., MD
+					</given>
+					<family>
+						Zoidberg
+					</family>
+				</name>
+			</assignedPerson>
+			<representedOrganization>
+				<name>
+					Planet Express Medical Office
+				</name>
+			</representedOrganization>
+		</assignedEntity>
+	</responsibleParty>
+	<location>
+		<healthCareFacility>
+			<id root="placeholder-ORG-OID" extension="${locationId}">
+			</id>
+			<location>
+				<name>
+					Planet Express Medical Office
+				</name>
+				<addr use="WP">
+					<streetAddressLine>
+						1111 Sample Street, Suite 987
+					</streetAddressLine>
+					<city>
+						Springfield
+					</city>
+					<state>
+						CA
+					</state>
+					<postalCode>
+						12123
+					</postalCode>
+					<country>
+						USA
+					</country>
+				</addr>
+			</location>
+		</healthCareFacility>
+	</location>
+</encompassingEncounter>
