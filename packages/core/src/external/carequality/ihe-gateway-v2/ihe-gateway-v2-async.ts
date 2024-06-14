@@ -10,12 +10,18 @@ import { processAsyncError } from "../../../util/error/shared";
 import { IHEGatewayV2 } from "./ihe-gateway-v2";
 
 const MAX_GATEWAYS_BEFORE_CHUNK = 1000;
-const MAX_DOCUMENT_RETRIEVAL_REQUESTS_PER_INVOCATION = 20;
+const MAX_DOCUMENT_REQUESTS_PER_INVOCATION = 20;
 
 const iheGatewayV2OutboundPatientDiscoveryLambdaName = "IHEGatewayV2OutboundPatientDiscoveryLambda";
 const iheGatewayV2OutboundDocumentQueryLambdaName = "IHEGatewayV2OutboundDocumentQueryLambda";
 const iheGatewayV2OutboundDocumentRetrievalLambdaName =
   "IHEGatewayV2OutboundDocumentRetrievalLambda";
+
+function chunkRequests<T>(requests: T[], maxRequestsPerInvocation: number): T[][] {
+  const chunks = Math.ceil(requests.length / maxRequestsPerInvocation);
+  const chunkSize = Math.ceil(requests.length / chunks);
+  return chunk(requests, chunkSize);
+}
 
 export class IHEGatewayV2Async extends IHEGatewayV2 {
   constructor() {
@@ -34,9 +40,7 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
     const lambdaClient = makeLambdaClient(Config.getAWSRegion());
     const { gateways, ...rest } = pdRequestGatewayV2;
 
-    const chunks = Math.ceil(gateways.length / MAX_GATEWAYS_BEFORE_CHUNK);
-    const chunkSize = Math.ceil(gateways.length / chunks);
-    const gatewayChunks = chunk(gateways, chunkSize);
+    const gatewayChunks = chunkRequests(gateways, MAX_GATEWAYS_BEFORE_CHUNK);
 
     for (const chunk of gatewayChunks) {
       const newPdRequestGatewayV2 = { ...rest, gateways: chunk };
@@ -66,17 +70,23 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
     requestId: string;
   }): Promise<void> {
     const lambdaClient = makeLambdaClient(Config.getAWSRegion());
-    const params = { patientId, cxId, requestId, dqRequestsGatewayV2 };
-    // intentionally not waiting
-    lambdaClient
-      .invoke({
-        FunctionName: iheGatewayV2OutboundDocumentQueryLambdaName,
-        InvocationType: "Event",
-        Payload: JSON.stringify(params),
-      })
-      .promise()
-      .catch(processAsyncError("Failed to invoke iheGWV2 lambda for document query"));
+    const requestChunks = chunkRequests(dqRequestsGatewayV2, MAX_DOCUMENT_REQUESTS_PER_INVOCATION);
+
+    for (const chunk of requestChunks) {
+      const params = { patientId, cxId, requestId, dqRequestsGatewayV2: chunk };
+
+      // intentionally not waiting
+      lambdaClient
+        .invoke({
+          FunctionName: iheGatewayV2OutboundDocumentQueryLambdaName,
+          InvocationType: "Event",
+          Payload: JSON.stringify(params),
+        })
+        .promise()
+        .catch(processAsyncError("Failed to invoke iheGWV2 lambda for document query"));
+    }
   }
+
   async startDocumentRetrievalGatewayV2({
     drRequestsGatewayV2,
     patientId,
@@ -89,11 +99,7 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
     requestId: string;
   }): Promise<void> {
     const lambdaClient = makeLambdaClient(Config.getAWSRegion());
-    const chunks = Math.ceil(
-      drRequestsGatewayV2.length / MAX_DOCUMENT_RETRIEVAL_REQUESTS_PER_INVOCATION
-    );
-    const chunkSize = Math.ceil(drRequestsGatewayV2.length / chunks);
-    const requestChunks = chunk(drRequestsGatewayV2, chunkSize);
+    const requestChunks = chunkRequests(drRequestsGatewayV2, MAX_DOCUMENT_REQUESTS_PER_INVOCATION);
 
     for (const chunk of requestChunks) {
       const params = { patientId, cxId, requestId, drRequestsGatewayV2: chunk };
