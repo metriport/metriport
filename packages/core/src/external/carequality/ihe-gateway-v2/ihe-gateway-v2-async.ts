@@ -10,7 +10,8 @@ import { processAsyncError } from "../../../util/error/shared";
 import { IHEGatewayV2 } from "./ihe-gateway-v2";
 
 const MAX_GATEWAYS_BEFORE_CHUNK = 1000;
-const MAX_DOCUMENT_REQUESTS_PER_INVOCATION = 20;
+const MAX_DOCUMENT_QUERY_REQUESTS_PER_INVOCATION = 20;
+const MAX_DOCUMENT_RETRIEVAL_REQUESTS_PER_INVOCATION = 20;
 
 const iheGatewayV2OutboundPatientDiscoveryLambdaName = "IHEGatewayV2OutboundPatientDiscoveryLambda";
 const iheGatewayV2OutboundDocumentQueryLambdaName = "IHEGatewayV2OutboundDocumentQueryLambda";
@@ -70,7 +71,10 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
     requestId: string;
   }): Promise<void> {
     const lambdaClient = makeLambdaClient(Config.getAWSRegion());
-    const requestChunks = chunkRequests(dqRequestsGatewayV2, MAX_DOCUMENT_REQUESTS_PER_INVOCATION);
+    const requestChunks = chunkRequests(
+      dqRequestsGatewayV2,
+      MAX_DOCUMENT_QUERY_REQUESTS_PER_INVOCATION
+    );
 
     for (const chunk of requestChunks) {
       const params = { patientId, cxId, requestId, dqRequestsGatewayV2: chunk };
@@ -99,7 +103,10 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
     requestId: string;
   }): Promise<void> {
     const lambdaClient = makeLambdaClient(Config.getAWSRegion());
-    const requestChunks = chunkRequests(drRequestsGatewayV2, MAX_DOCUMENT_REQUESTS_PER_INVOCATION);
+    const requestChunks = chunkRequests(
+      drRequestsGatewayV2,
+      MAX_DOCUMENT_RETRIEVAL_REQUESTS_PER_INVOCATION
+    );
 
     for (const chunk of requestChunks) {
       const params = { patientId, cxId, requestId, drRequestsGatewayV2: chunk };
