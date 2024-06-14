@@ -3,14 +3,12 @@ import { GenderAtBirth } from "../../../domain/patient";
 import { mapGenderAtBirthToFhir } from "../../fhir/patient";
 import { TextOrTextObject } from "./outbound/schema";
 
-export function normalizeGender(
-  gender: GenderAtBirth | undefined
-): "male" | "female" | "unknown" | undefined {
+export function normalizeGender(gender: GenderAtBirth | undefined): "male" | "female" | undefined {
   if (gender === undefined) {
     return undefined;
   }
   const mappedGender = mapGenderAtBirthToFhir(gender);
-  if (mappedGender === "other") {
+  if (mappedGender === "other" || mappedGender === "unknown") {
     return undefined;
   }
   return mappedGender;
