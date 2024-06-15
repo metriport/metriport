@@ -1,26 +1,26 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { InboundDocumentQueryReq, InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
+import { executeWithNetworkRetries } from "@metriport/shared";
 import axios from "axios";
 import {
   createUploadFilePath,
   createUploadMetadataFilePath,
 } from "../../../domain/document/upload";
+import { createAndUploadDocumentMetadataFile } from "../../../shareback/create-and-upload-extrinsic-object";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
+import { XML_APP_MIME_TYPE } from "../../../util/mime";
 import { capture } from "../../../util/notifications";
 import { sizeInBytes } from "../../../util/string";
-
 import { S3Utils } from "../../aws/s3";
 import {
+  constructDQErrorResponse,
   IHEGatewayError,
   XDSRegistryError,
   XDSUnknownPatientId,
-  constructDQErrorResponse,
 } from "../error";
 import { validateBasePayload } from "../shared";
 import { decodePatientId } from "./utils";
-import { XML_APP_MIME_TYPE } from "../../../util/mime";
-import { createAndUploadDocumentMetadataFile } from "../../../shareback/create-and-upload-extrinsic-object";
 
 const CCD_NAME = "ccd";
 
@@ -89,7 +89,7 @@ async function createAndUploadCcdAndMetadata(cxId: string, patientId: string, ap
 
   try {
     log(`Calling internal route to create the CCD`);
-    const resp = await api.get(url);
+    const resp = await executeWithNetworkRetries(() => api.get(url), { retryOnTimeout: true });
     const ccd = resp.data as string;
     const ccdSize = sizeInBytes(ccd);
     await s3Utils.uploadFile({

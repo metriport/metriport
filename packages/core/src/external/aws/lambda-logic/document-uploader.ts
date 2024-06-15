@@ -1,5 +1,5 @@
 import { DocumentReference } from "@medplum/fhirtypes";
-import { errorToString } from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, executeWithRetries } from "@metriport/shared";
 import axios from "axios";
 import { createDocumentFileName } from "../../../domain/document/filename";
 import {
@@ -55,7 +55,10 @@ export async function documentUploaderHandler(
 
   // Make a copy of the file to the general medical documents bucket
   try {
-    await s3Utils.s3.copyObject(params).promise();
+    await executeWithRetries(() => s3Utils.s3.copyObject(params).promise(), {
+      maxAttempts: 3,
+      initialDelay: 500,
+    });
     log(`Successfully copied the uploaded file to ${destinationBucket} with key ${destinationKey}`);
   } catch (error) {
     const message = "Error copying the uploaded file to medical documents bucket";
@@ -121,7 +124,7 @@ async function forwardCallToServer(
   const url = `${apiServerURL}?cxId=${cxId}`;
   const encodedUrl = encodeURI(url);
 
-  const resp = await api.post(encodedUrl, fileData);
+  const resp = await executeWithNetworkRetries(() => api.post(encodedUrl, fileData));
   log(`Server response - status: ${resp.status}`);
   log(`Server response - body: ${JSON.stringify(resp.data)}`);
   return resp.data;

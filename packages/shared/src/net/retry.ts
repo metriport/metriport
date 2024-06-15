@@ -4,18 +4,20 @@ import {
   executeWithRetries,
   ExecuteWithRetriesOptions,
 } from "../common/retry";
-import { NetworkError } from "./error";
+import { NetworkError, networkTimeoutErrors } from "./error";
 
-export type ExecuteWithHttpRetriesOptions = Omit<
+export type ExecuteWithNetworkRetriesOptions = Omit<
   ExecuteWithRetriesOptions<unknown>,
   "shouldRetry"
 > & {
   /** The network error codes to retry. See `defaultOptions` for defaults. */
   httpCodesToRetry: NetworkError[];
   httpStatusCodesToRetry: number[];
+  /** Whether to retry on timeout errors. Default is false. */
+  retryOnTimeout?: boolean;
 };
 
-const defaultOptions: ExecuteWithHttpRetriesOptions = {
+const defaultOptions: ExecuteWithNetworkRetriesOptions = {
   ...defaultRetryWithBackoffOptions,
   initialDelay: 1000,
   httpCodesToRetry: [
@@ -24,6 +26,7 @@ const defaultOptions: ExecuteWithHttpRetriesOptions = {
     "ECONNRESET", //  (Connection reset by peer): A connection was forcibly closed by a peer. This normally results from a loss of the connection on the remote socket due to a timeout or reboot. Commonly encountered via the http and net modules.
   ],
   httpStatusCodesToRetry: [429], // 429 Too Many Requests
+  retryOnTimeout: false,
 };
 
 /**
@@ -45,11 +48,18 @@ const defaultOptions: ExecuteWithHttpRetriesOptions = {
  */
 export async function executeWithNetworkRetries<T>(
   fn: () => Promise<T>,
-  options?: Partial<ExecuteWithHttpRetriesOptions>
+  options?: Partial<ExecuteWithNetworkRetriesOptions>
 ): Promise<T> {
   const actualOptions = { ...defaultOptions, ...options };
-  const { httpCodesToRetry, httpStatusCodesToRetry } = actualOptions;
+
+  const { httpCodesToRetry: httpCodesFromParams, httpStatusCodesToRetry } = actualOptions;
+
+  const httpCodesToRetry = actualOptions.retryOnTimeout
+    ? [...httpCodesFromParams, ...networkTimeoutErrors]
+    : httpCodesFromParams;
+
   const codesAsString = httpCodesToRetry.map(String);
+
   return executeWithRetries(fn, {
     ...actualOptions,
     shouldRetry: (_, error: unknown) => {

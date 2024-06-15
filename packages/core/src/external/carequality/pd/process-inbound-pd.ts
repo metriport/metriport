@@ -1,19 +1,20 @@
 import {
   InboundPatientDiscoveryReq,
   InboundPatientDiscoveryResp,
+  PatientResource,
 } from "@metriport/ihe-gateway-sdk";
-import { PatientResource } from "@metriport/ihe-gateway-sdk";
+import { executeWithNetworkRetries } from "@metriport/shared";
 import { Address } from "../../../domain/address";
 import { Patient, PatientData } from "../../../domain/patient";
 import { MPI } from "../../../mpi/mpi";
 import { patientMPIToPartialPatient } from "../../../mpi/shared";
-import { toIheGatewayPatientResource } from "../ihe-gateway-v2/patient";
 import {
-  IHEGatewayError,
-  XDSRegistryError,
   constructPDErrorResponse,
   constructPDNoMatchResponse,
+  IHEGatewayError,
+  XDSRegistryError,
 } from "../error";
+import { toIheGatewayPatientResource } from "../ihe-gateway-v2/patient";
 import { validateFHIRAndExtractPatient } from "./validating-pd";
 
 import { getStateEnum } from "../../../domain/geographic-locations";
@@ -45,7 +46,7 @@ export async function processInboundPatientDiscovery(
 ): Promise<InboundPatientDiscoveryResp> {
   try {
     const patient = validateFHIRAndExtractPatient(payload);
-    const matchingPatient = await mpi.findMatchingPatient(patient);
+    const matchingPatient = await executeWithNetworkRetries(() => mpi.findMatchingPatient(patient));
     if (!matchingPatient) {
       return constructPDNoMatchResponse(payload);
     }
