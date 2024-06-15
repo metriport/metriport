@@ -1,9 +1,12 @@
 import { CommonWellAPI, CommonwellError, organizationQueryMeta } from "@metriport/commonwell-sdk";
+import { executeWithNetworkRetries, getNetworkErrorDetails } from "@metriport/shared";
 import AWS from "aws-sdk";
 import path from "path";
 import * as stream from "stream";
 import { DOMParser } from "xmldom";
 import { MetriportError } from "../../../util/error/metriport-error";
+import NotFoundError from "../../../util/error/not-found";
+import { detectFileType, isContentTypeAccepted } from "../../../util/file-type";
 import { isMimeTypeXML } from "../../../util/mime";
 import { makeS3Client, S3Utils } from "../../aws/s3";
 import {
@@ -13,8 +16,6 @@ import {
   DownloadResult,
   FileInfo,
 } from "./document-downloader";
-import NotFoundError from "../../../util/error/not-found";
-import { detectFileType, isContentTypeAccepted } from "../../../util/file-type";
 
 export type DocumentDownloaderLocalConfig = DocumentDownloaderConfig & {
   commonWell: {
@@ -288,11 +289,18 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     stream: stream.Writable;
   }): Promise<void> {
     try {
-      await this.cwApi.retrieveDocument(this.cwQueryMeta, location, stream);
+      await executeWithNetworkRetries(
+        () => this.cwApi.retrieveDocument(this.cwQueryMeta, location, stream),
+        { retryOnTimeout: true, maxAttempts: 5, initialDelay: 500 }
+      );
     } catch (error) {
+      const { details, code, status } = getNetworkErrorDetails(error);
       const additionalInfo = {
         cwReferenceHeader: this.cwApi.lastReferenceHeader,
         documentLocation: location,
+        details,
+        code,
+        status,
       };
       if (error instanceof CommonwellError && error.cause?.response?.status === 404) {
         const msg = "CW - Document not found";

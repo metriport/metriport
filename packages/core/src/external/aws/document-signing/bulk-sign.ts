@@ -1,6 +1,12 @@
+import {
+  executeWithNetworkRetries,
+  getNetworkErrorDetails,
+  MetriportError,
+} from "@metriport/shared";
 import axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import { searchDocuments } from "../../opensearch/search-documents";
 import { S3Utils } from "../s3";
@@ -26,6 +32,7 @@ export async function searchDocumentsSignUrlsAndSendToApi(
   apiURL: string
 ) {
   const s3Utils = new S3Utils(region);
+  const { log } = out("getSignedUrls");
 
   const documents = await searchDocuments({ cxId, patientId });
   const ossApiClient = apiClientBulkDownloadWebhook(apiURL);
@@ -39,6 +46,10 @@ export async function searchDocumentsSignUrlsAndSendToApi(
 
         const fileName = attachment?.title;
         if (!fileName) {
+          const msg = `Found document without attachment title (filename)`;
+          const extra = { cxId, patientId, requestId, doc };
+          log(`${msg} - ${JSON.stringify(extra)}`);
+          capture.message(msg, { extra, level: "warning" });
           return;
         }
 
@@ -64,23 +75,27 @@ export async function searchDocumentsSignUrlsAndSendToApi(
 
     const response = urls.flatMap(url => (url !== undefined ? url : []));
 
-    await ossApiClient.callInternalEndpoint({
-      cxId: cxId,
-      patientId: patientId,
-      requestId: requestId,
-      dtos: response,
-      status: "completed",
-    });
+    await executeWithNetworkRetries(() =>
+      ossApiClient.callInternalEndpoint({
+        cxId,
+        patientId,
+        requestId,
+        docs: response,
+        status: "completed",
+      })
+    );
   } catch (error) {
     const msg = "Error getting signed URLs";
+    const extra = { ...getNetworkErrorDetails(error), cxId, patientId, requestId };
+    log(`${msg} - ${JSON.stringify(extra)}`);
     capture.error(msg, {
-      extra: { patientId, context: `getSignedUrls`, error },
+      extra: { ...extra, context: `getSignedUrls`, error },
     });
     await ossApiClient.callInternalEndpoint({
-      cxId: cxId,
-      patientId: patientId,
-      requestId: requestId,
-      dtos: [],
+      cxId,
+      patientId,
+      requestId,
+      docs: [],
       status: "failed",
     });
   }
@@ -90,35 +105,33 @@ export type BulkDownloadWebhookParams = {
   cxId: string;
   patientId: string;
   requestId: string;
-  dtos: DocumentBulkSignerLambdaResponse[];
+  docs: DocumentBulkSignerLambdaResponse[];
   status: string;
 };
 
 export function apiClientBulkDownloadWebhook(apiURL: string) {
+  const { log } = out("apiClientBulkDownloadWebhook");
   const sendBulkDownloadUrl = `${apiURL}/internal/docs/triggerBulkDownloadWebhook`;
 
   return {
     callInternalEndpoint: async function (params: BulkDownloadWebhookParams) {
       try {
-        await ossApi.post(sendBulkDownloadUrl, params.dtos, {
-          params: {
-            cxId: params.cxId,
-            patientId: params.patientId,
-            requestId: params.requestId,
-            status: params.status,
-          },
-        });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (error: any) {
-        const msg = "Error notifying API";
-        const extra = {
-          url: sendBulkDownloadUrl,
-          statusCode: error.response?.status,
-          error,
-        };
-        console.log(msg, extra);
-        capture.message(msg, { extra, level: "info" });
-        throw new Error(`Error from API: ${error.message}`);
+        await executeWithNetworkRetries(() =>
+          ossApi.post(sendBulkDownloadUrl, params.docs, {
+            params: {
+              cxId: params.cxId,
+              patientId: params.patientId,
+              requestId: params.requestId,
+              status: params.status,
+            },
+          })
+        );
+      } catch (error) {
+        const msg = "Error notifying API on bulk-sign";
+        const extra = { ...getNetworkErrorDetails(error), url: sendBulkDownloadUrl };
+        log(`${msg} - ${JSON.stringify(extra)}`);
+        capture.message(msg, { extra: { ...extra, params, error }, level: "info" });
+        throw new MetriportError(msg, error, extra);
       }
     },
   };

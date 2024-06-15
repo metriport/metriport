@@ -1,10 +1,7 @@
 import { BulkGetDocUrlStatus } from "@metriport/core/domain/bulk-get-document-url";
-import {
-  DocumentBulkSignerLambdaResponse,
-  documentBulkSignerLambdaResponseArraySchema,
-} from "@metriport/core/external/aws/document-signing/document-bulk-signer-response";
 import { convertResult } from "@metriport/core/domain/document-query";
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
+import { documentBulkSignerLambdaResponseArraySchema } from "@metriport/core/external/aws/document-signing/document-bulk-signer-response";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { isMedicalDataSource } from "@metriport/core/external/index";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
@@ -387,8 +384,7 @@ router.post(
     const patientId = getFrom("query").orFail("patientId", req);
     const requestId = getFrom("query").orFail("requestId", req);
     const status = getFrom("query").orFail("status", req);
-    const dtos: DocumentBulkSignerLambdaResponse[] =
-      documentBulkSignerLambdaResponseArraySchema.parse(req.body);
+    const docs = documentBulkSignerLambdaResponseArraySchema.parse(req.body);
 
     const updatedPatient = await appendBulkGetDocUrlProgress({
       patient: { id: patientId, cxId },
@@ -403,7 +399,7 @@ router.post(
       "medical.document-bulk-download-urls",
       status as MAPIWebhookStatus,
       requestId,
-      dtos
+      docs
     );
 
     return res.status(httpStatus.OK).json(updatedPatient.data.bulkGetDocumentsUrlProgress);

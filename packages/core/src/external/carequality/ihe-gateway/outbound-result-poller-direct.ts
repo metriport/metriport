@@ -1,9 +1,10 @@
-import axios from "axios";
 import {
-  OutboundPatientDiscoveryResp,
   OutboundDocumentQueryResp,
   OutboundDocumentRetrievalResp,
+  OutboundPatientDiscoveryResp,
 } from "@metriport/ihe-gateway-sdk";
+import { executeWithNetworkRetries } from "@metriport/shared";
+import axios from "axios";
 import { OutboundResultPoller, PollOutboundResults } from "./outbound-result-poller";
 import {
   pollOutboundDocQueryResults,
@@ -81,7 +82,8 @@ export class OutboundResultPollerDirect extends OutboundResultPoller {
       results,
     };
 
-    await api.post(this.patientDiscoveryResultsUrl, payload);
+    // TODO not sure if should retry on timeout
+    await executeWithNetworkRetries(() => api.post(this.patientDiscoveryResultsUrl, payload));
   }
 
   isDQEnabled(): boolean {
@@ -103,7 +105,8 @@ export class OutboundResultPollerDirect extends OutboundResultPoller {
       response,
     };
 
-    await api.post(this.docQueryResultsUrl, payload);
+    // TODO not sure if should retry on timeout
+    await executeWithNetworkRetries(() => api.post(this.docQueryResultsUrl, payload));
   }
 
   isDREnabled(): boolean {
@@ -124,6 +127,7 @@ export class OutboundResultPollerDirect extends OutboundResultPoller {
       results,
     };
 
-    await api.post(this.docRetrievalResultsUrl, payload);
+    // TODO not sure if should retry on timeout
+    await executeWithNetworkRetries(() => api.post(this.docRetrievalResultsUrl, payload));
   }
 }

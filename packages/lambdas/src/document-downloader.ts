@@ -10,6 +10,7 @@ import { DownloadResult } from "@metriport/core/external/commonwell/document/doc
 import { DocumentDownloaderLambdaRequest } from "@metriport/core/external/commonwell/document/document-downloader-lambda";
 import { DocumentDownloaderLocal } from "@metriport/core/external/commonwell/document/document-downloader-local";
 import { getEnvType } from "@metriport/core/util/env-var";
+import { executeWithNetworkRetries } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -72,7 +73,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       },
       capture,
     });
-    const result = await docDownloader.download({ document, fileInfo });
+    const result = await executeWithNetworkRetries(
+      () => docDownloader.download({ document, fileInfo }),
+      { retryOnTimeout: true, initialDelay: 500, maxAttempts: 5 }
+    );
 
     console.log(`Done - ${JSON.stringify(result)}`);
     return result;

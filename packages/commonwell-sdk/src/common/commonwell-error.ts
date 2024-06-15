@@ -1,4 +1,4 @@
-import axios from "axios";
+import { getNetworkErrorDetails } from "@metriport/shared";
 
 class Response {
   status: number | undefined;
@@ -13,6 +13,7 @@ export type AdditionalInfo = {
 
 export class CommonwellError extends Error {
   private _status: number | undefined;
+  private _code: string | undefined;
   public readonly cwReference: string | undefined;
 
   constructor(
@@ -22,17 +23,18 @@ export class CommonwellError extends Error {
   ) {
     super(message);
     if (cause) {
-      if (axios.isAxiosError(cause)) {
-        this._status = cause.response?.status;
-      } else {
-        this._status = cause.status;
-      }
+      const { code, status } = getNetworkErrorDetails(cause);
+      this._status = status;
+      this._code = code;
     }
     this.cwReference = additionalInfo?.cwReference;
   }
 
   get status(): number | undefined {
     return this._status;
+  }
+  get code(): string | undefined {
+    return this._code;
   }
   get response(): Response {
     return {
