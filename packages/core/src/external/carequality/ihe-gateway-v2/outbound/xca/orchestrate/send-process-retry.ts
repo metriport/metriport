@@ -1,15 +1,16 @@
-import { isRetryableError } from "../process/error";
-import { SamlCertsAndKeys } from "../../../saml/security/types";
 import {
   OutboundDocumentRetrievalResp,
   OutboundDocumentQueryResp,
 } from "@metriport/ihe-gateway-sdk";
+import { sleep } from "@metriport/shared";
 import { SignedDqRequest } from "../create/iti38-envelope";
 import { SignedDrRequest } from "../create/iti39-envelope";
 import { sendSignedDqRequest } from "../send/dq-requests";
 import { sendSignedDrRequest } from "../send/dr-requests";
 import { processDqResponse } from "../process/dq-response";
 import { processDrResponse } from "../process/dr-response";
+import { isRetryable } from "../process/error";
+import { SamlCertsAndKeys } from "../../../saml/security/types";
 import { out } from "../../../../../../util/log";
 
 const { log } = out("IHE Gateway V2");
@@ -63,18 +64,18 @@ export async function sendProcessRetryRequests<T, R>({
       attempt,
     });
 
-    if (!isRetryableError(result)) {
+    if (!isRetryable(result)) {
       return result;
     }
 
     attempt++;
     const backoffTime = calculateBackoff(attempt);
-    await new Promise(resolve => setTimeout(resolve, backoffTime));
+    await sleep(backoffTime);
     log(`Attempt ${attempt + 1} of ${maxRetries + 1}`);
   }
 
   const finalBackoffTime = calculateBackoff(maxRetries);
-  await new Promise(resolve => setTimeout(resolve, finalBackoffTime));
+  await sleep(finalBackoffTime);
 
   log(`Attempt ${maxRetries + 1} of ${maxRetries + 1}`);
   const finalResponse = await sendRequest({

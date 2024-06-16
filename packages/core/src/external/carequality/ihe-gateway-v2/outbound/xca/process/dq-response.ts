@@ -131,7 +131,7 @@ function parseDocumentReference({
   return documentReference;
 }
 
-function handleSuccessResponse({
+async function handleSuccessResponse({
   extrinsicObjects,
   outboundRequest,
   gateway,
@@ -141,7 +141,7 @@ function handleSuccessResponse({
   outboundRequest: OutboundDocumentQueryReq;
   gateway: XCAGateway;
   attempt?: number | undefined;
-}): OutboundDocumentQueryResp {
+}): Promise<OutboundDocumentQueryResp> {
   const documentReferences = extrinsicObjects.flatMap(
     extrinsicObject => parseDocumentReference({ extrinsicObject, outboundRequest }) ?? []
   );
@@ -216,7 +216,7 @@ export function processDqResponse({
       });
     }
   } catch (error) {
-    log("Error processing DQ response", error);
+    log(`Error processing DQ response ${JSON.stringify(jsonObj)}`);
     return handleSchemaErrorResponse({
       outboundRequest,
       gateway,

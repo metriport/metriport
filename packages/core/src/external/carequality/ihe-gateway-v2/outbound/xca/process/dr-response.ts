@@ -245,7 +245,7 @@ export async function processDrResponse({
       });
     }
   } catch (error) {
-    log("Error processing DR response", error);
+    log(`Error processing DR response ${JSON.stringify(error)}`);
     return handleSchemaErrorResponse({
       outboundRequest,
       gateway,

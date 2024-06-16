@@ -252,7 +252,7 @@ export function processXCPDResponse({
       });
     }
   } catch (error) {
-    log(`Error processing XCPD response: ${error}`);
+    log(`Error processing XCPD response: ${JSON.stringify(error)}`);
     return handleSchemaErrorResponse({
       outboundRequest,
       gateway,

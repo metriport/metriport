@@ -14,7 +14,7 @@ import { processXCPDResponse } from "@metriport/core/external/carequality/ihe-ga
 import {
   sendProcessRetryDrRequests,
   sendProcessRetryDqRequests,
-} from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2-logic";
+} from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/orchestrate/send-process-retry";
 import { setS3UtilsInstance as setS3UtilsInstanceForStoringDrResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
 import { setS3UtilsInstance as setS3UtilsInstanceForStoringIheResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/monitor/store";
 import { setRejectUnauthorized } from "@metriport/core/external/carequality/ihe-gateway-v2/saml/saml-client";

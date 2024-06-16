@@ -21,7 +21,7 @@ import { createAndSignBulkDQRequests } from "@metriport/core/external/carequalit
 import { sendSignedDqRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dq-requests";
 import { processDqResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dq-response";
 import { createAndSignBulkDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/create/iti39-envelope";
-import { sendProcessRetryDrRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2-logic";
+import { sendProcessRetryDrRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/orchestrate/send-process-retry";
 import { setS3UtilsInstance as setS3UtilsInstanceForStoringDrResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
 import { setS3UtilsInstance as setS3UtilsInstanceForStoringIheResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/monitor/store";
 import { Config } from "@metriport/core/util/config";
@@ -72,12 +72,12 @@ async function queryDatabaseForXcpds() {
     const results = await sequelize.query(query, {
       type: QueryTypes.SELECT,
     });
-    sequelize.close();
     return results;
   } catch (error) {
     console.error("Error executing SQL query:", error);
-    sequelize.close();
     throw error;
+  } finally {
+    sequelize.close();
   }
 }
 
@@ -96,12 +96,12 @@ async function queryDatabaseForDQs() {
     const results = await sequelize.query(query, {
       type: QueryTypes.SELECT,
     });
-    sequelize.close();
     return results;
   } catch (error) {
     console.error("Error executing SQL query:", error);
-    sequelize.close();
     throw error;
+  } finally {
+    sequelize.close();
   }
 }
 
@@ -123,12 +123,12 @@ export async function queryDatabaseForDqsFromFailedDrs() {
     const results = await sequelize.query(query, {
       type: QueryTypes.SELECT,
     });
-    sequelize.close();
     return results;
   } catch (error) {
     console.error("Error executing SQL query:", error);
-    sequelize.close();
     throw error;
+  } finally {
+    sequelize.close();
   }
 }
 
@@ -145,12 +145,12 @@ async function getDrUrl(id: string): Promise<string> {
       replacements: { id },
       type: QueryTypes.SELECT,
     });
-    sequelize.close();
     return results[0].url_dr;
   } catch (error) {
-    console.error("Error executing SQL query:", error);
-    sequelize.close();
+    console.log("Error executing SQL query:", error);
     throw error;
+  } finally {
+    sequelize.close();
   }
 }
 

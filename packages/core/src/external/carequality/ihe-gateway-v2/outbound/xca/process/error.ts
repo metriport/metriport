@@ -62,7 +62,7 @@ export function processRegistryErrorList(
   return operationOutcome.issue.length > 0 ? operationOutcome : undefined;
 }
 
-export function handleRegistryErrorResponse({
+export async function handleRegistryErrorResponse({
   registryErrorList,
   outboundRequest,
   gateway,
@@ -72,7 +72,7 @@ export function handleRegistryErrorResponse({
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
   attempt?: number | undefined;
-}): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
+}): Promise<OutboundDocumentQueryResp | OutboundDocumentRetrievalResp> {
   const operationOutcome = processRegistryErrorList(registryErrorList, outboundRequest);
   return {
     id: outboundRequest.id,
@@ -122,7 +122,7 @@ export function handleHttpErrorResponse({
   };
 }
 
-export function handleEmptyResponse({
+export async function handleEmptyResponse({
   outboundRequest,
   gateway,
   text = "No documents found",
@@ -132,7 +132,7 @@ export function handleEmptyResponse({
   gateway: XCAGateway;
   text?: string;
   attempt?: number | undefined;
-}): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
+}): Promise<OutboundDocumentQueryResp | OutboundDocumentRetrievalResp> {
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
     id: outboundRequest.id,
@@ -158,7 +158,7 @@ export function handleEmptyResponse({
   };
 }
 
-export function handleSchemaErrorResponse({
+export async function handleSchemaErrorResponse({
   outboundRequest,
   gateway,
   attempt,
@@ -168,7 +168,7 @@ export function handleSchemaErrorResponse({
   gateway: XCAGateway;
   attempt?: number | undefined;
   text?: string;
-}): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
+}): Promise<OutboundDocumentQueryResp | OutboundDocumentRetrievalResp> {
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
     id: outboundRequest.id,
@@ -194,7 +194,7 @@ export function handleSchemaErrorResponse({
   };
 }
 
-export function isRetryableError(outboundRequest: OutboundDocumentRetrievalResp): boolean {
+export function isRetryable(outboundRequest: OutboundDocumentRetrievalResp): boolean {
   return (
     outboundRequest.operationOutcome?.issue.some(
       issue =>
