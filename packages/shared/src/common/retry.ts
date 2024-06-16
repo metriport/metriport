@@ -9,7 +9,7 @@ export const defaultOptions: Required<ExecuteWithRetriesOptions<unknown>> = {
   backoffMultiplier: 2,
   maxAttempts: 10,
   shouldRetry: () => true,
-  shouldRetryResult: () => true,
+  shouldRetryResult: () => false,
   getTimeToWait: defaultGetTimeToWait,
   log: console.log,
 };

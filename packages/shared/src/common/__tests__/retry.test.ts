@@ -1,5 +1,10 @@
 import { faker } from "@faker-js/faker";
-import { defaultGetTimeToWait, executeWithRetries, executeWithRetriesSafe } from "../retry";
+import {
+  defaultGetTimeToWait,
+  executeWithRetries,
+  executeWithRetriesSafe,
+  executeWithRetriesOnResult,
+} from "../retry";
 
 describe("retry", () => {
   describe("executeWithRetries", () => {
@@ -112,6 +117,55 @@ describe("retry", () => {
           maxDelay,
         })
       );
+    });
+  });
+
+  describe("executeWithRetriesOnResult", () => {
+    const fn = jest.fn();
+    beforeEach(() => {
+      fn.mockImplementation(() => {
+        throw new Error("error");
+      });
+    });
+    afterEach(() => {
+      jest.resetAllMocks();
+    });
+
+    it("returns the first successful execution", async () => {
+      const expectedResult = faker.lorem.word();
+      fn.mockImplementationOnce(() => expectedResult);
+      const resp = await executeWithRetriesOnResult(fn, {
+        initialDelay: 1,
+        maxAttempts: 2,
+      });
+      expect(resp).toEqual(expectedResult);
+      expect(fn).toHaveBeenCalledTimes(1);
+    });
+
+    it("keeps trying on retryable result and returns the first non-retryable result", async () => {
+      const retryableResult = faker.lorem.word();
+      const expectedResult = faker.lorem.sentence();
+      fn.mockImplementationOnce(() => retryableResult);
+      fn.mockImplementationOnce(() => expectedResult);
+      const resp = await executeWithRetriesOnResult(fn, {
+        initialDelay: 1,
+        maxAttempts: 3,
+        shouldRetryResult: result => result === retryableResult,
+      });
+      expect(resp).toEqual(expectedResult);
+      expect(fn).toHaveBeenCalledTimes(2);
+    });
+
+    it("returns the last retryable result after max attempts", async () => {
+      const retryableResult = faker.lorem.word();
+      fn.mockImplementation(() => retryableResult);
+      const resp = await executeWithRetriesOnResult(fn, {
+        initialDelay: 1,
+        maxAttempts: 3,
+        shouldRetryResult: result => result === retryableResult,
+      });
+      expect(resp).toEqual(retryableResult);
+      expect(fn).toHaveBeenCalledTimes(3);
     });
   });
 
