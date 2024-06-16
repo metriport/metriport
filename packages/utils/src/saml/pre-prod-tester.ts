@@ -21,7 +21,7 @@ import { createAndSignBulkDQRequests } from "@metriport/core/external/carequalit
 import { sendSignedDqRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dq-requests";
 import { processDqResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dq-response";
 import { createAndSignBulkDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/create/iti39-envelope";
-import { sendProcessRetryDrRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/orchestrate/send-process-retry";
+import { sendProcessRetryDrRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2-logic";
 import { setS3UtilsInstance as setS3UtilsInstanceForStoringDrResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
 import { setS3UtilsInstance as setS3UtilsInstanceForStoringIheResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/monitor/store";
 import { Config } from "@metriport/core/util/config";
@@ -458,7 +458,7 @@ async function queryDR(
     });
 
     const resultPromises = signedRequests.map(async (signedRequest, index) => {
-      return sendProcessRetryDrRequests({
+      return sendProcessRetryDrRequest({
         signedRequest,
         samlCertsAndKeys,
         patientId: uuidv4(),

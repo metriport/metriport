@@ -12,9 +12,9 @@ import { createAndSignBulkDRRequests } from "@metriport/core/external/carequalit
 import { sendSignedXCPDRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/send/xcpd-requests";
 import { processXCPDResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/process/xcpd-response";
 import {
-  sendProcessRetryDrRequests,
-  sendProcessRetryDqRequests,
-} from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/orchestrate/send-process-retry";
+  sendProcessRetryDrRequest,
+  sendProcessRetryDqRequest,
+} from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2-logic";
 import { setS3UtilsInstance as setS3UtilsInstanceForStoringDrResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
 import { setS3UtilsInstance as setS3UtilsInstanceForStoringIheResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/monitor/store";
 import { setRejectUnauthorized } from "@metriport/core/external/carequality/ihe-gateway-v2/saml/saml-client";
@@ -91,7 +91,7 @@ app.post("/xcadq", async (req: Request, res: Response) => {
     });
 
     const resultPromises = signedRequests.map(async (signedRequest, index) => {
-      return sendProcessRetryDqRequests({
+      return sendProcessRetryDqRequest({
         signedRequest,
         samlCertsAndKeys,
         patientId: uuidv4(),
@@ -123,7 +123,7 @@ app.post("/xcadr", async (req: Request, res: Response) => {
       samlCertsAndKeys,
     });
     const resultPromises = signedRequests.map(async (signedRequest, index) => {
-      return sendProcessRetryDrRequests({
+      return sendProcessRetryDrRequest({
         signedRequest,
         samlCertsAndKeys,
         patientId: uuidv4(),

@@ -6,7 +6,10 @@ import {
 } from "../common/retry";
 import { NetworkError } from "./error";
 
-export type ExecuteWithHttpRetriesOptions = Omit<ExecuteWithRetriesOptions, "shouldRetry"> & {
+export type ExecuteWithHttpRetriesOptions = Omit<
+  ExecuteWithRetriesOptions<unknown>,
+  "shouldRetry"
+> & {
   /** The network error codes to retry. See `defaultOptions` for defaults. */
   httpCodesToRetry: NetworkError[];
 };

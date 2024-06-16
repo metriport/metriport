@@ -194,9 +194,13 @@ export async function handleSchemaErrorResponse({
   };
 }
 
-export function isRetryable(outboundRequest: OutboundDocumentRetrievalResp): boolean {
+/**
+ * Retries if the response has an error that is not in the known non-retryable errors list
+ * Will not retry if the response is successful and is not an error.
+ */
+export function isRetryable(outboundResponse: OutboundDocumentRetrievalResp): boolean {
   return (
-    outboundRequest.operationOutcome?.issue.some(
+    outboundResponse.operationOutcome?.issue.some(
       issue =>
         issue.severity === "error" &&
         !knownNonRetryableErrors.some(

@@ -3,20 +3,92 @@ import {
   OutboundDocumentRetrievalReq,
   OutboundPatientDiscoveryReq,
   OutboundPatientDiscoveryResp,
+  OutboundDocumentRetrievalResp,
+  OutboundDocumentQueryResp,
 } from "@metriport/ihe-gateway-sdk";
-import { executeWithNetworkRetries } from "@metriport/shared";
+import {
+  executeWithNetworkRetries,
+  executeWithRetriesOnResult as executeWithOperationOutcomeRetries,
+} from "@metriport/shared";
 import axios from "axios";
 import { capture } from "../../../util/notifications";
-import { createAndSignBulkDQRequests } from "./outbound/xca/create/iti38-envelope";
-import { createAndSignBulkDRRequests } from "./outbound/xca/create/iti39-envelope";
+import { createAndSignBulkDQRequests, SignedDqRequest } from "./outbound/xca/create/iti38-envelope";
+import { createAndSignBulkDRRequests, SignedDrRequest } from "./outbound/xca/create/iti39-envelope";
+import { sendSignedDqRequest } from "./outbound/xca/send/dq-requests";
+import { sendSignedDrRequest } from "./outbound/xca/send/dr-requests";
+import { processDqResponse } from "./outbound/xca/process/dq-response";
+import { processDrResponse } from "./outbound/xca/process/dr-response";
+import { isRetryable } from "./outbound/xca/process/error";
 import { sendSignedXCPDRequests } from "./outbound/xcpd/send/xcpd-requests";
 import { processXCPDResponse } from "./outbound/xcpd/process/xcpd-response";
-import {
-  sendProcessRetryDqRequests,
-  sendProcessRetryDrRequests,
-} from "./outbound/xca/orchestrate/send-process-retry";
 import { createAndSignBulkXCPDRequests } from "./outbound/xcpd/create/iti55-envelope";
 import { SamlCertsAndKeys } from "./saml/security/types";
+
+export async function sendProcessRetryDqRequest({
+  signedRequest,
+  samlCertsAndKeys,
+  patientId,
+  cxId,
+  index,
+}: {
+  signedRequest: SignedDqRequest;
+  samlCertsAndKeys: SamlCertsAndKeys;
+  patientId: string;
+  cxId: string;
+  index: number;
+}): Promise<OutboundDocumentQueryResp> {
+  async function sendProcessDqRequest() {
+    const response = await sendSignedDqRequest({
+      request: signedRequest,
+      samlCertsAndKeys,
+      patientId,
+      cxId,
+      index,
+    });
+    return await processDqResponse({
+      response,
+    });
+  }
+
+  return await executeWithOperationOutcomeRetries(sendProcessDqRequest, {
+    initialDelay: 3000,
+    maxAttempts: 3,
+    shouldRetryResult: result => isRetryable(result),
+  });
+}
+
+export async function sendProcessRetryDrRequest({
+  signedRequest,
+  samlCertsAndKeys,
+  patientId,
+  cxId,
+  index,
+}: {
+  signedRequest: SignedDrRequest;
+  samlCertsAndKeys: SamlCertsAndKeys;
+  patientId: string;
+  cxId: string;
+  index: number;
+}): Promise<OutboundDocumentRetrievalResp> {
+  async function sendProcessDrRequest() {
+    const response = await sendSignedDrRequest({
+      request: signedRequest,
+      samlCertsAndKeys,
+      patientId,
+      cxId,
+      index,
+    });
+    return await processDrResponse({
+      response,
+    });
+  }
+
+  return await executeWithOperationOutcomeRetries(sendProcessDrRequest, {
+    initialDelay: 3000,
+    maxAttempts: 3,
+    shouldRetryResult: result => isRetryable(result),
+  });
+}
 
 export async function createSignSendProcessXCPDRequest({
   pdResponseUrl,
@@ -80,13 +152,7 @@ export async function createSignSendProcessDQRequests({
   });
 
   const resultPromises = signedRequests.map(async (signedRequest, index) => {
-    return sendProcessRetryDqRequests({
-      signedRequest,
-      samlCertsAndKeys,
-      patientId,
-      cxId,
-      index,
-    });
+    return sendProcessRetryDqRequest({ signedRequest, samlCertsAndKeys, patientId, cxId, index });
   });
 
   const results = await Promise.allSettled(resultPromises);
@@ -126,13 +192,7 @@ export async function createSignSendProcessDRRequests({
   });
 
   const resultPromises = signedRequests.map(async (signedRequest, index) => {
-    return sendProcessRetryDrRequests({
-      signedRequest,
-      samlCertsAndKeys,
-      patientId,
-      cxId,
-      index,
-    });
+    return sendProcessRetryDrRequest({ signedRequest, samlCertsAndKeys, patientId, cxId, index });
   });
 
   const results = await Promise.allSettled(resultPromises);
