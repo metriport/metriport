@@ -1,12 +1,12 @@
-import axios from "axios";
 import {
-  OutboundPatientDiscoveryReq,
-  OutboundPatientDiscoveryResp,
   OutboundDocumentQueryReq,
   OutboundDocumentRetrievalReq,
+  OutboundPatientDiscoveryReq,
+  OutboundPatientDiscoveryResp,
 } from "@metriport/ihe-gateway-sdk";
-import { SamlCertsAndKeys } from "./saml/security/types";
-import { createAndSignBulkXCPDRequests } from "./outbound/xcpd/create/iti55-envelope";
+import { executeWithNetworkRetries } from "@metriport/shared";
+import axios from "axios";
+import { capture } from "../../../util/notifications";
 import { createAndSignBulkDQRequests } from "./outbound/xca/create/iti38-envelope";
 import { createAndSignBulkDRRequests } from "./outbound/xca/create/iti39-envelope";
 import { sendSignedXCPDRequests } from "./outbound/xcpd/send/xcpd-requests";
@@ -15,7 +15,8 @@ import {
   sendProcessRetryDqRequests,
   sendProcessRetryDrRequests,
 } from "./outbound/xca/orchestrate/send-process-retry";
-import { capture } from "../../../util/notifications";
+import { createAndSignBulkXCPDRequests } from "./outbound/xcpd/create/iti55-envelope";
+import { SamlCertsAndKeys } from "./saml/security/types";
 
 export async function createSignSendProcessXCPDRequest({
   pdResponseUrl,
@@ -46,10 +47,12 @@ export async function createSignSendProcessXCPDRequest({
   });
   for (const result of results) {
     try {
-      await axios.post(pdResponseUrl, result);
+      await executeWithNetworkRetries(async () => axios.post(pdResponseUrl, result));
     } catch (error) {
       capture.error("Failed to send PD response to Internal Carequality Endpoint", {
         extra: {
+          cxId,
+          patientId,
           error,
           result,
         },
@@ -89,17 +92,17 @@ export async function createSignSendProcessDQRequests({
   const results = await Promise.allSettled(resultPromises);
 
   for (const result of results) {
-    if (result.status === "fulfilled") {
-      try {
-        await axios.post(dqResponseUrl, result.value);
-      } catch (error) {
-        capture.error("Failed to send DQ response to Internal Carequality Endpoint", {
-          extra: {
-            error,
-            result: result.value,
-          },
-        });
-      }
+    try {
+      await executeWithNetworkRetries(async () => axios.post(dqResponseUrl, result));
+    } catch (error) {
+      capture.error("Failed to send DQ response to Internal Carequality Endpoint", {
+        extra: {
+          cxId,
+          patientId,
+          error,
+          result,
+        },
+      });
     }
   }
 }
@@ -135,17 +138,17 @@ export async function createSignSendProcessDRRequests({
   const results = await Promise.allSettled(resultPromises);
 
   for (const result of results) {
-    if (result.status === "fulfilled") {
-      try {
-        await axios.post(drResponseUrl, result.value);
-      } catch (error) {
-        capture.error("Failed to send DR response to Internal Carequality Endpoint", {
-          extra: {
-            error,
-            result: result.value,
-          },
-        });
-      }
+    try {
+      await executeWithNetworkRetries(async () => axios.post(drResponseUrl, result));
+    } catch (error) {
+      capture.error("Failed to send DR response to Internal Carequality Endpoint", {
+        extra: {
+          cxId,
+          patientId,
+          error,
+          result,
+        },
+      });
     }
   }
 }

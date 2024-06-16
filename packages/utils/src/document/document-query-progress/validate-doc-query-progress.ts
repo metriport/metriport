@@ -1,13 +1,13 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
-import { PatientDTO, USState, MetriportMedicalApi, FacilityCreate } from "@metriport/api-sdk";
-import { sleep, executeWithRetries } from "@metriport/shared";
-import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { faker } from "@faker-js/faker";
-import duration from "dayjs/plugin/duration";
-import dayjs from "dayjs";
+import { FacilityCreate, MetriportMedicalApi, PatientDTO, USState } from "@metriport/api-sdk";
+import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { executeWithRetries, sleep } from "@metriport/shared";
 import axios from "axios";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { patientsToCreate } from "./patients";
 dayjs.extend(duration);
 
@@ -143,8 +143,11 @@ async function checkPatientLinkingStatus(
 
     const retryIsPatientLinked = await executeWithRetries(
       () => checkPatientLinked(patient, facilityId),
-      3,
-      500
+      {
+        maxAttempts: 6,
+        initialDelay: 500,
+        backoffMultiplier: 0, // no backoff
+      }
     );
 
     if (retryIsPatientLinked) {

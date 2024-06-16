@@ -73,7 +73,7 @@
 	<observation classCode="OBS" moodCode="EVN">
 		<templateId root="2.16.840.1.113883.10.20.22.4.38" extension="2015-08-01">
 		</templateId>
-		<id root="placeholder-ORG-OID" extension="${params.observationId}">
+		<id root="placeholder-ORG-OID" extension="${observationId}">
 		</id>
 		<code code="LG51306-5" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="SDOH">
 		</code>
@@ -91,7 +91,7 @@
 			<observation classCode="OBS" moodCode="EVN">
 				<templateId root="2.16.840.1.113883.10.20.22.4.38" extension="2015-08-01">
 				</templateId>
-				<id root="placeholder-ORG-OID" extension="${params.observationId}">
+				<id root="placeholder-ORG-OID" extension="${observationId}">
 				</id>
 				<code code="71802-3" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="What is your living situation today?">
 				</code>
@@ -111,7 +111,7 @@
 			<observation classCode="OBS" moodCode="EVN">
 				<templateId root="2.16.840.1.113883.10.20.22.4.38" extension="2015-08-01">
 				</templateId>
-				<id root="placeholder-ORG-OID" extension="${params.observationId}">
+				<id root="placeholder-ORG-OID" extension="${observationId}">
 				</id>
 				<code code="96778-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Think about the place you live. Do you have problems with any of the following?">
 				</code>
