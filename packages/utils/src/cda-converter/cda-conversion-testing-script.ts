@@ -1,9 +1,13 @@
+import * as dotenv from "dotenv";
+dotenv.config();
+// keep that ^ on top
+import { Bundle } from "@medplum/fhirtypes";
+import { generateCdaFromFhirBundle } from "@metriport/core/fhir-to-cda/cda-generators";
+import { splitBundleByCompositions } from "@metriport/core/fhir-to-cda/composition-splitter";
+import axios, { AxiosInstance } from "axios";
 import fs from "fs";
 import path from "path";
-import { splitBundleByCompositions } from "@metriport/core/fhir-to-cda/composition-splitter";
-import { generateCdaFromFhirBundle } from "@metriport/core/fhir-to-cda/cda-generators";
-import axios, { AxiosInstance } from "axios";
-import { Bundle } from "@medplum/fhirtypes";
+import { getEnvVarOrFail } from "../../../api/src/shared/config";
 
 /**
  * The objective of these tests are to test two things:
@@ -19,6 +23,7 @@ import { Bundle } from "@medplum/fhirtypes";
  */
 
 const fhirBaseUrl = "http://localhost:8777";
+const orgOid = getEnvVarOrFail("ORG_OID");
 const baseInputFolder = "./src/cda-converter/scratch/";
 
 async function main() {
@@ -61,7 +66,7 @@ async function main() {
         return;
       }
 
-      convertFhirToCda(fhirBundle, file, inputJsonBundlesFolder, outputFolderCDA);
+      convertFhirToCda(fhirBundle, file, inputJsonBundlesFolder, outputFolderCDA, orgOid);
       convertCdaToFhir(
         outputFolderCDA,
         outputFolderFHIR,
@@ -75,24 +80,31 @@ async function main() {
   });
 }
 
-function convertFhirBundleToCdaTesting(fhirBundle: Bundle): {
+export function convertFhirBundleToCdaTesting(
+  fhirBundle: Bundle,
+  orgOid: string
+): {
   cdaDocuments: string[];
   splitBundles: Bundle[];
 } {
   const splitBundles = splitBundleByCompositions(fhirBundle);
-  return { cdaDocuments: splitBundles.map(generateCdaFromFhirBundle), splitBundles: splitBundles };
+  return {
+    cdaDocuments: splitBundles.map(bundle => generateCdaFromFhirBundle(bundle, orgOid)),
+    splitBundles: splitBundles,
+  };
 }
 
 function convertFhirToCda(
   fhirBundle: Bundle,
   inputFileName: string,
   outputFolderBundles: string,
-  outputFolderCDA: string
+  outputFolderCDA: string,
+  orgOid: string
 ) {
   let cdaDocuments;
   let splitBundles;
   try {
-    const result = convertFhirBundleToCdaTesting(fhirBundle);
+    const result = convertFhirBundleToCdaTesting(fhirBundle, orgOid);
     cdaDocuments = result.cdaDocuments;
     splitBundles = result.splitBundles;
   } catch (error) {

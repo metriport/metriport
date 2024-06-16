@@ -7,6 +7,7 @@ export type FhirToCdaConverterRequest = {
   docId: string;
   bundle: Bundle;
   organization: Organization;
+  orgOid: string;
 };
 
 export interface FhirToCdaConverter {

@@ -10,7 +10,7 @@ import {
   handleRegistryErrorResponse,
   handleHttpErrorResponse,
   handleEmptyResponse,
-  handleSoapFaultResponse,
+  handleSchemaErrorResponse,
 } from "./error";
 import { parseFileFromString, parseFileFromBuffer } from "./parse-file-from-string";
 import { stripUrnPrefix } from "../../../../../../util/urn";
@@ -23,28 +23,16 @@ import { createDocumentFilePath } from "../../../../../../domain/document/filena
 import { MetriportError } from "../../../../../../util/error/metriport-error";
 import { getCidReference } from "../mtom/cid";
 import { out } from "../../../../../../util/log";
+import { errorToString, toArray } from "@metriport/shared";
+import { iti39Schema, DocumentResponse } from "./schema";
 
 const { log } = out("DR Processing");
 
 const region = Config.getAWSRegion();
 const bucket = Config.getMedicalDocumentsBucketName();
 
-export type DocumentResponse = {
-  size?: string;
-  title?: string;
-  creation?: string;
-  language?: string;
-  mimeType: string;
-  DocumentUniqueId: string;
-  HomeCommunityId: string;
-  RepositoryUniqueId: string;
-  NewDocumentUniqueId: string;
-  NewRepositoryUniqueId: string;
-  Document: string | { Include: { _href: string } };
-};
-
 let s3UtilsInstance = new S3Utils(region);
-export function getS3UtilsInstance(): S3Utils {
+function getS3UtilsInstance(): S3Utils {
   return s3UtilsInstance;
 }
 export function setS3UtilsInstance(s3Utils: S3Utils): void {
@@ -89,7 +77,7 @@ function getMtomBytesAndMimeType(
   throw new Error("Invalid document response");
 }
 
-async function parseDocumentReference({
+async function processDocumentReference({
   documentResponse,
   outboundRequest,
   idMapping,
@@ -125,15 +113,14 @@ async function parseDocumentReference({
     });
   }
 
-  const msg = "Downloaded a document with mime type";
   log(
-    `${msg}: ${mimeType} for patient: ${outboundRequest.patientId} andrequest: ${outboundRequest.id}`
+    `Downloaded a document with mime type: ${mimeType} for patient: ${outboundRequest.patientId} and request: ${outboundRequest.id}`
   );
 
   return {
     url: s3Utils.buildFileUrl(bucket, filePath),
     size: documentResponse.size ? parseInt(documentResponse.size) : undefined,
-    title: documentResponse?.title,
+    title: documentResponse.title,
     fileName: filePath,
     creation: documentResponse.creation,
     language: documentResponse.language,
@@ -171,20 +158,11 @@ async function handleSuccessResponse({
 }): Promise<OutboundDocumentRetrievalResp> {
   try {
     const idMapping = generateIdMapping(outboundRequest.documentReference);
-    const documentReferences = Array.isArray(documentResponses)
-      ? await Promise.all(
-          documentResponses.map(async (documentResponse: DocumentResponse) =>
-            parseDocumentReference({ documentResponse, outboundRequest, idMapping, mtomResponse })
-          )
-        )
-      : [
-          await parseDocumentReference({
-            documentResponse: documentResponses,
-            outboundRequest,
-            idMapping,
-            mtomResponse,
-          }),
-        ];
+    const documentReferences = await Promise.all(
+      documentResponses.map(async (documentResponse: DocumentResponse) =>
+        processDocumentReference({ documentResponse, outboundRequest, idMapping, mtomResponse })
+      )
+    );
 
     const response: OutboundDocumentRetrievalResp = {
       id: outboundRequest.id,
@@ -226,37 +204,42 @@ export async function processDrResponse({
   });
   const jsonObj = parser.parse(soapData.toString());
 
-  const status = jsonObj?.Envelope?.Body?.RetrieveDocumentSetResponse?.RegistryResponse?._status
-    ?.split(":")
-    .pop();
-  const registryErrorList =
-    jsonObj?.Envelope?.Body?.RetrieveDocumentSetResponse?.RegistryResponse?.RegistryErrorList;
-  const documentResponses = jsonObj?.Envelope?.Body?.RetrieveDocumentSetResponse?.DocumentResponse;
-  const soapFault = jsonObj?.Envelope?.Body?.Fault;
+  try {
+    const iti39Response = iti39Schema.parse(jsonObj);
 
-  if ((status === successStatus || status === partialSuccessStatus) && documentResponses) {
-    return await handleSuccessResponse({
-      documentResponses,
+    const status = iti39Response.Envelope.Body.RetrieveDocumentSetResponse.RegistryResponse._status
+      ?.split(":")
+      .pop();
+    const registryErrorList =
+      iti39Response.Envelope.Body.RetrieveDocumentSetResponse.RegistryResponse.RegistryErrorList;
+    const documentResponses =
+      iti39Response.Envelope.Body.RetrieveDocumentSetResponse.DocumentResponse;
+
+    if ((status === successStatus || status === partialSuccessStatus) && documentResponses) {
+      return await handleSuccessResponse({
+        documentResponses: toArray(documentResponses),
+        outboundRequest,
+        gateway,
+        mtomResponse,
+      });
+    } else if (registryErrorList) {
+      return handleRegistryErrorResponse({
+        registryErrorList,
+        outboundRequest,
+        gateway,
+      });
+    } else {
+      return handleEmptyResponse({
+        outboundRequest,
+        gateway,
+      });
+    }
+  } catch (error) {
+    log("Error processing DR response", error);
+    return handleSchemaErrorResponse({
       outboundRequest,
       gateway,
-      mtomResponse,
-    });
-  } else if (registryErrorList) {
-    return handleRegistryErrorResponse({
-      registryErrorList,
-      outboundRequest,
-      gateway,
-    });
-  } else if (soapFault) {
-    return handleSoapFaultResponse({
-      soapFault,
-      outboundRequest,
-      gateway,
-    });
-  } else {
-    return handleEmptyResponse({
-      outboundRequest,
-      gateway,
+      text: errorToString(error),
     });
   }
 }

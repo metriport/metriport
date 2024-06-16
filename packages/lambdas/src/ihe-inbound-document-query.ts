@@ -2,7 +2,7 @@ import { inboundDocumentQueryReqSchema } from "@metriport/ihe-gateway-sdk";
 import * as Sentry from "@sentry/serverless";
 import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
 import { processInboundDocumentQuery } from "@metriport/core/external/carequality/dq/process-inbound-dq";
-import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { analyticsAsync, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { getEnvVarOrFail, getEnvVar } from "@metriport/core/util/env-var";
 
 const apiUrl = getEnvVarOrFail("API_URL");
@@ -23,8 +23,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
     const postHogApiKey = await getSecretValue(postHogSecretName, region);
 
     if (postHogApiKey && engineeringCxId) {
-      result.externalGatewayPatient?.system;
-      analytics(
+      await analyticsAsync(
         {
           distinctId: engineeringCxId,
           event: EventTypes.inboundDocumentQuery,

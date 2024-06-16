@@ -66,6 +66,7 @@ export class LambdasNestedStack extends NestedStack {
       vpc: props.vpc,
       medicalDocumentsBucket: props.medicalDocumentsBucket,
       envType: props.config.environmentType,
+      systemRootOid: props.config.systemRootOID,
       sentryDsn: props.config.lambdasSentryDSN,
     });
 
@@ -221,9 +222,11 @@ export class LambdasNestedStack extends NestedStack {
     vpc: ec2.IVpc;
     medicalDocumentsBucket: s3.Bucket;
     envType: EnvType;
+    systemRootOid: string;
     sentryDsn: string | undefined;
   }): Lambda {
-    const { lambdaLayers, vpc, medicalDocumentsBucket, sentryDsn, envType } = ownProps;
+    const { lambdaLayers, vpc, medicalDocumentsBucket, sentryDsn, envType, systemRootOid } =
+      ownProps;
 
     const fhirToCdaConverterLambda = createLambda({
       stack: this,
@@ -233,6 +236,7 @@ export class LambdasNestedStack extends NestedStack {
       envType,
       envVars: {
         MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
+        SYSTEM_ROOT_OID: systemRootOid,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],

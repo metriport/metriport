@@ -13,13 +13,13 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 
 export const handler = Sentry.AWSLambda.wrapHandler(
-  async ({ cxId, patientId, docId, organization, bundle }: Input): Promise<void> => {
+  async ({ cxId, patientId, docId, organization, bundle, orgOid }: Input): Promise<void> => {
     const { log } = out(`cx ${cxId}, patient ${patientId}`);
     log(
       `Running with: ${bundle.entry?.length} resources, bundle type: ${bundle.type}, bucket: ${bucketName}}`
     );
     try {
-      const converted = convertFhirBundleToCda(bundle);
+      const converted = convertFhirBundleToCda(bundle, orgOid);
       await uploadCdaDocuments({
         cxId,
         patientId,
@@ -38,6 +38,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
           cxId,
           patientId,
           context: lambdaName,
+          orgOid,
         },
       });
       throw error;

@@ -3,7 +3,7 @@ import * as Sentry from "@sentry/serverless";
 import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
 import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { processInboundDocumentRetrieval } from "@metriport/core/external/carequality/dr/process-inbound-dr";
-import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { analyticsAsync, EventTypes } from "@metriport/core/external/analytics/posthog";
 
 const postHogSecretName = getEnvVar("POST_HOG_API_KEY_SECRET");
 const engineeringCxId = getEnvVar("ENGINEERING_CX_ID");
@@ -21,7 +21,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
     const postHogApiKey = await getSecretValue(postHogSecretName, region);
 
     if (postHogApiKey && engineeringCxId) {
-      analytics(
+      await analyticsAsync(
         {
           distinctId: engineeringCxId,
           event: EventTypes.inboundDocumentRetrieval,

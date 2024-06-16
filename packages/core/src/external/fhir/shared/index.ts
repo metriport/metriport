@@ -1,20 +1,27 @@
 import { OperationOutcomeError, Operator } from "@medplum/core";
 import {
+  AllergyIntolerance,
   Bundle,
-  Patient,
-  Organization,
   Composition,
-  Observation,
+  Condition,
   DiagnosticReport,
   DocumentReference,
+  Encounter,
   Extension,
+  Location,
+  Medication,
+  MedicationStatement,
+  ResourceType as MedplumResourceType,
+  Observation,
   OperationOutcomeIssue,
+  Organization,
+  Patient,
+  Practitioner,
   Reference,
   Resource,
-  ResourceType as MedplumResourceType,
 } from "@medplum/fhirtypes";
-import { isCommonwellExtension } from "../../commonwell/extension";
 import { isCarequalityExtension } from "../../carequality/extension";
+import { isCommonwellExtension } from "../../commonwell/extension";
 import { DOC_ID_EXTENSION_URL } from "./extensions/doc-id-extension";
 import { isMetriportExtension } from "./extensions/metriport";
 
@@ -134,8 +141,16 @@ export function getIdFromSubjectRef(subject: Reference | undefined): string | un
   return undefined;
 }
 
+export function isLocation(resource: Resource | undefined): resource is Location {
+  return resource?.resourceType === "Location";
+}
+
 function isPatient(resource: Resource | undefined): resource is Patient {
   return resource?.resourceType === "Patient";
+}
+
+export function isPractitioner(resource: Resource | undefined): resource is Practitioner {
+  return resource?.resourceType === "Practitioner";
 }
 
 export function isOrganization(resource: Resource | undefined): resource is Organization {
@@ -146,6 +161,10 @@ export function isComposition(resource: Resource | undefined): resource is Compo
   return resource?.resourceType === "Composition";
 }
 
+export function isEncounter(resource: Resource | undefined): resource is Encounter {
+  return resource?.resourceType === "Encounter";
+}
+
 export function isObservation(resource: Resource | undefined): resource is Observation {
   return resource?.resourceType === "Observation";
 }
@@ -154,8 +173,32 @@ export function isDiagnosticReport(resource: Resource | undefined): resource is 
   return resource?.resourceType === "DiagnosticReport";
 }
 
+export function isCondition(resource: Resource | undefined): resource is Condition {
+  return resource?.resourceType === "Condition";
+}
+
+export function isMedicationStatement(
+  resource: Resource | undefined
+): resource is MedicationStatement {
+  return resource?.resourceType === "MedicationStatement";
+}
+
+export function isMedication(resource: Resource | undefined): resource is Medication {
+  return resource?.resourceType === "Medication";
+}
+
+export function isAllergyIntolerance(
+  resource: Resource | undefined
+): resource is AllergyIntolerance {
+  return resource?.resourceType === "AllergyIntolerance";
+}
+
 export function findOrganizationResource(fhirBundle: Bundle): Organization | undefined {
   return fhirBundle.entry?.map(e => e.resource).find(isOrganization);
+}
+
+export function findCompositionResource(fhirBundle: Bundle): Composition | undefined {
+  return fhirBundle.entry?.map(e => e.resource).find(isComposition);
 }
 
 export function findPatientResource(fhirBundle: Bundle): Patient | undefined {

@@ -1,6 +1,9 @@
 import { webhookDisableFlagName } from "@metriport/core/domain/webhook/index";
-import { errorToString } from "@metriport/shared/common/error";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
+import { errorToString, isTrue } from "@metriport/shared";
+import { PingWebhookRequest, WebhookMetadata } from "@metriport/shared/medical";
 import Axios from "axios";
 import crypto from "crypto";
 import dayjs from "dayjs";
@@ -8,39 +11,28 @@ import { nanoid } from "nanoid";
 import { v4 as uuidv4 } from "uuid";
 import { z, ZodError } from "zod";
 import { Product } from "../../domain/product";
+import { WebhookRequestStatus } from "../../domain/webhook";
 import WebhookError from "../../errors/webhook";
-import { isWebhookPongDisabledForCx } from "../../external/aws/app-config";
+import { isE2eCx, isWebhookPongDisabledForCx } from "../../external/aws/app-config";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { WebhookRequest } from "../../models/webhook-request";
-import { capture } from "../../shared/notifications";
-import { Util } from "../../shared/util";
+import { getHttpStatusFromAxiosError } from "../../shared/http";
 import { updateWebhookStatus } from "../settings/updateSettings";
 import { isDAPIWebhookRequest } from "./devices-util";
-import { updateWebhookRequestStatus, WebhookRequestData } from "./webhook-request";
+import { updateWebhookRequest, WebhookRequestData } from "./webhook-request";
 
 const DEFAULT_TIMEOUT_SEND_PAYLOAD_MS = 5_000;
 const DEFAULT_TIMEOUT_SEND_TEST_MS = 2_000;
-const axios = Axios.create();
-const log = Util.log(`Webhook`);
 
-// General
-type WebhookPingPayload = {
-  ping: string;
-  meta: WebhookMetadataPayload;
-};
+const successfulStatusDetail = "OK";
 
-/**
- * @param {messageId}  - The ID of the webhook request
- * @param {when}  - The date and time when the webhook request was created
- * @param {type}  - The type of the webhook request, either document-download or consolidated-request
- * @param {data}  - Any data the customer pases to the webhook request
- */
-export type WebhookMetadataPayload = {
-  messageId: string;
-  when: string;
-  type: string;
-  data?: unknown;
-};
+const axios = Axios.create({
+  transitional: {
+    // enables ETIMEDOUT instead of ECONNABORTED for timeouts - https://betterstack.com/community/guides/scaling-nodejs/nodejs-errors/
+    clarifyTimeoutError: true,
+  },
+});
+const { log } = out(`Webhook`);
 
 async function missingWHSettings(
   webhookRequest: WebhookRequest | WebhookRequestData,
@@ -52,7 +44,7 @@ async function missingWHSettings(
   const loggableKey = webhookKey ? "<defined>" : "<not-defined>";
   log(msg + ` (url: ${webhookUrl}, key: ${loggableKey}`);
   // mark this WH request as failed
-  await updateWebhookRequestStatus({
+  await updateWebhookRequest({
     id: webhookRequest.id,
     status: "failure",
   });
@@ -69,12 +61,12 @@ function getProductFromWebhookRequest(
   }
 }
 
-export const processRequest = async (
+export async function processRequest(
   webhookRequest: WebhookRequest | WebhookRequestData,
   settings: Settings,
   additionalWHRequestMeta?: Record<string, string>,
   cxWHRequestMeta?: unknown
-): Promise<boolean> => {
+): Promise<boolean> {
   const sendAnalytics = (status: string, properties?: Record<string, string>) => {
     analytics({
       distinctId: webhookRequest.cxId,
@@ -93,101 +85,149 @@ export const processRequest = async (
     sendAnalytics("failure", { reason: "missing-webhook-settings" });
     return missingWHSettings(webhookRequest, webhookUrl, webhookKey);
   }
-  const productType = getProductFromWebhookRequest(webhookRequest);
-
-  const payload = webhookRequest.payload;
   try {
-    const meta: WebhookMetadataPayload = {
+    const productType = getProductFromWebhookRequest(webhookRequest);
+
+    const payload = webhookRequest.payload;
+    const meta: WebhookMetadata = {
       messageId: webhookRequest.id,
       when: dayjs(webhookRequest.createdAt).toISOString(),
       type: webhookRequest.type,
       data: cxWHRequestMeta,
     };
+    const fullPayload = {
+      meta,
+      ...payload,
+    };
+    try {
+      const sendResponse = await sendPayload(fullPayload, webhookUrl, webhookKey);
 
-    await sendPayload(
-      {
-        meta,
-        ...payload,
-      },
-      webhookUrl,
-      webhookKey
-    );
-
-    // TODO: 1411 - remove when DAPI is fully discontinued
-    if (productType === Product.medical) {
-      // mark this request as successful on the DB
-      const status = "success";
-      await updateWebhookRequestStatus({
-        id: webhookRequest.id,
-        status,
-      });
-
-      // if the webhook was not working before, update the status to successful since we were able to send the payload
-      if (!webhookEnabled) {
-        await updateWebhookStatus({
-          cxId: settings.id,
-          webhookEnabled: true,
-          webhookStatusDetail: WEBHOOK_STATUS_OK,
-        });
-      }
-      sendAnalytics(status);
-    }
-    return true;
-
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    // TODO: 1411 - remove when DAPI is fully discontinued
-    if (productType === Product.medical) {
-      log(`Failed to process WH request: ${errorToString(error)}`);
-      const status = "failure";
-      try {
-        // mark this individual WH request as failed
-        await updateWebhookRequestStatus({
+      // TODO: 1411 - remove when DAPI is fully discontinued
+      if (productType === Product.medical) {
+        // mark this request as successful on the DB
+        const status = "success";
+        await updateWebhookRequest({
           id: webhookRequest.id,
           status,
+          statusDetail: successfulStatusDetail,
+          durationMillis: sendResponse.durationMillis,
+          httpStatus: sendResponse.status,
+          requestUrl: sendResponse.url,
         });
-      } catch (err2) {
-        log(`Failed to store failure state on WH log: ${errorToString(err2)}`);
-        capture.error(err2, {
-          extra: {
-            webhookRequestId: webhookRequest.id,
-            webhookUrl,
-            context: `webhook.processRequest.updateStatus.failed`,
-            error: err2,
-          },
-        });
-      }
-      sendAnalytics(status);
 
-      let webhookStatusDetail;
-      if (error instanceof WebhookError) {
-        webhookStatusDetail = errorToWhStatusDetails(error);
-      } else {
-        log(`Unexpected error testing webhook`, error);
-        webhookStatusDetail = `Internal error: ${error.message}`;
+        // if the webhook was not working before, update the status to successful since we were able to send the payload
+        if (!webhookEnabled) {
+          await updateWebhookStatus({
+            cxId: settings.id,
+            webhookEnabled: true,
+            webhookStatusDetail: WEBHOOK_STATUS_OK,
+          });
+        }
+        sendAnalytics(status);
       }
-      try {
-        // update the status of the webhook endpoint on the cx's settings table
-        await updateWebhookStatus({
-          cxId: settings.id,
-          webhookEnabled: false,
-          webhookStatusDetail,
-        });
-      } catch (err2) {
-        log(`Failed to store failure state on WH settings: ${errorToString(err2)}`);
-        capture.error(err2, {
-          extra: {
-            webhookRequestId: webhookRequest.id,
-            webhookUrl,
-            context: `webhook.processRequest.updateStatus.details`,
-            error: err2,
-          },
-        });
+      return true;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      // TODO: 1411 - remove the conditional and keep the code inside it when DAPI is fully discontinued
+      if (productType === Product.medical) {
+        log(
+          `Failed to process WH request: ${errorToString(error)}, cause ${errorToString(
+            error.cause
+          )}`
+        );
+        const status = "failure";
+        const [, , isE2e] = await Promise.all([
+          updateWhRequestWithError(error, webhookRequest.id, webhookUrl, status),
+          updateWhStatusWithError(error, webhookRequest.id, webhookUrl, settings.id),
+          isE2eCx(webhookRequest.cxId),
+        ]);
+        if (isE2e) {
+          log(`[E2E] WH Payload: ${JSON.stringify(fullPayload)}`);
+          log(
+            `[E2E] Error details: ${
+              "cause" in error && "response" in error.cause
+                ? JSON.stringify(error.cause.response)
+                : JSON.stringify(error)
+            }`
+          );
+        }
+        sendAnalytics(status);
       }
     }
+  } catch (error) {
+    log(`(Outer) Failed to process WH request: ${errorToString(error)}`);
   }
   return false;
-};
+}
+
+/**
+ * Updates the individual Webhook (WH) request status.
+ */
+async function updateWhRequestWithError(
+  error: unknown,
+  webhookRequestId: string,
+  webhookUrl: string,
+  status: WebhookRequestStatus
+) {
+  try {
+    const detail =
+      error instanceof WebhookError ? errorToWhStatusDetails(error) : errorToString(error);
+    const httpStatus = error instanceof WebhookError ? error.additionalInfo.httpStatus : 500;
+    await updateWebhookRequest({
+      id: webhookRequestId,
+      status,
+      statusDetail: detail,
+      requestUrl: webhookUrl,
+      httpStatus,
+    });
+  } catch (error) {
+    log(`Failed to store failure state on WH log: ${errorToString(error)}`);
+    capture.error(error, {
+      extra: {
+        webhookRequestId: webhookRequestId,
+        webhookUrl,
+        context: `webhook.processRequest.updateStatus.failed`,
+        error,
+      },
+    });
+  }
+}
+
+/**
+ * Updates the Customer's Webhook status on settings.
+ */
+async function updateWhStatusWithError(
+  error: unknown,
+  webhookRequestId: string,
+  webhookUrl: string,
+  settingsId: string
+) {
+  let webhookStatusDetail;
+  if (error instanceof WebhookError) {
+    webhookStatusDetail = errorToWhStatusDetails(error);
+  } else {
+    log(`Unexpected error testing webhook: ${errorToString(error)}`);
+    webhookStatusDetail = `Internal error`;
+  }
+  try {
+    // update the status of the webhook endpoint on the cx's settings table
+    await updateWebhookStatus({
+      cxId: settingsId,
+      webhookEnabled: false,
+      webhookStatusDetail,
+    });
+  } catch (error) {
+    log(`Failed to store failure state on WH settings: ${errorToString(error)}`);
+    capture.error(error, {
+      extra: {
+        webhookRequestId: webhookRequestId,
+        webhookUrl,
+        context: `webhook.processRequest.updateStatus.details`,
+        error,
+      },
+    });
+  }
+}
 
 const webhookResponseSchema = z
   .object({
@@ -195,16 +235,22 @@ const webhookResponseSchema = z
   })
   .or(z.string());
 
-type WebhookResponseSchema = z.infer<typeof webhookResponseSchema>;
+type WebhookResponse = z.infer<typeof webhookResponseSchema>;
 
-export const sendPayload = async (
+export async function sendPayload(
   payload: unknown,
   url: string,
   apiKey: string,
   timeout = DEFAULT_TIMEOUT_SEND_PAYLOAD_MS
-): Promise<WebhookResponseSchema> => {
+): Promise<{
+  status: number;
+  webhookResponse: WebhookResponse;
+  url: string;
+  durationMillis: number;
+}> {
   try {
     const hmac = crypto.createHmac("sha256", apiKey).update(JSON.stringify(payload)).digest("hex");
+    const before = Date.now();
     const res = await axios.post(url, payload, {
       headers: {
         "x-webhook-key": apiKey,
@@ -214,18 +260,30 @@ export const sendPayload = async (
       timeout,
       maxRedirects: 0, // disable redirects to prevent SSRF
     });
+    const duration = Date.now() - before;
     const webhookResponse = webhookResponseSchema.parse(res.data);
-    return webhookResponse;
+    return {
+      status: res.status,
+      webhookResponse,
+      url,
+      durationMillis: duration,
+    };
   } catch (err) {
     // Don't change this error message, it's used to detect if the webhook is working or not
-    throw new WebhookError(`Failed to send payload`, err);
+    const msg = "Failed to send payload";
+    const httpStatus = getHttpStatusFromAxiosError(err);
+    throw new WebhookError(msg, err, {
+      url,
+      httpStatus,
+      httpMessage: errorToString(err),
+    });
   }
-};
+}
 
-export const sendTestPayload = async (url: string, key: string, cxId: string): Promise<boolean> => {
+export async function sendTestPayload(url: string, key: string, cxId: string): Promise<boolean> {
   const ping = nanoid();
   const when = dayjs().toISOString();
-  const payload: WebhookPingPayload = {
+  const payload: PingWebhookRequest = {
     ping,
     meta: {
       messageId: uuidv4(),
@@ -233,20 +291,35 @@ export const sendTestPayload = async (url: string, key: string, cxId: string): P
       type: "ping",
     },
   };
-
-  const res = await sendPayload(payload, url, key, DEFAULT_TIMEOUT_SEND_TEST_MS);
-  if (!res) return false;
-
-  const isWebhookPongDisabled = await isWebhookPongDisabledForCx(cxId);
+  const [sendResponse, isWebhookPongDisabled] = await Promise.all([
+    sendPayload(payload, url, key, DEFAULT_TIMEOUT_SEND_TEST_MS),
+    isWebhookPongDisabledForCxSafe(cxId),
+  ]);
   if (isWebhookPongDisabled) return true;
   // check for a matching pong response, unless FF is enabled to skip that check
-  return typeof res !== "string" && res.pong && res.pong === ping ? true : false;
-};
+  const whResponse = sendResponse.webhookResponse;
+  return typeof whResponse !== "string" && whResponse.pong && whResponse.pong === ping
+    ? true
+    : false;
+}
+
+async function isWebhookPongDisabledForCxSafe(cxId: string): Promise<boolean> {
+  try {
+    return await isWebhookPongDisabledForCx(cxId);
+  } catch (error) {
+    const msg = "Error checking if WH Pong is disabled for cx";
+    log(`${msg}: ${errorToString(error)}`);
+    capture.error(msg, { extra: { cxId, error } });
+    // Fail gracefully since there was no error from Ping and we don't know if the cx supports Pong
+  }
+  return true;
+}
 
 export function isWebhookDisabled(meta?: unknown): boolean {
   if (!meta) return false;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return Boolean((meta as any)[webhookDisableFlagName]);
+  const value = (meta as any)[webhookDisableFlagName];
+  return isTrue(value);
 }
 
 export function errorToWhStatusDetails(error: WebhookError): string {

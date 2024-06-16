@@ -1,26 +1,6 @@
-import { AllergyIntolerance, Bundle } from "@medplum/fhirtypes";
-import { makeDocumentReference } from "@metriport/core/external/fhir/document/__tests__/document-reference";
-import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
-import { PatientWithId } from "@metriport/core/external/fhir/__tests__/patient";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
-
-export function createConsolidated(patient: PatientWithId): Bundle {
-  const extension = [metriportDataSourceExtension];
-  const entry: Bundle["entry"] = [
-    {
-      resource: { ...makeAllergyIntollerance({ patient }) },
-    },
-    {
-      resource: { ...makeDocumentReference({ patient, extension }) },
-    },
-  ];
-  return {
-    resourceType: "Bundle",
-    type: "collection",
-    total: entry.length,
-    entry,
-  };
-}
+import { AllergyIntolerance } from "@medplum/fhirtypes";
+import { uuidv7 } from "../../../util/uuid-v7";
+import { PatientWithId } from "./patient";
 
 export function makeAllergyIntollerance({
   patient,
@@ -52,6 +32,25 @@ export function makeAllergyIntollerance({
     type: "allergy",
     category: ["environment"],
     criticality: "low",
+    reaction: [
+      {
+        manifestation: [
+          {
+            coding: [
+              {
+                system: "http://snomed.info/sct",
+                code: "271807003",
+                display: "Eruption of skin (disorder)",
+              },
+            ],
+            text: "Eruption of skin (disorder)",
+          },
+        ],
+        substance: {
+          text: "Pollen",
+        },
+      },
+    ],
     code: {
       coding: [
         {

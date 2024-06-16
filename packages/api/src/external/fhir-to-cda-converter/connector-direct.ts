@@ -9,8 +9,9 @@ export class FhirToCdaConverterDirect implements FhirToCdaConverter {
     docId,
     organization,
     bundle,
+    orgOid,
   }: FhirToCdaConverterRequest): Promise<void> {
-    const converted = convertFhirBundleToCda(bundle);
+    const converted = convertFhirBundleToCda(bundle, orgOid);
     await uploadCdaDocuments({
       cxId,
       patientId,

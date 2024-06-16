@@ -12,6 +12,12 @@ export { Sleep } from "./devices/models/sleep";
 export { User } from "./devices/models/user";
 
 // Medical API
+export {
+  WebhookRequestParsingFailure,
+  WebhookRequest,
+  WebhookRequestStatus,
+  WebhookType,
+} from "@metriport/shared/medical";
 export { MetriportMedicalApi } from "./medical/client/metriport";
 export { Address, addressSchema } from "./medical/models/common/address";
 export { BaseUpdate, baseUpdateSchema } from "./medical/models/common/base-update";
