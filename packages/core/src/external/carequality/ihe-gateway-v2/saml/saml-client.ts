@@ -7,6 +7,8 @@ import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { MetriportError } from "../../../../util/error/metriport-error";
 import { createMtomContentTypeAndPayload } from "../outbound/xca/mtom/builder";
+import { executeWithNetworkRetries } from "@metriport/shared";
+
 import {
   parseMtomResponse,
   getBoundaryFromMtomResponse,
@@ -76,15 +78,24 @@ export async function sendSignedXml({
     secureOptions: constants.SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION,
   });
 
-  const response = await axios.post(url, signedXml, {
-    timeout: 120000,
-    headers: {
-      "Content-Type": "application/soap+xml;charset=UTF-8",
-      Accept: "application/soap+xml",
-      "Cache-Control": "no-cache",
+  const response = await executeWithNetworkRetries(
+    async () => {
+      return axios.post(url, signedXml, {
+        timeout: 120000,
+        headers: {
+          "Content-Type": "application/soap+xml;charset=UTF-8",
+          Accept: "application/soap+xml",
+          "Cache-Control": "no-cache",
+        },
+        httpsAgent: agent,
+      });
     },
-    httpsAgent: agent,
-  });
+    {
+      initialDelay: 3000,
+      maxAttempts: 3,
+      httpCodesToRetry: ["ECONNREFUSED", "ECONNRESET", "ETIMEDOUT"],
+    }
+  );
 
   return { response: response.data, contentType: response.headers["content-type"] };
 }
@@ -112,16 +123,25 @@ export async function sendSignedXmlMtom({
   });
 
   const { contentType, payload } = createMtomContentTypeAndPayload(signedXml);
-  const response = await axios.post(url, payload, {
-    timeout: timeout,
-    headers: {
-      "Accept-Encoding": "gzip, deflate",
-      "Content-Type": contentType,
-      "Cache-Control": "no-cache",
+  const response = await executeWithNetworkRetries(
+    async () => {
+      return axios.post(url, payload, {
+        timeout: timeout,
+        headers: {
+          "Accept-Encoding": "gzip, deflate",
+          "Content-Type": contentType,
+          "Cache-Control": "no-cache",
+        },
+        httpsAgent: agent,
+        responseType: "arraybuffer",
+      });
     },
-    httpsAgent: agent,
-    responseType: "arraybuffer",
-  });
+    {
+      initialDelay: 3000,
+      maxAttempts: 3,
+      httpCodesToRetry: ["ECONNREFUSED", "ECONNRESET", "ETIMEDOUT"],
+    }
+  );
 
   const binaryData: Buffer = Buffer.isBuffer(response.data)
     ? response.data

@@ -195,6 +195,7 @@ export function isRetryable(outboundResponse: OutboundDocumentRetrievalResp | un
     outboundResponse.operationOutcome?.issue.some(
       issue =>
         issue.severity === "error" &&
+        issue.code !== "http-error" &&
         !knownNonRetryableErrors.some(
           nonRetryableError =>
             "text" in issue.details && issue.details.text.includes(nonRetryableError)

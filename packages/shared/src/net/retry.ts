@@ -12,6 +12,7 @@ export type ExecuteWithHttpRetriesOptions = Omit<
 > & {
   /** The network error codes to retry. See `defaultOptions` for defaults. */
   httpCodesToRetry: NetworkError[];
+  httpStatusCodesToRetry: number[];
 };
 
 const defaultOptions: ExecuteWithHttpRetriesOptions = {
@@ -21,6 +22,7 @@ const defaultOptions: ExecuteWithHttpRetriesOptions = {
     "ECONNREFUSED", // (Connection refused): No connection could be made because the target machine actively refused it. This usually results from trying to connect to a service that is inactive on the foreign host.
     "ECONNRESET", //  (Connection reset by peer): A connection was forcibly closed by a peer. This normally results from a loss of the connection on the remote socket due to a timeout or reboot. Commonly encountered via the http and net modules.
   ],
+  httpStatusCodesToRetry: [429], // 429 Too Many Requests
 };
 
 /**
@@ -44,14 +46,19 @@ export async function executeWithNetworkRetries<T>(
   options?: Partial<ExecuteWithHttpRetriesOptions>
 ): Promise<T> {
   const actualOptions = { ...defaultOptions, ...options };
-  const { httpCodesToRetry } = actualOptions;
+  const { httpCodesToRetry, httpStatusCodesToRetry } = actualOptions;
   const codesAsString = httpCodesToRetry.map(String);
   return executeWithRetries(fn, {
     ...actualOptions,
     shouldRetry: (_, error: unknown) => {
       const networkCode = axios.isAxiosError(error) ? error.code : undefined;
-      if (!networkCode) return false;
-      return codesAsString.includes(networkCode);
+      const networkStatus = axios.isAxiosError(error) ? error.response?.status : undefined;
+      if (!networkCode && !networkStatus) return false;
+      return (
+        (networkCode && codesAsString.includes(networkCode)) ||
+        (networkStatus && httpStatusCodesToRetry.includes(networkStatus)) ||
+        false
+      );
     },
   });
 }
