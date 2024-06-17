@@ -45,7 +45,7 @@
     "lodash": "^4.17.21",
     "nanoid": "^3.3.6",
     "node-fetch": "^2.6.12",
-    "pg": "^8.11.3",
+    "pg": "^8.12.0",
     "pkijs": "^3.0.16",
     "posthog-node": "^4.0.1",
     "puppeteer-core": "18.0.5",

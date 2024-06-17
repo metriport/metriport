@@ -4,6 +4,7 @@ import {
   OutboundPatientDiscoveryReq,
   OutboundPatientDiscoveryResp,
 } from "@metriport/ihe-gateway-sdk";
+
 import { executeWithNetworkRetries } from "@metriport/shared";
 import axios from "axios";
 import { capture } from "../../../util/notifications";
@@ -16,7 +17,11 @@ import { sendSignedDRRequests } from "./outbound/xca/send/dr-requests";
 import { createAndSignBulkXCPDRequests } from "./outbound/xcpd/create/iti55-envelope";
 import { processXCPDResponse } from "./outbound/xcpd/process/xcpd-response";
 import { sendSignedXCPDRequests } from "./outbound/xcpd/send/xcpd-requests";
+import { errorToString } from "../../../util/error/shared";
 import { SamlCertsAndKeys } from "./saml/security/types";
+import { out } from "../../../util/log";
+
+const { log } = out("IHE Gateway V2");
 
 export async function createSignSendProcessXCPDRequest({
   pdResponseUrl,
@@ -49,6 +54,8 @@ export async function createSignSendProcessXCPDRequest({
     try {
       await executeWithNetworkRetries(async () => axios.post(pdResponseUrl, result));
     } catch (error) {
+      const errorString = errorToString(error);
+      log(errorString);
       capture.error("Failed to send PD response to Internal Carequality Endpoint", {
         extra: {
           cxId,
@@ -93,12 +100,15 @@ export async function createSignSendProcessDQRequests({
     try {
       await executeWithNetworkRetries(async () => axios.post(dqResponseUrl, result));
     } catch (error) {
+      const errorString = errorToString(error);
+      log(errorString);
       capture.error("Failed to send DQ response to Internal Carequality Endpoint", {
         extra: {
           cxId,
           patientId,
           error,
           result,
+          dqRequestsGatewayV2,
         },
       });
     }
@@ -139,12 +149,15 @@ export async function createSignSendProcessDRRequests({
     try {
       await executeWithNetworkRetries(async () => axios.post(drResponseUrl, result));
     } catch (error) {
+      const errorString = errorToString(error);
+      log(errorString);
       capture.error("Failed to send DR response to Internal Carequality Endpoint", {
         extra: {
           cxId,
           patientId,
           error,
           result,
+          drRequestsGatewayV2,
         },
       });
     }

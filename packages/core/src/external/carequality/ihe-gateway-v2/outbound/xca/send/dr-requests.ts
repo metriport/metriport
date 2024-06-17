@@ -1,6 +1,5 @@
 import { XCAGateway, OutboundDocumentRetrievalReq } from "@metriport/ihe-gateway-sdk";
 import { errorToString } from "../../../../../../util/error/shared";
-import { capture } from "../../../../../../util/notifications";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
 import { getTrustedKeyStore, sendSignedXmlMtom } from "../../../saml/saml-client";
 import { MtomAttachments } from "../mtom/parser";
@@ -9,7 +8,6 @@ import { out } from "../../../../../../util/log";
 import { storeDrResponses } from "../../../monitor/store";
 
 const { log } = out("Sending DR Requests");
-const context = "ihe-gateway-v2-dr-saml-client";
 
 export type DrSamlClientResponse = {
   gateway: XCAGateway;
@@ -55,30 +53,14 @@ export async function sendSignedDRRequests({
       };
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      const msg = "HTTP/SSL Failure Sending Signed DR SAML Request";
-      log(
-        `${msg}, cxId: ${cxId}, patientId: ${patientId}, gateway: ${request.gateway.homeCommunityId}, error: ${error}`
-      );
-      if (error?.response?.data) {
-        const errorDetails = Buffer.isBuffer(error?.response?.data)
-          ? error.response.data.toString("utf-8")
-          : JSON.stringify(error?.response?.data);
-        log(`error details: ${errorDetails}`);
-      }
-
+      const msg = "Error sending signed DR SAML request";
       const errorString: string = errorToString(error);
-      const extra = {
-        errorString,
-        request,
-        patientId,
-        cxId,
-      };
-      capture.error(msg, {
-        extra: {
-          context,
-          ...extra,
-        },
-      });
+      const errorDetails = error?.response?.data
+        ? `, error details: ${JSON.stringify(error.response.data)}`
+        : "";
+      log(
+        `${msg}, cxId: ${cxId}, patientId: ${patientId}, gateway: ${request.gateway.homeCommunityId}, error: ${errorString}${errorDetails}`
+      );
       return {
         gateway: request.gateway,
         outboundRequest: request.outboundRequest,
