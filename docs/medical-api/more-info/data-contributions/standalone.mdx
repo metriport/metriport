@@ -1,0 +1,82 @@
+```json
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "resource": {
+        "id": "<practitioner-resource-id>",
+        "resourceType": "Practitioner",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-npi",
+            "value": "1234567893"
+          }
+        ],
+        "name": [
+          {
+            "family": "Therapist",
+            "given": ["Tim"]
+          }
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "+15559586545"
+          },
+          {
+            "system": "email",
+            "value": "tim.therapist@example.com"
+          }
+        ],
+        "address": [
+          {
+            "line": ["922 Anna Squares", "Apt. 594"],
+            "city": "Bartlettmouth",
+            "state": "MI",
+            "postalCode": "28131-1367",
+            "country": "USA"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "id": "457eb867-9256-4613-986f-612c455327c3",
+        "resourceType": "Encounter",
+        "status": "finished",
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "VR",
+          "display": "virtual"
+        },
+        "serviceType": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/service-type",
+                "code": "138",
+                "display": "Mental Health Inpatient Services"
+              }
+            ]
+          }
+        ],
+        "subject": {
+          "reference": "Patient/32628128-0d0d-485f-b3c9-7fb61a328064"
+        },
+        "participant": [
+          {
+            "individual": {
+              "reference": "Practitioner/<practitioner-resource-id>"
+            }
+          }
+        ],
+        "period": {
+          "start": "2024-05-15T09:03:00.000Z",
+          "end": "2025-01-09T15:25:00.000Z"
+        }
+      }
+    }
+  ]
+}
+```

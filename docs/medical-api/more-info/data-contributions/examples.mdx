@@ -1,0 +1,347 @@
+---
+title: "Data Contributions Examples"
+description: "Examples below will guide you with your data contributions"
+---
+
+### DiagnosticReport
+
+```json
+{
+  "resource": {
+    "resourceType": "DiagnosticReport",
+    "id": "<report-uuid>",
+    "identifier": [
+      {
+        "system": "<opt-company-id>",
+        "value": "<opt-id>"
+      }
+    ],
+    "status": "final",
+    "code": {
+      "text": "Progress Notes",
+      "coding": [{ "code": "11506-3", "display": "Progress note", "system": "http://loinc.org" }]
+    },
+    "effectiveDateTime": "2024-06-01T11:21:35.000Z",
+    "presentedForm": [
+      {
+        "contentType": "text/plain",
+        "data": "MjAyNC0wNi0wMQoKIyBDaGllZiBDb21wbGFpbnQKUGFpbiBpbiB0aGUgbmVjawoKIyBIaXN0b3J5IG9mIFByZXNlbnQgSWxsbmVzcwpKb2huIERvZSBpcyBhIDU1IHllYXItb2xkIG5vbmhpc3BhbmljIHdoaXRlIG1hbGUsIHdobyBoZWFkYmFuZ3MgdG8gU2xheWVyIGFsbCBkYXkuCgojIFNvY2lhbCBIaXN0b3J5ClBhdGllbnQgaGFzIG5ldmVyIHNtb2tlZC4KUGF0aWVudCBjb21lcyBmcm9tIGEgbWlkZGxlIHNvY2lvZWNvbm9taWMgYmFja2dyb3VuZC4KCiMgQWxsZXJnaWVzCk5vIEtub3duIEFsbGVyZ2llcy4KCiMgTWVkaWNhdGlvbnMKTm8gQWN0aXZlIE1lZGljYXRpb25zLgoKCg===="
+      }
+    ],
+    "subject": { "reference": "Patient/<patient-uuid>" },
+    "performer": [{ "reference": "Practitioner/<practitioner-uuid>" }],
+    "result": [{ "reference": "Observation/<observation-uuid>" }]
+  }
+}
+```
+
+### Observation (categories: laboratory/vital-signs/survey/social-history)
+
+#### Social-History (Social Determinants of Health Questionnaire (SDOH))
+
+```json
+{
+  "resource": {
+    "resourceType": "Observation",
+    "id": "22aada8f-98ff-e551-8329-e48ec92ea758",
+    "meta": {
+      "profile": [
+        "http://hl7.org/fhir/us/core/StructureDefinition/us-core-observation-sdoh-assessment",
+        "http://hl7.org/fhir/us/core/StructureDefinition/us-core-observation-survey"
+      ]
+    },
+    "status": "final",
+    "category": [
+      {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+            "code": "social-history",
+            "display": "Social History"
+          }
+        ]
+      }
+    ],
+    "code": {
+      "coding": [
+        {
+          "system": "http://loinc.org",
+          "code": "LG51306-5",
+          "display": "SDOH"
+        }
+      ],
+      "text": "Social determinants of health"
+    },
+    "valueCodeableConcept": {
+      "coding": [
+        {
+          "code": "score",
+          "display": "Low risk",
+          "system": "2.16.840.1.113883.5.83"
+        }
+      ],
+      "text": "Low risk"
+    },
+    "subject": { "reference": "Patient/018ef2b1-a952-7a43-9124-7a86f10b9d78" },
+    "encounter": { "reference": "Encounter/90170bdf-3029-49d9-ba31-48c942bf3799" },
+    "effectiveDateTime": "2012-07-23T17:16:00.000Z",
+    "issued": "2012-07-23T17:16:00.324-07:00",
+    "interpretation": [
+      {
+        "coding": [
+          {
+            "code": "L",
+            "display": "Low risk",
+            "system": "2.16.840.1.113883.5.83"
+          }
+        ],
+        "text": "Low risk"
+      }
+    ],
+    "component": [
+      {
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "71802-3",
+              "display": "What is your living situation today?"
+            }
+          ],
+          "text": "What is your living situation today?"
+        },
+        "valueCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "LA31993-1",
+              "display": "I have a steady place to live"
+            }
+          ],
+          "text": "I have a steady place to live"
+        },
+        "interpretation": [
+          {
+            "coding": [
+              {
+                "code": "score",
+                "display": "0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "96778-6",
+              "display": "Think about the place you live. Do you have problems with any of the following?"
+            }
+          ],
+          "text": "Think about the place you live. Do you have problems with any of the following?"
+        },
+        "valueCodeableConcept": {
+          "coding": [
+            { "system": "http://loinc.org", "code": "LA9-3", "display": "None of the above" }
+          ],
+          "text": "None of the above"
+        },
+        "interpretation": [
+          {
+            "coding": [
+              {
+                "code": "score",
+                "display": "0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "88122-7",
+              "display": "Within the past 12 months, you worried that your food would run out before you got money to buy more."
+            }
+          ],
+          "text": "Within the past 12 months, you worried that your food would run out before you got money to buy more."
+        },
+        "valueCodeableConcept": {
+          "coding": [
+            { "system": "http://loinc.org", "code": "LA28398-8", "display": "Never true" }
+          ],
+          "text": "Never true"
+        },
+        "interpretation": [
+          {
+            "coding": [
+              {
+                "code": "score",
+                "display": "0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "88123-5",
+              "display": "Within the past 12 months, the food you bought just didn't last and you didn't have money to get more."
+            }
+          ],
+          "text": "Within the past 12 months, the food you bought just didn't last and you didn't have money to get more."
+        },
+        "valueCodeableConcept": {
+          "coding": [
+            { "system": "http://loinc.org", "code": "LA28398-8", "display": "Never true" }
+          ],
+          "text": "Never true"
+        },
+        "interpretation": [
+          {
+            "coding": [
+              {
+                "code": "score",
+                "display": "0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "93030-5",
+              "display": "In the past 12 months, has lack of transportation kept you from medical appointments, meetings, work, or from getting things needed for daily living?"
+            }
+          ],
+          "text": "In the past 12 months, has lack of transportation kept you from medical appointments, meetings, work, or from getting things needed for daily living?"
+        },
+        "valueCodeableConcept": {
+          "coding": [{ "system": "http://loinc.org", "code": "LA32-8", "display": "No" }],
+          "text": "No"
+        },
+        "interpretation": [
+          {
+            "coding": [
+              {
+                "code": "score",
+                "display": "0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "96779-4",
+              "display": "In the past 12 months has the electric, gas, oil, or water company threatened to shut off services in your home?"
+            }
+          ],
+          "text": "In the past 12 months has the electric, gas, oil, or water company threatened to shut off services in your home?"
+        },
+        "valueCodeableConcept": {
+          "coding": [{ "system": "http://loinc.org", "code": "LA32-8", "display": "No" }],
+          "text": "No"
+        },
+        "interpretation": [
+          {
+            "coding": [
+              {
+                "code": "score",
+                "display": "0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": {
+          "coding": [
+            { "system": "http://loinc.org", "code": "54899-0", "display": "Preferred language" }
+          ],
+          "text": "Preferred language"
+        },
+        "valueCodeableConcept": {
+          "coding": [{ "system": "http://loinc.org", "code": "LA43-5", "display": "English" }],
+          "text": "English"
+        }
+      }
+    ]
+  }
+}
+```
+
+- MedicationStatement
+- Medication
+- Condition
+- AllergyIntolerance
+- Location
+- Immunization
+- FamilyMemberHistory
+
+```json
+{
+  "resource": {
+    "resourceType": "Composition",
+    "status": "final",
+    "type": {
+      "coding": [
+        {
+          "code": "11506-3",
+          "display": "Subsequent evaluation note",
+          "system": "http://loinc.org"
+        }
+      ]
+    },
+    "date": "2024-06-01T11:55:00.000Z",
+    "title": "Encounter Summary",
+    "event": [{ "period": { "start": "2024-06-01T11:40:00.000Z" } }],
+    "section": [
+      {
+        "title": "Results",
+        "mode": "snapshot",
+        "entry": [
+          // References to any number of resources you want to include into the C-CDA document
+          {
+            "reference": "Encounter/<encompassing-encounter-id>",
+            "display": "Encounter 1"
+          },
+          {
+            "reference": "Encounter/<encounter-id>",
+            "display": "Encounter 2"
+          },
+          {
+            "reference": "DiagnosticReport/<diagnosticreport-id>",
+            "display": "DiagnosticReport 1"
+          },
+          {
+            "reference": "Observation/<observation1-id>",
+            "display": "Observation 1"
+          }
+          // and so on...
+        ]
+      }
+    ],
+    // These must be included
+    "subject": { "reference": "Patient/<patient-id>" },
+    "encounter": { "reference": "Encounter/<encompassing-encounter-id>" },
+    "author": [
+      { "reference": "Organization/<organization-id>" },
+      { "reference": "Practitioner/<practitioner-id>" }
+    ]
+  }
+}
+```

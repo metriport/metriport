@@ -1,9 +1,11 @@
 ---
 title: "Composition"
-description: "A set of healthcare-related information that is assembled together into a single logical package that provides a single coherent statement of meaning, establishes its own context and that has clinical attestation with regard to who is making the statement. A Composition defines the structure and narrative content necessary for a document. However, a Composition alone does not constitute a document. Rather, the Composition must be the first entry in a Bundle where Bundle.type=document, and any other resources referenced from Composition must be included as subsequent entries in the Bundle (for example Patient, Practitioner, Encounter, etc.)."
+description: "A logical assembly of FHIR resources that together constitute a logical package necessary for a document"
 ---
 
-We expect the composition to follow this pattern:
+A set of healthcare-related information that is assembled together into a single logical package that provides a single coherent statement of meaning, establishes its own context and that has clinical attestation with regard to who is making the statement. A Composition defines the structure and narrative content necessary for a document. However, a Composition alone does not constitute a document. Rather, the Composition must be the first entry in a Bundle where Bundle.type=document, and any other resources referenced from Composition must be included as subsequent entries in the Bundle (for example Patient, Practitioner, Encounter, etc.).
+
+Below is a simple example of a Composition resource that's aimed to specify the **required** fields for the creation of any CDA:
 
 ```json
 {
@@ -19,38 +21,23 @@ We expect the composition to follow this pattern:
         }
       ]
     },
-    "date": "2024-05-16T09:00:00.000Z",
+    "date": "2024-06-01T11:55:00.000Z",
     "title": "Encounter Summary",
-    "event": [{ "period": { "start": "2024-05-16T08:40:00.000Z" } }],
+    "event": [{ "period": { "start": "2024-06-01T11:40:00.000Z" } }],
     "section": [
       {
         "title": "Results",
-        "text": {
-          "status": "generated",
-          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Results</div>"
-        },
         "mode": "snapshot",
         "entry": [
-          // References to any number of resources you want to include into the C-CDA document
           {
-            "reference": "DiagnosticReport/<diagnosticreport-id>",
-            "display": "Report 1"
-          },
-          {
-            "reference": "Observation/<observation1-id>",
-            "display": "Observation 1"
-          },
-          {
-            "reference": "Observation/<observation2-id>",
-            "display": "Observation 2"
-          },
-          and so on...
+            "reference": "Encounter/<encompassing-encounter-id>",
+            "display": "Encounter 1"
+          }
         ]
       }
     ],
-    // These must be included
     "subject": { "reference": "Patient/<patient-id>" },
-    "encounter": { "reference": "Encounter/<encounter-id>" },
+    "encounter": { "reference": "Encounter/<encompassing-encounter-id>" },
     "author": [
       { "reference": "Organization/<organization-id>" },
       { "reference": "Practitioner/<practitioner-id>" }
@@ -58,3 +45,48 @@ We expect the composition to follow this pattern:
   }
 }
 ```
+
+Here's a breakdown of fields:
+
+<Expandable title="Composition Resource Basic Structure">
+ <ParamField body="resourceType" type="string" required>
+    Must be .
+  </ParamField>
+
+<ParamField body="type" type="string" required>
+  The coding inside type should specify the type of medical document. Can be one of Procedure Note,
+  History and Physical, Operative Note, Progress Note, Discharge Summary, Medical Imaging, or
+  Transfer Summary.
+</ParamField>
+
+<ParamField body="date" type="string" required>
+  The date when the document was constructed. Must be in the this format: `YYYY-MM-DD` or
+  `YYYY-MM-DDTHH:mm:ss.000Z`, where Z indicates UTC timezone.
+</ParamField>
+
+<ParamField body="title" type="string" required>
+  The title of the document. Can be Clinical Summary, Encounter Summary...
+</ParamField>
+
+<ParamField body="event" type="string" required>
+  Specifies the start time of the event.
+</ParamField>
+
+<ParamField body="section" type="array" required>
+  Specifies the start time of the event.
+</ParamField>
+
+<ParamField body="subject" type="array" required>
+  Reference to the patient that the document is about.
+</ParamField>
+
+<ParamField body="encounter" type="array" required>
+  Reference to the main encounter that lead to the generation of this document.
+</ParamField>
+
+<ParamField body="author" type="array" required>
+  Reference to the parties involved in the creation of this document. Includes the organization and
+  the practitioner.
+</ParamField>
+
+</Expandable>
