@@ -1,21 +1,22 @@
-import axios from "axios";
 import {
-  OutboundPatientDiscoveryReq,
-  OutboundPatientDiscoveryResp,
   OutboundDocumentQueryReq,
   OutboundDocumentRetrievalReq,
+  OutboundPatientDiscoveryReq,
+  OutboundPatientDiscoveryResp,
 } from "@metriport/ihe-gateway-sdk";
-import { SamlCertsAndKeys } from "./saml/security/types";
-import { createAndSignBulkXCPDRequests } from "./outbound/xcpd/create/iti55-envelope";
+import { executeWithNetworkRetries } from "@metriport/shared";
+import axios from "axios";
+import { capture } from "../../../util/notifications";
 import { createAndSignBulkDQRequests } from "./outbound/xca/create/iti38-envelope";
 import { createAndSignBulkDRRequests } from "./outbound/xca/create/iti39-envelope";
-import { sendSignedXCPDRequests } from "./outbound/xcpd/send/xcpd-requests";
-import { sendSignedDQRequests } from "./outbound/xca/send/dq-requests";
-import { sendSignedDRRequests } from "./outbound/xca/send/dr-requests";
-import { processXCPDResponse } from "./outbound/xcpd/process/xcpd-response";
 import { processDQResponse } from "./outbound/xca/process/dq-response";
 import { processDrResponse } from "./outbound/xca/process/dr-response";
-import { capture } from "../../../util/notifications";
+import { sendSignedDQRequests } from "./outbound/xca/send/dq-requests";
+import { sendSignedDRRequests } from "./outbound/xca/send/dr-requests";
+import { createAndSignBulkXCPDRequests } from "./outbound/xcpd/create/iti55-envelope";
+import { processXCPDResponse } from "./outbound/xcpd/process/xcpd-response";
+import { sendSignedXCPDRequests } from "./outbound/xcpd/send/xcpd-requests";
+import { SamlCertsAndKeys } from "./saml/security/types";
 
 export async function createSignSendProcessXCPDRequest({
   pdResponseUrl,
@@ -46,10 +47,12 @@ export async function createSignSendProcessXCPDRequest({
   });
   for (const result of results) {
     try {
-      await axios.post(pdResponseUrl, result);
+      await executeWithNetworkRetries(async () => axios.post(pdResponseUrl, result));
     } catch (error) {
       capture.error("Failed to send PD response to Internal Carequality Endpoint", {
         extra: {
+          cxId,
+          patientId,
           error,
           result,
         },
@@ -88,10 +91,12 @@ export async function createSignSendProcessDQRequests({
   });
   for (const result of results) {
     try {
-      await axios.post(dqResponseUrl, result);
+      await executeWithNetworkRetries(async () => axios.post(dqResponseUrl, result));
     } catch (error) {
       capture.error("Failed to send DQ response to Internal Carequality Endpoint", {
         extra: {
+          cxId,
+          patientId,
           error,
           result,
         },
@@ -132,10 +137,12 @@ export async function createSignSendProcessDRRequests({
   );
   for (const result of results) {
     try {
-      await axios.post(drResponseUrl, result);
+      await executeWithNetworkRetries(async () => axios.post(drResponseUrl, result));
     } catch (error) {
       capture.error("Failed to send DR response to Internal Carequality Endpoint", {
         extra: {
+          cxId,
+          patientId,
           error,
           result,
         },

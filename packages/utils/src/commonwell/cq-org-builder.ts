@@ -119,7 +119,11 @@ export async function main() {
 }
 
 async function getInfo(url: string) {
-  return executeWithRetries(() => axios.get(url), 5, 500);
+  return executeWithRetries(() => axios.get(url), {
+    maxAttempts: 6,
+    initialDelay: 500,
+    backoffMultiplier: 0, // no backoff
+  });
 }
 
 async function getOrgStatesFromSequoia(orgOID: string): Promise<string[]> {
