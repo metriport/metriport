@@ -2,7 +2,7 @@ import { XCAGateway, OutboundDocumentRetrievalReq } from "@metriport/ihe-gateway
 import { errorToString } from "../../../../../../util/error/shared";
 import { capture } from "../../../../../../util/notifications";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
-import { getTrustedKeyStore, sendSignedXmlMtom } from "../../../saml/saml-client";
+import { sendSignedXmlMtom } from "../../../saml/saml-client";
 import { MtomAttachments } from "../mtom/parser";
 import { SignedDrRequest } from "../create/iti39-envelope";
 import { out } from "../../../../../../util/log";
@@ -24,14 +24,15 @@ export async function sendSignedDrRequest({
   patientId,
   cxId,
   index,
+  trustedKeyStore,
 }: {
   request: SignedDrRequest;
   samlCertsAndKeys: SamlCertsAndKeys;
   patientId: string;
   cxId: string;
   index: number;
+  trustedKeyStore: string;
 }): Promise<DrSamlClientResponse> {
-  const trustedKeyStore = await getTrustedKeyStore();
   try {
     const { mtomParts, rawResponse } = await sendSignedXmlMtom({
       signedXml: request.signedRequest,

@@ -25,7 +25,10 @@ import { sendProcessRetryDrRequest } from "@metriport/core/external/carequality/
 import { setS3UtilsInstance as setS3UtilsInstanceForStoringDrResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
 import { setS3UtilsInstance as setS3UtilsInstanceForStoringIheResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/monitor/store";
 import { Config } from "@metriport/core/util/config";
-import { setRejectUnauthorized } from "@metriport/core/external/carequality/ihe-gateway-v2/saml/saml-client";
+import {
+  setRejectUnauthorized,
+  getTrustedKeyStore,
+} from "@metriport/core/external/carequality/ihe-gateway-v2/saml/saml-client";
 import { MockS3Utils } from "./mock-s3";
 
 /** 
@@ -165,6 +168,7 @@ async function XcpdIntegrationTest() {
   let failureCount = 0;
   let runTimeErrorCount = 0;
 
+  const trustedKeyStore = await getTrustedKeyStore();
   console.log("Querrying DB for Xcpds...");
   const results = await queryDatabaseForXcpds();
   console.log("Sending Xcpds...");
@@ -188,7 +192,7 @@ async function XcpdIntegrationTest() {
       principalCareProviderIds: [""],
     };
     try {
-      const xcpdResponse = await queryXcpd(xcpdRequest);
+      const xcpdResponse = await queryXcpd(xcpdRequest, trustedKeyStore);
       return { xcpdRequest, xcpdResponse };
     } catch (error) {
       console.error("Runtime error:", error);
@@ -232,6 +236,7 @@ async function DQIntegrationTest() {
   let failureCount = 0;
   let runTimeErrorCount = 0;
 
+  const trustedKeyStore = await getTrustedKeyStore();
   const results = await queryDatabaseForDQs();
   const promises = results.map(async result => {
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -250,7 +255,7 @@ async function DQIntegrationTest() {
       externalGatewayPatient: dqResult.externalGatewayPatient,
     };
     try {
-      const dqResponse = await queryDQ(dqRequest);
+      const dqResponse = await queryDQ(dqRequest, trustedKeyStore);
       return { dqResult, dqResponse };
     } catch (error) {
       console.error("Runtime error:", error);
@@ -293,6 +298,7 @@ async function DRIntegrationTest() {
   let failureCount = 0;
   let runTimeErrorCount = 0;
 
+  const trustedKeyStore = await getTrustedKeyStore();
   console.log("Querrying DB for DQs...");
   const results = await queryDatabaseForDqsFromFailedDrs();
   console.log("Sending DQs and DRs...");
@@ -318,7 +324,7 @@ async function DRIntegrationTest() {
       samlAttributes: samlAttributes,
       externalGatewayPatient: dqResult.externalGatewayPatient,
     };
-    const dqResponse = await queryDQ(dqRequest);
+    const dqResponse = await queryDQ(dqRequest, trustedKeyStore);
     if (!dqResponse.documentReference) {
       console.log("No document references found for DQ: ", dqRequest.id);
       return undefined;
@@ -342,7 +348,7 @@ async function DRIntegrationTest() {
       })),
     };
     try {
-      const drResponse = await queryDR(drRequest);
+      const drResponse = await queryDR(drRequest, trustedKeyStore);
       return { drRequest, drResponse };
     } catch (error) {
       console.error("Runtime error:", error);
@@ -381,7 +387,8 @@ async function DRIntegrationTest() {
 }
 
 async function queryXcpd(
-  xcpdRequest: OutboundPatientDiscoveryReq
+  xcpdRequest: OutboundPatientDiscoveryReq,
+  trustedKeyStore: string
 ): Promise<OutboundPatientDiscoveryResp> {
   try {
     const samlCertsAndKeys = {
@@ -398,6 +405,7 @@ async function queryXcpd(
       samlCertsAndKeys,
       patientId: xcpdRequest.patientId,
       cxId: xcpdRequest.cxId,
+      trustedKeyStore,
     });
 
     return processXCPDResponse({
@@ -409,7 +417,10 @@ async function queryXcpd(
   }
 }
 
-async function queryDQ(dqRequest: OutboundDocumentQueryReq): Promise<OutboundDocumentQueryResp> {
+async function queryDQ(
+  dqRequest: OutboundDocumentQueryReq,
+  trustedKeyStore: string
+): Promise<OutboundDocumentQueryResp> {
   try {
     const samlCertsAndKeys = {
       publicCert: getEnvVarOrFail("CQ_ORG_CERTIFICATE_PRODUCTION"),
@@ -429,11 +440,11 @@ async function queryDQ(dqRequest: OutboundDocumentQueryReq): Promise<OutboundDoc
       patientId: dqRequest.patientId,
       cxId: dqRequest.cxId,
       index: 0,
+      trustedKeyStore,
     });
 
     return processDqResponse({
       response,
-      attempt: 0,
     });
   } catch (error) {
     console.log("Erroring dqRequest", dqRequest);
@@ -442,7 +453,8 @@ async function queryDQ(dqRequest: OutboundDocumentQueryReq): Promise<OutboundDoc
 }
 
 async function queryDR(
-  drRequest: OutboundDocumentRetrievalReq
+  drRequest: OutboundDocumentRetrievalReq,
+  trustedKeyStore: string
 ): Promise<OutboundDocumentRetrievalResp> {
   try {
     const samlCertsAndKeys = {
@@ -464,6 +476,7 @@ async function queryDR(
         patientId: uuidv4(),
         cxId: uuidv4(),
         index,
+        trustedKeyStore,
       });
     });
     const results = await Promise.all(resultPromises);

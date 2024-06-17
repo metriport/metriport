@@ -20,6 +20,7 @@ import { createAndSignBulkXCPDRequests } from "./outbound/xcpd/create/iti55-enve
 import { processXCPDResponse } from "./outbound/xcpd/process/xcpd-response";
 import { sendSignedXCPDRequests } from "./outbound/xcpd/send/xcpd-requests";
 import { SamlCertsAndKeys } from "./saml/security/types";
+import { getTrustedKeyStore } from "./saml/saml-client";
 
 export async function sendProcessRetryDqRequest({
   signedRequest,
@@ -27,12 +28,14 @@ export async function sendProcessRetryDqRequest({
   patientId,
   cxId,
   index,
+  trustedKeyStore,
 }: {
   signedRequest: SignedDqRequest;
   samlCertsAndKeys: SamlCertsAndKeys;
   patientId: string;
   cxId: string;
   index: number;
+  trustedKeyStore: string;
 }): Promise<OutboundDocumentQueryResp> {
   async function sendProcessDqRequest() {
     const response = await sendSignedDqRequest({
@@ -41,6 +44,7 @@ export async function sendProcessRetryDqRequest({
       patientId,
       cxId,
       index,
+      trustedKeyStore,
     });
     return await processDqResponse({
       response,
@@ -60,12 +64,14 @@ export async function sendProcessRetryDrRequest({
   patientId,
   cxId,
   index,
+  trustedKeyStore,
 }: {
   signedRequest: SignedDrRequest;
   samlCertsAndKeys: SamlCertsAndKeys;
   patientId: string;
   cxId: string;
   index: number;
+  trustedKeyStore: string;
 }): Promise<OutboundDocumentRetrievalResp> {
   async function sendProcessDrRequest() {
     const response = await sendSignedDrRequest({
@@ -74,6 +80,7 @@ export async function sendProcessRetryDrRequest({
       patientId,
       cxId,
       index,
+      trustedKeyStore,
     });
     return await processDrResponse({
       response,
@@ -101,11 +108,13 @@ export async function createSignSendProcessXCPDRequest({
   cxId: string;
 }): Promise<void> {
   const signedRequests = createAndSignBulkXCPDRequests(xcpdRequest, samlCertsAndKeys);
+  const trustedKeyStore = await getTrustedKeyStore();
   const responses = await sendSignedXCPDRequests({
     signedRequests,
     samlCertsAndKeys,
     patientId,
     cxId,
+    trustedKeyStore,
   });
   const results: OutboundPatientDiscoveryResp[] = responses.map(response => {
     return processXCPDResponse({
@@ -130,7 +139,7 @@ export async function createSignSendProcessXCPDRequest({
   }
 }
 
-export async function createSignSendProcessDQRequests({
+export async function createSignSendProcessDqRequests({
   dqResponseUrl,
   dqRequestsGatewayV2,
   samlCertsAndKeys,
@@ -148,11 +157,20 @@ export async function createSignSendProcessDQRequests({
     samlCertsAndKeys,
   });
 
+  const trustedKeyStore = await getTrustedKeyStore();
+
   const resultPromises = signedRequests.map(async (signedRequest, index) => {
-    return sendProcessRetryDqRequest({ signedRequest, samlCertsAndKeys, patientId, cxId, index });
+    return sendProcessRetryDqRequest({
+      signedRequest,
+      samlCertsAndKeys,
+      patientId,
+      cxId,
+      index,
+      trustedKeyStore,
+    });
   });
 
-  const results = await Promise.allSettled(resultPromises);
+  const results = await Promise.all(resultPromises);
 
   for (const result of results) {
     try {
@@ -170,7 +188,7 @@ export async function createSignSendProcessDQRequests({
   }
 }
 
-export async function createSignSendProcessDRRequests({
+export async function createSignSendProcessDrRequests({
   drResponseUrl,
   drRequestsGatewayV2,
   samlCertsAndKeys,
@@ -188,11 +206,20 @@ export async function createSignSendProcessDRRequests({
     samlCertsAndKeys,
   });
 
+  const trustedKeyStore = await getTrustedKeyStore();
+
   const resultPromises = signedRequests.map(async (signedRequest, index) => {
-    return sendProcessRetryDrRequest({ signedRequest, samlCertsAndKeys, patientId, cxId, index });
+    return sendProcessRetryDrRequest({
+      signedRequest,
+      samlCertsAndKeys,
+      patientId,
+      cxId,
+      index,
+      trustedKeyStore,
+    });
   });
 
-  const results = await Promise.allSettled(resultPromises);
+  const results = await Promise.all(resultPromises);
 
   for (const result of results) {
     try {

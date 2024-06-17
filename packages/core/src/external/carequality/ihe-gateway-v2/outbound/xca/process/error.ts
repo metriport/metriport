@@ -66,12 +66,10 @@ export async function handleRegistryErrorResponse({
   registryErrorList,
   outboundRequest,
   gateway,
-  attempt,
 }: {
   registryErrorList: RegistryErrorList;
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
-  attempt?: number | undefined;
 }): Promise<OutboundDocumentQueryResp | OutboundDocumentRetrievalResp> {
   const operationOutcome = processRegistryErrorList(registryErrorList, outboundRequest);
   return {
@@ -81,7 +79,6 @@ export async function handleRegistryErrorResponse({
     responseTimestamp: dayjs().toISOString(),
     gateway,
     operationOutcome,
-    retried: attempt,
     iheGatewayV2: true,
   };
 }
@@ -126,12 +123,10 @@ export async function handleEmptyResponse({
   outboundRequest,
   gateway,
   text = "No documents found",
-  attempt,
 }: {
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
   text?: string;
-  attempt?: number | undefined;
 }): Promise<OutboundDocumentQueryResp | OutboundDocumentRetrievalResp> {
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
@@ -153,7 +148,6 @@ export async function handleEmptyResponse({
     responseTimestamp: dayjs().toISOString(),
     gateway,
     operationOutcome,
-    retried: attempt,
     iheGatewayV2: true,
   };
 }
@@ -161,12 +155,10 @@ export async function handleEmptyResponse({
 export async function handleSchemaErrorResponse({
   outboundRequest,
   gateway,
-  attempt,
   text = "Schema Error",
 }: {
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
-  attempt?: number | undefined;
   text?: string;
 }): Promise<OutboundDocumentQueryResp | OutboundDocumentRetrievalResp> {
   const operationOutcome: OperationOutcome = {
@@ -189,7 +181,6 @@ export async function handleSchemaErrorResponse({
     responseTimestamp: dayjs().toISOString(),
     gateway,
     operationOutcome,
-    retried: attempt,
     iheGatewayV2: true,
   };
 }

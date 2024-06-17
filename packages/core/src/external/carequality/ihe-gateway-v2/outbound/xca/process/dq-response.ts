@@ -115,7 +115,8 @@ function parseDocumentReference({
     return undefined;
   }
 
-  const creationTime = String(findSlotValue("creationTime"));
+  const creationTimeValue = findSlotValue("creationTime");
+  const creationTime = creationTimeValue ? String(creationTimeValue) : undefined;
 
   const documentReference: DocumentReference = {
     homeCommunityId: getHomeCommunityIdForDr(extrinsicObject),
@@ -135,12 +136,10 @@ async function handleSuccessResponse({
   extrinsicObjects,
   outboundRequest,
   gateway,
-  attempt,
 }: {
   extrinsicObjects: ExtrinsicObject[];
   outboundRequest: OutboundDocumentQueryReq;
   gateway: XCAGateway;
-  attempt?: number | undefined;
 }): Promise<OutboundDocumentQueryResp> {
   const documentReferences = extrinsicObjects.flatMap(
     extrinsicObject => parseDocumentReference({ extrinsicObject, outboundRequest }) ?? []
@@ -154,7 +153,6 @@ async function handleSuccessResponse({
     gateway,
     documentReference: documentReferences,
     externalGatewayPatient: outboundRequest.externalGatewayPatient,
-    retried: attempt,
     iheGatewayV2: true,
   };
   return response;
@@ -162,10 +160,8 @@ async function handleSuccessResponse({
 
 export function processDqResponse({
   response: { response, success, gateway, outboundRequest },
-  attempt,
 }: {
   response: DQSamlClientResponse;
-  attempt?: number | undefined;
 }): Promise<OutboundDocumentQueryResp> {
   if (success === false) {
     return Promise.resolve(
@@ -173,7 +169,6 @@ export function processDqResponse({
         httpError: response,
         outboundRequest,
         gateway: gateway,
-        attempt,
       })
     );
   }
@@ -199,20 +194,17 @@ export function processDqResponse({
         extrinsicObjects: toArray(extrinsicObjects),
         outboundRequest,
         gateway,
-        attempt,
       });
     } else if (registryErrorList) {
       return handleRegistryErrorResponse({
         registryErrorList,
         outboundRequest,
         gateway,
-        attempt,
       });
     } else {
       return handleEmptyResponse({
         outboundRequest,
         gateway,
-        attempt,
       });
     }
   } catch (error) {
@@ -221,7 +213,6 @@ export function processDqResponse({
       outboundRequest,
       gateway,
       text: errorToString(error),
-      attempt,
     });
   }
 }

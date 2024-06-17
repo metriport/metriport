@@ -150,13 +150,11 @@ async function handleSuccessResponse({
   outboundRequest,
   gateway,
   mtomResponse,
-  attempt,
 }: {
   documentResponses: DocumentResponse[];
   outboundRequest: OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
   mtomResponse: MtomAttachments;
-  attempt?: number | undefined;
 }): Promise<OutboundDocumentRetrievalResp> {
   try {
     const idMapping = generateIdMapping(outboundRequest.documentReference);
@@ -173,7 +171,6 @@ async function handleSuccessResponse({
       responseTimestamp: dayjs().toISOString(),
       gateway,
       documentReference: documentReferences,
-      retried: attempt,
       iheGatewayV2: true,
     };
     return response;
@@ -184,10 +181,8 @@ async function handleSuccessResponse({
 
 export async function processDrResponse({
   response: { errorResponse, mtomResponse, gateway, outboundRequest },
-  attempt,
 }: {
   response: DrSamlClientResponse;
-  attempt?: number;
 }): Promise<OutboundDocumentRetrievalResp> {
   if (!gateway || !outboundRequest) throw new Error("Missing gateway or outboundRequest");
   if (errorResponse) {
@@ -195,7 +190,6 @@ export async function processDrResponse({
       httpError: errorResponse,
       outboundRequest,
       gateway,
-      attempt,
     });
   }
   if (!mtomResponse) {
@@ -228,20 +222,17 @@ export async function processDrResponse({
         outboundRequest,
         gateway,
         mtomResponse,
-        attempt,
       });
     } else if (registryErrorList) {
       return handleRegistryErrorResponse({
         registryErrorList,
         outboundRequest,
         gateway,
-        attempt,
       });
     } else {
       return handleEmptyResponse({
         outboundRequest,
         gateway,
-        attempt,
       });
     }
   } catch (error) {
@@ -250,7 +241,6 @@ export async function processDrResponse({
       outboundRequest,
       gateway,
       text: errorToString(error),
-      attempt,
     });
   }
 }

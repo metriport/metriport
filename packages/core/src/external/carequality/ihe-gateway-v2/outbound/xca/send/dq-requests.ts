@@ -2,7 +2,7 @@ import { XCAGateway, OutboundDocumentQueryReq } from "@metriport/ihe-gateway-sdk
 import { errorToString } from "../../../../../../util/error/shared";
 import { capture } from "../../../../../../util/notifications";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
-import { getTrustedKeyStore, SamlClientResponse, sendSignedXml } from "../../../saml/saml-client";
+import { SamlClientResponse, sendSignedXml } from "../../../saml/saml-client";
 import { SignedDqRequest } from "../create/iti38-envelope";
 import { out } from "../../../../../../util/log";
 import { storeDqResponse } from "../../../monitor/store";
@@ -21,14 +21,15 @@ export async function sendSignedDqRequest({
   patientId,
   cxId,
   index,
+  trustedKeyStore,
 }: {
   request: SignedDqRequest;
   samlCertsAndKeys: SamlCertsAndKeys;
   patientId: string;
   cxId: string;
   index: number;
+  trustedKeyStore: string;
 }): Promise<DQSamlClientResponse> {
-  const trustedKeyStore = await getTrustedKeyStore();
   try {
     const { response } = await sendSignedXml({
       signedXml: request.signedRequest,
