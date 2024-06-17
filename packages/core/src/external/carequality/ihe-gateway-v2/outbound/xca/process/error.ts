@@ -1,16 +1,16 @@
-import dayjs from "dayjs";
 import {
-  OutboundDocumentQueryReq,
-  OutboundDocumentRetrievalReq,
-  OutboundDocumentQueryResp,
-  OutboundDocumentRetrievalResp,
   OperationOutcome,
+  OutboundDocumentQueryReq,
+  OutboundDocumentQueryResp,
+  OutboundDocumentRetrievalReq,
+  OutboundDocumentRetrievalResp,
   XCAGateway,
 } from "@metriport/ihe-gateway-sdk";
-import { capture } from "../../../../../../util/notifications";
-import { out } from "../../../../../../util/log";
-import { RegistryErrorList, RegistryError } from "./schema";
 import { toArray } from "@metriport/shared";
+import dayjs from "dayjs";
+import { out } from "../../../../../../util/log";
+import { capture } from "../../../../../../util/notifications";
+import { RegistryError, RegistryErrorList } from "./schema";
 
 const { log } = out("XCA Error Handling");
 const knownNonRetryableErrors = ["No active consent for patient id"];
@@ -198,7 +198,8 @@ export async function handleSchemaErrorResponse({
  * Retries if the response has an error that is not in the known non-retryable errors list
  * Will not retry if the response is successful and is not an error.
  */
-export function isRetryable(outboundResponse: OutboundDocumentRetrievalResp): boolean {
+export function isRetryable(outboundResponse: OutboundDocumentRetrievalResp | undefined): boolean {
+  if (!outboundResponse) return false;
   return (
     outboundResponse.operationOutcome?.issue.some(
       issue =>

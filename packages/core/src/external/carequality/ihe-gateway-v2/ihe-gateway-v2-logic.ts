@@ -1,27 +1,24 @@
 import {
   OutboundDocumentQueryReq,
+  OutboundDocumentQueryResp,
   OutboundDocumentRetrievalReq,
+  OutboundDocumentRetrievalResp,
   OutboundPatientDiscoveryReq,
   OutboundPatientDiscoveryResp,
-  OutboundDocumentRetrievalResp,
-  OutboundDocumentQueryResp,
 } from "@metriport/ihe-gateway-sdk";
-import {
-  executeWithNetworkRetries,
-  executeWithRetriesOnResult as executeWithOperationOutcomeRetries,
-} from "@metriport/shared";
+import { executeWithNetworkRetries, executeWithRetries } from "@metriport/shared";
 import axios from "axios";
 import { capture } from "../../../util/notifications";
 import { createAndSignBulkDQRequests, SignedDqRequest } from "./outbound/xca/create/iti38-envelope";
 import { createAndSignBulkDRRequests, SignedDrRequest } from "./outbound/xca/create/iti39-envelope";
-import { sendSignedDqRequest } from "./outbound/xca/send/dq-requests";
-import { sendSignedDrRequest } from "./outbound/xca/send/dr-requests";
 import { processDqResponse } from "./outbound/xca/process/dq-response";
 import { processDrResponse } from "./outbound/xca/process/dr-response";
 import { isRetryable } from "./outbound/xca/process/error";
-import { sendSignedXCPDRequests } from "./outbound/xcpd/send/xcpd-requests";
-import { processXCPDResponse } from "./outbound/xcpd/process/xcpd-response";
+import { sendSignedDqRequest } from "./outbound/xca/send/dq-requests";
+import { sendSignedDrRequest } from "./outbound/xca/send/dr-requests";
 import { createAndSignBulkXCPDRequests } from "./outbound/xcpd/create/iti55-envelope";
+import { processXCPDResponse } from "./outbound/xcpd/process/xcpd-response";
+import { sendSignedXCPDRequests } from "./outbound/xcpd/send/xcpd-requests";
 import { SamlCertsAndKeys } from "./saml/security/types";
 
 export async function sendProcessRetryDqRequest({
@@ -50,10 +47,10 @@ export async function sendProcessRetryDqRequest({
     });
   }
 
-  return await executeWithOperationOutcomeRetries(sendProcessDqRequest, {
+  return await executeWithRetries(sendProcessDqRequest, {
     initialDelay: 3000,
     maxAttempts: 3,
-    shouldRetryResult: result => isRetryable(result),
+    shouldRetry: isRetryable,
   });
 }
 
@@ -83,10 +80,10 @@ export async function sendProcessRetryDrRequest({
     });
   }
 
-  return await executeWithOperationOutcomeRetries(sendProcessDrRequest, {
+  return await executeWithRetries(sendProcessDrRequest, {
     initialDelay: 3000,
     maxAttempts: 3,
-    shouldRetryResult: result => isRetryable(result),
+    shouldRetry: isRetryable,
   });
 }
 

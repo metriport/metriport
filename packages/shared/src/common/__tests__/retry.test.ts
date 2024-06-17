@@ -1,10 +1,5 @@
 import { faker } from "@faker-js/faker";
-import {
-  defaultGetTimeToWait,
-  executeWithRetries,
-  executeWithRetriesSafe,
-  executeWithRetriesOnResult,
-} from "../retry";
+import { defaultGetTimeToWait, executeWithRetries, executeWithRetriesSafe } from "../retry";
 
 describe("retry", () => {
   describe("executeWithRetries", () => {
@@ -55,7 +50,7 @@ describe("retry", () => {
     });
 
     it("uses custom shouldRetry when provided", async () => {
-      const shouldRetry = (_: unknown, attempt: number): boolean => {
+      const shouldRetry = (_r: unknown, _e: unknown, attempt: number): boolean => {
         return attempt !== 2;
       };
       await expect(async () =>
@@ -134,7 +129,7 @@ describe("retry", () => {
     it("returns the first successful execution", async () => {
       const expectedResult = faker.lorem.word();
       fn.mockImplementationOnce(() => expectedResult);
-      const resp = await executeWithRetriesOnResult(fn, {
+      const resp = await executeWithRetries(fn, {
         initialDelay: 1,
         maxAttempts: 2,
       });
@@ -147,10 +142,10 @@ describe("retry", () => {
       const expectedResult = faker.lorem.sentence();
       fn.mockImplementationOnce(() => retryableResult);
       fn.mockImplementationOnce(() => expectedResult);
-      const resp = await executeWithRetriesOnResult(fn, {
+      const resp = await executeWithRetries(fn, {
         initialDelay: 1,
         maxAttempts: 3,
-        shouldRetryResult: result => result === retryableResult,
+        shouldRetry: result => result === retryableResult,
       });
       expect(resp).toEqual(expectedResult);
       expect(fn).toHaveBeenCalledTimes(2);
@@ -159,10 +154,10 @@ describe("retry", () => {
     it("returns the last retryable result after max attempts", async () => {
       const retryableResult = faker.lorem.word();
       fn.mockImplementation(() => retryableResult);
-      const resp = await executeWithRetriesOnResult(fn, {
+      const resp = await executeWithRetries(fn, {
         initialDelay: 1,
         maxAttempts: 3,
-        shouldRetryResult: result => result === retryableResult,
+        shouldRetry: result => result === retryableResult,
       });
       expect(resp).toEqual(retryableResult);
       expect(fn).toHaveBeenCalledTimes(3);

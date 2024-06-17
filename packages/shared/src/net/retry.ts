@@ -48,7 +48,7 @@ export async function executeWithNetworkRetries<T>(
   const codesAsString = httpCodesToRetry.map(String);
   return executeWithRetries(fn, {
     ...actualOptions,
-    shouldRetry: (error: unknown) => {
+    shouldRetry: (_, error: unknown) => {
       const networkCode = axios.isAxiosError(error) ? error.code : undefined;
       if (!networkCode) return false;
       return codesAsString.includes(networkCode);
