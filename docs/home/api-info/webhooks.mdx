@@ -31,7 +31,7 @@ General requirements for the endpoint:
 1. Verifies requests using the HTTP header `x-metriport-signature` - see [authentication](#authentication) below;
 1. Accepts and responds to a [`ping` message](#the-ping-message);
 1. Be [idempotent](https://en.wikipedia.org/wiki/Idempotence) - it should accept being called more
-   whan once with the same payload, with no changes to the end result.
+   than once with the same payload, with no changes to the end result.
 
 Additionally, your endpoint will need to accept and process different messages when they become available - specifically:
 
