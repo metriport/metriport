@@ -71,7 +71,7 @@ export async function sendSignedDrRequest({
     const errorString: string = errorToString(error);
     const extra = {
       errorString,
-      request,
+      outboundRequest: request.outboundRequest,
       patientId,
       cxId,
     };

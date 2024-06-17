@@ -65,7 +65,7 @@ export async function sendSignedDqRequest({
     const errorString: string = errorToString(error);
     const extra = {
       errorString,
-      request,
+      outboundRequest: request.outboundRequest,
       patientId,
       cxId,
     };
