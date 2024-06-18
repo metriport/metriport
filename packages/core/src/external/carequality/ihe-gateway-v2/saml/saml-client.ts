@@ -19,6 +19,11 @@ import {
 const { log } = out("Saml Client");
 const timeout = 120000;
 let rejectUnauthorized = true;
+let trustedStore: string | undefined = undefined;
+async function getTrustedKeyStore(): Promise<string> {
+  if (!trustedStore) trustedStore = await loadTrustedKeyStore();
+  return trustedStore;
+}
 
 /*
  * ONLY use this function for testing purposes. It will turn off SSL Verification of the server if set to false.
@@ -36,7 +41,7 @@ export type SamlClientResponse = {
   success: boolean;
 };
 
-export async function getTrustedKeyStore(): Promise<string> {
+export async function loadTrustedKeyStore(): Promise<string> {
   try {
     const s3 = new AWS.S3({ region: Config.getAWSRegion() });
     const trustBundleBucketName = Config.getCqTrustBundleBucketName();
@@ -60,13 +65,12 @@ export async function sendSignedXml({
   signedXml,
   url,
   samlCertsAndKeys,
-  trustedKeyStore,
 }: {
   signedXml: string;
   url: string;
   samlCertsAndKeys: SamlCertsAndKeys;
-  trustedKeyStore: string;
 }): Promise<{ response: string; contentType: string }> {
+  const trustedKeyStore = await getTrustedKeyStore();
   const agent = new https.Agent({
     rejectUnauthorized: getRejectUnauthorized(),
     requestCert: true,
@@ -93,6 +97,7 @@ export async function sendSignedXml({
     {
       initialDelay: 3000,
       maxAttempts: 3,
+      //TODO: This introduces retry on timeout without needing to specify the http Code: https://github.com/metriport/metriport/pull/2285. Remove once PR is merged
       httpCodesToRetry: ["ECONNREFUSED", "ECONNRESET", "ETIMEDOUT"],
     }
   );
@@ -104,13 +109,12 @@ export async function sendSignedXmlMtom({
   signedXml,
   url,
   samlCertsAndKeys,
-  trustedKeyStore,
 }: {
   signedXml: string;
   url: string;
   samlCertsAndKeys: SamlCertsAndKeys;
-  trustedKeyStore: string;
 }): Promise<{ mtomParts: MtomAttachments; rawResponse: Buffer }> {
+  const trustedKeyStore = await getTrustedKeyStore();
   const agent = new https.Agent({
     rejectUnauthorized: getRejectUnauthorized(),
     requestCert: true,
@@ -139,6 +143,7 @@ export async function sendSignedXmlMtom({
     {
       initialDelay: 3000,
       maxAttempts: 3,
+      //TODO: This introduces retry on timeout without needing to specify the http Code: https://github.com/metriport/metriport/pull/2285. Remove once PR is merged
       httpCodesToRetry: ["ECONNREFUSED", "ECONNRESET", "ETIMEDOUT"],
     }
   );

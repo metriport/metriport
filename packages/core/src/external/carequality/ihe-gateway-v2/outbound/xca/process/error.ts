@@ -83,7 +83,7 @@ export async function handleRegistryErrorResponse({
   };
 }
 
-export function handleHttpErrorResponse({
+export async function handleHttpErrorResponse({
   httpError,
   outboundRequest,
   gateway,
@@ -93,7 +93,7 @@ export function handleHttpErrorResponse({
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
   attempt?: number | undefined;
-}): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
+}): Promise<OutboundDocumentQueryResp | OutboundDocumentRetrievalResp> {
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
     id: outboundRequest.id,

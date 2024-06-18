@@ -17,10 +17,7 @@ import {
 } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2-logic";
 import { setS3UtilsInstance as setS3UtilsInstanceForStoringDrResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
 import { setS3UtilsInstance as setS3UtilsInstanceForStoringIheResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/monitor/store";
-import {
-  setRejectUnauthorized,
-  getTrustedKeyStore,
-} from "@metriport/core/external/carequality/ihe-gateway-v2/saml/saml-client";
+import { setRejectUnauthorized } from "@metriport/core/external/carequality/ihe-gateway-v2/saml/saml-client";
 import { Config } from "@metriport/core/util/config";
 import { MockS3Utils } from "./mock-s3";
 
@@ -58,14 +55,12 @@ app.post("/xcpd", async (req: Request, res: Response) => {
   }
 
   try {
-    const trustedKeyStore = await getTrustedKeyStore();
     const xmlResponses = createAndSignBulkXCPDRequests(req.body, samlCertsAndKeys);
     const response = await sendSignedXCPDRequests({
       signedRequests: xmlResponses,
       samlCertsAndKeys,
       patientId: uuidv4(),
       cxId: uuidv4(),
-      trustedKeyStore,
     });
     const results = response.map(response => {
       return processXCPDResponse({
@@ -95,8 +90,6 @@ app.post("/xcadq", async (req: Request, res: Response) => {
       samlCertsAndKeys,
     });
 
-    const trustedKeyStore = await getTrustedKeyStore();
-
     const resultPromises = signedRequests.map(async (signedRequest, index) => {
       return sendProcessRetryDqRequest({
         signedRequest,
@@ -104,7 +97,6 @@ app.post("/xcadq", async (req: Request, res: Response) => {
         patientId: uuidv4(),
         cxId: uuidv4(),
         index,
-        trustedKeyStore,
       });
     });
     const results = await Promise.all(resultPromises);
@@ -130,7 +122,6 @@ app.post("/xcadr", async (req: Request, res: Response) => {
       bulkBodyData: req.body,
       samlCertsAndKeys,
     });
-    const trustedKeyStore = await getTrustedKeyStore();
 
     const resultPromises = signedRequests.map(async (signedRequest, index) => {
       return sendProcessRetryDrRequest({
@@ -139,7 +130,6 @@ app.post("/xcadr", async (req: Request, res: Response) => {
         patientId: uuidv4(),
         cxId: uuidv4(),
         index,
-        trustedKeyStore,
       });
     });
 

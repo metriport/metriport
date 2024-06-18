@@ -21,21 +21,18 @@ export async function sendSignedDqRequest({
   patientId,
   cxId,
   index,
-  trustedKeyStore,
 }: {
   request: SignedDqRequest;
   samlCertsAndKeys: SamlCertsAndKeys;
   patientId: string;
   cxId: string;
   index: number;
-  trustedKeyStore: string;
 }): Promise<DQSamlClientResponse> {
   try {
     const { response } = await sendSignedXml({
       signedXml: request.signedRequest,
       url: request.gateway.url,
       samlCertsAndKeys,
-      trustedKeyStore,
     });
     log(
       `Request ${index + 1} sent successfully to: ${request.gateway.url} + oid: ${

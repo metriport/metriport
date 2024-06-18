@@ -17,6 +17,7 @@ export type ExecuteWithHttpRetriesOptions = Omit<
 
 const defaultOptions: ExecuteWithHttpRetriesOptions = {
   ...defaultRetryWithBackoffOptions,
+  initialDelay: 1000,
   httpCodesToRetry: [
     // https://nodejs.org/docs/latest-v18.x/api/errors.html#common-system-errors
     "ECONNREFUSED", // (Connection refused): No connection could be made because the target machine actively refused it. This usually results from trying to connect to a service that is inactive on the foreign host.
@@ -33,6 +34,7 @@ const defaultOptions: ExecuteWithHttpRetriesOptions = {
  * This is a specialization of `executeWithRetries` for network errors.
  * By default it retries on ECONNREFUSED and ECONNRESET (customize the errors to retry
  * setting the option `httpCodesToRetry`).
+ * By default it also retries on HTTP status code 429 (Too Many Requests).
  *
  * @param fn the function to be executed
  * @param options the options to be used; see `ExecuteWithHttpRetriesOptions` for components and

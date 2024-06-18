@@ -20,7 +20,6 @@ import { createAndSignBulkXCPDRequests } from "./outbound/xcpd/create/iti55-enve
 import { processXCPDResponse } from "./outbound/xcpd/process/xcpd-response";
 import { sendSignedXCPDRequests } from "./outbound/xcpd/send/xcpd-requests";
 import { SamlCertsAndKeys } from "./saml/security/types";
-import { getTrustedKeyStore } from "./saml/saml-client";
 
 export async function sendProcessRetryDqRequest({
   signedRequest,
@@ -28,14 +27,12 @@ export async function sendProcessRetryDqRequest({
   patientId,
   cxId,
   index,
-  trustedKeyStore,
 }: {
   signedRequest: SignedDqRequest;
   samlCertsAndKeys: SamlCertsAndKeys;
   patientId: string;
   cxId: string;
   index: number;
-  trustedKeyStore: string;
 }): Promise<OutboundDocumentQueryResp> {
   async function sendProcessDqRequest() {
     const response = await sendSignedDqRequest({
@@ -44,7 +41,6 @@ export async function sendProcessRetryDqRequest({
       patientId,
       cxId,
       index,
-      trustedKeyStore,
     });
     return await processDqResponse({
       response,
@@ -64,14 +60,12 @@ export async function sendProcessRetryDrRequest({
   patientId,
   cxId,
   index,
-  trustedKeyStore,
 }: {
   signedRequest: SignedDrRequest;
   samlCertsAndKeys: SamlCertsAndKeys;
   patientId: string;
   cxId: string;
   index: number;
-  trustedKeyStore: string;
 }): Promise<OutboundDocumentRetrievalResp> {
   async function sendProcessDrRequest() {
     const response = await sendSignedDrRequest({
@@ -80,7 +74,6 @@ export async function sendProcessRetryDrRequest({
       patientId,
       cxId,
       index,
-      trustedKeyStore,
     });
     return await processDrResponse({
       response,
@@ -108,13 +101,11 @@ export async function createSignSendProcessXCPDRequest({
   cxId: string;
 }): Promise<void> {
   const signedRequests = createAndSignBulkXCPDRequests(xcpdRequest, samlCertsAndKeys);
-  const trustedKeyStore = await getTrustedKeyStore();
   const responses = await sendSignedXCPDRequests({
     signedRequests,
     samlCertsAndKeys,
     patientId,
     cxId,
-    trustedKeyStore,
   });
   const results: OutboundPatientDiscoveryResp[] = responses.map(response => {
     return processXCPDResponse({
@@ -157,8 +148,6 @@ export async function createSignSendProcessDqRequests({
     samlCertsAndKeys,
   });
 
-  const trustedKeyStore = await getTrustedKeyStore();
-
   const resultPromises = signedRequests.map(async (signedRequest, index) => {
     return sendProcessRetryDqRequest({
       signedRequest,
@@ -166,7 +155,6 @@ export async function createSignSendProcessDqRequests({
       patientId,
       cxId,
       index,
-      trustedKeyStore,
     });
   });
 
@@ -206,8 +194,6 @@ export async function createSignSendProcessDrRequests({
     samlCertsAndKeys,
   });
 
-  const trustedKeyStore = await getTrustedKeyStore();
-
   const resultPromises = signedRequests.map(async (signedRequest, index) => {
     return sendProcessRetryDrRequest({
       signedRequest,
@@ -215,7 +201,6 @@ export async function createSignSendProcessDrRequests({
       patientId,
       cxId,
       index,
-      trustedKeyStore,
     });
   });
 

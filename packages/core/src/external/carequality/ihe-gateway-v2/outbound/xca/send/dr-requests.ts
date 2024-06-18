@@ -24,21 +24,18 @@ export async function sendSignedDrRequest({
   patientId,
   cxId,
   index,
-  trustedKeyStore,
 }: {
   request: SignedDrRequest;
   samlCertsAndKeys: SamlCertsAndKeys;
   patientId: string;
   cxId: string;
   index: number;
-  trustedKeyStore: string;
 }): Promise<DrSamlClientResponse> {
   try {
     const { mtomParts, rawResponse } = await sendSignedXmlMtom({
       signedXml: request.signedRequest,
       url: request.gateway.url,
       samlCertsAndKeys,
-      trustedKeyStore,
     });
     log(
       `Request ${index + 1} sent successfully to: ${request.gateway.url} + oid: ${

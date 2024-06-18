@@ -164,13 +164,11 @@ export function processDqResponse({
   response: DQSamlClientResponse;
 }): Promise<OutboundDocumentQueryResp> {
   if (success === false) {
-    return Promise.resolve(
-      handleHttpErrorResponse({
-        httpError: response,
-        outboundRequest,
-        gateway: gateway,
-      })
-    );
+    return handleHttpErrorResponse({
+      httpError: response,
+      outboundRequest,
+      gateway: gateway,
+    });
   }
   const parser = new XMLParser({
     ignoreAttributes: false,

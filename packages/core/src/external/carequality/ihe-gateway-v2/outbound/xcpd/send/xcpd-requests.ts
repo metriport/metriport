@@ -18,13 +18,11 @@ export async function sendSignedXCPDRequests({
   samlCertsAndKeys,
   patientId,
   cxId,
-  trustedKeyStore,
 }: {
   signedRequests: BulkSignedXCPD[];
   samlCertsAndKeys: SamlCertsAndKeys;
   patientId: string;
   cxId: string;
-  trustedKeyStore: string;
 }): Promise<XCPDSamlClientResponse[]> {
   const requestPromises = signedRequests.map(async (request, index) => {
     try {
@@ -32,7 +30,6 @@ export async function sendSignedXCPDRequests({
         signedXml: request.signedRequest,
         url: request.gateway.url,
         samlCertsAndKeys,
-        trustedKeyStore,
       });
       log(
         `Request ${index + 1} sent successfully to: ${request.gateway.url} + oid: ${
