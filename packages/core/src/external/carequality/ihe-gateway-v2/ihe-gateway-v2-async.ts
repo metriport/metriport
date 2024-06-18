@@ -9,8 +9,14 @@ import { makeLambdaClient } from "../../aws/lambda";
 import { Config } from "../../../util/config";
 import { processAsyncError } from "../../../util/error/shared";
 import { IHEGatewayV2 } from "./ihe-gateway-v2";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 
-const SLEEP_IN_BETWEEN_DOCUMENT_RETRIEVAL_REQUESTS = 1000;
+dayjs.extend(duration);
+
+const SLEEP_IN_BETWEEN_DOCUMENT_RETRIEVAL_REQUESTS = dayjs
+  .duration({ seconds: 1 })
+  .asMilliseconds();
 const MAX_GATEWAYS_BEFORE_CHUNK = 1000;
 const MAX_DOCUMENT_QUERY_REQUESTS_PER_INVOCATION = 20;
 const MAX_DOCUMENT_RETRIEVAL_REQUESTS_PER_INVOCATION = 20;
