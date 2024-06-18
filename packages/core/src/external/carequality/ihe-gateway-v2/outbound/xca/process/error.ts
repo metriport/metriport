@@ -62,7 +62,7 @@ export function processRegistryErrorList(
   return operationOutcome.issue.length > 0 ? operationOutcome : undefined;
 }
 
-export async function handleRegistryErrorResponse({
+export function handleRegistryErrorResponse({
   registryErrorList,
   outboundRequest,
   gateway,
@@ -70,7 +70,7 @@ export async function handleRegistryErrorResponse({
   registryErrorList: RegistryErrorList;
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
-}): Promise<OutboundDocumentQueryResp | OutboundDocumentRetrievalResp> {
+}): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
   const operationOutcome = processRegistryErrorList(registryErrorList, outboundRequest);
   return {
     id: outboundRequest.id,
@@ -83,7 +83,7 @@ export async function handleRegistryErrorResponse({
   };
 }
 
-export async function handleHttpErrorResponse({
+export function handleHttpErrorResponse({
   httpError,
   outboundRequest,
   gateway,
@@ -93,7 +93,7 @@ export async function handleHttpErrorResponse({
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
   attempt?: number | undefined;
-}): Promise<OutboundDocumentQueryResp | OutboundDocumentRetrievalResp> {
+}): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
     id: outboundRequest.id,
@@ -119,7 +119,7 @@ export async function handleHttpErrorResponse({
   };
 }
 
-export async function handleEmptyResponse({
+export function handleEmptyResponse({
   outboundRequest,
   gateway,
   text = "No documents found",
@@ -127,7 +127,7 @@ export async function handleEmptyResponse({
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
   text?: string;
-}): Promise<OutboundDocumentQueryResp | OutboundDocumentRetrievalResp> {
+}): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
     id: outboundRequest.id,
@@ -152,7 +152,7 @@ export async function handleEmptyResponse({
   };
 }
 
-export async function handleSchemaErrorResponse({
+export function handleSchemaErrorResponse({
   outboundRequest,
   gateway,
   text = "Schema Error",
@@ -160,7 +160,7 @@ export async function handleSchemaErrorResponse({
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
   text?: string;
-}): Promise<OutboundDocumentQueryResp | OutboundDocumentRetrievalResp> {
+}): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
     id: outboundRequest.id,

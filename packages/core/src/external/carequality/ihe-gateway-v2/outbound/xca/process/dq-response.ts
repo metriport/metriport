@@ -131,8 +131,7 @@ function parseDocumentReference({
   };
   return documentReference;
 }
-
-async function handleSuccessResponse({
+function handleSuccessResponse({
   extrinsicObjects,
   outboundRequest,
   gateway,
@@ -140,7 +139,7 @@ async function handleSuccessResponse({
   extrinsicObjects: ExtrinsicObject[];
   outboundRequest: OutboundDocumentQueryReq;
   gateway: XCAGateway;
-}): Promise<OutboundDocumentQueryResp> {
+}): OutboundDocumentQueryResp {
   const documentReferences = extrinsicObjects.flatMap(
     extrinsicObject => parseDocumentReference({ extrinsicObject, outboundRequest }) ?? []
   );
@@ -162,7 +161,7 @@ export function processDqResponse({
   response: { response, success, gateway, outboundRequest },
 }: {
   response: DQSamlClientResponse;
-}): Promise<OutboundDocumentQueryResp> {
+}): OutboundDocumentQueryResp {
   if (success === false) {
     return handleHttpErrorResponse({
       httpError: response,
