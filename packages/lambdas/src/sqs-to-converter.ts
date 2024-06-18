@@ -1,3 +1,4 @@
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import {
   executeWithNetworkRetries,
   executeWithRetries,
@@ -13,7 +14,6 @@ import { getEnvOrFail } from "./shared/env";
 import { isAxiosBadGateway, isAxiosTimeout } from "./shared/http";
 import { Log, prefixedLog } from "./shared/log";
 import { apiClient } from "./shared/oss-api";
-import { S3Utils } from "./shared/s3";
 import { SQSUtils } from "./shared/sqs";
 import { cleanUpPayload } from "./sqs-to-converter/cleanup";
 

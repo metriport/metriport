@@ -53,7 +53,10 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     const onEnd = () => {
       console.log("Finished downloading document");
     };
-    let downloadResult = await this.downloadFromCommonwellIntoS3(document, fileInfo, onData, onEnd);
+    let downloadResult = await executeWithNetworkRetries(
+      () => this.downloadFromCommonwellIntoS3(document, fileInfo, onData, onEnd),
+      { retryOnTimeout: true, initialDelay: 500, maxAttempts: 5 }
+    );
 
     // Check if the detected file type is in the accepted content types and update it if not
     downloadResult = await this.checkAndUpdateMimeType({
@@ -83,7 +86,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
 
   /**
    * Checks if the content type of a downloaded document is accepted. If not accepted, updates the content type
-   * and extension  in S3 and returns the updated download result.
+   * and extension in S3 and returns the updated download result.
    */
   async checkAndUpdateMimeType({
     document,
