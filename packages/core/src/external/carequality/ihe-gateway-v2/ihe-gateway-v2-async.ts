@@ -4,6 +4,7 @@ import {
   OutboundDocumentQueryReq,
   OutboundDocumentRetrievalReq,
 } from "@metriport/ihe-gateway-sdk";
+import { sleep } from "@metriport/shared";
 import { makeLambdaClient } from "../../aws/lambda";
 import { Config } from "../../../util/config";
 import { processAsyncError } from "../../../util/error/shared";
@@ -108,8 +109,13 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
       MAX_DOCUMENT_RETRIEVAL_REQUESTS_PER_INVOCATION
     );
 
-    for (const chunk of requestChunks) {
+    for (let i = 0; i < requestChunks.length; i++) {
+      const chunk = requestChunks[i];
       const params = { patientId, cxId, requestId, drRequestsGatewayV2: chunk };
+
+      if (i > 0) {
+        await sleep(1000);
+      }
 
       // intentionally not waiting
       lambdaClient

@@ -37,6 +37,7 @@ export function handleHttpErrorResponse({
     gateway,
     patientId: outboundRequest?.patientId,
     patientMatch: null,
+    iheGatewayV2: true,
     operationOutcome,
   };
 }
@@ -74,6 +75,7 @@ export function handlePatientErrorResponse({
     gateway,
     patientId: outboundRequest.patientId,
     patientMatch: null,
+    iheGatewayV2: true,
     operationOutcome,
   };
   return response;
@@ -108,6 +110,7 @@ export function handleSchemaErrorResponse({
     gateway,
     patientId: outboundRequest.patientId,
     patientMatch: null,
+    iheGatewayV2: true,
     operationOutcome,
   };
   return response;

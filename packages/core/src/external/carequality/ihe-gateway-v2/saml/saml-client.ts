@@ -137,13 +137,21 @@ export async function sendSignedXmlMtom({
         },
         httpsAgent: agent,
         responseType: "arraybuffer",
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity,
       });
     },
     {
       initialDelay: 3000,
-      maxAttempts: 3,
+      maxAttempts: 4,
       //TODO: This introduces retry on timeout without needing to specify the http Code: https://github.com/metriport/metriport/pull/2285. Remove once PR is merged
-      httpCodesToRetry: ["ECONNREFUSED", "ECONNRESET", "ETIMEDOUT"],
+      httpCodesToRetry: [
+        "ECONNREFUSED",
+        "ECONNRESET",
+        "ETIMEDOUT",
+        "ECONNABORTED",
+        "ERR_BAD_RESPONSE",
+      ],
     }
   );
 
