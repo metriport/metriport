@@ -34,6 +34,8 @@ const MEDICARE_CODE = "medicare";
 const CPT_CODE = "cpt";
 
 export const bundleToHtmlADHD = (fhirBundle: Bundle): string => {
+  const fhirTypes = extractFhirTypesFromBundle(fhirBundle);
+
   const {
     patient,
     practitioners,
@@ -55,7 +57,24 @@ export const bundleToHtmlADHD = (fhirBundle: Bundle): string => {
     tasks,
     coverages,
     organizations,
-  } = extractFhirTypesFromBundle(fhirBundle);
+  } = fhirTypes;
+
+  const isClinicallyRelevant = hasClinicalRelevantData(fhirTypes);
+
+  if (!isClinicallyRelevant) {
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Medical Record Summary</title>
+        </head>
+        <body>
+          <h1>Medical Record Summary</h1>
+          <p>No clinically relevant data found in the bundle</p>
+        </body>
+      </html>
+    `;
+  }
 
   if (!patient) {
     throw new Error("No patient found in bundle");
@@ -287,7 +306,7 @@ function formatDateForDisplay(date?: string | undefined): string {
   return date ? dayjs(date).format(ISO_DATE) : "";
 }
 
-function extractFhirTypesFromBundle(bundle: Bundle): {
+type FhirTypes = {
   diagnosticReports: DiagnosticReport[];
   patient?: Patient | undefined;
   practitioners: Practitioner[];
@@ -308,7 +327,9 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
   tasks: Task[];
   coverages: Coverage[];
   organizations: Organization[];
-} {
+};
+
+function extractFhirTypesFromBundle(bundle: Bundle): FhirTypes {
   let patient: Patient | undefined;
   const practitioners: Practitioner[] = [];
   const diagnosticReports: DiagnosticReport[] = [];
@@ -2333,4 +2354,20 @@ function getADHDVisits(conditions: Condition[]) {
   });
 
   return adhdVisits;
+}
+
+function hasClinicalRelevantData(fhirTypes: FhirTypes): boolean {
+  const hasValues: string[] = [];
+
+  Object.entries(fhirTypes).forEach(([key, value]) => {
+    const isNotRelatedPersons = key !== "relatedPersons";
+    const isNotCoverages = key !== "coverages";
+    const hasValue = value && Array.isArray(value) && value.length;
+
+    if (isNotRelatedPersons && isNotCoverages && hasValue) {
+      hasValues.push(key);
+    }
+  });
+
+  return hasValues.length > 0;
 }
