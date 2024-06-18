@@ -20,8 +20,8 @@ import {
 dayjs.extend(duration);
 
 const { log } = out("Saml Client");
-const httpTimeout = dayjs.duration({ seconds: 120 }).asMilliseconds();
-const initialDelay = dayjs.duration({ seconds: 3 }).asMilliseconds();
+const httpTimeout = dayjs.duration({ seconds: 120 });
+const initialDelay = dayjs.duration({ seconds: 3 });
 const maxPayloadSize = Infinity;
 let rejectUnauthorized = true;
 let trustedStore: string | undefined = undefined;
@@ -89,7 +89,7 @@ export async function sendSignedXml({
   const response = await executeWithNetworkRetries(
     async () => {
       return axios.post(url, signedXml, {
-        timeout: httpTimeout,
+        timeout: httpTimeout.asMilliseconds(),
         headers: {
           "Content-Type": "application/soap+xml;charset=UTF-8",
           Accept: "application/soap+xml",
@@ -99,7 +99,7 @@ export async function sendSignedXml({
       });
     },
     {
-      initialDelay: initialDelay,
+      initialDelay: initialDelay.asMilliseconds(),
       maxAttempts: 3,
       //TODO: This introduces retry on timeout without needing to specify the http Code: https://github.com/metriport/metriport/pull/2285. Remove once PR is merged
       httpCodesToRetry: ["ECONNREFUSED", "ECONNRESET", "ETIMEDOUT"],
@@ -134,7 +134,7 @@ export async function sendSignedXmlMtom({
   const response = await executeWithNetworkRetries(
     async () => {
       return axios.post(url, payload, {
-        timeout: httpTimeout,
+        timeout: httpTimeout.asMilliseconds(),
         headers: {
           "Accept-Encoding": "gzip, deflate",
           "Content-Type": contentType,
@@ -147,7 +147,7 @@ export async function sendSignedXmlMtom({
       });
     },
     {
-      initialDelay: initialDelay,
+      initialDelay: initialDelay.asMilliseconds(),
       maxAttempts: 4,
       //TODO: This introduces retry on timeout without needing to specify the http Code: https://github.com/metriport/metriport/pull/2285. Remove once PR is merged
       httpCodesToRetry: [

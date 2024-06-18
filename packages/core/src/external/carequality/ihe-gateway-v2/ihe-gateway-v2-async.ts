@@ -14,9 +14,7 @@ import duration from "dayjs/plugin/duration";
 
 dayjs.extend(duration);
 
-const SLEEP_IN_BETWEEN_DOCUMENT_RETRIEVAL_REQUESTS = dayjs
-  .duration({ seconds: 1 })
-  .asMilliseconds();
+const SLEEP_IN_BETWEEN_DOCUMENT_RETRIEVAL_REQUESTS = dayjs.duration({ seconds: 1 });
 const MAX_GATEWAYS_BEFORE_CHUNK = 1000;
 const MAX_DOCUMENT_QUERY_REQUESTS_PER_INVOCATION = 20;
 const MAX_DOCUMENT_RETRIEVAL_REQUESTS_PER_INVOCATION = 20;
@@ -120,7 +118,7 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
       const params = { patientId, cxId, requestId, drRequestsGatewayV2: chunk };
 
       if (i > 0) {
-        await sleep(SLEEP_IN_BETWEEN_DOCUMENT_RETRIEVAL_REQUESTS);
+        await sleep(SLEEP_IN_BETWEEN_DOCUMENT_RETRIEVAL_REQUESTS.asMilliseconds());
       }
 
       // intentionally not waiting
