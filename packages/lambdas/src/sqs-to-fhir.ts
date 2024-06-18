@@ -198,10 +198,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
         processFHIRResponse(response, event, log);
 
         await cloudWatchUtils.reportMetrics(metrics);
-        await executeWithNetworkRetries(
-          () => ossApi.notifyApi({ ...lambdaParams, status: "success" }, log),
-          { retryOnTimeout: true, maxAttempts: maxTimeoutRetries + 1 }
-        );
+        await ossApi.notifyApi({ ...lambdaParams, status: "success" }, log);
       } catch (error) {
         // If it timed-out let's just reenqueue for future processing - NOTE: the destination MUST be idempotent!
         const count = message.attributes?.ApproximateReceiveCount
@@ -234,11 +231,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           });
           await sqsUtils.sendToDLQ(message);
 
-          // TODO not sure if should retry on timeout
-          await executeWithNetworkRetries(
-            () => ossApi.notifyApi({ ...lambdaParams, status: "failed", details }, log),
-            { retryOnTimeout: true, maxAttempts: maxTimeoutRetries + 1 }
-          );
+          await ossApi.notifyApi({ ...lambdaParams, status: "failed", details }, log);
         }
       }
     }

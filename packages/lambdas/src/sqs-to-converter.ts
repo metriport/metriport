@@ -183,9 +183,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
             extra: { message, ...lambdaParams, context: lambdaName, fileName: s3FileName },
             level: "warning",
           });
-          await executeWithNetworkRetries(() =>
-            ossApi.notifyApi({ ...lambdaParams, status: "failed" }, log)
-          );
+          await ossApi.notifyApi({ ...lambdaParams, status: "failed" }, log);
           return;
         }
         const payloadClean = cleanUpPayload(payloadRaw);
@@ -200,9 +198,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
             extra: { message, ...lambdaParams, context: lambdaName, fileName: s3FileName },
             level: "warning",
           });
-          await executeWithNetworkRetries(() =>
-            ossApi.notifyApi({ ...lambdaParams, status: "failed" }, log)
-          );
+          await ossApi.notifyApi({ ...lambdaParams, status: "failed" }, log);
           return;
         }
 
@@ -325,11 +321,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           });
           await sqsUtils.sendToDLQ(message);
 
-          // TODO not sure if should retry on timeout
-          await executeWithNetworkRetries(
-            () => ossApi.notifyApi({ ...lambdaParams, status: "failed", details }, log),
-            { retryOnTimeout: true, maxAttempts: maxTimeoutRetries + 1 }
-          );
+          await ossApi.notifyApi({ ...lambdaParams, status: "failed", details }, log);
         }
       }
     }
