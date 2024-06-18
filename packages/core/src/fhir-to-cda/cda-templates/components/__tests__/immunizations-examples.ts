@@ -19,5 +19,4 @@ export const immunizationFlu: Partial<Immunization> = {
     reference: "Encounter/90170bdf-3029-49d9-ba31-48c942bf3799",
   },
   occurrenceDateTime: "2013-09-19T18:14:30-07:00",
-  primarySource: true,
 };

@@ -1,11 +1,12 @@
 import { Bundle, Immunization, Location } from "@medplum/fhirtypes";
 import { findResourceInBundle, isImmunization, isLocation } from "../../../external/fhir/shared";
-import { CdaSimpleReference, ObservationTableRow } from "../../cda-types/shared-types";
+import { ObservationTableRow } from "../../cda-types/shared-types";
 import {
   buildAddressText,
   buildCodeCe,
   buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
+  buildOriginalTextReference,
   buildPerformerFromLocation,
   formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
@@ -161,7 +162,7 @@ function createEntryFromEncounter(immunization: AugmentedImmunization, reference
         codeSystem: hl7actCode,
         codeSystemName: "ActCode",
       }),
-      text: buildSimpleReference(referenceId),
+      text: buildOriginalTextReference(referenceId),
       statusCode: {
         _code: mapImmunizationStatusCode(immunization.resource.status),
       },
@@ -187,14 +188,6 @@ function buildConsumable(immunization: Immunization, referenceId: string) {
       manufacturedMaterial: {
         code: buildCodeCvFromCodeableConcept(immunization.vaccineCode, `${referenceId}-material`),
       },
-    },
-  };
-}
-
-function buildSimpleReference(referenceId: string): CdaSimpleReference {
-  return {
-    reference: {
-      _value: referenceId,
     },
   };
 }

@@ -108,7 +108,7 @@ export type CdaName = {
   validTime: CdaPeriod;
 };
 
-export type CDAOriginalText = {
+export type CdaOriginalText = {
   reference: {
     _value: string;
   };
@@ -135,7 +135,7 @@ export type CdaValueCd = {
   _code?: string | undefined;
   _displayName?: string | undefined;
   _codeSystem?: string | undefined;
-  originalText?: CDAOriginalText;
+  originalText?: CdaOriginalText;
 };
 
 export type CdaValuePq = {
@@ -146,7 +146,7 @@ export type CdaValuePq = {
 
 // Cv (CV) stands for Coded Value
 export interface CdaCodeCv extends CdaCodeCe {
-  originalText?: CDAOriginalText | string | undefined;
+  originalText?: CdaOriginalText | string | undefined;
   translation?: CdaCodeCe[] | undefined;
 }
 

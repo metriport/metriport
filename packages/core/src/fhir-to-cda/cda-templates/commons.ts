@@ -14,7 +14,7 @@ import localizedFormat from "dayjs/plugin/localizedFormat";
 import utc from "dayjs/plugin/utc";
 import {
   AssignedEntity,
-  CDAOriginalText,
+  CdaOriginalText,
   CdaAddress,
   CdaAddressUse,
   CdaCodeCe,
@@ -116,7 +116,7 @@ export function buildCodeCe({
   return codeObject;
 }
 
-export function buildOriginalTextReference(value: string): CDAOriginalText {
+export function buildOriginalTextReference(value: string): CdaOriginalText {
   return {
     reference: {
       _value: value,

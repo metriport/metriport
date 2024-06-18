@@ -81,7 +81,7 @@ describe("buildVitalSigns", () => {
     bundle.entry?.push({ resource: { ...observation, id: observationId3, ...obsTemperature } });
     bundle.entry?.push({ resource: { ...observation, id: observationId4, ...obsRespiratoryRate } });
 
-    const filePath = path.join(__dirname, "./xmls/vital-signs-multiple-entries.xml");
+    const filePath = path.join(__dirname, "./xmls/vital-signs-multiple-entries-same-date.xml");
     const params = {
       observationId,
       observationId2,
@@ -113,7 +113,7 @@ describe("buildVitalSigns", () => {
     bundle.entry?.push({ resource: { ...observation, id: observationId7, ...obsDiastolic } });
     bundle.entry?.push({ resource: { ...observation, id: observationId8, ...obsHeight } });
 
-    const filePath = path.join(__dirname, "./xmls/vital-signs-many-entries.xml");
+    const filePath = path.join(__dirname, "./xmls/vital-signs-with-different-dates.xml");
     const params = {
       observationId,
       observationId2,
