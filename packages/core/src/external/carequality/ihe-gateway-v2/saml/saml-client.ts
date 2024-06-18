@@ -18,6 +18,7 @@ import {
 
 const { log } = out("Saml Client");
 const timeout = 120000;
+const maxPayloadSize = Infinity;
 let rejectUnauthorized = true;
 let trustedStore: string | undefined = undefined;
 async function getTrustedKeyStore(): Promise<string> {
@@ -84,7 +85,7 @@ export async function sendSignedXml({
   const response = await executeWithNetworkRetries(
     async () => {
       return axios.post(url, signedXml, {
-        timeout: 120000,
+        timeout: timeout,
         headers: {
           "Content-Type": "application/soap+xml;charset=UTF-8",
           Accept: "application/soap+xml",
@@ -137,8 +138,8 @@ export async function sendSignedXmlMtom({
         },
         httpsAgent: agent,
         responseType: "arraybuffer",
-        maxBodyLength: Infinity,
-        maxContentLength: Infinity,
+        maxBodyLength: maxPayloadSize,
+        maxContentLength: maxPayloadSize,
       });
     },
     {
