@@ -40,8 +40,7 @@ export type SamlClientResponse = {
   response: string;
   success: boolean;
 };
-
-export async function loadTrustedKeyStore(): Promise<string> {
+async function loadTrustedKeyStore(): Promise<string> {
   try {
     const s3 = new AWS.S3({ region: Config.getAWSRegion() });
     const trustBundleBucketName = Config.getCqTrustBundleBucketName();
