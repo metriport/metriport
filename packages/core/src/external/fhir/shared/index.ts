@@ -201,6 +201,10 @@ export function findCompositionResource(fhirBundle: Bundle): Composition | undef
   return fhirBundle.entry?.map(e => e.resource).find(isComposition);
 }
 
+export function findCompositionResources(fhirBundle: Bundle): Composition[] {
+  return fhirBundle.entry?.map(e => e.resource).filter(isComposition) || [];
+}
+
 export function findPatientResource(fhirBundle: Bundle): Patient | undefined {
   return fhirBundle.entry?.map(e => e.resource).find(isPatient);
 }
