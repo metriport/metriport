@@ -29,6 +29,7 @@ General requirements for the endpoint:
 1. Does not do an HTTP redirect (redirects will not be followed);
 1. Accepts a `POST` HTTP request;
 1. Verifies requests using the HTTP header `x-metriport-signature` - see [authentication](#authentication) below;
+1. Responds `200` in under 4 seconds - we recommend processing the webhook request asynchronously;
 1. Accepts and responds to a [`ping` message](#the-ping-message);
 1. Be [idempotent](https://en.wikipedia.org/wiki/Idempotence) - it should accept being called more
    than once with the same payload, with no changes to the end result.
@@ -39,9 +40,8 @@ Additionally, your endpoint will need to accept and process different messages w
 
 ## Authentication
 
-When Metriport sends a webhook message, it includes an `x-metriport-signature` header.
-
-- `x-metriport-signature`: This is an [HMAC](https://en.wikipedia.org/wiki/HMAC) SHA-256 hash computed using your webhook key and the body of the webhook message.
+When Metriport sends a webhook message, it includes an `x-metriport-signature` header - this is an 
+[HMAC](https://en.wikipedia.org/wiki/HMAC) SHA-256 hash computed using your webhook key and the body of the webhook message.
 
 At a high level, an HMAC works by taking a secret key (webhook key from the Settings page) and a message,
 and performing iterative hashes of the two to create a signature. That signature is compared against the
@@ -89,15 +89,7 @@ if is_signature_valid:
     print("Signature verified")
 else:
     print("Signature verification failed")
-
-
 ```
-
-<Warning>
-  The previous method of authenticating webhooks, comparing your webhook key with the
-  `x-webhook-key` in each request's HTTP header, is being deprecated on **December 9th, 2023**.
-  Please update your implementation to use the `x-metriport-signature` header for authentication.
-</Warning>
 
 ### Generating a new webhook key
 
