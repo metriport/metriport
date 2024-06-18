@@ -6,7 +6,7 @@ import { outboundDrRequest, testFiles, outboundDrRequestMtom } from "./constants
 import { S3Utils } from "../../../../aws/s3";
 import { createMtomMessageWithAttachments, createMtomMessageWithoutAttachments } from "./mtom";
 
-describe("processDRResponse for MTOM with/without attachments and for different file types", () => {
+describe("processDrResponse for MTOM with/without attachments and for different file types", () => {
   beforeEach(() => {
     jest.spyOn(S3Utils.prototype, "uploadFile").mockImplementation(() => {
       return Promise.resolve({
@@ -36,7 +36,7 @@ describe("processDRResponse for MTOM with/without attachments and for different 
       const attachmentsData = [{ payload: fileBuffer, mimeType: mimeType }];
       const mtomAttachments = await createMtomMessageWithAttachments(attachmentsData);
       const response = await processDrResponse({
-        drResponse: {
+        response: {
           mtomResponse: mtomAttachments,
           gateway: outboundDrRequestMtom.gateway,
           outboundRequest: outboundDrRequestMtom,
@@ -63,7 +63,7 @@ describe("processDRResponse for MTOM with/without attachments and for different 
 
       const mtomResponse = await createMtomMessageWithoutAttachments(modifiedXml);
       const response = await processDrResponse({
-        drResponse: {
+        response: {
           mtomResponse: mtomResponse,
           gateway: outboundDrRequest.gateway,
           outboundRequest: {
@@ -104,7 +104,7 @@ describe("processDRResponse for MTOM with/without attachments and for different 
 
     const mtomAttachments = await createMtomMessageWithAttachments(attachmentsData);
     const response = await processDrResponse({
-      drResponse: {
+      response: {
         mtomResponse: mtomAttachments,
         gateway: outboundDrRequestMtom.gateway,
         outboundRequest: outboundDrRequestMtom,
@@ -120,7 +120,7 @@ describe("processDRResponse for MTOM with/without attachments and for different 
     expect(response.documentReference?.[0]?.contentType).toBe(xmlFile.mimeType);
   });
 });
-describe("processDRResponse", () => {
+describe("processDrResponse", () => {
   beforeEach(() => {
     jest.spyOn(S3Utils.prototype, "uploadFile").mockImplementation(() =>
       Promise.resolve({
@@ -140,7 +140,7 @@ describe("processDRResponse", () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dr_success.xml"), "utf8");
     const mtomResponse = await createMtomMessageWithoutAttachments(xmlString);
     const response = await processDrResponse({
-      drResponse: {
+      response: {
         mtomResponse: mtomResponse,
         gateway: outboundDrRequest.gateway,
         outboundRequest: outboundDrRequest,
@@ -166,7 +166,7 @@ describe("processDRResponse", () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dr_soap_error.xml"), "utf8");
     const mtomResponse = await createMtomMessageWithoutAttachments(xmlString);
     const response = await processDrResponse({
-      drResponse: {
+      response: {
         mtomResponse: mtomResponse,
         gateway: outboundDrRequest.gateway,
         outboundRequest: outboundDrRequest,
@@ -180,7 +180,7 @@ describe("processDRResponse", () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dr_registry_error.xml"), "utf8");
     const mtomResponse = await createMtomMessageWithoutAttachments(xmlString);
     const response = await processDrResponse({
-      drResponse: {
+      response: {
         mtomResponse: mtomResponse,
         gateway: outboundDrRequest.gateway,
         outboundRequest: outboundDrRequest,
@@ -193,7 +193,7 @@ describe("processDRResponse", () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dr_empty.xml"), "utf8");
     const mtomResponse = await createMtomMessageWithoutAttachments(xmlString);
     const response = await processDrResponse({
-      drResponse: {
+      response: {
         mtomResponse: mtomResponse,
         gateway: outboundDrRequest.gateway,
         outboundRequest: outboundDrRequest,
@@ -205,7 +205,7 @@ describe("processDRResponse", () => {
     const randomResponse = "This is a bad response and is not xml";
     const mtomResponse = await createMtomMessageWithoutAttachments(randomResponse);
     const response = await processDrResponse({
-      drResponse: {
+      response: {
         mtomResponse: mtomResponse,
         gateway: outboundDrRequest.gateway,
         outboundRequest: outboundDrRequest,

@@ -1,7 +1,7 @@
 import { XCPDGateway, OutboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
 import { errorToString } from "../../../../../../util/error/shared";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
-import { getTrustedKeyStore, SamlClientResponse, sendSignedXml } from "../../../saml/saml-client";
+import { SamlClientResponse, sendSignedXml } from "../../../saml/saml-client";
 import { BulkSignedXCPD } from "../create/iti55-envelope";
 import { out } from "../../../../../../util/log";
 import { storeXcpdResponses } from "../../../monitor/store";
@@ -24,14 +24,12 @@ export async function sendSignedXCPDRequests({
   patientId: string;
   cxId: string;
 }): Promise<XCPDSamlClientResponse[]> {
-  const trustedKeyStore = await getTrustedKeyStore();
   const requestPromises = signedRequests.map(async (request, index) => {
     try {
       const { response } = await sendSignedXml({
         signedXml: request.signedRequest,
         url: request.gateway.url,
         samlCertsAndKeys,
-        trustedKeyStore,
       });
       log(
         `Request ${index + 1} sent successfully to: ${request.gateway.url} + oid: ${

@@ -42,7 +42,6 @@ function getCreationTime(time: string | undefined): string | undefined {
   try {
     return time ? dayjs.utc(time).toISOString() : undefined;
   } catch (error) {
-    log(`Error parsing creation time: ${time}, error: ${error}`);
     return undefined;
   }
 }
@@ -116,7 +115,8 @@ function parseDocumentReference({
     return undefined;
   }
 
-  const creationTime = String(findSlotValue("creationTime"));
+  const creationTimeValue = findSlotValue("creationTime");
+  const creationTime = creationTimeValue ? String(creationTimeValue) : undefined;
 
   const documentReference: DocumentReference = {
     homeCommunityId: getHomeCommunityIdForDr(extrinsicObject),
@@ -132,7 +132,7 @@ function parseDocumentReference({
   return documentReference;
 }
 
-function handleSuccessResponse({
+async function handleSuccessResponse({
   extrinsicObjects,
   outboundRequest,
   gateway,
@@ -140,7 +140,7 @@ function handleSuccessResponse({
   extrinsicObjects: ExtrinsicObject[];
   outboundRequest: OutboundDocumentQueryReq;
   gateway: XCAGateway;
-}): OutboundDocumentQueryResp {
+}): Promise<OutboundDocumentQueryResp> {
   const documentReferences = extrinsicObjects.flatMap(
     extrinsicObject => parseDocumentReference({ extrinsicObject, outboundRequest }) ?? []
   );
@@ -153,15 +153,16 @@ function handleSuccessResponse({
     gateway,
     documentReference: documentReferences,
     externalGatewayPatient: outboundRequest.externalGatewayPatient,
+    iheGatewayV2: true,
   };
   return response;
 }
 
-export function processDQResponse({
-  dqResponse: { response, success, gateway, outboundRequest },
+export function processDqResponse({
+  response: { response, success, gateway, outboundRequest },
 }: {
-  dqResponse: DQSamlClientResponse;
-}): OutboundDocumentQueryResp {
+  response: DQSamlClientResponse;
+}): Promise<OutboundDocumentQueryResp> {
   if (success === false) {
     return handleHttpErrorResponse({
       httpError: response,
@@ -205,7 +206,7 @@ export function processDQResponse({
       });
     }
   } catch (error) {
-    log("Error processing DQ response", error);
+    log(`Error processing DQ response ${JSON.stringify(jsonObj)}`);
     return handleSchemaErrorResponse({
       outboundRequest,
       gateway,

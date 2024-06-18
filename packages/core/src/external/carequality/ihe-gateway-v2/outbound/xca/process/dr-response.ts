@@ -171,6 +171,7 @@ async function handleSuccessResponse({
       responseTimestamp: dayjs().toISOString(),
       gateway,
       documentReference: documentReferences,
+      iheGatewayV2: true,
     };
     return response;
   } catch (error) {
@@ -179,9 +180,9 @@ async function handleSuccessResponse({
 }
 
 export async function processDrResponse({
-  drResponse: { errorResponse, mtomResponse, gateway, outboundRequest },
+  response: { errorResponse, mtomResponse, gateway, outboundRequest },
 }: {
-  drResponse: DrSamlClientResponse;
+  response: DrSamlClientResponse;
 }): Promise<OutboundDocumentRetrievalResp> {
   if (!gateway || !outboundRequest) throw new Error("Missing gateway or outboundRequest");
   if (errorResponse) {
@@ -235,7 +236,7 @@ export async function processDrResponse({
       });
     }
   } catch (error) {
-    log("Error processing DR response", error);
+    log(`Error processing DR response ${JSON.stringify(error)}`);
     return handleSchemaErrorResponse({
       outboundRequest,
       gateway,

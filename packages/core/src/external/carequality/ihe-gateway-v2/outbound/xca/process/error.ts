@@ -1,18 +1,19 @@
-import dayjs from "dayjs";
 import {
-  OutboundDocumentQueryReq,
-  OutboundDocumentRetrievalReq,
-  OutboundDocumentQueryResp,
-  OutboundDocumentRetrievalResp,
   OperationOutcome,
+  OutboundDocumentQueryReq,
+  OutboundDocumentQueryResp,
+  OutboundDocumentRetrievalReq,
+  OutboundDocumentRetrievalResp,
   XCAGateway,
 } from "@metriport/ihe-gateway-sdk";
-import { capture } from "../../../../../../util/notifications";
-import { out } from "../../../../../../util/log";
-import { RegistryErrorList, RegistryError } from "./schema";
 import { toArray } from "@metriport/shared";
+import dayjs from "dayjs";
+import { out } from "../../../../../../util/log";
+import { capture } from "../../../../../../util/notifications";
+import { RegistryError, RegistryErrorList } from "./schema";
 
 const { log } = out("XCA Error Handling");
+const knownNonRetryableErrors = ["No active consent for patient id"];
 
 export function processRegistryErrorList(
   registryErrorList: RegistryErrorList,
@@ -28,7 +29,7 @@ export function processRegistryErrorList(
     const registryErrors = toArray(registryErrorList?.RegistryError);
     registryErrors.forEach((entry: RegistryError) => {
       const issue = {
-        severity: entry?._severity?.toString().toLowerCase().split(":").pop() ?? "error",
+        severity: "error",
         code: entry?._errorCode?.toString() ?? "unknown-error",
         details: {
           text: entry?._codeContext?.toString() ?? "No details",
@@ -61,7 +62,7 @@ export function processRegistryErrorList(
   return operationOutcome.issue.length > 0 ? operationOutcome : undefined;
 }
 
-export function handleRegistryErrorResponse({
+export async function handleRegistryErrorResponse({
   registryErrorList,
   outboundRequest,
   gateway,
@@ -69,7 +70,7 @@ export function handleRegistryErrorResponse({
   registryErrorList: RegistryErrorList;
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
-}): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
+}): Promise<OutboundDocumentQueryResp | OutboundDocumentRetrievalResp> {
   const operationOutcome = processRegistryErrorList(registryErrorList, outboundRequest);
   return {
     id: outboundRequest.id,
@@ -78,18 +79,21 @@ export function handleRegistryErrorResponse({
     responseTimestamp: dayjs().toISOString(),
     gateway,
     operationOutcome,
+    iheGatewayV2: true,
   };
 }
 
-export function handleHttpErrorResponse({
+export async function handleHttpErrorResponse({
   httpError,
   outboundRequest,
   gateway,
+  attempt,
 }: {
   httpError: string;
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
-}): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
+  attempt?: number | undefined;
+}): Promise<OutboundDocumentQueryResp | OutboundDocumentRetrievalResp> {
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
     id: outboundRequest.id,
@@ -110,10 +114,12 @@ export function handleHttpErrorResponse({
     gateway: gateway,
     patientId: outboundRequest.patientId,
     operationOutcome: operationOutcome,
+    retried: attempt,
+    iheGatewayV2: true,
   };
 }
 
-export function handleEmptyResponse({
+export async function handleEmptyResponse({
   outboundRequest,
   gateway,
   text = "No documents found",
@@ -121,7 +127,7 @@ export function handleEmptyResponse({
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
   text?: string;
-}): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
+}): Promise<OutboundDocumentQueryResp | OutboundDocumentRetrievalResp> {
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
     id: outboundRequest.id,
@@ -142,10 +148,11 @@ export function handleEmptyResponse({
     responseTimestamp: dayjs().toISOString(),
     gateway,
     operationOutcome,
+    iheGatewayV2: true,
   };
 }
 
-export function handleSchemaErrorResponse({
+export async function handleSchemaErrorResponse({
   outboundRequest,
   gateway,
   text = "Schema Error",
@@ -153,7 +160,7 @@ export function handleSchemaErrorResponse({
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
   text?: string;
-}): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
+}): Promise<OutboundDocumentQueryResp | OutboundDocumentRetrievalResp> {
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
     id: outboundRequest.id,
@@ -174,5 +181,25 @@ export function handleSchemaErrorResponse({
     responseTimestamp: dayjs().toISOString(),
     gateway,
     operationOutcome,
+    iheGatewayV2: true,
   };
+}
+
+/**
+ * Retries if the response has an error that is not in the known non-retryable errors list
+ * Will not retry if the response is successful and is not an error.
+ */
+export function isRetryable(outboundResponse: OutboundDocumentRetrievalResp | undefined): boolean {
+  if (!outboundResponse) return false;
+  return (
+    outboundResponse.operationOutcome?.issue.some(
+      issue =>
+        issue.severity === "error" &&
+        issue.code !== "http-error" &&
+        !knownNonRetryableErrors.some(
+          nonRetryableError =>
+            "text" in issue.details && issue.details.text.includes(nonRetryableError)
+        )
+    ) ?? false
+  );
 }

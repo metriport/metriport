@@ -1,22 +1,91 @@
 import {
   OutboundDocumentQueryReq,
+  OutboundDocumentQueryResp,
   OutboundDocumentRetrievalReq,
+  OutboundDocumentRetrievalResp,
   OutboundPatientDiscoveryReq,
   OutboundPatientDiscoveryResp,
 } from "@metriport/ihe-gateway-sdk";
-import { executeWithNetworkRetries } from "@metriport/shared";
+import { executeWithNetworkRetries, executeWithRetries } from "@metriport/shared";
 import axios from "axios";
 import { capture } from "../../../util/notifications";
-import { createAndSignBulkDQRequests } from "./outbound/xca/create/iti38-envelope";
-import { createAndSignBulkDRRequests } from "./outbound/xca/create/iti39-envelope";
-import { processDQResponse } from "./outbound/xca/process/dq-response";
+import { createAndSignBulkDQRequests, SignedDqRequest } from "./outbound/xca/create/iti38-envelope";
+import { createAndSignBulkDRRequests, SignedDrRequest } from "./outbound/xca/create/iti39-envelope";
+import { processDqResponse } from "./outbound/xca/process/dq-response";
 import { processDrResponse } from "./outbound/xca/process/dr-response";
-import { sendSignedDQRequests } from "./outbound/xca/send/dq-requests";
-import { sendSignedDRRequests } from "./outbound/xca/send/dr-requests";
+import { isRetryable } from "./outbound/xca/process/error";
+import { sendSignedDqRequest } from "./outbound/xca/send/dq-requests";
+import { sendSignedDrRequest } from "./outbound/xca/send/dr-requests";
 import { createAndSignBulkXCPDRequests } from "./outbound/xcpd/create/iti55-envelope";
 import { processXCPDResponse } from "./outbound/xcpd/process/xcpd-response";
 import { sendSignedXCPDRequests } from "./outbound/xcpd/send/xcpd-requests";
 import { SamlCertsAndKeys } from "./saml/security/types";
+
+export async function sendProcessRetryDqRequest({
+  signedRequest,
+  samlCertsAndKeys,
+  patientId,
+  cxId,
+  index,
+}: {
+  signedRequest: SignedDqRequest;
+  samlCertsAndKeys: SamlCertsAndKeys;
+  patientId: string;
+  cxId: string;
+  index: number;
+}): Promise<OutboundDocumentQueryResp> {
+  async function sendProcessDqRequest() {
+    const response = await sendSignedDqRequest({
+      request: signedRequest,
+      samlCertsAndKeys,
+      patientId,
+      cxId,
+      index,
+    });
+    return await processDqResponse({
+      response,
+    });
+  }
+
+  return await executeWithRetries(sendProcessDqRequest, {
+    initialDelay: 3000,
+    maxAttempts: 3,
+    shouldRetry: isRetryable,
+  });
+}
+
+export async function sendProcessRetryDrRequest({
+  signedRequest,
+  samlCertsAndKeys,
+  patientId,
+  cxId,
+  index,
+}: {
+  signedRequest: SignedDrRequest;
+  samlCertsAndKeys: SamlCertsAndKeys;
+  patientId: string;
+  cxId: string;
+  index: number;
+}): Promise<OutboundDocumentRetrievalResp> {
+  async function sendProcessDrRequest() {
+    const response = await sendSignedDrRequest({
+      request: signedRequest,
+      samlCertsAndKeys,
+      patientId,
+      cxId,
+      index,
+    });
+    return await processDrResponse({
+      response,
+    });
+  }
+
+  return await executeWithRetries(sendProcessDrRequest, {
+    initialDelay: 3000,
+    maxAttempts: 3,
+    shouldRetry: isRetryable,
+  });
+}
 
 export async function createSignSendProcessXCPDRequest({
   pdResponseUrl,
@@ -61,7 +130,7 @@ export async function createSignSendProcessXCPDRequest({
   }
 }
 
-export async function createSignSendProcessDQRequests({
+export async function createSignSendProcessDqRequests({
   dqResponseUrl,
   dqRequestsGatewayV2,
   samlCertsAndKeys,
@@ -78,18 +147,25 @@ export async function createSignSendProcessDQRequests({
     bulkBodyData: dqRequestsGatewayV2,
     samlCertsAndKeys,
   });
-  const responses = await sendSignedDQRequests({
-    signedRequests,
-    samlCertsAndKeys,
-    patientId,
-    cxId,
-  });
-  const results = responses.map(response => {
-    return processDQResponse({
-      dqResponse: response,
+
+  const resultPromises = signedRequests.map(async (signedRequest, index) => {
+    return sendProcessRetryDqRequest({
+      signedRequest,
+      samlCertsAndKeys,
+      patientId,
+      cxId,
+      index,
     });
   });
-  for (const result of results) {
+
+  const results = await Promise.allSettled(resultPromises);
+  const successfulResults = results
+    .filter(
+      (result): result is PromiseFulfilledResult<OutboundDocumentQueryResp> =>
+        result.status === "fulfilled"
+    )
+    .map(result => result.value);
+  for (const result of successfulResults) {
     try {
       await executeWithNetworkRetries(async () => axios.post(dqResponseUrl, result));
     } catch (error) {
@@ -105,7 +181,7 @@ export async function createSignSendProcessDQRequests({
   }
 }
 
-export async function createSignSendProcessDRRequests({
+export async function createSignSendProcessDrRequests({
   drResponseUrl,
   drRequestsGatewayV2,
   samlCertsAndKeys,
@@ -122,20 +198,26 @@ export async function createSignSendProcessDRRequests({
     bulkBodyData: drRequestsGatewayV2,
     samlCertsAndKeys,
   });
-  const responses = await sendSignedDRRequests({
-    signedRequests,
-    samlCertsAndKeys,
-    patientId,
-    cxId,
+
+  const resultPromises = signedRequests.map(async (signedRequest, index) => {
+    return sendProcessRetryDrRequest({
+      signedRequest,
+      samlCertsAndKeys,
+      patientId,
+      cxId,
+      index,
+    });
   });
-  const results = await Promise.all(
-    responses.map(async response => {
-      return await processDrResponse({
-        drResponse: response,
-      });
-    })
-  );
-  for (const result of results) {
+
+  const results = await Promise.allSettled(resultPromises);
+  const successfulResults = results
+    .filter(
+      (result): result is PromiseFulfilledResult<OutboundDocumentRetrievalResp> =>
+        result.status === "fulfilled"
+    )
+    .map(result => result.value);
+
+  for (const result of successfulResults) {
     try {
       await executeWithNetworkRetries(async () => axios.post(drResponseUrl, result));
     } catch (error) {
