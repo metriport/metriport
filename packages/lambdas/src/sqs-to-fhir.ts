@@ -1,5 +1,6 @@
 import { MedplumClient } from "@medplum/core";
 import { Bundle, Resource } from "@medplum/fhirtypes";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import {
   executeWithNetworkRetries,
@@ -17,7 +18,6 @@ import { getEnvOrFail, isSandbox } from "./shared/env";
 import { isAxiosBadGateway, isAxiosTimeout } from "./shared/http";
 import { Log, prefixedLog } from "./shared/log";
 import { apiClient } from "./shared/oss-api";
-import { S3Utils } from "./shared/s3";
 import { SQSUtils } from "./shared/sqs";
 
 // Keep this as early on the file as possible

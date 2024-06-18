@@ -76,15 +76,13 @@ export async function getSignedUrls(
 
     const response = urls.filter(url => url !== undefined) as DocumentBulkSignerLambdaResponse[];
 
-    await executeWithNetworkRetries(() =>
-      ossApiClient.callInternalEndpoint({
-        cxId,
-        patientId,
-        requestId,
-        docs: response,
-        status: "completed",
-      })
-    );
+    await ossApiClient.callInternalEndpoint({
+      cxId,
+      patientId,
+      requestId,
+      docs: response,
+      status: "completed",
+    });
   } catch (error) {
     const msg = "Error getting signed URLs";
     const extra = { ...getNetworkErrorDetails(error), cxId, patientId, requestId };
@@ -92,15 +90,13 @@ export async function getSignedUrls(
     capture.error(msg, {
       extra: { ...extra, context: `getSignedUrls`, error },
     });
-    await executeWithNetworkRetries(() =>
-      ossApiClient.callInternalEndpoint({
-        cxId,
-        patientId,
-        requestId,
-        docs: [],
-        status: "failed",
-      })
-    );
+    await ossApiClient.callInternalEndpoint({
+      cxId,
+      patientId,
+      requestId,
+      docs: [],
+      status: "failed",
+    });
   }
 }
 
