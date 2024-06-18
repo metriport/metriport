@@ -158,9 +158,14 @@ export async function createSignSendProcessDqRequests({
     });
   });
 
-  const results = await Promise.all(resultPromises);
-
-  for (const result of results) {
+  const results = await Promise.allSettled(resultPromises);
+  const successfulResults = results
+    .filter(
+      (result): result is PromiseFulfilledResult<OutboundDocumentQueryResp> =>
+        result.status === "fulfilled"
+    )
+    .map(result => result.value);
+  for (const result of successfulResults) {
     try {
       await executeWithNetworkRetries(async () => axios.post(dqResponseUrl, result));
     } catch (error) {
@@ -204,9 +209,15 @@ export async function createSignSendProcessDrRequests({
     });
   });
 
-  const results = await Promise.all(resultPromises);
+  const results = await Promise.allSettled(resultPromises);
+  const successfulResults = results
+    .filter(
+      (result): result is PromiseFulfilledResult<OutboundDocumentRetrievalResp> =>
+        result.status === "fulfilled"
+    )
+    .map(result => result.value);
 
-  for (const result of results) {
+  for (const result of successfulResults) {
     try {
       await executeWithNetworkRetries(async () => axios.post(drResponseUrl, result));
     } catch (error) {

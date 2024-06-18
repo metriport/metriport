@@ -55,7 +55,6 @@ export async function executeWithNetworkRetries<T>(
     shouldRetry: (_, error: unknown) => {
       const networkCode = axios.isAxiosError(error) ? error.code : undefined;
       const networkStatus = axios.isAxiosError(error) ? error.response?.status : undefined;
-      if (!networkCode && !networkStatus) return false;
       return (
         (networkCode && codesAsString.includes(networkCode)) ||
         (networkStatus && httpStatusCodesToRetry.includes(networkStatus)) ||
