@@ -162,6 +162,7 @@ function handlePatientMatchResponse({
     patientMatch: true,
     gatewayHomeCommunityId: outboundRequest.samlAttributes.homeCommunityId,
     patientResource: patientResource,
+    iheGatewayV2: true,
   };
 
   return response;
@@ -194,6 +195,7 @@ function handlePatientNoMatchResponse({
     patientId: outboundRequest.patientId,
     patientMatch: false,
     operationOutcome: operationOutcome,
+    iheGatewayV2: true,
   };
   return response;
 }
@@ -250,7 +252,7 @@ export function processXCPDResponse({
       });
     }
   } catch (error) {
-    log(`Error processing XCPD response: ${error}`);
+    log(`Error processing XCPD response: ${JSON.stringify(error)}`);
     return handleSchemaErrorResponse({
       outboundRequest,
       gateway,

@@ -121,6 +121,7 @@ export const expectedXcpdResponse: OutboundPatientDiscoveryRespSuccessfulSchema 
       },
     ],
   },
+  iheGatewayV2: true,
 };
 
 export const expectedMultiNameAddressResponse: OutboundPatientDiscoveryRespSuccessfulSchema = {

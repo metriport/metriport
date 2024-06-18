@@ -19,7 +19,7 @@ const action = "urn:ihe:iti:2007:CrossGatewayRetrieve";
 const minDocumentReferencesPerDrRequest = 1;
 const maxDocumentReferencesPerDrRequest = 10;
 
-export type BulkSignedDR = {
+export type SignedDrRequest = {
   gateway: XCAGateway;
   signedRequest: string;
   outboundRequest: OutboundDocumentRetrievalReq;
@@ -117,8 +117,8 @@ export function createAndSignBulkDRRequests({
 }: {
   bulkBodyData: OutboundDocumentRetrievalReq[];
   samlCertsAndKeys: SamlCertsAndKeys;
-}): BulkSignedDR[] {
-  const signedRequests: BulkSignedDR[] = [];
+}): SignedDrRequest[] {
+  const signedRequests: SignedDrRequest[] = [];
 
   for (const bodyData of bulkBodyData) {
     const documentReferencesPerRequest = requiresOnlyOneDocRefPerRequest(bodyData.gateway)

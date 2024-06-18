@@ -21,13 +21,18 @@ const specialNamespaceRequiredUrl =
 const pointClickCareOid = "2.16.840.1.113883.3.6448";
 const redoxOid = "2.16.840.1.113883.3.6147.458";
 const redoxGatewayOid = "2.16.840.1.113883.3.6147.458.2";
+const surescriptsOid = "2.16.840.1.113883.3.2054.2.1.1";
 
 /*
  * These gateways only accept a single document reference per request.
  */
-const gatewaysThatAcceptOneDocRefPerRequest = [pointClickCareOid, redoxOid, redoxGatewayOid];
+const gatewaysThatAcceptOneDocRefPerRequest = [
+  pointClickCareOid,
+  redoxOid,
+  redoxGatewayOid,
+  surescriptsOid,
+];
 
-const surescriptsOid = "2.16.840.1.113883.3.2054.2.1.1";
 /*
  * These gateways require a urn:uuid prefix before document Unique ids formatted as lowercase uuids
  */
