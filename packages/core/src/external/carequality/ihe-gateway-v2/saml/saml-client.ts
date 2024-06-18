@@ -2,13 +2,14 @@ import https from "https";
 import { constants } from "crypto";
 import axios from "axios";
 import * as AWS from "aws-sdk";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { SamlCertsAndKeys } from "./security/types";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { MetriportError } from "../../../../util/error/metriport-error";
 import { createMtomContentTypeAndPayload } from "../outbound/xca/mtom/builder";
 import { executeWithNetworkRetries } from "@metriport/shared";
-
 import {
   parseMtomResponse,
   getBoundaryFromMtomResponse,
@@ -16,8 +17,11 @@ import {
   convertSoapResponseToMtomResponse,
 } from "../outbound/xca/mtom/parser";
 
+dayjs.extend(duration);
+
 const { log } = out("Saml Client");
-const timeout = 120000;
+const httpTimeout = dayjs.duration({ seconds: 120 }).asMilliseconds();
+const initialDelay = dayjs.duration({ seconds: 3 }).asMilliseconds();
 const maxPayloadSize = Infinity;
 let rejectUnauthorized = true;
 let trustedStore: string | undefined = undefined;
@@ -85,7 +89,7 @@ export async function sendSignedXml({
   const response = await executeWithNetworkRetries(
     async () => {
       return axios.post(url, signedXml, {
-        timeout: timeout,
+        timeout: httpTimeout,
         headers: {
           "Content-Type": "application/soap+xml;charset=UTF-8",
           Accept: "application/soap+xml",
@@ -95,7 +99,7 @@ export async function sendSignedXml({
       });
     },
     {
-      initialDelay: 3000,
+      initialDelay: initialDelay,
       maxAttempts: 3,
       //TODO: This introduces retry on timeout without needing to specify the http Code: https://github.com/metriport/metriport/pull/2285. Remove once PR is merged
       httpCodesToRetry: ["ECONNREFUSED", "ECONNRESET", "ETIMEDOUT"],
@@ -130,7 +134,7 @@ export async function sendSignedXmlMtom({
   const response = await executeWithNetworkRetries(
     async () => {
       return axios.post(url, payload, {
-        timeout: timeout,
+        timeout: httpTimeout,
         headers: {
           "Accept-Encoding": "gzip, deflate",
           "Content-Type": contentType,
@@ -143,7 +147,7 @@ export async function sendSignedXmlMtom({
       });
     },
     {
-      initialDelay: 3000,
+      initialDelay: initialDelay,
       maxAttempts: 4,
       //TODO: This introduces retry on timeout without needing to specify the http Code: https://github.com/metriport/metriport/pull/2285. Remove once PR is merged
       httpCodesToRetry: [

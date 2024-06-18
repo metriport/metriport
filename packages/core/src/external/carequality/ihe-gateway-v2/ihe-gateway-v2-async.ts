@@ -116,8 +116,7 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
       MAX_DOCUMENT_RETRIEVAL_REQUESTS_PER_INVOCATION
     );
 
-    for (let i = 0; i < requestChunks.length; i++) {
-      const chunk = requestChunks[i];
+    for (const [i, chunk] of requestChunks.entries()) {
       const params = { patientId, cxId, requestId, drRequestsGatewayV2: chunk };
 
       if (i > 0) {
