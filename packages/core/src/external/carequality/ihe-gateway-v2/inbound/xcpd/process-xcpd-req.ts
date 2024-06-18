@@ -66,10 +66,13 @@ export function processXcpdRequest(request: string): InboundPatientDiscoveryReq 
     const patientResource = transformIti55RequestToPatientResource(iti55Request);
 
     return {
-      id: "",
+      id: extractText(iti55Request.Envelope.Header.MessageID),
       timestamp: extractTimestamp(iti55Request.Envelope.Header),
       samlAttributes,
       patientResource,
+      signatureConfirmation: extractText(
+        iti55Request.Envelope.Header.Security.Signature.SignatureValue
+      ),
     };
   } catch (error) {
     throw new Error(`Failed to parse ITI-55 request: ${error}`);

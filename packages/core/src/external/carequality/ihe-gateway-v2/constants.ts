@@ -5,6 +5,7 @@ export const namespaces = {
   saml2: "urn:oasis:names:tc:SAML:2.0:assertion",
   ds: "http://www.w3.org/2000/09/xmldsig#",
   wsu: "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd",
+  wss: "http://docs.oasis-open.org/wss/oasis-wss-wssecurity-secext-1.1.xsd",
   xsi: "http://www.w3.org/2001/XMLSchema-instance",
   xsd: "http://www.w3.org/2001/XMLSchema-instance",
   hl7: "urn:hl7-org:v3",

@@ -51,6 +51,7 @@ export async function processInboundDocumentQuery(
       timestamp: payload.timestamp,
       responseTimestamp: new Date().toISOString(),
       extrinsicObjectXmls: documentContents,
+      signatureConfirmation: payload.signatureConfirmation,
     };
     return response;
   } catch (error) {

@@ -1,4 +1,4 @@
-import { processXcpdRequest } from "../xcpd/process-xcpd";
+import { processXcpdRequest } from "../xcpd/process-xcpd-req";
 import { TEST_CERT, iti55BodyData } from "../../saml/__tests__/constants";
 import { createITI5SoapEnvelope } from "../../outbound/xcpd/create/iti55-envelope";
 

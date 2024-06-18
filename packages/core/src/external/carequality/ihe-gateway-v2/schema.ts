@@ -74,7 +74,17 @@ export const AttributeSchema = z.union([
 export type AttributeValue = z.infer<typeof AttributeSchema>;
 
 export const samlHeaderSchema = z.object({
+  // messageId
+  // signature
+  MessageID: TextSchema,
   Security: z.object({
+    Timestamp: z.object({
+      Created: z.string(),
+      Expires: z.string(),
+    }),
+    Signature: z.object({
+      SignatureValue: z.string(),
+    }),
     Assertion: z.object({
       AttributeStatement: z.object({
         Attribute: z.tuple([
@@ -114,10 +124,6 @@ export const samlHeaderSchema = z.object({
           }),
         ]),
       }),
-    }),
-    Timestamp: z.object({
-      Created: z.string(),
-      Expires: z.string(),
     }),
   }),
 });

@@ -17,6 +17,7 @@ export async function processInboundDocumentRetrieval(
       timestamp: payload.timestamp,
       responseTimestamp: new Date().toISOString(),
       documentReference: documents,
+      signatureConfirmation: payload.signatureConfirmation,
     };
     return response;
   } catch (error) {

@@ -35,6 +35,7 @@ export const baseRequestSchema = z.object({
   timestamp: z.string(),
   samlAttributes: SamlAttributesSchema,
   patientId: z.string().nullish(),
+  signatureConfirmation: z.string().optional(),
 });
 
 export type BaseRequest = z.infer<typeof baseRequestSchema>;
@@ -86,6 +87,7 @@ export const baseResponseSchema = z.object({
   externalGatewayPatient: externalGatewayPatientSchema.optional(),
   patientId: z.string().nullish(),
   operationOutcome: operationOutcomeSchema.optional(),
+  signatureConfirmation: z.string().optional(),
 });
 export type BaseResponse = z.infer<typeof baseResponseSchema>;
 

@@ -36,6 +36,7 @@ function constructMatchResponse(
     },
     patientResource: toIheGatewayPatientResource(patient),
     gatewayHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
+    signatureConfirmation: payload.signatureConfirmation,
   };
 }
 
