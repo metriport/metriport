@@ -274,7 +274,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared],
       memory: 1024,
-      timeout: Duration.minutes(5),
+      timeout: Duration.minutes(15),
       vpc,
     });
 

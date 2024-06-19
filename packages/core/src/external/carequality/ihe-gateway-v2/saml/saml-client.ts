@@ -69,10 +69,12 @@ export async function sendSignedXml({
   signedXml,
   url,
   samlCertsAndKeys,
+  isDq,
 }: {
   signedXml: string;
   url: string;
   samlCertsAndKeys: SamlCertsAndKeys;
+  isDq: boolean;
 }): Promise<{ response: string; contentType: string }> {
   const trustedKeyStore = await getTrustedKeyStore();
   const agent = new https.Agent({
@@ -100,9 +102,9 @@ export async function sendSignedXml({
     },
     {
       initialDelay: initialDelay.asMilliseconds(),
-      maxAttempts: 3,
+      maxAttempts: isDq ? 4 : 3,
       //TODO: This introduces retry on timeout without needing to specify the http Code: https://github.com/metriport/metriport/pull/2285. Remove once PR is merged
-      httpCodesToRetry: ["ECONNREFUSED", "ECONNRESET", "ETIMEDOUT"],
+      httpCodesToRetry: ["ECONNREFUSED", "ECONNRESET", "ETIMEDOUT", "ECONNABORTED"],
     }
   );
 
