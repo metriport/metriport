@@ -33,6 +33,7 @@ export function handleHttpErrorResponse({
   return {
     id: outboundRequest.id,
     timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
     gateway,
     patientId: outboundRequest?.patientId,
@@ -70,6 +71,7 @@ export function handlePatientErrorResponse({
   const response: OutboundPatientDiscoveryResp = {
     id: outboundRequest.id,
     timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
     gateway,
     patientId: outboundRequest.patientId,
@@ -104,6 +106,7 @@ export function handleSchemaErrorResponse({
   const response: OutboundPatientDiscoveryResp = {
     id: outboundRequest.id,
     timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
     gateway,
     patientId: outboundRequest.patientId,
