@@ -6,6 +6,7 @@ import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Repository } from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
+import { FargateService } from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import {
   ApplicationProtocol,
@@ -98,6 +99,7 @@ export function createAPIService({
   service: ecs_patterns.NetworkLoadBalancedFargateService;
   serverAddress: string;
   loadBalancerAddress: string;
+  apiServiceAdditional: FargateService;
 } {
   // Create a new Amazon Elastic Container Service (ECS) cluster
   const cluster = new ecs.Cluster(stack, "APICluster", { vpc, containerInsights: true });
@@ -561,5 +563,6 @@ export function createAPIService({
     service: fargateService,
     serverAddress: apiUrl,
     loadBalancerAddress: serverAddress,
+    apiServiceAdditional: fargateServiceAlb.service,
   };
 }
