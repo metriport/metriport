@@ -1,18 +1,18 @@
+import { executeWithNetworkRetries, getEnvVar, getEnvVarOrFail } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import * as http from "http";
 import * as https from "https";
 import * as URL from "url";
 import { capture } from "./shared/capture";
-import { getEnv, getEnvOrFail } from "./shared/env";
 
 // Keep this as early on the file as possible
 capture.init();
 
 // Automatically set by AWS
-const lambdaName = getEnv("AWS_LAMBDA_FUNCTION_NAME");
+const lambdaName = getEnvVar("AWS_LAMBDA_FUNCTION_NAME");
 // Set by us
-const url = getEnvOrFail("URL");
-const timeoutRaw = getEnv("TIMEOUT_MILLIS");
+const url = getEnvVarOrFail("URL");
+const timeoutRaw = getEnvVar("TIMEOUT_MILLIS");
 const timeoutMillis = timeoutRaw != undefined ? Number(timeoutRaw) : undefined;
 
 /**
@@ -25,7 +25,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async event => {
   try {
     console.log(`Calling POST ${url}`);
 
-    await sendRequest({ url, method: "POST" });
+    await executeWithNetworkRetries(() => sendRequest({ url, method: "POST" }));
 
     console.log(`Done, request completed. (not waiting for a response)`);
   } catch (error) {
