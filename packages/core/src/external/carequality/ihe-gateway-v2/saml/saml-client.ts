@@ -108,7 +108,7 @@ export async function sendSignedXml({
       initialDelay: initialDelay.asMilliseconds(),
       maxAttempts: isDq ? 4 : 3,
       //TODO: This introduces retry on timeout without needing to specify the http Code: https://github.com/metriport/metriport/pull/2285. Remove once PR is merged
-      httpCodesToRetry: ["ECONNREFUSED", "ECONNRESET", "ETIMEDOUT"],
+      httpCodesToRetry: ["ECONNREFUSED", "ECONNRESET", "ETIMEDOUT", "ECONNABORTED"],
     }
   );
 
