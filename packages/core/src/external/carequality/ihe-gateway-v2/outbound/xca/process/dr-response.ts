@@ -158,11 +158,18 @@ async function handleSuccessResponse({
 }): Promise<OutboundDocumentRetrievalResp> {
   try {
     const idMapping = generateIdMapping(outboundRequest.documentReference);
-    const documentReferences = await Promise.all(
-      documentResponses.map(async (documentResponse: DocumentResponse) =>
+    const documentReferencesResults = await Promise.allSettled(
+      documentResponses.map((documentResponse: DocumentResponse) =>
         processDocumentReference({ documentResponse, outboundRequest, idMapping, mtomResponse })
       )
     );
+
+    const documentReferences = documentReferencesResults
+      .filter(
+        (result): result is PromiseFulfilledResult<DocumentReference> =>
+          result.status === "fulfilled"
+      )
+      .map(result => result.value);
 
     const response: OutboundDocumentRetrievalResp = {
       id: outboundRequest.id,
