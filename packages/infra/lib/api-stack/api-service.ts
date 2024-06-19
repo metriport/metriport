@@ -394,6 +394,7 @@ export function createAPIService({
 
   // Access grant for Aurora DB's secret
   dbCredsSecret.grantRead(fargateService.taskDefinition.taskRole);
+  dbCredsSecret.grantRead(fargateServiceAlb.taskDefinition.taskRole);
   // RW grant for Dynamo DB
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
@@ -402,18 +403,29 @@ export function createAPIService({
   outboundDocumentQueryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   outboundDocumentRetrievalLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToCdaConverterLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
+  dynamoDBTokenTable.grantReadWriteData(fargateServiceAlb.taskDefinition.taskRole);
+  cdaToVisualizationLambda.grantInvoke(fargateServiceAlb.taskDefinition.taskRole);
+  documentDownloaderLambda.grantInvoke(fargateServiceAlb.taskDefinition.taskRole);
+  outboundPatientDiscoveryLambda.grantInvoke(fargateServiceAlb.taskDefinition.taskRole);
+  outboundDocumentQueryLambda.grantInvoke(fargateServiceAlb.taskDefinition.taskRole);
+  outboundDocumentRetrievalLambda.grantInvoke(fargateServiceAlb.taskDefinition.taskRole);
+  fhirToCdaConverterLambda?.grantInvoke(fargateServiceAlb.taskDefinition.taskRole);
 
   // Access grant for medical document buckets
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  medicalDocumentsUploadBucket.grantReadWrite(fargateServiceAlb.taskDefinition.taskRole);
 
   if (fhirToMedicalRecordLambda) {
     fhirToMedicalRecordLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+    fhirToMedicalRecordLambda.grantInvoke(fargateServiceAlb.taskDefinition.taskRole);
     cdaToVisualizationLambda.grantInvoke(fhirToMedicalRecordLambda);
   }
 
   if (cookieStore) {
     cookieStore.grantRead(fargateService.service.taskDefinition.taskRole);
     cookieStore.grantWrite(fargateService.service.taskDefinition.taskRole);
+    cookieStore.grantRead(fargateServiceAlb.service.taskDefinition.taskRole);
+    cookieStore.grantWrite(fargateServiceAlb.service.taskDefinition.taskRole);
   }
 
   // Allow access to search services/infra
@@ -423,10 +435,36 @@ export function createAPIService({
     resource: fargateService.taskDefinition.taskRole,
   });
   searchAuth.secret.grantRead(fargateService.taskDefinition.taskRole);
+  provideAccessToQueue({
+    accessType: "send",
+    queue: searchIngestionQueue,
+    resource: fargateServiceAlb.taskDefinition.taskRole,
+  });
+  searchAuth.secret.grantRead(fargateServiceAlb.taskDefinition.taskRole);
 
   // Setting permissions for AppConfig
   fargateService.taskDefinition.taskRole.attachInlinePolicy(
     new iam.Policy(stack, "OSSAPIPermissionsForAppConfig", {
+      statements: [
+        new iam.PolicyStatement({
+          actions: [
+            "appconfig:StartConfigurationSession",
+            "appconfig:GetLatestConfiguration",
+            "appconfig:GetConfiguration",
+            "apigateway:GET",
+          ],
+          resources: ["*"],
+        }),
+        new iam.PolicyStatement({
+          actions: ["geo:SearchPlaceIndexForText"],
+          resources: [`arn:aws:geo:*`],
+          effect: iam.Effect.ALLOW,
+        }),
+      ],
+    })
+  );
+  fargateServiceAlb.taskDefinition.taskRole.attachInlinePolicy(
+    new iam.Policy(stack, "ApiPermissionsForAppConfig", {
       statements: [
         new iam.PolicyStatement({
           actions: [
@@ -479,9 +517,15 @@ export function createAPIService({
     ec2.Port.allTraffic(),
     "Allow traffic from within the VPC to the service secure port"
   );
+  fargateServiceAlb.service.connections.allowFrom(
+    ec2.Peer.ipv4(vpc.vpcCidrBlock),
+    ec2.Port.allTraffic(),
+    "Allow traffic from within the VPC to the service secure port"
+  );
   // TODO: #489 ain't the most secure, but the above code doesn't work as CDK complains we can't use the connections
   // from the cluster created above, should be fine for now as it will only accept connections in the VPC
   fargateService.service.connections.allowFromAnyIpv4(ec2.Port.allTcp());
+  fargateServiceAlb.service.connections.allowFromAnyIpv4(ec2.Port.allTcp());
 
   // TODO DEPRECATED start
   // This speeds up deployments so the tasks are swapped quicker.
