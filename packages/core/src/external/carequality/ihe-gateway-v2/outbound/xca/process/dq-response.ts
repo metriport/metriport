@@ -47,11 +47,7 @@ function getCreationTime({
   serviceStartTimeValue: string | undefined;
   serviceStopTimeValue: string | undefined;
 }): string | undefined {
-  const creationTimeStr = creationTimeValue ? String(creationTimeValue) : undefined;
-  const serviceStartTimeStr = serviceStartTimeValue ? String(serviceStartTimeValue) : undefined;
-  const serviceStopTimeStr = serviceStopTimeValue ? String(serviceStopTimeValue) : undefined;
-
-  const time = creationTimeStr ?? serviceStartTimeStr ?? serviceStopTimeStr;
+  const time = creationTimeValue ?? serviceStartTimeValue ?? serviceStopTimeValue;
 
   try {
     return time ? dayjs.utc(time).toISOString() : undefined;
