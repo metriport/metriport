@@ -131,6 +131,7 @@ function parseDocumentReference({
   };
   return documentReference;
 }
+
 function handleSuccessResponse({
   extrinsicObjects,
   outboundRequest,
