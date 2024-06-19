@@ -14,6 +14,7 @@ import {
   NetworkTargetGroup,
   Protocol,
 } from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import { AlbTarget } from "aws-cdk-lib/aws-elasticloadbalancingv2-targets";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { IFunction as ILambda } from "aws-cdk-lib/aws-lambda";
 import * as rds from "aws-cdk-lib/aws-rds";
@@ -360,6 +361,7 @@ export function createAPIService({
     ),
   });
 
+  const alb = fargateServiceAlb.loadBalancer;
   const nlb = new NetworkLoadBalancer(stack, `ApiNetworkLoadBalancer`, {
     vpc,
     internetFacing: false,
@@ -372,17 +374,11 @@ export function createAPIService({
     port: listenerPort,
     protocol: Protocol.TCP,
     vpc,
+    targets: [new AlbTarget(alb, listenerPort)],
   });
-  nlbTargetGroup.addTarget(fargateServiceAlb.service);
   nlbListener.addTargetGroups("ApiNetworkLoadBalancerTargetGroup", nlbTargetGroup);
 
   // Health checks
-  // This speeds up deployments so the tasks are swapped quicker.
-  // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
-  fargateServiceAlb.targetGroup.setAttribute("deregistration_delay.timeout_seconds", "17");
-  nlbTargetGroup.setAttribute("deregistration_delay.timeout_seconds", "20");
-  // This also speeds up deployments so the health checks have a faster turnaround.
-  // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/network/target-group-health-checks.html
   const healthcheck = {
     healthyThresholdCount: 2,
     unhealthyThresholdCount: 2,
