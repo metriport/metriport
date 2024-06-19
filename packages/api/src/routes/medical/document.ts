@@ -1,6 +1,7 @@
 import { UploadDocumentResult } from "@metriport/api-sdk";
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
 import { S3Utils } from "@metriport/core/external/aws/s3";
+import { searchDocuments } from "@metriport/core/external/opensearch/search-documents";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
@@ -18,14 +19,13 @@ import {
   docRefCheck,
 } from "../../external/fhir/document/draft-update-document-reference";
 import { upsertDocumentToFHIRServer } from "../../external/fhir/document/save-document-reference";
-import { searchDocuments } from "../../external/fhir/document/search-documents";
 import { Config } from "../../shared/config";
+import { requestLogger } from "../helpers/request-logger";
 import { sanitize } from "../helpers/string";
 import { optionalDateSchema } from "../schemas/date";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
 import { docConversionTypeSchema, docFileNameSchema } from "./schemas/documents";
-import { requestLogger } from "../helpers/request-logger";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
 const router = Router();

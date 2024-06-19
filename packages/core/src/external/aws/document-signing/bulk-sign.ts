@@ -1,14 +1,14 @@
-import { S3Utils } from "../s3";
-import { DocumentReference } from "@medplum/fhirtypes";
-import { searchDocuments } from "../../opensearch/search-documents";
 import axios from "axios";
-import { capture } from "../../../util/notifications";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { capture } from "../../../util/notifications";
+import { searchDocuments } from "../../opensearch/search-documents";
+import { S3Utils } from "../s3";
 import { DocumentBulkSignerLambdaResponse } from "./document-bulk-signer-response";
-const ossApi = axios.create();
+
 dayjs.extend(duration);
 
+const ossApi = axios.create();
 const SIGNED_URL_DURATION_SECONDS = dayjs.duration({ minutes: 3 }).asSeconds();
 
 export type DocumentBulkSignerLambdaRequest = {
@@ -17,7 +17,7 @@ export type DocumentBulkSignerLambdaRequest = {
   requestId: string;
 };
 
-export async function getSignedUrls(
+export async function searchDocumentsSignUrlsAndSendToApi(
   cxId: string,
   patientId: string,
   requestId: string,
@@ -27,12 +27,12 @@ export async function getSignedUrls(
 ) {
   const s3Utils = new S3Utils(region);
 
-  const documents: DocumentReference[] = await searchDocuments({ cxId, patientId });
+  const documents = await searchDocuments({ cxId, patientId });
   const ossApiClient = apiClientBulkDownloadWebhook(apiURL);
 
   try {
     const urls = await Promise.all(
-      documents.map(async doc => {
+      documents.flatMap(async doc => {
         const attachment = (doc?.content ?? [])
           .map(content => content?.attachment)
           .find(attachment => attachment?.title !== undefined);
@@ -62,7 +62,7 @@ export async function getSignedUrls(
       })
     );
 
-    const response = urls.filter(url => url !== undefined) as DocumentBulkSignerLambdaResponse[];
+    const response = urls.flatMap(url => (url !== undefined ? url : []));
 
     await ossApiClient.callInternalEndpoint({
       cxId: cxId,
@@ -72,8 +72,9 @@ export async function getSignedUrls(
       status: "completed",
     });
   } catch (error) {
-    capture.error(error, {
-      extra: { patientId, context: `bulkUrlSigningLambda.getSignedUrls`, error },
+    const msg = "Error getting signed URLs";
+    capture.error(msg, {
+      extra: { patientId, context: `getSignedUrls`, error },
     });
     await ossApiClient.callInternalEndpoint({
       cxId: cxId,
