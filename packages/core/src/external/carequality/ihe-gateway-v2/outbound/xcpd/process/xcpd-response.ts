@@ -152,6 +152,7 @@ function handlePatientMatchResponse({
   const response: OutboundPatientDiscoveryResp = {
     id: outboundRequest.id,
     timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
     externalGatewayPatient: {
       id: subject1.patient.id._extension,
@@ -190,6 +191,7 @@ function handlePatientNoMatchResponse({
   const response: OutboundPatientDiscoveryResp = {
     id: outboundRequest.id,
     timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
     gateway: gateway,
     patientId: outboundRequest.patientId,

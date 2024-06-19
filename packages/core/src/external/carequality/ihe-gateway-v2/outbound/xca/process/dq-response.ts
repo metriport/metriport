@@ -149,6 +149,7 @@ async function handleSuccessResponse({
     id: outboundRequest.id,
     patientId: outboundRequest.patientId,
     timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
     responseTimestamp: dayjs().toISOString(),
     gateway,
     documentReference: documentReferences,
