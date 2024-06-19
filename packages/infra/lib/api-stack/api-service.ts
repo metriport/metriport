@@ -7,6 +7,12 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Repository } from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
+import {
+  ApplicationProtocol,
+  NetworkLoadBalancer,
+  NetworkTargetGroup,
+  Protocol,
+} from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { IFunction as ILambda } from "aws-cdk-lib/aws-lambda";
 import * as rds from "aws-cdk-lib/aws-rds";
@@ -117,6 +123,121 @@ export function createAPIService({
     port: dbReadReplicaEndpoint.port,
   });
   // Run some servers on fargate containers
+  const listenerPort = 80;
+  const containerPort = 8080;
+  // TODO RENAME to remove "Alb"
+  const fargateServiceAlb = new ecs_patterns.ApplicationLoadBalancedFargateService(
+    stack,
+    "APIFargateServiceAlb",
+    {
+      cluster: cluster,
+      // Watch out for the combination of vCPUs and memory, more vCPU requires more memory
+      // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#task_size
+      cpu: isProd(props.config) ? 2048 : 1024,
+      desiredCount: isProd(props.config) ? 2 : 1,
+      taskImageOptions: {
+        image: ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest"),
+        containerPort,
+        containerName: "API-Server",
+        secrets: {
+          DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret),
+          SEARCH_PASSWORD: ecs.Secret.fromSecretsManager(searchAuth.secret),
+          ...secretsToECS(secrets),
+        },
+        environment: {
+          NODE_ENV: "production", // Determines its being run in the cloud, the logical env is set on ENV_TYPE
+          ENV_TYPE: props.config.environmentType, // staging, production, sandbox
+          ...(props.version ? { METRIPORT_VERSION: props.version } : undefined),
+          AWS_REGION: props.config.region,
+          DB_READ_REPLICA_ENDPOINT: dbReadReplicaEndpointAsString,
+          TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
+          API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
+          ...(props.config.apiGatewayUsagePlanId
+            ? { API_GW_USAGE_PLAN_ID: props.config.apiGatewayUsagePlanId }
+            : {}),
+          CONNECT_WIDGET_URL: connectWidgetUrlEnvVar,
+          SYSTEM_ROOT_OID: props.config.systemRootOID,
+          SYSTEM_ROOT_ORG_NAME: props.config.systemRootOrgName,
+          ...props.config.commonwell.envVars,
+          ...(props.config.slack ? props.config.slack : undefined),
+          ...(props.config.sentryDSN ? { SENTRY_DSN: props.config.sentryDSN } : undefined),
+          ...(props.config.usageReportUrl && {
+            USAGE_URL: props.config.usageReportUrl,
+          }),
+          ...(props.config.medicalDocumentsBucketName && {
+            MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
+          }),
+          ...(props.config.medicalDocumentsUploadBucketName && {
+            MEDICAL_DOCUMENTS_UPLOADS_BUCKET_NAME: props.config.medicalDocumentsUploadBucketName,
+          }),
+          ...(isSandbox(props.config) && {
+            SANDBOX_SEED_DATA_BUCKET_NAME: props.config.sandboxSeedDataBucketName,
+          }),
+          CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
+          DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
+          ...(iheGateway
+            ? {
+                IHE_GW_URL: `http://${iheGateway.outboundSubdomain}.${props.config.domain}`,
+                IHE_GW_PORT_PD: iheGateway.outboundPorts.patientDiscovery.toString(),
+                IHE_GW_PORT_DQ: iheGateway.outboundPorts.documentQuery.toString(),
+                IHE_GW_PORT_DR: iheGateway.outboundPorts.documentRetrieval.toString(),
+              }
+            : undefined),
+          OUTBOUND_PATIENT_DISCOVERY_LAMBDA_NAME: outboundPatientDiscoveryLambda.functionName,
+          OUTBOUND_DOC_QUERY_LAMBDA_NAME: outboundDocumentQueryLambda.functionName,
+          OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,
+          ...(fhirToMedicalRecordLambda && {
+            FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
+          }),
+          ...(fhirToCdaConverterLambda && {
+            FHIR_TO_CDA_CONVERTER_LAMBDA_NAME: fhirToCdaConverterLambda.functionName,
+          }),
+          FHIR_SERVER_URL: fhirServerUrl,
+          ...(fhirServerQueueUrl && {
+            FHIR_SERVER_QUEUE_URL: fhirServerQueueUrl,
+          }),
+          ...(fhirConverterQueueUrl && {
+            FHIR_CONVERTER_QUEUE_URL: fhirConverterQueueUrl,
+          }),
+          ...(fhirConverterServiceUrl && {
+            FHIR_CONVERTER_SERVER_URL: fhirConverterServiceUrl,
+          }),
+          SEARCH_INGESTION_QUEUE_URL: searchIngestionQueue.queueUrl,
+          SEARCH_ENDPOINT: searchEndpoint,
+          SEARCH_USERNAME: searchAuth.userName,
+          SEARCH_INDEX: searchIndexName,
+          ...(props.config.carequality?.envVars?.CQ_ORG_URLS && {
+            CQ_ORG_URLS: props.config.carequality.envVars.CQ_ORG_URLS,
+          }),
+          ...(props.config.carequality?.envVars?.CQ_URLS_TO_EXCLUDE && {
+            CQ_URLS_TO_EXCLUDE: props.config.carequality.envVars.CQ_URLS_TO_EXCLUDE,
+          }),
+          ...(props.config.locationService && {
+            PLACE_INDEX_NAME: props.config.locationService.placeIndexName,
+            PLACE_INDEX_REGION: props.config.locationService.placeIndexRegion,
+          }),
+          // app config
+          APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
+          APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
+          ...(coverageEnhancementConfig && {
+            CW_MANAGEMENT_URL: coverageEnhancementConfig.managementUrl,
+          }),
+          ...(cookieStore && {
+            CW_MANAGEMENT_COOKIE_SECRET_ARN: cookieStore.secretArn,
+          }),
+          ...(props.config.iheGateway?.trustStoreBucketName && {
+            CQ_TRUST_BUNDLE_BUCKET_NAME: props.config.iheGateway.trustStoreBucketName,
+          }),
+        },
+      },
+      memoryLimitMiB: isProd(props.config) ? 4096 : 2048,
+      healthCheckGracePeriod: Duration.seconds(60),
+      protocol: ApplicationProtocol.HTTP,
+      listenerPort,
+      publicLoadBalancer: false,
+    }
+  );
+  // TODO DEPRECATED start
   const fargateService = new ecs_patterns.NetworkLoadBalancedFargateService(
     stack,
     "APIFargateService",
@@ -226,6 +347,7 @@ export function createAPIService({
       publicLoadBalancer: false,
     }
   );
+  // TODO DEPRECATED end
   const serverAddress = fargateService.loadBalancer.loadBalancerDnsName;
   const apiUrl = `${props.config.subdomain}.${props.config.domain}`;
   new r53.ARecord(stack, "APIDomainPrivateRecord", {
@@ -234,6 +356,40 @@ export function createAPIService({
     target: r53.RecordTarget.fromAlias(
       new r53_targets.LoadBalancerTarget(fargateService.loadBalancer)
     ),
+  });
+
+  const nlb = new NetworkLoadBalancer(stack, `ApiNetworkLoadBalancer`, {
+    vpc,
+    internetFacing: false,
+  });
+  const nlbListener = nlb.addListener(`ApiNetworkLoadBalancerListener`, {
+    port: listenerPort,
+    protocol: Protocol.TCP,
+  });
+  const nlbTargetGroup = new NetworkTargetGroup(stack, `ApiNetworkTargetGroup`, {
+    port: listenerPort,
+    protocol: Protocol.TCP,
+    vpc,
+  });
+  nlbTargetGroup.addTarget(fargateServiceAlb.service);
+  nlbListener.addTargetGroups("ApiNetworkLoadBalancerTargetGroup", nlbTargetGroup);
+
+  // Health checks
+  // This speeds up deployments so the tasks are swapped quicker.
+  // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
+  fargateServiceAlb.targetGroup.setAttribute("deregistration_delay.timeout_seconds", "17");
+  nlbTargetGroup.setAttribute("deregistration_delay.timeout_seconds", "20");
+  // This also speeds up deployments so the health checks have a faster turnaround.
+  // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/network/target-group-health-checks.html
+  const healthcheck = {
+    healthyThresholdCount: 2,
+    unhealthyThresholdCount: 2,
+    interval: Duration.seconds(10),
+  };
+  fargateServiceAlb.targetGroup.configureHealthCheck(healthcheck);
+  nlbTargetGroup.configureHealthCheck({
+    ...healthcheck,
+    interval: healthcheck.interval.plus(Duration.seconds(3)),
   });
 
   // Access grant for Aurora DB's secret
@@ -327,6 +483,7 @@ export function createAPIService({
   // from the cluster created above, should be fine for now as it will only accept connections in the VPC
   fargateService.service.connections.allowFromAnyIpv4(ec2.Port.allTcp());
 
+  // TODO DEPRECATED start
   // This speeds up deployments so the tasks are swapped quicker.
   // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
   fargateService.targetGroup.setAttribute("deregistration_delay.timeout_seconds", "17");
@@ -337,6 +494,7 @@ export function createAPIService({
     healthyThresholdCount: 2,
     interval: Duration.seconds(10),
   });
+  // TODO DEPRECATED end
 
   // hookup autoscaling based on 90% thresholds
   const scaling = fargateService.service.autoScaleTaskCount({
