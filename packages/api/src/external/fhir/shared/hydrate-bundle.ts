@@ -1,7 +1,6 @@
 import { Extension, Organization, Patient } from "@medplum/fhirtypes";
-import { isValidUuid } from "@metriport/shared";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { isValidUuid, uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Bundle as ValidBundle } from "../../../routes/medical/schemas/fhir";
 
 /**
