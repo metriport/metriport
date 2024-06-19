@@ -38,7 +38,17 @@ function getHomeCommunityIdForDr(extrinsicObject: ExtrinsicObject): string {
   return getResponseHomeCommunityId(extrinsicObject);
 }
 
-function getCreationTime(time: string | undefined): string | undefined {
+function getCreationTime({
+  creationTimeValue,
+  serviceStartTimeValue,
+  serviceStopTimeValue,
+}: {
+  creationTimeValue: string | undefined;
+  serviceStartTimeValue: string | undefined;
+  serviceStopTimeValue: string | undefined;
+}): string | undefined {
+  const time = creationTimeValue ?? serviceStartTimeValue ?? serviceStopTimeValue;
+
   try {
     return time ? dayjs.utc(time).toISOString() : undefined;
   } catch (error) {
@@ -116,7 +126,8 @@ function parseDocumentReference({
   }
 
   const creationTimeValue = findSlotValue("creationTime");
-  const creationTime = creationTimeValue ? String(creationTimeValue) : undefined;
+  const serviceStartTimeValue = findSlotValue("serviceStartTime");
+  const serviceStopTimeValue = findSlotValue("serviceStopTime");
 
   const documentReference: DocumentReference = {
     homeCommunityId: getHomeCommunityIdForDr(extrinsicObject),
@@ -126,7 +137,7 @@ function parseDocumentReference({
     language: findSlotValue("languageCode"),
     size: sizeValue ? parseInt(sizeValue) : undefined,
     title: findClassificationName(XDSDocumentEntryClassCode),
-    creation: getCreationTime(creationTime),
+    creation: getCreationTime({ creationTimeValue, serviceStartTimeValue, serviceStopTimeValue }),
     authorInstitution: findClassificationSlotValue(XDSDocumentEntryAuthor, "authorInstitution"),
   };
   return documentReference;

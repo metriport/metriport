@@ -94,10 +94,12 @@ export async function storeDrResponse({
   response,
   outboundRequest,
   gateway,
+  index,
 }: {
   response: Buffer;
   outboundRequest: OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
+  index: number;
 }) {
   try {
     if (!bucket) {
@@ -112,6 +114,7 @@ export async function storeDrResponse({
       requestId,
       oid: gateway.homeCommunityId,
       timestamp,
+      index,
     });
     await s3Utils.uploadFile({ bucket, key, file: response, contentType: "application/xml" });
   } catch (error) {
@@ -126,6 +129,7 @@ export function buildIheResponseKey({
   requestId,
   oid,
   timestamp,
+  index,
 }: {
   type: "xcpd" | "dq" | "dr";
   cxId: string;
@@ -133,7 +137,9 @@ export function buildIheResponseKey({
   requestId: string;
   oid: string;
   timestamp: string;
+  index?: number;
 }) {
   const date = dayjs(timestamp).format("YYYY-MM-DD");
-  return `${cxId}/${patientId}/${type}/${requestId}_${date}/${oid}.xml`;
+  const indexPart = index ? `_${index}` : "";
+  return `${cxId}/${patientId}/${type}/${requestId}_${date}/${oid}${indexPart}.xml`;
 }
