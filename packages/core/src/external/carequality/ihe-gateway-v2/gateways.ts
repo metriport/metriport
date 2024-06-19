@@ -33,6 +33,9 @@ const gatewaysThatAcceptOneDocRefPerRequest = [
   surescriptsOid,
 ];
 
+const epicOidPrefix = "1.2.840.114350.1.13";
+export const maxDocRefsPerEpicDocRetrievalRequest = 10;
+
 /*
  * These gateways require a urn:uuid prefix before document Unique ids formatted as lowercase uuids
  */
@@ -81,4 +84,8 @@ export function requiresUrnInSoapBody(gateway: XCPDGateway): boolean {
 
 export function requiresOnlyOneDocRefPerRequest(gateway: XCAGateway): boolean {
   return gatewaysThatAcceptOneDocRefPerRequest.includes(gateway.homeCommunityId);
+}
+
+export function isEpicGateway(gateway: XCAGateway): boolean {
+  return gateway.homeCommunityId.startsWith(epicOidPrefix);
 }

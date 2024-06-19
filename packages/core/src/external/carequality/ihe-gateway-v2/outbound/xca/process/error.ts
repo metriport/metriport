@@ -13,7 +13,10 @@ import { capture } from "../../../../../../util/notifications";
 import { RegistryError, RegistryErrorList } from "./schema";
 
 const { log } = out("XCA Error Handling");
-const knownNonRetryableErrors = ["No active consent for patient id"];
+const knownNonRetryableErrors = [
+  "No active consent for patient id",
+  "Failed to find document with unique ID",
+];
 
 export function processRegistryErrorList(
   registryErrorList: RegistryErrorList,
@@ -193,13 +196,16 @@ export function handleSchemaErrorResponse({
  * Retries if the response has an error that is not in the known non-retryable errors list
  * Will not retry if the response is successful and is not an error.
  */
-export function isRetryable(outboundResponse: OutboundDocumentRetrievalResp | undefined): boolean {
+export function isRetryable(
+  outboundResponse: OutboundDocumentRetrievalResp | OutboundDocumentQueryResp | undefined
+): boolean {
   if (!outboundResponse) return false;
   return (
     outboundResponse.operationOutcome?.issue.some(
       issue =>
         issue.severity === "error" &&
         issue.code !== "http-error" &&
+        issue.code !== "schema-error" &&
         !knownNonRetryableErrors.some(
           nonRetryableError =>
             "text" in issue.details && issue.details.text.includes(nonRetryableError)

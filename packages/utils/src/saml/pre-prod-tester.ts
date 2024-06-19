@@ -15,13 +15,14 @@ import {
   OutboundDocumentRetrievalResp,
 } from "@metriport/ihe-gateway-sdk";
 import { createAndSignBulkXCPDRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/create/iti55-envelope";
-import { sendSignedXCPDRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/send/xcpd-requests";
-import { processXCPDResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/process/xcpd-response";
 import { createAndSignBulkDQRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/create/iti38-envelope";
 import { sendSignedDqRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dq-requests";
 import { processDqResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dq-response";
 import { createAndSignBulkDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/create/iti39-envelope";
-import { sendProcessRetryDrRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2-logic";
+import {
+  sendProcessRetryDrRequest,
+  sendProcessRetryXcpdRequest,
+} from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2-logic";
 import { setS3UtilsInstance as setS3UtilsInstanceForStoringDrResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
 import { setS3UtilsInstance as setS3UtilsInstanceForStoringIheResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/monitor/store";
 import { Config } from "@metriport/core/util/config";
@@ -391,18 +392,19 @@ async function queryXcpd(
       certChain: getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE_PRODUCTION"),
     };
 
-    const xmlResponses = createAndSignBulkXCPDRequests(xcpdRequest, samlCertsAndKeys);
+    const signedRequests = createAndSignBulkXCPDRequests(xcpdRequest, samlCertsAndKeys);
 
-    const response = await sendSignedXCPDRequests({
-      signedRequests: xmlResponses,
-      samlCertsAndKeys,
-      patientId: xcpdRequest.patientId,
-      cxId: xcpdRequest.cxId,
+    const resultPromises = signedRequests.map(async (signedRequest, index) => {
+      return sendProcessRetryXcpdRequest({
+        signedRequest,
+        samlCertsAndKeys,
+        patientId: uuidv4(),
+        cxId: uuidv4(),
+        index,
+      });
     });
-
-    return processXCPDResponse({
-      xcpdResponse: response[0],
-    });
+    const results = await Promise.all(resultPromises);
+    return results[0];
   } catch (error) {
     console.log("Erroring xcpdRequest", xcpdRequest);
     throw error;
