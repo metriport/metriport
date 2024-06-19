@@ -25,6 +25,7 @@ import { getCidReference } from "../mtom/cid";
 import { out } from "../../../../../../util/log";
 import { errorToString, toArray } from "@metriport/shared";
 import { iti39Schema, DocumentResponse } from "./schema";
+import { capture } from "../../../../../../util/notifications";
 
 const { log } = out("DR Processing");
 
@@ -88,52 +89,65 @@ async function processDocumentReference({
   idMapping: Record<string, string>;
   mtomResponse: MtomAttachments;
 }): Promise<DocumentReference> {
-  const s3Utils = getS3UtilsInstance();
-  const { mimeType, decodedBytes } = getMtomBytesAndMimeType(documentResponse, mtomResponse);
-  const strippedDocUniqueId = stripUrnPrefix(documentResponse.DocumentUniqueId);
-  const metriportId = idMapping[strippedDocUniqueId];
-  if (!metriportId) {
-    throw new MetriportError("MetriportId not found for document");
-  }
+  try {
+    const s3Utils = getS3UtilsInstance();
+    const { mimeType, decodedBytes } = getMtomBytesAndMimeType(documentResponse, mtomResponse);
+    const strippedDocUniqueId = stripUrnPrefix(documentResponse.DocumentUniqueId);
+    const metriportId = idMapping[strippedDocUniqueId];
+    if (!metriportId) {
+      throw new MetriportError("MetriportId not found for document");
+    }
 
-  const filePath = createDocumentFilePath(
-    outboundRequest.cxId,
-    outboundRequest.patientId,
-    metriportId,
-    mimeType
-  );
-  const fileInfo = await s3Utils.getFileInfoFromS3(filePath, bucket);
+    const filePath = createDocumentFilePath(
+      outboundRequest.cxId,
+      outboundRequest.patientId,
+      metriportId,
+      mimeType
+    );
+    const fileInfo = await s3Utils.getFileInfoFromS3(filePath, bucket);
 
-  if (!fileInfo.exists) {
-    await s3Utils.uploadFile({
-      bucket,
-      key: filePath,
-      file: decodedBytes,
+    if (!fileInfo.exists) {
+      await s3Utils.uploadFile({
+        bucket,
+        key: filePath,
+        file: decodedBytes,
+        contentType: mimeType,
+      });
+    }
+
+    log(
+      `Downloaded a document with mime type: ${mimeType} for patient: ${outboundRequest.patientId} and request: ${outboundRequest.id}`
+    );
+
+    return {
+      url: s3Utils.buildFileUrl(bucket, filePath),
+      size: documentResponse.size ? parseInt(documentResponse.size) : undefined,
+      title: documentResponse.title,
+      fileName: filePath,
+      creation: documentResponse.creation,
+      language: documentResponse.language,
       contentType: mimeType,
+      docUniqueId: documentResponse.DocumentUniqueId.toString(),
+      metriportId: metriportId,
+      fileLocation: bucket,
+      homeCommunityId: outboundRequest.gateway.homeCommunityId,
+      repositoryUniqueId: documentResponse.RepositoryUniqueId,
+      newDocumentUniqueId: documentResponse.NewDocumentUniqueId,
+      newRepositoryUniqueId: documentResponse.NewRepositoryUniqueId,
+      isNew: !fileInfo.exists,
+    };
+  } catch (error) {
+    const msg = "Error processing Document Reference";
+    log(`${msg}: ${error}`);
+    capture.error(msg, {
+      extra: {
+        error,
+        outboundRequest,
+        documentResponse,
+      },
     });
+    throw new MetriportError(`Error Processing Document Reference`, error);
   }
-
-  log(
-    `Downloaded a document with mime type: ${mimeType} for patient: ${outboundRequest.patientId} and request: ${outboundRequest.id}`
-  );
-
-  return {
-    url: s3Utils.buildFileUrl(bucket, filePath),
-    size: documentResponse.size ? parseInt(documentResponse.size) : undefined,
-    title: documentResponse.title,
-    fileName: filePath,
-    creation: documentResponse.creation,
-    language: documentResponse.language,
-    contentType: mimeType,
-    docUniqueId: documentResponse.DocumentUniqueId.toString(),
-    metriportId: metriportId,
-    fileLocation: bucket,
-    homeCommunityId: outboundRequest.gateway.homeCommunityId,
-    repositoryUniqueId: documentResponse.RepositoryUniqueId,
-    newDocumentUniqueId: documentResponse.NewDocumentUniqueId,
-    newRepositoryUniqueId: documentResponse.NewRepositoryUniqueId,
-    isNew: !fileInfo.exists,
-  };
 }
 
 function generateIdMapping(documentReferences: DocumentReference[]): Record<string, string> {
