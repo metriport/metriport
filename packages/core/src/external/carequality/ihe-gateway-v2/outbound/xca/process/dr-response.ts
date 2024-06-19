@@ -130,7 +130,7 @@ async function processDocumentReference({
       docUniqueId: documentResponse.DocumentUniqueId.toString(),
       metriportId: metriportId,
       fileLocation: bucket,
-      homeCommunityId: outboundRequest.gateway.homeCommunityId,
+      homeCommunityId: stripUrnPrefix(documentResponse.HomeCommunityId),
       repositoryUniqueId: documentResponse.RepositoryUniqueId,
       newDocumentUniqueId: documentResponse.NewDocumentUniqueId,
       newRepositoryUniqueId: documentResponse.NewRepositoryUniqueId,
