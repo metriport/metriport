@@ -1,4 +1,3 @@
-import { Organization } from "@medplum/fhirtypes";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { makeFhirToCdaConverter } from "../../../external/fhir-to-cda-converter/converter-factory";
@@ -9,15 +8,11 @@ export async function convertFhirToCda({
   patientId,
   docId,
   validatedBundle,
-  fhirOrganization,
-  orgOid,
 }: {
   cxId: string;
   patientId: string;
   docId: string;
   validatedBundle: Bundle;
-  fhirOrganization: Organization;
-  orgOid: string;
 }): Promise<void> {
   const { log } = out(`convertFhirToCda - cxId: ${cxId}, patientId: ${patientId}`);
   const cdaConverter = makeFhirToCdaConverter();
@@ -28,8 +23,6 @@ export async function convertFhirToCda({
       patientId,
       docId,
       bundle: validatedBundle,
-      organization: fhirOrganization,
-      orgOid,
     });
   } catch (error) {
     const msg = `Error converting FHIR to CDA`;

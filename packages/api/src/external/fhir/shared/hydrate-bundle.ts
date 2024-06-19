@@ -19,7 +19,7 @@ export function hydrateBundle(
     valueString: fhirBundleDestinationKey,
   };
 
-  const bundleWithExtensions = ensureUuidsAndAddExtensions(bundle, docExtension);
+  const bundleWithExtensions = validateUuidsAndAddExtensions(bundle, docExtension);
   bundleWithExtensions.entry?.push({ resource: patient });
   bundleWithExtensions.entry?.push({ resource: org });
 
@@ -28,7 +28,7 @@ export function hydrateBundle(
 
 type ReplacementIdPair = { old: string; new: string };
 
-function ensureUuidsAndAddExtensions(bundle: ValidBundle, docExtension: Extension): ValidBundle {
+function validateUuidsAndAddExtensions(bundle: ValidBundle, docExtension: Extension): ValidBundle {
   const replacements: ReplacementIdPair[] = [];
   bundle.entry.forEach(entry => {
     const oldId = entry.resource.id;
@@ -38,7 +38,12 @@ function ensureUuidsAndAddExtensions(bundle: ValidBundle, docExtension: Extensio
         new: uuidv7(),
       });
     }
-    entry.resource.extension = [metriportDataSourceExtension, docExtension];
+    if (entry.resource.extension) {
+      entry.resource.extension.push(metriportDataSourceExtension);
+      entry.resource.extension.push(docExtension);
+    } else {
+      entry.resource.extension = [metriportDataSourceExtension, docExtension];
+    }
   });
   let bundleString = JSON.stringify(bundle);
   replacements.forEach((idPair: ReplacementIdPair) => {

@@ -14,7 +14,6 @@ export { sleep } from "./common/sleep";
 export { limitStringLength } from "./common/string";
 export { AtLeastOne, stringToBoolean } from "./common/types";
 export { validateNPI } from "./common/validate-npi";
-export { isValidUuid } from "./common/validate-uuid";
 export { metriportCompanyDetails } from "./domain/metriport";
 export { BadRequestError } from "./error/bad-request";
 export { MetriportError } from "./error/metriport-error";

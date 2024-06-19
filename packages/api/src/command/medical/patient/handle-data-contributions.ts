@@ -45,7 +45,6 @@ export async function handleDataContribution({
   const incomingAmount = validatedBundle.entry.length;
 
   await checkResourceLimit(incomingAmount, patient);
-
   await uploadFhirBundleToS3({
     cxId,
     patientId,
@@ -67,8 +66,6 @@ export async function handleDataContribution({
         patientId,
         docId,
         validatedBundle,
-        fhirOrganization,
-        orgOid: organization.oid,
       });
     }
   };
