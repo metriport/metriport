@@ -6,7 +6,6 @@ import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Repository } from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
-import { FargateService } from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import {
   ApplicationProtocol,
@@ -102,7 +101,6 @@ export function createAPIService({
   loadBalancer: NetworkLoadBalancer;
   serverAddress: string;
   loadBalancerAddress: string;
-  apiServiceAdditional: FargateService;
 } {
   // Create a new Amazon Elastic Container Service (ECS) cluster
   const cluster = new ecs.Cluster(stack, "APICluster", { vpc, containerInsights: true });
@@ -246,117 +244,6 @@ export function createAPIService({
       publicLoadBalancer: false,
     }
   );
-  // TODO DEPRECATED start
-  const fargateServiceNlb = new ecs_patterns.NetworkLoadBalancedFargateService(
-    stack,
-    "APIFargateService",
-    {
-      cluster: cluster,
-      // Watch out for the combination of vCPUs and memory, more vCPU requires more memory
-      // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#task_size
-      cpu: isProd(props.config) ? 2048 : 1024,
-      desiredCount: isProd(props.config) ? 2 : 1,
-      taskImageOptions: {
-        image: ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest"),
-        containerPort,
-        containerName: "API-Server",
-        secrets: {
-          DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret),
-          SEARCH_PASSWORD: ecs.Secret.fromSecretsManager(searchAuth.secret),
-          ...secretsToECS(secrets),
-        },
-        environment: {
-          NODE_ENV: "production", // Determines its being run in the cloud, the logical env is set on ENV_TYPE
-          ENV_TYPE: props.config.environmentType, // staging, production, sandbox
-          ...(props.version ? { METRIPORT_VERSION: props.version } : undefined),
-          AWS_REGION: props.config.region,
-          DB_READ_REPLICA_ENDPOINT: dbReadReplicaEndpointAsString,
-          TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
-          API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
-          ...(props.config.apiGatewayUsagePlanId
-            ? { API_GW_USAGE_PLAN_ID: props.config.apiGatewayUsagePlanId }
-            : {}),
-          CONNECT_WIDGET_URL: connectWidgetUrlEnvVar,
-          SYSTEM_ROOT_OID: props.config.systemRootOID,
-          SYSTEM_ROOT_ORG_NAME: props.config.systemRootOrgName,
-          ...props.config.commonwell.envVars,
-          ...(props.config.slack ? props.config.slack : undefined),
-          ...(props.config.sentryDSN ? { SENTRY_DSN: props.config.sentryDSN } : undefined),
-          ...(props.config.usageReportUrl && {
-            USAGE_URL: props.config.usageReportUrl,
-          }),
-          ...(props.config.medicalDocumentsBucketName && {
-            MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
-          }),
-          ...(props.config.medicalDocumentsUploadBucketName && {
-            MEDICAL_DOCUMENTS_UPLOADS_BUCKET_NAME: props.config.medicalDocumentsUploadBucketName,
-          }),
-          ...(isSandbox(props.config) && {
-            SANDBOX_SEED_DATA_BUCKET_NAME: props.config.sandboxSeedDataBucketName,
-          }),
-          CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
-          DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
-          ...(iheGateway
-            ? {
-                IHE_GW_URL: `http://${iheGateway.outboundSubdomain}.${props.config.domain}`,
-                IHE_GW_PORT_PD: iheGateway.outboundPorts.patientDiscovery.toString(),
-                IHE_GW_PORT_DQ: iheGateway.outboundPorts.documentQuery.toString(),
-                IHE_GW_PORT_DR: iheGateway.outboundPorts.documentRetrieval.toString(),
-              }
-            : undefined),
-          OUTBOUND_PATIENT_DISCOVERY_LAMBDA_NAME: outboundPatientDiscoveryLambda.functionName,
-          OUTBOUND_DOC_QUERY_LAMBDA_NAME: outboundDocumentQueryLambda.functionName,
-          OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,
-          ...(fhirToMedicalRecordLambda && {
-            FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
-          }),
-          ...(fhirToCdaConverterLambda && {
-            FHIR_TO_CDA_CONVERTER_LAMBDA_NAME: fhirToCdaConverterLambda.functionName,
-          }),
-          FHIR_SERVER_URL: fhirServerUrl,
-          ...(fhirServerQueueUrl && {
-            FHIR_SERVER_QUEUE_URL: fhirServerQueueUrl,
-          }),
-          ...(fhirConverterQueueUrl && {
-            FHIR_CONVERTER_QUEUE_URL: fhirConverterQueueUrl,
-          }),
-          ...(fhirConverterServiceUrl && {
-            FHIR_CONVERTER_SERVER_URL: fhirConverterServiceUrl,
-          }),
-          SEARCH_INGESTION_QUEUE_URL: searchIngestionQueue.queueUrl,
-          SEARCH_ENDPOINT: searchEndpoint,
-          SEARCH_USERNAME: searchAuth.userName,
-          SEARCH_INDEX: searchIndexName,
-          ...(props.config.carequality?.envVars?.CQ_ORG_URLS && {
-            CQ_ORG_URLS: props.config.carequality.envVars.CQ_ORG_URLS,
-          }),
-          ...(props.config.carequality?.envVars?.CQ_URLS_TO_EXCLUDE && {
-            CQ_URLS_TO_EXCLUDE: props.config.carequality.envVars.CQ_URLS_TO_EXCLUDE,
-          }),
-          ...(props.config.locationService && {
-            PLACE_INDEX_NAME: props.config.locationService.placeIndexName,
-            PLACE_INDEX_REGION: props.config.locationService.placeIndexRegion,
-          }),
-          // app config
-          APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
-          APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
-          ...(coverageEnhancementConfig && {
-            CW_MANAGEMENT_URL: coverageEnhancementConfig.managementUrl,
-          }),
-          ...(cookieStore && {
-            CW_MANAGEMENT_COOKIE_SECRET_ARN: cookieStore.secretArn,
-          }),
-          ...(props.config.iheGateway?.trustStoreBucketName && {
-            CQ_TRUST_BUNDLE_BUCKET_NAME: props.config.iheGateway.trustStoreBucketName,
-          }),
-        },
-      },
-      memoryLimitMiB: isProd(props.config) ? 4096 : 2048,
-      healthCheckGracePeriod: Duration.seconds(60),
-      publicLoadBalancer: false,
-    }
-  );
-  // TODO DEPRECATED end
   const serverAddress = fargateService.loadBalancer.loadBalancerDnsName;
   const apiUrl = `${props.config.subdomain}.${props.config.domain}`;
   new r53.ARecord(stack, "APIDomainPrivateRecord", {
@@ -398,7 +285,6 @@ export function createAPIService({
 
   // Access grant for Aurora DB's secret
   dbCredsSecret.grantRead(fargateService.taskDefinition.taskRole);
-  dbCredsSecret.grantRead(fargateServiceNlb.taskDefinition.taskRole);
   // RW grant for Dynamo DB
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
@@ -407,29 +293,18 @@ export function createAPIService({
   outboundDocumentQueryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   outboundDocumentRetrievalLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToCdaConverterLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
-  dynamoDBTokenTable.grantReadWriteData(fargateServiceNlb.taskDefinition.taskRole);
-  cdaToVisualizationLambda.grantInvoke(fargateServiceNlb.taskDefinition.taskRole);
-  documentDownloaderLambda.grantInvoke(fargateServiceNlb.taskDefinition.taskRole);
-  outboundPatientDiscoveryLambda.grantInvoke(fargateServiceNlb.taskDefinition.taskRole);
-  outboundDocumentQueryLambda.grantInvoke(fargateServiceNlb.taskDefinition.taskRole);
-  outboundDocumentRetrievalLambda.grantInvoke(fargateServiceNlb.taskDefinition.taskRole);
-  fhirToCdaConverterLambda?.grantInvoke(fargateServiceNlb.taskDefinition.taskRole);
 
   // Access grant for medical document buckets
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
-  medicalDocumentsUploadBucket.grantReadWrite(fargateServiceNlb.taskDefinition.taskRole);
 
   if (fhirToMedicalRecordLambda) {
     fhirToMedicalRecordLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-    fhirToMedicalRecordLambda.grantInvoke(fargateServiceNlb.taskDefinition.taskRole);
     cdaToVisualizationLambda.grantInvoke(fhirToMedicalRecordLambda);
   }
 
   if (cookieStore) {
     cookieStore.grantRead(fargateService.service.taskDefinition.taskRole);
     cookieStore.grantWrite(fargateService.service.taskDefinition.taskRole);
-    cookieStore.grantRead(fargateServiceNlb.service.taskDefinition.taskRole);
-    cookieStore.grantWrite(fargateServiceNlb.service.taskDefinition.taskRole);
   }
 
   // Allow access to search services/infra
@@ -439,36 +314,10 @@ export function createAPIService({
     resource: fargateService.taskDefinition.taskRole,
   });
   searchAuth.secret.grantRead(fargateService.taskDefinition.taskRole);
-  provideAccessToQueue({
-    accessType: "send",
-    queue: searchIngestionQueue,
-    resource: fargateServiceNlb.taskDefinition.taskRole,
-  });
-  searchAuth.secret.grantRead(fargateServiceNlb.taskDefinition.taskRole);
 
   // Setting permissions for AppConfig
   fargateService.taskDefinition.taskRole.attachInlinePolicy(
     new iam.Policy(stack, "OSSAPIPermissionsForAppConfig", {
-      statements: [
-        new iam.PolicyStatement({
-          actions: [
-            "appconfig:StartConfigurationSession",
-            "appconfig:GetLatestConfiguration",
-            "appconfig:GetConfiguration",
-            "apigateway:GET",
-          ],
-          resources: ["*"],
-        }),
-        new iam.PolicyStatement({
-          actions: ["geo:SearchPlaceIndexForText"],
-          resources: [`arn:aws:geo:*`],
-          effect: iam.Effect.ALLOW,
-        }),
-      ],
-    })
-  );
-  fargateServiceNlb.taskDefinition.taskRole.attachInlinePolicy(
-    new iam.Policy(stack, "ApiPermissionsForAppConfig", {
       statements: [
         new iam.PolicyStatement({
           actions: [
@@ -521,28 +370,9 @@ export function createAPIService({
     ec2.Port.allTraffic(),
     "Allow traffic from within the VPC to the service secure port"
   );
-  fargateServiceNlb.service.connections.allowFrom(
-    ec2.Peer.ipv4(vpc.vpcCidrBlock),
-    ec2.Port.allTraffic(),
-    "Allow traffic from within the VPC to the service secure port"
-  );
   // TODO: #489 ain't the most secure, but the above code doesn't work as CDK complains we can't use the connections
   // from the cluster created above, should be fine for now as it will only accept connections in the VPC
   fargateService.service.connections.allowFromAnyIpv4(ec2.Port.allTcp());
-  fargateServiceNlb.service.connections.allowFromAnyIpv4(ec2.Port.allTcp());
-
-  // TODO DEPRECATED start
-  // This speeds up deployments so the tasks are swapped quicker.
-  // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
-  fargateServiceNlb.targetGroup.setAttribute("deregistration_delay.timeout_seconds", "17");
-
-  // This also speeds up deployments so the health checks have a faster turnaround.
-  // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/network/target-group-health-checks.html
-  fargateServiceNlb.targetGroup.configureHealthCheck({
-    healthyThresholdCount: 2,
-    interval: Duration.seconds(10),
-  });
-  // TODO DEPRECATED end
 
   // hookup autoscaling based on 90% thresholds
   const scaling = fargateService.service.autoScaleTaskCount({
@@ -566,6 +396,5 @@ export function createAPIService({
     serverAddress: apiUrl,
     loadBalancer: nlb,
     loadBalancerAddress: serverAddress,
-    apiServiceAdditional: fargateServiceNlb.service,
   };
 }
