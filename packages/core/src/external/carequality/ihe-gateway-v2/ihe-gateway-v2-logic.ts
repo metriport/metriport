@@ -42,7 +42,7 @@ export async function sendProcessRetryDqRequest({
       cxId,
       index,
     });
-    return await processDqResponse({
+    return processDqResponse({
       response,
     });
   }
