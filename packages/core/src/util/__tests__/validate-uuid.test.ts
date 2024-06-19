@@ -6,9 +6,7 @@ const idWithInvalidLength = "01902d03-8560-78ef-9566-f0b133de4a65111";
 const idWithUnexpectedCharacters = "01902d03-8560-78ef-9566-f0b133de4XYZ";
 
 describe("isValidUuid", () => {
-  it("should return false on falsy values", () => {
-    expect(isValidUuid()).toBe(false);
-    expect(isValidUuid(undefined)).toBe(false);
+  it("should return false on empty string", () => {
     expect(isValidUuid("")).toBe(false);
   });
 

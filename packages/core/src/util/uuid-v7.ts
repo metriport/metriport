@@ -394,6 +394,6 @@ const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}
  * @param uuid Any string
  * @returns boolean
  */
-export function isValidUuid(uuid?: string): boolean {
-  return uuid ? uuidRegex.test(uuid) : false;
+export function isValidUuid(uuid: string): boolean {
+  return uuidRegex.test(uuid);
 }

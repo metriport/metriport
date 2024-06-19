@@ -31,7 +31,10 @@ function validateUuidsAndAddExtensions(bundle: ValidBundle, docExtension: Extens
   const replacements: ReplacementIdPair[] = [];
   bundle.entry.forEach(entry => {
     const oldId = entry.resource.id;
-    if (!isValidUuid(oldId)) {
+    if (!oldId) {
+      entry.resource.id = uuidv7();
+    }
+    if (oldId && !isValidUuid(oldId)) {
       replacements.push({
         old: oldId,
         new: uuidv7(),
