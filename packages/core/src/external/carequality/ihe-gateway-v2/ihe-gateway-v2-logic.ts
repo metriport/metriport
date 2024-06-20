@@ -26,7 +26,7 @@ import { processXCPDResponse } from "./outbound/xcpd/process/xcpd-response";
 import { sendSignedXcpdRequest } from "./outbound/xcpd/send/xcpd-requests";
 import { SamlCertsAndKeys } from "./saml/security/types";
 
-export async function sendProcessRetryXcpdRequest({
+export async function sendProcessXcpdRequest({
   signedRequest,
   samlCertsAndKeys,
   patientId,
@@ -39,7 +39,7 @@ export async function sendProcessRetryXcpdRequest({
   cxId: string;
   index: number;
 }): Promise<OutboundPatientDiscoveryResp> {
-  async function sendProcessXcpdRequest() {
+  async function sendAndProcess() {
     const response = await sendSignedXcpdRequest({
       request: signedRequest,
       samlCertsAndKeys,
@@ -54,11 +54,11 @@ export async function sendProcessRetryXcpdRequest({
     });
   }
 
-  return await executeWithRetries(sendProcessXcpdRequest, {
+  return await executeWithRetries(sendAndProcess, {
     initialDelay: 3000,
     maxAttempts: 3,
     shouldRetry: isRetryableXcpd,
-    log: out("sendProcessRetryXcpdRequest").log,
+    log: out("sendProcessXcpdRequest").log,
   });
 }
 
@@ -146,7 +146,7 @@ export async function createSignSendProcessXCPDRequest({
   const log = getLog("createSignSendProcessXCPDRequest");
   const signedRequests = createAndSignBulkXCPDRequests(xcpdRequest, samlCertsAndKeys);
   const resultPromises = signedRequests.map(async (signedRequest, index) => {
-    const result = await sendProcessRetryXcpdRequest({
+    const result = await sendProcessXcpdRequest({
       signedRequest,
       samlCertsAndKeys,
       patientId,
