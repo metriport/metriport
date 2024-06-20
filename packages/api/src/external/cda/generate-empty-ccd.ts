@@ -1,26 +1,17 @@
 import { Address as FhirAddress, Organization } from "@medplum/fhirtypes";
 import { AddressStrict } from "@metriport/core/domain/location-address";
+import { Patient } from "@metriport/core/domain/patient";
 import { Address } from "@metriport/core/src/domain/address";
 import { Contact } from "@metriport/core/src/domain/contact";
 import { metriportOrganization } from "@metriport/shared/common/metriport-organization";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { OrganizationModel } from "../../models/medical/organization";
 import { Config } from "../../shared/config";
 
 const metriportOid = Config.getSystemRootOID();
 
-export async function generateEmptyCcd({
-  patientId,
-  cxId,
-}: {
-  patientId: string;
-  cxId: string;
-}): Promise<string> {
-  const [organization, patient] = await Promise.all([
-    getOrganizationOrFail({ cxId }),
-    getPatientOrFail({ cxId, id: patientId }),
-  ]);
+export async function generateEmptyCcd(patient: Patient): Promise<string> {
+  const organization = await getOrganizationOrFail({ cxId: patient.cxId });
   const data = patient.data;
   const address = data.address;
   const addresses = buildAddresses(address);
@@ -43,7 +34,7 @@ export async function generateEmptyCcd({
 	<languageCode code="en-US"/>
 	<recordTarget>
 		<patientRole>
-			<id root="${patientId}"/>
+			<id root="${patient.id}"/>
 			${addresses}
 			${patientTelecom}
 			<patient>

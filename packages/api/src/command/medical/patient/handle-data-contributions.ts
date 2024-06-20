@@ -1,9 +1,10 @@
+import { createUploadFilePath } from "@metriport/core/domain/document/upload";
 import { Patient } from "@metriport/core/domain/patient";
 import { toFHIR as toFhirPatient } from "@metriport/core/external/fhir/patient/index";
-import { createUploadFilePath } from "@metriport/core/domain/document/upload";
 import { uploadCdaDocuments, uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import BadRequestError from "../../../errors/bad-request";
+import { processCcdRequest } from "../../../external/cda/process-ccd-request";
 import { toFHIR as toFhirOrganization } from "../../../external/fhir/organization";
 import { countResources } from "../../../external/fhir/patient/count-resources";
 import { hydrateBundle } from "../../../external/fhir/shared/hydrate-bundle";
@@ -51,13 +52,12 @@ export async function handleDataContribution({
     fhirBundle: validatedBundle,
     destinationKey: fhirBundleDestinationKey,
   });
-  const patientDataPromise = async () => {
-    return createOrUpdateConsolidatedPatientData({
-      cxId,
-      patientId: patient.id,
-      fhirBundle: validatedBundle,
-    });
-  };
+  const consolidatedDataUploadResults = await createOrUpdateConsolidatedPatientData({
+    cxId,
+    patientId: patient.id,
+    fhirBundle: validatedBundle,
+  });
+
   const convertAndUploadCdaPromise = async () => {
     const isValidForCdaConversion = hasCompositionResource(validatedBundle);
     if (isValidForCdaConversion) {
@@ -74,8 +74,16 @@ export async function handleDataContribution({
       });
     }
   };
+  const createAndUploadCcdPromise = async () => {
+    // TODO: To minimize generating CCDs, make it a delayed job (run it ~5min after it was initiated, only once for all requests within that time window)
+    await processCcdRequest(patient, fhirOrganization);
+  };
 
-  return Promise.all([patientDataPromise(), convertAndUploadCdaPromise()]);
+  return Promise.all([
+    consolidatedDataUploadResults,
+    createAndUploadCcdPromise(),
+    convertAndUploadCdaPromise(),
+  ]);
 }
 
 async function checkResourceLimit(incomingAmount: number, patient: Patient) {

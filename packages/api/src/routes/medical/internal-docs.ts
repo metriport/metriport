@@ -25,12 +25,14 @@ import {
   MAPIWebhookStatus,
   processPatientDocumentRequest,
 } from "../../command/medical/document/document-webhook";
+import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { appendDocQueryProgress } from "../../command/medical/patient/append-doc-query-progress";
 import { appendBulkGetDocUrlProgress } from "../../command/medical/patient/bulk-get-doc-url-progress";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import BadRequestError from "../../errors/bad-request";
-import { generateCcd } from "../../external/cda/generate-ccd";
+import { processCcdRequest } from "../../external/cda/process-ccd-request";
 import { parseJobId } from "../../external/fhir/connector/connector";
+import { toFHIR as toFhirOrganization } from "../../external/fhir/organization";
 import { setDocQueryProgress } from "../../external/hie/set-doc-query-progress";
 import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
@@ -411,20 +413,26 @@ router.post(
 );
 
 /**
- * GET /internal/docs/ccd
+ * POST /internal/docs/ccd
  *
- * Generates a CCD document for the specified patient.
+ * Generates a CCD document and uploads it for the specified patient.
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.patientId - The patient's ID.
  * @return The CCD document string in XML format.
  */
-router.get(
+router.post(
   "/ccd",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
-    const ccd = await generateCcd({ patientId, cxId });
+    const [patient, organization] = await Promise.all([
+      getPatientOrFail({ cxId, id: patientId }),
+      getOrganizationOrFail({ cxId }),
+    ]);
+
+    const fhirOrganization = toFhirOrganization(organization);
+    const ccd = await processCcdRequest(patient, fhirOrganization);
     return res.type("application/xml").status(httpStatus.OK).send(ccd);
   })
 );

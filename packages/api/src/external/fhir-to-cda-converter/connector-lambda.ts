@@ -30,12 +30,13 @@ export class FhirToCdaConverterLambda implements FhirToCdaConverter {
       .promise();
 
     // TODO: Check that this works on Staging
-    const res = getLambdaResultPayload({
+    const resultPayload = getLambdaResultPayload({
       result,
       lambdaName: fhirToCdaConverterLambdaName,
       failGracefully: false,
     });
 
-    return [res];
+    const parsedResult = JSON.parse(resultPayload) as string[];
+    return parsedResult;
   }
 }

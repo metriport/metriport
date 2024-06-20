@@ -1,25 +1,16 @@
 import { Bundle } from "@medplum/fhirtypes";
+import { Patient } from "@metriport/core/domain/patient";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { getConsolidatedPatientData } from "../../command/medical/patient/consolidated-get";
 import { convertFhirToCda } from "../../command/medical/patient/convert-fhir-to-cda";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { bundleSchema } from "../../routes/medical/schemas/fhir";
 import { toFHIR as toFhirOrganization } from "../fhir/organization";
 import { validateFhirEntries } from "../fhir/shared/json-validator";
 import { generateEmptyCcd } from "./generate-empty-ccd";
 
-export async function generateCcd({
-  patientId,
-  cxId,
-}: {
-  patientId: string;
-  cxId: string;
-}): Promise<string | undefined> {
-  const [organization, patient] = await Promise.all([
-    getOrganizationOrFail({ cxId }),
-    getPatientOrFail({ cxId, id: patientId }),
-  ]);
+export async function generateCcd(patient: Patient): Promise<string> {
+  const organization = await getOrganizationOrFail({ cxId: patient.cxId });
   const allResources = await getConsolidatedPatientData({ patient });
   const metriportGenerated = allResources.entry?.filter(entry => {
     const resource = entry.resource;
@@ -33,7 +24,7 @@ export async function generateCcd({
   });
 
   if (!metriportGenerated || !metriportGenerated.length) {
-    return generateEmptyCcd({ patientId, cxId });
+    return generateEmptyCcd(patient);
   }
 
   const fhirOrganization = toFhirOrganization(organization);
@@ -45,10 +36,12 @@ export async function generateCcd({
   const parsedBundle = bundleSchema.parse(bundle);
   const validatedBundle = validateFhirEntries(parsedBundle);
 
-  const cda = await convertFhirToCda({
-    cxId,
+  const converted = await convertFhirToCda({
+    cxId: patient.cxId,
     validatedBundle,
     toSplit: false,
   });
-  return cda[0];
+  const ccd = converted[0];
+  if (!ccd) throw new Error("Failed to create CCD");
+  return ccd;
 }

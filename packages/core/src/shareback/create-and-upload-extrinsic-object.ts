@@ -25,7 +25,7 @@ export async function createAndUploadDocumentMetadataFile({
   patientId: string;
   docId: string;
   size: number;
-  docRef?: DocumentReference;
+  docRef?: DocumentReference | undefined;
   organization?: Organization;
   metadataFileName: string;
   destinationBucket: string;
