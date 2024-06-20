@@ -1,5 +1,4 @@
 import dayjs from "dayjs";
-import { chunk } from "lodash";
 import { XMLBuilder } from "fast-xml-parser";
 import { OutboundDocumentRetrievalReq, XCAGateway } from "@metriport/ihe-gateway-sdk";
 import { createSecurityHeader } from "../../../saml/security/security-header";
@@ -8,16 +7,9 @@ import { SamlCertsAndKeys } from "../../../saml/security/types";
 import { namespaces, expiresIn } from "../../../constants";
 import { ORGANIZATION_NAME_DEFAULT as metriportOrganization, replyTo } from "../../../../shared";
 import { wrapIdInUrnUuid, wrapIdInUrnOid } from "../../../../../../util/urn";
-import {
-  requiresOnlyOneDocRefPerRequest,
-  getHomeCommunityId,
-  getDocumentUniqueIdFunctionByGateway,
-} from "../../../gateways";
+import { getHomeCommunityId, getDocumentUniqueIdFunctionByGateway } from "../../../gateways";
 
 const action = "urn:ihe:iti:2007:CrossGatewayRetrieve";
-
-const minDocumentReferencesPerDrRequest = 1;
-const maxDocumentReferencesPerDrRequest = 10;
 
 export type SignedDrRequest = {
   gateway: XCAGateway;
@@ -121,22 +113,11 @@ export function createAndSignBulkDRRequests({
   const signedRequests: SignedDrRequest[] = [];
 
   for (const bodyData of bulkBodyData) {
-    const documentReferencesPerRequest = requiresOnlyOneDocRefPerRequest(bodyData.gateway)
-      ? minDocumentReferencesPerDrRequest
-      : maxDocumentReferencesPerDrRequest;
-    const documentReferences = bodyData.documentReference;
-    const chunks = chunk(documentReferences, documentReferencesPerRequest);
-    chunks.forEach(docRefs => {
-      const chunkedBodyData = {
-        ...bodyData,
-        documentReference: docRefs,
-      };
-      const signedRequest = createAndSignDRRequest(chunkedBodyData, samlCertsAndKeys);
-      signedRequests.push({
-        gateway: bodyData.gateway,
-        signedRequest,
-        outboundRequest: chunkedBodyData,
-      });
+    const signedRequest = createAndSignDRRequest(bodyData, samlCertsAndKeys);
+    signedRequests.push({
+      gateway: bodyData.gateway,
+      signedRequest,
+      outboundRequest: bodyData,
     });
   }
 
