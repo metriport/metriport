@@ -93,6 +93,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
       await executeWithRetries(async () => openSearch.ingest(params), {
         initialDelay: initialDelayBetweenRetries.asMilliseconds(),
         maxAttempts: maxAttemptsToIngest,
+        log,
       });
       metrics.ingestion = {
         duration: Date.now() - ingestionStart,

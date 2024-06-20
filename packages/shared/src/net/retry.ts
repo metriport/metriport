@@ -29,6 +29,7 @@ const defaultOptions: ExecuteWithNetworkRetriesOptions = {
     // https://nodejs.org/docs/latest-v18.x/api/errors.html#common-system-errors
     "ECONNREFUSED", // (Connection refused): No connection could be made because the target machine actively refused it. This usually results from trying to connect to a service that is inactive on the foreign host.
     "ECONNRESET", //  (Connection reset by peer): A connection was forcibly closed by a peer. This normally results from a loss of the connection on the remote socket due to a timeout or reboot. Commonly encountered via the http and net modules.
+    "ENOTFOUND", //  (DNS lookup failed): Indicates a DNS failure of either EAI_NODATA or EAI_NONAME. This is not a standard POSIX error.
   ],
   httpStatusCodesToRetry: [tooManyRequestsStatus],
   retryOnTimeout: false,

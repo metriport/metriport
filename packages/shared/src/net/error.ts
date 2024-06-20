@@ -2,20 +2,20 @@ import axios, { AxiosError } from "axios";
 import { errorToString } from "../error/shared";
 
 // https://nodejs.org/docs/latest-v18.x/api/errors.html#common-system-errors
-export const nodeConnRefusedErrorCodes = ["ECONNREFUSED", "ECONNRESET"];
+export const nodeConnRefusedErrorCodes = ["ECONNREFUSED", "ECONNRESET"] as const;
 export type NodeConnRefusedNetworkError = (typeof nodeConnRefusedErrorCodes)[number];
 
-export const nodeTimeoutErrorCodes = ["ETIMEDOUT"];
+export const nodeTimeoutErrorCodes = ["ETIMEDOUT"] as const;
 export type NodeTimeoutNetworkError = (typeof nodeTimeoutErrorCodes)[number];
 
-export type NodeNetworkError = NodeTimeoutNetworkError | NodeConnRefusedNetworkError;
+export type NodeNetworkError = NodeTimeoutNetworkError | NodeConnRefusedNetworkError | "ENOTFOUND";
 
 // Axios error codes that are timeout errors
 
-export const axiosTimeoutErrorCodes = [AxiosError.ECONNABORTED, AxiosError.ETIMEDOUT];
+export const axiosTimeoutErrorCodes = [AxiosError.ECONNABORTED, AxiosError.ETIMEDOUT] as const;
 export type AxiosTimeoutError = (typeof axiosTimeoutErrorCodes)[number];
 
-export const axiosResponseErrorCodes = [AxiosError.ERR_BAD_RESPONSE];
+export const axiosResponseErrorCodes = [AxiosError.ERR_BAD_RESPONSE] as const;
 export type AxiosResponseError = (typeof axiosResponseErrorCodes)[number];
 
 export type AxiosNetworkError = AxiosTimeoutError | AxiosResponseError;

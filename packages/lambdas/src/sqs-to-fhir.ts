@@ -126,7 +126,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
         const downloadStart = Date.now();
         const payloadRaw = await executeWithRetries(
           () => s3Utils.getFileContentsAsString(s3BucketName, s3FileName),
-          defaultS3RetriesConfig
+          {
+            ...defaultS3RetriesConfig,
+            log,
+          }
         );
         metrics.download = {
           duration: Date.now() - downloadStart,
@@ -163,7 +166,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
         // This retry logic is for application level errors, not network errors
         while (retry) {
           count++;
-          response = await executeWithNetworkRetries(() => fhirApi.executeBatch(payload));
+          response = await executeWithNetworkRetries(() => fhirApi.executeBatch(payload), { log });
           const errors = getErrorsFromReponse(response);
           if (errors.length <= 0) break;
           retry = count < maxRetries;
