@@ -218,9 +218,12 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
             fhirConverter.post(converterUrl, payloadClean, {
               params: converterParams,
               headers: { "Content-Type": "text/plain" },
-            })
-          // No retries on timeout b/c we want to re-enqueue instead of trying within the same lambda run,
-          // it could lead to timing out the lambda execution.
+            }),
+          {
+            // No retries on timeout b/c we want to re-enqueue instead of trying within the same lambda run,
+            // it could lead to timing out the lambda execution.
+            log,
+          }
         );
         const conversionResult = res.data.fhirResource as FHIRBundle;
         metrics.conversion = {
@@ -241,7 +244,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
                   ContentType: "application/fhir+json",
                 })
                 .promise(),
-            defaultS3RetriesConfig
+            {
+              ...defaultS3RetriesConfig,
+              log,
+            }
           );
         } catch (error) {
           console.log(`Error uploading pre-processed file: ${error}`);
@@ -410,7 +416,10 @@ async function sendConversionResult(
           ContentType: "application/fhir+json",
         })
         .promise(),
-    defaultS3RetriesConfig
+    {
+      ...defaultS3RetriesConfig,
+      log,
+    }
   );
 
   log(`Sending result info to queue`);
