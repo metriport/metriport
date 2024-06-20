@@ -2,7 +2,7 @@ import {
   makeDocumentReferenceWithMetriportId,
   makeDocumentReference,
 } from "./make-document-reference-with-metriport-id";
-import { filterDocRefsWithMetriportId } from "../shared";
+import { containsMetriportId } from "../shared";
 import { faker } from "@faker-js/faker";
 
 describe("filterDocRefsWithMetriportId", () => {
@@ -15,7 +15,7 @@ describe("filterDocRefsWithMetriportId", () => {
       makeDocumentReferenceWithMetriportId({ metriportId: metriportId2 }),
     ];
 
-    const filteredDocRefs = filterDocRefsWithMetriportId(docRefs);
+    const filteredDocRefs = docRefs.filter(containsMetriportId);
 
     expect(filteredDocRefs.length).toBe(2);
     expect(filteredDocRefs[0].metriportId).toBe(metriportId1);
