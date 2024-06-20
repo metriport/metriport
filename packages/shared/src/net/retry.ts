@@ -30,7 +30,7 @@ const defaultOptions: ExecuteWithNetworkRetriesOptions = {
     "ECONNREFUSED", // (Connection refused): No connection could be made because the target machine actively refused it. This usually results from trying to connect to a service that is inactive on the foreign host.
     "ECONNRESET", //  (Connection reset by peer): A connection was forcibly closed by a peer. This normally results from a loss of the connection on the remote socket due to a timeout or reboot. Commonly encountered via the http and net modules.
   ],
-  httpStatusCodesToRetry: [tooManyRequestsStatus], // 429 Too Many Requests
+  httpStatusCodesToRetry: [tooManyRequestsStatus],
   retryOnTimeout: false,
 };
 
@@ -59,21 +59,14 @@ function networkGetTimeToWait({
   error,
 }: GetTimeToWaitParams) {
   const status = getHttpStatusFromError(error);
-  if (status === tooManyRequestsStatus) {
-    return defaultGetTimeToWait({
-      initialDelay: initialDelay * tooManyRequestsMultiplier,
-      backoffMultiplier,
-      attempt,
-      maxDelay,
-    });
-  } else {
-    return defaultGetTimeToWait({
-      initialDelay,
-      backoffMultiplier,
-      attempt,
-      maxDelay,
-    });
-  }
+  const effectiveInitialDelay =
+    status === tooManyRequestsStatus ? initialDelay * tooManyRequestsMultiplier : initialDelay;
+  return defaultGetTimeToWait({
+    initialDelay: effectiveInitialDelay,
+    backoffMultiplier,
+    attempt,
+    maxDelay,
+  });
 }
 
 /**
