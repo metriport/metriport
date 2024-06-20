@@ -1,17 +1,16 @@
 import { DocumentReference } from "@medplum/fhirtypes";
-import { isCommonwellExtension } from "../commonwell/extension";
-import { isCarequalityExtension } from "../carequality/extension";
-import { isMetriportExtension } from "../fhir/shared/extensions/metriport";
+import { log as _log } from "../../util/log";
 import { uniqBy } from "lodash";
 import { isDocStatusReady } from ".";
 import { Config } from "../../util/config";
 import { capture } from "../../util/notifications";
-import { makeSearchServiceQuery } from "../opensearch/file-search-connector-factory";
+import { isCarequalityExtension } from "../carequality/extension";
+import { isCommonwellExtension } from "../commonwell/extension";
+import { DocumentReferenceWithId } from "../fhir/document/document-reference";
 import { getDocuments } from "../fhir/document/get-documents";
+import { isMetriportExtension } from "../fhir/shared/extensions/metriport";
+import { makeSearchServiceQuery } from "../opensearch/file-search-connector-factory";
 
-/* Warning! This function is duplicated in api/src/external/fhir/document/search-documents.ts.
- * Ticket to fix this: https://github.com/metriport/metriport-internal/issues/1801
- */
 export async function searchDocuments({
   cxId,
   patientId,
@@ -22,7 +21,8 @@ export async function searchDocuments({
   patientId: string;
   dateRange?: { from?: string; to?: string };
   contentFilter?: string;
-}): Promise<DocumentReference[]> {
+}): Promise<DocumentReferenceWithId[]> {
+  const log = _log("searchDocuments");
   const fhirDocs = await getDocuments({ cxId, patientId, from, to });
 
   const docs = await Promise.allSettled([
@@ -33,8 +33,14 @@ export async function searchDocuments({
   const success = [...docs.flatMap(d => (d.status === "fulfilled" ? d.value : []))];
   const failure = [...docs.flatMap(d => (d.status === "rejected" ? d.reason : []))];
   if (failure.length) {
-    console.log(`[searchDocuments] Failure searching: ${failure.join("; ")}`);
-    capture.message(`Failure searching`, { extra: { failures: failure.join("; ") } });
+    const msg = `Failure searching`;
+    const extra = {
+      failures: failure.join("; "),
+      successCount: success.length,
+      failureCount: failure.length,
+    };
+    log(`${msg}: ${JSON.stringify(extra)}`);
+    capture.message(msg, { extra });
   }
 
   const unique = uniqBy(success, "id");
@@ -43,9 +49,9 @@ export async function searchDocuments({
 }
 
 async function searchOnDocumentReferences(
-  docs: DocumentReference[],
+  docs: DocumentReferenceWithId[],
   contentFilter?: string
-): Promise<DocumentReference[]> {
+): Promise<DocumentReferenceWithId[]> {
   const checkContent = (d: DocumentReference) =>
     contentFilter ? JSON.stringify(d).toLocaleLowerCase().includes(contentFilter) : true;
   const result = docs.filter(d => checkExtensions(d) && checkContent(d));
@@ -58,24 +64,24 @@ function checkExtensions(doc: DocumentReference) {
   if (Config.isSandbox()) return true;
   const extensions = doc.extension;
   if (!extensions) return false;
-  const metriport = extensions.find(isMetriportExtension);
-  const cw = extensions.find(isCommonwellExtension);
-  const cq = extensions.find(isCarequalityExtension);
-  if (!metriport && !cw && !cq) return false;
+  const hasMetriport = extensions.find(isMetriportExtension);
+  const hasCW = extensions.find(isCommonwellExtension);
+  const hasCQ = extensions.find(isCarequalityExtension);
+  if (!hasMetriport && !hasCW && !hasCQ) return false;
   return true;
 }
 
 async function searchOnCCDAFiles(
-  docs: DocumentReference[],
+  docs: DocumentReferenceWithId[],
   cxId: string,
   patientId: string,
   contentFilter?: string
-): Promise<DocumentReference[]> {
+): Promise<DocumentReferenceWithId[]> {
   if (!contentFilter) return [];
   const searchService = makeSearchServiceQuery();
   const searchResult = await searchService.search({ query: contentFilter, cxId, patientId });
   const searchResultIds = searchResult.map(r => r.entryId);
   // only return documents that match both the search result and the documents we got from the FHIR server (using date filter)
-  const result = docs.filter(d => d.id && searchResultIds.includes(d.id));
+  const result = docs.filter(d => searchResultIds.includes(d.id));
   return result;
 }

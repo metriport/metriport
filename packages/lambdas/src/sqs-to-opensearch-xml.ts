@@ -1,16 +1,33 @@
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { OpenSearchFileIngestorDirect } from "@metriport/core/external/opensearch/file-ingestor-direct";
 import { FileIngestorSQSPayload } from "@metriport/core/external/opensearch/file-ingestor-sqs";
+import { executeWithRetries } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
 import { SQSUtils } from "./shared/sqs";
 
+dayjs.extend(duration);
+
 // Keep this as early on the file as possible
 capture.init();
+
+/**
+ * Larger delay to give OpenSearch more time to recover from any load related issues.
+ * There's not much pressure to ingest these super quickly.
+ */
+const initialDelayBetweenRetries = dayjs.duration({ seconds: 1 });
+/**
+ * Fewer attempts to ingest, as OpenSearch doesn't often fail and five should be more than enough.
+ * Also, considering the longer initial delay, more attempts would require capping max delay,
+ * because of exponential backoff.
+ */
+const maxAttemptsToIngest = 5;
 
 // Automatically set by AWS
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
@@ -73,7 +90,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
         `Getting contents from bucket ${s3BucketName}, key ${s3FileName}, converting and ingesting into OpenSearch...`
       );
       const ingestionStart = Date.now();
-      await openSearch.ingest(params);
+      await executeWithRetries(async () => openSearch.ingest(params), {
+        initialDelay: initialDelayBetweenRetries.asMilliseconds(),
+        maxAttempts: maxAttemptsToIngest,
+      });
       metrics.ingestion = {
         duration: Date.now() - ingestionStart,
         timestamp: new Date(),
@@ -83,8 +103,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
       log(`Metrics: ${JSON.stringify(metrics)}`);
       await cloudWatchUtils.reportMetrics(metrics);
     } catch (error) {
-      console.log(`Error processing message: ${JSON.stringify(message)};\n${error}`);
-      capture.error(error, {
+      const msg = "Error ingesting message into OpenSearch";
+      console.log(`${msg}: ${JSON.stringify(message)};\n${error}`);
+      capture.error(msg, {
         extra: { message, context: lambdaName, error },
       });
       await sqsUtils.sendToDLQ(message);
