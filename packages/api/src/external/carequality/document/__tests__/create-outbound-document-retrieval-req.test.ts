@@ -64,6 +64,62 @@ describe("outboundDocumentRetrievalRequest", () => {
     expect(res[0].documentReference.length).toEqual(2);
   });
 
+  it("returns 1 req with 6 doc refs when we have an epic gw", async () => {
+    const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
+      makeOutboundDocumentQueryResp({
+        gateway: makeXcaGateway({ homeCommunityId: "1.2.840.114350.1.13" }),
+        documentReference: [
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+        ],
+      }),
+    ];
+    const res: OutboundDocumentRetrievalReq[] = createOutboundDocumentRetrievalReqs({
+      patient,
+      requestId,
+      initiator,
+      outboundDocumentQueryResults: outboundDocumentQueryResps,
+    });
+    expect(res).toBeTruthy();
+    expect(res.length).toEqual(1);
+    expect(res[0].documentReference.length).toEqual(6);
+  });
+
+  it("returns 2 req with 11 doc refs when we have an epic gw", async () => {
+    const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
+      makeOutboundDocumentQueryResp({
+        gateway: makeXcaGateway({ homeCommunityId: "1.2.840.114350.1.13" }),
+        documentReference: [
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+        ],
+      }),
+    ];
+    const res: OutboundDocumentRetrievalReq[] = createOutboundDocumentRetrievalReqs({
+      patient,
+      requestId,
+      initiator,
+      outboundDocumentQueryResults: outboundDocumentQueryResps,
+    });
+    expect(res).toBeTruthy();
+    expect(res.length).toEqual(2);
+    expect(res[0].documentReference.length).toEqual(10);
+    expect(res[1].documentReference.length).toEqual(1);
+  });
+
   it("returns one req when doc refs within limit", async () => {
     const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
       makeOutboundDocumentQueryResp({
