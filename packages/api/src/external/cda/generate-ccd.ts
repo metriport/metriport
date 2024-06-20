@@ -14,12 +14,22 @@ export async function generateCcd(patient: Patient): Promise<string> {
   const allResources = await getConsolidatedPatientData({ patient });
   const metriportGenerated = allResources.entry?.filter(entry => {
     const resource = entry.resource;
-    if (resource && "extension" in resource) {
-      return resource.extension?.some(
-        (extension: { valueCoding?: { code?: string } }) =>
-          extension.valueCoding?.code === metriportDataSourceExtension.valueCoding.code
-      );
+
+    if (resource) {
+      // All new FHIR data coming from our CX will now have extensions.
+      if ("extension" in resource) {
+        return resource.extension?.some(
+          (extension: { valueCoding?: { code?: string } }) =>
+            extension.valueCoding?.code === metriportDataSourceExtension.valueCoding.code
+        );
+      }
+      // We used to not add extensions to CX-contributed resources. So this will allow us to include those.
+      // This is taking advantage of how all the resources resulting from external CDAs have extensions.
+      if (!("extension" in resource)) {
+        return true;
+      }
     }
+
     return false;
   });
 
