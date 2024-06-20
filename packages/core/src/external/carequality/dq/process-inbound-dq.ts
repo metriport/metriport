@@ -1,9 +1,8 @@
 import { InboundDocumentQueryReq, InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
 import axios from "axios";
 import { Config } from "../../../util/config";
-import { capture } from "../../../util/notifications";
-
 import { out } from "../../../util/log";
+import { capture } from "../../../util/notifications";
 import { S3Utils } from "../../aws/s3";
 import {
   IHEGatewayError,

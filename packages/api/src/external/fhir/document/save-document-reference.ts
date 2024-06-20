@@ -1,6 +1,6 @@
 import { Bundle, DocumentReference } from "@medplum/fhirtypes";
 import { out } from "@metriport/core/util/log";
-import { executeWithRetries } from "@metriport/shared";
+import { executeWithNetworkRetries } from "@metriport/shared";
 import { errorToString } from "../../../shared/log";
 import { makeFhirApi } from "../api/api-factory";
 
@@ -14,10 +14,9 @@ export const upsertDocumentToFHIRServer = async (
 ): Promise<void> => {
   const fhir = makeFhirApi(cxId);
   try {
-    await executeWithRetries(async () => await fhir.updateResource(docRef), {
+    await executeWithNetworkRetries(async () => await fhir.updateResource(docRef), {
       maxAttempts,
       initialDelay: waitTimeBetweenAttemptsInMillis,
-      backoffMultiplier: 0, // no backoff
       log,
     });
   } catch (err) {
@@ -33,10 +32,9 @@ export const upsertDocumentsToFHIRServer = async (
 ): Promise<void> => {
   const fhir = makeFhirApi(cxId);
   try {
-    await executeWithRetries(async () => await fhir.executeBatch(transactionBundle), {
+    await executeWithNetworkRetries(async () => await fhir.executeBatch(transactionBundle), {
       maxAttempts,
       initialDelay: waitTimeBetweenAttemptsInMillis,
-      backoffMultiplier: 0, // no backoff
       log,
     });
   } catch (error) {

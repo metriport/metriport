@@ -1,10 +1,10 @@
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import { docContributionFileParam } from "@metriport/core/external/commonwell/document/document-contribution";
-import { errorToString } from "@metriport/core/util/error/shared";
+import { errorToString } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import * as lambda from "aws-lambda";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
-import { S3Utils } from "./shared/s3";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -52,10 +52,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       }
 
       console.log(`Key: ${key}`);
-      const url = s3Utils.s3.getSignedUrl("getObject", {
-        Bucket: bucketName,
-        Key: key,
-        Expires: SIGNED_URL_DURATION_SECONDS,
+      const url = await s3Utils.getSignedUrl({
+        bucketName,
+        fileName: key,
+        durationSeconds: SIGNED_URL_DURATION_SECONDS,
       });
       return sendResponse({
         statusCode: 301,
