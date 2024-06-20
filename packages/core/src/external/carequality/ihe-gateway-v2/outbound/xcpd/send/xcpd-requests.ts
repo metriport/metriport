@@ -30,6 +30,7 @@ export async function sendSignedXCPDRequests({
         signedXml: request.signedRequest,
         url: request.gateway.url,
         samlCertsAndKeys,
+        isDq: false,
       });
       log(
         `Request ${index + 1} sent successfully to: ${request.gateway.url} + oid: ${

@@ -8,6 +8,7 @@ import {
   DocumentReference,
   Encounter,
   Extension,
+  Immunization,
   Location,
   Medication,
   MedicationStatement,
@@ -163,6 +164,10 @@ export function isComposition(resource: Resource | undefined): resource is Compo
 
 export function isEncounter(resource: Resource | undefined): resource is Encounter {
   return resource?.resourceType === "Encounter";
+}
+
+export function isImmunization(resource: Resource | undefined): resource is Immunization {
+  return resource?.resourceType === "Immunization";
 }
 
 export function isObservation(resource: Resource | undefined): resource is Observation {

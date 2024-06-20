@@ -1,7 +1,7 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { DiscoveryParams } from "@metriport/core/domain/patient-discovery";
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
-import { executeWithRetriesSafe } from "@metriport/shared";
+import { out } from "@metriport/core/util/log";
+import { executeWithRetriesSafe, MetriportError } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
@@ -14,7 +14,7 @@ import { CQLinkStatus, PatientDataCommonwell } from "./patient-shared";
 dayjs.extend(duration);
 
 const maxAttemptsToGetPatientCWData = 5;
-const waitTimeBetweenAttemptsToGetPatientCWData = dayjs.duration(2, "seconds");
+const waitTimeBetweenAttemptsToGetPatientCWData = dayjs.duration(1, "seconds");
 
 export type PatientWithCWData = Patient & {
   data: { externalData: { COMMONWELL: PatientDataCommonwell } };
@@ -23,8 +23,8 @@ export type PatientWithCWData = Patient & {
 const _getPatientWithCWData = async ({
   id,
   cxId,
-}: Pick<Patient, "id" | "cxId">): Promise<PatientWithCWData | undefined> => {
-  const patientDB: Patient = await getPatientOrFail({
+}: Pick<Patient, "id" | "cxId">): Promise<PatientWithCWData> => {
+  const patientDB = await getPatientOrFail({
     id,
     cxId,
   });
@@ -33,7 +33,17 @@ const _getPatientWithCWData = async ({
   if (!cwData) throw new MetriportError(`Missing CW data on patient`);
   if (!cwData.patientId) throw new MetriportError(`Missing CW patientId`);
 
-  return patientDB as PatientWithCWData;
+  const patient = patientDB.dataValues;
+  return {
+    ...patient,
+    data: {
+      ...patient.data,
+      externalData: {
+        ...patient.data.externalData,
+        COMMONWELL: cwData,
+      },
+    },
+  };
 };
 
 export async function getPatientWithCWData(
@@ -42,7 +52,7 @@ export async function getPatientWithCWData(
   return executeWithRetriesSafe(() => _getPatientWithCWData(patient), {
     maxAttempts: maxAttemptsToGetPatientCWData,
     initialDelay: waitTimeBetweenAttemptsToGetPatientCWData.asMilliseconds(),
-    backoffMultiplier: 0, // no backoff
+    log: out("getPatientWithCWData").log,
   });
 }
 

@@ -1,9 +1,16 @@
 import { MedplumClient } from "@medplum/core";
 import { Bundle, Resource } from "@medplum/fhirtypes";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
+import {
+  executeWithNetworkRetries,
+  executeWithRetries,
+  getNetworkErrorDetails,
+} from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { uuid4 } from "@sentry/utils";
 import { SQSEvent } from "aws-lambda";
+import axios from "axios";
 import fetch from "node-fetch";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
@@ -11,7 +18,6 @@ import { getEnvOrFail, isSandbox } from "./shared/env";
 import { isAxiosBadGateway, isAxiosTimeout } from "./shared/http";
 import { Log, prefixedLog } from "./shared/log";
 import { apiClient } from "./shared/oss-api";
-import { S3Utils } from "./shared/s3";
 import { SQSUtils } from "./shared/sqs";
 
 // Keep this as early on the file as possible
@@ -31,6 +37,10 @@ const fhirServerUrl = getEnvOrFail("FHIR_SERVER_URL");
 
 const sourceUrl = "https://api.metriport.com/cda/to/fhir";
 const maxRetries = 10;
+const defaultS3RetriesConfig = {
+  maxAttempts: 3,
+  initialDelay: 500,
+};
 
 const sqsUtils = new SQSUtils(region, sourceQueueURL, dlqURL, delayWhenRetryingSeconds);
 const s3Utils = new S3Utils(region);
@@ -105,6 +115,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
       if (!cxId) throw new Error(`Missing cxId`);
       if (!patientId) throw new Error(`Missing patientId`);
       const log = prefixedLog(`${i}, patient ${patientId}, job ${jobId}`);
+      const lambdaParams = { cxId, patientId, jobId, source };
 
       try {
         log(`Body: ${message.body}`);
@@ -113,7 +124,13 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
 
         log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
         const downloadStart = Date.now();
-        const payloadRaw = await s3Utils.getFileContentsAsString(s3BucketName, s3FileName);
+        const payloadRaw = await executeWithRetries(
+          () => s3Utils.getFileContentsAsString(s3BucketName, s3FileName),
+          {
+            ...defaultS3RetriesConfig,
+            log,
+          }
+        );
         metrics.download = {
           duration: Date.now() - downloadStart,
           timestamp: new Date(),
@@ -146,9 +163,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
         });
         let count = 0;
         let retry = true;
+        // This retry logic is for application level errors, not network errors
         while (retry) {
           count++;
-          response = await fhirApi.executeBatch(payload);
+          response = await executeWithNetworkRetries(() => fhirApi.executeBatch(payload), { log });
           const errors = getErrorsFromReponse(response);
           if (errors.length <= 0) break;
           retry = count < maxRetries;
@@ -183,49 +201,59 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
         processFHIRResponse(response, event, log);
 
         await cloudWatchUtils.reportMetrics(metrics);
-        await ossApi.notifyApi({ cxId, patientId, status: "success", jobId, source }, log);
-        //eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (error: any) {
+        await ossApi.notifyApi({ ...lambdaParams, status: "success" }, log);
+      } catch (error) {
         // If it timed-out let's just reenqueue for future processing - NOTE: the destination MUST be idempotent!
         const count = message.attributes?.ApproximateReceiveCount
           ? Number(message.attributes?.ApproximateReceiveCount)
           : undefined;
         const isWithinRetryRange = count == null || count <= maxTimeoutRetries;
-        const isRetryError = isAxiosTimeout(error) || isAxiosBadGateway(error);
+        const isRetryError = axios.isAxiosError(error)
+          ? isAxiosTimeout(error) || isAxiosBadGateway(error)
+          : false;
+        const networkErrorDetails = getNetworkErrorDetails(error);
+        const { details, code, status } = networkErrorDetails;
         if (!(error instanceof MetriportError) && isRetryError && isWithinRetryRange) {
-          console.log(`Timed out, reenqueue (${count} of ${maxTimeoutRetries}): `, message);
-          capture.message("Sending to FHIR server timed out", {
-            extra: { message, context: lambdaName, retryCount: count },
+          console.log(
+            `Timed out (${code}/${status}), reenqueue (${count} of ` +
+              `${maxTimeoutRetries}), lambdaParams ${lambdaParams}`
+          );
+          capture.message("Sending to FHIR server timed out, retrying", {
+            extra: { message, ...lambdaParams, context: lambdaName, retryCount: count },
+            level: "info",
           });
           await sqsUtils.reEnqueue(message);
         } else {
-          console.log(`Error processing message: ${JSON.stringify(message)}; \n${error.message}`);
-          capture.error(error, {
-            extra: { message, context: lambdaName, retryCount: count, error },
+          const msg = "Error processing message on " + lambdaName;
+          console.log(
+            `${msg} - lambdaParams: ${lambdaParams} - ` +
+              `error: ${JSON.stringify(networkErrorDetails)}`
+          );
+          capture.error(msg, {
+            extra: { message, ...lambdaParams, context: lambdaName, networkErrorDetails, error },
           });
           await sqsUtils.sendToDLQ(message);
 
-          await ossApi.notifyApi(
-            { cxId, patientId, status: "failed", details: error.message, jobId, source },
-            log
-          );
+          await ossApi.notifyApi({ ...lambdaParams, status: "failed", details }, log);
         }
       }
     }
     console.log(`Done`);
-  } catch (err) {
-    console.log(`Error processing event: ${JSON.stringify(event)}; ${err}`);
-    capture.error(err, {
+  } catch (error) {
+    const msg = "Error processing event on " + lambdaName;
+    console.log(`${msg}: ${JSON.stringify(event)}; ${error}`);
+    capture.error(msg, {
       extra: {
         event,
         context: lambdaName,
         additional: "outer catch",
+        error,
         notes:
-          "This means the API was notified about the failure, the patient's doc query is " +
-          "likely not to get completed - needs manual intervention!",
+          "This means the API was not notified about the failure, the patient's doc query is " +
+          "likely not to get completed - it might need manual intervention",
       },
     });
-    throw err;
+    throw error;
   }
 });
 

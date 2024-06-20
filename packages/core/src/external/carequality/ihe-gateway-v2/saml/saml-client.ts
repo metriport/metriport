@@ -2,13 +2,14 @@ import https from "https";
 import { constants } from "crypto";
 import axios from "axios";
 import * as AWS from "aws-sdk";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { SamlCertsAndKeys } from "./security/types";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { MetriportError } from "../../../../util/error/metriport-error";
 import { createMtomContentTypeAndPayload } from "../outbound/xca/mtom/builder";
 import { executeWithNetworkRetries } from "@metriport/shared";
-
 import {
   parseMtomResponse,
   getBoundaryFromMtomResponse,
@@ -16,8 +17,12 @@ import {
   convertSoapResponseToMtomResponse,
 } from "../outbound/xca/mtom/parser";
 
+dayjs.extend(duration);
+
 const { log } = out("Saml Client");
-const timeout = 120000;
+const httpTimeout = dayjs.duration({ seconds: 120 });
+const initialDelay = dayjs.duration({ seconds: 3 });
+const maxPayloadSize = Infinity;
 let rejectUnauthorized = true;
 let trustedStore: string | undefined = undefined;
 async function getTrustedKeyStore(): Promise<string> {
@@ -64,10 +69,12 @@ export async function sendSignedXml({
   signedXml,
   url,
   samlCertsAndKeys,
+  isDq,
 }: {
   signedXml: string;
   url: string;
   samlCertsAndKeys: SamlCertsAndKeys;
+  isDq: boolean;
 }): Promise<{ response: string; contentType: string }> {
   const trustedKeyStore = await getTrustedKeyStore();
   const agent = new https.Agent({
@@ -84,7 +91,7 @@ export async function sendSignedXml({
   const response = await executeWithNetworkRetries(
     async () => {
       return axios.post(url, signedXml, {
-        timeout: 120000,
+        timeout: httpTimeout.asMilliseconds(),
         headers: {
           "Content-Type": "application/soap+xml;charset=UTF-8",
           Accept: "application/soap+xml",
@@ -94,10 +101,10 @@ export async function sendSignedXml({
       });
     },
     {
-      initialDelay: 3000,
-      maxAttempts: 3,
+      initialDelay: initialDelay.asMilliseconds(),
+      maxAttempts: isDq ? 4 : 3,
       //TODO: This introduces retry on timeout without needing to specify the http Code: https://github.com/metriport/metriport/pull/2285. Remove once PR is merged
-      httpCodesToRetry: ["ECONNREFUSED", "ECONNRESET", "ETIMEDOUT"],
+      httpCodesToRetry: ["ECONNREFUSED", "ECONNRESET", "ETIMEDOUT", "ECONNABORTED"],
     }
   );
 
@@ -129,7 +136,7 @@ export async function sendSignedXmlMtom({
   const response = await executeWithNetworkRetries(
     async () => {
       return axios.post(url, payload, {
-        timeout: timeout,
+        timeout: httpTimeout.asMilliseconds(),
         headers: {
           "Accept-Encoding": "gzip, deflate",
           "Content-Type": contentType,
@@ -137,13 +144,21 @@ export async function sendSignedXmlMtom({
         },
         httpsAgent: agent,
         responseType: "arraybuffer",
+        maxBodyLength: maxPayloadSize,
+        maxContentLength: maxPayloadSize,
       });
     },
     {
-      initialDelay: 3000,
-      maxAttempts: 3,
+      initialDelay: initialDelay.asMilliseconds(),
+      maxAttempts: 4,
       //TODO: This introduces retry on timeout without needing to specify the http Code: https://github.com/metriport/metriport/pull/2285. Remove once PR is merged
-      httpCodesToRetry: ["ECONNREFUSED", "ECONNRESET", "ETIMEDOUT"],
+      httpCodesToRetry: [
+        "ECONNREFUSED",
+        "ECONNRESET",
+        "ETIMEDOUT",
+        "ECONNABORTED",
+        "ERR_BAD_RESPONSE",
+      ],
     }
   );
 

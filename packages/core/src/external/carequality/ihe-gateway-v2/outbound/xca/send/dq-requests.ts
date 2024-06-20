@@ -33,6 +33,7 @@ export async function sendSignedDqRequest({
       signedXml: request.signedRequest,
       url: request.gateway.url,
       samlCertsAndKeys,
+      isDq: true,
     });
     log(
       `Request ${index + 1} sent successfully to: ${request.gateway.url} + oid: ${

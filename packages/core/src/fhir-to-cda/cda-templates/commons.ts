@@ -14,7 +14,7 @@ import localizedFormat from "dayjs/plugin/localizedFormat";
 import utc from "dayjs/plugin/utc";
 import {
   AssignedEntity,
-  CDAOriginalText,
+  CdaOriginalText,
   CdaAddress,
   CdaAddressUse,
   CdaCodeCe,
@@ -43,6 +43,7 @@ import {
   placeholderOrgOid,
   providerTaxonomy,
   snomedSystemCode,
+  vaccineAdministeredCodeSet,
 } from "./constants";
 
 dayjs.extend(localizedFormat);
@@ -56,6 +57,8 @@ CODING_MAP.set("http://www.ama-assn.org/go/cpt", amaAssnSystemCode);
 CODING_MAP.set("http://fdasis.nlm.nih.gov", fdasisSystemCode);
 CODING_MAP.set("http://terminology.hl7.org/codesystem/v3-actcode", hl7ActCode);
 CODING_MAP.set("http://nucc.org/provider-taxonomy", providerTaxonomy);
+CODING_MAP.set("http://hl7.org/fhir/sid/cvx", vaccineAdministeredCodeSet);
+
 CODING_MAP.set("icd-10", icd10SystemCode);
 
 export const TIMESTAMP_CLEANUP_REGEX = /-|T|:|\.\d+Z$/g;
@@ -113,7 +116,7 @@ export function buildCodeCe({
   return codeObject;
 }
 
-export function buildOriginalTextReference(value: string): CDAOriginalText {
+export function buildOriginalTextReference(value: string): CdaOriginalText {
   return {
     reference: {
       _value: value,
@@ -459,10 +462,10 @@ export function getTextFromCode(code: CodeableConcept | undefined): string {
 }
 
 export function getDisplaysFromCodeableConcepts(
-  concepts: CodeableConcept[] | undefined
+  concepts: CodeableConcept | CodeableConcept[] | undefined
 ): string | undefined {
   if (!concepts) return undefined;
-  return concepts
+  return toArray(concepts)
     .map(concept => {
       const code = buildCodeCeFromCoding(concept.coding);
       if (code?._displayName) return code._displayName.trim();
@@ -495,11 +498,43 @@ export function buildPerformer(practitioners: Practitioner[] | undefined): Assig
                 family: p.name?.flatMap(n => n.family).join(", "),
               },
             },
+            representedOrganization: {
+              _classCode: "ORG",
+              name: {
+                "#text": "",
+              },
+              addr: buildAddress(p.address),
+              telecom: buildTelecom(p.telecom),
+            },
           },
         } || []
       );
     }) || []
   );
+}
+
+export function buildPerformerFromLocation(
+  location: Location | undefined
+): AssignedEntity | undefined {
+  if (!location) return undefined;
+  return {
+    assignedEntity: {
+      id: buildInstanceIdentifier({
+        root: placeholderOrgOid,
+        extension: location.id,
+      }),
+      addr: buildAddress(location.address),
+      telecom: buildTelecom(location.telecom),
+      representedOrganization: {
+        _classCode: "ORG",
+        name: {
+          "#text": "",
+        },
+        addr: buildAddress(location.address),
+        telecom: buildTelecom(location.telecom),
+      },
+    },
+  };
 }
 
 export function buildParticipant(locations: Location[] | undefined): Participant[] | undefined {
@@ -534,4 +569,9 @@ export function buildParticipant(locations: Location[] | undefined): Participant
     };
     return participant;
   });
+}
+
+export function buildAddressText(address: Address | undefined): string | undefined {
+  if (!address) return undefined;
+  return `${address.line?.join(", ")}, ${address.city}, ${address.state} ${address.postalCode}`;
 }
