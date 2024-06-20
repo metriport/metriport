@@ -396,6 +396,7 @@ export class APIStack extends Stack {
       service: apiService,
       loadBalancerAddress: apiLoadBalancerAddress,
       serverAddress: apiServerUrl,
+      apiServiceAdditional,
     } = createAPIService({
       stack: this,
       props,
@@ -456,6 +457,8 @@ export class APIStack extends Stack {
 
     // Access grant for Aurora DB
     dbCluster.connections.allowDefaultPortFrom(apiService.service);
+    // TODO remove this on 3/3
+    dbCluster.connections.allowDefaultPortFrom(apiServiceAdditional);
 
     // setup a private link so the API can talk to the NLB
     const link = new apig.VpcLink(this, "link", {
