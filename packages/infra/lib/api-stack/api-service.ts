@@ -98,7 +98,8 @@ export function createAPIService({
   cookieStore: secret.ISecret | undefined;
 }): {
   cluster: ecs.Cluster;
-  service: ecs_patterns.NetworkLoadBalancedFargateService;
+  service: ecs_patterns.ApplicationLoadBalancedFargateService;
+  loadBalancer: NetworkLoadBalancer;
   serverAddress: string;
   loadBalancerAddress: string;
   apiServiceAdditional: FargateService;
@@ -131,7 +132,7 @@ export function createAPIService({
   const containerPort = 8080;
   const logGroup = LogGroup.fromLogGroupArn(stack, "ApiLogGroup", props.config.logArn);
   // TODO RENAME to remove "Alb"
-  const fargateServiceAlb = new ecs_patterns.ApplicationLoadBalancedFargateService(
+  const fargateService = new ecs_patterns.ApplicationLoadBalancedFargateService(
     stack,
     "APIFargateServiceAlb",
     {
@@ -247,7 +248,7 @@ export function createAPIService({
     }
   );
   // TODO DEPRECATED start
-  const fargateService = new ecs_patterns.NetworkLoadBalancedFargateService(
+  const fargateServiceNlb = new ecs_patterns.NetworkLoadBalancedFargateService(
     stack,
     "APIFargateService",
     {
@@ -258,7 +259,7 @@ export function createAPIService({
       desiredCount: isProd(props.config) ? 2 : 1,
       taskImageOptions: {
         image: ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest"),
-        containerPort: 8080,
+        containerPort,
         containerName: "API-Server",
         secrets: {
           DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret),
@@ -367,7 +368,7 @@ export function createAPIService({
     ),
   });
 
-  const alb = fargateServiceAlb.loadBalancer;
+  const alb = fargateService.loadBalancer;
   const nlb = new NetworkLoadBalancer(stack, `ApiNetworkLoadBalancer`, {
     vpc,
     internetFacing: false,
@@ -390,7 +391,7 @@ export function createAPIService({
     unhealthyThresholdCount: 2,
     interval: Duration.seconds(10),
   };
-  fargateServiceAlb.targetGroup.configureHealthCheck(healthcheck);
+  fargateService.targetGroup.configureHealthCheck(healthcheck);
   nlbTargetGroup.configureHealthCheck({
     ...healthcheck,
     interval: healthcheck.interval.plus(Duration.seconds(3)),
@@ -398,7 +399,7 @@ export function createAPIService({
 
   // Access grant for Aurora DB's secret
   dbCredsSecret.grantRead(fargateService.taskDefinition.taskRole);
-  dbCredsSecret.grantRead(fargateServiceAlb.taskDefinition.taskRole);
+  dbCredsSecret.grantRead(fargateServiceNlb.taskDefinition.taskRole);
   // RW grant for Dynamo DB
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
@@ -407,29 +408,29 @@ export function createAPIService({
   outboundDocumentQueryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   outboundDocumentRetrievalLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToCdaConverterLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
-  dynamoDBTokenTable.grantReadWriteData(fargateServiceAlb.taskDefinition.taskRole);
-  cdaToVisualizationLambda.grantInvoke(fargateServiceAlb.taskDefinition.taskRole);
-  documentDownloaderLambda.grantInvoke(fargateServiceAlb.taskDefinition.taskRole);
-  outboundPatientDiscoveryLambda.grantInvoke(fargateServiceAlb.taskDefinition.taskRole);
-  outboundDocumentQueryLambda.grantInvoke(fargateServiceAlb.taskDefinition.taskRole);
-  outboundDocumentRetrievalLambda.grantInvoke(fargateServiceAlb.taskDefinition.taskRole);
-  fhirToCdaConverterLambda?.grantInvoke(fargateServiceAlb.taskDefinition.taskRole);
+  dynamoDBTokenTable.grantReadWriteData(fargateServiceNlb.taskDefinition.taskRole);
+  cdaToVisualizationLambda.grantInvoke(fargateServiceNlb.taskDefinition.taskRole);
+  documentDownloaderLambda.grantInvoke(fargateServiceNlb.taskDefinition.taskRole);
+  outboundPatientDiscoveryLambda.grantInvoke(fargateServiceNlb.taskDefinition.taskRole);
+  outboundDocumentQueryLambda.grantInvoke(fargateServiceNlb.taskDefinition.taskRole);
+  outboundDocumentRetrievalLambda.grantInvoke(fargateServiceNlb.taskDefinition.taskRole);
+  fhirToCdaConverterLambda?.grantInvoke(fargateServiceNlb.taskDefinition.taskRole);
 
   // Access grant for medical document buckets
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
-  medicalDocumentsUploadBucket.grantReadWrite(fargateServiceAlb.taskDefinition.taskRole);
+  medicalDocumentsUploadBucket.grantReadWrite(fargateServiceNlb.taskDefinition.taskRole);
 
   if (fhirToMedicalRecordLambda) {
     fhirToMedicalRecordLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-    fhirToMedicalRecordLambda.grantInvoke(fargateServiceAlb.taskDefinition.taskRole);
+    fhirToMedicalRecordLambda.grantInvoke(fargateServiceNlb.taskDefinition.taskRole);
     cdaToVisualizationLambda.grantInvoke(fhirToMedicalRecordLambda);
   }
 
   if (cookieStore) {
     cookieStore.grantRead(fargateService.service.taskDefinition.taskRole);
     cookieStore.grantWrite(fargateService.service.taskDefinition.taskRole);
-    cookieStore.grantRead(fargateServiceAlb.service.taskDefinition.taskRole);
-    cookieStore.grantWrite(fargateServiceAlb.service.taskDefinition.taskRole);
+    cookieStore.grantRead(fargateServiceNlb.service.taskDefinition.taskRole);
+    cookieStore.grantWrite(fargateServiceNlb.service.taskDefinition.taskRole);
   }
 
   // Allow access to search services/infra
@@ -442,9 +443,9 @@ export function createAPIService({
   provideAccessToQueue({
     accessType: "send",
     queue: searchIngestionQueue,
-    resource: fargateServiceAlb.taskDefinition.taskRole,
+    resource: fargateServiceNlb.taskDefinition.taskRole,
   });
-  searchAuth.secret.grantRead(fargateServiceAlb.taskDefinition.taskRole);
+  searchAuth.secret.grantRead(fargateServiceNlb.taskDefinition.taskRole);
 
   // Setting permissions for AppConfig
   fargateService.taskDefinition.taskRole.attachInlinePolicy(
@@ -467,7 +468,7 @@ export function createAPIService({
       ],
     })
   );
-  fargateServiceAlb.taskDefinition.taskRole.attachInlinePolicy(
+  fargateServiceNlb.taskDefinition.taskRole.attachInlinePolicy(
     new iam.Policy(stack, "ApiPermissionsForAppConfig", {
       statements: [
         new iam.PolicyStatement({
@@ -521,7 +522,7 @@ export function createAPIService({
     ec2.Port.allTraffic(),
     "Allow traffic from within the VPC to the service secure port"
   );
-  fargateServiceAlb.service.connections.allowFrom(
+  fargateServiceNlb.service.connections.allowFrom(
     ec2.Peer.ipv4(vpc.vpcCidrBlock),
     ec2.Port.allTraffic(),
     "Allow traffic from within the VPC to the service secure port"
@@ -529,16 +530,16 @@ export function createAPIService({
   // TODO: #489 ain't the most secure, but the above code doesn't work as CDK complains we can't use the connections
   // from the cluster created above, should be fine for now as it will only accept connections in the VPC
   fargateService.service.connections.allowFromAnyIpv4(ec2.Port.allTcp());
-  fargateServiceAlb.service.connections.allowFromAnyIpv4(ec2.Port.allTcp());
+  fargateServiceNlb.service.connections.allowFromAnyIpv4(ec2.Port.allTcp());
 
   // TODO DEPRECATED start
   // This speeds up deployments so the tasks are swapped quicker.
   // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
-  fargateService.targetGroup.setAttribute("deregistration_delay.timeout_seconds", "17");
+  fargateServiceNlb.targetGroup.setAttribute("deregistration_delay.timeout_seconds", "17");
 
   // This also speeds up deployments so the health checks have a faster turnaround.
   // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/network/target-group-health-checks.html
-  fargateService.targetGroup.configureHealthCheck({
+  fargateServiceNlb.targetGroup.configureHealthCheck({
     healthyThresholdCount: 2,
     interval: Duration.seconds(10),
   });
@@ -564,7 +565,8 @@ export function createAPIService({
     cluster,
     service: fargateService,
     serverAddress: apiUrl,
+    loadBalancer: nlb,
     loadBalancerAddress: serverAddress,
-    apiServiceAdditional: fargateServiceAlb.service,
+    apiServiceAdditional: fargateServiceNlb.service,
   };
 }
