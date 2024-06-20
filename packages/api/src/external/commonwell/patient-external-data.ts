@@ -1,5 +1,6 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { DiscoveryParams } from "@metriport/core/domain/patient-discovery";
+import { out } from "@metriport/core/util/log";
 import { executeWithRetriesSafe, MetriportError } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -51,6 +52,7 @@ export async function getPatientWithCWData(
   return executeWithRetriesSafe(() => _getPatientWithCWData(patient), {
     maxAttempts: maxAttemptsToGetPatientCWData,
     initialDelay: waitTimeBetweenAttemptsToGetPatientCWData.asMilliseconds(),
+    log: out("getPatientWithCWData").log,
   });
 }
 

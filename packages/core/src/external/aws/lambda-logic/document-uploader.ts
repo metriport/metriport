@@ -58,6 +58,7 @@ export async function documentUploaderHandler(
     await executeWithRetries(() => s3Utils.s3.copyObject(params).promise(), {
       maxAttempts: 3,
       initialDelay: 500,
+      log,
     });
     log(`Successfully copied the uploaded file to ${destinationBucket} with key ${destinationKey}`);
   } catch (error) {
@@ -124,7 +125,7 @@ async function forwardCallToServer(
   const url = `${apiServerURL}?cxId=${cxId}`;
   const encodedUrl = encodeURI(url);
 
-  const resp = await executeWithNetworkRetries(() => api.post(encodedUrl, fileData));
+  const resp = await executeWithNetworkRetries(() => api.post(encodedUrl, fileData), { log });
   log(`Server response - status: ${resp.status}`);
   log(`Server response - body: ${JSON.stringify(resp.data)}`);
   return resp.data;

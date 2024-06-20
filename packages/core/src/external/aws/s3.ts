@@ -11,6 +11,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import * as stream from "stream";
 import * as util from "util";
+import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
 
 dayjs.extend(duration);
@@ -26,7 +27,8 @@ async function executeWithRetriesS3<T>(
   fn: () => Promise<T>,
   options?: ExecuteWithRetriesOptions<T>
 ): Promise<T> {
-  return await executeWithRetries(fn, { ...defaultS3RetriesConfig, ...options });
+  const log = options?.log ?? out("executeWithRetriesS3").log;
+  return await executeWithRetries(fn, { ...defaultS3RetriesConfig, ...options, log });
 }
 
 /**
