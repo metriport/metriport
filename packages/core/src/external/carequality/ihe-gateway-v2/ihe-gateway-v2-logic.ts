@@ -8,7 +8,7 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import { errorToString, executeWithNetworkRetries, executeWithRetries } from "@metriport/shared";
 import axios from "axios";
-import { log as getLog } from "../../../util/log";
+import { log as getLog, out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import { createAndSignBulkDQRequests, SignedDqRequest } from "./outbound/xca/create/iti38-envelope";
 import { createAndSignBulkDRRequests, SignedDrRequest } from "./outbound/xca/create/iti39-envelope";
@@ -52,6 +52,7 @@ export async function sendProcessRetryDqRequest({
     initialDelay: 3000,
     maxAttempts: 3,
     shouldRetry: isRetryable,
+    log: out("sendProcessRetryDqRequest").log,
   });
 }
 
@@ -85,6 +86,7 @@ export async function sendProcessRetryDrRequest({
     initialDelay: 3000,
     maxAttempts: 3,
     shouldRetry: isRetryable,
+    log: out("sendProcessRetryDrRequest").log,
   });
 }
 
@@ -101,6 +103,7 @@ export async function createSignSendProcessXCPDRequest({
   patientId: string;
   cxId: string;
 }): Promise<void> {
+  const log = getLog("createSignSendProcessXCPDRequest");
   const signedRequests = createAndSignBulkXCPDRequests(xcpdRequest, samlCertsAndKeys);
   const responses = await sendSignedXCPDRequests({
     signedRequests,
@@ -118,11 +121,10 @@ export async function createSignSendProcessXCPDRequest({
   for (const result of results) {
     try {
       // TODO not sure if we should retry on timeout
-      await executeWithNetworkRetries(async () => axios.post(pdResponseUrl, result));
+      await executeWithNetworkRetries(async () => axios.post(pdResponseUrl, result), { log });
     } catch (error) {
       const msg = "Failed to send PD response to internal CQ endpoint";
       const extra = { cxId, patientId, result };
-      const log = getLog("createSignSendProcessXCPDRequest");
       log(`${msg} - ${errorToString(error)} - ${JSON.stringify(extra)}`);
       capture.error(msg, { extra: { ...extra, error } });
     }
@@ -142,6 +144,8 @@ export async function createSignSendProcessDqRequests({
   patientId: string;
   cxId: string;
 }): Promise<void> {
+  const log = getLog("createSignSendProcessDqRequests");
+
   const signedRequests = createAndSignBulkDQRequests({
     bulkBodyData: dqRequestsGatewayV2,
     samlCertsAndKeys,
@@ -167,11 +171,10 @@ export async function createSignSendProcessDqRequests({
   for (const result of successfulResults) {
     try {
       // TODO not sure if we should retry on timeout
-      await executeWithNetworkRetries(async () => axios.post(dqResponseUrl, result));
+      await executeWithNetworkRetries(async () => axios.post(dqResponseUrl, result), { log });
     } catch (error) {
       const msg = "Failed to send DQ response to internal CQ endpoint";
       const extra = { cxId, patientId, result };
-      const log = getLog("createSignSendProcessDQRequests");
       log(`${msg} - ${errorToString(error)} - ${JSON.stringify(extra)}`);
       capture.error(msg, { extra: { ...extra, error } });
     }
@@ -191,6 +194,7 @@ export async function createSignSendProcessDrRequests({
   patientId: string;
   cxId: string;
 }): Promise<void> {
+  const log = getLog("createSignSendProcessDrRequests");
   const signedRequests = createAndSignBulkDRRequests({
     bulkBodyData: drRequestsGatewayV2,
     samlCertsAndKeys,
@@ -217,11 +221,10 @@ export async function createSignSendProcessDrRequests({
   for (const result of successfulResults) {
     try {
       // TODO not sure if we should retry on timeout
-      await executeWithNetworkRetries(async () => axios.post(drResponseUrl, result));
+      await executeWithNetworkRetries(async () => axios.post(drResponseUrl, result), { log });
     } catch (error) {
       const msg = "Failed to send DR response to internal CQ endpoint";
       const extra = { cxId, patientId, result };
-      const log = getLog("createSignSendProcessDRRequests");
       log(`${msg} - ${errorToString(error)} - ${JSON.stringify(extra)}`);
       capture.error(msg, { extra: { ...extra, error } });
     }
