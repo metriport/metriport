@@ -936,7 +936,11 @@ function getLatestDrPerSpecialty(
         const isSameDate = dayjs(curr.date).isSame(dayjs(latestSpecialtyReportDate));
         const isAfterDate = dayjs(curr.date).isAfter(dayjs(latestSpecialtyReportDate));
 
-        const invalidCodes = ["18776-5", "34748-4", "55107-7"];
+        const planOfCareCode = "18776-5";
+        const telephoneEncounterCode = "34748-4";
+        const addendumDocumentCode = "55107-7";
+
+        const invalidCodes = [planOfCareCode, telephoneEncounterCode, addendumDocumentCode];
 
         const originalDiagnosticReport =
           mappedDiagnosticReports[specialtyExists.diagnosticReportId];
