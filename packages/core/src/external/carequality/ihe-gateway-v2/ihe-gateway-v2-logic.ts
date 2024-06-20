@@ -118,7 +118,9 @@ export async function createSignSendProcessXCPDRequest({
   for (const result of results) {
     try {
       // TODO not sure if we should retry on timeout
-      await executeWithNetworkRetries(async () => axios.post(pdResponseUrl, result));
+      await executeWithNetworkRetries(async () => axios.post(pdResponseUrl, result), {
+        httpCodesToRetry: ["ERR_BAD_RESPONSE"],
+      });
     } catch (error) {
       const msg = "Failed to send PD response to internal CQ endpoint";
       const extra = { cxId, patientId, result };
@@ -167,7 +169,9 @@ export async function createSignSendProcessDqRequests({
   for (const result of successfulResults) {
     try {
       // TODO not sure if we should retry on timeout
-      await executeWithNetworkRetries(async () => axios.post(dqResponseUrl, result));
+      await executeWithNetworkRetries(async () => axios.post(dqResponseUrl, result), {
+        httpCodesToRetry: ["ERR_BAD_RESPONSE"],
+      });
     } catch (error) {
       const msg = "Failed to send DQ response to internal CQ endpoint";
       const extra = { cxId, patientId, result };
@@ -217,7 +221,9 @@ export async function createSignSendProcessDrRequests({
   for (const result of successfulResults) {
     try {
       // TODO not sure if we should retry on timeout
-      await executeWithNetworkRetries(async () => axios.post(drResponseUrl, result));
+      await executeWithNetworkRetries(async () => axios.post(drResponseUrl, result), {
+        httpCodesToRetry: ["ERR_BAD_RESPONSE"],
+      });
     } catch (error) {
       const msg = "Failed to send DR response to internal CQ endpoint";
       const extra = { cxId, patientId, result };
