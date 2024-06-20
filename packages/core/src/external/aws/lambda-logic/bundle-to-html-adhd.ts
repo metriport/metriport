@@ -2288,6 +2288,12 @@ function createEncountersSection(encounters: Encounter[], locations: Location[])
     const aDate = dayjs(a.period?.start).format(ISO_DATE);
     const bDate = dayjs(b.period?.start).format(ISO_DATE);
     return aDate === bDate && a.type?.[0]?.text === b.type?.[0]?.text;
+  }).filter(encounter => {
+    const encounterDate = encounter.period?.start ?? "";
+    const encounterDateFormatted = dayjs(encounterDate).format(ISO_DATE);
+    const threeYearAgo = dayjs().subtract(3, "year").format(ISO_DATE);
+
+    return dayjs(encounterDateFormatted).isAfter(dayjs(threeYearAgo));
   });
 
   // SOMETIMES IT DOESNT HAVE A REASON SHOULD WE REMOVE ALTOGETHER?
