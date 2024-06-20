@@ -119,7 +119,7 @@ export async function createSignSendProcessXCPDRequest({
     try {
       // TODO not sure if we should retry on timeout
       await executeWithNetworkRetries(async () => axios.post(pdResponseUrl, result), {
-        httpCodesToRetry: ["ERR_BAD_RESPONSE"],
+        httpStatusCodesToRetry: [502, 504],
       });
     } catch (error) {
       const msg = "Failed to send PD response to internal CQ endpoint";
@@ -170,7 +170,7 @@ export async function createSignSendProcessDqRequests({
     try {
       // TODO not sure if we should retry on timeout
       await executeWithNetworkRetries(async () => axios.post(dqResponseUrl, result), {
-        httpCodesToRetry: ["ERR_BAD_RESPONSE"],
+        httpStatusCodesToRetry: [502, 504],
       });
     } catch (error) {
       const msg = "Failed to send DQ response to internal CQ endpoint";
@@ -222,7 +222,7 @@ export async function createSignSendProcessDrRequests({
     try {
       // TODO not sure if we should retry on timeout
       await executeWithNetworkRetries(async () => axios.post(drResponseUrl, result), {
-        httpCodesToRetry: ["ERR_BAD_RESPONSE"],
+        httpStatusCodesToRetry: [502, 504],
       });
     } catch (error) {
       const msg = "Failed to send DR response to internal CQ endpoint";
