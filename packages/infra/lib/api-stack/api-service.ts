@@ -17,6 +17,7 @@ import {
 import { AlbTarget } from "aws-cdk-lib/aws-elasticloadbalancingv2-targets";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { IFunction as ILambda } from "aws-cdk-lib/aws-lambda";
+import { LogGroup } from "aws-cdk-lib/aws-logs";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
@@ -128,6 +129,7 @@ export function createAPIService({
   // Run some servers on fargate containers
   const listenerPort = 80;
   const containerPort = 8080;
+  const logGroup = LogGroup.fromLogGroupArn(stack, "ApiLogGroup", props.config.logArn);
   // TODO RENAME to remove "Alb"
   const fargateServiceAlb = new ecs_patterns.ApplicationLoadBalancedFargateService(
     stack,
@@ -142,6 +144,10 @@ export function createAPIService({
         image: ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest"),
         containerPort,
         containerName: "API-Server",
+        logDriver: ecs.LogDrivers.awsLogs({
+          logGroup,
+          streamPrefix: "APIFargateService",
+        }),
         secrets: {
           DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret),
           SEARCH_PASSWORD: ecs.Secret.fromSecretsManager(searchAuth.secret),

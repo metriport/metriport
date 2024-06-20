@@ -76,6 +76,10 @@ type EnvConfigBase = {
     alarmThresholds: RDSAlarmThresholds;
   };
   loadBalancerDnsName: string;
+  /**
+   * Introduced when we had to recreate the Fargate service, so we could keep using the existing log group.
+   */
+  logArn: string;
   apiGatewayUsagePlanId?: string; // optional since we need to create the stack first, then update this and redeploy
   usageReportUrl?: string;
   fhirServerUrl: string;
