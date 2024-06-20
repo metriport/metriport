@@ -1,4 +1,4 @@
-import { Address, Bundle, Encounter, HumanName, Location, Practitioner } from "@medplum/fhirtypes";
+import { Bundle, Encounter, HumanName, Location, Practitioner } from "@medplum/fhirtypes";
 import { toArray } from "@metriport/shared";
 import {
   findResourceInBundle,
@@ -14,6 +14,7 @@ import {
   ObservationTableRow,
 } from "../../cda-types/shared-types";
 import {
+  buildAddressText,
   buildCodeCe,
   buildCodeCvFromCodeCe,
   buildInstanceIdentifier,
@@ -37,7 +38,7 @@ import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { initiateSectionTable } from "../table";
 import { AugmentedEncounter } from "./augmented-resources";
 
-export const encountersSectionName = "encounters";
+const encountersSectionName = "encounters";
 
 const tableHeaders = [
   "Reason for Visit",
@@ -150,11 +151,6 @@ function createTableRowFromEncounter(
       },
     },
   ];
-}
-
-function buildAddressText(address: Address | undefined): string | undefined {
-  if (!address) return undefined;
-  return `${address.line?.join(", ")}, ${address.city}, ${address.state} ${address.postalCode}`;
 }
 
 function getPractitionerInformation(participant: Practitioner[] | undefined): string {
