@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { faker } from "@faker-js/faker";
-import { AxiosError } from "axios";
+import { AxiosError, AxiosHeaders } from "axios";
 import { executeWithNetworkRetries } from "../retry";
+import * as retry from "../../common/retry";
 
 describe("executeWithNetworkRetries", () => {
   const fn = jest.fn();
@@ -186,5 +187,39 @@ describe("executeWithNetworkRetries", () => {
       })
     ).rejects.toThrow();
     expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  it("retries when 429 Too Many Requests and uses modified delay", async () => {
+    const spyDefaultGetTimeToWait = jest.spyOn(retry, "defaultGetTimeToWait");
+
+    fn.mockImplementation(() => {
+      const error = new AxiosError("mock error");
+      error.response = {
+        status: 429,
+        data: {},
+        statusText: "Too Many Requests",
+        headers: {},
+        config: {
+          headers: new AxiosHeaders(),
+          method: "post",
+          url: "",
+        },
+      };
+      throw error;
+    });
+
+    await expect(async () =>
+      executeWithNetworkRetries(fn, {
+        initialDelay: 1,
+        maxAttempts: 2,
+      })
+    ).rejects.toThrow();
+
+    expect(fn).toHaveBeenCalledTimes(2);
+    expect(spyDefaultGetTimeToWait).toHaveBeenCalledWith(
+      expect.objectContaining({
+        initialDelay: 3,
+      })
+    );
   });
 });
