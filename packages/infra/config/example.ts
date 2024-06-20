@@ -25,6 +25,7 @@ export const config: EnvConfigNonSandbox = {
     },
   },
   loadBalancerDnsName: "<your-load-balancer-dns-name>",
+  logArn: "<your-log-arn>",
   fhirToMedicalLambda: {
     nodeRuntimeArn: "arn:aws:lambda:<region>::runtime:<id>",
   },

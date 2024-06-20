@@ -4,26 +4,30 @@ import {
   executeWithRetries,
   ExecuteWithRetriesOptions,
 } from "../common/retry";
-import { NetworkError } from "./error";
+import { NetworkError, networkTimeoutErrors } from "./error";
 
-export type ExecuteWithHttpRetriesOptions = Omit<
+export type ExecuteWithNetworkRetriesOptions = Omit<
   ExecuteWithRetriesOptions<unknown>,
   "shouldRetry"
 > & {
   /** The network error codes to retry. See `defaultOptions` for defaults. */
   httpCodesToRetry: NetworkError[];
   httpStatusCodesToRetry: number[];
+  /** Whether to retry on timeout errors. Default is false. */
+  retryOnTimeout?: boolean;
 };
 
-const defaultOptions: ExecuteWithHttpRetriesOptions = {
+const defaultOptions: ExecuteWithNetworkRetriesOptions = {
   ...defaultRetryWithBackoffOptions,
   initialDelay: 1000,
   httpCodesToRetry: [
     // https://nodejs.org/docs/latest-v18.x/api/errors.html#common-system-errors
     "ECONNREFUSED", // (Connection refused): No connection could be made because the target machine actively refused it. This usually results from trying to connect to a service that is inactive on the foreign host.
     "ECONNRESET", //  (Connection reset by peer): A connection was forcibly closed by a peer. This normally results from a loss of the connection on the remote socket due to a timeout or reboot. Commonly encountered via the http and net modules.
+    "ENOTFOUND", //  (DNS lookup failed): Indicates a DNS failure of either EAI_NODATA or EAI_NONAME. This is not a standard POSIX error.
   ],
   httpStatusCodesToRetry: [429], // 429 Too Many Requests
+  retryOnTimeout: false,
 };
 
 /**
@@ -45,11 +49,18 @@ const defaultOptions: ExecuteWithHttpRetriesOptions = {
  */
 export async function executeWithNetworkRetries<T>(
   fn: () => Promise<T>,
-  options?: Partial<ExecuteWithHttpRetriesOptions>
+  options?: Partial<ExecuteWithNetworkRetriesOptions>
 ): Promise<T> {
   const actualOptions = { ...defaultOptions, ...options };
-  const { httpCodesToRetry, httpStatusCodesToRetry } = actualOptions;
+
+  const { httpCodesToRetry: httpCodesFromParams, httpStatusCodesToRetry } = actualOptions;
+
+  const httpCodesToRetry = actualOptions.retryOnTimeout
+    ? [...httpCodesFromParams, ...networkTimeoutErrors]
+    : httpCodesFromParams;
+
   const codesAsString = httpCodesToRetry.map(String);
+
   return executeWithRetries(fn, {
     ...actualOptions,
     shouldRetry: (_, error: unknown) => {

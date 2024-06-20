@@ -123,4 +123,68 @@ describe("executeWithNetworkRetries", () => {
     ).rejects.toThrow();
     expect(fn).toHaveBeenCalledTimes(1);
   });
+
+  it("does not retry when retryOnTimeout is false and error is timeout", async () => {
+    fn.mockImplementation(() => {
+      const error = new AxiosError("mock error");
+      error.code = AxiosError.ETIMEDOUT;
+      throw error;
+    });
+    await expect(async () =>
+      executeWithNetworkRetries(fn, {
+        initialDelay: 1,
+        maxAttempts: 2,
+        retryOnTimeout: false,
+      })
+    ).rejects.toThrow();
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not retry when retryOnTimeout is empty and error is timeout", async () => {
+    fn.mockImplementation(() => {
+      const error = new AxiosError("mock error");
+      error.code = AxiosError.ETIMEDOUT;
+      throw error;
+    });
+    await expect(async () =>
+      executeWithNetworkRetries(fn, {
+        initialDelay: 1,
+        maxAttempts: 2,
+      })
+    ).rejects.toThrow();
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries when retryOnTimeout is true and error is timeout", async () => {
+    fn.mockImplementation(() => {
+      const error = new AxiosError("mock error");
+      error.code = AxiosError.ETIMEDOUT;
+      throw error;
+    });
+    await expect(async () =>
+      executeWithNetworkRetries(fn, {
+        initialDelay: 1,
+        maxAttempts: 2,
+        retryOnTimeout: true,
+      })
+    ).rejects.toThrow();
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  it("retries when retryOnTimeout is false and error is timeout and httpCodesToRetry contains timeout code", async () => {
+    fn.mockImplementation(() => {
+      const error = new AxiosError("mock error");
+      error.code = AxiosError.ETIMEDOUT;
+      throw error;
+    });
+    await expect(async () =>
+      executeWithNetworkRetries(fn, {
+        initialDelay: 1,
+        maxAttempts: 2,
+        retryOnTimeout: false,
+        httpCodesToRetry: [AxiosError.ETIMEDOUT],
+      })
+    ).rejects.toThrow();
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
 });

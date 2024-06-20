@@ -99,12 +99,12 @@ async function prepareAndTriggerPD({
     );
 
     if (numGatewaysV1 > 0) {
-      log(`Kicking off patient discovery Gateway V1`);
+      log(`Kicking off patient discovery Gateway V1 - ${numGatewaysV1} gateways`);
       await enabledIHEGW.startPatientDiscovery(pdRequestGatewayV1);
     }
 
     if (numGatewaysV2 > 0) {
-      log(`Kicking off patient discovery Gateway V2`);
+      log(`Kicking off patient discovery Gateway V2 - ${numGatewaysV2} gateways`);
       const iheGatewayV2 = makeIHEGatewayV2();
       await iheGatewayV2.startPatientDiscovery({
         pdRequestGatewayV2,

@@ -23,3 +23,4 @@ export * as medical from "./medical";
 export * from "./net/file-downloader";
 export * from "./net/retry";
 export * from "./net/url";
+export * from "./net/error";

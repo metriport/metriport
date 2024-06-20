@@ -6,8 +6,9 @@ import {
   OutboundPatientDiscoveryReq,
   OutboundPatientDiscoveryResp,
 } from "@metriport/ihe-gateway-sdk";
-import { executeWithNetworkRetries, executeWithRetries } from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, executeWithRetries } from "@metriport/shared";
 import axios from "axios";
+import { log as getLog, out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import { createAndSignBulkDQRequests, SignedDqRequest } from "./outbound/xca/create/iti38-envelope";
 import { createAndSignBulkDRRequests, SignedDrRequest } from "./outbound/xca/create/iti39-envelope";
@@ -57,6 +58,7 @@ export async function sendProcessRetryXcpdRequest({
     initialDelay: 3000,
     maxAttempts: 3,
     shouldRetry: isRetryableXcpd,
+    log: out("sendProcessRetryXcpdRequest").log,
   });
 }
 
@@ -90,6 +92,7 @@ export async function sendProcessRetryDqRequest({
     initialDelay: 3000,
     maxAttempts: 3,
     shouldRetry: isRetryableXca,
+    log: out("sendProcessRetryDqRequest").log,
   });
 }
 
@@ -123,6 +126,7 @@ export async function sendProcessRetryDrRequest({
     initialDelay: 3000,
     maxAttempts: 3,
     shouldRetry: isRetryableXca,
+    log: out("sendProcessRetryDrRequest").log,
   });
 }
 
@@ -139,6 +143,7 @@ export async function createSignSendProcessXCPDRequest({
   patientId: string;
   cxId: string;
 }): Promise<void> {
+  const log = getLog("createSignSendProcessXCPDRequest");
   const signedRequests = createAndSignBulkXCPDRequests(xcpdRequest, samlCertsAndKeys);
   const resultPromises = signedRequests.map(async (signedRequest, index) => {
     const result = await sendProcessRetryXcpdRequest({
@@ -149,16 +154,13 @@ export async function createSignSendProcessXCPDRequest({
       index,
     });
     try {
-      await executeWithNetworkRetries(async () => axios.post(pdResponseUrl, result));
+      // TODO not sure if we should retry on timeout
+      await executeWithNetworkRetries(async () => axios.post(pdResponseUrl, result), { log });
     } catch (error) {
-      capture.error("Failed to send PD response to Internal Carequality Endpoint", {
-        extra: {
-          cxId,
-          patientId,
-          error,
-          result,
-        },
-      });
+      const msg = "Failed to send PD response to internal CQ endpoint";
+      const extra = { cxId, patientId, result };
+      log(`${msg} - ${errorToString(error)} - ${JSON.stringify(extra)}`);
+      capture.error(msg, { extra: { ...extra, error } });
     }
   });
 
@@ -178,6 +180,8 @@ export async function createSignSendProcessDqRequests({
   patientId: string;
   cxId: string;
 }): Promise<void> {
+  const log = getLog("createSignSendProcessDqRequests");
+
   const signedRequests = createAndSignBulkDQRequests({
     bulkBodyData: dqRequestsGatewayV2,
     samlCertsAndKeys,
@@ -192,16 +196,13 @@ export async function createSignSendProcessDqRequests({
       index,
     });
     try {
-      await executeWithNetworkRetries(async () => axios.post(dqResponseUrl, result));
+      // TODO not sure if we should retry on timeout
+      await executeWithNetworkRetries(async () => axios.post(dqResponseUrl, result), { log });
     } catch (error) {
-      capture.error("Failed to send DQ response to Internal Carequality Endpoint", {
-        extra: {
-          cxId,
-          patientId,
-          error,
-          result,
-        },
-      });
+      const msg = "Failed to send DQ response to internal CQ endpoint";
+      const extra = { cxId, patientId, result };
+      log(`${msg} - ${errorToString(error)} - ${JSON.stringify(extra)}`);
+      capture.error(msg, { extra: { ...extra, error } });
     }
   });
 
@@ -221,6 +222,7 @@ export async function createSignSendProcessDrRequests({
   patientId: string;
   cxId: string;
 }): Promise<void> {
+  const log = getLog("createSignSendProcessDrRequests");
   const signedRequests = createAndSignBulkDRRequests({
     bulkBodyData: drRequestsGatewayV2,
     samlCertsAndKeys,
@@ -235,16 +237,13 @@ export async function createSignSendProcessDrRequests({
       index,
     });
     try {
-      await executeWithNetworkRetries(async () => axios.post(drResponseUrl, result));
+      // TODO not sure if we should retry on timeout
+      await executeWithNetworkRetries(async () => axios.post(drResponseUrl, result), { log });
     } catch (error) {
-      capture.error("Failed to send DR response to Internal Carequality Endpoint", {
-        extra: {
-          cxId,
-          patientId,
-          error,
-          result,
-        },
-      });
+      const msg = "Failed to send DR response to internal CQ endpoint";
+      const extra = { cxId, patientId, result };
+      log(`${msg} - ${errorToString(error)} - ${JSON.stringify(extra)}`);
+      capture.error(msg, { extra: { ...extra, error } });
     }
   });
 
