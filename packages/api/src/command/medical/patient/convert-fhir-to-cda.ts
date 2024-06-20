@@ -5,29 +5,26 @@ import { Bundle } from "../../../routes/medical/schemas/fhir";
 
 export async function convertFhirToCda({
   cxId,
-  patientId,
-  docId,
   validatedBundle,
+  toSplit = true,
 }: {
   cxId: string;
-  patientId: string;
-  docId: string;
   validatedBundle: Bundle;
-}): Promise<void> {
-  const { log } = out(`convertFhirToCda - cxId: ${cxId}, patientId: ${patientId}`);
+  toSplit?: boolean;
+}): Promise<string[]> {
+  const { log } = out(`convertFhirToCda - cxId: ${cxId}`);
   const cdaConverter = makeFhirToCdaConverter();
 
   try {
-    await cdaConverter.requestConvert({
+    return cdaConverter.requestConvert({
       cxId,
-      patientId,
-      docId,
       bundle: validatedBundle,
+      toSplit,
     });
   } catch (error) {
     const msg = `Error converting FHIR to CDA`;
     log(`${msg} - error: ${error}`);
-    capture.error(msg, { extra: { error, cxId, patientId } });
+    capture.error(msg, { extra: { error, cxId } });
     throw error;
   }
 }

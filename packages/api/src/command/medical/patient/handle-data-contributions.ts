@@ -1,7 +1,7 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { toFHIR as toFhirPatient } from "@metriport/core/external/fhir/patient/index";
 import { createUploadFilePath } from "@metriport/core/domain/document/upload";
-import { uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
+import { uploadCdaDocuments, uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import BadRequestError from "../../../errors/bad-request";
 import { toFHIR as toFhirOrganization } from "../../../external/fhir/organization";
@@ -61,11 +61,16 @@ export async function handleDataContribution({
   const convertAndUploadCdaPromise = async () => {
     const isValidForCdaConversion = hasCompositionResource(validatedBundle);
     if (isValidForCdaConversion) {
-      await convertFhirToCda({
+      const converted = await convertFhirToCda({
+        cxId,
+        validatedBundle,
+      });
+      await uploadCdaDocuments({
         cxId,
         patientId,
+        cdaBundles: converted,
+        organization: fhirOrganization,
         docId,
-        validatedBundle,
       });
     }
   };

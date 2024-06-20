@@ -1,10 +1,8 @@
-import { Bundle, Organization } from "@medplum/fhirtypes";
+import { Bundle } from "@medplum/fhirtypes";
 
 export type Input = {
   cxId: string;
-  patientId: string;
-  docId: string;
-  organization: Organization;
+  toSplit: boolean;
   bundle: Bundle;
   orgOid: string;
 };

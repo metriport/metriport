@@ -76,7 +76,11 @@ async function getDocumentContents(cxId: string, patientId: string): Promise<str
   return documentContents;
 }
 
-async function createAndUploadCcdAndMetadata(cxId: string, patientId: string, apiUrl: string) {
+export async function createAndUploadCcdAndMetadata(
+  cxId: string,
+  patientId: string,
+  apiUrl: string
+) {
   const { log } = out(`Generate CCD cxId: ${cxId}, patientId: ${patientId}`);
   const queryParams = {
     cxId,
@@ -92,6 +96,7 @@ async function createAndUploadCcdAndMetadata(cxId: string, patientId: string, ap
     const resp = await api.get(url);
     const ccd = resp.data as string;
     const ccdSize = sizeInBytes(ccd);
+
     await s3Utils.uploadFile({
       bucket,
       key: fileName,

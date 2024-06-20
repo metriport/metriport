@@ -1,10 +1,10 @@
 import { BulkGetDocUrlStatus } from "@metriport/core/domain/bulk-get-document-url";
+import { convertResult } from "@metriport/core/domain/document-query";
+import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
 import {
   DocumentBulkSignerLambdaResponse,
   documentBulkSignerLambdaResponseArraySchema,
 } from "@metriport/core/external/aws/document-signing/document-bulk-signer-response";
-import { convertResult } from "@metriport/core/domain/document-query";
-import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { isMedicalDataSource } from "@metriport/core/external/index";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
@@ -425,7 +425,6 @@ router.get(
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
     const ccd = await generateCcd({ patientId, cxId });
-
     return res.type("application/xml").status(httpStatus.OK).send(ccd);
   })
 );
