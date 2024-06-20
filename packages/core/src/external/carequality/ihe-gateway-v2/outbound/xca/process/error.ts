@@ -13,10 +13,7 @@ import { capture } from "../../../../../../util/notifications";
 import { RegistryError, RegistryErrorList } from "./schema";
 
 const { log } = out("XCA Error Handling");
-const knownNonRetryableErrors = [
-  "No active consent for patient id",
-  "Failed to find document with unique ID",
-];
+const knownNonRetryableErrors = ["No active consent for patient id"];
 
 export function processRegistryErrorList(
   registryErrorList: RegistryErrorList,

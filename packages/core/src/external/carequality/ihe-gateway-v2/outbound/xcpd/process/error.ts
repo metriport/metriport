@@ -120,15 +120,9 @@ export function handleSchemaErrorResponse({
 }
 
 /**
- * Retries if the response has an error that is not in the known non-retryable errors list
- * Will not retry if the response is successful and is not an error.
+ * For now lets not retry on any error. We have network retries already. s
  */
 export function isRetryable(outboundResponse: OutboundPatientDiscoveryResp | undefined): boolean {
   if (!outboundResponse) return false;
-  return (
-    outboundResponse.operationOutcome?.issue.some(
-      issue =>
-        issue.severity === "error" && issue.code !== "http-error" && issue.code !== "schema-error"
-    ) ?? false
-  );
+  return false;
 }
