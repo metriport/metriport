@@ -6,7 +6,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { SamlCertsAndKeys } from "./security/types";
 import { Config } from "../../../../util/config";
-import { out } from "../../../../util/log";
+import { log as getLog, out } from "../../../../util/log";
 import { MetriportError } from "../../../../util/error/metriport-error";
 import { createMtomContentTypeAndPayload } from "../outbound/xca/mtom/builder";
 import { executeWithNetworkRetries } from "@metriport/shared";
@@ -115,10 +115,14 @@ export async function sendSignedXmlMtom({
   signedXml,
   url,
   samlCertsAndKeys,
+  oid,
+  subRequestId,
 }: {
   signedXml: string;
   url: string;
   samlCertsAndKeys: SamlCertsAndKeys;
+  oid: string;
+  subRequestId: string | undefined;
 }): Promise<{ mtomParts: MtomAttachments; rawResponse: Buffer }> {
   const trustedKeyStore = await getTrustedKeyStore();
   const agent = new https.Agent({
@@ -132,6 +136,7 @@ export async function sendSignedXmlMtom({
     secureOptions: constants.SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION,
   });
 
+  const logger = getLog(`sendSignedXmlMtom, oid: ${oid}, SubRequestId: ${subRequestId}`);
   const { contentType, payload } = createMtomContentTypeAndPayload(signedXml);
   const response = await executeWithNetworkRetries(
     async () => {
@@ -159,6 +164,7 @@ export async function sendSignedXmlMtom({
         "ECONNABORTED",
         "ERR_BAD_RESPONSE",
       ],
+      log: logger,
     }
   );
 

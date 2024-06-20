@@ -36,6 +36,8 @@ export async function sendSignedDrRequest({
       signedXml: request.signedRequest,
       url: request.gateway.url,
       samlCertsAndKeys,
+      oid: request.outboundRequest.gateway.homeCommunityId,
+      subRequestId: request.outboundRequest.subRequestId,
     });
     log(
       `Request ${index + 1} sent successfully to: ${request.gateway.url} + oid: ${
@@ -57,13 +59,15 @@ export async function sendSignedDrRequest({
   } catch (error: any) {
     const msg = "HTTP/SSL Failure Sending Signed DR SAML Request";
     log(
-      `${msg}, cxId: ${cxId}, patientId: ${patientId}, gateway: ${request.gateway.homeCommunityId}, error: ${error}`
+      `${msg}, batchRequestId: ${request.outboundRequest.id}, subRequestId: ${request.outboundRequest.subRequestId}, cxId: ${cxId}, patientId: ${patientId}, gateway: ${request.gateway.homeCommunityId}, error: ${error}`
     );
     if (error?.response?.data) {
       const errorDetails = Buffer.isBuffer(error?.response?.data)
         ? error.response.data.toString("utf-8")
         : JSON.stringify(error?.response?.data);
-      log(`error details: ${errorDetails}`);
+      log(
+        `batchRequestId: ${request.outboundRequest.id}, subRequestId: ${request.outboundRequest.subRequestId}, error details: ${errorDetails}`
+      );
     }
 
     const errorString: string = errorToString(error);

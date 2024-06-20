@@ -8,6 +8,7 @@ import {
   isEpicGateway,
   maxDocRefsPerEpicDocRetrievalRequest,
 } from "@metriport/core/external/carequality/ihe-gateway-v2/gateways";
+import { v4 as uuidv4 } from "uuid";
 
 import dayjs from "dayjs";
 import { chunk } from "lodash";
@@ -72,6 +73,7 @@ export function createOutboundDocumentRetrievalReqs({
       const request: OutboundDocumentRetrievalReq[] = docRefChunks.map(chunk => {
         return {
           ...baseRequest,
+          subRequestId: uuidv4(),
           documentReference: chunk,
         };
       });
