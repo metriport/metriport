@@ -23,3 +23,15 @@ export function isSocialHistoryObservation(
     ? socialHistorySurveyCodes.includes(resource.code.coding[0].code.toLowerCase())
     : false;
 }
+
+export function isVitalSignsObservation(resource: Resource | undefined): resource is Observation {
+  if (!isObservation(resource)) {
+    return false;
+  }
+
+  return (
+    resource?.category?.some(category =>
+      category?.coding?.some(coding => coding.code === "vital-signs")
+    ) ?? false
+  );
+}

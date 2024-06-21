@@ -120,7 +120,7 @@ export function handleSchemaErrorResponse({
 }
 
 /**
- * For now lets not retry on any error. We have network retries already. s
+ * For now lets not retry on any error. We have network retries already.
  */
 export function isRetryable(outboundResponse: OutboundPatientDiscoveryResp | undefined): boolean {
   if (!outboundResponse) return false;

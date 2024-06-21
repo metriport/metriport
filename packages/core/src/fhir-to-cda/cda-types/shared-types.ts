@@ -108,7 +108,7 @@ export type CdaName = {
   validTime: CdaPeriod;
 };
 
-export type CDAOriginalText = {
+export type CdaOriginalText = {
   reference: {
     _value: string;
   };
@@ -131,16 +131,22 @@ export type CdaValueSt = {
 
 // Cd (CD) stands for Concept Descriptor
 export type CdaValueCd = {
-  [_xsiTypeAttribute]?: "CD";
+  [_xsiTypeAttribute]: "CD";
   _code?: string | undefined;
   _displayName?: string | undefined;
   _codeSystem?: string | undefined;
-  originalText?: CDAOriginalText;
+  originalText?: CdaOriginalText;
+};
+
+export type CdaValuePq = {
+  [_xsiTypeAttribute]: "PQ";
+  _unit?: string | undefined;
+  _value: number;
 };
 
 // Cv (CV) stands for Coded Value
 export interface CdaCodeCv extends CdaCodeCe {
-  originalText?: CDAOriginalText | string | undefined;
+  originalText?: CdaOriginalText | string | undefined;
   translation?: CdaCodeCe[] | undefined;
 }
 
@@ -228,7 +234,7 @@ export type ObservationEntry = {
     effectiveTime?: {
       _value?: string | undefined;
     };
-    value?: CdaValueCd | CdaValueCd[] | undefined;
+    value?: CdaValuePq | CdaValuePq[] | CdaValueCd | CdaValueCd[] | undefined;
     participant?: Participant | undefined;
     entryRelationship?: ObservationEntryRelationship[];
     interpretationCode?: CdaCodeCe;
@@ -352,6 +358,15 @@ export type AssignedPerson = {
   };
 };
 
+export type RepresentedOrganization = {
+  _classCode: string;
+  name?: {
+    "#text": string;
+  };
+  addr?: CdaAddress[] | undefined;
+  telecom?: CdaTelecom[] | undefined;
+};
+
 export type AssignedEntity = {
   assignedEntity: {
     id?: CdaInstanceIdentifier | undefined;
@@ -359,6 +374,30 @@ export type AssignedEntity = {
     code?: CdaCodeCv | CdaCodeCv[] | undefined;
     telecom?: CdaTelecom[] | undefined;
     assignedPerson?: AssignedPerson | undefined;
+    representedOrganization?: RepresentedOrganization;
+  };
+};
+
+export type CdaSimpleReference = {
+  reference: {
+    _value: string;
+  };
+};
+
+export type VitalObservationOrganizer = {
+  _typeCode: string;
+  organizer: {
+    _classCode: string;
+    _moodCode: string;
+    templateId: CdaInstanceIdentifier;
+    code: CdaCodeCe;
+    statusCode: {
+      _code: string;
+    };
+    effectiveTime: {
+      _value?: string | undefined;
+    };
+    component: ObservationEntry[];
   };
 };
 

@@ -26,7 +26,7 @@ import { processXCPDResponse } from "./outbound/xcpd/process/xcpd-response";
 import { sendSignedXcpdRequest } from "./outbound/xcpd/send/xcpd-requests";
 import { SamlCertsAndKeys } from "./saml/security/types";
 
-export async function sendProcessRetryXcpdRequest({
+export async function sendProcessXcpdRequest({
   signedRequest,
   samlCertsAndKeys,
   patientId,
@@ -39,7 +39,7 @@ export async function sendProcessRetryXcpdRequest({
   cxId: string;
   index: number;
 }): Promise<OutboundPatientDiscoveryResp> {
-  async function sendProcessXcpdRequest() {
+  async function sendAndProcess() {
     const response = await sendSignedXcpdRequest({
       request: signedRequest,
       samlCertsAndKeys,
@@ -54,7 +54,7 @@ export async function sendProcessRetryXcpdRequest({
     });
   }
 
-  return await executeWithRetries(sendProcessXcpdRequest, {
+  return await executeWithRetries(sendAndProcess, {
     initialDelay: 3000,
     maxAttempts: 3,
     shouldRetry: isRetryableXcpd,
@@ -148,7 +148,7 @@ export async function createSignSendProcessXCPDRequest({
   const log = getLog("createSignSendProcessXCPDRequest");
   const signedRequests = createAndSignBulkXCPDRequests(xcpdRequest, samlCertsAndKeys);
   const resultPromises = signedRequests.map(async (signedRequest, index) => {
-    const result = await sendProcessRetryXcpdRequest({
+    const result = await sendProcessXcpdRequest({
       signedRequest,
       samlCertsAndKeys,
       patientId,
@@ -157,7 +157,10 @@ export async function createSignSendProcessXCPDRequest({
     });
     try {
       // TODO not sure if we should retry on timeout
-      await executeWithNetworkRetries(async () => axios.post(pdResponseUrl, result), { log });
+      await executeWithNetworkRetries(async () => axios.post(pdResponseUrl, result), {
+        httpStatusCodesToRetry: [502, 504],
+        log,
+      });
     } catch (error) {
       const msg = "Failed to send PD response to internal CQ endpoint";
       const extra = { cxId, patientId, result };
@@ -199,7 +202,10 @@ export async function createSignSendProcessDqRequests({
     });
     try {
       // TODO not sure if we should retry on timeout
-      await executeWithNetworkRetries(async () => axios.post(dqResponseUrl, result), { log });
+      await executeWithNetworkRetries(async () => axios.post(dqResponseUrl, result), {
+        httpStatusCodesToRetry: [502, 504],
+        log,
+      });
     } catch (error) {
       const msg = "Failed to send DQ response to internal CQ endpoint";
       const extra = { cxId, patientId, result };
@@ -240,7 +246,10 @@ export async function createSignSendProcessDrRequests({
     });
     try {
       // TODO not sure if we should retry on timeout
-      await executeWithNetworkRetries(async () => axios.post(drResponseUrl, result), { log });
+      await executeWithNetworkRetries(async () => axios.post(drResponseUrl, result), {
+        httpStatusCodesToRetry: [502, 504],
+        log,
+      });
     } catch (error) {
       const msg = "Failed to send DR response to internal CQ endpoint";
       const extra = { cxId, patientId, result };

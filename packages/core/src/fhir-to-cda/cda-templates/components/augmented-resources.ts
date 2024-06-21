@@ -2,6 +2,7 @@ import {
   AllergyIntolerance,
   Condition,
   Encounter,
+  Immunization,
   Location,
   Medication,
   MedicationStatement,
@@ -16,11 +17,20 @@ export interface AugmentedResource<T extends Resource> {
   resource: T;
   readonly typeOid: string;
 }
+
+export type VitalObservation = {
+  value: string;
+  date: string;
+  dateTime: string | undefined;
+  category: string;
+};
+
 export class AugmentedObservation implements AugmentedResource<Observation> {
   constructor(
     public readonly sectionName: string,
     public readonly resource: Observation,
-    public readonly typeOid: string
+    public readonly typeOid: string,
+    public readonly measurement?: VitalObservation
   ) {}
 }
 
@@ -50,5 +60,15 @@ export class AugmentedEncounter implements AugmentedResource<Encounter> {
     public readonly resource: Encounter,
     public readonly practitioners?: Practitioner[],
     public readonly locations?: Location[]
+  ) {}
+}
+
+export class AugmentedImmunization implements AugmentedResource<Immunization> {
+  public readonly typeOid = oids.immunizationActivity;
+  constructor(
+    public readonly sectionName: string,
+    public readonly resource: Immunization,
+    public readonly location?: Location,
+    public readonly locationName?: string | undefined
   ) {}
 }

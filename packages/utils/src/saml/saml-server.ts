@@ -12,7 +12,7 @@ import { createAndSignBulkDRRequests } from "@metriport/core/external/carequalit
 import {
   sendProcessRetryDrRequest,
   sendProcessRetryDqRequest,
-  sendProcessRetryXcpdRequest,
+  sendProcessXcpdRequest,
 } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2-logic";
 import { setS3UtilsInstance as setS3UtilsInstanceForStoringDrResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
 import { setS3UtilsInstance as setS3UtilsInstanceForStoringIheResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/monitor/store";
@@ -57,7 +57,7 @@ app.post("/xcpd", async (req: Request, res: Response) => {
     const signedRequests = createAndSignBulkXCPDRequests(req.body, samlCertsAndKeys);
 
     const resultPromises = signedRequests.map(async (signedRequest, index) => {
-      return sendProcessRetryXcpdRequest({
+      return sendProcessXcpdRequest({
         signedRequest,
         samlCertsAndKeys,
         patientId: uuidv4(),

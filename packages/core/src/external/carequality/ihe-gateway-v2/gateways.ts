@@ -22,6 +22,7 @@ const pointClickCareOid = "2.16.840.1.113883.3.6448";
 const redoxOid = "2.16.840.1.113883.3.6147.458";
 const redoxGatewayOid = "2.16.840.1.113883.3.6147.458.2";
 const surescriptsOid = "2.16.840.1.113883.3.2054.2.1.1";
+const epicOidPrefix = "1.2.840.114350.1.13";
 
 /*
  * These gateways only accept a single document reference per request.
@@ -33,7 +34,6 @@ const gatewaysThatAcceptOneDocRefPerRequest = [
   surescriptsOid,
 ];
 
-const epicOidPrefix = "1.2.840.114350.1.13";
 export const maxDocRefsPerEpicDocRetrievalRequest = 10;
 
 /*

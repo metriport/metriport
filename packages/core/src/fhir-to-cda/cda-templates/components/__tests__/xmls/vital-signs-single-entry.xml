@@ -1,0 +1,117 @@
+<templateId root="2.16.840.1.113883.10.20.22.2.4.1">
+</templateId>
+<code code="8716-3" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Vital Signs">
+</code>
+<title>
+	VITAL SIGNS
+</title>
+<text>
+	<table ID="vitalsigns">
+		<thead>
+			<tr>
+				<th>
+					Date Recorded
+				</th>
+				<th>
+					Temperature
+				</th>
+				<th>
+					Pulse
+				</th>
+				<th>
+					Respiratory Rate
+				</th>
+				<th>
+					Oxygen Saturation (SpO2)
+				</th>
+				<th>
+					Diastolic Blood Pressure
+				</th>
+				<th>
+					Systolic Blood Pressure
+				</th>
+				<th>
+					Weight
+				</th>
+				<th>
+					Height
+				</th>
+				<th>
+					Body Mass Index (BMI)
+				</th>
+				<th>
+					Pain Severity
+				</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr ID="vitalsigns0">
+				<td>
+					09/20/2013
+				</td>
+				<td>
+					-
+				</td>
+				<td>
+					-
+				</td>
+				<td>
+					-
+				</td>
+				<td>
+					-
+				</td>
+				<td>
+					-
+				</td>
+				<td>
+					-
+				</td>
+				<td>
+					-
+				</td>
+				<td>
+					-
+				</td>
+				<td>
+					-
+				</td>
+				<td>
+					0 {score}
+				</td>
+			</tr>
+		</tbody>
+	</table>
+</text>
+<entry typeCode="DRIV">
+	<organizer classCode="CLUSTER" moodCode="EVN">
+		<templateId root="2.16.840.1.113883.10.20.22.4.26">
+		</templateId>
+		<code code="46680005" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Vital signs">
+		</code>
+		<statusCode code="completed">
+		</statusCode>
+		<effectiveTime value="20130920">
+		</effectiveTime>
+		<component>
+			<observation classCode="OBS" moodCode="EVN">
+				<templateId root="2.16.840.1.113883.10.20.22.4.27" extension="2015-08-01">
+				</templateId>
+				<id root="placeholder-ORG-OID" extension="${observationId}">
+				</id>
+				<code code="72514-3" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Pain severity - 0-10 verbal numeric rating [Score] - Reported">
+				</code>
+				<text>
+					<reference value="vitalsigns0">
+					</reference>
+				</text>
+				<statusCode code="completed">
+				</statusCode>
+				<effectiveTime value="20130920011430">
+				</effectiveTime>
+				<value xsi:type="PQ" unit="{score}" value="0">
+				</value>
+			</observation>
+		</component>
+	</organizer>
+</entry>
