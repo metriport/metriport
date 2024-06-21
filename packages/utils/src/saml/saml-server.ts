@@ -9,11 +9,10 @@ import { DocumentReference } from "@metriport/ihe-gateway-sdk";
 import { createAndSignBulkXCPDRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/create/iti55-envelope";
 import { createAndSignBulkDQRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/create/iti38-envelope";
 import { createAndSignBulkDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/create/iti39-envelope";
-import { sendSignedXCPDRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/send/xcpd-requests";
-import { processXCPDResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/process/xcpd-response";
 import {
   sendProcessRetryDrRequest,
   sendProcessRetryDqRequest,
+  sendProcessXcpdRequest,
 } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2-logic";
 import { setS3UtilsInstance as setS3UtilsInstanceForStoringDrResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
 import { setS3UtilsInstance as setS3UtilsInstanceForStoringIheResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/monitor/store";
@@ -55,18 +54,18 @@ app.post("/xcpd", async (req: Request, res: Response) => {
   }
 
   try {
-    const xmlResponses = createAndSignBulkXCPDRequests(req.body, samlCertsAndKeys);
-    const response = await sendSignedXCPDRequests({
-      signedRequests: xmlResponses,
-      samlCertsAndKeys,
-      patientId: uuidv4(),
-      cxId: uuidv4(),
-    });
-    const results = response.map(response => {
-      return processXCPDResponse({
-        xcpdResponse: response,
+    const signedRequests = createAndSignBulkXCPDRequests(req.body, samlCertsAndKeys);
+
+    const resultPromises = signedRequests.map(async (signedRequest, index) => {
+      return sendProcessXcpdRequest({
+        signedRequest,
+        samlCertsAndKeys,
+        patientId: uuidv4(),
+        cxId: uuidv4(),
+        index,
       });
     });
+    const results = await Promise.all(resultPromises);
 
     res.type("application/json").send(results);
   } catch (error) {

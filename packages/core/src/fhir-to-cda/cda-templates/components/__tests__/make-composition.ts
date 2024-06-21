@@ -18,7 +18,6 @@ export function makeComposition(ids: { enc: string; pract: string }): Compositio
     },
     date: "2024-03-06T21:22:21.000Z",
     title: "Encounter Summary",
-    event: [{ period: { start: "2012-07-23T16:45:00.000Z" } }],
     section: [
       {
         title: "Results",
