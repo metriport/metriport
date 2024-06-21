@@ -45,7 +45,7 @@ const docRefsPerRequestByGateway: Record<string, number> = {
 export const defaultDocRefsPerRequest = 5;
 
 export function getGatewaySpecificDocRefsPerRequest(gateway: XCAGateway): number {
-  return docRefsPerRequestByGateway[gateway.homeCommunityId] || defaultDocRefsPerRequest;
+  return docRefsPerRequestByGateway[gateway.homeCommunityId] ?? defaultDocRefsPerRequest;
 }
 
 /*
