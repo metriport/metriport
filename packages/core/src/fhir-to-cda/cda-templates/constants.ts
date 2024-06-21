@@ -12,7 +12,9 @@ export const amaAssnSystemCode = "2.16.840.1.113883.6.12";
 export const fdasisSystemCode = "2.16.840.1.113883.4.9";
 export const hl7ActCode = "2.16.840.1.113883.5.4";
 export const providerTaxonomy = "2.16.840.1.113883.6.101";
+export const vaccineAdministeredCodeSet = "2.16.840.1.113883.12.292";
 export const icd10SystemCode = "2.16.840.1.113883.6.90";
+export const hl7actCode = "2.16.840.1.113883.5.4";
 export const extensionValue2014 = "2014-06-09";
 export const extensionValue2015 = "2015-08-01";
 export const loincCodeSystem = "2.16.840.1.113883.6.1";
@@ -28,9 +30,12 @@ export const oids = {
   resultsSection: "2.16.840.1.113883.10.20.22.2.3.1",
   socialHistorySection: "2.16.840.1.113883.10.20.22.2.17",
   encountersSection: "2.16.840.1.113883.10.20.22.2.22",
+  immunizationsSection: "2.16.840.1.113883.10.20.22.2.2.1",
   allergiesSection: "2.16.840.1.113883.10.20.22.2.6.1",
   problemConcernAct: "2.16.840.1.113883.10.20.22.4.3",
   socialHistoryObs: "2.16.840.1.113883.10.20.22.4.38",
+  vitalSignsObs: "2.16.840.1.113883.10.20.22.4.27",
+  vitalSignsSection: "2.16.840.1.113883.10.20.22.2.4.1",
   medicationActivity: "2.16.840.1.113883.10.20.22.4.16",
   mentalStatusObs: "2.16.840.1.113883.10.20.22.4.74",
   problemObs: "2.16.840.1.113883.10.20.22.4.4",
@@ -41,8 +46,11 @@ export const oids = {
   allergyIntoleranceObservation: "2.16.840.1.113883.10.20.22.4.7",
   reactionObservation: "2.16.840.1.113883.10.20.22.4.9",
   encounterActivity: "2.16.840.1.113883.10.20.22.4.49",
+  immunizationActivity: "2.16.840.1.113883.10.20.22.4.52",
   encounterDiagnosis: "2.16.840.1.113883.10.20.22.4.80",
+  immunizationMedicationInformation: "2.16.840.1.113883.10.20.22.4.54",
   serviceDeliveryLocation: "2.16.840.1.113883.10.20.22.4.32",
+  vitalSignsOrganizer: "2.16.840.1.113883.10.20.22.4.26",
 };
 
 export const mentalHealthSurveyCodes = ["44249-1"];

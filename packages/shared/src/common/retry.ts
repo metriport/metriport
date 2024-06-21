@@ -49,6 +49,7 @@ export type GetTimeToWaitParams = {
   backoffMultiplier: number;
   attempt: number;
   maxDelay: number;
+  error?: unknown;
 };
 
 /**
@@ -107,7 +108,13 @@ export async function executeWithRetries<T>(
         throw error;
       }
       log(`${msg}, retrying... (attempt: ${attempt})`);
-      const timeToWait = getTimeToWait({ initialDelay, backoffMultiplier, attempt, maxDelay });
+      const timeToWait = getTimeToWait({
+        initialDelay,
+        backoffMultiplier,
+        attempt,
+        maxDelay,
+        error,
+      });
       await sleep(timeToWait);
     }
   }

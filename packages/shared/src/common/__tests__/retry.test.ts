@@ -71,12 +71,14 @@ describe("retry", () => {
           getTimeToWait,
         })
       ).rejects.toThrow();
-      expect(getTimeToWait).toHaveBeenCalledWith({
-        initialDelay: 10,
-        backoffMultiplier: 2,
-        attempt: 1,
-        maxDelay: Infinity,
-      });
+      expect(getTimeToWait).toHaveBeenCalledWith(
+        expect.objectContaining({
+          initialDelay: 10,
+          backoffMultiplier: 2,
+          attempt: 1,
+          maxDelay: Infinity,
+        })
+      );
     });
 
     test("uses provided initialDelay", async () => {
