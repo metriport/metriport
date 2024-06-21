@@ -76,7 +76,7 @@ export type XCPDPatientId = z.infer<typeof externalGatewayPatientSchema>;
 
 export const baseResponseSchema = z.object({
   id: z.string(),
-  requestChunkId: z.string().optional(),
+  requestChunkId: z.string().nullish(),
   timestamp: z.string(),
   /** timestamp right after external gateway response */
   responseTimestamp: z.string(),
