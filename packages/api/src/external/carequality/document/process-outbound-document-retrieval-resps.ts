@@ -18,6 +18,7 @@ import { formatDate } from "../shared";
 import {
   DocumentReferenceWithMetriportId,
   containsMetriportId,
+  containsDuplicateMetriportId,
   cqToFHIR,
   dedupeContainedResources,
 } from "./shared";
@@ -89,14 +90,33 @@ export async function processOutboundDocumentRetrievalResps({
       source: MedicalDataSource.CAREQUALITY,
     });
 
+    const seenMetriportIds = new Set<string>();
+
     const resultPromises = await Promise.allSettled(
       results.map(async docRetrievalResp => {
         const docRefs = docRetrievalResp.documentReference;
 
         if (docRefs) {
           const validDocRefs = docRefs.filter(containsMetriportId);
+          const deduplicatedDocRefs = validDocRefs.filter(docRef => {
+            const isDuplicate = containsDuplicateMetriportId(docRef, seenMetriportIds);
+            if (isDuplicate) {
+              capture.message(`Duplicate docRef found in DR Resp`, {
+                extra: {
+                  context: `cq.processOutboundDocumentRetrievalResps`,
+                  patientId,
+                  requestId,
+                  cxId,
+                  docRef,
+                },
+                level: "warning",
+              });
+            }
+            return !isDuplicate;
+          });
+
           await handleDocReferences(
-            validDocRefs,
+            deduplicatedDocRefs,
             requestId,
             patientId,
             cxId,
