@@ -426,8 +426,8 @@ async function putConsolidated(req: Request, res: Response) {
   const cxId = getCxIdOrFail(req);
   const patientId = getFrom("params").orFail("id", req);
   const bundle = bundleSchema.parse(req.body);
-  const [result] = await handleDataContribution({ patientId, cxId, bundle });
-  return res.status(status.OK).json(result);
+  const results = await handleDataContribution({ patientId, cxId, bundle });
+  return res.status(status.OK).json(results);
 }
 
 /** ---------------------------------------------------------------------------

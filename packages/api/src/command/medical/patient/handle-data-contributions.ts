@@ -79,11 +79,8 @@ export async function handleDataContribution({
     await processCcdRequest(patient, fhirOrganization);
   };
 
-  return Promise.all([
-    consolidatedDataUploadResults,
-    createAndUploadCcdPromise(),
-    convertAndUploadCdaPromise(),
-  ]);
+  await Promise.all([createAndUploadCcdPromise(), convertAndUploadCdaPromise()]);
+  return consolidatedDataUploadResults;
 }
 
 async function checkResourceLimit(incomingAmount: number, patient: Patient) {

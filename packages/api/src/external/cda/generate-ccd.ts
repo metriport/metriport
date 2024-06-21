@@ -10,7 +10,6 @@ import { validateFhirEntries } from "../fhir/shared/json-validator";
 import { generateEmptyCcd } from "./generate-empty-ccd";
 
 export async function generateCcd(patient: Patient): Promise<string> {
-  const organization = await getOrganizationOrFail({ cxId: patient.cxId });
   const allResources = await getConsolidatedPatientData({ patient });
   const metriportGenerated = allResources.entry?.filter(entry => {
     const resource = entry.resource;
@@ -37,6 +36,7 @@ export async function generateCcd(patient: Patient): Promise<string> {
     return generateEmptyCcd(patient);
   }
 
+  const organization = await getOrganizationOrFail({ cxId: patient.cxId });
   const fhirOrganization = toFhirOrganization(organization);
   const bundle: Bundle = {
     resourceType: "Bundle",

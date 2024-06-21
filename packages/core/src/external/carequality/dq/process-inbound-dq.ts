@@ -1,4 +1,5 @@
 import { InboundDocumentQueryReq, InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
+import { base64ToString } from "@metriport/core/util/base64";
 import axios from "axios";
 import { DOMParser } from "xmldom";
 import { CCD_FILE_NAME } from "../../../domain/document/upload";
@@ -36,7 +37,7 @@ export async function processInboundDocumentQuery(
 
     let documentContents = await getDocumentContents(cxId, patientId);
 
-    if (!ccdExists(documentContents)) {
+    if (!containsCcd(documentContents)) {
       log("No CCD found. Let's generate one.");
       const queryParams = {
         cxId,
@@ -81,7 +82,7 @@ async function getDocumentContents(cxId: string, patientId: string): Promise<str
   return documentContents;
 }
 
-function ccdExists(extrinsicObjects: string[]) {
+function containsCcd(extrinsicObjects: string[]) {
   return extrinsicObjects.some(obj => {
     const parser = new DOMParser();
     const document = parser.parseFromString(obj, "text/xml");
@@ -91,7 +92,7 @@ function ccdExists(extrinsicObjects: string[]) {
       const externalId = externalIdentifiers[i];
       const value = externalId?.getAttribute("value");
       if (value) {
-        const decodedValue = Buffer.from(value, "base64").toString("utf-8");
+        const decodedValue = base64ToString(value);
         if (decodedValue.includes(`_${CCD_FILE_NAME}.xml`)) return true;
       }
     }
