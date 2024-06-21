@@ -126,7 +126,7 @@ export async function sendProcessRetryDrRequest({
     maxAttempts: 3,
     shouldRetry: isRetryableXca,
     log: out(
-      `sendProcessRetryDrRequest, oid: ${signedRequest.outboundRequest.gateway.homeCommunityId}, subRequestId: ${signedRequest.outboundRequest.subRequestId}`
+      `sendProcessRetryDrRequest, oid: ${signedRequest.outboundRequest.gateway.homeCommunityId}, requestChunkId: ${signedRequest.outboundRequest.requestChunkId}`
     ).log,
   });
 }
