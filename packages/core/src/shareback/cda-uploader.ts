@@ -1,4 +1,4 @@
-import { Organization } from "@medplum/fhirtypes";
+import { Organization, DocumentReference } from "@medplum/fhirtypes";
 import { errorToString } from "@metriport/shared";
 import { createUploadFilePath, createUploadMetadataFilePath } from "../domain/document/upload";
 import { S3Utils } from "../external/aws/s3";
@@ -11,22 +11,24 @@ import { createAndUploadDocumentMetadataFile } from "./create-and-upload-extrins
 export async function cdaDocumentUploaderHandler({
   cxId,
   patientId,
-  cdaBundle,
+  bundle,
   medicalDocumentsBucket,
   region,
   organization,
   docId,
+  docRef,
 }: {
   cxId: string;
   patientId: string;
-  cdaBundle: string;
+  bundle: string;
   medicalDocumentsBucket: string;
   region: string;
   organization: Organization;
   docId: string;
+  docRef?: DocumentReference;
 }): Promise<void> {
   const { log } = out(`CDA Upload - cxId: ${cxId} - patientId: ${patientId}`);
-  const fileSize = sizeInBytes(cdaBundle);
+  const fileSize = sizeInBytes(bundle);
   const s3Utils = new S3Utils(region);
   const destinationKey = createUploadFilePath(cxId, patientId, `${docId}.xml`);
 
@@ -34,7 +36,7 @@ export async function cdaDocumentUploaderHandler({
     await s3Utils.uploadFile({
       bucket: medicalDocumentsBucket,
       key: destinationKey,
-      file: Buffer.from(cdaBundle),
+      file: Buffer.from(bundle),
       contentType: XML_APP_MIME_TYPE,
     });
     log(`Successfully uploaded the file to ${medicalDocumentsBucket} with key ${destinationKey}`);
@@ -59,7 +61,9 @@ export async function cdaDocumentUploaderHandler({
       metadataFileName,
       destinationBucket: medicalDocumentsBucket,
       mimeType: XML_APP_MIME_TYPE,
+      docRef,
     });
+
     log(`Successfully uploaded the metadata file`);
   } catch (error) {
     const msg = "Failed to create the metadata file of a CDA";

@@ -32,7 +32,7 @@ export async function uploadCdaDocuments({
         await cdaDocumentUploaderHandler({
           cxId,
           patientId,
-          cdaBundle,
+          bundle: cdaBundle,
           medicalDocumentsBucket: Config.getMedicalDocumentsBucketName(),
           region: Config.getAWSRegion(),
           organization,

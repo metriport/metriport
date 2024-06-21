@@ -146,7 +146,7 @@ export function isLocation(resource: Resource | undefined): resource is Location
   return resource?.resourceType === "Location";
 }
 
-function isPatient(resource: Resource | undefined): resource is Patient {
+export function isPatient(resource: Resource | undefined): resource is Patient {
   return resource?.resourceType === "Patient";
 }
 

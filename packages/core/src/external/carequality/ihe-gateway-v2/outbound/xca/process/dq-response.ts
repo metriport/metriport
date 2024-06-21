@@ -56,7 +56,7 @@ function getCreationTime({
   }
 }
 
-function parseDocumentReference({
+export function parseDocumentReference({
   extrinsicObject,
   outboundRequest,
 }: {

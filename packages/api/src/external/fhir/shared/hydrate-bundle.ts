@@ -19,8 +19,10 @@ export function hydrateBundle(
   };
 
   const bundleWithExtensions = validateUuidsAndAddExtensions(bundle, docExtension);
-  bundleWithExtensions.entry?.push({ resource: patient });
-  bundleWithExtensions.entry?.push({ resource: org });
+  const patientWithExtension = addUniqueExtension(patient, metriportDataSourceExtension);
+  const organizationWithExtension = addUniqueExtension(org, metriportDataSourceExtension);
+  bundleWithExtensions.entry?.push({ resource: patientWithExtension });
+  bundleWithExtensions.entry?.push({ resource: organizationWithExtension });
 
   return bundleWithExtensions;
 }
@@ -40,16 +42,24 @@ function validateUuidsAndAddExtensions(bundle: ValidBundle, docExtension: Extens
         new: uuidv7(),
       });
     }
-    if (entry.resource.extension) {
-      entry.resource.extension.push(metriportDataSourceExtension);
-      entry.resource.extension.push(docExtension);
-    } else {
-      entry.resource.extension = [metriportDataSourceExtension, docExtension];
-    }
+    addUniqueExtension(entry.resource, metriportDataSourceExtension);
+    addUniqueExtension(entry.resource, docExtension);
   });
   let bundleString = JSON.stringify(bundle);
   replacements.forEach((idPair: ReplacementIdPair) => {
     bundleString = bundleString.replaceAll(idPair.old, idPair.new);
   });
   return JSON.parse(bundleString);
+}
+
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
+function addUniqueExtension(resource: any, extension: Extension) {
+  if (!resource.extension) {
+    resource.extension = [];
+  }
+  const extensionExists = resource.extension.some((ext: Extension) => ext.url === extension.url);
+  if (!extensionExists) {
+    resource.extension.push(extension);
+  }
+  return resource;
 }
