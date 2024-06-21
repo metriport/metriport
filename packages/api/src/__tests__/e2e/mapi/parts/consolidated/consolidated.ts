@@ -47,6 +47,7 @@ export function createConsolidatedPayloads(patient: PatientWithId): {
  * Ignores the "meta" field in all resources.
  */
 export function checkConsolidatedJson({
+  cxId,
   patientId,
   lastName,
   phone,
@@ -56,6 +57,7 @@ export function checkConsolidatedJson({
   binaryId,
   ...params
 }: {
+  cxId: string;
   patientId: string;
   lastName: string;
   phone: string;
@@ -64,7 +66,16 @@ export function checkConsolidatedJson({
   documentId: string;
   binaryId: string;
 } & Consolidated): boolean {
-  const templateParams = { patientId, lastName, phone, email, allergyId, documentId, binaryId };
+  const templateParams = {
+    cxId,
+    patientId,
+    lastName,
+    phone,
+    email,
+    allergyId,
+    documentId,
+    binaryId,
+  };
   const contentProcessor = (template: string) => {
     // Removes the "meta" field from the JSON, it contains dynamic data that we can't predict
     return template.replace(/"meta":\s*\{[^}]+\},/g, "");
@@ -120,6 +131,9 @@ function checkConsolidated({
     contentProcessor ? contentProcessor(interpolatedContents) : interpolatedContents
   ).trim();
   const receivedContents = (contentProcessor ? contentProcessor(contents) : contents).trim();
+
+  // console.log("EXPECTED CONTTT", expectedContents);
+  // console.log("RECEIVED CONTTT", receivedContents);
 
   const isMatch = receivedContents === expectedContents;
   if (!isMatch) {

@@ -10,7 +10,7 @@ import duration from "dayjs/plugin/duration";
 import isBetween from "dayjs/plugin/isBetween";
 import fs from "fs";
 import { e2eResultsFolderName } from "../../shared";
-import { E2eContext, medicalApi } from "../shared";
+import { E2eContext, cxId, medicalApi } from "../shared";
 import { getConsolidatedWebhookRequest, resetConsolidatedData } from "../webhook/consolidated";
 import { checkWebhookRequestMeta } from "../webhook/shared";
 import {
@@ -57,7 +57,7 @@ export function runConsolidatedTests(e2e: E2eContext) {
       expect(consolidated.type).toEqual("transaction-response");
       expect(consolidated.entry).toBeTruthy();
       if (!consolidated.entry) throw new Error("Missing entry");
-      expect(consolidated.entry.length).toEqual(2);
+      expect(consolidated.entry.length).toEqual(4);
       expect(consolidated.entry).toEqual(
         expect.arrayContaining([
           {
@@ -246,6 +246,7 @@ export function runConsolidatedTests(e2e: E2eContext) {
         expect(
           checkConsolidatedJson({
             contents,
+            cxId,
             patientId: e2e.patient.id,
             lastName,
             phone,
