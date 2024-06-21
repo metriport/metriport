@@ -98,9 +98,22 @@ export async function processOutboundDocumentRetrievalResps({
 
         if (docRefs) {
           const validDocRefs = docRefs.filter(containsMetriportId);
-          const deduplicatedDocRefs = validDocRefs.filter(
-            docRef => !containsDuplicateMetriportId(docRef, seenMetriportIds)
-          );
+          const deduplicatedDocRefs = validDocRefs.filter(docRef => {
+            const isDuplicate = containsDuplicateMetriportId(docRef, seenMetriportIds);
+            if (isDuplicate) {
+              capture.message(`Duplicate docRef found in DR Resp`, {
+                extra: {
+                  context: `cq.processOutboundDocumentRetrievalResps`,
+                  patientId,
+                  requestId,
+                  cxId,
+                  docRef,
+                },
+                level: "warning",
+              });
+            }
+            return !isDuplicate;
+          });
 
           await handleDocReferences(
             deduplicatedDocRefs,
