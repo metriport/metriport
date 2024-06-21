@@ -20,7 +20,9 @@ import {
 dayjs.extend(duration);
 
 const { log } = out("Saml Client");
-const httpTimeout = dayjs.duration({ seconds: 120 });
+const httpTimeoutPatientDiscovery = dayjs.duration({ seconds: 60 });
+const httpTimeoutDocumentQuery = dayjs.duration({ seconds: 120 });
+const httpTimeoutDocumentRetrieve = dayjs.duration({ seconds: 120 });
 const initialDelay = dayjs.duration({ seconds: 3 });
 const maxPayloadSize = Infinity;
 let rejectUnauthorized = true;
@@ -91,7 +93,9 @@ export async function sendSignedXml({
   const response = await executeWithNetworkRetries(
     async () => {
       return axios.post(url, signedXml, {
-        timeout: httpTimeout.asMilliseconds(),
+        timeout: isDq
+          ? httpTimeoutDocumentQuery.asMilliseconds()
+          : httpTimeoutPatientDiscovery.asMilliseconds(),
         headers: {
           "Content-Type": "application/soap+xml;charset=UTF-8",
           Accept: "application/soap+xml",
@@ -141,7 +145,7 @@ export async function sendSignedXmlMtom({
   const response = await executeWithNetworkRetries(
     async () => {
       return axios.post(url, payload, {
-        timeout: httpTimeout.asMilliseconds(),
+        timeout: httpTimeoutDocumentRetrieve.asMilliseconds(),
         headers: {
           "Accept-Encoding": "gzip, deflate",
           "Content-Type": contentType,
