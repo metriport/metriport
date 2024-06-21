@@ -74,6 +74,7 @@ export function handleRegistryErrorResponse({
   const operationOutcome = processRegistryErrorList(registryErrorList, outboundRequest);
   return {
     id: outboundRequest.id,
+    requestChunkId: outboundRequest.requestChunkId,
     patientId: outboundRequest.patientId,
     timestamp: outboundRequest.timestamp,
     requestTimestamp: outboundRequest.timestamp,
@@ -110,6 +111,7 @@ export function handleHttpErrorResponse({
   };
   return {
     id: outboundRequest.id,
+    requestChunkId: outboundRequest.requestChunkId,
     timestamp: outboundRequest.timestamp,
     requestTimestamp: outboundRequest.timestamp,
     responseTimestamp: dayjs().toISOString(),
@@ -145,6 +147,7 @@ export function handleEmptyResponse({
   };
   return {
     id: outboundRequest.id,
+    requestChunkId: outboundRequest.requestChunkId,
     patientId: outboundRequest.patientId,
     timestamp: outboundRequest.timestamp,
     requestTimestamp: outboundRequest.timestamp,
@@ -179,6 +182,7 @@ export function handleSchemaErrorResponse({
   };
   return {
     id: outboundRequest.id,
+    requestChunkId: outboundRequest.requestChunkId,
     patientId: outboundRequest.patientId,
     timestamp: outboundRequest.timestamp,
     requestTimestamp: outboundRequest.timestamp,

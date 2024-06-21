@@ -23,7 +23,6 @@ it("should construct the correct file path for type 'dr' with index", async () =
   const requestId = "requestId";
   const oid = "oid";
   const timestamp = "2024-05-01T00:00:00";
-  const index = 1;
   const key = buildIheResponseKey({
     type: "dr",
     cxId,
@@ -31,7 +30,7 @@ it("should construct the correct file path for type 'dr' with index", async () =
     requestId,
     oid,
     timestamp,
-    index,
+    requestChunkId: "requestChunkId",
   });
-  expect(key).toEqual(`${cxId}/${patientId}/dr/${requestId}_2024-05-01/${oid}_1.xml`);
+  expect(key).toEqual(`${cxId}/${patientId}/dr/${requestId}_2024-05-01/${oid}_requestChunkId.xml`);
 });

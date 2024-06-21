@@ -1,3 +1,4 @@
+import { nanoid } from "nanoid";
 import { Patient } from "@metriport/core/domain/patient";
 import { capture } from "@metriport/core/util/notifications";
 import {
@@ -72,6 +73,7 @@ export function createOutboundDocumentRetrievalReqs({
       const request: OutboundDocumentRetrievalReq[] = docRefChunks.map(chunk => {
         return {
           ...baseRequest,
+          requestChunkId: nanoid(),
           documentReference: chunk,
         };
       });

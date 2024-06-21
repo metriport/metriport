@@ -58,7 +58,7 @@ export async function sendProcessXcpdRequest({
     initialDelay: 3000,
     maxAttempts: 3,
     shouldRetry: isRetryableXcpd,
-    log: out("sendProcessXcpdRequest").log,
+    log: out(`sendProcessRetryXcpdRequest, oid: ${signedRequest.gateway.oid}`).log,
   });
 }
 
@@ -92,7 +92,7 @@ export async function sendProcessRetryDqRequest({
     initialDelay: 3000,
     maxAttempts: 3,
     shouldRetry: isRetryableXca,
-    log: out("sendProcessRetryDqRequest").log,
+    log: out(`sendProcessRetryDqRequest, oid: ${signedRequest.gateway.homeCommunityId}`).log,
   });
 }
 
@@ -121,12 +121,13 @@ export async function sendProcessRetryDrRequest({
       response,
     });
   }
-
   return await executeWithRetries(sendProcessDrRequest, {
     initialDelay: 3000,
     maxAttempts: 3,
     shouldRetry: isRetryableXca,
-    log: out("sendProcessRetryDrRequest").log,
+    log: out(
+      `sendProcessRetryDrRequest, oid: ${signedRequest.outboundRequest.gateway.homeCommunityId}, requestChunkId: ${signedRequest.outboundRequest.requestChunkId}`
+    ).log,
   });
 }
 

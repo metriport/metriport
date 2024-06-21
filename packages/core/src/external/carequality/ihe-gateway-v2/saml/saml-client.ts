@@ -4,9 +4,10 @@ import axios from "axios";
 import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { NetworkError } from "@metriport/shared";
 import { SamlCertsAndKeys } from "./security/types";
 import { Config } from "../../../../util/config";
-import { out } from "../../../../util/log";
+import { log as getLog, out } from "../../../../util/log";
 import { MetriportError } from "../../../../util/error/metriport-error";
 import { createMtomContentTypeAndPayload } from "../outbound/xca/mtom/builder";
 import { executeWithNetworkRetries } from "@metriport/shared";
@@ -23,6 +24,20 @@ const { log } = out("Saml Client");
 const httpTimeoutPatientDiscovery = dayjs.duration({ seconds: 60 });
 const httpTimeoutDocumentQuery = dayjs.duration({ seconds: 120 });
 const httpTimeoutDocumentRetrieve = dayjs.duration({ seconds: 120 });
+
+const httpCodesToRetry: NetworkError[] = [
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "ETIMEDOUT",
+  "ECONNABORTED",
+];
+
+const httpCodesToRetryPatientDiscovery: NetworkError[] = [...httpCodesToRetry];
+
+const httpCodesToRetryDocumentQuery: NetworkError[] = [...httpCodesToRetry, "ERR_BAD_RESPONSE"];
+
+const httpCodesToRetryDocumentRetrieve: NetworkError[] = [...httpCodesToRetry, "ERR_BAD_RESPONSE"];
+
 const initialDelay = dayjs.duration({ seconds: 3 });
 const maxPayloadSize = Infinity;
 let rejectUnauthorized = true;
@@ -102,13 +117,15 @@ export async function sendSignedXml({
           "Cache-Control": "no-cache",
         },
         httpsAgent: agent,
+        maxBodyLength: maxPayloadSize,
+        maxContentLength: maxPayloadSize,
       });
     },
     {
       initialDelay: initialDelay.asMilliseconds(),
       maxAttempts: isDq ? 4 : 3,
       //TODO: This introduces retry on timeout without needing to specify the http Code: https://github.com/metriport/metriport/pull/2285. Remove once PR is merged
-      httpCodesToRetry: ["ECONNREFUSED", "ECONNRESET", "ETIMEDOUT", "ECONNABORTED"],
+      httpCodesToRetry: isDq ? httpCodesToRetryDocumentQuery : httpCodesToRetryPatientDiscovery,
     }
   );
 
@@ -119,10 +136,14 @@ export async function sendSignedXmlMtom({
   signedXml,
   url,
   samlCertsAndKeys,
+  oid,
+  requestChunkId,
 }: {
   signedXml: string;
   url: string;
   samlCertsAndKeys: SamlCertsAndKeys;
+  oid: string;
+  requestChunkId: string | undefined;
 }): Promise<{ mtomParts: MtomAttachments; rawResponse: Buffer }> {
   const trustedKeyStore = await getTrustedKeyStore();
   const agent = new https.Agent({
@@ -136,6 +157,7 @@ export async function sendSignedXmlMtom({
     secureOptions: constants.SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION,
   });
 
+  const logger = getLog(`sendSignedXmlMtom, oid: ${oid}, requestChunkId: ${requestChunkId}`);
   const { contentType, payload } = createMtomContentTypeAndPayload(signedXml);
   const response = await executeWithNetworkRetries(
     async () => {
@@ -156,13 +178,8 @@ export async function sendSignedXmlMtom({
       initialDelay: initialDelay.asMilliseconds(),
       maxAttempts: 4,
       //TODO: This introduces retry on timeout without needing to specify the http Code: https://github.com/metriport/metriport/pull/2285. Remove once PR is merged
-      httpCodesToRetry: [
-        "ECONNREFUSED",
-        "ECONNRESET",
-        "ETIMEDOUT",
-        "ECONNABORTED",
-        "ERR_BAD_RESPONSE",
-      ],
+      httpCodesToRetry: httpCodesToRetryDocumentRetrieve,
+      log: logger,
     }
   );
 
