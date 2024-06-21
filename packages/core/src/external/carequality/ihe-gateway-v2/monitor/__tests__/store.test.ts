@@ -30,7 +30,7 @@ it("should construct the correct file path for type 'dr' with index", async () =
     requestId,
     oid,
     timestamp,
-    subRequestId: "subRequestId",
+    requestChunkId: "requestChunkId",
   });
-  expect(key).toEqual(`${cxId}/${patientId}/dr/${requestId}_2024-05-01/${oid}_subRequestId.xml`);
+  expect(key).toEqual(`${cxId}/${patientId}/dr/${requestId}_2024-05-01/${oid}_requestChunkId.xml`);
 });

@@ -137,13 +137,13 @@ export async function sendSignedXmlMtom({
   url,
   samlCertsAndKeys,
   oid,
-  subRequestId,
+  requestChunkId,
 }: {
   signedXml: string;
   url: string;
   samlCertsAndKeys: SamlCertsAndKeys;
   oid: string;
-  subRequestId: string | undefined;
+  requestChunkId: string | undefined;
 }): Promise<{ mtomParts: MtomAttachments; rawResponse: Buffer }> {
   const trustedKeyStore = await getTrustedKeyStore();
   const agent = new https.Agent({
@@ -157,7 +157,7 @@ export async function sendSignedXmlMtom({
     secureOptions: constants.SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION,
   });
 
-  const logger = getLog(`sendSignedXmlMtom, oid: ${oid}, SubRequestId: ${subRequestId}`);
+  const logger = getLog(`sendSignedXmlMtom, oid: ${oid}, requestChunkId: ${requestChunkId}`);
   const { contentType, payload } = createMtomContentTypeAndPayload(signedXml);
   const response = await executeWithNetworkRetries(
     async () => {

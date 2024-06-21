@@ -1,3 +1,4 @@
+import { nanoid } from "nanoid";
 import { Patient } from "@metriport/core/domain/patient";
 import { capture } from "@metriport/core/util/notifications";
 import {
@@ -8,7 +9,6 @@ import {
   isEpicGateway,
   maxDocRefsPerEpicDocRetrievalRequest,
 } from "@metriport/core/external/carequality/ihe-gateway-v2/gateways";
-import { v4 as uuidv4 } from "uuid";
 
 import dayjs from "dayjs";
 import { chunk } from "lodash";
@@ -73,7 +73,7 @@ export function createOutboundDocumentRetrievalReqs({
       const request: OutboundDocumentRetrievalReq[] = docRefChunks.map(chunk => {
         return {
           ...baseRequest,
-          subRequestId: uuidv4(),
+          requestChunkId: nanoid(),
           documentReference: chunk,
         };
       });

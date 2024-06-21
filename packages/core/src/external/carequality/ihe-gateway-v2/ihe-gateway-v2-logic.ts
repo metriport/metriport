@@ -121,7 +121,6 @@ export async function sendProcessRetryDrRequest({
       response,
     });
   }
-
   return await executeWithRetries(sendProcessDrRequest, {
     initialDelay: 3000,
     maxAttempts: 3,

@@ -37,7 +37,7 @@ export async function sendSignedDrRequest({
       url: request.gateway.url,
       samlCertsAndKeys,
       oid: request.outboundRequest.gateway.homeCommunityId,
-      subRequestId: request.outboundRequest.subRequestId,
+      requestChunkId: request.outboundRequest.requestChunkId,
     });
     log(
       `Request ${index + 1} sent successfully to: ${request.gateway.url} + oid: ${
@@ -48,7 +48,7 @@ export async function sendSignedDrRequest({
       response: rawResponse,
       outboundRequest: request.outboundRequest,
       gateway: request.gateway,
-      subRequestId: request.outboundRequest.subRequestId,
+      requestChunkId: request.outboundRequest.requestChunkId,
     });
     return {
       gateway: request.gateway,
@@ -59,14 +59,14 @@ export async function sendSignedDrRequest({
   } catch (error: any) {
     const msg = "HTTP/SSL Failure Sending Signed DR SAML Request";
     log(
-      `${msg}, batchRequestId: ${request.outboundRequest.id}, subRequestId: ${request.outboundRequest.subRequestId}, cxId: ${cxId}, patientId: ${patientId}, gateway: ${request.gateway.homeCommunityId}, error: ${error}`
+      `${msg}, requestId ${request.outboundRequest.id}, requestChunkId: ${request.outboundRequest.requestChunkId}, cxId: ${cxId}, patientId: ${patientId}, gateway: ${request.gateway.homeCommunityId}, error: ${error}`
     );
     if (error?.response?.data) {
       const errorDetails = Buffer.isBuffer(error?.response?.data)
         ? error.response.data.toString("utf-8")
         : JSON.stringify(error?.response?.data);
       log(
-        `batchRequestId: ${request.outboundRequest.id}, subRequestId: ${request.outboundRequest.subRequestId}, error details: ${errorDetails}`
+        `batchRequestId: ${request.outboundRequest.id}, requestChunkId: ${request.outboundRequest.requestChunkId}, error details: ${errorDetails}`
       );
     }
 
