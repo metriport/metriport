@@ -4,6 +4,11 @@ import {
   OutboundDocumentQueryResp,
   OutboundDocumentRetrievalReq,
 } from "@metriport/ihe-gateway-sdk";
+import {
+  isEpicGateway,
+  maxDocRefsPerEpicDocRetrievalRequest,
+} from "@metriport/core/external/carequality/ihe-gateway-v2/gateways";
+
 import dayjs from "dayjs";
 import { chunk } from "lodash";
 import { HieInitiator } from "../../hie/get-hie-initiator";
@@ -60,7 +65,10 @@ export function createOutboundDocumentRetrievalReqs({
         },
       };
 
-      const docRefChunks = chunk(documentReference, maxDocRefsPerDocRetrievalRequest);
+      const docRefsPerRequest = isEpicGateway(gateway)
+        ? maxDocRefsPerEpicDocRetrievalRequest
+        : maxDocRefsPerDocRetrievalRequest;
+      const docRefChunks = chunk(documentReference, docRefsPerRequest);
       const request: OutboundDocumentRetrievalReq[] = docRefChunks.map(chunk => {
         return {
           ...baseRequest,

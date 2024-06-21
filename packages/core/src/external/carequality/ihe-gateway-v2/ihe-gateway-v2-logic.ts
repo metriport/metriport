@@ -14,13 +14,53 @@ import { createAndSignBulkDQRequests, SignedDqRequest } from "./outbound/xca/cre
 import { createAndSignBulkDRRequests, SignedDrRequest } from "./outbound/xca/create/iti39-envelope";
 import { processDqResponse } from "./outbound/xca/process/dq-response";
 import { processDrResponse } from "./outbound/xca/process/dr-response";
-import { isRetryable } from "./outbound/xca/process/error";
+import { isRetryable as isRetryableXca } from "./outbound/xca/process/error";
+import { isRetryable as isRetryableXcpd } from "./outbound/xcpd/process/error";
 import { sendSignedDqRequest } from "./outbound/xca/send/dq-requests";
 import { sendSignedDrRequest } from "./outbound/xca/send/dr-requests";
-import { createAndSignBulkXCPDRequests } from "./outbound/xcpd/create/iti55-envelope";
+import {
+  createAndSignBulkXCPDRequests,
+  SignedXcpdRequest,
+} from "./outbound/xcpd/create/iti55-envelope";
 import { processXCPDResponse } from "./outbound/xcpd/process/xcpd-response";
-import { sendSignedXCPDRequests } from "./outbound/xcpd/send/xcpd-requests";
+import { sendSignedXcpdRequest } from "./outbound/xcpd/send/xcpd-requests";
 import { SamlCertsAndKeys } from "./saml/security/types";
+
+export async function sendProcessXcpdRequest({
+  signedRequest,
+  samlCertsAndKeys,
+  patientId,
+  cxId,
+  index,
+}: {
+  signedRequest: SignedXcpdRequest;
+  samlCertsAndKeys: SamlCertsAndKeys;
+  patientId: string;
+  cxId: string;
+  index: number;
+}): Promise<OutboundPatientDiscoveryResp> {
+  async function sendAndProcess() {
+    const response = await sendSignedXcpdRequest({
+      request: signedRequest,
+      samlCertsAndKeys,
+      patientId,
+      cxId,
+      index,
+    });
+    return processXCPDResponse({
+      xcpdResponse: response,
+      patientId,
+      cxId,
+    });
+  }
+
+  return await executeWithRetries(sendAndProcess, {
+    initialDelay: 3000,
+    maxAttempts: 3,
+    shouldRetry: isRetryableXcpd,
+    log: out("sendProcessXcpdRequest").log,
+  });
+}
 
 export async function sendProcessRetryDqRequest({
   signedRequest,
@@ -51,7 +91,7 @@ export async function sendProcessRetryDqRequest({
   return await executeWithRetries(sendProcessDqRequest, {
     initialDelay: 3000,
     maxAttempts: 3,
-    shouldRetry: isRetryable,
+    shouldRetry: isRetryableXca,
     log: out("sendProcessRetryDqRequest").log,
   });
 }
@@ -85,7 +125,7 @@ export async function sendProcessRetryDrRequest({
   return await executeWithRetries(sendProcessDrRequest, {
     initialDelay: 3000,
     maxAttempts: 3,
-    shouldRetry: isRetryable,
+    shouldRetry: isRetryableXca,
     log: out("sendProcessRetryDrRequest").log,
   });
 }
@@ -105,20 +145,14 @@ export async function createSignSendProcessXCPDRequest({
 }): Promise<void> {
   const log = getLog("createSignSendProcessXCPDRequest");
   const signedRequests = createAndSignBulkXCPDRequests(xcpdRequest, samlCertsAndKeys);
-  const responses = await sendSignedXCPDRequests({
-    signedRequests,
-    samlCertsAndKeys,
-    patientId,
-    cxId,
-  });
-  const results: OutboundPatientDiscoveryResp[] = responses.map(response => {
-    return processXCPDResponse({
-      xcpdResponse: response,
+  const resultPromises = signedRequests.map(async (signedRequest, index) => {
+    const result = await sendProcessXcpdRequest({
+      signedRequest,
+      samlCertsAndKeys,
       patientId,
       cxId,
+      index,
     });
-  });
-  for (const result of results) {
     try {
       // TODO not sure if we should retry on timeout
       await executeWithNetworkRetries(async () => axios.post(pdResponseUrl, result), {
@@ -131,7 +165,9 @@ export async function createSignSendProcessXCPDRequest({
       log(`${msg} - ${errorToString(error)} - ${JSON.stringify(extra)}`);
       capture.error(msg, { extra: { ...extra, error } });
     }
-  }
+  });
+
+  await Promise.allSettled(resultPromises);
 }
 
 export async function createSignSendProcessDqRequests({
@@ -155,23 +191,13 @@ export async function createSignSendProcessDqRequests({
   });
 
   const resultPromises = signedRequests.map(async (signedRequest, index) => {
-    return sendProcessRetryDqRequest({
+    const result = await sendProcessRetryDqRequest({
       signedRequest,
       samlCertsAndKeys,
       patientId,
       cxId,
       index,
     });
-  });
-
-  const results = await Promise.allSettled(resultPromises);
-  const successfulResults = results
-    .filter(
-      (result): result is PromiseFulfilledResult<OutboundDocumentQueryResp> =>
-        result.status === "fulfilled"
-    )
-    .map(result => result.value);
-  for (const result of successfulResults) {
     try {
       // TODO not sure if we should retry on timeout
       await executeWithNetworkRetries(async () => axios.post(dqResponseUrl, result), {
@@ -184,7 +210,9 @@ export async function createSignSendProcessDqRequests({
       log(`${msg} - ${errorToString(error)} - ${JSON.stringify(extra)}`);
       capture.error(msg, { extra: { ...extra, error } });
     }
-  }
+  });
+
+  await Promise.allSettled(resultPromises);
 }
 
 export async function createSignSendProcessDrRequests({
@@ -207,24 +235,13 @@ export async function createSignSendProcessDrRequests({
   });
 
   const resultPromises = signedRequests.map(async (signedRequest, index) => {
-    return sendProcessRetryDrRequest({
+    const result = await sendProcessRetryDrRequest({
       signedRequest,
       samlCertsAndKeys,
       patientId,
       cxId,
       index,
     });
-  });
-
-  const results = await Promise.allSettled(resultPromises);
-  const successfulResults = results
-    .filter(
-      (result): result is PromiseFulfilledResult<OutboundDocumentRetrievalResp> =>
-        result.status === "fulfilled"
-    )
-    .map(result => result.value);
-
-  for (const result of successfulResults) {
     try {
       // TODO not sure if we should retry on timeout
       await executeWithNetworkRetries(async () => axios.post(drResponseUrl, result), {
@@ -237,5 +254,7 @@ export async function createSignSendProcessDrRequests({
       log(`${msg} - ${errorToString(error)} - ${JSON.stringify(extra)}`);
       capture.error(msg, { extra: { ...extra, error } });
     }
-  }
+  });
+
+  await Promise.allSettled(resultPromises);
 }

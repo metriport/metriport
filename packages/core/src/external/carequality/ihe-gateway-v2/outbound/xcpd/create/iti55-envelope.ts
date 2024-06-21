@@ -17,7 +17,7 @@ import { requiresUrnInSoapBody, getHomeCommunityId } from "../../../gateways";
 
 const DATE_DASHES_REGEX = /-/g;
 const action = "urn:hl7-org:v3:PRPA_IN201305UV02:CrossGatewayPatientDiscovery";
-export type BulkSignedXCPD = {
+export type SignedXcpdRequest = {
   gateway: XCPDGateway;
   signedRequest: string;
   outboundRequest: OutboundPatientDiscoveryReq;
@@ -340,8 +340,8 @@ export function createITI5SoapEnvelope({
 export function createAndSignBulkXCPDRequests(
   bulkBodyData: OutboundPatientDiscoveryReq,
   samlCertsAndKeys: SamlCertsAndKeys
-): BulkSignedXCPD[] {
-  const signedRequests: BulkSignedXCPD[] = [];
+): SignedXcpdRequest[] {
+  const signedRequests: SignedXcpdRequest[] = [];
 
   for (const gateway of bulkBodyData.gateways) {
     const bodyData: OutboundPatientDiscoveryReq = {
