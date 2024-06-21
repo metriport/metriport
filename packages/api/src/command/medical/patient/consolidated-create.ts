@@ -34,8 +34,10 @@ export async function createOrUpdateConsolidatedPatientData({
 
     return transformedBundle;
   } catch (error) {
+    const errorMsg = errorToString(error);
     const msg = "Error converting and executing fhir bundle resources";
-    log(`${msg}: ${errorToString(error)}`);
+    log(`${msg}: ${errorMsg}`);
+    if (errorMsg.includes("ID")) throw new MetriportError(errorMsg, error, { cxId, patientId });
     throw new MetriportError(msg, error, { cxId, patientId });
   }
 }

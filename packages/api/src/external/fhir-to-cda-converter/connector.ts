@@ -1,4 +1,3 @@
-import { Organization } from "@medplum/fhirtypes";
 import { Bundle } from "../../routes/medical/schemas/fhir";
 
 export type FhirToCdaConverterRequest = {
@@ -6,8 +5,6 @@ export type FhirToCdaConverterRequest = {
   patientId: string;
   docId: string;
   bundle: Bundle;
-  organization: Organization;
-  orgOid: string;
 };
 
 export interface FhirToCdaConverter {

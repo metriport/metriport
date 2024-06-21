@@ -386,3 +386,14 @@ export const uuidv4obj = (): UUID => {
   bytes[8] = 0x80 | (bytes[8]! >>> 2);
   return UUID.ofInner(bytes);
 };
+
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Checks if a string matches the UUID regex
+ * @param uuid Any string
+ * @returns boolean
+ */
+export function isValidUuid(uuid: string): boolean {
+  return uuidRegex.test(uuid);
+}
