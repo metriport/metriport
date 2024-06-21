@@ -4,9 +4,13 @@ import { getOrganizationOrFail } from "../../command/medical/organization/get-or
 import { FhirToCdaConverter, FhirToCdaConverterRequest } from "./connector";
 
 export class FhirToCdaConverterDirect implements FhirToCdaConverter {
-  async requestConvert({ cxId, bundle, toSplit }: FhirToCdaConverterRequest): Promise<string[]> {
+  async requestConvert({
+    cxId,
+    bundle,
+    splitCompositions,
+  }: FhirToCdaConverterRequest): Promise<string[]> {
     const organization = await getOrganizationOrFail({ cxId });
-    const bundles = toSplit ? splitBundleByCompositions(bundle) : bundle;
+    const bundles = splitCompositions ? splitBundleByCompositions(bundle) : bundle;
     return convertFhirBundleToCda(bundles, organization.oid);
   }
 }

@@ -9,7 +9,11 @@ const lambdaClient = makeLambdaClient(region);
 const fhirToCdaConverterLambdaName = Config.getFhirToCdaConverterLambdaName();
 
 export class FhirToCdaConverterLambda implements FhirToCdaConverter {
-  async requestConvert({ cxId, bundle, toSplit }: FhirToCdaConverterRequest): Promise<string[]> {
+  async requestConvert({
+    cxId,
+    bundle,
+    splitCompositions,
+  }: FhirToCdaConverterRequest): Promise<string[]> {
     if (!fhirToCdaConverterLambdaName) {
       throw new Error("FHIR to CDA Converter Lambda Name is undefined");
     }
@@ -17,7 +21,7 @@ export class FhirToCdaConverterLambda implements FhirToCdaConverter {
     const lambdaInput: Input = {
       cxId,
       bundle,
-      toSplit,
+      splitCompositions,
       orgOid: organization.oid,
     };
 

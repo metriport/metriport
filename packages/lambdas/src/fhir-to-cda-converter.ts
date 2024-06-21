@@ -13,13 +13,13 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 
 export const handler = Sentry.AWSLambda.wrapHandler(
-  async ({ cxId, bundle, orgOid, toSplit }: Input): Promise<string[]> => {
+  async ({ cxId, bundle, orgOid, splitCompositions }: Input): Promise<string[]> => {
     const { log } = out(`cx ${cxId}`);
     log(
       `Running with: ${bundle.entry?.length} resources, bundle type: ${bundle.type}, bucket: ${bucketName}}`
     );
     try {
-      const bundles = toSplit ? splitBundleByCompositions(bundle) : bundle;
+      const bundles = splitCompositions ? splitBundleByCompositions(bundle) : bundle;
       return convertFhirBundleToCda(bundles, orgOid);
 
       //eslint-disable-next-line @typescript-eslint/no-explicit-any

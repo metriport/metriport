@@ -49,7 +49,7 @@ export async function generateCcd(patient: Patient): Promise<string> {
   const converted = await convertFhirToCda({
     cxId: patient.cxId,
     validatedBundle,
-    toSplit: false,
+    splitCompositions: false,
   });
   const ccd = converted[0];
   if (!ccd) throw new Error("Failed to create CCD");

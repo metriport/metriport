@@ -1,5 +1,7 @@
 import { InboundDocumentQueryReq, InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
 import axios from "axios";
+import { DOMParser } from "xmldom";
+import { CCD_FILE_NAME } from "../../../domain/document/upload";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
@@ -33,8 +35,8 @@ export async function processInboundDocumentQuery(
     const { log } = out(`Inbound DQ: ${cxId}, patientId: ${patientId}`);
 
     let documentContents = await getDocumentContents(cxId, patientId);
-    // TODO: Finding the CCDs by (CCD) is not the best way to achieve it... Let's maybe get each document's name, decode, and see if it ends with `_ccd.xml`
-    if (!documentContents.some(doc => doc.includes("(CCD)"))) {
+
+    if (!ccdExists(documentContents)) {
       log("No CCD found. Let's generate one.");
       const queryParams = {
         cxId,
@@ -44,6 +46,7 @@ export async function processInboundDocumentQuery(
       const endpointUrl = `${apiUrl}/internal/docs/ccd`;
       const url = `${endpointUrl}?${params}`;
       await api.post(url);
+      log("CCD generated. Fetching the document contents");
       documentContents = await getDocumentContents(cxId, patientId);
     }
 
@@ -76,4 +79,22 @@ async function getDocumentContents(cxId: string, patientId: string): Promise<str
     throw new XDSRegistryError("Internal Server Error");
   }
   return documentContents;
+}
+
+function ccdExists(extrinsicObjects: string[]) {
+  return extrinsicObjects.some(obj => {
+    const parser = new DOMParser();
+    const document = parser.parseFromString(obj, "text/xml");
+
+    const externalIdentifiers = document.getElementsByTagName("ExternalIdentifier");
+    for (let i = 0; i < externalIdentifiers.length; i++) {
+      const externalId = externalIdentifiers[i];
+      const value = externalId?.getAttribute("value");
+      if (value) {
+        const decodedValue = Buffer.from(value, "base64").toString("utf-8");
+        if (decodedValue.includes(`_${CCD_FILE_NAME}.xml`)) return true;
+      }
+    }
+    return false;
+  });
 }
