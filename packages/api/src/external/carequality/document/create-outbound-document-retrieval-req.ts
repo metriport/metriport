@@ -5,11 +5,7 @@ import {
   OutboundDocumentQueryResp,
   OutboundDocumentRetrievalReq,
 } from "@metriport/ihe-gateway-sdk";
-import {
-  isEpicGateway,
-  maxDocRefsPerEpicDocRetrievalRequest,
-} from "@metriport/core/external/carequality/ihe-gateway-v2/gateways";
-
+import { getGatewaySpecificDocRefsPerRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/gateways";
 import dayjs from "dayjs";
 import { chunk } from "lodash";
 import { HieInitiator } from "../../hie/get-hie-initiator";
@@ -17,7 +13,6 @@ import { createPurposeOfUse, getSystemUserName, isGWValid } from "../shared";
 
 const SUBJECT_ROLE_CODE = "106331006";
 const SUBJECT_ROLE_DISPLAY = "Administrative AND/OR managerial worker";
-export const maxDocRefsPerDocRetrievalRequest = 5;
 
 export function createOutboundDocumentRetrievalReqs({
   requestId,
@@ -66,9 +61,7 @@ export function createOutboundDocumentRetrievalReqs({
         },
       };
 
-      const docRefsPerRequest = isEpicGateway(gateway)
-        ? maxDocRefsPerEpicDocRetrievalRequest
-        : maxDocRefsPerDocRetrievalRequest;
+      const docRefsPerRequest = getGatewaySpecificDocRefsPerRequest(gateway);
       const docRefChunks = chunk(documentReference, docRefsPerRequest);
       const request: OutboundDocumentRetrievalReq[] = docRefChunks.map(chunk => {
         return {
