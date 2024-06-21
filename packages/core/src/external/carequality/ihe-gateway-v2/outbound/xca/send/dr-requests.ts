@@ -48,7 +48,7 @@ export async function sendSignedDrRequest({
       response: rawResponse,
       outboundRequest: request.outboundRequest,
       gateway: request.gateway,
-      index,
+      subRequestId: request.outboundRequest.subRequestId,
     });
     return {
       gateway: request.gateway,
