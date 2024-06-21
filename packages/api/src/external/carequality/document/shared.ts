@@ -21,12 +21,16 @@ export function containsMetriportId(
   return docRef.metriportId != undefined;
 }
 
-export function filterDocRefsWithMetriportId(
-  documentReferences: DocumentReference[]
-): DocumentReferenceWithMetriportId[] {
-  return documentReferences.filter((docRef): docRef is DocumentReferenceWithMetriportId => {
-    return docRef.metriportId != undefined;
-  });
+export function containsDuplicateMetriportId(
+  docRef: DocumentReferenceWithMetriportId,
+  seenMetriportIds: Set<string>
+): boolean {
+  if (seenMetriportIds.has(docRef.metriportId)) {
+    return true;
+  } else {
+    seenMetriportIds.add(docRef.metriportId);
+    return false;
+  }
 }
 
 export const cqToFHIR = (
