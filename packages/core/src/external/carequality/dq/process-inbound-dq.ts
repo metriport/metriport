@@ -1,8 +1,8 @@
 import { InboundDocumentQueryReq, InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
-import { base64ToString } from "@metriport/core/util/base64";
 import axios from "axios";
 import { DOMParser } from "xmldom";
 import { CCD_FILE_NAME } from "../../../domain/document/upload";
+import { base64ToString } from "../../../util/base64";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
@@ -83,6 +83,7 @@ async function getDocumentContents(cxId: string, patientId: string): Promise<str
 }
 
 function containsCcd(extrinsicObjects: string[]) {
+  // TODO: check s3 for the existence of _ccd.xml instead of parsing metadata xmls
   return extrinsicObjects.some(obj => {
     const parser = new DOMParser();
     const document = parser.parseFromString(obj, "text/xml");

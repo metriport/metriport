@@ -10,6 +10,7 @@ import { validateFhirEntries } from "../fhir/shared/json-validator";
 import { generateEmptyCcd } from "./generate-empty-ccd";
 
 export async function generateCcd(patient: Patient): Promise<string> {
+  // TODO: 1905 - check on s3 whether FHIR_BUNDLE.json files exist
   const allResources = await getConsolidatedPatientData({ patient });
   const metriportGenerated = allResources.entry?.filter(entry => {
     const resource = entry.resource;
