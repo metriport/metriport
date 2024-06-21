@@ -24,8 +24,9 @@ import { getCQData } from "../patient";
 import {
   cqToFHIR,
   DocumentReferenceWithMetriportId,
-  filterDocRefsWithMetriportId,
+  containsMetriportId,
   getContentTypeOrUnknown,
+  containsDuplicateMetriportId,
 } from "./shared";
 import { getDocumentReferenceContentTypeCounts } from "../../hie/get-docr-content-type-counts";
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
@@ -262,6 +263,7 @@ async function getRespWithDocsToDownload({
   response,
 }: OutboundDocQueryRespParam): Promise<DqRespWithDocRefsWithMetriportId[]> {
   const respWithDocsToDownload: DqRespWithDocRefsWithMetriportId[] = [];
+  const seenMetriportIds = new Set<string>();
 
   await executeAsynchronously(
     response,
@@ -273,8 +275,16 @@ async function getRespWithDocsToDownload({
         response: gwResp,
       });
       const docRefs = resultsWithMetriportId.flatMap(result => result.documentReference ?? []);
-      const docRefsWithMetriportId = filterDocRefsWithMetriportId(docRefs);
-      const docsToDownload = await getNonExistentDocRefs(docRefsWithMetriportId, patientId, cxId);
+      const docRefsWithMetriportId = docRefs.filter(containsMetriportId);
+      const deduplicatedDocRefsWithMetriportId = docRefsWithMetriportId.filter(
+        docRef => !containsDuplicateMetriportId(docRef, seenMetriportIds)
+      );
+
+      const docsToDownload = await getNonExistentDocRefs(
+        deduplicatedDocRefsWithMetriportId,
+        patientId,
+        cxId
+      );
 
       if (docsToDownload.length === 0) {
         return;

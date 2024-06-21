@@ -21,8 +21,8 @@ const specialNamespaceRequiredUrl =
 const pointClickCareOid = "2.16.840.1.113883.3.6448";
 const redoxOid = "2.16.840.1.113883.3.6147.458";
 const redoxGatewayOid = "2.16.840.1.113883.3.6147.458.2";
-const surescriptsOid = "2.16.840.1.113883.3.2054.2.1.1";
-const epicOidPrefix = "1.2.840.114350.1.13";
+export const surescriptsOid = "2.16.840.1.113883.3.2054.2.1.1";
+export const epicOidPrefix = "1.2.840.114350.1.13";
 
 /*
  * These gateways only accept a single document reference per request.
@@ -34,7 +34,19 @@ const gatewaysThatAcceptOneDocRefPerRequest = [
   surescriptsOid,
 ];
 
-export const maxDocRefsPerEpicDocRetrievalRequest = 10;
+const docRefsPerRequestByGateway: Record<string, number> = {
+  [pointClickCareOid]: 1,
+  [redoxOid]: 1,
+  [redoxGatewayOid]: 1,
+  [surescriptsOid]: 1,
+  [epicOidPrefix]: 10,
+};
+
+export const defaultDocRefsPerRequest = 5;
+
+export function getGatewaySpecificDocRefsPerRequest(gateway: XCAGateway): number {
+  return docRefsPerRequestByGateway[gateway.homeCommunityId] ?? defaultDocRefsPerRequest;
+}
 
 /*
  * These gateways require a urn:uuid prefix before document Unique ids formatted as lowercase uuids
@@ -84,8 +96,4 @@ export function requiresUrnInSoapBody(gateway: XCPDGateway): boolean {
 
 export function requiresOnlyOneDocRefPerRequest(gateway: XCAGateway): boolean {
   return gatewaysThatAcceptOneDocRefPerRequest.includes(gateway.homeCommunityId);
-}
-
-export function isEpicGateway(gateway: XCAGateway): boolean {
-  return gateway.homeCommunityId.startsWith(epicOidPrefix);
 }

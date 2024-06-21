@@ -1,6 +1,5 @@
 import { Bundle, Organization, Resource } from "@medplum/fhirtypes";
 import { errorToString } from "@metriport/shared";
-import { createUploadFilePath } from "../domain/document/upload";
 import { S3Utils } from "../external/aws/s3";
 import { cdaDocumentUploaderHandler } from "../shareback/cda-uploader";
 import { Config } from "../util/config";
@@ -33,7 +32,7 @@ export async function uploadCdaDocuments({
         await cdaDocumentUploaderHandler({
           cxId,
           patientId,
-          cdaBundle,
+          bundle: cdaBundle,
           medicalDocumentsBucket: Config.getMedicalDocumentsBucketName(),
           region: Config.getAWSRegion(),
           organization,
@@ -54,16 +53,16 @@ export async function uploadFhirBundleToS3({
   cxId,
   patientId,
   fhirBundle,
-  docId,
+  destinationKey,
 }: {
   cxId: string;
   patientId: string;
   fhirBundle: Bundle<Resource>;
-  docId: string;
+  destinationKey: string;
 }): Promise<void> {
   const { log } = out(`uploadFhirBundleToS3 - cxId: ${cxId}, patientId: ${patientId}`);
   const s3Utils = new S3Utils(region);
-  const destinationKey = createUploadFilePath(cxId, patientId, `${docId}_FHIR_BUNDLE.json`);
+
   try {
     await s3Utils.uploadFile({
       bucket: Config.getMedicalDocumentsBucketName(),

@@ -53,7 +53,7 @@ export async function sendSignedXcpdRequest({
   } catch (error: any) {
     const msg = "HTTP/SSL Failure Sending Signed XCPD SAML Request";
     log(
-      `${msg}, cxId: ${cxId}, patientId: ${patientId}, gateway: ${request.gateway.oid}, error: ${error}`
+      `${msg}, requestId: ${request.outboundRequest.id}, cxId: ${cxId}, patientId: ${patientId}, gateway: ${request.gateway.oid}, error: ${error}`
     );
     if (error?.response?.data) {
       log(`error details: ${JSON.stringify(error?.response?.data)}`);

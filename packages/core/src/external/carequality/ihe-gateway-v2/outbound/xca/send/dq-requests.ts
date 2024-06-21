@@ -55,7 +55,7 @@ export async function sendSignedDqRequest({
   } catch (error: any) {
     const msg = `HTTP/SSL Failure Sending Signed DQ SAML Request ${index + 1}`;
     log(
-      `${msg}, cxId: ${cxId}, patientId: ${patientId}, gateway: ${request.gateway.homeCommunityId}, error: ${error}`
+      `${msg}, requestId: ${request.outboundRequest.id}, cxId: ${cxId}, patientId: ${patientId}, gateway: ${request.gateway.homeCommunityId}, error: ${error}`
     );
     if (error?.response?.data) {
       log(`error details: ${JSON.stringify(error?.response?.data)}`);
