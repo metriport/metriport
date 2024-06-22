@@ -1,16 +1,16 @@
-import chunk from "lodash/chunk";
 import {
-  OutboundPatientDiscoveryReq,
   OutboundDocumentQueryReq,
   OutboundDocumentRetrievalReq,
+  OutboundPatientDiscoveryReq,
 } from "@metriport/ihe-gateway-sdk";
 import { sleep } from "@metriport/shared";
-import { makeLambdaClient } from "../../aws/lambda";
-import { Config } from "../../../util/config";
-import { processAsyncError } from "../../../util/error/shared";
-import { IHEGatewayV2 } from "./ihe-gateway-v2";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import chunk from "lodash/chunk";
+import { Config } from "../../../util/config";
+import { processAsyncError } from "../../../util/error/shared";
+import { defaultLambdaInvocationResponseHandler, makeLambdaClient } from "../../aws/lambda";
+import { IHEGatewayV2 } from "./ihe-gateway-v2";
 
 dayjs.extend(duration);
 
@@ -61,6 +61,7 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
           Payload: JSON.stringify(params),
         })
         .promise()
+        .then(defaultLambdaInvocationResponseHandler)
         .catch(processAsyncError("Failed to invoke iheGatewayV2 lambda for patient discovery"));
     }
   }
@@ -93,6 +94,7 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
           Payload: JSON.stringify(params),
         })
         .promise()
+        .then(defaultLambdaInvocationResponseHandler)
         .catch(processAsyncError("Failed to invoke iheGWV2 lambda for document query"));
     }
   }
@@ -129,6 +131,7 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
           Payload: JSON.stringify(params),
         })
         .promise()
+        .then(defaultLambdaInvocationResponseHandler)
         .catch(processAsyncError("Failed to invoke iheGWV2 lambda for document retrieval"));
     }
   }
