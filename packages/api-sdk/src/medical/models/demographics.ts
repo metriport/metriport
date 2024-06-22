@@ -1,12 +1,7 @@
 import { z } from "zod";
+import { defaultDateString, defaultNameString, stripNonNumericChars } from "../../shared";
 import { addressSchema } from "./common/address";
 import { usStateSchema } from "./common/us-data";
-import {
-  defaultDateString,
-  defaultNameString,
-  defaultOptionalString,
-  stripNonNumericChars,
-} from "../../shared";
 
 export const generalPersonalIdentifiers = ["ssn"] as const;
 export const driversLicensePersonalIdentifier = ["driversLicense"] as const;
@@ -55,8 +50,9 @@ export const contactSchema = z
       .refine(phone => phone.length === phoneLength, {
         message: `Phone must be a string consisting of ${phoneLength} numbers. For example: 4153245540`,
       })
-      .or(defaultOptionalString),
-    email: z.string().email().or(defaultOptionalString),
+      .or(z.null())
+      .or(z.undefined()),
+    email: z.string().email().or(z.null()).or(z.undefined()),
   })
   .refine(c => c.email || c.phone, { message: "Either email or phone must be present" });
 
