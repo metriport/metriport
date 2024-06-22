@@ -46,43 +46,26 @@ export function createConsolidatedPayloads(patient: PatientWithId): {
 /**
  * Ignores the "meta" field in all resources.
  */
-export function checkConsolidatedJson({
-  cxId,
-  patientId,
-  lastName,
-  phone,
-  email,
-  allergyId,
-  documentId,
-  binaryId,
-  ...params
-}: {
-  cxId: string;
-  patientId: string;
-  lastName: string;
-  phone: string;
-  email: string;
-  allergyId: string;
-  documentId: string;
-  binaryId: string;
-} & Consolidated): boolean {
-  const templateParams = {
-    cxId,
-    patientId,
-    lastName,
-    phone,
-    email,
-    allergyId,
-    documentId,
-    binaryId,
-  };
+export function checkConsolidatedJson(
+  params: {
+    cxId: string;
+    patientId: string;
+    lastName: string;
+    phone: string;
+    email: string;
+    allergyId: string;
+    documentId: string;
+    binaryId: string;
+    requestId: string;
+  } & Consolidated
+): boolean {
   const contentProcessor = (template: string) => {
     // Removes the "meta" field from the JSON, it contains dynamic data that we can't predict
     return template.replace(/"meta":\s*\{[^}]+\},/g, "");
   };
   return checkConsolidated({
     ...params,
-    templateParams,
+    templateParams: params,
     contentProcessor,
     extension: "json",
   });
@@ -120,6 +103,7 @@ function checkConsolidated({
 } & Consolidated): boolean {
   const date = dayjs().utc().format("YYYY-MM-DD");
 
+  // For JSON, it has to be minified (no new lines or spaces - DevUtils can do it!)
   const templateContents = fs.readFileSync(`${__dirname}/consolidated-template.${extension}`, {
     encoding: "utf8",
   });
@@ -131,9 +115,6 @@ function checkConsolidated({
     contentProcessor ? contentProcessor(interpolatedContents) : interpolatedContents
   ).trim();
   const receivedContents = (contentProcessor ? contentProcessor(contents) : contents).trim();
-
-  // console.log("EXPECTED CONTTT", expectedContents);
-  // console.log("RECEIVED CONTTT", receivedContents);
 
   const isMatch = receivedContents === expectedContents;
   if (!isMatch) {

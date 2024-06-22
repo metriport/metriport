@@ -10,7 +10,7 @@ import duration from "dayjs/plugin/duration";
 import isBetween from "dayjs/plugin/isBetween";
 import fs from "fs";
 import { e2eResultsFolderName } from "../../shared";
-import { E2eContext, cxId, medicalApi } from "../shared";
+import { cxId, E2eContext, medicalApi } from "../shared";
 import { getConsolidatedWebhookRequest, resetConsolidatedData } from "../webhook/consolidated";
 import { checkWebhookRequestMeta } from "../webhook/shared";
 import {
@@ -52,6 +52,7 @@ export function runConsolidatedTests(e2e: E2eContext) {
       e2e.patient.id,
       e2e.consolidatedPayload
     );
+    e2e.putConsolidatedDataRequestId = medicalApi.lastRequestId;
     expect(consolidated).toBeTruthy();
     try {
       expect(consolidated.type).toEqual("transaction-response");
@@ -229,8 +230,9 @@ export function runConsolidatedTests(e2e: E2eContext) {
         if (!documentId) throw new Error("Missing documentReference.id");
         const binaryId = e2e.binary?.id;
         if (!binaryId) throw new Error("Missing binary");
+        const requestId = e2e.putConsolidatedDataRequestId;
+        if (!requestId) throw new Error("Missing putConsolidatedDataRequestId");
         if (!e2e.mrContentBuffer) throw new Error("Missing mrContentBuffer");
-        const contents = e2e.mrContentBuffer.toString("utf-8");
         const contact = (
           Array.isArray(e2e.patient.contact)
             ? e2e.patient.contact
@@ -242,6 +244,7 @@ export function runConsolidatedTests(e2e: E2eContext) {
         if (!phone) throw new Error("Missing phone");
         const email = contact?.email;
         if (!email) throw new Error("Missing email");
+        const contents = e2e.mrContentBuffer.toString("utf-8");
         expect(contents).toBeTruthy();
         expect(
           checkConsolidatedJson({
@@ -253,6 +256,7 @@ export function runConsolidatedTests(e2e: E2eContext) {
             email,
             allergyId,
             documentId,
+            requestId,
             binaryId,
           })
         ).toBeTrue();

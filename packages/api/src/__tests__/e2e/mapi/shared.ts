@@ -31,4 +31,5 @@ export type E2eContext = {
   url?: string | undefined;
   mrContentBuffer?: Buffer | undefined;
   expectedWebhookMeta?: Record<string, string> | undefined;
+  putConsolidatedDataRequestId?: string | undefined;
 };
