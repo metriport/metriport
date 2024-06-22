@@ -9,7 +9,7 @@ import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { EnvType } from "./env-type";
-import { createLambda } from "./shared/lambda";
+import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { Secrets } from "./shared/secrets";
 
@@ -79,7 +79,7 @@ export class LambdasNestedStack extends NestedStack {
       dbCluster: props.dbCluster,
       dbCredsSecret: props.dbCredsSecret,
       // TODO move this to a config
-      maxPollingDuration: Duration.minutes(11),
+      maxPollingDuration: Duration.minutes(5),
     });
 
     this.outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({
@@ -279,10 +279,7 @@ export class LambdasNestedStack extends NestedStack {
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
-        MAX_POLLING_DURATION: maxPollingDuration
-          .minus(Duration.minutes(1))
-          .toMilliseconds()
-          .toString(),
+        MAX_POLLING_DURATION: this.normalizePollingDuration(maxPollingDuration),
       },
       layers: [lambdaLayers.shared],
       memory: 512,
@@ -327,10 +324,7 @@ export class LambdasNestedStack extends NestedStack {
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
-        MAX_POLLING_DURATION: maxPollingDuration
-          .minus(Duration.minutes(1))
-          .toMilliseconds()
-          .toString(),
+        MAX_POLLING_DURATION: this.normalizePollingDuration(maxPollingDuration),
       },
       layers: [lambdaLayers.shared],
       memory: 512,
@@ -375,10 +369,7 @@ export class LambdasNestedStack extends NestedStack {
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
-        MAX_POLLING_DURATION: maxPollingDuration
-          .minus(Duration.minutes(1))
-          .toMilliseconds()
-          .toString(),
+        MAX_POLLING_DURATION: this.normalizePollingDuration(maxPollingDuration),
       },
       layers: [lambdaLayers.shared],
       memory: 512,
@@ -391,5 +382,12 @@ export class LambdasNestedStack extends NestedStack {
     dbCredsSecret.grantRead(outboundDocumentRetrievalLambda);
 
     return outboundDocumentRetrievalLambda;
+  }
+
+  private normalizePollingDuration(duration: Duration): string {
+    return Math.min(
+      duration.toMilliseconds(),
+      MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(30)).toMilliseconds()
+    ).toString();
   }
 }
