@@ -247,8 +247,7 @@ export function runConsolidatedTests(e2e: E2eContext) {
         const contents = e2e.mrContentBuffer.toString("utf-8");
         expect(contents).toBeTruthy();
         expect(
-          checkConsolidatedJson({
-            contents,
+          checkConsolidatedJson(contents, {
             cxId,
             patientId: e2e.patient.id,
             lastName,

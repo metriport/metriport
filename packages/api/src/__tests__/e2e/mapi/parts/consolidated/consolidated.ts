@@ -47,6 +47,7 @@ export function createConsolidatedPayloads(patient: PatientWithId): {
  * Ignores the "meta" field in all resources.
  */
 export function checkConsolidatedJson(
+  contents: string,
   params: {
     cxId: string;
     patientId: string;
@@ -57,14 +58,14 @@ export function checkConsolidatedJson(
     documentId: string;
     binaryId: string;
     requestId: string;
-  } & Consolidated
+  }
 ): boolean {
   const contentProcessor = (template: string) => {
     // Removes the "meta" field from the JSON, it contains dynamic data that we can't predict
     return template.replace(/"meta":\s*\{[^}]+\},/g, "");
   };
   return checkConsolidated({
-    ...params,
+    contents,
     templateParams: params,
     contentProcessor,
     extension: "json",
