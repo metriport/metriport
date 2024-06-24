@@ -1,20 +1,22 @@
-import dayjs from "dayjs";
 import {
-  OutboundDocumentQueryReq,
-  OutboundDocumentRetrievalReq,
-  OutboundDocumentQueryResp,
-  OutboundDocumentRetrievalResp,
   OperationOutcome,
+  OutboundDocumentQueryReq,
+  OutboundDocumentQueryResp,
+  OutboundDocumentRetrievalReq,
+  OutboundDocumentRetrievalResp,
   XCAGateway,
 } from "@metriport/ihe-gateway-sdk";
-import { capture } from "../../../../../../util/notifications";
+import { toArray } from "@metriport/shared";
+import dayjs from "dayjs";
 import { out } from "../../../../../../util/log";
+import { capture } from "../../../../../../util/notifications";
+import { RegistryError, RegistryErrorList } from "./schema";
 
 const { log } = out("XCA Error Handling");
+const knownNonRetryableErrors = ["No active consent for patient id"];
 
 export function processRegistryErrorList(
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  registryErrorList: any,
+  registryErrorList: RegistryErrorList,
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq
 ): OperationOutcome | undefined {
   const operationOutcome: OperationOutcome = {
@@ -24,16 +26,13 @@ export function processRegistryErrorList(
   };
 
   try {
-    const registryErrors = Array.isArray(registryErrorList?.RegistryError)
-      ? registryErrorList.RegistryError
-      : [registryErrorList?.RegistryError];
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    registryErrors.forEach((entry: any) => {
+    const registryErrors = toArray(registryErrorList?.RegistryError);
+    registryErrors.forEach((entry: RegistryError) => {
       const issue = {
-        severity: entry?._severity?.toString().toLowerCase().split(":").pop(),
-        code: entry?._errorCode?.toString(),
+        severity: "error",
+        code: entry?._errorCode?.toString() ?? "unknown-error",
         details: {
-          text: entry?._codeContext?.toString(),
+          text: entry?._codeContext?.toString() ?? "No details",
         },
       };
 
@@ -68,19 +67,21 @@ export function handleRegistryErrorResponse({
   outboundRequest,
   gateway,
 }: {
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  registryErrorList: any;
+  registryErrorList: RegistryErrorList;
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
 }): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
   const operationOutcome = processRegistryErrorList(registryErrorList, outboundRequest);
   return {
     id: outboundRequest.id,
+    requestChunkId: outboundRequest.requestChunkId,
     patientId: outboundRequest.patientId,
     timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
     responseTimestamp: dayjs().toISOString(),
     gateway,
     operationOutcome,
+    iheGatewayV2: true,
   };
 }
 
@@ -88,10 +89,12 @@ export function handleHttpErrorResponse({
   httpError,
   outboundRequest,
   gateway,
+  attempt,
 }: {
   httpError: string;
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
+  attempt?: number | undefined;
 }): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
@@ -108,20 +111,26 @@ export function handleHttpErrorResponse({
   };
   return {
     id: outboundRequest.id,
+    requestChunkId: outboundRequest.requestChunkId,
     timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
     responseTimestamp: dayjs().toISOString(),
     gateway: gateway,
     patientId: outboundRequest.patientId,
     operationOutcome: operationOutcome,
+    retried: attempt,
+    iheGatewayV2: true,
   };
 }
 
 export function handleEmptyResponse({
   outboundRequest,
   gateway,
+  text = "No documents found",
 }: {
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
+  text?: string;
 }): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
@@ -131,55 +140,77 @@ export function handleEmptyResponse({
         severity: "information",
         code: "no-documents-found",
         details: {
-          text: "No documents found",
+          text,
         },
       },
     ],
   };
   return {
     id: outboundRequest.id,
+    requestChunkId: outboundRequest.requestChunkId,
     patientId: outboundRequest.patientId,
     timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
     responseTimestamp: dayjs().toISOString(),
     gateway,
     operationOutcome,
+    iheGatewayV2: true,
   };
 }
 
-export function handleSoapFaultResponse({
-  soapFault,
+export function handleSchemaErrorResponse({
   outboundRequest,
   gateway,
+  text = "Schema Error",
 }: {
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  soapFault: any;
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
+  text?: string;
 }): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
-  const faultCode = soapFault?.Code?.Value?.toString() ?? "unknown_fault";
-  const faultReason =
-    soapFault?.Reason?.Text?._text.toString().trim() ?? "An unknown error occurred";
-
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
     id: outboundRequest.id,
     issue: [
       {
         severity: "error",
-        code: faultCode,
+        code: "schema-error",
         details: {
-          text: faultReason,
+          text,
         },
       },
     ],
   };
-
   return {
     id: outboundRequest.id,
+    requestChunkId: outboundRequest.requestChunkId,
     patientId: outboundRequest.patientId,
     timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
     responseTimestamp: dayjs().toISOString(),
     gateway,
     operationOutcome,
+    iheGatewayV2: true,
   };
+}
+
+/**
+ * Retries if the response has an error that is not in the known non-retryable errors list
+ * Will not retry if the response is successful and is not an error.
+ */
+export function isRetryable(
+  outboundResponse: OutboundDocumentRetrievalResp | OutboundDocumentQueryResp | undefined
+): boolean {
+  if (!outboundResponse) return false;
+  return (
+    outboundResponse.operationOutcome?.issue.some(
+      issue =>
+        issue.severity === "error" &&
+        issue.code !== "http-error" &&
+        issue.code !== "schema-error" &&
+        !knownNonRetryableErrors.some(
+          nonRetryableError =>
+            "text" in issue.details && issue.details.text.includes(nonRetryableError)
+        )
+    ) ?? false
+  );
 }

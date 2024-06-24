@@ -4,17 +4,31 @@ import {
   OutboundDocumentQueryReq,
   OutboundDocumentRetrievalReq,
 } from "@metriport/ihe-gateway-sdk";
+import { sleep } from "@metriport/shared";
 import { makeLambdaClient } from "../../aws/lambda";
 import { Config } from "../../../util/config";
 import { processAsyncError } from "../../../util/error/shared";
 import { IHEGatewayV2 } from "./ihe-gateway-v2";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 
+dayjs.extend(duration);
+
+const SLEEP_IN_BETWEEN_DOCUMENT_RETRIEVAL_REQUESTS = dayjs.duration({ seconds: 1 });
 const MAX_GATEWAYS_BEFORE_CHUNK = 1000;
+const MAX_DOCUMENT_QUERY_REQUESTS_PER_INVOCATION = 20;
+const MAX_DOCUMENT_RETRIEVAL_REQUESTS_PER_INVOCATION = 10;
 
 const iheGatewayV2OutboundPatientDiscoveryLambdaName = "IHEGatewayV2OutboundPatientDiscoveryLambda";
 const iheGatewayV2OutboundDocumentQueryLambdaName = "IHEGatewayV2OutboundDocumentQueryLambda";
 const iheGatewayV2OutboundDocumentRetrievalLambdaName =
   "IHEGatewayV2OutboundDocumentRetrievalLambda";
+
+function chunkRequests<T>(requests: T[], maxRequestsPerInvocation: number): T[][] {
+  const chunks = Math.ceil(requests.length / maxRequestsPerInvocation);
+  const chunkSize = Math.ceil(requests.length / chunks);
+  return chunk(requests, chunkSize);
+}
 
 export class IHEGatewayV2Async extends IHEGatewayV2 {
   constructor() {
@@ -33,9 +47,7 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
     const lambdaClient = makeLambdaClient(Config.getAWSRegion());
     const { gateways, ...rest } = pdRequestGatewayV2;
 
-    const chunks = Math.ceil(gateways.length / MAX_GATEWAYS_BEFORE_CHUNK);
-    const chunkSize = Math.ceil(gateways.length / chunks);
-    const gatewayChunks = chunk(gateways, chunkSize);
+    const gatewayChunks = chunkRequests(gateways, MAX_GATEWAYS_BEFORE_CHUNK);
 
     for (const chunk of gatewayChunks) {
       const newPdRequestGatewayV2 = { ...rest, gateways: chunk };
@@ -65,17 +77,26 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
     requestId: string;
   }): Promise<void> {
     const lambdaClient = makeLambdaClient(Config.getAWSRegion());
-    const params = { patientId, cxId, requestId, dqRequestsGatewayV2 };
-    // intentionally not waiting
-    lambdaClient
-      .invoke({
-        FunctionName: iheGatewayV2OutboundDocumentQueryLambdaName,
-        InvocationType: "Event",
-        Payload: JSON.stringify(params),
-      })
-      .promise()
-      .catch(processAsyncError("Failed to invoke iheGWV2 lambda for document query"));
+    const requestChunks = chunkRequests(
+      dqRequestsGatewayV2,
+      MAX_DOCUMENT_QUERY_REQUESTS_PER_INVOCATION
+    );
+
+    for (const chunk of requestChunks) {
+      const params = { patientId, cxId, requestId, dqRequestsGatewayV2: chunk };
+
+      // intentionally not waiting
+      lambdaClient
+        .invoke({
+          FunctionName: iheGatewayV2OutboundDocumentQueryLambdaName,
+          InvocationType: "Event",
+          Payload: JSON.stringify(params),
+        })
+        .promise()
+        .catch(processAsyncError("Failed to invoke iheGWV2 lambda for document query"));
+    }
   }
+
   async startDocumentRetrievalGatewayV2({
     drRequestsGatewayV2,
     patientId,
@@ -88,15 +109,27 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
     requestId: string;
   }): Promise<void> {
     const lambdaClient = makeLambdaClient(Config.getAWSRegion());
-    const params = { patientId, cxId, requestId, drRequestsGatewayV2 };
+    const requestChunks = chunkRequests(
+      drRequestsGatewayV2,
+      MAX_DOCUMENT_RETRIEVAL_REQUESTS_PER_INVOCATION
+    );
 
-    lambdaClient
-      .invoke({
-        FunctionName: iheGatewayV2OutboundDocumentRetrievalLambdaName,
-        InvocationType: "Event",
-        Payload: JSON.stringify(params),
-      })
-      .promise()
-      .catch(processAsyncError("Failed to invoke iheGWV2 lambda for document retrieval"));
+    for (const [i, chunk] of requestChunks.entries()) {
+      const params = { patientId, cxId, requestId, drRequestsGatewayV2: chunk };
+
+      if (i > 0) {
+        await sleep(SLEEP_IN_BETWEEN_DOCUMENT_RETRIEVAL_REQUESTS.asMilliseconds());
+      }
+
+      // intentionally not waiting
+      lambdaClient
+        .invoke({
+          FunctionName: iheGatewayV2OutboundDocumentRetrievalLambdaName,
+          InvocationType: "Event",
+          Payload: JSON.stringify(params),
+        })
+        .promise()
+        .catch(processAsyncError("Failed to invoke iheGWV2 lambda for document retrieval"));
+    }
   }
 }

@@ -14,7 +14,11 @@ export function resetConsolidatedData(
 }
 
 export function handleConsolidated(whRequest: ConsolidatedWebhookRequest, res: Response) {
-  console.log(`[WH] ================> Handle Consolidated WH running...`);
+  console.log(
+    `[WH] ================> Handle Consolidated WH running... whRequest: ${
+      whRequest ? whRequest.patients?.length + " patients" : whRequest
+    }`
+  );
   webhookRequest = whRequest;
   return res.sendStatus(200);
 }

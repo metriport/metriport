@@ -1,23 +1,16 @@
+import { splitBundleByCompositions } from "@metriport/core/fhir-to-cda/composition-splitter";
 import { convertFhirBundleToCda } from "@metriport/core/fhir-to-cda/fhir-to-cda";
+import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { FhirToCdaConverter, FhirToCdaConverterRequest } from "./connector";
-import { uploadCdaDocuments } from "@metriport/core/fhir-to-cda/upload";
 
 export class FhirToCdaConverterDirect implements FhirToCdaConverter {
   async requestConvert({
     cxId,
-    patientId,
-    docId,
-    organization,
     bundle,
-    orgOid,
-  }: FhirToCdaConverterRequest): Promise<void> {
-    const converted = convertFhirBundleToCda(bundle, orgOid);
-    await uploadCdaDocuments({
-      cxId,
-      patientId,
-      cdaBundles: converted,
-      organization,
-      docId,
-    });
+    splitCompositions,
+  }: FhirToCdaConverterRequest): Promise<string[]> {
+    const organization = await getOrganizationOrFail({ cxId });
+    const bundles = splitCompositions ? splitBundleByCompositions(bundle) : bundle;
+    return convertFhirBundleToCda(bundles, organization.oid);
   }
 }

@@ -87,7 +87,7 @@
 	<organizer classCode="CLUSTER" moodCode="EVN">
 		<templateId root="2.16.840.1.113883.10.20.22.4.26">
 		</templateId>
-		<code code="46680005" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Vital sings">
+		<code code="46680005" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Vital signs">
 		</code>
 		<statusCode code="completed">
 		</statusCode>

@@ -7,10 +7,11 @@ import { getSettings, getSettingsOrFail } from "../command/settings/getSettings"
 import { updateSettings } from "../command/settings/updateSettings";
 import { countFailedAndProcessingRequests } from "../command/webhook/count-failed";
 import { retryFailedRequests } from "../command/webhook/retry-failed";
+import { maxWebhookUrlLength } from "../domain/settings";
 import BadRequestError from "../errors/bad-request";
 import { Settings } from "../models/settings";
-import { asyncHandler, getCxIdOrFail } from "./util";
 import { requestLogger } from "./helpers/request-logger";
+import { asyncHandler, getCxIdOrFail } from "./util";
 
 const router = Router();
 const webhookURLIncludeBlacklist = [
@@ -112,7 +113,7 @@ router.get(
 
 const updateSettingsSchema = z
   .object({
-    webhookUrl: z.string().url().or(z.literal("").nullable().optional()),
+    webhookUrl: z.string().url().max(maxWebhookUrlLength).or(z.literal("").nullable().optional()),
   })
   .strict();
 

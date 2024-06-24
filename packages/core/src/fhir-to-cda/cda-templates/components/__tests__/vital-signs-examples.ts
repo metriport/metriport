@@ -25,7 +25,6 @@ export const vitalSignObservationTemplate: Partial<Observation> = {
     text: "Pain severity - 0-10 verbal numeric rating [Score] - Reported",
   },
   effectiveDateTime: "2013-09-19T18:14:30-07:00",
-  issued: "2013-09-19T18:14:30.324-07:00",
   valueQuantity: {
     value: 0,
     unit: "{score}",

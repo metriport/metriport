@@ -80,6 +80,41 @@
 					0 {score}
 				</td>
 			</tr>
+			<tr ID="vitalsigns1">
+				<td>
+					09/03/2013
+				</td>
+				<td>
+					-
+				</td>
+				<td>
+					-
+				</td>
+				<td>
+					-
+				</td>
+				<td>
+					-
+				</td>
+				<td>
+					78 mm[Hg]
+				</td>
+				<td>
+					104 mm[Hg]
+				</td>
+				<td>
+					63.504 kg
+				</td>
+				<td>
+					172.3 cm
+				</td>
+				<td>
+					-
+				</td>
+				<td>
+					-
+				</td>
+			</tr>
 		</tbody>
 	</table>
 </text>
@@ -87,7 +122,7 @@
 	<organizer classCode="CLUSTER" moodCode="EVN">
 		<templateId root="2.16.840.1.113883.10.20.22.4.26">
 		</templateId>
-		<code code="46680005" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Vital sings">
+		<code code="46680005" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Vital signs">
 		</code>
 		<statusCode code="completed">
 		</statusCode>
@@ -170,6 +205,98 @@
 				<effectiveTime value="20130920011430">
 				</effectiveTime>
 				<value xsi:type="PQ" unit="/min" value="16">
+				</value>
+			</observation>
+		</component>
+	</organizer>
+</entry>
+<entry typeCode="DRIV">
+	<organizer classCode="CLUSTER" moodCode="EVN">
+		<templateId root="2.16.840.1.113883.10.20.22.4.26">
+		</templateId>
+		<code code="46680005" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Vital signs">
+		</code>
+		<statusCode code="completed">
+		</statusCode>
+		<effectiveTime value="20130903">
+		</effectiveTime>
+		<component>
+			<observation classCode="OBS" moodCode="EVN">
+				<templateId root="2.16.840.1.113883.10.20.22.4.27" extension="2015-08-01">
+				</templateId>
+				<id root="placeholder-ORG-OID" extension="${observationId5}">
+				</id>
+				<code code="29463-7" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC">
+				</code>
+				<text>
+					<reference value="vitalsigns1">
+					</reference>
+				</text>
+				<statusCode code="completed">
+				</statusCode>
+				<effectiveTime value="20130903011430">
+				</effectiveTime>
+				<value xsi:type="PQ" unit="kg" value="63.504">
+				</value>
+			</observation>
+		</component>
+		<component>
+			<observation classCode="OBS" moodCode="EVN">
+				<templateId root="2.16.840.1.113883.10.20.22.4.27" extension="2015-08-01">
+				</templateId>
+				<id root="placeholder-ORG-OID" extension="${observationId6}">
+				</id>
+				<code code="8480-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC">
+				</code>
+				<text>
+					<reference value="vitalsigns1">
+					</reference>
+				</text>
+				<statusCode code="completed">
+				</statusCode>
+				<effectiveTime value="20130903011430">
+				</effectiveTime>
+				<value xsi:type="PQ" unit="mm[Hg]" value="104">
+				</value>
+			</observation>
+		</component>
+		<component>
+			<observation classCode="OBS" moodCode="EVN">
+				<templateId root="2.16.840.1.113883.10.20.22.4.27" extension="2015-08-01">
+				</templateId>
+				<id root="placeholder-ORG-OID" extension="${observationId7}">
+				</id>
+				<code code="8462-4" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC">
+				</code>
+				<text>
+					<reference value="vitalsigns1">
+					</reference>
+				</text>
+				<statusCode code="completed">
+				</statusCode>
+				<effectiveTime value="20130903011430">
+				</effectiveTime>
+				<value xsi:type="PQ" unit="mm[Hg]" value="78">
+				</value>
+			</observation>
+		</component>
+		<component>
+			<observation classCode="OBS" moodCode="EVN">
+				<templateId root="2.16.840.1.113883.10.20.22.4.27" extension="2015-08-01">
+				</templateId>
+				<id root="placeholder-ORG-OID" extension="${observationId8}">
+				</id>
+				<code code="8302-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Body Height">
+				</code>
+				<text>
+					<reference value="vitalsigns1">
+					</reference>
+				</text>
+				<statusCode code="completed">
+				</statusCode>
+				<effectiveTime value="20130903011430">
+				</effectiveTime>
+				<value xsi:type="PQ" unit="cm" value="172.3">
 				</value>
 			</observation>
 		</component>

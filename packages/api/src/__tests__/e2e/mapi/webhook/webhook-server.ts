@@ -5,6 +5,7 @@ import { getEnvVar, getEnvVarOrFail, sleep } from "@metriport/shared";
 import ngrok, { Session } from "@ngrok/ngrok";
 import express, { Request, Response } from "express";
 import { Server } from "http";
+import { asyncHandler } from "../../../../routes/util";
 import whHandler from "./webhook-handler";
 
 const port = 8478;
@@ -12,9 +13,12 @@ const port = 8478;
 const app = express();
 app.use(express.json({ limit: "20mb" }));
 
-app.post("/", async (req: Request, res: Response) => {
-  await whHandler.handleRequest(req, res);
-});
+app.post(
+  "/",
+  asyncHandler(async (req: Request, res: Response) => {
+    await whHandler.handleRequest(req, res);
+  }, true)
+);
 
 let server: Server;
 let session: Session;

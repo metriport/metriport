@@ -1,5 +1,4 @@
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import { S3EventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
@@ -11,7 +10,7 @@ export function createLambda({
   lambdaLayers,
   stack,
   vpc,
-  apiService,
+  apiAddress,
   envType,
   medicalDocumentsUploadBucket,
   medicalDocumentsBucket,
@@ -20,7 +19,7 @@ export function createLambda({
   lambdaLayers: LambdaLayers;
   stack: Construct;
   vpc: ec2.IVpc;
-  apiService: ecs_patterns.NetworkLoadBalancedFargateService;
+  apiAddress: string;
   envType: EnvType;
   medicalDocumentsBucket: s3.IBucket;
   medicalDocumentsUploadBucket: s3.Bucket;
@@ -34,7 +33,7 @@ export function createLambda({
     layers: [lambdaLayers.shared],
     envType,
     envVars: {
-      API_URL: `http://${apiService.loadBalancer.loadBalancerDnsName}`,
+      API_URL: `http://${apiAddress}`,
       MEDICAL_DOCUMENTS_DESTINATION_BUCKET: medicalDocumentsBucket.bucketName,
       ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
     },

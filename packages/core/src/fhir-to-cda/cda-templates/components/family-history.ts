@@ -1,8 +1,8 @@
 import {
   Age,
+  Annotation,
   Bundle,
   CodeableConcept,
-  Annotation,
   FamilyMemberHistory,
   FamilyMemberHistoryCondition,
 } from "@medplum/fhirtypes";
@@ -21,7 +21,7 @@ import {
   buildCodeCe,
   buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
-  buildSimpleReference,
+  buildOriginalTextReference,
   formatDateToCdaTimestamp,
   getDisplaysFromCodeableConcepts,
   mapGenderCode,
@@ -233,7 +233,7 @@ function mapRelationship(
   return {
     ...codeCe,
     ...(display && { _displayName: display }),
-    originalText: buildSimpleReference(referenceId),
+    originalText: buildOriginalTextReference(referenceId),
   };
 }
 
@@ -260,12 +260,14 @@ function buildComponents(
   });
   const codeCv: CdaCodeCv = {
     ...codeCe,
-    translation: buildCodeCe({
-      code: "75315-2",
-      codeSystem: loincCodeSystem,
-      codeSystemName: loincSystemName,
-      displayName: "Condition Family member",
-    }),
+    translation: [
+      buildCodeCe({
+        code: "75315-2",
+        codeSystem: loincCodeSystem,
+        codeSystemName: loincSystemName,
+        displayName: "Condition Family member",
+      }),
+    ],
   };
 
   return conditions.map((condition, index) => {

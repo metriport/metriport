@@ -1,8 +1,12 @@
 import { limitStringLength, NotFoundError } from "@metriport/shared";
 import { v4 as uuidv4 } from "uuid";
-import { WebhookRequestStatus, WebhookType } from "../../domain/webhook";
+import {
+  maxRequestUrlLength,
+  maxStatusDetailLength,
+  WebhookRequestStatus,
+  WebhookType,
+} from "../../domain/webhook";
 import { WebhookRequest } from "../../models/webhook-request";
-import { MAX_VARCHAR_LENGTH } from "../../models/_default";
 
 export type CreateWebhookRequestCommand = {
   cxId: string;
@@ -63,8 +67,8 @@ export async function updateWebhookRequest({
 }: UpdateWebhookRequestCommand): Promise<void> {
   const whRequest = await WebhookRequest.findOne({ where: { id } });
   if (!whRequest) throw new NotFoundError(`Could not find webhook request ${id}`);
-  const statusDetailParsed = limitStringLength(statusDetail, MAX_VARCHAR_LENGTH);
-  const requestUrlParsed = limitStringLength(requestUrl, MAX_VARCHAR_LENGTH);
+  const statusDetailParsed = limitStringLength(statusDetail, maxStatusDetailLength);
+  const requestUrlParsed = limitStringLength(requestUrl, maxRequestUrlLength);
   await WebhookRequest.update(
     {
       status,

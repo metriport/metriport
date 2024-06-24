@@ -6,8 +6,8 @@ import {
   buildCodeCe,
   buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
+  buildOriginalTextReference,
   buildPerformerFromLocation,
-  buildSimpleReference,
   formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
   getDisplaysFromCodeableConcepts,
@@ -162,7 +162,7 @@ function createEntryFromEncounter(immunization: AugmentedImmunization, reference
         codeSystem: hl7actCode,
         codeSystemName: "ActCode",
       }),
-      text: buildSimpleReference(referenceId),
+      text: buildOriginalTextReference(referenceId),
       statusCode: {
         _code: mapImmunizationStatusCode(immunization.resource.status),
       },

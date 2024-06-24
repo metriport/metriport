@@ -105,7 +105,6 @@ function getDocumentTypeCode(composition: Composition | undefined): CdaCodeCe {
       displayName: primaryCoding?.display,
     });
   }
-  // TODO: Write a more robust backup option
   return buildCodeCe({
     code: "34133-9",
     codeSystem: clinicalDocumentConstants.code.codeSystem,
@@ -118,6 +117,5 @@ function getDocumentTitle(composition: Composition | undefined): string {
   if (composition && composition.type?.text) {
     return composition.type?.text;
   }
-  // TODO: Write a more robust backup option
   return "Continuity of Care Document";
 }

@@ -13,7 +13,7 @@ export { User } from "./devices/models/user";
 
 // Medical API
 export {
-  WebhookRequestParsingError,
+  WebhookRequestParsingFailure,
   WebhookRequest,
   WebhookRequestStatus,
   WebhookType,

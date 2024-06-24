@@ -172,7 +172,7 @@ function createOrganizedEntryFromSet(
         code: "46680005",
         codeSystem: "2.16.840.1.113883.6.96",
         codeSystemName: "SNOMED CT",
-        displayName: "Vital sings",
+        displayName: "Vital signs",
       }),
       statusCode: {
         _code: "completed",

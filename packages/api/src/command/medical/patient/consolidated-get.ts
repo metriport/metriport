@@ -246,6 +246,8 @@ export async function getConsolidated({
       dateFrom,
       dateTo,
     });
+
+    bundle.entry = filterOutPrelimDocRefs(bundle.entry);
     const hasResources = bundle.entry && bundle.entry.length > 0;
     const shouldCreateMedicalRecord = conversionType && conversionType != "json" && hasResources;
     const currentConsolidatedProgress = patient.data.consolidatedQueries?.find(
@@ -308,6 +310,22 @@ export async function getConsolidated({
     });
     throw error;
   }
+}
+
+export function filterOutPrelimDocRefs(
+  entries: BundleEntry<Resource>[] | undefined
+): BundleEntry<Resource>[] | undefined {
+  if (!entries) return entries;
+
+  return entries.filter(entry => {
+    if (entry.resource?.resourceType === "DocumentReference") {
+      const isValidStatus = entry.resource?.docStatus !== "preliminary";
+
+      return isValidStatus;
+    }
+
+    return true;
+  });
 }
 
 async function uploadConsolidatedJsonAndReturnUrl({

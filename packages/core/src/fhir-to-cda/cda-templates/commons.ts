@@ -14,7 +14,7 @@ import localizedFormat from "dayjs/plugin/localizedFormat";
 import utc from "dayjs/plugin/utc";
 import {
   AssignedEntity,
-  CDAOriginalText,
+  CdaOriginalText,
   CdaAddress,
   CdaAddressUse,
   CdaCodeCe,
@@ -22,7 +22,6 @@ import {
   CdaInstanceIdentifier,
   CdaOrganization,
   CdaSexType,
-  CdaSimpleReference,
   CdaTelecom,
   CdaTelecomUse,
   CdaValueCd,
@@ -118,7 +117,7 @@ export function buildCodeCe({
   return codeObject;
 }
 
-export function buildOriginalTextReference(value: string): CDAOriginalText {
+export function buildOriginalTextReference(value: string): CdaOriginalText {
   return {
     reference: {
       _value: value,
@@ -576,14 +575,6 @@ export function buildParticipant(locations: Location[] | undefined): Participant
 export function buildAddressText(address: Address | undefined): string | undefined {
   if (!address) return undefined;
   return `${address.line?.join(", ")}, ${address.city}, ${address.state} ${address.postalCode}`;
-}
-
-export function buildSimpleReference(referenceId: string): CdaSimpleReference {
-  return {
-    reference: {
-      _value: referenceId,
-    },
-  };
 }
 
 export function mapGenderCode(gender: string | undefined): CdaSexType {

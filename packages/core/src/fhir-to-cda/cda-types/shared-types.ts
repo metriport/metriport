@@ -109,7 +109,7 @@ export type CdaName = {
   validTime: CdaPeriod;
 };
 
-export type CDAOriginalText = {
+export type CdaOriginalText = {
   reference: {
     _value: string;
   };
@@ -136,7 +136,7 @@ export type CdaValueCd = {
   _code?: string | undefined;
   _displayName?: string | undefined;
   _codeSystem?: string | undefined;
-  originalText?: CDAOriginalText;
+  originalText?: CdaOriginalText;
 };
 
 export type CdaValuePq = {
@@ -147,8 +147,8 @@ export type CdaValuePq = {
 
 // Cv (CV) stands for Coded Value
 export interface CdaCodeCv extends CdaCodeCe {
-  originalText?: CDAOriginalText | string | undefined;
-  translation?: CdaCodeCe | CdaCodeCe[] | undefined;
+  originalText?: CdaOriginalText | string | undefined;
+  translation?: CdaCodeCe[] | undefined;
 }
 
 /**
@@ -377,12 +377,6 @@ export type AssignedEntity = {
     telecom?: CdaTelecom[] | undefined;
     assignedPerson?: AssignedPerson | undefined;
     representedOrganization?: RepresentedOrganization;
-  };
-};
-
-export type CdaSimpleReference = {
-  reference: {
-    _value: string;
   };
 };
 

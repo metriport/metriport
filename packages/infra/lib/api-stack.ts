@@ -251,12 +251,14 @@ export class APIStack extends Stack {
       bucketName: props.config.medicalDocumentsBucketName,
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
+      versioned: true,
     });
 
     const medicalDocumentsUploadBucket = new s3.Bucket(this, "APIMedicalDocumentsUploadBucket", {
       bucketName: props.config.medicalDocumentsUploadBucketName,
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
+      versioned: true,
     });
 
     const getSandboxSeedDataBucket = (sandboxConfig: EnvConfigSandbox) => {
@@ -392,7 +394,8 @@ export class APIStack extends Stack {
     const {
       cluster,
       service: apiService,
-      loadBalancerAddress: apiLoadBalancerAddress,
+      loadBalancer: apiLoadBalancer,
+      loadBalancerAddress: apiDirectUrl,
       serverAddress: apiServerUrl,
     } = createAPIService({
       stack: this,
@@ -426,6 +429,7 @@ export class APIStack extends Stack {
       },
       cookieStore,
     });
+    const apiLoadBalancerAddress = apiLoadBalancer.loadBalancerDnsName;
 
     if (props.config.iheGateway) {
       const mtlsBucketName = s3.Bucket.fromBucketName(
@@ -436,7 +440,7 @@ export class APIStack extends Stack {
       new IHEGatewayV2LambdasNestedStack(this, "IHEGatewayV2LambdasNestedStack", {
         lambdaLayers,
         vpc: this.vpc,
-        apiService: apiService,
+        apiTaskRole: apiService.taskDefinition.taskRole,
         secrets,
         cqOrgCertificate: props.config.carequality?.secretNames.CQ_ORG_CERTIFICATE,
         cqOrgPrivateKey: props.config.carequality?.secretNames.CQ_ORG_PRIVATE_KEY,
@@ -445,7 +449,7 @@ export class APIStack extends Stack {
         cqOrgPrivateKeyPassword: props.config.carequality?.secretNames.CQ_ORG_PRIVATE_KEY_PASSWORD,
         cqTrustBundleBucket: mtlsBucketName,
         medicalDocumentsBucket: medicalDocumentsBucket,
-        apiURL: apiService.loadBalancer.loadBalancerDnsName,
+        apiURL: apiDirectUrl,
         envType: props.config.environmentType,
         sentryDsn: props.config.lambdasSentryDSN,
         iheResponsesBucketName: props.config.iheResponsesBucketName,
@@ -455,9 +459,9 @@ export class APIStack extends Stack {
     // Access grant for Aurora DB
     dbCluster.connections.allowDefaultPortFrom(apiService.service);
 
-    // setup a private link so the API can talk to the NLB
+    // setup a private link so the API GW can talk to the API's LB
     const link = new apig.VpcLink(this, "link", {
-      targets: [apiService.loadBalancer],
+      targets: [apiLoadBalancer],
     });
 
     const integration = new apig.Integration({
@@ -498,26 +502,15 @@ export class APIStack extends Stack {
           dlq: fhirConverterDLQ,
           fhirConverterBucket,
           conversionResultQueueUrl: fhirServerQueue.queueUrl,
-          apiServiceDnsAddress: apiLoadBalancerAddress,
+          apiServiceDnsAddress: apiDirectUrl,
           alarmSnsAction: slackNotification?.alarmAction,
         })
       : undefined;
 
-    // Add ENV after apiserivce is created
-    outboundPatientDiscoveryLambda.addEnvironment(
-      "API_URL",
-      `http://${apiService.loadBalancer.loadBalancerDnsName}`
-    );
-
-    outboundDocumentQueryLambda.addEnvironment(
-      "API_URL",
-      `http://${apiService.loadBalancer.loadBalancerDnsName}`
-    );
-
-    outboundDocumentRetrievalLambda.addEnvironment(
-      "API_URL",
-      `http://${apiService.loadBalancer.loadBalancerDnsName}`
-    );
+    // Add ENV after the API service is created
+    outboundPatientDiscoveryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    outboundDocumentQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    outboundDocumentRetrievalLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
 
     // Access grant for medical documents bucket
     sandboxSeedDataBucket &&
@@ -530,7 +523,7 @@ export class APIStack extends Stack {
       lambdaLayers,
       stack: this,
       vpc: this.vpc,
-      apiAddress: apiLoadBalancerAddress,
+      apiAddress: apiDirectUrl,
       alarmSnsAction: slackNotification?.alarmAction,
     });
 
@@ -538,7 +531,7 @@ export class APIStack extends Stack {
       lambdaLayers,
       stack: this,
       vpc: this.vpc,
-      apiAddress: apiLoadBalancerAddress,
+      apiAddress: apiDirectUrl,
       alarmSnsAction: slackNotification?.alarmAction,
     });
 
@@ -549,7 +542,7 @@ export class APIStack extends Stack {
         lambdaLayers,
         envType: props.config.environmentType,
         secrets,
-        apiAddress: apiLoadBalancerAddress,
+        apiAddress: apiDirectUrl,
         bucket: generalBucket,
         alarmSnsAction: slackNotification?.alarmAction,
         cookieStore,
@@ -694,7 +687,7 @@ export class APIStack extends Stack {
       lambdaLayers,
       stack: this,
       vpc: this.vpc,
-      apiService,
+      apiAddress: apiDirectUrl,
       envType: props.config.environmentType,
       medicalDocumentsBucket,
       medicalDocumentsUploadBucket,
@@ -714,7 +707,8 @@ export class APIStack extends Stack {
       searchIndex: ccdaSearchIndexName,
       searchUserName: ccdaSearchUserName,
       searchPassword: ccdaSearchSecret.secretValue.unsafeUnwrap(),
-      apiService: apiService,
+      apiTaskRole: apiService.service.taskDefinition.taskRole,
+      apiAddress: apiDirectUrl,
     });
 
     this.setupGarminWebhookAuth({
@@ -805,13 +799,13 @@ export class APIStack extends Stack {
       stack: this,
       lambdaLayers,
       vpc: this.vpc,
-      apiAddress: apiLoadBalancerAddress,
+      apiAddress: apiDirectUrl,
     });
     createScheduledDBMaintenance({
       stack: this,
       lambdaLayers,
       vpc: this.vpc,
-      apiAddress: apiLoadBalancerAddress,
+      apiAddress: apiDirectUrl,
     });
 
     //-------------------------------------------
@@ -911,7 +905,7 @@ export class APIStack extends Stack {
     lambdaLayers: LambdaLayers;
     baseResource: apig.Resource;
     vpc: ec2.IVpc;
-    fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
+    fargateService: ecs_patterns.ApplicationLoadBalancedFargateService;
     dynamoDBTokenTable: dynamodb.Table;
     envType: EnvType;
     sentryDsn: string | undefined;
@@ -956,7 +950,7 @@ export class APIStack extends Stack {
     lambdaLayers: LambdaLayers;
     baseResource: apig.Resource;
     vpc: ec2.IVpc;
-    fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
+    fargateService: ecs_patterns.ApplicationLoadBalancedFargateService;
     envType: EnvType;
     sentryDsn: string | undefined;
   }) {
@@ -995,7 +989,7 @@ export class APIStack extends Stack {
     baseResource: apig.Resource;
     secrets: Secrets;
     vpc: ec2.IVpc;
-    fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
+    fargateService: ecs_patterns.ApplicationLoadBalancedFargateService;
     fitbitClientSecret: string;
     fitbitSubscriberVerificationCode: string;
     envType: EnvType;
@@ -1066,7 +1060,7 @@ export class APIStack extends Stack {
     baseResource: apig.Resource;
     secrets: Secrets;
     vpc: ec2.IVpc;
-    fargateService: ecs_patterns.NetworkLoadBalancedFargateService;
+    fargateService: ecs_patterns.ApplicationLoadBalancedFargateService;
     tenoviAuthHeader: string;
     envType: EnvType;
     sentryDsn: string | undefined;
@@ -1121,7 +1115,8 @@ export class APIStack extends Stack {
     searchIndex: string;
     searchUserName: string;
     searchPassword: string;
-    apiService: ecs_patterns.NetworkLoadBalancedFargateService;
+    apiTaskRole: iam.IRole;
+    apiAddress: string;
   }): Lambda {
     const {
       lambdaLayers,
@@ -1136,7 +1131,8 @@ export class APIStack extends Stack {
       searchIndex,
       searchUserName,
       searchPassword,
-      apiService,
+      apiTaskRole,
+      apiAddress,
     } = ownProps;
 
     const isSandboxSeed = envType === "sandbox" && medicalSeedDocumentsBucket;
@@ -1156,7 +1152,7 @@ export class APIStack extends Stack {
         SEARCH_INDEX: searchIndex,
         SEARCH_USERNAME: searchUserName,
         SEARCH_PASSWORD: searchPassword,
-        API_URL: `http://${apiService.loadBalancer.loadBalancerDnsName}`,
+        API_URL: `http://${apiAddress}`,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
@@ -1168,7 +1164,7 @@ export class APIStack extends Stack {
 
     isSandboxSeed && medicalSeedDocumentsBucket.grantRead(bulkUrlSigningLambda);
     medicalDocumentsBucket.grantRead(bulkUrlSigningLambda);
-    bulkUrlSigningLambda.grantInvoke(apiService.taskDefinition.taskRole);
+    bulkUrlSigningLambda.grantInvoke(apiTaskRole);
 
     return bulkUrlSigningLambda;
   }

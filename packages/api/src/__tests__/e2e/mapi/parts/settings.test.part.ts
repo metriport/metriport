@@ -2,9 +2,9 @@ import { sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import isBetween from "dayjs/plugin/isBetween";
-import { validate as validateUuid } from "uuid";
 import { medicalApi } from "../shared";
 import { getPingWebhookRequest } from "../webhook/settings";
+import { checkWebhookRequestMeta } from "../webhook/shared";
 import whServer from "../webhook/webhook-server";
 
 dayjs.extend(isBetween);
@@ -62,25 +62,8 @@ export function runSettingsTests() {
 
   it("receives ping WH with correct data", async () => {
     const whRequest = getPingWebhookRequest();
-    expect(whRequest).toBeTruthy();
+    checkWebhookRequestMeta(whRequest, "ping");
     if (!whRequest) throw new Error("Missing WH request");
-    expect(whRequest.meta).toBeTruthy();
-    expect(whRequest.meta).toEqual(
-      expect.objectContaining({
-        type: "ping",
-        messageId: expect.anything(),
-        when: expect.anything(),
-      })
-    );
-    expect(validateUuid(whRequest.meta.messageId)).toBeTrue();
-    const minDate = dayjs().subtract(1, "minute").toDate();
-    const maxDate = dayjs().add(1, "minute").toDate();
-    expect(dayjs(whRequest.meta.when).isBetween(minDate, maxDate)).toBeTrue();
-    expect(whRequest.meta).not.toEqual(
-      expect.objectContaining({
-        data: expect.toBeFalsy,
-      })
-    );
     expect(whRequest.ping).toBeTruthy();
     expect(whRequest.ping.length).toEqual(NANO_ID_LENGTH);
   });

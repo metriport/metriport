@@ -1,9 +1,9 @@
 import { limitStringLength } from "@metriport/shared";
 import { nanoid } from "nanoid";
+import { maxWebhookStatusLength } from "../../domain/settings";
 import { processAsyncError } from "../../errors";
 import WebhookError from "../../errors/webhook";
 import { Settings, WEBHOOK_STATUS_BAD_RESPONSE, WEBHOOK_STATUS_OK } from "../../models/settings";
-import { MAX_VARCHAR_LENGTH } from "../../models/_default";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { errorToWhStatusDetails, sendTestPayload } from "../webhook/webhook";
@@ -47,7 +47,7 @@ export const updateWebhookStatus = async ({
   webhookEnabled,
   webhookStatusDetail,
 }: UpdateWebhookStatusCommand): Promise<void> => {
-  const statusDetail = limitStringLength(webhookStatusDetail, MAX_VARCHAR_LENGTH);
+  const statusDetail = limitStringLength(webhookStatusDetail, maxWebhookStatusLength);
   await Settings.update(
     {
       webhookEnabled,

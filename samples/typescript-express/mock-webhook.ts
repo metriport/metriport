@@ -4,7 +4,7 @@ import fs from "fs";
 import https from "https";
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 import express, { Application, Request, Response } from "express";
-import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { getEnvVarOrFail } from "@metriport/shared";
 
 const app: Application = express();
 

@@ -107,6 +107,10 @@ export async function getCxsWithNoWebhookPongFeatureFlagValue(): Promise<string[
   return getCxsWithFeatureFlagEnabled("cxsWithNoWebhookPongFeatureFlag");
 }
 
+export async function getCxsWithEpicEnabled(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithEpicEnabled");
+}
+
 export async function getOrgOidsWithIHEGatewayV2Enabled(): Promise<string[]> {
   return Config.isDev()
     ? Config.getOrgOidsWithIHEGatewayV2Enabled().split(",")
@@ -168,6 +172,12 @@ export async function isWebhookPongDisabledForCx(cxId: string): Promise<boolean>
 export async function isIHEGatewayV2EnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithIHEGatewayV2Enabled = await getCxsWithIHEGatewayV2Enabled();
   return cxIdsWithIHEGatewayV2Enabled.some(i => i === cxId);
+}
+
+export async function isEpicEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithEpicEnabled = await getCxsWithEpicEnabled();
+
+  return cxIdsWithEpicEnabled.length === 0 ? true : cxIdsWithEpicEnabled.some(i => i === cxId);
 }
 
 export async function isCommonwellEnabled(): Promise<boolean> {

@@ -1,18 +1,17 @@
-import { NestedStack, NestedStackProps } from "aws-cdk-lib";
-import * as s3 from "aws-cdk-lib/aws-s3";
+import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
+import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as iam from "aws-cdk-lib/aws-iam";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
+import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { EnvType } from "./env-type";
+import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { Secrets } from "./shared/secrets";
-import { createLambda } from "./shared/lambda";
-import * as ec2 from "aws-cdk-lib/aws-ec2";
-import { Duration } from "aws-cdk-lib";
-import { NetworkLoadBalancedFargateService } from "aws-cdk-lib/aws-ecs-patterns";
 
 interface IHEGatewayV2LambdasNestedStackProps extends NestedStackProps {
   lambdaLayers: LambdaLayers;
-  apiService: NetworkLoadBalancedFargateService;
+  apiTaskRole: iam.IRole;
   vpc: ec2.IVpc;
   secrets: Secrets;
   cqOrgCertificate: string | undefined;
@@ -52,9 +51,9 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     );
 
     // granting lambda invoke access to api service
-    patientDiscoveryLambda.grantInvoke(props.apiService.taskDefinition.taskRole);
-    documentQueryLambda.grantInvoke(props.apiService.taskDefinition.taskRole);
-    documentRetrievalLambda.grantInvoke(props.apiService.taskDefinition.taskRole);
+    patientDiscoveryLambda.grantInvoke(props.apiTaskRole);
+    documentQueryLambda.grantInvoke(props.apiTaskRole);
+    documentRetrievalLambda.grantInvoke(props.apiTaskRole);
   }
 
   private grantSecretsReadAccess(
@@ -74,7 +73,6 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     ownProps: {
       lambdaLayers: LambdaLayers;
       vpc: ec2.IVpc;
-      apiService: NetworkLoadBalancedFargateService;
       secrets: Secrets;
       cqOrgCertificate: string | undefined;
       cqOrgPrivateKey: string | undefined;
@@ -127,7 +125,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared],
       memory: 4096,
-      timeout: Duration.minutes(5),
+      timeout: Duration.minutes(10),
       vpc,
     });
 
@@ -200,7 +198,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared],
       memory: 1024,
-      timeout: Duration.minutes(5),
+      timeout: Duration.minutes(10),
       vpc,
     });
 
@@ -274,7 +272,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared],
       memory: 1024,
-      timeout: Duration.minutes(5),
+      timeout: Duration.minutes(15),
       vpc,
     });
 
