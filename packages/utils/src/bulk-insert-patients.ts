@@ -1,7 +1,13 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { MetriportMedicalApi, PatientCreate, USState } from "@metriport/api-sdk";
+import {
+  MetriportMedicalApi,
+  PatientCreate,
+  USState,
+  PatientDTO,
+  Address,
+} from "@metriport/api-sdk";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { sleep } from "@metriport/core/util/sleep";
@@ -43,7 +49,7 @@ const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 const cxId = getEnvVarOrFail("CX_ID");
 const delayTime = dayjs.duration(30, "seconds").asMilliseconds(); // Let's keep this 10+ seconds while we're using IHE GW v1
-const inputFileName = "bulk-insert-patients.csv";
+const inputFileName = "care-advisors-bulk-insert-patients.csv";
 const ISO_DATE = "YYYY-MM-DD";
 const confirmationTime = dayjs.duration(10, "seconds");
 
@@ -110,10 +116,41 @@ async function loadData(
   for (const [i, patient] of results.entries()) {
     try {
       await sleep(delayTime);
-      const createdPatient = await metriportAPI.createPatient(patient, localFacilityId);
+      const exitingPatient = await metriportAPI.matchPatient(patient);
+      let updatedPatient: PatientDTO;
+      if (exitingPatient) {
+        console.log(
+          `Patient ${exitingPatient.firstName} ${exitingPatient.lastName} exists with Id ${exitingPatient.id}`
+        );
+        const updatePatient = {
+          id: exitingPatient.id,
+          dob: exitingPatient.dob,
+          genderAtBirth: exitingPatient.genderAtBirth,
+          firstName: exitingPatient.firstName,
+          lastName: exitingPatient.lastName,
+          address: (Array.isArray(exitingPatient.address)
+            ? exitingPatient.address
+            : [exitingPatient.address]) as [Address, ...Address[]],
+          ...(exitingPatient.contact
+            ? {
+                contact: Array.isArray(exitingPatient.contact)
+                  ? exitingPatient.contact
+                  : [exitingPatient.contact],
+              }
+            : undefined),
+          ...(exitingPatient.personalIdentifiers
+            ? { personalIdentifiers: exitingPatient.personalIdentifiers }
+            : undefined),
+          ...(exitingPatient.externalId ? { externalId: exitingPatient.externalId } : undefined),
+        };
+        updatedPatient = await metriportAPI.updatePatient(updatePatient, localFacilityId, true);
+      } else {
+        console.log(`Patient ${patient.firstName} ${patient.lastName} does not exist`);
+        updatedPatient = await metriportAPI.createPatient(patient, localFacilityId, true);
+      }
       successfulCount++;
-      console.log(i + 1, createdPatient);
-      storePatientId(createdPatient.id, outputFileName);
+      console.log(i + 1, updatedPatient);
+      storePatientId(updatedPatient.id, outputFileName);
     } catch (error) {
       errors.push({
         firstName: patient.firstName,
@@ -124,7 +161,7 @@ async function loadData(
     }
   }
   console.log(errors);
-  console.log(`Done, inserted ${successfulCount} patients.`);
+  console.log(`Done, inserted / updated ${successfulCount} patients.`);
 }
 
 async function displayWarningAndConfirmation(results: unknown[], orgName: string, dryRun: boolean) {
@@ -246,6 +283,11 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
   addressLine1: string | undefined;
   address2: string | undefined;
   addressLine2: string | undefined;
+  address2Zip: string | undefined;
+  address2City: string | undefined;
+  address2State: string | undefined;
+  address2AddressLine1: string | undefined;
+  address2AddressLine2: string | undefined;
   phone: string | undefined;
   phone1: string | undefined;
   phone2: string | undefined;
@@ -271,20 +313,40 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
     lastName: normalizeName(csvPatient.lastname, "lastname"),
     dob: normalizeDate(csvPatient.dob),
     genderAtBirth: normalizeGender(csvPatient.gender),
-    address: {
-      addressLine1: normalizeAddressLine(
-        csvPatient.address1 ?? csvPatient.addressLine1,
-        "address1 | addressLine1"
-      ),
-      addressLine2: normalizeAddressLine(
-        csvPatient.address2 ?? csvPatient.addressLine2,
-        "address2 | addressLine2"
-      ),
-      city: normalizeCity(csvPatient.city),
-      state: normalizeState(csvPatient.state),
-      zip: normalizeZip(csvPatient.zip),
-      country: "USA",
-    },
+    address: [
+      {
+        addressLine1: normalizeAddressLine(
+          csvPatient.address1 ?? csvPatient.addressLine1,
+          "address1 | addressLine1"
+        ),
+        addressLine2: normalizeAddressLine(
+          csvPatient.address2 ?? csvPatient.addressLine2,
+          "address2 | addressLine2"
+        ),
+        city: normalizeCity(csvPatient.city),
+        state: normalizeState(csvPatient.state),
+        zip: normalizeZip(csvPatient.zip),
+        country: "USA",
+      },
+      ...(csvPatient.address2AddressLine1
+        ? [
+            {
+              addressLine1: normalizeAddressLine(
+                csvPatient.address2AddressLine1,
+                "address2AddressLine1"
+              ),
+              addressLine2: normalizeAddressLine(
+                csvPatient.address2AddressLine2,
+                "address2AddressLine2"
+              ),
+              city: normalizeCity(csvPatient.address2City),
+              state: normalizeState(csvPatient.address2State),
+              zip: normalizeZip(csvPatient.address2Zip),
+              country: "USA" as const,
+            },
+          ]
+        : []),
+    ],
     contact,
   };
 };
