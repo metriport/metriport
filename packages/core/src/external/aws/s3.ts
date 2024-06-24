@@ -5,7 +5,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl as getPresignedUrl } from "@aws-sdk/s3-request-presigner";
-import { executeWithRetries, ExecuteWithRetriesOptions } from "@metriport/shared";
+import { emptyFunction, executeWithRetries, ExecuteWithRetriesOptions } from "@metriport/shared";
 import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -28,7 +28,18 @@ async function executeWithRetriesS3<T>(
   options?: ExecuteWithRetriesOptions<T>
 ): Promise<T> {
   const log = options?.log ?? out("executeWithRetriesS3").log;
-  return await executeWithRetries(fn, { ...defaultS3RetriesConfig, ...options, log });
+  return await executeWithRetries(fn, {
+    ...defaultS3RetriesConfig,
+    ...options,
+    log,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    shouldRetry: (_, error: any) => {
+      if (!error) return false;
+      if ("statusCode" in error && error.statusCode === 404) return false;
+      if ("message" in error && error.message?.includes("NotFound")) return false;
+      return true;
+    },
+  });
 }
 
 /**
@@ -117,13 +128,17 @@ export class S3Utils {
     | { exists: false; size?: never; contentType?: never; eTag?: never; createdAt?: never }
   > {
     try {
-      const head = await executeWithRetriesS3(() =>
-        this.s3
-          .headObject({
-            Bucket: bucket,
-            Key: key,
-          })
-          .promise()
+      const head = await executeWithRetriesS3(
+        () =>
+          this.s3
+            .headObject({
+              Bucket: bucket,
+              Key: key,
+            })
+            .promise(),
+        {
+          log: emptyFunction,
+        }
       );
       return {
         exists: true,
