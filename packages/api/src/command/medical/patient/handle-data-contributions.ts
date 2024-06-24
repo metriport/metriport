@@ -1,5 +1,8 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { createUploadFilePath } from "@metriport/core/domain/document/upload";
+import {
+  FHIR_BUNDLE_FILE_NAME,
+  createUploadFilePath,
+} from "@metriport/core/domain/document/upload";
 import { Patient } from "@metriport/core/domain/patient";
 import { toFHIR as toFhirPatient } from "@metriport/core/external/fhir/patient/index";
 import { uploadCdaDocuments, uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
@@ -41,7 +44,7 @@ export async function handleDataContribution({
   const fhirBundleDestinationKey = createUploadFilePath(
     cxId,
     patientId,
-    `${requestId}_FHIR_BUNDLE.json`
+    `${requestId}_${FHIR_BUNDLE_FILE_NAME}.json`
   );
   const fullBundle = hydrateBundle(bundle, fhirPatient, fhirOrganization, fhirBundleDestinationKey);
   const validatedBundle = validateFhirEntries(fullBundle);

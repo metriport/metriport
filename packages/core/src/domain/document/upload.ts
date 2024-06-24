@@ -2,6 +2,7 @@ import { createFileName, createFolderName } from "../filename";
 
 const UPLOADS_FOLDER = "uploads";
 export const CCD_FILE_NAME = "ccd";
+export const FHIR_BUNDLE_FILE_NAME = "FHIR_BUNDLE";
 
 export function createUploadFilePath(cxId: string, patientId: string, docName: string): string {
   const folderName = createFolderName(cxId, patientId);

@@ -1,8 +1,6 @@
 import { InboundDocumentQueryReq, InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
 import axios from "axios";
-import { DOMParser } from "xmldom";
-import { CCD_FILE_NAME } from "../../../domain/document/upload";
-import { base64ToString } from "../../../util/base64";
+import { CCD_FILE_NAME, createUploadFilePath } from "../../../domain/document/upload";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
@@ -35,9 +33,10 @@ export async function processInboundDocumentQuery(
     const { cxId, id: patientId } = id_pair;
     const { log } = out(`Inbound DQ: ${cxId}, patientId: ${patientId}`);
 
-    let documentContents = await getDocumentContents(cxId, patientId);
+    const destinationKey = createUploadFilePath(cxId, patientId, `${CCD_FILE_NAME}.xml`);
+    const ccdExists = await s3Utils.doesFileExist(destinationKey, bucket);
 
-    if (!containsCcd(documentContents)) {
+    if (!ccdExists) {
       log("No CCD found. Let's generate one.");
       const queryParams = {
         cxId,
@@ -48,9 +47,9 @@ export async function processInboundDocumentQuery(
       const url = `${endpointUrl}?${params}`;
       await api.post(url);
       log("CCD generated. Fetching the document contents");
-      documentContents = await getDocumentContents(cxId, patientId);
     }
 
+    const documentContents = await getDocumentContents(cxId, patientId);
     const response: InboundDocumentQueryResp = {
       id: payload.id,
       patientId: payload.patientId,
@@ -80,23 +79,4 @@ async function getDocumentContents(cxId: string, patientId: string): Promise<str
     throw new XDSRegistryError("Internal Server Error");
   }
   return documentContents;
-}
-
-function containsCcd(extrinsicObjects: string[]) {
-  // TODO: check s3 for the existence of _ccd.xml instead of parsing metadata xmls
-  return extrinsicObjects.some(obj => {
-    const parser = new DOMParser();
-    const document = parser.parseFromString(obj, "text/xml");
-
-    const externalIdentifiers = document.getElementsByTagName("ExternalIdentifier");
-    for (let i = 0; i < externalIdentifiers.length; i++) {
-      const externalId = externalIdentifiers[i];
-      const value = externalId?.getAttribute("value");
-      if (value) {
-        const decodedValue = base64ToString(value);
-        if (decodedValue.includes(`_${CCD_FILE_NAME}.xml`)) return true;
-      }
-    }
-    return false;
-  });
 }

@@ -1,6 +1,7 @@
 import {
   CopyObjectCommand,
   DeleteObjectCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -150,6 +151,39 @@ export class S3Utils {
     } catch (err) {
       return { exists: false };
     }
+  }
+
+  async doesFileExist(key: string, bucket: string): Promise<boolean> {
+    const fileInfo = await this.getFileInfoFromS3(key, bucket);
+    return fileInfo.exists;
+  }
+
+  async doFilesWithTargetExist({
+    bucket,
+    path,
+    target,
+  }: {
+    bucket: string;
+    path: string;
+    target: string;
+  }): Promise<boolean> {
+    const data = await executeWithRetriesS3(() =>
+      this._s3Client.send(
+        new ListObjectsV2Command({
+          Bucket: bucket,
+          Prefix: path,
+        })
+      )
+    );
+    const contents = data.Contents;
+    if (!contents) return false;
+
+    for (let i = 0; i < contents.length; i++) {
+      if (contents[i]?.Key?.includes(target)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   async getSignedUrl({
