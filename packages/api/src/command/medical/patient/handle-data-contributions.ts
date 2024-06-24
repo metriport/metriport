@@ -1,6 +1,5 @@
 import { createUploadFilePath } from "@metriport/core/domain/document/upload";
 import { Patient } from "@metriport/core/domain/patient";
-import { toFHIR as toFhirPatient } from "@metriport/core/external/fhir/patient/index";
 import { uploadCdaDocuments, uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import BadRequestError from "../../../errors/bad-request";
@@ -34,14 +33,13 @@ export async function handleDataContribution({
   ]);
 
   const fhirOrganization = toFhirOrganization(organization);
-  const fhirPatient = toFhirPatient(patient);
   const docId = uuidv7();
   const fhirBundleDestinationKey = createUploadFilePath(
     cxId,
     patientId,
     `${docId}_FHIR_BUNDLE.json`
   );
-  const fullBundle = hydrateBundle(bundle, fhirPatient, fhirOrganization, fhirBundleDestinationKey);
+  const fullBundle = hydrateBundle(bundle, patient, fhirOrganization, fhirBundleDestinationKey);
   const validatedBundle = validateFhirEntries(fullBundle);
   const incomingAmount = validatedBundle.entry.length;
 
