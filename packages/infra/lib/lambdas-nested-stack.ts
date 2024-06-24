@@ -15,6 +15,8 @@ import { Secrets } from "./shared/secrets";
 
 export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
+const pollingBuffer = Duration.seconds(30);
+
 interface LambdasNestedStackProps extends NestedStackProps {
   config: EnvConfig;
   vpc: ec2.IVpc;
@@ -283,7 +285,7 @@ export class LambdasNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared],
       memory: 512,
-      timeout: maxPollingDuration,
+      timeout: this.normalizeLambdaDuration(maxPollingDuration),
       vpc,
       alarmSnsAction: alarmAction,
     });
@@ -328,7 +330,7 @@ export class LambdasNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared],
       memory: 512,
-      timeout: maxPollingDuration,
+      timeout: this.normalizeLambdaDuration(maxPollingDuration),
       vpc,
       alarmSnsAction: alarmAction,
     });
@@ -373,7 +375,7 @@ export class LambdasNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared],
       memory: 512,
-      timeout: maxPollingDuration,
+      timeout: this.normalizeLambdaDuration(maxPollingDuration),
       vpc,
       alarmSnsAction: alarmAction,
     });
@@ -384,10 +386,27 @@ export class LambdasNestedStack extends NestedStack {
     return outboundDocumentRetrievalLambda;
   }
 
+  /**
+   * Max polling duration should not exceed the maximum lambda execution time minus
+   * 30 seconds as buffer for the response to make it to the API.
+   */
   private normalizePollingDuration(duration: Duration): string {
     return Math.min(
       duration.toMilliseconds(),
-      MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(30)).toMilliseconds()
+      MAXIMUM_LAMBDA_TIMEOUT.minus(pollingBuffer).toMilliseconds()
     ).toString();
+  }
+
+  /**
+   * Max lambda duration/timeout should not be lower than polling duration + 30 seconds
+   * as buffer for the response to make it to the API.
+   */
+  private normalizeLambdaDuration(duration: Duration): Duration {
+    return Duration.millis(
+      Math.min(
+        duration.plus(pollingBuffer).toMilliseconds(),
+        MAXIMUM_LAMBDA_TIMEOUT.toMilliseconds()
+      )
+    );
   }
 }
