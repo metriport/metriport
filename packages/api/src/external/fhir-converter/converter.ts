@@ -1,5 +1,5 @@
 import { Document } from "@metriport/commonwell-sdk";
-import { buildDocIdFHIRExtension } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
+import { buildDocIdFhirExtension } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
@@ -84,7 +84,7 @@ export async function convertCDAToFHIR(params: {
 
   // Build an extension to be added to all resources created by this conversion
   // so we can get the original doc ref from the resource
-  const documentExtension = buildDocIdFHIRExtension(s3FileName);
+  const documentExtension = buildDocIdFhirExtension(s3FileName);
   try {
     await connector.requestConvert({
       cxId: patient.cxId,

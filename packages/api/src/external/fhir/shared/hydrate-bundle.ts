@@ -2,7 +2,7 @@ import { Extension, Organization, Patient } from "@medplum/fhirtypes";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { isValidUuid, uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Bundle as ValidBundle } from "../../../routes/medical/schemas/fhir";
-import { DOC_ID_EXTENSION_URL } from "./extensions/extension";
+import { buildDocIdFhirExtension } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 
 /**
  * Adds the Metriport and Document extensions to all the provided resources, ensures that all resources have UUIDs for IDs,
@@ -14,11 +14,7 @@ export function hydrateBundle(
   org: Organization,
   fhirBundleDestinationKey: string
 ): ValidBundle {
-  const docExtension: Extension = {
-    url: DOC_ID_EXTENSION_URL,
-    valueString: fhirBundleDestinationKey,
-  };
-
+  const docExtension = buildDocIdFhirExtension(fhirBundleDestinationKey);
   const bundleWithExtensions = validateUuidsAndAddExtensions(bundle, docExtension);
   const patientWithExtension = addUniqueExtension(patient, metriportDataSourceExtension);
   const organizationWithExtension = addUniqueExtension(org, metriportDataSourceExtension);
