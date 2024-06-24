@@ -1,5 +1,8 @@
 import { Bundle } from "@medplum/fhirtypes";
-import { FHIR_BUNDLE_FILE_NAME } from "@metriport/core/domain/document/upload";
+import {
+  FHIR_BUNDLE_FILE_NAME,
+  createUploadFilePath,
+} from "@metriport/core/domain/document/upload";
 import { Patient } from "@metriport/core/domain/patient";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
@@ -20,7 +23,7 @@ export async function generateCcd(patient: Patient): Promise<string> {
   const uploadsExist = await s3Utils.doFilesWithTargetExist({
     bucket,
     target: FHIR_BUNDLE_FILE_NAME,
-    path: `${patient.cxId}/${patient.id}/uploads/`,
+    path: createUploadFilePath(patient.cxId, patient.id, ""),
   });
   if (!uploadsExist) {
     return generateEmptyCcd(patient);
