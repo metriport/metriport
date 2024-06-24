@@ -46,6 +46,7 @@ const ORGANIZATION_URL = `/organization`;
 const FACILITY_URL = `/facility`;
 const PATIENT_URL = `/patient`;
 const DOCUMENT_URL = `/document`;
+const REQUEST_ID_HEADER_NAME = "x-metriport-request-id";
 
 export type Options = {
   axios?: AxiosStatic; // Set axios if it fails to load
@@ -65,6 +66,7 @@ export type Options = {
 export class MetriportMedicalApi {
   // TODO this should be private
   readonly api: AxiosInstance;
+  private _lastRequestId: string | undefined;
 
   private optionsForSettingsEndpoints = {
     baseURL: "/",
@@ -106,6 +108,13 @@ export class MetriportMedicalApi {
     } else {
       throw new Error(`Failed to initialize Axios`);
     }
+  }
+
+  /**
+   * The ID from the last request made to the API.
+   */
+  get lastRequestId(): string | undefined {
+    return this._lastRequestId;
   }
 
   /**
@@ -415,7 +424,7 @@ export class MetriportMedicalApi {
    */
   async createPatientConsolidated(patientId: string, payload: Bundle): Promise<Bundle<Resource>> {
     const resp = await this.api.put(`${PATIENT_URL}/${patientId}/consolidated`, payload);
-
+    this._lastRequestId = resp.headers[REQUEST_ID_HEADER_NAME];
     return resp.data;
   }
 
