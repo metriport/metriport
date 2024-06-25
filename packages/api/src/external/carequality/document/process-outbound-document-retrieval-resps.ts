@@ -5,7 +5,10 @@ import { MedicalDataSource } from "@metriport/core/external/index";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { capture } from "@metriport/core/util/notifications";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { isSuccessfulOutboundDocRetrievalResponse } from "@metriport/ihe-gateway-sdk";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { DocumentReferenceWithId } from "../../fhir/document";
@@ -23,6 +26,9 @@ import {
   dedupeContainedResources,
 } from "./shared";
 
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { getCQData } from "../patient";
+
 export async function processOutboundDocumentRetrievalResps({
   requestId,
   patientId,
@@ -33,8 +39,38 @@ export async function processOutboundDocumentRetrievalResps({
     `CQ processOutboundDocumentRetrievalResps - requestId ${requestId}, patient ${patientId}`
   );
   try {
+    const patient = await getPatientOrFail({ id: patientId, cxId: cxId });
+    const cqData = getCQData(patient.data.externalData);
+    const docRetrievalStartedAt = cqData?.documentRetrievalStartTime;
+    const duration = elapsedTimeFromNow(docRetrievalStartedAt);
+
+    let successCount = 0;
+    let failureCount = 0;
     let successDocsRetrievedCount = 0;
     let issuesWithExternalGateway = 0;
+    for (const result of results) {
+      if (isSuccessfulOutboundDocRetrievalResponse(result)) {
+        successCount++;
+        successDocsRetrievedCount += result.documentReference.length;
+      } else if (result.operationOutcome?.issue) {
+        failureCount++;
+        issuesWithExternalGateway += result.operationOutcome.issue.length;
+      }
+    }
+
+    analytics({
+      distinctId: cxId,
+      event: EventTypes.documentRetrieval,
+      properties: {
+        requestId,
+        patientId,
+        hie: MedicalDataSource.CAREQUALITY,
+        successCount,
+        failureCount,
+        documentCount: successDocsRetrievedCount,
+        duration,
+      },
+    });
 
     if (results.length === 0) {
       const msg = `Received DR result without entries.`;
@@ -60,14 +96,6 @@ export async function processOutboundDocumentRetrievalResps({
       });
 
       return;
-    }
-
-    for (const docRetrievalResp of results) {
-      if (docRetrievalResp.documentReference) {
-        successDocsRetrievedCount += docRetrievalResp.documentReference.length;
-      } else if (docRetrievalResp.operationOutcome?.issue) {
-        issuesWithExternalGateway += docRetrievalResp.operationOutcome.issue.length;
-      }
     }
 
     await setDocQueryProgress({
