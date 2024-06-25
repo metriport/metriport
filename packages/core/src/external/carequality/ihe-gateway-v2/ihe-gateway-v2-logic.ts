@@ -157,6 +157,8 @@ export async function createSignSendProcessXCPDRequest({
     try {
       // TODO not sure if we should retry on timeout
       await executeWithNetworkRetries(async () => axios.post(pdResponseUrl, result), {
+        initialDelay: 100,
+        maxAttempts: 5,
         httpStatusCodesToRetry: [502, 504],
         log,
       });
