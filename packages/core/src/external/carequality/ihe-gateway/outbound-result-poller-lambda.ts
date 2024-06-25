@@ -1,6 +1,6 @@
 import { Config } from "../../../util/config";
 import { processAsyncError } from "../../../util/error/shared";
-import { makeLambdaClient } from "../../aws/lambda";
+import { defaultLambdaInvocationResponseHandler, makeLambdaClient } from "../../aws/lambda";
 import { OutboundResultPoller, PollOutboundResults } from "./outbound-result-poller";
 
 const region = Config.getAWSRegion();
@@ -44,6 +44,7 @@ export class OutboundResultPollerLambda extends OutboundResultPoller {
         Payload: JSON.stringify(params),
       })
       .promise()
+      .then(defaultLambdaInvocationResponseHandler)
       .catch(
         processAsyncError("Failed to invoke lambda to poll outbound patient discovery responses")
       );
@@ -65,6 +66,7 @@ export class OutboundResultPollerLambda extends OutboundResultPoller {
         Payload: JSON.stringify(params),
       })
       .promise()
+      .then(defaultLambdaInvocationResponseHandler)
       .catch(
         processAsyncError("Failed to invoke lambda to poll outbound document query responses")
       );
@@ -86,6 +88,7 @@ export class OutboundResultPollerLambda extends OutboundResultPoller {
         Payload: JSON.stringify(params),
       })
       .promise()
+      .then(defaultLambdaInvocationResponseHandler)
       .catch(
         processAsyncError("Failed to invoke lambda to poll outbound document query responses")
       );
