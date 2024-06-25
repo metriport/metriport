@@ -67,7 +67,7 @@ export async function processEmptyCcdRequest(patient: Patient, organization: Org
       medicalDocumentsBucket: medicalBucket,
       region: awsRegion,
       organization,
-      docId: CCD_FILE_NAME,
+      docId: CCD_SUFFIX,
       docRef,
     });
     log(`CCD uploaded into ${medicalBucket}`);
