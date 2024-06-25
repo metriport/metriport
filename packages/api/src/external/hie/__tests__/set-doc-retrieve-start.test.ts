@@ -50,6 +50,6 @@ describe("setDocRetrieveStartAt", () => {
     const sourceData = result.data.externalData?.[source] ?? {};
     const resultDocumentQueryProgress = sourceData.documentQueryProgress;
 
-    expect(resultDocumentQueryProgress).toEqual(externalData[source].documentQueryProgress);
+    expect(resultDocumentQueryProgress).toEqual(externalData[source]?.documentQueryProgress);
   });
 });
