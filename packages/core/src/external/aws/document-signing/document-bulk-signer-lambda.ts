@@ -24,7 +24,11 @@ export class DocumentBulkSignerLambda extends DocumentBulkSigner {
         Payload: JSON.stringify(payload),
       })
       .promise()
-      .then(defaultLambdaInvocationResponseHandler)
+      .then(
+        defaultLambdaInvocationResponseHandler({
+          lambdaName: this.lambdaName,
+        })
+      )
       .catch(error => {
         throw error;
       });
