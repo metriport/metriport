@@ -37,15 +37,21 @@ export async function processInboundDocumentQuery(
     const destinationKey = createUploadFilePath(cxId, patientId, `${CCD_SUFFIX}.xml`);
     const ccdExists = await s3Utils.fileExists(bucket, destinationKey);
     if (!ccdExists) {
-      log("No CCD found. Let's generate one.");
+      log("No CCD found. Let's trigger generating one.");
       const queryParams = {
         cxId,
         patientId,
       };
       const params = new URLSearchParams(queryParams).toString();
-      const endpointUrl = `${apiUrl}/internal/docs/ccd`;
-      const url = `${endpointUrl}?${params}`;
-      await executeWithNetworkRetries(async () => await api.post(url), { log });
+
+      executeWithNetworkRetries(async () => api.post(`${apiUrl}/internal/docs/ccd?${params}`), {
+        log,
+      });
+      await executeWithNetworkRetries(
+        async () => await api.post(await api.post(`${apiUrl}/internal/docs/empty-ccd?${params}`)),
+        { log }
+      );
+
       log("CCD generated. Fetching the document contents");
     }
 
