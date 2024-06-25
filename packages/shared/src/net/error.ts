@@ -8,7 +8,12 @@ export type NodeConnRefusedNetworkError = (typeof nodeConnRefusedErrorCodes)[num
 export const nodeTimeoutErrorCodes = ["ETIMEDOUT"] as const;
 export type NodeTimeoutNetworkError = (typeof nodeTimeoutErrorCodes)[number];
 
-export type NodeNetworkError = NodeTimeoutNetworkError | NodeConnRefusedNetworkError | "ENOTFOUND";
+export const nodeNetworkErrorCodes = [
+  ...nodeConnRefusedErrorCodes,
+  ...nodeTimeoutErrorCodes,
+  "ENOTFOUND",
+] as const;
+export type NodeNetworkError = (typeof nodeNetworkErrorCodes)[number];
 
 // Axios error codes that are timeout errors
 
@@ -18,14 +23,16 @@ export type AxiosTimeoutError = (typeof axiosTimeoutErrorCodes)[number];
 export const axiosResponseErrorCodes = [AxiosError.ERR_BAD_RESPONSE] as const;
 export type AxiosResponseError = (typeof axiosResponseErrorCodes)[number];
 
-export type AxiosNetworkError = AxiosTimeoutError | AxiosResponseError;
+export const axiosNetworkErrors = [...axiosResponseErrorCodes, ...axiosTimeoutErrorCodes] as const;
+export type AxiosNetworkError = (typeof axiosNetworkErrors)[number];
 
 // General Network errors
 
 export const networkTimeoutErrors = [...nodeTimeoutErrorCodes, ...axiosTimeoutErrorCodes];
 export type NetworkTimeoutError = (typeof networkTimeoutErrors)[number];
 
-export type NetworkError = NodeNetworkError | AxiosNetworkError;
+export const networkErrors = [...nodeNetworkErrorCodes, ...axiosNetworkErrors] as const;
+export type NetworkError = (typeof networkErrors)[number];
 
 export function getNetworkErrorDetails(error: unknown): {
   details: string;
