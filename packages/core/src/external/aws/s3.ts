@@ -6,7 +6,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl as getPresignedUrl } from "@aws-sdk/s3-request-presigner";
-import { emptyFunction, executeWithRetries, ExecuteWithRetriesOptions } from "@metriport/shared";
+import { ExecuteWithRetriesOptions, emptyFunction, executeWithRetries } from "@metriport/shared";
 import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -49,6 +49,11 @@ async function executeWithRetriesS3<T>(
 export function makeS3Client(region: string): AWS.S3 {
   return new AWS.S3({ signatureVersion: "v4", region });
 }
+
+type FileExistsFilter = {
+  path: string;
+  targetString: string;
+};
 
 /**
  * @deprecated Use `S3Utils.getSignedUrl()` instead
@@ -153,19 +158,27 @@ export class S3Utils {
     }
   }
 
-  async doesFileExist(key: string, bucket: string): Promise<boolean> {
-    const fileInfo = await this.getFileInfoFromS3(key, bucket);
-    return fileInfo.exists;
+  async fileExists(bucket: string, key: string): Promise<boolean>;
+  async fileExists(bucket: string, filters: FileExistsFilter): Promise<boolean>;
+  async fileExists(bucket: string, keyOrFilters: string | FileExistsFilter): Promise<boolean> {
+    if (typeof keyOrFilters === "string") {
+      const fileInfo = await this.getFileInfoFromS3(keyOrFilters, bucket);
+      return fileInfo.exists;
+    }
+    return this.filesWithPathExist({
+      bucket,
+      ...keyOrFilters,
+    });
   }
 
-  async doFilesWithTargetExist({
+  private async filesWithPathExist({
     bucket,
     path,
-    target,
+    targetString,
   }: {
     bucket: string;
     path: string;
-    target: string;
+    targetString?: string | undefined;
   }): Promise<boolean> {
     const data = await executeWithRetriesS3(() =>
       this._s3Client.send(
@@ -178,8 +191,8 @@ export class S3Utils {
     const contents = data.Contents;
     if (!contents) return false;
 
-    for (let i = 0; i < contents.length; i++) {
-      if (contents[i]?.Key?.includes(target)) {
+    for (const file of contents) {
+      if (targetString && file.Key?.includes(targetString)) {
         return true;
       }
     }

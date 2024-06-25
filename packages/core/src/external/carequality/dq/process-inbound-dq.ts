@@ -1,6 +1,7 @@
 import { InboundDocumentQueryReq, InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
+import { executeWithNetworkRetries } from "@metriport/shared";
 import axios from "axios";
-import { CCD_FILE_NAME, createUploadFilePath } from "../../../domain/document/upload";
+import { CCD_SUFFIX, createUploadFilePath } from "../../../domain/document/upload";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
@@ -33,9 +34,8 @@ export async function processInboundDocumentQuery(
     const { cxId, id: patientId } = id_pair;
     const { log } = out(`Inbound DQ: ${cxId}, patientId: ${patientId}`);
 
-    const destinationKey = createUploadFilePath(cxId, patientId, `${CCD_FILE_NAME}.xml`);
-    const ccdExists = await s3Utils.doesFileExist(destinationKey, bucket);
-
+    const destinationKey = createUploadFilePath(cxId, patientId, `${CCD_SUFFIX}.xml`);
+    const ccdExists = await s3Utils.fileExists(bucket, destinationKey);
     if (!ccdExists) {
       log("No CCD found. Let's generate one.");
       const queryParams = {
@@ -45,7 +45,7 @@ export async function processInboundDocumentQuery(
       const params = new URLSearchParams(queryParams).toString();
       const endpointUrl = `${apiUrl}/internal/docs/ccd`;
       const url = `${endpointUrl}?${params}`;
-      await api.post(url);
+      await executeWithNetworkRetries(async () => await api.post(url), { log });
       log("CCD generated. Fetching the document contents");
     }
 
