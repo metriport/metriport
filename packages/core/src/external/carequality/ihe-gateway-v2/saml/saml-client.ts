@@ -1,22 +1,21 @@
-import https from "https";
-import { constants } from "crypto";
-import axios from "axios";
+import { executeWithNetworkRetries, NetworkError } from "@metriport/shared";
 import * as AWS from "aws-sdk";
+import axios from "axios";
+import { constants } from "crypto";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { NetworkError } from "@metriport/shared";
-import { SamlCertsAndKeys } from "./security/types";
+import https from "https";
 import { Config } from "../../../../util/config";
-import { log as getLog, out } from "../../../../util/log";
 import { MetriportError } from "../../../../util/error/metriport-error";
+import { log as getLog, out } from "../../../../util/log";
 import { createMtomContentTypeAndPayload } from "../outbound/xca/mtom/builder";
-import { executeWithNetworkRetries } from "@metriport/shared";
 import {
-  parseMtomResponse,
+  convertSoapResponseToMtomResponse,
   getBoundaryFromMtomResponse,
   MtomAttachments,
-  convertSoapResponseToMtomResponse,
+  parseMtomResponse,
 } from "../outbound/xca/mtom/parser";
+import { SamlCertsAndKeys } from "./security/types";
 
 dayjs.extend(duration);
 
@@ -31,8 +30,6 @@ const httpCodesToRetry: NetworkError[] = [
   "ETIMEDOUT",
   "ECONNABORTED",
 ];
-
-const httpCodesToRetryPatientDiscovery: NetworkError[] = [...httpCodesToRetry];
 
 const httpCodesToRetryDocumentQuery: NetworkError[] = [...httpCodesToRetry, "ERR_BAD_RESPONSE"];
 
@@ -105,29 +102,32 @@ export async function sendSignedXml({
     secureOptions: constants.SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION,
   });
 
-  const response = await executeWithNetworkRetries(
-    async () => {
-      return axios.post(url, signedXml, {
-        timeout: isDq
-          ? httpTimeoutDocumentQuery.asMilliseconds()
-          : httpTimeoutPatientDiscovery.asMilliseconds(),
-        headers: {
-          "Content-Type": "application/soap+xml;charset=UTF-8",
-          Accept: "application/soap+xml",
-          "Cache-Control": "no-cache",
-        },
-        httpsAgent: agent,
-        maxBodyLength: maxPayloadSize,
-        maxContentLength: maxPayloadSize,
-      });
-    },
-    {
+  async function sendRequest() {
+    return axios.post(url, signedXml, {
+      timeout: isDq
+        ? httpTimeoutDocumentQuery.asMilliseconds()
+        : httpTimeoutPatientDiscovery.asMilliseconds(),
+      headers: {
+        "Content-Type": "application/soap+xml;charset=UTF-8",
+        Accept: "application/soap+xml",
+        "Cache-Control": "no-cache",
+      },
+      httpsAgent: agent,
+      maxBodyLength: maxPayloadSize,
+      maxContentLength: maxPayloadSize,
+    });
+  }
+
+  async function sendWithRetries() {
+    return executeWithNetworkRetries(sendRequest, {
       initialDelay: initialDelay.asMilliseconds(),
-      maxAttempts: isDq ? 4 : 3,
+      maxAttempts: 4,
       //TODO: This introduces retry on timeout without needing to specify the http Code: https://github.com/metriport/metriport/pull/2285. Remove once PR is merged
-      httpCodesToRetry: isDq ? httpCodesToRetryDocumentQuery : httpCodesToRetryPatientDiscovery,
-    }
-  );
+      httpCodesToRetry: httpCodesToRetryDocumentQuery,
+    });
+  }
+
+  const response = isDq ? await sendWithRetries() : await sendRequest();
 
   return { response: response.data, contentType: response.headers["content-type"] };
 }
