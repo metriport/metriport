@@ -14,13 +14,13 @@ import localizedFormat from "dayjs/plugin/localizedFormat";
 import utc from "dayjs/plugin/utc";
 import {
   AssignedEntity,
-  CdaOriginalText,
   CdaAddress,
   CdaAddressUse,
   CdaCodeCe,
   CdaCodeCv,
   CdaInstanceIdentifier,
   CdaOrganization,
+  CdaOriginalText,
   CdaSexType,
   CdaTelecom,
   CdaTelecomUse,
@@ -29,6 +29,7 @@ import {
   Entry,
   EntryObject,
   Participant,
+  TextParagraph,
 } from "../cda-types/shared-types";
 import {
   NOT_SPECIFIED,
@@ -587,3 +588,11 @@ export function mapGenderCode(gender: string | undefined): CdaSexType {
       return "UK";
   }
 }
+
+export const notOnFilePlaceholder: TextParagraph = {
+  text: {
+    paragraph: {
+      "#text": "Not on file",
+    },
+  },
+};

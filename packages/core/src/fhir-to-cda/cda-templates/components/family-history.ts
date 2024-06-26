@@ -25,6 +25,7 @@ import {
   formatDateToCdaTimestamp,
   getDisplaysFromCodeableConcepts,
   mapGenderCode,
+  notOnFilePlaceholder,
   withNullFlavor,
 } from "../commons";
 import {
@@ -47,13 +48,27 @@ const familyHistorySectionName = "familyhistory";
 const tableHeaders = ["Medical History", "Onset", "Relation", "Name", "Comments"];
 
 export function buildFamilyHistory(fhirBundle: Bundle): FamilyHistorySection {
+  const familyHistorySection: FamilyHistorySection = {
+    templateId: buildInstanceIdentifier({
+      root: oids.familyHistorySection,
+      extension: extensionValue2015,
+    }),
+    code: buildCodeCe({
+      code: "10157-6",
+      codeSystem: loincCodeSystem,
+      codeSystemName: loincSystemName,
+      displayName: "Family History",
+    }),
+    title: "FAMILY HISTORY",
+    text: notOnFilePlaceholder,
+  };
   const familyHistory: FamilyMemberHistory[] =
     fhirBundle.entry?.flatMap(entry =>
       isFamilyMemberHistory(entry.resource) ? [entry.resource] : []
     ) || [];
 
   if (familyHistory.length === 0) {
-    return undefined;
+    return familyHistorySection;
   }
 
   const augmentedMemberHistories = familyHistory.map(memberHistory => {
@@ -67,22 +82,10 @@ export function buildFamilyHistory(fhirBundle: Bundle): FamilyHistorySection {
   );
 
   const table = initiateSectionTable(familyHistorySectionName, tableHeaders, trs);
+  familyHistorySection.text = table;
+  familyHistorySection.entry = entries;
 
-  return {
-    templateId: buildInstanceIdentifier({
-      root: oids.familyHistorySection,
-      extension: extensionValue2015,
-    }),
-    code: buildCodeCe({
-      code: "10157-6",
-      codeSystem: loincCodeSystem,
-      codeSystemName: loincSystemName,
-      displayName: "Family History",
-    }),
-    title: "FAMILY HISTORY",
-    text: table,
-    entry: entries,
-  };
+  return familyHistorySection;
 }
 
 function createTableRowsFromMemberHistory(
