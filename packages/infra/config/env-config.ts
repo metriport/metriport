@@ -1,6 +1,7 @@
 import { EnvType } from "../lib/env-type";
 import { RDSAlarmThresholds } from "./aws/rds";
 import { IHEGatewayProps } from "./ihe-gateway-config";
+import { OpenSearchConnectorConfig } from "./open-search-config";
 
 export type ConnectWidgetConfig = {
   stackName: string;
@@ -99,6 +100,7 @@ type EnvConfigBase = {
     placeIndexName: string;
     placeIndexRegion: string;
   };
+  openSearch: OpenSearchConnectorConfig;
   carequality?: {
     secretNames: {
       CQ_MANAGEMENT_API_KEY: string;
