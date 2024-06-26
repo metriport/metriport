@@ -7,7 +7,7 @@ import { Coordinates } from "@metriport/core/domain/address";
 import { FacilityRegister, Facility, FacilityCreate } from "../../domain/medical/facility";
 import { getCxOrganizationNameOidAndType } from "../../command/medical/organization/get-organization";
 import { getAddressWithCoordinates } from "../../domain/medical/address";
-import { getCqOboData } from "../../external/carequality/get-obo-data";
+import { getCqOboData } from "../carequality/get-obo-data";
 import { createOrUpdateFacility } from "../../command/medical/facility/create-or-update-facility";
 import { createOrUpdateInCq, createOrUpdateInCw } from "./shared";
 
