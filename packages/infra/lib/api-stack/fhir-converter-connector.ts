@@ -74,6 +74,7 @@ export function createQueueAndBucket({
     envType,
     alarmSnsAction,
     alarmMaxAgeOfOldestMessage: Duration.minutes(5),
+    maxMessageCountAlarmThreshold: 2000,
   });
 
   const dlq = queue.deadLetterQueue;

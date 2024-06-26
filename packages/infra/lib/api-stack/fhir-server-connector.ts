@@ -88,6 +88,7 @@ export function createConnector({
     alarmSnsAction,
     alarmMaxAgeOfOldestMessage: Duration.minutes(2),
     alarmMaxAgeOfOldestMessageDlq: Duration.minutes(5),
+    maxMessageCountAlarmThreshold: 2000,
   });
 
   const dlq = queue.deadLetterQueue;
