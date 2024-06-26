@@ -50,7 +50,7 @@ export function settings(): {
         warmNodes: 0,
       },
       ebs: {
-        volumeSize: isLarge ? 50 : 10, // in GB, total is times amount of data nodes
+        volumeSize: isLarge ? 100 : 11, // in GB, total is times amount of data nodes
         volumeType: EbsDeviceVolumeType.GENERAL_PURPOSE_SSD_GP3,
       },
       encryptionAtRest: true,
