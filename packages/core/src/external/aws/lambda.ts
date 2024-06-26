@@ -13,10 +13,13 @@ export function makeLambdaClient(region: string, timeoutInMillis?: number) {
   });
 }
 
-export function defaultLambdaInvocationResponseHandler(
-  result: PromiseResult<AWS.Lambda.InvocationResponse, AWS.AWSError>
-) {
-  getLambdaResultPayload({ result, failOnEmptyResponse: false });
+export function defaultLambdaInvocationResponseHandler(params: {
+  lambdaName?: string;
+  failGracefully?: boolean | false;
+}) {
+  return function (result: PromiseResult<AWS.Lambda.InvocationResponse, AWS.AWSError>) {
+    getLambdaResultPayload({ result, failOnEmptyResponse: false, ...params });
+  };
 }
 
 export function logResultToString(logResult: string | undefined): string | undefined {
@@ -97,9 +100,12 @@ export function getLambdaResultPayload({
   failOnEmptyResponse?: boolean;
   log?: typeof console.log;
 }): string | undefined {
-  if (result.StatusCode !== 200) {
+  if (!result.StatusCode || result.StatusCode < 200 || result.StatusCode > 299) {
     if (failGracefully) return undefined;
-    throw new MetriportError("Lambda invocation failed", undefined, { lambdaName });
+    throw new MetriportError("Lambda invocation failed", undefined, {
+      lambdaName,
+      statusCode: result.StatusCode,
+    });
   }
   if (!result.Payload) {
     if (failGracefully || !failOnEmptyResponse) return undefined;

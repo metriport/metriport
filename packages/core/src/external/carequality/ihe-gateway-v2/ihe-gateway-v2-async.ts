@@ -61,7 +61,11 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
           Payload: JSON.stringify(params),
         })
         .promise()
-        .then(defaultLambdaInvocationResponseHandler)
+        .then(
+          defaultLambdaInvocationResponseHandler({
+            lambdaName: iheGatewayV2OutboundPatientDiscoveryLambdaName,
+          })
+        )
         .catch(processAsyncError("Failed to invoke iheGatewayV2 lambda for patient discovery"));
     }
   }
@@ -94,7 +98,11 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
           Payload: JSON.stringify(params),
         })
         .promise()
-        .then(defaultLambdaInvocationResponseHandler)
+        .then(
+          defaultLambdaInvocationResponseHandler({
+            lambdaName: iheGatewayV2OutboundDocumentQueryLambdaName,
+          })
+        )
         .catch(processAsyncError("Failed to invoke iheGWV2 lambda for document query"));
     }
   }
@@ -131,7 +139,11 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
           Payload: JSON.stringify(params),
         })
         .promise()
-        .then(defaultLambdaInvocationResponseHandler)
+        .then(
+          defaultLambdaInvocationResponseHandler({
+            lambdaName: iheGatewayV2OutboundDocumentRetrievalLambdaName,
+          })
+        )
         .catch(processAsyncError("Failed to invoke iheGWV2 lambda for document retrieval"));
     }
   }
