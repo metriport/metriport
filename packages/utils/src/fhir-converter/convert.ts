@@ -30,7 +30,6 @@ export async function convertCDAsToFHIR(
         if (error.message.includes("File has nonXMLBody")) {
           nonXMLBodyCount++;
         } else {
-          console.log(error);
           const errorData = error.response?.data ?? error;
           errorCount++;
           const errorFileName = `${outputFolderName}/error_${fileName.replace(/[/\\]/g, "_")}.json`;
