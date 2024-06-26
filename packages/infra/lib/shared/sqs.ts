@@ -77,6 +77,16 @@ export function createQueue(props: QueueProps): Queue {
   props.consumer && queue.grantConsumeMessages(props.consumer);
   props.consumer && dlq && dlq.grantSendMessages(props.consumer);
 
+  if (props.maxMessageCountAlarmThreshold) {
+    addMessageCountAlarmToQueue({
+      stack: props.stack,
+      queue,
+      threshold: props.maxMessageCountAlarmThreshold,
+      alarmName: `${props.name}-MessageCount-Alarm`,
+      alarmAction: props?.alarmSnsAction,
+    });
+  }
+
   addMaxAgeOfOldestMessageAlarmToQueue({
     stack: props.stack,
     queue,
@@ -107,6 +117,7 @@ type AbstractQueueProps = {
   receiveMessageWaitTime?: Duration;
   // maximum number of times a message can be processed before being automatically sent to the dead-letter queue
   maxReceiveCount?: number;
+  maxMessageCountAlarmThreshold?: number;
 };
 export type StandardQueueProps = AbstractQueueProps & {
   contentBasedDeduplication?: never;
