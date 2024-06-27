@@ -2,23 +2,17 @@ import { MedplumClient } from "@medplum/core";
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
-import {
-  executeWithNetworkRetries,
-  executeWithRetries,
-  getNetworkErrorDetails,
-} from "@metriport/shared";
+import { executeWithNetworkRetries, executeWithRetries } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { uuid4 } from "@sentry/utils";
 import { SQSEvent } from "aws-lambda";
-import axios from "axios";
 import fetch from "node-fetch";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnvOrFail, isSandbox } from "./shared/env";
-import { isAxiosBadGateway, isAxiosTimeout } from "./shared/http";
 import { Log, prefixedLog } from "./shared/log";
 import { apiClient } from "./shared/oss-api";
-import { SQSUtils } from "./shared/sqs";
+// import { SQSUtils } from "./shared/sqs";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -29,10 +23,10 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const apiURL = getEnvOrFail("API_URL");
-const maxTimeoutRetries = Number(getEnvOrFail("MAX_TIMEOUT_RETRIES"));
-const delayWhenRetryingSeconds = Number(getEnvOrFail("DELAY_WHEN_RETRY_SECONDS"));
-const sourceQueueURL = getEnvOrFail("QUEUE_URL");
-const dlqURL = getEnvOrFail("DLQ_URL");
+// const maxTimeoutRetries = Number(getEnvOrFail("MAX_TIMEOUT_RETRIES"));
+// const delayWhenRetryingSeconds = Number(getEnvOrFail("DELAY_WHEN_RETRY_SECONDS"));
+// const sourceQueueURL = getEnvOrFail("QUEUE_URL");
+// const dlqURL = getEnvOrFail("DLQ_URL");
 const fhirServerUrl = getEnvOrFail("FHIR_SERVER_URL");
 
 const sourceUrl = "https://api.metriport.com/cda/to/fhir";
@@ -42,7 +36,7 @@ const defaultS3RetriesConfig = {
   initialDelay: 500,
 };
 
-const sqsUtils = new SQSUtils(region, sourceQueueURL, dlqURL, delayWhenRetryingSeconds);
+// const sqsUtils = new SQSUtils(region, sourceQueueURL, dlqURL, delayWhenRetryingSeconds);
 const s3Utils = new S3Utils(region);
 const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace);
 const placeholderReplaceRegex = new RegExp("66666666-6666-6666-6666-666666666666", "g");
@@ -117,126 +111,126 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
       const log = prefixedLog(`${i}, patient ${patientId}, job ${jobId}`);
       const lambdaParams = { cxId, patientId, jobId, source };
 
-      try {
-        log(`Body: ${message.body}`);
-        const { s3BucketName, s3FileName } = parseBody(message.body);
-        const metrics: Metrics = {};
+      // try {
+      log(`Body: ${message.body}`);
+      const { s3BucketName, s3FileName } = parseBody(message.body);
+      const metrics: Metrics = {};
 
-        log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
-        const downloadStart = Date.now();
-        const payloadRaw = await executeWithRetries(
-          () => s3Utils.getFileContentsAsString(s3BucketName, s3FileName),
-          {
-            ...defaultS3RetriesConfig,
-            log,
-          }
+      log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
+      const downloadStart = Date.now();
+      const payloadRaw = await executeWithRetries(
+        () => s3Utils.getFileContentsAsString(s3BucketName, s3FileName),
+        {
+          ...defaultS3RetriesConfig,
+          log,
+        }
+      );
+      metrics.download = {
+        duration: Date.now() - downloadStart,
+        timestamp: new Date(),
+      };
+
+      log(`Converting payload to JSON, length ${payloadRaw.length}`);
+      let payload: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+      if (isSandbox()) {
+        const idsReplaced = replaceIds(payloadRaw);
+        log(`IDs replaced, length: ${idsReplaced.length}`);
+        const placeholderUpdated = idsReplaced.replace(placeholderReplaceRegex, patientId);
+        payload = JSON.parse(placeholderUpdated);
+        log(`Payload to FHIR (length ${placeholderUpdated.length}): ${JSON.stringify(payload)}`);
+      } else {
+        payload = JSON.parse(payloadRaw);
+      }
+
+      // light validation to make sure it's a bundle
+      if (payload.resourceType !== "Bundle") {
+        throw new Error(`Not a FHIR Bundle`);
+      }
+
+      log(`Sending payload to FHIRServer...`);
+      let response: Bundle<Resource> | undefined;
+      const upsertStart = Date.now();
+      const fhirApi = new MedplumClient({
+        fetch,
+        baseUrl: fhirServerUrl,
+        fhirUrlPath: `fhir/${cxId}`,
+      });
+      let count = 0;
+      let retry = true;
+      // This retry logic is for application level errors, not network errors
+      while (retry) {
+        count++;
+        response = await executeWithNetworkRetries(() => fhirApi.executeBatch(payload), { log });
+        const errors = getErrorsFromReponse(response);
+        if (errors.length <= 0) break;
+        retry = count < maxRetries;
+        log(
+          `Got ${errors.length} errors from FHIR, ${
+            retry ? "" : "NOT "
+          }trying again... errors: ${JSON.stringify(errors)}`
         );
-        metrics.download = {
-          duration: Date.now() - downloadStart,
-          timestamp: new Date(),
-        };
-
-        log(`Converting payload to JSON, length ${payloadRaw.length}`);
-        let payload: any; // eslint-disable-line @typescript-eslint/no-explicit-any
-        if (isSandbox()) {
-          const idsReplaced = replaceIds(payloadRaw);
-          log(`IDs replaced, length: ${idsReplaced.length}`);
-          const placeholderUpdated = idsReplaced.replace(placeholderReplaceRegex, patientId);
-          payload = JSON.parse(placeholderUpdated);
-          log(`Payload to FHIR (length ${placeholderUpdated.length}): ${JSON.stringify(payload)}`);
-        } else {
-          payload = JSON.parse(payloadRaw);
-        }
-
-        // light validation to make sure it's a bundle
-        if (payload.resourceType !== "Bundle") {
-          throw new Error(`Not a FHIR Bundle`);
-        }
-
-        log(`Sending payload to FHIRServer...`);
-        let response: Bundle<Resource> | undefined;
-        const upsertStart = Date.now();
-        const fhirApi = new MedplumClient({
-          fetch,
-          baseUrl: fhirServerUrl,
-          fhirUrlPath: `fhir/${cxId}`,
-        });
-        let count = 0;
-        let retry = true;
-        // This retry logic is for application level errors, not network errors
-        while (retry) {
-          count++;
-          response = await executeWithNetworkRetries(() => fhirApi.executeBatch(payload), { log });
-          const errors = getErrorsFromReponse(response);
-          if (errors.length <= 0) break;
-          retry = count < maxRetries;
-          log(
-            `Got ${errors.length} errors from FHIR, ${
-              retry ? "" : "NOT "
-            }trying again... errors: ${JSON.stringify(errors)}`
-          );
-          if (!retry) {
-            throw new MetriportError(`Too many errors from FHIR`, undefined, {
-              count: count.toString(),
-              maxRetries: maxRetries.toString(),
-            });
-          }
-        }
-        metrics.errorCount = {
-          count,
-          timestamp: new Date(),
-        };
-        metrics.upsert = {
-          duration: Date.now() - upsertStart,
-          timestamp: new Date(),
-        };
-
-        if (jobStartedAt) {
-          metrics.job = {
-            duration: Date.now() - new Date(jobStartedAt).getTime(),
-            timestamp: new Date(),
-          };
-        }
-
-        processFHIRResponse(response, event, log);
-
-        await cloudWatchUtils.reportMetrics(metrics);
-        await ossApi.notifyApi({ ...lambdaParams, status: "success" }, log);
-      } catch (error) {
-        // If it timed-out let's just reenqueue for future processing - NOTE: the destination MUST be idempotent!
-        const count = message.attributes?.ApproximateReceiveCount
-          ? Number(message.attributes?.ApproximateReceiveCount)
-          : undefined;
-        const isWithinRetryRange = count == null || count <= maxTimeoutRetries;
-        const isRetryError = axios.isAxiosError(error)
-          ? isAxiosTimeout(error) || isAxiosBadGateway(error)
-          : false;
-        const networkErrorDetails = getNetworkErrorDetails(error);
-        const { details, code, status } = networkErrorDetails;
-        if (!(error instanceof MetriportError) && isRetryError && isWithinRetryRange) {
-          console.log(
-            `Timed out (${code}/${status}), reenqueue (${count} of ` +
-              `${maxTimeoutRetries}), lambdaParams ${lambdaParams}`
-          );
-          capture.message("Sending to FHIR server timed out, retrying", {
-            extra: { message, ...lambdaParams, context: lambdaName, retryCount: count },
-            level: "info",
+        if (!retry) {
+          throw new MetriportError(`Too many errors from FHIR`, undefined, {
+            count: count.toString(),
+            maxRetries: maxRetries.toString(),
           });
-          await sqsUtils.reEnqueue(message);
-        } else {
-          const msg = "Error processing message on " + lambdaName;
-          console.log(
-            `${msg} - lambdaParams: ${lambdaParams} - ` +
-              `error: ${JSON.stringify(networkErrorDetails)}`
-          );
-          capture.error(msg, {
-            extra: { message, ...lambdaParams, context: lambdaName, networkErrorDetails, error },
-          });
-          await sqsUtils.sendToDLQ(message);
-
-          await ossApi.notifyApi({ ...lambdaParams, status: "failed", details }, log);
         }
       }
+      metrics.errorCount = {
+        count,
+        timestamp: new Date(),
+      };
+      metrics.upsert = {
+        duration: Date.now() - upsertStart,
+        timestamp: new Date(),
+      };
+
+      if (jobStartedAt) {
+        metrics.job = {
+          duration: Date.now() - new Date(jobStartedAt).getTime(),
+          timestamp: new Date(),
+        };
+      }
+
+      processFHIRResponse(response, event, log);
+
+      await cloudWatchUtils.reportMetrics(metrics);
+      await ossApi.notifyApi({ ...lambdaParams, status: "success" }, log);
+      // } catch (error) {
+      //   // If it timed-out let's just reenqueue for future processing - NOTE: the destination MUST be idempotent!
+      //   const count = message.attributes?.ApproximateReceiveCount
+      //     ? Number(message.attributes?.ApproximateReceiveCount)
+      //     : undefined;
+      //   const isWithinRetryRange = count == null || count <= maxTimeoutRetries;
+      //   const isRetryError = axios.isAxiosError(error)
+      //     ? isAxiosTimeout(error) || isAxiosBadGateway(error)
+      //     : false;
+      //   const networkErrorDetails = getNetworkErrorDetails(error);
+      //   const { details, code, status } = networkErrorDetails;
+      //   if (!(error instanceof MetriportError) && isRetryError && isWithinRetryRange) {
+      //     console.log(
+      //       `Timed out (${code}/${status}), reenqueue (${count} of ` +
+      //         `${maxTimeoutRetries}), lambdaParams ${lambdaParams}`
+      //     );
+      //     capture.message("Sending to FHIR server timed out, retrying", {
+      //       extra: { message, ...lambdaParams, context: lambdaName, retryCount: count },
+      //       level: "info",
+      //     });
+      //     await sqsUtils.reEnqueue(message);
+      //   } else {
+      //     const msg = "Error processing message on " + lambdaName;
+      //     console.log(
+      //       `${msg} - lambdaParams: ${lambdaParams} - ` +
+      //         `error: ${JSON.stringify(networkErrorDetails)}`
+      //     );
+      //     capture.error(msg, {
+      //       extra: { message, ...lambdaParams, context: lambdaName, networkErrorDetails, error },
+      //     });
+      //     await sqsUtils.sendToDLQ(message);
+
+      //     await ossApi.notifyApi({ ...lambdaParams, status: "failed", details }, log);
+      //   }
+      // }
     }
     console.log(`Done`);
   } catch (error) {

@@ -15,6 +15,7 @@ import mountRoutes from "./routes/index";
 import { initSentry, isSentryEnabled } from "./sentry";
 import { Config } from "./shared/config";
 import { isClientError } from "./shared/http";
+import { VERSION_HEADER_NAME } from "./routes/header";
 
 const app: Application = express();
 const version = Config.getVersion();
@@ -29,7 +30,7 @@ app.use(cors());
 app.set("etag", false);
 
 app.use((_req, res, next) => {
-  version && res.setHeader("x-metriport-version", version);
+  version && res.setHeader(VERSION_HEADER_NAME, version);
   next();
 });
 

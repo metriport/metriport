@@ -8,6 +8,7 @@ const nanoid = customAlphabet("0123456789abcdefghijklmnopqrstuvwxyz");
 
 export const requestLogger = (req: Request, res: Response, next: NextFunction): void => {
   const reqId = nanoid();
+  // TODO move the asyncLocalStorage logic to its own, dedicated middleware
   asyncLocalStorage.run(reqId, () => {
     const method = req.method;
     const url = req.baseUrl + req.path;

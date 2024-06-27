@@ -136,7 +136,7 @@ async function getCqData(
     const gatewayName = getGatewayName(entry);
     const existingErrorEntry = cqErrors.find(a => a.error === rowErrorDetail);
     if (existingErrorEntry) {
-      existingErrorEntry.gatewayNames.push(gatewayName);
+      existingErrorEntry.gatewayNames = [...existingErrorEntry.gatewayNames, gatewayName].sort();
       continue;
     }
     cqErrors.push({

@@ -10,6 +10,7 @@ import {
   isPingWebhookRequest,
 } from "@metriport/shared/medical";
 import { Request, Response } from "express";
+import { SIGNATURE_HEADER_NAME } from "../../../../routes/header";
 import { handleConsolidated } from "./consolidated";
 import { handlePing } from "./settings";
 
@@ -64,7 +65,7 @@ export function storeWebhookKey(key: string | undefined | null): void {
 
 function isSignatureValid(req: Request): boolean {
   if (!whKey) throw new Error("Webhook key not set");
-  const signature = req.headers["x-metriport-signature"];
+  const signature = req.headers[SIGNATURE_HEADER_NAME];
   return MetriportMedicalApi.verifyWebhookSignature(whKey, req.body, String(signature));
 }
 

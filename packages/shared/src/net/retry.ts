@@ -1,10 +1,10 @@
 import axios from "axios";
 import {
+  defaultGetTimeToWait,
   defaultOptions as defaultRetryWithBackoffOptions,
   executeWithRetries,
   ExecuteWithRetriesOptions,
   GetTimeToWaitParams,
-  defaultGetTimeToWait,
 } from "../common/retry";
 import { NetworkError, networkTimeoutErrors } from "./error";
 
@@ -35,12 +35,20 @@ const defaultOptions: ExecuteWithNetworkRetriesOptions = {
   retryOnTimeout: false,
 };
 
-function getHttpStatusFromError(error: unknown): number | undefined {
-  return axios.isAxiosError(error) ? error.response?.status : undefined;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function getHttpStatusFromError(error: any): number | undefined {
+  if (!error) return undefined;
+  if (axios.isAxiosError(error)) return error.response?.status;
+  if ("cause" in error) return getHttpStatusFromError(error.cause);
+  return undefined;
 }
 
-function getHttpCodeFromError(error: unknown): string | undefined {
-  return axios.isAxiosError(error) ? error.code : undefined;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function getHttpCodeFromError(error: any): string | undefined {
+  if (!error) return undefined;
+  if (axios.isAxiosError(error)) return error.code;
+  if ("cause" in error) return getHttpCodeFromError(error.cause);
+  return undefined;
 }
 
 /**

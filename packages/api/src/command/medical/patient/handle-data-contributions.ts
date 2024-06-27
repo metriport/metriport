@@ -1,3 +1,4 @@
+import { Bundle, Resource } from "@medplum/fhirtypes";
 import { createUploadFilePath } from "@metriport/core/domain/document/upload";
 import { Patient } from "@metriport/core/domain/patient";
 import { uploadCdaDocuments, uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
@@ -19,25 +20,26 @@ const MAX_RESOURCE_COUNT_PER_REQUEST = 50;
 const MAX_RESOURCE_STORED_LIMIT = 1000;
 
 export async function handleDataContribution({
+  requestId = uuidv7(),
   patientId,
   cxId,
   bundle,
 }: {
+  requestId: string;
   patientId: string;
   cxId: string;
   bundle: ValidBundle;
-}) {
+}): Promise<Bundle<Resource> | undefined> {
   const [organization, patient] = await Promise.all([
     getOrganizationOrFail({ cxId }),
     getPatientOrFail({ id: patientId, cxId }),
   ]);
 
   const fhirOrganization = toFhirOrganization(organization);
-  const docId = uuidv7();
   const fhirBundleDestinationKey = createUploadFilePath(
     cxId,
     patientId,
-    `${docId}_FHIR_BUNDLE.json`
+    `${requestId}_FHIR_BUNDLE.json`
   );
   const fullBundle = hydrateBundle(bundle, patient, fhirOrganization, fhirBundleDestinationKey);
   const validatedBundle = validateFhirEntries(fullBundle);
@@ -68,7 +70,7 @@ export async function handleDataContribution({
         patientId,
         cdaBundles: converted,
         organization: fhirOrganization,
-        docId,
+        docId: requestId,
       });
     }
   };
