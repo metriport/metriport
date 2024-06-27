@@ -11,7 +11,6 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as sns from "aws-cdk-lib/aws-sns";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as iam from "aws-cdk-lib/aws-iam";
-import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { createIHEGateway } from "./ihe-stack/ihe-gateway";
@@ -102,44 +101,6 @@ export class IHEStack extends Stack {
       },
       disableExecuteApiEndpoint: true,
     });
-
-    const clientErrorMetric = apigw2.metricClientError();
-    const serverErrorMetric = apigw2.metricServerError();
-    const dataProcessedMetric = apigw2.metricDataProcessed();
-    const countMetric = apigw2.metricCount();
-    const integrationLatencyMetric = apigw2.metricIntegrationLatency();
-    const latencyMetric = apigw2.metricLatency();
-
-    const dashboard = new cloudwatch.Dashboard(this, "IHEDashboard", {
-      dashboardName: "IHE-Inbound-Dashboard",
-    });
-
-    dashboard.addWidgets(
-      new cloudwatch.GraphWidget({
-        title: "Client Errors",
-        left: [clientErrorMetric],
-      }),
-      new cloudwatch.GraphWidget({
-        title: "Server Errors",
-        left: [serverErrorMetric],
-      }),
-      new cloudwatch.GraphWidget({
-        title: "Data Processed",
-        left: [dataProcessedMetric],
-      }),
-      new cloudwatch.GraphWidget({
-        title: "Request Count",
-        left: [countMetric],
-      }),
-      new cloudwatch.GraphWidget({
-        title: "Integration Latency",
-        left: [integrationLatencyMetric],
-      }),
-      new cloudwatch.GraphWidget({
-        title: "Latency",
-        left: [latencyMetric],
-      })
-    );
 
     // no feature to suuport this simply. Copied custom solution from https://github.com/aws/aws-cdk/issues/11100
     const accessLogs = new logs.LogGroup(this, "IHE-APIGW-AccessLogs");

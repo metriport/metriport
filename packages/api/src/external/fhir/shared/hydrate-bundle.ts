@@ -1,6 +1,9 @@
-import { Extension, Organization, Patient } from "@medplum/fhirtypes";
+import { Extension, Organization, Reference, Resource } from "@medplum/fhirtypes";
+import { Patient } from "@metriport/core/domain/patient";
+import { toFHIR as toFhirPatient } from "@metriport/core/external/fhir/patient/index";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
-import { isValidUuid, uuidv7 } from "@metriport/core/util/uuid-v7";
+import { isValidUuid } from "@metriport/core/util/uuid-v7";
+import { BadRequestError } from "@metriport/shared";
 import { Bundle as ValidBundle } from "../../../routes/medical/schemas/fhir";
 import { buildDocIdFhirExtension } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 
@@ -14,9 +17,10 @@ export function hydrateBundle(
   org: Organization,
   fhirBundleDestinationKey: string
 ): ValidBundle {
+  const fhirPatient = toFhirPatient(patient);
   const docExtension = buildDocIdFhirExtension(fhirBundleDestinationKey);
-  const bundleWithExtensions = validateUuidsAndAddExtensions(bundle, docExtension);
-  const patientWithExtension = addUniqueExtension(patient, metriportDataSourceExtension);
+  const bundleWithExtensions = validateUuidsAndAddExtensions(bundle, docExtension, patient.id);
+  const patientWithExtension = addUniqueExtension(fhirPatient, metriportDataSourceExtension);
   const organizationWithExtension = addUniqueExtension(org, metriportDataSourceExtension);
   bundleWithExtensions.entry?.push({ resource: patientWithExtension });
   bundleWithExtensions.entry?.push({ resource: organizationWithExtension });
@@ -24,29 +28,53 @@ export function hydrateBundle(
   return bundleWithExtensions;
 }
 
-type ReplacementIdPair = { old: string; new: string };
-
-function validateUuidsAndAddExtensions(bundle: ValidBundle, docExtension: Extension): ValidBundle {
-  const replacements: ReplacementIdPair[] = [];
+function validateUuidsAndAddExtensions(
+  bundle: ValidBundle,
+  docExtension: Extension,
+  patientId: string
+): ValidBundle {
+  const uniqueIds = new Set<string>();
   bundle.entry.forEach(entry => {
-    const oldId = entry.resource.id;
+    const resource: Resource = entry.resource;
+    const oldId = resource.id;
     if (!oldId) {
-      entry.resource.id = uuidv7();
+      throw new BadRequestError(`${entry.resource.resourceType} resource is missing the ID!`);
     }
-    if (oldId && !isValidUuid(oldId)) {
-      replacements.push({
-        old: oldId,
-        new: uuidv7(),
-      });
+    if (!isValidUuid(oldId)) {
+      throw new BadRequestError(`Invalid UUID: ${oldId}`);
     }
+    if (uniqueIds.has(oldId)) {
+      throw new BadRequestError(`Multiple resources with the same ID: ${oldId}`);
+    }
+    uniqueIds.add(oldId);
+
+    verifyPatientReferences(resource, patientId);
     addUniqueExtension(entry.resource, metriportDataSourceExtension);
     addUniqueExtension(entry.resource, docExtension);
   });
-  let bundleString = JSON.stringify(bundle);
-  replacements.forEach((idPair: ReplacementIdPair) => {
-    bundleString = bundleString.replaceAll(idPair.old, idPair.new);
-  });
-  return JSON.parse(bundleString);
+
+  return bundle;
+}
+
+function verifyPatientReferences(resource: Resource, patientId: string) {
+  if ("subject" in resource) {
+    const subject = resource.subject;
+    if (subject && "reference" in subject) {
+      comparePatientIds(subject, patientId);
+    }
+  }
+  if ("patient" in resource) {
+    comparePatientIds(resource.patient, patientId);
+  }
+}
+
+function comparePatientIds(reference: Reference | undefined, patientId: string) {
+  const refString = reference?.reference;
+  const refId = refString?.split("Patient/")[1];
+  console.log(refId, patientId, refId === patientId);
+  if (refId != patientId) {
+    throw new BadRequestError("Patient reference is pointing to another patient!");
+  }
 }
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any

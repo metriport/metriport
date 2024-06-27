@@ -1,5 +1,6 @@
 import {
   Address,
+  Annotation,
   CodeableConcept,
   Coding,
   ContactPoint,
@@ -14,13 +15,14 @@ import localizedFormat from "dayjs/plugin/localizedFormat";
 import utc from "dayjs/plugin/utc";
 import {
   AssignedEntity,
-  CdaOriginalText,
   CdaAddress,
   CdaAddressUse,
   CdaCodeCe,
   CdaCodeCv,
+  CdaGender,
   CdaInstanceIdentifier,
   CdaOrganization,
+  CdaOriginalText,
   CdaTelecom,
   CdaTelecomUse,
   CdaValueCd,
@@ -503,8 +505,8 @@ export function buildPerformer(practitioners: Practitioner[] | undefined): Assig
               name: {
                 "#text": "",
               },
-              addr: buildAddress(p.address),
               telecom: buildTelecom(p.telecom),
+              addr: buildAddress(p.address),
             },
           },
         } || []
@@ -574,4 +576,20 @@ export function buildParticipant(locations: Location[] | undefined): Participant
 export function buildAddressText(address: Address | undefined): string | undefined {
   if (!address) return undefined;
   return `${address.line?.join(", ")}, ${address.city}, ${address.state} ${address.postalCode}`;
+}
+
+export function getNotes(note: Annotation[] | undefined): string | undefined {
+  const combinedNotes = note?.map(note => note.text).join("; ");
+  return combinedNotes?.length ? combinedNotes : undefined;
+}
+
+export function mapFhirGenderToCda(gender: string | undefined): CdaGender {
+  switch (gender?.toLowerCase().trim()) {
+    case "male":
+      return "M";
+    case "female":
+      return "F";
+    default:
+      return "UK";
+  }
 }

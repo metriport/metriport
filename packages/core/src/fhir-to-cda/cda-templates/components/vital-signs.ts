@@ -1,6 +1,6 @@
 import { Bundle, Observation, Quantity } from "@medplum/fhirtypes";
 import { VitalSignsSection } from "../../cda-types/sections";
-import { ObservationTableRow, VitalObservationOrganizer } from "../../cda-types/shared-types";
+import { ObservationTableRow, ObservationOrganizer } from "../../cda-types/shared-types";
 import { isVitalSignsObservation } from "../../fhir";
 import {
   buildCodeCe,
@@ -73,7 +73,7 @@ export function buildVitalSigns(fhirBundle: Bundle): VitalSignsSection {
 
 function createTableRowsAndEntries(augObs: AugmentedObservation[]): {
   trs: ObservationTableRow[];
-  entries: VitalObservationOrganizer[];
+  entries: ObservationOrganizer[];
 } {
   const obsGroupedByDateMap = new Map<string, AugmentedObservation[]>();
 
@@ -89,7 +89,7 @@ function createTableRowsAndEntries(augObs: AugmentedObservation[]): {
   });
 
   const trs: ObservationTableRow[] = [];
-  const entries: VitalObservationOrganizer[] = [];
+  const entries: ObservationOrganizer[] = [];
   let index = -1;
   obsGroupedByDateMap.forEach((set, date) => {
     index++;
@@ -161,7 +161,7 @@ function createOrganizedEntryFromSet(
   set: AugmentedObservation[],
   date: string,
   referenceId: string
-): VitalObservationOrganizer {
+): ObservationOrganizer {
   return {
     _typeCode: "DRIV",
     organizer: {
