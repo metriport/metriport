@@ -1,4 +1,5 @@
 import { S3Utils } from "@metriport/core/external/aws/s3";
+import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
 import { executeWithNetworkRetries, executeWithRetries } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
@@ -181,7 +182,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
         await ossApi.notifyApi({ ...lambdaParams, status: "failed" }, log);
         return;
       }
-      const payloadClean = cleanUpPayload(payloadRaw);
+      const payloadNoB64 = removeBase64PdfEntries(payloadRaw);
+      const payloadClean = cleanUpPayload(payloadNoB64);
       metrics.download = {
         duration: Date.now() - downloadStart,
         timestamp: new Date(),
