@@ -242,6 +242,7 @@ export function createAPIService({
       protocol: ApplicationProtocol.HTTP,
       listenerPort,
       publicLoadBalancer: false,
+      idleTimeout: Duration.minutes(10),
     }
   );
   const serverAddress = fargateService.loadBalancer.loadBalancerDnsName;
