@@ -111,7 +111,7 @@ export class IHEStack extends Stack {
     const latencyMetric = apigw2.metricLatency();
 
     const dashboard = new cloudwatch.Dashboard(this, "IHEDashboard", {
-      dashboardName: "IHE-Dashboard",
+      dashboardName: "IHE-Inbound-Dashboard",
     });
 
     dashboard.addWidgets(
