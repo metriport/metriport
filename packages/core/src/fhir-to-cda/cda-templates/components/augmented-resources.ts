@@ -2,6 +2,7 @@ import {
   AllergyIntolerance,
   Condition,
   Encounter,
+  FamilyMemberHistory,
   Immunization,
   Location,
   Medication,
@@ -71,4 +72,9 @@ export class AugmentedImmunization implements AugmentedResource<Immunization> {
     public readonly location?: Location,
     public readonly locationName?: string | undefined
   ) {}
+}
+
+export class AugmentedFamilyMemberHistory implements AugmentedResource<FamilyMemberHistory> {
+  public readonly typeOid = oids.familyHistoryOrganizer;
+  constructor(public readonly sectionName: string, public readonly resource: FamilyMemberHistory) {}
 }

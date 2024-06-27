@@ -1,5 +1,5 @@
 import { DocumentReference, Organization } from "@medplum/fhirtypes";
-import { CCD_FILE_NAME } from "@metriport/core/domain/document/upload";
+import { CCD_SUFFIX } from "@metriport/core/domain/document/upload";
 import { Patient } from "@metriport/core/domain/patient";
 import { cdaDocumentUploaderHandler } from "@metriport/core/shareback/cda-uploader";
 import { out } from "@metriport/core/util/log";
@@ -41,7 +41,7 @@ export async function processCcdRequest(patient: Patient, organization: Organiza
       medicalDocumentsBucket: medicalBucket,
       region: awsRegion,
       organization,
-      docId: CCD_FILE_NAME,
+      docId: CCD_SUFFIX,
       docRef,
     });
     log(`CCD uploaded into ${medicalBucket}`);

@@ -105,6 +105,9 @@ export function splitName(name: string): string[] {
   return name.split(/[\s,]+/).filter(str => str);
 }
 
+/**
+ * @deprecated - Use the one in `domain/patient-demographics`.
+ */
 export function normalizeGender(gender: string | undefined): "M" | "F" | undefined {
   if (!gender) return;
   const lowerGender = gender.toLowerCase().trim();

@@ -104,6 +104,8 @@
 					</name>
 				</assignedPerson>
 				<representedOrganization classCode="ORG">
+					<telecom use="WP" value="+1-600-700-8000">
+					</telecom>
 					<addr use="WP">
 						<streetAddressLine>
 							1111 Sample Street, Suite 987
@@ -121,8 +123,6 @@
 							USA
 						</country>
 					</addr>
-					<telecom use="WP" value="+1-600-700-8000">
-					</telecom>
 				</representedOrganization>
 			</assignedEntity>
 		</performer>

@@ -181,8 +181,12 @@ async function compareFhirBundles(
       const inputBundle: Bundle = JSON.parse(fs.readFileSync(inputFilePath, "utf8"));
       const outputBundle: Bundle = JSON.parse(fs.readFileSync(outputFilePath, "utf8"));
 
-      const inputResourcesCount: Record<string, number> = countResources(inputBundle);
-      const outputResourcesCount: Record<string, number> = countResources(outputBundle);
+      const inputResourcesCount: Record<string, number> = sortAlphabetically(
+        countResources(inputBundle)
+      );
+      const outputResourcesCount: Record<string, number> = sortAlphabetically(
+        countResources(outputBundle)
+      );
 
       if (compareResourceCounts(inputResourcesCount, outputResourcesCount)) {
         console.log(
@@ -199,6 +203,15 @@ async function compareFhirBundles(
       }
     }
   }
+}
+
+function sortAlphabetically(resCounts: Record<string, number>): Record<string, number> {
+  const sortedKeys = Object.keys(resCounts).sort();
+
+  return sortedKeys.reduce((acc, key) => {
+    acc[key] = resCounts[key];
+    return acc;
+  }, {} as Record<string, number>);
 }
 
 function countResources(bundle: Bundle): Record<string, number> {
