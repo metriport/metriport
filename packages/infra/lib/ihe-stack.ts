@@ -102,13 +102,6 @@ export class IHEStack extends Stack {
       disableExecuteApiEndpoint: true,
     });
 
-    apigw2.metricClientError();
-    apigw2.metricServerError();
-    apigw2.metricDataProcessed();
-    apigw2.metricCount();
-    apigw2.metricIntegrationLatency();
-    apigw2.metricLatency();
-
     // no feature to suuport this simply. Copied custom solution from https://github.com/aws/aws-cdk/issues/11100
     const accessLogs = new logs.LogGroup(this, "IHE-APIGW-AccessLogs");
     const stage = apigw2.defaultStage?.node.defaultChild as CfnStage;
