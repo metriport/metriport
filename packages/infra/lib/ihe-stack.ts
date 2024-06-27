@@ -111,7 +111,17 @@ export class IHEStack extends Stack {
     const latencyMetric = apigw2.metricLatency();
 
     const dashboard = new cloudwatch.Dashboard(this, "IHEDashboard", {
-      dashboardName: "IHE-Inbound-Dashboard",
+      dashboardName: `IHE-Inbound-Dashboard-${props.config.environmentType}`,
+      variables: [
+        new cloudwatch.DashboardVariable({
+          id: "region",
+          type: cloudwatch.VariableType.PATTERN,
+          label: "RegionPattern",
+          inputType: cloudwatch.VariableInputType.INPUT,
+          value: props.config.region,
+          visible: true,
+        }),
+      ],
     });
 
     dashboard.addWidgets(
@@ -136,7 +146,7 @@ export class IHEStack extends Stack {
         left: [integrationLatencyMetric],
       }),
       new cloudwatch.GraphWidget({
-        title: "Latency",
+        title: "Total Latency",
         left: [latencyMetric],
       })
     );
