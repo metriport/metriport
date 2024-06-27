@@ -25,7 +25,7 @@ export class SQSUtils {
     const sendParams: AWS.SQS.SendMessageRequest = {
       MessageBody: message.body,
       QueueUrl: this.dlqURL,
-      MessageAttributes: this.attributesToSend(message.messageAttributes),
+      MessageAttributes: SQSUtils.attributesToSend(message.messageAttributes),
     };
     try {
       console.log(`Sending message to DLQ: ${JSON.stringify(sendParams)}`);
@@ -43,7 +43,7 @@ export class SQSUtils {
     const sendParams = {
       MessageBody: message.body,
       QueueUrl: this.sourceQueueURL,
-      MessageAttributes: this.attributesToSend(message.messageAttributes),
+      MessageAttributes: SQSUtils.attributesToSend(message.messageAttributes),
       DelaySeconds: this.delayWhenRetryingSeconds, // wait at least that long before retrying
     };
     try {
@@ -71,18 +71,18 @@ export class SQSUtils {
     }
   }
 
-  attributesToSend(inboundMessageAttribs: SQSMessageAttributes): MessageBodyAttributeMap {
+  static attributesToSend(inboundMessageAttribs: SQSMessageAttributes): MessageBodyAttributeMap {
     let res = {};
     for (const [key, value] of Object.entries(inboundMessageAttribs)) {
       res = {
         ...res,
-        ...this.singleAttributeToSend(key, value.stringValue),
+        ...SQSUtils.singleAttributeToSend(key, value.stringValue),
       };
     }
     return res;
   }
 
-  singleAttributeToSend(key: string, value: string | undefined): MessageBodyAttributeMap {
+  static singleAttributeToSend(key: string, value: string | undefined): MessageBodyAttributeMap {
     return {
       [key]: {
         DataType: "String",

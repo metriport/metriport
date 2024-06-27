@@ -37,14 +37,11 @@ function settings() {
     lambdaTimeout,
     // How long will it take before Axios returns a timeout error - should be less than the lambda timeout
     axiosTimeout: lambdaTimeout.minus(Duration.seconds(5)), // give the lambda some time to deal with the timeout
-    // Number of times we want to retry a message, this includes throttles!
-    maxReceiveCount: 5,
-    // Number of times we want to retry a message that timed out when trying to be processed
-    maxTimeoutRetries: 15,
+    // The number of times a message can be unsuccesfully dequeued before being moved to the dead-letter queue.
+    maxReceiveCount: 1,
     // How long messages should be invisible for other consumers, based on the lambda timeout
     // We don't care if the message gets reprocessed, so no need to have a huge visibility timeout that makes it harder to move messages to the DLQ
     visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
-    delayWhenRetrying: Duration.seconds(10),
   };
 }
 
@@ -128,8 +125,6 @@ export function createLambda({
     lambdaBatchSize,
     maxConcurrency,
     axiosTimeout,
-    maxTimeoutRetries,
-    delayWhenRetrying,
   } = settings();
   const conversionLambda = defaultCreateLambda({
     stack,
@@ -143,8 +138,6 @@ export function createLambda({
     envVars: {
       METRICS_NAMESPACE,
       AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
-      MAX_TIMEOUT_RETRIES: String(maxTimeoutRetries),
-      DELAY_WHEN_RETRY_SECONDS: delayWhenRetrying.toSeconds().toString(),
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       API_URL: `http://${apiServiceDnsAddress}`,
       QUEUE_URL: sourceQueue.queueUrl,
