@@ -9,11 +9,11 @@ import { Config } from "../../../shared/config";
 export async function updateHieEnabledFFs({
   cxId,
   cwEnabled,
-  cqEndabled,
+  cqEnabled,
 }: {
   cxId: string;
   cwEnabled?: boolean;
-  cqEndabled?: boolean;
+  cqEnabled?: boolean;
 }): Promise<CxFeatureFlagStatus> {
   const region = Config.getAWSRegion();
   const appId = Config.getAppConfigAppId();
@@ -46,9 +46,9 @@ export async function updateHieEnabledFFs({
       id => id !== cxId
     );
   }
-  if (cqEndabled == true) {
+  if (cqEnabled == true) {
     featureFlags.cxsWithCQDirectFeatureFlag.values.push(cxId);
-  } else if (cqEndabled === false) {
+  } else if (cqEnabled === false) {
     featureFlags.cxsWithCQDirectFeatureFlag.values =
       featureFlags.cxsWithCQDirectFeatureFlag.values.filter(id => id !== cxId);
   }

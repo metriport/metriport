@@ -68,7 +68,7 @@ router.get(
  *
  * @param req.query.cxId - The cutomer's ID.
  * @param req.query.cwEnabled - Whether to enabled CommonWell.
- * @param req.query.cqEndabled - Whether to enabled CareQuality.
+ * @param req.query.cqEnabled - Whether to enabled CareQuality.
  */
 router.post(
   "/hie/enabled",
@@ -76,11 +76,11 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const cwEnabled = getFromQueryAsBoolean("cwEnabled", req);
-    const cqEndabled = getFromQueryAsBoolean("cqEndabled", req);
+    const cqEnabled = getFromQueryAsBoolean("cqEnabled", req);
     const response = await updateHieEnabledFFs({
       cxId,
       cwEnabled,
-      cqEndabled,
+      cqEnabled,
     });
     return res.status(httpStatus.OK).json(response);
   })
