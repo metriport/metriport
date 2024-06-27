@@ -106,9 +106,7 @@ export function splitName(name: string): string[] {
 }
 
 /**
- * @deprecated - Use `mapGenderCode` instead.
- * @param gender
- * @returns
+ * @deprecated - Use the one in `domain/patient-demographics`.
  */
 export function normalizeGender(gender: string | undefined): "M" | "F" | undefined {
   if (!gender) return;
@@ -119,17 +117,4 @@ export function normalizeGender(gender: string | undefined): "M" | "F" | undefin
     return "F";
   }
   return;
-}
-
-export type GenderAtBirth = "M" | "F" | "UK";
-
-export function mapGenderCode(gender: string | undefined): GenderAtBirth {
-  switch (gender?.toLowerCase().trim()) {
-    case "male" || "m":
-      return "M";
-    case "female" || "f":
-      return "F";
-    default:
-      return "UK";
-  }
 }

@@ -19,6 +19,7 @@ import {
   CdaAddressUse,
   CdaCodeCe,
   CdaCodeCv,
+  CdaGender,
   CdaInstanceIdentifier,
   CdaOrganization,
   CdaOriginalText,
@@ -580,4 +581,15 @@ export function buildAddressText(address: Address | undefined): string | undefin
 export function getNotes(note: Annotation[] | undefined): string | undefined {
   const combinedNotes = note?.map(note => note.text).join("; ");
   return combinedNotes?.length ? combinedNotes : undefined;
+}
+
+export function mapFhirGenderToCda(gender: string | undefined): CdaGender {
+  switch (gender?.toLowerCase().trim()) {
+    case "male":
+      return "M";
+    case "female":
+      return "F";
+    default:
+      return "UK";
+  }
 }

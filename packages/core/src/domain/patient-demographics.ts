@@ -38,7 +38,7 @@ export type LinkDemographicsHistory = {
 
 export type GenderAtBirth = "M" | "F" | "UK";
 
-export function mapGenderCode(gender: string | undefined): GenderAtBirth {
+export function normalizeGender(gender: string | undefined): GenderAtBirth {
   switch (gender?.toLowerCase().trim()) {
     case "male" || "m":
       return "M";

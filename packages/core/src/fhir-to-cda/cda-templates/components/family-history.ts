@@ -5,7 +5,6 @@ import {
   FamilyMemberHistory,
   FamilyMemberHistoryCondition,
 } from "@medplum/fhirtypes";
-import { mapGenderCode } from "../../../domain/patient-demographics";
 import { isFamilyMemberHistory } from "../../../external/fhir/shared";
 import { FamilyHistorySection } from "../../cda-types/sections";
 import {
@@ -26,6 +25,7 @@ import {
   formatDateToCdaTimestamp,
   getDisplaysFromCodeableConcepts,
   getNotes,
+  mapFhirGenderToCda,
   withNullFlavor,
 } from "../commons";
 import {
@@ -183,7 +183,7 @@ function createEntryFromMemberHistory(
 function buildSubject(memberHist: FamilyMemberHistory): Subject {
   const genderCode = buildCodeCvFromCodeableConcept(memberHist.sex);
   const mappedGenderCode = buildCodeCe({
-    code: mapGenderCode(genderCode?._code),
+    code: mapFhirGenderToCda(genderCode?._code),
     codeSystem: "2.16.840.1.113883.5.1",
     codeSystemName: "AdministrativeGender",
     displayName: genderCode?._displayName,
