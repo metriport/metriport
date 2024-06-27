@@ -104,7 +104,14 @@
 				<text>
 					<reference value="familyhistory1-condition1">
 					</reference>
+					Myocardial Infarction
 				</text>
+				<value xsi:type="CD" code="315619001" codeSystem="2.16.840.1.113883.6.96" displayName="Myocardial Infarction">
+					<originalText>
+						<reference value="familyhistory1-condition1">
+						</reference>
+					</originalText>
+				</value>
 			</observation>
 		</component>
 		<component>
@@ -118,7 +125,14 @@
 				<text>
 					<reference value="familyhistory1-condition2">
 					</reference>
+					Embolic Stroke
 				</text>
+				<value xsi:type="CD" code="371041009" codeSystem="2.16.840.1.113883.6.96" displayName="Embolic Stroke">
+					<originalText>
+						<reference value="familyhistory1-condition2">
+						</reference>
+					</originalText>
+				</value>
 			</observation>
 		</component>
 	</organizer>

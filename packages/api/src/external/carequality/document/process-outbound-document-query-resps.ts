@@ -10,6 +10,7 @@ import { DocumentReference, OutboundDocumentQueryResp } from "@metriport/ihe-gat
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { mapDocRefToMetriport } from "../../../shared/external";
+import { setDocRetrieveStartAt } from "../../hie/set-doc-retrieve-start";
 import { isCQDirectEnabledForCx } from "../../aws/app-config";
 import { isConvertible } from "../../fhir-converter/converter";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
@@ -28,7 +29,10 @@ import {
   getContentTypeOrUnknown,
   containsDuplicateMetriportId,
 } from "./shared";
-import { getDocumentReferenceContentTypeCounts } from "../../hie/get-docr-content-type-counts";
+import {
+  getDocumentReferenceContentTypeCounts,
+  getOutboundDocQuerySuccessFailureCount,
+} from "../../hie/get-counts-analytics";
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
 import {
   getOrgOidsWithIHEGatewayV2Enabled,
@@ -60,6 +64,7 @@ export async function processOutboundDocumentQueryResps({
     const docRefs = response.flatMap(result => result.documentReference ?? []);
     const contentTypes = docRefs.map(getContentTypeOrUnknown);
     const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
+    const { successCount, failureCount } = getOutboundDocQuerySuccessFailureCount(response);
 
     analytics({
       distinctId: cxId,
@@ -70,6 +75,8 @@ export async function processOutboundDocumentQueryResps({
         hie: MedicalDataSource.CAREQUALITY,
         duration,
         documentCount: docRefs.length,
+        successCount,
+        failureCount,
         ...contentTypeCounts,
       },
     });
@@ -126,6 +133,13 @@ export async function processOutboundDocumentQueryResps({
           }),
       requestId,
       source: MedicalDataSource.CAREQUALITY,
+    });
+
+    const docRetrievalStartedAt = new Date();
+    await setDocRetrieveStartAt({
+      patient: { id: patientId, cxId: cxId },
+      source: MedicalDataSource.CAREQUALITY,
+      startedAt: docRetrievalStartedAt,
     });
 
     // Since we have most of the document contents when doing the document query,

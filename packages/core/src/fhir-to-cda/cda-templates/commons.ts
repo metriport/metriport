@@ -1,5 +1,6 @@
 import {
   Address,
+  Annotation,
   CodeableConcept,
   Coding,
   ContactPoint,
@@ -18,10 +19,10 @@ import {
   CdaAddressUse,
   CdaCodeCe,
   CdaCodeCv,
+  CdaGender,
   CdaInstanceIdentifier,
   CdaOrganization,
   CdaOriginalText,
-  CdaSexType,
   CdaTelecom,
   CdaTelecomUse,
   CdaValueCd,
@@ -578,8 +579,13 @@ export function buildAddressText(address: Address | undefined): string | undefin
   return `${address.line?.join(", ")}, ${address.city}, ${address.state} ${address.postalCode}`;
 }
 
-export function mapGenderCode(gender: string | undefined): CdaSexType {
-  switch (gender?.toLowerCase()) {
+export function getNotes(note: Annotation[] | undefined): string | undefined {
+  const combinedNotes = note?.map(note => note.text).join("; ");
+  return combinedNotes?.length ? combinedNotes : undefined;
+}
+
+export function mapFhirGenderToCda(gender: string | undefined): CdaGender {
+  switch (gender?.toLowerCase().trim()) {
     case "male":
       return "M";
     case "female":

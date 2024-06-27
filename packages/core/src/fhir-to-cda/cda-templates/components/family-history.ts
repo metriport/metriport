@@ -1,6 +1,5 @@
 import {
   Age,
-  Annotation,
   Bundle,
   CodeableConcept,
   FamilyMemberHistory,
@@ -22,9 +21,11 @@ import {
   buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
   buildOriginalTextReference,
+  buildValueCd,
   formatDateToCdaTimestamp,
   getDisplaysFromCodeableConcepts,
-  mapGenderCode,
+  getNotes,
+  mapFhirGenderToCda,
   notOnFilePlaceholder,
   withNullFlavor,
 } from "../commons";
@@ -152,11 +153,6 @@ function getConditionOnset(age: Age | undefined): string | undefined {
   return ageString.length > 0 ? ageString : undefined;
 }
 
-function getNotes(note: Annotation[] | undefined): string | undefined {
-  const combinedNotes = note?.map(note => note.text).join("; ");
-  return combinedNotes?.length ? combinedNotes : undefined;
-}
-
 function createEntryFromMemberHistory(
   augHistory: AugmentedFamilyMemberHistory,
   referenceId: string
@@ -189,7 +185,12 @@ function createEntryFromMemberHistory(
 
 function buildSubject(memberHist: FamilyMemberHistory): Subject {
   const genderCode = buildCodeCvFromCodeableConcept(memberHist.sex);
-  const mappedGenderCode = remapGenderCode(genderCode);
+  const mappedGenderCode = buildCodeCe({
+    code: mapFhirGenderToCda(genderCode?._code),
+    codeSystem: "2.16.840.1.113883.5.1",
+    codeSystemName: "AdministrativeGender",
+    displayName: genderCode?._displayName,
+  });
 
   const birthTime = withNullFlavor(formatDateToCdaTimestamp(memberHist.bornDate), "_value");
 
@@ -240,16 +241,6 @@ function mapRelationship(
   };
 }
 
-function remapGenderCode(genderCode: CdaCodeCe | undefined): CdaCodeCe | undefined {
-  if (!genderCode) return undefined;
-  return buildCodeCe({
-    code: mapGenderCode(genderCode._code),
-    codeSystem: "2.16.840.1.113883.5.1",
-    codeSystemName: "AdministrativeGender",
-    displayName: genderCode._displayName,
-  });
-}
-
 function buildComponents(
   conditions: FamilyMemberHistoryCondition[] | undefined,
   referenceId: string
@@ -274,6 +265,7 @@ function buildComponents(
   };
 
   return conditions.map((condition, index) => {
+    const conditionRef = createConditionReference(referenceId, index);
     return {
       observation: {
         _classCode: "OBS",
@@ -285,10 +277,11 @@ function buildComponents(
         code: codeCv,
         text: {
           reference: {
-            _value: createConditionReference(referenceId, index),
+            _value: conditionRef,
           },
-          "#text": getMedicalCondition(condition),
+          "#text": getMedicalCondition(condition.code),
         },
+        value: buildValueCd(condition.code, conditionRef),
       },
     };
   });

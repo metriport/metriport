@@ -9,6 +9,7 @@ import {
 } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
+import { getRequestId } from "@metriport/core/util/request";
 import { stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
@@ -24,13 +25,13 @@ import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
-import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
+import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
-  PatientMatchCmd,
   getPatientOrFail,
   getPatients,
   matchPatient,
+  PatientMatchCmd,
 } from "../../command/medical/patient/get-patient";
 import { handleDataContribution } from "../../command/medical/patient/handle-data-contributions";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
@@ -41,6 +42,7 @@ import NotFoundError from "../../errors/not-found";
 import { countResources } from "../../external/fhir/patient/count-resources";
 import { upsertPatientToFHIRServer } from "../../external/fhir/patient/upsert-patient";
 import { PatientModel as Patient } from "../../models/medical/patient";
+import { REQUEST_ID_HEADER_NAME } from "../../routes/header";
 import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
@@ -423,11 +425,12 @@ async function putConsolidated(req: Request, res: Response) {
       `Cannot create bundle with size greater than ${MAXIMUM_UPLOAD_FILE_SIZE} bytes.`
     );
   }
+  const requestId = getRequestId();
   const cxId = getCxIdOrFail(req);
   const patientId = getFrom("params").orFail("id", req);
   const bundle = bundleSchema.parse(req.body);
-  const results = await handleDataContribution({ patientId, cxId, bundle });
-  return res.status(status.OK).json(results);
+  const results = await handleDataContribution({ requestId, patientId, cxId, bundle });
+  return res.setHeader(REQUEST_ID_HEADER_NAME, requestId).status(status.OK).json(results);
 }
 
 /** ---------------------------------------------------------------------------

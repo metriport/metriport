@@ -12,7 +12,7 @@ export const defaultOptions: Required<ExecuteWithRetriesOptions<unknown>> = {
   initialDelay: 10,
   maxDelay: Infinity,
   backoffMultiplier: 2,
-  maxAttempts: 10,
+  maxAttempts: 5,
   shouldRetry: defaultShouldRetry,
   getTimeToWait: defaultGetTimeToWait,
   log: console.log,

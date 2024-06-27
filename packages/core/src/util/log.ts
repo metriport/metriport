@@ -1,17 +1,15 @@
 import { emptyFunction } from "@metriport/shared";
 import { Config } from "./config";
-import { getLocalStorage } from "./local-storage";
+import { getRequestIdSafe } from "./request";
 
 type LogParamBasic = string | number | boolean | unknown | null | undefined;
 export type LogParam = LogParamBasic | (() => LogParamBasic);
-
-const asyncLocalStorage = getLocalStorage("reqId");
 
 export function log(prefix?: string, suffix?: string) {
   return (msg: string, ...optionalParams: LogParam[]): void => {
     const actualPrefix = prefix ? `[${prefix}] ` : ``;
 
-    const reqId = asyncLocalStorage.getStore();
+    const reqId = getRequestIdSafe();
     const reqPrefix = reqId ? `${reqId} ` : "";
 
     const actualParams = (optionalParams ?? []).map(p => (typeof p === "function" ? p() : p));
