@@ -51,8 +51,8 @@ export type CdaAddressUse =
   | "TMP"
   | "WP";
 
+export type CdaGender = "M" | "F" | "UK";
 export type CdaTelecomUse = "AS" | "EC" | "HP" | "HV" | "MC" | "PG" | "WP";
-
 export type Entry = { [key: string]: string } | string;
 export type EntryObject = { [key: string]: string };
 
@@ -224,9 +224,10 @@ export type ObservationEntry = {
     };
     code?: CdaCodeCe | CdaCodeCv;
     text?: {
-      reference: {
-        _value: string;
+      reference?: {
+        _value?: string | undefined;
       };
+      "#text"?: string | undefined;
     };
     statusCode?: {
       _code: string;
@@ -378,26 +379,27 @@ export type AssignedEntity = {
   };
 };
 
-export type CdaSimpleReference = {
-  reference: {
-    _value: string;
-  };
-};
-
-export type VitalObservationOrganizer = {
-  _typeCode: string;
+export type ObservationOrganizer = {
+  _typeCode?: string;
   organizer: {
     _classCode: string;
     _moodCode: string;
     templateId: CdaInstanceIdentifier;
-    code: CdaCodeCe;
+    id?: CdaInstanceIdentifier;
+    code?: CdaCodeCe;
     statusCode: {
-      _code: string;
+      _code?: string | undefined;
     };
-    effectiveTime: {
+    effectiveTime?: {
       _value?: string | undefined;
     };
-    component: ObservationEntry[];
+    subject?: {
+      relatedSubject?: {
+        code: CdaCodeCv | undefined;
+        subject: Subject;
+      };
+    };
+    component?: ObservationEntry[] | undefined;
   };
 };
 
@@ -434,4 +436,16 @@ export type EncompassingEncounter = {
       healthCareFacility: HealthCareFacility;
     };
   };
+};
+
+export type Subject = {
+  name?: string | undefined;
+  administrativeGenderCode?: CdaCodeCe | undefined;
+  birthTime?: Entry | undefined;
+  deceasedInd?:
+    | {
+        _value?: boolean | undefined;
+        [_xmlnsSdtcAttribute]: string;
+      }
+    | undefined;
 };
