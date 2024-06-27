@@ -2,7 +2,7 @@ import { Extension, Organization, Reference, Resource } from "@medplum/fhirtypes
 import { Patient } from "@metriport/core/domain/patient";
 import { toFHIR as toFhirPatient } from "@metriport/core/external/fhir/patient/index";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
-import { isValidUuid, uuidv7 } from "@metriport/core/util/uuid-v7";
+import { isValidUuid } from "@metriport/core/util/uuid-v7";
 import { BadRequestError } from "@metriport/shared";
 import { Bundle as ValidBundle } from "../../../routes/medical/schemas/fhir";
 
@@ -31,41 +31,32 @@ export function hydrateBundle(
   return bundleWithExtensions;
 }
 
-type ReplacementIdPair = { old: string; new: string };
-
 function validateUuidsAndAddExtensions(
   bundle: ValidBundle,
   docExtension: Extension,
   patientId: string
 ): ValidBundle {
-  const replacements: ReplacementIdPair[] = [];
   const uniqueIds = new Set<string>();
   bundle.entry.forEach(entry => {
     const resource: Resource = entry.resource;
     const oldId = resource.id;
-    if (oldId) {
-      if (uniqueIds.has(oldId)) {
-        throw new BadRequestError(`Multiple resources with the same ID: ${oldId}`);
-      }
-      uniqueIds.add(oldId);
-
-      if (!isValidUuid(oldId)) {
-        replacements.push({
-          old: oldId,
-          new: uuidv7(),
-        });
-      }
+    if (!oldId) {
+      throw new BadRequestError(`${entry.resource.resourceType} resource is missing the ID!`);
     }
+    if (!isValidUuid(oldId)) {
+      throw new BadRequestError(`Invalid UUID: ${oldId}`);
+    }
+    if (uniqueIds.has(oldId)) {
+      throw new BadRequestError(`Multiple resources with the same ID: ${oldId}`);
+    }
+    uniqueIds.add(oldId);
+
     verifyPatientReferences(resource, patientId);
     addUniqueExtension(entry.resource, metriportDataSourceExtension);
     addUniqueExtension(entry.resource, docExtension);
   });
 
-  let bundleString = JSON.stringify(bundle);
-  replacements.forEach((idPair: ReplacementIdPair) => {
-    bundleString = bundleString.replaceAll(idPair.old, idPair.new);
-  });
-  return JSON.parse(bundleString);
+  return bundle;
 }
 
 function verifyPatientReferences(resource: Resource, patientId: string) {
