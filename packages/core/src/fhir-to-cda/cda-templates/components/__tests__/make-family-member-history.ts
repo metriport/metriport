@@ -8,7 +8,6 @@ export function makeFamilyMemberHistory(
     ...makeBaseDomain(),
     resourceType: "FamilyMemberHistory",
     status: "completed",
-    date: "2018-03-19",
     relationship: {
       coding: [
         {
@@ -33,3 +32,25 @@ export function makeFamilyMemberHistory(
     ...params,
   };
 }
+
+export const motherFamilyMemberHistory: Partial<FamilyMemberHistory> = {
+  name: "Helga",
+  relationship: {
+    coding: [
+      {
+        system: "http://snomed.info/sct",
+        code: "72705000",
+        display: "Mother",
+      },
+    ],
+  },
+  sex: {
+    coding: [
+      {
+        system: "http://hl7.org/fhir/administrative-gender",
+        code: "female",
+        display: "Female",
+      },
+    ],
+  },
+};

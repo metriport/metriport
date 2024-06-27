@@ -52,8 +52,6 @@ export type CdaAddressUse =
   | "WP";
 
 export type CdaTelecomUse = "AS" | "EC" | "HP" | "HV" | "MC" | "PG" | "WP";
-export type CdaSexType = "M" | "F" | "UK";
-
 export type Entry = { [key: string]: string } | string;
 export type EntryObject = { [key: string]: string };
 

@@ -105,6 +105,11 @@ export function splitName(name: string): string[] {
   return name.split(/[\s,]+/).filter(str => str);
 }
 
+/**
+ * @deprecated - Use `mapGenderCode` instead.
+ * @param gender
+ * @returns
+ */
 export function normalizeGender(gender: string | undefined): "M" | "F" | undefined {
   if (!gender) return;
   const lowerGender = gender.toLowerCase().trim();
@@ -114,4 +119,17 @@ export function normalizeGender(gender: string | undefined): "M" | "F" | undefin
     return "F";
   }
   return;
+}
+
+export type GenderAtBirth = "M" | "F" | "UK";
+
+export function mapGenderCode(gender: string | undefined): GenderAtBirth {
+  switch (gender?.toLowerCase().trim()) {
+    case "male" || "m":
+      return "M";
+    case "female" || "f":
+      return "F";
+    default:
+      return "UK";
+  }
 }

@@ -1,5 +1,6 @@
 import {
   Address,
+  Annotation,
   CodeableConcept,
   Coding,
   ContactPoint,
@@ -14,14 +15,13 @@ import localizedFormat from "dayjs/plugin/localizedFormat";
 import utc from "dayjs/plugin/utc";
 import {
   AssignedEntity,
-  CdaOriginalText,
   CdaAddress,
   CdaAddressUse,
   CdaCodeCe,
   CdaCodeCv,
   CdaInstanceIdentifier,
   CdaOrganization,
-  CdaSexType,
+  CdaOriginalText,
   CdaTelecom,
   CdaTelecomUse,
   CdaValueCd,
@@ -577,13 +577,7 @@ export function buildAddressText(address: Address | undefined): string | undefin
   return `${address.line?.join(", ")}, ${address.city}, ${address.state} ${address.postalCode}`;
 }
 
-export function mapGenderCode(gender: string | undefined): CdaSexType {
-  switch (gender?.toLowerCase()) {
-    case "male":
-      return "M";
-    case "female":
-      return "F";
-    default:
-      return "UK";
-  }
+export function getNotes(note: Annotation[] | undefined): string | undefined {
+  const combinedNotes = note?.map(note => note.text).join("; ");
+  return combinedNotes?.length ? combinedNotes : undefined;
 }

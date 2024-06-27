@@ -7,7 +7,7 @@ import { xmlBuilder } from "../../clinical-document/shared";
 import { buildFamilyHistory } from "../family-history";
 import { conditionHeartAttack, conditionStroke } from "./condition-examples";
 import { makeCondition } from "./make-condition";
-import { makeFamilyMemberHistory } from "./make-family-member-history";
+import { makeFamilyMemberHistory, motherFamilyMemberHistory } from "./make-family-member-history";
 import { createEmptyBundle, getXmlContentFromFile } from "./shared";
 
 let memberHistId: string;
@@ -61,25 +61,7 @@ describe("buildMedications", () => {
     const memberHistId2 = faker.string.uuid();
     const memberHist2 = makeFamilyMemberHistory({
       id: memberHistId2,
-      name: "Helga",
-      relationship: {
-        coding: [
-          {
-            system: "http://snomed.info/sct",
-            code: "72705000",
-            display: "Mother",
-          },
-        ],
-      },
-      sex: {
-        coding: [
-          {
-            system: "http://hl7.org/fhir/administrative-gender",
-            code: "female",
-            display: "Female",
-          },
-        ],
-      },
+      ...motherFamilyMemberHistory,
     });
     bundle.entry?.push({ resource: { ...memberHist2, condition: [condition2] } });
 
