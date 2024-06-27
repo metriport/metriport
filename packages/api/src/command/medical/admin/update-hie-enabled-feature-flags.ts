@@ -1,6 +1,5 @@
 import {
-  getDeployments,
-  getConfigurationContent,
+  getFeatureFlags,
   createAndDeployHieConfigurationContent,
   CxFeatureFlagStatus,
 } from "@metriport/core/external/aws/app-config";
@@ -18,27 +17,10 @@ export async function updateHieEnabledFFs({
   const region = Config.getAWSRegion();
   const appId = Config.getAppConfigAppId();
   const configId = Config.getAppConfigConfigId();
+  const envName = Config.getEnvType();
   const envId = Config.getAppConfigEnvironmentId();
   const deploymentStratId = Config.getAppConfigDeploymentStrategyId();
-  const deployments = await getDeployments({
-    region,
-    appId,
-    envId,
-  });
-  const deploymentsLatestToEarliest = deployments
-    .sort((a, b) => (a.DeploymentNumber ?? -1) - (b.DeploymentNumber ?? -1))
-    .reverse();
-  const latestDeployment = deploymentsLatestToEarliest[0];
-  if (!latestDeployment) {
-    throw new Error("Invalid latest deployment");
-  }
-  const featureFlags = await getConfigurationContent({
-    region,
-    appId,
-    envId,
-    configId,
-    deployment: latestDeployment,
-  });
+  const featureFlags = await getFeatureFlags(region, appId, configId, envName);
   if (cwEnabled === true) {
     featureFlags.cxsWithCWFeatureFlag.values.push(cxId);
   } else if (cwEnabled === false) {
