@@ -287,8 +287,8 @@ router.get(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const response = await getHieEnabledFFStatus(cxId);
-    return res.status(httpStatus.OK).json(response);
+    const result = await getHieEnabledFFStatus(cxId);
+    return res.status(httpStatus.OK).json(result);
   })
 );
 
@@ -308,12 +308,12 @@ router.put(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const cwEnabled = getFromQueryAsBoolean("cwEnabled", req);
     const cqEnabled = getFromQueryAsBoolean("cqEnabled", req);
-    const response = await updateHieEnabledFFs({
+    const result = await updateHieEnabledFFs({
       cxId,
       cwEnabled,
       cqEnabled,
     });
-    return res.status(httpStatus.OK).json(response);
+    return res.status(httpStatus.OK).json(result);
   })
 );
 
