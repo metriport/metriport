@@ -5,9 +5,11 @@ import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { z } from "zod";
 import { getHieOverview } from "../../command/medical/admin/hie-overview";
+import { getHieEnabledFFStatus } from "../../command/medical/admin/get-hie-enabled-feature-flags-status";
+import { updateHieEnabledFFs } from "../../command/medical/admin/update-hie-enabled-feature-flags";
 import { requestLogger } from "../helpers/request-logger";
 import { getUUIDFrom } from "../schemas/uuid";
-import { asyncHandler, getFrom } from "../util";
+import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 
 dayjs.extend(duration);
 
@@ -38,6 +40,48 @@ router.get(
     const facilityIdParam = getFrom("query").optional("facilityId", req);
     const debugLevel = debugLevelSchema.parse(req.query.debugLevel) ?? "info";
     const response = await getHieOverview(patientId, facilityIdParam, debugLevel);
+    return res.status(httpStatus.OK).json(response);
+  })
+);
+
+/**
+ * GET /internal/hie/enabled
+ *
+ * Retrieves the customer status of enabled HIEs via the Feature Flags.
+ *
+ * @param req.query.cxId - The cutomer's ID.
+ */
+router.get(
+  "/hie/enabled",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const response = await getHieEnabledFFStatus(cxId);
+    return res.status(httpStatus.OK).json(response);
+  })
+);
+
+/**
+ * POST /internal/hie/enabled
+ *
+ * Updates the customer status of enabled HIEs via the Feature Flags.
+ *
+ * @param req.query.cxId - The cutomer's ID.
+ * @param req.query.cwEnabled - Whether to enabled CommonWell.
+ * @param req.query.cqEndabled - Whether to enabled CareQuality.
+ */
+router.post(
+  "/hie/enabled",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const cwEnabled = getFromQueryAsBoolean("cwEnabled", req);
+    const cqEndabled = getFromQueryAsBoolean("cqEndabled", req);
+    const response = await updateHieEnabledFFs({
+      cxId,
+      cwEnabled,
+      cqEndabled,
+    });
     return res.status(httpStatus.OK).json(response);
   })
 );
