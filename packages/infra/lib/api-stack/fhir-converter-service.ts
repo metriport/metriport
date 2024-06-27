@@ -127,7 +127,7 @@ export function createFHIRConverterService(
     maxCapacity: taskCountMax,
   });
   scaling.scaleOnCpuUtilization("autoscale_cpu", {
-    targetUtilizationPercent: 70,
+    targetUtilizationPercent: 60,
     scaleInCooldown: Duration.minutes(2),
     scaleOutCooldown: Duration.seconds(30),
   });
