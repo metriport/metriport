@@ -13,32 +13,39 @@ export function isPhoneValid(phone: string): boolean {
 
 /**
  * Normalize a telephone number to a 10-digit string. Removes all non-numeric characters.
- * This should not be used in code that parses phone numbers from user input, as it will
- * remove the leftmost digits if the phone number is longer than 10 digits, which can lead to
- * phone numbers with extensions having the extensions and missing important parts of the actual
- * phone number.
- * @param telephone
+ * Removes the first digit (country code) if the number is 11 digits long and starts with a 1.
+ * Returns the original number (without non-numeric chars) if:
+ * - the number is less than 10 digits long
+ * - the number is more than 11 digits long
+ * - the number is 11 digits long and does not start with a 1
+ * @param telephone the phone number to normalize
  */
 export function normalizePhoneNumber(telephone: string): string;
 /**
  * Normalize a telephone number to a 10-digit string. Removes all non-numeric characters.
- * If in strict mode, only normalizes 10 to 11 digits strings (don't transform incorrect values
- * with extensions and etc.).
- * This should not be used with strict=false in code that parses phone numbers from user input, as
- * it will remove the leftmost digits if the phone number is longer than 10 digits, which can lead
- * to phone numbers with extensions having the extensions and missing important parts of the actual
- * phone number.
+ * Removes the first digit (country code) if the number is 11 digits long and starts with a 1.
+ * Returns the original number (without non-numeric chars) if:
+ * - the number is less than 10 digits long
+ * - the number is more than 11 digits long and autofix is false
+ * - the number is 11 digits long, it does not start with a 1  and autofix is false
+ * @param telephone the phone number to normalize
  * @param telephone the phone number to be normalized
- * @param strict whether to normalize only 10 to 11 digits strings (default: false)
+ * @param autofix whether to remove extra digits or not (default: false)
  */
-export function normalizePhoneNumber(telephone: string, strict: boolean): string;
-export function normalizePhoneNumber(telephone: string, strict = false): string {
+export function normalizePhoneNumber(telephone: string, autofix: boolean): string;
+export function normalizePhoneNumber(telephone: string, autofix = false): string {
   const stripped = stripNonNumericChars(telephone);
-  if (!strict) {
-    return stripped.slice(-1 * phoneLength);
-  }
+  const startsWithUsCode = stripped[0] === "1";
   if (stripped.length === phoneLength + 1) {
-    return stripped.slice(1);
+    if (startsWithUsCode) return stripped.slice(-phoneLength);
+    // TODO should we prefer the left or the right most in this situation?
+    if (autofix) return stripped.slice(0, phoneLength);
   }
+
+  if (autofix && stripped.length > phoneLength + 1) {
+    const initialPosition = startsWithUsCode ? 1 : 0;
+    return stripped.slice(initialPosition, initialPosition + phoneLength);
+  }
+  // TODO should we return the original value w/ non-digits if we're not able to normalize it?
   return stripped;
 }

@@ -308,7 +308,7 @@ export function stringifyAddress(normalizedAddress: LinkGenericAddress): string 
  * @deprecated use `normalizePhoneNumber` from `@metriport/shared` instead.
  */
 export function normalizeTelephone(telephone: string): string {
-  return normalizePhoneNumber(telephone);
+  return normalizePhoneNumber(telephone, true);
 }
 
 export function normalizeEmail(email: string): string {

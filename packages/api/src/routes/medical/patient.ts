@@ -31,7 +31,6 @@ import {
   getPatientOrFail,
   getPatients,
   matchPatient,
-  PatientMatchCmd,
 } from "../../command/medical/patient/get-patient";
 import { handleDataContribution } from "../../command/medical/patient/handle-data-contributions";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";

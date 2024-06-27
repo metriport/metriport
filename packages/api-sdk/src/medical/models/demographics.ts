@@ -51,7 +51,7 @@ export const contactSchema = z
   .object({
     phone: z.coerce
       .string()
-      .transform(phone => normalizePhoneNumber(phone, true))
+      .transform(phone => normalizePhoneNumber(phone))
       .refine(isPhoneValid, {
         message: `Phone must be a string consisting of ${phoneLength} numbers. For example: ${examplePhoneNumber}`,
       })
