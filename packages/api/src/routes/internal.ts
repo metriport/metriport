@@ -192,7 +192,6 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const org = await getOrganizationOrFail({ cxId });
-
     const facilities = await getFacilities({ cxId: org.cxId });
 
     const response = {
@@ -202,6 +201,7 @@ router.get(
         oid: org.oid,
         name: org.data.name,
         type: org.data.type,
+        businessType: org.type,
       },
       facilities: facilities.map(f => ({
         id: f.id,
@@ -209,6 +209,12 @@ router.get(
         npi: f.data.npi,
         tin: f.data.tin,
         active: f.data.active,
+        cqType: f.cqType,
+        cqActive: f.cqActive,
+        cqOboOid: f.cqOboOid,
+        cwType: f.cwType,
+        cwActive: f.cwActive,
+        cwOboOid: f.cwOboOid,
       })),
     };
     return res.status(httpStatus.OK).json(response);

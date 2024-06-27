@@ -1,4 +1,4 @@
-import { Organization, OrgType, OrganizationBizType } from "@metriport/core/domain/organization";
+import { Organization, OrgType } from "@metriport/core/domain/organization";
 import { BaseDTO, toBaseDTO } from "./baseDTO";
 import { AddressStrictDTO } from "./location-address-dto";
 
@@ -7,7 +7,6 @@ export type OrganizationDTO = BaseDTO & {
   name: string;
   type: OrgType;
   location: AddressStrictDTO;
-  businessType: OrganizationBizType;
 };
 
 export function dtoFromModel(org: Organization): OrganizationDTO {
@@ -15,7 +14,6 @@ export function dtoFromModel(org: Organization): OrganizationDTO {
   return {
     ...toBaseDTO(org),
     oid: org.oid,
-    businessType: org.type,
     name,
     type,
     location,
