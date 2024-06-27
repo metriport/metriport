@@ -6,11 +6,7 @@ import { analytics, EventTypes } from "@metriport/core/external/analytics/postho
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import {
-  DocumentReference,
-  OutboundDocumentQueryResp,
-  isSuccessfulOutboundDocQueryResponse,
-} from "@metriport/ihe-gateway-sdk";
+import { DocumentReference, OutboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { mapDocRefToMetriport } from "../../../shared/external";
@@ -33,7 +29,10 @@ import {
   getContentTypeOrUnknown,
   containsDuplicateMetriportId,
 } from "./shared";
-import { getDocumentReferenceContentTypeCounts } from "../../hie/get-docr-content-type-counts";
+import {
+  getDocumentReferenceContentTypeCounts,
+  getOutboundDocQuerySuccessFailureCount,
+} from "../../hie/get-counts-analytics";
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
 import {
   getOrgOidsWithIHEGatewayV2Enabled,
@@ -65,16 +64,7 @@ export async function processOutboundDocumentQueryResps({
     const docRefs = response.flatMap(result => result.documentReference ?? []);
     const contentTypes = docRefs.map(getContentTypeOrUnknown);
     const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
-
-    let successCount = 0;
-    let failureCount = 0;
-    for (const result of response) {
-      if (isSuccessfulOutboundDocQueryResponse(result)) {
-        successCount++;
-      } else {
-        failureCount++;
-      }
-    }
+    const { successCount, failureCount } = getOutboundDocQuerySuccessFailureCount(response);
 
     analytics({
       distinctId: cxId,

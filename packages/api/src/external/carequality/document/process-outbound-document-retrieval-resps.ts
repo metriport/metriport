@@ -8,7 +8,6 @@ import { out } from "@metriport/core/util/log";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { capture } from "@metriport/core/util/notifications";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
-import { isSuccessfulOutboundDocRetrievalResponse } from "@metriport/ihe-gateway-sdk";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { DocumentReferenceWithId } from "../../fhir/document";
@@ -28,6 +27,7 @@ import {
 
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { getCQData } from "../patient";
+import { getOutboundDocRetrievalSuccessFailureCount } from "../../hie/get-counts-analytics";
 
 export async function processOutboundDocumentRetrievalResps({
   requestId,
@@ -43,20 +43,10 @@ export async function processOutboundDocumentRetrievalResps({
     const cqData = getCQData(patient.data.externalData);
     const docRetrievalStartedAt = cqData?.documentRetrievalStartTime;
     const duration = elapsedTimeFromNow(docRetrievalStartedAt);
+    const { successCount, failureCount } = getOutboundDocRetrievalSuccessFailureCount(results);
 
-    let successCount = 0;
-    let failureCount = 0;
     let successDocsRetrievedCount = 0;
     let issuesWithExternalGateway = 0;
-    for (const result of results) {
-      if (isSuccessfulOutboundDocRetrievalResponse(result)) {
-        successCount++;
-        successDocsRetrievedCount += result.documentReference.length;
-      } else if (result.operationOutcome?.issue) {
-        failureCount++;
-        issuesWithExternalGateway += result.operationOutcome.issue.length;
-      }
-    }
 
     analytics({
       distinctId: cxId,
@@ -96,6 +86,14 @@ export async function processOutboundDocumentRetrievalResps({
       });
 
       return;
+    }
+
+    for (const docRetrievalResp of results) {
+      if (docRetrievalResp.documentReference) {
+        successDocsRetrievedCount += docRetrievalResp.documentReference.length;
+      } else if (docRetrievalResp.operationOutcome?.issue) {
+        issuesWithExternalGateway += docRetrievalResp.operationOutcome.issue.length;
+      }
     }
 
     await setDocQueryProgress({
