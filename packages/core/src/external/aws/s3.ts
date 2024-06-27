@@ -188,10 +188,10 @@ export class S3Utils {
         })
       )
     );
-    const contents = data.Contents;
-    if (!contents) return false;
+    const bucketContents = data.Contents;
+    if (!bucketContents) return false;
 
-    for (const file of contents) {
+    for (const file of bucketContents) {
       if (targetString && file.Key?.includes(targetString)) {
         return true;
       }
