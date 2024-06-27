@@ -106,14 +106,14 @@ export async function createAndDeployHieConfigurationContent({
   appId,
   envId,
   configId,
-  deploymentStratId,
+  deploymentStrategyId,
   newContent,
 }: {
   region: string;
   appId: string;
   envId: string;
   configId: string;
-  deploymentStratId: string;
+  deploymentStrategyId: string;
   newContent: FeatureFlagDatastore;
 }): Promise<FeatureFlagDatastore> {
   const appConfig = makeAppConfigClient(region);
@@ -136,7 +136,7 @@ export async function createAndDeployHieConfigurationContent({
   const startDeploymentRequestParams: AppConfig.StartDeploymentRequest = {
     ApplicationId: appId,
     EnvironmentId: envId,
-    DeploymentStrategyId: deploymentStratId,
+    DeploymentStrategyId: deploymentStrategyId,
     ConfigurationProfileId: configId,
     ConfigurationVersion: `${createConfigurationRsp.VersionNumber}`,
     Description: `PROGRAMMATIC DEPLOYMENT BY ${clientId}`,

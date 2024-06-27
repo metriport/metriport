@@ -12,8 +12,8 @@ import {
 import { getFacilities } from "../command/medical/facility/get-facility";
 import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
-import { getHieEnabledFFStatus } from "../command/medical/admin/get-hie-enabled-feature-flags-status";
-import { updateHieEnabledFFs } from "../command/medical/admin/update-hie-enabled-feature-flags";
+import { getHieEnabledFFStatus } from "../command/internal/get-hie-enabled-feature-flags-status";
+import { updateHieEnabledFFs } from "../command/internal/update-hie-enabled-feature-flags";
 import { isEnhancedCoverageEnabledForCx } from "../external/aws/app-config";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
 import { makeFhirApi } from "../external/fhir/api/api-factory";

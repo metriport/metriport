@@ -1,5 +1,5 @@
 import { getFeatureFlags, CxFeatureFlagStatus } from "@metriport/core/external/aws/app-config";
-import { Config } from "../../../shared/config";
+import { Config } from "../../shared/config";
 
 export async function getHieEnabledFFStatus(cxId: string): Promise<CxFeatureFlagStatus> {
   const region = Config.getAWSRegion();
