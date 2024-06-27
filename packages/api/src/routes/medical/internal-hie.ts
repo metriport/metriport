@@ -62,7 +62,7 @@ router.get(
 );
 
 /**
- * POST /internal/hie/enabled
+ * PUT /internal/hie/enabled
  *
  * Updates the customer status of enabled HIEs via the Feature Flags.
  *
@@ -70,7 +70,7 @@ router.get(
  * @param req.query.cwEnabled - Whether to enabled CommonWell.
  * @param req.query.cqEnabled - Whether to enabled CareQuality.
  */
-router.post(
+router.put(
   "/hie/enabled",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
