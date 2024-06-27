@@ -1,4 +1,5 @@
 import { CfnOutput, Stack, StackProps } from "aws-cdk-lib";
+import { CfnStage } from "aws-cdk-lib/aws-apigatewayv2";
 import * as apigwv2 from "aws-cdk-lib/aws-apigatewayv2";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
@@ -8,6 +9,9 @@ import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as sns from "aws-cdk-lib/aws-sns";
+import * as logs from "aws-cdk-lib/aws-logs";
+import * as iam from "aws-cdk-lib/aws-iam";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { createIHEGateway } from "./ihe-stack/ihe-gateway";
@@ -98,6 +102,83 @@ export class IHEStack extends Stack {
       },
       disableExecuteApiEndpoint: true,
     });
+
+    const clientErrorMetric = apigw2.metricClientError();
+    const serverErrorMetric = apigw2.metricServerError();
+    const dataProcessedMetric = apigw2.metricDataProcessed();
+    const countMetric = apigw2.metricCount();
+    const integrationLatencyMetric = apigw2.metricIntegrationLatency();
+    const latencyMetric = apigw2.metricLatency();
+
+    const dashboard = new cloudwatch.Dashboard(this, "IHEDashboard", {
+      dashboardName: "IHE-Dashboard",
+    });
+
+    dashboard.addWidgets(
+      new cloudwatch.GraphWidget({
+        title: "Client Errors",
+        left: [clientErrorMetric],
+      }),
+      new cloudwatch.GraphWidget({
+        title: "Server Errors",
+        left: [serverErrorMetric],
+      }),
+      new cloudwatch.GraphWidget({
+        title: "Data Processed",
+        left: [dataProcessedMetric],
+      }),
+      new cloudwatch.GraphWidget({
+        title: "Request Count",
+        left: [countMetric],
+      }),
+      new cloudwatch.GraphWidget({
+        title: "Integration Latency",
+        left: [integrationLatencyMetric],
+      }),
+      new cloudwatch.GraphWidget({
+        title: "Latency",
+        left: [latencyMetric],
+      })
+    );
+
+    // no feature to suuport this simply. Copied custom solution from https://github.com/aws/aws-cdk/issues/11100
+    const accessLogs = new logs.LogGroup(this, "IHE-APIGW-AccessLogs");
+    const stage = apigw2.defaultStage?.node.defaultChild as CfnStage;
+    stage.accessLogSettings = {
+      destinationArn: accessLogs.logGroupArn,
+      format: JSON.stringify({
+        requestId: "$context.requestId",
+        userAgent: "$context.identity.userAgent",
+        sourceIp: "$context.identity.sourceIp",
+        requestTime: "$context.requestTime",
+        requestTimeEpoch: "$context.requestTimeEpoch",
+        httpMethod: "$context.httpMethod",
+        path: "$context.path",
+        status: "$context.status",
+        protocol: "$context.protocol",
+        responseLength: "$context.responseLength",
+        domainName: "$context.domainName",
+      }),
+    };
+
+    const role = new iam.Role(this, "ApiGWLogWriterRole", {
+      assumedBy: new iam.ServicePrincipal("apigateway.amazonaws.com"),
+    });
+
+    const policy = new iam.PolicyStatement({
+      actions: [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:DescribeLogGroups",
+        "logs:DescribeLogStreams",
+        "logs:PutLogEvents",
+        "logs:GetLogEvents",
+        "logs:FilterLogEvents",
+      ],
+      resources: ["*"],
+    });
+    role.addToPolicy(policy);
+    accessLogs.grantWrite(role);
 
     // TODO 1377 Setup WAF
 
