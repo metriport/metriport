@@ -28,8 +28,8 @@ export function removeBase64PdfEntries(payloadRaw: string): string {
           //eslint-disable-next-line @typescript-eslint/no-explicit-any
           comp.section.entry = toArray(comp.section.entry).filter((entry: any) => {
             if (
-              entry.act?.text?.["@_mediaType"] === PDF_MIME_TYPE &&
-              entry.act.text["@_representation"] === b64Representation
+              entry.act?.text?.["@_mediaType"]?.toLowerCase() === PDF_MIME_TYPE.toLowerCase() &&
+              entry.act.text["@_representation"]?.toLowerCase() === b64Representation.toLowerCase()
             ) {
               removedEntry++;
               return false;
