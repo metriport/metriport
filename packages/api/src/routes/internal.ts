@@ -12,6 +12,8 @@ import {
 import { getFacilities } from "../command/medical/facility/get-facility";
 import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
+import { getHieEnabledFFStatus } from "../command/medical/admin/get-hie-enabled-feature-flags-status";
+import { updateHieEnabledFFs } from "../command/medical/admin/update-hie-enabled-feature-flags";
 import { isEnhancedCoverageEnabledForCx } from "../external/aws/app-config";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
 import { makeFhirApi } from "../external/fhir/api/api-factory";
@@ -26,7 +28,7 @@ import mpiRoutes from "./medical/internal-mpi";
 import patientRoutes from "./medical/internal-patient";
 import facilityRoutes from "./medical/internal-facility";
 import { getUUIDFrom } from "./schemas/uuid";
-import { asyncHandler, getFrom } from "./util";
+import { asyncHandler, getFrom, getFromQueryAsBoolean } from "./util";
 import { requestLogger } from "./helpers/request-logger";
 
 const router = Router();
@@ -270,6 +272,48 @@ router.post(
     const result = await getReferencesFromFHIR(missingReferences, fhir, console.log);
 
     return res.status(httpStatus.OK).json(result);
+  })
+);
+
+/**
+ * GET /internal/cx-hie-status
+ *
+ * Retrieves the customer status of enabled HIEs via the Feature Flags.
+ *
+ * @param req.query.cxId - The cutomer's ID.
+ */
+router.get(
+  "/cx-hie-status",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const response = await getHieEnabledFFStatus(cxId);
+    return res.status(httpStatus.OK).json(response);
+  })
+);
+
+/**
+ * PUT /internal/cx-hie-status
+ *
+ * Updates the customer status of enabled HIEs via the Feature Flags.
+ *
+ * @param req.query.cxId - The cutomer's ID.
+ * @param req.query.cwEnabled - Whether to enabled CommonWell.
+ * @param req.query.cqEnabled - Whether to enabled CareQuality.
+ */
+router.put(
+  "/cx-hie-status",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const cwEnabled = getFromQueryAsBoolean("cwEnabled", req);
+    const cqEnabled = getFromQueryAsBoolean("cqEnabled", req);
+    const response = await updateHieEnabledFFs({
+      cxId,
+      cwEnabled,
+      cqEnabled,
+    });
+    return res.status(httpStatus.OK).json(response);
   })
 );
 
