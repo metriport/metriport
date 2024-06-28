@@ -103,10 +103,13 @@ export async function getFeatureFlagValueStringArrayCxValues<
       : stringValueFFsSchema.keyof().options;
   let response: CxFeatureFlagStatus = {};
   targetFeatureFlags.map(featureFlagName => {
-    response = {
-      ...response,
-      [featureFlagName]: configContentValue[featureFlagName]?.values.includes(cxId),
-    };
+    const featureFlag = configContentValue[featureFlagName];
+    if (featureFlag) {
+      response = {
+        ...response,
+        [featureFlagName]: featureFlag.values.includes(cxId),
+      };
+    }
   });
   return response;
 }
