@@ -68,7 +68,13 @@ describe("phone", () => {
 
     describe("specific phone formats to try", () => {
       const phoneValid = "4150000000";
-      const phonesToCheck = [phoneValid, " 4150000000 ", "(415)-000-0000", "14150000000"];
+      const phonesToCheck = [
+        phoneValid,
+        " 4150000000 ",
+        "(415)-000-0000",
+        "14150000000",
+        "+14150000000",
+      ];
       for (const phone of phonesToCheck) {
         it(`returns original phone w/o format - ${phone}`, () => {
           const result = normalizePhoneNumber(phone);
