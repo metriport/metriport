@@ -5,8 +5,8 @@ import {
   patientCreateSchema,
 } from "@metriport/api-sdk";
 import { Contact } from "@metriport/core/domain/contact";
+import { PatientData } from "@metriport/core/domain/patient";
 import { z } from "zod";
-import { PatientMatchCmd } from "../../../command/medical/patient/get-patient";
 
 export const patientUpdateSchema = patientCreateSchema;
 export type PatientUpdate = z.infer<typeof patientUpdateSchema>;
@@ -18,10 +18,9 @@ export function schemaContactToContact(input: ContactSchema): Contact {
   };
 }
 
-export function schemaCreateToPatient(input: PatientCreate, cxId: string): PatientMatchCmd {
+export function schemaCreateToPatientData(input: PatientCreate): PatientData {
   return {
     ...input,
-    cxId,
     address: Array.isArray(input.address) ? input.address : [input.address],
     contact:
       input.contact && Array.isArray(input.contact)
@@ -32,10 +31,10 @@ export function schemaCreateToPatient(input: PatientCreate, cxId: string): Patie
   };
 }
 
-export function schemaUpdateToPatient(input: PatientUpdate, cxId: string): PatientMatchCmd {
-  return schemaCreateToPatient(input, cxId);
+export function schemaUpdateToPatientData(input: PatientUpdate): PatientData {
+  return schemaCreateToPatientData(input);
 }
 
-export function schemaDemographicsToPatient(input: Demographics, cxId: string): PatientMatchCmd {
-  return schemaCreateToPatient(input, cxId);
+export function schemaDemographicsToPatientData(input: Demographics): PatientData {
+  return schemaCreateToPatientData(input);
 }

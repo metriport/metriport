@@ -57,9 +57,9 @@ import { dtoFromModel } from "./dtos/patientDTO";
 import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
 import {
   patientUpdateSchema,
-  schemaCreateToPatient,
-  schemaDemographicsToPatient,
-  schemaUpdateToPatient,
+  schemaCreateToPatientData,
+  schemaDemographicsToPatientData,
+  schemaUpdateToPatientData,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
@@ -99,7 +99,8 @@ router.post(
     }
 
     const patientCreate: PatientCreateCmd = {
-      ...schemaCreateToPatient(payload, cxId),
+      ...schemaCreateToPatientData(payload),
+      cxId,
       facilityId,
     };
 
@@ -147,8 +148,9 @@ router.put(
 
     const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
     const patientUpdate: PatientUpdateCmd = {
-      ...schemaUpdateToPatient(payload, cxId),
+      ...schemaUpdateToPatientData(payload),
       ...getETag(req),
+      cxId,
       id,
       facilityId,
     };
@@ -486,9 +488,9 @@ router.post(
     const cxId = getCxIdOrFail(req);
     const payload = demographicsSchema.parse(req.body);
 
-    const patientMatch = schemaDemographicsToPatient(payload, cxId);
+    const patientData = schemaDemographicsToPatientData(payload);
 
-    const patient = await matchPatient(patientMatch);
+    const patient = await matchPatient({ cxId, ...patientData });
 
     if (patient) {
       return res.status(status.OK).json(dtoFromModel(patient));
