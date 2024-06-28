@@ -46,6 +46,8 @@ import {
 import { getPatientOrFail } from "./get-patient";
 import { storeQueryInit } from "./query-init";
 
+const MAKE_HYDRATION_ROUNDS = 3;
+
 export type GetConsolidatedParams = {
   patient: Pick<Patient, "id" | "cxId" | "data">;
   requestId?: string;
@@ -451,12 +453,17 @@ export async function getConsolidatedPatientData({
 
   const filtered = filterByDocumentIds(success, documentIds, log);
 
-  const { missingReferences } = getReferencesFromResources({
-    resources: filtered,
-  });
-  const missingRefsOnFHIR = await getReferencesFromFHIR(missingReferences, fhir, log);
-
-  const grouped = [...filtered, ...missingRefsOnFHIR];
+  let grouped = [...filtered];
+  for (let i = 0; i < MAKE_HYDRATION_ROUNDS; i++) {
+    const { missingReferences } = getReferencesFromResources({
+      resources: grouped,
+    });
+    if (missingReferences.length === 0) {
+      break;
+    }
+    const missingRefsOnFHIR = await getReferencesFromFHIR(missingReferences, fhir, log);
+    grouped = [...grouped, ...missingRefsOnFHIR];
+  }
 
   const entry: BundleEntry[] = grouped.map(r => ({ resource: r }));
   return buildBundle(entry);
