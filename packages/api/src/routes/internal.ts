@@ -304,7 +304,7 @@ router.get(
  * @param req.query.cxId - The cutomer's ID.
  * @param req.query.cwEnabled - Whether to enabled CommonWell.
  * @param req.query.cqEnabled - Whether to enabled CareQuality.
- * @param req.query.epicEnabled - Whether to enabled CareQuality.
+ * @param req.query.epicEnabled - Whether to enabled Epic.
  */
 router.put(
   "/cx-ff-status",

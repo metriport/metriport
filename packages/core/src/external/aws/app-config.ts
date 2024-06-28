@@ -29,34 +29,30 @@ export const booleanFFsSchema = z.object({
 });
 export type BooleanFeatureFlags = z.infer<typeof booleanFFsSchema>;
 
-export const stringValueFFsSchema = z.object({
+export const cxBasedFFsSchema = z.object({
   cxsWithEnhancedCoverageFeatureFlag: ffStringValuesSchema,
   cxsWithCQDirectFeatureFlag: ffStringValuesSchema,
   cxsWithCWFeatureFlag: ffStringValuesSchema,
   cxsWithADHDMRFeatureFlag: ffStringValuesSchema,
   cxsWithNoWebhookPongFeatureFlag: ffStringValuesSchema,
   cxsWithIncreasedSandboxLimitFeatureFlag: ffStringValuesSchema,
-  oidsWithIHEGatewayV2Enabled: ffStringValuesSchema,
   cxsWithIHEGatewayV2Enabled: ffStringValuesSchema,
   cxsWithEpicEnabled: ffStringValuesSchema,
-  e2eCxIds: ffStringValuesSchema.nullish(),
 });
+export type CxBasedFFsSchema = z.infer<typeof cxBasedFFsSchema>;
+
+export const stringValueFFsSchema = cxBasedFFsSchema.merge(
+  z.object({
+    oidsWithIHEGatewayV2Enabled: ffStringValuesSchema,
+    e2eCxIds: ffStringValuesSchema.nullish(),
+  })
+);
 export type StringValueFeatureFlags = z.infer<typeof stringValueFFsSchema>;
+
+export type CxFeatureFlagStatus = Partial<Record<keyof CxBasedFFsSchema, boolean>>;
 
 export const ffDatastoreSchema = stringValueFFsSchema.merge(booleanFFsSchema);
 export type FeatureFlagDatastore = z.infer<typeof ffDatastoreSchema>;
-
-export type CxFeatureFlagStatus = {
-  cxsWithEnhancedCoverageFeatureFlag?: boolean;
-  cxsWithCQDirectFeatureFlag?: boolean;
-  cxsWithCWFeatureFlag?: boolean;
-  cxsWithADHDMRFeatureFlag?: boolean;
-  cxsWithNoWebhookPongFeatureFlag?: boolean;
-  cxsWithIncreasedSandboxLimitFeatureFlag?: boolean;
-  oidsWithIHEGatewayV2Enabled?: boolean;
-  cxsWithIHEGatewayV2Enabled?: boolean;
-  cxsWithEpicEnabled?: boolean;
-};
 
 export async function getFeatureFlags(
   region: string,
@@ -86,9 +82,7 @@ export async function getFeatureFlags(
   throw new MetriportError(`Failed to get Feature Flags`);
 }
 
-export async function getFeatureFlagValueStringArrayCxValues<
-  T extends keyof StringValueFeatureFlags
->(
+export async function getFeatureFlagValueCxValues<T extends keyof StringValueFeatureFlags>(
   region: string,
   appId: string,
   configId: string,
