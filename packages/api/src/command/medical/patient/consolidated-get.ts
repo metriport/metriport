@@ -46,7 +46,7 @@ import {
 import { getPatientOrFail } from "./get-patient";
 import { storeQueryInit } from "./query-init";
 
-const MAKE_HYDRATION_ROUNDS = 3;
+const MAX_HYDRATION_ROUNDS = 3;
 
 export type GetConsolidatedParams = {
   patient: Pick<Patient, "id" | "cxId" | "data">;
@@ -454,7 +454,7 @@ export async function getConsolidatedPatientData({
   const filtered = filterByDocumentIds(success, documentIds, log);
 
   let grouped = [...filtered];
-  for (let i = 0; i < MAKE_HYDRATION_ROUNDS; i++) {
+  for (let i = 0; i < MAX_HYDRATION_ROUNDS; i++) {
     const { missingReferences } = getReferencesFromResources({
       resources: grouped,
     });
