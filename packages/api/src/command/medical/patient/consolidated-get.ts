@@ -451,21 +451,20 @@ export async function getConsolidatedPatientData({
     });
   }
 
-  const filtered = filterByDocumentIds(success, documentIds, log);
+  let filtered = filterByDocumentIds(success, documentIds, log);
 
-  let grouped = [...filtered];
   for (let i = 0; i < MAX_HYDRATION_ROUNDS; i++) {
     const { missingReferences } = getReferencesFromResources({
-      resources: grouped,
+      resources: filtered,
     });
     if (missingReferences.length === 0) {
       break;
     }
     const missingRefsOnFHIR = await getReferencesFromFHIR(missingReferences, fhir, log);
-    grouped = [...grouped, ...missingRefsOnFHIR];
+    filtered = [...filtered, ...missingRefsOnFHIR];
   }
 
-  const entry: BundleEntry[] = grouped.map(r => ({ resource: r }));
+  const entry: BundleEntry[] = filtered.map(r => ({ resource: r }));
   return buildBundle(entry);
 }
 
