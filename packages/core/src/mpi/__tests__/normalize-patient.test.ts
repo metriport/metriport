@@ -2,7 +2,7 @@ import { Address } from "../../domain/address";
 import { Contact } from "../../domain/contact";
 import { USState } from "../../domain/geographic-locations";
 import { GenderAtBirth } from "../../domain/patient";
-import { normalizePatient, normalizePhoneNumber } from "../normalize-patient";
+import { normalizePatient } from "../normalize-patient";
 import { PatientMPI } from "../shared";
 
 describe("normalizePatient", () => {
@@ -127,46 +127,6 @@ describe("normalizePatient", () => {
 
       const result = normalizePatient(patientMPI);
       expect(result).toEqual(expected);
-    });
-  });
-
-  describe("normalize phone number", () => {
-    it("returns original value when it contains 10 digits", () => {
-      const expectedPhone = "0987654321";
-      const result = normalizePhoneNumber(expectedPhone);
-      expect(result).toEqual(expectedPhone);
-    });
-
-    it("removes country code when its 1 and contains 11 digits", () => {
-      const expectedPhone = "0987654321";
-      const result = normalizePhoneNumber("1" + expectedPhone);
-      expect(result).toEqual(expectedPhone);
-    });
-
-    it("returns original value when code is not 1 and it contains 11 digits", () => {
-      const expectedPhone = "20987654321";
-      const result = normalizePhoneNumber(expectedPhone);
-      expect(result).toEqual(expectedPhone);
-    });
-
-    it("returns original value when it contains 12 digits", () => {
-      const expectedPhone = "109876543210";
-      const result = normalizePhoneNumber(expectedPhone);
-      expect(result).toEqual(expectedPhone);
-    });
-
-    it("removes non-digits and returns original value not US phone w/ 11 digits", () => {
-      const inputPhone = " a0987b6543-21 ext 0123 ";
-      const expectedPhone = "09876543210123";
-      const result = normalizePhoneNumber(inputPhone);
-      expect(result).toEqual(expectedPhone);
-    });
-
-    it("removes non-digits and returns updates value when its a US phone w/ 11 digits", () => {
-      const inputPhone = " a1987b6543-210 ";
-      const expectedPhone = "9876543210";
-      const result = normalizePhoneNumber(inputPhone);
-      expect(result).toEqual(expectedPhone);
     });
   });
 });

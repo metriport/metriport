@@ -83,7 +83,7 @@ export function patientToCommonwell({
         if (contact.phone) {
           contacts.push({
             system: ContactSystemCodes.phone,
-            value: normalizePhoneNumber(contact.phone, true),
+            value: normalizePhoneNumber(contact.phone),
           });
         }
         return contacts;
