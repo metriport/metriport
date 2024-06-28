@@ -280,14 +280,14 @@ router.post(
 );
 
 /**
- * GET /internal/cx-hie-status
+ * GET /internal/cx-ff-status
  *
  * Retrieves the customer status of enabled HIEs via the Feature Flags.
  *
  * @param req.query.cxId - The cutomer's ID.
  */
 router.get(
-  "/cx-hie-status",
+  "/cx-ff-status",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -297,7 +297,7 @@ router.get(
 );
 
 /**
- * PUT /internal/cx-hie-status
+ * PUT /internal/cx-ff-status
  *
  * Updates the customer status of enabled HIEs via the Feature Flags.
  *
@@ -307,7 +307,7 @@ router.get(
  * @param req.query.epicEnabled - Whether to enabled CareQuality.
  */
 router.put(
-  "/cx-hie-status",
+  "/cx-ff-status",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
