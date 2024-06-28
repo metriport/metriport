@@ -52,7 +52,7 @@ export function setRejectUnauthorized(value: boolean): void {
   rejectUnauthorized = value;
 }
 export function getRejectUnauthorized(): boolean {
-  return rejectUnauthorized;
+  return false && rejectUnauthorized;
 }
 
 export type SamlClientResponse = {
