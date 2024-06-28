@@ -47,8 +47,15 @@ export const ffDatastoreSchema = stringValueFFsSchema.merge(booleanFFsSchema);
 export type FeatureFlagDatastore = z.infer<typeof ffDatastoreSchema>;
 
 export type CxFeatureFlagStatus = {
-  cxsWithCWFeatureFlag: boolean;
-  cxsWithCQDirectFeatureFlag: boolean;
+  cxsWithEnhancedCoverageFeatureFlag?: boolean;
+  cxsWithCQDirectFeatureFlag?: boolean;
+  cxsWithCWFeatureFlag?: boolean;
+  cxsWithADHDMRFeatureFlag?: boolean;
+  cxsWithNoWebhookPongFeatureFlag?: boolean;
+  cxsWithIncreasedSandboxLimitFeatureFlag?: boolean;
+  oidsWithIHEGatewayV2Enabled?: boolean;
+  cxsWithIHEGatewayV2Enabled?: boolean;
+  cxsWithEpicEnabled?: boolean;
 };
 
 export async function getFeatureFlags(
@@ -79,6 +86,31 @@ export async function getFeatureFlags(
   throw new MetriportError(`Failed to get Feature Flags`);
 }
 
+export async function getFeatureFlagValueStringArrayCxValues<
+  T extends keyof StringValueFeatureFlags
+>(
+  region: string,
+  appId: string,
+  configId: string,
+  envName: string,
+  cxId: string,
+  featureFlagNames?: T[]
+): Promise<CxFeatureFlagStatus> {
+  const configContentValue = await getFeatureFlags(region, appId, configId, envName);
+  const targetFeatureFlags =
+    featureFlagNames && featureFlagNames.length > 0
+      ? featureFlagNames
+      : stringValueFFsSchema.keyof().options;
+  let response: CxFeatureFlagStatus = {};
+  targetFeatureFlags.map(featureFlagName => {
+    response = {
+      ...response,
+      [featureFlagName]: configContentValue[featureFlagName]?.values.includes(cxId),
+    };
+  });
+  return response;
+}
+
 export async function getFeatureFlagValueStringArray<T extends keyof StringValueFeatureFlags>(
   region: string,
   appId: string,
@@ -101,7 +133,7 @@ export async function getFeatureFlagValueBoolean<T extends keyof BooleanFeatureF
   return configContentValue[featureFlagName];
 }
 
-export async function createAndDeployHieConfigurationContent({
+export async function createAndDeployConfigurationContent({
   region,
   appId,
   envId,

@@ -1,18 +1,30 @@
 import {
   getFeatureFlags,
-  createAndDeployHieConfigurationContent,
+  createAndDeployConfigurationContent,
+  StringValuesFF,
   CxFeatureFlagStatus,
 } from "@metriport/core/external/aws/app-config";
+import { out } from "@metriport/core/util/log";
 import { Config } from "../../shared/config";
 
-export async function updateHieEnabledFFs({
+function enableFeatureFlagForCustomer(flag: StringValuesFF, cxId: string) {
+  flag.values.push(cxId);
+}
+
+function disableFeatureFlagForCustomer(flag: StringValuesFF, cxId: string) {
+  flag.values.filter(id => id !== cxId);
+}
+
+export async function updateCxHieEnabledFFs({
   cxId,
   cwEnabled,
   cqEnabled,
+  epicEnabled,
 }: {
   cxId: string;
   cwEnabled?: boolean;
   cqEnabled?: boolean;
+  epicEnabled?: boolean;
 }): Promise<CxFeatureFlagStatus> {
   const region = Config.getAWSRegion();
   const appId = Config.getAppConfigAppId();
@@ -22,23 +34,25 @@ export async function updateHieEnabledFFs({
   const deploymentStrategyId = Config.getAppConfigDeploymentStrategyId();
   const featureFlags = await getFeatureFlags(region, appId, configId, envName);
   if (cwEnabled === true) {
-    featureFlags.cxsWithCWFeatureFlag.values.push(cxId);
+    enableFeatureFlagForCustomer(featureFlags.cxsWithCWFeatureFlag, cxId);
   } else if (cwEnabled === false) {
-    featureFlags.cxsWithCWFeatureFlag.values = featureFlags.cxsWithCWFeatureFlag.values.filter(
-      id => id !== cxId
-    );
+    disableFeatureFlagForCustomer(featureFlags.cxsWithCWFeatureFlag, cxId);
   }
   if (cqEnabled == true) {
-    featureFlags.cxsWithCQDirectFeatureFlag.values.push(cxId);
+    enableFeatureFlagForCustomer(featureFlags.cxsWithCQDirectFeatureFlag, cxId);
   } else if (cqEnabled === false) {
-    featureFlags.cxsWithCQDirectFeatureFlag.values =
-      featureFlags.cxsWithCQDirectFeatureFlag.values.filter(id => id !== cxId);
+    disableFeatureFlagForCustomer(featureFlags.cxsWithCQDirectFeatureFlag, cxId);
+  }
+  if (epicEnabled == true) {
+    enableFeatureFlagForCustomer(featureFlags.cxsWithEpicEnabled, cxId);
+  } else if (epicEnabled == false) {
+    disableFeatureFlagForCustomer(featureFlags.cxsWithEpicEnabled, cxId);
   }
   featureFlags.cxsWithCWFeatureFlag.values = [...new Set(featureFlags.cxsWithCWFeatureFlag.values)];
   featureFlags.cxsWithCQDirectFeatureFlag.values = [
     ...new Set(featureFlags.cxsWithCQDirectFeatureFlag.values),
   ];
-  const newFeatureFlags = await createAndDeployHieConfigurationContent({
+  const newFeatureFlags = await createAndDeployConfigurationContent({
     region,
     appId,
     envId,
@@ -46,8 +60,15 @@ export async function updateHieEnabledFFs({
     deploymentStrategyId,
     newContent: featureFlags,
   });
+  const currentCwEnabled = newFeatureFlags.cxsWithCWFeatureFlag.values.includes(cxId);
+  const currentCqEnabled = newFeatureFlags.cxsWithCQDirectFeatureFlag.values.includes(cxId);
+  const currentEpicEnabled = newFeatureFlags.cxsWithCQDirectFeatureFlag.values.includes(cxId);
+  const { log } = out(`Customer ${cxId}`);
+  log(
+    `New HIE enabled state: CW: ${currentCwEnabled} CQ: ${currentCqEnabled} Epic: ${currentEpicEnabled}`
+  );
   return {
-    cxsWithCWFeatureFlag: newFeatureFlags.cxsWithCWFeatureFlag.values.includes(cxId),
-    cxsWithCQDirectFeatureFlag: newFeatureFlags.cxsWithCQDirectFeatureFlag.values.includes(cxId),
+    cxsWithCWFeatureFlag: currentCwEnabled,
+    cxsWithCQDirectFeatureFlag: currentCqEnabled,
   };
 }

@@ -12,8 +12,8 @@ import {
 import { getFacilities } from "../command/medical/facility/get-facility";
 import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
-import { getHieEnabledFFStatus } from "../command/internal/get-hie-enabled-feature-flags-status";
-import { updateHieEnabledFFs } from "../command/internal/update-hie-enabled-feature-flags";
+import { getCxFFStatus } from "../command/internal/get-hie-enabled-feature-flags-status";
+import { updateCxHieEnabledFFs } from "../command/internal/update-hie-enabled-feature-flags";
 import { isEnhancedCoverageEnabledForCx } from "../external/aws/app-config";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
 import { makeFhirApi } from "../external/fhir/api/api-factory";
@@ -291,7 +291,7 @@ router.get(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const result = await getHieEnabledFFStatus(cxId);
+    const result = await getCxFFStatus(cxId);
     return res.status(httpStatus.OK).json(result);
   })
 );
@@ -312,7 +312,7 @@ router.put(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const cwEnabled = getFromQueryAsBoolean("cwEnabled", req);
     const cqEnabled = getFromQueryAsBoolean("cqEnabled", req);
-    const result = await updateHieEnabledFFs({
+    const result = await updateCxHieEnabledFFs({
       cxId,
       cwEnabled,
       cqEnabled,
