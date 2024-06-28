@@ -304,6 +304,7 @@ router.get(
  * @param req.query.cxId - The cutomer's ID.
  * @param req.query.cwEnabled - Whether to enabled CommonWell.
  * @param req.query.cqEnabled - Whether to enabled CareQuality.
+ * @param req.query.epicEnabled - Whether to enabled CareQuality.
  */
 router.put(
   "/cx-hie-status",
@@ -312,10 +313,12 @@ router.put(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const cwEnabled = getFromQueryAsBoolean("cwEnabled", req);
     const cqEnabled = getFromQueryAsBoolean("cqEnabled", req);
+    const epicEnabled = getFromQueryAsBoolean("epicEnabled", req);
     const result = await updateCxHieEnabledFFs({
       cxId,
       cwEnabled,
       cqEnabled,
+      epicEnabled,
     });
     return res.status(httpStatus.OK).json(result);
   })
