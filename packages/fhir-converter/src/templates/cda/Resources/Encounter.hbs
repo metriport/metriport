@@ -46,9 +46,19 @@
                 {{{toJsonString this}}},
             {{/each}}
         ],
-        
-        "class":{{>DataType/Coding.hbs code=encounter.code}},
-        
+
+        {{#if encounter.code.code}}
+            "class":{{>DataType/Coding.hbs code=encounter.code}},
+        {{else}}
+          {{#if encounter.code.translation}}
+            "class":{{>DataType/Coding.hbs code=encounter.code.translation }},
+          {{else}}
+            "class": {
+              "display": "n/a"
+            }
+          {{/if}}
+        {{/if}}
+
         "type":
         [
            	{{>DataType/CodeableConcept.hbs code=encounter.code}},

@@ -60,8 +60,17 @@
             {{/if}}
         
         "status":{{>ValueSet/ObservationStatus.hbs code=observationEntry.statusCode.code}},
-        "code": {{>DataType/CodeableConcept.hbs code=observationEntry.code text=observationEntry.text._}},
-        
+
+        {{#if observationEntry.code.code}}
+          "code": {{>DataType/CodeableConcept.hbs code=observationEntry.code text=observationEntry.text._}},
+        {{else}}
+          {{#if observationEntry.value.length}}
+            "code": {{>DataType/CodeableConcept.hbs code=observationEntry.value.[0] text=observationEntry.text._}},
+          {{else}}
+            "code": {{>DataType/CodeableConcept.hbs code=observationEntry.value text="n/a"}},
+          {{/if}}
+        {{/if}}
+
         {{#if observationEntry.effectiveTime.low.value}}
             "effectivePeriod":
             {

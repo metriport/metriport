@@ -993,6 +993,17 @@ module.exports.external = [
     },
   },
   {
+    name: "trim",
+    description: "Trims string: trim string",
+    func: function (str) {
+      try {
+        return str.toString().trim();
+      } catch (err) {
+        return "";
+      }
+    },
+  },
+  {
     name: "trimAndLower",
     description: "Trims and converts string to lower case: trimAndLower string",
     func: function (str) {
@@ -1154,7 +1165,7 @@ module.exports.external = [
       if (referenceData == undefined) {
         return "";
       }
-      return JSON.stringify(referenceData).slice(1, -1);
+      return JSON.stringify(referenceData).slice(1, -1).replace(/\s+/g, "").trim();
     },
   },
   {
@@ -1336,7 +1347,19 @@ module.exports.external = [
         return "";
       }
       const match = str.match(new RegExp(`^(${DECIMAL_REGEX_STR})$`));
-      return match ? match[0] : "";
+
+      if (match) {
+        const decimal = match[0];
+        const leadsWithDecimal = decimal.startsWith(".");
+
+        if (leadsWithDecimal) {
+          return `0${decimal}`;
+        }
+
+        return decimal;
+      }
+
+      return "";
     },
   },
   {

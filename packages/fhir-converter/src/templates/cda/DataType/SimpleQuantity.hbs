@@ -28,7 +28,7 @@
   {{#with (convertFeetAndInchesToCm decodedValue) as |feetAndInches|}}
     {{#if feetAndInches.isValid}}
       {
-        "value": "{{feetAndInches.value}}",
+        "value": {{feetAndInches.value}},
         "unit": "cm",
         "system": "http://unitsofmeasure.org"
       }
@@ -36,14 +36,14 @@
       {{#with (extractNumberAndUnit decodedValue) as |numberAndUnit|}}
         {{#if numberAndUnit.isValid}}
           {
-            "value": "{{numberAndUnit.value}}",
+            "value": {{numberAndUnit.value}},
             "unit": "{{#if ../../../quantity.unit}}{{../../../quantity.unit}}{{else}}{{numberAndUnit.unit}}{{/if}}",
             "system": "http://unitsofmeasure.org"
           }
         {{else}}
           {{#with (extractDecimal decodedValue) as |decimal|}}
             {
-              "value": "{{decimal}}",
+              "value": {{decimal}},
               "unit": "{{../../../../quantity.unit}}",
               "system": "http://unitsofmeasure.org"
             }
