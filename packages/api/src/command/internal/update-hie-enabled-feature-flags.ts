@@ -15,6 +15,10 @@ function disableFeatureFlagForCustomer(flag: StringValuesFF, cxId: string) {
   flag.values.filter(id => id !== cxId);
 }
 
+function deduplicateFeatureFlagValues(flag: StringValuesFF) {
+  flag.values = [...new Set(flag.values)];
+}
+
 export async function updateCxHieEnabledFFs({
   cxId,
   cwEnabled,
@@ -48,10 +52,9 @@ export async function updateCxHieEnabledFFs({
   } else if (epicEnabled == false) {
     disableFeatureFlagForCustomer(featureFlags.cxsWithEpicEnabled, cxId);
   }
-  featureFlags.cxsWithCWFeatureFlag.values = [...new Set(featureFlags.cxsWithCWFeatureFlag.values)];
-  featureFlags.cxsWithCQDirectFeatureFlag.values = [
-    ...new Set(featureFlags.cxsWithCQDirectFeatureFlag.values),
-  ];
+  deduplicateFeatureFlagValues(featureFlags.cxsWithCWFeatureFlag);
+  deduplicateFeatureFlagValues(featureFlags.cxsWithCQDirectFeatureFlag);
+  deduplicateFeatureFlagValues(featureFlags.cxsWithEpicEnabled);
   const newFeatureFlags = await createAndDeployConfigurationContent({
     region,
     appId,
@@ -62,7 +65,7 @@ export async function updateCxHieEnabledFFs({
   });
   const currentCwEnabled = newFeatureFlags.cxsWithCWFeatureFlag.values.includes(cxId);
   const currentCqEnabled = newFeatureFlags.cxsWithCQDirectFeatureFlag.values.includes(cxId);
-  const currentEpicEnabled = newFeatureFlags.cxsWithCQDirectFeatureFlag.values.includes(cxId);
+  const currentEpicEnabled = newFeatureFlags.cxsWithEpicEnabled.values.includes(cxId);
   const { log } = out(`Customer ${cxId}`);
   log(
     `New HIE enabled state: CW: ${currentCwEnabled} CQ: ${currentCqEnabled} Epic: ${currentEpicEnabled}`
@@ -70,5 +73,6 @@ export async function updateCxHieEnabledFFs({
   return {
     cxsWithCWFeatureFlag: currentCwEnabled,
     cxsWithCQDirectFeatureFlag: currentCqEnabled,
+    cxsWithEpicEnabled: currentEpicEnabled,
   };
 }
