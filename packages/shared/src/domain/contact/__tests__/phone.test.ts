@@ -1,4 +1,4 @@
-import { isPhoneValid, normalizePhoneNumber } from "../phone";
+import { isPhoneValid, normalizePhoneNumber, normalizeUsPhoneWithPlusOne } from "../phone";
 
 describe("phone", () => {
   describe("isPhoneValid", () => {
@@ -58,11 +58,11 @@ describe("phone", () => {
     });
   });
 
-  describe("normalizePhoneNumber", () => {
-    it("removes non-digits and returns the first 10 digits", () => {
-      const inputPhone = " a0987b65 43-21 ext(012/3) ";
+  describe("normalizeUsPhoneWithPlusOne", () => {
+    it("removes non-digits and returns remaining when no US code", () => {
+      const inputPhone = " a0987b65 43-21 ";
       const expectedPhone = "0987654321";
-      const result = normalizePhoneNumber(inputPhone);
+      const result = normalizeUsPhoneWithPlusOne(inputPhone);
       expect(result).toEqual(expectedPhone);
     });
 
@@ -77,7 +77,7 @@ describe("phone", () => {
       ];
       for (const phone of phonesToCheck) {
         it(`returns original phone w/o format - ${phone}`, () => {
-          const result = normalizePhoneNumber(phone);
+          const result = normalizeUsPhoneWithPlusOne(phone);
           expect(result).toBe(phoneValid);
         });
       }
@@ -87,10 +87,52 @@ describe("phone", () => {
       const phonesWithFewerDigits = ["12345", "123456", "1234567", "12345678", "123456789"];
       for (const phone of phonesWithFewerDigits) {
         it(`returns original value when it gets ${phone} (less than 10 digits)`, () => {
-          const result = normalizePhoneNumber(phone);
+          const result = normalizeUsPhoneWithPlusOne(phone);
           expect(result).toBe(phone);
         });
       }
+    });
+
+    it(`removes country code when it starts with 1 and has 11 digits`, () => {
+      const expectedPhone = "0987654321";
+      const result = normalizeUsPhoneWithPlusOne("1" + expectedPhone);
+      expect(result).toBe(expectedPhone);
+    });
+
+    it(`removes country code when it starts with +1 and has 12 digits`, () => {
+      const expectedPhone = "0987654321";
+      const result = normalizeUsPhoneWithPlusOne("+1" + expectedPhone);
+      expect(result).toBe(expectedPhone);
+    });
+
+    it(`returns original when it starts with diff than 1 and has 11 digits`, () => {
+      const expectedPhone = "20987654321";
+      const result = normalizeUsPhoneWithPlusOne(expectedPhone);
+      expect(result).toBe(expectedPhone);
+    });
+
+    it(`does not remove country code when it starts with 1 and has 10 digits`, () => {
+      const expectedPhone = "1987654321";
+      const result = normalizeUsPhoneWithPlusOne(expectedPhone);
+      expect(result).toBe(expectedPhone);
+    });
+
+    it(`does no remove country code when it starts with 1 and has 12 digits`, () => {
+      const expectedPhone = "120987654321";
+      const result = normalizeUsPhoneWithPlusOne(expectedPhone);
+      expect(result).toBe(expectedPhone);
+    });
+  });
+
+  describe("normalizePhoneNumber", () => {
+    it("calls default param and return its response", () => {
+      const normalizeBase = jest.fn();
+      const inputPhone = " a0987b65 43-21 ext(012/3) ";
+      const outputPhone = "123456";
+      normalizeBase.mockReturnValue(outputPhone);
+      const result = normalizePhoneNumber(inputPhone, normalizeBase);
+      expect(result).toEqual(outputPhone);
+      expect(normalizeBase).toHaveBeenCalledWith(inputPhone);
     });
 
     it(`removes country code when it starts with 1 and has 11 digits`, () => {
@@ -130,14 +172,14 @@ describe("phone", () => {
       }
     });
 
-    it(`returns leftmost digits when does not start with 1 and autofix is true`, () => {
+    it(`returns 10 leftmost digits when does not start with 1 and has more than 10 digits`, () => {
       const result = normalizePhoneNumber("0987654321 ext 999");
       expect(result).toBe("0987654321");
     });
 
-    it(`removes first digit and returns leftmost digits when starts with 1 and autofix is true`, () => {
-      const result = normalizePhoneNumber("1987654321 ext 999");
-      expect(result).toBe("9876543219");
+    it(`removes first digit and returns remaining leftmost digits when starts with 1 and has more than 10 digits`, () => {
+      const result = normalizePhoneNumber("1987654321 ext 555");
+      expect(result).toBe("9876543215");
     });
   });
 });

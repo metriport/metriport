@@ -1,8 +1,8 @@
 import {
   examplePhoneNumber,
   isPhoneValid,
+  normalizeUsPhoneWithPlusOne,
   phoneLength,
-  stripNonNumericChars,
 } from "@metriport/shared";
 import { z } from "zod";
 import { defaultDateString, defaultNameString } from "../../shared";
@@ -51,7 +51,7 @@ export const contactSchema = z
   .object({
     phone: z.coerce
       .string()
-      .transform(stripNonNumericChars)
+      .transform(normalizeUsPhoneWithPlusOne)
       .refine(isPhoneValid, {
         message: `Phone must be a string consisting of ${phoneLength} numbers. For example: ${examplePhoneNumber}`,
       })

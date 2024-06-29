@@ -35,6 +35,8 @@ export const validateLocalPatient = (
     expect(pat.lastName).toEqual(patientToCompare.lastName);
     expect(pat.dob).toEqual(patientToCompare.dob);
     expect(pat.genderAtBirth).toEqual(patientToCompare.genderAtBirth);
+    // TODO validate address
+    // TODO validate contact
   } else {
     expect(pat.firstName).toBeTruthy();
     expect(pat.lastName).toBeTruthy();
