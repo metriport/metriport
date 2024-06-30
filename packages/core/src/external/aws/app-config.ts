@@ -36,8 +36,6 @@ export const stringValueFFsSchema = z.object({
   cxsWithADHDMRFeatureFlag: ffStringValuesSchema,
   cxsWithNoWebhookPongFeatureFlag: ffStringValuesSchema,
   cxsWithIncreasedSandboxLimitFeatureFlag: ffStringValuesSchema,
-  oidsWithIHEGatewayV2Enabled: ffStringValuesSchema,
-  cxsWithIHEGatewayV2Enabled: ffStringValuesSchema,
   cxsWithEpicEnabled: ffStringValuesSchema,
   e2eCxIds: ffStringValuesSchema.nullish(),
 });
