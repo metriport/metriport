@@ -118,8 +118,6 @@ export function createAPIService({
     ? props.config.connectWidgetUrl
     : `https://${props.config.connectWidget.subdomain}.${props.config.connectWidget.domain}/`;
 
-  const iheGateway = props.config.iheGateway;
-
   const coverageEnhancementConfig = props.config.commonwell.coverageEnhancement;
   const dbReadReplicaEndpointAsString = JSON.stringify({
     host: dbReadReplicaEndpoint.hostname,
@@ -182,14 +180,6 @@ export function createAPIService({
           }),
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
           DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
-          ...(iheGateway
-            ? {
-                IHE_GW_URL: `http://${iheGateway.outboundSubdomain}.${props.config.domain}`,
-                IHE_GW_PORT_PD: iheGateway.outboundPorts.patientDiscovery.toString(),
-                IHE_GW_PORT_DQ: iheGateway.outboundPorts.documentQuery.toString(),
-                IHE_GW_PORT_DR: iheGateway.outboundPorts.documentRetrieval.toString(),
-              }
-            : undefined),
           OUTBOUND_PATIENT_DISCOVERY_LAMBDA_NAME: outboundPatientDiscoveryLambda.functionName,
           OUTBOUND_DOC_QUERY_LAMBDA_NAME: outboundDocumentQueryLambda.functionName,
           OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,

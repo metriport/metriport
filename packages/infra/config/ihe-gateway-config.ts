@@ -62,7 +62,6 @@ export type IHEGatewayProps = {
   trustStoreBucketName: string;
   trustStoreKey: string;
   subdomain: string; // Subdomain for IHE integrations
-  outboundSubdomain: string; // Subdomain for Outbound IHE integrations
   /**
    * ID of the existing private hosted zone where the IHE Gateway will be deployed.
    */
@@ -73,11 +72,9 @@ export type IHEGatewayProps = {
   apiBaseAddress: string;
   ecs: {
     inbound: IHEGatewayEcsProps;
-    outbound: IHEGatewayEcsProps;
   };
   java: {
     inbound: IHEGatewayJavaProps;
-    outbound: IHEGatewayJavaProps;
   };
   rds: {
     dbName: string;
@@ -117,11 +114,6 @@ export type IHEGatewayProps = {
     alarmThresholds?: RDSAlarmThresholds;
   };
   inboundPorts: {
-    patientDiscovery: number;
-    documentQuery: number;
-    documentRetrieval: number;
-  };
-  outboundPorts: {
     patientDiscovery: number;
     documentQuery: number;
     documentRetrieval: number;

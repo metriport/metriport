@@ -15,7 +15,6 @@ import {
 import { buildXcpdGateway, cqOrgsToXCPDGateways } from "../organization-conversion";
 
 type Gateways = {
-  v1Gateways: XCPDGateway[];
   v2Gateways: XCPDGateway[];
 };
 
@@ -50,10 +49,9 @@ export async function gatherXCPDGateways(patient: Patient): Promise<Gateways> {
   const filteredOrgs = facilitiesWithEpicFilter(allOrgs, isEpicEnabled);
   const allOrgsWithBasics = filteredOrgs.map(toBasicOrgAttributes);
   const orgsToSearch = filterCQOrgsToSearch(allOrgsWithBasics);
-  const { v1Gateways, v2Gateways } = await cqOrgsToXCPDGateways(orgsToSearch, patient.cxId);
+  const { v2Gateways } = await cqOrgsToXCPDGateways(orgsToSearch);
 
   return {
-    v1Gateways,
     v2Gateways,
   };
 }
@@ -81,7 +79,6 @@ async function getE2eGateways(): Promise<Gateways> {
     id: e2eCqDirectoryEntry.id,
   });
   return {
-    v1Gateways: [],
     v2Gateways: [e2eXcpdGateway],
   };
 }
