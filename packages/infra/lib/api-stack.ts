@@ -1215,6 +1215,7 @@ export class APIStack extends Stack {
       layers: [lambdaLayers.shared, lambdaLayers.chromium],
       memory: 4096,
       timeout: lambdaTimeout,
+      isEnableInsights: true,
       vpc,
       alarmSnsAction: alarmAction,
     });
