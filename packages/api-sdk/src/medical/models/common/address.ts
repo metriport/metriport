@@ -1,6 +1,7 @@
+import { stripNonNumericChars } from "@metriport/shared";
 import { z } from "zod";
+import { defaultOptionalString, defaultString } from "../../../shared";
 import { usStateSchema } from "./us-data";
-import { defaultOptionalString, defaultString, stripNonNumericChars } from "../../../shared";
 
 const zipLength = 5;
 

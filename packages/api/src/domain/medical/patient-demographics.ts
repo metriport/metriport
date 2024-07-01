@@ -1,24 +1,25 @@
+import { Address } from "@metriport/core/domain/address";
+import { Contact } from "@metriport/core/domain/contact";
+import { USState } from "@metriport/core/domain/geographic-locations";
 import {
-  Patient,
-  splitName,
-  splitDob,
   ConsolidatedLinkDemographics,
+  Patient,
+  splitDob,
+  splitName,
 } from "@metriport/core/domain/patient";
 import {
+  LinkDateOfBirth,
   LinkDemographics,
   LinkDemographicsComparison,
-  LinkDateOfBirth,
   LinkGender,
   LinkGenericAddress,
-  LinkGenericName,
   LinkGenericDriversLicense,
+  LinkGenericName,
 } from "@metriport/core/domain/patient-demographics";
-import { Address } from "@metriport/core/domain/address";
-import { Contact, stripNonNumericChars } from "@metriport/core/domain/contact";
-import { USState } from "@metriport/core/domain/geographic-locations";
 import { mapGenderAtBirthToFhir } from "@metriport/core/external/fhir/patient/index";
-import { ISO_DATE } from "../../shared/date";
+import { normalizePhoneNumber, stripNonNumericChars } from "@metriport/shared";
 import dayjs from "dayjs";
+import { ISO_DATE } from "../../shared/date";
 
 /**
  * Evaluates whether the input linked demographics are similar enough to the Patient to be considered a usable "match".
@@ -303,8 +304,11 @@ export function stringifyAddress(normalizedAddress: LinkGenericAddress): string 
   return JSON.stringify(normalizedAddress, Object.keys(normalizedAddress).sort());
 }
 
+/**
+ * @deprecated use `normalizePhoneNumber` from `@metriport/shared` instead.
+ */
 export function normalizeTelephone(telephone: string): string {
-  return stripNonNumericChars(telephone).slice(-10);
+  return normalizePhoneNumber(telephone);
 }
 
 export function normalizeEmail(email: string): string {
