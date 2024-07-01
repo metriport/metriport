@@ -12,7 +12,7 @@ function enableFeatureFlagForCustomer(flag: StringValuesFF, cxId: string) {
 }
 
 function disableFeatureFlagForCustomer(flag: StringValuesFF, cxId: string) {
-  flag.values.filter(id => id !== cxId);
+  flag.values = flag.values.filter(id => id !== cxId);
 }
 
 function deduplicateFeatureFlagValues(flag: StringValuesFF) {

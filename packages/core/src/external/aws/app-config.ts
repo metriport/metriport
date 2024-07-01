@@ -150,7 +150,7 @@ export async function createAndDeployConfigurationContent({
     ApplicationId: appId,
     ConfigurationProfileId: configId,
     Description: `PROGRAMMATICALLY GENERATED VERSION BY ${clientId}`,
-    Content: new Blob([JSON.stringify(newContent)], { type: "application/json" }),
+    Content: Buffer.from(JSON.stringify(newContent), "utf8"),
     ContentType: "application/json",
   };
   const createConfigurationRsp = await appConfig
