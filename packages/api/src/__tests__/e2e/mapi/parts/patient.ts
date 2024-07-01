@@ -11,7 +11,7 @@ export const createPatient: PatientCreate = {
   dob: "1900-01-01",
   genderAtBirth: "M",
   contact: {
-    phone: faker.phone.number(),
+    phone: faker.phone.number("+1 ###-###-####"),
     email: faker.internet.email(),
   },
   address: {
