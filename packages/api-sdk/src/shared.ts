@@ -12,10 +12,6 @@ export const emptyStringToUndefined = (v: string | undefined | null) =>
 export const optionalString = (zodSchema: ZodString) =>
   zodSchema.or(z.string().optional()).transform(emptyStringToUndefined);
 
-export function stripNonNumericChars(str: string): string {
-  return str.trim().replace(/\D/g, "");
-}
-
 export const ISO_DATE = "YYYY-MM-DD";
 export const defaultString = z.string().trim();
 export const defaultOptionalString = optionalString(defaultString);

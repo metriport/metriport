@@ -19,6 +19,8 @@ export const extensionValue2014 = "2014-06-09";
 export const extensionValue2015 = "2015-08-01";
 export const loincCodeSystem = "2.16.840.1.113883.6.1";
 export const loincSystemName = "LOINC";
+export const snomedCodeSystem = "2.16.840.1.113883.6.96";
+export const snomedSystemName = "SNOMED CT";
 export const placeholderOrgOid = "placeholder-ORG-OID";
 export const NOT_SPECIFIED = "Not Specified";
 
@@ -31,6 +33,7 @@ export const oids = {
   socialHistorySection: "2.16.840.1.113883.10.20.22.2.17",
   encountersSection: "2.16.840.1.113883.10.20.22.2.22",
   immunizationsSection: "2.16.840.1.113883.10.20.22.2.2.1",
+  familyHistorySection: "2.16.840.1.113883.10.20.22.2.15",
   allergiesSection: "2.16.840.1.113883.10.20.22.2.6.1",
   problemConcernAct: "2.16.840.1.113883.10.20.22.4.3",
   socialHistoryObs: "2.16.840.1.113883.10.20.22.4.38",
@@ -40,6 +43,8 @@ export const oids = {
   mentalStatusObs: "2.16.840.1.113883.10.20.22.4.74",
   problemObs: "2.16.840.1.113883.10.20.22.4.4",
   resultOrganizer: "2.16.840.1.113883.10.20.22.4.1",
+  familyHistoryOrganizer: "2.16.840.1.113883.10.20.22.4.45",
+  familyHistoryObservation: "2.16.840.1.113883.10.20.22.4.46",
   medicationInformation: "2.16.840.1.113883.10.20.22.4.23",
   resultObs: "2.16.840.1.113883.10.20.22.4.2",
   allergyConcernAct: "2.16.840.1.113883.10.20.22.4.30",

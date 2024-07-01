@@ -1,11 +1,12 @@
 import {
   CopyObjectCommand,
   DeleteObjectCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl as getPresignedUrl } from "@aws-sdk/s3-request-presigner";
-import { emptyFunction, executeWithRetries, ExecuteWithRetriesOptions } from "@metriport/shared";
+import { ExecuteWithRetriesOptions, emptyFunction, executeWithRetries } from "@metriport/shared";
 import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -48,6 +49,11 @@ async function executeWithRetriesS3<T>(
 export function makeS3Client(region: string): AWS.S3 {
   return new AWS.S3({ signatureVersion: "v4", region });
 }
+
+type FileExistsFilter = {
+  path: string;
+  targetString: string;
+};
 
 /**
  * @deprecated Use `S3Utils.getSignedUrl()` instead
@@ -150,6 +156,47 @@ export class S3Utils {
     } catch (err) {
       return { exists: false };
     }
+  }
+
+  async fileExists(bucket: string, key: string): Promise<boolean>;
+  async fileExists(bucket: string, filters: FileExistsFilter): Promise<boolean>;
+  async fileExists(bucket: string, keyOrFilters: string | FileExistsFilter): Promise<boolean> {
+    if (typeof keyOrFilters === "string") {
+      const fileInfo = await this.getFileInfoFromS3(keyOrFilters, bucket);
+      return fileInfo.exists;
+    }
+    return this.filesWithPathExist({
+      bucket,
+      ...keyOrFilters,
+    });
+  }
+
+  private async filesWithPathExist({
+    bucket,
+    path,
+    targetString,
+  }: {
+    bucket: string;
+    path: string;
+    targetString?: string | undefined;
+  }): Promise<boolean> {
+    const data = await executeWithRetriesS3(() =>
+      this._s3Client.send(
+        new ListObjectsV2Command({
+          Bucket: bucket,
+          Prefix: path,
+        })
+      )
+    );
+    const bucketContents = data.Contents;
+    if (!bucketContents) return false;
+
+    for (const file of bucketContents) {
+      if (targetString && file.Key?.includes(targetString)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   async getSignedUrl({

@@ -1,16 +1,30 @@
 import { Bundle } from "@medplum/fhirtypes";
+import { FHIR_BUNDLE_SUFFIX, createUploadFilePath } from "@metriport/core/domain/document/upload";
 import { Patient } from "@metriport/core/domain/patient";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { getConsolidatedPatientData } from "../../command/medical/patient/consolidated-get";
 import { convertFhirToCda } from "../../command/medical/patient/convert-fhir-to-cda";
 import { bundleSchema } from "../../routes/medical/schemas/fhir";
+import { Config } from "../../shared/config";
 import { toFHIR as toFhirOrganization } from "../fhir/organization";
 import { validateFhirEntries } from "../fhir/shared/json-validator";
 import { generateEmptyCcd } from "./generate-empty-ccd";
 
+const region = Config.getAWSRegion();
+const bucket = Config.getMedicalDocumentsBucketName();
+const s3Utils = new S3Utils(region);
+
 export async function generateCcd(patient: Patient): Promise<string> {
-  // TODO: 1905 - check on s3 whether FHIR_BUNDLE.json files exist
+  const uploadsExist = await s3Utils.fileExists(bucket, {
+    targetString: FHIR_BUNDLE_SUFFIX,
+    path: createUploadFilePath(patient.cxId, patient.id, ""),
+  });
+  if (!uploadsExist) {
+    return generateEmptyCcd(patient);
+  }
+
   const allResources = await getConsolidatedPatientData({ patient });
   const metriportGenerated = allResources.entry?.filter(entry => {
     const resource = entry.resource;

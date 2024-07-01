@@ -35,3 +35,16 @@ export type LinkDemographicsComparison = Partial<LinkDemographics>;
 export type LinkDemographicsHistory = {
   [key: string]: LinkDemographics[];
 };
+
+export type GenderAtBirth = "M" | "F" | "UK";
+
+export function normalizeGender(gender: string | undefined): GenderAtBirth {
+  switch (gender?.toLowerCase().trim()) {
+    case "male" || "m":
+      return "M";
+    case "female" || "f":
+      return "F";
+    default:
+      return "UK";
+  }
+}

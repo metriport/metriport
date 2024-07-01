@@ -48,7 +48,7 @@ export function makeCwDataLink(): CwLink {
         telecom: [
           {
             system: "phone",
-            value: faker.phone.number(),
+            value: faker.phone.number("##########"),
           },
           {
             system: "email",

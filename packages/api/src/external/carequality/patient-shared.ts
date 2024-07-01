@@ -10,7 +10,11 @@ export class PatientDataCarequality extends PatientExternalDataEntry {
     /**
      * The request ID for the document query triggered while the patient discovery was processing.
      */
-    public scheduledDocQueryRequestId?: string | undefined
+    public scheduledDocQueryRequestId?: string | undefined,
+    /**
+     * The start time for document retrieval.
+     */
+    public documentRetrievalStartTime?: Date | undefined
   ) {
     super();
   }
