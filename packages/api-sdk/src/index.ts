@@ -24,6 +24,7 @@ export { BaseUpdate, baseUpdateSchema } from "./medical/models/common/base-updat
 export { MedicalDataSource } from "./medical/models/common/medical-data-source";
 export { USState, usStateSchema } from "./medical/models/common/us-data";
 export {
+  Contact,
   contactSchema,
   Demographics,
   demographicsSchema,
