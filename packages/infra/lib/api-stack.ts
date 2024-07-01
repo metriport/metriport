@@ -416,6 +416,7 @@ export class APIStack extends Stack {
       outboundPatientDiscoveryLambda,
       outboundDocumentQueryLambda,
       outboundDocumentRetrievalLambda,
+      generalBucket,
       medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
       fhirToCdaConverterLambda,
