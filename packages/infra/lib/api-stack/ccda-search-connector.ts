@@ -30,7 +30,6 @@ export function settings(): {
   sqs: {
     maxReceiveCount: number;
     visibilityTimeout: Duration;
-    delayWhenRetrying: Duration;
   };
 } {
   // TODO 1050 once this works well in staging, we can attempt a smaller/cheaper setup for it, but first validate
@@ -73,7 +72,6 @@ export function settings(): {
       // How long messages should be invisible for other consumers, based on the lambda timeout
       // We don't care if the message gets reprocessed, so no need to have a huge visibility timeout that makes it harder to move messages to the DLQ
       visibilityTimeout: Duration.seconds(timeout.toSeconds() * 2 + 1),
-      delayWhenRetrying: Duration.seconds(10),
     },
   };
 }
@@ -107,7 +105,7 @@ export function setup({
     connectorName,
     openSearch: openSearchConfig,
     lambda: { memory, timeout, batchSize, maxConcurrency },
-    sqs: { maxReceiveCount, visibilityTimeout, delayWhenRetrying },
+    sqs: { maxReceiveCount, visibilityTimeout },
   } = settings();
 
   const openSearch = new OpenSearchConstruct(stack, connectorName, {
@@ -147,10 +145,7 @@ export function setup({
     envType: config.environmentType,
     envVars: {
       METRICS_NAMESPACE,
-      DELAY_WHEN_RETRY_SECONDS: delayWhenRetrying.toSeconds().toString(),
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
-      QUEUE_URL: queue.queueUrl,
-      DLQ_URL: dlq.queue.queueUrl,
       SEARCH_HOST: openSearch.domain.domainEndpoint,
       SEARCH_USER: openSearch.creds.username,
       SEARCH_SECRET_NAME: openSearch.creds.secret.secretName,

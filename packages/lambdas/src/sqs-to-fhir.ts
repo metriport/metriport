@@ -1,9 +1,12 @@
 import { MedplumClient } from "@medplum/core";
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
-import { executeWithNetworkRetries, executeWithRetries } from "@metriport/shared";
-import * as Sentry from "@sentry/serverless";
+import {
+  errorToString,
+  executeWithNetworkRetries,
+  executeWithRetries,
+  MetriportError,
+} from "@metriport/shared";
 import { uuid4 } from "@sentry/utils";
 import { SQSEvent } from "aws-lambda";
 import fetch from "node-fetch";
@@ -12,7 +15,6 @@ import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnvOrFail, isSandbox } from "./shared/env";
 import { Log, prefixedLog } from "./shared/log";
 import { apiClient } from "./shared/oss-api";
-// import { SQSUtils } from "./shared/sqs";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -23,10 +25,6 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const apiURL = getEnvOrFail("API_URL");
-// const maxTimeoutRetries = Number(getEnvOrFail("MAX_TIMEOUT_RETRIES"));
-// const delayWhenRetryingSeconds = Number(getEnvOrFail("DELAY_WHEN_RETRY_SECONDS"));
-// const sourceQueueURL = getEnvOrFail("QUEUE_URL");
-// const dlqURL = getEnvOrFail("DLQ_URL");
 const fhirServerUrl = getEnvOrFail("FHIR_SERVER_URL");
 
 const sourceUrl = "https://api.metriport.com/cda/to/fhir";
@@ -36,7 +34,6 @@ const defaultS3RetriesConfig = {
   initialDelay: 500,
 };
 
-// const sqsUtils = new SQSUtils(region, sourceQueueURL, dlqURL, delayWhenRetryingSeconds);
 const s3Utils = new S3Utils(region);
 const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace);
 const placeholderReplaceRegex = new RegExp("66666666-6666-6666-6666-666666666666", "g");
@@ -76,7 +73,8 @@ type EventBody = {
   s3FileName: string;
 };
 
-export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
+// Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
+export async function handler(event: SQSEvent) {
   try {
     // Process messages from SQS
     const records = event.Records;
@@ -111,7 +109,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
       const log = prefixedLog(`${i}, patient ${patientId}, job ${jobId}`);
       const lambdaParams = { cxId, patientId, jobId, source };
 
-      // try {
       log(`Body: ${message.body}`);
       const { s3BucketName, s3FileName } = parseBody(message.body);
       const metrics: Metrics = {};
@@ -196,60 +193,24 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
 
       await cloudWatchUtils.reportMetrics(metrics);
       await ossApi.notifyApi({ ...lambdaParams, status: "success" }, log);
-      // } catch (error) {
-      //   // If it timed-out let's just reenqueue for future processing - NOTE: the destination MUST be idempotent!
-      //   const count = message.attributes?.ApproximateReceiveCount
-      //     ? Number(message.attributes?.ApproximateReceiveCount)
-      //     : undefined;
-      //   const isWithinRetryRange = count == null || count <= maxTimeoutRetries;
-      //   const isRetryError = axios.isAxiosError(error)
-      //     ? isAxiosTimeout(error) || isAxiosBadGateway(error)
-      //     : false;
-      //   const networkErrorDetails = getNetworkErrorDetails(error);
-      //   const { details, code, status } = networkErrorDetails;
-      //   if (!(error instanceof MetriportError) && isRetryError && isWithinRetryRange) {
-      //     console.log(
-      //       `Timed out (${code}/${status}), reenqueue (${count} of ` +
-      //         `${maxTimeoutRetries}), lambdaParams ${lambdaParams}`
-      //     );
-      //     capture.message("Sending to FHIR server timed out, retrying", {
-      //       extra: { message, ...lambdaParams, context: lambdaName, retryCount: count },
-      //       level: "info",
-      //     });
-      //     await sqsUtils.reEnqueue(message);
-      //   } else {
-      //     const msg = "Error processing message on " + lambdaName;
-      //     console.log(
-      //       `${msg} - lambdaParams: ${lambdaParams} - ` +
-      //         `error: ${JSON.stringify(networkErrorDetails)}`
-      //     );
-      //     capture.error(msg, {
-      //       extra: { message, ...lambdaParams, context: lambdaName, networkErrorDetails, error },
-      //     });
-      //     await sqsUtils.sendToDLQ(message);
-
-      //     await ossApi.notifyApi({ ...lambdaParams, status: "failed", details }, log);
-      //   }
-      // }
     }
     console.log(`Done`);
   } catch (error) {
     const msg = "Error processing event on " + lambdaName;
-    console.log(`${msg}: ${JSON.stringify(event)}; ${error}`);
+    console.log(`${msg}: ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         event,
         context: lambdaName,
-        additional: "outer catch",
         error,
         notes:
           "This means the API was not notified about the failure, the patient's doc query is " +
           "likely not to get completed - it might need manual intervention",
       },
     });
-    throw error;
+    throw new MetriportError(msg, error);
   }
-});
+}
 
 function parseBody(body: unknown): EventBody {
   const bodyString = typeof body === "string" ? (body as string) : undefined;
