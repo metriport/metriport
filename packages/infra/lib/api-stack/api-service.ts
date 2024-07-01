@@ -93,6 +93,8 @@ export function createAPIService({
   appConfigEnvVars: {
     appId: string;
     configId: string;
+    envId: string;
+    deploymentStrategyId: string;
   };
   cookieStore: secret.ISecret | undefined;
 }): {
@@ -226,6 +228,8 @@ export function createAPIService({
           // app config
           APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
           APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
+          APPCONFIG_ENVIRONMENT_ID: appConfigEnvVars.envId,
+          APPCONFIG_DEPLOYMENT_STRATEGY_ID: appConfigEnvVars.deploymentStrategyId,
           ...(coverageEnhancementConfig && {
             CW_MANAGEMENT_URL: coverageEnhancementConfig.managementUrl,
           }),
