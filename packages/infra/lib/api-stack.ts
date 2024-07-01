@@ -330,7 +330,7 @@ export class APIStack extends Stack {
     if (!isSandbox(props.config)) {
       fhirConverter = createFHIRConverterService(
         this,
-        props,
+        { ...props, generalBucket },
         this.vpc,
         slackNotification?.alarmAction
       );
