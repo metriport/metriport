@@ -153,10 +153,12 @@ export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
     count = MAX_COUNT,
     start = 0,
     oid,
+    isActive = true,
   }: {
     count?: number;
     start?: number;
     oid?: string;
+    isActive?: boolean;
   }): Promise<Organization[]> {
     if (count < 1 || count > MAX_COUNT)
       throw new Error(`Count value must be between 1 and ${MAX_COUNT}`);
@@ -165,6 +167,7 @@ export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
     query.append("_format", JSON_FORMAT);
     query.append("_count", count.toString());
     query.append("_start", start.toString());
+    if (!isActive) query.append("_active", isActive.toString());
     oid && query.append("_id", oid);
     const queryString = query.toString();
 

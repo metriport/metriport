@@ -115,7 +115,8 @@ router.get(
     const cq = makeCarequalityManagementAPI();
     if (!cq) throw new Error("Carequality API not initialized");
     const oid = getFrom("params").orFail("oid", req);
-    const resp = await cq.listOrganizations({ count: 1, oid });
+    const isActive = getFromQueryAsBoolean("isActive", req);
+    const resp = await cq.listOrganizations({ count: 1, oid, isActive });
     const org = parseCQDirectoryEntries(resp);
 
     if (org.length > 1) {
