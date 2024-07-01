@@ -49,7 +49,7 @@ const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 const cxId = getEnvVarOrFail("CX_ID");
 const delayTime = dayjs.duration(30, "seconds").asMilliseconds(); // Let's keep this 10+ seconds while we're using IHE GW v1
-const inputFileName = "care-advisors-bulk-insert-patients.csv";
+const inputFileName = "bulk-insert-patients.csv";
 const ISO_DATE = "YYYY-MM-DD";
 const confirmationTime = dayjs.duration(10, "seconds");
 
