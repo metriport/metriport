@@ -28,7 +28,7 @@ async function main() {
     cqDirectory = JSON.parse(fs.readFileSync("./runs/cq-directory.json", "utf8"));
   } else {
     const sqlCQDirectory = `SELECT * FROM cq_directory_entry`;
-    const cqDirectory = await readOnlyDBPool.query(sqlCQDirectory, {
+    cqDirectory = await readOnlyDBPool.query(sqlCQDirectory, {
       type: QueryTypes.SELECT,
     });
 
@@ -37,7 +37,7 @@ async function main() {
 
   console.log("cqDirectory:", cqDirectory.length);
 
-  const previousMonth = dayjs().subtract(2, "month");
+  const previousMonth = dayjs().subtract(1, "month");
   const previousMonthYear = previousMonth.year();
   const daysInPreviousMonth = previousMonth.daysInMonth();
   const endOfPreviousMonth = previousMonth.endOf("month").format("YYYY-MM-DD");
