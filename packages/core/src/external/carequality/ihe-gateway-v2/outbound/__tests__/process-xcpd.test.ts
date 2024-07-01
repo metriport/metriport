@@ -39,6 +39,7 @@ describe("processXCPDResponse", () => {
     expect(response).toEqual({
       ...expectedXcpdResponse,
       responseTimestamp: expect.any(String),
+      requestTimestamp: expect.any(String),
     });
   });
   it("should process the match XCPD response with multiple addresses and patient names correctly", async () => {
@@ -54,6 +55,7 @@ describe("processXCPDResponse", () => {
     expect(response).toEqual({
       ...expectedMultiNameAddressResponse,
       responseTimestamp: expect.any(String),
+      requestTimestamp: expect.any(String),
     });
   });
 

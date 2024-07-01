@@ -1,6 +1,3 @@
-import * as dotenv from "dotenv";
-dotenv.config();
-// Keep dotenv import and config before everything else
 import { getEnvVarOrFail } from "@metriport/shared";
 import Axios from "axios";
 import { customAlphabet } from "nanoid";
@@ -16,3 +13,5 @@ export const api = Axios.create({
   baseURL,
   headers: { "x-api-key": testApiKey, "Content-Type": "application/json" },
 });
+
+export const e2eResultsFolderName = "e2e-test-results";

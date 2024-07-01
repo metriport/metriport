@@ -1,10 +1,12 @@
+import { AxiosError } from "axios";
+
 /**
  * Axios specific. Checks if the error is a timeout or related error.
  *
  * @param err instance of AxiosError
  * @returns boolean indicating whether the error can be considered a timeout error
  */
-export function isAxiosTimeout(err: { code: string; response?: { status: number } }): boolean {
+export function isAxiosTimeout(err: AxiosError): boolean {
   return (
     err.code === "ETIMEDOUT" ||
     err.code === "ERR_BAD_RESPONSE" || // Axios code for 502
@@ -21,7 +23,7 @@ export function isAxiosTimeout(err: { code: string; response?: { status: number 
  * @param err instance of AxiosError
  * @returns boolean indicating whether the error can be considered a bad gateway error
  */
-export function isAxiosBadGateway(err: { code: string; response?: { status: number } }): boolean {
+export function isAxiosBadGateway(err: AxiosError): boolean {
   return (
     err.code === "ERR_BAD_RESPONSE" || // Axios code for 502
     err.response?.status === 502

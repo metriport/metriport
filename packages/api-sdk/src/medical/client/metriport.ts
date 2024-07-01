@@ -1,4 +1,10 @@
 import { Bundle, DocumentReference as FHIRDocumentReference, Resource } from "@medplum/fhirtypes";
+import {
+  WebhookRequest,
+  WebhookRequestParsingFailure,
+  webhookRequestSchema,
+  WebhookStatusResponse,
+} from "@metriport/shared/medical";
 import axios, { AxiosInstance, AxiosStatic, CreateAxiosDefaults } from "axios";
 import crypto from "crypto";
 import status from "http-status";
@@ -10,6 +16,7 @@ import {
   optionalDateToISOString,
 } from "../../shared";
 import { getETagHeader } from "../models/common/base-update";
+import { Demographics } from "../models/demographics";
 import {
   BulkGetDocumentUrlQuery,
   bulkGetDocumentUrlQuerySchema,
@@ -25,13 +32,13 @@ import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "..
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
 import { Organization, OrganizationCreate, organizationSchema } from "../models/organization";
 import {
+  GetConsolidatedQueryProgressResponse,
   PatientCreate,
   PatientUpdate,
   StartConsolidatedQueryProgressResponse,
-  GetConsolidatedQueryProgressResponse,
 } from "../models/patient";
-import { Demographics } from "../models/demographics";
 import { PatientDTO } from "../models/patientDTO";
+import { SettingsResponse } from "../models/settings-response";
 
 const NO_DATA_MESSAGE = "No data returned from API";
 const BASE_PATH = "/medical/v1";
@@ -39,6 +46,7 @@ const ORGANIZATION_URL = `/organization`;
 const FACILITY_URL = `/facility`;
 const PATIENT_URL = `/patient`;
 const DOCUMENT_URL = `/document`;
+const REQUEST_ID_HEADER_NAME = "x-metriport-request-id";
 
 export type Options = {
   axios?: AxiosStatic; // Set axios if it fails to load
@@ -56,7 +64,13 @@ export type Options = {
 );
 
 export class MetriportMedicalApi {
+  // TODO this should be private
   readonly api: AxiosInstance;
+  private _lastRequestId: string | undefined;
+
+  private optionsForSettingsEndpoints = {
+    baseURL: "/",
+  };
 
   static readonly headers = {
     clientApp: "x-metriport-client",
@@ -77,13 +91,15 @@ export class MetriportMedicalApi {
     const headers = { [API_KEY_HEADER]: apiKey, ...options.additionalHeaders };
     const { sandbox, timeout } = options;
 
-    const baseURL =
-      (options.baseAddress || (sandbox ? BASE_ADDRESS_SANDBOX : BASE_ADDRESS)) + BASE_PATH;
+    const baseHostAndProtocol =
+      options.baseAddress ?? (sandbox ? BASE_ADDRESS_SANDBOX : BASE_ADDRESS);
+    const baseURL = baseHostAndProtocol + BASE_PATH;
     const axiosConfig: CreateAxiosDefaults = {
       timeout: timeout ?? DEFAULT_AXIOS_TIMEOUT_MILLIS,
       baseURL,
       headers,
     };
+    this.optionsForSettingsEndpoints.baseURL = baseHostAndProtocol;
 
     if (axios) {
       this.api = axios.create(axiosConfig);
@@ -95,9 +111,66 @@ export class MetriportMedicalApi {
   }
 
   /**
-   * Creates a new organization.
+   * The ID from the last request made to the API.
+   */
+  get lastRequestId(): string | undefined {
+    return this._lastRequestId;
+  }
+
+  /**
+   * Gets the settings for your account.
+   *
+   * @returns Your account settings.
+   */
+  async getSettings(): Promise<SettingsResponse> {
+    const resp = await this.api.get<SettingsResponse>("/settings", {
+      ...this.optionsForSettingsEndpoints,
+    });
+    return resp.data;
+  }
+
+  /**
+   * Update the settings for your account.
+   *
+   * @returns Your updated account settings.
+   */
+  async updateSettings(webhookUrl: string): Promise<SettingsResponse> {
+    const resp = await this.api.post<SettingsResponse>(
+      "/settings",
+      { webhookUrl },
+      { ...this.optionsForSettingsEndpoints }
+    );
+    return resp.data;
+  }
+
+  /**
+   * Gets the status of communication with your app's webhook.
+   *
+   * @returns The status of communication with your app's webhook.
+   */
+  async getWebhookStatus(): Promise<WebhookStatusResponse> {
+    const resp = await this.api.get<WebhookStatusResponse>("/settings/webhook", {
+      ...this.optionsForSettingsEndpoints,
+    });
+    return resp.data;
+  }
+
+  /**
+   * Retries failed webhook requests.
+   *
+   * @returns void
+   */
+  async retryWebhookRequests(): Promise<void> {
+    await this.api.post("/settings/webhook/retry", undefined, {
+      ...this.optionsForSettingsEndpoints,
+    });
+  }
+
+  /**
+   * Creates a new organization if one does not already exist.
    *
    * @param data The data to be used to create a new organization.
+   * @throws Error (400) if an organization already exists for the customer.
    * @returns The created organization.
    */
   async createOrganization(data: OrganizationCreate): Promise<Organization> {
@@ -351,7 +424,7 @@ export class MetriportMedicalApi {
    */
   async createPatientConsolidated(patientId: string, payload: Bundle): Promise<Bundle<Resource>> {
     const resp = await this.api.put(`${PATIENT_URL}/${patientId}/consolidated`, payload);
-
+    this._lastRequestId = resp.headers[REQUEST_ID_HEADER_NAME];
     return resp.data;
   }
 
@@ -604,12 +677,63 @@ export class MetriportMedicalApi {
    *
    * @returns True if the signature is verified, false otherwise.
    */
-  verifyWebhookSignature = (wh_key: string, reqBody: string, signature: string): boolean => {
+  verifyWebhookSignature(wh_key: string, reqBody: string, signature: string): boolean {
+    return MetriportMedicalApi.verifyWebhookSignature(wh_key, reqBody, signature);
+  }
+
+  /**
+   * Verifies the signature of a webhook request.
+   * Refer to Metriport's documentation for more details: https://docs.metriport.com/medical-api/more-info/webhooks.
+   *
+   * @param wh_key - your webhook key.
+   * @param req.body - the body of the webhook request.
+   * @param signature - the signature obtained from the webhook request header.
+   *
+   * @returns True if the signature is verified, false otherwise.
+   */
+  static verifyWebhookSignature(wh_key: string, reqBody: string, signature: string): boolean {
     const signatureAsString = String(signature);
     const receivedHash = crypto
       .createHmac("sha256", wh_key)
       .update(JSON.stringify(reqBody))
       .digest("hex");
     return receivedHash === signatureAsString;
-  };
+  }
+
+  /**
+   * Parses a webhook request received from the Metriport API and return an object of type
+   * 'WebhookRequest'.
+   * Note: currently, the type of the 'bundle' property is 'any', but it can be safely casted to
+   * FHIR's 'Bundle<Resource> | undefined'.
+   *
+   * @param requestBody The request body received from the Metriport API.
+   * @param throwOnError Whether to throw an Error if the request body is not a valid webhook request.
+   *        Optional, defaults to true.
+   * @returns The webhook request - instance of WebhookRequest, or an instance of
+   *          WebhookRequestParsingError if the payload is invalid and throwOnError is 'true'.
+   * @throws Error if the request body is not a valid webhook request and throwOnError is 'true'.
+   *         Details can be obtained from the error object under the 'cause' property (instance
+   *         of ZodError).
+   */
+  static parseWebhookResponse(
+    requestBody: unknown,
+    throwOnError: false
+  ): WebhookRequest | WebhookRequestParsingFailure;
+  static parseWebhookResponse(reqBody: unknown, throwOnError: true): WebhookRequest;
+  static parseWebhookResponse(reqBody: unknown): WebhookRequest;
+  static parseWebhookResponse(
+    reqBody: unknown,
+    throwOnError = true
+  ): WebhookRequest | WebhookRequestParsingFailure {
+    if (throwOnError) {
+      try {
+        return webhookRequestSchema.parse(reqBody);
+      } catch (error) {
+        throw new Error(`Failed to parse webhook request`, { cause: error });
+      }
+    }
+    const parse = webhookRequestSchema.safeParse(reqBody);
+    if (parse.success) return parse.data;
+    return new WebhookRequestParsingFailure(parse.error, parse.error.format());
+  }
 }

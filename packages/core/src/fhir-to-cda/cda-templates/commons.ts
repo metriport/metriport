@@ -1,27 +1,35 @@
 import {
   Address,
+  Annotation,
   CodeableConcept,
   Coding,
   ContactPoint,
   Identifier,
+  Location,
   Organization,
+  Practitioner,
 } from "@medplum/fhirtypes";
-import { normalizeOid } from "@metriport/shared";
+import { normalizeOid, toArray } from "@metriport/shared";
 import dayjs from "dayjs";
 import localizedFormat from "dayjs/plugin/localizedFormat";
 import utc from "dayjs/plugin/utc";
 import {
-  CDAOriginalText,
+  AssignedEntity,
   CdaAddress,
+  CdaAddressUse,
   CdaCodeCe,
   CdaCodeCv,
+  CdaGender,
   CdaInstanceIdentifier,
   CdaOrganization,
+  CdaOriginalText,
   CdaTelecom,
+  CdaTelecomUse,
   CdaValueCd,
   CdaValueSt,
   Entry,
   EntryObject,
+  Participant,
 } from "../cda-types/shared-types";
 import {
   NOT_SPECIFIED,
@@ -29,11 +37,15 @@ import {
   _xsiTypeAttribute,
   amaAssnSystemCode,
   fdasisSystemCode,
+  hl7ActCode,
   icd10SystemCode,
   loincSystemCode,
   nlmNihSystemCode,
+  oids,
   placeholderOrgOid,
+  providerTaxonomy,
   snomedSystemCode,
+  vaccineAdministeredCodeSet,
 } from "./constants";
 
 dayjs.extend(localizedFormat);
@@ -45,6 +57,10 @@ CODING_MAP.set("http://snomed.info/sct", snomedSystemCode);
 CODING_MAP.set("http://www.nlm.nih.gov/research/umls/rxnorm", nlmNihSystemCode);
 CODING_MAP.set("http://www.ama-assn.org/go/cpt", amaAssnSystemCode);
 CODING_MAP.set("http://fdasis.nlm.nih.gov", fdasisSystemCode);
+CODING_MAP.set("http://terminology.hl7.org/codesystem/v3-actcode", hl7ActCode);
+CODING_MAP.set("http://nucc.org/provider-taxonomy", providerTaxonomy);
+CODING_MAP.set("http://hl7.org/fhir/sid/cvx", vaccineAdministeredCodeSet);
+
 CODING_MAP.set("icd-10", icd10SystemCode);
 
 export const TIMESTAMP_CLEANUP_REGEX = /-|T|:|\.\d+Z$/g;
@@ -63,9 +79,11 @@ export function withNullFlavor(value: string | undefined, key: string): Entry {
   return { [key]: value };
 }
 
-export function buildCodeCeFromCoding(coding: Coding[] | undefined): CdaCodeCe | undefined {
+export function buildCodeCeFromCoding(
+  coding: Coding | Coding[] | undefined
+): CdaCodeCe | undefined {
   if (!coding) return;
-  const primaryCoding = coding[0];
+  const primaryCoding = toArray(coding)[0];
   if (!primaryCoding) return;
   const cleanedUpCoding = cleanUpCoding(primaryCoding);
   return buildCodeCe({
@@ -100,7 +118,7 @@ export function buildCodeCe({
   return codeObject;
 }
 
-export function buildOriginalTextReference(value: string): CDAOriginalText {
+export function buildOriginalTextReference(value: string): CdaOriginalText {
   return {
     reference: {
       _value: value,
@@ -115,9 +133,9 @@ export function buildOriginalTextReference(value: string): CDAOriginalText {
 export function buildCodeCvFromCodeableConcept(
   codeableConcept: CodeableConcept | undefined,
   textReference?: string
-): CdaCodeCv | Entry {
+): CdaCodeCv | undefined {
   if (!codeableConcept) {
-    return withoutNullFlavorString(codeableConcept);
+    return undefined;
   }
 
   const primaryCodingRaw = codeableConcept.coding?.[0];
@@ -131,7 +149,7 @@ export function buildCodeCvFromCodeableConcept(
       })
     : {};
 
-  const translations = (codeableConcept.coding || []).map(coding =>
+  const translations = (codeableConcept.coding?.slice(1) || []).map(coding =>
     buildCodeCe({
       code: coding.code,
       codeSystem: mapCodingSystem(coding.system),
@@ -147,6 +165,29 @@ export function buildCodeCvFromCodeableConcept(
   };
 
   return codeCV;
+}
+
+export function buildCodeCvFromCodeCe(codeCe: CdaCodeCe, concepts: CodeableConcept[] | undefined) {
+  const codeCv: CdaCodeCv = {
+    ...codeCe,
+  };
+
+  if (!concepts) return codeCv;
+
+  const translations = concepts.flatMap(
+    concept =>
+      concept.coding?.flatMap(coding => {
+        if (coding.code === codeCe._code) return [];
+        return buildCodeCe({
+          code: coding.code,
+          codeSystem: mapCodingSystem(coding.system),
+          codeSystemName: undefined,
+          displayName: coding.display,
+        });
+      }) || []
+  );
+  codeCv.translation = translations;
+  return codeCv;
 }
 
 export function buildInstanceIdentifier({
@@ -173,11 +214,7 @@ export function buildInstanceIdentifiersFromIdentifier(
     return withNullFlavor(undefined, "_root");
   }
 
-  const identifiersArray = Array.isArray(identifiers)
-    ? identifiers
-    : identifiers
-    ? [identifiers]
-    : [];
+  const identifiersArray = toArray(identifiers);
   return identifiersArray.map(identifier =>
     buildInstanceIdentifier({
       root: placeholderOrgOid,
@@ -200,8 +237,10 @@ export function buildTelecom(telecoms: ContactPoint[] | undefined): CdaTelecom[]
   });
 }
 
-export function buildAddress(address?: Address[]): CdaAddress[] | undefined {
-  return address?.map(addr => ({
+export function buildAddress(address: Address | Address[] | undefined): CdaAddress[] | undefined {
+  if (!address) return undefined;
+  const addressArray = toArray(address);
+  return addressArray?.map(addr => ({
     ...withoutNullFlavorObject(mapAddressUse(addr.use), "_use"),
     streetAddressLine: addr.line?.join(", "),
     city: addr.city,
@@ -304,7 +343,7 @@ export function buildValueCd(
 /**
  * Mapping options for the PostalAddressUse from the CDA R2 IG
  */
-function mapAddressUse(use: string | undefined) {
+function mapAddressUse(use: string | undefined): CdaAddressUse | undefined {
   if (!use) return undefined;
   switch (use.toLowerCase()) {
     case "bad address":
@@ -330,14 +369,15 @@ function mapAddressUse(use: string | undefined) {
     // from example CDAs
     case "work":
       return "WP";
+    default:
+      return "BAD";
   }
-  return use;
 }
 
 /**
  * Mapping options from Telecom Use of the CDA R2 IG
  */
-function mapTelecomUse(use: string | undefined) {
+function mapTelecomUse(use: string | undefined): CdaTelecomUse | undefined {
   if (!use) return undefined;
   switch (use.toLowerCase()) {
     case "answering service":
@@ -354,8 +394,9 @@ function mapTelecomUse(use: string | undefined) {
       return "PG";
     case "work" || "work place":
       return "WP";
+    default:
+      return "WP";
   }
-  return use;
 }
 
 function cleanUpCoding(primaryCodingRaw: Coding | undefined) {
@@ -379,6 +420,12 @@ function cleanUpCoding(primaryCodingRaw: Coding | undefined) {
       return {
         system: CODING_MAP.get(system),
         code: primaryCodingRaw.code ?? "RXNORM",
+        display: primaryCodingRaw.display,
+      };
+    case "http://nucc.org/provider-taxonomy":
+      return {
+        system: CODING_MAP.get(system),
+        code: primaryCodingRaw.code ?? "NUCC",
         display: primaryCodingRaw.display,
       };
     default:
@@ -414,4 +461,135 @@ export function getTextFromCode(code: CodeableConcept | undefined): string {
   if (!code) return NOT_SPECIFIED;
   const primaryCoding = code.coding?.[0];
   return primaryCoding?.display ?? code.text ?? NOT_SPECIFIED;
+}
+
+export function getDisplaysFromCodeableConcepts(
+  concepts: CodeableConcept | CodeableConcept[] | undefined
+): string | undefined {
+  if (!concepts) return undefined;
+  return toArray(concepts)
+    .map(concept => {
+      const code = buildCodeCeFromCoding(concept.coding);
+      if (code?._displayName) return code._displayName.trim();
+      if (concept.text) return concept.text.trim();
+      return;
+    })
+    .join(", ");
+}
+
+export function buildPerformer(practitioners: Practitioner[] | undefined): AssignedEntity[] {
+  return (
+    practitioners?.flatMap(p => {
+      return (
+        {
+          assignedEntity: {
+            id: buildInstanceIdentifier({
+              root: placeholderOrgOid,
+              extension: p.id,
+            }),
+            code: p.qualification?.flatMap(
+              qualif => buildCodeCvFromCodeableConcept(qualif.code) || []
+            ),
+            addr: buildAddress(p.address),
+            telecom: buildTelecom(p.telecom),
+            assignedPerson: {
+              name: {
+                given: p.name
+                  ?.flatMap(n => `${n.given}${n.suffix ? `, ${n.suffix}` : ""}`)
+                  .join(", "),
+                family: p.name?.flatMap(n => n.family).join(", "),
+              },
+            },
+            representedOrganization: {
+              _classCode: "ORG",
+              name: {
+                "#text": "",
+              },
+              telecom: buildTelecom(p.telecom),
+              addr: buildAddress(p.address),
+            },
+          },
+        } || []
+      );
+    }) || []
+  );
+}
+
+export function buildPerformerFromLocation(
+  location: Location | undefined
+): AssignedEntity | undefined {
+  if (!location) return undefined;
+  return {
+    assignedEntity: {
+      id: buildInstanceIdentifier({
+        root: placeholderOrgOid,
+        extension: location.id,
+      }),
+      addr: buildAddress(location.address),
+      telecom: buildTelecom(location.telecom),
+      representedOrganization: {
+        _classCode: "ORG",
+        name: {
+          "#text": "",
+        },
+        addr: buildAddress(location.address),
+        telecom: buildTelecom(location.telecom),
+      },
+    },
+  };
+}
+
+export function buildParticipant(locations: Location[] | undefined): Participant[] | undefined {
+  if (!locations) return undefined;
+
+  return locations.map(location => {
+    const participant: Participant = {
+      _typeCode: "LOC",
+      participantRole: {
+        _classCode: "SDLOC",
+        templateId: {
+          _root: oids.serviceDeliveryLocation,
+        },
+        id: buildInstanceIdentifier({
+          root: placeholderOrgOid,
+          extension: location.id,
+        }),
+        code: {
+          _nullFlavor: "NI",
+        },
+        addr: buildAddress(location.address),
+        telecom: buildTelecom(location.telecom),
+        playingEntity: {
+          _classCode: "PLC",
+          ...(location.name && {
+            name: {
+              "#text": location.name,
+            },
+          }),
+        },
+      },
+    };
+    return participant;
+  });
+}
+
+export function buildAddressText(address: Address | undefined): string | undefined {
+  if (!address) return undefined;
+  return `${address.line?.join(", ")}, ${address.city}, ${address.state} ${address.postalCode}`;
+}
+
+export function getNotes(note: Annotation[] | undefined): string | undefined {
+  const combinedNotes = note?.map(note => note.text).join("; ");
+  return combinedNotes?.length ? combinedNotes : undefined;
+}
+
+export function mapFhirGenderToCda(gender: string | undefined): CdaGender {
+  switch (gender?.toLowerCase().trim()) {
+    case "male":
+      return "M";
+    case "female":
+      return "F";
+    default:
+      return "UK";
+  }
 }

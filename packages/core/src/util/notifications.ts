@@ -45,8 +45,11 @@ export const capture: ApiCapture = {
   /**
    * Captures an exception event and sends it to Sentry.
    *
-   * @param error — An Error object.
+   * @param error — An Error object or a string message.
    * @param captureContext — Additional scope data to apply to exception event.
+   * @param captureContext.level — Available levels are "fatal", "error", "warning", "log", "info",
+   *        and "debug" (defaults to "error").
+   * @param captureContext.extra — Additional information to be sent with the alert.
    * @returns — The generated eventId.
    */
   error: (error: unknown, captureContext?: Partial<ScopeContext>): string => {
@@ -65,10 +68,13 @@ export const capture: ApiCapture = {
   },
 
   /**
-   * Captures an exception event and sends it to Sentry.
+   * Sends a message to Sentry.
    *
    * @param message The message to send to Sentry.
    * @param captureContext — Additional scope data to apply to exception event.
+   * @param captureContext.level — Available levels are "fatal", "error", "warning", "log", "info",
+   *        and "debug" (defaults to "info").
+   * @param captureContext.extra — Additional information to be sent with the alert.
    * @returns — The generated eventId.
    */
   message: (message: string, captureContext?: Partial<ScopeContext>): string => {

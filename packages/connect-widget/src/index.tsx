@@ -32,11 +32,11 @@ Sentry.init({
     new Sentry.Replay(),
   ],
   // TODO #499 Review this based on the load on our app and Sentry's quotas
-  tracesSampleRate: 1.0,
-  replaysSessionSampleRate: 0.5,
+  tracesSampleRate: 0,
+  replaysSessionSampleRate: 0,
   // If the entire session is not sampled, use the below sample rate to sample
   // sessions when an error occurs.
-  replaysOnErrorSampleRate: 1.0,
+  replaysOnErrorSampleRate: 0,
 });
 
 const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);

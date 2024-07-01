@@ -9,11 +9,13 @@ import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { EnvType } from "./env-type";
-import { createLambda } from "./shared/lambda";
+import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { Secrets } from "./shared/secrets";
 
 export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
+
+const pollingBuffer = Duration.seconds(30);
 
 interface LambdasNestedStackProps extends NestedStackProps {
   config: EnvConfig;
@@ -79,7 +81,7 @@ export class LambdasNestedStack extends NestedStack {
       dbCluster: props.dbCluster,
       dbCredsSecret: props.dbCredsSecret,
       // TODO move this to a config
-      maxPollingDuration: Duration.minutes(11),
+      maxPollingDuration: Duration.minutes(5),
     });
 
     this.outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({
@@ -279,14 +281,11 @@ export class LambdasNestedStack extends NestedStack {
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
-        MAX_POLLING_DURATION: maxPollingDuration
-          .minus(Duration.minutes(1))
-          .toMilliseconds()
-          .toString(),
+        MAX_POLLING_DURATION: this.normalizePollingDuration(maxPollingDuration),
       },
       layers: [lambdaLayers.shared],
       memory: 512,
-      timeout: maxPollingDuration,
+      timeout: this.normalizeLambdaDuration(maxPollingDuration),
       vpc,
       alarmSnsAction: alarmAction,
     });
@@ -327,14 +326,11 @@ export class LambdasNestedStack extends NestedStack {
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
-        MAX_POLLING_DURATION: maxPollingDuration
-          .minus(Duration.minutes(1))
-          .toMilliseconds()
-          .toString(),
+        MAX_POLLING_DURATION: this.normalizePollingDuration(maxPollingDuration),
       },
       layers: [lambdaLayers.shared],
       memory: 512,
-      timeout: maxPollingDuration,
+      timeout: this.normalizeLambdaDuration(maxPollingDuration),
       vpc,
       alarmSnsAction: alarmAction,
     });
@@ -375,14 +371,11 @@ export class LambdasNestedStack extends NestedStack {
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
-        MAX_POLLING_DURATION: maxPollingDuration
-          .minus(Duration.minutes(1))
-          .toMilliseconds()
-          .toString(),
+        MAX_POLLING_DURATION: this.normalizePollingDuration(maxPollingDuration),
       },
       layers: [lambdaLayers.shared],
       memory: 512,
-      timeout: maxPollingDuration,
+      timeout: this.normalizeLambdaDuration(maxPollingDuration),
       vpc,
       alarmSnsAction: alarmAction,
     });
@@ -391,5 +384,29 @@ export class LambdasNestedStack extends NestedStack {
     dbCredsSecret.grantRead(outboundDocumentRetrievalLambda);
 
     return outboundDocumentRetrievalLambda;
+  }
+
+  /**
+   * Max polling duration should not exceed the maximum lambda execution time minus
+   * 30 seconds as buffer for the response to make it to the API.
+   */
+  private normalizePollingDuration(duration: Duration): string {
+    return Math.min(
+      duration.toMilliseconds(),
+      MAXIMUM_LAMBDA_TIMEOUT.minus(pollingBuffer).toMilliseconds()
+    ).toString();
+  }
+
+  /**
+   * Max lambda duration/timeout should not be lower than polling duration + 30 seconds
+   * as buffer for the response to make it to the API.
+   */
+  private normalizeLambdaDuration(duration: Duration): Duration {
+    return Duration.millis(
+      Math.min(
+        duration.plus(pollingBuffer).toMilliseconds(),
+        MAXIMUM_LAMBDA_TIMEOUT.toMilliseconds()
+      )
+    );
   }
 }

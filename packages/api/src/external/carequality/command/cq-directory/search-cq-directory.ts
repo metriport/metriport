@@ -4,6 +4,7 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import convert from "convert-units";
 import { Sequelize } from "sequelize";
+import { CQDirectoryEntry } from "../../cq-directory";
 import { Config } from "../../../../shared/config";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
 
@@ -113,7 +114,7 @@ export async function searchCQDirectoriesByRadius({
   return orgs;
 }
 
-export function toBasicOrgAttributes(org: CQDirectoryEntryModel): CQOrgBasicDetails {
+export function toBasicOrgAttributes(org: CQDirectoryEntry): CQOrgBasicDetails {
   return {
     name: org.name,
     id: org.id,

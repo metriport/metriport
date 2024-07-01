@@ -1,4 +1,4 @@
-import { getSignedUrls } from "./bulk-sign";
+import { searchDocumentsSignUrlsAndSendToApi } from "./bulk-sign";
 import { DocumentBulkSigner, DocumentBulkSignerRequest } from "./document-bulk-signer";
 
 export class DocumentBulkSignerLocal extends DocumentBulkSigner {
@@ -7,6 +7,13 @@ export class DocumentBulkSignerLocal extends DocumentBulkSigner {
   }
 
   async sign({ patientId, cxId, requestId }: DocumentBulkSignerRequest): Promise<void> {
-    await getSignedUrls(cxId, patientId, requestId, this.bucketName, this.region, this.apiURL);
+    await searchDocumentsSignUrlsAndSendToApi(
+      cxId,
+      patientId,
+      requestId,
+      this.bucketName,
+      this.region,
+      this.apiURL
+    );
   }
 }

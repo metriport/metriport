@@ -41,7 +41,7 @@ export function makeCqDataLink(): CQLink {
       telecom: [
         {
           system: "phone",
-          value: faker.phone.number(),
+          value: faker.phone.number("##########"),
         },
         {
           system: "email",

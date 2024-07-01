@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/serverless";
 import { DRRequestGatewayV2Params } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2";
-import { createSignSendProcessDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2-logic";
+import { createSignSendProcessDrRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2-logic";
 import { getEnvVarOrFail, getEnvType } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
 import { getSamlCertsAndKeys } from "./shared/secrets";
@@ -20,7 +20,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
     const samlCertsAndKeys = await getSamlCertsAndKeys();
 
-    await createSignSendProcessDRRequests({
+    await createSignSendProcessDrRequests({
       drResponseUrl,
       drRequestsGatewayV2,
       samlCertsAndKeys,

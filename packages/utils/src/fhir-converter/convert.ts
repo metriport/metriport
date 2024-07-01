@@ -1,4 +1,5 @@
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
 import { AxiosInstance } from "axios";
 import * as uuid from "uuid";
 import { getFileContents, makeDirIfNeeded, writeFileContents } from "../shared/fs";
@@ -60,11 +61,13 @@ async function convert(
     throw new Error(`File has nonXMLBody`);
   }
 
+  const noB64FileContents = removeBase64PdfEntries(fileContents);
+
   const unusedSegments = false;
   const invalidAccess = false;
   const params = { patientId, fileName, unusedSegments, invalidAccess };
   const url = `/api/convert/cda/ccd.hbs`;
-  const payload = (fileContents ?? "").trim();
+  const payload = (noB64FileContents ?? "").trim();
   const res = await api.post(url, payload, {
     params,
     headers: { "Content-Type": "text/plain" },

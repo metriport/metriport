@@ -7,24 +7,27 @@ import { buildMentalStatus } from "../mental-status";
 import { makeObservation } from "./make-observation";
 import { observationMentalStatus } from "./mental-status-examples";
 import { createEmptyBundle, getXmlContentFromFile } from "./shared";
+import _ from "lodash";
 
 let observationId: string;
 let bundle: Bundle;
 let observation: Observation;
 
-beforeEach(() => {
+beforeAll(() => {
   observationId = faker.string.uuid();
   observation = makeObservation({
     id: observationId,
     ...observationMentalStatus,
   });
+});
 
+beforeEach(() => {
   bundle = createEmptyBundle();
+  bundle.entry?.push({ resource: observation });
 });
 
 describe("buildMentalStatus", () => {
   it("does not pick up non-mental-status Observations", () => {
-    bundle.entry?.push({ resource: observation });
     const observation2 = makeObservation({
       ...observationMentalStatus,
       id: faker.string.uuid(),
@@ -48,16 +51,12 @@ describe("buildMentalStatus", () => {
   });
 
   it("correctly maps a single mental status survey Observation", () => {
-    bundle.entry?.push({ resource: observation });
     const filePath = path.join(__dirname, "./xmls/mental-status-section-single-survey.xml");
     const params = {
       observationId,
     };
-    // TODO: Remove the console.log after we fix the tsconfig to ignore "unused" vars,
-    // since `eval()` isn't explicitly using them
-    console.log("params", params);
-
-    const xmlContent = eval("`" + getXmlContentFromFile(filePath) + "`");
+    const applyToTemplate = _.template(getXmlContentFromFile(filePath));
+    const xmlContent = applyToTemplate(params);
     const res = buildMentalStatus(bundle);
     const cleanedJsonObj = removeEmptyFields(res);
     const xmlRes = xmlBuilder.build(cleanedJsonObj);

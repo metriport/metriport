@@ -20,37 +20,39 @@ To enable this integration approach with Metriport:
 1. Set this endpoint URL on the [Developers page](https://dash.metriport.com/developers) in the developer dashboard,
    or via the [Update Settings endpoint](/home/api-reference/settings/post-settings);
 1. This will generate a webhook key that should be used to authenticate requests on
-   your app's endpoint (webhook).
+   your app's endpoint (webhook) - see [authentication](#authentication) and 
+   [generating a new webhook key](#generating-a-new-webhook-key) below.
 
 General requirements for the endpoint:
 
 1. Public endpoint accessible from the internet;
 1. Does not do an HTTP redirect (redirects will not be followed);
 1. Accepts a `POST` HTTP request;
-1. Verifies requests by comparing the HTTP header `x-webhook-key` with the webhook key;
+1. Verifies requests using the HTTP header `x-metriport-signature` - see [authentication](#authentication) below;
+1. Responds `200` in under 4 seconds - we recommend processing the webhook request asynchronously;
 1. Accepts and responds to a [`ping` message](#the-ping-message);
+1. Be [idempotent](https://en.wikipedia.org/wiki/Idempotence) - it should accept being called more
+   than once with the same payload, with no changes to the end result.
 
-Additionally, depending on what Metriport APIs you're using, your endpoint will need to accept and process
-different messages when they become available - specifically:
+Additionally, your endpoint will need to accept and process different messages when they become available - specifically:
 
-1. If using the Devices API - accept and process [user data messages](#devices-api-messages).
-1. If using the Medical API - accept and process [patient data messages](#medical-api-messages).
+1. [Patient data messages](#medical-api-messages).
 
 ## Authentication
 
-When Metriport sends a webhook message, it includes an `x-metriport-signature` header. 
+When Metriport sends a webhook message, it includes an `x-metriport-signature` header - this is an 
+[HMAC](https://en.wikipedia.org/wiki/HMAC) SHA-256 hash computed using your webhook key and the body of the webhook message.
 
-- `x-metriport-signature`: This is an [HMAC](https://en.wikipedia.org/wiki/HMAC) SHA-256 hash computed using your webhook key and the body of the webhook message.
-
-At a high level, an HMAC works by taking a secret key and a message, and performing iterative hashes of the two to create 
-a signature. That signature is compared against the signature in the header for equality. If the signatures are equal, you can trust the webhook 
-payload is authentic and has not been tampered with. If they aren't equal, you should throw it away. 
+At a high level, an HMAC works by taking a secret key (webhook key from the Settings page) and a message,
+and performing iterative hashes of the two to create a signature. That signature is compared against the
+signature in the header for equality. If the signatures are equal, you can trust the webhook
+payload is authentic and has not been tampered with. If they aren't equal, you should throw it away.
 
 You can use this header to verify that the webhook messages sent to your endpoint are from Metriport. Here's an example of how you can do this in Node.js:
 
 <Snippet file="webhook-signature-validation.mdx" />
 
-The important thing is to make sure you use a trusted cryptography library in whatever language you choose to validate the webhook message in. 
+The important thing is to make sure you use a trusted cryptography library in whatever language you choose to validate the webhook message in.
 You can also compute an HMAC in python:
 
 ```python
@@ -63,7 +65,7 @@ def compute_hmac(key, message, signature, digestmod=hashlib.sha256):
     """
     Verify the HMAC signature for a given message and key.
 
-    :param key: The secret key (string).
+    :param key: The webhook key from the Settings page (string).
     :param message: The message to be authenticated (string in JSON format).
     :param signature: The provided HMAC signature to verify against (string).
     :param digestmod: The hash function to use (defaults to hashlib.sha256).
@@ -77,9 +79,9 @@ def compute_hmac(key, message, signature, digestmod=hashlib.sha256):
     return signature == computed_signature
 
 # Example usage
-key = 'your_secret_key'  # Your key 
+key = 'your_secret_key'  # The webhook key from the Settings page
 message = '{"webhookUrl": "https://api.app.com/webhook"}'  # The message from the request in JSON format
-signature = 'the-request-signature'  # The signature from the header 
+signature = 'the-request-signature'  # The signature from the header
 
 is_signature_valid = compute_hmac(key, message, signature)
 
@@ -87,21 +89,15 @@ if is_signature_valid:
     print("Signature verified")
 else:
     print("Signature verification failed")
-
-
 ```
-
-<Warning>
-The previous method of authenticating webhooks, comparing your webhook key with the `x-webhook-key` in each request's HTTP header, is being deprecated on **December 9th, 2023**. 
-Please update your implementation to use the `x-metriport-signature` header for authentication.
-</Warning>
 
 ### Generating a new webhook key
 
-If using the dashboard: simply delete your webhook URL on the [Developers page](https://dash.metriport.com/developers), save, and enter it again.
+If using the dashboard: simply delete your webhook URL on the [Developers page](https://dash.metriport.com/developers),
+save, and enter it again.
 
-If using the API: set the webhook URL to an empty string via the [Update Settings endpoint](/home/api-reference/settings/post-settings), and then set it
-to your desired URL making another request to the same endpoint.
+If using the API: set the webhook URL to an empty string via the [Update Settings endpoint](/home/api-reference/settings/post-settings),
+and then set it to your desired URL making another request to the same endpoint.
 
 ## Format
 
@@ -110,7 +106,6 @@ Webhook requests contain the relevant information on the body of the HTTP reques
 There are several types of messages you can expect to receive:
 
 - [`ping`](#the-ping-message): validation of the webhook connection between Metriport and your app;
-- [Devices API messages](#devices-api-messages);
 - [Medical API messages](#medical-api-messages).
 
 In general, upon successful receiving of these messages, it's expected that your app responds with a `200` HTTP
@@ -145,12 +140,6 @@ accept a `POST` request with this body...
 You can check the [webhook mock server available on our repository](https://github.com/metriport/metriport/blob/master/utils/src/mock-webhook.ts)
 for a simple implementation of this message.
 
-### Devices API messages
-
-When using the Devices API, Metriport will send Webhook messages containing [new provider connections](/devices-api/more-info/webhooks#provider-connected-message) for each user, as well as [user data](/devices-api/more-info/webhooks#user-health-data-message) to your app from [our supported Providers](/devices-api/more-info/our-integrations), as soon as the data becomes available.
-
-You can see Webhook details specific to the Devices API on [this page](/devices-api/more-info/webhooks).
-
 ### Medical API messages
 
 When using the Medical API, Metriport will send Webhook messages containing status updates to your app, as soon
@@ -170,8 +159,9 @@ Example payload:
   "meta": {
     "messageId": "<message-id>",
     "when": "<date-time-in-utc>",
-    "type": "devices.health-data"
-  }
+    "type": "medical.medical.consolidated-data"
+  },
+  ...
 }
 ```
 
@@ -191,7 +181,8 @@ The format follows:
     </ResponseField>
 
     <ResponseField name="type" type="string" required>
-      The type of the webhook message. If coming from the Devices API, this will be formatted `devices.<subtype>`, and if coming from the Medical API it will be formatted `medical.<subtype>`.
+      The type of the webhook message. This can either be `ping` or one of the 
+      [Medical API types](/medical-api/more-info/webhooks#types-of-messages).
     </ResponseField>
 
   </Expandable>

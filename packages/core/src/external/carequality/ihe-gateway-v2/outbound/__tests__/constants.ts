@@ -121,6 +121,7 @@ export const expectedXcpdResponse: OutboundPatientDiscoveryRespSuccessfulSchema 
       },
     ],
   },
+  iheGatewayV2: true,
 };
 
 export const expectedMultiNameAddressResponse: OutboundPatientDiscoveryRespSuccessfulSchema = {
@@ -133,6 +134,10 @@ export const expectedMultiNameAddressResponse: OutboundPatientDiscoveryRespSucce
       {
         given: ["nwhinone", "bartholomew"],
         family: "nwhinzzztestpatient",
+      },
+      {
+        given: ["NWHINONE"],
+        family: "NWHINZZZTESTPATIENT",
       },
     ],
     address: [

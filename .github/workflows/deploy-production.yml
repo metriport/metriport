@@ -204,3 +204,4 @@ jobs:
       TEST_API_KEY: ${{ secrets.TEST_API_KEY_PRODUCTION }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
