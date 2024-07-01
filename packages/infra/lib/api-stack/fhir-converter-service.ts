@@ -6,11 +6,13 @@ import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import { FargateService } from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
+import { Bucket } from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
 import { getConfig } from "../shared/config";
 import { vCPU } from "../shared/fargate";
 import { MAXIMUM_LAMBDA_TIMEOUT } from "../shared/lambda";
+import { buildLbAccessLogPrefix } from "../shared/s3";
 import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd } from "../shared/util";
 
@@ -34,6 +36,7 @@ export function settings() {
 interface FhirConverterServiceProps extends StackProps {
   config: EnvConfig;
   version: string | undefined;
+  generalBucket: Bucket;
 }
 
 export function createFHIRConverterService(
@@ -77,6 +80,11 @@ export function createFHIRConverterService(
     }
   );
   const serverAddress = fargateService.loadBalancer.loadBalancerDnsName;
+
+  fargateService.loadBalancer.logAccessLogs(
+    props.generalBucket,
+    buildLbAccessLogPrefix("fhir-converter")
+  );
 
   // CloudWatch Alarms and Notifications
   const fargateCPUAlarm = fargateService.service
