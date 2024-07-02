@@ -10,6 +10,15 @@ import { isCarequalityEnabled, isCQDirectEnabledForCx } from "../aws/app-config"
 import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
 import { makeIheGatewayAPIForPatientDiscovery } from "../ihe-gateway/api";
 
+export type CqOrgRole = "Implementer" | "Connection";
+
+export const CqMetriportDataDefault = {
+  contactName: "Metriport Team",
+  phone: "415-941-3282",
+  email: "engineering+carequality@metriport.com",
+  role: "Connection" as CqOrgRole,
+};
+
 // TODO: adjust when we support multiple POUs
 export function createPurposeOfUse() {
   return PurposeOfUse.TREATMENT;
@@ -86,12 +95,17 @@ export const cqOrgDetailsSchema = z.object({
   phone: z.string(),
   email: z.string(),
   role: z.enum(["Implementer", "Connection"]),
+  active: z.boolean(),
   organizationBizType: z.nativeEnum(OrganizationBizType).optional(),
   parentOrgOid: z.string().optional(),
 });
 
 export const cqOrgDetailsOrgBizRequiredSchema = cqOrgDetailsSchema.required({
   organizationBizType: true,
+});
+
+export const cqOrgActiveSchema = z.object({
+  active: z.boolean(),
 });
 
 export type CQOrgDetails = z.infer<typeof cqOrgDetailsSchema>;

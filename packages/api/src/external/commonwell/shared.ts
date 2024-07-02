@@ -1,5 +1,6 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import z from "zod";
 import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
 
 export async function getCwInitiator(
@@ -32,3 +33,7 @@ export function buildCwOrgName({
   }
   return `${vendorName} - ${orgName}`;
 }
+
+export const cwOrgActiveSchema = z.object({
+  active: z.boolean(),
+});

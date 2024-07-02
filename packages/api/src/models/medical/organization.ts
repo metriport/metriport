@@ -13,6 +13,8 @@ export class OrganizationModel extends BaseModel<OrganizationModel> implements O
   declare organizationNumber: number;
   declare type: OrganizationBizType;
   declare data: OrganizationData;
+  declare cqActive: boolean;
+  declare cwActive: boolean;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     OrganizationModel.init(
@@ -34,6 +36,14 @@ export class OrganizationModel extends BaseModel<OrganizationModel> implements O
         },
         data: {
           type: DataTypes.JSONB,
+        },
+        cqActive: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: false,
+        },
+        cwActive: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: false,
         },
       },
       {

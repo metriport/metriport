@@ -60,6 +60,7 @@ export async function createOrUpdateInCq(
     contactName: metriportCompanyDetails.name,
     phone: metriportCompanyDetails.phone,
     email: metriportEmailForCq,
+    active: facility.cqActive,
     parentOrgOid: isObo ? metriportIntermediaryOid : metriportOid,
     role: "Connection" as const,
   });
@@ -103,6 +104,7 @@ export async function createOrUpdateInCw(
         location: facility.data.address,
       },
       organizationNumber: facility.facilityNumber,
+      active: facility.cwActive,
       createdAt: new Date(),
       updatedAt: new Date(),
     },

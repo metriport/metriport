@@ -10,7 +10,10 @@ import { createOrganizationId } from "../customer-sequence/create-id";
 import { getOrganization } from "./get-organization";
 import { toFHIR } from "../../../external/fhir/organization";
 import { upsertOrgToFHIRServer } from "../../../external/fhir/organization/upsert-organization";
+import { CqMetriportDataDefault } from "../../../external/carequality/shared";
 import cwCommands from "../../../external/commonwell";
+import cqCommands from "../../../external/carequality";
+import { getAddressWithCoordinates } from "../../../domain/medical/address";
 import { processAsyncError } from "../../../errors";
 
 const MAX_ATTEMPTS = 5;
@@ -37,9 +40,29 @@ export const createOrganization = async (
   const fhirOrg = toFHIR(org);
   await upsertOrgToFHIRServer(org.cxId, fhirOrg);
 
-  if (org.type !== "healthcare_it_vendor") {
+  if (org.type === "healthcare_provider") {
     // Intentionally asynchronous
-    cwCommands.organization.create(org).catch(processAsyncError(`cw.org.create`));
+    cwCommands.organization
+      .create({
+        ...org,
+        active: org.cwActive,
+      })
+      .catch(processAsyncError(`cw.org.create`));
+
+    const locationWithCoordinates = await getAddressWithCoordinates(org.data.location, cxId);
+    cqCommands.organization
+      .createOrUpdate({
+        oid: org.oid,
+        name: org.data.name,
+        ...locationWithCoordinates,
+        lat: `${locationWithCoordinates.coordinates.lat}`,
+        lon: `${locationWithCoordinates.coordinates.lon}`,
+        postalCode: locationWithCoordinates.zip,
+        organizationBizType: org.type,
+        active: org.cwActive,
+        ...CqMetriportDataDefault,
+      })
+      .catch(processAsyncError(`cq.org.create`));
   }
 
   return org;
@@ -62,6 +85,8 @@ async function createOrganizationInternal(
       organizationNumber,
       cxId,
       data: { name, type, location },
+      cqActive: false,
+      cwActive: true,
     });
 
     return org;

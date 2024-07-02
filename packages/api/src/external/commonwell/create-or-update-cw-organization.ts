@@ -1,8 +1,8 @@
-import { Organization } from "@metriport/core/domain/organization";
+import { CWOrganization } from "./organization";
 import cwCommands from "./";
 
 export async function createOrUpdateCWOrganization(
-  org: Omit<Organization, "type" | "eTag">,
+  org: CWOrganization,
   isObo = false
 ): Promise<void> {
   const orgExists = await doesOrganizationExistInCW(org.oid);

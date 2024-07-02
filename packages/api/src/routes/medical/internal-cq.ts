@@ -19,6 +19,7 @@ import httpStatus from "http-status";
 import { uniqBy } from "lodash";
 import multer from "multer";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { makeCarequalityManagementAPI } from "../../external/carequality/api";
 import { bulkInsertCQDirectoryEntries } from "../../external/carequality/command/cq-directory/create-cq-directory-entry";
 import { createOrUpdateCQOrganization } from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
@@ -42,10 +43,15 @@ import {
 } from "../../external/carequality/ihe-result";
 import { processOutboundPatientDiscoveryResps } from "../../external/carequality/process-outbound-patient-discovery-resps";
 import { processPostRespOutboundPatientDiscoveryResps } from "../../external/carequality/process-subsequent-outbound-patient-discovery-resps";
-import { cqOrgDetailsOrgBizRequiredSchema } from "../../external/carequality/shared";
+import {
+  cqOrgDetailsOrgBizRequiredSchema,
+  cqOrgActiveSchema,
+} from "../../external/carequality/shared";
 import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
+import { getAddressWithCoordinates } from "../../domain/medical/address";
+import { CqMetriportDataDefault } from "../../external/carequality/shared";
 
 dayjs.extend(duration);
 const router = Router();
@@ -145,6 +151,37 @@ router.post(
     const body = req.body;
     const orgDetails = cqOrgDetailsOrgBizRequiredSchema.parse(body);
     await createOrUpdateCQOrganization(orgDetails);
+
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/carequality/directory/organization/v2
+ *
+ * Updates the organization in the Carequality Directory.
+ */
+router.put(
+  "/directory/organization/v2",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getFrom("query").orFail("cxId", req);
+    const orgId = getFrom("query").orFail("orgId", req);
+    const body = req.body;
+    const orgActive = cqOrgActiveSchema.parse(body);
+    const org = await getOrganizationOrFail({ cxId, id: orgId });
+    const locationWithCoordinates = await getAddressWithCoordinates(org.data.location, cxId);
+    await createOrUpdateCQOrganization({
+      oid: org.oid,
+      name: org.data.name,
+      ...locationWithCoordinates,
+      lat: `${locationWithCoordinates.coordinates.lat}`,
+      lon: `${locationWithCoordinates.coordinates.lon}`,
+      postalCode: locationWithCoordinates.zip,
+      organizationBizType: org.type,
+      active: orgActive.active,
+      ...CqMetriportDataDefault,
+    });
 
     return res.sendStatus(httpStatus.OK);
   })

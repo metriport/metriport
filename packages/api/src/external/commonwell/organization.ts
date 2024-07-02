@@ -1,4 +1,4 @@
-import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
+import { Organization as CWOSDKrganization } from "@metriport/commonwell-sdk";
 import { OID_PREFIX } from "@metriport/core/domain/oid";
 import { Organization } from "@metriport/core/domain/organization";
 import { getOrgsByPrio } from "@metriport/core/external/commonwell/cq-bridge/get-orgs";
@@ -23,15 +23,17 @@ const technicalContact = {
   phone: getEnvVarOrFail("CW_TECHNICAL_CONTACT_PHONE"),
 };
 
-type CWOrganizationWithOrgId = Omit<CWOrganization, "organizationId"> &
-  Required<Pick<CWOrganization, "organizationId">>;
+export type CWOrganization = Omit<Organization, "type" | "eTag"> & { active: boolean };
+
+type CWSDKOrganizationWithOrgId = Omit<CWOSDKrganization, "organizationId"> &
+  Required<Pick<CWOSDKrganization, "organizationId">>;
 
 export async function organizationToCommonwell(
-  org: Omit<Organization, "type" | "eTag">,
+  org: CWOrganization,
   isObo = false
-): Promise<CWOrganizationWithOrgId> {
+): Promise<CWSDKOrganizationWithOrgId> {
   const cwId = OID_PREFIX.concat(org.oid);
-  const cwOrg: CWOrganizationWithOrgId = {
+  const cwOrg: CWSDKOrganizationWithOrgId = {
     name: org.data.name,
     type: org.data.type,
     locations: [
@@ -53,7 +55,7 @@ export async function organizationToCommonwell(
     displayName: org.data.name,
     memberName: Config.getCWMemberOrgName(),
     securityTokenKeyType: "BearerKey",
-    isActive: true,
+    isActive: org.active,
     technicalContacts: [technicalContact],
   };
   // if this org isn't OBO, then we need to provide query responder details
@@ -76,7 +78,7 @@ export async function organizationToCommonwell(
   return cwOrg;
 }
 
-export async function get(orgOid: string): Promise<CWOrganization | undefined> {
+export async function get(orgOid: string): Promise<CWOSDKrganization | undefined> {
   const { log, debug } = out(`CW get org oid ${orgOid}`);
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   const cwId = OID_PREFIX.concat(orgOid);
@@ -100,10 +102,7 @@ export async function get(orgOid: string): Promise<CWOrganization | undefined> {
   }
 }
 
-export async function create(
-  org: Omit<Organization, "type" | "eTag">,
-  isObo = false
-): Promise<void> {
+export async function create(org: CWOrganization, isObo = false): Promise<void> {
   const { log, debug } = out(`CW create - M oid ${org.oid}, id ${org.id}`);
 
   if (!(await isCWEnabledForCx(org.cxId))) {
@@ -144,10 +143,7 @@ export async function create(
   }
 }
 
-export async function update(
-  org: Omit<Organization, "type" | "eTag">,
-  isObo = false
-): Promise<void> {
+export async function update(org: CWOrganization, isObo = false): Promise<void> {
   const { log, debug } = out(`CW update - M oid ${org.oid}, id ${org.id}`);
 
   if (!(await isCWEnabledForCx(org.cxId))) {
