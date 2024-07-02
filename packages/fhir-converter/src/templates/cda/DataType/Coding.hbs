@@ -26,9 +26,13 @@
 --}}
 {
 	"code": {{#if code.code}} "{{trim code.code}}" {{else if canBeUnknown}} "UNK" {{/if}},
-	"display": "{{{ parseReferenceData code.displayName }}}",
+	"display": {{#if code.displayName}} "{{{ parseReferenceData code.displayName }}}" {{else if canBeUnknown}} "unknown" {{/if}},
 	"version":"{{code.codeSystemVersion}}",
-	{{#with (evaluate 'ValueSet/SystemReference.hbs' code=code.codeSystem) as |system|}}
-		"system": "{{system.oid}}",
-	{{/with}}
+  {{#if code.codeSystem}}
+    {{#with (evaluate 'ValueSet/SystemReference.hbs' code=code.codeSystem) as |system|}}
+      "system": "{{system.oid}}",
+    {{/with}}
+  {{else if canBeUnknown}}
+    "system": "2.16.840.1.113883.1.11.10612",
+  {{/if}}
 }

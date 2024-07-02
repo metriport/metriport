@@ -47,7 +47,7 @@
                                 {{>References/Coverage/beneficiary.hbs ID=(generateUUID (toJsonString payerEntry.act)) REF=(concat 'Patient/' @metriportPatientId)}},
                             {{/with}}
                         {{else}}
-                          {{>References/Coverage/payor.hbs ID=(generateUUID (toJsonString payerEntry.act)) REF='UNK' }},
+                          {{>References/Coverage/payor.hbs ID=(generateUUID (toJsonString payerEntry.act)) canBeUnknown=true  }},
                         {{/if}}
                     {{/if}}
                 {{/each}}
