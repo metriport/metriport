@@ -8,6 +8,8 @@ import { CwLink, CwPatientData } from "../../cw-patient-data";
 import { CwPatientDataModel } from "../../models/cw-patient-data";
 import { getCwPatientDataOrFail } from "./get-cw-data";
 
+const CW_OFFICIAL_ID_SYSTEM = "urn:oid:2.16.840.1.113883.3.3330.47";
+
 export type CwPatientDataUpdate = CwPatientDataCreatePartial & BaseUpdateCmdWithCustomer;
 
 export async function updateCwPatientData({
@@ -58,7 +60,7 @@ export async function updateCwPatientDataWithinDBTx(
   const { data: newData } = update;
   const updatedLinks = [...(newData.links ?? []), ...existing.data.links];
   const uniqueUpdatedLinks = uniqBy(updatedLinks, function (nl) {
-    return nl.patient?.provider?.reference ?? "";
+    return nl.patient?.identifier?.filter(id => id.system === CW_OFFICIAL_ID_SYSTEM)[0]?.key;
   });
   const updatedLinkDemographicsHistory = {
     ...existing.data.linkDemographicsHistory,
