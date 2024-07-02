@@ -12,44 +12,37 @@ import { GenderAtBirth, Patient, splitName } from "../../../domain/patient";
 import { getIdFromSubjectId, getIdFromSubjectRef } from "../shared";
 import { GenderCodes } from "@metriport/commonwell-sdk";
 
-export enum FhirGender {
-  male = "male",
-  female = "female",
-  other = "other",
-  unknown = "unknown",
-}
+type FhirGender = NonNullable<FHIRPatient["gender"]>;
 
 export type PatientIdAndData = Pick<Patient, "id" | "data">;
 
 const genderMapping: Record<GenderAtBirth, FhirGender> = {
-  F: FhirGender.female,
-  M: FhirGender.male,
-  UN: FhirGender.other,
-  UNK: FhirGender.unknown,
+  F: "female",
+  M: "male",
+  UN: "other",
+  UNK: "unknown",
 };
 
 const reverseGenderMapping: Record<FhirGender, GenderAtBirth> = {
-  [FhirGender.female]: GenderCodes.F,
-  [FhirGender.male]: GenderCodes.M,
-  [FhirGender.other]: GenderCodes.UN,
-  [FhirGender.unknown]: GenderCodes.UNK,
+  female: GenderCodes.F,
+  male: GenderCodes.M,
+  other: GenderCodes.UN,
+  unknown: GenderCodes.UNK,
 };
 
 export function mapGenderAtBirthToFhir(k: GenderAtBirth | undefined): FhirGender {
   if (k === undefined) {
-    return FhirGender.unknown;
+    return "unknown";
   }
   const gender = genderMapping[k];
-  return gender ? gender : FhirGender.unknown;
+  return gender ? gender : "unknown";
 }
 
 export function mapStringGenderAtBirthToFhir(k: string): FhirGender {
   return mapGenderAtBirthToFhir(k as GenderAtBirth);
 }
 
-export function mapFhirToGenderAtBirth(
-  gender: "female" | "male" | "other" | "unknown"
-): GenderAtBirth {
+export function mapFhirToGenderAtBirth(gender: FhirGender): GenderAtBirth {
   const genderAtBirth = reverseGenderMapping[gender];
   return genderAtBirth ? genderAtBirth : GenderCodes.UNK;
 }
