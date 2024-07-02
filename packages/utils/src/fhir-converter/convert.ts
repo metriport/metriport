@@ -23,7 +23,10 @@ export async function convertCDAsToFHIR(
     fileNames,
     async fileName => {
       try {
-        await convert(baseFolderName, fileName, outputFolderName, api, fhirExtension);
+        const conversionResult = await convert(baseFolderName, fileName, api, fhirExtension);
+        const destFileName = path.join(outputFolderName, fileName.replace(".xml", fhirExtension));
+        makeDirIfNeeded(destFileName);
+        writeFileContents(destFileName, JSON.stringify(conversionResult));
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         if (error.message.includes("File has nonXMLBody")) {
@@ -47,10 +50,9 @@ export async function convertCDAsToFHIR(
   return { errorCount, nonXMLBodyCount };
 }
 
-async function convert(
+export async function convert(
   baseFolderName: string,
   fileName: string,
-  outputFolderName: string,
   api: AxiosInstance,
   fhirExtension: string
 ) {
@@ -79,9 +81,7 @@ async function convert(
   });
   removePatientFromConversion(updatedConversionResult);
 
-  const destFileName = path.join(outputFolderName, fileName.replace(".xml", fhirExtension));
-  makeDirIfNeeded(destFileName);
-  writeFileContents(destFileName, JSON.stringify(updatedConversionResult));
+  return updatedConversionResult;
 }
 
 interface Entry {
@@ -111,7 +111,7 @@ type FHIRExtension = {
   valueString: string;
 };
 
-type FHIRBundle = {
+export type FHIRBundle = {
   resourceType: "Bundle";
   type: "batch";
   entry: {
