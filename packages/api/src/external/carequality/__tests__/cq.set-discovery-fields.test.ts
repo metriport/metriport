@@ -96,8 +96,6 @@ describe("updatePatientDiscoveryStatus", () => {
       params: baseParams,
     });
   });
-  // Backward compatability during deployment phase
-  /*
   it("setting only status w/ no previous values", async () => {
     const patient = makePatient();
     patientModel_findOne.mockResolvedValue(patient);
@@ -114,5 +112,4 @@ describe("updatePatientDiscoveryStatus", () => {
       );
     }
   });
-  */
 });

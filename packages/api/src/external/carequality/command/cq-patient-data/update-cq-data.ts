@@ -56,7 +56,7 @@ export async function updateCQPatientDataWithinDBTx(
   transaction: Transaction
 ): Promise<CQPatientDataModel> {
   const { data: newData } = update;
-  const updatedLinks = [...existing.data.links, ...(newData.links ?? [])];
+  const updatedLinks = [...(newData.links ?? []), ...existing.data.links];
   const uniqueUpdatedLinks = uniqBy(updatedLinks, "oid");
   const updatedLinkDemographicsHistory = {
     ...existing.data.linkDemographicsHistory,
