@@ -30,6 +30,7 @@ import {
   Entry,
   EntryObject,
   Participant,
+  TextParagraph,
 } from "../cda-types/shared-types";
 import {
   NOT_SPECIFIED,
@@ -593,3 +594,11 @@ export function mapFhirGenderToCda(gender: string | undefined): CdaGender {
       return "UK";
   }
 }
+
+export const notOnFilePlaceholder: TextParagraph = {
+  text: {
+    paragraph: {
+      "#text": "Not on file",
+    },
+  },
+};

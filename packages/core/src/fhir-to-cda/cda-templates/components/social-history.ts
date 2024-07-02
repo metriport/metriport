@@ -1,23 +1,38 @@
 import { Bundle, Observation } from "@medplum/fhirtypes";
+import { SocialHistorySection } from "../../cda-types/sections";
 import { isSocialHistoryObservation } from "../../fhir";
-import { buildCodeCe, buildInstanceIdentifier } from "../commons";
+import { buildCodeCe, buildInstanceIdentifier, notOnFilePlaceholder } from "../commons";
 import { loincCodeSystem, loincSystemName, oids } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
+import { createTableHeader } from "../table";
 import { AugmentedObservation } from "./augmented-resources";
 import { createEntriesFromObservation, createTableRowsFromObservation } from "./observations";
-import { createTableHeader } from "../table";
 
 const sectionName = "socialhistory";
 const tableHeaders = ["Question / Observation", "Answer / Status", "Score", "Date Recorded"];
 
-export function buildSocialHistory(fhirBundle: Bundle) {
+export function buildSocialHistory(fhirBundle: Bundle): SocialHistorySection {
+  const socialHistorySection: SocialHistorySection = {
+    templateId: buildInstanceIdentifier({
+      root: oids.socialHistorySection,
+    }),
+    code: buildCodeCe({
+      code: "29762-2",
+      codeSystem: loincCodeSystem,
+      codeSystemName: loincSystemName,
+      displayName: "Social history Narrative",
+    }),
+    title: "SOCIAL HISTORY",
+    text: notOnFilePlaceholder,
+  };
+
   const socialHistoryObservations: Observation[] =
     fhirBundle.entry?.flatMap(entry =>
       isSocialHistoryObservation(entry.resource) ? [entry.resource] : []
     ) || [];
 
   if (socialHistoryObservations.length === 0) {
-    return undefined;
+    return socialHistorySection;
   }
 
   const augmentedObservations = socialHistoryObservations.map(
@@ -40,19 +55,8 @@ export function buildSocialHistory(fhirBundle: Bundle) {
     },
   };
 
-  const socialHistorySection = {
-    templateId: buildInstanceIdentifier({
-      root: oids.socialHistorySection,
-    }),
-    code: buildCodeCe({
-      code: "29762-2",
-      codeSystem: loincCodeSystem,
-      codeSystemName: loincSystemName,
-      displayName: "Social history Narrative",
-    }),
-    title: "SOCIAL HISTORY",
-    text: { table },
-    entry: entries,
-  };
+  socialHistorySection.text = { table };
+  socialHistorySection.entry = entries;
+
   return socialHistorySection;
 }

@@ -1,11 +1,6 @@
 import { Observation, ObservationComponent } from "@medplum/fhirtypes";
 import {
-  CdaCodeCv,
-  CdaInstanceIdentifier,
   CdaValuePq,
-  CdaValueSt,
-  Entry,
-  EntryObject,
   ObservationEntry,
   ObservationEntryRelationship,
   ObservationTableRow,
@@ -32,26 +27,7 @@ import {
 } from "../constants";
 import { AugmentedObservation } from "./augmented-resources";
 
-export interface CdaObservation {
-  component: {
-    observation: {
-      _classCode: Entry;
-      _moodCode: Entry;
-      id?: CdaInstanceIdentifier[] | Entry;
-      code: CdaCodeCv | undefined;
-      text?: Entry;
-      statusCode?: EntryObject;
-      effectiveTime?: {
-        low?: EntryObject;
-        high?: EntryObject;
-      };
-      priorityCode?: Entry;
-      value?: CdaValueSt | undefined;
-    };
-  };
-}
-
-export function createObservations(observations: Observation[]): CdaObservation[] {
+export function createObservations(observations: Observation[]): { component: ObservationEntry }[] {
   return observations.map(observation => {
     const effectiveTime = observation.effectiveDateTime?.replace(TIMESTAMP_CLEANUP_REGEX, "");
     return {

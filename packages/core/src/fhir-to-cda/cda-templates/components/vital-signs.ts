@@ -1,12 +1,13 @@
 import { Bundle, Observation, Quantity } from "@medplum/fhirtypes";
 import { VitalSignsSection } from "../../cda-types/sections";
-import { ObservationTableRow, ObservationOrganizer } from "../../cda-types/shared-types";
+import { ObservationOrganizer, ObservationTableRow } from "../../cda-types/shared-types";
 import { isVitalSignsObservation } from "../../fhir";
 import {
   buildCodeCe,
   buildInstanceIdentifier,
   formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
+  notOnFilePlaceholder,
 } from "../commons";
 import { loincCodeSystem, loincSystemName, oids } from "../constants";
 import { initiateSectionTable } from "../table";
@@ -41,20 +42,7 @@ const tableHeaders = [
 ];
 
 export function buildVitalSigns(fhirBundle: Bundle): VitalSignsSection {
-  const vitalSignsObservations: Observation[] =
-    fhirBundle.entry?.flatMap(entry =>
-      isVitalSignsObservation(entry.resource) ? [entry.resource] : []
-    ) || [];
-
-  if (vitalSignsObservations.length === 0) {
-    return undefined;
-  }
-
-  const augmentedObservations = createAugmentedVitalObservations(vitalSignsObservations);
-  const { trs, entries } = createTableRowsAndEntries(augmentedObservations);
-  const table = initiateSectionTable(sectionName, tableHeaders, trs);
-
-  const vitalSignsSection = {
+  const vitalSignsSection: VitalSignsSection = {
     templateId: buildInstanceIdentifier({
       root: oids.vitalSignsSection,
     }),
@@ -65,9 +53,25 @@ export function buildVitalSigns(fhirBundle: Bundle): VitalSignsSection {
       displayName: "Vital Signs",
     }),
     title: "VITAL SIGNS",
-    text: table,
-    entry: entries,
+    text: notOnFilePlaceholder,
   };
+
+  const vitalSignsObservations: Observation[] =
+    fhirBundle.entry?.flatMap(entry =>
+      isVitalSignsObservation(entry.resource) ? [entry.resource] : []
+    ) || [];
+
+  if (vitalSignsObservations.length === 0) {
+    return vitalSignsSection;
+  }
+
+  const augmentedObservations = createAugmentedVitalObservations(vitalSignsObservations);
+  const { trs, entries } = createTableRowsAndEntries(augmentedObservations);
+  const table = initiateSectionTable(sectionName, tableHeaders, trs);
+
+  vitalSignsSection.text = table;
+  vitalSignsSection.entry = entries;
+
   return vitalSignsSection;
 }
 

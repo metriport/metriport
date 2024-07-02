@@ -6,7 +6,7 @@ import { xmlBuilder } from "../../clinical-document/shared";
 import { buildSocialHistory } from "../social-history";
 import { makeObservation } from "./make-observation";
 import { createEmptyBundle, getXmlContentFromFile } from "./shared";
-import { observationMentalStatus } from "./social-history-examples";
+import { observationSocialHistory } from "./social-history-examples";
 import _ from "lodash";
 
 let observationId: string;
@@ -17,7 +17,7 @@ beforeAll(() => {
   observationId = faker.string.uuid();
   observation = makeObservation({
     id: observationId,
-    ...observationMentalStatus,
+    ...observationSocialHistory,
   });
 });
 
@@ -29,17 +29,19 @@ beforeEach(() => {
 describe("buildSocialHistory", () => {
   it("does not pick up non-social-history Observations", () => {
     const observation2 = makeObservation({
-      ...observationMentalStatus,
+      ...observationSocialHistory,
       id: faker.string.uuid(),
-      code: {
-        coding: [
-          {
-            system: "http://loinc.org",
-            code: "12345",
-            display: "Some other observation",
-          },
-        ],
-      },
+      category: [
+        {
+          coding: [
+            {
+              system: "http://terminology.hl7.org/CodeSystem/observation-category",
+              code: "survey",
+              display: "survey",
+            },
+          ],
+        },
+      ],
     });
     bundle.entry?.push({ resource: observation2 });
     const res = buildSocialHistory(bundle);

@@ -15,6 +15,7 @@ import {
   formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
   getDisplaysFromCodeableConcepts,
+  notOnFilePlaceholder,
   withoutNullFlavorObject,
 } from "../commons";
 import {
@@ -43,13 +44,27 @@ const tableHeaders = [
 ];
 
 export function buildMedications(fhirBundle: Bundle): MedicationSection {
+  const medicationsSection: MedicationSection = {
+    templateId: buildInstanceIdentifier({
+      root: oids.medicationsSection,
+    }),
+    code: buildCodeCe({
+      code: "10160-0",
+      codeSystem: loincCodeSystem,
+      codeSystemName: loincSystemName,
+      displayName: "History of Medication use Narrative",
+    }),
+    title: "MEDICATIONS",
+    text: notOnFilePlaceholder,
+  };
+
   const medicationStatements: MedicationStatement[] =
     fhirBundle.entry?.flatMap(entry =>
       isMedicationStatement(entry.resource) ? [entry.resource] : []
     ) || [];
 
   if (medicationStatements.length === 0) {
-    return undefined;
+    return medicationsSection;
   }
 
   const augmentedMedStatements = createAugmentedMedicationStatements(
@@ -65,20 +80,9 @@ export function buildMedications(fhirBundle: Bundle): MedicationSection {
 
   const table = initiateSectionTable(medicationsSectionName, tableHeaders, trs);
 
-  const medicationsSection = {
-    templateId: buildInstanceIdentifier({
-      root: oids.medicationsSection,
-    }),
-    code: buildCodeCe({
-      code: "10160-0",
-      codeSystem: loincCodeSystem,
-      codeSystemName: loincSystemName,
-      displayName: "History of Medication use Narrative",
-    }),
-    title: "MEDICATIONS",
-    text: table,
-    entry: entries,
-  };
+  medicationsSection.text = table;
+  medicationsSection.entry = entries;
+
   return medicationsSection;
 }
 

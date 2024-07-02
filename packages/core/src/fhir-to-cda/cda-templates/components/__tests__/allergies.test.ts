@@ -26,6 +26,14 @@ beforeEach(() => {
 });
 
 describe("buildAllergies", () => {
+  it("returns an empty section if no resources found", () => {
+    const res = buildAllergies(bundle);
+    const cleanedJsonObj = removeEmptyFields(res);
+    const xmlRes = xmlBuilder.build(cleanedJsonObj);
+    console.log(xmlRes);
+    expect(xmlRes).toContain("Not on file");
+  });
+
   it("correctly maps a single AllergyIntolerance", () => {
     bundle.entry?.push({ resource: { ...allergy, note: [] } });
 

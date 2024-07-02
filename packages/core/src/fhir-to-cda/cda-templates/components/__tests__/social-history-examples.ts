@@ -1,6 +1,6 @@
 import { Observation } from "@medplum/fhirtypes";
 
-export const observationMentalStatus: Partial<Observation> = {
+export const observationSocialHistory: Partial<Observation> = {
   status: "final",
   category: [
     {

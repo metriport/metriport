@@ -14,6 +14,7 @@ import {
   getTextFromCode,
   isLoinc,
   mapCodingSystem,
+  notOnFilePlaceholder,
   withoutNullFlavorObject,
 } from "../commons";
 import {
@@ -40,11 +41,26 @@ const tableHeaders = [
 ];
 
 export function buildProblems(fhirBundle: Bundle): ProblemsSection {
+  const problemsSection: ProblemsSection = {
+    templateId: buildInstanceIdentifier({
+      root: oids.problemsSection,
+      extension: extensionValue2015,
+    }),
+    code: buildCodeCe({
+      code: "11450-4",
+      codeSystem: loincCodeSystem,
+      codeSystemName: loincSystemName,
+      displayName: "Problem list - Reported",
+    }),
+    title: "PROBLEMS",
+    text: notOnFilePlaceholder,
+  };
+
   const conditions: Condition[] =
     fhirBundle.entry?.flatMap(entry => (isCondition(entry.resource) ? [entry.resource] : [])) || [];
 
   if (conditions.length === 0) {
-    return undefined;
+    return problemsSection;
   }
 
   const augmentedConditions = conditions.map(condition => {
@@ -59,21 +75,9 @@ export function buildProblems(fhirBundle: Bundle): ProblemsSection {
 
   const table = initiateSectionTable(problemsSectionName, tableHeaders, trs);
 
-  const problemsSection = {
-    templateId: buildInstanceIdentifier({
-      root: oids.problemsSection,
-      extension: extensionValue2015,
-    }),
-    code: buildCodeCe({
-      code: "11450-4",
-      codeSystem: loincCodeSystem,
-      codeSystemName: loincSystemName,
-      displayName: "Problem list - Reported",
-    }),
-    title: "PROBLEMS",
-    text: table,
-    entry: entries,
-  };
+  problemsSection.text = table;
+  problemsSection.entry = entries;
+
   return problemsSection;
 }
 
