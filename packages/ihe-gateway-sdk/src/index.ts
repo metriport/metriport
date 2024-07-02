@@ -61,6 +61,7 @@ export {
   SamlAttributes,
   XCAGateway,
   XCPDGateway,
+  XCPDPatientId,
 } from "./models/shared";
 export {
   Name,
