@@ -16,6 +16,7 @@ export enum FhirGender {
   male = "male",
   female = "female",
   other = "other",
+  unknown = "unknown",
 }
 
 export type PatientIdAndData = Pick<Patient, "id" | "data">;
@@ -24,20 +25,26 @@ const genderMapping: { [record in GenderAtBirth]: FhirGender } = {
   F: FhirGender.female,
   M: FhirGender.male,
   UN: FhirGender.other,
+  UNK: FhirGender.unknown,
 };
 
 const reverseGenderMapping: Record<FhirGender, GenderAtBirth> = {
   [FhirGender.female]: GenderCodes.F,
   [FhirGender.male]: GenderCodes.M,
   [FhirGender.other]: GenderCodes.UN,
+  [FhirGender.unknown]: GenderCodes.UNK,
 };
 
 export function mapGenderAtBirthToFhir(k: GenderAtBirth): FhirGender {
-  return genderMapping[k];
+  const gender = genderMapping[k];
+  return gender ? gender : FhirGender.unknown;
 }
 
-export function mapFhirToGenderAtBirth(gender: "female" | "male" | "other"): GenderAtBirth {
-  return reverseGenderMapping[gender];
+export function mapFhirToGenderAtBirth(
+  gender: "female" | "male" | "other" | "unknown"
+): GenderAtBirth {
+  const genderAtBirth = reverseGenderMapping[gender];
+  return genderAtBirth ? genderAtBirth : GenderCodes.UNK;
 }
 
 export function mapPatientDataToResource(patient: PatientIdAndData) {

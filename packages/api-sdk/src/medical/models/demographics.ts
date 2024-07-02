@@ -44,7 +44,7 @@ export const personalIdentifierSchema = basePersonalIdentifierSchema
   .or(basePersonalIdentifierSchema.merge(generalTypeIdentifierSchema));
 export type PersonalIdentifier = z.infer<typeof personalIdentifierSchema>;
 
-export const genderAtBirthSchema = z.enum(["F", "M", "UN"]);
+export const genderAtBirthSchema = z.enum(["F", "M", "UN", "UNK"]);
 
 const phoneLength = 10;
 export const contactSchema = z

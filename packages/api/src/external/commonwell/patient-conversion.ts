@@ -16,6 +16,7 @@ const genderMapping: { [k in GenderAtBirth]: string } = {
   F: GenderCodes.F,
   M: GenderCodes.M,
   UN: GenderCodes.UN,
+  UNK: GenderCodes.UNK,
 };
 
 export function mapGenderAtBirthToCw(k: GenderAtBirth): string {
