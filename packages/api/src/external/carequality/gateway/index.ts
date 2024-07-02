@@ -14,14 +14,9 @@ import {
 } from "../command/cq-directory/search-cq-directory";
 import { buildXcpdGateway, cqOrgsToXCPDGateways } from "../organization-conversion";
 
-type Gateways = {
-  v1Gateways: XCPDGateway[];
-  v2Gateways: XCPDGateway[];
-};
-
 export const EPIC_ORG_NAME = "Epic";
 
-export async function gatherXCPDGateways(patient: Patient): Promise<Gateways> {
+export async function gatherXCPDGateways(patient: Patient): Promise<XCPDGateway[]> {
   const { log } = out(`gatherXCPDGateways, cx ${patient.cxId}, patient ${patient.id}`);
 
   /**
@@ -50,12 +45,9 @@ export async function gatherXCPDGateways(patient: Patient): Promise<Gateways> {
   const filteredOrgs = facilitiesWithEpicFilter(allOrgs, isEpicEnabled);
   const allOrgsWithBasics = filteredOrgs.map(toBasicOrgAttributes);
   const orgsToSearch = filterCQOrgsToSearch(allOrgsWithBasics);
-  const { v1Gateways, v2Gateways } = await cqOrgsToXCPDGateways(orgsToSearch, patient.cxId);
+  const v2Gateways = await cqOrgsToXCPDGateways(orgsToSearch);
 
-  return {
-    v1Gateways,
-    v2Gateways,
-  };
+  return v2Gateways;
 }
 
 export function facilitiesWithEpicFilter(
@@ -69,7 +61,7 @@ export function facilitiesWithEpicFilter(
       );
 }
 
-async function getE2eGateways(): Promise<Gateways> {
+async function getE2eGateways(): Promise<XCPDGateway[]> {
   const e2eCqDirectoryEntry = await getCQDirectoryEntryOrFail(Config.getSystemRootOID());
   if (!e2eCqDirectoryEntry.urlXCPD) {
     throw new MetriportError("E2E CQ Directory entry missing XCPD URL", undefined, {
@@ -80,8 +72,5 @@ async function getE2eGateways(): Promise<Gateways> {
     urlXCPD: e2eCqDirectoryEntry.urlXCPD,
     id: e2eCqDirectoryEntry.id,
   });
-  return {
-    v1Gateways: [],
-    v2Gateways: [e2eXcpdGateway],
-  };
+  return [e2eXcpdGateway];
 }

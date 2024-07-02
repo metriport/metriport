@@ -24,10 +24,6 @@ on:
         description: "The ARN of the ECS service for Inbound requests to be restarted upon deployment"
         required: true
         type: string
-      IHE_OUTBOUND_ECS_SERVICE:
-        description: "The ARN of the ECS service for Outbound requeststo be restarted upon deployment"
-        required: true
-        type: string
       AWS_REGION:
         required: true
         type: string
@@ -78,7 +74,6 @@ jobs:
           echo "ECR_REPO_URI: ${{ inputs.ECR_REPO_URI }}"
           echo "ECS_CLUSTER: ${{ inputs.ECS_CLUSTER }}"
           echo "IHE_INBOUND_ECS_SERVICE: ${{ inputs.IHE_INBOUND_ECS_SERVICE }}"
-          echo "IHE_OUTBOUND_ECS_SERVICE: ${{ inputs.IHE_OUTBOUND_ECS_SERVICE }}"
           echo "AWS_REGION: ${{ inputs.AWS_REGION }}"
         shell: bash
       - name: Login to Docker Hub
@@ -156,7 +151,6 @@ jobs:
           ECR_REPO_URI: ${{ inputs.ECR_REPO_URI }}
           ECS_CLUSTER: ${{ inputs.ECS_CLUSTER }}
           IHE_INBOUND_ECS_SERVICE: ${{ inputs.IHE_INBOUND_ECS_SERVICE }}
-          IHE_OUTBOUND_ECS_SERVICE: ${{ inputs.IHE_OUTBOUND_ECS_SERVICE }}
           AWS_REGION: ${{ inputs.AWS_REGION }}
           IHE_GW_ARTIFACT_URL: ${{ inputs.IHE_GW_ARTIFACT_URL }}
           IHE_GW_KEYSTORE_NAME: ${{ inputs.IHE_GW_KEYSTORE_NAME }}
