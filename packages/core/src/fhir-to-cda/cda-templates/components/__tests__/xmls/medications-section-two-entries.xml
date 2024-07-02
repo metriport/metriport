@@ -16,6 +16,9 @@
 					Code
 				</th>
 				<th>
+					Code System
+				</th>
+				<th>
 					Dosage
 				</th>
 				<th>
@@ -38,7 +41,10 @@
 					CARVEDILOL
 				</td>
 				<td>
-					315577 - 2.16.840.1.113883.6.88
+					315577
+				</td>
+				<td>
+					2.16.840.1.113883.6.88
 				</td>
 				<td>
 					6.25 mg (milligram)
@@ -47,10 +53,10 @@
 					1 pill/day
 				</td>
 				<td>
-					${params.pastDateHumanReadable}
+					${pastDateHumanReadable}
 				</td>
 				<td>
-					${params.NOT_SPECIFIED}
+					${NOT_SPECIFIED}
 				</td>
 				<td>
 					heart, weakness
@@ -61,7 +67,10 @@
 					OMEPRAZOLE
 				</td>
 				<td>
-					646344 - 2.16.840.1.113883.6.88
+					646344
+				</td>
+				<td>
+					2.16.840.1.113883.6.88
 				</td>
 				<td>
 					20 mg (milligram)
@@ -70,10 +79,10 @@
 					2 capsule/day
 				</td>
 				<td>
-					${params.pastDateHumanReadable2}
+					${pastDateHumanReadable2}
 				</td>
 				<td>
-					${params.endDateHumanReadable}
+					${endDateHumanReadable}
 				</td>
 				<td>
 					GERD, Migraine
@@ -86,12 +95,12 @@
 	<substanceAdministration classCode="SBADM" moodCode="INT">
 		<templateId root="2.16.840.1.113883.10.20.22.4.16" extension="2014-06-09">
 		</templateId>
-		<id root="placeholder-ORG-OID" extension="${params.medStmntId}">
+		<id root="placeholder-ORG-OID" extension="${medStmntId}">
 		</id>
 		<statusCode code="active">
 		</statusCode>
 		<effectiveTime xsi:type="IVL_TS">
-			<low value="${params.pastDateCda}">
+			<low value="${pastDateCda}">
 			</low>
 		</effectiveTime>
 		<consumable typeCode="CSM">
@@ -104,8 +113,6 @@
 							<reference value="medications1">
 							</reference>
 						</originalText>
-						<translation code="315577" codeSystem="2.16.840.1.113883.6.88" displayName="carvedilol 6.25 MG">
-						</translation>
 						<translation code="51407-040" codeSystem="2.16.840.1.113883.6.69" displayName="Carvedilol">
 						</translation>
 					</code>
@@ -118,14 +125,14 @@
 	<substanceAdministration classCode="SBADM" moodCode="INT">
 		<templateId root="2.16.840.1.113883.10.20.22.4.16" extension="2014-06-09">
 		</templateId>
-		<id root="placeholder-ORG-OID" extension="${params.medStmntId2}">
+		<id root="placeholder-ORG-OID" extension="${medStmntId2}">
 		</id>
 		<statusCode code="completed">
 		</statusCode>
 		<effectiveTime xsi:type="IVL_TS">
-			<low value="${params.pastDateCda2}">
+			<low value="${pastDateCda2}">
 			</low>
-			<high value="${params.endDateXml}">
+			<high value="${endDateXml}">
 			</high>
 		</effectiveTime>
 		<consumable typeCode="CSM">
@@ -138,8 +145,6 @@
 							<reference value="medications2">
 							</reference>
 						</originalText>
-						<translation code="646344" codeSystem="2.16.840.1.113883.6.88" displayName="omeprazole 20 MG / sodium bicarbonate 1100 MG Oral Capsule">
-						</translation>
 					</code>
 				</manufacturedMaterial>
 			</manufacturedProduct>

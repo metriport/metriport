@@ -1,11 +1,11 @@
 import { Composition } from "@medplum/fhirtypes";
-import { xmlBuilder } from "./shared";
 import {
   CdaAuthor,
   CdaCodeCe,
   CdaCustodian,
   CdaRecordTarget,
   ClinicalDocument,
+  EncompassingEncounter,
 } from "../../cda-types/shared-types";
 import {
   buildCodeCe,
@@ -15,6 +15,7 @@ import {
   withoutNullFlavorObject,
 } from "../commons";
 import { _xmlnsSdtcAttribute, _xmlnsXsiAttribute, clinicalDocumentConstants } from "../constants";
+import { xmlBuilder } from "./shared";
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function removeEmptyFields(obj: any): unknown {
@@ -42,6 +43,7 @@ export function buildClinicalDocumentXml(
   recordTarget: CdaRecordTarget,
   author: CdaAuthor,
   custodian: CdaCustodian,
+  encompassingEncounter: EncompassingEncounter | undefined,
   structuredBody: unknown,
   composition: Composition | undefined
 ): string {
@@ -85,6 +87,7 @@ export function buildClinicalDocumentXml(
       recordTarget,
       author,
       custodian,
+      componentOf: encompassingEncounter,
       component: structuredBody,
     },
   };
@@ -102,7 +105,6 @@ function getDocumentTypeCode(composition: Composition | undefined): CdaCodeCe {
       displayName: primaryCoding?.display,
     });
   }
-  // TODO: Write a more robust backup option
   return buildCodeCe({
     code: "34133-9",
     codeSystem: clinicalDocumentConstants.code.codeSystem,
@@ -115,6 +117,5 @@ function getDocumentTitle(composition: Composition | undefined): string {
   if (composition && composition.type?.text) {
     return composition.type?.text;
   }
-  // TODO: Write a more robust backup option
   return "Continuity of Care Document";
 }

@@ -10,6 +10,7 @@ import { DocumentReference, OutboundDocumentQueryResp } from "@metriport/ihe-gat
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { mapDocRefToMetriport } from "../../../shared/external";
+import { setDocRetrieveStartAt } from "../../hie/set-doc-retrieve-start";
 import { isCQDirectEnabledForCx } from "../../aws/app-config";
 import { isConvertible } from "../../fhir-converter/converter";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
@@ -24,10 +25,14 @@ import { getCQData } from "../patient";
 import {
   cqToFHIR,
   DocumentReferenceWithMetriportId,
-  filterDocRefsWithMetriportId,
+  containsMetriportId,
   getContentTypeOrUnknown,
+  containsDuplicateMetriportId,
 } from "./shared";
-import { getDocumentReferenceContentTypeCounts } from "../../hie/get-docr-content-type-counts";
+import {
+  getDocumentReferenceContentTypeCounts,
+  getOutboundDocQuerySuccessFailureCount,
+} from "../../hie/get-counts-analytics";
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
 import {
   getOrgOidsWithIHEGatewayV2Enabled,
@@ -56,34 +61,10 @@ export async function processOutboundDocumentQueryResps({
     const cqData = getCQData(patient.data.externalData);
     const docQueryStartedAt = cqData?.documentQueryProgress?.startedAt;
     const duration = elapsedTimeFromNow(docQueryStartedAt);
-
-    const addDocRefId = addMetriportDocRefID({ cxId, patientId, requestId });
-    const resultsWithMetriportId: OutboundDocumentQueryResp[] = [];
-
-    const updateResponseDocumentReferencesWithMetriportId = async (
-      response: OutboundDocumentQueryResp
-    ): Promise<void> => {
-      const updatedDocumentReferences = response.documentReference
-        ? await Promise.all(
-            response.documentReference.map(async docRef => {
-              return await addDocRefId(docRef);
-            })
-          )
-        : response.documentReference;
-
-      resultsWithMetriportId.push({
-        ...response,
-        documentReference: updatedDocumentReferences,
-      });
-    };
-
-    await executeAsynchronously(response, updateResponseDocumentReferencesWithMetriportId, {
-      numberOfParallelExecutions: 20,
-    });
-
-    const docRefs = resultsWithMetriportId.flatMap(result => result.documentReference ?? []);
+    const docRefs = response.flatMap(result => result.documentReference ?? []);
     const contentTypes = docRefs.map(getContentTypeOrUnknown);
     const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
+    const { successCount, failureCount } = getOutboundDocQuerySuccessFailureCount(response);
 
     analytics({
       distinctId: cxId,
@@ -94,13 +75,23 @@ export async function processOutboundDocumentQueryResps({
         hie: MedicalDataSource.CAREQUALITY,
         duration,
         documentCount: docRefs.length,
+        successCount,
+        failureCount,
         ...contentTypeCounts,
       },
     });
 
-    const docRefsWithMetriportId = filterDocRefsWithMetriportId(docRefs);
+    const responsesWithDocsToDownload = await getRespWithDocsToDownload({
+      cxId,
+      patientId,
+      requestId,
+      response,
+    });
 
-    const docsToDownload = await getNonExistentDocRefs(docRefsWithMetriportId, patientId, cxId);
+    const docsToDownload = responsesWithDocsToDownload.flatMap(
+      result => result.documentReference ?? []
+    );
+
     const convertibleDocCount = docsToDownload.filter(doc =>
       isConvertible(doc.contentType || undefined)
     ).length;
@@ -144,47 +135,24 @@ export async function processOutboundDocumentQueryResps({
       source: MedicalDataSource.CAREQUALITY,
     });
 
+    const docRetrievalStartedAt = new Date();
+    await setDocRetrieveStartAt({
+      patient: { id: patientId, cxId: cxId },
+      source: MedicalDataSource.CAREQUALITY,
+      startedAt: docRetrievalStartedAt,
+    });
+
     // Since we have most of the document contents when doing the document query,
     // we will store this in FHIR and then upsert the reference to the s3 object in FHIR
     // when doing the doc retrieval
-    await storeInitDocRefInFHIR(docRefsWithMetriportId, cxId, patientId, log);
+    await storeInitDocRefInFHIR(docsToDownload, cxId, patientId, log);
 
-    const resultsWithMetriportIdAndDrUrl: OutboundDocumentQueryResp[] = [];
-
-    const replaceDqUrlWithDrUrl = async (
-      outboundDocumentQueryResp: OutboundDocumentQueryResp
-    ): Promise<void> => {
-      const gateway = await getCQDirectoryEntry(outboundDocumentQueryResp.gateway.homeCommunityId);
-
-      if (!gateway) {
-        const msg = `Gateway not found - Doc Retrieval`;
-        log(`${msg}: ${outboundDocumentQueryResp.gateway.homeCommunityId} skipping...`);
-        capture.message(msg, {
-          extra: {
-            context: `cq.dq.getCQDirectoryEntry`,
-            patientId,
-            requestId,
-            cxId,
-            gateway: outboundDocumentQueryResp.gateway,
-          },
-        });
-        return;
-      } else if (!gateway.urlDR) {
-        log(`Gateway ${gateway.id} has no DR URL, skipping...`);
-        return;
-      }
-
-      resultsWithMetriportIdAndDrUrl.push({
-        ...outboundDocumentQueryResp,
-        gateway: {
-          ...outboundDocumentQueryResp.gateway,
-          url: gateway.urlDR,
-        },
-      });
-    };
-
-    await executeAsynchronously(resultsWithMetriportId, replaceDqUrlWithDrUrl, {
-      numberOfParallelExecutions: 20,
+    const resultsWithMetriportIdAndDrUrl = await replaceDqUrlWithDrUrl({
+      patientId,
+      requestId,
+      cxId,
+      responsesWithDocsToDownload,
+      log,
     });
 
     const outboundDocumentQueryResultsV1: OutboundDocumentQueryResp[] = [];
@@ -298,6 +266,173 @@ function buildInterrupt({
   };
 }
 
+type DqRespWithDocRefsWithMetriportId = OutboundDocumentQueryResp & {
+  documentReference: DocumentReferenceWithMetriportId[];
+};
+
+async function getRespWithDocsToDownload({
+  cxId,
+  patientId,
+  requestId,
+  response,
+}: OutboundDocQueryRespParam): Promise<DqRespWithDocRefsWithMetriportId[]> {
+  const respWithDocsToDownload: DqRespWithDocRefsWithMetriportId[] = [];
+  const seenMetriportIds = new Set<string>();
+
+  await executeAsynchronously(
+    response,
+    async gwResp => {
+      const resultsWithMetriportId = await getDocumentReferencesWithMetriportId({
+        cxId,
+        patientId,
+        requestId,
+        response: gwResp,
+      });
+      const docRefs = resultsWithMetriportId.flatMap(result => result.documentReference ?? []);
+      const docRefsWithMetriportId = docRefs.filter(containsMetriportId);
+      const deduplicatedDocRefsWithMetriportId = docRefsWithMetriportId.filter(
+        docRef => !containsDuplicateMetriportId(docRef, seenMetriportIds)
+      );
+
+      const docsToDownload = await getNonExistentDocRefs(
+        deduplicatedDocRefsWithMetriportId,
+        patientId,
+        cxId
+      );
+
+      if (docsToDownload.length === 0) {
+        return;
+      }
+
+      respWithDocsToDownload.push({
+        ...gwResp,
+        documentReference: docsToDownload,
+      });
+    },
+    {
+      numberOfParallelExecutions: 20,
+    }
+  );
+
+  return respWithDocsToDownload;
+}
+
+async function getDocumentReferencesWithMetriportId({
+  cxId,
+  patientId,
+  requestId,
+  response,
+}: {
+  cxId: string;
+  patientId: string;
+  requestId: string;
+  response: OutboundDocumentQueryResp;
+}): Promise<OutboundDocumentQueryResp[]> {
+  const resultsWithMetriportId: OutboundDocumentQueryResp[] = [];
+
+  const docRefs = response.documentReference ?? [];
+
+  const docRefsWithMetriportId = await Promise.all(
+    docRefs.map(docRef =>
+      addMetriportDocRefID({
+        cxId,
+        patientId,
+        requestId,
+        document: docRef,
+      })
+    )
+  );
+
+  resultsWithMetriportId.push({
+    ...response,
+    documentReference: docRefsWithMetriportId,
+  });
+
+  return resultsWithMetriportId;
+}
+
+async function addMetriportDocRefID({
+  cxId,
+  patientId,
+  requestId,
+  document,
+}: {
+  patientId: string;
+  cxId: string;
+  requestId: string;
+  document: DocumentReference;
+}) {
+  const documentId = document.docUniqueId;
+
+  const { metriportId, originalId } = await mapDocRefToMetriport({
+    cxId,
+    patientId,
+    documentId,
+    requestId,
+    source: MedicalDataSource.CAREQUALITY,
+  });
+
+  return {
+    ...document,
+    docUniqueId: originalId,
+    metriportId,
+  };
+}
+
+async function replaceDqUrlWithDrUrl({
+  patientId,
+  requestId,
+  cxId,
+  responsesWithDocsToDownload,
+  log,
+}: {
+  patientId: string;
+  requestId: string;
+  cxId: string;
+  responsesWithDocsToDownload: OutboundDocumentQueryResp[];
+  log: typeof console.log;
+}): Promise<OutboundDocumentQueryResp[]> {
+  const resultsWithMetriportIdAndDrUrl: OutboundDocumentQueryResp[] = [];
+
+  await executeAsynchronously(
+    responsesWithDocsToDownload,
+    async outboundDocumentQueryResp => {
+      const gateway = await getCQDirectoryEntry(outboundDocumentQueryResp.gateway.homeCommunityId);
+
+      if (!gateway) {
+        const msg = `Gateway not found - Doc Retrieval`;
+        log(`${msg}: ${outboundDocumentQueryResp.gateway.homeCommunityId} skipping...`);
+        capture.message(msg, {
+          extra: {
+            context: `cq.dq.getCQDirectoryEntry`,
+            patientId,
+            requestId,
+            cxId,
+            gateway: outboundDocumentQueryResp.gateway,
+          },
+        });
+        return;
+      } else if (!gateway.urlDR) {
+        log(`Gateway ${gateway.id} has no DR URL, skipping...`);
+        return;
+      }
+
+      resultsWithMetriportIdAndDrUrl.push({
+        ...outboundDocumentQueryResp,
+        gateway: {
+          ...outboundDocumentQueryResp.gateway,
+          url: gateway.urlDR,
+        },
+      });
+    },
+    {
+      numberOfParallelExecutions: 20,
+    }
+  );
+
+  return resultsWithMetriportIdAndDrUrl;
+}
+
 async function storeInitDocRefInFHIR(
   docRefs: DocumentReferenceWithMetriportId[],
   cxId: string,
@@ -330,31 +465,4 @@ async function storeInitDocRefInFHIR(
     },
     { numberOfParallelExecutions: parallelUpsertsToFhir }
   );
-}
-
-function addMetriportDocRefID({
-  cxId,
-  patientId,
-  requestId,
-}: {
-  patientId: string;
-  cxId: string;
-  requestId: string;
-}) {
-  return async (document: DocumentReference): Promise<DocumentReferenceWithMetriportId> => {
-    const documentId = document.docUniqueId;
-
-    const { metriportId, originalId } = await mapDocRefToMetriport({
-      cxId,
-      patientId,
-      documentId,
-      requestId,
-      source: MedicalDataSource.CAREQUALITY,
-    });
-    return {
-      ...document,
-      docUniqueId: originalId,
-      metriportId,
-    };
-  };
 }

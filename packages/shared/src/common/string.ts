@@ -8,3 +8,7 @@ export function limitStringLength(
     ? value.substring(0, max - suffix.length) + suffix
     : value;
 }
+
+export function stripNonNumericChars(str: string): string {
+  return str.trim().replace(/\D/g, "");
+}

@@ -5,24 +5,29 @@ import {
   PatientDemoData,
 } from "@metriport/core/domain/patient";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import cqCommands from "../../../external/carequality";
-import cwCommands from "../../../external/commonwell";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilityOrFail } from "../facility/get-facility";
-import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientByDemo } from "./get-patient";
 import { sanitize, validate } from "./shared";
+import { runInitialPatientDiscoveryAcrossHies } from "../../../external/hie/run-initial-patient-discovery";
 
 type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientCreateCmd = PatientNoExternalData & Identifier;
 
-export const createPatient = async (
-  patient: PatientCreateCmd,
-  forceCommonwell?: boolean,
-  forceCarequality?: boolean
-): Promise<Patient> => {
+export async function createPatient({
+  patient,
+  rerunPdOnNewDemographics,
+  forceCommonwell,
+  forceCarequality,
+}: {
+  patient: PatientCreateCmd;
+  rerunPdOnNewDemographics?: boolean;
+  forceCommonwell?: boolean;
+  forceCarequality?: boolean;
+}): Promise<Patient> {
   const { cxId, facilityId, externalId } = patient;
 
   const sanitized = sanitize(patient);
@@ -45,7 +50,6 @@ export const createPatient = async (
   // validate facility exists and cx has access to it
   await getFacilityOrFail({ cxId, id: facilityId });
 
-  const requestId = uuidv7();
   const patientCreate: PatientCreate = {
     id: uuidv7(),
     cxId,
@@ -59,7 +63,6 @@ export const createPatient = async (
       personalIdentifiers,
       address,
       contact,
-      patientDiscovery: { requestId, startedAt: new Date() },
     },
   };
   const addressWithCoordinates = await addCoordinatesToAddresses({
@@ -71,15 +74,13 @@ export const createPatient = async (
 
   const newPatient = await PatientModel.create(patientCreate);
 
-  await cwCommands.patient.create(
-    newPatient,
+  runInitialPatientDiscoveryAcrossHies({
+    patient: newPatient.dataValues,
     facilityId,
-    getCqOrgIdsToDenyOnCw,
-    requestId,
-    forceCommonwell
-  );
-
-  await cqCommands.patient.discover(newPatient, facilityId, requestId, forceCarequality);
+    rerunPdOnNewDemographics,
+    forceCarequality,
+    forceCommonwell,
+  }).catch(processAsyncError("runInitialPatientDiscoveryAcrossHies"));
 
   return newPatient;
-};
+}

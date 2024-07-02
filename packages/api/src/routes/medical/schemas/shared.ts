@@ -1,3 +1,4 @@
+import { stripNonNumericChars } from "@metriport/shared";
 import dayjs from "dayjs";
 import { z, ZodString } from "zod";
 import { ISO_DATE } from "../../../shared/date";
@@ -7,10 +8,6 @@ export const emptyStringToUndefined = (v: string | undefined | null) =>
 
 export const optionalString = (zodSchema: ZodString) =>
   zodSchema.or(z.string().optional()).transform(emptyStringToUndefined);
-
-export function stripNonNumericChars(str: string): string {
-  return str.trim().replace(/\D/g, "");
-}
 
 export const defaultString = z.string().trim();
 export const defaultOptionalString = optionalString(defaultString);

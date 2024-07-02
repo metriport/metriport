@@ -10,7 +10,8 @@ import {
   GenderCodes,
 } from "@metriport/commonwell-sdk";
 import { addOidPrefix, driversLicenseURIs } from "@metriport/core/domain/oid";
-import { Patient, splitName, GenderAtBirth } from "@metriport/core/domain/patient";
+import { GenderAtBirth, Patient, splitName } from "@metriport/core/domain/patient";
+import { normalizePhoneNumber } from "@metriport/shared";
 
 const genderMapping: { [k in GenderAtBirth]: string } = {
   F: GenderCodes.F,
@@ -108,12 +109,4 @@ export function getCwStrongIdsFromPatient(patient: Patient): StrongId[] {
     }
     return []; // { ...base, key: id.value, system: identifierSytemByType[id.type] }
   });
-}
-
-function normalizePhoneNumber(phone: string): string {
-  const numericPhone = phone.replace(/[^0-9]/g, "");
-  if (numericPhone.length > 10) {
-    return numericPhone.slice(-10);
-  }
-  return numericPhone;
 }

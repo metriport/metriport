@@ -1,13 +1,13 @@
 import fs from "fs";
 import path from "path";
-import { processDQResponse } from "../xca/process/dq-response";
+import { processDqResponse } from "../xca/process/dq-response";
 import { outboundDqRequest, expectedDqDocumentReference } from "./constants";
 
-describe("processDQResponse", () => {
+describe("processDqResponse", () => {
   it("should process the successful DQ response correctly", async () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dq_multiple_docs.xml"), "utf8");
-    const response = processDQResponse({
-      dqResponse: {
+    const response = await processDqResponse({
+      response: {
         response: xmlString,
         success: true,
         gateway: outboundDqRequest.gateway,
@@ -21,8 +21,8 @@ describe("processDQResponse", () => {
   });
   it("should process the empty DQ response correctly", async () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dq_empty.xml"), "utf8");
-    const response = processDQResponse({
-      dqResponse: {
+    const response = await processDqResponse({
+      response: {
         response: xmlString,
         success: true,
         gateway: outboundDqRequest.gateway,
@@ -34,8 +34,8 @@ describe("processDQResponse", () => {
 
   it("should process the DQ response with registry error correctly", async () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dq_error.xml"), "utf8");
-    const response = processDQResponse({
-      dqResponse: {
+    const response = await processDqResponse({
+      response: {
         response: xmlString,
         success: true,
         gateway: outboundDqRequest.gateway,
@@ -48,8 +48,8 @@ describe("processDQResponse", () => {
   it("should process response that is not a string correctly", async () => {
     const randomResponse = "This is a bad response and is not xml";
 
-    const response = processDQResponse({
-      dqResponse: {
+    const response = await processDqResponse({
+      response: {
         success: true,
         response: randomResponse,
         gateway: outboundDqRequest.gateway,

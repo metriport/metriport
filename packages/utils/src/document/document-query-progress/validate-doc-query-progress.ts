@@ -1,13 +1,13 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
-import { PatientDTO, USState, MetriportMedicalApi, FacilityCreate } from "@metriport/api-sdk";
-import { sleep, executeWithRetries } from "@metriport/shared";
-import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { faker } from "@faker-js/faker";
-import duration from "dayjs/plugin/duration";
-import dayjs from "dayjs";
+import { FacilityCreate, MetriportMedicalApi, PatientDTO, USState } from "@metriport/api-sdk";
+import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { executeWithNetworkRetries, sleep } from "@metriport/shared";
 import axios from "axios";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { patientsToCreate } from "./patients";
 dayjs.extend(duration);
 
@@ -89,8 +89,8 @@ async function main() {
   }
 
   for (const patient of createdPatients) {
-    await internalApi.delete(
-      `/internal/patient/${patient.id}?facilityId=${facility.id}&cxId=${cxId}`
+    await executeWithNetworkRetries(() =>
+      internalApi.delete(`/internal/patient/${patient.id}?facilityId=${facility.id}&cxId=${cxId}`)
     );
   }
 }
@@ -141,11 +141,7 @@ async function checkPatientLinkingStatus(
   while (!isPatientLinked) {
     await sleep(CREATE_PATIENT_SLEEP.asMilliseconds());
 
-    const retryIsPatientLinked = await executeWithRetries(
-      () => checkPatientLinked(patient, facilityId),
-      3,
-      500
-    );
+    const retryIsPatientLinked = await checkPatientLinked(patient, facilityId);
 
     if (retryIsPatientLinked) {
       isPatientLinked = true;
@@ -162,8 +158,14 @@ async function checkPatientLinkingStatus(
 }
 
 async function checkPatientLinked(patient: PatientDTO, facilityId: string) {
-  const patientLinks = await internalApi.get(
-    `/internal/patient/${patient.id}/link?facilityId=${facilityId}&cxId=${cxId}`
+  const patientLinks = await executeWithNetworkRetries(
+    () =>
+      internalApi.get(`/internal/patient/${patient.id}/link?facilityId=${facilityId}&cxId=${cxId}`),
+    {
+      retryOnTimeout: true,
+      maxAttempts: 6,
+      initialDelay: 500,
+    }
   );
 
   return patientLinks.data.currentLinks.length > 0;
@@ -182,18 +184,20 @@ async function queryPatientDocs(
 ): Promise<{ patient: PatientDTO; successful: boolean }> {
   try {
     if (resetAndRunAgain) {
-      await internalApi.post(
-        `/medical/v1/document/query`,
-        {
-          metadata,
-        },
-        {
-          params: {
-            patientId: patient.id,
-            facilityId,
-            override: true,
+      await executeWithNetworkRetries(() =>
+        internalApi.post(
+          `/medical/v1/document/query`,
+          {
+            metadata,
           },
-        }
+          {
+            params: {
+              patientId: patient.id,
+              facilityId,
+              override: true,
+            },
+          }
+        )
       );
     } else {
       await metriportApi.startDocumentQuery(patient.id, facilityId, metadata);

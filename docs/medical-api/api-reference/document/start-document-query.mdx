@@ -15,11 +15,14 @@ incremented. Once all documents have been converted it too will be marked as `co
 
 If there's no document to be converted, the total will be set to zero and the status to `completed`.
 
-<Tip>
-  To get updates about the document query progress, including download and conversion status, check
-  out our [webhooks guide](/medical-api/more-info/webhooks). Note that the webhooks will only
-  contain updates for new data fetched in the current document query.
-</Tip>
+Once each process completes, a webhook request will be sent to [your configured URL](/home/api-reference/settings/post-settings)
+containing the available data. **Note:** the webhooks will only contain updates for new data fetched in the current document query.
+
+Webhook message types - see [the respective section on the webhooks page](/medical-api/more-info/webhooks#patient-document-data)
+for more details:
+
+- `medical.document-download`: contains the newly downloaded documents for the patient;
+- `medical.document-conversion`: result of converting the newly downloaded C-CDA documents into FHIR.
 
 <Warning>
   If you were to trigger this endpoint again while the query is still processing, you will get a

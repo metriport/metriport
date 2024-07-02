@@ -11,12 +11,14 @@ import { makeOrganization } from "../../../../domain/medical/__tests__/organizat
 import { makePatient } from "../../../../domain/medical/__tests__/patient";
 import { Facility, FacilityType } from "../../../../domain/medical/facility";
 import { HieInitiator } from "../../../hie/get-hie-initiator";
-import {
-  createOutboundDocumentRetrievalReqs,
-  maxDocRefsPerDocRetrievalRequest,
-} from "../create-outbound-document-retrieval-req";
+import { createOutboundDocumentRetrievalReqs } from "../create-outbound-document-retrieval-req";
+import { defaultDocRefsPerRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/gateways";
 import { makeDocumentReferenceWithMetriportId } from "./make-document-reference-with-metriport-id";
 import { makeOutboundDocumentQueryResp, makeXcaGateway } from "./shared";
+import {
+  epicOidPrefix,
+  surescriptsOid,
+} from "@metriport/core/external/carequality/ihe-gateway-v2/gateways";
 
 let requestId: string;
 let facilityId: string;
@@ -64,6 +66,84 @@ describe("outboundDocumentRetrievalRequest", () => {
     expect(res[0].documentReference.length).toEqual(2);
   });
 
+  it("returns 1 req with 6 doc refs when we have an epic gw", async () => {
+    const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
+      makeOutboundDocumentQueryResp({
+        gateway: makeXcaGateway({ homeCommunityId: epicOidPrefix }),
+        documentReference: [
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+        ],
+      }),
+    ];
+    const res: OutboundDocumentRetrievalReq[] = createOutboundDocumentRetrievalReqs({
+      patient,
+      requestId,
+      initiator,
+      outboundDocumentQueryResults: outboundDocumentQueryResps,
+    });
+    expect(res).toBeTruthy();
+    expect(res.length).toEqual(1);
+    expect(res[0].documentReference.length).toEqual(6);
+  });
+
+  it("returns 2 req with 11 doc refs when we have an epic gw", async () => {
+    const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
+      makeOutboundDocumentQueryResp({
+        gateway: makeXcaGateway({ homeCommunityId: epicOidPrefix }),
+        documentReference: [
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+        ],
+      }),
+    ];
+    const res: OutboundDocumentRetrievalReq[] = createOutboundDocumentRetrievalReqs({
+      patient,
+      requestId,
+      initiator,
+      outboundDocumentQueryResults: outboundDocumentQueryResps,
+    });
+    expect(res).toBeTruthy();
+    expect(res.length).toEqual(2);
+    expect(res[0].documentReference.length).toEqual(10);
+    expect(res[1].documentReference.length).toEqual(1);
+  });
+
+  it("returns 1 req with 6 doc refs when we have an epic gw", async () => {
+    const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
+      makeOutboundDocumentQueryResp({
+        gateway: makeXcaGateway({ homeCommunityId: surescriptsOid }),
+        documentReference: [
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+        ],
+      }),
+    ];
+    const res: OutboundDocumentRetrievalReq[] = createOutboundDocumentRetrievalReqs({
+      patient,
+      requestId,
+      initiator,
+      outboundDocumentQueryResults: outboundDocumentQueryResps,
+    });
+    expect(res).toBeTruthy();
+    expect(res.length).toEqual(2);
+    expect(res[0].documentReference.length).toEqual(1);
+    expect(res[1].documentReference.length).toEqual(1);
+  });
+
   it("returns one req when doc refs within limit", async () => {
     const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
       makeOutboundDocumentQueryResp({
@@ -94,7 +174,7 @@ describe("outboundDocumentRetrievalRequest", () => {
     const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
       makeOutboundDocumentQueryResp({
         gateway: makeXcaGateway({ homeCommunityId }),
-        documentReference: [...Array(maxDocRefsPerDocRetrievalRequest + 1).keys()].map(() =>
+        documentReference: [...Array(defaultDocRefsPerRequest + 1).keys()].map(() =>
           makeDocumentReferenceWithMetriportId({ homeCommunityId })
         ),
       }),
@@ -113,7 +193,7 @@ describe("outboundDocumentRetrievalRequest", () => {
     const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
       makeOutboundDocumentQueryResp({
         gateway: makeXcaGateway({ homeCommunityId }),
-        documentReference: [...Array(maxDocRefsPerDocRetrievalRequest * 2 + 1).keys()].map(() =>
+        documentReference: [...Array(defaultDocRefsPerRequest * 2 + 1).keys()].map(() =>
           makeDocumentReferenceWithMetriportId({ homeCommunityId })
         ),
       }),

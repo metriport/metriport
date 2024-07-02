@@ -1,5 +1,6 @@
 import { XMLParser } from "fast-xml-parser";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
 import {
   OutboundDocumentQueryReq,
   OutboundDocumentQueryResp,
@@ -25,6 +26,8 @@ import { errorToString, toArray } from "@metriport/shared";
 import { iti38Schema, Slot, ExternalIdentifier, Classification, ExtrinsicObject } from "./schema";
 import { out } from "../../../../../../util/log";
 
+dayjs.extend(utc);
+
 const { log } = out("DQ Processing");
 
 function getResponseHomeCommunityId(extrinsicObject: ExtrinsicObject): string {
@@ -35,16 +38,25 @@ function getHomeCommunityIdForDr(extrinsicObject: ExtrinsicObject): string {
   return getResponseHomeCommunityId(extrinsicObject);
 }
 
-function getCreationTime(time: string | undefined): string | undefined {
+function getCreationTime({
+  creationTimeValue,
+  serviceStartTimeValue,
+  serviceStopTimeValue,
+}: {
+  creationTimeValue: string | undefined;
+  serviceStartTimeValue: string | undefined;
+  serviceStopTimeValue: string | undefined;
+}): string | undefined {
+  const time = creationTimeValue ?? serviceStartTimeValue ?? serviceStopTimeValue;
+
   try {
-    return time ? dayjs(time).toISOString() : undefined;
+    return time ? dayjs.utc(time).toISOString() : undefined;
   } catch (error) {
-    log(`Error parsing creation time: ${time}, error: ${error}`);
     return undefined;
   }
 }
 
-function parseDocumentReference({
+export function parseDocumentReference({
   extrinsicObject,
   outboundRequest,
 }: {
@@ -113,7 +125,9 @@ function parseDocumentReference({
     return undefined;
   }
 
-  const creationTime = String(findSlotValue("creationTime"));
+  const creationTimeValue = findSlotValue("creationTime");
+  const serviceStartTimeValue = findSlotValue("serviceStartTime");
+  const serviceStopTimeValue = findSlotValue("serviceStopTime");
 
   const documentReference: DocumentReference = {
     homeCommunityId: getHomeCommunityIdForDr(extrinsicObject),
@@ -123,7 +137,7 @@ function parseDocumentReference({
     language: findSlotValue("languageCode"),
     size: sizeValue ? parseInt(sizeValue) : undefined,
     title: findClassificationName(XDSDocumentEntryClassCode),
-    creation: getCreationTime(creationTime),
+    creation: getCreationTime({ creationTimeValue, serviceStartTimeValue, serviceStopTimeValue }),
     authorInstitution: findClassificationSlotValue(XDSDocumentEntryAuthor, "authorInstitution"),
   };
   return documentReference;
@@ -146,18 +160,20 @@ function handleSuccessResponse({
     id: outboundRequest.id,
     patientId: outboundRequest.patientId,
     timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
     responseTimestamp: dayjs().toISOString(),
     gateway,
     documentReference: documentReferences,
     externalGatewayPatient: outboundRequest.externalGatewayPatient,
+    iheGatewayV2: true,
   };
   return response;
 }
 
-export function processDQResponse({
-  dqResponse: { response, success, gateway, outboundRequest },
+export function processDqResponse({
+  response: { response, success, gateway, outboundRequest },
 }: {
-  dqResponse: DQSamlClientResponse;
+  response: DQSamlClientResponse;
 }): OutboundDocumentQueryResp {
   if (success === false) {
     return handleHttpErrorResponse({
@@ -202,7 +218,7 @@ export function processDQResponse({
       });
     }
   } catch (error) {
-    log("Error processing DQ response", error);
+    log(`Error processing DQ response ${JSON.stringify(jsonObj)}`);
     return handleSchemaErrorResponse({
       outboundRequest,
       gateway,

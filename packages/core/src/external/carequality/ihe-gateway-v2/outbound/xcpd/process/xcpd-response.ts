@@ -154,6 +154,7 @@ function handlePatientMatchResponse({
   const response: OutboundPatientDiscoveryResp = {
     id: outboundRequest.id,
     timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
     externalGatewayPatient: {
       id: subject1.patient.id._extension,
@@ -164,6 +165,7 @@ function handlePatientMatchResponse({
     patientMatch: true,
     gatewayHomeCommunityId: outboundRequest.samlAttributes.homeCommunityId,
     patientResource: patientResource,
+    iheGatewayV2: true,
   };
 
   return response;
@@ -191,11 +193,13 @@ function handlePatientNoMatchResponse({
   const response: OutboundPatientDiscoveryResp = {
     id: outboundRequest.id,
     timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
     gateway: gateway,
     patientId: outboundRequest.patientId,
     patientMatch: false,
     operationOutcome: operationOutcome,
+    iheGatewayV2: true,
   };
   return response;
 }
@@ -252,7 +256,7 @@ export function processXCPDResponse({
       });
     }
   } catch (error) {
-    log(`Error processing XCPD response: ${error}`);
+    log(`Error processing XCPD response: ${JSON.stringify(error)}`);
     return handleSchemaErrorResponse({
       outboundRequest,
       gateway,

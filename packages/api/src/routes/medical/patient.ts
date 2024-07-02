@@ -1,4 +1,4 @@
-import { patientCreateSchema, demographicsSchema } from "@metriport/api-sdk";
+import { demographicsSchema, patientCreateSchema } from "@metriport/api-sdk";
 import {
   GetConsolidatedQueryProgressResponse,
   StartConsolidatedQueryProgressResponse,
@@ -9,33 +9,30 @@ import {
 } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
-import { uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { getRequestId } from "@metriport/core/util/request";
 import { stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import { z } from "zod";
 import { orderBy } from "lodash";
+import { z } from "zod";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
-import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/consolidated-create";
 import {
   getConsolidatedPatientData,
   startConsolidatedQuery,
 } from "../../command/medical/patient/consolidated-get";
-import { convertFhirToCda } from "../../command/medical/patient/convert-fhir-to-cda";
 import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
-import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
+import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getPatientOrFail,
   getPatients,
-  PatientMatchCmd,
   matchPatient,
 } from "../../command/medical/patient/get-patient";
+import { handleDataContribution } from "../../command/medical/patient/handle-data-contributions";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
@@ -43,8 +40,8 @@ import BadRequestError from "../../errors/bad-request";
 import NotFoundError from "../../errors/not-found";
 import { countResources } from "../../external/fhir/patient/count-resources";
 import { upsertPatientToFHIRServer } from "../../external/fhir/patient/upsert-patient";
-import { validateFhirEntries } from "../../external/fhir/shared/json-validator";
 import { PatientModel as Patient } from "../../models/medical/patient";
+import { REQUEST_ID_HEADER_NAME } from "../../routes/header";
 import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
@@ -57,18 +54,16 @@ import {
   getFromQueryOrFail,
 } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
-import { Bundle as ValidBundle, bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
+import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
 import {
   patientUpdateSchema,
-  schemaCreateToPatient,
-  schemaUpdateToPatient,
-  schemaDemographicsToPatient,
+  schemaCreateToPatientData,
+  schemaDemographicsToPatientData,
+  schemaUpdateToPatientData,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
 const router = Router();
-const MAX_RESOURCE_COUNT_PER_REQUEST = 50;
-const MAX_RESOURCE_STORED_LIMIT = 1000;
 
 /** ---------------------------------------------------------------------------
  * POST /patient
@@ -85,6 +80,9 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityId = getFromQueryOrFail("facilityId", req);
+    const rerunPdOnNewDemographics = stringToBoolean(
+      getFrom("query").optional("rerunPdOnNewDemographics", req)
+    );
     const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
     const payload = patientCreateSchema.parse(req.body);
@@ -101,11 +99,17 @@ router.post(
     }
 
     const patientCreate: PatientCreateCmd = {
-      ...schemaCreateToPatient(payload, cxId),
+      ...schemaCreateToPatientData(payload),
+      cxId,
       facilityId,
     };
 
-    const patient = await createPatient(patientCreate, forceCommonwell, forceCarequality);
+    const patient = await createPatient({
+      patient: patientCreate,
+      rerunPdOnNewDemographics,
+      forceCommonwell,
+      forceCarequality,
+    });
 
     // temp solution until we migrate to FHIR
     const fhirPatient = toFHIR(patient);
@@ -130,6 +134,9 @@ router.put(
     const cxId = getCxIdOrFail(req);
     const id = getFromParamsOrFail("id", req);
     const facilityIdParam = getFrom("query").optional("facilityId", req);
+    const rerunPdOnNewDemographics = stringToBoolean(
+      getFrom("query").optional("rerunPdOnNewDemographics", req)
+    );
     const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
     const payload = patientUpdateSchema.parse(req.body);
@@ -141,18 +148,19 @@ router.put(
 
     const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
     const patientUpdate: PatientUpdateCmd = {
-      ...schemaUpdateToPatient(payload, cxId),
+      ...schemaUpdateToPatientData(payload),
       ...getETag(req),
+      cxId,
       id,
       facilityId,
     };
 
-    const updatedPatient = await updatePatient(
+    const updatedPatient = await updatePatient({
       patientUpdate,
-      true,
+      rerunPdOnNewDemographics,
       forceCommonwell,
-      forceCarequality
-    );
+      forceCarequality,
+    });
 
     return res.status(status.OK).json(dtoFromModel(updatedPatient));
   })
@@ -408,7 +416,6 @@ router.post("/:id/consolidated", requestLogger, asyncHandler(putConsolidated));
  * @param req.param.id The ID of the patient to associate resources to.
  * @param req.body The FHIR Bundle to create or update resources.
  * @return FHIR Bundle with operation outcome.
- * TODO: 1603 - Simplify the logic and move the bulk of it into the `command` directory.
  */
 router.put("/:id/consolidated", requestLogger, asyncHandler(putConsolidated));
 async function putConsolidated(req: Request, res: Response) {
@@ -419,60 +426,12 @@ async function putConsolidated(req: Request, res: Response) {
       `Cannot create bundle with size greater than ${MAXIMUM_UPLOAD_FILE_SIZE} bytes.`
     );
   }
-
+  const requestId = getRequestId();
   const cxId = getCxIdOrFail(req);
   const patientId = getFrom("params").orFail("id", req);
-  const patient = await getPatientOrFail({ id: patientId, cxId });
-  const fhirBundle = bundleSchema.parse(req.body);
-  const validatedBundle = validateFhirEntries(fhirBundle);
-  const incomingAmount = validatedBundle.entry.length;
-
-  await checkResourceLimit(incomingAmount, patient);
-
-  const docId = uuidv7();
-  await uploadFhirBundleToS3({ cxId, patientId, fhirBundle: validatedBundle, docId });
-  const patientDataPromise = async () => {
-    createOrUpdateConsolidatedPatientData({
-      cxId,
-      patientId: patient.id,
-      fhirBundle: validatedBundle,
-    });
-  };
-  const convertAndUploadCdaPromise = async () => {
-    const isValidForCdaConversion = hasCompositionResource(validatedBundle);
-    if (isValidForCdaConversion) {
-      await convertFhirToCda({ cxId, patientId, docId, validatedBundle });
-    }
-  };
-
-  await Promise.all([patientDataPromise(), convertAndUploadCdaPromise()]);
-  return res.sendStatus(status.OK);
-}
-
-async function checkResourceLimit(incomingAmount: number, patient: Patient) {
-  if (!Config.isCloudEnv() || Config.isSandbox()) {
-    const { total: currentAmount } = await countResources({
-      patient: { id: patient.id, cxId: patient.cxId },
-    });
-    if (currentAmount + incomingAmount > MAX_RESOURCE_STORED_LIMIT) {
-      throw new BadRequestError(
-        `Reached maximum number of resources per patient in Sandbox mode.`,
-        null,
-        { currentAmount, incomingAmount, MAX_RESOURCE_STORED_LIMIT }
-      );
-    }
-    // Limit the amount of resources that can be created at once
-    if (incomingAmount > MAX_RESOURCE_COUNT_PER_REQUEST) {
-      throw new BadRequestError(`Cannot create this many resources at a time.`, null, {
-        incomingAmount,
-        MAX_RESOURCE_COUNT_PER_REQUEST,
-      });
-    }
-  }
-}
-
-function hasCompositionResource(bundle: ValidBundle): boolean {
-  return bundle.entry.some(entry => entry.resource?.resourceType === "Composition");
+  const bundle = bundleSchema.parse(req.body);
+  const results = await handleDataContribution({ requestId, patientId, cxId, bundle });
+  return res.setHeader(REQUEST_ID_HEADER_NAME, requestId).status(status.OK).json(results);
 }
 
 /** ---------------------------------------------------------------------------
@@ -529,9 +488,9 @@ router.post(
     const cxId = getCxIdOrFail(req);
     const payload = demographicsSchema.parse(req.body);
 
-    const patientMatch: PatientMatchCmd = schemaDemographicsToPatient(payload, cxId);
+    const patientData = schemaDemographicsToPatientData(payload);
 
-    const patient = await matchPatient(patientMatch);
+    const patient = await matchPatient({ cxId, ...patientData });
 
     if (patient) {
       return res.status(status.OK).json(dtoFromModel(patient));

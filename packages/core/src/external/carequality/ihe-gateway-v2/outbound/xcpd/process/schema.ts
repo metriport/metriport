@@ -44,10 +44,12 @@ export const patientRegistryProfileSchema = z.object({
     }),
     acknowledgementDetail: z
       .object({
-        code: z.object({
-          _code: z.string().optional(),
-          _codeSystem: z.string().optional(),
-        }),
+        code: z
+          .object({
+            _code: z.string().optional(),
+            _codeSystem: z.string().optional(),
+          })
+          .optional(),
         text: textSchema.optional(),
         location: z.string().optional(),
       })

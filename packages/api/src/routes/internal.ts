@@ -12,6 +12,8 @@ import {
 import { getFacilities } from "../command/medical/facility/get-facility";
 import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
+import { getCxFFStatus } from "../command/internal/get-hie-enabled-feature-flags-status";
+import { updateCxHieEnabledFFs } from "../command/internal/update-hie-enabled-feature-flags";
 import { isEnhancedCoverageEnabledForCx } from "../external/aws/app-config";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
 import { makeFhirApi } from "../external/fhir/api/api-factory";
@@ -26,7 +28,7 @@ import mpiRoutes from "./medical/internal-mpi";
 import patientRoutes from "./medical/internal-patient";
 import facilityRoutes from "./medical/internal-facility";
 import { getUUIDFrom } from "./schemas/uuid";
-import { asyncHandler, getFrom } from "./util";
+import { asyncHandler, getFrom, getFromQueryAsBoolean } from "./util";
 import { requestLogger } from "./helpers/request-logger";
 
 const router = Router();
@@ -192,23 +194,33 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const org = await getOrganizationOrFail({ cxId });
-
     const facilities = await getFacilities({ cxId: org.cxId });
 
     const response = {
       cxId: org.cxId,
       org: {
         id: org.id,
+        etag: org.eTag,
         oid: org.oid,
+        businessType: org.type,
         name: org.data.name,
         type: org.data.type,
+        location: org.data.location,
       },
       facilities: facilities.map(f => ({
         id: f.id,
+        etag: f.eTag,
         name: f.data.name,
         npi: f.data.npi,
         tin: f.data.tin,
         active: f.data.active,
+        address: f.data.address,
+        cqType: f.cqType,
+        cqActive: f.cqActive,
+        cqOboOid: f.cqOboOid,
+        cwType: f.cwType,
+        cwActive: f.cwActive,
+        cwOboOid: f.cwOboOid,
       })),
     };
     return res.status(httpStatus.OK).json(response);
@@ -263,6 +275,51 @@ router.post(
 
     const result = await getReferencesFromFHIR(missingReferences, fhir, console.log);
 
+    return res.status(httpStatus.OK).json(result);
+  })
+);
+
+/**
+ * GET /internal/cx-ff-status
+ *
+ * Retrieves the customer status of enabled HIEs via the Feature Flags.
+ *
+ * @param req.query.cxId - The cutomer's ID.
+ */
+router.get(
+  "/cx-ff-status",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const result = await getCxFFStatus(cxId);
+    return res.status(httpStatus.OK).json(result);
+  })
+);
+
+/**
+ * PUT /internal/cx-ff-status
+ *
+ * Updates the customer status of enabled HIEs via the Feature Flags.
+ *
+ * @param req.query.cxId - The cutomer's ID.
+ * @param req.query.cwEnabled - Whether to enabled CommonWell.
+ * @param req.query.cqEnabled - Whether to enabled CareQuality.
+ * @param req.query.epicEnabled - Whether to enabled Epic.
+ */
+router.put(
+  "/cx-ff-status",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const cwEnabled = getFromQueryAsBoolean("cwEnabled", req);
+    const cqEnabled = getFromQueryAsBoolean("cqEnabled", req);
+    const epicEnabled = getFromQueryAsBoolean("epicEnabled", req);
+    const result = await updateCxHieEnabledFFs({
+      cxId,
+      cwEnabled,
+      cqEnabled,
+      epicEnabled,
+    });
     return res.status(httpStatus.OK).json(result);
   })
 );

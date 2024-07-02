@@ -3,11 +3,11 @@ import { Address } from "@metriport/carequality-sdk/models/address";
 import { Contained } from "@metriport/carequality-sdk/models/contained";
 import { ManagingOrganization, Organization } from "@metriport/carequality-sdk/models/organization";
 import { Coordinates } from "@metriport/core/external/aws/location";
+import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { errorToString, normalizeOid, normalizeZipCode } from "@metriport/shared";
+import { errorToString, isValidUrl, normalizeOid, normalizeZipCode } from "@metriport/shared";
 import { CQDirectoryEntryData } from "../../cq-directory";
 import { CQOrgUrls } from "../../shared";
-import { out } from "@metriport/core/util/log";
 
 const { log } = out(`parseCQDirectoryEntries`);
 
@@ -112,17 +112,6 @@ function getUrls(contained: Contained): CQOrgUrls {
   }
 
   return urls;
-}
-
-function isValidUrl(url: string | undefined): boolean {
-  if (!url) return false;
-
-  try {
-    new URL(url);
-    return true;
-  } catch (e) {
-    return false;
-  }
 }
 
 function getCoordinates(address: Address[]): Coordinates | undefined {

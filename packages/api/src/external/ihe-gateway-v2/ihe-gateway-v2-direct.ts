@@ -6,8 +6,8 @@ import {
 import { IHEGatewayV2 } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2";
 import {
   createSignSendProcessXCPDRequest,
-  createSignSendProcessDQRequests,
-  createSignSendProcessDRRequests,
+  createSignSendProcessDqRequests,
+  createSignSendProcessDrRequests,
 } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2-logic";
 import { SamlCertsAndKeys } from "@metriport/core/external/carequality/ihe-gateway-v2/saml/security/types";
 import { Config } from "../../shared/config";
@@ -60,7 +60,7 @@ export class IHEGatewayV2Direct extends IHEGatewayV2 {
     patientId: string;
     cxId: string;
   }): Promise<void> {
-    await createSignSendProcessDQRequests({
+    await createSignSendProcessDqRequests({
       dqResponseUrl: this.dqResponseUrl,
       dqRequestsGatewayV2,
       samlCertsAndKeys: this.samlCertsAndKeys,
@@ -78,7 +78,7 @@ export class IHEGatewayV2Direct extends IHEGatewayV2 {
     patientId: string;
     cxId: string;
   }): Promise<void> {
-    await createSignSendProcessDRRequests({
+    await createSignSendProcessDrRequests({
       drResponseUrl: this.drResponseUrl,
       drRequestsGatewayV2,
       samlCertsAndKeys: this.samlCertsAndKeys,

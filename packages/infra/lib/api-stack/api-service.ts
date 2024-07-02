@@ -7,8 +7,16 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Repository } from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
+import {
+  ApplicationProtocol,
+  NetworkLoadBalancer,
+  NetworkTargetGroup,
+  Protocol,
+} from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import { AlbTarget } from "aws-cdk-lib/aws-elasticloadbalancingv2-targets";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { IFunction as ILambda } from "aws-cdk-lib/aws-lambda";
+import { LogGroup } from "aws-cdk-lib/aws-logs";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
@@ -19,6 +27,7 @@ import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
 import { DnsZones } from "../shared/dns";
+import { buildLbAccessLogPrefix } from "../shared/s3";
 import { Secrets, secretsToECS } from "../shared/secrets";
 import { provideAccessToQueue } from "../shared/sqs";
 import { isProd, isSandbox } from "../shared/util";
@@ -47,6 +56,7 @@ export function createAPIService({
   outboundPatientDiscoveryLambda,
   outboundDocumentQueryLambda,
   outboundDocumentRetrievalLambda,
+  generalBucket,
   medicalDocumentsUploadBucket,
   fhirToMedicalRecordLambda,
   fhirToCdaConverterLambda,
@@ -75,6 +85,7 @@ export function createAPIService({
   outboundPatientDiscoveryLambda: ILambda;
   outboundDocumentQueryLambda: ILambda;
   outboundDocumentRetrievalLambda: ILambda;
+  generalBucket: s3.Bucket;
   medicalDocumentsUploadBucket: s3.Bucket;
   fhirToMedicalRecordLambda: ILambda | undefined;
   fhirToCdaConverterLambda: ILambda | undefined;
@@ -85,11 +96,14 @@ export function createAPIService({
   appConfigEnvVars: {
     appId: string;
     configId: string;
+    envId: string;
+    deploymentStrategyId: string;
   };
   cookieStore: secret.ISecret | undefined;
 }): {
   cluster: ecs.Cluster;
-  service: ecs_patterns.NetworkLoadBalancedFargateService;
+  service: ecs_patterns.ApplicationLoadBalancedFargateService;
+  loadBalancer: NetworkLoadBalancer;
   serverAddress: string;
   loadBalancerAddress: string;
 } {
@@ -117,9 +131,12 @@ export function createAPIService({
     port: dbReadReplicaEndpoint.port,
   });
   // Run some servers on fargate containers
-  const fargateService = new ecs_patterns.NetworkLoadBalancedFargateService(
+  const listenerPort = 80;
+  const containerPort = 8080;
+  const logGroup = LogGroup.fromLogGroupArn(stack, "ApiLogGroup", props.config.logArn);
+  const fargateService = new ecs_patterns.ApplicationLoadBalancedFargateService(
     stack,
-    "APIFargateService",
+    "APIFargateServiceAlb",
     {
       cluster: cluster,
       // Watch out for the combination of vCPUs and memory, more vCPU requires more memory
@@ -128,8 +145,12 @@ export function createAPIService({
       desiredCount: isProd(props.config) ? 2 : 1,
       taskImageOptions: {
         image: ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest"),
-        containerPort: 8080,
+        containerPort,
         containerName: "API-Server",
+        logDriver: ecs.LogDrivers.awsLogs({
+          logGroup,
+          streamPrefix: "APIFargateService",
+        }),
         secrets: {
           DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret),
           SEARCH_PASSWORD: ecs.Secret.fromSecretsManager(searchAuth.secret),
@@ -210,6 +231,8 @@ export function createAPIService({
           // app config
           APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
           APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
+          APPCONFIG_ENVIRONMENT_ID: appConfigEnvVars.envId,
+          APPCONFIG_DEPLOYMENT_STRATEGY_ID: appConfigEnvVars.deploymentStrategyId,
           ...(coverageEnhancementConfig && {
             CW_MANAGEMENT_URL: coverageEnhancementConfig.managementUrl,
           }),
@@ -223,7 +246,10 @@ export function createAPIService({
       },
       memoryLimitMiB: isProd(props.config) ? 4096 : 2048,
       healthCheckGracePeriod: Duration.seconds(60),
+      protocol: ApplicationProtocol.HTTP,
+      listenerPort,
       publicLoadBalancer: false,
+      idleTimeout: Duration.minutes(10),
     }
   );
   const serverAddress = fargateService.loadBalancer.loadBalancerDnsName;
@@ -234,6 +260,37 @@ export function createAPIService({
     target: r53.RecordTarget.fromAlias(
       new r53_targets.LoadBalancerTarget(fargateService.loadBalancer)
     ),
+  });
+
+  const alb = fargateService.loadBalancer;
+  alb.logAccessLogs(generalBucket, buildLbAccessLogPrefix("api"));
+
+  const nlb = new NetworkLoadBalancer(stack, `ApiNetworkLoadBalancer`, {
+    vpc,
+    internetFacing: false,
+  });
+  const nlbListener = nlb.addListener(`ApiNetworkLoadBalancerListener`, {
+    port: listenerPort,
+    protocol: Protocol.TCP,
+  });
+  const nlbTargetGroup = new NetworkTargetGroup(stack, `ApiNetworkTargetGroup`, {
+    port: listenerPort,
+    protocol: Protocol.TCP,
+    vpc,
+    targets: [new AlbTarget(alb, listenerPort)],
+  });
+  nlbListener.addTargetGroups("ApiNetworkLoadBalancerTargetGroup", nlbTargetGroup);
+
+  // Health checks
+  const healthcheck = {
+    healthyThresholdCount: 2,
+    unhealthyThresholdCount: 2,
+    interval: Duration.seconds(10),
+  };
+  fargateService.targetGroup.configureHealthCheck(healthcheck);
+  nlbTargetGroup.configureHealthCheck({
+    ...healthcheck,
+    interval: healthcheck.interval.plus(Duration.seconds(3)),
   });
 
   // Access grant for Aurora DB's secret
@@ -327,17 +384,6 @@ export function createAPIService({
   // from the cluster created above, should be fine for now as it will only accept connections in the VPC
   fargateService.service.connections.allowFromAnyIpv4(ec2.Port.allTcp());
 
-  // This speeds up deployments so the tasks are swapped quicker.
-  // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
-  fargateService.targetGroup.setAttribute("deregistration_delay.timeout_seconds", "17");
-
-  // This also speeds up deployments so the health checks have a faster turnaround.
-  // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/network/target-group-health-checks.html
-  fargateService.targetGroup.configureHealthCheck({
-    healthyThresholdCount: 2,
-    interval: Duration.seconds(10),
-  });
-
   // hookup autoscaling based on 90% thresholds
   const scaling = fargateService.service.autoScaleTaskCount({
     minCapacity: isProd(props.config) ? 2 : 1,
@@ -358,6 +404,7 @@ export function createAPIService({
     cluster,
     service: fargateService,
     serverAddress: apiUrl,
+    loadBalancer: nlb,
     loadBalancerAddress: serverAddress,
   };
 }
