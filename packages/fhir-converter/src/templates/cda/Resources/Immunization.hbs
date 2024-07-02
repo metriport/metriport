@@ -54,7 +54,7 @@
                     {{#if this.manufacturedMaterial.code}}
                         "vaccineCode":{{>DataType/CodeableConcept.hbs code=this.manufacturedMaterial.code}},
                     {{else}}
-                        "vaccineCode":{{>DataType/CodeableConcept.hbs text='n/a'}},
+                        "vaccineCode":{{>DataType/CodeableConcept.hbs code='UNK' text='unknown'}},
                     {{/if}}
                     "lotNumber":"{{escapeSpecialChars this.manufacturedMaterial.lotNumberText._}}",
                 {{/if}}

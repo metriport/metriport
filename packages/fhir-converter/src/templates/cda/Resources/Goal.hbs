@@ -40,7 +40,7 @@
         {{#if goalEntry.effectiveTime}}
           "description":{{>DataType/CodeableConcept.hbs code=goalEntry.code}},
           {{else}}
-          "description":{{>DataType/CodeableConcept.hbs text="n/a"}},
+          "description":{{>DataType/CodeableConcept.hbs code='UNK' text='unknown'}},
         {{/if}}
 
         "lifecycleStatus":"{{goalEntry.statusCode.code}}",

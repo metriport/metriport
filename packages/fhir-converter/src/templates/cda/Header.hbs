@@ -81,7 +81,7 @@
     {{/if}}
 
     {{#each (toArray document.author) as |author|}}
-      {{#if author}}
+      {{#if author.assignedAuthor}}
           {{#with (evaluate 'Utils/GenerateId.hbs' obj=author.assignedAuthor) as |practitionerId|}}
             {{>Resources/Practitioner.hbs practitioner=author.assignedAuthor ID=practitionerId.Id}},
             {{>References/Composition/author.hbs ID=(generateUUID (toJsonString document)) REF=(concat 'Practitioner/' practitionerId.Id)}},

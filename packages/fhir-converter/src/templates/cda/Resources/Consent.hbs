@@ -48,7 +48,7 @@
         {{#if categoryCode.code}}
           "category":[{{>DataType/CodeableConcept.hbs code=categoryCode}}],
         {{else}}
-          "category":[{{>DataType/CodeableConcept.hbs text='n/a'}}],
+          "category":[{{>DataType/CodeableConcept.hbs code='UKN' text='unknown'}}],
         {{/if}}
         "dateTime":"{{formatAsDateTime consentEntry.effectiveTime.low.value}}",
         "provision":

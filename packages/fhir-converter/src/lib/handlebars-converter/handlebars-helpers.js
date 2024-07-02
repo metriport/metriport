@@ -1165,7 +1165,7 @@ module.exports.external = [
       if (referenceData == undefined) {
         return "";
       }
-      return JSON.stringify(referenceData).slice(1, -1).replace(/\s+/g, "").trim();
+      return JSON.stringify(referenceData).slice(1, -1).replace(/ {2,}/g, " ").trim();
     },
   },
   {

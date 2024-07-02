@@ -54,7 +54,11 @@
                       {{#if (contains (toJsonString this.observation.templateId) '"2.16.840.1.113883.10.20.22.4.9"')}}
                           "manifestation":
                           [
-                              {{>DataType/CodeableConcept.hbs code=this.observation.code}},
+                              {{#if this.observation.value.code}}
+                                  {{>DataType/CodeableConcept.hbs code=this.observation.value}},
+                              {{else}}
+                                  {{>DataType/CodeableConcept.hbs code='UNK' text='unknown'}},
+                              {{/if}}
                           ],
                           "onset": "{{formatAsDateTime this.observation.effectiveTime.low.value}}",
                       {{/if}}
@@ -71,7 +75,7 @@
                 {{else}}
                   "manifestation":
                   [
-                      {{>DataType/CodeableConcept.hbs text='noKnownManifestation'}},
+                      {{>DataType/CodeableConcept.hbs code='UNK' text='unknown'}},
                   ],
                 {{/if}}
             },
