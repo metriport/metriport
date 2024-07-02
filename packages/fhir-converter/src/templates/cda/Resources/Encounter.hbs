@@ -47,17 +47,7 @@
             {{/each}}
         ],
 
-        {{#if encounter.code.code}}
-            "class":{{>DataType/Coding.hbs code=encounter.code}},
-        {{else}}
-          {{#if encounter.code.translation}}
-            "class":{{>DataType/Coding.hbs code=encounter.code.translation }},
-          {{else}}
-            "class": {
-              "display": "unknown",
-            }
-          {{/if}}
-        {{/if}}
+        "class":{{>DataType/Coding.hbs code=encounter.code canBeUnknown=true}},
 
         "type":
         [

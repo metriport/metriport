@@ -25,7 +25,7 @@
   // -------------------------------------------------------------------------------------------------
 --}}
 {
-	"code":"{{trim code.code}}",
+	"code": {{#if code.code}} "{{trim code.code}}" {{else if canBeUnknown}} "UNK" {{/if}},
 	"display": "{{{ parseReferenceData code.displayName }}}",
 	"version":"{{code.codeSystemVersion}}",
 	{{#with (evaluate 'ValueSet/SystemReference.hbs' code=code.codeSystem) as |system|}}
