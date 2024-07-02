@@ -1,4 +1,4 @@
-import { Organization as CWOSDKrganization } from "@metriport/commonwell-sdk";
+import { Organization as CWSdkOrganization } from "@metriport/commonwell-sdk";
 import { OID_PREFIX } from "@metriport/core/domain/oid";
 import { Organization } from "@metriport/core/domain/organization";
 import { getOrgsByPrio } from "@metriport/core/external/commonwell/cq-bridge/get-orgs";
@@ -25,15 +25,15 @@ const technicalContact = {
 
 export type CWOrganization = Omit<Organization, "type" | "eTag"> & { active: boolean };
 
-type CWSDKOrganizationWithOrgId = Omit<CWOSDKrganization, "organizationId"> &
-  Required<Pick<CWOSDKrganization, "organizationId">>;
+type CWSdkOrganizationWithOrgId = Omit<CWSdkOrganization, "organizationId"> &
+  Required<Pick<CWSdkOrganization, "organizationId">>;
 
 export async function organizationToCommonwell(
   org: CWOrganization,
   isObo = false
-): Promise<CWSDKOrganizationWithOrgId> {
+): Promise<CWSdkOrganizationWithOrgId> {
   const cwId = OID_PREFIX.concat(org.oid);
-  const cwOrg: CWSDKOrganizationWithOrgId = {
+  const cwOrg: CWSdkOrganizationWithOrgId = {
     name: org.data.name,
     type: org.data.type,
     locations: [
@@ -78,7 +78,7 @@ export async function organizationToCommonwell(
   return cwOrg;
 }
 
-export async function get(orgOid: string): Promise<CWOSDKrganization | undefined> {
+export async function get(orgOid: string): Promise<CWSdkOrganization | undefined> {
   const { log, debug } = out(`CW get org oid ${orgOid}`);
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   const cwId = OID_PREFIX.concat(orgOid);
