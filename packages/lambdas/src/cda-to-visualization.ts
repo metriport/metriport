@@ -23,6 +23,10 @@ const cdaToVisTimeoutInMillis = getEnvOrFail("CDA_TO_VIS_TIMEOUT_MS");
 const GRACEFUL_SHUTDOWN_ALLOWANCE_MS = 3_000;
 const SIGNED_URL_DURATION_SECONDS = 60;
 
+let cda10: unknown;
+let narrative: unknown;
+const styleSheetTextStringified = JSON.stringify(styleSheetText);
+
 const s3client = new AWS.S3({
   signatureVersion: "v4",
 });
@@ -149,6 +153,7 @@ const convertStoreAndReturnPdfDocUrl = async ({
     await sleep(2_500);
 
     // Generate PDF from page in puppeteer
+    const before = Date.now();
     await page.pdf({
       path: pdfFilepath,
       printBackground: true,
@@ -161,6 +166,7 @@ const convertStoreAndReturnPdfDocUrl = async ({
         bottom: "20px",
       },
     });
+    console.log(`Finished generating the PDF, took ${Date.now() - before}ms`);
 
     // Upload generated PDF to S3 bucket
     await s3client
@@ -192,29 +198,14 @@ const convertStoreAndReturnPdfDocUrl = async ({
   return urlPdf;
 };
 
-const convertToHtml = async (document: string): Promise<string> => {
+async function convertToHtml(document: string): Promise<string> {
   try {
-    const cda10 = await SaxonJS.getResource(
-      {
-        location:
-          "https://raw.githubusercontent.com/metriport/metriport/master/packages/lambdas/static/cda_l10n.xml",
-        type: "xml",
-      },
-      "async"
-    );
-
-    const narrative = await SaxonJS.getResource(
-      {
-        location:
-          "https://raw.githubusercontent.com/metriport/metriport/master/packages/lambdas/static/cda_narrativeblock.xml",
-        type: "xml",
-      },
-      "async"
-    );
+    const cda10 = await getCda10();
+    const narrative = await getNarrative();
 
     const result = await SaxonJS.transform(
       {
-        stylesheetText: JSON.stringify(styleSheetText),
+        stylesheetText: styleSheetTextStringified,
         stylesheetParams: {
           vocFile: cda10,
           narrative: narrative,
@@ -233,13 +224,42 @@ const convertToHtml = async (document: string): Promise<string> => {
     });
     throw error;
   }
-};
+}
 
-const getSignedUrl = async ({ fileName, bucketName }: { fileName: string; bucketName: string }) => {
+// TODO could we do the same we do w/ stylesheet? require("./cda-to-visualization/stylesheet.js");
+async function getCda10() {
+  if (!cda10) {
+    cda10 = await SaxonJS.getResource(
+      {
+        location:
+          "https://raw.githubusercontent.com/metriport/metriport/master/packages/lambdas/static/cda_l10n.xml",
+        type: "xml",
+      },
+      "async"
+    );
+  }
+  return cda10;
+}
+
+async function getNarrative() {
+  if (!narrative) {
+    narrative = await SaxonJS.getResource(
+      {
+        location:
+          "https://raw.githubusercontent.com/metriport/metriport/master/packages/lambdas/static/cda_narrativeblock.xml",
+        type: "xml",
+      },
+      "async"
+    );
+  }
+  return narrative;
+}
+
+async function getSignedUrl({ fileName, bucketName }: { fileName: string; bucketName: string }) {
   const url = s3client.getSignedUrl("getObject", {
     Bucket: bucketName,
     Key: fileName,
     Expires: SIGNED_URL_DURATION_SECONDS,
   });
   return url;
-};
+}
