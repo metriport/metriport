@@ -144,13 +144,15 @@ function createSoapBodyContent({
             "@_code": "I",
           },
           [`${prefix}parameterList`]: {
-            [`${prefix}livingSubjectAdministrativeGender`]: {
-              [`${prefix}value`]: {
-                "@_code": patientGender,
-                "@_codeSystem": "2.16.840.1.113883.5.1",
+            ...(patientGender !== "UNK" && {
+              [`${prefix}livingSubjectAdministrativeGender`]: {
+                [`${prefix}value`]: {
+                  "@_code": patientGender,
+                  "@_codeSystem": "2.16.840.1.113883.5.1",
+                },
+                [`${prefix}semanticsText`]: "LivingSubject.administrativeGender",
               },
-              [`${prefix}semanticsText`]: "LivingSubject.administrativeGender",
-            },
+            }),
             [`${prefix}livingSubjectBirthTime`]: patientBirthtime
               ? {
                   [`${prefix}value`]: {

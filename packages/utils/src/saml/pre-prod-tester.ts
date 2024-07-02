@@ -185,7 +185,7 @@ async function XcpdIntegrationTest() {
       samlAttributes: samlAttributes,
       patientResource: isSuccessfulResponse(xcpdResult)
         ? xcpdResult.patientResource
-        : { name: [], birthDate: "", gender: "other" },
+        : { name: [], birthDate: "", gender: "unknown" },
       principalCareProviderIds: [""],
     };
     try {

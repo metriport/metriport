@@ -4,7 +4,7 @@ import {
   normalizeZipCode,
 } from "@metriport/shared";
 import { Address } from "../domain/address";
-import { PatientData, GenderAtBirth } from "../domain/patient";
+import { PatientData } from "../domain/patient";
 import { out } from "../util/log";
 
 /**
@@ -101,17 +101,4 @@ export function normalizeAddress(address: string): string {
 export function splitName(name: string): string[] {
   // splits by comma delimiter and filters out empty strings
   return name.split(/[\s,]+/).filter(str => str);
-}
-
-export function normalizeGender(gender: string | undefined): GenderAtBirth | undefined {
-  if (!gender) return;
-  const lowerGender = gender.toLowerCase().trim();
-  if (lowerGender === "male" || lowerGender === "m") {
-    return "M";
-  } else if (lowerGender === "female" || lowerGender === "f") {
-    return "F";
-  } else if (lowerGender === "other" || lowerGender === "un") {
-    return "UN";
-  }
-  return "UNK";
 }

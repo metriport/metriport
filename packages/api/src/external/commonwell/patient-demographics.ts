@@ -1,9 +1,9 @@
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
+import { mapStringGenderAtBirthToFhir } from "@metriport/core/external/fhir/patient";
 import { PatientNetworkLink } from "@metriport/commonwell-sdk";
 import {
   removeInvalidArrayValues,
   normalizeDob,
-  normalizeGender,
   normalizeAndStringifyNames,
   normalizeAddress,
   stringifyAddress,
@@ -16,7 +16,7 @@ export function patientNetworkLinkToNormalizedLinkDemographics(
   patientNetworkLink: PatientNetworkLink
 ): LinkDemographics {
   const dob = normalizeDob(patientNetworkLink.details.birthDate);
-  const gender = normalizeGender(patientNetworkLink.details.gender.code);
+  const gender = mapStringGenderAtBirthToFhir(patientNetworkLink.details.gender.code);
   const names = patientNetworkLink.details.name.flatMap(name => {
     return name.family.flatMap(lastName => {
       return (name.given ?? []).map(firstName => {

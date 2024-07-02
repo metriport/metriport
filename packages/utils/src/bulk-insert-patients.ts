@@ -164,6 +164,8 @@ function normalizeGender(gender: string | undefined): GenderAtBirth {
     return "F";
   } else if (lowerGender === "other" || lowerGender === "un") {
     return "UN";
+  } else if (lowerGender === "unknown" || lowerGender === "unk") {
+    return "UNK";
   }
   throw new Error(`Invalid gender ${gender}`);
 }

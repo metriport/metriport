@@ -35,9 +35,16 @@ const reverseGenderMapping: Record<FhirGender, GenderAtBirth> = {
   [FhirGender.unknown]: GenderCodes.UNK,
 };
 
-export function mapGenderAtBirthToFhir(k: GenderAtBirth): FhirGender {
+export function mapGenderAtBirthToFhir(k: GenderAtBirth | undefined): FhirGender {
+  if (k === undefined) {
+    return FhirGender.unknown;
+  }
   const gender = genderMapping[k];
   return gender ? gender : FhirGender.unknown;
+}
+
+export function mapStringGenderAtBirthToFhir(k: string): FhirGender {
+  return mapGenderAtBirthToFhir(k as GenderAtBirth);
 }
 
 export function mapFhirToGenderAtBirth(
