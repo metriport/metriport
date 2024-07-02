@@ -274,8 +274,7 @@ export class LambdasNestedStack extends NestedStack {
 
     const outboundPatientDiscoveryLambda = createLambda({
       stack: this,
-      name: "OutboundPatientDiscovery",
-      nameSuffix: "v2",
+      name: "PollOutboundPatientDiscovery",
       entry: "ihe-outbound-patient-discovery",
       envType,
       envVars: {
@@ -319,8 +318,7 @@ export class LambdasNestedStack extends NestedStack {
 
     const outboundDocumentQueryLambda = createLambda({
       stack: this,
-      name: "OutboundDocumentQuery",
-      nameSuffix: "v2",
+      name: "PollOutboundDocumentQuery",
       entry: "ihe-outbound-document-query",
       envType,
       envVars: {
@@ -364,8 +362,7 @@ export class LambdasNestedStack extends NestedStack {
 
     const outboundDocumentRetrievalLambda = createLambda({
       stack: this,
-      name: "OutboundDocumentRetrieval",
-      nameSuffix: "v2",
+      name: "PollOutboundDocumentRetrieval",
       entry: "ihe-outbound-document-retrieval",
       envType,
       envVars: {
