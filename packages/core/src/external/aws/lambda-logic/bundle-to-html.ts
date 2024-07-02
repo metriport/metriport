@@ -680,9 +680,11 @@ function containsB64(extension: Extension[] | undefined) {
 }
 
 function cleanUp(valueString: string): string {
-  const htmlString = valueString.replace(/root/g, "div").replace(/<\/content>/g, "</content><br/>");
-  const noId = htmlString.replace(/<ID>.*?<\/ID>/g, "");
-  return noId;
+  return valueString
+    .replace(/root/g, "div")
+    .replace(/<\/content>/g, "</content><br/>")
+    .replace(/<styleCode>.*?<\/styleCode>/g, "")
+    .replace(/<ID>.*?<\/ID>/g, "");
 }
 
 function createDiagnosticTable(timedNote: { time: string | undefined; notes: string }) {
