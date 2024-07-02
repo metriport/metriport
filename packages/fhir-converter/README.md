@@ -20,9 +20,20 @@ Once this completes, you can access the service at http://localhost:8777/
 
 Send a `POST` request to this route to be able to hot reload template changes without needing to restart the server.
 
-### POST /api/convert/ccda/ccd.hbs
+### POST /api/convert/cda/ccd.hbs
 
 Send a `POST` request to this route to convert a C-CDA document specified in the body to a a FHIR R4 Bundle of type batch with the entry containing an array of FHIR R4 Resources being the outcome of the conversion.
+
+**Example**
+
+```bash
+curl -X 'POST' \
+  --data-binary @C-CDA_R2-1_CCD.xml \
+  'http://localhost:8777/api/convert/cda/ccd.hbs' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: text/plain'
+```
+
 
 #### Body
 
@@ -37,6 +48,7 @@ A valid C-CDA (R2.1) XML document.
 ```
 
 You can use [this example C-CDA](https://github.com/HL7/CDA-ccda-2.1/blob/master/examples/C-CDA_R2-1_CCD.xml) from HL7 for testing purposes.
+
 
 #### Query Params
 
