@@ -44,7 +44,7 @@
               }
             ]
         }
-        "category":[{{>DataType/CodeableConcept.hbs code=categoryCode}}],    
+        "category":[{{>DataType/CodeableConcept.hbs code=categoryCode canBeUnknown=true}}],
         "dateTime":"{{formatAsDateTime consentEntry.effectiveTime.low.value}}",
         "provision":
         {

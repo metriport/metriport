@@ -46,9 +46,9 @@
                 {{{toJsonString this}}},
             {{/each}}
         ],
-        
-        "class":{{>DataType/Coding.hbs code=encounter.code}},
-        
+
+        "class":{{>DataType/Coding.hbs code=encounter.code canBeUnknown=true}},
+
         "type":
         [
            	{{>DataType/CodeableConcept.hbs code=encounter.code}},
