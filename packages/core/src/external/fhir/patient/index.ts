@@ -21,7 +21,7 @@ export enum FhirGender {
 
 export type PatientIdAndData = Pick<Patient, "id" | "data">;
 
-const genderMapping: { [record in GenderAtBirth]: FhirGender } = {
+const genderMapping: Record<GenderAtBirth, FhirGender> = {
   F: FhirGender.female,
   M: FhirGender.male,
   UN: FhirGender.other,
