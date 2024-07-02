@@ -318,6 +318,12 @@ export class Config {
   static getAppConfigConfigId(): string {
     return getEnvVarOrFail("APPCONFIG_CONFIGURATION_ID");
   }
+  static getAppConfigEnvironmentId(): string {
+    return getEnvVarOrFail("APPCONFIG_ENVIRONMENT_ID");
+  }
+  static getAppConfigDeploymentStrategyId(): string {
+    return getEnvVarOrFail("APPCONFIG_DEPLOYMENT_STRATEGY_ID");
+  }
   static getCQOrgCertificateIntermediate(): string {
     return getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE");
   }

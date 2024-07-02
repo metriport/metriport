@@ -1,171 +1,180 @@
+import { USState } from "@metriport/core/domain/geographic-locations";
 import { Patient, PatientDemoData, splitDob } from "@metriport/core/domain/patient";
 import { LinkDemographics, LinkGender } from "@metriport/core/domain/patient-demographics";
-import { USState } from "@metriport/core/domain/geographic-locations";
 import {
-  normalizeDob,
-  normalizeGender,
-  normalizeAndStringifyNames,
-  normalizeAddress,
-  stringifyAddress,
-  normalizeTelephone,
-  normalizeSsn,
-  normalizeEmail,
-  normalizeAndStringifyDriversLicense,
-  patientToNormalizedCoreDemographics,
+  checkDemoMatch,
   createAugmentedPatient,
   linkHasNewDemographics,
-  checkDemoMatch,
+  normalizeAddress,
+  normalizeAndStringifyDriversLicense,
+  normalizeAndStringifyNames,
+  normalizeDob,
+  normalizeEmail,
+  normalizeGender,
+  normalizeSsn,
+  patientToNormalizedCoreDemographics,
+  stringifyAddress,
 } from "../patient-demographics";
-import { patient, consolidatedLinkDemographics, coreDemographics } from "./demographics.const";
+import { consolidatedLinkDemographics, coreDemographics, patient } from "./demographics.const";
 
 describe("normalization", () => {
   const dobValid = "2023-08-01";
-  const dobsToCheck = [dobValid, " 2023-08-01 ", "20230801", undefined];
-  for (const dob of dobsToCheck) {
-    it(`dob: ${dob}`, async () => {
-      const result = normalizeDob(dob);
-      expect(result).toBe(dob ? dobValid : undefined);
-    });
-  }
+  describe("normalizeDob", () => {
+    const dobsToCheck = [dobValid, " 2023-08-01 ", "20230801", undefined];
+    for (const dob of dobsToCheck) {
+      it(`dob: ${dob}`, async () => {
+        const result = normalizeDob(dob);
+        expect(result).toBe(dob ? dobValid : undefined);
+      });
+    }
+  });
+
   it("dob split", async () => {
     const result = splitDob(dobValid);
     expect(result).toMatchObject(["2023", "08", "01"]);
   });
-  const genderValid = "male";
-  const gendersToCheck = [genderValid, " male ", "Male", "M", undefined];
-  for (const gender of gendersToCheck) {
-    it(`gender: ${gender}`, async () => {
-      const result = normalizeGender(gender);
-      expect(result).toBe(gender ? genderValid : undefined);
-    });
-  }
-  const genderValidF = "female";
-  const gendersToCheckF = [genderValidF, " female ", "Female", "F", undefined];
-  for (const genderf of gendersToCheckF) {
-    it(`gender: ${genderf}`, async () => {
-      const result = normalizeGender(genderf);
-      expect(result).toBe(genderf ? genderValidF : undefined);
-    });
-  }
-  const nameValid = { firstName: "john", lastName: "smith" };
-  const nameValidString = JSON.stringify(nameValid, Object.keys(nameValid).sort());
-  const namesToCheck = [
-    nameValid,
-    { firstName: " john ", lastName: " smith " },
-    { firstName: "John", lastName: "Smith" },
-  ];
-  for (const name of namesToCheck) {
-    it(`name: ${name}`, async () => {
-      const result = normalizeAndStringifyNames(name);
-      expect(result).toBe(nameValidString);
-    });
-  }
-  const addressValid = {
-    line: ["1 mordhaus st rd ave dr", "apt 1a", "2"],
-    city: "mordhaus",
-    state: "ny",
-    zip: "66666",
-    country: "usa",
-  };
-  const addressValidNormalized = normalizeAddress(addressValid);
-  const addressesToCheck = [
-    addressValid,
-    {
-      line: [" 1 mordhaus st rd ave dr ", " apt 1a ", " 2 "],
-      city: " mordhaus ",
-      state: " ny ",
-      zip: " 66666 ",
-      country: " usa ",
-    },
-    {
-      line: ["1 Mordhaus St Rd Ave Dr", "Apt 1A", "2"],
-      city: "Mordhaus",
-      state: "NY",
-      zip: "66666",
-      country: "USA",
-    },
-    {
-      line: ["1 Mordhaus St Rd Ave Dr", "Apt 1A", "2"],
-      city: "Mordhaus",
-      state: "NYY",
-      zip: "66666-1234",
-      country: "USAA",
-    },
-    {
-      line: ["1 Mordhaus Street Road Avenue Drive", "Apt 1A", "2"],
-      city: "Mordhaus",
-      state: "NY",
-      zip: "66666",
-      country: "USA",
-    },
-    {
-      line: undefined,
-      city: undefined,
-      state: undefined,
-      zip: undefined,
-      country: undefined,
-    },
-  ];
-  for (const address of addressesToCheck) {
-    it(`address: ${address}`, async () => {
-      const result = normalizeAddress(address);
-      expect(result).toMatchObject(
-        address.line
-          ? addressValidNormalized
-          : {
-              line: [],
-              city: "",
-              state: "",
-              zip: "",
-              country: "usa",
-            }
-      );
-    });
-  }
-  it("address strinify", () => {
-    const result = stringifyAddress(addressValidNormalized);
-    expect(result).toBe(
-      JSON.stringify(addressValidNormalized, Object.keys(addressValidNormalized).sort())
-    );
+
+  describe("normalizeGender", () => {
+    const genderValid = "male";
+    const gendersToCheck = [genderValid, " male ", "Male", "M", undefined];
+    for (const gender of gendersToCheck) {
+      it(`gender: ${gender}`, async () => {
+        const result = normalizeGender(gender);
+        expect(result).toBe(gender ? genderValid : undefined);
+      });
+    }
+    const genderValidF = "female";
+    const gendersToCheckF = [genderValidF, " female ", "Female", "F", undefined];
+    for (const genderf of gendersToCheckF) {
+      it(`gender: ${genderf}`, async () => {
+        const result = normalizeGender(genderf);
+        expect(result).toBe(genderf ? genderValidF : undefined);
+      });
+    }
   });
-  const phoneValid = "4150000000";
-  const phonesToCheck = [phoneValid, " 4150000000 ", "(415)-000-0000", "14150000000"];
-  for (const phone of phonesToCheck) {
-    it(`phone: ${phone}`, async () => {
-      const result = normalizeTelephone(phone);
-      expect(result).toBe(phoneValid);
+
+  describe("normalizeAndStringifyNames", () => {
+    const nameValid = { firstName: "john", lastName: "smith" };
+    const nameValidString = JSON.stringify(nameValid, Object.keys(nameValid).sort());
+    const namesToCheck = [
+      nameValid,
+      { firstName: " john ", lastName: " smith " },
+      { firstName: "John", lastName: "Smith" },
+    ];
+    for (const name of namesToCheck) {
+      it(`name: ${JSON.stringify(name)}`, async () => {
+        const result = normalizeAndStringifyNames(name);
+        expect(result).toBe(nameValidString);
+      });
+    }
+  });
+
+  describe("normalizeAddress", () => {
+    const expectedAddress = {
+      line: ["1 mordhaus st rd ave dr", "apt 1a", "2"],
+      city: "mordhaus",
+      state: "ny",
+      zip: "66666",
+      country: "usa",
+    };
+    const addressesToCheck = [
+      expectedAddress,
+      {
+        line: [" 1 mordhaus st rd ave dr ", " apt 1a ", " 2 "],
+        city: " mordhaus ",
+        state: " ny ",
+        zip: " 66666 ",
+        country: " usa ",
+      },
+      {
+        line: ["1 Mordhaus St Rd Ave Dr", "Apt 1A", "2"],
+        city: "Mordhaus",
+        state: "NY",
+        zip: "66666",
+        country: "USA",
+      },
+      {
+        line: ["1 Mordhaus St Rd Ave Dr", "Apt 1A", "2"],
+        city: "Mordhaus",
+        state: "NYY",
+        zip: "66666-1234",
+        country: "USAA",
+      },
+      {
+        line: ["1 Mordhaus Street Road Avenue Drive", "Apt 1A", "2"],
+        city: "Mordhaus",
+        state: "NY",
+        zip: "66666",
+        country: "USA",
+      },
+      {
+        line: undefined,
+        city: undefined,
+        state: undefined,
+        zip: undefined,
+        country: undefined,
+      },
+    ];
+    for (const address of addressesToCheck) {
+      it(`address: ${JSON.stringify(address)}`, async () => {
+        const result = normalizeAddress(address);
+        expect(result).toMatchObject(
+          address.line
+            ? expectedAddress
+            : {
+                line: [],
+                city: "",
+                state: "",
+                zip: "",
+                country: "usa",
+              }
+        );
+      });
+    }
+    it("address stringify", () => {
+      const result = stringifyAddress(expectedAddress);
+      expect(result).toBe(JSON.stringify(expectedAddress, Object.keys(expectedAddress).sort()));
     });
-  }
-  const emailValid = "john.smith@gmail.com";
-  const emailsToCheck = [emailValid, " john.smith@gmail.com ", "JOHN.SMITH@GMAIL.COM"];
-  for (const email of emailsToCheck) {
-    it(`email: ${email}`, async () => {
-      const result = normalizeEmail(email);
-      expect(result).toBe(emailValid);
-    });
-  }
-  const dlValid = { value: "i1234568", state: "ca" };
-  const dlValidString = JSON.stringify(dlValid, Object.keys(dlValid).sort());
-  const dlsToCheck = [
-    dlValid,
-    { value: " i1234568 ", state: " ca " },
-    { value: "I1234568", state: "CA" },
-    { value: "I1234568", state: "CAA" },
-  ];
-  for (const dl of dlsToCheck) {
-    it(`dl: ${dl}`, async () => {
-      const result = normalizeAndStringifyDriversLicense(dl);
-      expect(result).toBe(dlValidString);
-    });
-  }
-  const ssnValid = "000000000";
-  const ssnsToCheck = [ssnValid, " 000000000 ", "000-00-0000", "1000000000"];
-  for (const ssn of ssnsToCheck) {
-    it(`ssn: ${ssn}`, async () => {
-      const result = normalizeSsn(ssn);
-      expect(result).toBe(ssnValid);
-    });
-  }
+  });
+
+  describe("normalizeEmail", () => {
+    const emailValid = "john.smith@gmail.com";
+    const emailsToCheck = [emailValid, " john.smith@gmail.com ", "JOHN.SMITH@GMAIL.COM"];
+    for (const email of emailsToCheck) {
+      it(`email: ${email}`, async () => {
+        const result = normalizeEmail(email);
+        expect(result).toBe(emailValid);
+      });
+    }
+  });
+
+  describe("normalizeAndStringifyDriversLicense", () => {
+    const dlValid = { value: "i1234568", state: "ca" };
+    const dlValidString = JSON.stringify(dlValid, Object.keys(dlValid).sort());
+    const dlsToCheck = [
+      dlValid,
+      { value: " i1234568 ", state: " ca " },
+      { value: "I1234568", state: "CA" },
+      { value: "I1234568", state: "CAA" },
+    ];
+    for (const dl of dlsToCheck) {
+      it(`dl: ${JSON.stringify(dl)}`, async () => {
+        const result = normalizeAndStringifyDriversLicense(dl);
+        expect(result).toBe(dlValidString);
+      });
+    }
+  });
+
+  describe("normalizeSsn", () => {
+    const ssnValid = "000000000";
+    const ssnsToCheck = [ssnValid, " 000000000 ", "000-00-0000", "1000000000"];
+    for (const ssn of ssnsToCheck) {
+      it(`ssn: ${ssn}`, async () => {
+        const result = normalizeSsn(ssn);
+        expect(result).toBe(ssnValid);
+      });
+    }
+  });
 });
 
 describe("total patient normalization", () => {

@@ -36,6 +36,7 @@ export function runPatientTestsPart1(e2e: E2eContext) {
       getPatient(e2e.patient.id),
       getFhirPatient(e2e.patient.id),
     ]);
+    validateLocalPatient(createdPatient, createPatient);
     validateLocalPatient(createdPatient, e2e.patient);
     validateFhirPatient(fhirPatient, e2e.patient);
   });

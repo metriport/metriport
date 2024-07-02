@@ -27,6 +27,7 @@ import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
 import { DnsZones } from "../shared/dns";
+import { buildLbAccessLogPrefix } from "../shared/s3";
 import { Secrets, secretsToECS } from "../shared/secrets";
 import { provideAccessToQueue } from "../shared/sqs";
 import { isProd, isSandbox } from "../shared/util";
@@ -55,6 +56,7 @@ export function createAPIService({
   outboundPatientDiscoveryLambda,
   outboundDocumentQueryLambda,
   outboundDocumentRetrievalLambda,
+  generalBucket,
   medicalDocumentsUploadBucket,
   fhirToMedicalRecordLambda,
   fhirToCdaConverterLambda,
@@ -83,6 +85,7 @@ export function createAPIService({
   outboundPatientDiscoveryLambda: ILambda;
   outboundDocumentQueryLambda: ILambda;
   outboundDocumentRetrievalLambda: ILambda;
+  generalBucket: s3.Bucket;
   medicalDocumentsUploadBucket: s3.Bucket;
   fhirToMedicalRecordLambda: ILambda | undefined;
   fhirToCdaConverterLambda: ILambda | undefined;
@@ -93,6 +96,8 @@ export function createAPIService({
   appConfigEnvVars: {
     appId: string;
     configId: string;
+    envId: string;
+    deploymentStrategyId: string;
   };
   cookieStore: secret.ISecret | undefined;
 }): {
@@ -216,6 +221,8 @@ export function createAPIService({
           // app config
           APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
           APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
+          APPCONFIG_ENVIRONMENT_ID: appConfigEnvVars.envId,
+          APPCONFIG_DEPLOYMENT_STRATEGY_ID: appConfigEnvVars.deploymentStrategyId,
           ...(coverageEnhancementConfig && {
             CW_MANAGEMENT_URL: coverageEnhancementConfig.managementUrl,
           }),
@@ -246,6 +253,8 @@ export function createAPIService({
   });
 
   const alb = fargateService.loadBalancer;
+  alb.logAccessLogs(generalBucket, buildLbAccessLogPrefix("api"));
+
   const nlb = new NetworkLoadBalancer(stack, `ApiNetworkLoadBalancer`, {
     vpc,
     internetFacing: false,
