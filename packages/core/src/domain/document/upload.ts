@@ -1,6 +1,6 @@
 import { createFileName, createFolderName } from "../filename";
 
-const UPLOADS_FOLDER = "uploads";
+export const UPLOADS_FOLDER = "uploads";
 export const CCD_SUFFIX = "ccd";
 export const FHIR_BUNDLE_SUFFIX = "FHIR_BUNDLE";
 
