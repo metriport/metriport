@@ -35,7 +35,7 @@ export const updateOrganization = async (
   if (org.type === "healthcare_provider") {
     // Intentionally asynchronous
     cwCommands.organization
-      .create({
+      .update({
         ...updatedOrg,
         active: updatedOrg.cwActive,
       })
