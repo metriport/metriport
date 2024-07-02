@@ -17,7 +17,7 @@ export function isGWValid(gateway: { homeCommunityId: string; url: string }): bo
   return !!gateway.homeCommunityId && !!gateway.url;
 }
 
-export async function validateCQEnabled(
+export async function isCqEnabled(
   patient: Pick<Patient, "id" | "cxId">,
   facilityId: string,
   forceEnabled: boolean,

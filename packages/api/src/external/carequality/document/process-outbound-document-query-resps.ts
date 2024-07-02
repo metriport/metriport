@@ -140,19 +140,13 @@ export async function processOutboundDocumentQueryResps({
     // when doing the doc retrieval
     await storeInitDocRefInFHIR(docsToDownload, cxId, patientId, log);
 
-    const resultsWithMetriportIdAndDrUrl = await replaceDqUrlWithDrUrl({
+    const outboundDocumentQueryResults = await replaceDqUrlWithDrUrl({
       patientId,
       requestId,
       cxId,
       responsesWithDocsToDownload,
       log,
     });
-
-    const outboundDocumentQueryResults: OutboundDocumentQueryResp[] = [];
-
-    for (const result of resultsWithMetriportIdAndDrUrl) {
-      outboundDocumentQueryResults.push(result);
-    }
 
     const initiator = await getCqInitiator(patient);
 

@@ -15,7 +15,7 @@ import { createOutboundPatientDiscoveryReq } from "./create-outbound-patient-dis
 import { gatherXCPDGateways } from "./gateway";
 import { PatientDataCarequality } from "./patient-shared";
 import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
-import { getCqInitiator, validateCQEnabled } from "./shared";
+import { getCqInitiator, isCqEnabled } from "./shared";
 import { queryDocsIfScheduled } from "./process-outbound-patient-discovery-resps";
 import { createAugmentedPatient } from "../../domain/medical/patient-demographics";
 import { resetScheduledPatientDiscovery } from "../hie/reset-scheduled-patient-discovery-request";
@@ -41,7 +41,7 @@ export async function discover({
   const baseLogMessage = `CQ PD - patientId ${patient.id}`;
   const { log: outerLog } = out(baseLogMessage);
 
-  const enabledIHEGW = await validateCQEnabled(patient, facilityId, forceEnabled, outerLog);
+  const enabledIHEGW = await isCqEnabled(patient, facilityId, forceEnabled, outerLog);
 
   if (enabledIHEGW) {
     const requestId = inputRequestId ?? uuidv7();
@@ -78,7 +78,7 @@ async function prepareAndTriggerPD({
   baseLogMessage: string;
 }): Promise<void> {
   try {
-    const { pdRequestGatewayV2 } = await prepareForPatientDiscovery(patient, facilityId, requestId);
+    const pdRequestGatewayV2 = await prepareForPatientDiscovery(patient, facilityId, requestId);
     const numGatewaysV2 = pdRequestGatewayV2.gateways.length;
 
     const { log } = out(`${baseLogMessage}, requestIdV2: ${pdRequestGatewayV2.id}`);
@@ -124,12 +124,10 @@ async function prepareForPatientDiscovery(
   patient: Patient,
   facilityId: string,
   requestId: string
-): Promise<{
-  pdRequestGatewayV2: OutboundPatientDiscoveryReq;
-}> {
+): Promise<OutboundPatientDiscoveryReq> {
   const patientResource = toIheGatewayPatientResource(patient);
 
-  const [{ v2Gateways }, initiator] = await Promise.all([
+  const [v2Gateways, initiator] = await Promise.all([
     gatherXCPDGateways(patient),
     getCqInitiator(patient, facilityId),
   ]);
@@ -143,9 +141,7 @@ async function prepareForPatientDiscovery(
     initiator,
   });
 
-  return {
-    pdRequestGatewayV2,
-  };
+  return pdRequestGatewayV2;
 }
 
 export function getCQData(
