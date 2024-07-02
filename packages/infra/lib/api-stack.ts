@@ -331,7 +331,7 @@ export class APIStack extends Stack {
     if (!isSandbox(props.config)) {
       fhirConverter = createFHIRConverterService(
         this,
-        props,
+        { ...props, generalBucket },
         this.vpc,
         slackNotification?.alarmAction
       );
@@ -417,6 +417,7 @@ export class APIStack extends Stack {
       outboundPatientDiscoveryLambda,
       outboundDocumentQueryLambda,
       outboundDocumentRetrievalLambda,
+      generalBucket,
       medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
       fhirToCdaConverterLambda,
@@ -664,6 +665,8 @@ export class APIStack extends Stack {
       bucket: medicalDocumentsBucket,
     });
 
+    // TODO move this to its own stack/nested stack, name it accordingly so it doesn't
+    // confuse with the regular FHIRConverter service/lambda
     // CONVERT API
     const convertResource = api.root.addResource("convert");
     const convertBaseResource = convertResource.addResource("v1");
