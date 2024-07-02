@@ -324,6 +324,8 @@ export function createAPIService({
             "appconfig:StartConfigurationSession",
             "appconfig:GetLatestConfiguration",
             "appconfig:GetConfiguration",
+            "appconfig:CreateHostedConfigurationVersion",
+            "appconfig:StartDeployment",
             "apigateway:GET",
           ],
           resources: ["*"],
