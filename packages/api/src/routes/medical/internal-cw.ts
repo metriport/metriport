@@ -10,9 +10,9 @@ import { asyncHandler, getFrom } from "../util";
 const router = Router();
 
 /**
- * POST /internal/carequality/directory/organization
+ * POST /internal/commonwell/directory/organization
  *
- * Creates or updates the organization in the Carequality Directory.
+ * Creates or updates the organization in the CommonWell.
  */
 router.post(
   "/organization",

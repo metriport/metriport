@@ -159,7 +159,7 @@ router.post(
 /**
  * POST /internal/carequality/directory/organization/v2
  *
- * Updates the organization in the Carequality Directory.
+ * Creates or updates the organization in the Carequality Directory.
  */
 router.put(
   "/directory/organization/v2",
