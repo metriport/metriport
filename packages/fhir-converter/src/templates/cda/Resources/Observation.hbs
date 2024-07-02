@@ -87,6 +87,13 @@
             "valueString":"{{{parseReferenceData observationEntry.value._}}}",
         {{!-- in some cases text is here in the b64 field. Adding so no data loss but not sure if thats the way its supposed to be. also how it renders I do not know      --}}
         {{else if observationEntry.value._b64}}
+            "extension": [
+                {
+                    {{!-- This must be identical to `@metriport/core/external/fhir/shared/extensions/base64-extension. We're avoiding adding a dependency on that package.` --}}
+                    "url": "https://public.metriport.com/fhir/StructureDefinition/is-base-64-encoded.json",
+                    "valueBoolean": true
+                }
+            ],
             "valueString":"{{observationEntry.value._b64}}",
         {{else if observationEntry.value.translation.value}}
             {{#if observationEntry.value.translation.originalText._}}

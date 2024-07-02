@@ -6,6 +6,7 @@ import {
   Coverage,
   DiagnosticReport,
   Encounter,
+  Extension,
   FamilyMemberHistory,
   Immunization,
   Location,
@@ -22,6 +23,7 @@ import {
 } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import { uniqWith } from "lodash";
+import { BASE_64_EXTENSION_URL } from "../../fhir/shared/extensions/base64-extension";
 
 const ISO_DATE = "YYYY-MM-DD";
 
@@ -238,6 +240,7 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
           ${createDiagnosticReportsSection(
             diagnosticReports,
             practitioners,
+            observationLaboratory,
             aweVisits,
             organizations
           )}
@@ -566,6 +569,7 @@ function createAWESection(
 function createDiagnosticReportsSection(
   diagnosticReports: DiagnosticReport[],
   practitioners: Practitioner[],
+  observations: Observation[],
   aweVisits: Condition[],
   organizations: Organization[]
 ) {
@@ -586,8 +590,8 @@ function createDiagnosticReportsSection(
     false
   );
 
-  const hasNonAWEreports = nonAWEreports.length > 0;
-
+  const reportsFromB64 = createDiagnosticReportsWithB64Notes(diagnosticReports, observations);
+  const noReportsPlaceholder = `<table><tbody><tr><td>No reports found</td></tr></tbody></table>`;
   return `
     <div id="reports" class="section">
       <div class="section-title">
@@ -595,14 +599,99 @@ function createDiagnosticReportsSection(
         <a href="#mr-header">&#x25B2; Back to Top</a>
       </div>
       <div class="section-content">
-        ${
-          hasNonAWEreports
-            ? nonAWEreports
-            : `<table><tbody><tr><td>No reports found</td></tr></tbody></table>`
-        }
+        ${combineStrings(nonAWEreports, reportsFromB64) ?? noReportsPlaceholder} 
       </div>
     </div>
   `;
+}
+
+function combineStrings(
+  stringA: string | undefined,
+  stringB: string | undefined
+): string | undefined {
+  if (stringA && stringA.length > 0 && stringB && stringB.length > 0) {
+    return stringA + stringB;
+  } else if (stringA && stringA.length > 0) {
+    return stringA;
+  } else if (stringB && stringB.length > 0) {
+    return stringB;
+  }
+  return undefined;
+}
+
+function createDiagnosticReportsWithB64Notes(
+  diagnosticReports: DiagnosticReport[],
+  observations: Observation[]
+): string {
+  const mappedObservations = mapResourceToId<Observation>(observations);
+
+  if (!diagnosticReports) {
+    return "";
+  }
+
+  const reportsWithObservations = diagnosticReports.map(report => {
+    const obsRefs = report.result?.flatMap(obsRef => obsRef.reference || []);
+    const observations = obsRefs?.flatMap(obsRef => {
+      const obsRefId = obsRef?.split("Observation/")[1];
+      if (!obsRefId) return [];
+      return mappedObservations[obsRefId] || [];
+    });
+
+    let time = report.effectiveDateTime ?? report.effectivePeriod?.start;
+    if (!time) {
+      time = observations?.[0]?.effectiveDateTime ?? observations?.[0]?.effectivePeriod?.start;
+    }
+
+    return { report, observations, time };
+  });
+
+  const timedNotes = reportsWithObservations
+    .sort((a, b) => {
+      return dayjs(a.time).isBefore(dayjs(b.time)) ? -1 : 1;
+    })
+    .map(reportWithObs => {
+      const note =
+        reportWithObs.observations
+          ?.map(obs => {
+            const valueString = obs.valueString ?? "";
+            const valueStringWithoutEncoded = removeEncodedStrings(valueString);
+            const obsExtensions = obs.extension;
+            const resString = containsB64(obsExtensions)
+              ? Buffer.from(valueStringWithoutEncoded, "base64").toString("utf-8")
+              : valueStringWithoutEncoded;
+
+            return cleanUp(resString);
+          })
+          ?.join("<br/>") ?? "";
+
+      const formattedTime = dayjs(reportWithObs.time).format(ISO_DATE);
+      return note ? { time: formattedTime, notes: note } : undefined;
+    });
+
+  return `${timedNotes.map(note => createDiagnosticTable(note)).join("")}`;
+}
+
+function removeEncodedStrings(valueString: string): string {
+  return valueString.replace(/&#x3D;/g, "").trim();
+}
+
+function containsB64(extension: Extension[] | undefined) {
+  return extension?.some(ext => ext.url === BASE_64_EXTENSION_URL);
+}
+
+function cleanUp(valueString: string): string {
+  return valueString
+    .replace(/root/g, "div")
+    .replace(/<\/content>/g, "</content><br/>")
+    .replace(/<styleCode>.*?<\/styleCode>/g, "")
+    .replace(/<ID>.*?<\/ID>/g, "");
+}
+
+function createDiagnosticTable(
+  timedNote: { time: string | undefined; notes: string } | undefined
+): string {
+  if (!timedNote) return "";
+  return `<table><thead><th>${timedNote.time}</th></thead><tbody><tr><td>${timedNote.notes}</td></tr></tbody></table>`;
 }
 
 function buildEncounterSections(
