@@ -147,6 +147,7 @@ export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
    * @param count Optional, number of organizations to fetch. Defaults to 1000.
    * @param start Optional, the index of the directory to start querying from. Defaults to 0.
    * @param oid Optional, the OID of the organization to fetch.
+   * @param isActive Optional, indicates whether to list active or inactive organizations. Defaults to true.
    * @returns
    */
   async listOrganizations({
