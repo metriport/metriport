@@ -88,5 +88,5 @@ function personToPatient(person: { id: string } & Person): PatientOnLinkDTO {
 
 const genderToDTO = (person: Person): GenderDTO => {
   const code = person.details?.gender?.code;
-  return code === "M" || code === "F" ? code : "UN";
+  return code === "M" || code === "F" || code === "UN" ? code : "UNK";
 };

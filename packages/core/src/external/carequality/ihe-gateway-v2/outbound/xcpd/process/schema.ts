@@ -34,7 +34,12 @@ export const identifierSchema = z.object({
 });
 export type IheIdentifier = z.infer<typeof identifierSchema>;
 
-const genderCodeSchema = z.union([z.literal("F"), z.literal("M"), z.literal("UN")]);
+const genderCodeSchema = z.union([
+  z.literal("F"),
+  z.literal("M"),
+  z.literal("UN"),
+  z.literal("UNK"),
+]);
 export type IheGender = z.infer<typeof genderCodeSchema>;
 
 export const patientRegistryProfileSchema = z.object({
