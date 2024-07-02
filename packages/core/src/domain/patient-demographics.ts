@@ -1,5 +1,5 @@
 export type LinkDateOfBirth = string | undefined;
-export type LinkGender = "male" | "female" | undefined;
+export type LinkGender = "male" | "female" | "other" | "unknown" | undefined;
 
 export type LinkGenericName = {
   firstName: string;
@@ -36,15 +36,4 @@ export type LinkDemographicsHistory = {
   [key: string]: LinkDemographics[];
 };
 
-export type GenderAtBirth = "M" | "F" | "UK";
-
-export function normalizeGender(gender: string | undefined): GenderAtBirth {
-  switch (gender?.toLowerCase().trim()) {
-    case "male" || "m":
-      return "M";
-    case "female" || "f":
-      return "F";
-    default:
-      return "UK";
-  }
-}
+export type GenderAtBirth = "M" | "F" | "UN" | "UNK";

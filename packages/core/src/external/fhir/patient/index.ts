@@ -10,16 +10,41 @@ import { Contact, ContactTypes } from "../../../domain/contact";
 import { driversLicenseURIs, identifierSytemByType } from "../../../domain/oid";
 import { GenderAtBirth, Patient, splitName } from "../../../domain/patient";
 import { getIdFromSubjectId, getIdFromSubjectRef } from "../shared";
+import { GenderCodes } from "@metriport/commonwell-sdk";
+
+type FhirGender = NonNullable<FHIRPatient["gender"]>;
 
 export type PatientIdAndData = Pick<Patient, "id" | "data">;
 
-const genderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
+const genderMapping: Record<GenderAtBirth, FhirGender> = {
   F: "female",
   M: "male",
+  UN: "other",
+  UNK: "unknown",
 };
 
-export function mapGenderAtBirthToFhir(k: GenderAtBirth): Required<FHIRPatient>["gender"] {
-  return genderMapping[k];
+const reverseGenderMapping: Record<FhirGender, GenderAtBirth> = {
+  female: GenderCodes.F,
+  male: GenderCodes.M,
+  other: GenderCodes.UN,
+  unknown: GenderCodes.UNK,
+};
+
+export function mapGenderAtBirthToFhir(k: GenderAtBirth | undefined): FhirGender {
+  if (k === undefined) {
+    return "unknown";
+  }
+  const gender = genderMapping[k];
+  return gender ? gender : "unknown";
+}
+
+export function mapStringGenderAtBirthToFhir(k: string): FhirGender {
+  return mapGenderAtBirthToFhir(k as GenderAtBirth);
+}
+
+export function mapFhirToGenderAtBirth(gender: FhirGender): GenderAtBirth {
+  const genderAtBirth = reverseGenderMapping[gender];
+  return genderAtBirth ? genderAtBirth : GenderCodes.UNK;
 }
 
 export function mapPatientDataToResource(patient: PatientIdAndData) {

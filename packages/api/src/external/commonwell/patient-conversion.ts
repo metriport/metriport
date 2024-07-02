@@ -7,14 +7,17 @@ import {
   Patient as CommonwellPatient,
   Person as CommonwellPerson,
   StrongId,
+  GenderCodes,
 } from "@metriport/commonwell-sdk";
 import { addOidPrefix, driversLicenseURIs } from "@metriport/core/domain/oid";
 import { GenderAtBirth, Patient, splitName } from "@metriport/core/domain/patient";
 import { normalizePhoneNumber } from "@metriport/shared";
 
 const genderMapping: { [k in GenderAtBirth]: string } = {
-  F: "F",
-  M: "M",
+  F: GenderCodes.F,
+  M: GenderCodes.M,
+  UN: GenderCodes.UN,
+  UNK: GenderCodes.UNK,
 };
 
 export function mapGenderAtBirthToCw(k: GenderAtBirth): string {
