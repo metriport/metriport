@@ -622,7 +622,7 @@ function combineStrings(
 function createDiagnosticReportsWithB64Notes(
   diagnosticReports: DiagnosticReport[],
   observations: Observation[]
-): string {
+) {
   const mappedObservations = mapResourceToId<Observation>(observations);
 
   if (!diagnosticReports) {
@@ -665,7 +665,7 @@ function createDiagnosticReportsWithB64Notes(
           ?.join("<br/>") ?? "";
 
       const formattedTime = dayjs(reportWithObs.time).format(ISO_DATE);
-      return note ? { time: formattedTime, notes: note } : undefined;
+      return { time: formattedTime, notes: note };
     });
 
   return `${timedNotes.map(note => createDiagnosticTable(note)).join("")}`;
@@ -687,10 +687,7 @@ function cleanUp(valueString: string): string {
     .replace(/<ID>.*?<\/ID>/g, "");
 }
 
-function createDiagnosticTable(
-  timedNote: { time: string | undefined; notes: string } | undefined
-): string {
-  if (!timedNote) return "";
+function createDiagnosticTable(timedNote: { time: string | undefined; notes: string }) {
   return `<table><thead><th>${timedNote.time}</th></thead><tbody><tr><td>${timedNote.notes}</td></tr></tbody></table>`;
 }
 
