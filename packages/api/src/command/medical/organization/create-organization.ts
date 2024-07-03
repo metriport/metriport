@@ -43,7 +43,7 @@ export const createOrganization = async (
   if (org.type === "healthcare_provider") {
     // Intentionally asynchronous
     cwCommands.organization
-      .create({
+      .create(cxId, {
         ...org,
         active: org.cwActive,
       })

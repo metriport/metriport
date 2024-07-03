@@ -157,6 +157,43 @@ router.post(
 );
 
 /**
+ * GET /internal/carequality/directory/organization/v2/:oid
+ *
+ * Retrieves the organization with the specified OID from the Carequality Directory.
+ * @param req.params.oid The OID of the organization to retrieve.
+ * @returns Returns the organization with the specified OID.
+ */
+router.get(
+  "/directory/organization/v2/:oid",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
+    const cq = makeCarequalityManagementAPI();
+    if (!cq) throw new Error("Carequality API not initialized");
+    const cxId = getFrom("query").orFail("cxId", req);
+    const oid = getFrom("params").orFail("oid", req);
+    const org = await getOrganizationOrFail({ cxId });
+    if (org.oid !== oid) throw new NotFoundError("Organization not found");
+    const resp = await cq.listOrganizations({ count: 1, oid });
+    if (resp.length === 0) throw new NotFoundError("Organization not found");
+    const cqOrgs = parseCQDirectoryEntries(resp);
+    const cqOrg = cqOrgs[0];
+
+    if (cqOrgs.length > 1) {
+      capture.message("More than one organization with the same OID found in the CQ directory", {
+        extra: {
+          orgId: org.id,
+          orgOid: org.oid,
+          context: `cq.org.directory`,
+        },
+      });
+    }
+
+    return res.status(httpStatus.OK).json(cqOrg);
+  })
+);
+
+/**
  * POST /internal/carequality/directory/organization/v2
  *
  * Creates or updates the organization in the Carequality Directory.

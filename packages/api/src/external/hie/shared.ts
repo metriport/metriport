@@ -94,19 +94,15 @@ export async function createOrUpdateInCw(
   log(`Creating/Updating a CW entry with this OID ${facility.oid} and name ${orgName}`);
 
   await createOrUpdateCWOrganization(
+    cxId,
     {
-      cxId,
-      id: facility.id,
       oid: facility.oid,
       data: {
         name: orgName,
         type: cxOrg.type,
         location: facility.data.address,
       },
-      organizationNumber: facility.facilityNumber,
       active: facility.cwActive,
-      createdAt: new Date(),
-      updatedAt: new Date(),
     },
     isObo
   );
