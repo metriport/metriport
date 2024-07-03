@@ -2,7 +2,7 @@ import { faker } from "@faker-js/faker";
 import { Address, Patient as FhirPatient } from "@medplum/fhirtypes";
 import { PatientCreate, PatientDTO, USState } from "@metriport/api-sdk";
 import { Patient } from "@metriport/core/domain/patient";
-import { mapMetriportGenderToFhir } from "@metriport/core/external/fhir/patient/index";
+import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/index";
 import { PatientWithId } from "@metriport/core/external/fhir/__tests__/patient";
 
 export const createPatient: PatientCreate = {
@@ -80,7 +80,7 @@ export function patientDtoToFhir(dto: PatientDTO): PatientWithId {
       },
     ],
     birthDate: dto.dob,
-    gender: mapMetriportGenderToFhir(dto.genderAtBirth),
+    gender: mapMetriportGenderToFhirGender(dto.genderAtBirth),
     address: address.flatMap(patientAddressDtoToFhir),
   };
 }
