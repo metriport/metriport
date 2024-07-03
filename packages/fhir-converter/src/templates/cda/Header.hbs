@@ -79,14 +79,16 @@
             {{/with}}           
         {{/if}}
     {{/if}}
-            
-    {{#if document.author.assignedAuthor}}
-        {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=document.author.assignedAuthor) as |practitionerId|}}
-            {{>Resources/Practitioner.hbs practitioner=document.author.assignedAuthor ID=practitionerId.Id}},
+
+    {{#each (toArray document.author) as |author|}}
+      {{#if author.assignedAuthor}}
+          {{#with (evaluate 'Utils/GenerateId.hbs' obj=author.assignedAuthor) as |practitionerId|}}
+            {{>Resources/Practitioner.hbs practitioner=author.assignedAuthor ID=practitionerId.Id}},
             {{>References/Composition/author.hbs ID=(generateUUID (toJsonString document)) REF=(concat 'Practitioner/' practitionerId.Id)}},
-        {{/with}}
-    {{/if}}
-        
+          {{/with}}
+      {{/if}}
+    {{/each}}
+
     {{#with document.recordTarget.patientRole as |patientRole|}}
         {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
             {{>Resources/Patient.hbs patientRole=patientRole ID=patientId.Id}},
