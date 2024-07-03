@@ -52,21 +52,6 @@ export function createIHEGateway(stack: Construct, props: IHEGatewayProps): void
     containerInsights,
   });
 
-  new IHEGatewayConstruct(stack, {
-    ...props,
-    mainConfig,
-    config,
-    configEcs: config.ecs.outbound,
-    configJava: config.java.outbound,
-    cluster,
-    privateZone,
-    db,
-    name: `${name}Outbound`,
-    dnsSubdomain: "outbound",
-    pdPort: config.outboundPorts.patientDiscovery,
-    dqPort: config.outboundPorts.documentQuery,
-    drPort: config.outboundPorts.documentRetrieval,
-  });
   const { pdListener, dqListener, drListener } = new IHEGatewayConstruct(stack, {
     ...props,
     mainConfig,
