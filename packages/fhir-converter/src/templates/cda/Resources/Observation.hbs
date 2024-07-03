@@ -89,7 +89,6 @@
         {{else if observationEntry.value._b64}}
             "extension": [
                 {
-                    {{!-- This must be identical to `@metriport/core/external/fhir/shared/extensions/base64-extension. We're avoiding adding a dependency on that package.` --}}
                     "url": "https://public.metriport.com/fhir/StructureDefinition/is-base-64-encoded.json",
                     "valueBoolean": true
                 }

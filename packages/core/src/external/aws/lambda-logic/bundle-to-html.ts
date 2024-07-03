@@ -23,7 +23,7 @@ import {
 } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import { uniqWith } from "lodash";
-import { BASE_64_EXTENSION_URL } from "../../fhir/shared/extensions/base64-extension";
+import { BASE_64_EXTENSION_URL } from "../../fhir/shared/extensions/base-64-extension";
 
 const ISO_DATE = "YYYY-MM-DD";
 
@@ -599,7 +599,7 @@ function createDiagnosticReportsSection(
         <a href="#mr-header">&#x25B2; Back to Top</a>
       </div>
       <div class="section-content">
-        ${combineStrings(nonAWEreports, reportsFromB64) ?? noReportsPlaceholder} 
+        ${combineStrings(nonAWEreports, reportsFromB64, noReportsPlaceholder)}
       </div>
     </div>
   `;
@@ -607,8 +607,9 @@ function createDiagnosticReportsSection(
 
 function combineStrings(
   stringA: string | undefined,
-  stringB: string | undefined
-): string | undefined {
+  stringB: string | undefined,
+  placeholder = "default"
+) {
   if (stringA && stringA.length > 0 && stringB && stringB.length > 0) {
     return stringA + stringB;
   } else if (stringA && stringA.length > 0) {
@@ -616,7 +617,7 @@ function combineStrings(
   } else if (stringB && stringB.length > 0) {
     return stringB;
   }
-  return undefined;
+  return placeholder;
 }
 
 function createDiagnosticReportsWithB64Notes(
@@ -629,49 +630,44 @@ function createDiagnosticReportsWithB64Notes(
     return "";
   }
 
-  const reportsWithObservations = diagnosticReports.map(report => {
-    const obsRefs = report.result?.flatMap(obsRef => obsRef.reference || []);
-    const observations = obsRefs?.flatMap(obsRef => {
-      const obsRefId = obsRef?.split("Observation/")[1];
-      if (!obsRefId) return [];
-      return mappedObservations[obsRefId] || [];
-    });
-
-    let time = report.effectiveDateTime ?? report.effectivePeriod?.start;
-    if (!time) {
-      time = observations?.[0]?.effectiveDateTime ?? observations?.[0]?.effectivePeriod?.start;
-    }
-
-    return { report, observations, time };
-  });
-
-  const timedNotes = reportsWithObservations
+  const timedNotes = diagnosticReports
     .sort((a, b) => {
-      return dayjs(a.time).isBefore(dayjs(b.time)) ? -1 : 1;
+      const timeA = a.effectiveDateTime ?? a.effectivePeriod?.start;
+      const timeB = b.effectiveDateTime ?? b.effectivePeriod?.start;
+      return dayjs(timeA).isBefore(dayjs(timeB)) ? -1 : 1;
     })
-    .map(reportWithObs => {
-      const note =
-        reportWithObs.observations
-          ?.map(obs => {
-            const valueString = obs.valueString ?? "";
-            const valueStringWithoutEncoded = removeEncodedStrings(valueString);
-            const obsExtensions = obs.extension;
+    .map(report => {
+      let time = report.effectiveDateTime ?? report.effectivePeriod?.start;
+
+      const obsRefs = report.result?.flatMap(obsRef => obsRef.reference || []);
+      const notes =
+        obsRefs
+          ?.flatMap(obsRef => {
+            const obsRefId = obsRef?.split("/")[1];
+            if (!obsRefId) return;
+            const referencedObs = mappedObservations[obsRefId];
+            if (!time) {
+              time = referencedObs?.effectiveDateTime ?? referencedObs?.effectivePeriod?.start;
+            }
+            const valueString = referencedObs?.valueString ?? "";
+            const cleanedUp = removeJunk(valueString);
+            const obsExtensions = referencedObs?.extension;
             const resString = containsB64(obsExtensions)
-              ? Buffer.from(valueStringWithoutEncoded, "base64").toString("utf-8")
-              : valueStringWithoutEncoded;
+              ? Buffer.from(cleanedUp, "base64").toString("utf-8")
+              : cleanedUp;
 
             return cleanUp(resString);
           })
           ?.join("<br/>") ?? "";
 
-      const formattedTime = dayjs(reportWithObs.time).format(ISO_DATE);
-      return { time: formattedTime, notes: note };
+      const formattedTime = dayjs(time).format(ISO_DATE);
+      return { time: formattedTime, notes };
     });
 
   return `${timedNotes.map(note => createDiagnosticTable(note)).join("")}`;
 }
 
-function removeEncodedStrings(valueString: string): string {
+function removeJunk(valueString: string): string {
   return valueString.replace(/&#x3D;/g, "").trim();
 }
 
@@ -682,6 +678,7 @@ function containsB64(extension: Extension[] | undefined) {
 function cleanUp(valueString: string): string {
   const htmlString = valueString.replace(/root/g, "div").replace(/<\/content>/g, "</content><br/>");
   const noId = htmlString.replace(/<ID>.*?<\/ID>/g, "");
+  console.log(noId);
   return noId;
 }
 
