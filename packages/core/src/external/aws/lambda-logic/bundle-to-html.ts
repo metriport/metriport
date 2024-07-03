@@ -6,7 +6,6 @@ import {
   Coverage,
   DiagnosticReport,
   Encounter,
-  Extension,
   FamilyMemberHistory,
   Immunization,
   Location,
@@ -23,7 +22,6 @@ import {
 } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import { uniqWith } from "lodash";
-import { BASE_64_EXTENSION_URL } from "../../fhir/shared/extensions/base-64-extension";
 
 const ISO_DATE = "YYYY-MM-DD";
 
@@ -590,8 +588,8 @@ function createDiagnosticReportsSection(
     false
   );
 
+  const hasNonAWEreports = nonAWEreports.length > 0;
   const reportsFromB64 = createDiagnosticReportsWithB64Notes(diagnosticReports, observations);
-  const noReportsPlaceholder = `<table><tbody><tr><td>No reports found</td></tr></tbody></table>`;
   return `
     <div id="reports" class="section">
       <div class="section-title">
@@ -599,25 +597,15 @@ function createDiagnosticReportsSection(
         <a href="#mr-header">&#x25B2; Back to Top</a>
       </div>
       <div class="section-content">
-        ${combineStrings(nonAWEreports, reportsFromB64, noReportsPlaceholder)}
+        ${
+          hasNonAWEreports
+            ? nonAWEreports
+            : `<table><tbody><tr><td>No reports found</td></tr></tbody></table>`
+        }
+        ${reportsFromB64}
       </div>
     </div>
   `;
-}
-
-function combineStrings(
-  stringA: string | undefined,
-  stringB: string | undefined,
-  placeholder = "default"
-) {
-  if (stringA && stringA.length > 0 && stringB && stringB.length > 0) {
-    return stringA + stringB;
-  } else if (stringA && stringA.length > 0) {
-    return stringA;
-  } else if (stringB && stringB.length > 0) {
-    return stringB;
-  }
-  return placeholder;
 }
 
 function createDiagnosticReportsWithB64Notes(
@@ -637,49 +625,36 @@ function createDiagnosticReportsWithB64Notes(
       return dayjs(timeA).isBefore(dayjs(timeB)) ? -1 : 1;
     })
     .map(report => {
-      let time = report.effectiveDateTime ?? report.effectivePeriod?.start;
-
+      const time = report.effectiveDateTime ?? report.effectivePeriod?.start;
       const obsRefs = report.result?.flatMap(obsRef => obsRef.reference || []);
       const notes =
         obsRefs
           ?.flatMap(obsRef => {
             const obsRefId = obsRef?.split("/")[1];
             if (!obsRefId) return;
-            const referencedObs = mappedObservations[obsRefId];
-            if (!time) {
-              time = referencedObs?.effectiveDateTime ?? referencedObs?.effectivePeriod?.start;
+            const valueString = mappedObservations[obsRefId]?.valueString ?? "";
+            const cleanedUp = valueString.replace(/&#x3D;/g, "").trim();
+            let resString;
+            try {
+              resString = Buffer.from(cleanedUp, "base64").toString("utf-8");
+            } catch {
+              resString = cleanedUp;
             }
-            const valueString = referencedObs?.valueString ?? "";
-            const cleanedUp = removeJunk(valueString);
-            const obsExtensions = referencedObs?.extension;
-            const resString = containsB64(obsExtensions)
-              ? Buffer.from(cleanedUp, "base64").toString("utf-8")
-              : cleanedUp;
-
-            return cleanUp(resString);
+            return resString.replace(/root/g, "div").replace(/<\/content>/g, "</content><br/>");
           })
           ?.join("<br/>") ?? "";
 
-      const formattedTime = dayjs(time).format(ISO_DATE);
-      return { time: formattedTime, notes };
+      console.log(notes);
+      return { time, notes };
     });
 
-  return `${timedNotes.map(note => createDiagnosticTable(note)).join("")}`;
-}
-
-function removeJunk(valueString: string): string {
-  return valueString.replace(/&#x3D;/g, "").trim();
-}
-
-function containsB64(extension: Extension[] | undefined) {
-  return extension?.some(ext => ext.url === BASE_64_EXTENSION_URL);
-}
-
-function cleanUp(valueString: string): string {
-  const htmlString = valueString.replace(/root/g, "div").replace(/<\/content>/g, "</content><br/>");
-  const noId = htmlString.replace(/<ID>.*?<\/ID>/g, "");
-  console.log(noId);
-  return noId;
+  return `
+    ${
+      timedNotes
+        ? timedNotes.map(note => createDiagnosticTable(note)).join("")
+        : `<table><tbody><tr><td>No reports found</td></tr></tbody></table>`
+    }
+  `;
 }
 
 function createDiagnosticTable(timedNote: { time: string | undefined; notes: string }) {
