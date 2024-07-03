@@ -105,6 +105,7 @@ router.post(
  *
  * Retrieves the organization with the specified OID from the Carequality Directory.
  * @param req.params.oid The OID of the organization to retrieve.
+ * @param req.params.getInactive Optional, indicates whether to get the inactive organization(s). If not provided, will fetch active organizations.
  * @returns Returns the organization with the specified OID.
  */
 router.get(
@@ -115,7 +116,8 @@ router.get(
     const cq = makeCarequalityManagementAPI();
     if (!cq) throw new Error("Carequality API not initialized");
     const oid = getFrom("params").orFail("oid", req);
-    const resp = await cq.listOrganizations({ count: 1, oid });
+    const getInactive = getFromQueryAsBoolean("getInactive", req);
+    const resp = await cq.listOrganizations({ count: 1, oid, active: !getInactive });
     const org = parseCQDirectoryEntries(resp);
 
     if (org.length > 1) {

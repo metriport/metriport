@@ -27,7 +27,7 @@ import { appendDocQueryProgress } from "../../command/medical/patient/append-doc
 import { appendBulkGetDocUrlProgress } from "../../command/medical/patient/bulk-get-doc-url-progress";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import BadRequestError from "../../errors/bad-request";
-import { processCcdRequest } from "../../external/cda/process-ccd-request";
+import { processCcdRequest, processEmptyCcdRequest } from "../../external/cda/process-ccd-request";
 import { parseJobId } from "../../external/fhir/connector/connector";
 import { toFHIR as toFhirOrganization } from "../../external/fhir/organization";
 import { setDocQueryProgress } from "../../external/hie/set-doc-query-progress";
@@ -429,6 +429,31 @@ router.post(
 
     const fhirOrganization = toFhirOrganization(organization);
     const ccd = await processCcdRequest(patient, fhirOrganization);
+    return res.type("application/xml").status(httpStatus.OK).send(ccd);
+  })
+);
+
+/**
+ * POST /internal/docs/empty-ccd
+ *
+ * Generates an empty CCD document and uploads it for the specified patient.
+ * @param req.query.cxId - The customer/account's ID.
+ * @param req.query.patientId - The patient's ID.
+ * @return The CCD document string in XML format.
+ */
+router.post(
+  "/empty-ccd",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getFrom("query").orFail("cxId", req);
+    const patientId = getFrom("query").orFail("patientId", req);
+    const [patient, organization] = await Promise.all([
+      getPatientOrFail({ cxId, id: patientId }),
+      getOrganizationOrFail({ cxId }),
+    ]);
+
+    const fhirOrganization = toFhirOrganization(organization);
+    const ccd = await processEmptyCcdRequest(patient, fhirOrganization);
     return res.type("application/xml").status(httpStatus.OK).send(ccd);
   })
 );
