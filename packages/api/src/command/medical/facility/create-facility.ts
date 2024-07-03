@@ -36,13 +36,13 @@ export const createFacility = async ({
 };
 
 export function validateCreate(facility: FacilityCreate, throwOnError = true): boolean {
-  const { cwType, cqType, cqActive, cwActive, cqOboOid, cwOboOid } = facility;
-  if (isOboFacility(cwType) && cwActive && !cwOboOid) {
+  const { cwType, cqType, cqOboOid, cwOboOid } = facility;
+  if (isOboFacility(cwType) && !cwOboOid) {
     if (!throwOnError) return false;
     throw new BadRequestError("CW OBO facility must have CW OBO OID when CW OBO active");
   }
 
-  if (isOboFacility(cqType) && cqActive && !cqOboOid) {
+  if (isOboFacility(cqType) && !cqOboOid) {
     if (!throwOnError) return false;
     throw new BadRequestError("CQ OBO facility must have CQ OBO OID when CQ OBO active");
   }

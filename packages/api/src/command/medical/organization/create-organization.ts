@@ -44,7 +44,8 @@ export const createOrganization = async (
     // Intentionally asynchronous
     cwCommands.organization
       .create(cxId, {
-        ...org,
+        oid: org.oid,
+        data: org.data,
         active: org.cwActive,
       })
       .catch(processAsyncError(`cw.org.create`));

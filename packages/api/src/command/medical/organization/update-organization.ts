@@ -36,7 +36,8 @@ export const updateOrganization = async (
     // Intentionally asynchronous
     cwCommands.organization
       .update(cxId, {
-        ...updatedOrg,
+        oid: updatedOrg.oid,
+        data: updatedOrg.data,
         active: updatedOrg.cwActive,
       })
       .catch(processAsyncError(`cw.org.create`));
@@ -44,13 +45,13 @@ export const updateOrganization = async (
     const locationWithCoordinates = await getAddressWithCoordinates(updatedOrg.data.location, cxId);
     cqCommands.organization
       .createOrUpdate({
-        oid: org.oid,
-        name: org.data.name,
+        oid: updatedOrg.oid,
+        name: updatedOrg.data.name,
         ...locationWithCoordinates,
         lat: `${locationWithCoordinates.coordinates.lat}`,
         lon: `${locationWithCoordinates.coordinates.lon}`,
         postalCode: locationWithCoordinates.zip,
-        organizationBizType: org.type,
+        organizationBizType: updatedOrg.type,
         active: updatedOrg.cqActive,
         ...CqMetriportDataDefault,
       })

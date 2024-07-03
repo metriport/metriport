@@ -63,7 +63,6 @@ export async function organizationToCommonwell(
     isActive: org.active,
     technicalContacts: [technicalContact],
   };
-  // if this org isn't OBO, then we need to provide query responder details
   if (!isObo) {
     cwOrg.authorizationInformation = {
       authorizationServerEndpoint: Config.getGatewayAuthorizationServerEndpoint(),
