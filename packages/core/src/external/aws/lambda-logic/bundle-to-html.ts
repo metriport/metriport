@@ -599,7 +599,7 @@ function createDiagnosticReportsSection(
         <a href="#mr-header">&#x25B2; Back to Top</a>
       </div>
       <div class="section-content">
-        ${combineStrings(nonAWEreports, reportsFromB64) ?? noReportsPlaceholder}
+        ${combineStrings(nonAWEreports, reportsFromB64) ?? noReportsPlaceholder} 
       </div>
     </div>
   `;
