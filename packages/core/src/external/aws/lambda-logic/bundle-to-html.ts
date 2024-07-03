@@ -238,7 +238,6 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
           ${createDiagnosticReportsSection(
             diagnosticReports,
             practitioners,
-            observationLaboratory,
             aweVisits,
             organizations
           )}
@@ -567,7 +566,6 @@ function createAWESection(
 function createDiagnosticReportsSection(
   diagnosticReports: DiagnosticReport[],
   practitioners: Practitioner[],
-  observations: Observation[],
   aweVisits: Condition[],
   organizations: Organization[]
 ) {
@@ -589,7 +587,7 @@ function createDiagnosticReportsSection(
   );
 
   const hasNonAWEreports = nonAWEreports.length > 0;
-  const reportsFromB64 = createDiagnosticReportsWithB64Notes(diagnosticReports, observations);
+
   return `
     <div id="reports" class="section">
       <div class="section-title">
@@ -602,63 +600,9 @@ function createDiagnosticReportsSection(
             ? nonAWEreports
             : `<table><tbody><tr><td>No reports found</td></tr></tbody></table>`
         }
-        ${reportsFromB64}
       </div>
     </div>
   `;
-}
-
-function createDiagnosticReportsWithB64Notes(
-  diagnosticReports: DiagnosticReport[],
-  observations: Observation[]
-) {
-  const mappedObservations = mapResourceToId<Observation>(observations);
-
-  if (!diagnosticReports) {
-    return "";
-  }
-
-  const timedNotes = diagnosticReports
-    .sort((a, b) => {
-      const timeA = a.effectiveDateTime ?? a.effectivePeriod?.start;
-      const timeB = b.effectiveDateTime ?? b.effectivePeriod?.start;
-      return dayjs(timeA).isBefore(dayjs(timeB)) ? -1 : 1;
-    })
-    .map(report => {
-      const time = report.effectiveDateTime ?? report.effectivePeriod?.start;
-      const obsRefs = report.result?.flatMap(obsRef => obsRef.reference || []);
-      const notes =
-        obsRefs
-          ?.flatMap(obsRef => {
-            const obsRefId = obsRef?.split("/")[1];
-            if (!obsRefId) return;
-            const valueString = mappedObservations[obsRefId]?.valueString ?? "";
-            const cleanedUp = valueString.replace(/&#x3D;/g, "").trim();
-            let resString;
-            try {
-              resString = Buffer.from(cleanedUp, "base64").toString("utf-8");
-            } catch {
-              resString = cleanedUp;
-            }
-            return resString.replace(/root/g, "div").replace(/<\/content>/g, "</content><br/>");
-          })
-          ?.join("<br/>") ?? "";
-
-      console.log(notes);
-      return { time, notes };
-    });
-
-  return `
-    ${
-      timedNotes
-        ? timedNotes.map(note => createDiagnosticTable(note)).join("")
-        : `<table><tbody><tr><td>No reports found</td></tr></tbody></table>`
-    }
-  `;
-}
-
-function createDiagnosticTable(timedNote: { time: string | undefined; notes: string }) {
-  return `<table><thead><th>${timedNote.time}</th></thead><tbody><tr><td>${timedNote.notes}</td></tr></tbody></table>`;
 }
 
 function buildEncounterSections(
