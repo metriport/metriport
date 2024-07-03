@@ -39,12 +39,12 @@ export function validateCreate(facility: FacilityCreate, throwOnError = true): b
   const { cwType, cqType, cqOboOid, cwOboOid } = facility;
   if (isOboFacility(cwType) && !cwOboOid) {
     if (!throwOnError) return false;
-    throw new BadRequestError("CW OBO facility must have CW OBO OID when CW OBO active");
+    throw new BadRequestError("CW OBO facility must have CW OBO OID");
   }
 
   if (isOboFacility(cqType) && !cqOboOid) {
     if (!throwOnError) return false;
-    throw new BadRequestError("CQ OBO facility must have CQ OBO OID when CQ OBO active");
+    throw new BadRequestError("CQ OBO facility must have CQ OBO OID");
   }
 
   return true;

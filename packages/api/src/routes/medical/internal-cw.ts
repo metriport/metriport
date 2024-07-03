@@ -49,7 +49,8 @@ router.post(
     const orgActive = cwOrgActiveSchema.parse(body);
     const org = await getOrganizationOrFail({ cxId, id: orgId });
     await createOrUpdateCWOrganization(cxId, {
-      ...org,
+      oid: org.oid,
+      data: org.data,
       active: orgActive.active,
     });
 
