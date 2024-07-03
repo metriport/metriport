@@ -14,7 +14,7 @@ import { OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway
 import { timestampToSoapBody } from "../../../utils";
 import { wrapIdInUrnUuid } from "../../../../../../util/urn";
 import { requiresUrnInSoapBody, getHomeCommunityId } from "../../../gateways";
-import { mapFhirToGenderAtBirth } from "../../../../../fhir/patient";
+import { mapFhirToIheGender } from "../../../../../fhir/patient";
 
 const DATE_DASHES_REGEX = /-/g;
 const action = "urn:hl7-org:v3:PRPA_IN201305UV02:CrossGatewayPatientDiscovery";
@@ -239,7 +239,7 @@ function createSoapBody({
   const toUrl = gateway.url;
   const providerId = bodyData.principalCareProviderIds[0];
   const homeCommunityId = getHomeCommunityId(gateway, bodyData.samlAttributes);
-  const patientGender = mapFhirToGenderAtBirth(bodyData.patientResource.gender);
+  const patientGender = mapFhirToIheGender(bodyData.patientResource.gender);
   const patientBirthtime = bodyData.patientResource.birthDate?.replace(DATE_DASHES_REGEX, "");
   const patientNames = bodyData.patientResource.name;
   const patientAddresses = bodyData.patientResource.address;

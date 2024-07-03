@@ -8,7 +8,7 @@ import { getStateEnum } from "../../../domain/geographic-locations";
 import { Patient, PatientData } from "../../../domain/patient";
 import { MPI } from "../../../mpi/mpi";
 import { normalizePatient } from "../../../mpi/normalize-patient";
-import { mapFhirToGenderAtBirth } from "../../fhir/patient";
+import { mapFhirToMetriportGender } from "../../fhir/patient";
 import { patientMPIToPartialPatient } from "../../../mpi/shared";
 import {
   constructPDErrorResponse,
@@ -71,7 +71,7 @@ export function mapPatientResourceToPatientData(
   const firstName = humanName[0]?.given?.join(" ");
   const lastName = humanName[0]?.family;
   const dob = patientResource.birthDate;
-  const genderAtBirth = mapFhirToGenderAtBirth(patientResource.gender);
+  const genderAtBirth = mapFhirToMetriportGender(patientResource.gender);
   const addresses = getPatientAddresses(patientResource);
 
   if (!firstName || !lastName || !dob || !genderAtBirth || !addresses.length) return;

@@ -27,7 +27,7 @@ import {
   handleSchemaErrorResponse,
   handlePatientErrorResponse,
 } from "./error";
-import { mapGenderAtBirthToFhir } from "../../../../../fhir/patient";
+import { mapIheGenderToFhir } from "../../../../../fhir/patient";
 
 const { log } = out("Processing XCPD Requests");
 
@@ -142,9 +142,7 @@ function handlePatientMatchResponse({
 
   const patientResource = {
     name: patientNames,
-    gender: mapGenderAtBirthToFhir(
-      subject1?.patient?.patientPerson?.administrativeGenderCode?._code
-    ),
+    gender: mapIheGenderToFhir(subject1?.patient?.patientPerson?.administrativeGenderCode?._code),
     birthDate: subject1?.patient?.patientPerson?.birthTime?._value,
     ...(addresses && { address: addresses }),
     ...(patientTelecoms && { telecom: patientTelecoms }),

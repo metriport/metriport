@@ -16,7 +16,7 @@ import {
   LinkGenericDriversLicense,
   LinkGenericName,
 } from "@metriport/core/domain/patient-demographics";
-import { mapGenderAtBirthToFhir } from "@metriport/core/external/fhir/patient/index";
+import { mapMetriportGenderToFhir } from "@metriport/core/external/fhir/patient/index";
 import { normalizePhoneNumber, stripNonNumericChars } from "@metriport/shared";
 import dayjs from "dayjs";
 import { ISO_DATE } from "../../shared/date";
@@ -155,7 +155,7 @@ export function checkDemoMatch({
  */
 export function patientToNormalizedCoreDemographics(patient: Patient): LinkDemographics {
   const dob = normalizeDob(patient.data.dob);
-  const gender = mapGenderAtBirthToFhir(patient.data.genderAtBirth) as LinkGender;
+  const gender = mapMetriportGenderToFhir(patient.data.genderAtBirth) as LinkGender;
   const patientFirstNames: string[] = splitName(patient.data.firstName);
   const patientLastNames: string[] = splitName(patient.data.lastName);
   const names = patientLastNames.flatMap(lastName => {

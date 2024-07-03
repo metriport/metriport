@@ -16,8 +16,8 @@ import { normalizePhoneNumber } from "@metriport/shared";
 const genderMapping: { [k in GenderAtBirth]: string } = {
   F: GenderCodes.F,
   M: GenderCodes.M,
-  UN: GenderCodes.UN,
-  UNK: GenderCodes.UNK,
+  O: GenderCodes.UN,
+  U: GenderCodes.UNK,
 };
 
 export function mapGenderAtBirthToCw(k: GenderAtBirth): string {

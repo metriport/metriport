@@ -41,7 +41,7 @@ export type DriversLicense = {
   state: USState;
 };
 
-export const genderAtBirthTypes = ["F", "M", "UN", "UNK"] as const;
+export const genderAtBirthTypes = ["F", "M", "O", "U"] as const;
 export type GenderAtBirth = (typeof genderAtBirthTypes)[number];
 
 export abstract class PatientExternalDataEntry {

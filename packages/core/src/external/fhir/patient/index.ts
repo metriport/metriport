@@ -10,41 +10,68 @@ import { Contact, ContactTypes } from "../../../domain/contact";
 import { driversLicenseURIs, identifierSytemByType } from "../../../domain/oid";
 import { GenderAtBirth, Patient, splitName } from "../../../domain/patient";
 import { getIdFromSubjectId, getIdFromSubjectRef } from "../shared";
-import { GenderCodes } from "@metriport/commonwell-sdk";
+import { IheGender } from "../../carequality/ihe-gateway-v2/outbound/xcpd/process/schema";
 
 type FhirGender = NonNullable<FHIRPatient["gender"]>;
 
 export type PatientIdAndData = Pick<Patient, "id" | "data">;
 
-const genderMapping: Record<GenderAtBirth, FhirGender> = {
+const iheGenderToFhirGender: Record<IheGender, FhirGender> = {
   F: "female",
   M: "male",
   UN: "other",
   UNK: "unknown",
 };
 
-const reverseGenderMapping: Record<FhirGender, GenderAtBirth> = {
-  female: GenderCodes.F,
-  male: GenderCodes.M,
-  other: GenderCodes.UN,
-  unknown: GenderCodes.UNK,
+const metriportGenderToFhir: Record<GenderAtBirth, FhirGender> = {
+  F: "female",
+  M: "male",
+  O: "other",
+  U: "unknown",
 };
 
-export function mapGenderAtBirthToFhir(k: GenderAtBirth | undefined): FhirGender {
+const fhirGenderToMetriportGender: Record<FhirGender, GenderAtBirth> = {
+  female: "F",
+  male: "M",
+  other: "O",
+  unknown: "U",
+};
+
+const fhirGenderToIheGender: Record<FhirGender, IheGender> = {
+  female: "F",
+  male: "M",
+  other: "UN",
+  unknown: "UNK",
+};
+
+export function mapIheGenderToFhir(k: IheGender | undefined): FhirGender {
   if (k === undefined) {
     return "unknown";
   }
-  const gender = genderMapping[k];
+  const gender = iheGenderToFhirGender[k];
   return gender ? gender : "unknown";
 }
 
-export function mapStringGenderAtBirthToFhir(k: string): FhirGender {
-  return mapGenderAtBirthToFhir(k as GenderAtBirth);
+export function mapFhirToIheGender(gender: FhirGender): IheGender {
+  const iheGender = fhirGenderToIheGender[gender];
+  return iheGender ? iheGender : "UNK";
 }
 
-export function mapFhirToGenderAtBirth(gender: FhirGender): GenderAtBirth {
-  const genderAtBirth = reverseGenderMapping[gender];
-  return genderAtBirth ? genderAtBirth : GenderCodes.UNK;
+export function mapMetriportGenderToFhir(k: GenderAtBirth | undefined): FhirGender {
+  if (k === undefined) {
+    return "unknown";
+  }
+  const gender = metriportGenderToFhir[k];
+  return gender ? gender : "unknown";
+}
+
+export function mapFhirToMetriportGender(gender: FhirGender): GenderAtBirth {
+  const genderAtBirth = fhirGenderToMetriportGender[gender];
+  return genderAtBirth ? genderAtBirth : "U";
+}
+
+export function mapStringGenderAtBirthToFhir(k: string): FhirGender {
+  return mapMetriportGenderToFhir(k as GenderAtBirth);
 }
 
 export function mapPatientDataToResource(patient: PatientIdAndData) {
@@ -77,7 +104,7 @@ export function mapPatientDataToResource(patient: PatientIdAndData) {
           return telecoms;
         })
         .reduce((prev, curr) => prev.concat(curr), []) || [],
-    gender: mapGenderAtBirthToFhir(patient.data.genderAtBirth),
+    gender: mapMetriportGenderToFhir(patient.data.genderAtBirth),
     birthDate: patient.data.dob,
     address:
       patient.data.address.map((addr: Address) => {
