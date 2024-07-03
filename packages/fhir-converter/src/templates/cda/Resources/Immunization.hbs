@@ -51,7 +51,7 @@
         {{#each (toArray imm.consumable)}}
             {{#each (toArray this.manufacturedProduct)}}
                 {{#if (contains (toJsonString this.templateId) '"2.16.840.1.113883.10.20.22.4.54"')}}
-                    "vaccineCode":{{>DataType/CodeableConcept.hbs code=this.manufacturedMaterial.code}},
+                    "vaccineCode":{{>DataType/CodeableConcept.hbs code=this.manufacturedMaterial.code canBeUnknown=true}},
                     "lotNumber":"{{escapeSpecialChars this.manufacturedMaterial.lotNumberText._}}",
                 {{/if}}
             {{/each}}
