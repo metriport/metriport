@@ -633,7 +633,12 @@ export class APIStack extends Stack {
       apiKeyRequired: true,
     });
 
-    this.setupTestLambda(lambdaLayers, props.config.environmentType, props.config.lambdasSentryDSN);
+    this.setupTestLambda(
+      lambdaLayers,
+      props.config.environmentType,
+      apiDirectUrl,
+      props.config.lambdasSentryDSN
+    );
 
     // token auth for connect sessions
     const tokenAuth = this.setupTokenAuthLambda(
@@ -890,6 +895,7 @@ export class APIStack extends Stack {
   private setupTestLambda(
     lambdaLayers: LambdaLayers,
     envType: EnvType,
+    apiAddress: string,
     sentryDsn: string | undefined
   ) {
     return createLambda({
@@ -901,6 +907,7 @@ export class APIStack extends Stack {
       entry: "tester",
       envType,
       envVars: {
+        API_URL: apiAddress,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       architecture: lambda.Architecture.ARM_64,
@@ -1221,6 +1228,7 @@ export class APIStack extends Stack {
       layers: [lambdaLayers.shared, lambdaLayers.chromium],
       memory: 4096,
       timeout: lambdaTimeout,
+      isEnableInsights: true,
       vpc,
       alarmSnsAction: alarmAction,
     });
