@@ -1,6 +1,7 @@
 import {
   AllergyIntolerance,
   Condition,
+  DiagnosticReport,
   Encounter,
   FamilyMemberHistory,
   Immunization,
@@ -25,6 +26,11 @@ export type VitalObservation = {
   dateTime: string | undefined;
   category: string;
 };
+
+export class AugmentedDiagnosticReport implements AugmentedResource<DiagnosticReport> {
+  public readonly typeOid = oids.resultOrganizer;
+  constructor(public readonly sectionName: string, public readonly resource: DiagnosticReport) {}
+}
 
 export class AugmentedObservation implements AugmentedResource<Observation> {
   constructor(

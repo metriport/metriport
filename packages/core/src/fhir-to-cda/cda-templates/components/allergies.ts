@@ -17,6 +17,7 @@ import {
   formatDateToHumanReadableFormat,
   getTextFromCode,
   isLoinc,
+  notOnFilePlaceholder,
   withoutNullFlavorObject,
 } from "../commons";
 import {
@@ -43,13 +44,28 @@ const tableHeaders = [
 ];
 
 export function buildAllergies(fhirBundle: Bundle): AllergiesSection {
+  const allergiesSection: AllergiesSection = {
+    templateId: buildInstanceIdentifier({
+      root: oids.allergiesSection,
+      extension: extensionValue2015,
+    }),
+    code: buildCodeCe({
+      code: "48765-2",
+      codeSystem: loincCodeSystem,
+      codeSystemName: loincSystemName,
+      displayName: "Allergies and Adverse Reactions",
+    }),
+    title: "ALLERGIES, ADVERSE REACTIONS, ALERTS",
+    text: notOnFilePlaceholder,
+  };
+
   const allergies: AllergyIntolerance[] =
     fhirBundle.entry?.flatMap(entry =>
       isAllergyIntolerance(entry.resource) ? [entry.resource] : []
     ) || [];
 
   if (allergies.length === 0) {
-    return undefined;
+    return allergiesSection;
   }
 
   const augmentedAllergies = allergies.map(allergy => {
@@ -64,22 +80,10 @@ export function buildAllergies(fhirBundle: Bundle): AllergiesSection {
 
   const table = initiateSectionTable(allergiesSectionName, tableHeaders, trs);
 
-  const allergySection = {
-    templateId: buildInstanceIdentifier({
-      root: oids.allergiesSection,
-      extension: extensionValue2015,
-    }),
-    code: buildCodeCe({
-      code: "48765-2",
-      codeSystem: loincCodeSystem,
-      codeSystemName: loincSystemName,
-      displayName: "Allergies and Adverse Reactions",
-    }),
-    title: "ALLERGIES, ADVERSE REACTIONS, ALERTS",
-    text: table,
-    entry: entries,
-  };
-  return allergySection;
+  allergiesSection.text = table;
+  allergiesSection.entry = entries;
+
+  return allergiesSection;
 }
 
 function createTableRowFromAllergyIntolerance(
