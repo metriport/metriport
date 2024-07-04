@@ -253,7 +253,6 @@ export async function sendPayload(
     const before = Date.now();
     const res = await axios.post(url, payload, {
       headers: {
-        "x-webhook-key": apiKey,
         "user-agent": "Metriport API",
         "x-metriport-signature": hmac,
       },
