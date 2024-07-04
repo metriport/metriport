@@ -25,6 +25,7 @@ export const DocumentRequest = z.object({
   RepositoryUniqueId: stringOrNumberSchema,
   HomeCommunityId: stringOrNumberSchema,
 });
+export type DocumentRequest = z.infer<typeof DocumentRequest>;
 
 export const iti39RequestBody = z.object({
   RetrieveDocumentSetRequest: z.object({
