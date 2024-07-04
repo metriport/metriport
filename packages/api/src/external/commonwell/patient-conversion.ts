@@ -13,14 +13,14 @@ import { addOidPrefix, driversLicenseURIs } from "@metriport/core/domain/oid";
 import { GenderAtBirth, Patient, splitName } from "@metriport/core/domain/patient";
 import { normalizePhoneNumber } from "@metriport/shared";
 
-const genderMapping: { [k in GenderAtBirth]: string } = {
+const genderMapping: { [k in GenderAtBirth]: GenderCodes } = {
   F: GenderCodes.F,
   M: GenderCodes.M,
   O: GenderCodes.UN,
   U: GenderCodes.UNK,
 };
 
-export function mapGenderAtBirthToCw(k: GenderAtBirth): string {
+export function mapGenderAtBirthToCw(k: GenderAtBirth): GenderCodes {
   return genderMapping[k];
 }
 

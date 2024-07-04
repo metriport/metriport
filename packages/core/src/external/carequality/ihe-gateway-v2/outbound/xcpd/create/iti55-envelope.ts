@@ -14,7 +14,7 @@ import { OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway
 import { timestampToSoapBody } from "../../../utils";
 import { wrapIdInUrnUuid } from "../../../../../../util/urn";
 import { requiresUrnInSoapBody, getHomeCommunityId } from "../../../gateways";
-import { mapFhirToIheGender } from "../../../../../fhir/patient";
+import { mapFhirToIheGender } from "../../../../shared";
 
 const DATE_DASHES_REGEX = /-/g;
 const action = "urn:hl7-org:v3:PRPA_IN201305UV02:CrossGatewayPatientDiscovery";

@@ -10,18 +10,10 @@ import { Contact, ContactTypes } from "../../../domain/contact";
 import { driversLicenseURIs, identifierSytemByType } from "../../../domain/oid";
 import { GenderAtBirth as MetriportGender, Patient, splitName } from "../../../domain/patient";
 import { getIdFromSubjectId, getIdFromSubjectRef } from "../shared";
-import { IheGender } from "../../carequality/ihe-gateway-v2/outbound/xcpd/process/schema";
 
-type FhirGender = NonNullable<FHIRPatient["gender"]>;
+export type FhirGender = NonNullable<FHIRPatient["gender"]>;
 
 export type PatientIdAndData = Pick<Patient, "id" | "data">;
-
-const iheGenderToFhirGender: Record<IheGender, FhirGender> = {
-  F: "female",
-  M: "male",
-  UN: "other",
-  UNK: "unknown",
-};
 
 const metriportGenderToFhir: Record<MetriportGender, FhirGender> = {
   F: "female",
@@ -36,26 +28,6 @@ const fhirGenderToMetriportGender: Record<FhirGender, MetriportGender> = {
   other: "O",
   unknown: "U",
 };
-
-const fhirGenderToIheGender: Record<FhirGender, IheGender> = {
-  female: "F",
-  male: "M",
-  other: "UN",
-  unknown: "UNK",
-};
-
-export function mapIheGenderToFhir(k: IheGender | undefined): FhirGender {
-  if (k === undefined) {
-    return "unknown";
-  }
-  const gender = iheGenderToFhirGender[k];
-  return gender ? gender : "unknown";
-}
-
-export function mapFhirToIheGender(gender: FhirGender): IheGender {
-  const iheGender = fhirGenderToIheGender[gender];
-  return iheGender ? iheGender : "UNK";
-}
 
 export function mapMetriportGenderToFhirGender(k: MetriportGender | undefined): FhirGender {
   if (k === undefined) {

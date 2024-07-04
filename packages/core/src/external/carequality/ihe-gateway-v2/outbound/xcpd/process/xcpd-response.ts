@@ -27,7 +27,7 @@ import {
   handleSchemaErrorResponse,
   handlePatientErrorResponse,
 } from "./error";
-import { mapIheGenderToFhir } from "../../../../../fhir/patient";
+import { mapIheGenderToFhir } from "../../../../shared";
 
 const { log } = out("Processing XCPD Requests");
 
