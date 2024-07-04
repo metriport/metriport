@@ -51,7 +51,7 @@ export function transformIti55RequestToPatientResource(
 
   return patientResource;
 }
-export function processXcpdRequest(request: string): InboundPatientDiscoveryReq {
+export function processInboundXcpdRequest(request: string): InboundPatientDiscoveryReq {
   const parser = new XMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "_",

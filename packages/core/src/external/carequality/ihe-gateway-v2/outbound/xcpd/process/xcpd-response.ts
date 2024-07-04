@@ -244,6 +244,7 @@ export function processXCPDResponse({
     }
   } catch (error) {
     log(`Error processing XCPD response: ${error}`);
+    console.log("jsonobj", JSON.stringify(jsonObj, null, 2));
     return handleSchemaErrorResponse({
       outboundRequest,
       gateway,

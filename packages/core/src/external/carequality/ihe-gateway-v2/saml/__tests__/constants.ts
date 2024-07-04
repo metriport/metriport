@@ -1,6 +1,12 @@
 import * as uuid from "uuid";
 import { Gender } from "@metriport/ihe-gateway-sdk";
 
+export const xcpdGateway = {
+  id: uuid.v4(),
+  oid: "2.16.840.1.113883.3.9801.2.1",
+  url: "http://localhost:9091/Gateway/PatientDiscovery/1_0/NhinService/NhinPatientDiscovery",
+};
+
 export const iti55BodyData = {
   id: uuid.v4(),
   cxId: uuid.v4(),
