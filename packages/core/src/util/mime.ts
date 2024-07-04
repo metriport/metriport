@@ -40,7 +40,7 @@ export const OCTET_FILE_EXTENSION = ".bin";
 export const HTML_MIME_TYPE = "text/html";
 export const HTML_FILE_EXTENSION = ".html";
 
-export const BASE64_ENCODED_MIME_TYPES = [
+export const BINARY_MIME_TYPES = [
   PDF_MIME_TYPE,
   TIFF_MIME_TYPE,
   TIF_MIME_TYPE,
