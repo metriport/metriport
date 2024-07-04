@@ -75,6 +75,24 @@ type EnvConfigBase = {
      * The thresholds for the RDS alarms.
      */
     alarmThresholds: RDSAlarmThresholds;
+    /**
+     * Sequelize DB pool settings.
+     */
+    poolSettings: {
+      /**
+       * Maximum number of connections in pool. Default is 5.
+       * It should be lower than the DB's max connections.
+       * For Aurora Serverless v2, that's tied to `maxCapacity`.
+       * @see https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-serverless-v2.setting-capacity.html#aurora-serverless-v2.max-connections
+       */
+      max: number;
+      /** Minimum number of connections in pool. Default is 0. */
+      min: number;
+      /** The maximum time, in milliseconds, that pool will try to get connection before throwing error. */
+      acquire: number;
+      /** The maximum time, in milliseconds, that a connection can be idle before being released. */
+      idle: number;
+    };
   };
   loadBalancerDnsName: string;
   /**

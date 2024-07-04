@@ -128,6 +128,7 @@ export function createAPIService({
     host: dbReadReplicaEndpoint.hostname,
     port: dbReadReplicaEndpoint.port,
   });
+  const dbPoolSettings = JSON.stringify(props.config.apiDatabase.poolSettings);
   // Run some servers on fargate containers
   const listenerPort = 80;
   const containerPort = 8080;
@@ -160,6 +161,7 @@ export function createAPIService({
           ...(props.version ? { METRIPORT_VERSION: props.version } : undefined),
           AWS_REGION: props.config.region,
           DB_READ_REPLICA_ENDPOINT: dbReadReplicaEndpointAsString,
+          DB_POOL_SETTINGS: dbPoolSettings,
           TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
           API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
           ...(props.config.apiGatewayUsagePlanId
