@@ -21,10 +21,14 @@ export function asyncHandler(
       await f(req, res, next);
     } catch (err) {
       if (logErrorDetails) log("", err);
-      else log(errorToString(err));
+      else log(removeNewLines(errorToString(err)));
       next(err);
     }
   };
+}
+
+function removeNewLines(s: string): string {
+  return (s ?? "").replace(/\n/g, " ");
 }
 
 // https://www.rfc-editor.org/rfc/rfc7807 w/ Metriport extension, { name?: string }
