@@ -13,7 +13,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async () => {
   console.log(`Running...`);
 
   // OSS API
-  const url = getEnvVarOrFail("API_URL");
+  const url = "http://" + getEnvVarOrFail("API_URL");
 
   console.log(`Calling ${url}...`);
   const res = await api.get(url);
