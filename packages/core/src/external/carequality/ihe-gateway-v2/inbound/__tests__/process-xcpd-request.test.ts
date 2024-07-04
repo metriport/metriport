@@ -1,17 +1,23 @@
 import { processInboundXcpdRequest } from "../xcpd/process-xcpd-req";
-import { createIti55SoapEnvelopeInboundResponse } from "../xcpd/create-xcpd-resp";
-import { TEST_CERT, iti55BodyData, xcpdGateway } from "../../saml/__tests__/constants";
+import {
+  createIti55SoapEnvelopeInboundResponse,
+  isSuccessfulPatientDiscoveryResponse,
+} from "../xcpd/create-xcpd-resp";
+import { iti55BodyData, xcpdGateway } from "../../saml/__tests__/constants";
 import { createITI5SoapEnvelope } from "../../outbound/xcpd/create/iti55-envelope";
 import { processXCPDResponse } from "../../outbound/xcpd/process/xcpd-response";
+import { TEST_CERT, TEST_KEY } from "../../saml/__tests__/constants";
+import { signTimestamp } from "../../saml/security/sign";
 
-it.skip("should process ITI-55 request", () => {
+it("should process ITI-55 request", () => {
   try {
     const soapEnvelope = createITI5SoapEnvelope({
       bodyData: iti55BodyData,
       publicCert: TEST_CERT,
     });
+    const signedEnvelope = signTimestamp({ xml: soapEnvelope, privateKey: TEST_KEY });
 
-    const iti55InboundRequest = processInboundXcpdRequest(soapEnvelope);
+    const iti55InboundRequest = processInboundXcpdRequest(signedEnvelope);
     const updatedIti55InboundRequest = {
       ...iti55InboundRequest,
       patientResource: {
@@ -50,5 +56,9 @@ it("should process ITI-55 response", () => {
       gateway: xcpdGateway,
     },
   });
-  console.log(JSON.stringify(iti55Response, null, 2));
+  const patientResource = isSuccessfulPatientDiscoveryResponse(response)
+    ? response.patientResource
+    : undefined;
+  expect(patientResource).toEqual(response.patientResource);
+  expect(iti55Response.patientMatch).toEqual(response.patientMatch);
 });

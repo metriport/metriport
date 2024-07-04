@@ -8,9 +8,6 @@ export function normalizeGender(gender: GenderAtBirth | undefined): "male" | "fe
     return undefined;
   }
   const mappedGender = mapGenderAtBirthToFhir(gender);
-  if (mappedGender === "other" || mappedGender === "unknown") {
-    return undefined;
-  }
   return mappedGender;
 }
 

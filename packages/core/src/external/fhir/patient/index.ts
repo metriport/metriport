@@ -18,8 +18,22 @@ const genderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
   M: "male",
 };
 
-export function mapGenderAtBirthToFhir(k: GenderAtBirth): Required<FHIRPatient>["gender"] {
+const reverseGenderMapping: { [k in "female" | "male"]: GenderAtBirth } = {
+  female: "F",
+  male: "M",
+};
+
+export function mapGenderAtBirthToFhir(k: GenderAtBirth): "female" | "male" {
   return genderMapping[k];
+}
+
+export function mapFhirToGenderAtBirth(
+  gender: "female" | "male" | undefined
+): GenderAtBirth | undefined {
+  if (gender === undefined) {
+    return undefined;
+  }
+  return reverseGenderMapping[gender];
 }
 
 export function mapPatientDataToResource(patient: PatientIdAndData) {

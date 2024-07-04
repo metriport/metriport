@@ -9,6 +9,7 @@ import { namespaces, expiresIn } from "../../constants";
 import { timestampToSoapBody } from "../../utils";
 import { uuidv7 } from "../../../../../util/uuid-v7";
 import { METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX } from "../../../shared";
+import { mapFhirToGenderAtBirth } from "../../../../fhir/patient/index";
 
 export enum queryResponseCodes {
   OK = "OK",
@@ -133,7 +134,7 @@ function createQueryByParameter(request: InboundPatientDiscoveryReq): object {
   return queryByParameter;
 }
 
-function isSuccessfulPatientDiscoveryResponse(
+export function isSuccessfulPatientDiscoveryResponse(
   response: InboundPatientDiscoveryResp
 ): response is InboundPatientDiscoveryRespSuccess {
   return "patientResource" in response;
@@ -183,9 +184,11 @@ function createSubjectAndRegistrationEvent(response: InboundPatientDiscoveryResp
               "@_value": t.value,
             })),
             administrativeGenderCode: {
-              "@_code": patientResource.gender, // this needs to be not in FHIR but in IHE
+              "@_code": mapFhirToGenderAtBirth(patientResource.gender),
             },
-            birthTime: patientResource.birthDate, // this needs to be in right format
+            birthTime: {
+              "@_value": patientResource.birthDate, // this needs to be in right format
+            },
             addr: patientResource.address?.map(a => ({
               streetAddressLine: a.line?.join(", "),
               city: a.city,
