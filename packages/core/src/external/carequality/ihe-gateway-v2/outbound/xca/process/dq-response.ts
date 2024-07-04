@@ -221,6 +221,7 @@ export function processDqResponse({
     }
   } catch (error) {
     log(`Error processing DQ response ${JSON.stringify(jsonObj)}`);
+    console.log("jsonObj", JSON.stringify(jsonObj, null, 2));
     return handleSchemaErrorResponse({
       outboundRequest,
       gateway,

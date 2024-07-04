@@ -1,8 +1,6 @@
+import { isSuccessfulPatientDiscoveryResponse } from "@metriport/ihe-gateway-sdk";
 import { processInboundXcpdRequest } from "../xcpd/process-xcpd-req";
-import {
-  createIti55SoapEnvelopeInboundResponse,
-  isSuccessfulPatientDiscoveryResponse,
-} from "../xcpd/create-xcpd-resp";
+import { createIti55SoapEnvelopeInboundResponse } from "../xcpd/create-xcpd-resp";
 import { iti55BodyData, xcpdGateway } from "../../saml/__tests__/constants";
 import { createITI5SoapEnvelope } from "../../outbound/xcpd/create/iti55-envelope";
 import { processXCPDResponse } from "../../outbound/xcpd/process/xcpd-response";

@@ -27,7 +27,7 @@ export function makeCqDataLink(): CQLink {
         },
       ],
       birthDate: dayjs(faker.date.past()).format(ISO_DATE),
-      gender: faker.helpers.arrayElement(["undefined", "unknown", "male", "female", "other"]),
+      gender: faker.helpers.arrayElement([undefined, "male", "female"]),
       identifier: [], // TODO
       address: [
         {

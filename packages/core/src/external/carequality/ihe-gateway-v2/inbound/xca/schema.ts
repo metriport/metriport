@@ -4,7 +4,6 @@ import { schemaOrArray, samlHeaderSchema, slot, stringOrNumberSchema } from "../
 export const iti38RequestBody = z.object({
   AdhocQueryRequest: z.object({
     ResponseOption: z.object({
-      _returnComposedObjects: z.literal("true"),
       _returnType: z.literal("LeafClass"),
     }),
     AdhocQuery: z.object({

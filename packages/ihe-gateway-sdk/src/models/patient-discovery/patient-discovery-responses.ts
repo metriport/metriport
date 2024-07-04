@@ -73,3 +73,9 @@ export const outboundPatientDiscoveryRespSchema = z.union([
 ]);
 
 export type OutboundPatientDiscoveryResp = z.infer<typeof outboundPatientDiscoveryRespSchema>;
+
+export function isSuccessfulPatientDiscoveryResponse(
+  response: InboundPatientDiscoveryResp
+): response is InboundPatientDiscoveryRespSuccess {
+  return "patientResource" in response;
+}

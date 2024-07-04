@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { SamlAttributes } from "@metriport/ihe-gateway-sdk";
 import {
   SamlHeader,
@@ -7,6 +8,8 @@ import {
   AttributeValue,
 } from "../schema";
 import { extractText } from "../utils";
+import { namespaces, expiresIn } from "../constants";
+import { stripUrnPrefix } from "../../../../util/urn";
 
 const istextSchema = (value: AttributeValue): value is TextOrTextObject => {
   return typeof value === "object" && "_text" in value;
@@ -87,8 +90,8 @@ export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttribute
   return {
     subjectId: subjectId,
     organization: organization,
-    organizationId: organizationId,
-    homeCommunityId: homeCommunityId,
+    organizationId: stripUrnPrefix(organizationId),
+    homeCommunityId: stripUrnPrefix(homeCommunityId),
     subjectRole: subjectRole,
     purposeOfUse: purposeOfUse,
   };
@@ -96,4 +99,29 @@ export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttribute
 
 export function extractTimestamp(header: SamlHeader): string {
   return header.Security.Timestamp.Created;
+}
+
+export function createSecurityHeader({
+  signatureConfirmation,
+}: {
+  signatureConfirmation?: string | undefined;
+}) {
+  const createdTimestamp = dayjs().toISOString();
+  const expiresTimestamp = dayjs(createdTimestamp).add(expiresIn, "minute").toISOString();
+  const securityHeader = {
+    "wsse:Security": {
+      "@_xmlns:wsse": namespaces.wsse,
+      "@_xmlns:ds": namespaces.ds,
+      "@_xmlns:wsu": namespaces.wsu,
+      "wsu:Timestamp": {
+        "wsu:Created": createdTimestamp,
+        "wsu:Expires": expiresTimestamp,
+      },
+      SignatureConfirmation: {
+        "@_xmlns": namespaces.wss,
+        SignatureValue: signatureConfirmation,
+      },
+    },
+  };
+  return securityHeader;
 }

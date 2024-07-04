@@ -5,22 +5,27 @@ import { iti38RequestSchema } from "./schema";
 import { convertSamlHeaderToAttributes, extractTimestamp } from "../shared";
 import { extractText } from "../../utils";
 import { Slot } from "../../schema";
+import { stripUrnPrefix } from "../../../../../util/urn";
 
-const regex = /(.+)\^\^\^(.+)/i;
-
+const externalGatewayPatientRegex = /(.+)\^\^\^(.+)/i;
+const externalGatewayIdRegex = /'/g;
+const externalGatewaySystemRegex = /&|ISO'/g;
 function extractExternalGatewayPatient(slots: Slot[]): XCPDPatientId {
-  const slot = slots.find((slot: Slot) => slot._name === "XDSDocumentEntryPatientId");
+  const slot = slots.find((slot: Slot) => slot._name === "$XDSDocumentEntryPatientId");
   const value = String(slot?.ValueList.Value);
-  const match = value.match(regex);
-  const externalGatewayPatient = match && match[1];
-  const system = match && match[2];
+  const match = value.match(externalGatewayPatientRegex);
+  const externalGatewayPatient = match && match[1]?.replace(externalGatewayIdRegex, "");
+  const system = match && match[2]?.replace(externalGatewaySystemRegex, "");
+  if (!externalGatewayPatient) {
+    throw new Error("Failed to extract external gateway patient id");
+  }
   return {
-    id: externalGatewayPatient ?? "",
+    id: externalGatewayPatient,
     system: system ?? "",
   };
 }
 
-export function processDqRequest(request: string): InboundDocumentQueryReq {
+export function processInboundDqRequest(request: string): InboundDocumentQueryReq {
   const parser = new XMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "_",
@@ -36,7 +41,7 @@ export function processDqRequest(request: string): InboundDocumentQueryReq {
     const externalGatewayPatient = extractExternalGatewayPatient(slots);
 
     return {
-      id: extractText(iti38Request.Envelope.Header.MessageID),
+      id: stripUrnPrefix(extractText(iti38Request.Envelope.Header.MessageID)),
       timestamp: extractTimestamp(iti38Request.Envelope.Header),
       samlAttributes,
       externalGatewayPatient,

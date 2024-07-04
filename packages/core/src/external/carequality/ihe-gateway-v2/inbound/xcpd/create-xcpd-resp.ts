@@ -1,15 +1,15 @@
 import { XMLBuilder } from "fast-xml-parser";
-import dayjs from "dayjs";
 import {
   InboundPatientDiscoveryResp,
   InboundPatientDiscoveryReq,
-  InboundPatientDiscoveryRespSuccess,
+  isSuccessfulPatientDiscoveryResponse,
 } from "@metriport/ihe-gateway-sdk";
-import { namespaces, expiresIn } from "../../constants";
+import { namespaces } from "../../constants";
 import { timestampToSoapBody } from "../../utils";
 import { uuidv7 } from "../../../../../util/uuid-v7";
 import { METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX } from "../../../shared";
 import { mapFhirToGenderAtBirth } from "../../../../fhir/patient/index";
+import { createSecurityHeader } from "../shared";
 
 export enum queryResponseCodes {
   OK = "OK",
@@ -26,31 +26,6 @@ export enum ackCodes {
 // need to return the security confirmation in the header.
 // need to construct the query params again. Might need the InboundPatientDiscoveryReq to do that.
 // focus on body for now
-
-export function createSecurityHeader({
-  signatureConfirmation,
-}: {
-  signatureConfirmation?: string | undefined;
-}) {
-  const createdTimestamp = dayjs().toISOString();
-  const expiresTimestamp = dayjs(createdTimestamp).add(expiresIn, "minute").toISOString();
-  const securityHeader = {
-    "wsse:Security": {
-      "@_xmlns:wsse": namespaces.wsse,
-      "@_xmlns:ds": namespaces.ds,
-      "@_xmlns:wsu": namespaces.wsu,
-      "wsu:Timestamp": {
-        "wsu:Created": createdTimestamp,
-        "wsu:Expires": expiresTimestamp,
-      },
-      SignatureConfirmation: {
-        "@_xmlns": namespaces.wss,
-        SignatureValue: signatureConfirmation,
-      },
-    },
-  };
-  return securityHeader;
-}
 
 function createQueryByParameter(request: InboundPatientDiscoveryReq): object {
   const { id, samlAttributes, patientResource } = request;
@@ -132,12 +107,6 @@ function createQueryByParameter(request: InboundPatientDiscoveryReq): object {
     },
   };
   return queryByParameter;
-}
-
-export function isSuccessfulPatientDiscoveryResponse(
-  response: InboundPatientDiscoveryResp
-): response is InboundPatientDiscoveryRespSuccess {
-  return "patientResource" in response;
 }
 
 function createSubjectAndRegistrationEvent(response: InboundPatientDiscoveryResp): object {
@@ -231,7 +200,7 @@ function createIti55SoapBody(
     "@_xmlns:urn": namespaces.hl7,
     PRPA_IN201306UV02: {
       id: {
-        "@_root": uuidv7(), // change this if we ever end up keeping track of these. s
+        "@_root": uuidv7(), // change this if we ever end up keeping track of these.
       },
       creationTime: timestampToSoapBody(response.timestamp),
       interactionId: {
