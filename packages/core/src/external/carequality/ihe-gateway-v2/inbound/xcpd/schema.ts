@@ -1,8 +1,8 @@
 import { z } from "zod";
 import {
   schemaOrArray,
-  TextSchema,
-  AddressSchema,
+  textSchema,
+  addressSchema,
   samlHeaderSchema,
   genderSchema,
   schemaOrArrayOrEmpty,
@@ -32,15 +32,15 @@ export const QueryByParameterSchema = z.object({
     livingSubjectName: schemaOrArray(
       z.object({
         value: z.object({
-          family: TextSchema,
-          given: schemaOrArray(TextSchema),
+          family: textSchema,
+          given: schemaOrArray(textSchema),
         }),
         semanticsText: z.literal("LivingSubject.name"),
       })
     ),
     patientAddress: schemaOrArrayOrEmpty(
       z.object({
-        value: AddressSchema,
+        value: addressSchema,
         semanticsText: z.literal("Patient.addr"),
       })
     ).optional(),

@@ -147,16 +147,19 @@ export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
    * @param count Optional, number of organizations to fetch. Defaults to 1000.
    * @param start Optional, the index of the directory to start querying from. Defaults to 0.
    * @param oid Optional, the OID of the organization to fetch.
+   * @param active Optional, indicates whether to list active or inactive organizations. Defaults to true.
    * @returns
    */
   async listOrganizations({
     count = MAX_COUNT,
     start = 0,
     oid,
+    active = true,
   }: {
     count?: number;
     start?: number;
     oid?: string;
+    active?: boolean;
   }): Promise<Organization[]> {
     if (count < 1 || count > MAX_COUNT)
       throw new Error(`Count value must be between 1 and ${MAX_COUNT}`);
@@ -165,6 +168,7 @@ export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
     query.append("_format", JSON_FORMAT);
     query.append("_count", count.toString());
     query.append("_start", start.toString());
+    if (!active) query.append("_active", active.toString());
     oid && query.append("_id", oid);
     const queryString = query.toString();
 

@@ -1,14 +1,20 @@
-import * as Sentry from "@sentry/serverless";
+import { S3Utils } from "@metriport/core/external/aws/s3";
+import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
+import {
+  errorToString,
+  executeWithNetworkRetries,
+  executeWithRetries,
+  MetriportError,
+} from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
+import AWS from "aws-sdk";
 import axios from "axios";
 import * as uuid from "uuid";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnvOrFail } from "./shared/env";
-import { isAxiosBadGateway, isAxiosTimeout } from "./shared/http";
 import { Log, prefixedLog } from "./shared/log";
 import { apiClient } from "./shared/oss-api";
-import { S3Utils } from "./shared/s3";
 import { SQSUtils } from "./shared/sqs";
 import { cleanUpPayload } from "./sqs-to-converter/cleanup";
 
@@ -22,16 +28,16 @@ const region = getEnvOrFail("AWS_REGION");
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const apiURL = getEnvOrFail("API_URL");
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
-const maxTimeoutRetries = Number(getEnvOrFail("MAX_TIMEOUT_RETRIES"));
-const delayWhenRetryingSeconds = Number(getEnvOrFail("DELAY_WHEN_RETRY_SECONDS"));
-const sourceQueueURL = getEnvOrFail("QUEUE_URL");
-const dlqURL = getEnvOrFail("DLQ_URL");
 const conversionResultQueueURL = getEnvOrFail("CONVERSION_RESULT_QUEUE_URL");
 const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME");
 
 const sourceUrl = "https://api.metriport.com/cda/to/fhir";
+const defaultS3RetriesConfig = {
+  maxAttempts: 3,
+  initialDelay: 500,
+};
 
-const sqsUtils = new SQSUtils(region, sourceQueueURL, dlqURL, delayWhenRetryingSeconds);
+const sqs = new AWS.SQS({ region });
 const s3Utils = new S3Utils(region);
 const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace);
 const fhirConverter = axios.create({
@@ -124,7 +130,8 @@ type FHIRBundle = {
   }[];
 };
 
-export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
+// Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
+export async function handler(event: SQSEvent) {
   try {
     // Process messages from SQS
     const records = event.Records;
@@ -156,150 +163,141 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
       if (!cxId) throw new Error(`Missing cxId`);
       if (!patientId) throw new Error(`Missing patientId`);
       const log = prefixedLog(`${i}, patient ${patientId}, job ${jobId}`);
+      const lambdaParams = { cxId, patientId, jobId, source };
+
+      log(`Body: ${message.body}`);
+      const { s3BucketName, s3FileName, documentExtension } = parseBody(message.body);
+      const metrics: Metrics = {};
+
+      await cloudWatchUtils.reportMemoryUsage();
+      log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
+      const downloadStart = Date.now();
+      const payloadRaw = await s3Utils.getFileContentsAsString(s3BucketName, s3FileName);
+      if (payloadRaw.includes("nonXMLBody")) {
+        const msg = "XML document is unstructured CDA with nonXMLBody";
+        console.log(`${msg}, skipping...`);
+        capture.message(msg, {
+          extra: { message, ...lambdaParams, context: lambdaName, fileName: s3FileName },
+          level: "warning",
+        });
+        await ossApi.notifyApi({ ...lambdaParams, status: "failed" }, log);
+        return;
+      }
+      const payloadNoB64 = removeBase64PdfEntries(payloadRaw);
+      const payloadClean = cleanUpPayload(payloadNoB64);
+      metrics.download = {
+        duration: Date.now() - downloadStart,
+        timestamp: new Date(),
+      };
+
+      if (!payloadClean.trim().length) {
+        console.log("XML document is empty, skipping...");
+        capture.message("XML document is empty", {
+          extra: { message, ...lambdaParams, context: lambdaName, fileName: s3FileName },
+          level: "warning",
+        });
+        await ossApi.notifyApi({ ...lambdaParams, status: "failed" }, log);
+        return;
+      }
+
+      await cloudWatchUtils.reportMemoryUsage();
+      const conversionStart = Date.now();
+
+      const converterUrl = attrib.serverUrl?.stringValue;
+      if (!converterUrl) throw new Error(`Missing converterUrl`);
+      const unusedSegments = attrib.unusedSegments?.stringValue;
+      const invalidAccess = attrib.invalidAccess?.stringValue;
+      const converterParams = { patientId, fileName: s3FileName, unusedSegments, invalidAccess };
+      log(
+        `Calling converter on url ${converterUrl} with params ${JSON.stringify(converterParams)}`
+      );
+      const res = await executeWithNetworkRetries(
+        () =>
+          fhirConverter.post(converterUrl, payloadClean, {
+            params: converterParams,
+            headers: { "Content-Type": "text/plain" },
+          }),
+        {
+          // No retries on timeout b/c we want to re-enqueue instead of trying within the same lambda run,
+          // it could lead to timing out the lambda execution.
+          log,
+        }
+      );
+      const conversionResult = res.data.fhirResource as FHIRBundle;
+      metrics.conversion = {
+        duration: Date.now() - conversionStart,
+        timestamp: new Date(),
+      };
+
+      const preProcessedFilename = `${s3FileName}.from_converter.json`;
 
       try {
-        log(`Body: ${message.body}`);
-        const { s3BucketName, s3FileName, documentExtension } = parseBody(message.body);
-        const metrics: Metrics = {};
-
-        await cloudWatchUtils.reportMemoryUsage();
-        log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
-        const downloadStart = Date.now();
-        const payloadRaw = await s3Utils.getFileContentsAsString(s3BucketName, s3FileName);
-        if (payloadRaw.includes("nonXMLBody")) {
-          const msg = "XML document is unstructured CDA with nonXMLBody";
-          console.log(`${msg}, skipping...`);
-          capture.message(msg, {
-            extra: { context: lambdaName, fileName: s3FileName, patientId, cxId, jobId },
-            level: "warning",
-          });
-          await ossApi.notifyApi({ cxId, patientId, status: "failed", jobId, source }, log);
-          return;
-        }
-        const payloadClean = cleanUpPayload(payloadRaw);
-        metrics.download = {
-          duration: Date.now() - downloadStart,
-          timestamp: new Date(),
-        };
-
-        if (!payloadClean.trim().length) {
-          console.log("XML document is empty, skipping...");
-          capture.message("XML document is empty", {
-            extra: { context: lambdaName, fileName: s3FileName, patientId, cxId, jobId },
-            level: "warning",
-          });
-          await ossApi.notifyApi({ cxId, patientId, status: "failed", jobId, source }, log);
-          return;
-        }
-
-        await cloudWatchUtils.reportMemoryUsage();
-        const conversionStart = Date.now();
-
-        const converterUrl = attrib.serverUrl?.stringValue;
-        if (!converterUrl) throw new Error(`Missing converterUrl`);
-        const unusedSegments = attrib.unusedSegments?.stringValue;
-        const invalidAccess = attrib.invalidAccess?.stringValue;
-        const params = { patientId, fileName: s3FileName, unusedSegments, invalidAccess };
-        log(`Calling converter on url ${converterUrl} with params ${JSON.stringify(params)}`);
-        const res = await fhirConverter.post(converterUrl, payloadClean, {
-          params,
-          headers: { "Content-Type": "text/plain" },
-        });
-        const conversionResult = res.data.fhirResource as FHIRBundle;
-        metrics.conversion = {
-          duration: Date.now() - conversionStart,
-          timestamp: new Date(),
-        };
-
-        const preProcessedFilename = `${s3FileName}.from_converter.json`;
-
-        try {
-          await s3Utils.s3
-            .upload({
-              Bucket: conversionResultBucketName,
-              Key: preProcessedFilename,
-              Body: JSON.stringify(conversionResult),
-              ContentType: "application/fhir+json",
-            })
-            .promise();
-        } catch (error) {
-          console.log(`Error uploading pre-processed file: ${error}`);
-          capture.error(error, {
-            extra: { context: lambdaName, preProcessedFilename, patientId, cxId, jobId },
-          });
-        }
-
-        await cloudWatchUtils.reportMemoryUsage();
-
-        // post-process conversion result
-        const postProcessStart = Date.now();
-        const updatedConversionResult = replaceIDs(conversionResult, patientId);
-        addExtensionToConversion(updatedConversionResult, documentExtension);
-        removePatientFromConversion(updatedConversionResult);
-        addMissingRequests(updatedConversionResult);
-        metrics.postProcess = {
-          duration: Date.now() - postProcessStart,
-          timestamp: new Date(),
-        };
-
-        await cloudWatchUtils.reportMemoryUsage();
-        await sendConversionResult(
-          cxId,
-          patientId,
-          s3FileName,
-          updatedConversionResult,
-          jobStartedAt,
-          jobId,
-          source,
-          log
-        );
-
-        await cloudWatchUtils.reportMemoryUsage();
-        await cloudWatchUtils.reportMetrics(metrics);
-        //eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (err: any) {
-        // If it timed-out let's just reenqueue for future processing - NOTE: the destination MUST be idempotent!
-        const count = message.attributes?.ApproximateReceiveCount
-          ? Number(message.attributes?.ApproximateReceiveCount)
-          : undefined;
-        const isWithinRetryRange = count == null || count <= maxTimeoutRetries;
-        const isRetryError = isAxiosTimeout(err) || isAxiosBadGateway(err);
-        if (isRetryError && isWithinRetryRange) {
-          const details = `${err.code}/${err.response?.status}`;
-          console.log(
-            `Timed out (${details}), reenqueue (${count} of ${maxTimeoutRetries}): `,
-            message
-          );
-          capture.message("Conversion timed out", {
-            extra: { message, context: lambdaName, retryCount: count },
-          });
-          await sqsUtils.reEnqueue(message);
-        } else {
-          console.log(`Error processing message: ${JSON.stringify(message)}; \n${err}: ${err}`);
-          // Axios error response
-          if (err.response) {
-            const resp = err.response;
-            const responseData = resp.data ? JSON.stringify(resp.data) : "undefined";
-            console.log(`Response body: ${responseData}`);
+        await executeWithRetries(
+          () =>
+            s3Utils.s3
+              .upload({
+                Bucket: conversionResultBucketName,
+                Key: preProcessedFilename,
+                Body: JSON.stringify(conversionResult),
+                ContentType: "application/fhir+json",
+              })
+              .promise(),
+          {
+            ...defaultS3RetriesConfig,
+            log,
           }
-          capture.error(err, {
-            extra: { message, context: lambdaName, retryCount: count },
-          });
-          await sqsUtils.sendToDLQ(message);
-
-          await ossApi.notifyApi({ cxId, patientId, status: "failed", jobId, source }, log);
-        }
+        );
+      } catch (error) {
+        console.log(`Error uploading pre-processed file: ${error}`);
+        capture.error(error, {
+          extra: {
+            message,
+            ...lambdaParams,
+            preProcessedFilename,
+            context: lambdaName,
+            error,
+          },
+        });
       }
+
+      await cloudWatchUtils.reportMemoryUsage();
+
+      // post-process conversion result
+      const postProcessStart = Date.now();
+      const updatedConversionResult = replaceIDs(conversionResult, patientId);
+      addExtensionToConversion(updatedConversionResult, documentExtension);
+      removePatientFromConversion(updatedConversionResult);
+      addMissingRequests(updatedConversionResult);
+      metrics.postProcess = {
+        duration: Date.now() - postProcessStart,
+        timestamp: new Date(),
+      };
+
+      await cloudWatchUtils.reportMemoryUsage();
+      await sendConversionResult(
+        cxId,
+        patientId,
+        s3FileName,
+        updatedConversionResult,
+        jobStartedAt,
+        jobId,
+        source,
+        log
+      );
+
+      await cloudWatchUtils.reportMemoryUsage();
+      await cloudWatchUtils.reportMetrics(metrics);
     }
     console.log(`Done`);
-  } catch (err) {
-    console.log(`Error processing event: ${JSON.stringify(event)}; ${err}`);
-    capture.error(err, {
-      extra: { event, context: lambdaName, additional: "outer catch" },
+  } catch (error) {
+    const msg = "Error processing event on " + lambdaName;
+    console.log(`${msg}: ${errorToString(error)}`);
+    capture.error(msg, {
+      extra: { event, context: lambdaName, error },
     });
-    throw err;
+    throw new MetriportError(msg, error);
   }
-});
+}
 
 function parseBody(body: unknown): EventBody {
   const bodyString = typeof body === "string" ? (body as string) : undefined;
@@ -365,14 +363,21 @@ async function sendConversionResult(
 ) {
   const fileName = `${sourceFileName}.json`;
   log(`Uploading result to S3, bucket ${conversionResultBucketName}, key ${fileName}`);
-  await s3Utils.s3
-    .upload({
-      Bucket: conversionResultBucketName,
-      Key: fileName,
-      Body: JSON.stringify(conversionPayload),
-      ContentType: "application/fhir+json",
-    })
-    .promise();
+  await executeWithRetries(
+    () =>
+      s3Utils.s3
+        .upload({
+          Bucket: conversionResultBucketName,
+          Key: fileName,
+          Body: JSON.stringify(conversionPayload),
+          ContentType: "application/fhir+json",
+        })
+        .promise(),
+    {
+      ...defaultS3RetriesConfig,
+      log,
+    }
+  );
 
   log(`Sending result info to queue`);
   const queuePayload = JSON.stringify({
@@ -384,12 +389,12 @@ async function sendConversionResult(
     MessageBody: queuePayload,
     QueueUrl: conversionResultQueueURL,
     MessageAttributes: {
-      ...sqsUtils.singleAttributeToSend("cxId", cxId),
-      ...sqsUtils.singleAttributeToSend("patientId", patientId),
-      ...(jobStartedAt ? sqsUtils.singleAttributeToSend("jobStartedAt", jobStartedAt) : {}),
-      ...(jobId ? sqsUtils.singleAttributeToSend("jobId", jobId) : {}),
-      ...(source ? sqsUtils.singleAttributeToSend("source", source) : {}),
+      ...SQSUtils.singleAttributeToSend("cxId", cxId),
+      ...SQSUtils.singleAttributeToSend("patientId", patientId),
+      ...(jobStartedAt ? SQSUtils.singleAttributeToSend("jobStartedAt", jobStartedAt) : {}),
+      ...(jobId ? SQSUtils.singleAttributeToSend("jobId", jobId) : {}),
+      ...(source ? SQSUtils.singleAttributeToSend("source", source) : {}),
     },
   };
-  await sqsUtils.sqs.sendMessage(sendParams).promise();
+  await sqs.sendMessage(sendParams).promise();
 }

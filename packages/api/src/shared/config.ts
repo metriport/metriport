@@ -271,19 +271,6 @@ export class Config {
     return getEnvVar("FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME");
   }
 
-  static getIheGatewayUrl(): string | undefined {
-    return getEnvVar("IHE_GW_URL");
-  }
-  static getIheGatewayPortPD(): string | undefined {
-    return getEnvVar("IHE_GW_PORT_PD");
-  }
-  static getIheGatewayPortDQ(): string | undefined {
-    return getEnvVar("IHE_GW_PORT_DQ");
-  }
-  static getIheGatewayPortDR(): string | undefined {
-    return getEnvVar("IHE_GW_PORT_DR");
-  }
-
   static getOutboundPatientDiscoveryLambdaName(): string | undefined {
     return getEnvVar("OUTBOUND_PATIENT_DISCOVERY_LAMBDA_NAME");
   }
@@ -330,6 +317,12 @@ export class Config {
   }
   static getAppConfigConfigId(): string {
     return getEnvVarOrFail("APPCONFIG_CONFIGURATION_ID");
+  }
+  static getAppConfigEnvironmentId(): string {
+    return getEnvVarOrFail("APPCONFIG_ENVIRONMENT_ID");
+  }
+  static getAppConfigDeploymentStrategyId(): string {
+    return getEnvVarOrFail("APPCONFIG_DEPLOYMENT_STRATEGY_ID");
   }
   static getCQOrgCertificateIntermediate(): string {
     return getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE");

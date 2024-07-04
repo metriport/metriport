@@ -33,10 +33,12 @@ export function handleHttpErrorResponse({
   return {
     id: outboundRequest.id,
     timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
     gateway,
     patientId: outboundRequest?.patientId,
     patientMatch: null,
+    iheGatewayV2: true,
     operationOutcome,
   };
 }
@@ -70,10 +72,12 @@ export function handlePatientErrorResponse({
   const response: OutboundPatientDiscoveryResp = {
     id: outboundRequest.id,
     timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
     gateway,
     patientId: outboundRequest.patientId,
     patientMatch: null,
+    iheGatewayV2: true,
     operationOutcome,
   };
   return response;
@@ -104,11 +108,21 @@ export function handleSchemaErrorResponse({
   const response: OutboundPatientDiscoveryResp = {
     id: outboundRequest.id,
     timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
     gateway,
     patientId: outboundRequest.patientId,
     patientMatch: null,
+    iheGatewayV2: true,
     operationOutcome,
   };
   return response;
+}
+
+/**
+ * For now lets not retry on any error. We have network retries already.
+ */
+export function isRetryable(outboundResponse: OutboundPatientDiscoveryResp | undefined): boolean {
+  if (!outboundResponse) return false;
+  return false;
 }

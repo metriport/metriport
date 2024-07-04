@@ -1,21 +1,47 @@
 import {
   CopyObjectCommand,
   DeleteObjectCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl as getPresignedUrl } from "@aws-sdk/s3-request-presigner";
+import { ExecuteWithRetriesOptions, emptyFunction, executeWithRetries } from "@metriport/shared";
 import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import * as stream from "stream";
 import * as util from "util";
+import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
 
 dayjs.extend(duration);
 
-const DEFAULT_SIGNED_URL_DURATION = dayjs.duration({ minutes: 3 }).asSeconds();
 const pipeline = util.promisify(stream.pipeline);
+const DEFAULT_SIGNED_URL_DURATION = dayjs.duration({ minutes: 3 }).asSeconds();
+const defaultS3RetriesConfig = {
+  maxAttempts: 3,
+  initialDelay: 500,
+};
+
+export async function executeWithRetriesS3<T>(
+  fn: () => Promise<T>,
+  options?: ExecuteWithRetriesOptions<T>
+): Promise<T> {
+  const log = options?.log ?? out("executeWithRetriesS3").log;
+  return await executeWithRetries(fn, {
+    ...defaultS3RetriesConfig,
+    ...options,
+    log,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    shouldRetry: (_, error: any) => {
+      if (!error) return false;
+      if ("statusCode" in error && error.statusCode === 404) return false;
+      if ("message" in error && error.message?.includes("NotFound")) return false;
+      return true;
+    },
+  });
+}
 
 /**
  * @deprecated Use S3Utils instead, adding functions as needed
@@ -23,6 +49,11 @@ const pipeline = util.promisify(stream.pipeline);
 export function makeS3Client(region: string): AWS.S3 {
   return new AWS.S3({ signatureVersion: "v4", region });
 }
+
+type FileExistsFilter = {
+  path: string;
+  targetString: string;
+};
 
 /**
  * @deprecated Use `S3Utils.getSignedUrl()` instead
@@ -103,12 +134,18 @@ export class S3Utils {
     | { exists: false; size?: never; contentType?: never; eTag?: never; createdAt?: never }
   > {
     try {
-      const head = await this.s3
-        .headObject({
-          Bucket: bucket,
-          Key: key,
-        })
-        .promise();
+      const head = await executeWithRetriesS3(
+        () =>
+          this.s3
+            .headObject({
+              Bucket: bucket,
+              Key: key,
+            })
+            .promise(),
+        {
+          log: emptyFunction,
+        }
+      );
       return {
         exists: true,
         size: head.ContentLength ?? 0,
@@ -121,6 +158,47 @@ export class S3Utils {
     }
   }
 
+  async fileExists(bucket: string, key: string): Promise<boolean>;
+  async fileExists(bucket: string, filters: FileExistsFilter): Promise<boolean>;
+  async fileExists(bucket: string, keyOrFilters: string | FileExistsFilter): Promise<boolean> {
+    if (typeof keyOrFilters === "string") {
+      const fileInfo = await this.getFileInfoFromS3(keyOrFilters, bucket);
+      return fileInfo.exists;
+    }
+    return this.filesWithPathExist({
+      bucket,
+      ...keyOrFilters,
+    });
+  }
+
+  private async filesWithPathExist({
+    bucket,
+    path,
+    targetString,
+  }: {
+    bucket: string;
+    path: string;
+    targetString?: string | undefined;
+  }): Promise<boolean> {
+    const data = await executeWithRetriesS3(() =>
+      this._s3Client.send(
+        new ListObjectsV2Command({
+          Bucket: bucket,
+          Prefix: path,
+        })
+      )
+    );
+    const bucketContents = data.Contents;
+    if (!bucketContents) return false;
+
+    for (const file of bucketContents) {
+      if (targetString && file.Key?.includes(targetString)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   async getSignedUrl({
     bucketName,
     fileName,
@@ -130,11 +208,13 @@ export class S3Utils {
     fileName: string;
     durationSeconds?: number;
   }): Promise<string> {
-    return this.s3.getSignedUrlPromise("getObject", {
-      Bucket: bucketName,
-      Key: fileName,
-      Expires: durationSeconds ?? DEFAULT_SIGNED_URL_DURATION,
-    });
+    return executeWithRetriesS3(() =>
+      this.s3.getSignedUrlPromise("getObject", {
+        Bucket: bucketName,
+        Key: fileName,
+        Expires: durationSeconds ?? DEFAULT_SIGNED_URL_DURATION,
+      })
+    );
   }
 
   async getPresignedUploadUrl({
@@ -150,9 +230,11 @@ export class S3Utils {
       Bucket: bucket,
       Key: key,
     });
-    const presignedUrl = await getPresignedUrl(this.s3Client, command, {
-      expiresIn: durationSeconds ?? DEFAULT_SIGNED_URL_DURATION,
-    });
+    const presignedUrl = await executeWithRetriesS3(() =>
+      getPresignedUrl(this.s3Client, command, {
+        expiresIn: durationSeconds ?? DEFAULT_SIGNED_URL_DURATION,
+      })
+    );
     return presignedUrl;
   }
 
@@ -196,14 +278,14 @@ export class S3Utils {
       ContentType: newContentType,
       MetadataDirective: "REPLACE",
     });
-    await this.s3Client.send(copyObjectCommand);
+    await executeWithRetriesS3(() => this.s3Client.send(copyObjectCommand));
 
     try {
       const deleteObjectCommand = new DeleteObjectCommand({
         Bucket: bucket,
         Key: key,
       });
-      await this.s3Client.send(deleteObjectCommand);
+      await executeWithRetriesS3(() => this.s3Client.send(deleteObjectCommand));
     } catch (error) {
       capture.error(error, {
         extra: {
@@ -217,6 +299,7 @@ export class S3Utils {
 
     return newKey;
   }
+
   async uploadFile({
     bucket,
     key,
@@ -228,44 +311,36 @@ export class S3Utils {
     file: Buffer;
     contentType?: string;
   }): Promise<AWS.S3.ManagedUpload.SendData> {
-    return new Promise((resolve, reject) => {
-      const uploadParams: AWS.S3.PutObjectRequest = {
-        Bucket: bucket,
-        Key: key,
-        Body: file,
-      };
-
-      if (contentType) {
-        uploadParams.ContentType = contentType;
-      }
-
-      this._s3.upload(uploadParams, (err, data) => {
-        if (err) {
-          console.error("Error during upload:", err);
-          reject(err);
-        } else {
-          console.log("Upload successful");
-          resolve(data);
-        }
-      });
-    });
+    const uploadParams: AWS.S3.PutObjectRequest = {
+      Bucket: bucket,
+      Key: key,
+      Body: file,
+    };
+    if (contentType) {
+      uploadParams.ContentType = contentType;
+    }
+    try {
+      const resp = await executeWithRetriesS3(() => this._s3.upload(uploadParams).promise());
+      console.log("Upload successful");
+      return resp;
+    } catch (error) {
+      console.error(`Error during upload: ${JSON.stringify(error)}`);
+      throw error;
+    }
   }
 
   async downloadFile({ bucket, key }: { bucket: string; key: string }): Promise<Buffer> {
-    return new Promise((resolve, reject) => {
-      const params = {
-        Bucket: bucket,
-        Key: key,
-      };
-      this._s3.getObject(params, (err, data) => {
-        if (err) {
-          console.error("Error during download:", err);
-          reject(err);
-        } else {
-          resolve(data.Body as Buffer);
-        }
-      });
-    });
+    const params = {
+      Bucket: bucket,
+      Key: key,
+    };
+    try {
+      const resp = await executeWithRetriesS3(() => this._s3.getObject(params).promise());
+      return resp.Body as Buffer;
+    } catch (error) {
+      console.error(`Error during download: ${JSON.stringify(error)}`);
+      throw error;
+    }
   }
 
   async deleteFile({ bucket, key }: { bucket: string; key: string }): Promise<void> {
@@ -273,51 +348,18 @@ export class S3Utils {
       Bucket: bucket,
       Key: key,
     };
-    this._s3.deleteObject(deleteParams, err => {
-      if (err) {
-        console.error("Error during file deletion:", err);
-        throw err;
-      }
-    });
-  }
-
-  async retrieveDocumentIdsFromS3(
-    cxId: string,
-    patientId: string,
-    bucketName: string
-  ): Promise<string[]> {
-    const Prefix = `${cxId}/${patientId}/uploads/`;
-
-    const params = {
-      Bucket: bucketName,
-      Prefix,
-    };
-
-    const data = await this._s3.listObjectsV2(params).promise();
-    const documentContents = (
-      await Promise.all(
-        data.Contents?.filter(item => item.Key && item.Key.endsWith("_metadata.xml")).map(
-          async item => {
-            if (item.Key) {
-              const params = {
-                Bucket: bucketName,
-                Key: item.Key,
-              };
-
-              const data = await this._s3.getObject(params).promise();
-              return data.Body?.toString();
-            }
-            return undefined;
-          }
-        ) || []
-      )
-    ).filter((item): item is string => Boolean(item));
-
-    return documentContents;
+    try {
+      await executeWithRetriesS3(() => this._s3.deleteObject(deleteParams).promise());
+    } catch (error) {
+      console.error(`Error during file deletion: ${JSON.stringify(error)}`);
+      throw error;
+    }
   }
 
   async listObjects(bucket: string, prefix: string): Promise<AWS.S3.ObjectList | undefined> {
-    const res = await this._s3.listObjectsV2({ Bucket: bucket, Prefix: prefix }).promise();
+    const res = await executeWithRetriesS3(() =>
+      this._s3.listObjectsV2({ Bucket: bucket, Prefix: prefix }).promise()
+    );
     return res.Contents;
   }
 }

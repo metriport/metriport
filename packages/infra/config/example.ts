@@ -1,3 +1,5 @@
+import { Duration } from "aws-cdk-lib";
+import { EbsDeviceVolumeType } from "aws-cdk-lib/aws-ec2";
 import { EnvType } from "../lib/env-type";
 import { EnvConfigNonSandbox } from "./env-config";
 
@@ -25,6 +27,7 @@ export const config: EnvConfigNonSandbox = {
     },
   },
   loadBalancerDnsName: "<your-load-balancer-dns-name>",
+  logArn: "<your-log-arn>",
   fhirToMedicalLambda: {
     nodeRuntimeArn: "arn:aws:lambda:<region>::runtime:<id>",
   },
@@ -96,6 +99,29 @@ export const config: EnvConfigNonSandbox = {
       CW_TECHNICAL_CONTACT_TITLE: "Engineering",
       CW_TECHNICAL_CONTACT_EMAIL: "support@healthapp.com",
       CW_TECHNICAL_CONTACT_PHONE: "(123)-123-1234",
+    },
+  },
+  openSearch: {
+    openSearch: {
+      capacity: {
+        dataNodes: 2,
+        dataNodeInstanceType: "t3.medium.search",
+        masterNodes: 0,
+        masterNodeInstanceType: undefined,
+        warmNodes: 0,
+      },
+      ebs: {
+        volumeSize: 10,
+        volumeType: EbsDeviceVolumeType.GENERAL_PURPOSE_SSD_GP3,
+      },
+      encryptionAtRest: true,
+      indexName: "test-index-name",
+    },
+    lambda: {
+      memory: 512,
+      batchSize: 1,
+      maxConcurrency: 5,
+      timeout: Duration.minutes(2),
     },
   },
   generalBucketName: "test-bucket",

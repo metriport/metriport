@@ -14,10 +14,6 @@ if [[ -z "${ECS_CLUSTER}" ]]; then
   echo "ECS_CLUSTER is missing"
   exit 1
 fi
-if [[ -z "${IHE_OUTBOUND_ECS_SERVICE}" ]]; then
-  echo "IHE_OUTBOUND_ECS_SERVICE is missing"
-  exit 1
-fi
 if [[ -z "${IHE_INBOUND_ECS_SERVICE}" ]]; then
   echo "IHE_INBOUND_ECS_SERVICE is missing"
   exit 1
@@ -68,19 +64,9 @@ aws ecs update-service \
   --service "$IHE_INBOUND_ECS_SERVICE" \
   --force-new-deployment
 
-echo "Restarting the IHE GW service $IHE_OUTBOUND_ECS_SERVICE"
-# Update the fargate service
-aws ecs update-service \
-  --no-cli-pager \
-  --region "$AWS_REGION" \
-  --cluster "$ECS_CLUSTER" \
-  --service "$IHE_OUTBOUND_ECS_SERVICE" \
-  --force-new-deployment
-
 echo "Waiting for services to be healthy/stable..."
 # Wait for the service to be stable
-until (aws ecs wait services-stable --cluster "$ECS_CLUSTER" --service "$IHE_INBOUND_ECS_SERVICE" &&
-  aws ecs wait services-stable --cluster "$ECS_CLUSTER" --service "$IHE_OUTBOUND_ECS_SERVICE"); do
+until (aws ecs wait services-stable --cluster "$ECS_CLUSTER" --service "$IHE_INBOUND_ECS_SERVICE"); do
   echo "'aws ecs wait services-stable' timed out, trying again in 5s..."
   sleep 5
 done

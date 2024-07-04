@@ -24,17 +24,14 @@ function settings() {
     // Number of messages the lambda pull from SQS at once
     lambdaBatchSize: 1,
     // Max number of concurrent instances of the lambda that an Amazon SQS event source can invoke [2 - 1000].
-    maxConcurrency: prod ? 32 : 4,
+    maxConcurrency: prod ? 128 : 4,
     // How long can the lambda run for, max is 900 seconds (15 minutes)
     lambdaTimeout,
     // Number of times we want to retry a message, this includes throttles!
-    maxReceiveCount: 5,
-    // Number of times we want to retry a message that timed out when trying to be processed
-    maxTimeoutRetries: 15,
+    maxReceiveCount: 1,
     // How long messages should be invisible for other consumers, based on the lambda timeout
     // We don't care if the message gets reprocessed, so no need to have a huge visibility timeout that makes it harder to move messages to the DLQ
     visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
-    delayWhenRetrying: Duration.seconds(10),
   };
 }
 
@@ -72,8 +69,6 @@ export function createConnector({
     maxConcurrency,
     maxReceiveCount,
     visibilityTimeout,
-    maxTimeoutRetries,
-    delayWhenRetrying,
   } = settings();
   const queue = defaultCreateQueue({
     stack,
@@ -88,6 +83,7 @@ export function createConnector({
     alarmSnsAction,
     alarmMaxAgeOfOldestMessage: Duration.minutes(2),
     alarmMaxAgeOfOldestMessageDlq: Duration.minutes(5),
+    maxMessageCountAlarmThreshold: 2000,
   });
 
   const dlq = queue.deadLetterQueue;
@@ -104,11 +100,7 @@ export function createConnector({
     envType,
     envVars: {
       METRICS_NAMESPACE,
-      MAX_TIMEOUT_RETRIES: String(maxTimeoutRetries),
-      DELAY_WHEN_RETRY_SECONDS: delayWhenRetrying.toSeconds().toString(),
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
-      QUEUE_URL: queue.queueUrl,
-      DLQ_URL: dlq.queue.queueUrl,
       FHIR_SERVER_URL: fhirServerUrl,
       API_URL: apiURL,
     },

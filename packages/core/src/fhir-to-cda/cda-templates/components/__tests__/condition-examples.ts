@@ -30,3 +30,46 @@ export const conditionHyperlipidemia: Partial<Condition> = {
     ],
   },
 };
+
+export const conditionHeartAttack: Partial<Condition> = {
+  code: {
+    coding: [
+      {
+        system: "http://snomed.info/sct",
+        code: "315619001",
+        display: "Myocardial Infarction",
+      },
+    ],
+    text: "Heart Attack",
+  },
+  onsetAge: {
+    value: 88,
+    unit: "yr",
+    system: "http://unitsofmeasure.org",
+    code: "a",
+  },
+  note: [
+    {
+      text: "Went to see the Stanley Cup finals. At least his team won.",
+    },
+  ],
+};
+
+export const conditionStroke: Partial<Condition> = {
+  code: {
+    coding: [
+      {
+        system: "http://snomed.info/sct",
+        code: "371041009",
+        display: "Embolic Stroke",
+      },
+    ],
+    text: "Stroke",
+  },
+  onsetAge: {
+    value: 56,
+    unit: "yr",
+    system: "http://unitsofmeasure.org",
+    code: "a",
+  },
+};

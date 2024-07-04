@@ -1,9 +1,9 @@
 import { limitStringLength } from "@metriport/shared";
 import { nanoid } from "nanoid";
+import { maxWebhookStatusLength } from "../../domain/settings";
 import { processAsyncError } from "../../errors";
 import WebhookError from "../../errors/webhook";
 import { Settings, WEBHOOK_STATUS_BAD_RESPONSE, WEBHOOK_STATUS_OK } from "../../models/settings";
-import { MAX_VARCHAR_LENGTH } from "../../models/_default";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { errorToWhStatusDetails, sendTestPayload } from "../webhook/webhook";
@@ -21,13 +21,18 @@ export const updateSettings = async ({
   webhookUrl,
 }: UpdateSettingsCommand): Promise<Settings> => {
   const originalSettings = await getSettingsOrFail({ id: cxId });
-  const updateWebhook = getWebhookDataForUpdate(originalSettings, cxId, webhookUrl);
+  const updateWebhook = getWebhookDataForUpdate(originalSettings, webhookUrl);
   await Settings.update(
     {
       ...updateWebhook,
     },
     { where: { id: cxId } }
   );
+
+  // if there's a URL, fire a test towards it - intentionally asynchronous
+  updateWebhook.webhookUrl &&
+    testWebhook({ cxId, ...updateWebhook }).catch(processAsyncError(`testWebhook`));
+
   const updatedSettings = await getSettingsOrFail({ id: cxId });
   return updatedSettings;
 };
@@ -42,7 +47,7 @@ export const updateWebhookStatus = async ({
   webhookEnabled,
   webhookStatusDetail,
 }: UpdateWebhookStatusCommand): Promise<void> => {
-  const statusDetail = limitStringLength(webhookStatusDetail, MAX_VARCHAR_LENGTH);
+  const statusDetail = limitStringLength(webhookStatusDetail, maxWebhookStatusLength);
   await Settings.update(
     {
       webhookEnabled,
@@ -54,7 +59,6 @@ export const updateWebhookStatus = async ({
 
 const getWebhookDataForUpdate = (
   settings: Settings,
-  cxId: string,
   newUrl?: string
 ): Pick<Settings, "webhookUrl" | "webhookKey"> => {
   const webhookData = {
@@ -69,9 +73,6 @@ const getWebhookDataForUpdate = (
         }),
     webhookStatus: null,
   };
-  // if there's a URL, fire a test towards it - intentionally asynchronous
-  webhookData.webhookUrl &&
-    testWebhook({ cxId, ...webhookData }).catch(processAsyncError(`testWebhook`));
   return webhookData;
 };
 

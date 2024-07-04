@@ -6,51 +6,52 @@ export const schemaOrArray = <T extends z.ZodTypeAny>(schema: T) =>
   z.union([schema, z.array(schema)]);
 export const schemaOrArrayOrEmpty = <T extends z.ZodTypeAny>(schema: T) =>
   z.union([schema, z.array(schema), z.literal("")]);
-export const TextSchema = z.union([
+export const textSchema = z.union([
   z.string(),
   z.object({
     _text: z.string(),
   }),
 ]);
-export type TextOrTextObject = z.infer<typeof TextSchema>;
+export type TextOrTextObject = z.infer<typeof textSchema>;
 
-export const StringOrNumberSchema = z.union([z.string(), z.number()]);
+export const stringOrNumberSchema = z.union([z.string(), z.number()]);
 
-export const AddressSchema = z.object({
-  streetAddressLine: schemaOrArray(StringOrNumberSchema).optional(),
-  city: StringOrNumberSchema.optional(),
-  state: StringOrNumberSchema.optional(),
-  postalCode: StringOrNumberSchema.optional(),
-  country: StringOrNumberSchema.optional(),
-  county: StringOrNumberSchema.optional(),
+export const addressSchema = z.object({
+  streetAddressLine: schemaOrArray(stringOrNumberSchema).optional(),
+  city: stringOrNumberSchema.optional(),
+  state: stringOrNumberSchema.optional(),
+  postalCode: stringOrNumberSchema.optional(),
+  country: stringOrNumberSchema.optional(),
+  county: stringOrNumberSchema.optional(),
 });
-export type IheAddress = z.infer<typeof AddressSchema>;
+export type IheAddress = z.infer<typeof addressSchema>;
 
-export const NameSchema = z.object({
-  given: schemaOrArray(TextSchema),
-  family: TextSchema,
+export const nameSchema = z.object({
+  given: schemaOrArray(textSchema),
+  family: textSchema,
 });
-export type IheName = z.infer<typeof NameSchema>;
+export type IheName = z.infer<typeof nameSchema>;
 
-export const TelecomSchema = z.object({
+export const telecomSchema = z.object({
   _use: z.string().optional(),
   _value: z.string().optional(),
 });
-export type IheTelecom = z.infer<typeof TelecomSchema>;
+export type IheTelecom = z.infer<typeof telecomSchema>;
 
-export const IdentifierSchema = z.object({
+export const identifierSchema = z.object({
   _root: z.string().optional(),
   _extension: z.string().optional(),
 });
-export type IheIdentifier = z.infer<typeof IdentifierSchema>;
+export type IheIdentifier = z.infer<typeof identifierSchema>;
 
 export const genderSchema = z.object({
-  _code: z.union([z.literal("F"), z.literal("M"), z.literal("UN")]),
+  _code: z.union([z.literal("F"), z.literal("M")]),
 });
+export type IheGender = z.infer<typeof genderSchema>;
 
 export const slot = z.object({
   ValueList: z.object({
-    Value: schemaOrArray(StringOrNumberSchema),
+    Value: schemaOrArray(stringOrNumberSchema),
   }),
   _name: z.string(),
 });
@@ -69,14 +70,14 @@ export const AttributeSchema = z.union([
   z.object({
     PurposeOfUse: codeSchema,
   }),
-  TextSchema,
+  textSchema,
 ]);
 export type AttributeValue = z.infer<typeof AttributeSchema>;
 
 export const samlHeaderSchema = z.object({
   // messageId
   // signature
-  MessageID: TextSchema,
+  MessageID: textSchema,
   Security: z.object({
     Timestamp: z.object({
       Created: z.string(),
@@ -91,22 +92,22 @@ export const samlHeaderSchema = z.object({
           z.object({
             _Name: z.literal("urn:oasis:names:tc:xspa:1.0:subject:subject-id"),
             _NameFormat: z.string().optional(),
-            AttributeValue: TextSchema,
+            AttributeValue: textSchema,
           }),
           z.object({
             _Name: z.literal("urn:oasis:names:tc:xspa:1.0:subject:organization"),
             _NameFormat: z.string().optional(),
-            AttributeValue: TextSchema,
+            AttributeValue: textSchema,
           }),
           z.object({
             _Name: z.literal("urn:oasis:names:tc:xspa:1.0:subject:organization-id"),
             _NameFormat: z.string().optional(),
-            AttributeValue: TextSchema,
+            AttributeValue: textSchema,
           }),
           z.object({
             _Name: z.literal("urn:nhin:names:saml:homeCommunityId"),
             _NameFormat: z.string().optional(),
-            AttributeValue: TextSchema,
+            AttributeValue: textSchema,
           }),
           z.object({
             _Name: z.literal("urn:oasis:names:tc:xacml:2.0:subject:role"),

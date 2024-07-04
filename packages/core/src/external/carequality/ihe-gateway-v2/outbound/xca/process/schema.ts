@@ -3,8 +3,8 @@ import {
   schemaOrEmpty,
   schemaOrArray,
   schemaOrArrayOrEmpty,
-  StringOrNumberSchema,
   slot,
+  stringOrNumberSchema,
 } from "../../../schema";
 
 const name = z.object({
@@ -16,15 +16,15 @@ const name = z.object({
 export type Name = z.infer<typeof name>;
 
 const classification = z.object({
-  Slot: schemaOrArray(slot),
+  Slot: schemaOrArray(slot).optional(),
   Name: name.optional(),
   _classificationScheme: z.string(),
   _classifiedObject: z.string(),
   _id: z.string(),
   _nodeRepresentation: z.string(),
-  _objectType: z.literal(
-    "urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification"
-  ),
+  _objectType: z
+    .literal("urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification")
+    .optional(),
 });
 export type Classification = z.infer<typeof classification>;
 
@@ -90,7 +90,7 @@ const includeSchema = z.object({
   }),
 });
 
-export const DocumentResponse = z.object({
+export const documentResponse = z.object({
   size: z.string().optional(),
   title: z.string().optional(),
   creation: z.string().optional(),
@@ -100,11 +100,11 @@ export const DocumentResponse = z.object({
   RepositoryUniqueId: z.string(),
   NewDocumentUniqueId: z.string().optional(),
   NewRepositoryUniqueId: z.string().optional(),
-  DocumentUniqueId: StringOrNumberSchema,
+  DocumentUniqueId: stringOrNumberSchema,
   Document: z.union([z.string(), includeSchema]),
 });
 
-export type DocumentResponse = z.infer<typeof DocumentResponse>;
+export type DocumentResponse = z.infer<typeof documentResponse>;
 
 export const iti39Body = z.object({
   RetrieveDocumentSetResponse: z.object({
@@ -112,7 +112,7 @@ export const iti39Body = z.object({
       _status: z.string(),
       RegistryErrorList: registryErrorList.optional(),
     }),
-    DocumentResponse: schemaOrArrayOrEmpty(DocumentResponse).optional(),
+    DocumentResponse: schemaOrArrayOrEmpty(documentResponse).optional(),
   }),
 });
 

@@ -9,7 +9,7 @@ import {
   Telecom,
   PersonalIdentifier,
 } from "@metriport/ihe-gateway-sdk";
-import { toArray } from "@metriport/shared";
+import { errorToString, toArray } from "@metriport/shared";
 import { normalizeGender } from "../../../utils";
 import { XCPDSamlClientResponse } from "../send/xcpd-requests";
 import { out } from "../../../../../../util/log";
@@ -145,6 +145,7 @@ function handlePatientMatchResponse({
   const response: OutboundPatientDiscoveryResp = {
     id: outboundRequest.id,
     timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
     externalGatewayPatient: {
       id: subject1.patient.id._extension,
@@ -155,6 +156,7 @@ function handlePatientMatchResponse({
     patientMatch: true,
     gatewayHomeCommunityId: outboundRequest.samlAttributes.homeCommunityId,
     patientResource: patientResource,
+    iheGatewayV2: true,
   };
 
   return response;
@@ -182,11 +184,13 @@ function handlePatientNoMatchResponse({
   const response: OutboundPatientDiscoveryResp = {
     id: outboundRequest.id,
     timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
     gateway: gateway,
     patientId: outboundRequest.patientId,
     patientMatch: false,
     operationOutcome: operationOutcome,
+    iheGatewayV2: true,
   };
   return response;
 }
@@ -248,6 +252,7 @@ export function processXCPDResponse({
     return handleSchemaErrorResponse({
       outboundRequest,
       gateway,
+      text: errorToString(error),
     });
   }
 }

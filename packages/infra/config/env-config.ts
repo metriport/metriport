@@ -1,6 +1,7 @@
 import { EnvType } from "../lib/env-type";
 import { RDSAlarmThresholds } from "./aws/rds";
 import { IHEGatewayProps } from "./ihe-gateway-config";
+import { OpenSearchConnectorConfig } from "./open-search-config";
 
 export type ConnectWidgetConfig = {
   stackName: string;
@@ -76,6 +77,10 @@ type EnvConfigBase = {
     alarmThresholds: RDSAlarmThresholds;
   };
   loadBalancerDnsName: string;
+  /**
+   * Introduced when we had to recreate the Fargate service, so we could keep using the existing log group.
+   */
+  logArn: string;
   apiGatewayUsagePlanId?: string; // optional since we need to create the stack first, then update this and redeploy
   usageReportUrl?: string;
   fhirServerUrl: string;
@@ -95,6 +100,7 @@ type EnvConfigBase = {
     placeIndexName: string;
     placeIndexRegion: string;
   };
+  openSearch: OpenSearchConnectorConfig;
   carequality?: {
     secretNames: {
       CQ_MANAGEMENT_API_KEY: string;

@@ -40,12 +40,14 @@
                     Example: https://github.com/HL7/C-CDA-Examples/blob/fb1c33b3a880fc47407f25c5dafa0066996529f4/Documents/CCD/CCD%201/CCD.XML
                  --}}
                     {{#if (contains (toJsonString performerEntry.templateId) "2.16.840.1.113883.10.20.22.4.87")}}
-                        {{#if performerEntry.assignedEntity.representedOrganization.name._}}
+                          {{#if performerEntry.assignedEntity.representedOrganization.name._}}
                             {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=performerEntry.assignedEntity.representedOrganization) as |orgId|}}
                                 {{>Resources/Organization.hbs org=performerEntry.assignedEntity.representedOrganization ID=orgId.Id}},
                                 {{>References/Coverage/payor.hbs ID=(generateUUID (toJsonString payerEntry.act)) REF=(concat 'Organization/' orgId.Id)}},
                                 {{>References/Coverage/beneficiary.hbs ID=(generateUUID (toJsonString payerEntry.act)) REF=(concat 'Patient/' @metriportPatientId)}},
                             {{/with}}
+                        {{else}}
+                          {{>References/Coverage/payor.hbs ID=(generateUUID (toJsonString payerEntry.act)) canBeUnknown=true  }},
                         {{/if}}
                     {{/if}}
                 {{/each}}

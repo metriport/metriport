@@ -44,7 +44,9 @@
                     {{#each (toArray medAdm.substanceAdministration.entryRelationship) as |entryRelationship|}}
                         {{#if (contains (toJsonString entryRelationship.observation.templateId) '"2.16.840.1.113883.10.20.22.4.19"')}}
                             {{>Resources/Condition.hbs conditionEntry=entryRelationship.observation ID=(generateUUID (toJsonString entryRelationship.observation))}},
-
+                            {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                    	        {{>References/Condition/subject.hbs ID=(generateUUID (toJsonString entryRelationship.observation)) REF=(concat 'Patient/' patientId.Id)}},
+                            {{/with}}
                             {{#if medAdm.substanceAdministration.author.assignedAuthor}}
                                 {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=medAdm.substanceAdministration.author.assignedAuthor) as |practitionerId|}}
                                     {{>Resources/Practitioner.hbs practitioner=medAdm.substanceAdministration.author.assignedAuthor ID=practitionerId.Id}},

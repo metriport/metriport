@@ -1,8 +1,5 @@
-import { ConsolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
-import { Patient } from "@metriport/core/domain/patient";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import { Config } from "../../../shared/config";
 import { getSignedURL } from "../document/document-download";
 import { getPatient } from "./get-patient";
@@ -12,24 +9,6 @@ const awsRegion = Config.getAWSRegion();
 const s3Utils = new S3Utils(awsRegion);
 const bucketName = Config.getMedicalDocumentsBucketName();
 const DEFAULT_MR_CREATION_DATE_STRING = new Date("2023-09-21").toString(); // The date of the MAPI launch
-
-export type GetConsolidatedFilters = {
-  resources?: ResourceTypeForConsolidation[];
-  dateFrom?: string;
-  dateTo?: string;
-  conversionType?: ConsolidationConversionType;
-};
-
-export type GetConsolidatedParams = {
-  patient: Pick<Patient, "id" | "cxId" | "data">;
-  documentIds?: string[];
-} & GetConsolidatedFilters;
-
-export type ConsolidatedQueryParams = {
-  cxId: string;
-  patientId: string;
-  cxConsolidatedRequestMetadata?: unknown;
-} & GetConsolidatedFilters;
 
 type MedicalRecordsStatus = {
   htmlCreatedAt?: string;

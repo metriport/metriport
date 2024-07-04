@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { schemaOrArray, samlHeaderSchema, slot, StringOrNumberSchema } from "../../schema";
+import { schemaOrArray, samlHeaderSchema, slot, stringOrNumberSchema } from "../../schema";
 
 export const iti38RequestBody = z.object({
   AdhocQueryRequest: z.object({
@@ -22,9 +22,9 @@ export const iti38RequestSchema = z.object({
 export type Iti38Request = z.infer<typeof iti38RequestSchema>;
 
 export const DocumentRequest = z.object({
-  DocumentUniqueId: StringOrNumberSchema,
-  RepositoryUniqueId: StringOrNumberSchema,
-  HomeCommunityId: StringOrNumberSchema,
+  DocumentUniqueId: stringOrNumberSchema,
+  RepositoryUniqueId: stringOrNumberSchema,
+  HomeCommunityId: stringOrNumberSchema,
 });
 
 export const iti39RequestBody = z.object({

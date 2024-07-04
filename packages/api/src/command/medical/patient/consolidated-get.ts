@@ -1,5 +1,4 @@
 import { OperationOutcomeError } from "@medplum/core";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
   Bundle,
   BundleEntry,
@@ -8,19 +7,25 @@ import {
   Resource,
   ResourceType,
 } from "@medplum/fhirtypes";
+import {
+  ConsolidatedQuery,
+  GetConsolidatedFilters,
+  resourcesSearchableByPatient,
+  ResourceTypeForConsolidation,
+} from "@metriport/api-sdk";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
-import { ConsolidatedQuery, resourcesSearchableByPatient } from "@metriport/api-sdk";
-import { intersection } from "lodash";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import {
   buildBundle,
   getReferencesFromResources,
 } from "@metriport/core/external/fhir/shared/bundle";
 import { isResourceDerivedFromDocRef } from "@metriport/core/external/fhir/shared/index";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { emptyFunction } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
-import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
-import { GetConsolidatedFilters, ResourceTypeForConsolidation } from "@metriport/api-sdk";
+import { SearchSetBundle } from "@metriport/shared/medical";
+import { intersection } from "lodash";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import {
   fullDateQueryForResource,
@@ -40,6 +45,8 @@ import {
 } from "./convert-fhir-bundle";
 import { getPatientOrFail } from "./get-patient";
 import { storeQueryInit } from "./query-init";
+
+const MAX_HYDRATION_ROUNDS = 3;
 
 export type GetConsolidatedParams = {
   patient: Pick<Patient, "id" | "cxId" | "data">;
@@ -228,7 +235,7 @@ export async function getConsolidated({
   requestId,
   conversionType,
 }: GetConsolidatedParams): Promise<{
-  bundle: Bundle<Resource>;
+  bundle: SearchSetBundle<Resource>;
   filters: Record<string, string | undefined>;
 }> {
   const { log } = Util.out(`getConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
@@ -241,6 +248,8 @@ export async function getConsolidated({
       dateFrom,
       dateTo,
     });
+
+    bundle.entry = filterOutPrelimDocRefs(bundle.entry);
     const hasResources = bundle.entry && bundle.entry.length > 0;
     const shouldCreateMedicalRecord = conversionType && conversionType != "json" && hasResources;
     const currentConsolidatedProgress = patient.data.consolidatedQueries?.find(
@@ -305,6 +314,22 @@ export async function getConsolidated({
   }
 }
 
+export function filterOutPrelimDocRefs(
+  entries: BundleEntry<Resource>[] | undefined
+): BundleEntry<Resource>[] | undefined {
+  if (!entries) return entries;
+
+  return entries.filter(entry => {
+    if (entry.resource?.resourceType === "DocumentReference") {
+      const isValidStatus = entry.resource?.docStatus !== "preliminary";
+
+      return isValidStatus;
+    }
+
+    return true;
+  });
+}
+
 async function uploadConsolidatedJsonAndReturnUrl({
   patient,
   bundle,
@@ -314,7 +339,7 @@ async function uploadConsolidatedJsonAndReturnUrl({
   bundle: Bundle<Resource>;
   filters: Record<string, string | undefined>;
 }): Promise<{
-  bundle: Bundle<Resource>;
+  bundle: SearchSetBundle<Resource>;
   filters: Record<string, string | undefined>;
 }> {
   {
@@ -360,7 +385,7 @@ export async function getConsolidatedPatientData({
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
-}): Promise<Bundle<Resource>> {
+}): Promise<SearchSetBundle<Resource>> {
   const { log } = Util.out(
     `getConsolidatedPatientData - cxId ${patient.cxId}, patientId ${patient.id}`
   );
@@ -426,16 +451,20 @@ export async function getConsolidatedPatientData({
     });
   }
 
-  const filtered = filterByDocumentIds(success, documentIds, log);
+  let filtered = filterByDocumentIds(success, documentIds, log);
 
-  const { missingReferences } = getReferencesFromResources({
-    resources: filtered,
-  });
-  const missingRefsOnFHIR = await getReferencesFromFHIR(missingReferences, fhir, log);
+  for (let i = 0; i < MAX_HYDRATION_ROUNDS; i++) {
+    const { missingReferences } = getReferencesFromResources({
+      resources: filtered,
+    });
+    if (missingReferences.length === 0) {
+      break;
+    }
+    const missingRefsOnFHIR = await getReferencesFromFHIR(missingReferences, fhir, log);
+    filtered = [...filtered, ...missingRefsOnFHIR];
+  }
 
-  const grouped = [...filtered, ...missingRefsOnFHIR];
-
-  const entry: BundleEntry[] = grouped.map(r => ({ resource: r }));
+  const entry: BundleEntry[] = filtered.map(r => ({ resource: r }));
   return buildBundle(entry);
 }
 

@@ -17,4 +17,4 @@ export const namespaces = {
   xsiType: "xsd:string",
 };
 
-export const expiresIn = 5;
+export const expiresIn = 20;

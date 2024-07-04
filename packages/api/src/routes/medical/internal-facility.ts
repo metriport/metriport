@@ -5,7 +5,7 @@ import { requestLogger } from "../helpers/request-logger";
 import { facilityOboDetailsSchema } from "./schemas/facility";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler } from "../util";
-import { registerFacilityWithinHIEs } from "../../external/hie/register-facility.ts";
+import { registerFacilityWithinHIEs } from "../../external/hie/register-facility";
 import { FacilityRegister } from "../../domain/medical/facility";
 
 const router = Router();

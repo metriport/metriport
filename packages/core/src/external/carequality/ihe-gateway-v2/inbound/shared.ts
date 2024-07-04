@@ -8,7 +8,7 @@ import {
 } from "../schema";
 import { extractText } from "../utils";
 
-const isTextSchema = (value: AttributeValue): value is TextOrTextObject => {
+const istextSchema = (value: AttributeValue): value is TextOrTextObject => {
   return typeof value === "object" && "_text" in value;
 };
 
@@ -27,7 +27,7 @@ export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttribute
     const attribute = attributes.find(attr => attr._Name === name);
     if (!attribute) return undefined;
     if (typeof attribute.AttributeValue === "string") return attribute.AttributeValue;
-    if (isTextSchema(attribute.AttributeValue)) return extractText(attribute.AttributeValue);
+    if (istextSchema(attribute.AttributeValue)) return extractText(attribute.AttributeValue);
     return undefined;
   };
 

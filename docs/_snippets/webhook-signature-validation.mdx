@@ -1,11 +1,12 @@
 ```typescript
 
+  const webhookKey = "your_secret_key"; // Webhook key from the Settings page
   const signature = req.headers["x-metriport-signature"];
   const signatureAsString = // codeToValidateAndConvertToString(signature);
   const metriportApi = new MetriportMedicalApi(apiKey, {
     baseAddress: apiUrl,
   });
-  if (metriportApi.verifyWebhookSignature(whKey, req.body, signatureAsString)) {
+  if (metriportApi.verifyWebhookSignature(webhookKey, req.body, signatureAsString)) {
     console.log(`Signature verified`);
   } else {
     console.log(`Signature verification failed`);

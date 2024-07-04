@@ -36,7 +36,7 @@
             {{/each}}
         ],
         "status":{{>ValueSet/DiagnosticReportStatus.hbs code=diagReport.statusCode.code}},
-        "code":{{>DataType/CodeableConcept.hbs code=diagReport.code}},
+        "code": {{>DataType/CodeableConcept.hbs code=diagReport.code canBeUnknown=true}},
         "category":[{{>DataType/CodeableConcept.hbs code=categoryCode}}],
         "effectivePeriod":
         {

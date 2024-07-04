@@ -1,4 +1,8 @@
-import { errorToString, normalizeZipCode } from "@metriport/shared";
+import {
+  errorToString,
+  normalizePhoneNumber as normalizePhoneNumberFromShared,
+  normalizeZipCode,
+} from "@metriport/shared";
 import { Address } from "../domain/address";
 import { PatientData } from "../domain/patient";
 import { out } from "../util/log";
@@ -73,18 +77,12 @@ export function normalizeEmail(email: string): string {
 
 /**
  * Normalizes a phone number by removing all non-numeric characters and, if applicable, removing the country code.
+ * @deprecated use `normalizePhoneNumber` from `@metriport/shared` instead.
  * @param phoneNumber - The phone number to be normalized.
  * @returns The normalized phone number as a string.
  */
-function normalizePhoneNumber(phoneNumber: string): string {
-  const normalizedNumber = phoneNumber.replace(/\D/g, "");
-
-  if (normalizedNumber.startsWith("1") && normalizedNumber.length === 11) {
-    // applies to US and Canada numbers only
-    return normalizedNumber.substring(1);
-  }
-
-  return normalizedNumber;
+export function normalizePhoneNumber(phoneNumber: string): string {
+  return normalizePhoneNumberFromShared(phoneNumber);
 }
 
 // TODO maybe want to have a rule that we will only normalize a single word in the address. If there are multiple, then
@@ -105,6 +103,9 @@ export function splitName(name: string): string[] {
   return name.split(/[\s,]+/).filter(str => str);
 }
 
+/**
+ * @deprecated - Use the one in `domain/patient-demographics`.
+ */
 export function normalizeGender(gender: string | undefined): "M" | "F" | undefined {
   if (!gender) return;
   const lowerGender = gender.toLowerCase().trim();

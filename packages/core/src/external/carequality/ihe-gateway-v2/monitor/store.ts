@@ -56,7 +56,7 @@ export async function storeXcpdResponses({
   }
 }
 
-export async function storeDqResponses({
+export async function storeDqResponse({
   response,
   outboundRequest,
   gateway,
@@ -90,14 +90,16 @@ export async function storeDqResponses({
   }
 }
 
-export async function storeDrResponses({
+export async function storeDrResponse({
   response,
   outboundRequest,
   gateway,
+  requestChunkId,
 }: {
   response: Buffer;
   outboundRequest: OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
+  requestChunkId?: string | undefined;
 }) {
   try {
     if (!bucket) {
@@ -112,6 +114,7 @@ export async function storeDrResponses({
       requestId,
       oid: gateway.homeCommunityId,
       timestamp,
+      requestChunkId,
     });
     await s3Utils.uploadFile({ bucket, key, file: response, contentType: "application/xml" });
   } catch (error) {
@@ -126,6 +129,7 @@ export function buildIheResponseKey({
   requestId,
   oid,
   timestamp,
+  requestChunkId,
 }: {
   type: "xcpd" | "dq" | "dr";
   cxId: string;
@@ -133,7 +137,9 @@ export function buildIheResponseKey({
   requestId: string;
   oid: string;
   timestamp: string;
+  requestChunkId?: string | undefined;
 }) {
   const date = dayjs(timestamp).format("YYYY-MM-DD");
-  return `${cxId}/${patientId}/${type}/${requestId}_${date}/${oid}.xml`;
+  const requestChunkIdPart = requestChunkId ? `_${requestChunkId}` : "";
+  return `${cxId}/${patientId}/${type}/${requestId}_${date}/${oid}${requestChunkIdPart}.xml`;
 }

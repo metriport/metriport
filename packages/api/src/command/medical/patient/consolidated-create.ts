@@ -1,6 +1,6 @@
 import { Bundle, BundleEntry, Patient } from "@medplum/fhirtypes";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
-import { OPERATION_OUTCOME_EXTENSION_URL } from "../../../external/fhir/shared/extensions/extension";
+import { OPERATION_OUTCOME_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/extension";
 import { Util } from "../../../shared/util";
 import { errorToString } from "@metriport/shared";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
@@ -34,8 +34,10 @@ export async function createOrUpdateConsolidatedPatientData({
 
     return transformedBundle;
   } catch (error) {
+    const errorMsg = errorToString(error);
     const msg = "Error converting and executing fhir bundle resources";
-    log(`${msg}: ${errorToString(error)}`);
+    log(`${msg}: ${errorMsg}`);
+    if (errorMsg.includes("ID")) throw new MetriportError(errorMsg, error, { cxId, patientId });
     throw new MetriportError(msg, error, { cxId, patientId });
   }
 }

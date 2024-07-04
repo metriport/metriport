@@ -1,27 +1,40 @@
-import { PatientCreate, patientCreateSchema, Demographics } from "@metriport/api-sdk";
+import {
+  Contact as ContactSchema,
+  Demographics,
+  PatientCreate,
+  patientCreateSchema,
+} from "@metriport/api-sdk";
+import { Contact } from "@metriport/core/domain/contact";
+import { PatientData } from "@metriport/core/domain/patient";
 import { z } from "zod";
 
 export const patientUpdateSchema = patientCreateSchema;
 export type PatientUpdate = z.infer<typeof patientUpdateSchema>;
 
-export function schemaCreateToPatient(input: PatientCreate, cxId: string) {
+export function schemaContactToContact(input: ContactSchema): Contact {
+  return {
+    email: input.email ?? undefined,
+    phone: input.phone ?? undefined,
+  };
+}
+
+export function schemaCreateToPatientData(input: PatientCreate): PatientData {
   return {
     ...input,
-    cxId,
     address: Array.isArray(input.address) ? input.address : [input.address],
     contact:
       input.contact && Array.isArray(input.contact)
-        ? input.contact
+        ? input.contact.map(schemaContactToContact)
         : input.contact
-        ? [input.contact]
+        ? [schemaContactToContact(input.contact)]
         : undefined,
   };
 }
 
-export function schemaUpdateToPatient(input: PatientUpdate, cxId: string) {
-  return schemaCreateToPatient(input, cxId);
+export function schemaUpdateToPatientData(input: PatientUpdate): PatientData {
+  return schemaCreateToPatientData(input);
 }
 
-export function schemaDemographicsToPatient(input: Demographics, cxId: string) {
-  return schemaCreateToPatient(input, cxId);
+export function schemaDemographicsToPatientData(input: Demographics): PatientData {
+  return schemaCreateToPatientData(input);
 }
