@@ -25,11 +25,11 @@ function createSignature({
   const sig = new SignedXml({ privateKey });
   sig.addReference({
     xpath: xpath,
-    digestAlgorithm: "http://www.w3.org/2000/09/xmldsig#sha1",
+    digestAlgorithm: "http://www.w3.org/2001/04/xmlenc#sha256",
     transforms: transforms,
   });
   sig.canonicalizationAlgorithm = "http://www.w3.org/2001/10/xml-exc-c14n#";
-  sig.signatureAlgorithm = "http://www.w3.org/2000/09/xmldsig#rsa-sha1";
+  sig.signatureAlgorithm = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256";
   sig.computeSignature(xml, {
     prefix: "ds",
     location: { reference: locationReference, action: action },
