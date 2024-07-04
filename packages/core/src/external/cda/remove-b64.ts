@@ -1,16 +1,17 @@
-import { XMLParser, XMLBuilder } from "fast-xml-parser";
 import { toArray } from "@metriport/shared";
-import { PDF_MIME_TYPE } from "../../util/mime";
+import { XMLBuilder, XMLParser } from "fast-xml-parser";
+import { OCTET_MIME_TYPE, PDF_MIME_TYPE } from "../../util/mime";
 
 const notesTemplateId = "2.16.840.1.113883.10.20.22.2.65";
 const b64Representation = "B64";
 
+const parser = new XMLParser({
+  ignoreAttributes: false,
+  attributeNamePrefix: "@_",
+  removeNSPrefix: true,
+});
+
 export function removeBase64PdfEntries(payloadRaw: string): string {
-  const parser = new XMLParser({
-    ignoreAttributes: false,
-    attributeNamePrefix: "@_",
-    removeNSPrefix: true,
-  });
   const json = parser.parse(payloadRaw);
 
   let removedEntry = 0;
@@ -27,8 +28,9 @@ export function removeBase64PdfEntries(payloadRaw: string): string {
         if (comp.section.entry) {
           //eslint-disable-next-line @typescript-eslint/no-explicit-any
           comp.section.entry = toArray(comp.section.entry).filter((entry: any) => {
+            const mediaType = entry.act?.text?.["@_mediaType"]?.toLowerCase();
             if (
-              entry.act?.text?.["@_mediaType"]?.toLowerCase() === PDF_MIME_TYPE.toLowerCase() &&
+              (mediaType === PDF_MIME_TYPE || mediaType === OCTET_MIME_TYPE) &&
               entry.act.text["@_representation"]?.toLowerCase() === b64Representation.toLowerCase()
             ) {
               removedEntry++;
