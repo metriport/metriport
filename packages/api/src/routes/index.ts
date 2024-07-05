@@ -7,7 +7,7 @@ import { reportClientErrors } from "./helpers/report-client-errors";
 import internal from "./internal";
 import medical from "./medical";
 import fhirRouter from "./medical/fhir-r4-proxy";
-import { checkMAPIAccess, processAPIKey } from "./middlewares/auth";
+import { checkMAPIAccess, processCxId } from "./middlewares/auth";
 import { reportDeviceUsage } from "./middlewares/usage";
 import nutrition from "./nutrition";
 import oauthRoutes from "./oauth-routes";
@@ -22,17 +22,17 @@ export default (app: Application) => {
   app.use("/internal", internal);
 
   // routes with API key auth
-  app.use("/settings", processAPIKey, settings);
-  app.use("/activity", processAPIKey, reportDeviceUsage, activity);
-  app.use("/body", processAPIKey, reportDeviceUsage, body);
-  app.use("/biometrics", processAPIKey, reportDeviceUsage, biometrics);
-  app.use("/nutrition", processAPIKey, reportDeviceUsage, nutrition);
-  app.use("/sleep", processAPIKey, reportDeviceUsage, sleep);
-  app.use("/user", processAPIKey, reportDeviceUsage, user);
+  app.use("/settings", processCxId, settings);
+  app.use("/activity", processCxId, reportDeviceUsage, activity);
+  app.use("/body", processCxId, reportDeviceUsage, body);
+  app.use("/biometrics", processCxId, reportDeviceUsage, biometrics);
+  app.use("/nutrition", processCxId, reportDeviceUsage, nutrition);
+  app.use("/sleep", processCxId, reportDeviceUsage, sleep);
+  app.use("/user", processCxId, reportDeviceUsage, user);
 
   // medical routes with API key auth - report usage is on individual routes
-  app.use("/medical/v1", processAPIKey, checkMAPIAccess, medical);
-  app.use("/fhir/R4", processAPIKey, checkMAPIAccess, fhirRouter);
+  app.use("/medical/v1", processCxId, checkMAPIAccess, medical);
+  app.use("/fhir/R4", processCxId, checkMAPIAccess, fhirRouter);
 
   // routes with session token auth
   app.use("/connect", connect);
