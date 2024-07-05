@@ -2,6 +2,8 @@ import { InboundDocumentQueryReq, InboundDocumentRetrievalReq } from "@metriport
 import { XDSMissingHomeCommunityId, XDSRegistryError } from "./error";
 import { USState } from "../../domain/geographic-locations";
 import { base64ToString, stringToBase64 } from "../../util/base64";
+import { IheGender } from "./ihe-gateway-v2/outbound/xcpd/process/schema";
+import { FhirGender } from "../fhir/patient/index";
 
 /*
 CONFIDENTIALITY_CODE is always N, or normal, indicating its normal PHI
@@ -124,4 +126,31 @@ export function validateBasePayload(
   if (!payload.samlAttributes.homeCommunityId) {
     throw new XDSMissingHomeCommunityId("Home Community ID is not defined");
   }
+}
+
+const fhirGenderToIheGender: Record<FhirGender, IheGender> = {
+  female: "F",
+  male: "M",
+  other: "UN",
+  unknown: "UNK",
+};
+
+const iheGenderToFhirGender: Record<IheGender, FhirGender> = {
+  F: "female",
+  M: "male",
+  UN: "other",
+  UNK: "unknown",
+};
+
+export function mapIheGenderToFhir(k: IheGender | undefined): FhirGender {
+  if (k === undefined) {
+    return "unknown";
+  }
+  const gender = iheGenderToFhirGender[k];
+  return gender ? gender : "unknown";
+}
+
+export function mapFhirToIheGender(gender: FhirGender): IheGender {
+  const iheGender = fhirGenderToIheGender[gender];
+  return iheGender ? iheGender : "UNK";
 }

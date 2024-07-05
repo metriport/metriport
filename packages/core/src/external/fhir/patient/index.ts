@@ -8,18 +8,42 @@ import {
 import { Address } from "../../../domain/address";
 import { Contact, ContactTypes } from "../../../domain/contact";
 import { driversLicenseURIs, identifierSytemByType } from "../../../domain/oid";
-import { GenderAtBirth, Patient, splitName } from "../../../domain/patient";
+import { GenderAtBirth as MetriportGender, Patient, splitName } from "../../../domain/patient";
 import { getIdFromSubjectId, getIdFromSubjectRef } from "../shared";
+
+export type FhirGender = NonNullable<FHIRPatient["gender"]>;
 
 export type PatientIdAndData = Pick<Patient, "id" | "data">;
 
-const genderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
+const metriportGenderToFhir: Record<MetriportGender, FhirGender> = {
   F: "female",
   M: "male",
+  O: "other",
+  U: "unknown",
 };
 
-export function mapGenderAtBirthToFhir(k: GenderAtBirth): Required<FHIRPatient>["gender"] {
-  return genderMapping[k];
+const fhirGenderToMetriportGender: Record<FhirGender, MetriportGender> = {
+  female: "F",
+  male: "M",
+  other: "O",
+  unknown: "U",
+};
+
+export function mapMetriportGenderToFhirGender(k: MetriportGender | undefined): FhirGender {
+  if (k === undefined) {
+    return "unknown";
+  }
+  const gender = metriportGenderToFhir[k];
+  return gender ? gender : "unknown";
+}
+
+export function mapFhirToMetriportGender(gender: FhirGender): MetriportGender {
+  const MetriportGender = fhirGenderToMetriportGender[gender];
+  return MetriportGender ? MetriportGender : "U";
+}
+
+export function mapStringMetriportGenderToFhir(k: string): FhirGender {
+  return mapMetriportGenderToFhirGender(k as MetriportGender);
 }
 
 export function mapPatientDataToResource(patient: PatientIdAndData) {
@@ -52,7 +76,7 @@ export function mapPatientDataToResource(patient: PatientIdAndData) {
           return telecoms;
         })
         .reduce((prev, curr) => prev.concat(curr), []) || [],
-    gender: mapGenderAtBirthToFhir(patient.data.genderAtBirth),
+    gender: mapMetriportGenderToFhirGender(patient.data.genderAtBirth),
     birthDate: patient.data.dob,
     address:
       patient.data.address.map((addr: Address) => {
