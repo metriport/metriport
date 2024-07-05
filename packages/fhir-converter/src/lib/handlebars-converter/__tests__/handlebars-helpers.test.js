@@ -4,6 +4,7 @@
 // -------------------------------------------------------------------------------------------------
 
 var inputs = require("./extract-range-templates");
+var presentedForm = require("./build-presented-form-templates");
 var helpers = require("../handlebars-helpers").external;
 
 describe("Handlebars helpers", function () {
@@ -61,6 +62,59 @@ describe("Handlebars helpers", function () {
       desc: "Should return undefined when input is empty",
       in: [{}],
       out: undefined,
+    },
+    {
+      f: "buildPresentedForm",
+      desc: "Returns empty array if nothing is passed",
+      in: [],
+      out: undefined,
+    },
+    {
+      f: "buildPresentedForm",
+      desc: "Returns empty array if undefined is passed",
+      in: [undefined, undefined],
+      out: undefined,
+    },
+    {
+      f: "buildPresentedForm",
+      desc: "Returns presentedForm entry with b64 string if one is provided",
+      in: [presentedForm.b64String],
+      out: JSON.stringify(presentedForm.makePresentedFormEntry([presentedForm.b64String])),
+    },
+    {
+      f: "buildPresentedForm",
+      desc: "Returns presentedForm entry with b64 string if one is provided together with an empty component",
+      in: [presentedForm.b64String, presentedForm.emptyComponent],
+      out: JSON.stringify(presentedForm.makePresentedFormEntry([presentedForm.b64String])),
+    },
+    {
+      f: "buildPresentedForm",
+      desc: "Returns empty array if empty component is provided",
+      in: [undefined, presentedForm.componentWithEmptyObservations],
+      out: undefined,
+    },
+    {
+      f: "buildPresentedForm",
+      desc: "Returns presentedForm entry with b64 strings if they are provided",
+      in: [undefined, presentedForm.component],
+      out: JSON.stringify(
+        presentedForm.makePresentedFormEntry([
+          presentedForm.b64StringValuable,
+          presentedForm.b64StringProtected,
+        ])
+      ),
+    },
+    {
+      f: "buildPresentedForm",
+      desc: "Correctly combines the inputs to return presentedForm with b64 strings",
+      in: [presentedForm.b64String, presentedForm.component],
+      out: JSON.stringify(
+        presentedForm.makePresentedFormEntry([
+          presentedForm.b64String,
+          presentedForm.b64StringValuable,
+          presentedForm.b64StringProtected,
+        ])
+      ),
     },
   ];
 

@@ -1339,6 +1339,32 @@ module.exports.external = [
     },
   },
   {
+    name: "buildPresentedForm",
+    description: "Builds a presented form array",
+    func: function (b64String, component) {
+      const presentedForm = [];
+      if (b64String) {
+        presentedForm.push({
+          data: b64String,
+          contentType: "text/plain",
+        });
+      }
+      if (component) {
+        component.forEach(comp => {
+          const obsValueB64 = comp.observation?.value?._b64;
+          if (obsValueB64) {
+            presentedForm.push({
+              data: obsValueB64,
+              contentType: "text/plain",
+            });
+          }
+        });
+      }
+      if (presentedForm.length === 0) return undefined;
+      return JSON.stringify(presentedForm);
+    },
+  },
+  {
     name: "extractDecimal",
     description:
       "Returns true if following the FHIR decimal specification: https://www.hl7.org/fhir/R4/datatypes.html#decimal ",
@@ -1353,7 +1379,7 @@ module.exports.external = [
         const leadsWithDecimal = decimal.startsWith(".");
 
         if (leadsWithDecimal) {
-          return  parseFloat(`0${decimal}`);
+          return parseFloat(`0${decimal}`);
         }
 
         return parseFloat(decimal);
