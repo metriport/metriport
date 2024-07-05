@@ -3,7 +3,6 @@ import { PatientResource } from "@metriport/ihe-gateway-sdk";
 import {
   removeInvalidArrayValues,
   normalizeDob,
-  normalizeGender,
   normalizeAndStringifyNames,
   normalizeAddress,
   stringifyAddress,
@@ -16,7 +15,7 @@ export function patientResourceToNormalizedLinkDemographics(
   patientResource: PatientResource
 ): LinkDemographics {
   const dob = normalizeDob(patientResource.birthDate);
-  const gender = normalizeGender(patientResource.gender);
+  const gender = patientResource.gender;
   const names = patientResource.name.flatMap(name => {
     return name.given.map(firstName => {
       return normalizeAndStringifyNames({ firstName, lastName: name.family });
