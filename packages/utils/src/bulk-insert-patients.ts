@@ -5,6 +5,7 @@ import { MetriportMedicalApi, PatientCreate, USState } from "@metriport/api-sdk"
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { sleep } from "@metriport/core/util/sleep";
+import { GenderAtBirth } from "@metriport/core/domain/patient";
 import { Command } from "commander";
 import csv from "csv-parser";
 import dayjs from "dayjs";
@@ -154,13 +155,17 @@ function toTitleCase(str: string): string {
     .trim();
 }
 
-function normalizeGender(gender: string | undefined): "M" | "F" {
+function normalizeGender(gender: string | undefined): GenderAtBirth {
   if (gender == undefined) throw new Error(`Missing gender`);
   const lowerGender = gender.toLowerCase().trim();
   if (lowerGender === "male" || lowerGender === "m") {
     return "M";
   } else if (lowerGender === "female" || lowerGender === "f") {
     return "F";
+  } else if (lowerGender === "other" || lowerGender === "un" || lowerGender === "o") {
+    return "O";
+  } else if (lowerGender === "unknown" || lowerGender === "unk" || lowerGender === "u") {
+    return "U";
   }
   throw new Error(`Invalid gender ${gender}`);
 }

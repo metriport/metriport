@@ -1,6 +1,10 @@
 import { Bundle, Immunization, Location } from "@medplum/fhirtypes";
 import { findResourceInBundle, isImmunization, isLocation } from "../../../external/fhir/shared";
-import { ObservationTableRow } from "../../cda-types/shared-types";
+import {
+  Consumable,
+  ObservationTableRow,
+  SubstanceAdministationEntry,
+} from "../../cda-types/shared-types";
 import {
   buildAddressText,
   buildCodeCe,
@@ -11,6 +15,7 @@ import {
   formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
   getDisplaysFromCodeableConcepts,
+  notOnFilePlaceholder,
   withoutNullFlavorObject,
 } from "../commons";
 import {
@@ -25,31 +30,14 @@ import {
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { initiateSectionTable } from "../table";
 import { AugmentedImmunization } from "./augmented-resources";
+import { ImmunizationsSection } from "../../cda-types/sections";
 
 const immunizationsSectionName = "immunizations";
 
 const tableHeaders = ["Immunization", "Status", "Location", "Date"];
 
 export function buildImmunizations(fhirBundle: Bundle) {
-  const immunizations: Immunization[] =
-    fhirBundle.entry?.flatMap(entry => (isImmunization(entry.resource) ? [entry.resource] : [])) ||
-    [];
-
-  if (immunizations.length === 0) {
-    return undefined;
-  }
-
-  const augmentedImmunizations = createAugmentedImmunizations(immunizations, fhirBundle);
-
-  const { trs, entries } = createTableRowsAndEntries(
-    augmentedImmunizations,
-    createTableRowFromImmunization,
-    createEntryFromEncounter
-  );
-
-  const table = initiateSectionTable(immunizationsSectionName, tableHeaders, trs);
-
-  return {
+  const immunizationsSection: ImmunizationsSection = {
     templateId: buildInstanceIdentifier({
       root: oids.immunizationsSection,
     }),
@@ -60,9 +48,31 @@ export function buildImmunizations(fhirBundle: Bundle) {
       displayName: "History of immunizations",
     }),
     title: "IMMUNIZATIONS",
-    text: table,
-    entry: entries,
+    text: notOnFilePlaceholder,
   };
+
+  const immunizations: Immunization[] =
+    fhirBundle.entry?.flatMap(entry => (isImmunization(entry.resource) ? [entry.resource] : [])) ||
+    [];
+
+  if (immunizations.length === 0) {
+    return immunizationsSection;
+  }
+
+  const augmentedImmunizations = createAugmentedImmunizations(immunizations, fhirBundle);
+
+  const { trs, entries } = createTableRowsAndEntries(
+    augmentedImmunizations,
+    createTableRowFromImmunization,
+    createEntryFromImmunization
+  );
+
+  const table = initiateSectionTable(immunizationsSectionName, tableHeaders, trs);
+
+  immunizationsSection.text = table;
+  immunizationsSection.entry = entries;
+
+  return immunizationsSection;
 }
 
 function createAugmentedImmunizations(
@@ -143,12 +153,15 @@ function mapImmunizationStatusCode(status: string | undefined): string | undefin
   }
 }
 
-function createEntryFromEncounter(immunization: AugmentedImmunization, referenceId: string) {
+function createEntryFromImmunization(
+  immunization: AugmentedImmunization,
+  referenceId: string
+): SubstanceAdministationEntry {
   return {
     substanceAdministration: {
       _classCode: "SBADM",
       _moodCode: "EVN",
-      _negationInd: "false",
+      _negationInd: false,
       templateId: buildInstanceIdentifier({
         root: immunization.typeOid,
         extension: extensionValue2015,
@@ -176,7 +189,7 @@ function createEntryFromEncounter(immunization: AugmentedImmunization, reference
   };
 }
 
-function buildConsumable(immunization: Immunization, referenceId: string) {
+function buildConsumable(immunization: Immunization, referenceId: string): Consumable {
   return {
     _typeCode: "CSM",
     manufacturedProduct: {

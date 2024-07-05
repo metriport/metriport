@@ -49,7 +49,7 @@ export async function processInboundDocumentQuery(
         log,
       });
       await executeWithNetworkRetries(
-        async () => await api.post(await api.post(`${apiUrl}/internal/docs/empty-ccd?${params}`)),
+        async () => await api.post(`${apiUrl}/internal/docs/empty-ccd?${params}`),
         { log }
       );
 

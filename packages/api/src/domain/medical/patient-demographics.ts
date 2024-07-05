@@ -11,12 +11,11 @@ import {
   LinkDateOfBirth,
   LinkDemographics,
   LinkDemographicsComparison,
-  LinkGender,
   LinkGenericAddress,
   LinkGenericDriversLicense,
   LinkGenericName,
 } from "@metriport/core/domain/patient-demographics";
-import { mapGenderAtBirthToFhir } from "@metriport/core/external/fhir/patient/index";
+import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/index";
 import { normalizePhoneNumber, stripNonNumericChars } from "@metriport/shared";
 import dayjs from "dayjs";
 import { ISO_DATE } from "../../shared/date";
@@ -155,7 +154,7 @@ export function checkDemoMatch({
  */
 export function patientToNormalizedCoreDemographics(patient: Patient): LinkDemographics {
   const dob = normalizeDob(patient.data.dob);
-  const gender = normalizeGender(patient.data.genderAtBirth);
+  const gender = mapMetriportGenderToFhirGender(patient.data.genderAtBirth);
   const patientFirstNames: string[] = splitName(patient.data.firstName);
   const patientLastNames: string[] = splitName(patient.data.lastName);
   const names = patientLastNames.flatMap(lastName => {
@@ -232,17 +231,6 @@ export function normalizeDob(dob?: string): LinkDateOfBirth {
   const parsedDate = dayjs(normalDob);
   if (parsedDate.isValid()) return parsedDate.format(ISO_DATE);
   return undefined;
-}
-
-export function normalizeGender(gender?: string): LinkGender {
-  if (gender === "M" || gender === "F") {
-    return mapGenderAtBirthToFhir(gender) as LinkGender;
-  }
-  const normalizeAndStringifydGender = gender?.trim().toLowerCase() ?? "";
-  if (normalizeAndStringifydGender !== "male" && normalizeAndStringifydGender !== "female") {
-    return undefined;
-  }
-  return normalizeAndStringifydGender;
 }
 
 export function normalizeAndStringifyNames({

@@ -10,4 +10,4 @@ COPY src/templates/ ${LAMBDA_TASK_ROOT}/templates/
 RUN npm install
 
 
-CMD [ "ccda-to-fhir.handler" ]
+CMD [ "ccda-to-fhir-lambda.handler" ]

@@ -3,6 +3,7 @@ import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { requestLogger } from "../helpers/request-logger";
 import { facilityOboDetailsSchema } from "./schemas/facility";
+import { internalDtoFromModel } from "./dtos/facilityDTO";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler } from "../util";
 import { registerFacilityWithinHIEs } from "../../external/hie/register-facility";
@@ -52,7 +53,7 @@ router.put(
 
     const facility = await registerFacilityWithinHIEs(cxId, facilityUpdate);
 
-    return res.status(httpStatus.OK).json(facility);
+    return res.status(httpStatus.OK).json(internalDtoFromModel(facility));
   })
 );
 
