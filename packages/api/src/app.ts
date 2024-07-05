@@ -10,12 +10,13 @@ import helmet from "helmet";
 import { initEvents } from "./event";
 import { initFeatureFlags } from "./external/aws/app-config";
 import initDB from "./models/db";
+import { VERSION_HEADER_NAME } from "./routes/header";
 import { errorHandler } from "./routes/helpers/default-error-handler";
+import { notFoundHandlers } from "./routes/helpers/not-found-handler";
 import mountRoutes from "./routes/index";
 import { initSentry, isSentryEnabled } from "./sentry";
 import { Config } from "./shared/config";
 import { isClientError } from "./shared/http";
-import { VERSION_HEADER_NAME } from "./routes/header";
 
 const app: Application = express();
 const version = Config.getVersion();
@@ -57,6 +58,8 @@ if (isSentryEnabled()) {
   );
 }
 app.use(errorHandler);
+
+app.all("*", ...notFoundHandlers);
 
 initEvents();
 
