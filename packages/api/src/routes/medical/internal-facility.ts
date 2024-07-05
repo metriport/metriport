@@ -50,9 +50,23 @@ router.put(
       },
     };
 
-    const facility = await registerFacilityWithinHIEs(cxId, facilityUpdate);
+    const f = await registerFacilityWithinHIEs(cxId, facilityUpdate);
 
-    return res.status(httpStatus.OK).json(facility);
+    return res.status(httpStatus.OK).json({
+      id: f.id,
+      etag: f.eTag,
+      name: f.data.name,
+      npi: f.data.npi,
+      tin: f.data.tin,
+      active: f.data.active,
+      address: f.data.address,
+      cqType: f.cqType,
+      cqActive: f.cqActive,
+      cqOboOid: f.cqOboOid,
+      cwType: f.cwType,
+      cwActive: f.cwActive,
+      cwOboOid: f.cwOboOid,
+    });
   })
 );
 
