@@ -11,7 +11,6 @@ import {
   LinkDateOfBirth,
   LinkDemographics,
   LinkDemographicsComparison,
-  LinkGender,
   LinkGenericAddress,
   LinkGenericDriversLicense,
   LinkGenericName,
@@ -155,7 +154,7 @@ export function checkDemoMatch({
  */
 export function patientToNormalizedCoreDemographics(patient: Patient): LinkDemographics {
   const dob = normalizeDob(patient.data.dob);
-  const gender = mapMetriportGenderToFhirGender(patient.data.genderAtBirth) as LinkGender;
+  const gender = mapMetriportGenderToFhirGender(patient.data.genderAtBirth);
   const patientFirstNames: string[] = splitName(patient.data.firstName);
   const patientLastNames: string[] = splitName(patient.data.lastName);
   const names = patientLastNames.flatMap(lastName => {
