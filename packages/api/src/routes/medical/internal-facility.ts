@@ -3,6 +3,7 @@ import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { requestLogger } from "../helpers/request-logger";
 import { facilityOboDetailsSchema } from "./schemas/facility";
+import { internalDtoFromModel } from "./dtos/facilityDTO";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler } from "../util";
 import { registerFacilityWithinHIEs } from "../../external/hie/register-facility";
@@ -50,23 +51,9 @@ router.put(
       },
     };
 
-    const f = await registerFacilityWithinHIEs(cxId, facilityUpdate);
+    const facility = await registerFacilityWithinHIEs(cxId, facilityUpdate);
 
-    return res.status(httpStatus.OK).json({
-      id: f.id,
-      etag: f.eTag,
-      name: f.data.name,
-      npi: f.data.npi,
-      tin: f.data.tin,
-      active: f.data.active,
-      address: f.data.address,
-      cqType: f.cqType,
-      cqActive: f.cqActive,
-      cqOboOid: f.cqOboOid,
-      cwType: f.cwType,
-      cwActive: f.cwActive,
-      cwOboOid: f.cwOboOid,
-    });
+    return res.status(httpStatus.OK).json(internalDtoFromModel(facility));
   })
 );
 

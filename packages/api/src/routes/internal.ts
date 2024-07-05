@@ -20,6 +20,7 @@ import { makeFhirApi } from "../external/fhir/api/api-factory";
 import { countResources } from "../external/fhir/patient/count-resources";
 import { getReferencesFromFHIR } from "../external/fhir/references/get-references";
 import { OrganizationModel } from "../models/medical/organization";
+import { internalDtoFromModel } from "./medical/dtos/facilityDTO";
 import userRoutes from "./devices/internal-user";
 import carequalityRoutes from "./medical/internal-cq";
 import docsRoutes from "./medical/internal-docs";
@@ -207,21 +208,7 @@ router.get(
         type: org.data.type,
         location: org.data.location,
       },
-      facilities: facilities.map(f => ({
-        id: f.id,
-        etag: f.eTag,
-        name: f.data.name,
-        npi: f.data.npi,
-        tin: f.data.tin,
-        active: f.data.active,
-        address: f.data.address,
-        cqType: f.cqType,
-        cqActive: f.cqActive,
-        cqOboOid: f.cqOboOid,
-        cwType: f.cwType,
-        cwActive: f.cwActive,
-        cwOboOid: f.cwOboOid,
-      })),
+      facilities: facilities.map(f => internalDtoFromModel(f)),
     };
     return res.status(httpStatus.OK).json(response);
   })
