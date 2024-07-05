@@ -90,9 +90,9 @@ function buildLocation(location: Location | Location[] | undefined) {
   };
 }
 
-function buildResponsibleParty(
+export function buildResponsibleParty(
   practitioner: Practitioner | undefined,
-  location: Location | undefined
+  location?: Location | undefined
 ): ResponsibleParty | undefined {
   if (!practitioner) return undefined;
 

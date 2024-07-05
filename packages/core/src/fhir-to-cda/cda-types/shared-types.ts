@@ -341,7 +341,9 @@ export type ConcernActEntry = {
       _code: string;
     };
     effectiveTime?: EffectiveTimeLowHigh;
-    entryRelationship: ObservationEntryRelationship;
+    author?: CdaAuthor | undefined;
+    informant?: ResponsibleParty | undefined;
+    entryRelationship?: ObservationEntryRelationship;
   };
 };
 

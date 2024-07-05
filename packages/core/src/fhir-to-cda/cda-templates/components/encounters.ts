@@ -190,7 +190,7 @@ function buildNameText(names: HumanName[] | undefined): string | undefined {
   return Array.from(uniqueNames).join("\n");
 }
 
-function createEntryFromEncounter(
+export function createEntryFromEncounter(
   encounter: AugmentedEncounter,
   referenceId: string
 ): EncounterEntry {
@@ -241,7 +241,7 @@ function createEntryFromEncounter(
  * For CDA statuses:
  * @see https://terminology.hl7.org/5.2.0/ValueSet-v3-ActStatus.html
  */
-function mapEncounterStatusCode(status: string | undefined): ActStatusCode {
+export function mapEncounterStatusCode(status: string | undefined): ActStatusCode {
   if (!status) return "completed";
   switch (status) {
     case "planned":

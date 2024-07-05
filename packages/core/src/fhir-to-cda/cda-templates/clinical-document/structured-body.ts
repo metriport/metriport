@@ -9,8 +9,10 @@ import { buildProblems } from "../components/problems";
 import { buildResult } from "../components/results";
 import { buildSocialHistory } from "../components/social-history";
 import { buildVitalSigns } from "../components/vital-signs";
+import { buildNotes } from "../components/notes";
 
 export function buildStructuredBody(fhirBundle: Bundle): unknown {
+  const notes = buildNotes(fhirBundle);
   const structuredBodySections = [
     buildResult(fhirBundle),
     buildSocialHistory(fhirBundle),
@@ -22,6 +24,7 @@ export function buildStructuredBody(fhirBundle: Bundle): unknown {
     buildImmunizations(fhirBundle),
     buildVitalSigns(fhirBundle),
     buildFamilyHistory(fhirBundle),
+    ...(notes ? notes : []),
   ];
 
   return {

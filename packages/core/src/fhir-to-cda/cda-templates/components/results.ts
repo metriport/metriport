@@ -17,6 +17,7 @@ import {
 } from "../commons";
 import { extensionValue2015, oids, placeholderOrgOid } from "../constants";
 import { createObservations } from "./observations";
+import { notesCodingMap } from "./notes";
 
 export function buildResult(fhirBundle: Bundle): ResultsSection {
   const resultsSection: ResultsSection = {
@@ -41,10 +42,16 @@ export function buildResult(fhirBundle: Bundle): ResultsSection {
     return resultsSection;
   }
 
-  const text = getTextItemsFromDiagnosticReports(diagnosticReports);
+  const resultsReports = diagnosticReports.filter(report =>
+    report.code?.coding?.some(
+      coding => coding.code && !Array.from(notesCodingMap.keys()).includes(coding.code)
+    )
+  );
+
+  const text = getTextItemsFromDiagnosticReports(resultsReports);
   const textSection = text.flatMap(t => (t && t.item) || []);
   resultsSection.text = textSection;
-  resultsSection.entry = buildEntriesFromDiagnosticReports(diagnosticReports, fhirBundle);
+  resultsSection.entry = buildEntriesFromDiagnosticReports(resultsReports, fhirBundle);
 
   return resultsSection;
 }
