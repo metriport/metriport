@@ -31,6 +31,7 @@ export {
   genderAtBirthSchema,
   PersonalIdentifier,
   personalIdentifierSchema,
+  GeneralTypeIdentifier,
   generalPersonalIdentifiers,
   DriverLicenseIdentifier,
   driversLicensePersonalIdentifier,
