@@ -7,10 +7,12 @@ import { addressSchema } from "./address";
 import { isoDateSchema } from "./iso-date";
 
 export enum GenderCodes {
-  F = "F", // Female
-  M = "M", // Male
+  /** Female */
+  F = "F",
+  /** Male */
+  M = "M",
+  /* Undifferentiated: the gender of a person could not be uniquely defined as male or female, such as hermaphrodite. */
   UN = "UN",
-  UNK = "UNK",
 }
 export const genderCodesSchema = z.enum(Object.keys(GenderCodes) as [string, ...string[]]);
 
