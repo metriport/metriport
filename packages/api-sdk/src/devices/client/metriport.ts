@@ -3,21 +3,22 @@ import {
   API_KEY_HEADER,
   BASE_ADDRESS,
   BASE_ADDRESS_SANDBOX,
+  CX_ID_HEADER,
   DEFAULT_AXIOS_TIMEOUT_MILLIS,
 } from "../../shared";
 import { Activity } from "../models/activity";
 import { Biometrics } from "../models/biometrics";
 import { Body } from "../models/body";
+import { ConnectedUserInfo } from "../models/common/connected-user-info";
 import { ProviderSource } from "../models/common/provider-source";
 import { Nutrition } from "../models/nutrition";
 import { Sleep } from "../models/sleep";
 import { User } from "../models/user";
 import { GetConnectTokenResponse } from "./models/get-connect-token-response";
+import { GetConnectedUsersResponse } from "./models/get-connected-users-response";
 import { GetMetriportUserIDResponse } from "./models/get-metriport-user-id-response";
 import { SettingsResponse } from "./models/settings-response";
 import { WebhookStatusResponse } from "./models/webhook-status-response";
-import { GetConnectedUsersResponse } from "./models/get-connected-users-response";
-import { ConnectedUserInfo } from "../models/common/connected-user-info";
 import { dateIsValid } from "./util/date-util";
 import { isValidTimezone } from "./util/timezone-util";
 
@@ -25,6 +26,7 @@ export type Options = {
   sandbox?: boolean;
   timeout?: number;
   baseAddress?: string;
+  mode?: "api-key" | "jwt";
 };
 
 export class MetriportDevicesApi {
@@ -41,10 +43,11 @@ export class MetriportDevicesApi {
   constructor(apiKey: string, options: Options = {}) {
     const { sandbox, timeout } = options;
     const baseURL = options.baseAddress || (sandbox ? BASE_ADDRESS_SANDBOX : BASE_ADDRESS);
+    const mode = options.mode || "api-key";
     this.api = axios.create({
       timeout: timeout ?? DEFAULT_AXIOS_TIMEOUT_MILLIS,
       baseURL,
-      headers: { [API_KEY_HEADER]: apiKey },
+      headers: mode === "api-key" ? { [API_KEY_HEADER]: apiKey } : { [CX_ID_HEADER]: apiKey },
     });
   }
 
