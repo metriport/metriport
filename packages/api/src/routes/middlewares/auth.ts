@@ -2,6 +2,7 @@ import { base64ToString } from "@metriport/core/util/base64";
 import { out } from "@metriport/core/util/log";
 import { NextFunction, Request, Response } from "express";
 import status from "http-status";
+import * as jwt from "jsonwebtoken";
 import { MAPIAccess } from "../../models/medical/mapi-access";
 import { Config } from "../../shared/config";
 import { getCxIdOrFail } from "../util";
@@ -16,9 +17,19 @@ export function processCxId(req: Request, res: Response, next: NextFunction): vo
     // Downstream routes should check whether `cxId` is present on the request or not.
     const encodedApiKey = req.header("x-api-key");
     req.cxId = getCxIdFromApiKey(encodedApiKey);
+    // TODO remove this
+    // TODO remove this
+    // TODO remove this
+    // TODO remove this
+    console.log(`..... cxId from API Key: ${req.cxId}`);
   } catch (error) {
     try {
-      req.cxId = getCxIdFromReq(req);
+      // TODO remove this
+      // TODO remove this
+      // TODO remove this
+      // TODO remove this
+      req.cxId = getCxIdFromJwt(req);
+      console.log(`..... cxId from JWT: ${req.cxId} 🤘`);
     } catch (error) {
       // noop - auth is done on API GW level, this is just to make data available downstream
     }
@@ -36,8 +47,13 @@ export function getCxIdFromApiKey(encodedApiKey: string | undefined): string {
   return cxId;
 }
 
-export function getCxIdFromReq(req: Request): string {
-  const cxId = req.header("x-cx-id");
+export function getCxIdFromJwt(req: Request): string {
+  const jwtStr = req.header("Authorization");
+  if (!jwtStr) throw new Error("Missing token");
+  const rawToken = jwt.decode(jwtStr);
+  if (!rawToken) throw new Error("Invalid token");
+  const token = (typeof rawToken === "string" ? JSON.parse(rawToken) : rawToken) as jwt.JwtPayload;
+  const cxId = token["cognito:username"] ?? token["cxId"];
   if (!isValidCxId(cxId)) throw new Error("Invalid cxId");
   return cxId;
 }
