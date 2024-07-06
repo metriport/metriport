@@ -1350,7 +1350,8 @@ module.exports.external = [
         });
       }
       if (component) {
-        component.forEach(comp => {
+        const components = Array.isArray(component) ? component : [component];
+        components.forEach(comp => {
           const obsValueB64 = comp.observation?.value?._b64;
           if (obsValueB64) {
             presentedForm.push({

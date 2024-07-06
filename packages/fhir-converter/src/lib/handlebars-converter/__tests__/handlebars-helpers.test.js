@@ -116,6 +116,17 @@ describe("Handlebars helpers", function () {
         ])
       ),
     },
+    {
+      f: "buildPresentedForm",
+      desc: "Correctly handles the component that's not an array and returns presentedForm with b64 strings",
+      in: [presentedForm.b64String, ...presentedForm.component],
+      out: JSON.stringify(
+        presentedForm.makePresentedFormEntry([
+          presentedForm.b64String,
+          presentedForm.b64StringValuable,
+        ])
+      ),
+    },
   ];
 
   opTests.forEach(t => {
