@@ -35,6 +35,7 @@ export const driverLicenseIdentifierSchema = z.object({
   type: z.enum(driversLicensePersonalIdentifier),
   state: usStateSchema,
 });
+export type DriverLicenseIdentifier = z.infer<typeof driverLicenseIdentifierSchema>;
 
 export const generalTypeIdentifierSchema = z.object({
   type: z.enum(generalPersonalIdentifiers),
