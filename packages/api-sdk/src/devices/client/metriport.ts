@@ -3,7 +3,6 @@ import {
   API_KEY_HEADER,
   BASE_ADDRESS,
   BASE_ADDRESS_SANDBOX,
-  CX_ID_HEADER,
   DEFAULT_AXIOS_TIMEOUT_MILLIS,
 } from "../../shared";
 import { Activity } from "../models/activity";
@@ -26,7 +25,6 @@ export type Options = {
   sandbox?: boolean;
   timeout?: number;
   baseAddress?: string;
-  mode?: "api-key" | "jwt";
 };
 
 export class MetriportDevicesApi {
@@ -43,11 +41,10 @@ export class MetriportDevicesApi {
   constructor(apiKey: string, options: Options = {}) {
     const { sandbox, timeout } = options;
     const baseURL = options.baseAddress || (sandbox ? BASE_ADDRESS_SANDBOX : BASE_ADDRESS);
-    const mode = options.mode || "api-key";
     this.api = axios.create({
       timeout: timeout ?? DEFAULT_AXIOS_TIMEOUT_MILLIS,
       baseURL,
-      headers: mode === "api-key" ? { [API_KEY_HEADER]: apiKey } : { [CX_ID_HEADER]: apiKey },
+      headers: { [API_KEY_HEADER]: apiKey },
     });
   }
 
