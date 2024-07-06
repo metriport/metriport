@@ -12,7 +12,7 @@ import {
   API_KEY_HEADER,
   BASE_ADDRESS,
   BASE_ADDRESS_SANDBOX,
-  CX_ID_HEADER,
+  JWT_HEADER,
   DEFAULT_AXIOS_TIMEOUT_MILLIS,
   optionalDateToISOString,
 } from "../../shared";
@@ -94,7 +94,7 @@ export class MetriportMedicalApi {
 
     const mode = options.mode || "api-key";
     const headers = {
-      [mode === "api-key" ? API_KEY_HEADER : CX_ID_HEADER]: apiKey,
+      [mode === "api-key" ? API_KEY_HEADER : JWT_HEADER]: apiKey,
       ...options.additionalHeaders,
     };
 
