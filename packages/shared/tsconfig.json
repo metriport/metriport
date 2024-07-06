@@ -21,6 +21,6 @@
     // END - From @tsconfig/strictest
     "outDir": "./dist"
   },
-  "include": ["./src", "../core/src/util/__tests__/file-downloader.ts"],
+  "include": ["./src"],
   "exclude": ["dist", "node_modules"]
 }
