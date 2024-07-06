@@ -32,6 +32,7 @@ export {
   PersonalIdentifier,
   personalIdentifierSchema,
   generalPersonalIdentifiers,
+  DriverLicenseIdentifier,
   driversLicensePersonalIdentifier,
 } from "./medical/models/demographics";
 export {
