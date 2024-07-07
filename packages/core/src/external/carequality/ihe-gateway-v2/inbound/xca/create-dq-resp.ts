@@ -48,7 +48,7 @@ export function createIti38SoapEnvelopeInboundResponse(response: InboundDocument
       "soap:Header": {
         ...securityHeader,
         "wsa:Action": {
-          "#text": "urn:hl7-org:v3:PRPA_IN201306UV02:CrossGatewayPatientDiscovery",
+          "#text": "urn:ihe:iti:2007:CrossGatewayQueryResponse",
           "@_mustUnderstand": "1",
         },
         "wsa:RelatesTo": response.id,

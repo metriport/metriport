@@ -57,6 +57,6 @@ it("should process ITI-38 response", () => {
       docUniqueId
     );
   } else {
-    fail("iti38Response.documentReference is undefined or has wrong document unique id");
+    throw new Error("iti38Response.documentReference is undefined or has wrong document unique id");
   }
 });
