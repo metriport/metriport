@@ -20,6 +20,7 @@ import {
   handleSchemaErrorResponse,
   handlePatientErrorResponse,
 } from "./error";
+import { queryResponseCodes, ackCodes } from "../../../shared";
 import { mapIheGenderToFhir } from "../../../../shared";
 
 const { log } = out("Processing XCPD Requests");
@@ -248,7 +249,6 @@ export function processXCPDResponse({
     }
   } catch (error) {
     log(`Error processing XCPD response: ${error}`);
-    console.log("jsonobj", JSON.stringify(jsonObj, null, 2));
     return handleSchemaErrorResponse({
       outboundRequest,
       gateway,
@@ -258,15 +258,15 @@ export function processXCPDResponse({
 }
 
 function isApplicationAccept(ack: string): boolean {
-  return ack === "AA";
+  return ack === ackCodes.AA;
 }
 
 function isXCPDRespOk(queryResponseCode: string): boolean {
-  return queryResponseCode === "OK";
+  return queryResponseCode === queryResponseCodes.OK;
 }
 
 function isXCPDRespNotFound(queryResponseCode: string): boolean {
-  return queryResponseCode === "NF";
+  return queryResponseCode === queryResponseCodes.NF;
 }
 
 function getPatientRegistryProfile(iti55Response: Iti55Response): PatientRegistryProfile {

@@ -1,9 +1,9 @@
 import { XMLBuilder, XMLParser } from "fast-xml-parser";
 import { v4 as uuidv4 } from "uuid";
 import { InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
+import { successStatus, failureStatus, errorSeverity, createSecurityHeader } from "../../shared";
+import { xmlBuilderAttributes, attributeNamePrefix } from "../../../shared";
 import { namespaces } from "../../../constants";
-import { createSecurityHeader } from "../../shared";
-import { successStatus, failureStatus, errorSeverity, attributeNamePrefix } from "../../shared";
 import { wrapIdInUrnUuid } from "../../../../../../util/urn";
 
 function createIti38SoapBody(response: InboundDocumentQueryResp): object {
@@ -78,19 +78,7 @@ export function createInboundDqResponse(response: InboundDocumentQueryResp): str
     },
   };
 
-  const options = {
-    format: false,
-    attributeNamePrefix: attributeNamePrefix,
-    ignoreAttributes: false,
-    suppressEmptyNode: true,
-    declaration: {
-      include: true,
-      encoding: "UTF-8",
-      version: "1.0",
-    },
-  };
-
-  const builder = new XMLBuilder(options);
+  const builder = new XMLBuilder(xmlBuilderAttributes);
   const xmlContent = builder.build(soapEnvelope);
   return xmlContent;
 }

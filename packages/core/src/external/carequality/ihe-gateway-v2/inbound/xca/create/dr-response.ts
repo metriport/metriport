@@ -1,11 +1,11 @@
 import { XMLBuilder } from "fast-xml-parser";
 import { InboundDocumentRetrievalResp } from "@metriport/ihe-gateway-sdk";
+import { successStatus, failureStatus, errorSeverity, createSecurityHeader } from "../../shared";
+import { xmlBuilderAttributes } from "../../../shared";
 import { namespaces } from "../../../constants";
-import { createSecurityHeader } from "../../shared";
 import { S3Utils } from "../../../../../aws/s3";
 import { Config } from "../../../../../../util/config";
 import { wrapIdInUrnOid } from "../../../../../../util/urn";
-import { successStatus, failureStatus, errorSeverity, attributeNamePrefix } from "../../shared";
 
 const region = Config.getAWSRegion();
 const medicalDocumentsBucketName = Config.getMedicalDocumentsBucketName();
@@ -108,19 +108,7 @@ export async function createInboundDrResponse(
     },
   };
 
-  const options = {
-    format: false,
-    attributeNamePrefix: attributeNamePrefix,
-    ignoreAttributes: false,
-    suppressEmptyNode: true,
-    declaration: {
-      include: true,
-      encoding: "UTF-8",
-      version: "1.0",
-    },
-  };
-
-  const builder = new XMLBuilder(options);
+  const builder = new XMLBuilder(xmlBuilderAttributes);
   const xmlContent = builder.build(soapEnvelope);
   return xmlContent;
 }

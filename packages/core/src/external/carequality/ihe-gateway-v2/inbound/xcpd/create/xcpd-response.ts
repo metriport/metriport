@@ -4,23 +4,13 @@ import {
   InboundPatientDiscoveryReq,
   isSuccessfulPatientDiscoveryResponse,
 } from "@metriport/ihe-gateway-sdk";
+import { createSecurityHeader } from "../../shared";
+import { queryResponseCodes, ackCodes, xmlBuilderAttributes } from "../../../shared";
 import { namespaces } from "../../../constants";
 import { timestampToSoapBody } from "../../../utils";
-import { uuidv7 } from "../../../../../../util/uuid-v7";
 import { METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX } from "../../../../shared";
 import { mapFhirToMetriportGender } from "../../../../../fhir/patient/index";
-import { createSecurityHeader, attributeNamePrefix } from "../../shared";
-
-export enum queryResponseCodes {
-  OK = "OK",
-  NF = "NF",
-  AE = "AE",
-}
-
-export enum ackCodes {
-  AA = "AA",
-  AE = "AE",
-}
+import { uuidv7 } from "../../../../../../util/uuid-v7";
 
 function createQueryByParameter(request: InboundPatientDiscoveryReq): object {
   const { id, samlAttributes, patientResource } = request;
@@ -151,7 +141,7 @@ function createSubjectAndRegistrationEvent(response: InboundPatientDiscoveryResp
               "@_code": mapFhirToMetriportGender(patientResource.gender),
             },
             birthTime: {
-              "@_value": patientResource.birthDate, // this needs to be in right format
+              "@_value": patientResource.birthDate,
             },
             addr: patientResource.address?.map(a => ({
               streetAddressLine: a.line?.join(", "),
@@ -195,7 +185,7 @@ function createIti55SoapBody(
     "@_xmlns:urn": namespaces.hl7,
     PRPA_IN201306UV02: {
       id: {
-        "@_root": uuidv7(), // change this if we ever end up keeping track of these.
+        "@_root": uuidv7(), // TODO change this if we ever end up keeping track of these.
       },
       creationTime: timestampToSoapBody(response.timestamp),
       interactionId: {
@@ -292,25 +282,13 @@ export function createInboundXcpdResponse({
           "#text": "urn:hl7-org:v3:PRPA_IN201306UV02:CrossGatewayPatientDiscovery",
           "@_mustUnderstand": "1",
         },
-        "wsa:RelatesTo": response.id,
+        "wsa:RelatesTo": request.id,
       },
       "soap:Body": soapBody,
     },
   };
 
-  const options = {
-    format: false,
-    ignoreAttributes: false,
-    attributeNamePrefix: attributeNamePrefix,
-    suppressEmptyNode: true,
-    declaration: {
-      include: true,
-      encoding: "UTF-8",
-      version: "1.0",
-    },
-  };
-
-  const builder = new XMLBuilder(options);
+  const builder = new XMLBuilder(xmlBuilderAttributes);
   const xmlContent = builder.build(soapEnvelope);
   return xmlContent;
 }

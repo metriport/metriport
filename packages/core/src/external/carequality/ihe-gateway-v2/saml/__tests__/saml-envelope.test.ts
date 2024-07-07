@@ -3,12 +3,18 @@ import { createITI38SoapEnvelope } from "../../outbound/xca/create/iti38-envelop
 import { createITI39SoapEnvelope } from "../../outbound/xca/create/iti39-envelope";
 import { verifySaml } from "../security/verify";
 import { signEnvelope } from "../security/sign";
-import { iti55BodyData, iti38BodyData, iti39BodyData, TEST_CERT, TEST_KEY } from "./constants";
+import {
+  TEST_CERT,
+  TEST_KEY,
+  outboundXcpdRequest,
+  outboundDqRequest,
+  outboundDrRequest,
+} from "../../outbound/__tests__/constants";
 
 describe("SAML XCPD Envelope Signature Verification", () => {
   it("should sign and verify the iti55 envelope successfully with envelope", () => {
     const soapEnvelope = createITI5SoapEnvelope({
-      bodyData: iti55BodyData,
+      bodyData: outboundXcpdRequest,
       publicCert: TEST_CERT,
     });
     const signedEnvelope = signEnvelope({ xml: soapEnvelope, privateKey: TEST_KEY });
@@ -16,7 +22,7 @@ describe("SAML XCPD Envelope Signature Verification", () => {
   });
   it("should fail verification if the iti55 SAML assertion is modified", () => {
     const soapEnvelope = createITI5SoapEnvelope({
-      bodyData: iti55BodyData,
+      bodyData: outboundXcpdRequest,
       publicCert: TEST_CERT,
     });
     const signedEnvelope = signEnvelope({ xml: soapEnvelope, privateKey: TEST_KEY });
@@ -28,7 +34,7 @@ describe("SAML XCPD Envelope Signature Verification", () => {
   });
   it("should fail verification if the iti55 SAML assertion signature is modified", () => {
     const soapEnvelope = createITI5SoapEnvelope({
-      bodyData: iti55BodyData,
+      bodyData: outboundXcpdRequest,
       publicCert: TEST_CERT,
     });
     const signedEnvelope = signEnvelope({ xml: soapEnvelope, privateKey: TEST_KEY });
@@ -40,7 +46,7 @@ describe("SAML XCPD Envelope Signature Verification", () => {
   });
   it("should fail verification if the iti55 SAML assertion digest is modified", () => {
     const soapEnvelope = createITI5SoapEnvelope({
-      bodyData: iti55BodyData,
+      bodyData: outboundXcpdRequest,
       publicCert: TEST_CERT,
     });
     const signedEnvelope = signEnvelope({ xml: soapEnvelope, privateKey: TEST_KEY });
@@ -52,7 +58,7 @@ describe("SAML XCPD Envelope Signature Verification", () => {
   });
   it("should sign and verify the ITI38 envelope successfully with envelope", () => {
     const soapEnvelope = createITI38SoapEnvelope({
-      bodyData: iti38BodyData,
+      bodyData: outboundDqRequest,
       publicCert: TEST_CERT,
     });
     const signedEnvelope = signEnvelope({ xml: soapEnvelope, privateKey: TEST_KEY });
@@ -60,7 +66,7 @@ describe("SAML XCPD Envelope Signature Verification", () => {
   });
   it("should fail verification if the ITI38 SAML assertion is modified", () => {
     const soapEnvelope = createITI38SoapEnvelope({
-      bodyData: iti38BodyData,
+      bodyData: outboundDqRequest,
       publicCert: TEST_CERT,
     });
     const signedEnvelope = signEnvelope({ xml: soapEnvelope, privateKey: TEST_KEY });
@@ -72,7 +78,7 @@ describe("SAML XCPD Envelope Signature Verification", () => {
   });
   it("should fail verification if the ITI38 SAML assertion signature is modified", () => {
     const soapEnvelope = createITI38SoapEnvelope({
-      bodyData: iti38BodyData,
+      bodyData: outboundDqRequest,
       publicCert: TEST_CERT,
     });
     const signedEnvelope = signEnvelope({ xml: soapEnvelope, privateKey: TEST_KEY });
@@ -84,7 +90,7 @@ describe("SAML XCPD Envelope Signature Verification", () => {
   });
   it("should fail verification if the ITI38 SAML assertion digest is modified", () => {
     const soapEnvelope = createITI38SoapEnvelope({
-      bodyData: iti38BodyData,
+      bodyData: outboundDqRequest,
       publicCert: TEST_CERT,
     });
     const signedEnvelope = signEnvelope({ xml: soapEnvelope, privateKey: TEST_KEY });
@@ -96,7 +102,7 @@ describe("SAML XCPD Envelope Signature Verification", () => {
   });
   it("should sign and verify the ITI39 envelope successfully with envelope", () => {
     const soapEnvelope = createITI39SoapEnvelope({
-      bodyData: iti39BodyData,
+      bodyData: outboundDrRequest,
       publicCert: TEST_CERT,
     });
     const signedEnvelope = signEnvelope({ xml: soapEnvelope, privateKey: TEST_KEY });
@@ -104,7 +110,7 @@ describe("SAML XCPD Envelope Signature Verification", () => {
   });
   it("should fail verification if the ITI39 SAML assertion is modified", () => {
     const soapEnvelope = createITI39SoapEnvelope({
-      bodyData: iti39BodyData,
+      bodyData: outboundDrRequest,
       publicCert: TEST_CERT,
     });
     const signedEnvelope = signEnvelope({ xml: soapEnvelope, privateKey: TEST_KEY });
@@ -116,7 +122,7 @@ describe("SAML XCPD Envelope Signature Verification", () => {
   });
   it("should fail verification if the ITI39 SAML assertion signature is modified", () => {
     const soapEnvelope = createITI39SoapEnvelope({
-      bodyData: iti39BodyData,
+      bodyData: outboundDrRequest,
       publicCert: TEST_CERT,
     });
     const signedEnvelope = signEnvelope({ xml: soapEnvelope, privateKey: TEST_KEY });
@@ -128,7 +134,7 @@ describe("SAML XCPD Envelope Signature Verification", () => {
   });
   it("should fail verification if the ITI39 SAML assertion digest is modified", () => {
     const soapEnvelope = createITI39SoapEnvelope({
-      bodyData: iti39BodyData,
+      bodyData: outboundDrRequest,
       publicCert: TEST_CERT,
     });
     const signedEnvelope = signEnvelope({ xml: soapEnvelope, privateKey: TEST_KEY });

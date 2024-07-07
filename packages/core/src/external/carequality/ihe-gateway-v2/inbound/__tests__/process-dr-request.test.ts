@@ -3,8 +3,12 @@ import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import { InboundDocumentRetrievalResp } from "@metriport/ihe-gateway-sdk";
 import { createITI39SoapEnvelope } from "../../outbound/xca/create/iti39-envelope";
-import { iti39BodyData } from "../../saml/__tests__/constants";
-import { TEST_CERT, TEST_KEY, xcaGateway } from "../../saml/__tests__/constants";
+import {
+  TEST_CERT,
+  TEST_KEY,
+  xcaGateway,
+  outboundDrRequest,
+} from "../../outbound/__tests__/constants";
 import { signTimestamp } from "../../saml/security/sign";
 import { processInboundDrRequest } from "../xca/process/dr-request";
 import { createInboundDrResponse } from "../xca/create/dr-response";
@@ -16,30 +20,35 @@ describe("Process Inbound Dr Request", () => {
   it("should process ITI-39 request", () => {
     try {
       const soapEnvelope = createITI39SoapEnvelope({
-        bodyData: iti39BodyData,
+        bodyData: outboundDrRequest,
         publicCert: TEST_CERT,
       });
       const signedEnvelope = signTimestamp({ xml: soapEnvelope, privateKey: TEST_KEY });
       const iti39Request = processInboundDrRequest(signedEnvelope);
 
-      const expectedDocumentReference = iti39BodyData.documentReference.map(
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        ({ metriportId, ...rest }) => rest
+      const expectedDocumentReference = outboundDrRequest.documentReference.map(
+        ({ docUniqueId, homeCommunityId, repositoryUniqueId }) => ({
+          docUniqueId,
+          homeCommunityId,
+          repositoryUniqueId,
+        })
       );
       const actualDocumentReference = iti39Request.documentReference.map(
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        ({ metriportId, ...rest }) => rest
+        ({ docUniqueId, homeCommunityId, repositoryUniqueId }) => ({
+          docUniqueId,
+          homeCommunityId,
+          repositoryUniqueId,
+        })
       );
 
       expect(actualDocumentReference).toEqual(expectedDocumentReference);
     } catch (error) {
-      console.log(error);
       expect(true).toBe(false);
     }
   });
   it("should process invalid ITI-39 request correctly", () => {
     const soapEnvelope = createITI39SoapEnvelope({
-      bodyData: iti39BodyData,
+      bodyData: outboundDrRequest,
       publicCert: TEST_CERT,
     });
     expect(() => {
@@ -76,8 +85,8 @@ describe("Process Inbound Dr Response", () => {
   });
   it("should process successful Iti-39 Response", async () => {
     const response: InboundDocumentRetrievalResp = {
-      ...iti39BodyData,
-      documentReference: iti39BodyData.documentReference.map(docRef => ({
+      ...outboundDrRequest,
+      documentReference: outboundDrRequest.documentReference.map(docRef => ({
         ...docRef,
         urn: uuidv4(),
         contentType: "application/pdf",
@@ -90,8 +99,8 @@ describe("Process Inbound Dr Response", () => {
     const iti39Response = await processDrResponse({
       response: {
         outboundRequest: {
-          ...iti39BodyData,
-          documentReference: iti39BodyData.documentReference.map(docRef => ({
+          ...outboundDrRequest,
+          documentReference: outboundDrRequest.documentReference.map(docRef => ({
             ...docRef,
             metriportId: uuidv4(),
           })),
@@ -120,9 +129,9 @@ describe("Process Inbound Dr Response", () => {
   });
   it("should process ITI-38 error response", async () => {
     //eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { documentReference, ...iti39BodyDataWithoutDocRef } = iti39BodyData;
+    const { documentReference, ...outboundDrRequestWithoutDocRef } = outboundDrRequest;
     const response = {
-      ...iti39BodyDataWithoutDocRef,
+      ...outboundDrRequestWithoutDocRef,
       responseTimestamp: new Date().toISOString(),
       externalGatewayPatient: {
         id: "123456789",
@@ -131,7 +140,7 @@ describe("Process Inbound Dr Response", () => {
       gatewayHomeCommunityId: "123456789",
       operationOutcome: {
         resourceType: "OperationOutcome",
-        id: iti39BodyData.id,
+        id: outboundDrRequest.id,
         issue: [
           {
             severity: "error",
@@ -146,13 +155,12 @@ describe("Process Inbound Dr Response", () => {
     };
 
     const xmlResponse = await createInboundDrResponse(response);
-    fs.writeFileSync("iti39error.xml", xmlResponse);
     const mtomResponse = convertSoapResponseToMtomResponse(Buffer.from(xmlResponse));
     const iti39Response = await processDrResponse({
       response: {
         outboundRequest: {
-          ...iti39BodyData,
-          documentReference: iti39BodyData.documentReference.map(docRef => ({
+          ...outboundDrRequest,
+          documentReference: outboundDrRequest.documentReference.map(docRef => ({
             ...docRef,
             metriportId: uuidv4(),
           })),
@@ -161,7 +169,6 @@ describe("Process Inbound Dr Response", () => {
         gateway: xcaGateway,
       },
     });
-
     expect(iti39Response.operationOutcome).toEqual(response.operationOutcome);
   });
 });

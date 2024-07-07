@@ -4,8 +4,12 @@ import { createITI38SoapEnvelope } from "../../outbound/xca/create/iti38-envelop
 import { processDqResponse } from "../../outbound/xca/process/dq-response";
 import { processInboundDqRequest } from "../xca/process/dq-request";
 import { createInboundDqResponse } from "../xca/create/dq-response";
-import { iti38BodyData } from "../../saml/__tests__/constants";
-import { TEST_CERT, TEST_KEY, xcaGateway } from "../../saml/__tests__/constants";
+import {
+  TEST_CERT,
+  TEST_KEY,
+  xcaGateway,
+  outboundDqRequest,
+} from "../../outbound/__tests__/constants";
 import { signTimestamp } from "../../saml/security/sign";
 import { createExtrinsicObjectXml } from "../../../dq/create-metadata-xml";
 import { extractDocumentUniqueId } from "../../../shared";
@@ -14,12 +18,12 @@ describe("Process Inbound Dq Request", () => {
   it("should process successful Iti-38 request", () => {
     try {
       const soapEnvelope = createITI38SoapEnvelope({
-        bodyData: iti38BodyData,
+        bodyData: outboundDqRequest,
         publicCert: TEST_CERT,
       });
       const signedEnvelope = signTimestamp({ xml: soapEnvelope, privateKey: TEST_KEY });
       const iti38Request = processInboundDqRequest(signedEnvelope);
-      expect(iti38Request.externalGatewayPatient).toEqual(iti38BodyData.externalGatewayPatient);
+      expect(iti38Request.externalGatewayPatient).toEqual(outboundDqRequest.externalGatewayPatient);
     } catch (error) {
       throw new Error("iti38Request externalPatient is wrong or undefined");
     }
@@ -27,7 +31,7 @@ describe("Process Inbound Dq Request", () => {
 
   it("should process invalid ITI-38 request correctly", () => {
     const soapEnvelope = createITI38SoapEnvelope({
-      bodyData: iti38BodyData,
+      bodyData: outboundDqRequest,
       publicCert: TEST_CERT,
     });
     expect(() => {
@@ -50,7 +54,7 @@ describe("Process Inbound Dq Response", () => {
       }),
     ];
     const response: InboundDocumentQueryResp = {
-      ...iti38BodyData,
+      ...outboundDqRequest,
       responseTimestamp: new Date().toISOString(),
       extrinsicObjectXmls,
     };
@@ -59,7 +63,7 @@ describe("Process Inbound Dq Response", () => {
     const iti38Response = processDqResponse({
       response: {
         gateway: xcaGateway,
-        outboundRequest: iti38BodyData,
+        outboundRequest: outboundDqRequest,
         success: true,
         response: xmlResponse,
       },
@@ -76,7 +80,7 @@ describe("Process Inbound Dq Response", () => {
   });
   it("should process ITI-38 error response", () => {
     const response = {
-      ...iti38BodyData,
+      ...outboundDqRequest,
       responseTimestamp: new Date().toISOString(),
       externalGatewayPatient: {
         id: "123456789",
@@ -85,7 +89,7 @@ describe("Process Inbound Dq Response", () => {
       gatewayHomeCommunityId: "123456789",
       operationOutcome: {
         resourceType: "OperationOutcome",
-        id: iti38BodyData.id,
+        id: outboundDqRequest.id,
         issue: [
           {
             severity: "error",
@@ -104,7 +108,7 @@ describe("Process Inbound Dq Response", () => {
       response: {
         response: xmlResponse,
         success: true,
-        outboundRequest: iti38BodyData,
+        outboundRequest: outboundDqRequest,
         gateway: xcaGateway,
       },
     });

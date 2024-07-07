@@ -1,11 +1,10 @@
 import { XMLParser } from "fast-xml-parser";
 import dayjs from "dayjs";
-import { errorToString } from "@metriport/shared";
 import { PatientResource, InboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
 import { toArray } from "@metriport/shared";
-import { extractText } from "../../../utils";
 import { Iti55Request, iti55RequestSchema } from "./schema";
 import { convertSamlHeaderToAttributes, extractTimestamp } from "../../shared";
+import { extractText } from "../../../utils";
 import { mapIheGenderToFhir } from "../../../../shared";
 
 export function transformIti55RequestToPatientResource(
@@ -27,7 +26,6 @@ export function transformIti55RequestToPatientResource(
     country: addr.value.country ? String(addr.value.country) : undefined,
   }));
 
-  // is it a phone or an email
   const telecom = toArray(queryParams.patientTelecom).map(tel => ({
     system: "phone",
     value: tel.value._value,
@@ -41,7 +39,6 @@ export function transformIti55RequestToPatientResource(
   const gender = mapIheGenderToFhir(queryParams.livingSubjectAdministrativeGender?.value?._code);
   const birthDate = dayjs(queryParams.livingSubjectBirthTime.value._value).format("YYYY-MM-DD");
   const patientResource = {
-    resourceType: "Patient",
     name,
     gender,
     birthDate,
@@ -76,6 +73,6 @@ export function processInboundXcpdRequest(request: string): InboundPatientDiscov
       ),
     };
   } catch (error) {
-    throw new Error(`Failed to parse ITI-55 request: ${errorToString(error)}`);
+    throw new Error(`Failed to parse ITI-55 request: ${error}`);
   }
 }

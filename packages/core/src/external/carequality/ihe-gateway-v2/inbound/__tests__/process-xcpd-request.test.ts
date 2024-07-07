@@ -1,17 +1,21 @@
 import { isSuccessfulPatientDiscoveryResponse } from "@metriport/ihe-gateway-sdk";
 import { processInboundXcpdRequest } from "../xcpd/process/xcpd-request";
 import { createInboundXcpdResponse } from "../xcpd/create/xcpd-response";
-import { iti55BodyData, xcpdGateway } from "../../saml/__tests__/constants";
 import { createITI5SoapEnvelope } from "../../outbound/xcpd/create/iti55-envelope";
 import { processXCPDResponse } from "../../outbound/xcpd/process/xcpd-response";
-import { TEST_CERT, TEST_KEY } from "../../saml/__tests__/constants";
+import {
+  TEST_CERT,
+  TEST_KEY,
+  xcpdGateway,
+  outboundXcpdRequest,
+} from "../../outbound/__tests__/constants";
 import { signTimestamp } from "../../saml/security/sign";
 
 describe("Process Inbound Xcpd Request", () => {
   it("should process successful ITI-55 request", () => {
     try {
       const soapEnvelope = createITI5SoapEnvelope({
-        bodyData: iti55BodyData,
+        bodyData: outboundXcpdRequest,
         publicCert: TEST_CERT,
       });
       const signedEnvelope = signTimestamp({ xml: soapEnvelope, privateKey: TEST_KEY });
@@ -21,20 +25,20 @@ describe("Process Inbound Xcpd Request", () => {
         ...iti55InboundRequest,
         patientResource: {
           ...iti55InboundRequest.patientResource,
-          id: iti55BodyData.patientResource.id,
+          id: outboundXcpdRequest.patientResource.id,
         },
       };
-
-      expect(iti55BodyData.patientResource).toEqual(updatedIti55InboundRequest.patientResource);
+      expect(outboundXcpdRequest.patientResource).toEqual(
+        updatedIti55InboundRequest.patientResource
+      );
     } catch (error) {
-      console.log(error);
       expect(true).toBe(false);
     }
   });
 
   it("should process invalid ITI-55 request correctly", () => {
     const soapEnvelope = createITI5SoapEnvelope({
-      bodyData: iti55BodyData,
+      bodyData: outboundXcpdRequest,
       publicCert: TEST_CERT,
     });
 
@@ -47,7 +51,7 @@ describe("Process Inbound Xcpd Request", () => {
 describe("Process Inbound Xcpd Response", () => {
   it("should process ITI-55 success response", () => {
     const response = {
-      ...iti55BodyData,
+      ...outboundXcpdRequest,
       externalGatewayPatient: {
         id: "123456789",
         system: "987654321",
@@ -57,7 +61,7 @@ describe("Process Inbound Xcpd Response", () => {
       gatewayHomeCommunityId: "123456789",
     };
     const xmlResponse = createInboundXcpdResponse({
-      request: iti55BodyData,
+      request: outboundXcpdRequest,
       response,
     });
 
@@ -65,7 +69,7 @@ describe("Process Inbound Xcpd Response", () => {
       xcpdResponse: {
         response: xmlResponse,
         success: true,
-        outboundRequest: iti55BodyData,
+        outboundRequest: outboundXcpdRequest,
         gateway: xcpdGateway,
       },
     });
@@ -77,7 +81,7 @@ describe("Process Inbound Xcpd Response", () => {
   });
   it("should process ITI-55 no match response", () => {
     const response = {
-      ...iti55BodyData,
+      ...outboundXcpdRequest,
       responseTimestamp: new Date().toISOString(),
       externalGatewayPatient: {
         id: "123456789",
@@ -88,14 +92,14 @@ describe("Process Inbound Xcpd Response", () => {
     };
 
     const xmlResponse = createInboundXcpdResponse({
-      request: iti55BodyData,
+      request: outboundXcpdRequest,
       response,
     });
     const iti55Response = processXCPDResponse({
       xcpdResponse: {
         response: xmlResponse,
         success: true,
-        outboundRequest: iti55BodyData,
+        outboundRequest: outboundXcpdRequest,
         gateway: xcpdGateway,
       },
     });
@@ -104,7 +108,7 @@ describe("Process Inbound Xcpd Response", () => {
 
   it("should process ITI-55 error response", () => {
     const response = {
-      ...iti55BodyData,
+      ...outboundXcpdRequest,
       responseTimestamp: new Date().toISOString(),
       externalGatewayPatient: {
         id: "123456789",
@@ -114,7 +118,7 @@ describe("Process Inbound Xcpd Response", () => {
       gatewayHomeCommunityId: "123456789",
       operationOutcome: {
         resourceType: "OperationOutcome",
-        id: iti55BodyData.id,
+        id: outboundXcpdRequest.id,
         issue: [
           {
             severity: "error",
@@ -129,14 +133,14 @@ describe("Process Inbound Xcpd Response", () => {
     };
 
     const xmlResponse = createInboundXcpdResponse({
-      request: iti55BodyData,
+      request: outboundXcpdRequest,
       response,
     });
     const iti55Response = processXCPDResponse({
       xcpdResponse: {
         response: xmlResponse,
         success: true,
-        outboundRequest: iti55BodyData,
+        outboundRequest: outboundXcpdRequest,
         gateway: xcpdGateway,
       },
     });

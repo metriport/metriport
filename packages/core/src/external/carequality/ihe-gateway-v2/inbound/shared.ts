@@ -14,7 +14,6 @@ import { stripUrnPrefix } from "../../../../util/urn";
 export const successStatus = "urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Success";
 export const failureStatus = "urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Failure";
 export const errorSeverity = "urn:oasis:names:tc:ebxml-regrep:ErrorSeverityType:Error";
-export const attributeNamePrefix = "@_";
 
 const istextSchema = (value: AttributeValue): value is TextOrTextObject => {
   return typeof value === "object" && "_text" in value;
