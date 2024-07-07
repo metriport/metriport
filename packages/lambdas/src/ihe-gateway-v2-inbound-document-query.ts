@@ -13,30 +13,34 @@ const engineeringCxId = getEnvVar("ENGINEERING_CX_ID");
 const postHogSecretName = getEnvVar("POST_HOG_API_KEY_SECRET");
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
-  const dqRequest: InboundDocumentQueryReq = processInboundDqRequest(event);
-  const result: InboundDocumentQueryResp = await processInboundDocumentQuery(dqRequest, apiUrl);
-  const xmlResponse = createIti38SoapEnvelopeInboundResponse(result);
+  try {
+    const dqRequest: InboundDocumentQueryReq = processInboundDqRequest(event);
+    const result: InboundDocumentQueryResp = await processInboundDocumentQuery(dqRequest, apiUrl);
+    const xmlResponse = createIti38SoapEnvelopeInboundResponse(result);
 
-  if (result.extrinsicObjectXmls && result.extrinsicObjectXmls.length > 1 && postHogSecretName) {
-    const postHogApiKey = await getSecretValue(postHogSecretName, region);
+    if (result.extrinsicObjectXmls && result.extrinsicObjectXmls.length > 1 && postHogSecretName) {
+      const postHogApiKey = await getSecretValue(postHogSecretName, region);
 
-    if (postHogApiKey && engineeringCxId) {
-      await analyticsAsync(
-        {
-          distinctId: engineeringCxId,
-          event: EventTypes.inboundDocumentQuery,
-          properties: {
-            patientId: result.patientId,
-            documentCount: result.extrinsicObjectXmls.length,
-            homeCommunityId: dqRequest.samlAttributes.homeCommunityId,
+      if (postHogApiKey && engineeringCxId) {
+        await analyticsAsync(
+          {
+            distinctId: engineeringCxId,
+            event: EventTypes.inboundDocumentQuery,
+            properties: {
+              patientId: result.patientId,
+              documentCount: result.extrinsicObjectXmls.length,
+              homeCommunityId: dqRequest.samlAttributes.homeCommunityId,
+            },
           },
-        },
-        postHogApiKey
-      );
+          postHogApiKey
+        );
+      }
     }
-  }
 
-  return buildResponse(200, xmlResponse);
+    return buildResponse(200, xmlResponse);
+  } catch (error) {
+    return buildResponse(400, error);
+  }
 });
 
 const buildResponse = (status: number, body?: unknown) => ({

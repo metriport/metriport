@@ -7,7 +7,7 @@ import { processXCPDResponse } from "../../outbound/xcpd/process/xcpd-response";
 import { TEST_CERT, TEST_KEY } from "../../saml/__tests__/constants";
 import { signTimestamp } from "../../saml/security/sign";
 
-describe("processInboundXcpdRequest", () => {
+describe("Process Inbound Xcpd Request", () => {
   it("should process successful ITI-55 request", () => {
     try {
       const soapEnvelope = createITI5SoapEnvelope({
@@ -44,7 +44,7 @@ describe("processInboundXcpdRequest", () => {
   });
 });
 
-describe("processXCPDResponse", () => {
+describe("Process Inbound Xcpd Response", () => {
   it("should process ITI-55 success response", () => {
     const response = {
       ...iti55BodyData,
@@ -118,9 +118,9 @@ describe("processXCPDResponse", () => {
         issue: [
           {
             severity: "error",
-            code: "1.3.6.1.4.1.19376.1.2.27.1",
+            code: "XDSRegistryError",
             details: {
-              coding: [{ system: "XDSRegistryError", code: "1.3.6.1.4.1.19376.1.2.27.1" }],
+              coding: [{ system: "1.3.6.1.4.1.19376.1.2.27.1", code: "XDSRegistryError" }],
               text: "Internal Server Error",
             },
           },

@@ -18,34 +18,48 @@ export function setS3UtilsInstance(s3Utils: S3Utils): void {
 }
 
 const successStatus = "urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Success";
+const failureStatus = "urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Failure";
+const errorSeverity = "urn:oasis:names:tc:ebxml-regrep:ErrorSeverityType:Error";
 const attributeNamePrefix = "@_";
 
 async function createIti39SoapBody(response: InboundDocumentRetrievalResp): Promise<object> {
+  const success = response?.documentReference ? true : false;
+  console.log("success", success);
   const s3Utils = getS3UtilsInstance();
-  const documentResponses = await Promise.all(
-    (response?.documentReference || []).map(async entry => {
-      if (!entry.urn) {
-        throw new Error("Document URN is required");
-      }
-      if (!entry.contentType) {
-        throw new Error("Document content type is required");
-      }
-      const doc = await s3Utils.downloadFile({
-        key: entry.urn,
-        bucket: medicalDocumentsBucketName,
-      });
-      const doc64 = Buffer.from(doc).toString("base64");
-      return {
-        DocumentResponse: {
-          HomeCommunityId: wrapIdInUrnOid(entry.homeCommunityId),
-          RepositoryUniqueId: entry.repositoryUniqueId,
-          DocumentUniqueId: entry.docUniqueId,
-          mimeType: entry.contentType,
-          Document: doc64,
-        },
-      };
-    })
-  );
+  const documentResponses = success
+    ? await Promise.all(
+        (response?.documentReference || []).map(async entry => {
+          if (!entry.urn) {
+            throw new Error("Document URN is required");
+          }
+          if (!entry.contentType) {
+            throw new Error("Document content type is required");
+          }
+          const doc = await s3Utils.downloadFile({
+            key: entry.urn,
+            bucket: medicalDocumentsBucketName,
+          });
+          const doc64 = Buffer.from(doc).toString("base64");
+          return {
+            DocumentResponse: {
+              HomeCommunityId: wrapIdInUrnOid(entry.homeCommunityId),
+              RepositoryUniqueId: entry.repositoryUniqueId,
+              DocumentUniqueId: entry.docUniqueId,
+              mimeType: entry.contentType,
+              Document: doc64,
+            },
+          };
+        })
+      )
+    : undefined;
+
+  const registryErrors = !success
+    ? (response?.operationOutcome?.issue || []).map(issue => ({
+        "@_codeContext": issue.details.text,
+        "@_errorCode": issue.details?.coding?.[0]?.code,
+        "@_severity": errorSeverity,
+      }))
+    : undefined;
 
   const soapBody = {
     "@_xmlns": namespaces.urn,
@@ -55,11 +69,20 @@ async function createIti39SoapBody(response: InboundDocumentRetrievalResp): Prom
       "@_xmlns": namespaces.urnihe,
       RegistryResponse: {
         "@_xmlns": namespaces.rs,
-        "@_status": successStatus,
+        "@_status": success ? successStatus : failureStatus,
+        ...(registryErrors &&
+          registryErrors.length > 0 && {
+            RegistryErrorList: {
+              RegistryError: registryErrors,
+            },
+          }),
       },
-      DocumentResponse: documentResponses.map(obj => ({
-        ...obj.DocumentResponse,
-      })),
+      ...(documentResponses &&
+        documentResponses.length > 0 && {
+          DocumentResponse: documentResponses.map(obj => ({
+            ...obj.DocumentResponse,
+          })),
+        }),
     },
   };
   return soapBody;

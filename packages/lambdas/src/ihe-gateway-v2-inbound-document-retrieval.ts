@@ -15,30 +15,34 @@ const engineeringCxId = getEnvVar("ENGINEERING_CX_ID");
 const region = getEnvVarOrFail("AWS_REGION");
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
-  const drRequest: InboundDocumentRetrievalReq = processInboundDrRequest(event);
-  const result: InboundDocumentRetrievalResp = await processInboundDocumentRetrieval(drRequest);
-  const xmlResponse = createIti39SoapEnvelopeInboundResponse(result);
+  try {
+    const drRequest: InboundDocumentRetrievalReq = processInboundDrRequest(event);
+    const result: InboundDocumentRetrievalResp = await processInboundDocumentRetrieval(drRequest);
+    const xmlResponse = createIti39SoapEnvelopeInboundResponse(result);
 
-  if (result.documentReference && result.documentReference.length > 1 && postHogSecretName) {
-    const postHogApiKey = await getSecretValue(postHogSecretName, region);
+    if (result.documentReference && result.documentReference.length > 1 && postHogSecretName) {
+      const postHogApiKey = await getSecretValue(postHogSecretName, region);
 
-    if (postHogApiKey && engineeringCxId) {
-      await analyticsAsync(
-        {
-          distinctId: engineeringCxId,
-          event: EventTypes.inboundDocumentRetrieval,
-          properties: {
-            patientId: result.patientId,
-            documentCount: result.documentReference.length,
-            homeCommunityId: drRequest.samlAttributes.homeCommunityId,
+      if (postHogApiKey && engineeringCxId) {
+        await analyticsAsync(
+          {
+            distinctId: engineeringCxId,
+            event: EventTypes.inboundDocumentRetrieval,
+            properties: {
+              patientId: result.patientId,
+              documentCount: result.documentReference.length,
+              homeCommunityId: drRequest.samlAttributes.homeCommunityId,
+            },
           },
-        },
-        postHogApiKey
-      );
+          postHogApiKey
+        );
+      }
     }
-  }
 
-  return buildResponse(200, xmlResponse);
+    return buildResponse(200, xmlResponse);
+  } catch (error) {
+    return buildResponse(400, error);
+  }
 });
 
 const buildResponse = (status: number, body?: unknown) => ({

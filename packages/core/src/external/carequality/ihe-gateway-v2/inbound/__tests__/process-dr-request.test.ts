@@ -12,31 +12,43 @@ import { processDrResponse } from "../../outbound/xca/process/dr-response";
 import { convertSoapResponseToMtomResponse } from "../../outbound/xca/mtom/parser";
 import { S3Utils } from "../../../../aws/s3";
 
-it("should process ITI-39 request", () => {
-  try {
+describe("Process Inbound Dr Request", () => {
+  it("should process ITI-39 request", () => {
+    try {
+      const soapEnvelope = createITI39SoapEnvelope({
+        bodyData: iti39BodyData,
+        publicCert: TEST_CERT,
+      });
+      const signedEnvelope = signTimestamp({ xml: soapEnvelope, privateKey: TEST_KEY });
+      const iti39Request = processInboundDrRequest(signedEnvelope);
+
+      const expectedDocumentReference = iti39BodyData.documentReference.map(
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        ({ metriportId, ...rest }) => rest
+      );
+      const actualDocumentReference = iti39Request.documentReference.map(
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        ({ metriportId, ...rest }) => rest
+      );
+
+      expect(actualDocumentReference).toEqual(expectedDocumentReference);
+    } catch (error) {
+      console.log(error);
+      expect(true).toBe(false);
+    }
+  });
+  it("should process invalid ITI-39 request correctly", () => {
     const soapEnvelope = createITI39SoapEnvelope({
       bodyData: iti39BodyData,
       publicCert: TEST_CERT,
     });
-    const signedEnvelope = signTimestamp({ xml: soapEnvelope, privateKey: TEST_KEY });
-    const iti39Request = processInboundDrRequest(signedEnvelope);
-
-    const expectedDocumentReference = iti39BodyData.documentReference.map(
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      ({ metriportId, ...rest }) => rest
-    );
-    const actualDocumentReference = iti39Request.documentReference.map(
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      ({ metriportId, ...rest }) => rest
-    );
-
-    expect(actualDocumentReference).toEqual(expectedDocumentReference);
-  } catch (error) {
-    console.log(error);
-    expect(true).toBe(false);
-  }
+    expect(() => {
+      processInboundDrRequest(soapEnvelope);
+    }).toThrow("Failed to parse ITI-39 request");
+  });
 });
-describe("should process ITI-39 response", () => {
+
+describe("Process Inbound Dr Response", () => {
   beforeEach(() => {
     jest.spyOn(S3Utils.prototype, "uploadFile").mockImplementation(() => {
       return Promise.resolve({
@@ -62,7 +74,7 @@ describe("should process ITI-39 response", () => {
   afterEach(() => {
     jest.restoreAllMocks();
   });
-  it("normal iti39", async () => {
+  it("should process successful Iti-39 Response", async () => {
     const response: InboundDocumentRetrievalResp = {
       ...iti39BodyData,
       documentReference: iti39BodyData.documentReference.map(docRef => ({
@@ -105,5 +117,51 @@ describe("should process ITI-39 response", () => {
         "iti98Response.documentReference is undefined or has wrong document unique id"
       );
     }
+  });
+  it("should process ITI-38 error response", async () => {
+    //eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { documentReference, ...iti39BodyDataWithoutDocRef } = iti39BodyData;
+    const response = {
+      ...iti39BodyDataWithoutDocRef,
+      responseTimestamp: new Date().toISOString(),
+      externalGatewayPatient: {
+        id: "123456789",
+        system: "987654321",
+      },
+      gatewayHomeCommunityId: "123456789",
+      operationOutcome: {
+        resourceType: "OperationOutcome",
+        id: iti39BodyData.id,
+        issue: [
+          {
+            severity: "error",
+            code: "XDSRegistryError",
+            details: {
+              coding: [{ system: "1.3.6.1.4.1.19376.1.2.27.1", code: "XDSRegistryError" }],
+              text: "Internal Server Error",
+            },
+          },
+        ],
+      },
+    };
+
+    const xmlResponse = await createIti39SoapEnvelopeInboundResponse(response);
+    fs.writeFileSync("iti39error.xml", xmlResponse);
+    const mtomResponse = convertSoapResponseToMtomResponse(Buffer.from(xmlResponse));
+    const iti39Response = await processDrResponse({
+      response: {
+        outboundRequest: {
+          ...iti39BodyData,
+          documentReference: iti39BodyData.documentReference.map(docRef => ({
+            ...docRef,
+            metriportId: uuidv4(),
+          })),
+        },
+        mtomResponse,
+        gateway: xcaGateway,
+      },
+    });
+
+    expect(iti39Response.operationOutcome).toEqual(response.operationOutcome);
   });
 });

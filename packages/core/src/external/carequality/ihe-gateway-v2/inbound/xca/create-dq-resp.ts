@@ -4,6 +4,8 @@ import { namespaces } from "../../constants";
 import { createSecurityHeader } from "../shared";
 
 const successStatus = "urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Success";
+const failureStatus = "urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Failure";
+const errorSeverity = "urn:oasis:names:tc:ebxml-regrep:ErrorSeverityType:Error";
 const attributeNamePrefix = "@_";
 
 function createIti38SoapBody(response: InboundDocumentQueryResp): object {
@@ -14,22 +16,41 @@ function createIti38SoapBody(response: InboundDocumentQueryResp): object {
     parseAttributeValue: false,
     removeNSPrefix: true,
   });
-  const extrinsicObjects = (response?.extrinsicObjectXmls || []).map(xml => ({
-    ...parser.parse(xml),
-  }));
+  const success = response?.extrinsicObjectXmls ? true : false;
+  const extrinsicObjects = success
+    ? (response?.extrinsicObjectXmls || []).map(xml => ({
+        ...parser.parse(xml),
+      }))
+    : undefined;
+  const registryErrors = !success
+    ? (response?.operationOutcome?.issue || []).map(issue => ({
+        "@_codeContext": issue.details.text,
+        "@_errorCode": issue.details?.coding?.[0]?.code,
+        "@_severity": errorSeverity,
+      }))
+    : undefined;
 
   const soapBody = {
     "@_xmlns": namespaces.urn,
     "@_xmlns:xsi": namespaces.xsi,
     AdhocQueryResponse: {
       "@_xmlns": namespaces.urn,
-      "@_status": successStatus,
+      "@_status": success ? successStatus : failureStatus,
       RegistryObjectList: {
         "@_xmlns": namespaces.urn2,
-        ExtrinsicObject: extrinsicObjects.map(obj => ({
-          ...obj.ExtrinsicObject,
-        })),
+        ...(extrinsicObjects && {
+          ExtrinsicObject: extrinsicObjects.map(obj => ({
+            ...obj.ExtrinsicObject,
+          })),
+        }),
       },
+      ...(registryErrors && {
+        RegistryErrorList: {
+          RegistryError: registryErrors.map(error => ({
+            ...error,
+          })),
+        },
+      }),
     },
   };
   return soapBody;

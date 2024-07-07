@@ -11,6 +11,7 @@ import dayjs from "dayjs";
 import { out } from "../../../../../../util/log";
 import { capture } from "../../../../../../util/notifications";
 import { RegistryError, RegistryErrorList } from "./schema";
+import { CODE_SYSTEM_ERROR } from "../../../../shared";
 
 const { log } = out("XCA Error Handling");
 const knownNonRetryableErrors = ["No active consent for patient id"];
@@ -33,6 +34,12 @@ export function processRegistryErrorList(
         code: entry?._errorCode?.toString() ?? "unknown-error",
         details: {
           text: entry?._codeContext?.toString() ?? "No details",
+          coding: [
+            {
+              code: entry?._errorCode?.toString() ?? "",
+              system: CODE_SYSTEM_ERROR,
+            },
+          ],
         },
       };
 
