@@ -1,5 +1,5 @@
 // import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
-import { processInboundPatientDiscovery } from "@metriport/core/external/carequality/pd/process-inbound-pd";
+import { processInboundXcpd } from "@metriport/core/external/carequality/pd/process-inbound-pd";
 import { MPIMetriportAPI } from "@metriport/core/mpi/patient-mpi-metriport-api";
 import { getEnvVarOrFail, getEnvVar } from "@metriport/core/util/env-var";
 import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
@@ -21,7 +21,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
   const baseRequest = inboundPatientDiscoveryReqSchema.safeParse(JSON.parse(event));
   if (!baseRequest.success) return buildResponse(400, baseRequest.error);
 
-  const result = await processInboundPatientDiscovery(baseRequest.data, mpi);
+  const result = await processInboundXcpd(baseRequest.data, mpi);
 
   if (result.patientMatch && postHogSecretName) {
     const postHogApiKey = await getSecretValue(postHogSecretName, region);

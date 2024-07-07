@@ -2,14 +2,15 @@ import { XMLParser } from "fast-xml-parser";
 import { toArray } from "@metriport/shared";
 import { InboundDocumentQueryReq, XCPDPatientId } from "@metriport/ihe-gateway-sdk";
 import { iti38RequestSchema } from "./schema";
-import { convertSamlHeaderToAttributes, extractTimestamp } from "../shared";
-import { extractText } from "../../utils";
-import { Slot } from "../../schema";
-import { stripUrnPrefix } from "../../../../../util/urn";
+import { convertSamlHeaderToAttributes, extractTimestamp } from "../../shared";
+import { extractText } from "../../../utils";
+import { Slot } from "../../../schema";
+import { stripUrnPrefix } from "../../../../../../util/urn";
 
 const externalGatewayPatientRegex = /(.+)\^\^\^(.+)/i;
 const externalGatewayIdRegex = /'/g;
 const externalGatewaySystemRegex = /&|ISO'/g;
+
 function extractExternalGatewayPatient(slots: Slot[]): XCPDPatientId {
   const slot = slots.find((slot: Slot) => slot._name === "$XDSDocumentEntryPatientId");
   const value = String(slot?.ValueList.Value);

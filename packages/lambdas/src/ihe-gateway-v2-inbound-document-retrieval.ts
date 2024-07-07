@@ -5,9 +5,9 @@ import {
 import * as Sentry from "@sentry/serverless";
 import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
 import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { processInboundDocumentRetrieval } from "@metriport/core/external/carequality/dr/process-inbound-dr";
-import { processInboundDrRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xca/process-dr";
-import { createIti39SoapEnvelopeInboundResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xca/create-dr-resp";
+import { processInboundDr } from "@metriport/core/external/carequality/dr/process-inbound-dr";
+import { processInboundDrRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xca/process/dr-request";
+import { createInboundDrResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xca/create/dr-response";
 import { analyticsAsync, EventTypes } from "@metriport/core/external/analytics/posthog";
 
 const postHogSecretName = getEnvVar("POST_HOG_API_KEY_SECRET");
@@ -17,8 +17,8 @@ const region = getEnvVarOrFail("AWS_REGION");
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
   try {
     const drRequest: InboundDocumentRetrievalReq = processInboundDrRequest(event);
-    const result: InboundDocumentRetrievalResp = await processInboundDocumentRetrieval(drRequest);
-    const xmlResponse = createIti39SoapEnvelopeInboundResponse(result);
+    const result: InboundDocumentRetrievalResp = await processInboundDr(drRequest);
+    const xmlResponse = createInboundDrResponse(result);
 
     if (result.documentReference && result.documentReference.length > 1 && postHogSecretName) {
       const postHogApiKey = await getSecretValue(postHogSecretName, region);

@@ -2,8 +2,8 @@ import { metriportOrganization } from "@metriport/shared";
 import { InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
 import { createITI38SoapEnvelope } from "../../outbound/xca/create/iti38-envelope";
 import { processDqResponse } from "../../outbound/xca/process/dq-response";
-import { processInboundDqRequest } from "../xca/process-dq";
-import { createIti38SoapEnvelopeInboundResponse } from "../xca/create-dq-resp";
+import { processInboundDqRequest } from "../xca/process/dq-request";
+import { createInboundDqResponse } from "../xca/create/dq-response";
 import { iti38BodyData } from "../../saml/__tests__/constants";
 import { TEST_CERT, TEST_KEY, xcaGateway } from "../../saml/__tests__/constants";
 import { signTimestamp } from "../../saml/security/sign";
@@ -21,8 +21,7 @@ describe("Process Inbound Dq Request", () => {
       const iti38Request = processInboundDqRequest(signedEnvelope);
       expect(iti38Request.externalGatewayPatient).toEqual(iti38BodyData.externalGatewayPatient);
     } catch (error) {
-      console.log(error);
-      expect(true).toBe(false);
+      throw new Error("iti38Request externalPatient is wrong or undefined");
     }
   });
 
@@ -56,7 +55,7 @@ describe("Process Inbound Dq Response", () => {
       extrinsicObjectXmls,
     };
 
-    const xmlResponse = createIti38SoapEnvelopeInboundResponse(response);
+    const xmlResponse = createInboundDqResponse(response);
     const iti38Response = processDqResponse({
       response: {
         gateway: xcaGateway,
@@ -100,7 +99,7 @@ describe("Process Inbound Dq Response", () => {
       },
     };
 
-    const xmlResponse = createIti38SoapEnvelopeInboundResponse(response);
+    const xmlResponse = createInboundDqResponse(response);
     const iti38Response = processDqResponse({
       response: {
         response: xmlResponse,

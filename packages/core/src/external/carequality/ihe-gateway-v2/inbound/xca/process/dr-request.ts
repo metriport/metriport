@@ -2,9 +2,9 @@ import { XMLParser } from "fast-xml-parser";
 import { toArray } from "@metriport/shared";
 import { iti39RequestSchema, DocumentRequest } from "./schema";
 import { InboundDocumentRetrievalReq, DocumentReference } from "@metriport/ihe-gateway-sdk";
-import { convertSamlHeaderToAttributes, extractTimestamp } from "../shared";
-import { stripUrnPrefix } from "../../../../../util/urn";
-import { extractText } from "../../utils";
+import { convertSamlHeaderToAttributes, extractTimestamp } from "../../shared";
+import { stripUrnPrefix } from "../../../../../../util/urn";
+import { extractText } from "../../../utils";
 
 function extractDocumentReferences(documentRequest: DocumentRequest[]): DocumentReference[] {
   return documentRequest.map(req => ({

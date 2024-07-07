@@ -3,10 +3,10 @@ import dayjs from "dayjs";
 import { errorToString } from "@metriport/shared";
 import { PatientResource, InboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
 import { toArray } from "@metriport/shared";
-import { extractText } from "../../utils";
+import { extractText } from "../../../utils";
 import { Iti55Request, iti55RequestSchema } from "./schema";
-import { convertSamlHeaderToAttributes, extractTimestamp } from "../shared";
-import { mapIheGenderToFhir } from "../../../shared";
+import { convertSamlHeaderToAttributes, extractTimestamp } from "../../shared";
+import { mapIheGenderToFhir } from "../../../../shared";
 
 export function transformIti55RequestToPatientResource(
   iti55Request: Iti55Request

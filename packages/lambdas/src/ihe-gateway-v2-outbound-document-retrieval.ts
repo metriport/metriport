@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/serverless";
-import { DRRequestGatewayV2Params } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2";
-import { createSignSendProcessDrRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2-logic";
+import { DRRequestGatewayV2Params } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/ihe-gateway-v2";
+import { createSignSendProcessDrRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/ihe-gateway-v2-logic";
 import { getEnvVarOrFail, getEnvType } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
 import { getSamlCertsAndKeys } from "./shared/secrets";

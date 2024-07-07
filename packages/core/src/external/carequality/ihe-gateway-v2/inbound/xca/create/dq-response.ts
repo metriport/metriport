@@ -1,12 +1,10 @@
 import { XMLBuilder, XMLParser } from "fast-xml-parser";
+import { v4 as uuidv4 } from "uuid";
 import { InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
-import { namespaces } from "../../constants";
-import { createSecurityHeader } from "../shared";
-
-const successStatus = "urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Success";
-const failureStatus = "urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Failure";
-const errorSeverity = "urn:oasis:names:tc:ebxml-regrep:ErrorSeverityType:Error";
-const attributeNamePrefix = "@_";
+import { namespaces } from "../../../constants";
+import { createSecurityHeader } from "../../shared";
+import { successStatus, failureStatus, errorSeverity, attributeNamePrefix } from "../../shared";
+import { wrapIdInUrnUuid } from "../../../../../../util/urn";
 
 function createIti38SoapBody(response: InboundDocumentQueryResp): object {
   const parser = new XMLParser({
@@ -32,6 +30,7 @@ function createIti38SoapBody(response: InboundDocumentQueryResp): object {
 
   const soapBody = {
     "@_xmlns": namespaces.urn,
+    "@_xmlns:xsd": namespaces.xs,
     "@_xmlns:xsi": namespaces.xsi,
     AdhocQueryResponse: {
       "@_xmlns": namespaces.urn,
@@ -56,7 +55,7 @@ function createIti38SoapBody(response: InboundDocumentQueryResp): object {
   return soapBody;
 }
 
-export function createIti38SoapEnvelopeInboundResponse(response: InboundDocumentQueryResp): string {
+export function createInboundDqResponse(response: InboundDocumentQueryResp): string {
   const securityHeader = createSecurityHeader({
     signatureConfirmation: response.signatureConfirmation,
   });
@@ -72,7 +71,8 @@ export function createIti38SoapEnvelopeInboundResponse(response: InboundDocument
           "#text": "urn:ihe:iti:2007:CrossGatewayQueryResponse",
           "@_mustUnderstand": "1",
         },
-        "wsa:RelatesTo": response.id,
+        "wsa:MessageID": wrapIdInUrnUuid(uuidv4()), // TODO track this
+        "wsa:RelatesTo": wrapIdInUrnUuid(response.id),
       },
       "soap:Body": soapBody,
     },

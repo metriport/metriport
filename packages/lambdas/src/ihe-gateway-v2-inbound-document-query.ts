@@ -1,9 +1,9 @@
 import { InboundDocumentQueryReq, InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
 import * as Sentry from "@sentry/serverless";
 import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
-import { processInboundDocumentQuery } from "@metriport/core/external/carequality/dq/process-inbound-dq";
-import { processInboundDqRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xca/process-dq";
-import { createIti38SoapEnvelopeInboundResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xca/create-dq-resp";
+import { processInboundDq } from "@metriport/core/external/carequality/dq/process-inbound-dq";
+import { processInboundDqRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xca/process/dq-request";
+import { createInboundDqResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xca/create/dq-response";
 import { analyticsAsync, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { getEnvVarOrFail, getEnvVar } from "@metriport/core/util/env-var";
 
@@ -15,8 +15,8 @@ const postHogSecretName = getEnvVar("POST_HOG_API_KEY_SECRET");
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
   try {
     const dqRequest: InboundDocumentQueryReq = processInboundDqRequest(event);
-    const result: InboundDocumentQueryResp = await processInboundDocumentQuery(dqRequest, apiUrl);
-    const xmlResponse = createIti38SoapEnvelopeInboundResponse(result);
+    const result: InboundDocumentQueryResp = await processInboundDq(dqRequest, apiUrl);
+    const xmlResponse = createInboundDqResponse(result);
 
     if (result.extrinsicObjectXmls && result.extrinsicObjectXmls.length > 1 && postHogSecretName) {
       const postHogApiKey = await getSecretValue(postHogSecretName, region);

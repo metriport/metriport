@@ -1,6 +1,6 @@
 import { isSuccessfulPatientDiscoveryResponse } from "@metriport/ihe-gateway-sdk";
-import { processInboundXcpdRequest } from "../xcpd/process-xcpd-req";
-import { createIti55SoapEnvelopeInboundResponse } from "../xcpd/create-xcpd-resp";
+import { processInboundXcpdRequest } from "../xcpd/process/xcpd-request";
+import { createInboundXcpdResponse } from "../xcpd/create/xcpd-response";
 import { iti55BodyData, xcpdGateway } from "../../saml/__tests__/constants";
 import { createITI5SoapEnvelope } from "../../outbound/xcpd/create/iti55-envelope";
 import { processXCPDResponse } from "../../outbound/xcpd/process/xcpd-response";
@@ -56,7 +56,7 @@ describe("Process Inbound Xcpd Response", () => {
       patientMatch: true,
       gatewayHomeCommunityId: "123456789",
     };
-    const xmlResponse = createIti55SoapEnvelopeInboundResponse({
+    const xmlResponse = createInboundXcpdResponse({
       request: iti55BodyData,
       response,
     });
@@ -87,7 +87,7 @@ describe("Process Inbound Xcpd Response", () => {
       gatewayHomeCommunityId: "123456789",
     };
 
-    const xmlResponse = createIti55SoapEnvelopeInboundResponse({
+    const xmlResponse = createInboundXcpdResponse({
       request: iti55BodyData,
       response,
     });
@@ -128,7 +128,7 @@ describe("Process Inbound Xcpd Response", () => {
       },
     };
 
-    const xmlResponse = createIti55SoapEnvelopeInboundResponse({
+    const xmlResponse = createInboundXcpdResponse({
       request: iti55BodyData,
       response,
     });

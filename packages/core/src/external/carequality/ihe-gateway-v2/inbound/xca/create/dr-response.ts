@@ -1,10 +1,11 @@
 import { XMLBuilder } from "fast-xml-parser";
 import { InboundDocumentRetrievalResp } from "@metriport/ihe-gateway-sdk";
-import { namespaces } from "../../constants";
-import { createSecurityHeader } from "../shared";
-import { S3Utils } from "../../../../aws/s3";
-import { Config } from "../../../../../util/config";
-import { wrapIdInUrnOid } from "../../../../../util/urn";
+import { namespaces } from "../../../constants";
+import { createSecurityHeader } from "../../shared";
+import { S3Utils } from "../../../../../aws/s3";
+import { Config } from "../../../../../../util/config";
+import { wrapIdInUrnOid } from "../../../../../../util/urn";
+import { successStatus, failureStatus, errorSeverity, attributeNamePrefix } from "../../shared";
 
 const region = Config.getAWSRegion();
 const medicalDocumentsBucketName = Config.getMedicalDocumentsBucketName();
@@ -17,14 +18,8 @@ export function setS3UtilsInstance(s3Utils: S3Utils): void {
   s3UtilsInstance = s3Utils;
 }
 
-const successStatus = "urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Success";
-const failureStatus = "urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Failure";
-const errorSeverity = "urn:oasis:names:tc:ebxml-regrep:ErrorSeverityType:Error";
-const attributeNamePrefix = "@_";
-
 async function createIti39SoapBody(response: InboundDocumentRetrievalResp): Promise<object> {
   const success = response?.documentReference ? true : false;
-  console.log("success", success);
   const s3Utils = getS3UtilsInstance();
   const documentResponses = success
     ? await Promise.all(
@@ -80,6 +75,7 @@ async function createIti39SoapBody(response: InboundDocumentRetrievalResp): Prom
       ...(documentResponses &&
         documentResponses.length > 0 && {
           DocumentResponse: documentResponses.map(obj => ({
+            "@_xmlns": namespaces.urnihe,
             ...obj.DocumentResponse,
           })),
         }),
@@ -88,7 +84,7 @@ async function createIti39SoapBody(response: InboundDocumentRetrievalResp): Prom
   return soapBody;
 }
 
-export async function createIti39SoapEnvelopeInboundResponse(
+export async function createInboundDrResponse(
   response: InboundDocumentRetrievalResp
 ): Promise<string> {
   const securityHeader = createSecurityHeader({

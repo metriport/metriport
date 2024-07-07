@@ -3,9 +3,9 @@ import {
   InboundPatientDiscoveryReq,
   InboundPatientDiscoveryResp,
 } from "@metriport/ihe-gateway-sdk";
-import { processInboundXcpdRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xcpd/process-xcpd-req";
-import { processInboundPatientDiscovery } from "@metriport/core/external/carequality/pd/process-inbound-pd";
-import { createIti55SoapEnvelopeInboundResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xcpd/create-xcpd-resp";
+import { processInboundXcpdRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xcpd/process/xcpd-request";
+import { processInboundXcpd } from "@metriport/core/external/carequality/pd/process-inbound-pd";
+import { createInboundXcpdResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xcpd/create/xcpd-response";
 import { MPIMetriportAPI } from "@metriport/core/mpi/patient-mpi-metriport-api";
 import { getEnvVarOrFail, getEnvVar } from "@metriport/core/util/env-var";
 import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
@@ -22,11 +22,8 @@ const mpi = new MPIMetriportAPI(apiUrl);
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
   try {
     const pdRequest: InboundPatientDiscoveryReq = processInboundXcpdRequest(event);
-    const result: InboundPatientDiscoveryResp = await processInboundPatientDiscovery(
-      pdRequest,
-      mpi
-    );
-    const xmlResponse = createIti55SoapEnvelopeInboundResponse({
+    const result: InboundPatientDiscoveryResp = await processInboundXcpd(pdRequest, mpi);
+    const xmlResponse = createInboundXcpdResponse({
       request: pdRequest,
       response: result,
     });

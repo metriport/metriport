@@ -6,7 +6,7 @@ import {
   samlHeaderSchema,
   genderCodeSchema,
   schemaOrArrayOrEmpty,
-} from "../../schema";
+} from "../../../schema";
 
 export const QueryByParameterSchema = z.object({
   parameterList: z.object({

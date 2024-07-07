@@ -7,9 +7,9 @@ import { sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import chunk from "lodash/chunk";
-import { Config } from "../../../util/config";
-import { processAsyncError } from "../../../util/error/shared";
-import { defaultLambdaInvocationResponseHandler, makeLambdaClient } from "../../aws/lambda";
+import { Config } from "../../../../util/config";
+import { processAsyncError } from "../../../../util/error/shared";
+import { defaultLambdaInvocationResponseHandler, makeLambdaClient } from "../../../aws/lambda";
 import { IHEGatewayV2 } from "./ihe-gateway-v2";
 
 dayjs.extend(duration);

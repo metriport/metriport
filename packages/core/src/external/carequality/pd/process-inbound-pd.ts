@@ -40,7 +40,7 @@ function constructMatchResponse(
   };
 }
 
-export async function processInboundPatientDiscovery(
+export async function processInboundXcpd(
   payload: InboundPatientDiscoveryReq,
   mpi: MPI
 ): Promise<InboundPatientDiscoveryResp> {

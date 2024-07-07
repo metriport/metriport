@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { schemaOrArray, samlHeaderSchema, slot, stringOrNumberSchema } from "../../schema";
+import { schemaOrArray, samlHeaderSchema, slot, stringOrNumberSchema } from "../../../schema";
 
 export const iti38RequestBody = z.object({
   AdhocQueryRequest: z.object({

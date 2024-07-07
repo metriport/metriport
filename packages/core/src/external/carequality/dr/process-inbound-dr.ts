@@ -5,7 +5,7 @@ import {
 import { constructDRErrorResponse, IHEGatewayError, XDSRegistryError } from "../error";
 import { buildDocumentReferences } from "./get-document-download-url";
 
-export async function processInboundDocumentRetrieval(
+export async function processInboundDr(
   payload: InboundDocumentRetrievalReq
 ): Promise<InboundDocumentRetrievalResp> {
   try {

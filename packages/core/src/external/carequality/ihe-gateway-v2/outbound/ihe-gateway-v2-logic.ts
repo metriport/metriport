@@ -8,23 +8,20 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import { errorToString, executeWithNetworkRetries, executeWithRetries } from "@metriport/shared";
 import axios from "axios";
-import { log as getLog, out } from "../../../util/log";
-import { capture } from "../../../util/notifications";
-import { createAndSignBulkDQRequests, SignedDqRequest } from "./outbound/xca/create/iti38-envelope";
-import { createAndSignBulkDRRequests, SignedDrRequest } from "./outbound/xca/create/iti39-envelope";
-import { processDqResponse } from "./outbound/xca/process/dq-response";
-import { processDrResponse } from "./outbound/xca/process/dr-response";
-import { isRetryable as isRetryableXca } from "./outbound/xca/process/error";
-import { isRetryable as isRetryableXcpd } from "./outbound/xcpd/process/error";
-import { sendSignedDqRequest } from "./outbound/xca/send/dq-requests";
-import { sendSignedDrRequest } from "./outbound/xca/send/dr-requests";
-import {
-  createAndSignBulkXCPDRequests,
-  SignedXcpdRequest,
-} from "./outbound/xcpd/create/iti55-envelope";
-import { processXCPDResponse } from "./outbound/xcpd/process/xcpd-response";
-import { sendSignedXcpdRequest } from "./outbound/xcpd/send/xcpd-requests";
-import { SamlCertsAndKeys } from "./saml/security/types";
+import { log as getLog, out } from "../../../../util/log";
+import { capture } from "../../../../util/notifications";
+import { createAndSignBulkDQRequests, SignedDqRequest } from "./xca/create/iti38-envelope";
+import { createAndSignBulkDRRequests, SignedDrRequest } from "./xca/create/iti39-envelope";
+import { processDqResponse } from "./xca/process/dq-response";
+import { processDrResponse } from "./xca/process/dr-response";
+import { isRetryable as isRetryableXca } from "./xca/process/error";
+import { isRetryable as isRetryableXcpd } from "./xcpd/process/error";
+import { sendSignedDqRequest } from "./xca/send/dq-requests";
+import { sendSignedDrRequest } from "./xca/send/dr-requests";
+import { createAndSignBulkXCPDRequests, SignedXcpdRequest } from "./xcpd/create/iti55-envelope";
+import { processXCPDResponse } from "./xcpd/process/xcpd-response";
+import { sendSignedXcpdRequest } from "./xcpd/send/xcpd-requests";
+import { SamlCertsAndKeys } from "../saml/security/types";
 
 export async function sendProcessXcpdRequest({
   signedRequest,

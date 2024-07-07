@@ -6,8 +6,8 @@ import { createITI39SoapEnvelope } from "../../outbound/xca/create/iti39-envelop
 import { iti39BodyData } from "../../saml/__tests__/constants";
 import { TEST_CERT, TEST_KEY, xcaGateway } from "../../saml/__tests__/constants";
 import { signTimestamp } from "../../saml/security/sign";
-import { processInboundDrRequest } from "../xca/process-dr";
-import { createIti39SoapEnvelopeInboundResponse } from "../xca/create-dr-resp";
+import { processInboundDrRequest } from "../xca/process/dr-request";
+import { createInboundDrResponse } from "../xca/create/dr-response";
 import { processDrResponse } from "../../outbound/xca/process/dr-response";
 import { convertSoapResponseToMtomResponse } from "../../outbound/xca/mtom/parser";
 import { S3Utils } from "../../../../aws/s3";
@@ -85,7 +85,7 @@ describe("Process Inbound Dr Response", () => {
       responseTimestamp: new Date().toISOString(),
     };
 
-    const xmlResponse = await createIti39SoapEnvelopeInboundResponse(response);
+    const xmlResponse = await createInboundDrResponse(response);
     const mtomResponse = convertSoapResponseToMtomResponse(Buffer.from(xmlResponse));
     const iti39Response = await processDrResponse({
       response: {
@@ -145,7 +145,7 @@ describe("Process Inbound Dr Response", () => {
       },
     };
 
-    const xmlResponse = await createIti39SoapEnvelopeInboundResponse(response);
+    const xmlResponse = await createInboundDrResponse(response);
     fs.writeFileSync("iti39error.xml", xmlResponse);
     const mtomResponse = convertSoapResponseToMtomResponse(Buffer.from(xmlResponse));
     const iti39Response = await processDrResponse({

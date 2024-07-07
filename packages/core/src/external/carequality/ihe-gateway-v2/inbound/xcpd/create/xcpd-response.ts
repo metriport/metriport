@@ -4,12 +4,12 @@ import {
   InboundPatientDiscoveryReq,
   isSuccessfulPatientDiscoveryResponse,
 } from "@metriport/ihe-gateway-sdk";
-import { namespaces } from "../../constants";
-import { timestampToSoapBody } from "../../utils";
-import { uuidv7 } from "../../../../../util/uuid-v7";
-import { METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX } from "../../../shared";
-import { mapFhirToMetriportGender } from "../../../../fhir/patient/index";
-import { createSecurityHeader } from "../shared";
+import { namespaces } from "../../../constants";
+import { timestampToSoapBody } from "../../../utils";
+import { uuidv7 } from "../../../../../../util/uuid-v7";
+import { METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX } from "../../../../shared";
+import { mapFhirToMetriportGender } from "../../../../../fhir/patient/index";
+import { createSecurityHeader, attributeNamePrefix } from "../../shared";
 
 export enum queryResponseCodes {
   OK = "OK",
@@ -271,7 +271,7 @@ function createIti55SoapBody(
   return soapBody;
 }
 
-export function createIti55SoapEnvelopeInboundResponse({
+export function createInboundXcpdResponse({
   request,
   response,
 }: {
@@ -301,6 +301,7 @@ export function createIti55SoapEnvelopeInboundResponse({
   const options = {
     format: false,
     ignoreAttributes: false,
+    attributeNamePrefix: attributeNamePrefix,
     suppressEmptyNode: true,
     declaration: {
       include: true,
