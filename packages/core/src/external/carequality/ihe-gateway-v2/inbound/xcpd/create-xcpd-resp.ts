@@ -8,7 +8,7 @@ import { namespaces } from "../../constants";
 import { timestampToSoapBody } from "../../utils";
 import { uuidv7 } from "../../../../../util/uuid-v7";
 import { METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX } from "../../../shared";
-import { mapFhirToGenderAtBirth } from "../../../../fhir/patient/index";
+import { mapFhirToMetriportGender } from "../../../../fhir/patient/index";
 import { createSecurityHeader } from "../shared";
 
 export enum queryResponseCodes {
@@ -153,7 +153,7 @@ function createSubjectAndRegistrationEvent(response: InboundPatientDiscoveryResp
               "@_value": t.value,
             })),
             administrativeGenderCode: {
-              "@_code": mapFhirToGenderAtBirth(patientResource.gender),
+              "@_code": mapFhirToMetriportGender(patientResource.gender),
             },
             birthTime: {
               "@_value": patientResource.birthDate, // this needs to be in right format

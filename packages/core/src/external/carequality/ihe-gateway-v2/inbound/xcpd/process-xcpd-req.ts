@@ -2,9 +2,10 @@ import { XMLParser } from "fast-xml-parser";
 import dayjs from "dayjs";
 import { PatientResource, InboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
 import { toArray } from "@metriport/shared";
-import { extractText, normalizeGender } from "../../utils";
+import { extractText } from "../../utils";
 import { Iti55Request, iti55RequestSchema } from "./schema";
 import { convertSamlHeaderToAttributes, extractTimestamp } from "../shared";
+import { mapIheGenderToFhir } from "../../../shared";
 
 export function transformIti55RequestToPatientResource(
   iti55Request: Iti55Request
@@ -36,8 +37,7 @@ export function transformIti55RequestToPatientResource(
     value: id.value._extension,
   }));
 
-  const gender = normalizeGender(queryParams.livingSubjectAdministrativeGender.value._code);
-
+  const gender = mapIheGenderToFhir(queryParams.livingSubjectAdministrativeGender?.value?._code);
   const birthDate = dayjs(queryParams.livingSubjectBirthTime.value._value).format("YYYY-MM-DD");
   const patientResource = {
     resourceType: "Patient",

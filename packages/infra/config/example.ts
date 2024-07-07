@@ -25,6 +25,12 @@ export const config: EnvConfigNonSandbox = {
       volumeReadIops: 2_000,
       volumeWriteIops: 2_000,
     },
+    poolSettings: {
+      max: 200,
+      min: 10,
+      acquire: 5_000,
+      idle: 5_000,
+    },
   },
   loadBalancerDnsName: "<your-load-balancer-dns-name>",
   logArn: "<your-log-arn>",

@@ -2,7 +2,7 @@ import { z } from "zod";
 import {
   schemaOrArray,
   schemaOrArrayOrEmpty,
-  genderSchema,
+  genderCodeSchema,
   addressSchema,
   nameSchema,
   telecomSchema,
@@ -47,7 +47,11 @@ export const patientRegistryProfileSchema = z.object({
                     id: schemaOrArrayOrEmpty(identifierSchema).optional(),
                   })
                 ).optional(),
-                administrativeGenderCode: genderSchema.optional(),
+                administrativeGenderCode: z
+                  .object({
+                    _code: genderCodeSchema,
+                  })
+                  .optional(),
                 birthTime: z.object({
                   _value: z.string(),
                 }),

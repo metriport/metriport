@@ -607,7 +607,7 @@ async function downloadDocsAndUpsertFHIR({
             log(`${msg}: (docId ${doc.id}): ${errorToString(error)}`);
             capture.error(msg, {
               extra: {
-                context: `s3.documentUpload`,
+                context: `cw.downloadDocsAndUpsertFHIR.downloadFromCWAndUploadToS3`,
                 patientId: patient.id,
                 documentReference: doc,
                 requestId,

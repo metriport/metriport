@@ -51,8 +51,9 @@ async function getTrustedKeyStore(): Promise<string> {
 export function setRejectUnauthorized(value: boolean): void {
   rejectUnauthorized = value;
 }
+// TODO: remove false here once allscripts patches their endpoints
 export function getRejectUnauthorized(): boolean {
-  return rejectUnauthorized;
+  return false && rejectUnauthorized;
 }
 
 export type SamlClientResponse = {

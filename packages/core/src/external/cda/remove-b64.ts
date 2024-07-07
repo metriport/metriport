@@ -1,6 +1,6 @@
-import { XMLParser, XMLBuilder } from "fast-xml-parser";
 import { toArray } from "@metriport/shared";
-import { PDF_MIME_TYPE } from "../../util/mime";
+import { XMLBuilder, XMLParser } from "fast-xml-parser";
+import { BINARY_MIME_TYPES } from "../../util/mime";
 
 const notesTemplateId = "2.16.840.1.113883.10.20.22.2.65";
 const b64Representation = "B64";
@@ -27,9 +27,11 @@ export function removeBase64PdfEntries(payloadRaw: string): string {
         if (comp.section.entry) {
           //eslint-disable-next-line @typescript-eslint/no-explicit-any
           comp.section.entry = toArray(comp.section.entry).filter((entry: any) => {
+            const mediaType = entry.act?.text?.["@_mediaType"]?.trim().toLowerCase();
             if (
-              entry.act?.text?.["@_mediaType"]?.toLowerCase() === PDF_MIME_TYPE.toLowerCase() &&
-              entry.act.text["@_representation"]?.toLowerCase() === b64Representation.toLowerCase()
+              BINARY_MIME_TYPES.includes(mediaType) &&
+              entry.act.text["@_representation"]?.trim().toLowerCase() ===
+                b64Representation.toLowerCase()
             ) {
               removedEntry++;
               return false;

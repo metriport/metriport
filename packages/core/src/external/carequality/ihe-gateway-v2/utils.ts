@@ -1,15 +1,5 @@
 import dayjs from "dayjs";
-import { GenderAtBirth } from "../../../domain/patient";
-import { mapGenderAtBirthToFhir } from "../../fhir/patient";
 import { TextOrTextObject } from "./schema";
-
-export function normalizeGender(gender: GenderAtBirth | undefined): "male" | "female" | undefined {
-  if (gender === undefined) {
-    return undefined;
-  }
-  const mappedGender = mapGenderAtBirthToFhir(gender);
-  return mappedGender;
-}
 
 export function timestampToSoapBody(createdTimestamp: string): string {
   return dayjs(createdTimestamp).toISOString();

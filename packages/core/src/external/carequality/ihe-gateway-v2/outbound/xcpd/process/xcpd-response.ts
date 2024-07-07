@@ -10,7 +10,6 @@ import {
   PersonalIdentifier,
 } from "@metriport/ihe-gateway-sdk";
 import { errorToString, toArray } from "@metriport/shared";
-import { normalizeGender } from "../../../utils";
 import { XCPDSamlClientResponse } from "../send/xcpd-requests";
 import { out } from "../../../../../../util/log";
 import { extractText } from "../../../utils";
@@ -21,6 +20,7 @@ import {
   handleSchemaErrorResponse,
   handlePatientErrorResponse,
 } from "./error";
+import { mapIheGenderToFhir } from "../../../../shared";
 
 const { log } = out("Processing XCPD Requests");
 
@@ -135,7 +135,7 @@ function handlePatientMatchResponse({
 
   const patientResource = {
     name: patientNames,
-    gender: normalizeGender(subject1?.patient?.patientPerson?.administrativeGenderCode?._code),
+    gender: mapIheGenderToFhir(subject1?.patient?.patientPerson?.administrativeGenderCode?._code),
     birthDate: subject1?.patient?.patientPerson?.birthTime?._value,
     ...(addresses && { address: addresses }),
     ...(patientTelecoms && { telecom: patientTelecoms }),

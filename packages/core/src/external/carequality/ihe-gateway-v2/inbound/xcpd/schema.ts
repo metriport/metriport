@@ -4,14 +4,18 @@ import {
   textSchema,
   addressSchema,
   samlHeaderSchema,
-  genderSchema,
+  genderCodeSchema,
   schemaOrArrayOrEmpty,
 } from "../../schema";
 
 export const QueryByParameterSchema = z.object({
   parameterList: z.object({
     livingSubjectAdministrativeGender: z.object({
-      value: genderSchema,
+      value: z
+        .object({
+          _code: genderCodeSchema,
+        })
+        .optional(),
       semanticsText: z.literal("LivingSubject.administrativeGender"),
     }),
     livingSubjectBirthTime: z.object({
