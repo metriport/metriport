@@ -7,56 +7,139 @@ import { processXCPDResponse } from "../../outbound/xcpd/process/xcpd-response";
 import { TEST_CERT, TEST_KEY } from "../../saml/__tests__/constants";
 import { signTimestamp } from "../../saml/security/sign";
 
-it("should process ITI-55 request", () => {
-  try {
+describe("processInboundXcpdRequest", () => {
+  it("should process successful ITI-55 request", () => {
+    try {
+      const soapEnvelope = createITI5SoapEnvelope({
+        bodyData: iti55BodyData,
+        publicCert: TEST_CERT,
+      });
+      const signedEnvelope = signTimestamp({ xml: soapEnvelope, privateKey: TEST_KEY });
+
+      const iti55InboundRequest = processInboundXcpdRequest(signedEnvelope);
+      const updatedIti55InboundRequest = {
+        ...iti55InboundRequest,
+        patientResource: {
+          ...iti55InboundRequest.patientResource,
+          id: iti55BodyData.patientResource.id,
+        },
+      };
+
+      expect(iti55BodyData.patientResource).toEqual(updatedIti55InboundRequest.patientResource);
+    } catch (error) {
+      console.log(error);
+      expect(true).toBe(false);
+    }
+  });
+
+  it("should process invalid ITI-55 request correctly", () => {
     const soapEnvelope = createITI5SoapEnvelope({
       bodyData: iti55BodyData,
       publicCert: TEST_CERT,
     });
-    const signedEnvelope = signTimestamp({ xml: soapEnvelope, privateKey: TEST_KEY });
 
-    const iti55InboundRequest = processInboundXcpdRequest(signedEnvelope);
-    const updatedIti55InboundRequest = {
-      ...iti55InboundRequest,
-      patientResource: {
-        ...iti55InboundRequest.patientResource,
-        id: iti55BodyData.patientResource.id,
+    expect(() => {
+      processInboundXcpdRequest(soapEnvelope);
+    }).toThrow("Failed to parse ITI-55 request");
+  });
+});
+
+describe("processXCPDResponse", () => {
+  it("should process ITI-55 success response", () => {
+    const response = {
+      ...iti55BodyData,
+      externalGatewayPatient: {
+        id: "123456789",
+        system: "987654321",
+      },
+      responseTimestamp: new Date().toISOString(),
+      patientMatch: true,
+      gatewayHomeCommunityId: "123456789",
+    };
+    const xmlResponse = createIti55SoapEnvelopeInboundResponse({
+      request: iti55BodyData,
+      response,
+    });
+
+    const iti55Response = processXCPDResponse({
+      xcpdResponse: {
+        response: xmlResponse,
+        success: true,
+        outboundRequest: iti55BodyData,
+        gateway: xcpdGateway,
+      },
+    });
+    const patientResource = isSuccessfulPatientDiscoveryResponse(response)
+      ? response.patientResource
+      : undefined;
+    expect(patientResource).toEqual(response.patientResource);
+    expect(iti55Response.patientMatch).toEqual(response.patientMatch);
+  });
+  it("should process ITI-55 no match response", () => {
+    const response = {
+      ...iti55BodyData,
+      responseTimestamp: new Date().toISOString(),
+      externalGatewayPatient: {
+        id: "123456789",
+        system: "987654321",
+      },
+      patientMatch: false,
+      gatewayHomeCommunityId: "123456789",
+    };
+
+    const xmlResponse = createIti55SoapEnvelopeInboundResponse({
+      request: iti55BodyData,
+      response,
+    });
+    const iti55Response = processXCPDResponse({
+      xcpdResponse: {
+        response: xmlResponse,
+        success: true,
+        outboundRequest: iti55BodyData,
+        gateway: xcpdGateway,
+      },
+    });
+    expect(iti55Response.patientMatch).toEqual(response.patientMatch);
+  });
+
+  it("should process ITI-55 error response", () => {
+    const response = {
+      ...iti55BodyData,
+      responseTimestamp: new Date().toISOString(),
+      externalGatewayPatient: {
+        id: "123456789",
+        system: "987654321",
+      },
+      patientMatch: null,
+      gatewayHomeCommunityId: "123456789",
+      operationOutcome: {
+        resourceType: "OperationOutcome",
+        id: iti55BodyData.id,
+        issue: [
+          {
+            severity: "error",
+            code: "1.3.6.1.4.1.19376.1.2.27.1",
+            details: {
+              coding: [{ system: "XDSRegistryError", code: "1.3.6.1.4.1.19376.1.2.27.1" }],
+              text: "Internal Server Error",
+            },
+          },
+        ],
       },
     };
 
-    expect(iti55BodyData.patientResource).toEqual(updatedIti55InboundRequest.patientResource);
-  } catch (error) {
-    console.log(error);
-    expect(true).toBe(false);
-  }
-});
-it("should process ITI-55 response", () => {
-  const response = {
-    ...iti55BodyData,
-    externalGatewayPatient: {
-      id: "123456789",
-      system: "987654321",
-    },
-    responseTimestamp: new Date().toISOString(),
-    patientMatch: true,
-    gatewayHomeCommunityId: "123456789",
-  };
-  const xmlResponse = createIti55SoapEnvelopeInboundResponse({
-    request: iti55BodyData,
-    response,
+    const xmlResponse = createIti55SoapEnvelopeInboundResponse({
+      request: iti55BodyData,
+      response,
+    });
+    const iti55Response = processXCPDResponse({
+      xcpdResponse: {
+        response: xmlResponse,
+        success: true,
+        outboundRequest: iti55BodyData,
+        gateway: xcpdGateway,
+      },
+    });
+    expect(iti55Response.operationOutcome).toEqual(response.operationOutcome);
   });
-
-  const iti55Response = processXCPDResponse({
-    xcpdResponse: {
-      response: xmlResponse,
-      success: true,
-      outboundRequest: iti55BodyData,
-      gateway: xcpdGateway,
-    },
-  });
-  const patientResource = isSuccessfulPatientDiscoveryResponse(response)
-    ? response.patientResource
-    : undefined;
-  expect(patientResource).toEqual(response.patientResource);
-  expect(iti55Response.patientMatch).toEqual(response.patientMatch);
 });

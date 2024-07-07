@@ -22,11 +22,6 @@ export enum ackCodes {
   AE = "AE",
 }
 
-// need the original messageId of the request
-// need to return the security confirmation in the header.
-// need to construct the query params again. Might need the InboundPatientDiscoveryReq to do that.
-// focus on body for now
-
 function createQueryByParameter(request: InboundPatientDiscoveryReq): object {
   const { id, samlAttributes, patientResource } = request;
 
@@ -194,7 +189,7 @@ function createIti55SoapBody(
 ): object {
   const { ack, queryResponseCode } = createAckAndQueryResponseCode(response);
   const queryByParameter = createQueryByParameter(request);
-  const subject = response.patientMatch ? createSubjectAndRegistrationEvent(response) : {};
+  const subject = response.patientMatch ? createSubjectAndRegistrationEvent(response) : undefined;
 
   const soapBody = {
     "@_xmlns:urn": namespaces.hl7,
@@ -229,6 +224,18 @@ function createIti55SoapBody(
             "@_root": request.samlAttributes.homeCommunityId,
           },
         },
+        ...(response.operationOutcome && {
+          acknowledgementDetail: {
+            typeCode: "E",
+            code: response.operationOutcome?.issue?.[0]?.details?.coding?.[0]
+              ? {
+                  "@_code": response.operationOutcome.issue[0].details?.coding[0].code,
+                  "@_codeSystem": response.operationOutcome.issue[0].details.coding[0].system,
+                }
+              : undefined,
+            text: response.operationOutcome?.issue?.[0]?.details?.text,
+          },
+        }),
       },
       controlActProcess: {
         "@_classCode": "CACT",

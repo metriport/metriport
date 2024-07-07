@@ -1,5 +1,6 @@
 import { XMLParser } from "fast-xml-parser";
 import dayjs from "dayjs";
+import { errorToString } from "@metriport/shared";
 import { PatientResource, InboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
 import { toArray } from "@metriport/shared";
 import { extractText } from "../../utils";
@@ -75,6 +76,6 @@ export function processInboundXcpdRequest(request: string): InboundPatientDiscov
       ),
     };
   } catch (error) {
-    throw new Error(`Failed to parse ITI-55 request: ${error}`);
+    throw new Error(`Failed to parse ITI-55 request: ${errorToString(error)}`);
   }
 }

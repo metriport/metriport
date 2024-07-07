@@ -207,9 +207,8 @@ export function isRetryable(
         issue.severity === "error" &&
         issue.code !== "http-error" &&
         issue.code !== "schema-error" &&
-        !knownNonRetryableErrors.some(
-          nonRetryableError =>
-            "text" in issue.details && issue.details.text.includes(nonRetryableError)
+        !knownNonRetryableErrors.some(nonRetryableError =>
+          issue.details.text?.includes(nonRetryableError)
         )
     ) ?? false
   );

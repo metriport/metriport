@@ -48,10 +48,10 @@ export const codeSchema = z.object({
 
 export type Code = z.infer<typeof codeSchema>;
 
-export const detailsSchema = z.union([
-  z.object({ coding: z.array(codeSchema) }),
-  z.object({ text: z.string() }),
-]);
+export const detailsSchema = z.object({
+  coding: z.array(codeSchema).optional(),
+  text: z.string().optional(),
+});
 
 export type Details = z.infer<typeof detailsSchema>;
 
