@@ -1,6 +1,9 @@
 import { StackProps } from "aws-cdk-lib";
 import * as apigwv2 from "aws-cdk-lib/aws-apigatewayv2";
-import { HttpAlbIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
+import {
+  HttpLambdaIntegration,
+  HttpAlbIntegration,
+} from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecs from "aws-cdk-lib/aws-ecs";
@@ -23,6 +26,9 @@ interface IHEGatewayProps extends StackProps {
   patientDiscoveryLambda: Lambda;
   medicalDocumentsBucket: IBucket;
   alarmAction?: SnsAction | undefined;
+  patientDiscoveryLambdaV2: Lambda;
+  documentQueryLambdaV2: Lambda;
+  documentRetrievalLambdaV2: Lambda;
 }
 
 const name = "IHEGateway";
@@ -105,5 +111,23 @@ export function createIHEGateway(stack: Construct, props: IHEGatewayProps): void
         )
       ),
     }),
+  });
+
+  apiGateway.addRoutes({
+    path: "/v2/patient-discovery",
+    methods: [apigwv2.HttpMethod.POST],
+    integration: new HttpLambdaIntegration("IHEGWPDIntegrationV2", props.patientDiscoveryLambdaV2),
+  });
+
+  apiGateway.addRoutes({
+    path: "/v2/document-query",
+    methods: [apigwv2.HttpMethod.POST],
+    integration: new HttpLambdaIntegration("IHEGWDQIntegrationV2", props.documentQueryLambdaV2),
+  });
+
+  apiGateway.addRoutes({
+    path: "/v2/document-retrieve",
+    methods: [apigwv2.HttpMethod.POST],
+    integration: new HttpLambdaIntegration("IHEGWDRIntegrationV2", props.documentRetrievalLambdaV2),
   });
 }

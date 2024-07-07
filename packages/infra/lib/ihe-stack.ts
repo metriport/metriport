@@ -191,7 +191,7 @@ export class IHEStack extends Stack {
       entry: "ihe-inbound-patient-discovery",
     });
 
-    this.setupPatientDiscoveryLambda({
+    const patientDiscoveryLambdaV2 = this.setupPatientDiscoveryLambda({
       props,
       lambdaLayers,
       vpc,
@@ -202,7 +202,7 @@ export class IHEStack extends Stack {
       entry: "ihe-gateway-v2-inbound-patient-discovery",
     });
 
-    this.setupDocumentQueryLambda({
+    const documentQueryLambdaV2 = this.setupDocumentQueryLambda({
       props,
       lambdaLayers,
       vpc,
@@ -214,7 +214,7 @@ export class IHEStack extends Stack {
       entry: "ihe-gateway-v2-inbound-document-query",
     });
 
-    this.setupDocumentRetrievalLambda({
+    const documentRetrievalLambdaV2 = this.setupDocumentRetrievalLambda({
       props,
       lambdaLayers,
       vpc,
@@ -237,6 +237,9 @@ export class IHEStack extends Stack {
       patientDiscoveryLambda,
       medicalDocumentsBucket,
       alarmAction: alarmSnsAction,
+      patientDiscoveryLambdaV2,
+      documentQueryLambdaV2,
+      documentRetrievalLambdaV2,
     });
 
     //-------------------------------------------
