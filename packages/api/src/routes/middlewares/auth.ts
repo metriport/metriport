@@ -12,24 +12,23 @@ import { getCxIdOrFail } from "../util";
  * The customer id is stored on the Request, property 'cxId'.
  */
 export function processCxId(req: Request, res: Response, next: NextFunction): void {
+  const { log } = out("processCxId");
   try {
     // Just gets the cxId from the API Key, the actual auth is done on API GW.
     // Downstream routes should check whether `cxId` is present on the request or not.
     const encodedApiKey = req.header("x-api-key");
     req.cxId = getCxIdFromApiKey(encodedApiKey);
-    // TODO remove this
-    // TODO remove this
-    // TODO remove this
-    // TODO remove this
-    console.log(`..... cxId from API Key: ${req.cxId}`);
+    // TODO 1935 remove this
+    // TODO 1935 remove this
+    // TODO 1935 remove this
+    log(`..... cxId from API Key: ${req.cxId}`);
   } catch (error) {
     try {
-      // TODO remove this
-      // TODO remove this
-      // TODO remove this
-      // TODO remove this
+      // TODO 1935 remove this
+      // TODO 1935 remove this
+      // TODO 1935 remove this
       req.cxId = getCxIdFromJwt(req);
-      console.log(`..... cxId from JWT: ${req.cxId} 🤘`);
+      log(`..... cxId from JWT: ${req.cxId} 🤘`);
     } catch (error) {
       // noop - auth is done on API GW level, this is just to make data available downstream
     }
