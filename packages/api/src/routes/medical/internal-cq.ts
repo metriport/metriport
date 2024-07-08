@@ -51,7 +51,7 @@ import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 import { getAddressWithCoordinates } from "../../domain/medical/address";
-import { CqMetriportDataDefault } from "../../external/carequality/shared";
+import { CQ_METRIPORT_DEFAULT_DATA } from "../../external/carequality/shared";
 
 dayjs.extend(duration);
 const router = Router();
@@ -219,7 +219,7 @@ router.put(
       postalCode: locationWithCoordinates.zip,
       organizationBizType: org.type,
       active: orgActive.active,
-      ...CqMetriportDataDefault,
+      ...CQ_METRIPORT_DEFAULT_DATA,
     });
 
     return res.sendStatus(httpStatus.OK);
