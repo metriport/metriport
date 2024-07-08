@@ -13,27 +13,27 @@ export function transformIti55RequestToPatientResource(
   const queryParams =
     iti55Request.Envelope.Body.PRPA_IN201305UV02.controlActProcess.queryByParameter.parameterList;
 
-  const name = toArray(queryParams.livingSubjectName).map(name => ({
-    family: extractText(name.value.family),
-    given: toArray(name.value.given).map(extractText),
+  const name = toArray(queryParams.livingSubjectName.value).map(name => ({
+    family: extractText(name.family),
+    given: toArray(name.given).map(extractText),
   }));
 
-  const address = toArray(queryParams.patientAddress).map(addr => ({
-    line: toArray(addr.value.streetAddressLine).map(line => line.toString()),
-    city: addr.value.city ? String(addr.value.city) : undefined,
-    state: addr.value.state ? String(addr.value.state) : undefined,
-    postalCode: addr.value.postalCode ? String(addr.value.postalCode) : undefined,
-    country: addr.value.country ? String(addr.value.country) : undefined,
+  const address = toArray(queryParams.patientAddress?.value).map(addr => ({
+    line: toArray(addr.streetAddressLine).map(line => line.toString()),
+    city: addr.city ? String(addr.city) : undefined,
+    state: addr.state ? String(addr.state) : undefined,
+    postalCode: addr.postalCode ? String(addr.postalCode) : undefined,
+    country: addr.country ? String(addr.country) : undefined,
   }));
 
-  const telecom = toArray(queryParams.patientTelecom).map(tel => ({
+  const telecom = toArray(queryParams.patientTelecom?.value).map(tel => ({
     system: "phone",
-    value: tel.value._value,
+    value: tel._value,
   }));
 
-  const identifier = toArray(queryParams.livingSubjectId).map(id => ({
-    system: id.value._root,
-    value: id.value._extension,
+  const identifier = toArray(queryParams.livingSubjectId?.value).map(id => ({
+    system: id._root,
+    value: id._extension,
   }));
 
   const gender = mapIheGenderToFhir(queryParams.livingSubjectAdministrativeGender?.value?._code);
@@ -73,6 +73,7 @@ export function processInboundXcpdRequest(request: string): InboundPatientDiscov
       ),
     };
   } catch (error) {
+    console.log("schema error", JSON.stringify(error, null, 2));
     throw new Error(`Failed to parse ITI-55 request: ${error}`);
   }
 }

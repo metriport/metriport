@@ -1,4 +1,4 @@
-// import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
+import { ALBEvent } from "aws-lambda";
 import {
   InboundPatientDiscoveryReq,
   InboundPatientDiscoveryResp,
@@ -19,9 +19,12 @@ const engineeringCxId = getEnvVar("ENGINEERING_CX_ID");
 const postHogSecretName = getEnvVar("POST_HOG_API_KEY_SECRET");
 const mpi = new MPIMetriportAPI(apiUrl);
 
-export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
+export const handler = Sentry.AWSLambda.wrapHandler(async (event: ALBEvent) => {
+  console.log(`Running with ${event}`);
+  if (!event.body) return buildResponse(400, { message: "The request body is empty" });
+
   try {
-    const pdRequest: InboundPatientDiscoveryReq = processInboundXcpdRequest(event);
+    const pdRequest: InboundPatientDiscoveryReq = processInboundXcpdRequest(event.body);
     const result: InboundPatientDiscoveryResp = await processInboundXcpd(pdRequest, mpi);
     const xmlResponse = createInboundXcpdResponse({
       request: pdRequest,

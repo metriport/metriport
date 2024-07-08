@@ -8,6 +8,11 @@ import {
   schemaOrArrayOrEmpty,
 } from "../../../schema";
 
+const nameSchema = z.object({
+  family: textSchema,
+  given: schemaOrArray(textSchema),
+});
+
 export const QueryByParameterSchema = z.object({
   parameterList: z.object({
     livingSubjectAdministrativeGender: z.object({
@@ -24,46 +29,48 @@ export const QueryByParameterSchema = z.object({
       }),
       semanticsText: z.literal("LivingSubject.birthTime"),
     }),
-    livingSubjectId: schemaOrArrayOrEmpty(
-      z.object({
-        value: z.object({
-          _extension: z.string(),
-          _root: z.string(),
-        }),
+    livingSubjectId: z
+      .object({
+        value: schemaOrArrayOrEmpty(
+          z.object({
+            _extension: z.string(),
+            _root: z.string(),
+          })
+        ).optional(),
         semanticsText: z.literal("LivingSubject.id"),
       })
-    ).optional(),
-    livingSubjectName: schemaOrArray(
-      z.object({
-        value: z.object({
-          family: textSchema,
-          given: schemaOrArray(textSchema),
-        }),
-        semanticsText: z.literal("LivingSubject.name"),
-      })
-    ),
-    patientAddress: schemaOrArrayOrEmpty(
-      z.object({
-        value: addressSchema,
+      .optional(),
+    livingSubjectName: z.object({
+      value: schemaOrArray(nameSchema),
+      semanticsText: z.literal("LivingSubject.name"),
+    }),
+    patientAddress: z
+      .object({
+        value: schemaOrArrayOrEmpty(addressSchema).optional(),
         semanticsText: z.literal("Patient.addr"),
       })
-    ).optional(),
-    patientTelecom: schemaOrArrayOrEmpty(
-      z.object({
-        value: z.object({
-          _value: z.string(),
-        }),
+      .optional(),
+    patientTelecom: z
+      .object({
+        value: schemaOrArrayOrEmpty(
+          z.object({
+            _value: z.string(),
+          })
+        ).optional(),
         semanticsText: z.literal("Patient.telecom"),
       })
-    ).optional(),
-    principalCareProviderId: schemaOrArrayOrEmpty(
-      z.object({
-        value: z.object({
-          _extension: z.string(),
-          _root: z.string(),
-        }),
+      .optional(),
+    principalCareProviderId: z
+      .object({
+        value: schemaOrArrayOrEmpty(
+          z.object({
+            _extension: z.string(),
+            _root: z.string(),
+          })
+        ).optional(),
+        semanticsText: z.literal("AssignedProvider.id"),
       })
-    ).optional(),
+      .optional(),
   }),
 });
 

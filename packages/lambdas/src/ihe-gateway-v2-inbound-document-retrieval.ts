@@ -1,3 +1,4 @@
+import { ALBEvent } from "aws-lambda";
 import {
   InboundDocumentRetrievalReq,
   InboundDocumentRetrievalResp,
@@ -14,9 +15,11 @@ const postHogSecretName = getEnvVar("POST_HOG_API_KEY_SECRET");
 const engineeringCxId = getEnvVar("ENGINEERING_CX_ID");
 const region = getEnvVarOrFail("AWS_REGION");
 
-export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
+export const handler = Sentry.AWSLambda.wrapHandler(async (event: ALBEvent) => {
+  console.log(`Running with ${event}`);
+  if (!event.body) return buildResponse(400, { message: "The request body is empty" });
   try {
-    const drRequest: InboundDocumentRetrievalReq = processInboundDrRequest(event);
+    const drRequest: InboundDocumentRetrievalReq = processInboundDrRequest(event.body);
     const result: InboundDocumentRetrievalResp = await processInboundDr(drRequest);
     const xmlResponse = createInboundDrResponse(result);
 

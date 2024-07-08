@@ -1,3 +1,4 @@
+import { ALBEvent } from "aws-lambda";
 import { InboundDocumentQueryReq, InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
 import * as Sentry from "@sentry/serverless";
 import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
@@ -12,9 +13,11 @@ const region = getEnvVarOrFail("AWS_REGION");
 const engineeringCxId = getEnvVar("ENGINEERING_CX_ID");
 const postHogSecretName = getEnvVar("POST_HOG_API_KEY_SECRET");
 
-export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
+export const handler = Sentry.AWSLambda.wrapHandler(async (event: ALBEvent) => {
+  console.log(`Running with ${event}`);
+  if (!event.body) return buildResponse(400, { message: "The request body is empty" });
   try {
-    const dqRequest: InboundDocumentQueryReq = processInboundDqRequest(event);
+    const dqRequest: InboundDocumentQueryReq = processInboundDqRequest(event.body);
     const result: InboundDocumentQueryResp = await processInboundDq(dqRequest, apiUrl);
     const xmlResponse = createInboundDqResponse(result);
 
