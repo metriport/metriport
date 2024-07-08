@@ -7,6 +7,7 @@ import {
   isOboFacility,
 } from "../../../domain/medical/facility";
 import { FacilityModel } from "../../../models/medical/facility";
+import { getFacilityByNpi } from "./get-facility";
 
 export async function createFacility({
   cxId,
@@ -32,6 +33,12 @@ export async function createFacility({
     data,
   };
   validateCreate(input);
+  const facilityByNpi = await getFacilityByNpi({ cxId, npi: data.npi });
+  if (facilityByNpi) {
+    throw new BadRequestError(
+      `Found a matching facility along NPI - please add the corresponding Facility ID to the request`
+    );
+  }
   return FacilityModel.create(input);
 }
 

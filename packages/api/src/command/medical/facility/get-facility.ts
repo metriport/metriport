@@ -49,3 +49,22 @@ export const getFacilityStrictOrFail = async ({
     throw new NotFoundError(`Could not find facility`, undefined, { facilityId: id, npi });
   return facility;
 };
+
+export const getFacilityByNpi = async ({
+  cxId,
+  npi,
+}: {
+  cxId: string;
+  npi: string;
+}): Promise<FacilityModel> => {
+  const facility = await FacilityModel.findOne({
+    where: {
+      cxId,
+      data: {
+        npi,
+      },
+    },
+  });
+  if (!facility) throw new NotFoundError(`Could not find facility`, undefined, { npi });
+  return facility;
+};

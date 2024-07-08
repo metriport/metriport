@@ -2,7 +2,9 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { requestLogger } from "../helpers/request-logger";
+import BadRequestError from "@metriport/core/util/error/bad-request";
 import { FacilityCreate } from "../../domain/medical/facility";
+import { getFacilityByNpi } from "../../command/medical/facility/get-facility";
 import { verifyCxItVendorAccess } from "../../command/medical/facility/verify-access";
 import { createOrUpdateFacility } from "../../command/medical/facility/create-or-update-facility";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
@@ -54,6 +56,13 @@ router.put(
       cqOboOid: facilityDetails.cqOboOid,
       cwOboOid: facilityDetails.cwOboOid,
     };
+    const facilityByNpi = await getFacilityByNpi({ cxId, npi: facilityDetails.npi });
+    if (!facilityDetails.id && facilityByNpi) {
+      throw new BadRequestError(
+        `Found a matching facility along NPI - please add the corresponding Facility ID to the request`
+      );
+    }
+
     const facility = await createOrUpdateFacility(
       cxId,
       facilityDetails.id,
