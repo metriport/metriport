@@ -24,14 +24,14 @@ describe("verifyCxProviderAccess", () => {
     expect(res).toBeTruthy();
   });
 
-  it("returns false when org is provider and throwOnNoAccess is false", async () => {
+  it("returns false when org is it vendor and throwOnNoAccess is false", async () => {
     const org = makeOrganization({ type: OrganizationBizType.healthcareITVendor });
     getOrganizationOrFailMock.mockImplementation(async () => org);
     const res = await verifyCxProviderAccess(faker.string.uuid(), false);
     expect(res).toBeFalsy();
   });
 
-  it("throws when org is provider and throwOnNoAccess is true", async () => {
+  it("throws when org is it vendor and throwOnNoAccess is true", async () => {
     const org = makeOrganization({ type: OrganizationBizType.healthcareITVendor });
     getOrganizationOrFailMock.mockImplementation(async () => org);
     expect(async () => await verifyCxProviderAccess(faker.string.uuid(), true)).rejects.toThrow(
@@ -39,7 +39,7 @@ describe("verifyCxProviderAccess", () => {
     );
   });
 
-  it("throws when org is provider and throwOnNoAccess is not set", async () => {
+  it("throws when org is it vendor and throwOnNoAccess is not set", async () => {
     const org = makeOrganization({ type: OrganizationBizType.healthcareITVendor });
     getOrganizationOrFailMock.mockImplementation(async () => org);
     expect(async () => await verifyCxProviderAccess(faker.string.uuid())).rejects.toThrow(
@@ -56,7 +56,7 @@ describe("verifyCxProviderAccess", () => {
 });
 
 describe("verifyCxItVendorAccess", () => {
-  it("returns true when org is provider", async () => {
+  it("returns true when org is it vendor", async () => {
     const org = makeOrganization({ type: OrganizationBizType.healthcareITVendor });
     getOrganizationOrFailMock.mockImplementation(async () => org);
     const res = await verifyCxItVendorAccess(faker.string.uuid());
