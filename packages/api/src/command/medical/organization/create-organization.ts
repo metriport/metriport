@@ -10,7 +10,8 @@ import { createOrganizationId } from "../customer-sequence/create-id";
 import { getOrganization } from "./get-organization";
 import { toFHIR } from "../../../external/fhir/organization";
 import { upsertOrgToFHIRServer } from "../../../external/fhir/organization/upsert-organization";
-import { CQ_METRIPORT_DEFAULT_DATA } from "../../../external/carequality/shared";
+import { metriportEmail as metriportEmailForCq } from "../../../external/carequality/constants";
+import { metriportCompanyDetails } from "@metriport/shared";
 import cwCommands from "../../../external/commonwell";
 import cqCommands from "../../../external/carequality";
 import { getAddressWithCoordinates } from "../../../domain/medical/address";
@@ -50,18 +51,28 @@ export const createOrganization = async (
       })
       .catch(processAsyncError(`cw.org.create`));
 
-    const locationWithCoordinates = await getAddressWithCoordinates(org.data.location, cxId);
+    const { coordinates } = await getAddressWithCoordinates(org.data.location, cxId);
+    const address = org.data.location;
+    const addressLine = address.addressLine2
+      ? `${address.addressLine1}, ${address.addressLine2}`
+      : address.addressLine1;
+
     cqCommands.organization
       .createOrUpdate({
-        oid: org.oid,
         name: org.data.name,
-        ...locationWithCoordinates,
-        lat: `${locationWithCoordinates.coordinates.lat}`,
-        lon: `${locationWithCoordinates.coordinates.lon}`,
-        postalCode: locationWithCoordinates.zip,
+        addressLine1: addressLine,
+        lat: coordinates.lat.toString(),
+        lon: coordinates.lon.toString(),
+        city: address.city,
+        state: address.state,
+        postalCode: address.zip,
+        oid: org.oid,
         organizationBizType: org.type,
+        contactName: metriportCompanyDetails.name,
+        phone: metriportCompanyDetails.phone,
+        email: metriportEmailForCq,
         active: org.cqActive,
-        ...CQ_METRIPORT_DEFAULT_DATA,
+        role: "Connection" as const,
       })
       .catch(processAsyncError(`cq.org.create`));
   }

@@ -51,7 +51,8 @@ import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 import { getAddressWithCoordinates } from "../../domain/medical/address";
-import { CQ_METRIPORT_DEFAULT_DATA } from "../../external/carequality/shared";
+import { metriportEmail as metriportEmailForCq } from "../../external/carequality/constants";
+import { metriportCompanyDetails } from "@metriport/shared";
 
 dayjs.extend(duration);
 const router = Router();
@@ -209,17 +210,29 @@ router.put(
     const body = req.body;
     const orgActive = cqOrgActiveSchema.parse(body);
     const org = await getOrganizationOrFail({ cxId, id: orgId });
-    const locationWithCoordinates = await getAddressWithCoordinates(org.data.location, cxId);
+    const { coordinates } = await getAddressWithCoordinates(org.data.location, cxId);
+    const address = org.data.location;
+    const addressLine = address.addressLine2
+      ? `${address.addressLine1}, ${address.addressLine2}`
+      : address.addressLine1;
     await createOrUpdateCQOrganization({
-      oid: org.oid,
       name: org.data.name,
-      ...locationWithCoordinates,
-      lat: `${locationWithCoordinates.coordinates.lat}`,
-      lon: `${locationWithCoordinates.coordinates.lon}`,
-      postalCode: locationWithCoordinates.zip,
+      addressLine1: addressLine,
+      lat: coordinates.lat.toString(),
+      lon: coordinates.lon.toString(),
+      city: address.city,
+      state: address.state,
+      postalCode: address.zip,
+      oid: org.oid,
       organizationBizType: org.type,
+      contactName: metriportCompanyDetails.name,
+      phone: metriportCompanyDetails.phone,
+      email: metriportEmailForCq,
       active: orgActive.active,
-      ...CQ_METRIPORT_DEFAULT_DATA,
+      role: "Connection" as const,
+    });
+    await org.update({
+      cqActive: orgActive.active,
     });
 
     return res.sendStatus(httpStatus.OK);

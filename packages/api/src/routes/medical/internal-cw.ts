@@ -53,6 +53,9 @@ router.post(
       data: org.data,
       active: orgActive.active,
     });
+    await org.update({
+      cwActive: orgActive.active,
+    });
 
     return res.sendStatus(httpStatus.OK);
   })

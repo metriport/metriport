@@ -8,15 +8,6 @@ import z from "zod";
 import { isCarequalityEnabled, isCQDirectEnabledForCx } from "../aws/app-config";
 import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
 
-export const CQ_METRIPORT_DEFAULT_DATA = {
-  contactName: "Metriport Team",
-  phone: "415-941-3282",
-  email: "engineering+carequality@metriport.com",
-  role: "Connection" as CqOrgRole,
-};
-
-export type CqOrgRole = "Implementer" | "Connection";
-
 // TODO: adjust when we support multiple POUs
 export function createPurposeOfUse() {
   return PurposeOfUse.TREATMENT;

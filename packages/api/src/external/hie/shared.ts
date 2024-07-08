@@ -11,6 +11,7 @@ import { buildCqOrgName } from "../../external/carequality/shared";
 import { buildCwOrgName } from "../../external/commonwell/shared";
 import { isOboFacility, isNonOboFacility } from "../../domain/medical/facility";
 import { Config } from "../../shared/config";
+import { processAsyncError } from "../../errors";
 
 const metriportOid = Config.getSystemRootOID();
 const metriportIntermediaryOid = `${metriportOid}.666`;
@@ -48,7 +49,7 @@ export async function createOrUpdateInCq(
     ? `${address.addressLine1}, ${address.addressLine2}`
     : address.addressLine1;
 
-  await createOrUpdateCQOrganization({
+  createOrUpdateCQOrganization({
     name: orgName,
     addressLine1: addressLine,
     lat: coordinates.lat.toString(),
@@ -63,7 +64,7 @@ export async function createOrUpdateInCq(
     active: facility.cqActive,
     parentOrgOid: isObo ? metriportIntermediaryOid : metriportOid,
     role: "Connection" as const,
-  });
+  }).catch(processAsyncError(`cq.facility.createOrUpdate`));
 }
 
 export async function createOrUpdateInCw(
@@ -93,7 +94,7 @@ export async function createOrUpdateInCw(
 
   log(`Creating/Updating a CW entry with this OID ${facility.oid} and name ${orgName}`);
 
-  await createOrUpdateCWOrganization(
+  createOrUpdateCWOrganization(
     cxId,
     {
       oid: facility.oid,
@@ -105,5 +106,5 @@ export async function createOrUpdateInCw(
       active: facility.cwActive,
     },
     isObo
-  );
+  ).catch(processAsyncError(`cw.facility.createOrUpdate`));
 }
