@@ -74,6 +74,7 @@ export function setup({
     region: config.region,
     vpc,
     ...openSearchConfig,
+    alarmAction: alarmSnsAction,
   });
 
   // setup queue and lambda to process the ccda files
