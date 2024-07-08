@@ -10,8 +10,8 @@ import { facilityOboDetailsSchema } from "./schemas/facility";
 import { internalDtoFromModel } from "./dtos/facilityDTO";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler } from "../util";
-import { createOrUpdateFacilityInCq } from "../../external/carequality/facility";
-import { createOrUpdateInCw } from "../../external/commonwell/facility";
+import { createOrUpdateFacilityInCq } from "../../external/carequality/command/cq-directory/create-or-update-cq-facility";
+import { createOrUpdateInCw } from "../../external/commonwell/command/create-or-update-cw-facility";
 
 const router = Router();
 

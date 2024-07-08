@@ -1,7 +1,7 @@
 import { OrgType } from "@metriport/core/domain/organization";
-import { Facility } from "../../domain/medical/facility";
+import { Facility } from "../../../domain/medical/facility";
 import { createOrUpdateCWOrganization } from "./create-or-update-cw-organization";
-import { buildCwOrgNameForFacility } from "./shared";
+import { buildCwOrgNameForFacility } from "../shared";
 
 export async function createOrUpdateInCw({
   cxId,

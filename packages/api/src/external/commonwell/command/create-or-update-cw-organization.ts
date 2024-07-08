@@ -1,4 +1,4 @@
-import { CWOrganization, get, update, create } from "./organization";
+import { CWOrganization, get, update, create } from "../organization";
 
 export async function createOrUpdateCWOrganization(
   cxId: string,

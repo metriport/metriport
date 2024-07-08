@@ -4,7 +4,7 @@ import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { verifyCxProviderAccess } from "../../command/medical/facility/verify-access";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import { createOrUpdateCWOrganization } from "../../external/commonwell/create-or-update-cw-organization";
+import { createOrUpdateCWOrganization } from "../../external/commonwell/command/create-or-update-cw-organization";
 import { get as getCWOgranization, parseCWEntry } from "../../external/commonwell/organization";
 import { cwOrgActiveSchema } from "../../external/commonwell/shared";
 import { requestLogger } from "../helpers/request-logger";

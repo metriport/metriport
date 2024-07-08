@@ -1,11 +1,11 @@
 import { OrganizationBizType } from "@metriport/core/domain/organization";
-import { metriportEmail as metriportEmailForCq } from "./constants";
+import { metriportEmail as metriportEmailForCq } from "../../constants";
 import { metriportCompanyDetails } from "@metriport/shared";
-import { Facility } from "../../domain/medical/facility";
-import { createOrUpdateCQOrganization } from "./command/cq-directory/create-or-update-cq-organization";
-import { buildCqOrgNameForFacility } from "./shared";
-import { Config } from "../../shared/config";
-import { getAddressWithCoordinates } from "../../domain/medical/address";
+import { Facility } from "../../../../domain/medical/facility";
+import { createOrUpdateCQOrganization } from "./create-or-update-cq-organization";
+import { buildCqOrgNameForFacility } from "../../shared";
+import { Config } from "../../../../shared/config";
+import { getAddressWithCoordinates } from "../../../../domain/medical/address";
 
 const metriportOid = Config.getSystemRootOID();
 const metriportIntermediaryOid = `${metriportOid}.666`;
