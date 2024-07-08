@@ -13,7 +13,6 @@ export type FacilityDTO = BaseDTO & {
 
 export type InternalFacilityDTO = BaseDTO &
   FacilityDTO & {
-    oid: string;
     cqType: FacilityType;
     cqActive: boolean;
     cqOboOid: string | null;
