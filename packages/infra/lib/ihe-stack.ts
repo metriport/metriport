@@ -165,8 +165,6 @@ export class IHEStack extends Stack {
       secrets,
       posthogSecretName,
       alarmSnsAction,
-      name: "IHEInboundPatientDiscoveryV2",
-      entry: "ihe-gateway-v2-inbound-patient-discovery",
     });
 
     const documentQueryLambdaV2 = this.setupDocumentQueryLambda({
@@ -177,8 +175,6 @@ export class IHEStack extends Stack {
       medicalDocumentsBucket,
       posthogSecretName,
       alarmSnsAction,
-      name: "IHEInboundDocumentQueryV2",
-      entry: "ihe-gateway-v2-inbound-document-query",
     });
 
     const documentRetrievalLambdaV2 = this.setupDocumentRetrievalLambda({
@@ -189,24 +185,22 @@ export class IHEStack extends Stack {
       medicalDocumentsBucket,
       posthogSecretName,
       alarmSnsAction,
-      name: "IHEInboundDocumentRetrievalV2",
-      entry: "ihe-gateway-v2-inbound-document-retrieval",
     });
 
     apigw2.addRoutes({
-      path: "/v2/patient-discovery",
+      path: "/v1/patient-discovery",
       methods: [apigwv2.HttpMethod.POST],
       integration: new HttpLambdaIntegration("IHEGWPDIntegrationV2", patientDiscoveryLambdaV2),
     });
 
     apigw2.addRoutes({
-      path: "/v2/document-query",
+      path: "/v1/document-query",
       methods: [apigwv2.HttpMethod.POST],
       integration: new HttpLambdaIntegration("IHEGWDQIntegrationV2", documentQueryLambdaV2),
     });
 
     apigw2.addRoutes({
-      path: "/v2/document-retrieve",
+      path: "/v1/document-retrieve",
       methods: [apigwv2.HttpMethod.POST],
       integration: new HttpLambdaIntegration("IHEGWDRIntegrationV2", documentRetrievalLambdaV2),
     });
@@ -232,8 +226,8 @@ export class IHEStack extends Stack {
     medicalDocumentsBucket,
     posthogSecretName,
     alarmSnsAction,
-    name,
-    entry,
+    name = "IHEInboundDocumentQueryV2",
+    entry = "ihe-gateway-v2-inbound-document-query",
   }: {
     props: IHEStackProps;
     lambdaLayers: LambdaLayers;
@@ -242,8 +236,8 @@ export class IHEStack extends Stack {
     medicalDocumentsBucket: s3.IBucket;
     posthogSecretName: string | undefined;
     alarmSnsAction?: SnsAction | undefined;
-    name: string;
-    entry: string;
+    name?: string;
+    entry?: string;
   }): Lambda {
     const documentQueryLambda = createLambda({
       stack: this,
@@ -278,8 +272,8 @@ export class IHEStack extends Stack {
     medicalDocumentsBucket,
     posthogSecretName,
     alarmSnsAction,
-    name,
-    entry,
+    name = "IHEInboundDocumentRetrievalV2",
+    entry = "ihe-gateway-v2-inbound-document-retrieval",
   }: {
     props: IHEStackProps;
     lambdaLayers: LambdaLayers;
@@ -288,8 +282,8 @@ export class IHEStack extends Stack {
     medicalDocumentsBucket: s3.IBucket;
     posthogSecretName: string | undefined;
     alarmSnsAction?: SnsAction | undefined;
-    name: string;
-    entry: string;
+    name?: string;
+    entry?: string;
   }): Lambda {
     const documentRetrievalLambda = createLambda({
       stack: this,
@@ -322,8 +316,8 @@ export class IHEStack extends Stack {
     secrets,
     posthogSecretName,
     alarmSnsAction,
-    name,
-    entry,
+    name = "IHEInboundPatientDiscoveryV2",
+    entry = "ihe-gateway-v2-inbound-patient-discovery",
   }: {
     props: IHEStackProps;
     lambdaLayers: LambdaLayers;
@@ -331,8 +325,8 @@ export class IHEStack extends Stack {
     secrets: Secrets;
     posthogSecretName: string | undefined;
     alarmSnsAction?: SnsAction | undefined;
-    name: string;
-    entry: string;
+    name?: string;
+    entry?: string;
   }): Lambda {
     const patientDiscoveryLambda = createLambda({
       stack: this,
