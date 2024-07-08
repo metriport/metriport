@@ -1,7 +1,7 @@
 import { verifySaml } from "../security/verify";
 import fs from "fs";
 import path from "path";
-import { TEST_CERT } from "./constants";
+import { TEST_CERT } from "../../outbound/__tests__/constants";
 
 const xmlString = fs.readFileSync(path.join(__dirname, "./valid-saml.xml"), "utf8");
 describe("SAML Verification Edge Cases", () => {

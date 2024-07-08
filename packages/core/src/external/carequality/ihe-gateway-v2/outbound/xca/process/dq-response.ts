@@ -22,9 +22,11 @@ import {
 } from "../../../../shared";
 import { successStatus, partialSuccessStatus } from "./constants";
 import { capture } from "../../../../../../util/notifications";
-import { errorToString, toArray } from "@metriport/shared";
-import { iti38Schema, Slot, ExternalIdentifier, Classification, ExtrinsicObject } from "./schema";
+import { toArray } from "@metriport/shared";
+import { iti38Schema, ExternalIdentifier, Classification, ExtrinsicObject } from "./schema";
+import { Slot } from "../../../schema";
 import { out } from "../../../../../../util/log";
+import { errorToString } from "../../../../../../util/error/shared";
 
 dayjs.extend(utc);
 

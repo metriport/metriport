@@ -21,7 +21,7 @@ const s3Utils = new S3Utils(region);
 const api = axios.create();
 const bucket = Config.getMedicalDocumentsBucketName();
 
-export async function processInboundDocumentQuery(
+export async function processInboundDq(
   payload: InboundDocumentQueryReq,
   apiUrl: string
 ): Promise<InboundDocumentQueryResp> {
@@ -63,6 +63,7 @@ export async function processInboundDocumentQuery(
       timestamp: payload.timestamp,
       responseTimestamp: new Date().toISOString(),
       extrinsicObjectXmls: documentContents,
+      signatureConfirmation: payload.signatureConfirmation,
     };
     return response;
   } catch (error) {

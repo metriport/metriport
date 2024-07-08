@@ -166,6 +166,8 @@ export class IHEStack extends Stack {
       medicalDocumentsBucket,
       posthogSecretName,
       alarmSnsAction,
+      name: "IHEInboundDocumentQuery",
+      entry: "ihe-inbound-document-query",
     });
     const documentRetrievalLambda = this.setupDocumentRetrievalLambda({
       props,
@@ -175,6 +177,8 @@ export class IHEStack extends Stack {
       medicalDocumentsBucket,
       posthogSecretName,
       alarmSnsAction,
+      name: "IHEInboundDocumentRetrieval",
+      entry: "ihe-inbound-document-retrieval",
     });
     const patientDiscoveryLambda = this.setupPatientDiscoveryLambda({
       props,
@@ -183,6 +187,43 @@ export class IHEStack extends Stack {
       secrets,
       posthogSecretName,
       alarmSnsAction,
+      name: "IHEInboundPatientDiscovery",
+      entry: "ihe-inbound-patient-discovery",
+    });
+
+    const patientDiscoveryLambdaV2 = this.setupPatientDiscoveryLambda({
+      props,
+      lambdaLayers,
+      vpc,
+      secrets,
+      posthogSecretName,
+      alarmSnsAction,
+      name: "IHEInboundPatientDiscoveryV2",
+      entry: "ihe-gateway-v2-inbound-patient-discovery",
+    });
+
+    const documentQueryLambdaV2 = this.setupDocumentQueryLambda({
+      props,
+      lambdaLayers,
+      vpc,
+      secrets,
+      medicalDocumentsBucket,
+      posthogSecretName,
+      alarmSnsAction,
+      name: "IHEInboundDocumentQueryV2",
+      entry: "ihe-gateway-v2-inbound-document-query",
+    });
+
+    const documentRetrievalLambdaV2 = this.setupDocumentRetrievalLambda({
+      props,
+      lambdaLayers,
+      vpc,
+      secrets,
+      medicalDocumentsBucket,
+      posthogSecretName,
+      alarmSnsAction,
+      name: "IHEInboundDocumentRetrievalV2",
+      entry: "ihe-gateway-v2-inbound-document-retrieval",
     });
 
     createIHEGateway(this, {
@@ -196,6 +237,9 @@ export class IHEStack extends Stack {
       patientDiscoveryLambda,
       medicalDocumentsBucket,
       alarmAction: alarmSnsAction,
+      patientDiscoveryLambdaV2,
+      documentQueryLambdaV2,
+      documentRetrievalLambdaV2,
     });
 
     //-------------------------------------------
@@ -219,6 +263,8 @@ export class IHEStack extends Stack {
     medicalDocumentsBucket,
     posthogSecretName,
     alarmSnsAction,
+    name,
+    entry,
   }: {
     props: IHEStackProps;
     lambdaLayers: LambdaLayers;
@@ -227,11 +273,13 @@ export class IHEStack extends Stack {
     medicalDocumentsBucket: s3.IBucket;
     posthogSecretName: string | undefined;
     alarmSnsAction?: SnsAction | undefined;
+    name: string;
+    entry: string;
   }): Lambda {
     const documentQueryLambda = createLambda({
       stack: this,
-      name: "IHEInboundDocumentQuery",
-      entry: "ihe-inbound-document-query",
+      name,
+      entry,
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
@@ -261,6 +309,8 @@ export class IHEStack extends Stack {
     medicalDocumentsBucket,
     posthogSecretName,
     alarmSnsAction,
+    name,
+    entry,
   }: {
     props: IHEStackProps;
     lambdaLayers: LambdaLayers;
@@ -269,11 +319,13 @@ export class IHEStack extends Stack {
     medicalDocumentsBucket: s3.IBucket;
     posthogSecretName: string | undefined;
     alarmSnsAction?: SnsAction | undefined;
+    name: string;
+    entry: string;
   }): Lambda {
     const documentRetrievalLambda = createLambda({
       stack: this,
-      name: "IHEInboundDocumentRetrieval",
-      entry: "ihe-inbound-document-retrieval",
+      name,
+      entry,
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
@@ -301,6 +353,8 @@ export class IHEStack extends Stack {
     secrets,
     posthogSecretName,
     alarmSnsAction,
+    name,
+    entry,
   }: {
     props: IHEStackProps;
     lambdaLayers: LambdaLayers;
@@ -308,11 +362,13 @@ export class IHEStack extends Stack {
     secrets: Secrets;
     posthogSecretName: string | undefined;
     alarmSnsAction?: SnsAction | undefined;
+    name: string;
+    entry: string;
   }): Lambda {
     const patientDiscoveryLambda = createLambda({
       stack: this,
-      name: "IHEInboundPatientDiscovery",
-      entry: "ihe-inbound-patient-discovery",
+      name,
+      entry,
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {

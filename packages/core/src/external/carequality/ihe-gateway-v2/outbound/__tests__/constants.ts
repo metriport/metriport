@@ -5,6 +5,18 @@ import {
   OutboundPatientDiscoveryRespSuccessfulSchema,
 } from "@metriport/ihe-gateway-sdk";
 
+export const xcpdGateway = {
+  id: uuidv4(),
+  oid: "2.16.840.1.113883.3.9801.2.1",
+  url: "test@metriport.com",
+};
+
+export const xcaGateway = {
+  id: uuidv4(),
+  homeCommunityId: "2.16.840.1.113883.3.9801.2.1",
+  url: "test@metriport.com",
+};
+
 export const outboundXcpdRequest: OutboundPatientDiscoveryReq = {
   id: uuidv4(),
   cxId: uuidv4(),
@@ -30,7 +42,7 @@ export const outboundXcpdRequest: OutboundPatientDiscoveryReq = {
       },
     ],
     gender: "male",
-    birthDate: "19810101",
+    birthDate: "1981-01-01",
     address: [
       {
         line: ["1100 Test Street"],
@@ -388,3 +400,20 @@ MBIGA1UEAxMLUm9vdCBBZ2VuY3mCEAY3bACqAGSKEc+41KpcNfQwDQYJKoZIhvcN
 AQEEBQADQQAfIbnMPVYkNNfX1tG1F+qfLhHwJdfDUZuPyRPucWF5qkh6sSdWVBY5
 sT/txBnVJGziyO8DPYdu2fPMER8ajJfl
 -----END CERTIFICATE-----`;
+
+export const TEST_KEY = `-----BEGIN PRIVATE KEY-----
+MIICdwIBADANBgkqhkiG9w0BAQEFAASCAmEwggJdAgEAAoGBAL4vpoH3H3byehjj
+7RAGxefGRATiq4mXtzc9Q91W7uT0DTaFEbjzVch9aGsNjmLs4QHsoZbuoUmi0st4
+x5z9SQpTAKC/dW8muzacT3E7dJJYh03MAO6RiH4LG34VRTq1SQN6qDt2rCK85eG4
+5NHI4jceptZNu6Zot1zyO5/PYuFpAgMBAAECgYAhspeyF3M/xB7WIixy1oBiXMLY
+isESFAumgfhwU2LotkVRD6rgNl1QtMe3kCNWa9pCWQcYkxeI0IzA+JmFu2shVvoR
+oL7eV4VCe1Af33z24E46+cY5grxNhHt/LyCnZKcitvCcrzXExUc5n6KngX0mMKgk
+W7skZDwsnKzhyUV8wQJBAN2bQMeASQVOqdfqBdFgC/NPnKY2cuDi6h659QN1l+kg
+X3ywdZ7KKftJo1G9l45SN9YpkyEd9zEO6PMFaufJvZUCQQDbtAWxk0i8BT3UTNWC
+T/9bUQROPcGZagwwnRFByX7gpmfkf1ImIvbWVXSpX68/IjbjSkTw1nj/Yj1NwFZ0
+nxeFAkEAzPhRpXVBlPgaXkvlz7AfvY+wW4hXHyyi0YK8XdPBi25XA5SPZiylQfjt
+Z6iN6qSfYqYXoPT/c0/QJR+orvVJNQJBANhRPNXljVTK2GDCseoXd/ZiI5ohxg+W
+UaA/1fDvQsRQM7TQA4NXI7BO/YmSk4rW1jIeOxjiIspY4MFAIh+7UL0CQFL6zTg6
+wfeMlEZzvgqwCGoLuvTnqtvyg45z7pfcrg2cHdgCXIy9kErcjwGiu6BOevEA1qTW
+Rk+bv0tknWvcz/s=
+-----END PRIVATE KEY-----`;

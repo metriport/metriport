@@ -3,16 +3,9 @@ import {
   schemaOrEmpty,
   schemaOrArray,
   schemaOrArrayOrEmpty,
+  slot,
   stringOrNumberSchema,
-} from "../../schema";
-
-const slot = z.object({
-  ValueList: z.object({
-    Value: schemaOrArray(stringOrNumberSchema),
-  }),
-  _name: z.string(),
-});
-export type Slot = z.infer<typeof slot>;
+} from "../../../schema";
 
 const name = z.object({
   LocalizedString: z.object({
