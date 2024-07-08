@@ -20,13 +20,13 @@ export type FacilityData = {
 
 export interface FacilityCreate extends Omit<BaseDomainCreate, "id"> {
   cxId: string;
+  data: FacilityData;
   cqActive?: boolean;
   cwActive?: boolean;
   cqOboOid?: string | null;
   cwOboOid?: string | null;
   cwType?: FacilityType;
   cqType?: FacilityType;
-  data: FacilityData;
 }
 
 export interface FacilityRegister extends FacilityCreate {

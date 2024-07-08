@@ -50,6 +50,7 @@ import {
 import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
+import { getUUIDFrom } from "../schemas/uuid";
 import { getAddressWithCoordinates } from "../../domain/medical/address";
 import { metriportEmail as metriportEmailForCq } from "../../external/carequality/constants";
 import { metriportCompanyDetails } from "@metriport/shared";
@@ -173,8 +174,9 @@ router.get(
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
     const cq = makeCarequalityManagementAPI();
     if (!cq) throw new Error("Carequality API not initialized");
-    const cxId = getFrom("query").orFail("cxId", req);
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const oid = getFrom("params").orFail("oid", req);
+
     const org = await getOrganizationOrFail({ cxId });
     if (org.oid !== oid) throw new NotFoundError("Organization not found");
     const resp = await cq.listOrganizations({ count: 1, oid });
@@ -205,16 +207,20 @@ router.put(
   "/directory/organization/v2",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getFrom("query").orFail("cxId", req);
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const orgId = getFrom("query").orFail("orgId", req);
-    const body = req.body;
-    const orgActive = cqOrgActiveSchema.parse(body);
+
+    const orgActive = cqOrgActiveSchema.parse(req.body);
+
     const org = await getOrganizationOrFail({ cxId, id: orgId });
     const { coordinates } = await getAddressWithCoordinates(org.data.location, cxId);
     const address = org.data.location;
     const addressLine = address.addressLine2
       ? `${address.addressLine1}, ${address.addressLine2}`
       : address.addressLine1;
+    await org.update({
+      cqActive: orgActive.active,
+    });
     await createOrUpdateCQOrganization({
       name: org.data.name,
       addressLine1: addressLine,
@@ -230,9 +236,6 @@ router.put(
       email: metriportEmailForCq,
       active: orgActive.active,
       role: "Connection" as const,
-    });
-    await org.update({
-      cqActive: orgActive.active,
     });
 
     return res.sendStatus(httpStatus.OK);

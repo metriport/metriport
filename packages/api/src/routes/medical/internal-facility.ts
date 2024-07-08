@@ -2,12 +2,16 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { requestLogger } from "../helpers/request-logger";
+import { FacilityCreate } from "../../domain/medical/facility";
+import { verifyCxProviderAccess } from "../../command/medical/facility/verify-access";
+import { createOrUpdateFacility } from "../../command/medical/facility/create-or-update-facility";
+import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { facilityOboDetailsSchema } from "./schemas/facility";
 import { internalDtoFromModel } from "./dtos/facilityDTO";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler } from "../util";
-import { registerFacilityWithinHIEs } from "../../external/hie/register-facility";
-import { FacilityRegister } from "../../domain/medical/facility";
+import { createOrUpdateFacilityInCq } from "../../external/carequality/facility";
+import { createOrUpdateInCw } from "../../external/commonwell/facility";
 
 const router = Router();
 
@@ -15,7 +19,7 @@ const router = Router();
  *
  * PUT /internal/facility
  *
- * Creates a new facility and registers it within HIEs.
+ * Creates or updates a facility and registers it within HIEs if new.
  *
  * TODO: Search existing facility by NPI, cqOboOid, and cwOboOid (individually), and fail if it exists?
  *
@@ -26,32 +30,56 @@ router.put(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const facilityInput = facilityOboDetailsSchema.parse(req.body);
+    await verifyCxProviderAccess(cxId);
 
-    const facilityUpdate: FacilityRegister = {
-      id: facilityInput.id,
+    const facilityDetails = facilityOboDetailsSchema.parse(req.body);
+    const facilityCreate: FacilityCreate = {
       cxId,
-      cqActive: facilityInput.cqActive,
-      cqType: facilityInput.cqType,
-      cqOboOid: facilityInput.cqOboOid,
-      cwActive: facilityInput.cwActive,
-      cwType: facilityInput.cwType,
-      cwOboOid: facilityInput.cwOboOid,
-      cwFacilityName: facilityInput.cwFacilityName,
       data: {
-        name: facilityInput.nameInMetriport,
-        npi: facilityInput.npi,
+        name: facilityDetails.nameInMetriport,
+        npi: facilityDetails.npi,
         address: {
-          addressLine1: facilityInput.addressLine1,
-          city: facilityInput.city,
-          state: facilityInput.state,
-          zip: facilityInput.zip,
-          country: facilityInput.country,
+          addressLine1: facilityDetails.addressLine1,
+          addressLine2: facilityDetails.addressLine2,
+          city: facilityDetails.city,
+          state: facilityDetails.state,
+          zip: facilityDetails.zip,
+          country: facilityDetails.country,
         },
       },
+      cqType: facilityDetails.cqType,
+      cwType: facilityDetails.cwType,
+      cqActive: facilityDetails.cqActive,
+      cwActive: facilityDetails.cwActive,
+      cqOboOid: facilityDetails.cqOboOid,
+      cwOboOid: facilityDetails.cwOboOid,
     };
+    const facility = await createOrUpdateFacility(
+      cxId,
+      facilityDetails.id,
+      facilityDetails.npi,
+      facilityCreate
+    );
 
-    const facility = await registerFacilityWithinHIEs(cxId, facilityUpdate);
+    const cxOrg = await getOrganizationOrFail({ cxId });
+    // CAREQUALITY
+    await createOrUpdateFacilityInCq({
+      cxId,
+      facility,
+      facilityName: facilityDetails.cqFacilityName,
+      cxOrgName: cxOrg.data.name,
+      cxOrgBizType: cxOrg.type,
+      cqOboOid: facilityDetails.cqOboOid,
+    });
+    // COMMONWELL
+    await createOrUpdateInCw({
+      cxId,
+      facility,
+      facilityName: facilityDetails.cwFacilityName,
+      cxOrgName: cxOrg.data.name,
+      cxOrgType: cxOrg.data.type,
+      cwOboOid: facilityDetails.cwOboOid,
+    });
 
     return res.status(httpStatus.OK).json(internalDtoFromModel(facility));
   })

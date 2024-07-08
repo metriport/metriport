@@ -17,18 +17,16 @@ export async function isFacilityEnabledToQueryCW(
   return await isHieEnabledToQuery(facilityId, patient, MedicalDataSource.COMMONWELL);
 }
 
-export function buildCwOrgName({
+export function buildCwOrgNameForFacility({
   vendorName,
   orgName,
-  isProvider,
   oboOid,
 }: {
   vendorName: string;
   orgName: string;
-  isProvider: boolean;
   oboOid?: string | null;
 }): string {
-  if (oboOid && !isProvider) {
+  if (oboOid) {
     return `${vendorName} - ${orgName} -OBO- ${oboOid}`;
   }
   return `${vendorName} - ${orgName}`;

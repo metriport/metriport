@@ -8,6 +8,7 @@ import { get as getCWOgranization, parseCWEntry } from "../../external/commonwel
 import { cwOrgActiveSchema } from "../../external/commonwell/shared";
 import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler, getFrom } from "../util";
+import { getUUIDFrom } from "../schemas/uuid";
 
 const router = Router();
 
@@ -22,10 +23,12 @@ router.get(
   "/organization/:oid",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getFrom("query").orFail("cxId", req);
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const oid = getFrom("params").orFail("oid", req);
+
     const org = await getOrganizationOrFail({ cxId });
     if (org.oid !== oid) throw new NotFoundError("Organization not found");
+
     const resp = await getCWOgranization(oid);
     if (!resp) throw new NotFoundError("Organization not found");
     const cwOrg = parseCWEntry(resp);
@@ -43,18 +46,19 @@ router.put(
   "/organization",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getFrom("query").orFail("cxId", req);
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const orgId = getFrom("query").orFail("orgId", req);
-    const body = req.body;
-    const orgActive = cwOrgActiveSchema.parse(body);
+
+    const orgActive = cwOrgActiveSchema.parse(req.body);
+
     const org = await getOrganizationOrFail({ cxId, id: orgId });
+    await org.update({
+      cwActive: orgActive.active,
+    });
     await createOrUpdateCWOrganization(cxId, {
       oid: org.oid,
       data: org.data,
       active: orgActive.active,
-    });
-    await org.update({
-      cwActive: orgActive.active,
     });
 
     return res.sendStatus(httpStatus.OK);

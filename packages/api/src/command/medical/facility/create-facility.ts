@@ -8,7 +8,7 @@ import {
 } from "../../../domain/medical/facility";
 import { FacilityModel } from "../../../models/medical/facility";
 
-export const createFacility = async ({
+export async function createFacility({
   cxId,
   data,
   cqActive = false,
@@ -17,7 +17,7 @@ export const createFacility = async ({
   cwActive = false,
   cwType = FacilityType.initiatorAndResponder,
   cwOboOid,
-}: FacilityCreate): Promise<Facility> => {
+}: FacilityCreate): Promise<Facility> {
   const input = {
     id: uuidv7(),
     oid: "", // will be set when facility is created in hook
@@ -33,7 +33,7 @@ export const createFacility = async ({
   };
   validateCreate(input);
   return FacilityModel.create(input);
-};
+}
 
 export function validateCreate(facility: FacilityCreate, throwOnError = true): boolean {
   const { cwType, cqType, cqOboOid, cwOboOid } = facility;

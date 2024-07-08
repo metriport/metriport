@@ -132,18 +132,16 @@ export function getSystemUserName(orgName: string): string {
   return `${orgName} System User`;
 }
 
-export function buildCqOrgName({
+export function buildCqOrgNameForFacility({
   vendorName,
   orgName,
-  isProvider,
   oboOid,
 }: {
   vendorName: string;
   orgName: string;
-  isProvider: boolean;
   oboOid?: string;
 }): string {
-  if (oboOid && !isProvider) {
+  if (oboOid) {
     return `${vendorName} - ${orgName} #OBO# ${oboOid}`;
   }
 
