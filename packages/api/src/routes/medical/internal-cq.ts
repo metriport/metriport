@@ -18,6 +18,7 @@ import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { uniqBy } from "lodash";
 import multer from "multer";
+import { verifyCxItVendorAccess } from "../../command/medical/facility/verify-access";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { makeCarequalityManagementAPI } from "../../external/carequality/api";
@@ -179,6 +180,7 @@ router.get(
 
     const org = await getOrganizationOrFail({ cxId });
     if (org.oid !== oid) throw new NotFoundError("Organization not found");
+
     const resp = await cq.listOrganizations({ count: 1, oid });
     if (resp.length === 0) throw new NotFoundError("Organization not found");
     const cqOrgs = parseCQDirectoryEntries(resp);
@@ -209,18 +211,19 @@ router.put(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const orgId = getFrom("query").orFail("orgId", req);
+    await verifyCxItVendorAccess(cxId);
 
     const orgActive = cqOrgActiveSchema.parse(req.body);
 
     const org = await getOrganizationOrFail({ cxId, id: orgId });
+    await org.update({
+      cqActive: orgActive.active,
+    });
     const { coordinates } = await getAddressWithCoordinates(org.data.location, cxId);
     const address = org.data.location;
     const addressLine = address.addressLine2
       ? `${address.addressLine1}, ${address.addressLine2}`
       : address.addressLine1;
-    await org.update({
-      cqActive: orgActive.active,
-    });
     await createOrUpdateCQOrganization({
       name: org.data.name,
       addressLine1: addressLine,

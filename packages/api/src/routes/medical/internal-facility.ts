@@ -60,15 +60,14 @@ router.put(
       facilityDetails.npi,
       facilityCreate
     );
-
-    const cxOrg = await getOrganizationOrFail({ cxId });
+    const org = await getOrganizationOrFail({ cxId });
     // CAREQUALITY
     await createOrUpdateFacilityInCq({
       cxId,
       facility,
       facilityName: facilityDetails.cqFacilityName,
-      cxOrgName: cxOrg.data.name,
-      cxOrgBizType: cxOrg.type,
+      cxOrgName: org.data.name,
+      cxOrgBizType: org.type,
       cqOboOid: facilityDetails.cqOboOid,
     });
     // COMMONWELL
@@ -76,8 +75,8 @@ router.put(
       cxId,
       facility,
       facilityName: facilityDetails.cwFacilityName,
-      cxOrgName: cxOrg.data.name,
-      cxOrgType: cxOrg.data.type,
+      cxOrgName: org.data.name,
+      cxOrgType: org.data.type,
       cwOboOid: facilityDetails.cwOboOid,
     });
 

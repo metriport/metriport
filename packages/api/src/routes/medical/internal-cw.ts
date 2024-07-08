@@ -2,6 +2,7 @@ import NotFoundError from "@metriport/core/util/error/not-found";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
+import { verifyCxItVendorAccess } from "../../command/medical/facility/verify-access";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { createOrUpdateCWOrganization } from "../../external/commonwell/create-or-update-cw-organization";
 import { get as getCWOgranization, parseCWEntry } from "../../external/commonwell/organization";
@@ -48,6 +49,7 @@ router.put(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const orgId = getFrom("query").orFail("orgId", req);
+    await verifyCxItVendorAccess(cxId);
 
     const orgActive = cwOrgActiveSchema.parse(req.body);
 

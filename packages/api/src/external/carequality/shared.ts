@@ -88,10 +88,6 @@ export const cqOrgDetailsOrgBizRequiredSchema = cqOrgDetailsSchema.required({
   organizationBizType: true,
 });
 
-export const cqOrgActiveSchema = z.object({
-  active: z.boolean(),
-});
-
 export type CQOrgDetails = z.infer<typeof cqOrgDetailsSchema>;
 export type CQOrgDetailsWithUrls = CQOrgDetails & CQOrgUrls;
 
@@ -147,3 +143,7 @@ export function buildCqOrgNameForFacility({
 
   return `${vendorName} - ${orgName}`;
 }
+
+export const cqOrgActiveSchema = z.object({
+  active: z.boolean(),
+});
