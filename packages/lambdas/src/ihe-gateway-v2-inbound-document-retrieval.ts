@@ -27,16 +27,19 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: ALBEvent) => {
   try {
     const boundary = getBoundaryFromMtomResponse(event.headers?.["content-type"]);
     let mtomParts: MtomAttachments;
+    const bodyBuffer = event.isBase64Encoded
+      ? Buffer.from(event.body, "base64")
+      : Buffer.from(event.body);
     if (boundary) {
-      mtomParts = await parseMtomResponse(Buffer.from(event.body), boundary);
+      mtomParts = await parseMtomResponse(bodyBuffer, boundary);
     } else {
-      mtomParts = convertSoapResponseToMtomResponse(Buffer.from(event.body));
+      mtomParts = convertSoapResponseToMtomResponse(bodyBuffer);
     }
     const soapData = mtomParts.parts[0]?.body || Buffer.from("");
 
     const drRequest: InboundDocumentRetrievalReq = processInboundDrRequest(soapData.toString());
     const result: InboundDocumentRetrievalResp = await processInboundDr(drRequest);
-    const xmlResponse = createInboundDrResponse(result);
+    const xmlResponse = await createInboundDrResponse(result);
 
     if (result.documentReference && result.documentReference.length > 1 && postHogSecretName) {
       const postHogApiKey = await getSecretValue(postHogSecretName, region);
