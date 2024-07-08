@@ -60,7 +60,7 @@ export const createOrganization = async (
         lon: `${locationWithCoordinates.coordinates.lon}`,
         postalCode: locationWithCoordinates.zip,
         organizationBizType: org.type,
-        active: org.cwActive,
+        active: org.cqActive,
         ...CqMetriportDataDefault,
       })
       .catch(processAsyncError(`cq.org.create`));
