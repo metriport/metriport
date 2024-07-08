@@ -35,11 +35,11 @@ router.get(
 );
 
 /**
- * POST /internal/commonwell/organization
+ * PUT /internal/commonwell/organization
  *
  * Creates or updates the organization in the CommonWell.
  */
-router.post(
+router.put(
   "/organization",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
