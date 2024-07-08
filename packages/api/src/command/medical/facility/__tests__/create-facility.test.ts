@@ -10,6 +10,7 @@ describe("createFacility", () => {
     beforeEach(() => {
       jest.restoreAllMocks();
       mockStartTransaction();
+      jest.spyOn(FacilityModel, "findOne").mockImplementation(async () => null);
       facilityModel_create = jest.spyOn(FacilityModel, "create").mockImplementation(async f => f);
     });
 

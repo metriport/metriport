@@ -2,9 +2,11 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { requestLogger } from "../helpers/request-logger";
-import { FacilityCreate } from "../../domain/medical/facility";
+import { Facility, FacilityCreate } from "../../domain/medical/facility";
 import { verifyCxItVendorAccess } from "../../command/medical/facility/verify-access";
-import { createOrUpdateFacility } from "../../command/medical/facility/create-or-update-facility";
+import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
+import { createFacility } from "../../command/medical/facility/create-facility";
+import { updateFacility } from "../../command/medical/facility/update-facility";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { facilityOboDetailsSchema } from "./schemas/facility";
 import { internalDtoFromModel } from "./dtos/facilityDTO";
@@ -54,12 +56,17 @@ router.put(
       cqOboOid: facilityDetails.cqOboOid,
       cwOboOid: facilityDetails.cwOboOid,
     };
-    const facility = await createOrUpdateFacility(
-      cxId,
-      facilityDetails.id,
-      facilityDetails.npi,
-      facilityCreate
-    );
+    let facility: Facility;
+    if (facilityDetails.id) {
+      const id = facilityDetails.id;
+      const currentFacility = await getFacilityOrFail({ cxId, id });
+      if (currentFacility.data.npi !== facilityDetails.npi) {
+        throw new Error("Cannot updated NPI once the faciilty is created on the HIEs");
+      }
+      facility = await updateFacility({ id, ...facilityCreate });
+    } else {
+      facility = await createFacility(facilityCreate);
+    }
     const org = await getOrganizationOrFail({ cxId });
     // CAREQUALITY
     await createOrUpdateFacilityInCq({

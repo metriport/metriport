@@ -29,7 +29,7 @@ beforeAll(() => {
     .spyOn(createTenant, "createTenantIfNotExists")
     .mockImplementation(async () => {});
   jest.spyOn(upsertOrgToFHIRServer, "upsertOrgToFHIRServer").mockImplementation(async () => {});
-  jest.spyOn(cwCommands.default.organization, "create").mockImplementation(async () => {});
+  jest.spyOn(cwCommands.default.organization, "createOrUpdate").mockImplementation(async () => {});
   jest.spyOn(address, "getAddressWithCoordinates").mockResolvedValue({
     addressLine1: "",
     city: "",
