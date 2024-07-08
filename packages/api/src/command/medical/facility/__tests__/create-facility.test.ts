@@ -68,23 +68,17 @@ describe("createFacility", () => {
     it("throws when OBO, CW OBO is active and CW OID is null", async () => {
       const facility = makeFacilityCreate({
         cwType: FacilityType.initiatorOnly,
-        cwActive: true,
         cwOboOid: null,
       });
-      expect(() => validateCreate(facility)).toThrow(
-        "CW OBO facility must have CW OBO OID when CW OBO active"
-      );
+      expect(() => validateCreate(facility)).toThrow("CW OBO facility must have CW OBO OID");
     });
 
     it("throws when OBO, CQ OBO is active and CQ OID is null", async () => {
       const facility = makeFacilityCreate({
         cqType: FacilityType.initiatorOnly,
-        cqActive: true,
         cqOboOid: null,
       });
-      expect(() => validateCreate(facility)).toThrow(
-        "CQ OBO facility must have CQ OBO OID when CQ OBO active"
-      );
+      expect(() => validateCreate(facility)).toThrow("CQ OBO facility must have CQ OBO OID");
     });
   });
 });

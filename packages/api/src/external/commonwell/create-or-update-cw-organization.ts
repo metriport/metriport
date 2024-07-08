@@ -1,5 +1,4 @@
-import { CWOrganization } from "./organization";
-import cwCommands from "./";
+import { CWOrganization, get, update, create } from "./organization";
 
 export async function createOrUpdateCWOrganization(
   cxId: string,
@@ -8,12 +7,12 @@ export async function createOrUpdateCWOrganization(
 ): Promise<void> {
   const orgExists = await doesOrganizationExistInCW(org.oid);
   if (orgExists) {
-    return cwCommands.organization.update(cxId, org, isObo);
+    return update(cxId, org, isObo);
   }
-  return cwCommands.organization.create(cxId, org, isObo);
+  return create(cxId, org, isObo);
 }
 
 async function doesOrganizationExistInCW(oid: string): Promise<boolean> {
-  const org = await cwCommands.organization.get(oid);
+  const org = await get(oid);
   return !!org;
 }

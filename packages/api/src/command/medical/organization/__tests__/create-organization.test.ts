@@ -1,10 +1,12 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { faker } from "@faker-js/faker";
 import { v4 as uuidv4 } from "uuid";
+import { USState } from "@metriport/core/domain/geographic-locations";
 import {
   makeOrganization,
   makeOrganizationData,
 } from "../../../../domain/medical/__tests__/organization";
+import * as address from "../../../../domain/medical/address";
 import * as createTenant from "../../../../external/fhir/admin";
 import { OrganizationModel } from "../../../../models/medical/organization";
 import { makeOrganizationOID } from "../../../../shared/oid";
@@ -28,6 +30,17 @@ beforeAll(() => {
     .mockImplementation(async () => {});
   jest.spyOn(upsertOrgToFHIRServer, "upsertOrgToFHIRServer").mockImplementation(async () => {});
   jest.spyOn(cwCommands.default.organization, "create").mockImplementation(async () => {});
+  jest.spyOn(address, "getAddressWithCoordinates").mockResolvedValue({
+    addressLine1: "",
+    city: "",
+    state: "" as USState,
+    zip: "00000",
+    country: "USA",
+    coordinates: {
+      lat: 0,
+      lon: 0,
+    },
+  });
 });
 beforeEach(() => {
   jest.clearAllMocks();
