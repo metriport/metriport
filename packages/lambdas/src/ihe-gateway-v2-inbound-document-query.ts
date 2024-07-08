@@ -1,4 +1,4 @@
-import { ALBEvent } from "aws-lambda";
+import { APIGatewayProxyEventV2 } from "aws-lambda";
 import { InboundDocumentQueryReq, InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
 import { errorToString } from "@metriport/shared";
 import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
@@ -7,6 +7,7 @@ import { processInboundDqRequest } from "@metriport/core/external/carequality/ih
 import { createInboundDqResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xca/create/dq-response";
 import { analyticsAsync, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { getEnvVarOrFail, getEnvVar } from "@metriport/core/util/env-var";
+import { out } from "@metriport/core/util/log";
 import { getEnvOrFail } from "./shared/env";
 
 const apiUrl = getEnvVarOrFail("API_URL");
@@ -14,8 +15,9 @@ const region = getEnvVarOrFail("AWS_REGION");
 const engineeringCxId = getEnvVar("ENGINEERING_CX_ID");
 const postHogSecretName = getEnvVar("POST_HOG_API_KEY_SECRET");
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
+const { log } = out(`ihe-gateway-v2-inbound-document-query`);
 
-export async function handler(event: ALBEvent) {
+export async function handler(event: APIGatewayProxyEventV2) {
   try {
     if (!event.body) return buildResponse(400, { message: "The request body is empty" });
     try {
@@ -48,11 +50,12 @@ export async function handler(event: ALBEvent) {
 
       return buildResponse(200, xmlResponse);
     } catch (error) {
+      log(`Error processing event on ${lambdaName}: ${errorToString(error)}`);
       return buildResponse(400, error);
     }
   } catch (error) {
     const msg = "Error processing event on " + lambdaName;
-    console.log(`${msg}: ${errorToString(error)}`);
+    log(`${msg}: ${errorToString(error)}`);
     return buildResponse(500, "Internal Server Error");
   }
 }

@@ -1,4 +1,4 @@
-import { ALBEvent } from "aws-lambda";
+import { APIGatewayProxyEventV2 } from "aws-lambda";
 import {
   InboundDocumentRetrievalReq,
   InboundDocumentRetrievalResp,
@@ -16,14 +16,16 @@ import {
   convertSoapResponseToMtomResponse,
   MtomAttachments,
 } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/mtom/parser";
+import { out } from "@metriport/core/util/log";
 import { getEnvOrFail } from "./shared/env";
 
 const postHogSecretName = getEnvVar("POST_HOG_API_KEY_SECRET");
 const engineeringCxId = getEnvVar("ENGINEERING_CX_ID");
 const region = getEnvVarOrFail("AWS_REGION");
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
+const { log } = out(`ihe-gateway-v2-inbound-document-retrieval`);
 
-export async function handler(event: ALBEvent) {
+export async function handler(event: APIGatewayProxyEventV2) {
   try {
     if (!event.body) return buildResponse(400, { message: "The request body is empty" });
     try {
@@ -64,11 +66,12 @@ export async function handler(event: ALBEvent) {
 
       return buildResponse(200, xmlResponse);
     } catch (error) {
+      log(`Error processing event on ${lambdaName}: ${errorToString(error)}`);
       return buildResponse(400, error);
     }
   } catch (error) {
     const msg = "Error processing event on " + lambdaName;
-    console.log(`${msg}: ${errorToString(error)}`);
+    log(`${msg}: ${errorToString(error)}`);
     return buildResponse(500, "Internal Server Error");
   }
 }

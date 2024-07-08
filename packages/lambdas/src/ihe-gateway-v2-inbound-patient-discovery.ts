@@ -1,4 +1,4 @@
-import { ALBEvent } from "aws-lambda";
+import { APIGatewayProxyEventV2 } from "aws-lambda";
 import {
   InboundPatientDiscoveryReq,
   InboundPatientDiscoveryResp,
@@ -11,6 +11,8 @@ import { MPIMetriportAPI } from "@metriport/core/mpi/patient-mpi-metriport-api";
 import { getEnvVarOrFail, getEnvVar } from "@metriport/core/util/env-var";
 import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
 import { analyticsAsync, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { out } from "@metriport/core/util/log";
+
 import { getEnvOrFail } from "./shared/env";
 
 const apiUrl = getEnvVarOrFail("API_URL");
@@ -20,8 +22,9 @@ const engineeringCxId = getEnvVar("ENGINEERING_CX_ID");
 const postHogSecretName = getEnvVar("POST_HOG_API_KEY_SECRET");
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const mpi = new MPIMetriportAPI(apiUrl);
+const { log } = out(`ihe-gateway-v2-inbound-patient-discovery`);
 
-export async function handler(event: ALBEvent) {
+export async function handler(event: APIGatewayProxyEventV2) {
   try {
     if (!event.body) return buildResponse(400, { message: "The request body is empty" });
 
@@ -54,12 +57,12 @@ export async function handler(event: ALBEvent) {
 
       return buildResponse(200, xmlResponse);
     } catch (error) {
-      console.log(JSON.stringify(error, null, 2));
+      log(`Error processing event on ${lambdaName}: ${errorToString(error)}`);
       return buildResponse(400, error);
     }
   } catch (error) {
     const msg = "Error processing event on " + lambdaName;
-    console.log(`${msg}: ${errorToString(error)}`);
+    log(`${msg}: ${errorToString(error)}`);
     return buildResponse(500, "Internal Server Error");
   }
 }

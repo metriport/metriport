@@ -73,7 +73,6 @@ export function processInboundXcpdRequest(request: string): InboundPatientDiscov
       ),
     };
   } catch (error) {
-    console.log("schema error", JSON.stringify(error, null, 2));
     throw new Error(`Failed to parse ITI-55 request: ${error}`);
   }
 }

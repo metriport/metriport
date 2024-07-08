@@ -24,9 +24,7 @@ app.post("/v2/patient-discovery", async (req: Request, res: Response) => {
 
 app.post("/v2/document-query", async (req: Request, res: Response) => {
   try {
-    console.log("req.body", req.body);
     const response = processInboundDqRequest(req.body.toString());
-    console.log("response", response);
     res.set("Content-Type", "application/json; charset=utf-8");
     res.send({ response });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
