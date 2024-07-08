@@ -56,7 +56,7 @@ export const getFacilityByNpi = async ({
 }: {
   cxId: string;
   npi: string;
-}): Promise<FacilityModel> => {
+}): Promise<FacilityModel | null> => {
   const facility = await FacilityModel.findOne({
     where: {
       cxId,
@@ -65,6 +65,5 @@ export const getFacilityByNpi = async ({
       },
     },
   });
-  if (!facility) throw new NotFoundError(`Could not find facility`, undefined, { npi });
   return facility;
 };
