@@ -21,8 +21,8 @@ async function doesOrganizationExistInCQ(
   cq: CarequalityManagementAPI,
   oid: string
 ): Promise<boolean> {
-  const cqOrgs = await cq.listOrganizations({ count: 1, oid });
-  return cqOrgs.length > 0;
+  const resp = await cq.listOrganizations({ count: 1, oid });
+  return resp.length > 0;
 }
 
 export async function getCqOrganization(oid: string): Promise<CQSdkOrganization | undefined> {

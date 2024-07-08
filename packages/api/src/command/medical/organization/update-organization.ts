@@ -5,7 +5,7 @@ import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getOrganizationOrFail } from "./get-organization";
 import { toFHIR } from "../../../external/fhir/organization";
 import { upsertOrgToFHIRServer } from "../../../external/fhir/organization/upsert-organization";
-import { CqMetriportDataDefault } from "../../../external/carequality/shared";
+import { CQ_METRIPORT_DEFAULT_DATA } from "../../../external/carequality/shared";
 import cwCommands from "../../../external/commonwell";
 import cqCommands from "../../../external/carequality";
 import { getAddressWithCoordinates } from "../../../domain/medical/address";
@@ -53,7 +53,7 @@ export const updateOrganization = async (
         postalCode: locationWithCoordinates.zip,
         organizationBizType: updatedOrg.type,
         active: updatedOrg.cqActive,
-        ...CqMetriportDataDefault,
+        ...CQ_METRIPORT_DEFAULT_DATA,
       })
       .catch(processAsyncError(`cq.org.update`));
   }

@@ -10,7 +10,7 @@ import { createOrganizationId } from "../customer-sequence/create-id";
 import { getOrganization } from "./get-organization";
 import { toFHIR } from "../../../external/fhir/organization";
 import { upsertOrgToFHIRServer } from "../../../external/fhir/organization/upsert-organization";
-import { CqMetriportDataDefault } from "../../../external/carequality/shared";
+import { CQ_METRIPORT_DEFAULT_DATA } from "../../../external/carequality/shared";
 import cwCommands from "../../../external/commonwell";
 import cqCommands from "../../../external/carequality";
 import { getAddressWithCoordinates } from "../../../domain/medical/address";
@@ -61,7 +61,7 @@ export const createOrganization = async (
         postalCode: locationWithCoordinates.zip,
         organizationBizType: org.type,
         active: org.cqActive,
-        ...CqMetriportDataDefault,
+        ...CQ_METRIPORT_DEFAULT_DATA,
       })
       .catch(processAsyncError(`cq.org.create`));
   }
@@ -87,7 +87,7 @@ async function createOrganizationInternal(
       cxId,
       data: { name, type, location },
       cqActive: false,
-      cwActive: true,
+      cwActive: orgType === "healthcare_provider" ? true : false,
     });
 
     return org;

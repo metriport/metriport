@@ -12,7 +12,7 @@ import {
   getCertificate,
   makeCommonWellAPI,
   makeCommonWellManagementAPI,
-  metriportQueryMeta as queryMeta,
+  metriportQueryMeta,
 } from "./api";
 
 const MAX_HIGH_PRIO_ORGS = 50;
@@ -31,7 +31,7 @@ export type CWOrganization = Omit<
 
 type CWSdkOrganizationWithOrgId = Omit<CWSdkOrganization, "organizationId"> &
   Required<Pick<CWSdkOrganization, "organizationId">>;
-type CWSdkOrganizationLocation = Pick<CWSdkOrganization, "locations">["locations"][0];
+type CWSdkOrganizationLocation = Pick<CWSdkOrganization, "locations">["locations"][number];
 
 export async function organizationToCommonwell(
   org: CWOrganization,
@@ -82,35 +82,13 @@ export async function organizationToCommonwell(
   return cwOrg;
 }
 
-export function parseCWEntry(org: CWSdkOrganization): CWOrganization {
-  const location = (
-    org.locations as [CWSdkOrganizationLocation, ...CWSdkOrganizationLocation[]]
-  )[0];
-  return {
-    data: {
-      name: org.name,
-      location: {
-        addressLine1: location.address1,
-        addressLine2: location.address2 ? location.address2 : undefined,
-        city: location.city,
-        state: location.state as USState,
-        zip: location.postalCode,
-        country: location.country,
-      },
-      type: org.type as OrgType,
-    },
-    oid: org.organizationId.replace(OID_PREFIX, ""),
-    active: org.isActive,
-  };
-}
-
 export async function get(orgOid: string): Promise<CWSdkOrganization | undefined> {
   const { log, debug } = out(`CW get (Organization) - CW Org OID ${orgOid}`);
   const cwId = OID_PREFIX.concat(orgOid);
 
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   try {
-    const resp = await commonWell.getOneOrg(queryMeta, cwId);
+    const resp = await commonWell.getOneOrg(metriportQueryMeta, cwId);
     debug(`resp getOneOrg: `, JSON.stringify(resp));
     return resp;
   } catch (error) {
@@ -136,9 +114,13 @@ export async function create(cxId: string, org: CWOrganization, isObo = false): 
 
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   try {
-    const respCreate = await commonWell.createOrg(queryMeta, commonwellOrg);
+    const respCreate = await commonWell.createOrg(metriportQueryMeta, commonwellOrg);
     debug(`resp createOrg: `, JSON.stringify(respCreate));
-    const respAddCert = await commonWell.addCertificateToOrg(queryMeta, getCertificate(), org.oid);
+    const respAddCert = await commonWell.addCertificateToOrg(
+      metriportQueryMeta,
+      getCertificate(),
+      org.oid
+    );
     debug(`resp respAddCert: `, JSON.stringify(respAddCert));
 
     if (await isEnhancedCoverageEnabledForCx(cxId)) {
@@ -168,7 +150,11 @@ export async function update(cxId: string, org: CWOrganization, isObo = false): 
 
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   try {
-    const resp = await commonWell.updateOrg(queryMeta, commonwellOrg, commonwellOrg.organizationId);
+    const resp = await commonWell.updateOrg(
+      metriportQueryMeta,
+      commonwellOrg,
+      commonwellOrg.organizationId
+    );
     debug(`resp updateOrg: `, JSON.stringify(resp));
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
@@ -216,4 +202,26 @@ export async function initCQOrgIncludeList(orgOid: string): Promise<void> {
       },
     });
   }
+}
+
+export function parseCWEntry(org: CWSdkOrganization): CWOrganization {
+  const location = (
+    org.locations as [CWSdkOrganizationLocation, ...CWSdkOrganizationLocation[]]
+  )[0];
+  return {
+    data: {
+      name: org.name,
+      location: {
+        addressLine1: location.address1,
+        addressLine2: location.address2 ? location.address2 : undefined,
+        city: location.city,
+        state: location.state as USState,
+        zip: location.postalCode,
+        country: location.country,
+      },
+      type: org.type as OrgType,
+    },
+    oid: org.organizationId.replace(OID_PREFIX, ""),
+    active: org.isActive,
+  };
 }
