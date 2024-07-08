@@ -1,4 +1,5 @@
 import { XMLBuilder } from "fast-xml-parser";
+import { v4 as uuidv4 } from "uuid";
 import {
   InboundPatientDiscoveryResp,
   InboundPatientDiscoveryReq,
@@ -10,7 +11,6 @@ import { namespaces } from "../../../constants";
 import { timestampToSoapBody } from "../../../utils";
 import { METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX } from "../../../../shared";
 import { mapFhirToMetriportGender } from "../../../../../fhir/patient/index";
-import { uuidv7 } from "../../../../../../util/uuid-v7";
 
 function createQueryByParameter(request: InboundPatientDiscoveryReq): object {
   const { id, samlAttributes, patientResource } = request;
@@ -185,7 +185,7 @@ function createIti55SoapBody(
     "@_xmlns:urn": namespaces.hl7,
     PRPA_IN201306UV02: {
       id: {
-        "@_root": uuidv7(), // TODO change this if we ever end up keeping track of these.
+        "@_root": uuidv4(), // TODO #1776 monitoring PR
       },
       creationTime: timestampToSoapBody(response.timestamp),
       interactionId: {

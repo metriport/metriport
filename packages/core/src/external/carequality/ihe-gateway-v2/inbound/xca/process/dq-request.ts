@@ -51,7 +51,6 @@ export function processInboundDqRequest(request: string): InboundDocumentQueryRe
       ),
     };
   } catch (error) {
-    console.log(error);
     throw new Error(`Failed to parse ITI-38 request: ${error}`);
   }
 }

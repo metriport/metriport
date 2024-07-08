@@ -78,8 +78,6 @@ export const AttributeSchema = z.union([
 export type AttributeValue = z.infer<typeof AttributeSchema>;
 
 export const samlHeaderSchema = z.object({
-  // messageId
-  // signature
   MessageID: textSchema,
   Security: z.object({
     Timestamp: z.object({

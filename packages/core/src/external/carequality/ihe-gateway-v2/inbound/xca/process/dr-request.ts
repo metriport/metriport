@@ -24,7 +24,6 @@ export function processInboundDrRequest(request: string): InboundDocumentRetriev
       removeNSPrefix: true,
     });
     const jsonObj = parser.parse(request);
-    console.log("jsonObj", JSON.stringify(jsonObj, null, 2));
     const iti39Request = iti39RequestSchema.parse(jsonObj);
     const samlAttributes = convertSamlHeaderToAttributes(iti39Request.Envelope.Header);
     const documentRequests = toArray(
@@ -42,7 +41,6 @@ export function processInboundDrRequest(request: string): InboundDocumentRetriev
       ),
     };
   } catch (error) {
-    console.log(error);
     throw new Error(`Failed to parse ITI-39 request: ${error}`);
   }
 }
