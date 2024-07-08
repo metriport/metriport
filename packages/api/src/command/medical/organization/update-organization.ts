@@ -40,7 +40,7 @@ export const updateOrganization = async (
         data: updatedOrg.data,
         active: updatedOrg.cwActive,
       })
-      .catch(processAsyncError(`cw.org.create`));
+      .catch(processAsyncError(`cw.org.update`));
 
     const locationWithCoordinates = await getAddressWithCoordinates(updatedOrg.data.location, cxId);
     cqCommands.organization

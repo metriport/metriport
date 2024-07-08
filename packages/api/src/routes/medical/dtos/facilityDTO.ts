@@ -13,6 +13,7 @@ export type FacilityDTO = BaseDTO & {
 
 export type InternalFacilityDTO = BaseDTO &
   FacilityDTO & {
+    oid: string;
     cqType: FacilityType;
     cqActive: boolean;
     cqOboOid: string | null;
@@ -44,6 +45,7 @@ export function internalDtoFromModel(facility: Facility): InternalFacilityDTO {
     tin,
     active,
     address,
+    oid: facility.oid,
     cqType: facility.cqType,
     cqActive: facility.cqActive,
     cqOboOid: facility.cqOboOid,

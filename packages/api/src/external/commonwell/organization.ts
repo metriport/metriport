@@ -91,7 +91,7 @@ export function parseCWEntry(org: CWSdkOrganization): CWOrganization {
       name: org.name,
       location: {
         addressLine1: location.address1,
-        addressLine2: location.address2 !== null ? location.address2 : undefined,
+        addressLine2: location.address2 ? location.address2 : undefined,
         city: location.city,
         state: location.state as USState,
         zip: location.postalCode,
@@ -182,7 +182,7 @@ export async function update(cxId: string, org: CWOrganization, isObo = false): 
     };
     if (error.response?.status === 404) {
       capture.message("Got 404 while updating Org @ CW, creating it", { extra });
-      await create(cxId, org);
+      await create(cxId, org, isObo);
     }
     const msg = `Failure while updating org @ CW`;
     log(`${msg}. Org OID: ${org.oid}. Cause: ${errorToString(error)}. CW Reference: ${cwRef}`);

@@ -17,18 +17,18 @@ export async function createOrUpdateCQOrganization(orgDetails: CQOrgDetails): Pr
   return registerOrganization(cq, org);
 }
 
-export async function getCqOrganization(oid: string): Promise<CQSdkOrganization | undefined> {
-  if (!cq) throw new Error("Carequality API not initialized");
-  const organizations = await cq.listOrganizations({ count: 1, oid });
-  return organizations[0];
-}
-
 async function doesOrganizationExistInCQ(
   cq: CarequalityManagementAPI,
   oid: string
 ): Promise<boolean> {
   const cqOrgs = await cq.listOrganizations({ count: 1, oid });
   return cqOrgs.length > 0;
+}
+
+export async function getCqOrganization(oid: string): Promise<CQSdkOrganization | undefined> {
+  if (!cq) throw new Error("Carequality API not initialized");
+  const organizations = await cq.listOrganizations({ count: 1, oid });
+  return organizations[0];
 }
 
 async function updateCQOrganization(

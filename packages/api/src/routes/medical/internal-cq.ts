@@ -196,7 +196,7 @@ router.get(
 );
 
 /**
- * POST /internal/carequality/directory/organization/v2
+ * PUT /internal/carequality/directory/organization/v2
  *
  * Creates or updates the organization in the Carequality Directory.
  */
