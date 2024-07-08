@@ -62,6 +62,15 @@ export function handlePatientErrorResponse({
       text: acknowledgementDetail?.text
         ? extractText(acknowledgementDetail.text)
         : acknowledgementDetail?.location ?? "unknown",
+      ...(acknowledgementDetail?.code?._code &&
+        acknowledgementDetail?.code?._codeSystem && {
+          coding: [
+            {
+              code: acknowledgementDetail.code._code,
+              system: acknowledgementDetail.code._codeSystem,
+            },
+          ],
+        }),
     },
   };
   const operationOutcome: OperationOutcome = {

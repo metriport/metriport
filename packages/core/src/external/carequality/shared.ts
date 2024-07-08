@@ -2,7 +2,7 @@ import { InboundDocumentQueryReq, InboundDocumentRetrievalReq } from "@metriport
 import { XDSMissingHomeCommunityId, XDSRegistryError } from "./error";
 import { USState } from "../../domain/geographic-locations";
 import { base64ToString, stringToBase64 } from "../../util/base64";
-import { IheGender } from "./ihe-gateway-v2/outbound/xcpd/process/schema";
+import { IheGender } from "./ihe-gateway-v2/schema";
 import { FhirGender } from "../fhir/patient/index";
 
 /*
@@ -150,7 +150,6 @@ export function mapIheGenderToFhir(k: IheGender | undefined): FhirGender {
   return gender ? gender : "unknown";
 }
 
-export function mapFhirToIheGender(gender: FhirGender): IheGender {
-  const iheGender = fhirGenderToIheGender[gender];
-  return iheGender ? iheGender : "UNK";
+export function mapFhirToIheGender(gender: FhirGender | undefined): IheGender {
+  return gender ? fhirGenderToIheGender[gender] : "UNK";
 }

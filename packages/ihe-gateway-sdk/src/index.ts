@@ -38,6 +38,7 @@ export {
 export {
   InboundPatientDiscoveryResp,
   inboundPatientDiscoveryRespSchema,
+  isSuccessfulPatientDiscoveryResponse,
   outboundPatientDiscoveryRespSuccessfulSchema,
   outboundPatientDiscoveryRespFaultSchema,
   OutboundPatientDiscoveryResp,
@@ -61,6 +62,7 @@ export {
   SamlAttributes,
   XCAGateway,
   XCPDGateway,
+  XCPDPatientId,
 } from "./models/shared";
 export {
   Name,

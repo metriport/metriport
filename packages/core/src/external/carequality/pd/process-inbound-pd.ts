@@ -36,10 +36,11 @@ function constructMatchResponse(
     },
     patientResource: toIheGatewayPatientResource(patient),
     gatewayHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
+    signatureConfirmation: payload.signatureConfirmation,
   };
 }
 
-export async function processInboundPatientDiscovery(
+export async function processInboundXcpd(
   payload: InboundPatientDiscoveryReq,
   mpi: MPI
 ): Promise<InboundPatientDiscoveryResp> {
