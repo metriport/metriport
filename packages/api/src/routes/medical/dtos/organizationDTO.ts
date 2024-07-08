@@ -9,6 +9,12 @@ export type OrganizationDTO = BaseDTO & {
   location: AddressStrictDTO;
 };
 
+export type InternalOrganizationDTO = BaseDTO &
+  OrganizationDTO & {
+    cqActive: boolean;
+    cwActive: boolean;
+  };
+
 export function dtoFromModel(org: Organization): OrganizationDTO {
   const { name, type, location } = org.data;
   return {
@@ -17,5 +23,18 @@ export function dtoFromModel(org: Organization): OrganizationDTO {
     name,
     type,
     location,
+  };
+}
+
+export function internalDtoFromModel(org: Organization): InternalOrganizationDTO {
+  const { name, type, location } = org.data;
+  return {
+    ...toBaseDTO(org),
+    oid: org.oid,
+    name,
+    type,
+    location,
+    cqActive: org.cqActive,
+    cwActive: org.cwActive,
   };
 }

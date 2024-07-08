@@ -30,5 +30,7 @@ export const makeOrganization = ({
     organizationNumber: organizationNumber != null ? organizationNumber : makeOrgNumber(),
     type: type ?? faker.helpers.arrayElement(Object.values(OrganizationBizType)),
     data: makeOrganizationData(),
+    cqActive: false,
+    cwActive: false,
   };
 };

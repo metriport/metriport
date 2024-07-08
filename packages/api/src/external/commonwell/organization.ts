@@ -26,7 +26,15 @@ const technicalContact = {
 
 export type CWOrganization = Omit<
   Organization,
-  "id" | "cxId" | "type" | "organizationNumber" | "eTag" | "createdAt" | "updatedAt"
+  | "id"
+  | "cxId"
+  | "type"
+  | "organizationNumber"
+  | "eTag"
+  | "createdAt"
+  | "updatedAt"
+  | "cwActive"
+  | "cqActive"
 > & { active: boolean };
 
 type CWSdkOrganizationWithOrgId = Omit<CWSdkOrganization, "organizationId"> &
