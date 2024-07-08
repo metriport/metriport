@@ -1345,8 +1345,8 @@ module.exports.external = [
       const presentedForm = [];
       if (b64String) {
         presentedForm.push({
-          data: b64String,
           contentType: "text/plain",
+          data: b64String,
         });
       }
       if (component) {
@@ -1355,8 +1355,8 @@ module.exports.external = [
           const obsValueB64 = comp.observation?.value?._b64;
           if (obsValueB64) {
             presentedForm.push({
-              data: obsValueB64,
               contentType: "text/plain",
+              data: obsValueB64,
             });
           }
         });

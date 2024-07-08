@@ -12,8 +12,8 @@ const component = [
 const makePresentedFormEntry = strings => {
   return strings.map(string => {
     return {
-      data: string,
       contentType: "text/plain",
+      data: string,
     };
   });
 };
