@@ -7,7 +7,7 @@ export async function verifyCxItVendorAccess(
   throwOnNoAccess = true
 ): Promise<boolean> {
   const org = await getOrganizationOrFail({ cxId });
-  if (org.type === OrganizationBizType.healthcareITVendor) {
+  if (org.type === OrganizationBizType.healthcareProvider) {
     if (throwOnNoAccess) {
       throw new ForbiddenError("Facilities cannot be created or updated, contact support.");
     }
@@ -21,7 +21,7 @@ export async function verifyCxProviderAccess(
   throwOnNoAccess = true
 ): Promise<boolean> {
   const org = await getOrganizationOrFail({ cxId });
-  if (org.type === OrganizationBizType.healthcareProvider) {
+  if (org.type === OrganizationBizType.healthcareITVendor) {
     if (throwOnNoAccess) {
       throw new ForbiddenError("Facilities cannot be created or updated, contact support.");
     }

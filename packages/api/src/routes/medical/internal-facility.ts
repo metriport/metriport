@@ -3,7 +3,7 @@ import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { requestLogger } from "../helpers/request-logger";
 import { FacilityCreate } from "../../domain/medical/facility";
-import { verifyCxProviderAccess } from "../../command/medical/facility/verify-access";
+import { verifyCxItVendorAccess } from "../../command/medical/facility/verify-access";
 import { createOrUpdateFacility } from "../../command/medical/facility/create-or-update-facility";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { facilityOboDetailsSchema } from "./schemas/facility";
@@ -30,7 +30,7 @@ router.put(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    await verifyCxProviderAccess(cxId);
+    await verifyCxItVendorAccess(cxId);
 
     const facilityDetails = facilityOboDetailsSchema.parse(req.body);
     const facilityCreate: FacilityCreate = {

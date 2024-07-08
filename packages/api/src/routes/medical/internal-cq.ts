@@ -18,7 +18,7 @@ import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { uniqBy } from "lodash";
 import multer from "multer";
-import { verifyCxItVendorAccess } from "../../command/medical/facility/verify-access";
+import { verifyCxProviderAccess } from "../../command/medical/facility/verify-access";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { makeCarequalityManagementAPI } from "../../external/carequality/api";
@@ -211,7 +211,7 @@ router.put(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const orgId = getFrom("query").orFail("orgId", req);
-    await verifyCxItVendorAccess(cxId);
+    await verifyCxProviderAccess(cxId);
 
     const orgActive = cqOrgActiveSchema.parse(req.body);
 
