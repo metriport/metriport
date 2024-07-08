@@ -10,13 +10,13 @@ export const up: Migration = async ({ context: queryInterface }) => {
     await queryInterface.addColumn(
       tableName,
       cqActiveColumn,
-      { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+      { type: DataTypes.BOOLEAN, defaultValue: false },
       { transaction }
     );
     await queryInterface.addColumn(
       tableName,
       cwActiveColumn,
-      { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+      { type: DataTypes.BOOLEAN, defaultValue: false },
       { transaction }
     );
   });
