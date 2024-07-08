@@ -52,12 +52,12 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: ALBEvent) => {
 
     return buildResponse(200, xmlResponse);
   } catch (error) {
+    console.log(JSON.stringify(error, null, 2));
     return buildResponse(400, error);
   }
 });
 
 function buildResponse(status: number, body: unknown) {
-  console.log(`Returning (${status}): ${JSON.stringify(body)}`);
   return {
     statusCode: status,
     headers: { "Content-Type": "application/soap+xml" },

@@ -10,6 +10,12 @@ import { processInboundDr } from "@metriport/core/external/carequality/dr/proces
 import { processInboundDrRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xca/process/dr-request";
 import { createInboundDrResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xca/create/dr-response";
 import { analyticsAsync, EventTypes } from "@metriport/core/external/analytics/posthog";
+import {
+  getBoundaryFromMtomResponse,
+  parseMtomResponse,
+  convertSoapResponseToMtomResponse,
+  MtomAttachments,
+} from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/mtom/parser";
 
 const postHogSecretName = getEnvVar("POST_HOG_API_KEY_SECRET");
 const engineeringCxId = getEnvVar("ENGINEERING_CX_ID");
@@ -19,7 +25,16 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: ALBEvent) => {
   console.log(`Running with ${event}`);
   if (!event.body) return buildResponse(400, { message: "The request body is empty" });
   try {
-    const drRequest: InboundDocumentRetrievalReq = processInboundDrRequest(event.body);
+    const boundary = getBoundaryFromMtomResponse(event.headers?.["content-type"]);
+    let mtomParts: MtomAttachments;
+    if (boundary) {
+      mtomParts = await parseMtomResponse(Buffer.from(event.body), boundary);
+    } else {
+      mtomParts = convertSoapResponseToMtomResponse(Buffer.from(event.body));
+    }
+    const soapData = mtomParts.parts[0]?.body || Buffer.from("");
+
+    const drRequest: InboundDocumentRetrievalReq = processInboundDrRequest(soapData.toString());
     const result: InboundDocumentRetrievalResp = await processInboundDr(drRequest);
     const xmlResponse = createInboundDrResponse(result);
 
