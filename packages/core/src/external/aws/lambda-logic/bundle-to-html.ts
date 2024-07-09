@@ -810,7 +810,7 @@ function createPractionerField(
   const practitioner = mappedPractitioners[practitionerRefId];
   const practitionerName =
     (practitioner?.name?.[0]?.given?.[0] ?? "") + " " + (practitioner?.name?.[0]?.family ?? "");
-  const practitionerTitle = practitioner?.qualification?.[0]?.code?.coding?.[0]?.display ?? "";
+  const practitionerTitle = getValidCode(practitioner?.qualification?.[0]?.code?.coding)[0]?.display ?? "";
 
   const hasName = practitionerName.trim().length > 0;
   const hasTitle = practitionerTitle.trim().length > 0;
@@ -1002,9 +1002,9 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
       );
 
       const name =
-        idc10Code?.display ?? condition.code?.coding?.[0]?.display ?? condition.code?.text ?? "";
+        idc10Code?.display ?? getValidCode(condition.code?.coding)[0]?.display ?? condition.code?.text ?? "";
       const onsetDateTime = condition.onsetDateTime ?? "";
-      const clinicalStatus = condition.clinicalStatus?.coding?.[0]?.display ?? "";
+      const clinicalStatus = getValidCode(condition.clinicalStatus?.coding)[0]?.display ?? "";
       let onsetStartTime = condition.onsetPeriod?.start ?? "";
       let onsetEndTime = condition.onsetPeriod?.end ?? "";
 
@@ -1325,8 +1325,8 @@ function createObservationSocialHistorySection(observations: Observation[]) {
   const removeDuplicate = uniqWith(observationsSortedByDate, (a, b) => {
     const aDate = dayjs(a.effectiveDateTime).format(ISO_DATE);
     const bDate = dayjs(b.effectiveDateTime).format(ISO_DATE);
-    const aText = a.code?.text ?? a.code?.coding?.[0]?.display;
-    const bText = b.code?.text ?? b.code?.coding?.[0]?.display;
+    const aText = a.code?.text ?? getValidCode(a.code?.coding)[0]?.display;
+    const bText = b.code?.text ?? getValidCode(b.code?.coding)[0]?.display;
     const aValue = renderSocialHistoryValue(a) ?? "";
     const bValue = renderSocialHistoryValue(b) ?? "";
     if (aText === undefined || bText === undefined) {
@@ -1337,13 +1337,13 @@ function createObservationSocialHistorySection(observations: Observation[]) {
     .filter(observation => {
       const value = renderSocialHistoryValue(observation) ?? "";
       const blacklistValues = ["sex assigned at birth"];
-      const display = observation.code?.coding?.[0]?.display ?? "";
+      const display = getValidCode(observation.code?.coding)[0]?.display ?? "";
       const valueIsBlacklisted = blacklistValues.includes(display);
 
       return value && value.length > 0 && !valueIsBlacklisted;
     })
     .reduce((acc, observation) => {
-      const display = observation.code?.coding?.[0]?.display ?? "";
+      const display = getValidCode(observation.code?.coding)[0]?.display ?? "";
       const value = renderSocialHistoryValue(observation) ?? "";
       const observationDate = formatDateForDisplay(observation.effectiveDateTime);
       const lastItemInArray = acc[acc.length - 1];
@@ -1437,7 +1437,7 @@ function renderSocialHistoryValue(observation: Observation) {
   } else if (observation.valueCodeableConcept) {
     return (
       observation.valueCodeableConcept?.text ??
-      observation.valueCodeableConcept.coding?.[0]?.display
+      getValidCode(observation.valueCodeableConcept.coding)[0]?.display
     );
   } else {
     return "";
@@ -1496,7 +1496,7 @@ function createVitalsByDate(observations: Observation[]): string {
 
           return `
             <tr>
-              <td>${observation.code?.coding?.[0]?.display ?? observation.code?.text ?? ""}</td>
+              <td>${getValidCode(observation.code?.coding)[0]?.display ?? observation.code?.text ?? ""}</td>
               <td>${renderVitalsValue(observation)}</td>
               <td>${code ?? ""}</td>
             </tr>
@@ -1580,7 +1580,10 @@ function createObservationsByDate(observations: Observation[]): string {
         ${tables.observations
           .filter(observation => {
             const observationDisplay = observation.code?.coding?.find(coding => {
-              return coding.display;
+              if (coding.code !== 'UNK') {
+                return  coding.display;
+              }
+              return;
             });
 
             const hasDisplayValue = observationDisplay?.display ?? observation.code?.text;
@@ -1602,7 +1605,10 @@ function createObservationsByDate(observations: Observation[]): string {
                 }`;
 
             const observationDisplay = observation.code?.coding?.find(coding => {
-              return coding.display;
+              if (coding.code !== 'UNK') {
+                return  coding.display;
+              }
+              return;
             });
 
             return `
@@ -1687,7 +1693,7 @@ function createOtherObservationsByDate(observations: Observation[]): string {
 
             return `
               <tr>
-                <td>${observation.code?.coding?.[0]?.display ?? observation.code?.text ?? ""}</td>
+                <td>${getValidCode(observation.code?.coding)[0]?.display ?? observation.code?.text ?? ""}</td>
                 <td>${observation.valueQuantity?.value ?? observation.valueString ?? ""}</td>
                 <td>${code ?? ""}</td>
               </tr>
@@ -1823,7 +1829,7 @@ function createFamilyHistorySection(familyMemberHistories: FamilyMemberHistory[]
     return (
       renderFamilyHistoryConditions(a)?.join(", ") ===
         renderFamilyHistoryConditions(b)?.join(", ") &&
-      a.relationship?.coding?.[0]?.display === b.relationship?.coding?.[0]?.display
+        getValidCode(a.relationship?.coding)[0]?.display === getValidCode(b.relationship?.coding)[0]?.display
     );
   });
 
@@ -1855,7 +1861,7 @@ function createFamilyHistorySection(familyMemberHistories: FamilyMemberHistory[]
 
           return `
             <tr>
-              <td>${familyMemberHistory.relationship?.coding?.[0]?.display ?? ""}</td>
+              <td>${getValidCode(familyMemberHistory.relationship?.coding)[0]?.display ?? ""}</td>
               <td>${renderAdministrativeGender(familyMemberHistory) ?? ""}</td>
               <td>${renderFamilyHistoryConditions(familyMemberHistory)?.join(", ") ?? ""}</td>
               <td>${deceasedFamilyMember ? "yes" : "no"}</td>
@@ -1878,7 +1884,7 @@ function createFamilyHistorySection(familyMemberHistories: FamilyMemberHistory[]
 
 function renderFamilyHistoryConditions(familyMemberHistory: FamilyMemberHistory) {
   return familyMemberHistory.condition?.map(condition => {
-    return condition.code?.text ?? condition.code?.coding?.[0]?.display;
+    return condition.code?.text ?? getValidCode(condition.code?.coding)[0]?.display;
   });
 }
 
@@ -1906,7 +1912,7 @@ function createRelatedPersonSection(relatedPersons: RelatedPerson[]) {
   function getRelationship(relatedPerson: RelatedPerson) {
     return (
       relatedPerson.relationship?.[0]?.text ??
-      relatedPerson.relationship?.[0]?.coding?.[0]?.display ??
+      getValidCode(relatedPerson.relationship?.[0]?.coding)[0]?.display ??
       ""
     );
   }
@@ -2007,7 +2013,7 @@ function createTaskSection(tasks: Task[]) {
           return `
             <tr>
               <td>${task.description ?? ""}</td>
-              <td>${task.reasonCode?.coding?.[0]?.display ?? ""}</td>
+              <td>${getValidCode(task.reasonCode?.coding)[0]?.display ?? ""}</td>
               <td>${code ?? ""}</td>
               <td>${task.note?.[0]?.text ?? ""}</td>
               <td>${formatDateForDisplay(task.authoredOn)}</td>
@@ -2066,7 +2072,8 @@ function createEncountersSection(encounters: Encounter[], locations: Location[])
             <tr>
               <td>${
                 encounter.reasonCode?.[0]?.text ??
-                encounter.reasonCode?.[0]?.coding?.[0]?.display ??
+                getValidCode(encounter.reasonCode?.[0]?.coding)[0]?.display ??
+
                 ""
               }</td>
               <td>${(locationId && mappedLocations[locationId]?.name) ?? ""}</td>
@@ -2232,4 +2239,12 @@ function getAnnualWellnessVisits(conditions: Condition[]) {
   });
 
   return annualWellnessVisit;
+}
+
+function getValidCode(coding: Coding[] | undefined): Coding[] {
+  if (!coding) return [];
+
+  return coding.filter(coding => {
+    return coding.code && coding.code !== 'UNK'
+  })
 }

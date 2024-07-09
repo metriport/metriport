@@ -63,11 +63,7 @@
         "event":
         [
            	{
-                "period":
-           		{
-                   	"start":"{{formatAsDateTime composition.documentationOf.serviceEvent.effectiveTime.low.value}}",
-                   	"end":"{{formatAsDateTime composition.documentationOf.serviceEvent.effectiveTime.high.value}}",            
-                },
+                "period": {{>DataType/Period.hbs period=composition.documentationOf.serviceEvent.effectiveTime}}
            	},
         ],
 		"section": 

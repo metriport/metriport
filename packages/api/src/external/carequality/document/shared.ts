@@ -65,6 +65,7 @@ export const cqToFHIR = (
       value: docId,
     },
     docStatus,
+    status: "current",
     subject: toFHIRSubject(patientId),
     content: generateCQFHIRContent(baseAttachment, contentExtension, docRef.url),
     extension: [cqExtension],

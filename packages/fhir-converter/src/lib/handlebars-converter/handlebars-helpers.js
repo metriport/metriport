@@ -217,8 +217,6 @@ var getDateTime = function (dateTimeString) {
     return new Date(date + " " + time + " " + timezone).toISOString();
   }
 
-  if (ds.length <= 8) return convertDate(ds);
-
   // Padding 0s to 17 digits
   dateTimeComposition = getDateTimeComposition(ds);
   if (!validUTCDateTime(dateTimeComposition)) throw `Invalid datetime: ${ds}`;
@@ -1482,6 +1480,13 @@ module.exports.external = [
         }
       }
       return false;
+    },
+  },
+  {
+    name: "startDateLteEndDate",
+    description: "Checks if the start date is less than or equal to the end date.",
+    func: function (v1, v2) {
+      return new Date(getDateTime(v1)).getTime() <= new Date(getDateTime(v2)).getTime();
     },
   },
 ];
