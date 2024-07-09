@@ -15,15 +15,15 @@ function extractDocumentReferences(documentRequest: DocumentRequest[]): Document
 }
 
 export function processInboundDrRequest(request: string): InboundDocumentRetrievalReq {
-  const parser = new XMLParser({
-    ignoreAttributes: false,
-    attributeNamePrefix: "_",
-    textNodeName: "_text",
-    parseAttributeValue: false,
-    removeNSPrefix: true,
-  });
-  const jsonObj = parser.parse(request);
   try {
+    const parser = new XMLParser({
+      ignoreAttributes: false,
+      attributeNamePrefix: "_",
+      textNodeName: "_text",
+      parseAttributeValue: false,
+      removeNSPrefix: true,
+    });
+    const jsonObj = parser.parse(request);
     const iti39Request = iti39RequestSchema.parse(jsonObj);
     const samlAttributes = convertSamlHeaderToAttributes(iti39Request.Envelope.Header);
     const documentRequests = toArray(
@@ -41,7 +41,6 @@ export function processInboundDrRequest(request: string): InboundDocumentRetriev
       ),
     };
   } catch (error) {
-    console.log(error);
     throw new Error(`Failed to parse ITI-39 request: ${error}`);
   }
 }

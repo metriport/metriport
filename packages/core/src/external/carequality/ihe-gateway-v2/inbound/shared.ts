@@ -109,7 +109,7 @@ export function createSecurityHeader({
   signatureConfirmation,
 }: {
   signatureConfirmation?: string | undefined;
-}) {
+}): object {
   const createdTimestamp = dayjs().toISOString();
   const expiresTimestamp = dayjs(createdTimestamp).add(expiresIn, "minute").toISOString();
   const securityHeader = {

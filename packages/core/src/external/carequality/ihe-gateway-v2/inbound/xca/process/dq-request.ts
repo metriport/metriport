@@ -27,15 +27,15 @@ function extractExternalGatewayPatient(slots: Slot[]): XCPDPatientId {
 }
 
 export function processInboundDqRequest(request: string): InboundDocumentQueryReq {
-  const parser = new XMLParser({
-    ignoreAttributes: false,
-    attributeNamePrefix: "_",
-    textNodeName: "_text",
-    parseAttributeValue: false,
-    removeNSPrefix: true,
-  });
-  const jsonObj = parser.parse(request);
   try {
+    const parser = new XMLParser({
+      ignoreAttributes: false,
+      attributeNamePrefix: "_",
+      textNodeName: "_text",
+      parseAttributeValue: false,
+      removeNSPrefix: true,
+    });
+    const jsonObj = parser.parse(request);
     const iti38Request = iti38RequestSchema.parse(jsonObj);
     const samlAttributes = convertSamlHeaderToAttributes(iti38Request.Envelope.Header);
     const slots = toArray(iti38Request.Envelope.Body.AdhocQueryRequest.AdhocQuery.Slot);
@@ -51,7 +51,6 @@ export function processInboundDqRequest(request: string): InboundDocumentQueryRe
       ),
     };
   } catch (error) {
-    console.log(error);
     throw new Error(`Failed to parse ITI-38 request: ${error}`);
   }
 }

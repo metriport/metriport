@@ -71,7 +71,7 @@ export function createInboundDqResponse(response: InboundDocumentQueryResp): str
           "#text": "urn:ihe:iti:2007:CrossGatewayQueryResponse",
           "@_mustUnderstand": "1",
         },
-        "wsa:MessageID": wrapIdInUrnUuid(uuidv4()), // TODO track this
+        "wsa:MessageID": wrapIdInUrnUuid(uuidv4()), // TODO #1776 track this in monitoring
         "wsa:RelatesTo": wrapIdInUrnUuid(response.id),
       },
       "soap:Body": soapBody,

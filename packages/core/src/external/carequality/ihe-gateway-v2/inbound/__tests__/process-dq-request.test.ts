@@ -68,15 +68,9 @@ describe("Process Inbound Dq Response", () => {
         response: xmlResponse,
       },
     });
-    if (iti38Response.documentReference && iti38Response.documentReference[0]) {
-      expect(extractDocumentUniqueId(iti38Response.documentReference[0].docUniqueId)).toEqual(
-        docUniqueId
-      );
-    } else {
-      throw new Error(
-        "iti38Response.documentReference is undefined or has wrong document unique id"
-      );
-    }
+    expect(
+      extractDocumentUniqueId(iti38Response?.documentReference?.[0]?.docUniqueId ?? "")
+    ).toEqual(docUniqueId);
   });
   it("should process ITI-38 error response", () => {
     const response = {

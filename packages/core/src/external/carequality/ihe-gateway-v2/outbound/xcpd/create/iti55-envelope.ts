@@ -161,15 +161,17 @@ function createSoapBodyContent({
                   [`${prefix}semanticsText`]: "LivingSubject.birthTime",
                 }
               : {},
-            [`${prefix}livingSubjectId`]: identifiers
+            ...(identifiers
               ? {
-                  [`${prefix}value`]: identifiers.map(identifier => ({
-                    "@_extension": identifier.value,
-                    "@_root": identifier.system,
-                  })),
-                  [`${prefix}semanticsText`]: "LivingSubject.id",
+                  [`${prefix}livingSubjectId`]: {
+                    [`${prefix}value`]: identifiers.map(identifier => ({
+                      "@_extension": identifier.value,
+                      "@_root": identifier.system,
+                    })),
+                    [`${prefix}semanticsText`]: "LivingSubject.id",
+                  },
                 }
-              : {},
+              : {}),
             [`${prefix}livingSubjectName`]: patientNames
               ? {
                   [`${prefix}value`]: patientNames.map(name => ({
@@ -182,27 +184,31 @@ function createSoapBodyContent({
                   [`${prefix}semanticsText`]: "LivingSubject.name",
                 }
               : {},
-            [`${prefix}patientAddress`]: patientAddresses
+            ...(patientAddresses
               ? {
-                  [`${prefix}value`]: patientAddresses.map(address => ({
-                    [`${prefix}streetAddressLine`]: address.line?.join(", "),
-                    [`${prefix}city`]: address.city,
-                    [`${prefix}state`]: address.state,
-                    [`${prefix}postalCode`]: address.postalCode,
-                    [`${prefix}country`]: address.country,
-                  })),
-                  [`${prefix}semanticsText`]: "Patient.addr",
+                  [`${prefix}patientAddress`]: {
+                    [`${prefix}value`]: patientAddresses.map(address => ({
+                      [`${prefix}streetAddressLine`]: address.line?.join(", "),
+                      [`${prefix}city`]: address.city,
+                      [`${prefix}state`]: address.state,
+                      [`${prefix}postalCode`]: address.postalCode,
+                      [`${prefix}country`]: address.country,
+                    })),
+                    [`${prefix}semanticsText`]: "Patient.addr",
+                  },
                 }
-              : {},
-            [`${prefix}patientTelecom`]: patientTelecoms
+              : {}),
+            ...(patientTelecoms
               ? {
-                  [`${prefix}value`]: patientTelecoms.map(telecom => ({
-                    "@_use": telecom.system,
-                    "@_value": telecom.value,
-                  })),
-                  [`${prefix}semanticsText`]: "Patient.telecom",
+                  [`${prefix}patientTelecom`]: {
+                    [`${prefix}value`]: patientTelecoms.map(telecom => ({
+                      "@_use": telecom.system,
+                      "@_value": telecom.value,
+                    })),
+                    [`${prefix}semanticsText`]: "Patient.telecom",
+                  },
                 }
-              : {},
+              : {}),
             ...(providerId
               ? {
                   [`${prefix}principalCareProviderId`]: {
