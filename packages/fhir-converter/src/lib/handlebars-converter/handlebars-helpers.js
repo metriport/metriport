@@ -160,8 +160,18 @@ var convertDate = function (dateString) {
   throw `Bad input for Date type in ${dateString}`;
 };
 
+var alreadyValidDateTime = function (dateTimeString) {
+  if (!dateTimeString || dateTimeString.toString() === "") return false;
+  // Match the format YYYY-MM-DD
+  var ds = dateTimeString.toString();
+  return /^\d{4}-\d{2}-\d{2}$/.test(ds);
+};
+
 // handling the date format here
 var getDate = function (dateString) {
+  if (alreadyValidDateTime(dateString)) {
+    return dateString;
+  }
   if (!validDatetimeString(dateString)) return "";
   return convertDate(dateString.toString());
 };
@@ -190,6 +200,9 @@ var getDateTimeComposition = function (ds) {
 
 // handling the datetime format here
 var getDateTime = function (dateTimeString) {
+  if (alreadyValidDateTime(dateTimeString)) {
+    return dateTimeString;
+  }
   if (!validDatetimeString(dateTimeString)) return "";
 
   // handle the datetime format with time zone
