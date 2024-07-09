@@ -226,8 +226,6 @@ export class IHEStack extends Stack {
     medicalDocumentsBucket,
     posthogSecretName,
     alarmSnsAction,
-    name = "IHEInboundDocumentQueryV2",
-    entry = "ihe-gateway-v2-inbound-document-query",
   }: {
     props: IHEStackProps;
     lambdaLayers: LambdaLayers;
@@ -236,13 +234,11 @@ export class IHEStack extends Stack {
     medicalDocumentsBucket: s3.IBucket;
     posthogSecretName: string | undefined;
     alarmSnsAction?: SnsAction | undefined;
-    name?: string;
-    entry?: string;
   }): Lambda {
     const documentQueryLambda = createLambda({
       stack: this,
-      name,
-      entry,
+      name: "IHEInboundDocumentQueryV2",
+      entry: "ihe-gateway-v2-inbound-document-query",
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
@@ -272,8 +268,6 @@ export class IHEStack extends Stack {
     medicalDocumentsBucket,
     posthogSecretName,
     alarmSnsAction,
-    name = "IHEInboundDocumentRetrievalV2",
-    entry = "ihe-gateway-v2-inbound-document-retrieval",
   }: {
     props: IHEStackProps;
     lambdaLayers: LambdaLayers;
@@ -282,13 +276,11 @@ export class IHEStack extends Stack {
     medicalDocumentsBucket: s3.IBucket;
     posthogSecretName: string | undefined;
     alarmSnsAction?: SnsAction | undefined;
-    name?: string;
-    entry?: string;
   }): Lambda {
     const documentRetrievalLambda = createLambda({
       stack: this,
-      name,
-      entry,
+      name: "IHEInboundDocumentRetrievalV2",
+      entry: "ihe-gateway-v2-inbound-document-retrieval",
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
@@ -316,8 +308,6 @@ export class IHEStack extends Stack {
     secrets,
     posthogSecretName,
     alarmSnsAction,
-    name = "IHEInboundPatientDiscoveryV2",
-    entry = "ihe-gateway-v2-inbound-patient-discovery",
   }: {
     props: IHEStackProps;
     lambdaLayers: LambdaLayers;
@@ -325,13 +315,11 @@ export class IHEStack extends Stack {
     secrets: Secrets;
     posthogSecretName: string | undefined;
     alarmSnsAction?: SnsAction | undefined;
-    name?: string;
-    entry?: string;
   }): Lambda {
     const patientDiscoveryLambda = createLambda({
       stack: this,
-      name,
-      entry,
+      name: "IHEInboundPatientDiscoveryV2",
+      entry: "ihe-gateway-v2-inbound-patient-discovery",
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
