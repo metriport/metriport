@@ -32,6 +32,7 @@ const ICD_10_CODE = "icd-10";
 const LOINC_CODE = "loinc";
 const MEDICARE_CODE = "medicare";
 const CPT_CODE = "cpt";
+const UNK_CODE = 'UNK';
 
 export const bundleToHtml = (fhirBundle: Bundle): string => {
   const {
@@ -1580,8 +1581,8 @@ function createObservationsByDate(observations: Observation[]): string {
         ${tables.observations
           .filter(observation => {
             const observationDisplay = observation.code?.coding?.find(coding => {
-              if (coding.code !== 'UNK') {
-                return  coding.display;
+              if (coding.code !== UNK_CODE) {
+                return coding.display;
               }
               return;
             });
@@ -1605,8 +1606,8 @@ function createObservationsByDate(observations: Observation[]): string {
                 }`;
 
             const observationDisplay = observation.code?.coding?.find(coding => {
-              if (coding.code !== 'UNK') {
-                return  coding.display;
+              if (coding.code !== UNK_CODE) {
+                return coding.display;
               }
               return;
             });
@@ -2245,6 +2246,6 @@ function getValidCode(coding: Coding[] | undefined): Coding[] {
   if (!coding) return [];
 
   return coding.filter(coding => {
-    return coding.code && coding.code !== 'UNK'
+    return coding.code && coding.code !== UNK_CODE
   })
 }
