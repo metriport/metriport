@@ -233,6 +233,7 @@ jobs:
       # IHE Stack 
       - name: Diff IHE Stack CDK
         uses: metriport/deploy-with-cdk@master
+        if: inputs.deploy_env != 'sandbox'
         with:
           cdk_action: "diff"
           cdk_version: "2.122.0"
@@ -245,6 +246,7 @@ jobs:
           AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
       - name: Deploy IHE Stack CDK
         uses: metriport/deploy-with-cdk@master
+        if: inputs.deploy_env != 'sandbox'
         with:
           cdk_action: "deploy --verbose --require-approval never"
           cdk_version: "2.122.0"
