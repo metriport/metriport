@@ -157,35 +157,19 @@ export function exactMatchSimilarity(patient1: PatientData, patient2: PatientDat
 }
 
 function isSameContactByPhone(a?: Contact, b?: Contact): boolean {
-  return (
-    a?.phone !== undefined &&
-    a.phone !== null &&
-    b?.phone !== undefined &&
-    b.phone !== null &&
-    a.phone === b.phone
-  );
+  return !!a?.phone && !!b?.phone && a.phone === b.phone;
 }
 
 function isSameContactByEmail(a?: Contact, b?: Contact): boolean {
-  return (
-    a?.email !== undefined &&
-    a.email !== null &&
-    b?.email !== undefined &&
-    b.email !== null &&
-    a.email === b.email
-  );
+  return !!a?.email && !!b?.email && a.email === b.email;
 }
 
 function isSameIdentifierById(a?: PersonalIdentifier, b?: PersonalIdentifier): boolean {
   return (
-    a?.value !== undefined &&
-    a.value !== null &&
-    b?.value !== undefined &&
-    b.value !== null &&
-    a?.type !== undefined &&
-    a.type !== null &&
-    b?.type !== undefined &&
-    b.type !== null &&
+    !!a?.value &&
+    !!b?.value &&
+    !!a?.type &&
+    !!b?.type &&
     a.value === b.value &&
     a.type === b.type &&
     (a.type === "driversLicense" && b.type === "driversLicense" ? a.state === b.state : true)
