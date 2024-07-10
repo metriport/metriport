@@ -12,7 +12,7 @@ const component = [
 const makePresentedFormEntry = strings => {
   return strings.map(string => {
     return {
-      contentType: "text/plain",
+      contentType: "text/html",
       data: string,
     };
   });
