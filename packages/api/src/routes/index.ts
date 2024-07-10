@@ -16,6 +16,9 @@ import sleep from "./sleep";
 import user from "./user";
 import webhook from "./webhook";
 
+// Supports requests from the Dashboard through the dedicated JWT-based auth on API GW
+const dash = "/dash-oss";
+
 export default (app: Application) => {
   // internal only routes, should be disabled at API Gateway
   app.use("/webhook", reportClientErrors, webhook);
@@ -23,6 +26,7 @@ export default (app: Application) => {
 
   // routes with API key auth
   app.use("/settings", processCxId, settings);
+  app.use(`${dash}/settings`, processCxId, settings);
   app.use("/activity", processCxId, reportDeviceUsage, activity);
   app.use("/body", processCxId, reportDeviceUsage, body);
   app.use("/biometrics", processCxId, reportDeviceUsage, biometrics);
@@ -32,6 +36,7 @@ export default (app: Application) => {
 
   // medical routes with API key auth - report usage is on individual routes
   app.use("/medical/v1", processCxId, checkMAPIAccess, medical);
+  app.use(`${dash}/medical/v1`, processCxId, checkMAPIAccess, medical);
   app.use("/fhir/R4", processCxId, checkMAPIAccess, fhirRouter);
 
   // routes with session token auth
