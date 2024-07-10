@@ -1,12 +1,13 @@
 import Ajv, { ErrorObject } from "ajv";
-import { cloneDeep } from "lodash";
-import schema from "./fhir.schema.json";
 import metaSchema from "ajv/lib/refs/json-schema-draft-06.json";
-import { Bundle } from "../../../routes/medical/schemas/fhir";
+import { cloneDeep } from "lodash";
 import BadRequestError from "../../../errors/bad-request";
+import { Bundle } from "../../../routes/medical/schemas/fhir";
+import schema from "./fhir.schema.json";
 
 type Error = {
   resourceType: string;
+  resourceId: string;
   errors: ErrorObject[] | null | undefined;
 };
 
@@ -34,18 +35,22 @@ export const validateFhirEntries = (bundle: Bundle): Bundle => {
     if (!isValid) {
       const resourceValidate = ajv.compile(getSubSchema(resourceType));
       resourceValidate(entry.resource);
-      errors.push({ resourceType, errors: resourceValidate.errors });
+      errors.push({ resourceType, resourceId: entry.resource.id, errors: resourceValidate.errors });
       schema.oneOf = clonedSchema.oneOf;
     }
   }
 
   if (errors.length > 0) {
-    const resourceErrors = errors.map(e => e.resourceType).join(", ");
-    throw new BadRequestError(`Invalid FHIR resource(s) ${resourceErrors}`);
+    const resourceErrors = errors.map(toErrorMessage).join(", ");
+    throw new BadRequestError(`Invalid FHIR resource(s): ${resourceErrors}`);
   }
 
   return bundle;
 };
+
+function toErrorMessage(error: Error): string {
+  return `${error.resourceType} ${error.resourceId}`;
+}
 
 const getSubSchema = (resourceType: string) => {
   const subSchema = schema;

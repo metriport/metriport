@@ -38,12 +38,7 @@
         "status":{{>ValueSet/DiagnosticReportStatus.hbs code=diagReport.statusCode.code}},
         "code": {{>DataType/CodeableConcept.hbs code=diagReport.code canBeUnknown=true}},
         "category":[{{>DataType/CodeableConcept.hbs code=categoryCode}}],
-        "effectivePeriod":
-        {
-            "start":"{{formatAsDateTime diagReport.effectiveTime.low.value}}",
-            "end":"{{formatAsDateTime diagReport.effectiveTime.high.value}}"
-        },
-        
+        "effectivePeriod": {{>DataType/Period.hbs period=diagReport.effectiveTime}},
         "effectiveDateTime":"{{formatAsDateTime diagReport.effectiveTime.value}}",
         {{#if diagReport.text._b64}}
             "presentedForm": [

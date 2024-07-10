@@ -3,6 +3,7 @@ import { CfnStage } from "aws-cdk-lib/aws-apigatewayv2";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import * as apigwv2 from "aws-cdk-lib/aws-apigatewayv2";
+import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as r53 from "aws-cdk-lib/aws-route53";
@@ -13,7 +14,6 @@ import * as logs from "aws-cdk-lib/aws-logs";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
-import { createIHEGateway } from "./ihe-stack/ihe-gateway";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { getSecrets, Secrets } from "./shared/secrets";
@@ -158,39 +158,6 @@ export class IHEStack extends Stack {
 
     const posthogSecretName = props.config.analyticsSecretNames?.POST_HOG_API_KEY_SECRET;
 
-    const documentQueryLambda = this.setupDocumentQueryLambda({
-      props,
-      lambdaLayers,
-      vpc,
-      secrets,
-      medicalDocumentsBucket,
-      posthogSecretName,
-      alarmSnsAction,
-      name: "IHEInboundDocumentQuery",
-      entry: "ihe-inbound-document-query",
-    });
-    const documentRetrievalLambda = this.setupDocumentRetrievalLambda({
-      props,
-      lambdaLayers,
-      vpc,
-      secrets,
-      medicalDocumentsBucket,
-      posthogSecretName,
-      alarmSnsAction,
-      name: "IHEInboundDocumentRetrieval",
-      entry: "ihe-inbound-document-retrieval",
-    });
-    const patientDiscoveryLambda = this.setupPatientDiscoveryLambda({
-      props,
-      lambdaLayers,
-      vpc,
-      secrets,
-      posthogSecretName,
-      alarmSnsAction,
-      name: "IHEInboundPatientDiscovery",
-      entry: "ihe-inbound-patient-discovery",
-    });
-
     const patientDiscoveryLambdaV2 = this.setupPatientDiscoveryLambda({
       props,
       lambdaLayers,
@@ -198,8 +165,6 @@ export class IHEStack extends Stack {
       secrets,
       posthogSecretName,
       alarmSnsAction,
-      name: "IHEInboundPatientDiscoveryV2",
-      entry: "ihe-gateway-v2-inbound-patient-discovery",
     });
 
     const documentQueryLambdaV2 = this.setupDocumentQueryLambda({
@@ -210,8 +175,6 @@ export class IHEStack extends Stack {
       medicalDocumentsBucket,
       posthogSecretName,
       alarmSnsAction,
-      name: "IHEInboundDocumentQueryV2",
-      entry: "ihe-gateway-v2-inbound-document-query",
     });
 
     const documentRetrievalLambdaV2 = this.setupDocumentRetrievalLambda({
@@ -222,24 +185,24 @@ export class IHEStack extends Stack {
       medicalDocumentsBucket,
       posthogSecretName,
       alarmSnsAction,
-      name: "IHEInboundDocumentRetrievalV2",
-      entry: "ihe-gateway-v2-inbound-document-retrieval",
     });
 
-    createIHEGateway(this, {
-      ...props,
-      config: props.config,
-      vpc,
-      zoneName: props.config.host,
-      apiGateway: apigw2,
-      documentQueryLambda,
-      documentRetrievalLambda,
-      patientDiscoveryLambda,
-      medicalDocumentsBucket,
-      alarmAction: alarmSnsAction,
-      patientDiscoveryLambdaV2,
-      documentQueryLambdaV2,
-      documentRetrievalLambdaV2,
+    apigw2.addRoutes({
+      path: "/v1/patient-discovery",
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new HttpLambdaIntegration("IHEGWPDIntegrationV2", patientDiscoveryLambdaV2),
+    });
+
+    apigw2.addRoutes({
+      path: "/v1/document-query",
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new HttpLambdaIntegration("IHEGWDQIntegrationV2", documentQueryLambdaV2),
+    });
+
+    apigw2.addRoutes({
+      path: "/v1/document-retrieve",
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new HttpLambdaIntegration("IHEGWDRIntegrationV2", documentRetrievalLambdaV2),
     });
 
     //-------------------------------------------
@@ -263,8 +226,6 @@ export class IHEStack extends Stack {
     medicalDocumentsBucket,
     posthogSecretName,
     alarmSnsAction,
-    name,
-    entry,
   }: {
     props: IHEStackProps;
     lambdaLayers: LambdaLayers;
@@ -273,13 +234,11 @@ export class IHEStack extends Stack {
     medicalDocumentsBucket: s3.IBucket;
     posthogSecretName: string | undefined;
     alarmSnsAction?: SnsAction | undefined;
-    name: string;
-    entry: string;
   }): Lambda {
     const documentQueryLambda = createLambda({
       stack: this,
-      name,
-      entry,
+      name: "IHEInboundDocumentQueryV2",
+      entry: "ihe-gateway-v2-inbound-document-query",
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
@@ -309,8 +268,6 @@ export class IHEStack extends Stack {
     medicalDocumentsBucket,
     posthogSecretName,
     alarmSnsAction,
-    name,
-    entry,
   }: {
     props: IHEStackProps;
     lambdaLayers: LambdaLayers;
@@ -319,13 +276,11 @@ export class IHEStack extends Stack {
     medicalDocumentsBucket: s3.IBucket;
     posthogSecretName: string | undefined;
     alarmSnsAction?: SnsAction | undefined;
-    name: string;
-    entry: string;
   }): Lambda {
     const documentRetrievalLambda = createLambda({
       stack: this,
-      name,
-      entry,
+      name: "IHEInboundDocumentRetrievalV2",
+      entry: "ihe-gateway-v2-inbound-document-retrieval",
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
@@ -353,8 +308,6 @@ export class IHEStack extends Stack {
     secrets,
     posthogSecretName,
     alarmSnsAction,
-    name,
-    entry,
   }: {
     props: IHEStackProps;
     lambdaLayers: LambdaLayers;
@@ -362,13 +315,11 @@ export class IHEStack extends Stack {
     secrets: Secrets;
     posthogSecretName: string | undefined;
     alarmSnsAction?: SnsAction | undefined;
-    name: string;
-    entry: string;
   }): Lambda {
     const patientDiscoveryLambda = createLambda({
       stack: this,
-      name,
-      entry,
+      name: "IHEInboundPatientDiscoveryV2",
+      entry: "ihe-gateway-v2-inbound-patient-discovery",
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
