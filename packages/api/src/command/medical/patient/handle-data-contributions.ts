@@ -58,28 +58,23 @@ export async function handleDataContribution({
     fhirBundle: validatedBundle,
   });
 
-  const convertAndUploadCdaPromise = async () => {
-    const isValidForCdaConversion = hasCompositionResource(validatedBundle);
-    if (isValidForCdaConversion) {
-      const converted = await convertFhirToCda({
-        cxId,
-        validatedBundle,
-      });
-      await uploadCdaDocuments({
-        cxId,
-        patientId,
-        cdaBundles: converted,
-        organization: fhirOrganization,
-        docId: requestId,
-      });
-    }
-  };
-  const createAndUploadCcdPromise = async () => {
-    // TODO: To minimize generating CCDs, make it a delayed job (run it ~5min after it was initiated, only once for all requests within that time window)
-    await processCcdRequest(patient, fhirOrganization);
-  };
+  if (hasCompositionResource(validatedBundle)) {
+    const converted = await convertFhirToCda({
+      cxId,
+      validatedBundle,
+    });
+    await uploadCdaDocuments({
+      cxId,
+      patientId,
+      cdaBundles: converted,
+      organization: fhirOrganization,
+      docId: requestId,
+    });
+  }
 
-  await Promise.all([createAndUploadCcdPromise(), convertAndUploadCdaPromise()]);
+  // TODO: To minimize generating CCDs, make it a delayed job (run it ~5min after it was initiated, only once for all requests within that time window)
+  if (!Config.isSandbox()) processCcdRequest(patient, fhirOrganization);
+
   return consolidatedDataUploadResults;
 }
 
