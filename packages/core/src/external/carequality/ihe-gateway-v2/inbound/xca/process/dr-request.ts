@@ -1,10 +1,11 @@
+import { DocumentReference, InboundDocumentRetrievalReq } from "@metriport/ihe-gateway-sdk";
+import { errorToString, toArray } from "@metriport/shared";
 import { XMLParser } from "fast-xml-parser";
-import { toArray } from "@metriport/shared";
-import { iti39RequestSchema, DocumentRequest } from "./schema";
-import { InboundDocumentRetrievalReq, DocumentReference } from "@metriport/ihe-gateway-sdk";
-import { convertSamlHeaderToAttributes, extractTimestamp } from "../../shared";
+import { out } from "../../../../../../util/log";
 import { stripUrnPrefix } from "../../../../../../util/urn";
 import { extractText } from "../../../utils";
+import { convertSamlHeaderToAttributes, extractTimestamp } from "../../shared";
+import { DocumentRequest, iti39RequestSchema } from "./schema";
 
 function extractDocumentReferences(documentRequest: DocumentRequest[]): DocumentReference[] {
   return documentRequest.map(req => ({
@@ -15,6 +16,8 @@ function extractDocumentReferences(documentRequest: DocumentRequest[]): Document
 }
 
 export function processInboundDrRequest(request: string): InboundDocumentRetrievalReq {
+  const log = out("Inbound DR Request").log;
+  log(JSON.stringify(request));
   try {
     const parser = new XMLParser({
       ignoreAttributes: false,
@@ -41,6 +44,8 @@ export function processInboundDrRequest(request: string): InboundDocumentRetriev
       ),
     };
   } catch (error) {
-    throw new Error(`Failed to parse ITI-39 request: ${error}`);
+    const msg = "Failed to parse ITI-39 request";
+    log(`${msg}: Error - ${errorToString(error)}`);
+    throw new Error(`${msg}: ${error}`);
   }
 }
