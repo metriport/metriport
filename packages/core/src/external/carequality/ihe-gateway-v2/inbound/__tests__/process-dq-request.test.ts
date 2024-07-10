@@ -3,7 +3,6 @@ import { InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
 import { createITI38SoapEnvelope } from "../../outbound/xca/create/iti38-envelope";
 import { processInboundDqRequest } from "../xca/process/dq-request";
 import { processDqResponse } from "../../outbound/xca/process/dq-response";
-import {} from "../xca/process/dq-request";
 import { createInboundDqResponse } from "../xca/create/dq-response";
 import {
   TEST_CERT,
