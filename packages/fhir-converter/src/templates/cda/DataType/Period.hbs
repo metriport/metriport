@@ -25,8 +25,14 @@
   // -------------------------------------------------------------------------------------------------
 --}}
 {
-    {{#if (or period.low period.high)}}
+    {{#if (and (and period.low period.high) (startDateLteEndDate period.low.value period.high.value) )}}
         "start":"{{formatAsDateTime period.low.value}}",
+        "end":"{{formatAsDateTime period.high.value}}",
+    {{else if (and (and period.low period.high) (not (startDateLteEndDate period.low.value period.high.value)) ) }}
+        "start":"{{formatAsDateTime period.low.value}}",
+    {{else if period.low}}
+        "start":"{{formatAsDateTime period.low.value}}",
+    {{else if period.high}}
         "end":"{{formatAsDateTime period.high.value}}",
     {{else}}
         "start":"{{formatAsDateTime period.value}}",
