@@ -6,6 +6,7 @@ import {
   InboundPatientDiscoveryReq,
   InboundDocumentQueryReq,
   InboundDocumentRetrievalReq,
+  InboundPatientDiscoveryResp,
   XCPDGateway,
   XCAGateway,
 } from "@metriport/ihe-gateway-sdk";
@@ -149,12 +150,48 @@ export async function storeXcpdRequest({
       oid: inboundRequest.samlAttributes.homeCommunityId,
       timestamp: inboundRequest.timestamp,
       day: dayjs().format("YYYY-MM-DD"),
+      extension: "xml",
     });
     await s3Utils.uploadFile({
       bucket: bucketInbound,
       key,
       file: Buffer.from(request),
       contentType: "application/xml",
+    });
+  } catch (error) {
+    log(`Error storing XCPD response: ${error}`);
+  }
+}
+
+export async function storeXcpdReqRespJson({
+  inboundRequest,
+  inboundResponse,
+}: {
+  inboundRequest: InboundPatientDiscoveryReq;
+  inboundResponse: InboundPatientDiscoveryResp;
+}) {
+  try {
+    if (!bucketInbound) {
+      return;
+    }
+    const s3Utils = getS3UtilsInstance();
+    const key = buildIheRequestKey({
+      type: "xcpd",
+      requestId: inboundRequest.id,
+      oid: inboundRequest.samlAttributes.homeCommunityId,
+      timestamp: inboundRequest.timestamp,
+      day: dayjs().format("YYYY-MM-DD"),
+      extension: "json",
+    });
+    const jsonData = {
+      request: inboundRequest,
+      response: inboundResponse,
+    };
+    await s3Utils.uploadFile({
+      bucket: bucketInbound,
+      key,
+      file: Buffer.from(JSON.stringify(jsonData)),
+      contentType: "application/json",
     });
   } catch (error) {
     log(`Error storing XCPD response: ${error}`);
@@ -179,6 +216,7 @@ export async function storeDqRequest({
       oid: inboundRequest.samlAttributes.homeCommunityId,
       timestamp: inboundRequest.timestamp,
       day: dayjs().format("YYYY-MM-DD"),
+      extension: "xml",
     });
     await s3Utils.uploadFile({
       bucket: bucketInbound,
@@ -209,6 +247,7 @@ export async function storeDrRequest({
       oid: inboundRequest.samlAttributes.homeCommunityId,
       timestamp: inboundRequest.timestamp,
       day: dayjs().format("YYYY-MM-DD"),
+      extension: "xml",
     });
     await s3Utils.uploadFile({
       bucket: bucketInbound,
@@ -249,13 +288,15 @@ export function buildIheRequestKey({
   requestId,
   day,
   timestamp,
+  extension,
 }: {
   day: string;
   oid: string;
   type: "xcpd" | "dq" | "dr";
   requestId: string;
   timestamp: string;
+  extension: "xml" | "json";
 }) {
   const date = dayjs(timestamp).toISOString();
-  return `${day}/${oid}/${type}/${requestId}_${date}.xml`;
+  return `${day}/${oid}/${type}/${requestId}_${date}.${extension}`;
 }

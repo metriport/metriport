@@ -17,6 +17,16 @@ import { convertSoapResponseToMtomResponse } from "../../outbound/xca/mtom/parse
 import { S3Utils } from "../../../../aws/s3";
 
 describe("Process Inbound Dr Request", () => {
+  beforeEach(() => {
+    jest.spyOn(S3Utils.prototype, "uploadFile").mockImplementation(() => {
+      return Promise.resolve({
+        Location: "http://example.com/mockurl",
+        ETag: '"mockedetag"',
+        Bucket: "mockedbucket",
+        Key: "mockedkey",
+      });
+    });
+  });
   it("should process ITI-39 request", async () => {
     try {
       const soapEnvelope = createITI39SoapEnvelope({
@@ -46,14 +56,14 @@ describe("Process Inbound Dr Request", () => {
       expect(true).toBe(false);
     }
   });
-  it("should process invalid ITI-39 request correctly", () => {
+  it("should process invalid ITI-39 request correctly", async () => {
     const soapEnvelope = createITI39SoapEnvelope({
       bodyData: outboundDrRequest,
       publicCert: TEST_CERT,
     });
-    expect(async () => {
-      await processInboundDrRequest(soapEnvelope);
-    }).toThrow("Failed to parse ITI-39 request");
+    await expect(processInboundDrRequest(soapEnvelope)).rejects.toThrow(
+      "Failed to parse ITI-39 request"
+    );
   });
 });
 
