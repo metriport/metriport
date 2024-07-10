@@ -1,11 +1,11 @@
-import { XMLParser } from "fast-xml-parser";
-import { toArray } from "@metriport/shared";
 import { InboundDocumentQueryReq, XCPDPatientId } from "@metriport/ihe-gateway-sdk";
-import { iti38RequestSchema } from "./schema";
-import { convertSamlHeaderToAttributes, extractTimestamp } from "../../shared";
-import { extractText } from "../../../utils";
-import { Slot } from "../../../schema";
+import { errorToString, toArray } from "@metriport/shared";
+import { XMLParser } from "fast-xml-parser";
 import { stripUrnPrefix } from "../../../../../../util/urn";
+import { Slot } from "../../../schema";
+import { extractText } from "../../../utils";
+import { convertSamlHeaderToAttributes, extractTimestamp } from "../../shared";
+import { iti38RequestSchema } from "./schema";
 
 const externalGatewayPatientRegex = /(.+)\^\^\^(.+)/i;
 const externalGatewayIdRegex = /'/g;
@@ -27,6 +27,7 @@ function extractExternalGatewayPatient(slots: Slot[]): XCPDPatientId {
 }
 
 export function processInboundDqRequest(request: string): InboundDocumentQueryReq {
+  console.log(`Inbound request: ${JSON.stringify(request)}`);
   try {
     const parser = new XMLParser({
       ignoreAttributes: false,
@@ -51,6 +52,8 @@ export function processInboundDqRequest(request: string): InboundDocumentQueryRe
       ),
     };
   } catch (error) {
-    throw new Error(`Failed to parse ITI-38 request: ${error}`);
+    const msg = "Failed to parse ITI-38 request";
+    console.log(`${msg}: Error - ${errorToString(error)}`);
+    throw new Error(`: ${error}`);
   }
 }
