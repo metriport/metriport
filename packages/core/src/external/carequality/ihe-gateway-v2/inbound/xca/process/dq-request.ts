@@ -6,6 +6,7 @@ import { convertSamlHeaderToAttributes, extractTimestamp } from "../../shared";
 import { extractText } from "../../../utils";
 import { Slot } from "../../../schema";
 import { stripUrnPrefix } from "../../../../../../util/urn";
+import { storeDqRequest } from "../../../monitor/store";
 
 const externalGatewayPatientRegex = /(.+)\^\^\^(.+)/i;
 const externalGatewayIdRegex = /'/g;
@@ -26,7 +27,7 @@ function extractExternalGatewayPatient(slots: Slot[]): XCPDPatientId {
   };
 }
 
-export function processInboundDqRequest(request: string): InboundDocumentQueryReq {
+export async function processInboundDqRequest(request: string): Promise<InboundDocumentQueryReq> {
   try {
     const parser = new XMLParser({
       ignoreAttributes: false,
@@ -41,7 +42,7 @@ export function processInboundDqRequest(request: string): InboundDocumentQueryRe
     const slots = toArray(iti38Request.Envelope.Body.AdhocQueryRequest.AdhocQuery.Slot);
     const externalGatewayPatient = extractExternalGatewayPatient(slots);
 
-    return {
+    const inboundRequest = {
       id: stripUrnPrefix(extractText(iti38Request.Envelope.Header.MessageID)),
       timestamp: extractTimestamp(iti38Request.Envelope.Header),
       samlAttributes,
@@ -50,6 +51,8 @@ export function processInboundDqRequest(request: string): InboundDocumentQueryRe
         iti38Request.Envelope.Header.Security.Signature.SignatureValue
       ),
     };
+    await storeDqRequest({ request, inboundRequest });
+    return inboundRequest;
   } catch (error) {
     throw new Error(`Failed to parse ITI-38 request: ${error}`);
   }

@@ -5,6 +5,7 @@ import { InboundDocumentRetrievalReq, DocumentReference } from "@metriport/ihe-g
 import { convertSamlHeaderToAttributes, extractTimestamp } from "../../shared";
 import { stripUrnPrefix } from "../../../../../../util/urn";
 import { extractText } from "../../../utils";
+import { storeDrRequest } from "../../../monitor/store";
 
 function extractDocumentReferences(documentRequest: DocumentRequest[]): DocumentReference[] {
   return documentRequest.map(req => ({
@@ -14,7 +15,9 @@ function extractDocumentReferences(documentRequest: DocumentRequest[]): Document
   }));
 }
 
-export function processInboundDrRequest(request: string): InboundDocumentRetrievalReq {
+export async function processInboundDrRequest(
+  request: string
+): Promise<InboundDocumentRetrievalReq> {
   try {
     const parser = new XMLParser({
       ignoreAttributes: false,
@@ -31,7 +34,7 @@ export function processInboundDrRequest(request: string): InboundDocumentRetriev
     );
     const documentReference = extractDocumentReferences(documentRequests);
 
-    return {
+    const inboundRequest = {
       id: stripUrnPrefix(extractText(iti39Request.Envelope.Header.MessageID)),
       timestamp: extractTimestamp(iti39Request.Envelope.Header),
       samlAttributes,
@@ -40,6 +43,9 @@ export function processInboundDrRequest(request: string): InboundDocumentRetriev
         iti39Request.Envelope.Header.Security.Signature.SignatureValue
       ),
     };
+
+    await storeDrRequest({ request, inboundRequest });
+    return inboundRequest;
   } catch (error) {
     throw new Error(`Failed to parse ITI-39 request: ${error}`);
   }

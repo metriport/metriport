@@ -6,6 +6,7 @@ import { Iti55Request, iti55RequestSchema } from "./schema";
 import { convertSamlHeaderToAttributes, extractTimestamp } from "../../shared";
 import { extractText } from "../../../utils";
 import { mapIheGenderToFhir } from "../../../../shared";
+import { storeXcpdRequest } from "../../../monitor/store";
 
 export function transformIti55RequestToPatientResource(
   iti55Request: Iti55Request
@@ -49,7 +50,9 @@ export function transformIti55RequestToPatientResource(
 
   return patientResource;
 }
-export function processInboundXcpdRequest(request: string): InboundPatientDiscoveryReq {
+export async function processInboundXcpdRequest(
+  request: string
+): Promise<InboundPatientDiscoveryReq> {
   const parser = new XMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "_",
@@ -57,13 +60,14 @@ export function processInboundXcpdRequest(request: string): InboundPatientDiscov
     parseAttributeValue: false,
     removeNSPrefix: true,
   });
+
   const jsonObj = parser.parse(request);
   try {
     const iti55Request = iti55RequestSchema.parse(jsonObj);
     const samlAttributes = convertSamlHeaderToAttributes(iti55Request.Envelope.Header);
     const patientResource = transformIti55RequestToPatientResource(iti55Request);
 
-    return {
+    const inboundRequest = {
       id: extractText(iti55Request.Envelope.Header.MessageID),
       timestamp: extractTimestamp(iti55Request.Envelope.Header),
       samlAttributes,
@@ -72,6 +76,10 @@ export function processInboundXcpdRequest(request: string): InboundPatientDiscov
         iti55Request.Envelope.Header.Security.Signature.SignatureValue
       ),
     };
+
+    await storeXcpdRequest({ request, inboundRequest });
+
+    return inboundRequest;
   } catch (error) {
     throw new Error(`Failed to parse ITI-55 request: ${error}`);
   }

@@ -15,27 +15,27 @@ import { createExtrinsicObjectXml } from "../../../dq/create-metadata-xml";
 import { extractDocumentUniqueId } from "../../../shared";
 
 describe("Process Inbound Dq Request", () => {
-  it("should process successful Iti-38 request", () => {
+  it("should process successful Iti-38 request", async () => {
     try {
       const soapEnvelope = createITI38SoapEnvelope({
         bodyData: outboundDqRequest,
         publicCert: TEST_CERT,
       });
       const signedEnvelope = signTimestamp({ xml: soapEnvelope, privateKey: TEST_KEY });
-      const iti38Request = processInboundDqRequest(signedEnvelope);
+      const iti38Request = await processInboundDqRequest(signedEnvelope);
       expect(iti38Request.externalGatewayPatient).toEqual(outboundDqRequest.externalGatewayPatient);
     } catch (error) {
       throw new Error("iti38Request externalPatient is wrong or undefined");
     }
   });
 
-  it("should process invalid ITI-38 request correctly", () => {
+  it("should process invalid ITI-38 request correctly", async () => {
     const soapEnvelope = createITI38SoapEnvelope({
       bodyData: outboundDqRequest,
       publicCert: TEST_CERT,
     });
-    expect(() => {
-      processInboundDqRequest(soapEnvelope);
+    expect(async () => {
+      await processInboundDqRequest(soapEnvelope);
     }).toThrow("Failed to parse ITI-38 request");
   });
 });

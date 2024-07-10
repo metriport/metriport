@@ -12,7 +12,7 @@ import {
 import { signTimestamp } from "../../saml/security/sign";
 
 describe("Process Inbound Xcpd Request", () => {
-  it("should process successful ITI-55 request", () => {
+  it("should process successful ITI-55 request", async () => {
     try {
       const soapEnvelope = createITI5SoapEnvelope({
         bodyData: outboundXcpdRequest,
@@ -20,7 +20,7 @@ describe("Process Inbound Xcpd Request", () => {
       });
       const signedEnvelope = signTimestamp({ xml: soapEnvelope, privateKey: TEST_KEY });
 
-      const iti55InboundRequest = processInboundXcpdRequest(signedEnvelope);
+      const iti55InboundRequest = await processInboundXcpdRequest(signedEnvelope);
       const updatedIti55InboundRequest = {
         ...iti55InboundRequest,
         patientResource: {
@@ -36,14 +36,14 @@ describe("Process Inbound Xcpd Request", () => {
     }
   });
 
-  it("should process invalid ITI-55 request correctly", () => {
+  it("should process invalid ITI-55 request correctly", async () => {
     const soapEnvelope = createITI5SoapEnvelope({
       bodyData: outboundXcpdRequest,
       publicCert: TEST_CERT,
     });
 
-    expect(() => {
-      processInboundXcpdRequest(soapEnvelope);
+    expect(async () => {
+      await processInboundXcpdRequest(soapEnvelope);
     }).toThrow("Failed to parse ITI-55 request");
   });
 });
