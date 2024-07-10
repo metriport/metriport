@@ -58,22 +58,19 @@ export async function handleDataContribution({
     fhirBundle: validatedBundle,
   });
 
-  if (hasCompositionResource(validatedBundle)) {
-    const converted = await convertFhirToCda({
-      cxId,
-      validatedBundle,
-    });
-    await uploadCdaDocuments({
-      cxId,
-      patientId,
-      cdaBundles: converted,
-      organization: fhirOrganization,
-      docId: requestId,
-    });
+  if (!Config.isSandbox()) {
+    if (hasCompositionResource(validatedBundle)) {
+      const converted = await convertFhirToCda({ cxId, validatedBundle });
+      uploadCdaDocuments({
+        cxId,
+        patientId,
+        cdaBundles: converted,
+        organization: fhirOrganization,
+        docId: requestId,
+      });
+    }
+    processCcdRequest(patient, fhirOrganization);
   }
-
-  // TODO: To minimize generating CCDs, make it a delayed job (run it ~5min after it was initiated, only once for all requests within that time window)
-  if (!Config.isSandbox()) processCcdRequest(patient, fhirOrganization);
 
   return consolidatedDataUploadResults;
 }
