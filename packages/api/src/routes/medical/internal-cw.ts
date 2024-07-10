@@ -54,13 +54,13 @@ router.put(
     const orgActive = cwOrgActiveSchema.parse(req.body);
 
     const org = await getOrganizationOrFail({ cxId, id: orgId });
-    await org.update({
-      cwActive: orgActive.active,
-    });
     await createOrUpdateCWOrganization(cxId, {
       oid: org.oid,
       data: org.data,
       active: orgActive.active,
+    });
+    await org.update({
+      cwActive: orgActive.active,
     });
 
     return res.sendStatus(httpStatus.OK);

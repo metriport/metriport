@@ -216,9 +216,6 @@ router.put(
     const orgActive = cqOrgActiveSchema.parse(req.body);
 
     const org = await getOrganizationOrFail({ cxId, id: orgId });
-    await org.update({
-      cqActive: orgActive.active,
-    });
     const { coordinates } = await getAddressWithCoordinates(org.data.location, cxId);
     const address = org.data.location;
     const addressLine = address.addressLine2
@@ -239,6 +236,9 @@ router.put(
       email: metriportEmailForCq,
       active: orgActive.active,
       role: "Connection" as const,
+    });
+    await org.update({
+      cqActive: orgActive.active,
     });
 
     return res.sendStatus(httpStatus.OK);

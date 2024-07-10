@@ -25,6 +25,7 @@ import { MetriportMedicalApi, USState } from "@metriport/api-sdk";
 
 const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
+const facilityId = "018a80c4-292a-7486-a1234-7uwe234ert90";
 const patient = await metriport.createPatient(
   {
     firstName: "Jose",
@@ -55,7 +56,7 @@ const patient = await metriport.createPatient(
     ],
     externalId: "123456789",
   },
-  "2.16.840.1.113883.3.666.5.2004.4.2005"
+  facilityId
 );
 ```
 

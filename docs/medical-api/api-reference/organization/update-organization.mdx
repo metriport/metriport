@@ -26,7 +26,7 @@ import { Metriport, OrgType, USState } from "@metriport/api-sdk";
 const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
 
 const org = await metriportClient.updateOrganization({
-  id: "2.16.840.1.113883.3.666.123",
+  id: "018a80c4-292a-7486-a1234-7uwe234ert90",
   type: OrgType.postAcuteCare,
   name: "Metriport Inc.",
   location: {
@@ -42,18 +42,4 @@ const org = await metriportClient.updateOrganization({
 
 </ResponseExample>
 
-```json
-{
-    "id": "2.16.840.1.113883.3.666.123",
-    "type": "postAcuteCare",
-    "name": "Metriport Inc.",
-    "location": {
-        "addressLine1": "2261 Market Street",
-        "addressLine2": "#4818",
-        "city": "San Francisco",
-        "state": "CA",
-        "zip": "94114",
-        "country": "USA"
-    }
-}
-```
+<Snippet file="organization-response-json.mdx" />

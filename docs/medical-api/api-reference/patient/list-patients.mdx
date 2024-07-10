@@ -28,7 +28,8 @@ import { MetriportMedicalApi } from "@metriport/api-sdk";
 
 const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
-const patients = await metriport.listPatients("2.16.840.1.113883.3.666.5.2004.4.2005");
+const facilityId = "018a80c4-292a-7486-a1234-7uwe234ert90";
+const patients = await metriport.listPatients(facilityId);
 ```
 
 </ResponseExample>
@@ -37,9 +38,8 @@ const patients = await metriport.listPatients("2.16.840.1.113883.3.666.5.2004.4.
 {
   "patients": [
     {
-      "id": "2.16.840.1.113883.3.666.777",
-      "externalId": "123456789",
-      "facilityIds": ["2.16.840.1.113883.3.666.5.2004.4.2005"],
+      "id": "018a80c4-292a-7486-a1234-76yuhe23yu14",
+      "facilityIds": ["018a80c4-292a-7486-a1234-7uwe234ert90"],
       "firstName": "Jose",
       "lastName": "Juarez",
       "dob": "1951-05-05",
@@ -65,12 +65,13 @@ const patients = await metriport.listPatients("2.16.840.1.113883.3.666.5.2004.4.
           "phone": "1234567899",
           "email": "jose@domain.com"
         }
-      ]
+      ],
+      "externalId": "123456789",
     },
     {
-      "id": "2.16.840.1.113883.3.666.888",
+      "id": "018a80c4-292a-7486-a1234-5ert32uij123",
       "externalId": "123456789",
-      "facilityIds": ["2.16.840.1.113883.3.666.5.2004.4.2005"],
+      "facilityIds": ["018a80c4-292a-7486-a1234-7uwe234ert90"],
       "firstName": "Josita",
       "lastName": "Juarez,Diaz",
       "dob": "1949-06-09",
@@ -83,7 +84,6 @@ const patients = await metriport.listPatients("2.16.840.1.113883.3.666.5.2004.4.
           "country": "USA",
           "addressLine1": "Guadalajara St"
         },
-        { "zip": 66543 }
       ]
     }
   ]
