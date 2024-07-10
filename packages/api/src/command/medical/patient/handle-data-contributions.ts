@@ -1,5 +1,5 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { FHIR_BUNDLE_SUFFIX, createUploadFilePath } from "@metriport/core/domain/document/upload";
+import { createUploadFilePath, FHIR_BUNDLE_SUFFIX } from "@metriport/core/domain/document/upload";
 import { Patient } from "@metriport/core/domain/patient";
 import { uploadCdaDocuments, uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
@@ -42,16 +42,19 @@ export async function handleDataContribution({
     `${requestId}_${FHIR_BUNDLE_SUFFIX}.json`
   );
   const fullBundle = hydrateBundle(bundle, patient, fhirOrganization, fhirBundleDestinationKey);
-  const validatedBundle = validateFhirEntries(fullBundle);
-  const incomingAmount = validatedBundle.entry.length;
 
-  await checkResourceLimit(incomingAmount, patient);
   await uploadFhirBundleToS3({
     cxId,
     patientId,
-    fhirBundle: validatedBundle,
+    fhirBundle: fullBundle,
     destinationKey: fhirBundleDestinationKey,
   });
+
+  const validatedBundle = validateFhirEntries(fullBundle);
+
+  const incomingAmount = validatedBundle.entry.length;
+  await checkResourceLimit(incomingAmount, patient);
+
   const consolidatedDataUploadResults = await createOrUpdateConsolidatedPatientData({
     cxId,
     patientId: patient.id,
