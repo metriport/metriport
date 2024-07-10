@@ -56,6 +56,6 @@ export function processInboundDqRequest(request: string): InboundDocumentQueryRe
   } catch (error) {
     const msg = "Failed to parse ITI-38 request";
     log(`${msg}: Error - ${errorToString(error)}`);
-    throw new Error(`: ${error}`);
+    throw new Error(`${msg}: ${error}`);
   }
 }

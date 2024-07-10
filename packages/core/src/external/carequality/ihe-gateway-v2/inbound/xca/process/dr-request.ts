@@ -46,6 +46,6 @@ export function processInboundDrRequest(request: string): InboundDocumentRetriev
   } catch (error) {
     const msg = "Failed to parse ITI-39 request";
     log(`${msg}: Error - ${errorToString(error)}`);
-    throw new Error(`: ${error}`);
+    throw new Error(`${msg}: ${error}`);
   }
 }
