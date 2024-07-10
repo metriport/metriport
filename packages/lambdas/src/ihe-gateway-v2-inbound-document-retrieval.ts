@@ -41,7 +41,9 @@ export async function handler(event: APIGatewayProxyEventV2) {
       }
       const soapData = mtomParts.parts[0]?.body || Buffer.from("");
 
-      const drRequest: InboundDocumentRetrievalReq = processInboundDrRequest(soapData.toString());
+      const drRequest: InboundDocumentRetrievalReq = await processInboundDrRequest(
+        soapData.toString()
+      );
       const result: InboundDocumentRetrievalResp = await processInboundDr(drRequest);
       const xmlResponse = await createInboundDrResponse(result);
 

@@ -2,6 +2,7 @@ import { InboundDocumentQueryReq, XCPDPatientId } from "@metriport/ihe-gateway-s
 import { errorToString, toArray } from "@metriport/shared";
 import { XMLParser } from "fast-xml-parser";
 import { stripUrnPrefix } from "../../../../../../util/urn";
+import { storeDqRequest } from "../../../monitor/store";
 import { Slot } from "../../../schema";
 import { extractText } from "../../../utils";
 import { convertSamlHeaderToAttributes, extractTimestamp } from "../../shared";
@@ -27,7 +28,7 @@ function extractExternalGatewayPatient(slots: Slot[]): XCPDPatientId {
   };
 }
 
-export function processInboundDqRequest(request: string): InboundDocumentQueryReq {
+export async function processInboundDqRequest(request: string): Promise<InboundDocumentQueryReq> {
   const log = out("Inbound DQ Request").log;
   log(JSON.stringify(request));
   try {
@@ -44,7 +45,7 @@ export function processInboundDqRequest(request: string): InboundDocumentQueryRe
     const slots = toArray(iti38Request.Envelope.Body.AdhocQueryRequest.AdhocQuery.Slot);
     const externalGatewayPatient = extractExternalGatewayPatient(slots);
 
-    return {
+    const inboundRequest = {
       id: stripUrnPrefix(extractText(iti38Request.Envelope.Header.MessageID)),
       timestamp: extractTimestamp(iti38Request.Envelope.Header),
       samlAttributes,
@@ -53,6 +54,8 @@ export function processInboundDqRequest(request: string): InboundDocumentQueryRe
         iti38Request.Envelope.Header.Security.Signature.SignatureValue
       ),
     };
+    await storeDqRequest({ request, inboundRequest });
+    return inboundRequest;
   } catch (error) {
     const msg = "Failed to parse ITI-38 request";
     log(`${msg}: Error - ${errorToString(error)}`);

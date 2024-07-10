@@ -134,6 +134,7 @@ export const config: EnvConfigNonSandbox = {
   medicalDocumentsBucketName: "test-bucket",
   medicalDocumentsUploadBucketName: "test-upload-bucket",
   iheResponsesBucketName: "test-ihe-responses-bucket",
+  iheRequestsBucketName: "test-ihe-requests-bucket",
   engineeringCxId: "12345678-1234-1234-1234-123456789012",
 };
 export default config;
