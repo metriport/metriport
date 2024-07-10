@@ -125,6 +125,7 @@ jobs:
     with:
       deploy_env: "sandbox"
       cdk_stack: ${{ vars.API_STACK_NAME_SANDBOX }}
+      ihe_stack: ${{ vars.IHE_STACK_NAME }}
       AWS_REGION: ${{ vars.API_REGION_SANDBOX  }}
     secrets:
       SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
