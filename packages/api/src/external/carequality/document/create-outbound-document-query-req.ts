@@ -92,10 +92,6 @@ export function createOutboundDocumentQueryRequests({
             system: externalGateway.systemId,
           },
           patientId: patient.id,
-          documentCreationDate: {
-            dateFrom: now.toISOString(),
-            dateTo: now.toISOString(),
-          },
         },
       ];
     }
