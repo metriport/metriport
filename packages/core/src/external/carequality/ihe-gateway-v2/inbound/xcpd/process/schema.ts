@@ -40,10 +40,12 @@ export const QueryByParameterSchema = z.object({
         semanticsText: z.literal("LivingSubject.id"),
       })
       .optional(),
-    livingSubjectName: z.object({
-      value: schemaOrArray(nameSchema),
-      semanticsText: z.literal("LivingSubject.name"),
-    }),
+    livingSubjectName: schemaOrArray(
+      z.object({
+        value: nameSchema,
+        semanticsText: z.literal("LivingSubject.name").optional(),
+      })
+    ),
     patientAddress: z
       .object({
         value: schemaOrArrayOrEmpty(addressSchema).optional(),

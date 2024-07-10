@@ -15,9 +15,9 @@ export function transformIti55RequestToPatientResource(
   const queryParams =
     iti55Request.Envelope.Body.PRPA_IN201305UV02.controlActProcess.queryByParameter.parameterList;
 
-  const name = toArray(queryParams.livingSubjectName.value).map(name => ({
-    family: extractText(name.family),
-    given: toArray(name.given).map(extractText),
+  const name = toArray(queryParams.livingSubjectName).map(value => ({
+    family: extractText(value.value.family),
+    given: toArray(value.value.given).map(extractText),
   }));
 
   const address = toArray(queryParams.patientAddress?.value).map(addr => ({
