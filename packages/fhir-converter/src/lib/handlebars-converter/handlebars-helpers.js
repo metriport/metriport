@@ -219,7 +219,10 @@ var getDateTime = function (dateTimeString) {
 
   // Padding 0s to 17 digits
   dateTimeComposition = getDateTimeComposition(ds);
-  if (!validUTCDateTime(dateTimeComposition)) throw `Invalid datetime: ${ds}`;
+  if (!validUTCDateTime(dateTimeComposition)) {
+    console.log( `Invalid datetime: ${ds}`);
+    return '';
+  }
   return new Date(
     Date.UTC(
       dateTimeComposition.year,
