@@ -18,34 +18,41 @@ const requiresMetriportOidUrl = [
 const specialNamespaceRequiredUrl =
   "https://www.medentcq.com:14430/MedentRespondingGateway-1.0-SNAPSHOT/RespondingGateway/xcpd-iti55";
 
-const pointClickCareOid = "2.16.840.1.113883.3.6448";
-const redoxOid = "2.16.840.1.113883.3.6147.458";
-const redoxGatewayOid = "2.16.840.1.113883.3.6147.458.2";
+export const eHexUrlPrefix = "https://hub002prodcq.ehealthexchange.org";
+
+export const pointClickCareOid = "2.16.840.1.113883.3.6448";
 export const surescriptsOid = "2.16.840.1.113883.3.2054.2.1.1";
 export const epicOidPrefix = "1.2.840.114350.1.13";
+export const redoxOidPrefix = "2.16.840.1.113883.3.6147";
 
 /*
  * These gateways only accept a single document reference per request.
  */
-const gatewaysThatAcceptOneDocRefPerRequest = [
-  pointClickCareOid,
-  redoxOid,
-  redoxGatewayOid,
-  surescriptsOid,
-];
+const gatewaysThatAcceptOneDocRefPerRequest = [pointClickCareOid, surescriptsOid];
+
+const prefixDocRefsPerRequest: Record<string, number> = {
+  [epicOidPrefix]: 10,
+  [redoxOidPrefix]: 5,
+};
 
 const docRefsPerRequestByGateway: Record<string, number> = {
   [pointClickCareOid]: 1,
-  [redoxOid]: 1,
-  [redoxGatewayOid]: 1,
   [surescriptsOid]: 1,
-  [epicOidPrefix]: 10,
 };
 
 export const defaultDocRefsPerRequest = 5;
 
 export function getGatewaySpecificDocRefsPerRequest(gateway: XCAGateway): number {
+  for (const prefix in prefixDocRefsPerRequest) {
+    if (gateway.homeCommunityId.startsWith(prefix)) {
+      return prefixDocRefsPerRequest[prefix] ?? defaultDocRefsPerRequest;
+    }
+  }
   return docRefsPerRequestByGateway[gateway.homeCommunityId] ?? defaultDocRefsPerRequest;
+}
+
+export function doesGatewayNeedDateRanges(url: string): boolean {
+  return url.startsWith(eHexUrlPrefix);
 }
 
 /*
