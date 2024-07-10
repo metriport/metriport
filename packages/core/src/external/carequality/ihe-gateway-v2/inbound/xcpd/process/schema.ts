@@ -49,7 +49,7 @@ export const QueryByParameterSchema = z.object({
     patientAddress: z
       .object({
         value: schemaOrArrayOrEmpty(addressSchema).optional(),
-        semanticsText: z.literal("Patient.addr"),
+        semanticsText: z.literal("Patient.addr").optional(),
       })
       .optional(),
     patientTelecom: z
