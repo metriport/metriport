@@ -220,8 +220,8 @@ var getDateTime = function (dateTimeString) {
   // Padding 0s to 17 digits
   dateTimeComposition = getDateTimeComposition(ds);
   if (!validUTCDateTime(dateTimeComposition)) {
-    console.log( `Invalid datetime: ${ds}`);
-    return '';
+    console.log(`Invalid datetime: ${ds}`);
+    return "";
   }
   return new Date(
     Date.UTC(
@@ -1354,7 +1354,7 @@ module.exports.external = [
         const leadsWithDecimal = decimal.startsWith(".");
 
         if (leadsWithDecimal) {
-          return  parseFloat(`0${decimal}`);
+          return parseFloat(`0${decimal}`);
         }
 
         return parseFloat(decimal);
@@ -1388,11 +1388,15 @@ module.exports.external = [
             const paragraphArray = Array.isArray(td.paragraph) ? td.paragraph : [td.paragraph];
             const textValues = paragraphArray
               .map(paragraph => {
-                if (!paragraph || !paragraph.content) return "";
+                if (!paragraph || (!paragraph.content && !paragraph._)) return "";
                 const contentArray = Array.isArray(paragraph.content)
                   ? paragraph.content
                   : [paragraph.content];
-                return concatenateTextValues(contentArray);
+                const contents = concatenateTextValues(contentArray);
+
+                const valueArray = Array.isArray(paragraph._) ? paragraph._ : [paragraph._];
+                const values = valueArray.join("\n");
+                return contents + "\n" + values;
               })
               .join("\n");
             rowData[headers[index]] = textValues;
