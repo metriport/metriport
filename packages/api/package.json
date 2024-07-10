@@ -36,6 +36,7 @@
     "@metriport/ihe-gateway-sdk": "file:packages/ihe-gateway-sdk",
     "@metriport/shared": "file:packages/shared",
     "@opensearch-project/opensearch": "^2.3.1",
+    "@propelauth/express": "^2.1.19",
     "@sentry/node": "^7.45.0",
     "@sentry/tracing": "^7.45.0",
     "ajv": "^8.12.0",

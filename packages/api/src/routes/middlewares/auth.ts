@@ -2,33 +2,24 @@ import { base64ToString } from "@metriport/core/util/base64";
 import { out } from "@metriport/core/util/log";
 import { NextFunction, Request, Response } from "express";
 import status from "http-status";
-import * as jwt from "jsonwebtoken";
 import { MAPIAccess } from "../../models/medical/mapi-access";
 import { Config } from "../../shared/config";
 import { getCxIdOrFail } from "../util";
+import { auth, getCxId } from "./propelauth";
 
 /**
  * Process the API key and get the customer id.
  * The customer id is stored on the Request, property 'cxId'.
  */
-export function processCxId(req: Request, res: Response, next: NextFunction): void {
-  const { log } = out("processCxId");
+export async function processCxId(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     // Just gets the cxId from the API Key, the actual auth is done on API GW.
     // Downstream routes should check whether `cxId` is present on the request or not.
     const encodedApiKey = req.header("x-api-key");
     req.cxId = getCxIdFromApiKey(encodedApiKey);
-    // TODO 1935 remove this
-    // TODO 1935 remove this
-    // TODO 1935 remove this
-    log(`..... cxId from API Key: ${req.cxId}`);
   } catch (error) {
     try {
-      // TODO 1935 remove this
-      // TODO 1935 remove this
-      // TODO 1935 remove this
-      req.cxId = getCxIdFromJwt(req);
-      log(`..... cxId from JWT: ${req.cxId} 🤘`);
+      req.cxId = await getCxIdFromJwt(req);
     } catch (error) {
       // noop - auth is done on API GW level, this is just to make data available downstream
     }
@@ -46,14 +37,12 @@ export function getCxIdFromApiKey(encodedApiKey: string | undefined): string {
   return cxId;
 }
 
-export function getCxIdFromJwt(req: Request): string {
+export async function getCxIdFromJwt(req: Request): Promise<string> {
   const jwtStr = req.header("Authorization");
   if (!jwtStr) throw new Error("Missing token");
-  const rawToken = jwt.decode(jwtStr);
-  if (!rawToken) throw new Error("Invalid token");
-  const token = (typeof rawToken === "string" ? JSON.parse(rawToken) : rawToken) as jwt.JwtPayload;
-  const cxId = token["cognito:username"] ?? token["cxId"];
-  if (!isValidCxId(cxId)) throw new Error("Invalid cxId");
+  const user = await auth.validateAccessTokenAndGetUser(jwtStr);
+  const cxId = getCxId(user);
+  if (!cxId) throw new Error("Could not determine cxId from JWT");
   return cxId;
 }
 
