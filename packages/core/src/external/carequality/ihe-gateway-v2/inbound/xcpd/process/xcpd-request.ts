@@ -1,12 +1,13 @@
 import { XMLParser } from "fast-xml-parser";
 import dayjs from "dayjs";
 import { PatientResource, InboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
-import { toArray } from "@metriport/shared";
+import { errorToString, toArray } from "@metriport/shared";
 import { Iti55Request, iti55RequestSchema } from "./schema";
 import { convertSamlHeaderToAttributes, extractTimestamp } from "../../shared";
 import { extractText } from "../../../utils";
 import { mapIheGenderToFhir } from "../../../../shared";
 import { storeXcpdRequest } from "../../../monitor/store";
+import { out } from "../../../../../../util/log";
 
 export function transformIti55RequestToPatientResource(
   iti55Request: Iti55Request
@@ -53,6 +54,7 @@ export function transformIti55RequestToPatientResource(
 export async function processInboundXcpdRequest(
   request: string
 ): Promise<InboundPatientDiscoveryReq> {
+  const log = out("Inbound XCPD Request").log;
   const parser = new XMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "_",
@@ -81,6 +83,8 @@ export async function processInboundXcpdRequest(
 
     return inboundRequest;
   } catch (error) {
-    throw new Error(`Failed to parse ITI-55 request: ${error}`);
+    const msg = "Failed to parse ITI-55 request";
+    log(`${msg}: Error - ${errorToString(error)}`);
+    throw new Error(`${msg}: ${error}`);
   }
 }
