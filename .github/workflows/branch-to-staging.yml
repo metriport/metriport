@@ -29,6 +29,7 @@ jobs:
       is-branch-to-staging: true
       location_services_cdk_stack: ${{ vars.LOCATION_SERVICES_STACK_NAME_STAGING }}
       cdk_stack: ${{ vars.API_STACK_NAME_STAGING }}
+      ihe_stack: ${{ vars.IHE_STACK_NAME }}
       AWS_REGION: ${{ vars.API_REGION_STAGING }}
     secrets:
       SERVICE_PAT: ${{ secrets.SERVICE_PAT }}

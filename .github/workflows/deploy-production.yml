@@ -108,6 +108,7 @@ jobs:
       deploy_env: "production"
       location_services_cdk_stack: ${{ vars.LOCATION_SERVICES_STACK_NAME_PRODUCTION }}
       cdk_stack: ${{ vars.API_STACK_NAME_PRODUCTION }}
+      ihe_stack: ${{ vars.IHE_STACK_NAME }}
       AWS_REGION: ${{ vars.API_REGION_PRODUCTION }}
     secrets:
       SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
