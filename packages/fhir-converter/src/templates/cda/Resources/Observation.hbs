@@ -64,11 +64,7 @@
         "code": {{>DataType/CodeableConcept.hbs code=observationEntry.code text=observationEntry.text._ canBeUnknown=true}},
 
         {{#if observationEntry.effectiveTime.low.value}}
-            "effectivePeriod":
-            {
-                "start":"{{formatAsDateTime observationEntry.effectiveTime.low.value}}",
-                "end":"{{formatAsDateTime observationEntry.effectiveTime.high.value}}",
-            },
+            "effectivePeriod": {{>DataType/Period.hbs period=observationEntry.effectiveTime}},
         {{else}}
             "effectiveDateTime":"{{formatAsDateTime observationEntry.effectiveTime.value}}",
         {{/if}}
