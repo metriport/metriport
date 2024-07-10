@@ -151,14 +151,14 @@ describe("processDrResponse", () => {
     expect(response?.documentReference?.[0]?.docUniqueId).toEqual("123456789");
     expect(response?.documentReference?.[0]?.homeCommunityId).toEqual("2.16.840.1.113883.3.9621");
     expect(response?.documentReference?.[0]?.repositoryUniqueId).toEqual(
-      "urn:oid:2.16.840.1.113883.3.9621"
+      "2.16.840.1.113883.3.9621"
     );
 
     expect(response?.documentReference?.[1]?.contentType).toEqual("application/octet-stream");
     expect(response?.documentReference?.[1]?.docUniqueId).toEqual("987654321");
     expect(response?.documentReference?.[1]?.homeCommunityId).toEqual("2.16.840.1.113883.3.9621");
     expect(response?.documentReference?.[1]?.repositoryUniqueId).toEqual(
-      "urn:oid:2.16.840.1.113883.3.9621"
+      "2.16.840.1.113883.3.9621"
     );
   });
 

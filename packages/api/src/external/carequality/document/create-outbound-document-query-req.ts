@@ -28,9 +28,13 @@ export function createOutboundDocumentQueryRequests({
   return cqLinks.flatMap(externalGateway => {
     if (doesGatewayNeedDateRanges(externalGateway.url)) {
       const requests = [];
-      for (let i = 0; i < 10; i++) {
+      const length = 10;
+      for (let i = 0; i < length; i++) {
         const dateTo = now.subtract(i * 6, "month").toISOString();
-        const dateFrom = now.subtract((i + 1) * 6, "month").toISOString();
+        const dateFrom =
+          i !== length - 1
+            ? now.subtract((i + 1) * 6, "month").toISOString()
+            : now.subtract(25, "year").toISOString();
         requests.push({
           id: requestId,
           cxId: cxId,
