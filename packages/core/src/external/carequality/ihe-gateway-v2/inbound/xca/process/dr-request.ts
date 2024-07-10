@@ -4,6 +4,7 @@ import { XMLParser } from "fast-xml-parser";
 import { out } from "../../../../../../util/log";
 import { stripUrnPrefix } from "../../../../../../util/urn";
 import { extractText } from "../../../utils";
+import { storeDrRequest } from "../../../monitor/store";
 import { convertSamlHeaderToAttributes, extractTimestamp } from "../../shared";
 import { DocumentRequest, iti39RequestSchema } from "./schema";
 
@@ -15,7 +16,9 @@ function extractDocumentReferences(documentRequest: DocumentRequest[]): Document
   }));
 }
 
-export function processInboundDrRequest(request: string): InboundDocumentRetrievalReq {
+export async function processInboundDrRequest(
+  request: string
+): Promise<InboundDocumentRetrievalReq> {
   const log = out("Inbound DR Request").log;
   log(JSON.stringify(request));
   try {
@@ -34,7 +37,7 @@ export function processInboundDrRequest(request: string): InboundDocumentRetriev
     );
     const documentReference = extractDocumentReferences(documentRequests);
 
-    return {
+    const inboundRequest = {
       id: stripUrnPrefix(extractText(iti39Request.Envelope.Header.MessageID)),
       timestamp: extractTimestamp(iti39Request.Envelope.Header),
       samlAttributes,
@@ -43,6 +46,9 @@ export function processInboundDrRequest(request: string): InboundDocumentRetriev
         iti39Request.Envelope.Header.Security.Signature.SignatureValue
       ),
     };
+
+    await storeDrRequest({ request, inboundRequest });
+    return inboundRequest;
   } catch (error) {
     const msg = "Failed to parse ITI-39 request";
     log(`${msg}: Error - ${errorToString(error)}`);

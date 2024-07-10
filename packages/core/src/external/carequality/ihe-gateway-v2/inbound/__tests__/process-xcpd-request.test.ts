@@ -10,9 +10,20 @@ import {
   outboundXcpdRequest,
 } from "../../outbound/__tests__/constants";
 import { signTimestamp } from "../../saml/security/sign";
+import { S3Utils } from "../../../../aws/s3";
 
 describe("Process Inbound Xcpd Request", () => {
-  it("should process successful ITI-55 request", () => {
+  beforeEach(() => {
+    jest.spyOn(S3Utils.prototype, "uploadFile").mockImplementation(() => {
+      return Promise.resolve({
+        Location: "http://example.com/mockurl",
+        ETag: '"mockedetag"',
+        Bucket: "mockedbucket",
+        Key: "mockedkey",
+      });
+    });
+  });
+  it("should process successful ITI-55 request", async () => {
     try {
       const soapEnvelope = createITI5SoapEnvelope({
         bodyData: outboundXcpdRequest,
@@ -20,7 +31,7 @@ describe("Process Inbound Xcpd Request", () => {
       });
       const signedEnvelope = signTimestamp({ xml: soapEnvelope, privateKey: TEST_KEY });
 
-      const iti55InboundRequest = processInboundXcpdRequest(signedEnvelope);
+      const iti55InboundRequest = await processInboundXcpdRequest(signedEnvelope);
       const updatedIti55InboundRequest = {
         ...iti55InboundRequest,
         patientResource: {
@@ -36,19 +47,29 @@ describe("Process Inbound Xcpd Request", () => {
     }
   });
 
-  it("should process invalid ITI-55 request correctly", () => {
+  it("should process invalid ITI-55 request correctly", async () => {
     const soapEnvelope = createITI5SoapEnvelope({
       bodyData: outboundXcpdRequest,
       publicCert: TEST_CERT,
     });
 
-    expect(() => {
-      processInboundXcpdRequest(soapEnvelope);
-    }).toThrow("Failed to parse ITI-55 request");
+    await expect(processInboundXcpdRequest(soapEnvelope)).rejects.toThrow(
+      "Failed to parse ITI-55 request"
+    );
   });
 });
 
 describe("Process Inbound Xcpd Response", () => {
+  beforeEach(() => {
+    jest.spyOn(S3Utils.prototype, "uploadFile").mockImplementation(() => {
+      return Promise.resolve({
+        Location: "http://example.com/mockurl",
+        ETag: '"mockedetag"',
+        Bucket: "mockedbucket",
+        Key: "mockedkey",
+      });
+    });
+  });
   it("should process ITI-55 success response", () => {
     const response = {
       ...outboundXcpdRequest,
