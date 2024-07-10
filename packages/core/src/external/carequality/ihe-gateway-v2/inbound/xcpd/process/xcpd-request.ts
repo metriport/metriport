@@ -84,7 +84,7 @@ export async function processInboundXcpdRequest(
     return inboundRequest;
   } catch (error) {
     const msg = "Failed to parse ITI-55 request";
-    log(`${msg}: Error - ${errorToString(error)}`);
+    log(`${msg}: Error - ${errorToString(error)}, JsonObj: ${JSON.stringify(jsonObj)}`);
     throw new Error(`${msg}: ${error}`);
   }
 }
