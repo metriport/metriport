@@ -84,6 +84,12 @@
                             "status":"generated",
                             "div":"<div xmlns=\"http://www.w3.org/1999/xhtml\">{{this.section.code.displayName}}</div>",
                         }
+                    {{else}}
+                        "text":
+                        {
+                            "status":"generated",
+                            "div":"<div xmlns=\"http://www.w3.org/1999/xhtml\">unknown</div>",
+                        }
                     {{/if}}
                     "code":{{>DataType/CodeableConcept.hbs code=this.section.code}},
                     "mode":"snapshot",

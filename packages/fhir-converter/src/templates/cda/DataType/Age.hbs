@@ -24,16 +24,9 @@
   //     CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  
   // -------------------------------------------------------------------------------------------------
 --}}
-{
-    "resource":{
-        "resourceType": "Coverage",
-        "id":"{{ID}}",
-        "beneficiary":
-        {
-            {{#if canBeUnknown}} 
-              "display":"unknown",
-            {{/if}}
-            "reference":"{{REF}}",
-        },
-    },
-},
+{        
+  "value": {{quantity.value}},
+  "unit": "{{quantity.unit}}",
+  "system": "http://unitsofmeasure.org",
+  "code": {{#if quantity.code}} "{{quantity.code}}" {{else}} "unknown" {{/if}}
+}
