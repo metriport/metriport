@@ -9,5 +9,5 @@ export function extractText(textOrTextObject: TextOrTextObject): string {
   if (typeof textOrTextObject === "string") {
     return textOrTextObject;
   }
-  return textOrTextObject._text;
+  return String(textOrTextObject._text);
 }

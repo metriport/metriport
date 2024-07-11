@@ -9,9 +9,10 @@ export const schemaOrArrayOrEmpty = <T extends z.ZodTypeAny>(schema: T) =>
 export const textSchema = z.union([
   z.string(),
   z.object({
-    _text: z.string(),
+    _text: z.union([z.string(), z.number()]),
   }),
 ]);
+
 export type TextOrTextObject = z.infer<typeof textSchema>;
 
 export const stringOrNumberSchema = z.union([z.string(), z.number()]);
