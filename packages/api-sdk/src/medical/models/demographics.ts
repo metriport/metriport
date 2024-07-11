@@ -35,14 +35,22 @@ export const driverLicenseIdentifierSchema = z.object({
   type: z.enum(driversLicensePersonalIdentifier),
   state: usStateSchema,
 });
+export const driverLicenseIdentifierWithBaseSchema = basePersonalIdentifierSchema.merge(
+  driverLicenseIdentifierSchema
+);
+export type DriverLicenseIdentifier = z.infer<typeof driverLicenseIdentifierWithBaseSchema>;
 
 export const generalTypeIdentifierSchema = z.object({
   type: z.enum(generalPersonalIdentifiers),
 });
+export const generalTypeIdentifierWithBaseSchema = basePersonalIdentifierSchema.merge(
+  generalTypeIdentifierSchema
+);
+export type GeneralTypeIdentifier = z.infer<typeof generalTypeIdentifierWithBaseSchema>;
 
-export const personalIdentifierSchema = basePersonalIdentifierSchema
-  .merge(driverLicenseIdentifierSchema)
-  .or(basePersonalIdentifierSchema.merge(generalTypeIdentifierSchema));
+export const personalIdentifierSchema = driverLicenseIdentifierWithBaseSchema.or(
+  generalTypeIdentifierWithBaseSchema
+);
 export type PersonalIdentifier = z.infer<typeof personalIdentifierSchema>;
 
 export const genderAtBirthSchema = z.enum(["F", "M", "O", "U"]);
