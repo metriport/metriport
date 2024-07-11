@@ -40,8 +40,6 @@ export class LambdasNestedStack extends NestedStack {
   constructor(scope: Construct, id: string, props: LambdasNestedStackProps) {
     super(scope, id, props);
 
-    this.terminationProtection = true;
-
     this.lambdaLayers = setupLambdasLayers(this);
 
     this.cdaToVisualizationLambda = this.setupCdaToVisualization({

@@ -20,8 +20,6 @@ export class SecretsStack extends Stack {
   constructor(scope: Construct, id: string, props: SecretStackProps) {
     super(scope, id, props);
 
-    this.terminationProtection = true;
-
     //-------------------------------------------
     // Init secrets for the infra stack
     //-------------------------------------------
