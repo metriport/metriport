@@ -30,7 +30,7 @@ function extractExternalGatewayPatient(slots: Slot[]): XCPDPatientId {
 
 export async function processInboundDqRequest(request: string): Promise<InboundDocumentQueryReq> {
   const log = out("Inbound DQ Request").log;
-  log(JSON.stringify(request));
+  log(request);
   try {
     const parser = new XMLParser({
       ignoreAttributes: false,

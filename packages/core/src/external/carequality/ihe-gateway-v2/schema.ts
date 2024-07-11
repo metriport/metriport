@@ -74,6 +74,9 @@ export const AttributeSchema = z.union([
   z.object({
     PurposeOfUse: codeSchema,
   }),
+  z.object({
+    PurposeForUse: codeSchema,
+  }),
   textSchema,
 ]);
 export type AttributeValue = z.infer<typeof AttributeSchema>;
@@ -109,6 +112,13 @@ export const samlHeaderSchema = z.object({
               _NameFormat: z.string().optional(),
               AttributeValue: z.object({
                 PurposeOfUse: codeSchema,
+              }),
+            }),
+            z.object({
+              _Name: z.string(),
+              _NameFormat: z.string().optional(),
+              AttributeValue: z.object({
+                PurposeForUse: codeSchema,
               }),
             }),
           ])
