@@ -1340,6 +1340,33 @@ module.exports.external = [
     },
   },
   {
+    name: "buildPresentedForm",
+    description: "Builds a presented form array",
+    func: function (b64String, component) {
+      const presentedForm = [];
+      if (b64String) {
+        presentedForm.push({
+          contentType: "text/html",
+          data: b64String,
+        });
+      }
+      if (component) {
+        const components = Array.isArray(component) ? component : [component];
+        components.forEach(comp => {
+          const obsValueB64 = comp.observation?.value?._b64;
+          if (obsValueB64) {
+            presentedForm.push({
+              contentType: "text/html",
+              data: obsValueB64,
+            });
+          }
+        });
+      }
+      if (presentedForm.length === 0) return undefined;
+      return JSON.stringify(presentedForm);
+    },
+  },
+  {
     name: "extractDecimal",
     description:
       "Returns true if following the FHIR decimal specification: https://www.hl7.org/fhir/R4/datatypes.html#decimal ",

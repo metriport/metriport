@@ -1,8 +1,8 @@
 import { metriportOrganization } from "@metriport/shared";
 import { InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
 import { createITI38SoapEnvelope } from "../../outbound/xca/create/iti38-envelope";
-import { processDqResponse } from "../../outbound/xca/process/dq-response";
 import { processInboundDqRequest } from "../xca/process/dq-request";
+import { processDqResponse } from "../../outbound/xca/process/dq-response";
 import { createInboundDqResponse } from "../xca/create/dq-response";
 import {
   TEST_CERT,
@@ -13,30 +13,43 @@ import {
 import { signTimestamp } from "../../saml/security/sign";
 import { createExtrinsicObjectXml } from "../../../dq/create-metadata-xml";
 import { extractDocumentUniqueId } from "../../../shared";
+import { S3Utils } from "../../../../aws/s3";
 
 describe("Process Inbound Dq Request", () => {
-  it("should process successful Iti-38 request", () => {
+  beforeEach(() => {
+    jest.spyOn(S3Utils.prototype, "uploadFile").mockImplementation(() => {
+      return Promise.resolve({
+        Location: "http://example.com/mockurl",
+        ETag: '"mockedetag"',
+        Bucket: "mockedbucket",
+        Key: "mockedkey",
+      });
+    });
+  });
+
+  it("should process successful Iti-38 request", async () => {
     try {
       const soapEnvelope = createITI38SoapEnvelope({
         bodyData: outboundDqRequest,
         publicCert: TEST_CERT,
       });
       const signedEnvelope = signTimestamp({ xml: soapEnvelope, privateKey: TEST_KEY });
-      const iti38Request = processInboundDqRequest(signedEnvelope);
+      const iti38Request = await processInboundDqRequest(signedEnvelope);
       expect(iti38Request.externalGatewayPatient).toEqual(outboundDqRequest.externalGatewayPatient);
     } catch (error) {
       throw new Error("iti38Request externalPatient is wrong or undefined");
     }
   });
 
-  it("should process invalid ITI-38 request correctly", () => {
+  it("should process invalid ITI-38 request correctly", async () => {
     const soapEnvelope = createITI38SoapEnvelope({
       bodyData: outboundDqRequest,
       publicCert: TEST_CERT,
     });
-    expect(() => {
-      processInboundDqRequest(soapEnvelope);
-    }).toThrow("Failed to parse ITI-38 request");
+
+    await expect(processInboundDqRequest(soapEnvelope)).rejects.toThrow(
+      "Failed to parse ITI-38 request"
+    );
   });
 });
 

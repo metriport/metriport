@@ -1,11 +1,13 @@
 import { XMLParser } from "fast-xml-parser";
 import dayjs from "dayjs";
 import { PatientResource, InboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
-import { toArray } from "@metriport/shared";
+import { errorToString, toArray } from "@metriport/shared";
 import { Iti55Request, iti55RequestSchema } from "./schema";
 import { convertSamlHeaderToAttributes, extractTimestamp } from "../../shared";
 import { extractText } from "../../../utils";
 import { mapIheGenderToFhir } from "../../../../shared";
+import { storeXcpdRequest } from "../../../monitor/store";
+import { out } from "../../../../../../util/log";
 
 export function transformIti55RequestToPatientResource(
   iti55Request: Iti55Request
@@ -13,9 +15,9 @@ export function transformIti55RequestToPatientResource(
   const queryParams =
     iti55Request.Envelope.Body.PRPA_IN201305UV02.controlActProcess.queryByParameter.parameterList;
 
-  const name = toArray(queryParams.livingSubjectName.value).map(name => ({
-    family: extractText(name.family),
-    given: toArray(name.given).map(extractText),
+  const name = toArray(queryParams.livingSubjectName).map(name => ({
+    family: extractText(name.value.family),
+    given: toArray(name.value.given).map(extractText),
   }));
 
   const address = toArray(queryParams.patientAddress?.value).map(addr => ({
@@ -49,7 +51,10 @@ export function transformIti55RequestToPatientResource(
 
   return patientResource;
 }
-export function processInboundXcpdRequest(request: string): InboundPatientDiscoveryReq {
+export async function processInboundXcpdRequest(
+  request: string
+): Promise<InboundPatientDiscoveryReq> {
+  const log = out("Inbound XCPD Request").log;
   const parser = new XMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "_",
@@ -57,13 +62,14 @@ export function processInboundXcpdRequest(request: string): InboundPatientDiscov
     parseAttributeValue: false,
     removeNSPrefix: true,
   });
+
   const jsonObj = parser.parse(request);
   try {
     const iti55Request = iti55RequestSchema.parse(jsonObj);
     const samlAttributes = convertSamlHeaderToAttributes(iti55Request.Envelope.Header);
     const patientResource = transformIti55RequestToPatientResource(iti55Request);
 
-    return {
+    const inboundRequest = {
       id: extractText(iti55Request.Envelope.Header.MessageID),
       timestamp: extractTimestamp(iti55Request.Envelope.Header),
       samlAttributes,
@@ -72,7 +78,13 @@ export function processInboundXcpdRequest(request: string): InboundPatientDiscov
         iti55Request.Envelope.Header.Security.Signature.SignatureValue
       ),
     };
+
+    await storeXcpdRequest({ request, inboundRequest });
+
+    return inboundRequest;
   } catch (error) {
-    throw new Error(`Failed to parse ITI-55 request: ${error}`);
+    const msg = "Failed to parse ITI-55 request";
+    log(`${msg}: Error - ${errorToString(error)}, iti55Request: ${JSON.stringify(jsonObj)}`);
+    throw new Error(`${msg}: ${error}`);
   }
 }

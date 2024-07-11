@@ -172,18 +172,20 @@ function createSoapBodyContent({
                   },
                 }
               : {}),
-            [`${prefix}livingSubjectName`]: patientNames
-              ? {
-                  [`${prefix}value`]: patientNames.map(name => ({
-                    [`${prefix}family`]: name.family,
-                    ...name.given?.reduce((acc: { [key: string]: string }, givenName: string) => {
-                      acc[`${prefix}given`] = givenName;
-                      return acc;
-                    }, {}),
-                  })),
-                  [`${prefix}semanticsText`]: "LivingSubject.name",
-                }
-              : {},
+            ...(patientNames
+              ? patientNames.map(name => ({
+                  [`${prefix}livingSubjectName`]: {
+                    [`${prefix}value`]: {
+                      [`${prefix}family`]: name.family,
+                      ...name.given?.reduce((acc: { [key: string]: string }, givenName: string) => {
+                        acc[`${prefix}given`] = givenName;
+                        return acc;
+                      }, {}),
+                    },
+                    [`${prefix}semanticsText`]: "LivingSubject.name",
+                  },
+                }))
+              : []),
             ...(patientAddresses
               ? {
                   [`${prefix}patientAddress`]: {
