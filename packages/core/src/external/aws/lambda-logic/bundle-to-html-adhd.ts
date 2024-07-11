@@ -746,9 +746,9 @@ function buildEncounterSections(
                 reportInside.effectiveDateTime ?? reportInside.effectivePeriod?.start;
               const reportInsideDate = dayjs(reportInsideTime).format(ISO_DATE) ?? "";
               const isDuplicateDate = reportInsideDate === reportDate;
-              const hasSamePresentedForm =
-                reportInside.presentedForm?.[0]?.data === report.presentedForm?.[0]?.data;
-
+              const hasSamePresentedForm = report.presentedForm?.some(pf =>
+                reportInside.presentedForm?.some(ripf => pf.data === ripf.data)
+              );
               return isDuplicateDate && hasSamePresentedForm;
             }
           );
@@ -802,11 +802,13 @@ function buildReports(
     .filter(([key, value]) => {
       const documentation = value.documentation;
       const validDocumentation = documentation?.filter(doc => {
-        const note = doc.presentedForm?.[0]?.data ?? "";
-        const decodeNote = Buffer.from(note, "base64").toString("utf-8");
-        const containsB64 = decodeNote.includes("^application^pdf^BASE64^");
+        const containsB64InAnyPresentedForm = doc.presentedForm?.some(form => {
+          const note = form.data ?? "";
+          const decodeNote = Buffer.from(note, "base64").toString("utf-8");
+          return decodeNote.includes("^application^pdf^BASE64^");
+        });
 
-        return !containsB64;
+        return !containsB64InAnyPresentedForm;
       });
 
       return validDocumentation && validDocumentation.length > 0;
@@ -997,9 +999,12 @@ function getLatestDrPerSpecialty(
 function filterEncounterSections(encounterSections: EncounterSection): EncounterSection {
   return Object.entries(encounterSections).reduce((acc, [key, value]) => {
     const documentation = value.documentation?.filter(doc => {
-      const note = doc.presentedForm?.[0]?.data ?? "";
+      const hasValidNote = doc.presentedForm?.some(form => {
+        const note = form.data ?? "";
+        return note && note.length > 0;
+      });
 
-      return note || note.length > 0;
+      return hasValidNote;
     });
 
     acc[key] = {
@@ -1011,7 +1016,27 @@ function filterEncounterSections(encounterSections: EncounterSection): Encounter
   }, {} as EncounterSection);
 }
 
-const REMOVE_FROM_NOTE = ["xLabel", "5/5", "Â°F", "â¢", "documented in this encounter"];
+const REMOVE_FROM_NOTE = [
+  "xLabel",
+  "5/5",
+  "Â°F",
+  "â¢",
+  "documented in this encounter",
+  "xnoIndent",
+  "Formatting of this note might be different from the original.",
+];
+
+function cleanUpNote(note: string): string {
+  return note
+    .trim()
+    .replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "")
+    .replace(/<ID>.*?<\/ID>/g, "")
+    .replace(/<styleCode>.*?<\/styleCode>/g, "");
+}
+
+function removeEncodedStrings(valueString: string): string {
+  return valueString.replace(/&#x3D;/g, "").trim();
+}
 
 function createWhatWasDocumentedFromDiagnosticReports(
   documentation: DiagnosticReport[],
@@ -1020,20 +1045,32 @@ function createWhatWasDocumentedFromDiagnosticReports(
   mappedPractitioners: Record<string, Practitioner>
 ) {
   const documentations = documentation
-    .map(documentation => {
-      const note = documentation.presentedForm?.[0]?.data ?? "";
-      const decodeNote = Buffer.from(note, "base64").toString("utf-8");
-      const cleanNote = decodeNote.replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "");
+    .map(doc => {
+      const notes =
+        doc.presentedForm?.map(form => {
+          const note = form.data ?? "";
+          const noJunkNote = removeEncodedStrings(note);
+          const decodeNote = Buffer.from(noJunkNote, "base64").toString("utf-8");
+          return cleanUpNote(decodeNote);
+        }) ?? [];
 
-      const practitionerField = createPractionerField(documentation, mappedPractitioners);
-      const organizationField = createOrganizationField(documentation, encounters, locations);
+      const practitionerField = createPractionerField(doc, mappedPractitioners);
+      const organizationField = createOrganizationField(doc, encounters, locations);
 
+      const fields = [practitionerField, organizationField].filter(
+        field => field.trim().length > 0
+      );
       return `
-        <div>
-        ${practitionerField}
-        ${organizationField}
-          <p style="margin-bottom: 10px; line-height: 25px; white-space: pre-line;">${cleanNote}</p>
-        </div>
+      <div>
+        ${fields.join("<br />")}
+        ${
+          notes.length > 0
+            ? `<p style="margin-bottom: 10px; line-height: 25px; white-space: pre-line;">${notes.join(
+                "<br />"
+              )}</p>`
+            : ""
+        }
+      </div>
       `;
     })
     .join("");
