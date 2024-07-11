@@ -22,6 +22,5 @@ export { NotFoundError } from "./error/not-found";
 export { errorToString } from "./error/shared";
 export * as medical from "./medical";
 export * from "./net/error";
-export * from "./net/file-downloader";
 export * from "./net/retry";
 export * from "./net/url";
