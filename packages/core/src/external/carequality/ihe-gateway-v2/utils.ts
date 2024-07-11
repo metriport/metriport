@@ -6,8 +6,8 @@ export function timestampToSoapBody(createdTimestamp: string): string {
 }
 
 export function extractText(textOrTextObject: TextOrTextObject): string {
-  if (typeof textOrTextObject === "string") {
-    return textOrTextObject;
+  if (typeof textOrTextObject === "object") {
+    return String(textOrTextObject._text);
   }
-  return textOrTextObject._text;
+  return String(textOrTextObject);
 }
