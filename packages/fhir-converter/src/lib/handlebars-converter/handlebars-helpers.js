@@ -160,8 +160,22 @@ var convertDate = function (dateString) {
   throw `Bad input for Date type in ${dateString}`;
 };
 
+/**
+ * Checks if the given dateTimeString is already in the valid format YYYY-MM-DD.
+ * @param {string} dateTimeString - The date-time string to validate.
+ * @returns {boolean} - Returns true if the dateTimeString is in the valid format, otherwise false.
+ */
+var alreadyValidDateTime = function (dateTimeString) {
+  if (!dateTimeString || dateTimeString.toString() === "") return false;
+  var ds = dateTimeString.toString();
+  return /^\d{4}-\d{2}-\d{2}$/.test(ds);
+};
+
 // handling the date format here
 var getDate = function (dateString) {
+  if (alreadyValidDateTime(dateString)) {
+    return dateString;
+  }
   if (!validDatetimeString(dateString)) return "";
   return convertDate(dateString.toString());
 };
@@ -190,6 +204,9 @@ var getDateTimeComposition = function (ds) {
 
 // handling the datetime format here
 var getDateTime = function (dateTimeString) {
+  if (alreadyValidDateTime(dateTimeString)) {
+    return dateTimeString;
+  }
   if (!validDatetimeString(dateTimeString)) return "";
 
   // handle the datetime format with time zone
@@ -220,8 +237,8 @@ var getDateTime = function (dateTimeString) {
   // Padding 0s to 17 digits
   dateTimeComposition = getDateTimeComposition(ds);
   if (!validUTCDateTime(dateTimeComposition)) {
-    console.log( `Invalid datetime: ${ds}`);
-    return '';
+    console.log(`Invalid datetime: ${ds}`);
+    return "";
   }
   return new Date(
     Date.UTC(
@@ -1340,6 +1357,33 @@ module.exports.external = [
     },
   },
   {
+    name: "buildPresentedForm",
+    description: "Builds a presented form array",
+    func: function (b64String, component) {
+      const presentedForm = [];
+      if (b64String) {
+        presentedForm.push({
+          contentType: "text/html",
+          data: b64String,
+        });
+      }
+      if (component) {
+        const components = Array.isArray(component) ? component : [component];
+        components.forEach(comp => {
+          const obsValueB64 = comp.observation?.value?._b64;
+          if (obsValueB64) {
+            presentedForm.push({
+              contentType: "text/html",
+              data: obsValueB64,
+            });
+          }
+        });
+      }
+      if (presentedForm.length === 0) return undefined;
+      return JSON.stringify(presentedForm);
+    },
+  },
+  {
     name: "extractDecimal",
     description:
       "Returns true if following the FHIR decimal specification: https://www.hl7.org/fhir/R4/datatypes.html#decimal ",
@@ -1354,7 +1398,7 @@ module.exports.external = [
         const leadsWithDecimal = decimal.startsWith(".");
 
         if (leadsWithDecimal) {
-          return  parseFloat(`0${decimal}`);
+          return parseFloat(`0${decimal}`);
         }
 
         return parseFloat(decimal);
@@ -1388,11 +1432,15 @@ module.exports.external = [
             const paragraphArray = Array.isArray(td.paragraph) ? td.paragraph : [td.paragraph];
             const textValues = paragraphArray
               .map(paragraph => {
-                if (!paragraph || !paragraph.content) return "";
+                if (!paragraph || (!paragraph.content && !paragraph._)) return "";
                 const contentArray = Array.isArray(paragraph.content)
                   ? paragraph.content
                   : [paragraph.content];
-                return concatenateTextValues(contentArray);
+                const contents = concatenateTextValues(contentArray);
+
+                const valueArray = Array.isArray(paragraph._) ? paragraph._ : [paragraph._];
+                const values = valueArray.join("\n");
+                return contents + "\n" + values;
               })
               .join("\n");
             rowData[headers[index]] = textValues;

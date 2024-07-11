@@ -37,9 +37,8 @@ export function mapMetriportGenderToFhirGender(k: MetriportGender | undefined): 
   return gender ? gender : "unknown";
 }
 
-export function mapFhirToMetriportGender(gender: FhirGender): MetriportGender {
-  const MetriportGender = fhirGenderToMetriportGender[gender];
-  return MetriportGender ? MetriportGender : "U";
+export function mapFhirToMetriportGender(gender: FhirGender | undefined): MetriportGender {
+  return gender ? fhirGenderToMetriportGender[gender] : "U";
 }
 
 export function mapStringMetriportGenderToFhir(k: string): FhirGender {

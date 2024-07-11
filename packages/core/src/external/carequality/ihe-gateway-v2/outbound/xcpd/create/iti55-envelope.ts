@@ -161,48 +161,56 @@ function createSoapBodyContent({
                   [`${prefix}semanticsText`]: "LivingSubject.birthTime",
                 }
               : {},
-            [`${prefix}livingSubjectId`]: identifiers
+            ...(identifiers
               ? {
-                  [`${prefix}value`]: identifiers.map(identifier => ({
-                    "@_extension": identifier.value,
-                    "@_root": identifier.system,
-                  })),
-                  [`${prefix}semanticsText`]: "LivingSubject.id",
+                  [`${prefix}livingSubjectId`]: {
+                    [`${prefix}value`]: identifiers.map(identifier => ({
+                      "@_extension": identifier.value,
+                      "@_root": identifier.system,
+                    })),
+                    [`${prefix}semanticsText`]: "LivingSubject.id",
+                  },
                 }
-              : {},
-            [`${prefix}livingSubjectName`]: patientNames
+              : {}),
+            ...(patientNames
+              ? patientNames.map(name => ({
+                  [`${prefix}livingSubjectName`]: {
+                    [`${prefix}value`]: {
+                      [`${prefix}family`]: name.family,
+                      ...name.given?.reduce((acc: { [key: string]: string }, givenName: string) => {
+                        acc[`${prefix}given`] = givenName;
+                        return acc;
+                      }, {}),
+                    },
+                    [`${prefix}semanticsText`]: "LivingSubject.name",
+                  },
+                }))
+              : []),
+            ...(patientAddresses
               ? {
-                  [`${prefix}value`]: patientNames.map(name => ({
-                    [`${prefix}family`]: name.family,
-                    ...name.given?.reduce((acc: { [key: string]: string }, givenName: string) => {
-                      acc[`${prefix}given`] = givenName;
-                      return acc;
-                    }, {}),
-                  })),
-                  [`${prefix}semanticsText`]: "LivingSubject.name",
+                  [`${prefix}patientAddress`]: {
+                    [`${prefix}value`]: patientAddresses.map(address => ({
+                      [`${prefix}streetAddressLine`]: address.line?.join(", "),
+                      [`${prefix}city`]: address.city,
+                      [`${prefix}state`]: address.state,
+                      [`${prefix}postalCode`]: address.postalCode,
+                      [`${prefix}country`]: address.country,
+                    })),
+                    [`${prefix}semanticsText`]: "Patient.addr",
+                  },
                 }
-              : {},
-            [`${prefix}patientAddress`]: patientAddresses
+              : {}),
+            ...(patientTelecoms
               ? {
-                  [`${prefix}value`]: patientAddresses.map(address => ({
-                    [`${prefix}streetAddressLine`]: address.line?.join(", "),
-                    [`${prefix}city`]: address.city,
-                    [`${prefix}state`]: address.state,
-                    [`${prefix}postalCode`]: address.postalCode,
-                    [`${prefix}country`]: address.country,
-                  })),
-                  [`${prefix}semanticsText`]: "Patient.addr",
+                  [`${prefix}patientTelecom`]: {
+                    [`${prefix}value`]: patientTelecoms.map(telecom => ({
+                      "@_use": telecom.system,
+                      "@_value": telecom.value,
+                    })),
+                    [`${prefix}semanticsText`]: "Patient.telecom",
+                  },
                 }
-              : {},
-            [`${prefix}patientTelecom`]: patientTelecoms
-              ? {
-                  [`${prefix}value`]: patientTelecoms.map(telecom => ({
-                    "@_use": telecom.system,
-                    "@_value": telecom.value,
-                  })),
-                  [`${prefix}semanticsText`]: "Patient.telecom",
-                }
-              : {},
+              : {}),
             ...(providerId
               ? {
                   [`${prefix}principalCareProviderId`]: {

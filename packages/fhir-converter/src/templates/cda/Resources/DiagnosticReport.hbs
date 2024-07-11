@@ -40,16 +40,12 @@
         "category":[{{>DataType/CodeableConcept.hbs code=categoryCode}}],
         "effectivePeriod": {{>DataType/Period.hbs period=diagReport.effectiveTime}},
         "effectiveDateTime":"{{formatAsDateTime diagReport.effectiveTime.value}}",
-        {{#if diagReport.text._b64}}
-            "presentedForm": [
-                {
-                    "contentType": "text/plain",
-                    {{!-- safe to use triple braces here since we control the input and can ensure no single quotes --}}
-                    "data": "{{{diagReport.text._b64}}}",
-                }
-            ],
-        {{/if}}
-        
+
+        {{#with (buildPresentedForm diagReport.text._b64 diagReport.component) as |presentedFormArray|}}
+            {{#if presentedFormArray}} 
+                "presentedForm":{{{presentedFormArray}}},
+            {{/if}}
+        {{/with}}
     },
     "request":{
         "method":"PUT",

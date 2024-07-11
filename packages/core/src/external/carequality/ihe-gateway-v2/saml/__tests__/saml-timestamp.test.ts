@@ -3,12 +3,18 @@ import { createITI38SoapEnvelope } from "../../outbound/xca/create/iti38-envelop
 import { createITI39SoapEnvelope } from "../../outbound/xca/create/iti39-envelope";
 import { verifySaml } from "../security/verify";
 import { signTimestamp } from "../security/sign";
-import { iti55BodyData, iti38BodyData, iti39BodyData, TEST_CERT, TEST_KEY } from "./constants";
+import {
+  TEST_CERT,
+  TEST_KEY,
+  outboundXcpdRequest,
+  outboundDqRequest,
+  outboundDrRequest,
+} from "../../outbound/__tests__/constants";
 
 describe("SAML Timestamp Signature Verification", () => {
   it("should fail verification if the iti55 timestamp text is modified after signing", () => {
     const soapEnvelope = createITI5SoapEnvelope({
-      bodyData: iti55BodyData,
+      bodyData: outboundXcpdRequest,
       publicCert: TEST_CERT,
     });
 
@@ -23,7 +29,7 @@ describe("SAML Timestamp Signature Verification", () => {
 
   it("should fail verification if the iti55 timestamp signature is modified", () => {
     const soapEnvelope = createITI5SoapEnvelope({
-      bodyData: iti55BodyData,
+      bodyData: outboundXcpdRequest,
       publicCert: TEST_CERT,
     });
 
@@ -38,7 +44,7 @@ describe("SAML Timestamp Signature Verification", () => {
 
   it("should fail verification if the iti55 timestamp digest is modified", () => {
     const soapEnvelope = createITI5SoapEnvelope({
-      bodyData: iti55BodyData,
+      bodyData: outboundXcpdRequest,
       publicCert: TEST_CERT,
     });
 
@@ -53,7 +59,7 @@ describe("SAML Timestamp Signature Verification", () => {
 
   it("should sign and verify the iti55 envelope successfully with timestamp", () => {
     const soapEnvelope = createITI5SoapEnvelope({
-      bodyData: iti55BodyData,
+      bodyData: outboundXcpdRequest,
       publicCert: TEST_CERT,
     });
 
@@ -63,7 +69,7 @@ describe("SAML Timestamp Signature Verification", () => {
 
   it("should sign and verify the ITI38 envelope successfully with timestamp", () => {
     const soapEnvelope = createITI38SoapEnvelope({
-      bodyData: iti38BodyData,
+      bodyData: outboundDqRequest,
       publicCert: TEST_CERT,
     });
 
@@ -73,7 +79,7 @@ describe("SAML Timestamp Signature Verification", () => {
 
   it("should fail verification if the ITI38 timestamp text is modified after signing", () => {
     const soapEnvelope = createITI38SoapEnvelope({
-      bodyData: iti38BodyData,
+      bodyData: outboundDqRequest,
       publicCert: TEST_CERT,
     });
 
@@ -88,7 +94,7 @@ describe("SAML Timestamp Signature Verification", () => {
 
   it("should sign and verify the ITI39 envelope successfully with timestamp", () => {
     const soapEnvelope = createITI39SoapEnvelope({
-      bodyData: iti39BodyData,
+      bodyData: outboundDrRequest,
       publicCert: TEST_CERT,
     });
 
@@ -98,7 +104,7 @@ describe("SAML Timestamp Signature Verification", () => {
 
   it("should fail verification if the ITI39 timestamp text is modified after signing", () => {
     const soapEnvelope = createITI39SoapEnvelope({
-      bodyData: iti39BodyData,
+      bodyData: outboundDrRequest,
       publicCert: TEST_CERT,
     });
 
