@@ -2,10 +2,18 @@ import { getEnvVarOrFail } from "@metriport/shared";
 import { OrgMemberInfo, User } from "@propelauth/express";
 import { initBaseAuth } from "@propelauth/node";
 
-export const auth = initBaseAuth({
-  authUrl: getEnvVarOrFail("PROPELAUTH_AUTH_URL"),
-  apiKey: getEnvVarOrFail("PROPELAUTH_API_KEY"),
-});
+export type PropeAuth = ReturnType<typeof initBaseAuth>;
+let auth: PropeAuth | undefined;
+
+export function getAuth(): PropeAuth {
+  if (!auth) {
+    auth = initBaseAuth({
+      authUrl: getEnvVarOrFail("PROPELAUTH_AUTH_URL"),
+      apiKey: getEnvVarOrFail("PROPELAUTH_API_KEY"),
+    });
+  }
+  return auth;
+}
 
 export function getCxId(user: User): string | undefined {
   const userAtOrg = getOrgMemberInfo(user);

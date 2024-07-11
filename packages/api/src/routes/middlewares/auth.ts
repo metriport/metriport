@@ -5,7 +5,7 @@ import status from "http-status";
 import { MAPIAccess } from "../../models/medical/mapi-access";
 import { Config } from "../../shared/config";
 import { getCxIdOrFail } from "../util";
-import { auth, getCxId } from "./propelauth";
+import { getAuth, getCxId } from "./propelauth";
 
 /**
  * Process the API key and get the customer id.
@@ -40,7 +40,7 @@ export function getCxIdFromApiKey(encodedApiKey: string | undefined): string {
 export async function getCxIdFromJwt(req: Request): Promise<string> {
   const jwtStr = req.header("Authorization");
   if (!jwtStr) throw new Error("Missing token");
-  const user = await auth.validateAccessTokenAndGetUser(jwtStr);
+  const user = await getAuth().validateAccessTokenAndGetUser(jwtStr);
   const cxId = getCxId(user);
   if (!cxId) throw new Error("Could not determine cxId from JWT");
   return cxId;
