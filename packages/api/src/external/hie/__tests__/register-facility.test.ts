@@ -7,7 +7,7 @@ import * as getAddress from "../../../domain/medical/address";
 import * as getOrg from "../../../command/medical/organization/get-organization";
 import * as getCqOboData from "../../../external/carequality/get-obo-data";
 import * as createOrUpdateFacility from "../../../command/medical/facility/create-or-update-facility";
-import { registerFacilityWithinHIEs, createFacilityDetails } from "../register-facility.ts";
+import { registerFacilityWithinHIEs, createFacilityDetails } from "../register-facility";
 import * as shared from "../shared";
 import {
   getCxOrganizationNameAndOidResult,

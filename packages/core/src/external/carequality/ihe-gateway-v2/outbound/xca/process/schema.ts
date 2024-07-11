@@ -3,16 +3,9 @@ import {
   schemaOrEmpty,
   schemaOrArray,
   schemaOrArrayOrEmpty,
+  slot,
   stringOrNumberSchema,
-} from "../../schema";
-
-const slot = z.object({
-  ValueList: z.object({
-    Value: schemaOrArray(stringOrNumberSchema),
-  }),
-  _name: z.string(),
-});
-export type Slot = z.infer<typeof slot>;
+} from "../../../schema";
 
 const name = z.object({
   LocalizedString: z.object({
@@ -23,15 +16,15 @@ const name = z.object({
 export type Name = z.infer<typeof name>;
 
 const classification = z.object({
-  Slot: schemaOrArray(slot),
+  Slot: schemaOrArray(slot).optional(),
   Name: name.optional(),
   _classificationScheme: z.string(),
   _classifiedObject: z.string(),
   _id: z.string(),
   _nodeRepresentation: z.string(),
-  _objectType: z.literal(
-    "urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification"
-  ),
+  _objectType: z
+    .literal("urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification")
+    .optional(),
 });
 export type Classification = z.infer<typeof classification>;
 

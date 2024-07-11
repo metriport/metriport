@@ -30,17 +30,25 @@ import {
   isEnhancedCoverageEnabledForCx,
 } from "../aws/app-config";
 import { isFacilityEnabledToQueryCW } from "../commonwell/shared";
-import { HieInitiator } from "../hie/get-hie-initiator";
-import { updatePatientLinkDemographics } from "../hie/update-patient-link-demographics";
 import { checkLinkDemographicsAcrossHies } from "../hie/check-patient-link-demographics";
+import { HieInitiator } from "../hie/get-hie-initiator";
 import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
+import { resetScheduledPatientDiscovery } from "../hie/reset-scheduled-patient-discovery-request";
+import { setDocQueryProgress } from "../hie/set-doc-query-progress";
+import { updatePatientLinkDemographics } from "../hie/update-patient-link-demographics";
 import { LinkStatus } from "../patient-link";
 import { makeCommonWellAPI } from "./api";
+import { createOrUpdateCwPatientData } from "./command/cw-patient-data/create-cw-data";
+import { deleteCwPatientData } from "./command/cw-patient-data/delete-cw-data";
+import { updateCwPatientData } from "./command/cw-patient-data/update-cw-data";
+import { CwLink } from "./cw-patient-data";
 import { queryAndProcessDocuments } from "./document/document-query";
-import { setDocQueryProgress } from "../hie/set-doc-query-progress";
-import { resetScheduledPatientDiscovery } from "../hie/reset-scheduled-patient-discovery-request";
 import { autoUpgradeNetworkLinks } from "./link/shared";
 import { makePersonForPatient, patientToCommonwell } from "./patient-conversion";
+import {
+  getPatientNetworkLinks,
+  patientNetworkLinkToNormalizedLinkDemographics,
+} from "./patient-demographics";
 import {
   updateCommonwellIdsAndStatus,
   updatePatientDiscoveryStatus,
@@ -53,14 +61,6 @@ import {
   PatientDataCommonwell,
 } from "./patient-shared";
 import { getCwInitiator } from "./shared";
-import {
-  getPatientNetworkLinks,
-  patientNetworkLinkToNormalizedLinkDemographics,
-} from "./patient-demographics";
-import { createOrUpdateCwPatientData } from "./command/cw-patient-data/create-cw-data";
-import { updateCwPatientData } from "./command/cw-patient-data/update-cw-data";
-import { deleteCwPatientData } from "./command/cw-patient-data/delete-cw-data";
-import { CwLink } from "./cw-patient-data";
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
@@ -435,16 +435,16 @@ async function updatePatientAndLinksInCw({
   }
 }
 
-async function validateCWEnabled({
+export async function validateCWEnabled({
   patient,
   facilityId,
   forceCW = false,
-  log,
+  log = console.log,
 }: {
   patient: Patient;
   facilityId: string;
   forceCW?: boolean;
-  log: typeof console.log;
+  log?: typeof console.log;
 }): Promise<boolean> {
   const { cxId } = patient;
   const isSandbox = Config.isSandbox();
@@ -455,6 +455,10 @@ async function validateCWEnabled({
   }
 
   try {
+    if (!isCommonwellEnabledForPatient(patient)) {
+      log(`CW disabled for patient, skipping...`);
+      return false;
+    }
     const [isCwEnabledGlobally, isCwEnabledForCx] = await Promise.all([
       isCommonwellEnabled(),
       isCWEnabledForCx(cxId),
@@ -485,6 +489,11 @@ async function validateCWEnabled({
     });
     return false;
   }
+}
+
+function isCommonwellEnabledForPatient(patient: Patient): boolean {
+  if (patient.data.genderAtBirth === "U") return false;
+  return true;
 }
 
 async function createCwLinks(

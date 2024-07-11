@@ -1,24 +1,24 @@
 import {
   InboundPatientDiscoveryReq,
   InboundPatientDiscoveryResp,
+  PatientResource,
 } from "@metriport/ihe-gateway-sdk";
-import { PatientResource } from "@metriport/ihe-gateway-sdk";
 import { Address } from "../../../domain/address";
+import { getStateEnum } from "../../../domain/geographic-locations";
 import { Patient, PatientData } from "../../../domain/patient";
 import { MPI } from "../../../mpi/mpi";
+import { normalizePatient } from "../../../mpi/normalize-patient";
+import { mapFhirToMetriportGender } from "../../fhir/patient";
 import { patientMPIToPartialPatient } from "../../../mpi/shared";
-import { toIheGatewayPatientResource } from "../ihe-gateway-v2/patient";
 import {
-  IHEGatewayError,
-  XDSRegistryError,
   constructPDErrorResponse,
   constructPDNoMatchResponse,
+  IHEGatewayError,
+  XDSRegistryError,
 } from "../error";
-import { validateFHIRAndExtractPatient } from "./validating-pd";
-
-import { getStateEnum } from "../../../domain/geographic-locations";
-import { normalizeGender, normalizePatient } from "../../../mpi/normalize-patient";
+import { toIheGatewayPatientResource } from "../ihe-gateway-v2/patient";
 import { METRIPORT_HOME_COMMUNITY_ID } from "../shared";
+import { validateFHIRAndExtractPatient } from "./validating-pd";
 
 function constructMatchResponse(
   payload: InboundPatientDiscoveryReq,
@@ -36,10 +36,11 @@ function constructMatchResponse(
     },
     patientResource: toIheGatewayPatientResource(patient),
     gatewayHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
+    signatureConfirmation: payload.signatureConfirmation,
   };
 }
 
-export async function processInboundPatientDiscovery(
+export async function processInboundXcpd(
   payload: InboundPatientDiscoveryReq,
   mpi: MPI
 ): Promise<InboundPatientDiscoveryResp> {
@@ -71,7 +72,7 @@ export function mapPatientResourceToPatientData(
   const firstName = humanName[0]?.given?.join(" ");
   const lastName = humanName[0]?.family;
   const dob = patientResource.birthDate;
-  const genderAtBirth = normalizeGender(patientResource.gender);
+  const genderAtBirth = mapFhirToMetriportGender(patientResource.gender);
   const addresses = getPatientAddresses(patientResource);
 
   if (!firstName || !lastName || !dob || !genderAtBirth || !addresses.length) return;

@@ -10,7 +10,9 @@ import helmet from "helmet";
 import { initEvents } from "./event";
 import { initFeatureFlags } from "./external/aws/app-config";
 import initDB from "./models/db";
+import { VERSION_HEADER_NAME } from "./routes/header";
 import { errorHandler } from "./routes/helpers/default-error-handler";
+import { notFoundHandlers } from "./routes/helpers/not-found-handler";
 import mountRoutes from "./routes/index";
 import { initSentry, isSentryEnabled } from "./sentry";
 import { Config } from "./shared/config";
@@ -29,7 +31,7 @@ app.use(cors());
 app.set("etag", false);
 
 app.use((_req, res, next) => {
-  version && res.setHeader("x-metriport-version", version);
+  version && res.setHeader(VERSION_HEADER_NAME, version);
   next();
 });
 
@@ -56,6 +58,8 @@ if (isSentryEnabled()) {
   );
 }
 app.use(errorHandler);
+
+app.all("*", ...notFoundHandlers);
 
 initEvents();
 

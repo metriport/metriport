@@ -2,7 +2,7 @@ import { faker } from "@faker-js/faker";
 import { Address, Patient as FhirPatient } from "@medplum/fhirtypes";
 import { PatientCreate, PatientDTO, USState } from "@metriport/api-sdk";
 import { Patient } from "@metriport/core/domain/patient";
-import { mapGenderAtBirthToFhir } from "@metriport/core/external/fhir/patient/index";
+import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/index";
 import { PatientWithId } from "@metriport/core/external/fhir/__tests__/patient";
 
 export const createPatient: PatientCreate = {
@@ -11,7 +11,7 @@ export const createPatient: PatientCreate = {
   dob: "1900-01-01",
   genderAtBirth: "M",
   contact: {
-    phone: faker.phone.number(),
+    phone: faker.phone.number("+1 ###-###-####"),
     email: faker.internet.email(),
   },
   address: {
@@ -35,6 +35,8 @@ export const validateLocalPatient = (
     expect(pat.lastName).toEqual(patientToCompare.lastName);
     expect(pat.dob).toEqual(patientToCompare.dob);
     expect(pat.genderAtBirth).toEqual(patientToCompare.genderAtBirth);
+    // TODO validate address
+    // TODO validate contact
   } else {
     expect(pat.firstName).toBeTruthy();
     expect(pat.lastName).toBeTruthy();
@@ -78,7 +80,7 @@ export function patientDtoToFhir(dto: PatientDTO): PatientWithId {
       },
     ],
     birthDate: dto.dob,
-    gender: mapGenderAtBirthToFhir(dto.genderAtBirth),
+    gender: mapMetriportGenderToFhirGender(dto.genderAtBirth),
     address: address.flatMap(patientAddressDtoToFhir),
   };
 }

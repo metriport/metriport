@@ -1,5 +1,5 @@
 import { GenderAtBirth, Patient, PatientData } from "@metriport/core/domain/patient";
-import { mapGenderAtBirthToFhir } from "@metriport/core/external/fhir/patient/index";
+import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/index";
 import NotFoundError from "@metriport/core/util/error/not-found";
 import { initReadonlyDbPool } from "@metriport/core/util/sequelize";
 import {
@@ -136,7 +136,7 @@ async function getCqData(
     const gatewayName = getGatewayName(entry);
     const existingErrorEntry = cqErrors.find(a => a.error === rowErrorDetail);
     if (existingErrorEntry) {
-      existingErrorEntry.gatewayNames.push(gatewayName);
+      existingErrorEntry.gatewayNames = [...existingErrorEntry.gatewayNames, gatewayName].sort();
       continue;
     }
     cqErrors.push({
@@ -241,7 +241,7 @@ function addGenderDiff(
 ): string | undefined {
   const genderAdj = gender?.trim();
   if (!genderAdj) return undefined;
-  const referenceGenderAdj = mapGenderAtBirthToFhir(referenceGender);
+  const referenceGenderAdj = mapMetriportGenderToFhirGender(referenceGender);
   if (genderAdj === referenceGenderAdj) return `${genderAdj} (same)`;
   return `${genderAdj} (diff; metriport: ${referenceGender})`;
 }

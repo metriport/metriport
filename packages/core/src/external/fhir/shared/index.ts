@@ -8,6 +8,8 @@ import {
   DocumentReference,
   Encounter,
   Extension,
+  FamilyMemberHistory,
+  Immunization,
   Location,
   Medication,
   MedicationStatement,
@@ -145,7 +147,7 @@ export function isLocation(resource: Resource | undefined): resource is Location
   return resource?.resourceType === "Location";
 }
 
-function isPatient(resource: Resource | undefined): resource is Patient {
+export function isPatient(resource: Resource | undefined): resource is Patient {
   return resource?.resourceType === "Patient";
 }
 
@@ -163,6 +165,16 @@ export function isComposition(resource: Resource | undefined): resource is Compo
 
 export function isEncounter(resource: Resource | undefined): resource is Encounter {
   return resource?.resourceType === "Encounter";
+}
+
+export function isFamilyMemberHistory(
+  resource: Resource | undefined
+): resource is FamilyMemberHistory {
+  return resource?.resourceType === "FamilyMemberHistory";
+}
+
+export function isImmunization(resource: Resource | undefined): resource is Immunization {
+  return resource?.resourceType === "Immunization";
 }
 
 export function isObservation(resource: Resource | undefined): resource is Observation {
@@ -199,6 +211,10 @@ export function findOrganizationResource(fhirBundle: Bundle): Organization | und
 
 export function findCompositionResource(fhirBundle: Bundle): Composition | undefined {
   return fhirBundle.entry?.map(e => e.resource).find(isComposition);
+}
+
+export function findCompositionResources(fhirBundle: Bundle): Composition[] {
+  return fhirBundle.entry?.map(e => e.resource).filter(isComposition) || [];
 }
 
 export function findPatientResource(fhirBundle: Bundle): Patient | undefined {

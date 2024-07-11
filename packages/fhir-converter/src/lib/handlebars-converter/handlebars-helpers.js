@@ -160,8 +160,22 @@ var convertDate = function (dateString) {
   throw `Bad input for Date type in ${dateString}`;
 };
 
+/**
+ * Checks if the given dateTimeString is already in the valid format YYYY-MM-DD.
+ * @param {string} dateTimeString - The date-time string to validate.
+ * @returns {boolean} - Returns true if the dateTimeString is in the valid format, otherwise false.
+ */
+var alreadyValidDateTime = function (dateTimeString) {
+  if (!dateTimeString || dateTimeString.toString() === "") return false;
+  var ds = dateTimeString.toString();
+  return /^\d{4}-\d{2}-\d{2}$/.test(ds);
+};
+
 // handling the date format here
 var getDate = function (dateString) {
+  if (alreadyValidDateTime(dateString)) {
+    return dateString;
+  }
   if (!validDatetimeString(dateString)) return "";
   return convertDate(dateString.toString());
 };
@@ -190,6 +204,9 @@ var getDateTimeComposition = function (ds) {
 
 // handling the datetime format here
 var getDateTime = function (dateTimeString) {
+  if (alreadyValidDateTime(dateTimeString)) {
+    return dateTimeString;
+  }
   if (!validDatetimeString(dateTimeString)) return "";
 
   // handle the datetime format with time zone
@@ -217,11 +234,12 @@ var getDateTime = function (dateTimeString) {
     return new Date(date + " " + time + " " + timezone).toISOString();
   }
 
-  if (ds.length <= 8) return convertDate(ds);
-
   // Padding 0s to 17 digits
   dateTimeComposition = getDateTimeComposition(ds);
-  if (!validUTCDateTime(dateTimeComposition)) throw `Invalid datetime: ${ds}`;
+  if (!validUTCDateTime(dateTimeComposition)) {
+    console.log( `Invalid datetime: ${ds}`);
+    return '';
+  }
   return new Date(
     Date.UTC(
       dateTimeComposition.year,
@@ -993,6 +1011,17 @@ module.exports.external = [
     },
   },
   {
+    name: "trim",
+    description: "Trims string: trim string",
+    func: function (str) {
+      try {
+        return str.toString().trim();
+      } catch (err) {
+        return "";
+      }
+    },
+  },
+  {
     name: "trimAndLower",
     description: "Trims and converts string to lower case: trimAndLower string",
     func: function (str) {
@@ -1154,7 +1183,7 @@ module.exports.external = [
       if (referenceData == undefined) {
         return "";
       }
-      return JSON.stringify(referenceData).slice(1, -1);
+      return JSON.stringify(referenceData).slice(1, -1).replace(/ {2,}/g, " ").trim();
     },
   },
   {
@@ -1328,15 +1357,54 @@ module.exports.external = [
     },
   },
   {
+    name: "buildPresentedForm",
+    description: "Builds a presented form array",
+    func: function (b64String, component) {
+      const presentedForm = [];
+      if (b64String) {
+        presentedForm.push({
+          contentType: "text/html",
+          data: b64String,
+        });
+      }
+      if (component) {
+        const components = Array.isArray(component) ? component : [component];
+        components.forEach(comp => {
+          const obsValueB64 = comp.observation?.value?._b64;
+          if (obsValueB64) {
+            presentedForm.push({
+              contentType: "text/html",
+              data: obsValueB64,
+            });
+          }
+        });
+      }
+      if (presentedForm.length === 0) return undefined;
+      return JSON.stringify(presentedForm);
+    },
+  },
+  {
     name: "extractDecimal",
     description:
       "Returns true if following the FHIR decimal specification: https://www.hl7.org/fhir/R4/datatypes.html#decimal ",
     func: function (str) {
       if (!str) {
-        return "";
+        return undefined;
       }
       const match = str.match(new RegExp(`^(${DECIMAL_REGEX_STR})$`));
-      return match ? match[0] : "";
+
+      if (match) {
+        const decimal = match[0];
+        const leadsWithDecimal = decimal.startsWith(".");
+
+        if (leadsWithDecimal) {
+          return parseFloat(`0${decimal}`);
+        }
+
+        return parseFloat(decimal);
+      }
+
+      return undefined;
     },
   },
   {
@@ -1459,6 +1527,13 @@ module.exports.external = [
         }
       }
       return false;
+    },
+  },
+  {
+    name: "startDateLteEndDate",
+    description: "Checks if the start date is less than or equal to the end date.",
+    func: function (v1, v2) {
+      return new Date(getDateTime(v1)).getTime() <= new Date(getDateTime(v2)).getTime();
     },
   },
 ];

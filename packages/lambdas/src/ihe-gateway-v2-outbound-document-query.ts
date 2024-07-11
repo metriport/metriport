@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/serverless";
-import { DQRequestGatewayV2Params } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2";
-import { createSignSendProcessDQRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2-logic";
+import { DQRequestGatewayV2Params } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/ihe-gateway-v2";
+import { createSignSendProcessDqRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/ihe-gateway-v2-logic";
 import { getEnvVarOrFail, getEnvType } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
 import { getSamlCertsAndKeys } from "./shared/secrets";
@@ -19,7 +19,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     );
 
     const samlCertsAndKeys = await getSamlCertsAndKeys();
-    await createSignSendProcessDQRequests({
+    await createSignSendProcessDqRequests({
       dqResponseUrl: documentQueryResponseUrl,
       dqRequestsGatewayV2,
       samlCertsAndKeys,

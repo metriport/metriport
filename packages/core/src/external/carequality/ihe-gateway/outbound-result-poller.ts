@@ -7,12 +7,12 @@ export type PollOutboundResults = {
 };
 
 export abstract class OutboundResultPoller {
-  abstract isPDEnabled(): boolean;
+  abstract isPDEnabled(lambdaName?: string | undefined): boolean;
   abstract pollOutboundPatientDiscoveryResults(params: PollOutboundResults): Promise<void>;
 
-  abstract isDQEnabled(): boolean;
+  abstract isDQEnabled(lambdaName?: string | undefined): boolean;
   abstract pollOutboundDocQueryResults(params: PollOutboundResults): Promise<void>;
 
-  abstract isDREnabled(): boolean;
+  abstract isDREnabled(lambdaName?: string | undefined): boolean;
   abstract pollOutboundDocRetrievalResults(params: PollOutboundResults): Promise<void>;
 }

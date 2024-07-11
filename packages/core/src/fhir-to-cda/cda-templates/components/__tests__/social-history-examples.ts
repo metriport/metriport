@@ -1,6 +1,6 @@
 import { Observation } from "@medplum/fhirtypes";
 
-export const observationMentalStatus: Partial<Observation> = {
+export const observationSocialHistory: Partial<Observation> = {
   status: "final",
   category: [
     {
@@ -34,7 +34,6 @@ export const observationMentalStatus: Partial<Observation> = {
     text: "Low risk",
   },
   effectiveDateTime: "2012-07-23T17:16:00.324-07:00",
-  issued: "2012-07-23T17:16:00.324-07:00",
   interpretation: [
     {
       coding: [

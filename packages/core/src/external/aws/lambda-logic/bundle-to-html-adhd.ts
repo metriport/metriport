@@ -32,8 +32,12 @@ const ICD_10_CODE = "icd-10";
 const LOINC_CODE = "loinc";
 const MEDICARE_CODE = "medicare";
 const CPT_CODE = "cpt";
+const UNK_CODE = "UNK";
+const UNKNOWN_DISPLAY = "unknown";
 
 export const bundleToHtmlADHD = (fhirBundle: Bundle): string => {
+  const fhirTypes = extractFhirTypesFromBundle(fhirBundle);
+
   const {
     patient,
     practitioners,
@@ -55,7 +59,24 @@ export const bundleToHtmlADHD = (fhirBundle: Bundle): string => {
     tasks,
     coverages,
     organizations,
-  } = extractFhirTypesFromBundle(fhirBundle);
+  } = fhirTypes;
+
+  const isClinicallyRelevant = hasClinicalRelevantData(fhirTypes);
+
+  if (!isClinicallyRelevant) {
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Medical Record Summary</title>
+        </head>
+        <body>
+          <h1>Medical Record Summary</h1>
+          <p>No clinically relevant data found in the bundle</p>
+        </body>
+      </html>
+    `;
+  }
 
   if (!patient) {
     throw new Error("No patient found in bundle");
@@ -239,8 +260,8 @@ export const bundleToHtmlADHD = (fhirBundle: Bundle): string => {
             diagnosticReports,
             practitioners,
             aweVisits,
-            organizations,
             encounters,
+            locations,
             "Annual Wellness Exam Encounters",
             "awe",
             aYearAgo
@@ -249,16 +270,16 @@ export const bundleToHtmlADHD = (fhirBundle: Bundle): string => {
             diagnosticReports,
             practitioners,
             adhdVisits,
-            organizations,
             encounters,
+            locations,
             "ADHD Encounters",
             "adhd"
           )}
           ${createDiagnosticReportsSection(
             diagnosticReports,
             practitioners,
+            locations,
             [...aweVisits, ...adhdVisits],
-            organizations,
             encounters
           )}
           ${createMedicationSection(medications, medicationStatements)}
@@ -287,7 +308,7 @@ function formatDateForDisplay(date?: string | undefined): string {
   return date ? dayjs(date).format(ISO_DATE) : "";
 }
 
-function extractFhirTypesFromBundle(bundle: Bundle): {
+type FhirTypes = {
   diagnosticReports: DiagnosticReport[];
   patient?: Patient | undefined;
   practitioners: Practitioner[];
@@ -308,7 +329,9 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
   tasks: Task[];
   coverages: Coverage[];
   organizations: Organization[];
-} {
+};
+
+function extractFhirTypesFromBundle(bundle: Bundle): FhirTypes {
   let patient: Patient | undefined;
   const practitioners: Practitioner[] = [];
   const diagnosticReports: DiagnosticReport[] = [];
@@ -548,12 +571,11 @@ type EncounterSection = {
 function createDiagnosticReportsSection(
   diagnosticReports: DiagnosticReport[],
   practitioners: Practitioner[],
+  locations: Location[],
   aweAndADHDVisits: Condition[],
-  organizations: Organization[],
   encounters: Encounter[]
 ) {
   const mappedPractitioners = mapResourceToId<Practitioner>(practitioners);
-  const mappedOrganizations = mapResourceToId<Organization>(organizations);
 
   if (!diagnosticReports) {
     return "";
@@ -589,9 +611,11 @@ function createDiagnosticReportsSection(
   const nonAWEreports = buildReports(
     encountersWithoutAWEAndADHD,
     mappedPractitioners,
-    mappedOrganizations,
     encounters,
-    aYearAgo
+    locations,
+    aYearAgo,
+    [],
+    false
   );
 
   const hasNonAWEreports = nonAWEreports.length > 0;
@@ -613,18 +637,23 @@ function createDiagnosticReportsSection(
   `;
 }
 
+type DiagnosticIdWithDateAndLocation = {
+  diagnosticReportId: string;
+  locationRefName: string | undefined;
+  date: string;
+};
+
 function createFilteredReportSection(
   diagnosticReports: DiagnosticReport[],
   practitioners: Practitioner[],
   filterConditions: Condition[],
-  organization: Organization[],
   encounters: Encounter[],
+  locations: Location[],
   title: string,
   tag: string,
   dateFilter?: string
 ) {
   const mappedPractitioners = mapResourceToId<Practitioner>(practitioners);
-  const mappedOrganizations = mapResourceToId<Organization>(organization);
 
   if (!diagnosticReports) {
     return "";
@@ -658,10 +687,11 @@ function createFilteredReportSection(
   const conditionReports = buildReports(
     encountersWithCondition,
     mappedPractitioners,
-    mappedOrganizations,
     encounters,
+    locations,
     dateFilter,
-    filterConditions
+    filterConditions,
+    true
   );
 
   const hasConditionReports = conditionReports.length > 0;
@@ -717,9 +747,9 @@ function buildEncounterSections(
                 reportInside.effectiveDateTime ?? reportInside.effectivePeriod?.start;
               const reportInsideDate = dayjs(reportInsideTime).format(ISO_DATE) ?? "";
               const isDuplicateDate = reportInsideDate === reportDate;
-              const hasSamePresentedForm =
-                reportInside.presentedForm?.[0]?.data === report.presentedForm?.[0]?.data;
-
+              const hasSamePresentedForm = report.presentedForm?.some(pf =>
+                reportInside.presentedForm?.some(ripf => pf.data === ripf.data)
+              );
               return isDuplicateDate && hasSamePresentedForm;
             }
           );
@@ -747,78 +777,89 @@ function buildEncounterSections(
 function buildReports(
   encounterSections: EncounterSection,
   mappedPractitioners: Record<string, Practitioner>,
-  mappedOrganizations: Record<string, Organization>,
   encounters: Encounter[],
+  locations: Location[],
   dateFilter?: string,
-  conditions?: Condition[]
+  conditions?: Condition[],
+  latest?: boolean
 ) {
   const docsWithNotes = filterEncounterSections(encounterSections);
 
-  return (
-    Object.entries(docsWithNotes)
-      // SORT BY ENCOUNTER DATE DESCENDING
-      .sort(([keyA], [keyB]) => {
-        return dayjs(keyA).isBefore(dayjs(keyB)) ? 1 : -1;
-      })
-      .filter(([key]) => {
-        if (dateFilter) {
-          const encounterDateFormatted = dayjs(key).format(ISO_DATE);
-          return encounterDateFormatted > dateFilter;
-        }
+  const sortedAndFilteredNotes = Object.entries(docsWithNotes)
+    // SORT BY ENCOUNTER DATE DESCENDING
+    .sort(([keyA], [keyB]) => {
+      return dayjs(keyA).isBefore(dayjs(keyB)) ? 1 : -1;
+    })
+    .slice(0, latest ? 1 : undefined)
+    .filter(([key]) => {
+      if (dateFilter) {
+        const encounterDateFormatted = dayjs(key).format(ISO_DATE);
+        return encounterDateFormatted > dateFilter;
+      }
 
-        return true;
-      })
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      .filter(([key, value]) => {
-        const documentation = value.documentation;
-        const validDocumentation = documentation?.filter(doc => {
-          const note = doc.presentedForm?.[0]?.data ?? "";
+      return true;
+    })
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    .filter(([key, value]) => {
+      const documentation = value.documentation;
+      const validDocumentation = documentation?.filter(doc => {
+        const containsB64InAnyPresentedForm = doc.presentedForm?.some(form => {
+          const note = form.data ?? "";
           const decodeNote = Buffer.from(note, "base64").toString("utf-8");
-          const containsB64 = decodeNote.includes("^application^pdf^BASE64^");
-
-          return !containsB64;
+          return decodeNote.includes("^application^pdf^BASE64^");
         });
 
-        return validDocumentation && validDocumentation.length > 0;
-      })
-      .map(([key, value]) => {
-        const labs = value.labs;
-        const documentation = value.documentation;
+        return !containsB64InAnyPresentedForm;
+      });
 
-        const hasNoLabs = !labs || labs?.length === 0;
-        const hasNoDocumentation = !documentation || documentation?.length === 0;
+      return validDocumentation && validDocumentation.length > 0;
+    });
 
-        if (hasNoLabs && hasNoDocumentation) {
-          return "";
-        }
+  const notesBySpecialty = getLatestDrPerSpecialty(
+    Object.fromEntries(sortedAndFilteredNotes),
+    encounters,
+    locations
+  );
 
-        const conditionDateDict = getConditionDatesFromEncounters(encounters);
+  return Object.entries(notesBySpecialty)
+    .map(([key, value]) => {
+      const labs = value.labs;
+      const documentation = value.documentation;
 
-        const condition = conditions?.find(condition => {
-          const conditionId = condition.id ?? "";
-          const conditionVisitDate = condition.onsetDateTime
-            ? condition.onsetDateTime
-            : conditionDateDict[conditionId]?.start;
+      const hasNoLabs = !labs || labs?.length === 0;
+      const hasNoDocumentation = !documentation || documentation?.length === 0;
 
-          const encounterDateFormatted = dayjs(key).format(ISO_DATE);
-          const conditionVisitDateFormatted = dayjs(conditionVisitDate).format(ISO_DATE);
+      if (hasNoLabs && hasNoDocumentation) {
+        return "";
+      }
 
-          return conditionVisitDateFormatted === encounterDateFormatted;
-        });
+      const conditionDateDict = getConditionDatesFromEncounters(encounters);
 
-        const codeName = getSpecificCode(condition?.code?.coding ?? [], [ICD_10_CODE]);
+      const condition = conditions?.find(condition => {
+        const conditionId = condition.id ?? "";
+        const conditionVisitDate = condition.onsetDateTime
+          ? condition.onsetDateTime
+          : conditionDateDict[conditionId]?.start;
 
-        const idc10Code = condition?.code?.coding?.find(code =>
-          code.system?.toLowerCase().includes(ICD_10_CODE)
-        );
+        const encounterDateFormatted = dayjs(key).format(ISO_DATE);
+        const conditionVisitDateFormatted = dayjs(conditionVisitDate).format(ISO_DATE);
 
-        const name =
-          idc10Code?.display ??
-          condition?.code?.coding?.[0]?.display ??
-          condition?.code?.text ??
-          "";
+        return conditionVisitDateFormatted === encounterDateFormatted;
+      });
 
-        return `
+      const codeName = getSpecificCode(condition?.code?.coding ?? [], [ICD_10_CODE]);
+
+      const idc10Code = condition?.code?.coding?.find(code =>
+        code.system?.toLowerCase().includes(ICD_10_CODE)
+      );
+
+      const name =
+        idc10Code?.display ??
+        getValidCode(condition?.code?.coding)[0]?.display ??
+        condition?.code?.text ??
+        "";
+
+      return `
         <div id="report">
           <div class="header">
             <h3 class="title">Encounter</h3>
@@ -832,8 +873,9 @@ function buildReports(
               documentation && documentation.length > 0
                 ? createWhatWasDocumentedFromDiagnosticReports(
                     documentation,
-                    mappedPractitioners,
-                    mappedOrganizations
+                    encounters,
+                    locations,
+                    mappedPractitioners
                   )
                 : ""
             }
@@ -851,17 +893,122 @@ function buildReports(
           </div>
         </div>
     `;
-      })
-      .join("")
+    })
+    .join("");
+}
+
+function getLatestDrPerSpecialty(
+  encounterSections: EncounterSection,
+  encounters: Encounter[],
+  locations: Location[]
+): EncounterSection {
+  const diagnosticReports = Object.values(encounterSections).flatMap(section => {
+    if (!section.documentation) {
+      return [];
+    }
+
+    return section.documentation;
+  });
+  const mappedDiagnosticReports = mapResourceToId<DiagnosticReport>(diagnosticReports);
+  const mappedEncounters = mapResourceToId<Encounter>(encounters);
+  const mappedLocations = mapResourceToId<Location>(locations);
+
+  const diagnosticReportWithDate: DiagnosticIdWithDateAndLocation[] = [];
+
+  for (const diagnosticReport of diagnosticReports) {
+    const encounterRefId = diagnosticReport.encounter?.reference?.split("/")[1];
+    const encounter = mappedEncounters[encounterRefId ?? ""];
+    const diagnosticReportId = diagnosticReport.id ?? "";
+    const locationRefId = encounter?.location?.[0]?.location?.reference?.split("/")[1];
+    const location = mappedLocations[locationRefId ?? ""];
+
+    const time = diagnosticReport.effectiveDateTime ?? diagnosticReport.effectivePeriod?.start;
+    const formattedDate = dayjs(time).format(ISO_DATE) ?? "";
+
+    diagnosticReportWithDate.push({
+      diagnosticReportId,
+      locationRefName: location ? location.name : undefined,
+      date: formattedDate,
+    });
+  }
+
+  const latestDiagnosticReportPerSpecialty = diagnosticReportWithDate.reduce(
+    (acc: DiagnosticIdWithDateAndLocation[], curr) => {
+      const specialtyExists = acc.find(report => report.locationRefName === curr.locationRefName);
+
+      if (!specialtyExists || !curr.locationRefName) {
+        acc.push(curr);
+      } else {
+        const latestSpecialtyReportDate = dayjs(specialtyExists.date).format(ISO_DATE);
+        const isSameDate = dayjs(curr.date).isSame(dayjs(latestSpecialtyReportDate));
+        const isAfterDate = dayjs(curr.date).isAfter(dayjs(latestSpecialtyReportDate));
+
+        const planOfCareCode = "18776-5";
+        const telephoneEncounterCode = "34748-4";
+        const addendumDocumentCode = "55107-7";
+
+        const invalidCodes = [planOfCareCode, telephoneEncounterCode, addendumDocumentCode];
+
+        const originalDiagnosticReport =
+          mappedDiagnosticReports[specialtyExists.diagnosticReportId];
+        const originalLoincCodes = originalDiagnosticReport?.code?.coding?.filter(code =>
+          code.system?.includes("loinc")
+        );
+        const originalHasInvalidCode = originalLoincCodes?.some(code =>
+          invalidCodes.includes(code.code ?? "")
+        );
+
+        const currlDiagnosticReport = mappedDiagnosticReports[curr.diagnosticReportId];
+        const currlLoincCodes = currlDiagnosticReport?.code?.coding?.filter(code =>
+          code.system?.includes("loinc")
+        );
+        const currlHasInvalidCode = currlLoincCodes?.some(code =>
+          invalidCodes.includes(code.code ?? "")
+        );
+
+        const canOverideInvalid = originalHasInvalidCode && !currlHasInvalidCode;
+        const bothInvalid = originalHasInvalidCode && currlHasInvalidCode;
+        const isSameOrAfter = isSameDate || isAfterDate;
+
+        if (
+          canOverideInvalid ||
+          (isSameOrAfter && bothInvalid) ||
+          (isSameOrAfter && !currlHasInvalidCode)
+        ) {
+          acc = acc.filter(report => report.locationRefName !== curr.locationRefName);
+          acc.push(curr);
+        }
+      }
+
+      return acc;
+    },
+    []
   );
+
+  const reportsBySpecialty: DiagnosticReport[] = [];
+
+  for (const report of latestDiagnosticReportPerSpecialty) {
+    const diagnosticReport = mappedDiagnosticReports[report.diagnosticReportId];
+
+    if (diagnosticReport) {
+      reportsBySpecialty.push(diagnosticReport);
+    }
+  }
+
+  const encounterSectionsBySpecialty = buildEncounterSections({}, reportsBySpecialty);
+
+  return encounterSectionsBySpecialty;
 }
 
 function filterEncounterSections(encounterSections: EncounterSection): EncounterSection {
   return Object.entries(encounterSections).reduce((acc, [key, value]) => {
     const documentation = value.documentation?.filter(doc => {
-      const note = doc.presentedForm?.[0]?.data ?? "";
+      const hasValidNote = doc.presentedForm?.some(form => {
+        const note = form.data ?? "";
+        return note && note.length > 0;
+      });
 
-      return note || note.length > 0;
+      return hasValidNote;
     });
 
     acc[key] = {
@@ -873,28 +1020,61 @@ function filterEncounterSections(encounterSections: EncounterSection): Encounter
   }, {} as EncounterSection);
 }
 
-const REMOVE_FROM_NOTE = ["xLabel", "5/5", "Â°F", "â¢", "documented in this encounter"];
+const REMOVE_FROM_NOTE = [
+  "xLabel",
+  "5/5",
+  "Â°F",
+  "â¢",
+  "documented in this encounter",
+  "xnoIndent",
+  "Formatting of this note might be different from the original.",
+];
+
+function cleanUpNote(note: string): string {
+  return note
+    .trim()
+    .replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "")
+    .replace(/<ID>.*?<\/ID>/g, "")
+    .replace(/<styleCode>.*?<\/styleCode>/g, "");
+}
+
+function removeEncodedStrings(valueString: string): string {
+  return valueString.replace(/&#x3D;/g, "").trim();
+}
 
 function createWhatWasDocumentedFromDiagnosticReports(
   documentation: DiagnosticReport[],
-  mappedPractitioners: Record<string, Practitioner>,
-  mappedOrganizations: Record<string, Organization>
+  encounters: Encounter[],
+  locations: Location[],
+  mappedPractitioners: Record<string, Practitioner>
 ) {
   const documentations = documentation
-    .map(documentation => {
-      const note = documentation.presentedForm?.[0]?.data ?? "";
-      const decodeNote = Buffer.from(note, "base64").toString("utf-8");
-      const cleanNote = decodeNote.replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "");
+    .map(doc => {
+      const notes =
+        doc.presentedForm?.map(form => {
+          const note = form.data ?? "";
+          const noJunkNote = removeEncodedStrings(note);
+          const decodeNote = Buffer.from(noJunkNote, "base64").toString("utf-8");
+          return cleanUpNote(decodeNote);
+        }) ?? [];
 
-      const practitionerField = createPractionerField(documentation, mappedPractitioners);
-      const organizationField = createOrganiztionField(documentation, mappedOrganizations);
+      const practitionerField = createPractionerField(doc, mappedPractitioners);
+      const organizationField = createOrganizationField(doc, encounters, locations);
 
+      const fields = [practitionerField, organizationField].filter(
+        field => field.trim().length > 0
+      );
       return `
-        <div>
-        ${practitionerField}
-        ${organizationField}
-          <p style="margin-bottom: 10px; line-height: 25px; white-space: pre-line;">${cleanNote}</p>
-        </div>
+      <div>
+        ${fields.join("<br />")}
+        ${
+          notes.length > 0
+            ? `<p style="margin-bottom: 10px; line-height: 25px; white-space: pre-line;">${notes.join(
+                "<br />"
+              )}</p>`
+            : ""
+        }
+      </div>
       `;
     })
     .join("");
@@ -913,7 +1093,8 @@ function createPractionerField(
   const practitioner = mappedPractitioners[practitionerRefId];
   const practitionerName =
     (practitioner?.name?.[0]?.given?.[0] ?? "") + " " + (practitioner?.name?.[0]?.family ?? "");
-  const practitionerTitle = practitioner?.qualification?.[0]?.code?.coding?.[0]?.display ?? "";
+  const practitionerTitle =
+    getValidCode(practitioner?.qualification?.[0]?.code?.coding)[0]?.display ?? "";
 
   const hasName = practitionerName.trim().length > 0;
   const hasTitle = practitionerTitle.trim().length > 0;
@@ -925,17 +1106,23 @@ function createPractionerField(
   `;
 }
 
-function createOrganiztionField(
+function createOrganizationField(
   diagnosticReport: DiagnosticReport,
-  mappedOrganizations: Record<string, Organization>
+  encounters: Encounter[],
+  locations: Location[]
 ) {
-  const organizationRefId = diagnosticReport.performer
-    ?.find(performer => performer.reference?.includes("Organization"))
-    ?.reference?.split("/")[1];
+  const mappedEncounters = mapResourceToId<Encounter>(encounters);
+  const mappedLocation = mapResourceToId<Location>(locations);
 
-  const organization = mappedOrganizations[organizationRefId ?? ""];
+  const encounterRefId = diagnosticReport.encounter?.reference?.split("/")[1];
 
-  return organization?.name ? `<p>Facility: ${organization.name}</p>` : "";
+  const encounter = mappedEncounters[encounterRefId ?? ""];
+
+  const locationRefId = encounter?.location?.[0]?.location?.reference?.split("/")?.[1];
+
+  const location = mappedLocation[locationRefId ?? ""];
+
+  return location ? `<p>Facility: ${location.name}</p>` : "";
 }
 
 function createMedicationSection(
@@ -1083,9 +1270,12 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
       );
 
       const name =
-        idc10Code?.display ?? condition.code?.coding?.[0]?.display ?? condition.code?.text ?? "";
+        idc10Code?.display ??
+        getValidCode(condition.code?.coding)[0]?.display ??
+        condition.code?.text ??
+        "";
       const onsetDateTime = condition.onsetDateTime ?? "";
-      const clinicalStatus = condition.clinicalStatus?.coding?.[0]?.display ?? "";
+      const clinicalStatus = getValidCode(condition.clinicalStatus?.coding)[0]?.display ?? "";
       let onsetStartTime = condition.onsetPeriod?.start ?? "";
       let onsetEndTime = condition.onsetPeriod?.end ?? "";
 
@@ -1400,8 +1590,8 @@ function createObservationSocialHistorySection(observations: Observation[]) {
   const removeDuplicate = uniqWith(observationsSortedByDate, (a, b) => {
     const aDate = dayjs(a.effectiveDateTime).format(ISO_DATE);
     const bDate = dayjs(b.effectiveDateTime).format(ISO_DATE);
-    const aText = a.code?.text ?? a.code?.coding?.[0]?.display;
-    const bText = b.code?.text ?? b.code?.coding?.[0]?.display;
+    const aText = a.code?.text ?? getValidCode(a.code?.coding)[0]?.display;
+    const bText = b.code?.text ?? getValidCode(b.code?.coding)[0]?.display;
     const aValue = renderSocialHistoryValue(a) ?? "";
     const bValue = renderSocialHistoryValue(b) ?? "";
     if (aText === undefined || bText === undefined) {
@@ -1412,13 +1602,13 @@ function createObservationSocialHistorySection(observations: Observation[]) {
     .filter(observation => {
       const value = renderSocialHistoryValue(observation) ?? "";
       const blacklistValues = ["sex assigned at birth"];
-      const display = observation.code?.coding?.[0]?.display ?? "";
+      const display = getValidCode(observation.code?.coding)[0]?.display ?? "";
       const valueIsBlacklisted = blacklistValues.includes(display);
 
       return value && value.length > 0 && !valueIsBlacklisted;
     })
     .reduce((acc, observation) => {
-      const display = observation.code?.coding?.[0]?.display ?? "";
+      const display = getValidCode(observation.code?.coding)[0]?.display ?? "";
       const value = renderSocialHistoryValue(observation) ?? "";
       const observationDate = formatDateForDisplay(observation.effectiveDateTime);
       const lastItemInArray = acc[acc.length - 1];
@@ -1512,7 +1702,7 @@ function renderSocialHistoryValue(observation: Observation) {
   } else if (observation.valueCodeableConcept) {
     return (
       observation.valueCodeableConcept?.text ??
-      observation.valueCodeableConcept.coding?.[0]?.display
+      getValidCode(observation.valueCodeableConcept.coding)[0]?.display
     );
   } else {
     return "";
@@ -1537,6 +1727,12 @@ function createObservationVitalsSection(observations: Observation[]) {
       return false;
     }
     return aDate === bDate && aText === bText;
+  }).filter(observation => {
+    const observationDate = observation.effectiveDateTime ?? "";
+    const observationDateFormatted = dayjs(observationDate).format(ISO_DATE);
+    const threeYearAgo = dayjs().subtract(3, "year").format(ISO_DATE);
+
+    return dayjs(observationDateFormatted).isAfter(dayjs(threeYearAgo));
   });
 
   const observationTableContents =
@@ -1571,7 +1767,9 @@ function createVitalsByDate(observations: Observation[]): string {
 
           return `
             <tr>
-              <td>${observation.code?.coding?.[0]?.display ?? observation.code?.text ?? ""}</td>
+              <td>${
+                getValidCode(observation.code?.coding)[0]?.display ?? observation.code?.text ?? ""
+              }</td>
               <td>${renderVitalsValue(observation)}</td>
               <td>${code ?? ""}</td>
             </tr>
@@ -1621,6 +1819,12 @@ function createObservationLaboratorySection(observations: Observation[]) {
       return false;
     }
     return aDate === bDate && aText === bText;
+  }).filter(observation => {
+    const observationDate = observation.effectiveDateTime ?? "";
+    const observationDateFormatted = dayjs(observationDate).format(ISO_DATE);
+    const threeYearAgo = dayjs().subtract(3, "year").format(ISO_DATE);
+
+    return dayjs(observationDateFormatted).isAfter(dayjs(threeYearAgo));
   });
 
   const observationTableContents =
@@ -1655,7 +1859,10 @@ function createObservationsByDate(observations: Observation[]): string {
         ${tables.observations
           .filter(observation => {
             const observationDisplay = observation.code?.coding?.find(coding => {
-              return coding.display;
+              if (coding.code !== UNK_CODE) {
+                return coding.display;
+              }
+              return;
             });
 
             const hasDisplayValue = observationDisplay?.display ?? observation.code?.text;
@@ -1677,7 +1884,10 @@ function createObservationsByDate(observations: Observation[]): string {
                 }`;
 
             const observationDisplay = observation.code?.coding?.find(coding => {
-              return coding.display;
+              if (coding.code !== UNK_CODE) {
+                return coding.display;
+              }
+              return;
             });
 
             return `
@@ -1815,7 +2025,9 @@ function createOtherObservationsByDate(observations: Observation[]): string {
 
             return `
               <tr>
-                <td>${observation.code?.coding?.[0]?.display ?? observation.code?.text ?? ""}</td>
+                <td>${
+                  getValidCode(observation.code?.coding)[0]?.display ?? observation.code?.text ?? ""
+                }</td>
                 <td>${observation.valueQuantity?.value ?? observation.valueString ?? ""}</td>
                 <td>${code ?? ""}</td>
               </tr>
@@ -1918,7 +2130,8 @@ function createFamilyHistorySection(familyMemberHistories: FamilyMemberHistory[]
     return (
       renderFamilyHistoryConditions(a)?.join(", ") ===
         renderFamilyHistoryConditions(b)?.join(", ") &&
-      a.relationship?.coding?.[0]?.display === b.relationship?.coding?.[0]?.display
+      getValidCode(a.relationship?.coding)[0]?.display ===
+        getValidCode(b.relationship?.coding)[0]?.display
     );
   });
 
@@ -1950,7 +2163,7 @@ function createFamilyHistorySection(familyMemberHistories: FamilyMemberHistory[]
 
           return `
             <tr>
-              <td>${familyMemberHistory.relationship?.coding?.[0]?.display ?? ""}</td>
+              <td>${getValidCode(familyMemberHistory.relationship?.coding)[0]?.display ?? ""}</td>
               <td>${renderAdministrativeGender(familyMemberHistory) ?? ""}</td>
               <td>${renderFamilyHistoryConditions(familyMemberHistory)?.join(", ") ?? ""}</td>
               <td>${deceasedFamilyMember ? "yes" : "no"}</td>
@@ -1973,7 +2186,7 @@ function createFamilyHistorySection(familyMemberHistories: FamilyMemberHistory[]
 
 function renderFamilyHistoryConditions(familyMemberHistory: FamilyMemberHistory) {
   return familyMemberHistory.condition?.map(condition => {
-    return condition.code?.text ?? condition.code?.coding?.[0]?.display;
+    return condition.code?.text ?? getValidCode(condition.code?.coding)[0]?.display;
   });
 }
 
@@ -2001,7 +2214,7 @@ function createRelatedPersonSection(relatedPersons: RelatedPerson[]) {
   function getRelationship(relatedPerson: RelatedPerson) {
     return (
       relatedPerson.relationship?.[0]?.text ??
-      relatedPerson.relationship?.[0]?.coding?.[0]?.display ??
+      getValidCode(relatedPerson.relationship?.[0]?.coding)[0]?.display ??
       ""
     );
   }
@@ -2102,7 +2315,7 @@ function createTaskSection(tasks: Task[]) {
           return `
             <tr>
               <td>${task.description ?? ""}</td>
-              <td>${task.reasonCode?.coding?.[0]?.display ?? ""}</td>
+              <td>${getValidCode(task.reasonCode?.coding)[0]?.display ?? ""}</td>
               <td>${code ?? ""}</td>
               <td>${task.note?.[0]?.text ?? ""}</td>
               <td>${formatDateForDisplay(task.authoredOn)}</td>
@@ -2136,6 +2349,12 @@ function createEncountersSection(encounters: Encounter[], locations: Location[])
     const aDate = dayjs(a.period?.start).format(ISO_DATE);
     const bDate = dayjs(b.period?.start).format(ISO_DATE);
     return aDate === bDate && a.type?.[0]?.text === b.type?.[0]?.text;
+  }).filter(encounter => {
+    const encounterDate = encounter.period?.start ?? "";
+    const encounterDateFormatted = dayjs(encounterDate).format(ISO_DATE);
+    const threeYearAgo = dayjs().subtract(3, "year").format(ISO_DATE);
+
+    return dayjs(encounterDateFormatted).isAfter(dayjs(threeYearAgo));
   });
 
   // SOMETIMES IT DOESNT HAVE A REASON SHOULD WE REMOVE ALTOGETHER?
@@ -2161,7 +2380,7 @@ function createEncountersSection(encounters: Encounter[], locations: Location[])
             <tr>
               <td>${
                 encounter.reasonCode?.[0]?.text ??
-                encounter.reasonCode?.[0]?.coding?.[0]?.display ??
+                getValidCode(encounter.reasonCode?.[0]?.coding)[0]?.display ??
                 ""
               }</td>
               <td>${(locationId && mappedLocations[locationId]?.name) ?? ""}</td>
@@ -2188,7 +2407,7 @@ function createCoverageSection(coverages: Coverage[], organizations: Organizatio
     return "";
   }
 
-  const mappedOrganizations = mapResourceToId<Organization>(organizations);
+  const mappedLocations = mapResourceToId<Organization>(organizations);
 
   const coveragesSortedByDate = coverages.sort((a, b) => {
     return dayjs(a.period?.start).isBefore(dayjs(b.period?.start)) ? 1 : -1;
@@ -2218,7 +2437,7 @@ function createCoverageSection(coverages: Coverage[], organizations: Organizatio
       ${removeDuplicate
         .map(coverage => {
           const payorRef = coverage.payor?.[0]?.reference?.split("/")?.[1];
-          const organization = mappedOrganizations[payorRef ?? ""];
+          const organization = mappedLocations[payorRef ?? ""];
 
           return `
             <tr>
@@ -2333,4 +2552,33 @@ function getADHDVisits(conditions: Condition[]) {
   });
 
   return adhdVisits;
+}
+
+function hasClinicalRelevantData(fhirTypes: FhirTypes): boolean {
+  const hasValues: string[] = [];
+
+  Object.entries(fhirTypes).forEach(([key, value]) => {
+    const isNotRelatedPersons = key !== "relatedPersons";
+    const isNotCoverages = key !== "coverages";
+    const hasValue = value && Array.isArray(value) && value.length;
+
+    if (isNotRelatedPersons && isNotCoverages && hasValue) {
+      hasValues.push(key);
+    }
+  });
+
+  return hasValues.length > 0;
+}
+
+function getValidCode(coding: Coding[] | undefined): Coding[] {
+  if (!coding) return [];
+
+  return coding.filter(coding => {
+    return (
+      coding.code &&
+      coding.code !== UNK_CODE &&
+      coding.display &&
+      coding.display.toLowerCase() !== UNKNOWN_DISPLAY
+    );
+  });
 }

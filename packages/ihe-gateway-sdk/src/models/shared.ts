@@ -31,10 +31,12 @@ export type SamlAttributes = z.infer<typeof SamlAttributesSchema>;
 
 export const baseRequestSchema = z.object({
   id: z.string(),
+  requestChunkId: z.string().optional(),
   cxId: z.string().optional(),
   timestamp: z.string(),
   samlAttributes: SamlAttributesSchema,
   patientId: z.string().nullish(),
+  signatureConfirmation: z.string().optional(),
 });
 
 export type BaseRequest = z.infer<typeof baseRequestSchema>;
@@ -46,10 +48,10 @@ export const codeSchema = z.object({
 
 export type Code = z.infer<typeof codeSchema>;
 
-export const detailsSchema = z.union([
-  z.object({ coding: z.array(codeSchema) }),
-  z.object({ text: z.string() }),
-]);
+export const detailsSchema = z.object({
+  coding: z.array(codeSchema).optional(),
+  text: z.string().optional(),
+});
 
 export type Details = z.infer<typeof detailsSchema>;
 
@@ -75,6 +77,7 @@ export type XCPDPatientId = z.infer<typeof externalGatewayPatientSchema>;
 
 export const baseResponseSchema = z.object({
   id: z.string(),
+  requestChunkId: z.string().nullish(),
   timestamp: z.string(),
   /** timestamp right after external gateway response */
   responseTimestamp: z.string(),
@@ -86,6 +89,9 @@ export const baseResponseSchema = z.object({
   externalGatewayPatient: externalGatewayPatientSchema.optional(),
   patientId: z.string().nullish(),
   operationOutcome: operationOutcomeSchema.optional(),
+  signatureConfirmation: z.string().optional(),
+  retried: z.number().optional(),
+  iheGatewayV2: z.boolean().optional(),
 });
 export type BaseResponse = z.infer<typeof baseResponseSchema>;
 

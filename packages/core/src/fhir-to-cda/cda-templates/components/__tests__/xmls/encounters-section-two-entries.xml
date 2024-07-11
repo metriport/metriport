@@ -120,6 +120,27 @@
 						</family>
 					</name>
 				</assignedPerson>
+				<representedOrganization classCode="ORG">
+					<telecom use="WP" value="+1-600-700-8000">
+					</telecom>
+					<addr use="WP">
+						<streetAddressLine>
+							1111 Sample Street, Suite 987
+						</streetAddressLine>
+						<city>
+							Springfield
+						</city>
+						<state>
+							CA
+						</state>
+						<postalCode>
+							12123
+						</postalCode>
+						<country>
+							USA
+						</country>
+					</addr>
+				</representedOrganization>
 			</assignedEntity>
 		</performer>
 		<participant typeCode="LOC">
@@ -240,6 +261,27 @@
 						</family>
 					</name>
 				</assignedPerson>
+				<representedOrganization classCode="ORG">
+					<telecom use="WP" value="+1-600-700-8000">
+					</telecom>
+					<addr use="WP">
+						<streetAddressLine>
+							1111 Sample Street, Suite 987
+						</streetAddressLine>
+						<city>
+							Springfield
+						</city>
+						<state>
+							CA
+						</state>
+						<postalCode>
+							12123
+						</postalCode>
+						<country>
+							USA
+						</country>
+					</addr>
+				</representedOrganization>
 			</assignedEntity>
 		</performer>
 		<participant typeCode="LOC">

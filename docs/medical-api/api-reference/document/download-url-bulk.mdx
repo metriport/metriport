@@ -3,13 +3,19 @@ title: "Start Bulk Get Document URL"
 description: "Triggers a process to generate a list of download URLs for all of the patient's documents."
 api: "POST /medical/v1/document/download-url/bulk"
 ---
-When executed, this endpoint triggers a process to generate all download URLs for a patient's documents, which will then be delivered via webhook message.
+When executed, this endpoint triggers a process to generate all download URLs for a patient's documents.
+This is an asynchronous process, and the status is returned in the response to the original request.
 
-The status of the process is returned in the response. Initially, it will be `processing`, and when the process is finished, the status will be updated to `completed` or `failed`.
+Initially, the status will be `processing`, and when the process is finished, the status will be updated to
+`completed` or `failed`.
 
-<Tip>
-  The result of the process will be delivered via a webhook message - to set this up, and see the message format, check out our [webhooks guide](/medical-api/more-info/webhooks#bulk-downloadable-url-generation). 
-</Tip>
+Once completed, a webhook request will be sent [your configured URL](/home/api-reference/settings/post-settings)
+containing the document download URLs.
+
+Webhook message type - see [the respective section on the webhooks page](/medical-api/more-info/webhooks#bulk-downloadable-url-generation)
+for more details:
+
+- `medical.document-bulk-download`: list of download urls for a patient's documents.
 
 <Warning>
   If you trigger this endpoint again while the process is still running, you will get a response that reflects the current progress. Essentially, only a single bulk URL generation process will be running for a patient at any given time.

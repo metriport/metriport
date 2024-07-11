@@ -1,4 +1,4 @@
-import { Address, Bundle, Encounter, HumanName, Location, Practitioner } from "@medplum/fhirtypes";
+import { Bundle, Encounter, HumanName, Location, Practitioner } from "@medplum/fhirtypes";
 import { toArray } from "@metriport/shared";
 import {
   findResourceInBundle,
@@ -14,6 +14,7 @@ import {
   ObservationTableRow,
 } from "../../cda-types/shared-types";
 import {
+  buildAddressText,
   buildCodeCe,
   buildCodeCvFromCodeCe,
   buildInstanceIdentifier,
@@ -23,6 +24,7 @@ import {
   formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
   getDisplaysFromCodeableConcepts,
+  notOnFilePlaceholder,
   withoutNullFlavorObject,
 } from "../commons";
 import {
@@ -37,7 +39,7 @@ import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { initiateSectionTable } from "../table";
 import { AugmentedEncounter } from "./augmented-resources";
 
-export const encountersSectionName = "encounters";
+const encountersSectionName = "encounters";
 
 const tableHeaders = [
   "Reason for Visit",
@@ -48,11 +50,26 @@ const tableHeaders = [
 ];
 
 export function buildEncounters(fhirBundle: Bundle): EncountersSection {
+  const encountersSection: EncountersSection = {
+    templateId: buildInstanceIdentifier({
+      root: oids.encountersSection,
+      extension: extensionValue2015,
+    }),
+    code: buildCodeCe({
+      code: "46240-8",
+      codeSystem: loincCodeSystem,
+      codeSystemName: loincSystemName,
+      displayName: "History of encounters",
+    }),
+    title: "ENCOUNTERS",
+    text: notOnFilePlaceholder,
+  };
+
   const encounters: Encounter[] =
     fhirBundle.entry?.flatMap(entry => (isEncounter(entry.resource) ? [entry.resource] : [])) || [];
 
   if (encounters.length === 0) {
-    return undefined;
+    return encountersSection;
   }
 
   const augmentedEncounters = createAugmentedEncounters(encounters, fhirBundle);
@@ -65,21 +82,10 @@ export function buildEncounters(fhirBundle: Bundle): EncountersSection {
 
   const table = initiateSectionTable(encountersSectionName, tableHeaders, trs);
 
-  return {
-    templateId: buildInstanceIdentifier({
-      root: oids.encountersSection,
-      extension: extensionValue2015,
-    }),
-    code: buildCodeCe({
-      code: "46240-8",
-      codeSystem: loincCodeSystem,
-      codeSystemName: loincSystemName,
-      displayName: "History of encounters",
-    }),
-    title: "ENCOUNTERS",
-    text: table,
-    entry: entries,
-  };
+  encountersSection.text = table;
+  encountersSection.entry = entries;
+
+  return encountersSection;
 }
 
 export function createAugmentedEncounters(
@@ -150,11 +156,6 @@ function createTableRowFromEncounter(
       },
     },
   ];
-}
-
-function buildAddressText(address: Address | undefined): string | undefined {
-  if (!address) return undefined;
-  return `${address.line?.join(", ")}, ${address.city}, ${address.state} ${address.postalCode}`;
 }
 
 function getPractitionerInformation(participant: Practitioner[] | undefined): string {

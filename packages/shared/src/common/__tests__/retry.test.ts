@@ -50,7 +50,7 @@ describe("retry", () => {
     });
 
     it("uses custom shouldRetry when provided", async () => {
-      const shouldRetry = (_: unknown, attempt: number): boolean => {
+      const shouldRetry = (_r: unknown, _e: unknown, attempt: number): boolean => {
         return attempt !== 2;
       };
       await expect(async () =>
@@ -71,12 +71,14 @@ describe("retry", () => {
           getTimeToWait,
         })
       ).rejects.toThrow();
-      expect(getTimeToWait).toHaveBeenCalledWith({
-        initialDelay: 10,
-        backoffMultiplier: 2,
-        attempt: 1,
-        maxDelay: Infinity,
-      });
+      expect(getTimeToWait).toHaveBeenCalledWith(
+        expect.objectContaining({
+          initialDelay: 10,
+          backoffMultiplier: 2,
+          attempt: 1,
+          maxDelay: Infinity,
+        })
+      );
     });
 
     test("uses provided initialDelay", async () => {
@@ -112,6 +114,55 @@ describe("retry", () => {
           maxDelay,
         })
       );
+    });
+  });
+
+  describe("executeWithRetriesOnResult", () => {
+    const fn = jest.fn();
+    beforeEach(() => {
+      fn.mockImplementation(() => {
+        throw new Error("error");
+      });
+    });
+    afterEach(() => {
+      jest.resetAllMocks();
+    });
+
+    it("returns the first successful execution", async () => {
+      const expectedResult = faker.lorem.word();
+      fn.mockImplementationOnce(() => expectedResult);
+      const resp = await executeWithRetries(fn, {
+        initialDelay: 1,
+        maxAttempts: 2,
+      });
+      expect(resp).toEqual(expectedResult);
+      expect(fn).toHaveBeenCalledTimes(1);
+    });
+
+    it("keeps trying on retryable result and returns the first non-retryable result", async () => {
+      const retryableResult = faker.lorem.word();
+      const expectedResult = faker.lorem.sentence();
+      fn.mockImplementationOnce(() => retryableResult);
+      fn.mockImplementationOnce(() => expectedResult);
+      const resp = await executeWithRetries(fn, {
+        initialDelay: 1,
+        maxAttempts: 3,
+        shouldRetry: result => result === retryableResult,
+      });
+      expect(resp).toEqual(expectedResult);
+      expect(fn).toHaveBeenCalledTimes(2);
+    });
+
+    it("returns the last retryable result after max attempts", async () => {
+      const retryableResult = faker.lorem.word();
+      fn.mockImplementation(() => retryableResult);
+      const resp = await executeWithRetries(fn, {
+        initialDelay: 1,
+        maxAttempts: 3,
+        shouldRetry: result => result === retryableResult,
+      });
+      expect(resp).toEqual(retryableResult);
+      expect(fn).toHaveBeenCalledTimes(3);
     });
   });
 

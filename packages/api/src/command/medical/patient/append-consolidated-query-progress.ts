@@ -14,8 +14,7 @@ export type SetDocQueryProgress = {
 
 /**
  * Update a single patient's consolidated query progress.
- * Keeps existing sibling properties when those are not provided
- * @returns the updated Patient
+ * Keeps existing sibling properties when those are not provided.
  */
 export async function updateConsolidatedQueryProgress({
   patient,

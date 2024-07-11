@@ -1,10 +1,6 @@
 import { Observation, ObservationComponent } from "@medplum/fhirtypes";
 import {
-  CdaCodeCv,
-  CdaInstanceIdentifier,
-  CdaValueSt,
-  Entry,
-  EntryObject,
+  CdaValuePq,
   ObservationEntry,
   ObservationEntryRelationship,
   ObservationTableRow,
@@ -22,6 +18,7 @@ import {
   withoutNullFlavorObject,
 } from "../commons";
 import {
+  _xsiTypeAttribute,
   extensionValue2015,
   loincCodeSystem,
   loincSystemName,
@@ -30,27 +27,7 @@ import {
 } from "../constants";
 import { AugmentedObservation } from "./augmented-resources";
 
-export interface CDAObservation {
-  component: {
-    observation: {
-      _classCode: Entry;
-      _moodCode: Entry;
-      id?: CdaInstanceIdentifier[] | Entry;
-      code: CdaCodeCv | undefined;
-      text?: Entry;
-      statusCode?: EntryObject;
-      effectiveTime?: {
-        low?: EntryObject;
-        high?: EntryObject;
-      };
-      priorityCode?: Entry;
-      // TODO support other types of values like CodeableConcept, Quantity, etc.
-      value?: CdaValueSt | undefined;
-    };
-  };
-}
-
-export function createObservations(observations: Observation[]): CDAObservation[] {
+export function createObservations(observations: Observation[]): { component: ObservationEntry }[] {
   return observations.map(observation => {
     const effectiveTime = observation.effectiveDateTime?.replace(TIMESTAMP_CLEANUP_REGEX, "");
     return {
@@ -145,7 +122,7 @@ export function createTableRowFromObservation(
   };
 }
 
-function hasObservationInCode(observation: Observation): boolean {
+export function hasObservationInCode(observation: Observation): boolean {
   return (
     (observation.code?.coding &&
       observation.code.coding.length > 0 &&
@@ -179,8 +156,9 @@ export function createEntriesFromObservation(
         date
       );
       const entryRelationship = createEntryRelationship(entryRelationshipObservation);
-      if (observationEntry.observation.entryRelationship)
+      if (observationEntry.observation.entryRelationship) {
         observationEntry.observation.entryRelationship.push(entryRelationship);
+      }
     });
   }
 
@@ -222,6 +200,7 @@ function createEntryFromObservation(
         _code: "completed",
       },
       effectiveTime: withoutNullFlavorObject(date, "_value"),
+      value: buildValue(observation),
       interpretationCode: buildCodeCe({
         code: observation.interpretation?.[0]?.coding?.[0]?.code,
         codeSystem: observation.interpretation?.[0]?.coding?.[0]?.system,
@@ -233,9 +212,19 @@ function createEntryFromObservation(
   return entry;
 }
 
+function buildValue(observation: Observation | ObservationComponent): CdaValuePq | undefined {
+  if (observation.valueQuantity?.value == undefined) return undefined;
+
+  return {
+    [_xsiTypeAttribute]: "PQ",
+    _unit: observation.valueQuantity?.unit,
+    _value: observation.valueQuantity?.value,
+  };
+}
+
 function createEntryRelationship(entry: ObservationEntry): ObservationEntryRelationship {
   return {
-    _typeCode: "COMP", // TODO: Dynamically assign values based on the spec
+    _typeCode: "COMP",
     observation: {
       ...entry.observation,
     },

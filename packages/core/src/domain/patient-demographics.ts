@@ -1,5 +1,7 @@
+import { Patient as FHIRPatient } from "@medplum/fhirtypes";
+
 export type LinkDateOfBirth = string | undefined;
-export type LinkGender = "male" | "female" | undefined;
+export type LinkGender = FHIRPatient["gender"];
 
 export type LinkGenericName = {
   firstName: string;
