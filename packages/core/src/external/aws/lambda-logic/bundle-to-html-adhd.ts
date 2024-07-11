@@ -1859,7 +1859,7 @@ function createObservationsByDate(observations: Observation[]): string {
         ${tables.observations
           .filter(observation => {
             const observationDisplay = observation.code?.coding?.find(coding => {
-              if (coding.code !== UNK_CODE) {
+              if (coding.code !== UNK_CODE && coding.display !== UNKNOWN_DISPLAY) {
                 return coding.display;
               }
               return;
@@ -1884,7 +1884,7 @@ function createObservationsByDate(observations: Observation[]): string {
                 }`;
 
             const observationDisplay = observation.code?.coding?.find(coding => {
-              if (coding.code !== UNK_CODE) {
+              if (coding.code !== UNK_CODE && coding.display !== UNKNOWN_DISPLAY) {
                 return coding.display;
               }
               return;
