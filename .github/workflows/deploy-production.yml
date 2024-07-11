@@ -42,16 +42,15 @@ jobs:
           base: "master"
           filters: |
             api:
+              - "packages/shared/**"
               - "packages/api/**"
               - "packages/api-sdk/**"
               - "packages/commonwell-sdk/**"
               - "packages/ihe-gateway-sdk/**"
-              - "packages/infra/**"
               - "packages/core/**"
-              - "packages/shared/**"
               - "package*.json"
+            # Doing them individually because there are other stuff there that we don't want to trigger a deploy b/c of that
             fhir-converter:
-              # Doing them individually because there are other stuff there that we don't want to trigger a deploy b/c of that
               - "packages/fhir-converter/Dockerfile"
               - "packages/fhir-converter/docker-entrypoint.sh"
               - "packages/fhir-converter/package*.json"
@@ -59,12 +58,11 @@ jobs:
               - "packages/fhir-converter/src/**"
               - "packages/fhir-converter/test/**"
               - "packages/fhir-converter/deploy/**"
-              - "packages/infra/**"
             infra-lambdas:
+              - "packages/shared/**"
               - "packages/core/**"
               - "packages/infra/**"
               - "packages/lambdas/**"
-              - "packages/shared/**"
               - "package*.json"
 
   api-prod:
