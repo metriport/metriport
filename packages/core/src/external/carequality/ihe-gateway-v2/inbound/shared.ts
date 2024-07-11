@@ -87,9 +87,6 @@ export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttribute
   const purposeOfUse = getPurposeOfUseAttributeValue(
     "urn:oasis:names:tc:xspa:1.0:subject:purposeofuse"
   );
-  if (purposeOfUse != treatmentPurposeOfUse) {
-    throw new Error("A treatment purpose of use is required");
-  }
 
   return {
     subjectId: subjectId,
@@ -97,7 +94,7 @@ export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttribute
     organizationId: stripUrnPrefix(organizationId),
     homeCommunityId: stripUrnPrefix(homeCommunityId),
     subjectRole: subjectRole,
-    purposeOfUse: purposeOfUse,
+    purposeOfUse: purposeOfUse ?? treatmentPurposeOfUse,
   };
 }
 

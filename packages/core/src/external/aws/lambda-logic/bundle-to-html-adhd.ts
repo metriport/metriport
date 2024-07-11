@@ -32,7 +32,8 @@ const ICD_10_CODE = "icd-10";
 const LOINC_CODE = "loinc";
 const MEDICARE_CODE = "medicare";
 const CPT_CODE = "cpt";
-const UNK_CODE = 'UNK';
+const UNK_CODE = "UNK";
+const UNKNOWN_DISPLAY = "unknown";
 
 export const bundleToHtmlADHD = (fhirBundle: Bundle): string => {
   const fhirTypes = extractFhirTypesFromBundle(fhirBundle);
@@ -746,9 +747,9 @@ function buildEncounterSections(
                 reportInside.effectiveDateTime ?? reportInside.effectivePeriod?.start;
               const reportInsideDate = dayjs(reportInsideTime).format(ISO_DATE) ?? "";
               const isDuplicateDate = reportInsideDate === reportDate;
-              const hasSamePresentedForm =
-                reportInside.presentedForm?.[0]?.data === report.presentedForm?.[0]?.data;
-
+              const hasSamePresentedForm = report.presentedForm?.some(pf =>
+                reportInside.presentedForm?.some(ripf => pf.data === ripf.data)
+              );
               return isDuplicateDate && hasSamePresentedForm;
             }
           );
@@ -802,11 +803,13 @@ function buildReports(
     .filter(([key, value]) => {
       const documentation = value.documentation;
       const validDocumentation = documentation?.filter(doc => {
-        const note = doc.presentedForm?.[0]?.data ?? "";
-        const decodeNote = Buffer.from(note, "base64").toString("utf-8");
-        const containsB64 = decodeNote.includes("^application^pdf^BASE64^");
+        const containsB64InAnyPresentedForm = doc.presentedForm?.some(form => {
+          const note = form.data ?? "";
+          const decodeNote = Buffer.from(note, "base64").toString("utf-8");
+          return decodeNote.includes("^application^pdf^BASE64^");
+        });
 
-        return !containsB64;
+        return !containsB64InAnyPresentedForm;
       });
 
       return validDocumentation && validDocumentation.length > 0;
@@ -851,7 +854,10 @@ function buildReports(
       );
 
       const name =
-        idc10Code?.display ?? getValidCode(condition?.code?.coding)[0]?.display ?? condition?.code?.text ?? "";
+        idc10Code?.display ??
+        getValidCode(condition?.code?.coding)[0]?.display ??
+        condition?.code?.text ??
+        "";
 
       return `
         <div id="report">
@@ -997,9 +1003,12 @@ function getLatestDrPerSpecialty(
 function filterEncounterSections(encounterSections: EncounterSection): EncounterSection {
   return Object.entries(encounterSections).reduce((acc, [key, value]) => {
     const documentation = value.documentation?.filter(doc => {
-      const note = doc.presentedForm?.[0]?.data ?? "";
+      const hasValidNote = doc.presentedForm?.some(form => {
+        const note = form.data ?? "";
+        return note && note.length > 0;
+      });
 
-      return note || note.length > 0;
+      return hasValidNote;
     });
 
     acc[key] = {
@@ -1011,7 +1020,27 @@ function filterEncounterSections(encounterSections: EncounterSection): Encounter
   }, {} as EncounterSection);
 }
 
-const REMOVE_FROM_NOTE = ["xLabel", "5/5", "Â°F", "â¢", "documented in this encounter"];
+const REMOVE_FROM_NOTE = [
+  "xLabel",
+  "5/5",
+  "Â°F",
+  "â¢",
+  "documented in this encounter",
+  "xnoIndent",
+  "Formatting of this note might be different from the original.",
+];
+
+function cleanUpNote(note: string): string {
+  return note
+    .trim()
+    .replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "")
+    .replace(/<ID>.*?<\/ID>/g, "")
+    .replace(/<styleCode>.*?<\/styleCode>/g, "");
+}
+
+function removeEncodedStrings(valueString: string): string {
+  return valueString.replace(/&#x3D;/g, "").trim();
+}
 
 function createWhatWasDocumentedFromDiagnosticReports(
   documentation: DiagnosticReport[],
@@ -1020,20 +1049,32 @@ function createWhatWasDocumentedFromDiagnosticReports(
   mappedPractitioners: Record<string, Practitioner>
 ) {
   const documentations = documentation
-    .map(documentation => {
-      const note = documentation.presentedForm?.[0]?.data ?? "";
-      const decodeNote = Buffer.from(note, "base64").toString("utf-8");
-      const cleanNote = decodeNote.replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "");
+    .map(doc => {
+      const notes =
+        doc.presentedForm?.map(form => {
+          const note = form.data ?? "";
+          const noJunkNote = removeEncodedStrings(note);
+          const decodeNote = Buffer.from(noJunkNote, "base64").toString("utf-8");
+          return cleanUpNote(decodeNote);
+        }) ?? [];
 
-      const practitionerField = createPractionerField(documentation, mappedPractitioners);
-      const organizationField = createOrganizationField(documentation, encounters, locations);
+      const practitionerField = createPractionerField(doc, mappedPractitioners);
+      const organizationField = createOrganizationField(doc, encounters, locations);
 
+      const fields = [practitionerField, organizationField].filter(
+        field => field.trim().length > 0
+      );
       return `
-        <div>
-        ${practitionerField}
-        ${organizationField}
-          <p style="margin-bottom: 10px; line-height: 25px; white-space: pre-line;">${cleanNote}</p>
-        </div>
+      <div>
+        ${fields.join("<br />")}
+        ${
+          notes.length > 0
+            ? `<p style="margin-bottom: 10px; line-height: 25px; white-space: pre-line;">${notes.join(
+                "<br />"
+              )}</p>`
+            : ""
+        }
+      </div>
       `;
     })
     .join("");
@@ -1052,7 +1093,8 @@ function createPractionerField(
   const practitioner = mappedPractitioners[practitionerRefId];
   const practitionerName =
     (practitioner?.name?.[0]?.given?.[0] ?? "") + " " + (practitioner?.name?.[0]?.family ?? "");
-  const practitionerTitle =  getValidCode(practitioner?.qualification?.[0]?.code?.coding)[0]?.display ?? "";
+  const practitionerTitle =
+    getValidCode(practitioner?.qualification?.[0]?.code?.coding)[0]?.display ?? "";
 
   const hasName = practitionerName.trim().length > 0;
   const hasTitle = practitionerTitle.trim().length > 0;
@@ -1228,7 +1270,10 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
       );
 
       const name =
-        idc10Code?.display ?? getValidCode(condition.code?.coding)[0]?.display ?? condition.code?.text ?? "";
+        idc10Code?.display ??
+        getValidCode(condition.code?.coding)[0]?.display ??
+        condition.code?.text ??
+        "";
       const onsetDateTime = condition.onsetDateTime ?? "";
       const clinicalStatus = getValidCode(condition.clinicalStatus?.coding)[0]?.display ?? "";
       let onsetStartTime = condition.onsetPeriod?.start ?? "";
@@ -1722,7 +1767,9 @@ function createVitalsByDate(observations: Observation[]): string {
 
           return `
             <tr>
-              <td>${getValidCode(observation.code?.coding)[0]?.display ?? observation.code?.text ?? ""}</td>
+              <td>${
+                getValidCode(observation.code?.coding)[0]?.display ?? observation.code?.text ?? ""
+              }</td>
               <td>${renderVitalsValue(observation)}</td>
               <td>${code ?? ""}</td>
             </tr>
@@ -1978,7 +2025,9 @@ function createOtherObservationsByDate(observations: Observation[]): string {
 
             return `
               <tr>
-                <td>${getValidCode(observation.code?.coding)[0]?.display ?? observation.code?.text ?? ""}</td>
+                <td>${
+                  getValidCode(observation.code?.coding)[0]?.display ?? observation.code?.text ?? ""
+                }</td>
                 <td>${observation.valueQuantity?.value ?? observation.valueString ?? ""}</td>
                 <td>${code ?? ""}</td>
               </tr>
@@ -2081,7 +2130,8 @@ function createFamilyHistorySection(familyMemberHistories: FamilyMemberHistory[]
     return (
       renderFamilyHistoryConditions(a)?.join(", ") ===
         renderFamilyHistoryConditions(b)?.join(", ") &&
-        getValidCode(a.relationship?.coding)[0]?.display === getValidCode(b.relationship?.coding)[0]?.display
+      getValidCode(a.relationship?.coding)[0]?.display ===
+        getValidCode(b.relationship?.coding)[0]?.display
     );
   });
 
@@ -2507,7 +2557,6 @@ function getADHDVisits(conditions: Condition[]) {
 function hasClinicalRelevantData(fhirTypes: FhirTypes): boolean {
   const hasValues: string[] = [];
 
-
   Object.entries(fhirTypes).forEach(([key, value]) => {
     const isNotRelatedPersons = key !== "relatedPersons";
     const isNotCoverages = key !== "coverages";
@@ -2525,6 +2574,11 @@ function getValidCode(coding: Coding[] | undefined): Coding[] {
   if (!coding) return [];
 
   return coding.filter(coding => {
-    return coding.code && coding.code !== UNK_CODE
-  })
+    return (
+      coding.code &&
+      coding.code !== UNK_CODE &&
+      coding.display &&
+      coding.display.toLowerCase() !== UNKNOWN_DISPLAY
+    );
+  });
 }

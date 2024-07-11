@@ -158,6 +158,13 @@ export class IHEStack extends Stack {
 
     const posthogSecretName = props.config.analyticsSecretNames?.POST_HOG_API_KEY_SECRET;
 
+    const iheRequestsBucket = new s3.Bucket(this, "IHERequestsBucket", {
+      bucketName: props.config.iheRequestsBucketName,
+      publicReadAccess: false,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      versioned: true,
+    });
+
     const patientDiscoveryLambdaV2 = this.setupPatientDiscoveryLambda({
       props,
       lambdaLayers,
@@ -165,6 +172,7 @@ export class IHEStack extends Stack {
       secrets,
       posthogSecretName,
       alarmSnsAction,
+      iheRequestsBucket,
     });
 
     const documentQueryLambdaV2 = this.setupDocumentQueryLambda({
@@ -175,6 +183,7 @@ export class IHEStack extends Stack {
       medicalDocumentsBucket,
       posthogSecretName,
       alarmSnsAction,
+      iheRequestsBucket,
     });
 
     const documentRetrievalLambdaV2 = this.setupDocumentRetrievalLambda({
@@ -185,6 +194,7 @@ export class IHEStack extends Stack {
       medicalDocumentsBucket,
       posthogSecretName,
       alarmSnsAction,
+      iheRequestsBucket,
     });
 
     apigw2.addRoutes({
@@ -226,6 +236,7 @@ export class IHEStack extends Stack {
     medicalDocumentsBucket,
     posthogSecretName,
     alarmSnsAction,
+    iheRequestsBucket,
   }: {
     props: IHEStackProps;
     lambdaLayers: LambdaLayers;
@@ -234,15 +245,18 @@ export class IHEStack extends Stack {
     medicalDocumentsBucket: s3.IBucket;
     posthogSecretName: string | undefined;
     alarmSnsAction?: SnsAction | undefined;
+    iheRequestsBucket: s3.IBucket;
   }): Lambda {
     const documentQueryLambda = createLambda({
       stack: this,
       name: "IHEInboundDocumentQueryV2",
       entry: "ihe-gateway-v2-inbound-document-query",
       layers: [lambdaLayers.shared],
+      memory: 1024,
       envType: props.config.environmentType,
       envVars: {
         MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
+        IHE_REQUESTS_BUCKET_NAME: iheRequestsBucket.bucketName,
         API_URL: props.config.loadBalancerDnsName,
         ...(props.config.engineeringCxId
           ? { ENGINEERING_CX_ID: props.config.engineeringCxId }
@@ -255,6 +269,7 @@ export class IHEStack extends Stack {
       version: props.version,
     });
 
+    iheRequestsBucket.grantReadWrite(documentQueryLambda);
     secrets[posthogSecretKey]?.grantRead(documentQueryLambda);
     medicalDocumentsBucket.grantReadWrite(documentQueryLambda);
     return documentQueryLambda;
@@ -268,6 +283,7 @@ export class IHEStack extends Stack {
     medicalDocumentsBucket,
     posthogSecretName,
     alarmSnsAction,
+    iheRequestsBucket,
   }: {
     props: IHEStackProps;
     lambdaLayers: LambdaLayers;
@@ -276,14 +292,17 @@ export class IHEStack extends Stack {
     medicalDocumentsBucket: s3.IBucket;
     posthogSecretName: string | undefined;
     alarmSnsAction?: SnsAction | undefined;
+    iheRequestsBucket: s3.IBucket;
   }): Lambda {
     const documentRetrievalLambda = createLambda({
       stack: this,
       name: "IHEInboundDocumentRetrievalV2",
       entry: "ihe-gateway-v2-inbound-document-retrieval",
       layers: [lambdaLayers.shared],
+      memory: 1024,
       envType: props.config.environmentType,
       envVars: {
+        IHE_REQUESTS_BUCKET_NAME: iheRequestsBucket.bucketName,
         MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
         ...(props.config.engineeringCxId
           ? { ENGINEERING_CX_ID: props.config.engineeringCxId }
@@ -296,6 +315,7 @@ export class IHEStack extends Stack {
       version: props.version,
     });
 
+    iheRequestsBucket.grantReadWrite(documentRetrievalLambda);
     secrets[posthogSecretKey]?.grantRead(documentRetrievalLambda);
     medicalDocumentsBucket.grantRead(documentRetrievalLambda);
     return documentRetrievalLambda;
@@ -308,6 +328,7 @@ export class IHEStack extends Stack {
     secrets,
     posthogSecretName,
     alarmSnsAction,
+    iheRequestsBucket,
   }: {
     props: IHEStackProps;
     lambdaLayers: LambdaLayers;
@@ -315,14 +336,17 @@ export class IHEStack extends Stack {
     secrets: Secrets;
     posthogSecretName: string | undefined;
     alarmSnsAction?: SnsAction | undefined;
+    iheRequestsBucket: s3.IBucket;
   }): Lambda {
     const patientDiscoveryLambda = createLambda({
       stack: this,
       name: "IHEInboundPatientDiscoveryV2",
       entry: "ihe-gateway-v2-inbound-patient-discovery",
       layers: [lambdaLayers.shared],
+      memory: 1024,
       envType: props.config.environmentType,
       envVars: {
+        IHE_REQUESTS_BUCKET_NAME: iheRequestsBucket.bucketName,
         API_URL: props.config.loadBalancerDnsName,
         ...(props.config.engineeringCxId
           ? { ENGINEERING_CX_ID: props.config.engineeringCxId }
@@ -335,6 +359,7 @@ export class IHEStack extends Stack {
       version: props.version,
     });
 
+    iheRequestsBucket.grantReadWrite(patientDiscoveryLambda);
     secrets[posthogSecretKey]?.grantRead(patientDiscoveryLambda);
 
     return patientDiscoveryLambda;

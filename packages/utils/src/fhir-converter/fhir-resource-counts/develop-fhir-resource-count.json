@@ -1,5 +1,5 @@
 {
-  "total": 373712,
+  "total": 369685,
   "countPerType": {
     "AllergyIntolerance": 819,
     "Composition": 9445,
@@ -10,9 +10,9 @@
     "FamilyMemberHistory": 774,
     "Medication": 12384,
     "MedicationStatement": 8354,
-    "Observation": 165048,
+    "Observation": 160685,
     "Organization": 14764,
-    "Practitioner": 52082,
+    "Practitioner": 52418,
     "RelatedPerson": 12260,
     "DiagnosticReport": 27627,
     "Encounter": 10420,
