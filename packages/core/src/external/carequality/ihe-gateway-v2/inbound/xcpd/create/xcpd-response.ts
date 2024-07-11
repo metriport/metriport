@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import {
   InboundPatientDiscoveryResp,
   InboundPatientDiscoveryReq,
-  isSuccessfulPatientDiscoveryResponse,
+  isSuccessfulInboundPatientDiscoveryResponse,
 } from "@metriport/ihe-gateway-sdk";
 import { createSecurityHeader } from "../../shared";
 import { queryResponseCodes, ackCodes, xmlBuilderAttributes } from "../../../shared";
@@ -96,7 +96,7 @@ function createQueryByParameter(request: InboundPatientDiscoveryReq): object {
 
 function createSubjectAndRegistrationEvent(response: InboundPatientDiscoveryResp): object {
   const externalGatewayPatient = response.externalGatewayPatient;
-  const patientResource = isSuccessfulPatientDiscoveryResponse(response)
+  const patientResource = isSuccessfulInboundPatientDiscoveryResponse(response)
     ? response.patientResource
     : undefined;
   if (!patientResource) {

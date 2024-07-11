@@ -26,6 +26,7 @@ import {
   getPatientResources,
   patientResourceToNormalizedLinkDemographics,
 } from "./patient-demographics";
+import { getOutboundPatientDiscoverySuccessFailureCount } from "../hie/get-counts-analytics";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 
 dayjs.extend(duration);
@@ -42,6 +43,7 @@ export async function processOutboundPatientDiscoveryResps({
   const { log } = out(`${baseLogMessage}, requestId: ${requestId}`);
   const { log: outerLog } = out(baseLogMessage);
   const patientIds = { id: patientId, cxId };
+  const { successCount, failureCount } = getOutboundPatientDiscoverySuccessFailureCount(results);
 
   try {
     const patient = await getPatientOrFail({ id: patientId, cxId });
@@ -97,6 +99,8 @@ export async function processOutboundPatientDiscoveryResps({
         requestId,
         pdLinks: cqLinks.length,
         duration: elapsedTimeFromNow(discoveryParams.startedAt),
+        successCount,
+        failureCount,
       },
     });
 

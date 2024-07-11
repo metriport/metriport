@@ -1,8 +1,10 @@
 import {
+  OutboundPatientDiscoveryResp,
   OutboundDocumentQueryResp,
   OutboundDocumentRetrievalResp,
   isSuccessfulOutboundDocQueryResponse,
   isSuccessfulOutboundDocRetrievalResponse,
+  isNonErroringOutboundPatientDiscoveryResponse,
 } from "@metriport/ihe-gateway-sdk";
 
 export function getDocumentReferenceContentTypeCounts(
@@ -15,6 +17,25 @@ export function getDocumentReferenceContentTypeCounts(
   }, {} as Record<string, number>);
 
   return contentTypeCounts;
+}
+
+export function getOutboundPatientDiscoverySuccessFailureCount(
+  response: OutboundPatientDiscoveryResp[]
+): {
+  successCount: number;
+  failureCount: number;
+} {
+  let successCount = 0;
+  let failureCount = 0;
+  for (const result of response) {
+    if (isNonErroringOutboundPatientDiscoveryResponse(result)) {
+      successCount++;
+    } else {
+      failureCount++;
+    }
+  }
+
+  return { successCount, failureCount };
 }
 
 export function getOutboundDocQuerySuccessFailureCount(response: OutboundDocumentQueryResp[]): {
