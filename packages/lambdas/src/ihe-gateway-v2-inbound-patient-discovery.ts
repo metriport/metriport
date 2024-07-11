@@ -29,7 +29,10 @@ export async function handler(event: APIGatewayProxyEventV2) {
     if (!event.body) return buildResponse(400, { message: "The request body is empty" });
 
     try {
-      const pdRequest: InboundPatientDiscoveryReq = await processInboundXcpdRequest(event.body);
+      const body = event.isBase64Encoded
+        ? Buffer.from(event.body, "base64").toString()
+        : event.body;
+      const pdRequest: InboundPatientDiscoveryReq = await processInboundXcpdRequest(body);
       const result: InboundPatientDiscoveryResp = await processInboundXcpd(pdRequest, mpi);
       const xmlResponse = createInboundXcpdResponse({
         request: pdRequest,
