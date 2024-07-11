@@ -80,6 +80,12 @@ export function isSuccessfulInboundPatientDiscoveryResponse(
   return "patientResource" in response;
 }
 
+export function isSuccessfulOutboundPatientDiscoveryResponse(
+  response: OutboundPatientDiscoveryResp
+): response is OutboundPatientDiscoveryRespSuccessfulSchema {
+  return "patientResource" in response;
+}
+
 export function isNonErroringOutboundPatientDiscoveryResponse(
   response: OutboundPatientDiscoveryResp
 ): response is OutboundPatientDiscoveryResp {

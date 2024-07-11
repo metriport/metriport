@@ -5,9 +5,24 @@ import {
   isSuccessfulOutboundDocQueryResponse,
   isSuccessfulOutboundDocRetrievalResponse,
   isNonErroringOutboundPatientDiscoveryResponse,
+  isSuccessfulOutboundPatientDiscoveryResponse,
 } from "@metriport/ihe-gateway-sdk";
 
 import { httpErrorCode, schemaErrorCode } from "@metriport/core/external/carequality/error";
+
+export type GatewayCounts = {
+  ehealthexchange: number;
+  epic: number;
+  allscripts: number;
+  ntst: number;
+  redox: number;
+  surescripts: number;
+  athena: number;
+  nextgen: number;
+  kno2: number;
+  medent: number;
+  healthgorilla: number;
+};
 
 export function getDocumentReferenceContentTypeCounts(
   docRefsContentTypes: string[]
@@ -19,6 +34,46 @@ export function getDocumentReferenceContentTypeCounts(
   }, {} as Record<string, number>);
 
   return contentTypeCounts;
+}
+
+// ehex, epic, allscripts, ntst, redox, surescripts, athena, nextgen,
+// kno2, medent, healthgorilla,
+
+export function determinePatientDiscoverySuccessGateway(
+  response: OutboundPatientDiscoveryResp
+): GatewayCounts {
+  const gateways = [
+    "ehealthexchange",
+    "epic",
+    "allscripts",
+    "ntst",
+    "redox",
+    "surescripts",
+    "athena",
+    "nextgen",
+    "kno2",
+    "medent",
+    "healthgorilla",
+  ];
+
+  const result = gateways.reduce((acc, gateway) => {
+    acc[gateway] = response.gateway.url.includes(gateway);
+    return acc;
+  }, {} as Record<string, boolean>);
+
+  return {
+    ehealthexchange: result.ehealthexchange ? 1 : 0,
+    epic: result.epic ? 1 : 0,
+    allscripts: result.allscripts ? 1 : 0,
+    ntst: result.ntst ? 1 : 0,
+    redox: result.redox ? 1 : 0,
+    surescripts: result.surescripts ? 1 : 0,
+    athena: result.athena ? 1 : 0,
+    nextgen: result.nextgen ? 1 : 0,
+    kno2: result.kno2 ? 1 : 0,
+    medent: result.medent ? 1 : 0,
+    healthgorilla: result.healthgorilla ? 1 : 0,
+  };
 }
 
 export function determinePatientDiscoveryFailureType(response: OutboundPatientDiscoveryResp): {
@@ -44,26 +99,49 @@ export function determinePatientDiscoveryFailureType(response: OutboundPatientDi
 export function getOutboundPatientDiscoverySuccessFailureCount(
   response: OutboundPatientDiscoveryResp[]
 ): {
-  successCount: number;
-  failureCount: number;
+  nonErrorCount: number;
+  errorCount: number;
   httpErrorCount: number;
   schemaErrorCount: number;
   specificErrorCount: number;
+  gatewayCounts: GatewayCounts;
 } {
-  let successCount = 0;
-  let failureCount = 0;
+  let nonErrorCount = 0;
+  let errorCount = 0;
   let httpErrorCount = 0;
   let schemaErrorCount = 0;
   let specificErrorCount = 0;
+  const gatewayCounts = {
+    ehealthexchange: 0,
+    epic: 0,
+    allscripts: 0,
+    ntst: 0,
+    redox: 0,
+    surescripts: 0,
+    athena: 0,
+    nextgen: 0,
+    kno2: 0,
+    medent: 0,
+    healthgorilla: 0,
+  };
+
   for (const result of response) {
     if (isNonErroringOutboundPatientDiscoveryResponse(result)) {
-      successCount++;
+      nonErrorCount++;
+      if (isSuccessfulOutboundPatientDiscoveryResponse(result)) {
+        const successGateways = determinePatientDiscoverySuccessGateway(result);
+        for (const gateway of Object.keys(successGateways) as (keyof GatewayCounts)[]) {
+          if (successGateways[gateway]) {
+            gatewayCounts[gateway]++;
+          }
+        }
+      }
     } else {
-      const failureType = determinePatientDiscoveryFailureType(result);
-      failureCount++;
-      if (failureType.httpError) {
+      const errorType = determinePatientDiscoveryFailureType(result);
+      errorCount++;
+      if (errorType.httpError) {
         httpErrorCount++;
-      } else if (failureType.schemaError) {
+      } else if (errorType.schemaError) {
         schemaErrorCount++;
       } else {
         specificErrorCount++;
@@ -71,7 +149,14 @@ export function getOutboundPatientDiscoverySuccessFailureCount(
     }
   }
 
-  return { successCount, failureCount, httpErrorCount, schemaErrorCount, specificErrorCount };
+  return {
+    nonErrorCount,
+    errorCount,
+    httpErrorCount,
+    schemaErrorCount,
+    specificErrorCount,
+    gatewayCounts,
+  };
 }
 
 export function getOutboundDocQuerySuccessFailureCount(response: OutboundDocumentQueryResp[]): {
