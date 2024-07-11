@@ -15,9 +15,9 @@ export function transformIti55RequestToPatientResource(
   const queryParams =
     iti55Request.Envelope.Body.PRPA_IN201305UV02.controlActProcess.queryByParameter.parameterList;
 
-  const name = toArray(queryParams.livingSubjectName.value).map(name => ({
-    family: extractText(name.family),
-    given: toArray(name.given).map(extractText),
+  const name = toArray(queryParams.livingSubjectName).map(name => ({
+    family: extractText(name.value.family),
+    given: toArray(name.value.given).map(extractText),
   }));
 
   const address = toArray(queryParams.patientAddress?.value).map(addr => ({
@@ -84,7 +84,7 @@ export async function processInboundXcpdRequest(
     return inboundRequest;
   } catch (error) {
     const msg = "Failed to parse ITI-55 request";
-    log(`${msg}: Error - ${errorToString(error)}`);
+    log(`${msg}: Error - ${errorToString(error)}, iti55Request: ${JSON.stringify(jsonObj)}`);
     throw new Error(`${msg}: ${error}`);
   }
 }
