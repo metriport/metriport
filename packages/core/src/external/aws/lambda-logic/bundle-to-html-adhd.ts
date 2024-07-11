@@ -32,7 +32,8 @@ const ICD_10_CODE = "icd-10";
 const LOINC_CODE = "loinc";
 const MEDICARE_CODE = "medicare";
 const CPT_CODE = "cpt";
-const UNK_CODE = 'UNK';
+const UNK_CODE = "UNK";
+const UNKNOWN_DISPLAY = "unknown";
 
 export const bundleToHtmlADHD = (fhirBundle: Bundle): string => {
   const fhirTypes = extractFhirTypesFromBundle(fhirBundle);
@@ -851,7 +852,10 @@ function buildReports(
       );
 
       const name =
-        idc10Code?.display ?? getValidCode(condition?.code?.coding)[0]?.display ?? condition?.code?.text ?? "";
+        idc10Code?.display ??
+        getValidCode(condition?.code?.coding)[0]?.display ??
+        condition?.code?.text ??
+        "";
 
       return `
         <div id="report">
@@ -1052,7 +1056,8 @@ function createPractionerField(
   const practitioner = mappedPractitioners[practitionerRefId];
   const practitionerName =
     (practitioner?.name?.[0]?.given?.[0] ?? "") + " " + (practitioner?.name?.[0]?.family ?? "");
-  const practitionerTitle =  getValidCode(practitioner?.qualification?.[0]?.code?.coding)[0]?.display ?? "";
+  const practitionerTitle =
+    getValidCode(practitioner?.qualification?.[0]?.code?.coding)[0]?.display ?? "";
 
   const hasName = practitionerName.trim().length > 0;
   const hasTitle = practitionerTitle.trim().length > 0;
@@ -1228,7 +1233,10 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
       );
 
       const name =
-        idc10Code?.display ?? getValidCode(condition.code?.coding)[0]?.display ?? condition.code?.text ?? "";
+        idc10Code?.display ??
+        getValidCode(condition.code?.coding)[0]?.display ??
+        condition.code?.text ??
+        "";
       const onsetDateTime = condition.onsetDateTime ?? "";
       const clinicalStatus = getValidCode(condition.clinicalStatus?.coding)[0]?.display ?? "";
       let onsetStartTime = condition.onsetPeriod?.start ?? "";
@@ -1722,7 +1730,9 @@ function createVitalsByDate(observations: Observation[]): string {
 
           return `
             <tr>
-              <td>${getValidCode(observation.code?.coding)[0]?.display ?? observation.code?.text ?? ""}</td>
+              <td>${
+                getValidCode(observation.code?.coding)[0]?.display ?? observation.code?.text ?? ""
+              }</td>
               <td>${renderVitalsValue(observation)}</td>
               <td>${code ?? ""}</td>
             </tr>
@@ -1978,7 +1988,9 @@ function createOtherObservationsByDate(observations: Observation[]): string {
 
             return `
               <tr>
-                <td>${getValidCode(observation.code?.coding)[0]?.display ?? observation.code?.text ?? ""}</td>
+                <td>${
+                  getValidCode(observation.code?.coding)[0]?.display ?? observation.code?.text ?? ""
+                }</td>
                 <td>${observation.valueQuantity?.value ?? observation.valueString ?? ""}</td>
                 <td>${code ?? ""}</td>
               </tr>
@@ -2081,7 +2093,8 @@ function createFamilyHistorySection(familyMemberHistories: FamilyMemberHistory[]
     return (
       renderFamilyHistoryConditions(a)?.join(", ") ===
         renderFamilyHistoryConditions(b)?.join(", ") &&
-        getValidCode(a.relationship?.coding)[0]?.display === getValidCode(b.relationship?.coding)[0]?.display
+      getValidCode(a.relationship?.coding)[0]?.display ===
+        getValidCode(b.relationship?.coding)[0]?.display
     );
   });
 
@@ -2507,7 +2520,6 @@ function getADHDVisits(conditions: Condition[]) {
 function hasClinicalRelevantData(fhirTypes: FhirTypes): boolean {
   const hasValues: string[] = [];
 
-
   Object.entries(fhirTypes).forEach(([key, value]) => {
     const isNotRelatedPersons = key !== "relatedPersons";
     const isNotCoverages = key !== "coverages";
@@ -2525,6 +2537,11 @@ function getValidCode(coding: Coding[] | undefined): Coding[] {
   if (!coding) return [];
 
   return coding.filter(coding => {
-    return coding.code && coding.code !== UNK_CODE
-  })
+    return (
+      coding.code &&
+      coding.code !== UNK_CODE &&
+      coding.display &&
+      coding.display.toLowerCase() !== UNKNOWN_DISPLAY
+    );
+  });
 }
