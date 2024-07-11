@@ -21,13 +21,11 @@ export const QueryByParameterSchema = z.object({
           _code: genderCodeSchema,
         })
         .optional(),
-      semanticsText: z.literal("LivingSubject.administrativeGender"),
     }),
     livingSubjectBirthTime: z.object({
       value: z.object({
         _value: z.string(),
       }),
-      semanticsText: z.literal("LivingSubject.birthTime"),
     }),
     livingSubjectId: z
       .object({
@@ -37,19 +35,16 @@ export const QueryByParameterSchema = z.object({
             _root: z.string(),
           })
         ).optional(),
-        semanticsText: z.literal("LivingSubject.id"),
       })
       .optional(),
     livingSubjectName: schemaOrArray(
       z.object({
         value: nameSchema,
-        semanticsText: z.literal("LivingSubject.name").optional(),
       })
     ),
     patientAddress: z
       .object({
         value: schemaOrArrayOrEmpty(addressSchema).optional(),
-        semanticsText: z.literal("Patient.addr").optional(),
       })
       .optional(),
     patientTelecom: z
@@ -59,7 +54,6 @@ export const QueryByParameterSchema = z.object({
             _value: z.string(),
           })
         ).optional(),
-        semanticsText: z.literal("Patient.telecom"),
       })
       .optional(),
     principalCareProviderId: z
@@ -70,7 +64,6 @@ export const QueryByParameterSchema = z.object({
             _root: z.string(),
           })
         ).optional(),
-        semanticsText: z.literal("AssignedProvider.id"),
       })
       .optional(),
   }),

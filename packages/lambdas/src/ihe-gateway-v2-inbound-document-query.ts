@@ -21,7 +21,10 @@ export async function handler(event: APIGatewayProxyEventV2) {
   try {
     if (!event.body) return buildResponse(400, { message: "The request body is empty" });
     try {
-      const dqRequest: InboundDocumentQueryReq = await processInboundDqRequest(event.body);
+      const body = event.isBase64Encoded
+        ? Buffer.from(event.body, "base64").toString()
+        : event.body;
+      const dqRequest: InboundDocumentQueryReq = await processInboundDqRequest(body);
       const result: InboundDocumentQueryResp = await processInboundDq(dqRequest, apiUrl);
       const xmlResponse = createInboundDqResponse(result);
 
