@@ -72,8 +72,6 @@ export class APIStack extends Stack {
     const awsAccount = props.env?.account;
     if (!awsAccount) throw new Error("Missing AWS account");
 
-    this.terminationProtection = true;
-
     //-------------------------------------------
     // Secrets
     //-------------------------------------------

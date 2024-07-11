@@ -10,9 +10,6 @@ interface LocationServicesStackProps extends StackProps {
 export class LocationServicesStack extends Stack {
   constructor(scope: Construct, id: string, props: LocationServicesStackProps) {
     super(scope, id, props);
-
-    this.terminationProtection = true;
-
     //-------------------------------------------
     // API Gateway
     //-------------------------------------------
