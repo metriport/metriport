@@ -234,11 +234,12 @@ var getDateTime = function (dateTimeString) {
     return new Date(date + " " + time + " " + timezone).toISOString();
   }
 
-  if (ds.length <= 8) return convertDate(ds);
-
   // Padding 0s to 17 digits
   dateTimeComposition = getDateTimeComposition(ds);
-  if (!validUTCDateTime(dateTimeComposition)) throw `Invalid datetime: ${ds}`;
+  if (!validUTCDateTime(dateTimeComposition)) {
+    console.log( `Invalid datetime: ${ds}`);
+    return '';
+  }
   return new Date(
     Date.UTC(
       dateTimeComposition.year,
@@ -1356,6 +1357,33 @@ module.exports.external = [
     },
   },
   {
+    name: "buildPresentedForm",
+    description: "Builds a presented form array",
+    func: function (b64String, component) {
+      const presentedForm = [];
+      if (b64String) {
+        presentedForm.push({
+          contentType: "text/html",
+          data: b64String,
+        });
+      }
+      if (component) {
+        const components = Array.isArray(component) ? component : [component];
+        components.forEach(comp => {
+          const obsValueB64 = comp.observation?.value?._b64;
+          if (obsValueB64) {
+            presentedForm.push({
+              contentType: "text/html",
+              data: obsValueB64,
+            });
+          }
+        });
+      }
+      if (presentedForm.length === 0) return undefined;
+      return JSON.stringify(presentedForm);
+    },
+  },
+  {
     name: "extractDecimal",
     description:
       "Returns true if following the FHIR decimal specification: https://www.hl7.org/fhir/R4/datatypes.html#decimal ",
@@ -1370,7 +1398,7 @@ module.exports.external = [
         const leadsWithDecimal = decimal.startsWith(".");
 
         if (leadsWithDecimal) {
-          return  parseFloat(`0${decimal}`);
+          return parseFloat(`0${decimal}`);
         }
 
         return parseFloat(decimal);
@@ -1499,6 +1527,13 @@ module.exports.external = [
         }
       }
       return false;
+    },
+  },
+  {
+    name: "startDateLteEndDate",
+    description: "Checks if the start date is less than or equal to the end date.",
+    func: function (v1, v2) {
+      return new Date(getDateTime(v1)).getTime() <= new Date(getDateTime(v2)).getTime();
     },
   },
 ];

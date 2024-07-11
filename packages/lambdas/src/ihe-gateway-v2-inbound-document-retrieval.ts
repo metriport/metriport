@@ -41,7 +41,9 @@ export async function handler(event: APIGatewayProxyEventV2) {
       }
       const soapData = mtomParts.parts[0]?.body || Buffer.from("");
 
-      const drRequest: InboundDocumentRetrievalReq = processInboundDrRequest(soapData.toString());
+      const drRequest: InboundDocumentRetrievalReq = await processInboundDrRequest(
+        soapData.toString()
+      );
       const result: InboundDocumentRetrievalResp = await processInboundDr(drRequest);
       const xmlResponse = await createInboundDrResponse(result);
 
@@ -66,11 +68,11 @@ export async function handler(event: APIGatewayProxyEventV2) {
 
       return buildResponse(200, xmlResponse);
     } catch (error) {
-      log(`Error processing event on ${lambdaName}: ${errorToString(error)}`);
-      return buildResponse(400, error);
+      log(`Client error on ${lambdaName}: ${errorToString(error)}`);
+      return buildResponse(400, "Schema Validation Error");
     }
   } catch (error) {
-    const msg = "Error processing event on " + lambdaName;
+    const msg = "Server error processing event on " + lambdaName;
     log(`${msg}: ${errorToString(error)}`);
     return buildResponse(500, "Internal Server Error");
   }
