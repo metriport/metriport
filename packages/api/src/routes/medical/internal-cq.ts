@@ -255,7 +255,8 @@ router.put(
 /**
  * PUT /internal/carequality/directory/facility/v2/:oid
  *
- * Creates or updates the facility in the Carequality Directory.
+ * Updates the facility in the Carequality Directory.
+ * @param req.params.oid The OID of the facility to update.
  */
 router.put(
   "/directory/facility/v2/:oid",
