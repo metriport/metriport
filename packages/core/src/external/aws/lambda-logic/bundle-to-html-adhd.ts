@@ -33,6 +33,7 @@ const LOINC_CODE = "loinc";
 const MEDICARE_CODE = "medicare";
 const CPT_CODE = "cpt";
 const UNK_CODE = "UNK";
+const UNKNOWN_DISPLAY = "unknown";
 
 export const bundleToHtmlADHD = (fhirBundle: Bundle): string => {
   const fhirTypes = extractFhirTypesFromBundle(fhirBundle);
@@ -2573,6 +2574,11 @@ function getValidCode(coding: Coding[] | undefined): Coding[] {
   if (!coding) return [];
 
   return coding.filter(coding => {
-    return coding.code && coding.code !== UNK_CODE;
+    return (
+      coding.code &&
+      coding.code !== UNK_CODE &&
+      coding.display &&
+      coding.display.toLowerCase() !== UNKNOWN_DISPLAY
+    );
   });
 }
