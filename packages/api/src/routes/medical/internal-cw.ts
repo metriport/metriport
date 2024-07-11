@@ -2,8 +2,12 @@ import NotFoundError from "@metriport/core/util/error/not-found";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { verifyCxProviderAccess } from "../../command/medical/facility/verify-access";
+import {
+  verifyCxProviderAccess,
+  verifyCxItVendorAccess,
+} from "../../command/medical/facility/verify-access";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
+import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import { createOrUpdateCWOrganization } from "../../external/commonwell/command/create-or-update-cw-organization";
 import { get as getCWOgranization, parseCWEntry } from "../../external/commonwell/organization";
 import { cwOrgActiveSchema } from "../../external/commonwell/shared";
@@ -61,6 +65,47 @@ router.put(
     });
     await org.update({
       cwActive: orgActive.active,
+    });
+
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * PUT /internal/carequality/directory/facility/v2/:oid
+ *
+ * Creates or updates the facility in the Carequality Directory.
+ */
+router.put(
+  "/facility/v2/:oid",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    await verifyCxItVendorAccess(cxId);
+    const facilityId = getFrom("query").orFail("facilityId", req);
+    const oid = getFrom("params").orFail("oid", req);
+
+    const org = await getOrganizationOrFail({ cxId });
+    const facility = await getFacilityOrFail({ cxId, id: facilityId });
+    if (facility.oid !== oid) throw new NotFoundError("Facility not found");
+
+    const resp = await getCWOgranization(oid);
+    if (!resp) throw new NotFoundError("Facility not found");
+    const cwOrg = parseCWEntry(resp);
+
+    const facilityActive = cwOrgActiveSchema.parse(req.body);
+
+    await createOrUpdateCWOrganization(cxId, {
+      oid: facility.oid,
+      data: {
+        name: cwOrg.data.name,
+        type: org.data.type,
+        location: facility.data.address,
+      },
+      active: facilityActive.active,
+    });
+    await facility.update({
+      cqActive: facilityActive.active,
     });
 
     return res.sendStatus(httpStatus.OK);

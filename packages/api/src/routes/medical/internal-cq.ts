@@ -18,11 +18,19 @@ import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { uniqBy } from "lodash";
 import multer from "multer";
-import { verifyCxProviderAccess } from "../../command/medical/facility/verify-access";
+import {
+  verifyCxProviderAccess,
+  verifyCxItVendorAccess,
+} from "../../command/medical/facility/verify-access";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
+import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import { makeCarequalityManagementAPI } from "../../external/carequality/api";
 import { bulkInsertCQDirectoryEntries } from "../../external/carequality/command/cq-directory/create-cq-directory-entry";
+import {
+  metriportIntermediaryOid,
+  metriportOid,
+} from "../../external/carequality/command/cq-directory/create-or-update-cq-facility";
 import { createOrUpdateCQOrganization } from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
 import { parseCQDirectoryEntries } from "../../external/carequality/command/cq-directory/parse-cq-directory-entry";
 import { rebuildCQDirectory } from "../../external/carequality/command/cq-directory/rebuild-cq-directory";
@@ -210,12 +218,11 @@ router.put(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const orgId = getFrom("query").orFail("orgId", req);
     await verifyCxProviderAccess(cxId);
 
     const orgActive = cqOrgActiveSchema.parse(req.body);
 
-    const org = await getOrganizationOrFail({ cxId, id: orgId });
+    const org = await getOrganizationOrFail({ cxId });
     const { coordinates } = await getAddressWithCoordinates(org.data.location, cxId);
     const address = org.data.location;
     const addressLine = address.addressLine2
@@ -230,15 +237,85 @@ router.put(
       state: address.state,
       postalCode: address.zip,
       oid: org.oid,
-      organizationBizType: org.type,
       contactName: metriportCompanyDetails.name,
       phone: metriportCompanyDetails.phone,
       email: metriportEmailForCq,
+      organizationBizType: org.type,
       active: orgActive.active,
       role: "Connection" as const,
     });
     await org.update({
       cqActive: orgActive.active,
+    });
+
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * PUT /internal/carequality/directory/facility/v2/:oid
+ *
+ * Creates or updates the facility in the Carequality Directory.
+ */
+router.put(
+  "/directory/facility/v2/:oid",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
+    const cq = makeCarequalityManagementAPI();
+    if (!cq) throw new Error("Carequality API not initialized");
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    await verifyCxItVendorAccess(cxId);
+    const facilityId = getFrom("query").orFail("facilityId", req);
+    const oid = getFrom("params").orFail("oid", req);
+
+    const org = await getOrganizationOrFail({ cxId });
+    const facility = await getFacilityOrFail({ cxId, id: facilityId });
+    if (facility.oid !== oid) throw new NotFoundError("Facility not found");
+
+    const resp = await cq.listOrganizations({ count: 1, oid });
+    if (resp.length === 0) throw new NotFoundError("Facility not found");
+    const cqOrgs = parseCQDirectoryEntries(resp);
+    const cqOrg = cqOrgs[0];
+
+    if (cqOrgs.length > 1) {
+      capture.message("More than one organization with the same OID found in the CQ directory", {
+        extra: {
+          facilityId: facility.id,
+          facilityOid: facility.oid,
+          context: `cq.facility.directory`,
+        },
+      });
+    }
+
+    const facilityActive = cqOrgActiveSchema.parse(req.body);
+
+    const { coordinates } = await getAddressWithCoordinates(facility.data.address, cxId);
+    const address = facility.data.address;
+    const addressLine = address.addressLine2
+      ? `${address.addressLine1}, ${address.addressLine2}`
+      : address.addressLine1;
+
+    if (!cqOrg.name) throw new NotFoundError("CQ org name is not set - cannot update");
+    await createOrUpdateCQOrganization({
+      name: cqOrg.name,
+      addressLine1: addressLine,
+      lat: coordinates.lat.toString(),
+      lon: coordinates.lon.toString(),
+      city: address.city,
+      state: address.state,
+      postalCode: address.zip,
+      oid: facility.oid,
+      contactName: metriportCompanyDetails.name,
+      phone: metriportCompanyDetails.phone,
+      email: metriportEmailForCq,
+      organizationBizType: org.type,
+      active: facilityActive.active,
+      parentOrgOid: facility.cqOboOid ? metriportIntermediaryOid : metriportOid,
+      role: "Connection" as const,
+    });
+    await facility.update({
+      cqActive: facilityActive.active,
     });
 
     return res.sendStatus(httpStatus.OK);

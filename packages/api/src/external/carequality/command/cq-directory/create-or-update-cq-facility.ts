@@ -7,8 +7,8 @@ import { buildCqOrgNameForFacility } from "../../shared";
 import { Config } from "../../../../shared/config";
 import { getAddressWithCoordinates } from "../../../../domain/medical/address";
 
-const metriportOid = Config.getSystemRootOID();
-const metriportIntermediaryOid = `${metriportOid}.666`;
+export const metriportOid = Config.getSystemRootOID();
+export const metriportIntermediaryOid = `${metriportOid}.666`;
 
 export async function createOrUpdateFacilityInCq({
   cxId,
