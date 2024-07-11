@@ -160,9 +160,13 @@ var convertDate = function (dateString) {
   throw `Bad input for Date type in ${dateString}`;
 };
 
+/**
+ * Checks if the given dateTimeString is already in the valid format YYYY-MM-DD.
+ * @param {string} dateTimeString - The date-time string to validate.
+ * @returns {boolean} - Returns true if the dateTimeString is in the valid format, otherwise false.
+ */
 var alreadyValidDateTime = function (dateTimeString) {
   if (!dateTimeString || dateTimeString.toString() === "") return false;
-  // Match the format YYYY-MM-DD
   var ds = dateTimeString.toString();
   return /^\d{4}-\d{2}-\d{2}$/.test(ds);
 };
