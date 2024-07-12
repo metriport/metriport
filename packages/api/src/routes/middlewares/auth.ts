@@ -52,7 +52,7 @@ export function getCxIdFromJwt(req: Request): string {
   const rawToken = jwt.decode(jwtStr);
   if (!rawToken) throw new Error("Invalid token");
   const token = (typeof rawToken === "string" ? JSON.parse(rawToken) : rawToken) as jwt.JwtPayload;
-  const cxId = token["cognito:username"] ?? token["cxId"];
+  const cxId = token["name"] ?? token["sub"];
   if (!isValidCxId(cxId)) throw new Error("Invalid cxId");
   return cxId;
 }
