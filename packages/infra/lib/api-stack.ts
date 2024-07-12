@@ -214,6 +214,9 @@ export class APIStack extends Stack {
       slackNotification?.alarmAction
     );
 
+    const dbSecretArn = dbCredsSecret.secretArn;
+    const dbClusterArn = dbCluster.clusterArn;
+
     //----------------------------------------------------------
     // DynamoDB
     //----------------------------------------------------------
@@ -460,6 +463,8 @@ export class APIStack extends Stack {
         envType: props.config.environmentType,
         sentryDsn: props.config.lambdasSentryDSN,
         iheResponsesBucketName: props.config.iheResponsesBucketName,
+        dbSecretArn,
+        dbClusterArn,
       });
     }
 

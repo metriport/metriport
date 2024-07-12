@@ -24,6 +24,8 @@ interface IHEGatewayV2LambdasNestedStackProps extends NestedStackProps {
   envType: EnvType;
   sentryDsn: string | undefined;
   iheResponsesBucketName: string;
+  dbSecretArn: string;
+  dbClusterArn: string;
 }
 
 export class IHEGatewayV2LambdasNestedStack extends NestedStack {
@@ -294,25 +296,21 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
   private setupMockDirectDbClient(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
-    secrets: Secrets;
-    cqOrgCertificate: string | undefined;
-    cqOrgPrivateKey: string | undefined;
-    cqOrgPrivateKeyPassword: string | undefined;
-    cqOrgCertificateIntermediate: string | undefined;
-    cqTrustBundleBucket: s3.IBucket;
-    medicalDocumentsBucket: s3.Bucket;
-    apiURL: string;
     envType: EnvType;
-    sentryDsn: string | undefined;
+    dbClusterArn: string;
+    dbSecretArn: string;
   }): Lambda {
-    const { lambdaLayers, vpc, envType } = ownProps;
+    const { lambdaLayers, vpc, envType, dbClusterArn, dbSecretArn } = ownProps;
 
     const mockDbClientLambda = createLambda({
       stack: this,
       name: "IHEGatewayV2MockDbClient",
       entry: "ihe-gateway-v2-mock-db-client",
       envType: envType,
-      envVars: {},
+      envVars: {
+        DB_RESOURCE_ARN: dbClusterArn,
+        DB_SECRET_ARN: dbSecretArn,
+      },
       layers: [lambdaLayers.shared],
       memory: 1024,
       timeout: Duration.minutes(15),
