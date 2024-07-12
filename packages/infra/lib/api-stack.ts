@@ -200,9 +200,12 @@ export class APIStack extends Stack {
             minCapacity: dbConfig.minCapacity,
             maxCapacity: dbConfig.maxCapacity,
           };
+          // see @https://github.com/aws/aws-cdk/issues/28574
+          node.addOverride("Properties.EnableHttpEndpoint", true);
         }
       },
     });
+
     addDBClusterPerformanceAlarms(
       this,
       dbCluster,
