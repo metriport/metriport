@@ -1,5 +1,6 @@
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
+import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE, XML_APP_MIME_TYPE } from "@metriport/core/util/mime";
 import {
   errorToString,
   executeWithNetworkRetries,
@@ -167,9 +168,6 @@ export async function handler(event: SQSEvent) {
 
       log(`Body: ${message.body}`);
       const { s3BucketName, s3FileName, documentExtension } = parseBody(message.body);
-      const preConversionFilename = `${message.messageId}.pre-conversion.xml`;
-      const conversionResultFilename = `${s3FileName}.from_converter.json`;
-
       const metrics: Metrics = {};
 
       await cloudWatchUtils.reportMemoryUsage();
@@ -211,6 +209,10 @@ export async function handler(event: SQSEvent) {
       const unusedSegments = attrib.unusedSegments?.stringValue;
       const invalidAccess = attrib.invalidAccess?.stringValue;
       const converterParams = { patientId, fileName: s3FileName, unusedSegments, invalidAccess };
+
+      const preConversionFilename = `${s3FileName}.pre-conversion.xml`;
+      const conversionResultFilename = `${s3FileName}.from_converter.json`;
+
       log(
         `Calling converter on url ${converterUrl} with params ${JSON.stringify(converterParams)}`
       );
@@ -219,7 +221,7 @@ export async function handler(event: SQSEvent) {
           () =>
             fhirConverter.post(converterUrl, payloadClean, {
               params: converterParams,
-              headers: { "Content-Type": "text/plain" },
+              headers: { "Content-Type": TXT_MIME_TYPE },
             }),
           {
             // No retries on timeout b/c we want to re-enqueue instead of trying within the same lambda run,
@@ -368,7 +370,7 @@ async function sendConversionResult(
           Bucket: conversionResultBucketName,
           Key: fileName,
           Body: JSON.stringify(conversionPayload),
-          ContentType: "application/fhir+json",
+          ContentType: FHIR_APP_MIME_TYPE,
         })
         .promise(),
     {
@@ -418,7 +420,7 @@ async function storePreProcessedConversionResult({
             Bucket: conversionResultBucketName,
             Key: conversionResultFilename,
             Body: JSON.stringify(conversionResult),
-            ContentType: "application/fhir+json",
+            ContentType: FHIR_APP_MIME_TYPE,
           })
           .promise(),
       {
@@ -427,8 +429,9 @@ async function storePreProcessedConversionResult({
       }
     );
   } catch (error) {
-    console.log(`Error uploading conversion result: ${error}`);
-    capture.error(error, {
+    const msg = "Error uploading conversion result";
+    log(`${msg}: ${error}`);
+    capture.error(msg, {
       extra: {
         message,
         ...lambdaParams,
@@ -461,7 +464,7 @@ async function storePreConversionPayloadInS3({
             Bucket: conversionResultBucketName,
             Key: preProcessedFilename,
             Body: JSON.stringify(payload),
-            ContentType: "application/xml",
+            ContentType: XML_APP_MIME_TYPE,
           })
           .promise(),
       {
@@ -470,8 +473,9 @@ async function storePreConversionPayloadInS3({
       }
     );
   } catch (error) {
-    console.log(`Error uploading pre-convert file: ${error}`);
-    capture.error(error, {
+    const msg = "Error uploading pre-convert file";
+    log(`${msg}: ${error}`);
+    capture.error(msg, {
       extra: {
         message,
         ...lambdaParams,
