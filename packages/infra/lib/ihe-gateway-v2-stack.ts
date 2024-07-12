@@ -30,6 +30,8 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
   constructor(scope: Construct, id: string, props: IHEGatewayV2LambdasNestedStackProps) {
     super(scope, id, props);
 
+    this.terminationProtection = true;
+
     const iheResponsesBucket = new s3.Bucket(this, "IHEResponsesBucket", {
       bucketName: props.iheResponsesBucketName,
       publicReadAccess: false,

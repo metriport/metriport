@@ -1,5 +1,3 @@
-import { inspect } from "node:util";
-
 export type ErrorToStringOptions = { detailed: boolean };
 
 export function errorToString(
@@ -25,10 +23,7 @@ export function genericErrorToString(err: any): string {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function detailedErrorToString(err: any): string {
   const thisErrorMessage = genericErrorToString(err);
-  // this can lead to multi-line
-  const additionalInfo = err.additionalInfo
-    ? inspect(err.additionalInfo, { compact: true, breakLength: undefined })
-    : undefined;
+  const additionalInfo = err.additionalInfo ? JSON.stringify(err.additionalInfo) : undefined;
   const causeMessage = err.cause ? detailedErrorToString(err.cause) : undefined;
   return (
     `${thisErrorMessage}` +
