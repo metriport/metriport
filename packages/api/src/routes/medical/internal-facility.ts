@@ -68,24 +68,27 @@ router.put(
       facility = await createFacility(facilityCreate);
     }
     const org = await getOrganizationOrFail({ cxId });
+    // TODO Move to external/hie
     // CAREQUALITY
-    await createOrUpdateFacilityInCq({
-      cxId,
-      facility,
-      facilityName: facilityDetails.cqFacilityName,
-      cxOrgName: org.data.name,
-      cxOrgBizType: org.type,
-      cqOboOid: facilityDetails.cqOboOid,
-    });
-    // COMMONWELL
-    await createOrUpdateInCw({
-      cxId,
-      facility,
-      facilityName: facilityDetails.cwFacilityName,
-      cxOrgName: org.data.name,
-      cxOrgType: org.data.type,
-      cwOboOid: facilityDetails.cwOboOid,
-    });
+    await Promise.all([
+      createOrUpdateFacilityInCq({
+        cxId,
+        facility,
+        facilityName: facilityDetails.cqFacilityName,
+        cxOrgName: org.data.name,
+        cxOrgBizType: org.type,
+        cqOboOid: facilityDetails.cqOboOid,
+      }),
+      // COMMONWELL
+      createOrUpdateInCw({
+        cxId,
+        facility,
+        facilityName: facilityDetails.cwFacilityName,
+        cxOrgName: org.data.name,
+        cxOrgType: org.data.type,
+        cwOboOid: facilityDetails.cwOboOid,
+      }),
+    ]);
 
     return res.status(httpStatus.OK).json(internalDtoFromModel(facility));
   })

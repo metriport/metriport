@@ -34,6 +34,7 @@ export const updateOrganization = async (
   await upsertOrgToFHIRServer(updatedOrg.cxId, fhirOrg);
 
   if (org.type === "healthcare_provider") {
+    // TODO Move to external/hie
     // Intentionally asynchronous
     cwCommands.organization
       .createOrUpdate(cxId, {
