@@ -30,31 +30,37 @@
   {{#with (toLower code) as |normalizedCode|}}
     {{#if normalizedCode}}
       {{#if (or (eq normalizedCode "aborted") (eq normalizedCode "discontinued"))}}
-        "stopped"
+        "entered-in-error"
       {{else if (eq normalizedCode "stopped")}}
-        "stopped"
+        "entered-in-error"
       {{else if (eq normalizedCode "failed")}}
-        "stopped"
-      {{else if (eq normalizedCode "in-progress")}}
-        "in-progress"
-      {{else if (eq normalizedCode "active")}}
-        "in-progress"
-      {{else if (eq normalizedCode "not-done")}}
-        "not-done"
+        "entered-in-error"
       {{else if (eq normalizedCode "entered-in-error")}}
         "entered-in-error"
       {{else if (eq normalizedCode "error")}}
         "entered-in-error"
       {{else if (eq normalizedCode "nullified")}}
         "entered-in-error"
+      {{else if (eq normalizedCode "draft")}}
+        "draft"
       {{else if (eq normalizedCode "on-hold")}}
-        "on-hold"
+        "draft"
+      {{else if (eq normalizedCode "in-progress")}}
+        "draft"
+      {{else if (eq normalizedCode "active")}}
+        "draft"
+      {{else if (eq normalizedCode "not-done")}}
+        "draft"
       {{else if (eq normalizedCode "suspended")}}
-        "on-hold"
+        "draft"
+      {{else if (eq normalizedCode "recorded")}}
+        "recorded"
+      {{else if (eq normalizedCode "record")}}
+        "recorded"
       {{else if (eq normalizedCode "complete")}}
-        "completed"
+        "recorded"
       {{else if (eq normalizedCode "completed")}}
-        "completed"
+        "recorded"
       {{else}}
         "unknown"
       {{/if}}
