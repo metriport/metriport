@@ -39,7 +39,6 @@
         "code": {{>DataType/CodeableConcept.hbs code=diagReport.code canBeUnknown=true}},
         "category":[{{>DataType/CodeableConcept.hbs code=categoryCode}}],
         "effectivePeriod": {{>DataType/Period.hbs period=diagReport.effectiveTime}},
-        "effectiveDateTime":"{{formatAsDateTime diagReport.effectiveTime.value}}",
 
         {{#with (buildPresentedForm diagReport.text._b64 diagReport.component) as |presentedFormArray|}}
             {{#if presentedFormArray}} 
