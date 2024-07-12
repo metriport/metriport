@@ -37,6 +37,8 @@ interface ApiServiceProps extends StackProps {
   version: string | undefined;
 }
 
+const loadBalancerIdleTimeout = Duration.minutes(10);
+
 export function createAPIService({
   stack,
   props,
@@ -160,6 +162,7 @@ export function createAPIService({
           ENV_TYPE: props.config.environmentType, // staging, production, sandbox
           ...(props.version ? { METRIPORT_VERSION: props.version } : undefined),
           AWS_REGION: props.config.region,
+          LB_TIMEOUT_IN_MILLIS: loadBalancerIdleTimeout.toMilliseconds().toString(),
           DB_READ_REPLICA_ENDPOINT: dbReadReplicaEndpointAsString,
           DB_POOL_SETTINGS: dbPoolSettings,
           TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
@@ -241,7 +244,7 @@ export function createAPIService({
       protocol: ApplicationProtocol.HTTP,
       listenerPort,
       publicLoadBalancer: false,
-      idleTimeout: Duration.minutes(10),
+      idleTimeout: loadBalancerIdleTimeout,
     }
   );
   const serverAddress = fargateService.loadBalancer.loadBalancerDnsName;
