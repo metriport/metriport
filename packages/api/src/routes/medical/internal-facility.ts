@@ -78,7 +78,7 @@ router.put(
       cxOrgName: org.data.name,
       cxOrgBizType: org.type,
       cqOboOid: facilityDetails.cqOboOid,
-    }).catch(processAsyncError("/internal/facility"));
+    }).catch(processAsyncError("cq.internal.facility"));
     // COMMONWEL
     createOrUpdateInCw({
       cxId,
@@ -87,7 +87,7 @@ router.put(
       cxOrgName: org.data.name,
       cxOrgType: org.data.type,
       cwOboOid: facilityDetails.cwOboOid,
-    }).catch(processAsyncError("/internal/facility"));
+    }).catch(processAsyncError("cw.internal.facility"));
 
     return res.status(httpStatus.OK).json(internalDtoFromModel(facility));
   })

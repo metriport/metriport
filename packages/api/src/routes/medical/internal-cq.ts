@@ -214,7 +214,7 @@ router.get(
  * Updates the organization in the Carequality Directory.
  */
 router.put(
-  "/directory/organization/v2",
+  "/directory/organization/v2/:oid",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
