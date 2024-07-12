@@ -2,10 +2,10 @@ import { getEnvVarOrFail } from "@metriport/shared";
 import { OrgMemberInfo, User } from "@propelauth/express";
 import { initBaseAuth } from "@propelauth/node";
 
-export type PropeAuth = ReturnType<typeof initBaseAuth>;
-let auth: PropeAuth | undefined;
+export type PropelAuth = ReturnType<typeof initBaseAuth>;
+let auth: PropelAuth | undefined;
 
-export function getAuth(): PropeAuth {
+export function getAuth(): PropelAuth {
   if (!auth) {
     auth = initBaseAuth({
       authUrl: getEnvVarOrFail("PROPELAUTH_AUTH_URL"),
