@@ -43,23 +43,33 @@ router.get(
 );
 
 /**
- * PUT /internal/commonwell/organization
+ * PUT /internal/commonwell/organization/:oid
  *
- * Creates or updates the organization in the CommonWell.
+ * Updates the organization in the CommonWell.
  */
 router.put(
-  "/organization",
+  "/organization/:oid",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     await verifyCxProviderAccess(cxId);
-
-    const orgActive = cwOrgActiveSchema.parse(req.body);
+    const oid = getFrom("params").orFail("oid", req);
 
     const org = await getOrganizationOrFail({ cxId });
+    if (org.oid !== oid) throw new NotFoundError("Organization not found");
+
+    const resp = await getCWOgranization(oid);
+    if (!resp) throw new NotFoundError("Organization not found");
+    const cwOrg = parseCWEntry(resp);
+
+    const orgActive = cwOrgActiveSchema.parse(req.body);
     await createOrUpdateCWOrganization(cxId, {
       oid: org.oid,
-      data: org.data,
+      data: {
+        name: cwOrg.data.name,
+        type: org.data.type,
+        location: org.data.location,
+      },
       active: orgActive.active,
     });
     await org.update({

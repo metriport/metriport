@@ -14,6 +14,7 @@ import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler } from "../util";
 import { createOrUpdateFacilityInCq } from "../../external/carequality/command/cq-directory/create-or-update-cq-facility";
 import { createOrUpdateInCw } from "../../external/commonwell/command/create-or-update-cw-facility";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 
 const router = Router();
 
@@ -70,25 +71,23 @@ router.put(
     const org = await getOrganizationOrFail({ cxId });
     // TODO Move to external/hie
     // CAREQUALITY
-    await Promise.allSettled([
-      createOrUpdateFacilityInCq({
-        cxId,
-        facility,
-        facilityName: facilityDetails.cqFacilityName,
-        cxOrgName: org.data.name,
-        cxOrgBizType: org.type,
-        cqOboOid: facilityDetails.cqOboOid,
-      }),
-      // COMMONWELL
-      createOrUpdateInCw({
-        cxId,
-        facility,
-        facilityName: facilityDetails.cwFacilityName,
-        cxOrgName: org.data.name,
-        cxOrgType: org.data.type,
-        cwOboOid: facilityDetails.cwOboOid,
-      }),
-    ]);
+    createOrUpdateFacilityInCq({
+      cxId,
+      facility,
+      facilityName: facilityDetails.cqFacilityName,
+      cxOrgName: org.data.name,
+      cxOrgBizType: org.type,
+      cqOboOid: facilityDetails.cqOboOid,
+    }).catch(processAsyncError("/internal/facility"));
+    // COMMONWEL
+    createOrUpdateInCw({
+      cxId,
+      facility,
+      facilityName: facilityDetails.cwFacilityName,
+      cxOrgName: org.data.name,
+      cxOrgType: org.data.type,
+      cwOboOid: facilityDetails.cwOboOid,
+    }).catch(processAsyncError("/internal/facility"));
 
     return res.status(httpStatus.OK).json(internalDtoFromModel(facility));
   })

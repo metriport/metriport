@@ -209,27 +209,49 @@ router.get(
 );
 
 /**
- * PUT /internal/carequality/directory/organization/v2
+ * PUT /internal/carequality/directory/organization/v2/:oid
  *
- * Creates or updates the organization in the Carequality Directory.
+ * Updates the organization in the Carequality Directory.
  */
 router.put(
   "/directory/organization/v2",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
+    if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
+    const cq = makeCarequalityManagementAPI();
+    if (!cq) throw new Error("Carequality API not initialized");
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     await verifyCxProviderAccess(cxId);
+    const oid = getFrom("params").orFail("oid", req);
+
+    const org = await getOrganizationOrFail({ cxId });
+    if (org.oid !== oid) throw new NotFoundError("Organization not found");
+
+    const resp = await cq.listOrganizations({ count: 1, oid });
+    if (resp.length === 0) throw new NotFoundError("Facility not found");
+    const cqOrgs = parseCQDirectoryEntries(resp);
+    const cqOrg = cqOrgs[0];
+
+    if (cqOrgs.length > 1) {
+      capture.message("More than one organization with the same OID found in the CQ directory", {
+        extra: {
+          facilityId: org.id,
+          facilityOid: org.oid,
+          context: `cq.organization.directory`,
+        },
+      });
+    }
 
     const orgActive = cqOrgActiveSchema.parse(req.body);
 
-    const org = await getOrganizationOrFail({ cxId });
     const { coordinates } = await getAddressWithCoordinates(org.data.location, cxId);
     const address = org.data.location;
     const addressLine = address.addressLine2
       ? `${address.addressLine1}, ${address.addressLine2}`
       : address.addressLine1;
+    if (!cqOrg.name) throw new NotFoundError("CQ org name is not set - cannot update");
     await createOrUpdateCQOrganization({
-      name: org.data.name,
+      name: cqOrg.name,
       addressLine1: addressLine,
       lat: coordinates.lat.toString(),
       lon: coordinates.lon.toString(),
