@@ -135,15 +135,18 @@ export function createAPIService({
   const listenerPort = 80;
   const containerPort = 8080;
   const logGroup = LogGroup.fromLogGroupArn(stack, "ApiLogGroup", props.config.logArn);
+  const desiredTaskCount = isProd(props.config) ? 6 : isSandbox(props.config) ? 2 : 1;
+  const maxTaskCount = isProd(props.config) ? 40 : isSandbox(props.config) ? 10 : 5;
   const fargateService = new ecs_patterns.ApplicationLoadBalancedFargateService(
     stack,
     "APIFargateServiceAlb",
     {
       cluster: cluster,
-      // Watch out for the combination of vCPUs and memory, more vCPU requires more memory
+      // Watch out for the combination of vCPUs and memory.
       // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#task_size
-      cpu: isProd(props.config) ? 2048 : 1024,
-      desiredCount: isProd(props.config) ? 2 : 1,
+      cpu: 1024, // Keep to 1 vCPU because NodeJS is single-threaded
+      memoryLimitMiB: isProd(props.config) ? 2048 : 1024,
+      desiredCount: desiredTaskCount,
       taskImageOptions: {
         image: ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest"),
         containerPort,
@@ -239,7 +242,6 @@ export function createAPIService({
           }),
         },
       },
-      memoryLimitMiB: isProd(props.config) ? 4096 : 2048,
       healthCheckGracePeriod: Duration.seconds(60),
       protocol: ApplicationProtocol.HTTP,
       listenerPort,
@@ -247,6 +249,9 @@ export function createAPIService({
       idleTimeout: loadBalancerIdleTimeout,
     }
   );
+  // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
+  // fargateService.taskDefinition.defaultContainer?.addUlimits({ ... });
+
   const serverAddress = fargateService.loadBalancer.loadBalancerDnsName;
   const apiUrl = `${props.config.subdomain}.${props.config.domain}`;
   new r53.ARecord(stack, "APIDomainPrivateRecord", {
@@ -352,7 +357,7 @@ export function createAPIService({
   const fargateCPUAlarm = fargateService.service
     .metricCpuUtilization()
     .createAlarm(stack, "CPUAlarm", {
-      threshold: 80,
+      threshold: 85,
       evaluationPeriods: 3,
       datapointsToAlarm: 2,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
@@ -363,7 +368,7 @@ export function createAPIService({
   const fargateMemoryAlarm = fargateService.service
     .metricMemoryUtilization()
     .createAlarm(stack, "MemoryAlarm", {
-      threshold: 70,
+      threshold: 85,
       evaluationPeriods: 3,
       datapointsToAlarm: 2,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
@@ -383,16 +388,16 @@ export function createAPIService({
 
   // hookup autoscaling based on 90% thresholds
   const scaling = fargateService.service.autoScaleTaskCount({
-    minCapacity: isProd(props.config) ? 2 : 1,
-    maxCapacity: isProd(props.config) ? 10 : 2,
+    minCapacity: desiredTaskCount,
+    maxCapacity: maxTaskCount,
   });
   scaling.scaleOnCpuUtilization("autoscale_cpu", {
-    targetUtilizationPercent: 90,
+    targetUtilizationPercent: 80,
     scaleInCooldown: Duration.minutes(2),
     scaleOutCooldown: Duration.seconds(30),
   });
   scaling.scaleOnMemoryUtilization("autoscale_mem", {
-    targetUtilizationPercent: 90,
+    targetUtilizationPercent: 80,
     scaleInCooldown: Duration.minutes(2),
     scaleOutCooldown: Duration.seconds(30),
   });
