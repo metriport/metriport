@@ -5,13 +5,15 @@ import status from "http-status";
 import { MAPIAccess } from "../../models/medical/mapi-access";
 import { Config } from "../../shared/config";
 import { getCxIdOrFail } from "../util";
-import { getAuth, getCxId } from "./propelauth";
+import { getAuth, getCxId, PropelAuth } from "./propelauth";
 
 /**
  * Process the API key and get the customer id.
  * The customer id is stored on the Request, property 'cxId'.
  */
 export async function processCxId(req: Request, res: Response, next: NextFunction): Promise<void> {
+  // validate it has the needed info
+  const auth = getAuth();
   try {
     // Just gets the cxId from the API Key, the actual auth is done on API GW.
     // Downstream routes should check whether `cxId` is present on the request or not.
@@ -19,7 +21,7 @@ export async function processCxId(req: Request, res: Response, next: NextFunctio
     req.cxId = getCxIdFromApiKey(encodedApiKey);
   } catch (error) {
     try {
-      req.cxId = await getCxIdFromJwt(req);
+      req.cxId = await getCxIdFromJwt(req, auth);
     } catch (error) {
       // noop - auth is done on API GW level, this is just to make data available downstream
     }
@@ -37,10 +39,10 @@ export function getCxIdFromApiKey(encodedApiKey: string | undefined): string {
   return cxId;
 }
 
-export async function getCxIdFromJwt(req: Request): Promise<string> {
+export async function getCxIdFromJwt(req: Request, auth: PropelAuth): Promise<string> {
   const jwtStr = req.header("Authorization");
   if (!jwtStr) throw new Error("Missing token");
-  const user = await getAuth().validateAccessTokenAndGetUser(jwtStr);
+  const user = await auth.validateAccessTokenAndGetUser(jwtStr);
   const cxId = getCxId(user);
   if (!cxId) throw new Error("Could not determine cxId from JWT");
   return cxId;
