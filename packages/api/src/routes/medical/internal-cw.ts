@@ -52,12 +52,11 @@ router.put(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const orgId = getFrom("query").orFail("orgId", req);
     await verifyCxProviderAccess(cxId);
 
     const orgActive = cwOrgActiveSchema.parse(req.body);
 
-    const org = await getOrganizationOrFail({ cxId, id: orgId });
+    const org = await getOrganizationOrFail({ cxId });
     await createOrUpdateCWOrganization(cxId, {
       oid: org.oid,
       data: org.data,
@@ -78,7 +77,7 @@ router.put(
  * @param req.params.oid The OID of the facility to update.
  */
 router.put(
-  "/facility/v2/:oid",
+  "/facility/:oid",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
