@@ -70,7 +70,7 @@ router.put(
     const org = await getOrganizationOrFail({ cxId });
     // TODO Move to external/hie
     // CAREQUALITY
-    await Promise.all([
+    await Promise.allSettled([
       createOrUpdateFacilityInCq({
         cxId,
         facility,
