@@ -142,7 +142,9 @@ var convertDate = function (dateString) {
 var alreadyValidDateTime = function (dateTimeString) {
   if (!dateTimeString || dateTimeString.toString() === "") return false;
   var ds = dateTimeString.toString();
-  return /^\d{4}-\d{2}-\d{2}$/.test(ds);
+  return /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,7}))?(Z|[-+]\d{2}:?\d{2})?)?$/.test(
+    ds
+  );
 };
 
 // handling the date format here
@@ -177,6 +179,10 @@ var getDateTimeComposition = function (ds) {
   return dateTimeComposition;
 };
 
+var isValidYear = function (year) {
+  return parseInt(year) >= 1900;
+};
+
 // handling the datetime format here
 var getDateTime = function (dateTimeStringRaw) {
   var dateTimeString = dateTimeStringRaw.trim();
@@ -195,9 +201,7 @@ var getDateTime = function (dateTimeStringRaw) {
     var dateSections = ds.split(timeZoneChar);
     var dateTimeComposition = getDateTimeComposition(dateSections[0]);
 
-    if (parseInt(dateTimeComposition.year) < 1900) return "";
-
-    console.log(dateTimeComposition);
+    if (isValidYear(dateTimeComposition.year)) return "";
 
     var date =
       dateTimeComposition.year + "-" + dateTimeComposition.month + "-" + dateTimeComposition.day;
@@ -216,7 +220,7 @@ var getDateTime = function (dateTimeStringRaw) {
   // Padding 0s to 17 digits
   dateTimeComposition = getDateTimeComposition(ds);
 
-  if (parseInt(dateTimeComposition.year) < 1900) return "";
+  if (isValidYear(dateTimeComposition.year)) return "";
 
   if (dateTimeComposition.month === "00" && dateTimeComposition.day === "00") {
     return new Date(

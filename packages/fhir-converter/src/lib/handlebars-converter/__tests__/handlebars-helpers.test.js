@@ -237,6 +237,36 @@ describe("getDateTime", function () {
     var date = functions.getDateTime("18991231");
     expect(date).toEqual("");
   });
+
+  it("should render date when ISO YYYY-MM-DD", function () {
+    var date = functions.getDateTime("2023-06-26");
+    expect(date).toEqual("2023-06-26");
+  });
+
+  it("should render date when ISO YYYY-MM-DDTHH:MM:SS", function () {
+    var date = functions.getDateTime("2023-06-26T19:08:46");
+    expect(date).toEqual("2023-06-26T19:08:46");
+  });
+
+  it("should render date when ISO YYYY-MM-DDTHH:MM:SS.MMM", function () {
+    var date = functions.getDateTime("2023-06-26T19:08:46.000");
+    expect(date).toEqual("2023-06-26T19:08:46.000");
+  });
+
+  it("should render date when ISO YYYY-MM-DDTHH:MM:SS.MMMZ", function () {
+    var date = functions.getDateTime("2023-06-26T19:08:46.000Z");
+    expect(date).toEqual("2023-06-26T19:08:46.000Z");
+  });
+
+  it("should render date when ISO YYYY-MM-DDTHH:MM:SS.MMM-0300", function () {
+    var date = functions.getDateTime("2023-06-26T19:08:46.000-0300");
+    expect(date).toEqual("2023-06-26T19:08:46.000-0300");
+  });
+
+  it("should render date when ISO YYYY-MM-DD HH:MM:SS.MMMZ", function () {
+    var date = functions.getDateTime("2023-06-26 19:08:46.000Z");
+    expect(date).toEqual("2023-06-26 19:08:46.000Z");
+  });
 });
 
 function getHelper(helperName) {
