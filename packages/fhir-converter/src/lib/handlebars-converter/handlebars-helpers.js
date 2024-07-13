@@ -108,33 +108,6 @@ var validDate = function (year, monthIndex, day) {
   return false;
 };
 
-// check the datetime is valid
-var validUTCDateTime = function (dateTimeComposition) {
-  for (var key in dateTimeComposition) dateTimeComposition[key] = Number(dateTimeComposition[key]);
-  var dateInstance = new Date(
-    Date.UTC(
-      dateTimeComposition.year,
-      dateTimeComposition.month - 1,
-      dateTimeComposition.day,
-      dateTimeComposition.hours,
-      dateTimeComposition.minutes,
-      dateTimeComposition.seconds,
-      dateTimeComposition.milliseconds
-    )
-  );
-  if (
-    dateInstance.getUTCFullYear() === dateTimeComposition.year &&
-    dateInstance.getUTCMonth() === dateTimeComposition.month - 1 &&
-    dateInstance.getUTCDate() === dateTimeComposition.day &&
-    dateInstance.getUTCHours() === dateTimeComposition.hours &&
-    dateInstance.getUTCMinutes() === dateTimeComposition.minutes &&
-    dateInstance.getSeconds() === dateTimeComposition.seconds &&
-    dateInstance.getMilliseconds() === dateTimeComposition.milliseconds
-  )
-    return true;
-  return false;
-};
-
 // check the string is valid
 var validDatetimeString = function (dateTimeString) {
   if (!dateTimeString || dateTimeString.toString() === "") return false;
@@ -228,18 +201,38 @@ var getDateTime = function (dateTimeString) {
       ":" +
       dateTimeComposition.milliseconds;
     var timezone = timeZoneChar + dateSections[1];
-    if (!validUTCDateTime(dateTimeComposition)) {
-      console.log(`Invalid datetime: ${ds}`);
-    }
     return new Date(date + " " + time + " " + timezone).toISOString();
   }
 
   // Padding 0s to 17 digits
   dateTimeComposition = getDateTimeComposition(ds);
-  if (!validUTCDateTime(dateTimeComposition)) {
-    console.log( `Invalid datetime: ${ds}`);
-    return '';
+
+  if (dateTimeComposition.month === "00" && dateTimeComposition.day === "00") {
+    return new Date(
+      Date.UTC(
+        dateTimeComposition.year,
+        dateTimeComposition.month,
+        dateTimeComposition.day + 1,
+        dateTimeComposition.hours,
+        dateTimeComposition.minutes,
+        dateTimeComposition.seconds,
+        dateTimeComposition.milliseconds
+      )
+    ).toJSON();
+  } else if (dateTimeComposition.day === "00") {
+    return new Date(
+      Date.UTC(
+        dateTimeComposition.year,
+        dateTimeComposition.month - 1,
+        dateTimeComposition.day + 1,
+        dateTimeComposition.hours,
+        dateTimeComposition.minutes,
+        dateTimeComposition.seconds,
+        dateTimeComposition.milliseconds
+      )
+    ).toJSON();
   }
+
   return new Date(
     Date.UTC(
       dateTimeComposition.year,
