@@ -40,8 +40,8 @@ export interface OrganizationCreate extends BaseDomainCreate {
   organizationNumber: number;
   type: OrganizationBizType;
   data: OrganizationData;
-  cqActive: boolean;
-  cwActive: boolean;
+  cqActive?: boolean;
+  cwActive?: boolean;
 }
 
 export interface Organization extends BaseDomain, OrganizationCreate {}
