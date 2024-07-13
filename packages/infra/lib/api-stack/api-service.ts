@@ -28,7 +28,7 @@ import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
 import { DnsZones } from "../shared/dns";
 import { buildLbAccessLogPrefix } from "../shared/s3";
-import { Secrets, secretsToECS } from "../shared/secrets";
+import { buildSecrets, Secrets, secretsToECS } from "../shared/secrets";
 import { provideAccessToQueue } from "../shared/sqs";
 import { isProd, isSandbox } from "../shared/util";
 
@@ -196,6 +196,9 @@ export function createAPIService({
           DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret),
           SEARCH_PASSWORD: ecs.Secret.fromSecretsManager(searchAuth.secret),
           ...secretsToECS(secrets),
+          ...(!isSandbox(props.config) && {
+            ...buildSecrets(stack, props.config.propelAuth.secrets),
+          }),
         },
         environment: {
           NODE_ENV: "production", // Determines its being run in the cloud, the logical env is set on ENV_TYPE
@@ -225,9 +228,13 @@ export function createAPIService({
           ...(props.config.medicalDocumentsUploadBucketName && {
             MEDICAL_DOCUMENTS_UPLOADS_BUCKET_NAME: props.config.medicalDocumentsUploadBucketName,
           }),
-          ...(isSandbox(props.config) && {
-            SANDBOX_SEED_DATA_BUCKET_NAME: props.config.sandboxSeedDataBucketName,
-          }),
+          ...(isSandbox(props.config)
+            ? {
+                SANDBOX_SEED_DATA_BUCKET_NAME: props.config.sandboxSeedDataBucketName,
+              }
+            : {
+                PROPELAUTH_AUTH_URL: props.config.propelAuth.authUrl,
+              }),
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
           DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
           OUTBOUND_PATIENT_DISCOVERY_LAMBDA_NAME: outboundPatientDiscoveryLambda.functionName,

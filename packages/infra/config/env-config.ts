@@ -170,10 +170,9 @@ type EnvConfigBase = {
     WHOOP_CLIENT_SECRET: string;
     TENOVI_AUTH_HEADER: string;
   };
+  // TODO move this under `commonwell`
   // Secret props should be in upper case because they become env vars for ECS
   cwSecretNames: {
-    // TODO 1195 Either remove or re-enable this and finish building it
-    // CW_MANAGEMENT_CREDS?: string;
     CW_ORG_PRIVATE_KEY: string;
     CW_ORG_CERTIFICATE: string;
     CW_MEMBER_PRIVATE_KEY: string;
