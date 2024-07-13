@@ -2,6 +2,7 @@ import { base64ToString } from "@metriport/core/util/base64";
 import { out } from "@metriport/core/util/log";
 import { NextFunction, Request, Response } from "express";
 import status from "http-status";
+import * as jwt from "jsonwebtoken";
 import { MAPIAccess } from "../../models/medical/mapi-access";
 import { Config } from "../../shared/config";
 import { getCxIdOrFail } from "../util";
@@ -23,7 +24,12 @@ export async function processCxId(req: Request, res: Response, next: NextFunctio
     try {
       req.cxId = await getCxIdFromJwt(req, auth);
     } catch (error) {
-      // noop - auth is done on API GW level, this is just to make data available downstream
+      // TODO 1935 1986 Remove this after we're fully off of Cognito
+      try {
+        req.cxId = getCxIdFromCognitoJwt(req);
+      } catch (error) {
+        // noop - auth is done on API GW level, this is just to make data available downstream
+      }
     }
   }
   next();
@@ -45,6 +51,19 @@ export async function getCxIdFromJwt(req: Request, auth: PropelAuth): Promise<st
   const user = await auth.validateAccessTokenAndGetUser(jwtStr);
   const cxId = getCxId(user);
   if (!cxId) throw new Error("Could not determine cxId from JWT");
+  return cxId;
+}
+
+// TODO 1935 1986 Remove this after we're fully off of Cognito
+export function getCxIdFromCognitoJwt(req: Request): string {
+  const jwtStr = req.header("Authorization");
+  if (!jwtStr) throw new Error("Missing token");
+  const rawToken = jwt.decode(jwtStr);
+  if (!rawToken) throw new Error("Invalid token");
+  const token = (typeof rawToken === "string" ? JSON.parse(rawToken) : rawToken) as jwt.JwtPayload;
+  const cxId = token["name"] ?? token["sub"];
+  if (!isValidCxId(cxId)) throw new Error("Invalid cxId");
+  console.log(`Got cxId from Cognito JWT ${cxId}`);
   return cxId;
 }
 
