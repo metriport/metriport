@@ -6,12 +6,11 @@ export type PropelAuth = ReturnType<typeof initBaseAuth>;
 let auth: PropelAuth | undefined;
 
 export function getAuth(): PropelAuth {
-  if (!auth) {
-    auth = initBaseAuth({
-      authUrl: getEnvVarOrFail("PROPELAUTH_AUTH_URL"),
-      apiKey: getEnvVarOrFail("PROPELAUTH_API_KEY"),
-    });
-  }
+  if (auth) return auth;
+  auth = initBaseAuth({
+    authUrl: getEnvVarOrFail("PROPELAUTH_AUTH_URL"),
+    apiKey: getEnvVarOrFail("PROPELAUTH_API_KEY"),
+  });
   return auth;
 }
 
