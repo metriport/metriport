@@ -207,11 +207,23 @@ var getDateTime = function (dateTimeString) {
   // Padding 0s to 17 digits
   dateTimeComposition = getDateTimeComposition(ds);
 
-  if (dateTimeComposition.month === '00' && dateTimeComposition.day === '00') {
+  if (dateTimeComposition.month === "00" && dateTimeComposition.day === "00") {
     return new Date(
       Date.UTC(
         dateTimeComposition.year,
         dateTimeComposition.month,
+        dateTimeComposition.day + 1,
+        dateTimeComposition.hours,
+        dateTimeComposition.minutes,
+        dateTimeComposition.seconds,
+        dateTimeComposition.milliseconds
+      )
+    ).toJSON();
+  } else if (dateTimeComposition.day === "00") {
+    return new Date(
+      Date.UTC(
+        dateTimeComposition.year,
+        dateTimeComposition.month - 1,
         dateTimeComposition.day + 1,
         dateTimeComposition.hours,
         dateTimeComposition.minutes,

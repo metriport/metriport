@@ -6,6 +6,7 @@
 var inputs = require("./extract-range-templates");
 var presentedForm = require("./build-presented-form-templates");
 var helpers = require("../handlebars-helpers").external;
+var functions = require("../handlebars-helpers").internal;
 
 describe("Handlebars helpers", function () {
   var opTests = [
@@ -163,6 +164,43 @@ describe("Handlebars helpers", function () {
         }
       }
     });
+  });
+});
+
+describe("getDateTime", function () {
+  it("should render date if full dateTimeString", function () {
+    var date = functions.getDateTime("20240711220795");
+    expect(date).toEqual("2024-07-11T22:08:35.000Z");
+  });
+
+  it("should render date if only year, month, day", function () {
+    var date = functions.getDateTime("20240710");
+    expect(date).toEqual("2024-07-10T00:00:00.000Z");
+  });
+
+  it("should render date if only year, month", function () {
+    var date = functions.getDateTime("202407");
+    expect(date).toEqual("2024-07-01T00:00:00.000Z");
+  });
+
+  it("should render date if only year", function () {
+    var date = functions.getDateTime("2024");
+    expect(date).toEqual("2024-01-01T00:00:00.000Z");
+  });
+
+  it("should render date if full dateTimeString with timezone", function () {
+    var date = functions.getDateTime("20230626150846-0400");
+    expect(date).toEqual("2023-06-26T19:08:46.000Z");
+  });
+
+  it("should render date if full dateTimeString with timezone and seconds", function () {
+    var date = functions.getDateTime("20230626150846.123-0400");
+    expect(date).toEqual("2023-06-26T19:08:46.123Z");
+  });
+  
+  it("should render noting empty string", function () {
+    var date = functions.getDateTime("");
+    expect(date).toEqual("");
   });
 });
 
