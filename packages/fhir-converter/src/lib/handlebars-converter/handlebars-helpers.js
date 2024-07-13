@@ -146,7 +146,8 @@ var alreadyValidDateTime = function (dateTimeString) {
 };
 
 // handling the date format here
-var getDate = function (dateString) {
+var getDate = function (dateStringRaw) {
+  var dateString = dateStringRaw.trim();
   if (alreadyValidDateTime(dateString)) {
     return dateString;
   }
@@ -177,7 +178,9 @@ var getDateTimeComposition = function (ds) {
 };
 
 // handling the datetime format here
-var getDateTime = function (dateTimeString) {
+var getDateTime = function (dateTimeStringRaw) {
+  var dateTimeString = dateTimeStringRaw.trim();
+
   if (alreadyValidDateTime(dateTimeString)) {
     return dateTimeString;
   }
@@ -191,6 +194,11 @@ var getDateTime = function (dateTimeString) {
   if (timeZoneChar !== "") {
     var dateSections = ds.split(timeZoneChar);
     var dateTimeComposition = getDateTimeComposition(dateSections[0]);
+
+    if (parseInt(dateTimeComposition.year) < 1900) return "";
+
+    console.log(dateTimeComposition);
+
     var date =
       dateTimeComposition.year + "-" + dateTimeComposition.month + "-" + dateTimeComposition.day;
     var time =
@@ -207,6 +215,8 @@ var getDateTime = function (dateTimeString) {
 
   // Padding 0s to 17 digits
   dateTimeComposition = getDateTimeComposition(ds);
+
+  if (parseInt(dateTimeComposition.year) < 1900) return "";
 
   if (dateTimeComposition.month === "00" && dateTimeComposition.day === "00") {
     return new Date(

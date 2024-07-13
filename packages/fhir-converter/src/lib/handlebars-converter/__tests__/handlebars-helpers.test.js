@@ -173,6 +173,16 @@ describe("getDateTime", function () {
     expect(date).toEqual("2024-07-11T22:08:35.000Z");
   });
 
+  it("should render date if full dateTimeString with space in front", function () {
+    var date = functions.getDateTime(" 20240711220795");
+    expect(date).toEqual("2024-07-11T22:08:35.000Z");
+  });
+
+  it("should render date if full dateTimeString with space in back", function () {
+    var date = functions.getDateTime("20240711220795 ");
+    expect(date).toEqual("2024-07-11T22:08:35.000Z");
+  });
+
   it("should render date if only year, month, day", function () {
     var date = functions.getDateTime("20240710");
     expect(date).toEqual("2024-07-10T00:00:00.000Z");
@@ -197,9 +207,34 @@ describe("getDateTime", function () {
     var date = functions.getDateTime("20230626150846.123-0400");
     expect(date).toEqual("2023-06-26T19:08:46.123Z");
   });
-  
-  it("should render noting empty string", function () {
+
+  it("should render nothing when has year but bad month", function () {
+    var date = functions.getDateTime("20243");
+    expect(date).toEqual("");
+  });
+
+  it("should render nothing when just one number", function () {
+    var date = functions.getDateTime("4");
+    expect(date).toEqual("");
+  });
+
+  it("should render nothing when its letters", function () {
+    var date = functions.getDateTime("abcdefg");
+    expect(date).toEqual("");
+  });
+
+  it("should render nothing when its numbers and one letter", function () {
+    var date = functions.getDateTime("2024a0304");
+    expect(date).toEqual("");
+  });
+
+  it("should render nothing empty string", function () {
     var date = functions.getDateTime("");
+    expect(date).toEqual("");
+  });
+
+  it("should render nothing if date before 1900", function () {
+    var date = functions.getDateTime("18991231");
     expect(date).toEqual("");
   });
 });
