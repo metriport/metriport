@@ -113,8 +113,9 @@ var validDatetimeString = function (dateTimeString) {
   if (!dateTimeString || dateTimeString.toString() === "") return false;
   // datetime format in the spec: YYYY[MM[DD[HH[MM[SS[.S[S[S[S]]]]]]]]][+/-ZZZZ],
   var ds = dateTimeString.toString();
-  if (!/^(\d{4}(\d{2}(\d{2}(\d{2}(\d{2}(\d{2}(\.\d+)?)?)?)?)?)?((-|\+)\d{1,4})?)$/.test(ds))
-    throw `Bad input for Datetime type in ${ds}`;
+  if (!/^(\d{4}(\d{2}(\d{2}(\d{2}(\d{2}(\d{2}(\.\d+)?)?)?)?)?)?((-|\+)\d{1,4})?)$/.test(ds)) {
+    return false;
+  }
   return true;
 };
 
@@ -141,11 +142,14 @@ var convertDate = function (dateString) {
 var alreadyValidDateTime = function (dateTimeString) {
   if (!dateTimeString || dateTimeString.toString() === "") return false;
   var ds = dateTimeString.toString();
-  return /^\d{4}-\d{2}-\d{2}$/.test(ds);
+  return /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,7}))?(Z|[-+]\d{2}:?\d{2})?)?$/.test(
+    ds
+  );
 };
 
 // handling the date format here
-var getDate = function (dateString) {
+var getDate = function (dateStringRaw) {
+  var dateString = dateStringRaw.trim();
   if (alreadyValidDateTime(dateString)) {
     return dateString;
   }
@@ -175,11 +179,18 @@ var getDateTimeComposition = function (ds) {
   return dateTimeComposition;
 };
 
+var isValidYear = function (year) {
+  return parseInt(year) >= 1900;
+};
+
 // handling the datetime format here
-var getDateTime = function (dateTimeString) {
+var getDateTime = function (dateTimeStringRaw) {
+  var dateTimeString = dateTimeStringRaw.trim();
+
   if (alreadyValidDateTime(dateTimeString)) {
     return dateTimeString;
   }
+
   if (!validDatetimeString(dateTimeString)) return "";
 
   // handle the datetime format with time zone
@@ -190,6 +201,9 @@ var getDateTime = function (dateTimeString) {
   if (timeZoneChar !== "") {
     var dateSections = ds.split(timeZoneChar);
     var dateTimeComposition = getDateTimeComposition(dateSections[0]);
+
+    if (!isValidYear(dateTimeComposition.year)) return "";
+
     var date =
       dateTimeComposition.year + "-" + dateTimeComposition.month + "-" + dateTimeComposition.day;
     var time =
@@ -206,6 +220,8 @@ var getDateTime = function (dateTimeString) {
 
   // Padding 0s to 17 digits
   dateTimeComposition = getDateTimeComposition(ds);
+
+  if (!isValidYear(dateTimeComposition.year)) return "";
 
   if (dateTimeComposition.month === "00" && dateTimeComposition.day === "00") {
     return new Date(
