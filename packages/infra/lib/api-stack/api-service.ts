@@ -197,7 +197,7 @@ export function createAPIService({
           SEARCH_PASSWORD: ecs.Secret.fromSecretsManager(searchAuth.secret),
           ...secretsToECS(secrets),
           ...(!isSandbox(props.config) && {
-            ...buildSecrets(stack, props.config.propelAuth.secrets),
+            ...secretsToECS(buildSecrets(stack, props.config.propelAuth.secrets)),
           }),
         },
         environment: {
