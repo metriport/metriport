@@ -113,8 +113,9 @@ var validDatetimeString = function (dateTimeString) {
   if (!dateTimeString || dateTimeString.toString() === "") return false;
   // datetime format in the spec: YYYY[MM[DD[HH[MM[SS[.S[S[S[S]]]]]]]]][+/-ZZZZ],
   var ds = dateTimeString.toString();
-  if (!/^(\d{4}(\d{2}(\d{2}(\d{2}(\d{2}(\d{2}(\.\d+)?)?)?)?)?)?((-|\+)\d{1,4})?)$/.test(ds))
-    throw `Bad input for Datetime type in ${ds}`;
+  if (!/^(\d{4}(\d{2}(\d{2}(\d{2}(\d{2}(\d{2}(\.\d+)?)?)?)?)?)?((-|\+)\d{1,4})?)$/.test(ds)) {
+    return false;
+  }
   return true;
 };
 
