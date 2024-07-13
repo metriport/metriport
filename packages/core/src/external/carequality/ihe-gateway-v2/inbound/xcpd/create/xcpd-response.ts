@@ -276,6 +276,7 @@ export function createInboundXcpdResponse({
   const soapEnvelope = {
     "soap:Envelope": {
       "@_xmlns:soap": namespaces.soap,
+      "@_xmlns:wsa": namespaces.wsa,
       "soap:Header": {
         ...securityHeader,
         "wsa:Action": {
