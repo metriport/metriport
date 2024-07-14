@@ -267,6 +267,11 @@ describe("getDateTime", function () {
     var date = functions.getDateTime("2023-06-26 19:08:46.000Z");
     expect(date).toEqual("2023-06-26 19:08:46.000Z");
   });
+
+  it("should render nothing when invalid dateTimeString", function () {
+    var date = functions.getDateTime("20240714040785-0400");
+    expect(date).toEqual("");
+  });
 });
 
 function getHelper(helperName) {
