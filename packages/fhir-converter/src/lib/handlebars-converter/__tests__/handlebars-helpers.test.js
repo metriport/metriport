@@ -270,7 +270,7 @@ describe("getDateTime", function () {
 
   it("should render nothing when invalid dateTimeString", function () {
     var date = functions.getDateTime("20240714040785-0400");
-    expect(date).toEqual("");
+    expect(date).toEqual("2024-07-14T00:00:00.000Z");
   });
 });
 

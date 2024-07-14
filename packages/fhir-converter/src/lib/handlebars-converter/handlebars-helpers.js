@@ -219,7 +219,7 @@ var getDateTime = function (dateTimeStringRaw) {
     const newDate = new Date(date + " " + time + " " + timezone);
 
     if (isNaN(newDate.getTime())) {
-      return "";
+      return new Date(date).toISOString();
     }
 
     return newDate.toISOString();
