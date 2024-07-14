@@ -463,7 +463,7 @@ async function storePreConversionPayloadInS3({
           .upload({
             Bucket: conversionResultBucketName,
             Key: preProcessedFilename,
-            Body: JSON.stringify(payload),
+            Body: payload,
             ContentType: XML_APP_MIME_TYPE,
           })
           .promise(),
