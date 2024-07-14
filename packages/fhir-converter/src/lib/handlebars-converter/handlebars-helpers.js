@@ -149,7 +149,7 @@ var alreadyValidDateTime = function (dateTimeString) {
 
 // handling the date format here
 var getDate = function (dateStringRaw) {
-  var dateString = dateStringRaw.trim();
+  var dateString = dateStringRaw?.trim();
   if (alreadyValidDateTime(dateString)) {
     return dateString;
   }
@@ -185,7 +185,7 @@ var isValidYear = function (year) {
 
 // handling the datetime format here
 var getDateTime = function (dateTimeStringRaw) {
-  var dateTimeString = dateTimeStringRaw.trim();
+  var dateTimeString = dateTimeStringRaw?.trim();
 
   if (alreadyValidDateTime(dateTimeString)) {
     return dateTimeString;
