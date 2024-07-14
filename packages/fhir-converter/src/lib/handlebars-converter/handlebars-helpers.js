@@ -215,7 +215,14 @@ var getDateTime = function (dateTimeStringRaw) {
       ":" +
       dateTimeComposition.milliseconds;
     var timezone = timeZoneChar + dateSections[1];
-    return new Date(date + " " + time + " " + timezone).toISOString();
+
+    const newDate = new Date(date + " " + time + " " + timezone);
+
+    if (isNaN(newDate.getTime())) {
+      return new Date(date).toISOString();
+    }
+
+    return newDate.toISOString();
   }
 
   // Padding 0s to 17 digits
