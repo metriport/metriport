@@ -202,6 +202,12 @@ type EnvConfigBase = {
 
 export type EnvConfigNonSandbox = EnvConfigBase & {
   environmentType: EnvType.staging | EnvType.production;
+  propelAuth: {
+    authUrl: string;
+    secrets: {
+      PROPELAUTH_API_KEY: string;
+    };
+  };
   fhirToMedicalLambda: {
     nodeRuntimeArn: string;
   };
