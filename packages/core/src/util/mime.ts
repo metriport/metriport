@@ -9,10 +9,11 @@ import { contentType, extension } from "mime-types";
  * See: https://en.wikipedia.org/wiki/XML_and_MIME
  */
 export function isMimeTypeXML(mimeType?: string | undefined | null): boolean {
-  return mimeType === "application/xml" || mimeType === "text/xml";
+  return mimeType === XML_APP_MIME_TYPE || mimeType === XML_TXT_MIME_TYPE;
 }
 
 // define exportable constants for all the different file types
+export const FHIR_APP_MIME_TYPE = "application/fhir+json";
 export const JSON_APP_MIME_TYPE = "application/json";
 export const JSON_TXT_MIME_TYPE = "text/json";
 export const JSON_FILE_EXTENSION = ".json";

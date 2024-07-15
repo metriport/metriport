@@ -34,6 +34,12 @@ export const config: EnvConfigNonSandbox = {
   },
   loadBalancerDnsName: "<your-load-balancer-dns-name>",
   logArn: "<your-log-arn>",
+  propelAuth: {
+    authUrl: "url-to-propel-auth",
+    secrets: {
+      PROPELAUTH_API_KEY: "key-name",
+    },
+  },
   fhirToMedicalLambda: {
     nodeRuntimeArn: "arn:aws:lambda:<region>::runtime:<id>",
   },

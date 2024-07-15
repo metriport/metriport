@@ -20,7 +20,7 @@ export async function processInboundDrRequest(
   request: string
 ): Promise<InboundDocumentRetrievalReq> {
   const log = out("Inbound DR Request").log;
-  log(JSON.stringify(request));
+  log(request);
   try {
     const parser = new XMLParser({
       ignoreAttributes: false,

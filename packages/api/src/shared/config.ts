@@ -49,6 +49,12 @@ export class Config {
     return getEnvVarOrFail("AWS_REGION");
   }
 
+  static getLbTimeoutInMillis(): number | undefined {
+    const timeoutAsString = getEnvVar("LB_TIMEOUT_IN_MILLIS");
+    if (timeoutAsString) return parseInt(timeoutAsString);
+    return undefined;
+  }
+
   /**
    * @deprecated Use core's Config instead
    */

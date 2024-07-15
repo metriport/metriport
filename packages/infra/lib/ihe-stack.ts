@@ -252,6 +252,7 @@ export class IHEStack extends Stack {
       name: "IHEInboundDocumentQueryV2",
       entry: "ihe-gateway-v2-inbound-document-query",
       layers: [lambdaLayers.shared],
+      memory: 1024,
       envType: props.config.environmentType,
       envVars: {
         MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
@@ -298,6 +299,7 @@ export class IHEStack extends Stack {
       name: "IHEInboundDocumentRetrievalV2",
       entry: "ihe-gateway-v2-inbound-document-retrieval",
       layers: [lambdaLayers.shared],
+      memory: 1024,
       envType: props.config.environmentType,
       envVars: {
         IHE_REQUESTS_BUCKET_NAME: iheRequestsBucket.bucketName,
@@ -341,6 +343,7 @@ export class IHEStack extends Stack {
       name: "IHEInboundPatientDiscoveryV2",
       entry: "ihe-gateway-v2-inbound-patient-discovery",
       layers: [lambdaLayers.shared],
+      memory: 1024,
       envType: props.config.environmentType,
       envVars: {
         IHE_REQUESTS_BUCKET_NAME: iheRequestsBucket.bucketName,

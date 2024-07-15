@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { faker } from "@faker-js/faker";
 import { isDocumentReference } from "@metriport/core/external/fhir/document/document-reference";
+import { downloadToMemory } from "@metriport/core/util/file-downloader";
 import { detectFileType } from "@metriport/core/util/file-type";
 import { PDF_MIME_TYPE } from "@metriport/core/util/mime";
-import { downloadToMemory, isValidUrl, sleep } from "@metriport/shared";
+import { isValidUrl, sleep } from "@metriport/shared";
 import { AxiosError } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";

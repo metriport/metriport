@@ -6,6 +6,7 @@
 var inputs = require("./extract-range-templates");
 var presentedForm = require("./build-presented-form-templates");
 var helpers = require("../handlebars-helpers").external;
+var functions = require("../handlebars-helpers").internal;
 
 describe("Handlebars helpers", function () {
   var opTests = [
@@ -163,6 +164,108 @@ describe("Handlebars helpers", function () {
         }
       }
     });
+  });
+});
+
+describe("getDateTime", function () {
+  it("should render date if full dateTimeString", function () {
+    var date = functions.getDateTime("20240711220795");
+    expect(date).toEqual("2024-07-11T22:08:35.000Z");
+  });
+
+  it("should render date if full dateTimeString with space in front", function () {
+    var date = functions.getDateTime(" 20240711220795");
+    expect(date).toEqual("2024-07-11T22:08:35.000Z");
+  });
+
+  it("should render date if full dateTimeString with space in back", function () {
+    var date = functions.getDateTime("20240711220795 ");
+    expect(date).toEqual("2024-07-11T22:08:35.000Z");
+  });
+
+  it("should render date if only year, month, day", function () {
+    var date = functions.getDateTime("20240710");
+    expect(date).toEqual("2024-07-10T00:00:00.000Z");
+  });
+
+  it("should render date if only year, month", function () {
+    var date = functions.getDateTime("202407");
+    expect(date).toEqual("2024-07-01T00:00:00.000Z");
+  });
+
+  it("should render date if only year", function () {
+    var date = functions.getDateTime("2024");
+    expect(date).toEqual("2024-01-01T00:00:00.000Z");
+  });
+
+  it("should render date if full dateTimeString with timezone", function () {
+    var date = functions.getDateTime("20230626150846-0400");
+    expect(date).toEqual("2023-06-26T19:08:46.000Z");
+  });
+
+  it("should render date if full dateTimeString with timezone and seconds", function () {
+    var date = functions.getDateTime("20230626150846.123-0400");
+    expect(date).toEqual("2023-06-26T19:08:46.123Z");
+  });
+
+  it("should render nothing when has year but bad month", function () {
+    var date = functions.getDateTime("20243");
+    expect(date).toEqual("");
+  });
+
+  it("should render nothing when just one number", function () {
+    var date = functions.getDateTime("4");
+    expect(date).toEqual("");
+  });
+
+  it("should render nothing when its letters", function () {
+    var date = functions.getDateTime("abcdefg");
+    expect(date).toEqual("");
+  });
+
+  it("should render nothing when its numbers and one letter", function () {
+    var date = functions.getDateTime("2024a0304");
+    expect(date).toEqual("");
+  });
+
+  it("should render nothing empty string", function () {
+    var date = functions.getDateTime("");
+    expect(date).toEqual("");
+  });
+
+  it("should render nothing if date before 1900", function () {
+    var date = functions.getDateTime("18991231");
+    expect(date).toEqual("");
+  });
+
+  it("should render date when ISO YYYY-MM-DD", function () {
+    var date = functions.getDateTime("2023-06-26");
+    expect(date).toEqual("2023-06-26");
+  });
+
+  it("should render date when ISO YYYY-MM-DDTHH:MM:SS", function () {
+    var date = functions.getDateTime("2023-06-26T19:08:46");
+    expect(date).toEqual("2023-06-26T19:08:46");
+  });
+
+  it("should render date when ISO YYYY-MM-DDTHH:MM:SS.MMM", function () {
+    var date = functions.getDateTime("2023-06-26T19:08:46.000");
+    expect(date).toEqual("2023-06-26T19:08:46.000");
+  });
+
+  it("should render date when ISO YYYY-MM-DDTHH:MM:SS.MMMZ", function () {
+    var date = functions.getDateTime("2023-06-26T19:08:46.000Z");
+    expect(date).toEqual("2023-06-26T19:08:46.000Z");
+  });
+
+  it("should render date when ISO YYYY-MM-DDTHH:MM:SS.MMM-0300", function () {
+    var date = functions.getDateTime("2023-06-26T19:08:46.000-0300");
+    expect(date).toEqual("2023-06-26T19:08:46.000-0300");
+  });
+
+  it("should render date when ISO YYYY-MM-DD HH:MM:SS.MMMZ", function () {
+    var date = functions.getDateTime("2023-06-26 19:08:46.000Z");
+    expect(date).toEqual("2023-06-26 19:08:46.000Z");
   });
 });
 
