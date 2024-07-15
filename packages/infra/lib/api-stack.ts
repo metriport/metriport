@@ -194,6 +194,7 @@ export class APIStack extends Stack {
       cloudwatchLogsExports: ["postgresql"],
       deletionProtection: true,
       removalPolicy: RemovalPolicy.RETAIN,
+      enableDataApi: true,
     });
     Aspects.of(dbCluster).add({
       visit(node) {
@@ -202,7 +203,6 @@ export class APIStack extends Stack {
             minCapacity: dbConfig.minCapacity,
             maxCapacity: dbConfig.maxCapacity,
           };
-          node.enableHttpEndpoint = true;
         }
       },
     });
