@@ -125,6 +125,7 @@ function getDbPoolSettings(): DbPoolProps {
     }
   }
   const parsedProps = getAndParseSettings();
+  // https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-serverless-v2.setting-capacity.html#aurora-serverless-v2.max-connections
   const max = getOptionalInteger(parsedProps.max) ?? 500;
   const min = getOptionalInteger(parsedProps.min) ?? 50;
   const acquire = getOptionalInteger(parsedProps.acquire) ?? 10_000;

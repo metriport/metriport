@@ -37,6 +37,45 @@ interface ApiServiceProps extends StackProps {
   version: string | undefined;
 }
 
+type EnvSpecificSettings = {
+  desiredTaskCount: number;
+  maxTaskCount: number;
+  memoryLimitMiB: number;
+};
+type Settings = EnvSpecificSettings & {
+  loadBalancerIdleTimeout: Duration;
+  cpu: number;
+};
+
+function getEnvSpecificSettings(config: EnvConfig): EnvSpecificSettings {
+  if (isProd(config)) {
+    return {
+      desiredTaskCount: 6,
+      maxTaskCount: 40,
+      memoryLimitMiB: 4096,
+    };
+  }
+  if (isSandbox(config)) {
+    return {
+      desiredTaskCount: 2,
+      maxTaskCount: 10,
+      memoryLimitMiB: 2048,
+    };
+  }
+  return {
+    desiredTaskCount: 1,
+    maxTaskCount: 5,
+    memoryLimitMiB: 2048,
+  };
+}
+function getSettings(config: EnvConfig): Settings {
+  return {
+    ...getEnvSpecificSettings(config),
+    cpu: 1024, // Keep to 1 vCPU because NodeJS is single-threaded
+    loadBalancerIdleTimeout: Duration.minutes(10),
+  };
+}
+
 export function createAPIService({
   stack,
   props,
@@ -133,15 +172,18 @@ export function createAPIService({
   const listenerPort = 80;
   const containerPort = 8080;
   const logGroup = LogGroup.fromLogGroupArn(stack, "ApiLogGroup", props.config.logArn);
+  const { cpu, memoryLimitMiB, desiredTaskCount, maxTaskCount, loadBalancerIdleTimeout } =
+    getSettings(props.config);
   const fargateService = new ecs_patterns.ApplicationLoadBalancedFargateService(
     stack,
     "APIFargateServiceAlb",
     {
       cluster: cluster,
-      // Watch out for the combination of vCPUs and memory, more vCPU requires more memory
+      // Watch out for the combination of vCPUs and memory.
       // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#task_size
-      cpu: isProd(props.config) ? 2048 : 1024,
-      desiredCount: isProd(props.config) ? 2 : 1,
+      cpu,
+      memoryLimitMiB,
+      desiredCount: desiredTaskCount,
       taskImageOptions: {
         image: ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest"),
         containerPort,
@@ -160,6 +202,7 @@ export function createAPIService({
           ENV_TYPE: props.config.environmentType, // staging, production, sandbox
           ...(props.version ? { METRIPORT_VERSION: props.version } : undefined),
           AWS_REGION: props.config.region,
+          LB_TIMEOUT_IN_MILLIS: loadBalancerIdleTimeout.toMilliseconds().toString(),
           DB_READ_REPLICA_ENDPOINT: dbReadReplicaEndpointAsString,
           DB_POOL_SETTINGS: dbPoolSettings,
           TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
@@ -236,14 +279,16 @@ export function createAPIService({
           }),
         },
       },
-      memoryLimitMiB: isProd(props.config) ? 4096 : 2048,
       healthCheckGracePeriod: Duration.seconds(60),
       protocol: ApplicationProtocol.HTTP,
       listenerPort,
       publicLoadBalancer: false,
-      idleTimeout: Duration.minutes(10),
+      idleTimeout: loadBalancerIdleTimeout,
     }
   );
+  // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
+  // fargateService.taskDefinition.defaultContainer?.addUlimits({ ... });
+
   const serverAddress = fargateService.loadBalancer.loadBalancerDnsName;
   const apiUrl = `${props.config.subdomain}.${props.config.domain}`;
   new r53.ARecord(stack, "APIDomainPrivateRecord", {
@@ -349,7 +394,7 @@ export function createAPIService({
   const fargateCPUAlarm = fargateService.service
     .metricCpuUtilization()
     .createAlarm(stack, "CPUAlarm", {
-      threshold: 80,
+      threshold: 85,
       evaluationPeriods: 3,
       datapointsToAlarm: 2,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
@@ -360,7 +405,7 @@ export function createAPIService({
   const fargateMemoryAlarm = fargateService.service
     .metricMemoryUtilization()
     .createAlarm(stack, "MemoryAlarm", {
-      threshold: 70,
+      threshold: 85,
       evaluationPeriods: 3,
       datapointsToAlarm: 2,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
@@ -368,7 +413,7 @@ export function createAPIService({
   alarmAction && fargateMemoryAlarm.addAlarmAction(alarmAction);
   alarmAction && fargateMemoryAlarm.addOkAction(alarmAction);
 
-  // allow the NLB to talk to fargate
+  // allow the LB to talk to fargate
   fargateService.service.connections.allowFrom(
     ec2.Peer.ipv4(vpc.vpcCidrBlock),
     ec2.Port.allTraffic(),
@@ -378,18 +423,18 @@ export function createAPIService({
   // from the cluster created above, should be fine for now as it will only accept connections in the VPC
   fargateService.service.connections.allowFromAnyIpv4(ec2.Port.allTcp());
 
-  // hookup autoscaling based on 90% thresholds
+  // hookup autoscaling based on thresholds
   const scaling = fargateService.service.autoScaleTaskCount({
-    minCapacity: isProd(props.config) ? 2 : 1,
-    maxCapacity: isProd(props.config) ? 10 : 2,
+    minCapacity: desiredTaskCount,
+    maxCapacity: maxTaskCount,
   });
   scaling.scaleOnCpuUtilization("autoscale_cpu", {
-    targetUtilizationPercent: 90,
+    targetUtilizationPercent: 80,
     scaleInCooldown: Duration.minutes(2),
     scaleOutCooldown: Duration.seconds(30),
   });
   scaling.scaleOnMemoryUtilization("autoscale_mem", {
-    targetUtilizationPercent: 90,
+    targetUtilizationPercent: 80,
     scaleInCooldown: Duration.minutes(2),
     scaleOutCooldown: Duration.seconds(30),
   });
