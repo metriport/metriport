@@ -596,9 +596,7 @@ export function mapFhirGenderToCda(gender: string | undefined): CdaGender {
 }
 
 export const notOnFilePlaceholder: TextParagraph = {
-  text: {
-    paragraph: {
-      "#text": "Not on file",
-    },
+  paragraph: {
+    "#text": "Not on file",
   },
 };

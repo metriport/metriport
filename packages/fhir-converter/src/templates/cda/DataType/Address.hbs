@@ -25,7 +25,7 @@
   // -------------------------------------------------------------------------------------------------
 --}}
 {
-    "use": {{>ValueSet/AddressUse.hbs code=addr.use}},
+    "use": {{#if (not isOrg)}} {{>ValueSet/AddressUse.hbs code=addr.use}} {{/if}},
     "line": [
        	{{#each (toArray addr.streetAddressLine)}}
            	"{{this._}}",

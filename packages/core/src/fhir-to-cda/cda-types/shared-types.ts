@@ -461,10 +461,8 @@ export type Subject = {
 };
 
 export type TextParagraph = {
-  text: {
-    paragraph: {
-      "#text": string;
-    };
+  paragraph: {
+    "#text": string;
   };
 };
 

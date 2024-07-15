@@ -30,6 +30,9 @@
         "id":"{{ID}}",
         "beneficiary":
         {
+            {{#if canBeUnknown}} 
+              "display":"unknown",
+            {{/if}}
             "reference":"{{REF}}",
         },
     },
