@@ -12,8 +12,8 @@ export type OrganizationDTO = BaseDTO & {
 export type InternalOrganizationDTO = BaseDTO &
   OrganizationDTO & {
     businessType: OrganizationBizType;
-    cqActive: boolean;
-    cwActive: boolean;
+    cqActive: boolean | undefined;
+    cwActive: boolean | undefined;
   };
 
 export function dtoFromModel(org: Organization): OrganizationDTO {
