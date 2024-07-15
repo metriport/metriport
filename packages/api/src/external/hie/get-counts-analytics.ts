@@ -36,9 +36,6 @@ export function getDocumentReferenceContentTypeCounts(
   return contentTypeCounts;
 }
 
-// ehex, epic, allscripts, ntst, redox, surescripts, athena, nextgen,
-// kno2, medent, healthgorilla,
-
 export function determinePatientDiscoverySuccessGateway(
   response: OutboundPatientDiscoveryResp
 ): GatewayCounts {
