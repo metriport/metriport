@@ -82,16 +82,18 @@ const convertCollectionBundleToTransactionBundle = ({
     )
       continue;
 
-    const contained = resource.contained ? [...resource.contained, patient] : [patient];
     const transactionEntry: BundleEntry = {
-      resource: {
-        ...resource,
-        contained,
-      },
       request: { method: "PUT", url: resource.resourceType + "/" + resource.id },
     };
-    if (resource.resourceType === "Patient") {
-      delete (transactionEntry.resource as Patient).contained;
+
+    const contained = resource.contained ? [...resource.contained, patient] : [patient];
+    if (resource.resourceType !== "Patient") {
+      transactionEntry.resource = {
+        ...resource,
+        contained,
+      };
+    } else if (resource.resourceType === "Patient") {
+      transactionEntry.resource = resource;
     }
 
     transactionBundle.entry?.push(transactionEntry);
