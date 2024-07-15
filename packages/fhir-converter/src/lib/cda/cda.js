@@ -33,6 +33,7 @@ const elementTime00010101Replacement = "";
 const valueTime00010101Regex = new RegExp('value="00010101000000*"s*/>', "g");
 const valueTime00010101Replacement = 'nullFlavor="NI" />';
 
+// TODO https://github.com/metriport/metriport-internal/issues/2004
 const singleAmpersandRegexOneOff = new RegExp('A&O x 3', "g");
 const singleAmpersandReplacementOneOff = 'A&amp;O x 3';
 
