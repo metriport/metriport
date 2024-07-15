@@ -53,8 +53,9 @@ export function determinePatientDiscoverySuccessGateway(
     "healthgorilla",
   ];
 
+  const urlLowerCase = response.gateway.url.toLowerCase();
   const result = gateways.reduce((acc, gateway) => {
-    acc[gateway] = response.gateway.url.includes(gateway);
+    acc[gateway] = urlLowerCase.includes(gateway);
     return acc;
   }, {} as Record<string, boolean>);
 
