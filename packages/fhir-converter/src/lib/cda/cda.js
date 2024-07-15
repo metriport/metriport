@@ -129,7 +129,7 @@ module.exports = class cda extends dataHandler {
     }
     res = res.replace(elementTime00010101Regex, elementTime00010101Replacement);
     res = res.replace(valueTime00010101Regex, valueTime00010101Replacement);
-    res = res.replace(singleAmpersandRegexOneOff, singleAmpersandReplacementOneOff)
+    res = res.replace(singleAmpersandRegexOneOff, singleAmpersandReplacementOneOff);
     return res;
   }
 
