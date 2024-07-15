@@ -3,6 +3,7 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as rds from "aws-cdk-lib/aws-rds";
 import { Construct } from "constructs";
 import { EnvType } from "./env-type";
 import { createLambda } from "./shared/lambda";
@@ -25,7 +26,7 @@ interface IHEGatewayV2LambdasNestedStackProps extends NestedStackProps {
   sentryDsn: string | undefined;
   iheResponsesBucketName: string;
   dbSecretArn: string;
-  dbClusterArn: string;
+  dbCluster: rds.DatabaseCluster;
 }
 
 export class IHEGatewayV2LambdasNestedStack extends NestedStack {
@@ -299,10 +300,10 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: EnvType;
-    dbClusterArn: string;
+    dbCluster: rds.DatabaseCluster;
     dbSecretArn: string;
   }): Lambda {
-    const { lambdaLayers, vpc, envType, dbClusterArn, dbSecretArn } = ownProps;
+    const { lambdaLayers, vpc, envType, dbCluster, dbSecretArn } = ownProps;
 
     const mockDbClientLambda = createLambda({
       stack: this,
@@ -310,7 +311,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       entry: "ihe-gateway-v2-mock-db-client",
       envType: envType,
       envVars: {
-        DB_RESOURCE_ARN: dbClusterArn,
+        DB_RESOURCE_ARN: dbCluster.clusterArn,
         DB_SECRET_ARN: dbSecretArn,
       },
       layers: [lambdaLayers.shared],
@@ -319,6 +320,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       vpc,
     });
 
+    dbCluster.grantDataApiAccess(mockDbClientLambda);
     return mockDbClientLambda;
   }
 }

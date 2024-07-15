@@ -216,7 +216,6 @@ export class APIStack extends Stack {
     );
 
     const dbSecretArn = dbCredsSecret.secretArn;
-    const dbClusterArn = dbCluster.clusterArn;
 
     //----------------------------------------------------------
     // DynamoDB
@@ -465,7 +464,7 @@ export class APIStack extends Stack {
         sentryDsn: props.config.lambdasSentryDSN,
         iheResponsesBucketName: props.config.iheResponsesBucketName,
         dbSecretArn,
-        dbClusterArn,
+        dbCluster,
       });
     }
 
