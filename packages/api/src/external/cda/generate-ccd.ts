@@ -90,7 +90,7 @@ async function uploadCcdFhirDataToS3(
   data: BundleEntry<Resource>[],
   requestId: string
 ): Promise<void> {
-  const log = out(`Upload FHIR data for CCD cxId: ${patient.cxId}, patientId: ${patient.id}`).log;
+  const { log } = out(`Upload FHIR data for CCD cxId: ${patient.cxId}, patientId: ${patient.id}`);
   const key = createUploadFilePath(
     patient.cxId,
     patient.id,
