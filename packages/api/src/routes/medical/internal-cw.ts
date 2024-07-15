@@ -52,8 +52,8 @@ router.put(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    await verifyCxProviderAccess(cxId);
     const oid = getFrom("params").orFail("oid", req);
+    await verifyCxProviderAccess(cxId);
 
     const org = await getOrganizationOrFail({ cxId });
     if (org.oid !== oid) throw new NotFoundError("Organization not found");
@@ -91,9 +91,9 @@ router.put(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    await verifyCxItVendorAccess(cxId);
     const facilityId = getFrom("query").orFail("facilityId", req);
     const oid = getFrom("params").orFail("oid", req);
+    await verifyCxItVendorAccess(cxId);
 
     const org = await getOrganizationOrFail({ cxId });
     const facility = await getFacilityOrFail({ cxId, id: facilityId });
