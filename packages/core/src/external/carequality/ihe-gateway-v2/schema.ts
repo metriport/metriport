@@ -50,6 +50,10 @@ export const genderCodeSchema = z.union([
   z.literal("M"),
   z.literal("UN"),
   z.literal("UNK"),
+  z.literal("OTH"),
+  z.literal("U"),
+  z.literal("FTM"),
+  z.literal("MTF"),
 ]);
 export type IheGender = z.infer<typeof genderCodeSchema>;
 
@@ -92,38 +96,40 @@ export const samlHeaderSchema = z.object({
       SignatureValue: z.string(),
     }),
     Assertion: z.object({
-      AttributeStatement: z.object({
-        Attribute: z.array(
-          z.union([
-            z.object({
-              _Name: z.string(),
-              _NameFormat: z.string().optional(),
-              AttributeValue: textSchema,
-            }),
-            z.object({
-              _Name: z.string(),
-              _NameFormat: z.string().optional(),
-              AttributeValue: z.object({
-                Role: codeSchema,
+      AttributeStatement: schemaOrArray(
+        z.object({
+          Attribute: z.array(
+            z.union([
+              z.object({
+                _Name: z.string(),
+                _NameFormat: z.string().optional(),
+                AttributeValue: textSchema,
               }),
-            }),
-            z.object({
-              _Name: z.string(),
-              _NameFormat: z.string().optional(),
-              AttributeValue: z.object({
-                PurposeOfUse: codeSchema,
+              z.object({
+                _Name: z.string(),
+                _NameFormat: z.string().optional(),
+                AttributeValue: z.object({
+                  Role: codeSchema,
+                }),
               }),
-            }),
-            z.object({
-              _Name: z.string(),
-              _NameFormat: z.string().optional(),
-              AttributeValue: z.object({
-                PurposeForUse: codeSchema,
+              z.object({
+                _Name: z.string(),
+                _NameFormat: z.string().optional(),
+                AttributeValue: z.object({
+                  PurposeOfUse: codeSchema,
+                }),
               }),
-            }),
-          ])
-        ),
-      }),
+              z.object({
+                _Name: z.string(),
+                _NameFormat: z.string().optional(),
+                AttributeValue: z.object({
+                  PurposeForUse: codeSchema,
+                }),
+              }),
+            ])
+          ),
+        })
+      ),
     }),
   }),
 });

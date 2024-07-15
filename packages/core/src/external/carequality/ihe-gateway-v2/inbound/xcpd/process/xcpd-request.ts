@@ -38,7 +38,8 @@ export function transformIti55RequestToPatientResource(
     value: id._extension,
   }));
 
-  const gender = mapIheGenderToFhir(queryParams.livingSubjectAdministrativeGender?.value?._code);
+  const iheGender = queryParams.livingSubjectAdministrativeGender?.value;
+  const gender = iheGender ? mapIheGenderToFhir(iheGender._code) : mapIheGenderToFhir(undefined);
   const birthDate = dayjs(queryParams.livingSubjectBirthTime.value._value).format("YYYY-MM-DD");
   const patientResource = {
     name,
@@ -89,6 +90,6 @@ export async function processInboundXcpdRequest(
         jsonObj
       )}, request: ${request}`
     );
-    throw new Error(`${msg}: ${error}`);
+    throw error;
   }
 }

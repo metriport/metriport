@@ -139,7 +139,11 @@ const iheGenderToFhirGender: Record<IheGender, FhirGender> = {
   F: "female",
   M: "male",
   UN: "other",
+  OTH: "other",
+  FTM: "other",
+  MTF: "other",
   UNK: "unknown",
+  U: "unknown",
 };
 
 export function mapIheGenderToFhir(k: IheGender | undefined): FhirGender {

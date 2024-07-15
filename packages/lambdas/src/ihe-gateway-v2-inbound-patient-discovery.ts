@@ -61,7 +61,7 @@ export async function handler(event: APIGatewayProxyEventV2) {
       return buildResponse(200, xmlResponse);
     } catch (error) {
       log(`Client error on ${lambdaName}: ${errorToString(error)}`);
-      return buildResponse(400, "Schema Validation Error");
+      return buildResponse(400, errorToString(error));
     }
   } catch (error) {
     const msg = "Server error processing event on " + lambdaName;
