@@ -90,6 +90,6 @@ export async function processInboundXcpdRequest(
         jsonObj
       )}, request: ${request}`
     );
-    throw error;
+    throw new Error(`${msg}: ${error}`);
   }
 }
