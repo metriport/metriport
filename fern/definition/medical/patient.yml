@@ -54,7 +54,7 @@ service:
       examples:
         - name: Example1
           path-parameters:
-            id: "2.16.840.1.113883.3.666.777"
+            id: "018a80c4-292a-7486-a1234-76yuhe23yu14"
           response:
             body: $Patient.Example1
 
@@ -69,6 +69,8 @@ service:
           docs: The ID of the Patient to update.
       request:
         name: PatientUpdate
+        path-parameters:
+            id: "018a80c4-292a-7486-a1234-76yuhe23yu14"
         query-parameters:
           facilityId:
             type: string
@@ -100,6 +102,8 @@ service:
           docs: The ID of the Patient to delete.
       request:
         name: PatientDelete
+        path-parameters:
+            id: "018a80c4-292a-7486-a1234-76yuhe23yu14"
         query-parameters:
           facilityId:
             type: optional<string>
@@ -285,7 +289,7 @@ types:
     examples:
       - name: Example1
         value:
-          id: "2.16.840.1.113883.3.666.777"
+          id: "018a80c4-292a-7486-a1234-76yuhe23yu14"
           firstName: Karen
           lastName: Lynch
           dob: 1963-12-30
