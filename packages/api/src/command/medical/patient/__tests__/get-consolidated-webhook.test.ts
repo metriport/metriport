@@ -125,7 +125,7 @@ describe("getConsolidatedWebhook", () => {
     expect(result).toEqual({
       requestId,
       conversionType: undefined,
-      message: "No Url to return for this conversion type",
+      message: "No URL to return for this conversion type",
     });
   });
 
@@ -177,7 +177,7 @@ describe("getConsolidatedWebhook", () => {
     expect(result).toEqual({
       requestId,
       status: "failed",
-      message: "No url found for this webhook",
+      message: "No URL found for this webhook",
     });
   });
 });
