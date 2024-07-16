@@ -74,7 +74,6 @@ router.put(
     createOrUpdateFacilityInCq({
       cxId,
       facility,
-      facilityName: facilityDetails.cqFacilityName,
       cxOrgName: org.data.name,
       cxOrgBizType: org.type,
       cqOboOid: facilityDetails.cqOboOid,
@@ -83,7 +82,6 @@ router.put(
     createOrUpdateInCw({
       cxId,
       facility,
-      facilityName: facilityDetails.cwFacilityName,
       cxOrgName: org.data.name,
       cxOrgType: org.data.type,
       cwOboOid: facilityDetails.cwOboOid,
