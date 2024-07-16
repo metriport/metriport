@@ -154,6 +154,9 @@ jobs:
       - name: Infra test
         run: npm run test
         working-directory: "metriport/packages/infra"
+      - name: FHIR Converter test
+        run: npm run test
+        working-directory: "metriport/packages/fhir-converter"
 
         # SENTRY
       - name: Create Sentry release
