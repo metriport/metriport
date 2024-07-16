@@ -48,7 +48,7 @@ export async function getConsolidatedWebhook({
     return {
       requestId,
       conversionType: consolidatedWebhookQuery.conversionType,
-      message: "No Url to return for this conversion type",
+      message: "No URL to return for this conversion type",
     };
   }
 
@@ -77,7 +77,7 @@ export async function getConsolidatedWebhook({
     return {
       requestId,
       status: "failed",
-      message: "No url found for this webhook",
+      message: "No URL found for this webhook",
     };
   }
 
