@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { faker } from "@faker-js/faker";
 import { v4 as uuidv4 } from "uuid";
-import { USState } from "@metriport/core/domain/geographic-locations";
 import {
   makeOrganization,
   makeOrganizationData,
@@ -12,6 +11,7 @@ import { OrganizationModel } from "../../../../models/medical/organization";
 import { makeOrganizationOID } from "../../../../shared/oid";
 import * as createId from "../../customer-sequence/create-id";
 import { createOrganization } from "../create-organization";
+import { addressWithCoordinates } from "./register-organization";
 import * as upsertOrgToFHIRServer from "../../../../external/fhir/organization/upsert-organization";
 import * as cwCommands from "../../../../external/commonwell";
 
@@ -30,17 +30,7 @@ beforeAll(() => {
     .mockImplementation(async () => {});
   jest.spyOn(upsertOrgToFHIRServer, "upsertOrgToFHIRServer").mockImplementation(async () => {});
   jest.spyOn(cwCommands.default.organization, "createOrUpdate").mockImplementation(async () => {});
-  jest.spyOn(address, "getAddressWithCoordinates").mockResolvedValue({
-    addressLine1: "",
-    city: "",
-    state: "" as USState,
-    zip: "00000",
-    country: "USA",
-    coordinates: {
-      lat: 0,
-      lon: 0,
-    },
-  });
+  jest.spyOn(address, "getAddressWithCoordinates").mockResolvedValue(addressWithCoordinates);
 });
 beforeEach(() => {
   jest.clearAllMocks();
