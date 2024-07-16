@@ -48,8 +48,7 @@
     "packages/api",
     "packages/infra",
     "packages/utils",
-    "packages/tester-node",
-    "packages/fhir-converter"
+    "packages/tester-node"
   ],
   "lint-staged": {
     "*.{ts,tsx}": [
