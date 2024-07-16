@@ -182,7 +182,9 @@ function createIti55SoapBody(
   const subject = response.patientMatch ? createSubjectAndRegistrationEvent(response) : undefined;
 
   const soapBody = {
-    "@_xmlns:urn": namespaces.hl7,
+    "@_xmlns": namespaces.hl7,
+    "@_xmlns:xsd": namespaces.xs,
+    "@_xmlns:xsi": namespaces.xsi,
     PRPA_IN201306UV02: {
       id: {
         "@_root": uuidv4(), // TODO #1776 monitoring PR
