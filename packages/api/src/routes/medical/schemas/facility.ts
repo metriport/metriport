@@ -26,11 +26,9 @@ export const facilityOboDetailsSchema = z
     cqType: z.nativeEnum(FacilityType),
     cqActive: z.boolean().optional(),
     cqOboOid: z.string().optional(),
-    cqFacilityName: z.string().optional(),
     // CW
     cwType: z.nativeEnum(FacilityType),
     cwActive: z.boolean().optional(),
     cwOboOid: z.string().optional(),
-    cwFacilityName: z.string().optional(),
   })
   .merge(AddressStrictSchema);

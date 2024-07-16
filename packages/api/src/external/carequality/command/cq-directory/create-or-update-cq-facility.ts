@@ -13,21 +13,19 @@ export const metriportIntermediaryOid = `${metriportOid}.666`;
 export async function createOrUpdateFacilityInCq({
   cxId,
   facility,
-  facilityName,
   cxOrgName,
   cxOrgBizType,
   cqOboOid,
 }: {
   cxId: string;
   facility: Facility;
-  facilityName: string | undefined;
   cxOrgName: string;
   cxOrgBizType: OrganizationBizType;
   cqOboOid: string | undefined;
 }): Promise<void> {
   const orgName = buildCqOrgNameForFacility({
     vendorName: cxOrgName,
-    orgName: facilityName ?? facility.data.name,
+    orgName: facility.data.name,
     oboOid: cqOboOid,
   });
 
