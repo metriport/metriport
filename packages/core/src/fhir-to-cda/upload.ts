@@ -5,6 +5,7 @@ import { cdaDocumentUploaderHandler } from "../shareback/cda-uploader";
 import { Config } from "../util/config";
 import { MetriportError } from "../util/error/metriport-error";
 import { out } from "../util/log";
+import { JSON_APP_MIME_TYPE } from "../util/mime";
 import { capture } from "../util/notifications";
 
 const medicalDocumentsBucket = Config.getMedicalDocumentsBucketName();
@@ -68,6 +69,7 @@ export async function uploadFhirBundleToS3({
       bucket: Config.getMedicalDocumentsBucketName(),
       key: destinationKey,
       file: Buffer.from(JSON.stringify(fhirBundle)),
+      contentType: JSON_APP_MIME_TYPE,
     });
     log(`Successfully uploaded the file to ${medicalDocumentsBucket} with key ${destinationKey}`);
   } catch (error) {

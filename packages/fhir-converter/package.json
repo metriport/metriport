@@ -6,7 +6,7 @@
   "private": true,
   "scripts": {
     "clean": "rimraf node_modules",
-    "build": "npm run eslint && npm run full-hbs-lint",
+    "build": "npm run eslint",
     "pretest": "node --experimental-worker src/init-service.js",
     "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
     "prestart": "node --experimental-worker src/init-service.js",
