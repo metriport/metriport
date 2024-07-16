@@ -8,6 +8,7 @@ import { makeProgress } from "../../../../domain/medical/__tests__/document-quer
 import { StoreQueryParams } from "../query-init";
 import { makePatientData } from "../../../../domain/medical/__tests__/patient";
 import { makePatientModel } from "../../../../models/medical/__tests__/patient";
+import { WebhookRequest } from "../../../../models/webhook-request";
 
 export const requestId = uuidv7_file.uuidv4();
 export const patient = { id: uuidv7_file.uuidv7(), cxId: uuidv7_file.uuidv7() };
@@ -71,3 +72,12 @@ export const mockedPatientAllProgresses = makePatientModel({
     consolidatedQueries: [makeConsolidatedQueryProgress()],
   }),
 });
+
+export function makeConsolidatedWebhook(params?: Partial<WebhookRequest>): WebhookRequest {
+  return {
+    cxId: params?.cxId ?? patient.cxId,
+    requestId: params?.requestId ?? requestId,
+    type: "medical.consolidated-data",
+    // url: faker.internet.url(),
+  };
+}
