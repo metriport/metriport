@@ -8,6 +8,7 @@ import { makeProgress } from "../../../../domain/medical/__tests__/document-quer
 import { StoreQueryParams } from "../query-init";
 import { makePatientData } from "../../../../domain/medical/__tests__/patient";
 import { makePatientModel } from "../../../../models/medical/__tests__/patient";
+import { WebhookRequestCreate } from "../../../../domain/webhook";
 import { WebhookRequest } from "../../../../models/webhook-request";
 
 export const requestId = uuidv7_file.uuidv4();
@@ -56,7 +57,7 @@ export function makeConsolidatedQueryProgress(
     status: params?.status ?? "processing",
     startedAt: params?.startedAt ?? new Date(),
     resources: params?.resources ?? [],
-    conversionType: params?.conversionType ?? "json",
+    conversionType: params?.conversionType,
     dateFrom: dayjs(
       faker.date.past({
         refDate: dateTo,
@@ -73,11 +74,18 @@ export const mockedPatientAllProgresses = makePatientModel({
   }),
 });
 
-export function makeConsolidatedWebhook(params?: Partial<WebhookRequest>): WebhookRequest {
-  return {
+export function makeConsolidatedWebhook(params?: Partial<WebhookRequestCreate>): WebhookRequest {
+  const webhookRequest = {
     cxId: params?.cxId ?? patient.cxId,
     requestId: params?.requestId ?? requestId,
     type: "medical.consolidated-data",
-    // url: faker.internet.url(),
-  };
+    payload: params?.payload ?? {},
+    status: params?.status ?? "success",
+    statusDetail: params?.statusDetail ?? "",
+    requestUrl: params?.requestUrl ?? "",
+    httpStatus: params?.httpStatus ?? 200,
+    durationMillis: params?.durationMillis ?? 0,
+  } as WebhookRequest;
+
+  return webhookRequest;
 }

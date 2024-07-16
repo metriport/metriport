@@ -41,7 +41,8 @@ export async function getConsolidatedWebhook({
 
   const conversionIsValid =
     consolidatedWebhookQuery.conversionType === "html" ||
-    consolidatedWebhookQuery.conversionType === "pdf";
+    consolidatedWebhookQuery.conversionType === "pdf" ||
+    consolidatedWebhookQuery.conversionType === "json";
 
   if (!conversionIsValid) {
     return {
@@ -69,7 +70,8 @@ export async function getConsolidatedWebhook({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const webhookPayload: any = webhookData.payload;
 
-  const url = webhookPayload.patients[0].bundle.entry[0].resource.content[0].attachment.url;
+  const url =
+    webhookPayload.patients?.[0].bundle?.entry?.[0].resource?.content?.[0].attachment?.url;
 
   if (!url) {
     return {
