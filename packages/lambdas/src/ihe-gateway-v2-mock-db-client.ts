@@ -16,8 +16,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       const command = new ExecuteStatementCommand({
         secretArn,
         resourceArn,
-        sql: "SELECT * FROM document_query_lambda LIMIT 10",
+        sql: "SELECT * FROM document_query_result order by created_at desc LIMIT 10",
         includeResultMetadata: true,
+        database: "metriport_api",
       });
 
       const response = await rdsDataClient.send(command);
