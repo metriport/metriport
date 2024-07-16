@@ -33,10 +33,6 @@ const elementTime00010101Replacement = "";
 const valueTime00010101Regex = new RegExp('value="00010101000000*"s*/>', "g");
 const valueTime00010101Replacement = 'nullFlavor="NI" />';
 
-// TODO https://github.com/metriport/metriport-internal/issues/2004
-const singleAmpersandRegexOneOff = new RegExp('A&O x 3', "g");
-const singleAmpersandReplacementOneOff = 'A&amp;O x 3';
-
 module.exports = class cda extends dataHandler {
   constructor() {
     super("cda");
@@ -130,7 +126,6 @@ module.exports = class cda extends dataHandler {
     }
     res = res.replace(elementTime00010101Regex, elementTime00010101Replacement);
     res = res.replace(valueTime00010101Regex, valueTime00010101Replacement);
-    res = res.replace(singleAmpersandRegexOneOff, singleAmpersandReplacementOneOff);
     return res;
   }
 
