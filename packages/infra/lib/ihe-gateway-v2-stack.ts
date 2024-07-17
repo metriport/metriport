@@ -134,7 +134,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         IHE_RESPONSES_BUCKET_NAME: iheResponsesBucket.bucketName,
-        IHE_XCPD_RESPONES_BUCKET_NAME: iheXcpdResponsesBucket.bucketName,
+        IHE_XCPD_RESPONSES_BUCKET_NAME: iheXcpdResponsesBucket.bucketName,
       },
       layers: [lambdaLayers.shared],
       memory: 4096,
