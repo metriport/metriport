@@ -49,7 +49,7 @@ export const updateOrganization = async (
       address: updatedOrg.data.location,
     });
     cqCommands.organization
-      .createOrUpdate({
+      .createOrUpdate(cxId, {
         name: updatedOrg.data.name,
         addressLine1: addressLine,
         lat: coordinates.lat.toString(),

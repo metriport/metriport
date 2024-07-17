@@ -5,14 +5,14 @@ export async function createOrUpdateCWOrganization(
   org: CWOrganization,
   isObo = false
 ): Promise<void> {
-  const orgExists = await doesOrganizationExistInCW(org.oid);
+  const orgExists = await doesOrganizationExistInCW(cxId, org.oid);
   if (orgExists) {
     return update(cxId, org, isObo);
   }
   return create(cxId, org, isObo);
 }
 
-async function doesOrganizationExistInCW(oid: string): Promise<boolean> {
-  const org = await get(oid);
+async function doesOrganizationExistInCW(cxId: string, oid: string): Promise<boolean> {
+  const org = await get(cxId, oid);
   return !!org;
 }

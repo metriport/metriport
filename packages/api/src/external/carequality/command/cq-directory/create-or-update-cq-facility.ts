@@ -29,8 +29,7 @@ export async function createOrUpdateFacilityInCq({
   });
 
   const { coordinates, addressLine } = await getCqAddress({ cxId, address: facility.data.address });
-
-  await createOrUpdateCQOrganization({
+  await createOrUpdateCQOrganization(cxId, {
     name: orgName,
     addressLine1: addressLine,
     lat: coordinates.lat.toString(),

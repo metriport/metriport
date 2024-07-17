@@ -161,9 +161,10 @@ router.post(
   "/directory/organization",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const body = req.body;
     const orgDetails = cqOrgDetailsOrgBizRequiredSchema.parse(body);
-    await createOrUpdateCQOrganization(orgDetails);
+    await createOrUpdateCQOrganization(cxId, orgDetails);
 
     return res.sendStatus(httpStatus.OK);
   })
@@ -246,7 +247,7 @@ router.put(
 
     if (!cqOrg.name) throw new NotFoundError("CQ org name is not set - cannot update");
     const { coordinates, addressLine } = await getCqAddress({ cxId, address: org.data.location });
-    await createOrUpdateCQOrganization({
+    await createOrUpdateCQOrganization(cxId, {
       name: cqOrg.name,
       addressLine1: addressLine,
       lat: coordinates.lat.toString(),
@@ -314,7 +315,7 @@ router.put(
       cxId,
       address: facility.data.address,
     });
-    await createOrUpdateCQOrganization({
+    await createOrUpdateCQOrganization(cxId, {
       name: cqOrg.name,
       addressLine1: addressLine,
       lat: coordinates.lat.toString(),

@@ -54,7 +54,7 @@ export const createOrganization = async (
 
     const { coordinates, addressLine } = await getCqAddress({ cxId, address: org.data.location });
     cqCommands.organization
-      .createOrUpdate({
+      .createOrUpdate(cxId, {
         name: org.data.name,
         addressLine1: addressLine,
         lat: coordinates.lat.toString(),
