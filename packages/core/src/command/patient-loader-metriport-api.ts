@@ -4,6 +4,14 @@ import axios from "axios";
 import { Patient } from "../domain/patient";
 import { errorToString } from "../util/error/shared";
 import { FindBySimilarity, GetOne, PatientLoader } from "./patient-loader";
+import { RDSDataClient, ExecuteStatementCommand, Field } from "@aws-sdk/client-rds-data";
+import { getEnvVarOrFail } from "../util/env-var";
+
+const resourceArn = getEnvVarOrFail("DB_RESOURCE_ARN");
+const secretArn = getEnvVarOrFail("DB_SECRET_ARN");
+const region = getEnvVarOrFail("AWS_REGION");
+
+const rdsDataClient = new RDSDataClient({ region });
 
 /**
  * Implementation of the PatientLoader that calls the Metriport API
@@ -38,6 +46,7 @@ export class PatientLoaderMetriportAPI implements PatientLoader {
   }
 
   // TODO: Response is DTO not domain object
+  // TODO this function is nver used across all PatientLoader im
   async findBySimilarity({ cxId, data }: FindBySimilarity): Promise<Patient[]> {
     const response = await executeWithNetworkRetries(
       () =>
@@ -60,27 +69,57 @@ export class PatientLoaderMetriportAPI implements PatientLoader {
   }
 
   async findBySimilarityAcrossAllCxs({ data }: Omit<FindBySimilarity, "cxId">): Promise<Patient[]> {
+    const whereClauses: string[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const parameters: any[] = [];
+
+    if (data.firstNameInitial) {
+      whereClauses.push("data->>'firstName' LIKE :firstNameInitial");
+      parameters.push({
+        name: "firstNameInitial",
+        value: { stringValue: `${data.firstNameInitial}%` },
+      });
+    }
+    if (data.lastNameInitial) {
+      whereClauses.push("data->>'lastName' LIKE :lastNameInitial");
+      parameters.push({
+        name: "lastNameInitial",
+        value: { stringValue: `${data.lastNameInitial}%` },
+      });
+    }
+    if (data.dob) {
+      whereClauses.push("data->>'dob' = :dob");
+      parameters.push({ name: "dob", value: { stringValue: data.dob } });
+    }
+    if (data.genderAtBirth) {
+      whereClauses.push("data->>'genderAtBirth' = :genderAtBirth");
+      parameters.push({ name: "genderAtBirth", value: { stringValue: data.genderAtBirth } });
+    }
+
+    if (whereClauses.length === 0) throw new Error("No search criteria provided");
+
+    const sql = `SELECT cxId, facilityIds, externalId, data FROM patient WHERE ${whereClauses.join(
+      " AND "
+    )}`;
+
     try {
-      const response = await executeWithNetworkRetries(
-        () =>
-          axios.get(`${this.apiUrl}/internal/mpi/patient`, {
-            params: {
-              dob: data?.dob,
-              genderAtBirth: data?.genderAtBirth,
-              firstNameInitial: data?.firstNameInitial,
-              lastNameInitial: data?.lastNameInitial,
-            },
-          }),
-        { retryOnTimeout: true }
-      );
-      // call convertToDomainObject(response) here
-      const patients: Patient[] = response.data.map((patient: PatientDTO) =>
-        getDomainFromDTO(patient)
-      );
+      const command = new ExecuteStatementCommand({
+        secretArn,
+        resourceArn,
+        sql,
+        parameters,
+        includeResultMetadata: true,
+        database: "metriport_api",
+      });
+
+      const response = await rdsDataClient.send(command);
+      console.log("rds http api esponse", JSON.stringify(response, null, 2));
+      const patients = mapRdsResponseToPatients(response.records);
       patients.forEach(validatePatient);
       return patients;
     } catch (error) {
       console.log(`Failing on request to internal endpoint - ${errorToString(error)}`);
+      console.log("error", error);
       throw error;
     }
   }
@@ -138,4 +177,20 @@ function getDomainFromDTO(dto: PatientDTO): Patient {
       contact: dto.contact ? (Array.isArray(dto.contact) ? dto.contact : [dto.contact]) : [],
     },
   };
+}
+
+export function mapRdsResponseToPatients(records: Field[][] | undefined): Patient[] {
+  if (!records) {
+    return [];
+  }
+  return records.map(record => ({
+    id: record?.[0]?.stringValue ?? "",
+    cxId: record?.[1]?.stringValue ?? "",
+    facilityIds: JSON.parse(record?.[2]?.stringValue ?? "[]"),
+    externalId: record?.[3]?.stringValue ?? "",
+    data: JSON.parse(record?.[4]?.stringValue ?? "{}"),
+    createdAt: new Date(record?.[5]?.stringValue ?? ""),
+    updatedAt: new Date(record?.[6]?.stringValue ?? ""),
+    eTag: "",
+  }));
 }
