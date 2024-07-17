@@ -27,7 +27,6 @@ export class IHEGatewayV2Direct extends IHEGatewayV2 {
       privateKey: Config.getCQOrgPrivateKey(),
       privateKeyPassword: Config.getCQOrgPrivateKeyPassword(),
     };
-    this.pdResponseUrl = Config.getApiUrl() + cqPath + "/patient-discovery/response";
     this.dqResponseUrl = Config.getApiUrl() + cqPath + "/document-query/response";
     this.drResponseUrl = Config.getApiUrl() + cqPath + "/document-retrieval/response";
   }
