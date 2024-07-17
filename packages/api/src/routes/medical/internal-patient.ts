@@ -1,8 +1,28 @@
+import { Patient } from "@metriport/core/domain/patient";
+import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
+import { Bundle, DocumentReference } from "@medplum/fhirtypes";
 import { genderAtBirthSchema } from "@metriport/api-sdk";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
-import { sleep, stringToBoolean } from "@metriport/shared";
+import {
+  sleep,
+  stringToBoolean,
+  normalizeDate,
+  normalizeDateStrict,
+  normalizeGender,
+  normalizeGenderStrict,
+  isPhoneValid,
+  normalizePhoneNumber,
+  isEmailValid,
+  normalizeEmail,
+  normalizeState,
+  normalizeStateStrict,
+  normalizeZipCodePassive,
+  normalizeZipCodeStrict,
+  normalizeExternalId,
+  toTitleCase,
+} from "@metriport/shared";
 import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -14,6 +34,8 @@ import { chunk } from "lodash";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import { getCqOrgIdsToDenyOnCw } from "../../external/hie/cross-hie-ids";
+import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
+import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { getConsolidated } from "../../command/medical/patient/consolidated-get";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
@@ -21,9 +43,11 @@ import {
   getPatientOrFail,
   getPatients,
   getPatientStates,
+  matchPatient,
 } from "../../command/medical/patient/get-patient";
 import {
   PatientUpdateCmd,
+  updatePatient,
   updatePatientWithoutHIEs,
 } from "../../command/medical/patient/update-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
@@ -32,6 +56,7 @@ import {
   getCxsWithCQDirectFeatureFlagValue,
   getCxsWithEnhancedCoverageFeatureFlagValue,
 } from "../../external/aws/app-config";
+import { countResources } from "../../external/fhir/patient/count-resources";
 import { PatientUpdaterCarequality } from "../../external/carequality/patient-updater-carequality";
 import cwCommands from "../../external/commonwell";
 import { findDuplicatedPersons } from "../../external/commonwell/admin/find-patient-duplicates";
@@ -720,6 +745,275 @@ router.get(
     const patient = await getPatientOrFail({ cxId, id });
 
     return res.status(status.OK).json(dtoFromModel(patient));
+  })
+);
+
+const coverageAssessmentValidationSchema = z.object({
+  patients: z
+    .object({
+      dob: z.string().optional(),
+      gender: z.string().optional(),
+      firstname: z.string().optional(),
+      lastname: z.string().optional(),
+      zip: z.string().optional(),
+      city: z.string().optional(),
+      state: z.string().optional(),
+      addressLine1: z.string(),
+      addressLine2: z.string().optional(),
+      phone1: z.string().optional(),
+      phone2: z.string().optional(),
+      email1: z.string().optional(),
+      email2: z.string().optional(),
+      externalId: z.string().optional(),
+    })
+    .array(),
+});
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/patient/validate-coverage-assessment
+ *
+ */
+router.post(
+  "/validate-coverage-assessment",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const payload = coverageAssessmentValidationSchema.parse(req.body);
+
+    const invalidPatients: { patient: unknown; errors: string[] }[] = [];
+    payload.patients.map(patient => {
+      const errors: string[] = [];
+      // DOB
+      if (!patient.dob) {
+        errors.push("Missing DOB");
+      } else {
+        const dob = normalizeDate(patient.dob);
+        if (!dob) errors.push("Invalid DOB");
+      }
+      // Gender
+      if (!patient.gender) {
+        errors.push("Missing Gender");
+      } else {
+        const gender = normalizeGender(patient.gender);
+        if (!gender) errors.push("Invalid Gender");
+      }
+      // Name
+      if (!patient.firstname) errors.push("Missing First Name");
+      if (!patient.lastname) errors.push("Missing Last Name");
+      // Email
+      if (patient.email1 && !isEmailValid(patient.email1)) errors.push("Invalid Email 1");
+      if (patient.email2 && !isEmailValid(patient.email2)) errors.push("Invalid Email 2");
+      // Phone
+      if (patient.phone1 && !isPhoneValid(patient.phone1)) errors.push("Invalid Phone 1");
+      if (patient.phone2 && !isPhoneValid(patient.phone2)) errors.push("Invalid Phone 2");
+      // Zip
+      if (!patient.zip) {
+        errors.push("Missing Zip");
+      } else {
+        const zip = normalizeZipCodePassive(patient.zip);
+        if (!zip) errors.push("Invalid Zip");
+      }
+      // City
+      if (!patient.city) errors.push("Missing City");
+      // State
+      if (!patient.state) {
+        errors.push("Missing State");
+      } else {
+        const state = normalizeState(patient.state);
+        if (!state) errors.push("Invalid State");
+      }
+      // Address
+      if (!patient.addressLine1) errors.push("Missing Address Line");
+      if (errors.length > 0) invalidPatients.push({ patient, errors });
+    });
+
+    return res.status(status.OK).json({ invalidPatients });
+  })
+);
+
+const coverageAssessmentSchema = z.object({
+  patients: z
+    .object({
+      dob: z.string(),
+      gender: z.string(),
+      firstname: z.string(),
+      lastname: z.string(),
+      zip: z.string(),
+      city: z.string(),
+      state: z.string(),
+      addressLine1: z.string(),
+      addressLine2: z.string().optional(),
+      phone1: z.string().optional(),
+      phone2: z.string().optional(),
+      email1: z.string().optional(),
+      email2: z.string().optional(),
+      externalId: z.string().optional(),
+    })
+    .array(),
+});
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/patient/coverage-assessment
+ *
+ * return the coverage
+ * @param req.query.cxId The customer ID.
+ * @param req.params.id The patient ID.
+ * @return A patient.
+ *
+ */
+router.post(
+  "/coverage-assessment",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const facilityId = getFrom("query").orFail("facilityId", req);
+    const payload = coverageAssessmentSchema.parse(req.body);
+    const delayTime = dayjs.duration(30, "seconds").asMilliseconds();
+
+    const facility = await getFacilityOrFail({ cxId, id: facilityId });
+
+    const patientsCreateCmds: PatientCreateCmd[] = payload.patients.map(patient => {
+      const phone1 = patient.phone1 ? normalizePhoneNumber(patient.phone1) : undefined;
+      const email1 = patient.email1 ? normalizeEmail(patient.email1) : undefined;
+      const phone2 = patient.phone2 ? normalizePhoneNumber(patient.phone2) : undefined;
+      const email2 = patient.email2 ? normalizeEmail(patient.email2) : undefined;
+      const contact1 = phone1 || email1 ? { phone: phone1, email: email1 } : undefined;
+      const contact2 = phone2 || email2 ? { phone: phone2, email: email2 } : undefined;
+      const contact = [contact1, contact2].flatMap(c => c ?? []);
+      const externalId = patient.externalId ? normalizeExternalId(patient.externalId) : undefined;
+      return {
+        cxId,
+        facilityId: facility.id,
+        externalId,
+        firstName: toTitleCase(patient.firstname),
+        lastName: toTitleCase(patient.lastname),
+        dob: normalizeDateStrict(patient.dob),
+        genderAtBirth: normalizeGenderStrict(patient.gender),
+        address: [
+          {
+            addressLine1: toTitleCase(patient.addressLine1),
+            addressLine2: patient.addressLine2 ? toTitleCase(patient.addressLine2) : undefined,
+            city: toTitleCase(patient.city),
+            state: normalizeStateStrict(patient.state),
+            zip: normalizeZipCodeStrict(patient.zip),
+            country: "USA",
+          },
+        ],
+        contact,
+      };
+    });
+
+    const createOrUpdatePatient = async (patient: PatientCreateCmd): Promise<Patient> => {
+      const matchedPatient = await matchPatient(patient);
+      let updatedPatient: Patient;
+      if (matchedPatient) {
+        updatedPatient = await updatePatient({
+          patientUpdate: {
+            ...patient,
+            id: matchedPatient.id,
+          },
+          rerunPdOnNewDemographics: true,
+        });
+      } else {
+        updatedPatient = await createPatient({
+          patient,
+          rerunPdOnNewDemographics: true,
+        });
+      }
+      return updatedPatient;
+    };
+
+    const patientChunkSize = 10;
+    const pdPatients: Patient[] = [];
+    const pdChunks = chunk(patientsCreateCmds, patientChunkSize);
+    for (const chunk of pdChunks) {
+      await sleep(delayTime);
+      const patientCreates: Promise<Patient>[] = [];
+      for (const patient of chunk) {
+        patientCreates.push(createOrUpdatePatient(patient));
+      }
+      const patients = await Promise.allSettled(patientCreates);
+      patients.map(patient => {
+        if (patient.status == "fulfilled") {
+          pdPatients.push(patient.value);
+        }
+      });
+    }
+    const dQChunks = chunk(
+      pdPatients.map(p => p.id),
+      patientChunkSize
+    );
+    for (const chunk of dQChunks) {
+      await sleep(delayTime);
+      const docQueries: Promise<DocumentQueryProgress>[] = [];
+      for (const patientId of chunk) {
+        docQueries.push(
+          queryDocumentsAcrossHIEs({
+            cxId,
+            patientId,
+            facilityId: facility.id,
+          })
+        );
+      }
+      await Promise.allSettled(docQueries);
+    }
+
+    type CoverageAssessment = {
+      patientId: string;
+      downloadStatus: string | undefined;
+      docCount: number | undefined;
+      convertStatus: string | undefined;
+      fhirCount: number;
+      fhirDetails: string;
+      consolidatedUrl: string | undefined;
+    };
+    const getPatientCoverage = async (patient: Patient): Promise<CoverageAssessment> => {
+      const [currentPatient, fhir, fhirResources] = await Promise.all([
+        getPatientOrFail({ cxId, id: patient.id }),
+        getConsolidated({ patient }),
+        countResources({ patient }),
+      ]);
+
+      if (!currentPatient.data.documentQueryProgress) {
+        throw new Error(`Document query status not found for patient ${patient.id}`);
+      }
+
+      const { download, convert } = currentPatient.data.documentQueryProgress;
+      const downloadStatus = download?.status;
+      const docCount = download?.successful;
+      const convertStatus = convert?.status;
+      const fhirCount = fhirResources.total;
+      const fhirDetails = JSON.stringify(fhirResources.resources).replaceAll(",", " ");
+      const bundle = fhir.bundle as Bundle<DocumentReference>;
+      const consolidatedUrl = bundle.entry?.[0]?.resource?.content?.[0]?.attachment?.url;
+
+      return {
+        patientId: patient.id,
+        downloadStatus,
+        docCount,
+        convertStatus,
+        fhirCount,
+        fhirDetails,
+        consolidatedUrl,
+      };
+    };
+
+    const dqCoverageAssessments: CoverageAssessment[] = [];
+    const coverageAssessmentChunks = chunk(pdPatients, patientChunkSize);
+    for (const chunk of coverageAssessmentChunks) {
+      await sleep(delayTime);
+      const getPatientCoverages: Promise<CoverageAssessment>[] = [];
+      for (const patient of chunk) {
+        getPatientCoverages.push(getPatientCoverage(patient));
+      }
+      const coverageAssessments = await Promise.allSettled(getPatientCoverages);
+      coverageAssessments.map(ca => {
+        if (ca.status == "fulfilled") {
+          dqCoverageAssessments.push(ca.value);
+        }
+      });
+    }
+
+    return res.status(status.OK).json({ pdPatients, dqCoverageAssessments });
   })
 );
 
