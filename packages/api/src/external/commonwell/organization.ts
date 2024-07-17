@@ -198,7 +198,7 @@ export async function update(cxId: string, org: CWOrganization, isObo = false): 
 }
 
 export async function initCQOrgIncludeList(orgOid: string): Promise<void> {
-  const { log } = out(`CQ initCQOrgIncludeList - CW Org OID ${orgOid}`);
+  const { log } = out(`CW initCQOrgIncludeList - CW Org OID ${orgOid}`);
   try {
     const managementApi = makeCommonWellManagementAPI();
     if (!managementApi) {
