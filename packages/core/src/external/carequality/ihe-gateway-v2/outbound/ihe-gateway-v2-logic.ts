@@ -26,7 +26,7 @@ import { S3Utils } from "../../../aws/s3";
 import { Config } from "../../../../util/config";
 
 const region = Config.getAWSRegion();
-const bucket = Config.getIheDebugResponsesBucketName();
+const bucket = Config.getIheXcpdResponsesBucketName();
 
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
@@ -178,14 +178,14 @@ export async function createSignSendProcessXCPDRequest({
       }
     } else {
       try {
-        const filePath = `direction=outbound/stage=xcpd/cxId=${cxId}/patientId=${patientId}/requestId=${result.id}/gwId=${result.gateway.id}/result.json`;
+        const filePath = `cxId=${cxId}/patientId=${patientId}/requestId=${result.id}/gwId=${result.gateway.id}/result.json`;
         await s3Utils.uploadFile({
           bucket,
           key: filePath,
           file: Buffer.from(JSON.stringify(result), "utf8"),
         });
       } catch (error) {
-        const msg = "Failed to send PD failure/error to s3";
+        const msg = "Failed to send PD failure/error response to S3";
         const extra = { cxId, patientId, result };
         log(`${msg} - ${errorToString(error)} - ${JSON.stringify(extra)}`);
         capture.error(msg, { extra: { ...extra, error } });
