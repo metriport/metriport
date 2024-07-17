@@ -36,7 +36,7 @@ export async function createFacility({
   const facilityByNpi = await getFacilityByNpi({ cxId, npi: data.npi });
   if (facilityByNpi) {
     throw new BadRequestError(
-      `Found a matching facility along NPI - please add the corresponding Facility ID to the request to update`
+      `Can't create a new facility with the same NPI as facility with ID: ${facilityByNpi.id} and name: ${facilityByNpi.data.name}`
     );
   }
   return FacilityModel.create(input);

@@ -69,7 +69,7 @@ router.put(
       facility = await createFacility(facilityCreate);
     }
     const org = await getOrganizationOrFail({ cxId });
-    // TODO Move to external/hie
+    // TODO Move to external/hie https://github.com/metriport/metriport-internal/issues/1940
     // CAREQUALITY
     createOrUpdateFacilityInCq({
       cxId,
@@ -78,7 +78,7 @@ router.put(
       cxOrgBizType: org.type,
       cqOboOid: facilityDetails.cqOboOid,
     }).catch(processAsyncError("cq.internal.facility"));
-    // COMMONWEL
+    // COMMONWELL
     createOrUpdateInCw({
       cxId,
       facility,

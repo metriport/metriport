@@ -40,10 +40,12 @@ export class OrganizationModel extends BaseModel<OrganizationModel> implements O
         cqActive: {
           type: DataTypes.BOOLEAN,
           defaultValue: false,
+          allowNull: false,
         },
         cwActive: {
           type: DataTypes.BOOLEAN,
           defaultValue: false,
+          allowNull: false,
         },
       },
       {

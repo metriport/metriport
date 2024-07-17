@@ -14,7 +14,7 @@ import { metriportEmail as metriportEmailForCq } from "../../../external/carequa
 import { metriportCompanyDetails } from "@metriport/shared";
 import cwCommands from "../../../external/commonwell";
 import cqCommands from "../../../external/carequality";
-import { getAddressWithCoordinates } from "../../../domain/medical/address";
+import { getCqAddress } from "../../../external/carequality/shared";
 import { processAsyncError } from "../../../errors";
 
 const MAX_ATTEMPTS = 5;
@@ -42,7 +42,7 @@ export const createOrganization = async (
   await upsertOrgToFHIRServer(org.cxId, fhirOrg);
 
   if (org.type === "healthcare_provider") {
-    // TODO Move to external/hie
+    // TODO Move to external/hie https://github.com/metriport/metriport-internal/issues/1940
     // Intentionally asynchronous
     cwCommands.organization
       .createOrUpdate(cxId, {
@@ -52,21 +52,16 @@ export const createOrganization = async (
       })
       .catch(processAsyncError(`cw.org.create`));
 
-    const { coordinates } = await getAddressWithCoordinates(org.data.location, cxId);
-    const address = org.data.location;
-    const addressLine = address.addressLine2
-      ? `${address.addressLine1}, ${address.addressLine2}`
-      : address.addressLine1;
-
+    const { coordinates, addressLine } = await getCqAddress({ cxId, address: org.data.location });
     cqCommands.organization
       .createOrUpdate({
         name: org.data.name,
         addressLine1: addressLine,
         lat: coordinates.lat.toString(),
         lon: coordinates.lon.toString(),
-        city: address.city,
-        state: address.state,
-        postalCode: address.zip,
+        city: org.data.location.city,
+        state: org.data.location.state,
+        postalCode: org.data.location.zip,
         oid: org.oid,
         organizationBizType: org.type,
         contactName: metriportCompanyDetails.name,

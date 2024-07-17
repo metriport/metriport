@@ -55,12 +55,12 @@ import { processPostRespOutboundPatientDiscoveryResps } from "../../external/car
 import {
   cqOrgDetailsOrgBizRequiredSchema,
   cqOrgActiveSchema,
+  getCqAddress,
 } from "../../external/carequality/shared";
 import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 import { getUUIDFrom } from "../schemas/uuid";
-import { getAddressWithCoordinates } from "../../domain/medical/address";
 import { metriportEmail as metriportEmailForCq } from "../../external/carequality/constants";
 import { metriportCompanyDetails } from "@metriport/shared";
 
@@ -228,7 +228,7 @@ router.put(
     if (org.oid !== oid) throw new NotFoundError("Organization not found");
 
     const resp = await cq.listOrganizations({ count: 1, oid });
-    if (resp.length === 0) throw new NotFoundError("Facility not found");
+    if (resp.length === 0) throw new NotFoundError("Organization not found");
     const cqOrgs = parseCQDirectoryEntries(resp);
     const cqOrg = cqOrgs[0];
 
@@ -244,20 +244,16 @@ router.put(
 
     const orgActive = cqOrgActiveSchema.parse(req.body);
 
-    const { coordinates } = await getAddressWithCoordinates(org.data.location, cxId);
-    const address = org.data.location;
-    const addressLine = address.addressLine2
-      ? `${address.addressLine1}, ${address.addressLine2}`
-      : address.addressLine1;
     if (!cqOrg.name) throw new NotFoundError("CQ org name is not set - cannot update");
+    const { coordinates, addressLine } = await getCqAddress({ cxId, address: org.data.location });
     await createOrUpdateCQOrganization({
       name: cqOrg.name,
       addressLine1: addressLine,
       lat: coordinates.lat.toString(),
       lon: coordinates.lon.toString(),
-      city: address.city,
-      state: address.state,
-      postalCode: address.zip,
+      city: org.data.location.city,
+      state: org.data.location.state,
+      postalCode: org.data.location.zip,
       oid: org.oid,
       contactName: metriportCompanyDetails.name,
       phone: metriportCompanyDetails.phone,
@@ -313,21 +309,19 @@ router.put(
 
     const facilityActive = cqOrgActiveSchema.parse(req.body);
 
-    const { coordinates } = await getAddressWithCoordinates(facility.data.address, cxId);
-    const address = facility.data.address;
-    const addressLine = address.addressLine2
-      ? `${address.addressLine1}, ${address.addressLine2}`
-      : address.addressLine1;
-
     if (!cqOrg.name) throw new NotFoundError("CQ org name is not set - cannot update");
+    const { coordinates, addressLine } = await getCqAddress({
+      cxId,
+      address: facility.data.address,
+    });
     await createOrUpdateCQOrganization({
       name: cqOrg.name,
       addressLine1: addressLine,
       lat: coordinates.lat.toString(),
       lon: coordinates.lon.toString(),
-      city: address.city,
-      state: address.state,
-      postalCode: address.zip,
+      city: facility.data.address.city,
+      state: facility.data.address.state,
+      postalCode: facility.data.address.zip,
       oid: facility.oid,
       contactName: metriportCompanyDetails.name,
       phone: metriportCompanyDetails.phone,
