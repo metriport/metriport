@@ -14,6 +14,7 @@ import { createOrganization } from "../create-organization";
 import { addressWithCoordinates } from "./register-organization";
 import * as upsertOrgToFHIRServer from "../../../../external/fhir/organization/upsert-organization";
 import * as cwCommands from "../../../../external/commonwell";
+import * as cqCommands from "../../../../external/carequality";
 
 let createOrganizationId_mock: jest.SpyInstance;
 let createTenantIfNotExistsMock: jest.SpyInstance;
@@ -29,7 +30,8 @@ beforeAll(() => {
     .spyOn(createTenant, "createTenantIfNotExists")
     .mockImplementation(async () => {});
   jest.spyOn(upsertOrgToFHIRServer, "upsertOrgToFHIRServer").mockImplementation(async () => {});
-  jest.spyOn(cwCommands.default.organization, "createOrUpdate").mockImplementation(async () => {});
+  jest.spyOn(cwCommands.default.organization, "createOrUpdate").mockResolvedValue();
+  jest.spyOn(cqCommands.default.organization, "createOrUpdate").mockResolvedValue("test");
   jest.spyOn(address, "getAddressWithCoordinates").mockResolvedValue(addressWithCoordinates);
 });
 beforeEach(() => {
