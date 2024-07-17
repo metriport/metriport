@@ -40,7 +40,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       versioned: true,
     });
 
-    const iheXcpdResponsesBucket = new s3.Bucket(this, "IHEResponsesBucket", {
+    const iheXcpdResponsesBucket = new s3.Bucket(this, "IHEXcpdResponsesBucket", {
       bucketName: props.iheXcpdResponsesBucketName,
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
