@@ -183,6 +183,7 @@ export async function createSignSendProcessXCPDRequest({
           bucket,
           key: filePath,
           file: Buffer.from(JSON.stringify(result), "utf8"),
+          contentType: "application/json",
         });
       } catch (error) {
         const msg = "Failed to send PD failure/error response to S3";
