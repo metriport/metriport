@@ -22,6 +22,15 @@ import { createAndSignBulkXCPDRequests, SignedXcpdRequest } from "./xcpd/create/
 import { processXCPDResponse } from "./xcpd/process/xcpd-response";
 import { sendSignedXcpdRequest } from "./xcpd/send/xcpd-requests";
 import { SamlCertsAndKeys } from "../saml/security/types";
+import { S3Utils } from "../../../aws/s3";
+import { Config } from "../../../../util/config";
+
+const region = Config.getAWSRegion();
+const bucket = Config.getIHEV2ResponsesBucketName();
+
+function getS3UtilsInstance(): S3Utils {
+  return new S3Utils(region);
+}
 
 export async function sendProcessXcpdRequest({
   signedRequest,
@@ -142,6 +151,7 @@ export async function createSignSendProcessXCPDRequest({
   cxId: string;
 }): Promise<void> {
   const log = getLog("createSignSendProcessXCPDRequest");
+  const s3Utils = getS3UtilsInstance();
   const signedRequests = createAndSignBulkXCPDRequests(xcpdRequest, samlCertsAndKeys);
   const resultPromises = signedRequests.map(async (signedRequest, index) => {
     const result = await sendProcessXcpdRequest({
@@ -151,19 +161,35 @@ export async function createSignSendProcessXCPDRequest({
       cxId,
       index,
     });
-    try {
-      // TODO not sure if we should retry on timeout
-      await executeWithNetworkRetries(async () => axios.post(pdResponseUrl, result), {
-        initialDelay: 100,
-        maxAttempts: 5,
-        httpStatusCodesToRetry: [502, 504],
-        log,
-      });
-    } catch (error) {
-      const msg = "Failed to send PD response to internal CQ endpoint";
-      const extra = { cxId, patientId, result };
-      log(`${msg} - ${errorToString(error)} - ${JSON.stringify(extra)}`);
-      capture.error(msg, { extra: { ...extra, error } });
+    if (result.patientMatch) {
+      try {
+        // TODO not sure if we should retry on timeout
+        await executeWithNetworkRetries(async () => axios.post(pdResponseUrl, result), {
+          initialDelay: 100,
+          maxAttempts: 5,
+          httpStatusCodesToRetry: [502, 504],
+          log,
+        });
+      } catch (error) {
+        const msg = "Failed to send PD response to internal CQ endpoint";
+        const extra = { cxId, patientId, result };
+        log(`${msg} - ${errorToString(error)} - ${JSON.stringify(extra)}`);
+        capture.error(msg, { extra: { ...extra, error } });
+      }
+    } else {
+      try {
+        const filePath = `direction=outbound/stage=xcpd/cxId=${cxId}/patientId=${patientId}/requestId=${result.id}/gwId=${result.gateway.id}/result.json`;
+        await s3Utils.uploadFile({
+          bucket,
+          key: filePath,
+          file: Buffer.from(JSON.stringify(result), "utf8"),
+        });
+      } catch (error) {
+        const msg = "Failed to send PD failure/error to s3";
+        const extra = { cxId, patientId, result };
+        log(`${msg} - ${errorToString(error)} - ${JSON.stringify(extra)}`);
+        capture.error(msg, { extra: { ...extra, error } });
+      }
     }
   });
 

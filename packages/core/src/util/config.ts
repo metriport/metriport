@@ -102,4 +102,8 @@ export class Config {
   static getIheRequestsBucketName(): string | undefined {
     return getEnvVar("IHE_REQUESTS_BUCKET_NAME");
   }
+
+  static getIHEV2ResponsesBucketName(): string {
+    return getEnvVarOrFail("IHEV2_RESPONSES_BUCKET_NAME");
+  }
 }
