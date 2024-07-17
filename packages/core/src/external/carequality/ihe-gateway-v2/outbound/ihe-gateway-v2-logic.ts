@@ -26,7 +26,7 @@ import { S3Utils } from "../../../aws/s3";
 import { Config } from "../../../../util/config";
 
 const region = Config.getAWSRegion();
-const bucket = Config.getIHEV2ResponsesBucketName();
+const bucket = Config.getIheDebugResponsesBucketName();
 
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);

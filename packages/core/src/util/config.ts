@@ -103,7 +103,7 @@ export class Config {
     return getEnvVar("IHE_REQUESTS_BUCKET_NAME");
   }
 
-  static getIHEV2ResponsesBucketName(): string {
-    return getEnvVarOrFail("IHEV2_RESPONSES_BUCKET_NAME");
+  static getIheDebugResponsesBucketName(): string {
+    return getEnvVarOrFail("IHE_DEBUG_RESPONSES_BUCKET_NAME");
   }
 }
