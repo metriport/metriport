@@ -23,10 +23,12 @@ export async function processCxId(req: Request, res: Response, next: NextFunctio
   } catch (error) {
     try {
       req.cxId = await getCxIdFromJwt(req, auth);
+      console.log(`[PropelAuth] cxId ${req.cxId}`);
     } catch (error) {
       // TODO 1935 1986 Remove this after we're fully off of Cognito
       try {
         req.cxId = getCxIdFromCognitoJwt(req);
+        console.log(`[Cognito] cxId ${req.cxId}`);
       } catch (error) {
         // noop - auth is done on API GW level, this is just to make data available downstream
       }
