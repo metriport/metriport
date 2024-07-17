@@ -29,7 +29,6 @@ export async function createOrUpdateConsolidatedPatientData({
     });
 
     const bundleResource = await fhir.executeBatch(fhirBundleTransaction);
-
     const transformedBundle = removeUnwantedFhirData(bundleResource);
 
     return transformedBundle;
@@ -84,14 +83,16 @@ const convertCollectionBundleToTransactionBundle = ({
       continue;
 
     const transactionEntry: BundleEntry = {
-      resource: {
+      resource,
+      request: { method: "PUT", url: resource.resourceType + "/" + resource.id },
+    };
+
+    if (resource.resourceType !== "Patient") {
+      transactionEntry.resource = {
         ...resource,
         contained: resource.contained ? [...resource.contained, patient] : [patient],
-      },
-      request: resource.id
-        ? { method: "PUT", url: resource.resourceType + "/" + resource.id }
-        : { method: "POST", url: resource.resourceType },
-    };
+      };
+    }
 
     transactionBundle.entry?.push(transactionEntry);
   }
