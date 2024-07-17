@@ -15,6 +15,7 @@ import { getAuth, getCxId, PropelAuth } from "./propelauth";
 export async function processCxId(req: Request, res: Response, next: NextFunction): Promise<void> {
   // validate it has the needed info
   const auth = getAuth();
+  const { log } = out("processCxId");
   try {
     // Just gets the cxId from the API Key, the actual auth is done on API GW.
     // Downstream routes should check whether `cxId` is present on the request or not.
@@ -22,13 +23,16 @@ export async function processCxId(req: Request, res: Response, next: NextFunctio
     req.cxId = getCxIdFromApiKey(encodedApiKey);
   } catch (error) {
     try {
-      req.cxId = await getCxIdFromJwt(req, auth);
-      console.log(`[PropelAuth] cxId ${req.cxId}`);
+      // TODO 1986 Remove this after we're fully off of Cognito
+      req.cxId = getCxIdFromCognitoJwt(req);
+      log(`Cognito - cxId ${req.cxId}`);
     } catch (error) {
-      // TODO 1935 1986 Remove this after we're fully off of Cognito
       try {
-        req.cxId = getCxIdFromCognitoJwt(req);
-        console.log(`[Cognito] cxId ${req.cxId}`);
+        // TODO 1986 Remove the conditional after we're fully off of Cognito
+        if (auth) {
+          req.cxId = await getCxIdFromJwt(req, auth);
+          log(`PropelAuth - cxId ${req.cxId}`);
+        }
       } catch (error) {
         // noop - auth is done on API GW level, this is just to make data available downstream
       }

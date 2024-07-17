@@ -1,16 +1,17 @@
-import { getEnvVarOrFail } from "@metriport/shared";
+import { getEnvVar } from "@metriport/shared";
 import { OrgMemberInfo, User } from "@propelauth/express";
 import { initBaseAuth } from "@propelauth/node";
 
 export type PropelAuth = ReturnType<typeof initBaseAuth>;
-let auth: PropelAuth | undefined;
 
-export function getAuth(): PropelAuth {
-  if (auth) return auth;
-  auth = initBaseAuth({
-    authUrl: getEnvVarOrFail("PROPELAUTH_AUTH_URL"),
-    apiKey: getEnvVarOrFail("PROPELAUTH_API_KEY"),
-  });
+// TODO 1986 Move this back to getAuth() and make them required there - getAuth() doesn't return undefined anymore
+const authUrl = getEnvVar("PROPELAUTH_AUTH_URL");
+const apiKey = getEnvVar("PROPELAUTH_API_KEY");
+
+let auth: PropelAuth | undefined;
+export function getAuth(): PropelAuth | undefined {
+  if (auth || !authUrl || !apiKey) return auth;
+  auth = initBaseAuth({ authUrl, apiKey });
   return auth;
 }
 
