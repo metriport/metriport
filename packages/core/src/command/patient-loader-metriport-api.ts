@@ -7,12 +7,6 @@ import { FindBySimilarity, GetOne, PatientLoader } from "./patient-loader";
 import { RDSDataClient, ExecuteStatementCommand, Field } from "@aws-sdk/client-rds-data";
 import { getEnvVarOrFail } from "../util/env-var";
 
-const resourceArn = getEnvVarOrFail("DB_RESOURCE_ARN");
-const secretArn = getEnvVarOrFail("DB_SECRET_ARN");
-const region = getEnvVarOrFail("AWS_REGION");
-
-const rdsDataClient = new RDSDataClient({ region });
-
 /**
  * Implementation of the PatientLoader that calls the Metriport API
  * to execute each its functions.
@@ -69,6 +63,12 @@ export class PatientLoaderMetriportAPI implements PatientLoader {
   }
 
   async findBySimilarityAcrossAllCxs({ data }: Omit<FindBySimilarity, "cxId">): Promise<Patient[]> {
+    // tests fail on cicd if I have this at top of file because we cant find the env vars. How do those work??
+    const resourceArn = getEnvVarOrFail("DB_RESOURCE_ARN");
+    const secretArn = getEnvVarOrFail("DB_SECRET_ARN");
+    const region = getEnvVarOrFail("AWS_REGION");
+    const rdsDataClient = new RDSDataClient({ region });
+
     const whereClauses: string[] = [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const parameters: any[] = [];
