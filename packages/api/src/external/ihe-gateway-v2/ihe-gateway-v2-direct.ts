@@ -16,7 +16,6 @@ const cqPath = "/internal/carequality";
 
 export class IHEGatewayV2Direct extends IHEGatewayV2 {
   private samlCertsAndKeys: SamlCertsAndKeys;
-  private pdResponseUrl: string;
   private dqResponseUrl: string;
   private drResponseUrl: string;
 
@@ -43,7 +42,6 @@ export class IHEGatewayV2Direct extends IHEGatewayV2 {
     cxId: string;
   }): Promise<void> {
     await createSignSendProcessXCPDRequest({
-      pdResponseUrl: this.pdResponseUrl,
       xcpdRequest: pdRequestGatewayV2,
       samlCertsAndKeys: this.samlCertsAndKeys,
       patientId,

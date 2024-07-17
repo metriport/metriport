@@ -294,6 +294,8 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       apiURL: string;
       envType: EnvType;
       sentryDsn: string | undefined;
+      dbCluster: rds.IDatabaseCluster;
+      dbSecretArn: string;
     },
     iheResponsesBucket: s3.Bucket
   ): Lambda {
@@ -310,6 +312,8 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       apiURL,
       envType,
       sentryDsn,
+      dbCluster,
+      dbSecretArn,
     } = ownProps;
 
     const patientDiscoveryLambda = createLambda({
@@ -318,6 +322,8 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       entry: "ihe-gateway-v2-outbound-patient-discovery",
       envType: envType,
       envVars: {
+        DB_RESOURCE_ARN: dbCluster.clusterArn,
+        DB_SECRET_ARN: dbSecretArn,
         ...(cqOrgPrivateKey !== undefined && { CQ_ORG_PRIVATE_KEY: cqOrgPrivateKey }),
         ...(cqOrgCertificate !== undefined && { CQ_ORG_CERTIFICATE: cqOrgCertificate }),
         ...(cqOrgCertificateIntermediate !== undefined && {
@@ -350,6 +356,8 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     iheResponsesBucket.grantReadWrite(patientDiscoveryLambda);
     medicalDocumentsBucket.grantRead(patientDiscoveryLambda);
     cqTrustBundleBucket.grantRead(patientDiscoveryLambda);
+    dbCluster.grantDataApiAccess(patientDiscoveryLambda);
+
     return patientDiscoveryLambda;
   }
 
@@ -667,6 +675,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
 
     iheRequestsBucket.grantReadWrite(patientDiscoveryLambda);
     secrets[posthogSecretKey]?.grantRead(patientDiscoveryLambda);
+    dbCluster.grantDataApiAccess(patientDiscoveryLambda);
 
     return patientDiscoveryLambda;
   }

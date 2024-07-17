@@ -22,6 +22,7 @@ import { createAndSignBulkXCPDRequests, SignedXcpdRequest } from "./xcpd/create/
 import { processXCPDResponse } from "./xcpd/process/xcpd-response";
 import { sendSignedXcpdRequest } from "./xcpd/send/xcpd-requests";
 import { SamlCertsAndKeys } from "../saml/security/types";
+import { createOutboundPatientDiscoveryResp } from "./xcpd/write";
 
 export async function sendProcessXcpdRequest({
   signedRequest,
@@ -129,13 +130,11 @@ export async function sendProcessRetryDrRequest({
 }
 
 export async function createSignSendProcessXCPDRequest({
-  pdResponseUrl,
   xcpdRequest,
   samlCertsAndKeys,
   patientId,
   cxId,
 }: {
-  pdResponseUrl: string;
   xcpdRequest: OutboundPatientDiscoveryReq;
   samlCertsAndKeys: SamlCertsAndKeys;
   patientId: string;
@@ -153,12 +152,7 @@ export async function createSignSendProcessXCPDRequest({
     });
     try {
       // TODO not sure if we should retry on timeout
-      await executeWithNetworkRetries(async () => axios.post(pdResponseUrl, result), {
-        initialDelay: 100,
-        maxAttempts: 5,
-        httpStatusCodesToRetry: [502, 504],
-        log,
-      });
+      await createOutboundPatientDiscoveryResp({ response: result });
     } catch (error) {
       const msg = "Failed to send PD response to internal CQ endpoint";
       const extra = { cxId, patientId, result };
