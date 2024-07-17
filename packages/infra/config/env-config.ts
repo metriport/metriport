@@ -103,6 +103,12 @@ type EnvConfigBase = {
    */
   logArn: string;
   apiGatewayUsagePlanId?: string; // optional since we need to create the stack first, then update this and redeploy
+  propelAuth: {
+    authUrl: string;
+    secrets: {
+      PROPELAUTH_API_KEY: string;
+    };
+  };
   usageReportUrl?: string;
   fhirServerUrl: string;
   fhirServerQueueUrl?: string;
@@ -205,12 +211,6 @@ type EnvConfigBase = {
 
 export type EnvConfigNonSandbox = EnvConfigBase & {
   environmentType: EnvType.staging | EnvType.production;
-  propelAuth: {
-    authUrl: string;
-    secrets: {
-      PROPELAUTH_API_KEY: string;
-    };
-  };
   fhirToMedicalLambda: {
     nodeRuntimeArn: string;
   };
