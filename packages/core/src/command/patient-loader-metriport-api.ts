@@ -113,7 +113,7 @@ export class PatientLoaderMetriportAPI implements PatientLoader {
       });
 
       const response = await rdsDataClient.send(command);
-      console.log("rds http api esponse", JSON.stringify(response, null, 2));
+      console.log("rds http api response", JSON.stringify(response, null, 2));
       const patients = mapRdsResponseToPatients(response.records);
       patients.forEach(validatePatient);
       return patients;

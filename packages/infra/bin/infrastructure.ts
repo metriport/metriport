@@ -4,7 +4,6 @@ import "source-map-support/register";
 import { EnvConfig } from "../config/env-config";
 import { APIStack } from "../lib/api-stack";
 import { ConnectWidgetStack } from "../lib/connect-widget-stack";
-import { IHEStack } from "../lib/ihe-stack";
 import { LocationServicesStack } from "../lib/location-services-stack";
 import { SecretsStack } from "../lib/secrets-stack";
 import { initConfig } from "../lib/shared/config";
@@ -46,16 +45,6 @@ async function deploy(config: EnvConfig) {
   //---------------------------------------------------------------------------------
   new APIStack(app, config.stackName, { env, config, version });
 
-  //---------------------------------------------------------------------------------
-  // 4. Deploy the IHE stack. Contains Mirth, Lambdas for IHE Inbound, and IHE API Gateway.
-  //---------------------------------------------------------------------------------
-  if (config.iheGateway) {
-    new IHEStack(app, "IHEStack", {
-      env,
-      config: config,
-      version,
-    });
-  }
   //---------------------------------------------------------------------------------
   // 5. Deploy the Connect widget stack.
   //---------------------------------------------------------------------------------
