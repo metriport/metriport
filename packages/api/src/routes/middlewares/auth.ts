@@ -13,8 +13,6 @@ import { getAuth, getCxId, PropelAuth } from "./propelauth";
  * The customer id is stored on the Request, property 'cxId'.
  */
 export async function processCxId(req: Request, res: Response, next: NextFunction): Promise<void> {
-  // validate it has the needed info
-  const auth = getAuth();
   const { log } = out("processCxId");
   try {
     // Just gets the cxId from the API Key, the actual auth is done on API GW.
@@ -28,6 +26,8 @@ export async function processCxId(req: Request, res: Response, next: NextFunctio
       log(`Cognito - cxId ${req.cxId}`);
     } catch (error) {
       log(`Cognito - ${error}`);
+      // validate it has the needed info
+      const auth = getAuth();
       try {
         // TODO 1986 Remove the conditional after we're fully off of Cognito
         if (auth) {
