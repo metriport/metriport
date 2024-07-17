@@ -27,6 +27,7 @@ export async function processCxId(req: Request, res: Response, next: NextFunctio
       req.cxId = getCxIdFromCognitoJwt(req);
       log(`Cognito - cxId ${req.cxId}`);
     } catch (error) {
+      log(`Cognito - ${error}`);
       try {
         // TODO 1986 Remove the conditional after we're fully off of Cognito
         if (auth) {
@@ -34,6 +35,7 @@ export async function processCxId(req: Request, res: Response, next: NextFunctio
           log(`PropelAuth - cxId ${req.cxId}`);
         }
       } catch (error) {
+        log(`PropelAuth - ${error}`);
         // noop - auth is done on API GW level, this is just to make data available downstream
       }
     }
