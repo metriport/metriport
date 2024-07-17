@@ -30,13 +30,12 @@ export const getFacilityOrFail = async ({ cxId, id }: GetFacilityQuery): Promise
   return facility;
 };
 
+type GetFacilityByNpiQuery = Pick<FacilityModel, "cxId"> & { npi: string };
+
 export const getFacilityByNpi = async ({
   cxId,
   npi,
-}: {
-  cxId: string;
-  npi: string;
-}): Promise<FacilityModel | null> => {
+}: GetFacilityByNpiQuery): Promise<FacilityModel | null> => {
   const facility = await FacilityModel.findOne({
     where: {
       cxId,
