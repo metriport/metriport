@@ -75,23 +75,19 @@ export function determinePatientDiscoverySuccessGateway(
 }
 
 export function determinePatientDiscoveryFailureType(response: OutboundPatientDiscoveryResp): {
-  httpError: boolean;
-  schemaError: boolean;
-  specificError: boolean;
+  httpError?: boolean;
+  schemaError?: boolean;
+  specificError?: boolean;
 } {
   if (response.operationOutcome?.issue?.[0]?.code) {
     const issueCode = response.operationOutcome.issue[0].code;
     if (issueCode === httpErrorCode) {
-      return { httpError: true, schemaError: false, specificError: false };
+      return { httpError: true };
     } else if (issueCode === schemaErrorCode) {
-      return { httpError: false, schemaError: true, specificError: false };
+      return { schemaError: true };
     }
   }
-  return {
-    httpError: false,
-    schemaError: false,
-    specificError: true,
-  };
+  return { specificError: true };
 }
 
 export function getOutboundPatientDiscoverySuccessFailureCount(
