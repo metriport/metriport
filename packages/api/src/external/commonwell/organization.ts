@@ -129,7 +129,7 @@ export async function create(cxId: string, org: CWOrganization, isObo = false): 
       getCertificate(),
       org.oid
     );
-    debug(`resp respAddCert: `, JSON.stringify(respAddCert));
+    debug(`resp addCertificateToOrg: `, JSON.stringify(respAddCert));
 
     if (await isEnhancedCoverageEnabledForCx(cxId)) {
       // update the CQ bridge include list

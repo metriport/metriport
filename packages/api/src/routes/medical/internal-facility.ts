@@ -62,7 +62,7 @@ router.put(
       const id = facilityDetails.id;
       const currentFacility = await getFacilityOrFail({ cxId, id });
       if (currentFacility.data.npi !== facilityDetails.npi) {
-        throw new Error("Cannot updated NPI once the faciilty is created on the HIEs");
+        throw new Error("Cannot update NPI once the faciilty is created on the HIEs");
       }
       facility = await updateFacility({ id, ...facilityCreate });
     } else {
