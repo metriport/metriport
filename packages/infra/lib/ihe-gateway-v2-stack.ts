@@ -204,12 +204,11 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
 
     const posthogSecretName = props.config.analyticsSecretNames?.POST_HOG_API_KEY_SECRET;
 
-    const iheRequestsBucket = new s3.Bucket(this, "IHERequestsBucket", {
-      bucketName: props.config.iheRequestsBucketName,
-      publicReadAccess: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-      versioned: true,
-    });
+    const iheRequestsBucket = s3.Bucket.fromBucketName(
+      this,
+      "IHERequestsBucket",
+      props.config.iheRequestsBucketName
+    );
 
     const patientDiscoveryLambdaV2 = this.setupPatientDiscoveryLambda({
       props: props.config,
