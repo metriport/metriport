@@ -221,6 +221,7 @@ export async function initCQOrgIncludeList(orgOid: string): Promise<void> {
         error,
       },
     });
+    throw error;
   }
 }
 
