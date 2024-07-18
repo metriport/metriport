@@ -1,7 +1,8 @@
 import { OutboundPatientDiscoveryResp } from "@metriport/ihe-gateway-sdk";
 import { errorToString } from "../../../../../util/error/shared";
 import { getEnvVarOrFail } from "../../../../../util/env-var";
-import { RDSDataClient, ExecuteStatementCommand } from "@aws-sdk/client-rds-data";
+import { uuidv7 } from "../../../../../util/uuid-v7";
+import { RDSDataClient, ExecuteStatementCommand, TypeHint } from "@aws-sdk/client-rds-data";
 
 export async function createOutboundPatientDiscoveryResp({
   response,
@@ -19,12 +20,20 @@ export async function createOutboundPatientDiscoveryResp({
     `;
 
   const parameters = [
-    { name: "id", value: { stringValue: response.id } },
-    { name: "requestId", value: { stringValue: response.id } },
-    { name: "patientId", value: { stringValue: response.patientId ?? "" } },
+    { name: "id", value: { stringValue: uuidv7() }, typeHint: TypeHint.UUID },
+    { name: "requestId", value: { stringValue: response.id }, typeHint: TypeHint.UUID },
+    {
+      name: "patientId",
+      value: { stringValue: response.patientId ?? "" },
+      typeHint: TypeHint.UUID,
+    },
     { name: "status", value: { stringValue: getPDResultStatus(response.patientMatch) } },
-    { name: "data", value: { stringValue: JSON.stringify(response) } },
-    { name: "createdAt", value: { stringValue: new Date().toISOString() } },
+    { name: "data", value: { stringValue: JSON.stringify(response) }, typeHint: TypeHint.JSON },
+    {
+      name: "createdAt",
+      value: { stringValue: new Date().toISOString() },
+      typeHint: TypeHint.DATE,
+    },
   ];
 
   try {
