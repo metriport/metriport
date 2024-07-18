@@ -71,7 +71,7 @@ export async function getConsolidatedWebhook({
   const webhookPayload: any = webhookData.payload;
 
   const url =
-    webhookPayload.patients?.[0].bundle?.entry?.[0].resource?.content?.[0].attachment?.url;
+    webhookPayload.patients?.[0]?.bundle?.entry?.[0]?.resource?.content?.[0]?.attachment?.url;
 
   if (!url) {
     return {
