@@ -1,6 +1,5 @@
-import { Extension, Organization, Reference, Resource } from "@medplum/fhirtypes";
+import { Extension, Reference, Resource } from "@medplum/fhirtypes";
 import { Patient } from "@metriport/core/domain/patient";
-import { toFHIR as toFhirPatient } from "@metriport/core/external/fhir/patient/index";
 import { buildDocIdFhirExtension } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { isValidUuid } from "@metriport/core/util/uuid-v7";
@@ -8,27 +7,21 @@ import { BadRequestError } from "@metriport/shared";
 import { Bundle as ValidBundle } from "../../../routes/medical/schemas/fhir";
 
 /**
- * Adds the Metriport and Document extensions to all the provided resources, ensures that all resources have UUIDs for IDs,
- * and adds the Patient and Organization resources to the Bundle
+ * Removes the Patient resource if provided, adds the Metriport and Document extensions to all the provided resources,
+ * ensures that all resources have UUIDs for IDs
  */
 export function hydrateBundle(
   bundle: ValidBundle,
   patient: Patient,
-  org: Organization,
   fhirBundleDestinationKey: string
 ): ValidBundle {
   const bundleWithoutPatient = removePatientResource(bundle, patient.id);
-  const fhirPatient = toFhirPatient(patient);
   const docExtension = buildDocIdFhirExtension(fhirBundleDestinationKey);
   const bundleWithExtensions = validateUuidsAndAddExtensions(
     bundleWithoutPatient,
     docExtension,
     patient.id
   );
-  const patientWithExtension = addUniqueExtension(fhirPatient, metriportDataSourceExtension);
-  const organizationWithExtension = addUniqueExtension(org, metriportDataSourceExtension);
-  bundleWithExtensions.entry?.push({ resource: patientWithExtension });
-  bundleWithExtensions.entry?.push({ resource: organizationWithExtension });
 
   return bundleWithExtensions;
 }
