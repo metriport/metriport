@@ -1,11 +1,11 @@
 import { Extension, Organization, Reference, Resource } from "@medplum/fhirtypes";
 import { Patient } from "@metriport/core/domain/patient";
 import { toFHIR as toFhirPatient } from "@metriport/core/external/fhir/patient/index";
+import { buildDocIdFhirExtension } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { isValidUuid } from "@metriport/core/util/uuid-v7";
 import { BadRequestError } from "@metriport/shared";
 import { Bundle as ValidBundle } from "../../../routes/medical/schemas/fhir";
-import { buildDocIdFhirExtension } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 
 /**
  * Adds the Metriport and Document extensions to all the provided resources, ensures that all resources have UUIDs for IDs,
@@ -17,9 +17,14 @@ export function hydrateBundle(
   org: Organization,
   fhirBundleDestinationKey: string
 ): ValidBundle {
+  const bundleWithoutPatient = removePatientResource(bundle, patient.id);
   const fhirPatient = toFhirPatient(patient);
   const docExtension = buildDocIdFhirExtension(fhirBundleDestinationKey);
-  const bundleWithExtensions = validateUuidsAndAddExtensions(bundle, docExtension, patient.id);
+  const bundleWithExtensions = validateUuidsAndAddExtensions(
+    bundleWithoutPatient,
+    docExtension,
+    patient.id
+  );
   const patientWithExtension = addUniqueExtension(fhirPatient, metriportDataSourceExtension);
   const organizationWithExtension = addUniqueExtension(org, metriportDataSourceExtension);
   bundleWithExtensions.entry?.push({ resource: patientWithExtension });
@@ -71,7 +76,6 @@ function verifyPatientReferences(resource: Resource, patientId: string) {
 function comparePatientIds(reference: Reference | undefined, patientId: string) {
   const refString = reference?.reference;
   const refId = refString?.split("Patient/")[1];
-  console.log(refId, patientId, refId === patientId);
   if (refId != patientId) {
     throw new BadRequestError("Patient reference is pointing to another patient!");
   }
@@ -87,4 +91,21 @@ function addUniqueExtension(resource: any, extension: Extension) {
     resource.extension.push(extension);
   }
   return resource;
+}
+
+function removePatientResource(bundle: ValidBundle, id: string): ValidBundle {
+  const entriesWithoutPatient = bundle.entry.filter(e => {
+    const res: Resource = e.resource;
+    if (res.resourceType === "Patient") {
+      if (res.id !== id) {
+        throw new BadRequestError("Patient ID does not match the Patient resource ID");
+      }
+      return false;
+    }
+    return true;
+  });
+  return {
+    ...bundle,
+    entry: entriesWithoutPatient,
+  };
 }
