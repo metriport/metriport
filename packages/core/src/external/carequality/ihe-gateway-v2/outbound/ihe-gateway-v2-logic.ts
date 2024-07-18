@@ -24,6 +24,7 @@ import { sendSignedXcpdRequest } from "./xcpd/send/xcpd-requests";
 import { SamlCertsAndKeys } from "../saml/security/types";
 import { S3Utils } from "../../../aws/s3";
 import { Config } from "../../../../util/config";
+import { createHivePartitionFilePath } from "../../../../domain/filename";
 
 const region = Config.getAWSRegion();
 const bucket = Config.getIheXcpdResponsesBucketName();
@@ -178,10 +179,16 @@ export async function createSignSendProcessXCPDRequest({
       }
     } else {
       try {
-        const filePath = `cxId=${cxId}/patientId=${patientId}/requestId=${result.id}/gwId=${result.gateway.id}/result.json`;
+        const filePath = createHivePartitionFilePath(new Date(result.responseTimestamp), {
+          cxId,
+          patientId,
+          requestId: result.id,
+          gatewayId: result.gateway.id,
+        });
+        const key = `${filePath}/result.json`;
         await s3Utils.uploadFile({
           bucket,
-          key: filePath,
+          key,
           file: Buffer.from(JSON.stringify(result), "utf8"),
           contentType: "application/json",
         });

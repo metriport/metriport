@@ -8,6 +8,17 @@ export function createFilePath(cxId: string, patientId: string, fileId: string):
   return `${createFolderName(cxId, patientId)}/${createFileName(cxId, patientId, fileId)}`;
 }
 
+export function createHivePartitionFilePath(date: Date, keys: { [key: string]: string }): string {
+  const datePath = [
+    `date=${date.toISOString().slice(10)}`,
+    `hour=${date.getUTCHours()}`,
+    `minute=${date.getUTCMinutes()}`,
+    `second=${date.getUTCSeconds()}`,
+  ];
+  const keyPath = Object.entries(keys).map(([key, value]) => `${key}=${value}`);
+  return [...datePath, ...keyPath].join("/");
+}
+
 export type ParsedFileName = { cxId: string; patientId: string; fileId: string };
 
 export function parseFileName(fileName: string): ParsedFileName | undefined {
