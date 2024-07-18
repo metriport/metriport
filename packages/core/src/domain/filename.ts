@@ -8,15 +8,31 @@ export function createFilePath(cxId: string, patientId: string, fileId: string):
   return `${createFolderName(cxId, patientId)}/${createFileName(cxId, patientId, fileId)}`;
 }
 
-export function createHivePartitionFilePath(date: Date, keys: { [key: string]: string }): string {
-  const datePath = [
-    `date=${date.toISOString().slice(10)}`,
-    `hour=${date.getUTCHours()}`,
-    `minute=${date.getUTCMinutes()}`,
-    `second=${date.getUTCSeconds()}`,
-  ];
-  const keyPath = Object.entries(keys).map(([key, value]) => `${key}=${value}`);
-  return [...datePath, ...keyPath].join("/");
+export function createHivePartitionFilePath({
+  cxId,
+  patientId,
+  keys,
+  date,
+}: {
+  cxId: string;
+  patientId: string;
+  keys?: { [key: string]: string };
+  date?: Date;
+}): string {
+  let datePath: string[] = [];
+  if (date) {
+    datePath = [
+      `date=${date.toISOString().slice(0, 10)}`,
+      `hour=${date.getUTCHours()}`,
+      `minute=${date.getUTCMinutes()}`,
+      `second=${date.getUTCSeconds()}`,
+    ];
+  }
+  let keysPath: string[] = [];
+  if (keys) {
+    keysPath = Object.entries(keys).map(([key, value]) => `${key}=${value}`);
+  }
+  return [...datePath, `cxId=${cxId}`, `patientId=${patientId}`, ...keysPath].join("/");
 }
 
 export type ParsedFileName = { cxId: string; patientId: string; fileId: string };

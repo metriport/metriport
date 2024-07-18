@@ -179,11 +179,13 @@ export async function createSignSendProcessXCPDRequest({
       }
     } else {
       try {
-        const filePath = createHivePartitionFilePath(new Date(result.responseTimestamp), {
+        const filePath = createHivePartitionFilePath({
           cxId,
           patientId,
-          requestId: result.id,
-          gatewayId: result.gateway.id,
+          keys: {
+            requestId: result.id,
+            gatewayOid: result.gateway.oid,
+          },
         });
         const key = `${filePath}/result.json`;
         await s3Utils.uploadFile({
