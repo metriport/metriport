@@ -50,7 +50,7 @@ export type IHEGatewayJavaProps = {
 export type IHEGatewayProps = {
   vpcId: string;
   certArn: string;
-  ownershipCertArn: string;
+  ownershipCertArn?: string;
   trustStoreBucketName: string;
   trustStoreKey: string;
   subdomain: string; // Subdomain for IHE integrations
