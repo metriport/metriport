@@ -72,7 +72,7 @@ const metadata = {
   stringKeyValue: "pairsHere",
 };
 
-const status = await api.startDocumentQuery(
+const status = await metriportClient.startDocumentQuery(
   "2.16.840.1.113883.3.666.5.2004.4.2005",
   "2.16.840.1.113883.3.666.123",
   metadata
