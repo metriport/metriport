@@ -27,7 +27,7 @@ import { Config } from "../../../../util/config";
 import { createHivePartitionFilePath } from "../../../../domain/filename";
 
 const region = Config.getAWSRegion();
-const bucket = Config.getIheXcpdResponsesBucketName();
+const parsedResponsesBucket = Config.getIheParsedResponsesBucketName();
 
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
@@ -187,7 +187,7 @@ export async function createSignSendProcessXCPDRequest({
         });
         const key = `${filePath}/result.json`;
         await s3Utils.uploadFile({
-          bucket,
+          bucket: parsedResponsesBucket,
           key,
           file: Buffer.from(JSON.stringify(result), "utf8"),
           contentType: "application/json",

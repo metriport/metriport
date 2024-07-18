@@ -103,7 +103,7 @@ export class Config {
     return getEnvVar("IHE_REQUESTS_BUCKET_NAME");
   }
 
-  static getIheXcpdResponsesBucketName(): string {
-    return getEnvVarOrFail("IHE_XCPD_RESPONSES_BUCKET_NAME");
+  static getIheParsedResponsesBucketName(): string {
+    return getEnvVarOrFail("IHE_PARSED_RESPONSES_BUCKET_NAME");
   }
 }
