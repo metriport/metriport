@@ -59,11 +59,15 @@ export class IHEStack extends Stack {
       props.config.iheGateway.certArn
     );
 
+    if (!props.config.iheGateway.ownershipCertArn) {
+      throw new Error("Missing ownership certificate ARN for IHE stack");
+    }
     // get the ownership Certificate from ACM.
-    const ownershipCertificate = new cert.Certificate(this, "OwnershipVerificationCertificate", {
-      domainName: iheApiUrl,
-      validation: cert.CertificateValidation.fromDns(publicZone),
-    });
+    const ownershipCertificate = cert.Certificate.fromCertificateArn(
+      this,
+      "OwnershipVerificationCertificate",
+      props.config.iheGateway.ownershipCertArn
+    );
 
     const trustStoreBucket = s3.Bucket.fromBucketName(
       this,
@@ -158,12 +162,11 @@ export class IHEStack extends Stack {
 
     const posthogSecretName = props.config.analyticsSecretNames?.POST_HOG_API_KEY_SECRET;
 
-    const iheRequestsBucket = new s3.Bucket(this, "IHERequestsBucket", {
-      bucketName: props.config.iheRequestsBucketName,
-      publicReadAccess: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-      versioned: true,
-    });
+    const iheRequestsBucket = s3.Bucket.fromBucketName(
+      this,
+      "IHERequestsBucket",
+      props.config.iheRequestsBucketName
+    );
 
     const patientDiscoveryLambdaV2 = this.setupPatientDiscoveryLambda({
       props,
