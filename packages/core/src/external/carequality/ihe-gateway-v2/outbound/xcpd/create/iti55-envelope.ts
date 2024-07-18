@@ -13,7 +13,7 @@ import {
 import { OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import { timestampToSoapBody } from "../../../utils";
 import { wrapIdInUrnUuid } from "../../../../../../util/urn";
-import { requiresUrnInSoapBody, getHomeCommunityId } from "../../../gateways";
+import { requiresUrnInSoapBody, getHomeCommunityId, doesGatewayUseSha1 } from "../../../gateways";
 import { mapFhirToIheGender } from "../../../../shared";
 
 const DATE_DASHES_REGEX = /-/g;
@@ -361,7 +361,8 @@ export function createAndSignBulkXCPDRequests(
     };
 
     const xmlString = createITI5SoapEnvelope({ bodyData, publicCert: samlCertsAndKeys.publicCert });
-    const signedRequest = signFullSaml({ xmlString, samlCertsAndKeys });
+    const useSha1 = doesGatewayUseSha1(gateway.oid);
+    const signedRequest = signFullSaml({ xmlString, samlCertsAndKeys, useSha1 });
     signedRequests.push({ gateway, signedRequest, outboundRequest: bodyData });
   }
 
