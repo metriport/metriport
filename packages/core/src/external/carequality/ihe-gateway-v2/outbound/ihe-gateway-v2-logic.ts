@@ -183,6 +183,7 @@ export async function createSignSendProcessXCPDRequest({
           cxId,
           patientId,
           keys: {
+            stage: "pd",
             requestId: result.id,
             gatewayOid: result.gateway.oid,
           },
