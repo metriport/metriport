@@ -6,6 +6,8 @@ import {
   buildInstanceIdentifiersFromIdentifier,
   buildTelecom,
   formatDateToCdaTimestamp,
+  mapFhirGenderToCda,
+  withNullFlavor,
   withoutNullFlavorObject,
   withoutNullFlavorString,
 } from "../commons";
@@ -25,7 +27,7 @@ function buildPatient(patient: Patient): CdaPatientRole {
       };
     }),
     administrativeGenderCode: buildCodeCe({
-      code: patient.gender,
+      code: mapFhirGenderToCda(patient.gender),
       codeSystem: "2.16.840.1.113883.5.1",
       codeSystemName: "AdministrativeGender",
     }),
@@ -37,6 +39,8 @@ function buildPatient(patient: Patient): CdaPatientRole {
       codeSystemName: "MaritalStatusCode",
       displayName: patient.maritalStatus?.coding?.[0]?.display,
     }),
+    raceCode: withNullFlavor(undefined, "code"),
+    ethnicGroupCode: withNullFlavor(undefined, "code"),
     languageCommunication: {
       languageCode: buildCodeCe({
         code: patient.communication?.[0]?.language?.coding?.[0]?.code,

@@ -11,10 +11,12 @@ import {
   buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
   buildReferenceId,
+  buildTemplateIds,
   buildValueSt,
   formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
   isLoinc,
+  withNullFlavor,
   withoutNullFlavorObject,
 } from "../commons";
 import {
@@ -35,7 +37,7 @@ export function createObservations(observations: Observation[]): { component: Ob
         observation: {
           _classCode: "OBS",
           _moodCode: "EVN",
-          templateId: buildInstanceIdentifier({
+          templateId: buildTemplateIds({
             root: oids.resultObs,
             extension: extensionValue2015,
           }),
@@ -177,7 +179,7 @@ function createEntryFromObservation(
     observation: {
       _classCode: "OBS",
       _moodCode: "EVN",
-      templateId: buildInstanceIdentifier({
+      templateId: buildTemplateIds({
         root: augObs.typeOid,
         extension: extensionValue2015,
       }),
@@ -190,16 +192,16 @@ function createEntryFromObservation(
         codeSystem: systemIsLoinc ? loincCodeSystem : codeSystem,
         codeSystemName: systemIsLoinc ? loincSystemName : undefined,
         displayName: observation.code?.coding?.[0]?.display,
-      }),
+      }), // TODO: If not LOINC, include a translation with a LOINC code
       text: {
         reference: {
-          _value: referenceId,
+          _value: `#${referenceId}`,
         },
       },
       statusCode: {
         _code: "completed",
       },
-      effectiveTime: withoutNullFlavorObject(date, "_value"),
+      effectiveTime: withNullFlavor(date, "_value"),
       value: buildValue(observation),
       interpretationCode: buildCodeCe({
         code: observation.interpretation?.[0]?.coding?.[0]?.code,
