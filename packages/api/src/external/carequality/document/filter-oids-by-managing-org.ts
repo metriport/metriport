@@ -14,6 +14,8 @@ export async function filterCqLinksByManagingOrg(
     },
   });
 
+  console.log("TESTING ONE", managingOrg);
+
   if (!managingOrg) {
     return [];
   }
@@ -26,7 +28,15 @@ export async function filterCqLinksByManagingOrg(
     },
   });
 
+  console.log("TESTING TWO", managingOrgChildren);
+
   const cqOrgIds = managingOrgChildren.map(org => org.id);
 
-  return cqLinks.filter(link => cqOrgIds.includes(link.oid));
+  console.log("TESTING THREE", cqOrgIds);
+
+  const links = cqLinks.filter(link => cqOrgIds.includes(link.oid));
+
+  console.log("TESTING FOUR", links);
+
+  return links;
 }
