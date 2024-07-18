@@ -126,6 +126,13 @@ export class IHEStack extends Stack {
       }),
     };
 
+    stage.routeSettings = [
+      {
+        throttlingBurstLimit: 100,
+        throttlingRateLimit: 100,
+      },
+    ];
+
     const role = new iam.Role(this, "ApiGWLogWriterRole", {
       assumedBy: new iam.ServicePrincipal("apigateway.amazonaws.com"),
     });
