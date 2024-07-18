@@ -1,291 +1,111 @@
-import { Address as FhirAddress, Organization } from "@medplum/fhirtypes";
-import { AddressStrict } from "@metriport/core/domain/location-address";
-import { Address } from "@metriport/core/src/domain/address";
-import { Contact } from "@metriport/core/src/domain/contact";
-import { metriportOrganization } from "@metriport/shared/common/metriport-organization";
+import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
+import {
+  CCD_SUFFIX,
+  FHIR_BUNDLE_SUFFIX,
+  createUploadFilePath,
+} from "@metriport/core/domain/document/upload";
+import { Patient } from "@metriport/core/domain/patient";
+import { S3Utils } from "@metriport/core/external/aws/s3";
+import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
+import { out } from "@metriport/core/util/log";
+import { JSON_APP_MIME_TYPE } from "@metriport/core/util/mime";
+import { capture } from "@metriport/core/util/notifications";
+import { errorToString } from "@metriport/shared";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { OrganizationModel } from "../../models/medical/organization";
+import { getConsolidatedPatientData } from "../../command/medical/patient/consolidated-get";
+import { convertFhirToCda } from "../../command/medical/patient/convert-fhir-to-cda";
+import { bundleSchema } from "../../routes/medical/schemas/fhir";
 import { Config } from "../../shared/config";
+import { toFHIR as toFhirOrganization } from "../fhir/organization";
+import { validateFhirEntries } from "../fhir/shared/json-validator";
+import { generateEmptyCcd } from "./generate-empty-ccd";
 
-const metriportOid = Config.getSystemRootOID();
+const region = Config.getAWSRegion();
+const bucket = Config.getMedicalDocumentsBucketName();
+const s3Utils = new S3Utils(region);
 
-export async function generateCcd({
-  patientId,
-  cxId,
-}: {
-  patientId: string;
-  cxId: string;
-}): Promise<string> {
-  const [organization, patient] = await Promise.all([
-    getOrganizationOrFail({ cxId }),
-    getPatientOrFail({ cxId, id: patientId }),
-  ]);
-  const data = patient.data;
-  const address = data.address;
-  const addresses = buildAddresses(address);
-  const patientTelecom = buildTelecom(data.contact);
-  const author = buildAuthor(organization);
-  const custodian = buildCustodian(metriportOrganization);
-  const structuredBody = buildStructuredBody();
-  const currentTime = getCurrentDate();
-
-  return `<ClinicalDocument xmlns="urn:hl7-org:v3" xmlns:sdtc="urn:hl7-org:sdtc" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" moodCode="EVN">
-	<realmCode code="US"/>
-	<typeId root="2.16.840.1.113883.1.3" extension="POCD_HD000040"/>
-	<templateId root="2.16.840.1.113883.10.20.22.1.1" extension="2015-08-01"/>
-	<templateId root="2.16.840.1.113883.10.20.22.1.2" extension="2015-08-01"/>
-	<id root="${metriportOid}" assigningAuthorityName="${metriportOrganization.name}"/>
-  <code code="34133-9" codeSystem="2.16.840.1.113883.6.1" displayName="Summarization of episode note" codeSystemName="LOINC"/>
-	<title>Continuity of Care Document</title>
-	<effectiveTime value="${currentTime}"/>
-	<confidentialityCode code="N" codeSystem="2.16.840.1.113883.5.25" displayName="Normal"/>
-	<languageCode code="en-US"/>
-	<recordTarget>
-		<patientRole>
-			<id root="${patientId}"/>
-			${addresses}
-			${patientTelecom}
-			<patient>
-				<name use="L">
-					<given>
-						${data.firstName}
-					</given>
-					<family>
-						${data.lastName}
-					</family>
-				</name>
-				<administrativeGenderCode code="${
-          data.genderAtBirth
-        }" codeSystem="2.16.840.1.113883.5.1" codeSystemName="AdministrativeGender">
-				</administrativeGenderCode>
-				<birthTime value="${data.dob.replace(/-/g, "")}"/>
-			</patient>
-		</patientRole>
-	</recordTarget>
-  ${author}
-  ${custodian}
-  <component>
-    ${structuredBody}
-  </component>
-</ClinicalDocument>
-`;
-}
-
-function buildAddresses(addresses: Address[]): string {
-  let addressesString = ``;
-  addresses.forEach(addr => {
-    addressesString += buildAddress(addr);
+export async function generateCcd(patient: Patient, requestId: string): Promise<string> {
+  const uploadsExist = await s3Utils.fileExists(bucket, {
+    targetString: FHIR_BUNDLE_SUFFIX,
+    path: createUploadFilePath(patient.cxId, patient.id, ""),
   });
-
-  return addressesString;
-}
-
-function buildAddress(addr: Address | AddressStrict): string {
-  let addressString = "";
-  addressString += `<addr use="H">
-  <streetAddressLine>
-    ${addr.addressLine1}
-  </streetAddressLine>`;
-  if (addr.addressLine2) {
-    addressString += `<streetAddressLine>
-    ${addr.addressLine2}
-  </streetAddressLine>`;
+  if (!uploadsExist) {
+    return generateEmptyCcd(patient);
   }
-  addressString += `<city>
-      ${addr.city}
-    </city>
-    <state>
-      ${addr.state}
-    </state>
-    <postalCode>
-      ${addr.zip}
-    </postalCode>
-  </addr>`;
+  const metriportGenerated = await getFhirResourcesForCcd(patient);
+  if (!metriportGenerated || !metriportGenerated.length) {
+    return generateEmptyCcd(patient);
+  }
 
-  return addressString;
-}
+  uploadCcdFhirDataToS3(patient, metriportGenerated, requestId);
 
-function buildTelecom(contacts: Contact[] | undefined): string {
-  if (!contacts) return "";
+  const organization = await getOrganizationOrFail({ cxId: patient.cxId });
+  const fhirOrganization = toFhirOrganization(organization);
+  const bundle: Bundle = {
+    resourceType: "Bundle",
+    type: "collection",
+    entry: [...metriportGenerated, { resource: fhirOrganization }],
+  };
+  const parsedBundle = bundleSchema.parse(bundle);
+  const validatedBundle = validateFhirEntries(parsedBundle);
 
-  let telecomString = ``;
-  contacts.forEach(contact => {
-    telecomString += `<telecom value="tel:${contact.phone}"/>`;
+  const converted = await convertFhirToCda({
+    cxId: patient.cxId,
+    validatedBundle,
+    splitCompositions: false,
   });
-
-  return telecomString;
+  const ccd = converted[0];
+  if (!ccd) throw new Error("Failed to create CCD");
+  return ccd;
 }
 
-function buildCustodianAddresses(address: FhirAddress): string {
-  return `<addr>
-    <streetAddressLine>
-      ${address.line?.[0]}
-    </streetAddressLine>
-    <city>
-      ${address.city}
-    </city>
-    <state>
-      ${address.state}
-    </state>
-    <postalCode>
-      ${address.postalCode}
-    </postalCode>
-    <country>
-      US
-    </country>
-  </addr>`;
+async function getFhirResourcesForCcd(
+  patient: Patient
+): Promise<BundleEntry<Resource>[] | undefined> {
+  const allResources = await getConsolidatedPatientData({ patient });
+  return allResources.entry?.filter(entry => {
+    const resource = entry.resource;
+
+    if (resource) {
+      // All new FHIR data coming from our CX will now have extensions.
+      if ("extension" in resource) {
+        return resource.extension?.some(
+          (extension: { valueCoding?: { code?: string } }) =>
+            extension.valueCoding?.code === metriportDataSourceExtension.valueCoding.code
+        );
+      }
+      // We used to not add extensions to CX-contributed resources. So this will allow us to include those.
+      // This is taking advantage of how all the resources resulting from external CDAs have extensions.
+      if (!("extension" in resource)) {
+        return true;
+      }
+    }
+
+    return false;
+  });
 }
 
-function buildAuthor(org: OrganizationModel) {
-  const currentTime = getCurrentDate();
-  const address = buildAddress(org.data.location);
-
-  return `<author>
-    <time value="${currentTime}"/>
-    <assignedAuthor>
-      <id root="${org.id}"/>
-      ${address}
-      <representedOrganization>
-        <id nullFlavor="UNK">
-        </id>
-        <name>
-          ${org.data.name}
-        </name>
-        ${address}
-      </representedOrganization>
-    </assignedAuthor>
-  </author>`;
-}
-
-function buildCustodian(org: Organization): string {
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const orgAddress = metriportOrganization.address![0]!;
-  const address = buildCustodianAddresses(orgAddress);
-
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const phoneNumber = org.telecom![0]!.value;
-  return `<custodian>
-    <assignedCustodian>
-      <representedCustodianOrganization>
-        <id nullFlavor="UNK"/>
-        <name>Metriport</name>
-        <telecom use="WP" value="${phoneNumber}"/>
-        ${address}
-      </representedCustodianOrganization>
-    </assignedCustodian>
-  </custodian>`;
-}
-
-function getCurrentDate(): string {
-  return new Date()
-    .toISOString()
-    .replace(/[^0-9]/g, "")
-    .slice(0, 14);
-}
-
-function buildStructuredBody(): string {
-  return `<structuredBody>
-    <component>
-      <section nullFlavor="NI">
-        <templateId root="2.16.840.1.113883.10.20.22.2.6" />
-        <templateId root="2.16.840.1.113883.10.20.22.2.6" extension="2015-08-01" />
-        <templateId root="2.16.840.1.113883.10.20.22.2.6.1" />
-        <templateId root="2.16.840.1.113883.10.20.22.2.6.1" extension="2015-08-01" />
-        <code code="48765-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Allergies and adverse reactions Document" />
-        <title>
-          Allergies
-        </title>
-        <text>
-          <content ID="nof1">
-            Not on File
-          </content>
-        </text>
-      </section>
-    </component>
-    <component>
-      <section nullFlavor="NI">
-        <templateId root="2.16.840.1.113883.10.20.22.2.1" />
-        <templateId root="2.16.840.1.113883.10.20.22.2.1" extension="2014-06-09" />
-        <templateId root="2.16.840.1.113883.10.20.22.2.1.1" />
-        <templateId root="2.16.840.1.113883.10.20.22.2.1.1" extension="2014-06-09" />
-        <code code="10160-0" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="History of Medication use Narrative" />
-        <title>
-          Medications
-        </title>
-        <text>
-          <content ID="nof2">
-            Not on file
-          </content>
-        </text>
-      </section>
-    </component>
-    <component>
-      <section nullFlavor="NI">
-        <templateId root="2.16.840.1.113883.10.20.22.2.5" />
-        <templateId root="2.16.840.1.113883.10.20.22.2.5" extension="2015-08-01" />
-        <templateId root="2.16.840.1.113883.10.20.22.2.5.1" />
-        <templateId root="2.16.840.1.113883.10.20.22.2.5.1" extension="2015-08-01" />
-        <code code="11450-4" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Problem list - Reported" />
-        <title>
-          Active Problems
-        </title>
-        <text>
-          <paragraph ID="nof3">
-            Not on file
-          </paragraph>
-        </text>
-      </section>
-    </component>
-    <component>
-      <section>
-        <templateId root="2.16.840.1.113883.10.20.22.2.17" />
-        <templateId root="2.16.840.1.113883.10.20.22.2.17" extension="2015-08-01" />
-        <code code="29762-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Social history Narrative" />
-        <title>
-          Social History
-        </title>
-        <text>
-          <content ID="nof4">
-            Not on File
-          </content>
-        </text>
-      </section>
-    </component>
-    <component>
-      <section>
-        <templateId root="2.16.840.1.113883.10.20.22.2.10" />
-        <templateId root="2.16.840.1.113883.10.20.22.2.10" extension="2014-06-09" />
-        <code code="18776-5" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Plan of care note" />
-        <title>
-          Plan of Treatment
-        </title>
-        <text>
-          <paragraph>
-            Not on file
-          </paragraph>
-        </text>
-      </section>
-    </component>
-    <component>
-      <section nullFlavor="NI">
-        <templateId root="2.16.840.1.113883.10.20.22.2.3" />
-        <templateId root="2.16.840.1.113883.10.20.22.2.3" extension="2015-08-01" />
-        <templateId root="2.16.840.1.113883.10.20.22.2.3.1" />
-        <templateId root="2.16.840.1.113883.10.20.22.2.3.1" extension="2015-08-01" />
-        <code code="30954-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Relevant diagnostic tests/laboratory data Narrative" />
-        <title>
-          Results
-        </title>
-        <text>
-          <content ID="nof5">
-            Not on file
-          </content>
-          <footnote ID="subTitle20" styleCode="xSectionSubTitle">
-            from Last 3 Months
-          </footnote>
-        </text>
-      </section>
-    </component>
-  </structuredBody>`;
+async function uploadCcdFhirDataToS3(
+  patient: Patient,
+  data: BundleEntry<Resource>[],
+  requestId: string
+): Promise<void> {
+  const { log } = out(`Upload FHIR data for CCD cxId: ${patient.cxId}, patientId: ${patient.id}`);
+  const key = createUploadFilePath(
+    patient.cxId,
+    patient.id,
+    `${requestId}_${CCD_SUFFIX}_${FHIR_BUNDLE_SUFFIX}.json`
+  );
+  try {
+    await s3Utils.uploadFile({
+      bucket,
+      key,
+      file: Buffer.from(JSON.stringify(data)),
+      contentType: JSON_APP_MIME_TYPE,
+    });
+  } catch (error) {
+    const msg = `Error uploading FHIR data for CCD`;
+    log(`${msg}: error - ${errorToString(error)}`);
+    capture.error(msg, { extra: { cxId: patient.cxId, patientId: patient.id } });
+  }
 }

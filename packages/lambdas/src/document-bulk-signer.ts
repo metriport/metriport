@@ -1,18 +1,18 @@
-import * as Sentry from "@sentry/serverless";
-import { getEnvOrFail, getEnv } from "./shared/env";
-import { getEnvType } from "@metriport/core/util/env-var";
 import {
-  getSignedUrls,
   DocumentBulkSignerLambdaRequest,
+  searchDocumentsSignUrlsAndSendToApi,
 } from "@metriport/core/external/aws/document-signing/bulk-sign";
+import { getEnvType } from "@metriport/core/util/env-var";
+import { getEnvVar, getEnvVarOrFail } from "@metriport/shared";
+import * as Sentry from "@sentry/serverless";
 import { capture } from "./shared/capture";
 
 // Automatically set by AWS
-const lambdaName = getEnv("AWS_LAMBDA_FUNCTION_NAME");
-const region = getEnvOrFail("AWS_REGION");
+const lambdaName = getEnvVar("AWS_LAMBDA_FUNCTION_NAME");
+const region = getEnvVarOrFail("AWS_REGION");
 
-const apiURL = getEnvOrFail("API_URL");
-const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
+const apiURL = getEnvVarOrFail("API_URL");
+const bucketName = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 
 export const handler = Sentry.AWSLambda.wrapHandler(
   async (req: DocumentBulkSignerLambdaRequest) => {
@@ -23,6 +23,13 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         `bucketName: ${bucketName}, cxId: ${cxId}, patientId: ${patientId}, requestId: ${requestId} `
     );
 
-    await getSignedUrls(cxId, patientId, requestId, bucketName, region, apiURL);
+    await searchDocumentsSignUrlsAndSendToApi(
+      cxId,
+      patientId,
+      requestId,
+      bucketName,
+      region,
+      apiURL
+    );
   }
 );

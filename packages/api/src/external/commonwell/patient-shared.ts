@@ -8,12 +8,9 @@ import {
   RequestMetadata,
   StrongId,
 } from "@metriport/commonwell-sdk";
-import { driversLicenseURIs } from "@metriport/core/domain/oid";
-import { Patient, PatientExternalDataEntry } from "@metriport/core/domain/patient";
+import { PatientExternalDataEntry } from "@metriport/core/domain/patient";
+import { out } from "@metriport/core/util/log";
 import { intersectionBy } from "lodash";
-import { filterTruthy } from "../../shared/filter-map-utils";
-import { capture } from "../../shared/notifications";
-import { Util } from "../../shared/util";
 import { LinkStatus } from "../patient-link";
 import { makePersonForPatient } from "./patient-conversion";
 import {
@@ -42,8 +39,6 @@ export class PatientDataCommonwell extends PatientExternalDataEntry {
   }
 }
 
-type SimplifiedPersonalId = { key: string; system: string };
-
 export type FindOrCreatePersonResponse = { personId: string; person: CommonwellPerson };
 
 export async function findOrCreatePerson({
@@ -57,11 +52,11 @@ export async function findOrCreatePerson({
   commonwellPatient: CommonwellPatient;
   commonwellPatientId: string;
 }): Promise<FindOrCreatePersonResponse> {
-  const { log, debug } = Util.out(`CW findOrCreatePerson - CW patientId ${commonwellPatientId}`);
+  const { log, debug } = out(`CW findOrCreatePerson - CW patientId ${commonwellPatientId}`);
   const baseContext = `cw.findOrCreatePerson`;
 
   const tempCommonwellPerson = makePersonForPatient(commonwellPatient);
-  const strongIds = getPersonalIdentifiers(tempCommonwellPerson);
+  const strongIds = tempCommonwellPerson.details.identifier ?? [];
   if (strongIds.length > 0) {
     // Search by personal ID
     const persons = await matchPersonsByStrongIds({
@@ -138,73 +133,4 @@ export function getMatchingStrongIds(
   const patientIds = commonwellPatient.details?.identifier;
   if (!personIds || !personIds.length || !patientIds || !patientIds.length) return [];
   return intersectionBy(personIds, patientIds, id => `${id.system}|${id.key}`);
-}
-
-export async function searchPersonIds({
-  commonWell,
-  queryMeta,
-  personalIds,
-}: {
-  commonWell: CommonWellAPI;
-  queryMeta: RequestMetadata;
-  personalIds: SimplifiedPersonalId[];
-}): Promise<string[]> {
-  const { log } = Util.out(`CW searchPersonIds`);
-  const respSearches = await Promise.allSettled(
-    personalIds.map(id =>
-      commonWell.searchPerson(queryMeta, id.key, id.system).catch(error => {
-        const msg = `Failure searching person @ CW by personal ID`;
-        log(`${msg}. Cause: ${error}`);
-        capture.message(msg, { extra: { context: `cw.searchPersonIds`, error }, level: "error" });
-        throw error;
-      })
-    )
-  );
-  const fulfilledPersons = respSearches
-    .flatMap(r => (r.status === "fulfilled" ? r.value._embedded?.person : []))
-    .flatMap(filterTruthy);
-  const duplicatedPersonIds = fulfilledPersons.flatMap(getPersonId).flatMap(filterTruthy);
-  return Array.from(new Set(duplicatedPersonIds));
-}
-
-export function getPersonalIdentifiers(
-  person: CommonwellPatient | CommonwellPerson
-): SimplifiedPersonalId[] {
-  return (person.details?.identifier ?? []).flatMap(id =>
-    id.key !== undefined && id.system !== undefined ? { key: id.key, system: id.system } : []
-  );
-}
-
-export async function searchPersons({
-  commonWell,
-  queryMeta,
-  strongIds,
-}: {
-  commonWell: CommonWellAPI;
-  queryMeta: RequestMetadata;
-  strongIds: SimplifiedPersonalId[];
-}): Promise<CommonwellPerson[]> {
-  const respSearches = await Promise.allSettled(
-    strongIds.map(id =>
-      commonWell.searchPerson(queryMeta, id.key, id.system).catch(error => {
-        const msg = `Failed to search for person with strongId`;
-        console.log(`${msg}. Cause: ${error}`);
-        capture.message(msg, { extra: { context: `cw.searchPersons`, error }, level: "error" });
-        throw error;
-      })
-    )
-  );
-  const fulfilled = respSearches
-    .flatMap(r => (r.status === "fulfilled" ? r.value._embedded?.person : []))
-    .flatMap(filterTruthy);
-
-  return fulfilled;
-}
-
-export function getPersonalIdentifiersFromPatient(patient: Patient): SimplifiedPersonalId[] {
-  return (patient.data.personalIdentifiers ?? []).flatMap(id =>
-    id.value !== undefined && id.state !== undefined
-      ? { key: id.value, system: driversLicenseURIs[id.state] }
-      : []
-  );
 }

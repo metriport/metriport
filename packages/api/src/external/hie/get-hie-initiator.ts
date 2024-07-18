@@ -18,8 +18,7 @@ export async function getHieInitiator(
   facilityId: string | undefined
 ): Promise<HieInitiator> {
   const { organization, facilities } = await getPatientWithDependencies(patient);
-
-  const facility = await getPatientsFacility(patient.id, facilities, facilityId);
+  const facility = getPatientsFacility(patient.id, facilities, facilityId);
 
   if (isHealthcareItVendor(organization.type)) {
     return {
@@ -46,7 +45,7 @@ export async function isHieEnabledToQuery(
 ): Promise<boolean> {
   const { organization, facilities } = await getPatientWithDependencies(patient);
 
-  const facility = await getPatientsFacility(patient.id, facilities, facilityId);
+  const facility = getPatientsFacility(patient.id, facilities, facilityId);
 
   if (isHealthcareItVendor(organization.type)) {
     if (!isFacilityActiveForHie(facility, hie)) {

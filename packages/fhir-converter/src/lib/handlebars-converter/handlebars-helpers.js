@@ -33,7 +33,6 @@ var specialCharProcessor = require("../inputProcessor/specialCharProcessor");
 var zlib = require("zlib");
 const he = require("he");
 const convert = require("convert-units");
-const path = require("path");
 
 const PERSONAL_RELATIONSHIP_TYPE_CODE = "2.16.840.1.113883.1.11.19563";
 const decimal_regex = /-?(?:(?:0|[1-9][0-9]*)\.?[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?/;
@@ -109,40 +108,14 @@ var validDate = function (year, monthIndex, day) {
   return false;
 };
 
-// check the datetime is valid
-var validUTCDateTime = function (dateTimeComposition) {
-  for (var key in dateTimeComposition) dateTimeComposition[key] = Number(dateTimeComposition[key]);
-  var dateInstance = new Date(
-    Date.UTC(
-      dateTimeComposition.year,
-      dateTimeComposition.month - 1,
-      dateTimeComposition.day,
-      dateTimeComposition.hours,
-      dateTimeComposition.minutes,
-      dateTimeComposition.seconds,
-      dateTimeComposition.milliseconds
-    )
-  );
-  if (
-    dateInstance.getUTCFullYear() === dateTimeComposition.year &&
-    dateInstance.getUTCMonth() === dateTimeComposition.month - 1 &&
-    dateInstance.getUTCDate() === dateTimeComposition.day &&
-    dateInstance.getUTCHours() === dateTimeComposition.hours &&
-    dateInstance.getUTCMinutes() === dateTimeComposition.minutes &&
-    dateInstance.getSeconds() === dateTimeComposition.seconds &&
-    dateInstance.getMilliseconds() === dateTimeComposition.milliseconds
-  )
-    return true;
-  return false;
-};
-
 // check the string is valid
 var validDatetimeString = function (dateTimeString) {
   if (!dateTimeString || dateTimeString.toString() === "") return false;
   // datetime format in the spec: YYYY[MM[DD[HH[MM[SS[.S[S[S[S]]]]]]]]][+/-ZZZZ],
   var ds = dateTimeString.toString();
-  if (!/^(\d{4}(\d{2}(\d{2}(\d{2}(\d{2}(\d{2}(\.\d+)?)?)?)?)?)?((-|\+)\d{1,4})?)$/.test(ds))
-    throw `Bad input for Datetime type in ${ds}`;
+  if (!/^(\d{4}(\d{2}(\d{2}(\d{2}(\d{2}(\d{2}(\.\d+)?)?)?)?)?)?((-|\+)\d{1,4})?)$/.test(ds)) {
+    return false;
+  }
   return true;
 };
 
@@ -161,8 +134,25 @@ var convertDate = function (dateString) {
   throw `Bad input for Date type in ${dateString}`;
 };
 
+/**
+ * Checks if the given dateTimeString is already in the valid format YYYY-MM-DD.
+ * @param {string} dateTimeString - The date-time string to validate.
+ * @returns {boolean} - Returns true if the dateTimeString is in the valid format, otherwise false.
+ */
+var alreadyValidDateTime = function (dateTimeString) {
+  if (!dateTimeString || dateTimeString.toString() === "") return false;
+  var ds = dateTimeString.toString();
+  return /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,7}))?(Z|[-+]\d{2}:?\d{2})?)?$/.test(
+    ds
+  );
+};
+
 // handling the date format here
-var getDate = function (dateString) {
+var getDate = function (dateStringRaw) {
+  var dateString = dateStringRaw?.trim();
+  if (alreadyValidDateTime(dateString)) {
+    return dateString;
+  }
   if (!validDatetimeString(dateString)) return "";
   return convertDate(dateString.toString());
 };
@@ -189,8 +179,18 @@ var getDateTimeComposition = function (ds) {
   return dateTimeComposition;
 };
 
+var isValidYear = function (year) {
+  return parseInt(year) >= 1900;
+};
+
 // handling the datetime format here
-var getDateTime = function (dateTimeString) {
+var getDateTime = function (dateTimeStringRaw) {
+  var dateTimeString = dateTimeStringRaw?.trim();
+
+  if (alreadyValidDateTime(dateTimeString)) {
+    return dateTimeString;
+  }
+
   if (!validDatetimeString(dateTimeString)) return "";
 
   // handle the datetime format with time zone
@@ -201,6 +201,9 @@ var getDateTime = function (dateTimeString) {
   if (timeZoneChar !== "") {
     var dateSections = ds.split(timeZoneChar);
     var dateTimeComposition = getDateTimeComposition(dateSections[0]);
+
+    if (!isValidYear(dateTimeComposition.year)) return "";
+
     var date =
       dateTimeComposition.year + "-" + dateTimeComposition.month + "-" + dateTimeComposition.day;
     var time =
@@ -212,17 +215,47 @@ var getDateTime = function (dateTimeString) {
       ":" +
       dateTimeComposition.milliseconds;
     var timezone = timeZoneChar + dateSections[1];
-    if (!validUTCDateTime(dateTimeComposition)) {
-      console.log(`Invalid datetime: ${ds}`);
-    }
-    return new Date(date + " " + time + " " + timezone).toISOString();
-  }
 
-  if (ds.length <= 8) return convertDate(ds);
+    const newDate = new Date(date + " " + time + " " + timezone);
+
+    if (isNaN(newDate.getTime())) {
+      return new Date(date).toISOString();
+    }
+
+    return newDate.toISOString();
+  }
 
   // Padding 0s to 17 digits
   dateTimeComposition = getDateTimeComposition(ds);
-  if (!validUTCDateTime(dateTimeComposition)) throw `Invalid datetime: ${ds}`;
+
+  if (!isValidYear(dateTimeComposition.year)) return "";
+
+  if (dateTimeComposition.month === "00" && dateTimeComposition.day === "00") {
+    return new Date(
+      Date.UTC(
+        dateTimeComposition.year,
+        dateTimeComposition.month,
+        dateTimeComposition.day + 1,
+        dateTimeComposition.hours,
+        dateTimeComposition.minutes,
+        dateTimeComposition.seconds,
+        dateTimeComposition.milliseconds
+      )
+    ).toJSON();
+  } else if (dateTimeComposition.day === "00") {
+    return new Date(
+      Date.UTC(
+        dateTimeComposition.year,
+        dateTimeComposition.month - 1,
+        dateTimeComposition.day + 1,
+        dateTimeComposition.hours,
+        dateTimeComposition.minutes,
+        dateTimeComposition.seconds,
+        dateTimeComposition.milliseconds
+      )
+    ).toJSON();
+  }
+
   return new Date(
     Date.UTC(
       dateTimeComposition.year,
@@ -246,7 +279,7 @@ const allValuesInObjAreNullFlavor = obj => {
         continue;
       }
       for (let key in current) {
-        if (current.hasOwnProperty(key)) {
+        if (Object.prototype.hasOwnProperty.call(current, key)) {
           if (key === "classCode") {
             continue;
           }
@@ -994,6 +1027,17 @@ module.exports.external = [
     },
   },
   {
+    name: "trim",
+    description: "Trims string: trim string",
+    func: function (str) {
+      try {
+        return str.toString().trim();
+      } catch (err) {
+        return "";
+      }
+    },
+  },
+  {
     name: "trimAndLower",
     description: "Trims and converts string to lower case: trimAndLower string",
     func: function (str) {
@@ -1155,7 +1199,7 @@ module.exports.external = [
       if (referenceData == undefined) {
         return "";
       }
-      return JSON.stringify(referenceData).slice(1, -1);
+      return JSON.stringify(referenceData).slice(1, -1).replace(/ {2,}/g, " ").trim();
     },
   },
   {
@@ -1205,7 +1249,7 @@ module.exports.external = [
       if (!str) {
         return { isValid: false };
       }
-      const match = str.match(/^(\d+(?:\.\d+)?)(\s*)([a-zA-Z\/\(\)\[\]]+)$/);
+      const match = str.match(/^(\d+(?:\.\d+)?)(\s*)([a-zA-Z/()[\]]+)$/);
       if (match) {
         return { isValid: true, value: parseFloat(match[1]), unit: match[3] };
       } else {
@@ -1260,15 +1304,123 @@ module.exports.external = [
     },
   },
   {
+    name: "extractReferenceRange",
+    description: "Parses lab result reference value ranges",
+    func: function (obj) {
+      function cleanUpReturn(obj1, obj2, name1, name2) {
+        if (!obj1 && !obj2) return;
+        return {
+          ...(obj1 && { [name1]: obj1 }),
+          ...(obj2 && { [name2]: obj2 }),
+        };
+      }
+
+      function getRangeLimit(limit) {
+        if (!limit) return;
+        if (limit.value) {
+          return limit;
+        } else if (limit.nullFlavor === "OTH") {
+          const translation = limit.translation;
+          const value = translation?.value ?? undefined;
+          const unit = translation?.originalText?._ ?? undefined;
+          return cleanUpReturn(value, unit, "value", "unit");
+        }
+        return;
+      }
+
+      function buildRange(value) {
+        if (!value) return;
+        if (value.includes("-")) {
+          const [low, high] = value.split("-");
+          return {
+            low: {
+              value: low.trim(),
+            },
+            high: {
+              value: high.trim(),
+            },
+          };
+        }
+        if (typeof value === "string") {
+          return {
+            low: {
+              value: value.trim(),
+            },
+          };
+        }
+      }
+
+      function parseRange(range) {
+        const value = range.value;
+        if (value) {
+          if (value["x:type"] === "ST") {
+            if (value._) {
+              return buildRange(value._);
+            }
+          } else if (value["x:type"] === "IVL_PQ" || value["x:type"] === "IVL_REAL") {
+            const low = getRangeLimit(value.low);
+            const high = getRangeLimit(value.high);
+            const ret = cleanUpReturn(low, high, "low", "high");
+            if (ret) return ret;
+          }
+        }
+        if (range.text?._) {
+          return buildRange(range.text._);
+        }
+      }
+
+      return parseRange(obj);
+    },
+  },
+  {
+    name: "buildPresentedForm",
+    description: "Builds a presented form array",
+    func: function (b64String, component) {
+      const presentedForm = [];
+      if (b64String) {
+        presentedForm.push({
+          contentType: "text/html",
+          data: b64String,
+        });
+      }
+      if (component) {
+        const components = Array.isArray(component) ? component : [component];
+        components.forEach(comp => {
+          const obsValueB64 = comp.observation?.value?._b64;
+          if (obsValueB64) {
+            presentedForm.push({
+              contentType: "text/html",
+              data: obsValueB64,
+            });
+          }
+        });
+      }
+      if (presentedForm.length === 0) return undefined;
+      return JSON.stringify(presentedForm);
+    },
+  },
+  {
     name: "extractDecimal",
     description:
       "Returns true if following the FHIR decimal specification: https://www.hl7.org/fhir/R4/datatypes.html#decimal ",
     func: function (str) {
       if (!str) {
-        return "";
+        return undefined;
       }
       const match = str.match(new RegExp(`^(${DECIMAL_REGEX_STR})$`));
-      return match ? match[0] : "";
+
+      if (match) {
+        const decimal = match[0];
+        const leadsWithDecimal = decimal.startsWith(".");
+
+        if (leadsWithDecimal) {
+          return parseFloat(`0${decimal}`);
+        }
+
+        return parseFloat(decimal);
+      }
+
+      return undefined;
     },
   },
   {
@@ -1391,6 +1543,13 @@ module.exports.external = [
         }
       }
       return false;
+    },
+  },
+  {
+    name: "startDateLteEndDate",
+    description: "Checks if the start date is less than or equal to the end date.",
+    func: function (v1, v2) {
+      return new Date(getDateTime(v1)).getTime() <= new Date(getDateTime(v2)).getTime();
     },
   },
 ];

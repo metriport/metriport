@@ -1,14 +1,15 @@
-import { Organization } from "@medplum/fhirtypes";
 import { Bundle } from "../../routes/medical/schemas/fhir";
 
 export type FhirToCdaConverterRequest = {
   cxId: string;
-  patientId: string;
-  docId: string;
+  /**
+   * Indicates whether to split the bundle based on the Compositions
+   * prior to FHIR-to-CDA conversion. Should be set to `false` for CCD generation.
+   */
+  splitCompositions: boolean;
   bundle: Bundle;
-  organization: Organization;
 };
 
 export interface FhirToCdaConverter {
-  requestConvert(req: FhirToCdaConverterRequest): Promise<void>;
+  requestConvert(req: FhirToCdaConverterRequest): Promise<string[]>;
 }

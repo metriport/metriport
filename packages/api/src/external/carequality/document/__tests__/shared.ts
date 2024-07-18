@@ -12,7 +12,7 @@ import {
   XCPDGateway,
   XCPDPatientId,
 } from "@metriport/ihe-gateway-sdk/models/shared";
-import { makeDocumentReferenceWithMetriporId } from "./make-document-reference-with-metriport-id";
+import { makeDocumentReferenceWithMetriportId } from "./make-document-reference-with-metriport-id";
 
 export type IdSystem = { id: string; system: string };
 
@@ -171,7 +171,7 @@ export function makeOutboundDocumentQueryResp({
   const _externalGatewayPatient = externalGatewayPatient ?? makeIdSystem();
   const _patientId = patientId ?? faker.string.uuid();
   const _operationOutcome = operationOutcome ?? makeOperationOutcome();
-  const _documentReference = documentReference ?? [makeDocumentReferenceWithMetriporId()];
+  const _documentReference = documentReference ?? [makeDocumentReferenceWithMetriportId()];
   const _gateway = gateway ?? makeXcaGateway();
 
   return {

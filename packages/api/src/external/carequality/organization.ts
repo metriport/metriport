@@ -1,3 +1,4 @@
+import { OrganizationBizType } from "@metriport/core/domain/organization";
 import { Config } from "../../shared/config";
 import { buildXmlStringFromTemplate } from "./organization-template";
 import { CQOrgDetails, CQOrgUrls, cqOrgUrlsSchema } from "./shared";
@@ -25,6 +26,7 @@ export class CQOrganization {
     public email: string,
     public role: "Implementer" | "Connection",
     public parentOrgOid?: string,
+    public organizationBizType?: OrganizationBizType,
     public urlXCPD?: string,
     public urlDQ?: string,
     public urlDR?: string
@@ -44,7 +46,8 @@ export class CQOrganization {
       orgDetails.phone,
       orgDetails.email,
       orgDetails.role,
-      orgDetails.parentOrgOid
+      orgDetails.parentOrgOid,
+      orgDetails.organizationBizType
     );
 
     this.addUrls(organization);
@@ -72,6 +75,7 @@ export class CQOrganization {
       email: this.email,
       role: this.role,
       parentOrgOid: this.parentOrgOid,
+      organizationBizType: this.organizationBizType,
     };
   }
 

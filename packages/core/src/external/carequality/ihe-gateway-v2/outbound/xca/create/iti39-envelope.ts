@@ -1,16 +1,17 @@
 import dayjs from "dayjs";
 import { XMLBuilder } from "fast-xml-parser";
+import { OutboundDocumentRetrievalReq, XCAGateway } from "@metriport/ihe-gateway-sdk";
 import { createSecurityHeader } from "../../../saml/security/security-header";
 import { signFullSaml } from "../../../saml/security/sign";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
 import { namespaces, expiresIn } from "../../../constants";
 import { ORGANIZATION_NAME_DEFAULT as metriportOrganization, replyTo } from "../../../../shared";
 import { wrapIdInUrnUuid, wrapIdInUrnOid } from "../../../../../../util/urn";
-import { OutboundDocumentRetrievalReq, XCAGateway } from "@metriport/ihe-gateway-sdk";
+import { getHomeCommunityId, getDocumentUniqueIdFunctionByGateway } from "../../../gateways";
 
 const action = "urn:ihe:iti:2007:CrossGatewayRetrieve";
 
-export type BulkSignedDR = {
+export type SignedDrRequest = {
   gateway: XCAGateway;
   signedRequest: string;
   outboundRequest: OutboundDocumentRetrievalReq;
@@ -34,7 +35,7 @@ export function createITI39SoapEnvelope({
   }));
 
   const subjectRole = bodyData.samlAttributes.subjectRole.display;
-  const homeCommunityId = bodyData.samlAttributes.homeCommunityId;
+  const homeCommunityId = getHomeCommunityId(bodyData.gateway, bodyData.samlAttributes);
   const purposeOfUse = bodyData.samlAttributes.purposeOfUse;
 
   const createdTimestamp = dayjs().toISOString();
@@ -51,6 +52,7 @@ export function createITI39SoapEnvelope({
     purposeOfUse,
   });
 
+  const getDocumentUniqueIdFn = getDocumentUniqueIdFunctionByGateway(bodyData.gateway);
   const soapBody = {
     "soap:Body": {
       "@_xmlns:xsd": namespaces.xs,
@@ -60,7 +62,7 @@ export function createITI39SoapEnvelope({
         "urn:DocumentRequest": documentReferences.map(docRef => ({
           "urn:HomeCommunityId": wrapIdInUrnOid(docRef.homeCommunityId),
           "urn:RepositoryUniqueId": docRef.repositoryUniqueId,
-          "urn:DocumentUniqueId": docRef.documentUniqueId,
+          "urn:DocumentUniqueId": getDocumentUniqueIdFn(docRef.documentUniqueId),
         })),
       },
     },
@@ -107,12 +109,16 @@ export function createAndSignBulkDRRequests({
 }: {
   bulkBodyData: OutboundDocumentRetrievalReq[];
   samlCertsAndKeys: SamlCertsAndKeys;
-}): BulkSignedDR[] {
-  const signedRequests: BulkSignedDR[] = [];
+}): SignedDrRequest[] {
+  const signedRequests: SignedDrRequest[] = [];
 
   for (const bodyData of bulkBodyData) {
     const signedRequest = createAndSignDRRequest(bodyData, samlCertsAndKeys);
-    signedRequests.push({ gateway: bodyData.gateway, signedRequest, outboundRequest: bodyData });
+    signedRequests.push({
+      gateway: bodyData.gateway,
+      signedRequest,
+      outboundRequest: bodyData,
+    });
   }
 
   return signedRequests;

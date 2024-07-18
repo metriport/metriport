@@ -1,12 +1,18 @@
+import {
+  examplePhoneNumber,
+  isPhoneValid,
+  normalizeUsPhoneWithPlusOne,
+  phoneLength,
+} from "@metriport/shared";
 import { z } from "zod";
+import { defaultDateString, defaultNameString } from "../../shared";
 import { addressSchema } from "./common/address";
 import { usStateSchema } from "./common/us-data";
-import {
-  defaultDateString,
-  defaultNameString,
-  defaultOptionalString,
-  stripNonNumericChars,
-} from "../../shared";
+
+export const generalPersonalIdentifiers = ["ssn"] as const;
+export const driversLicensePersonalIdentifier = ["driversLicense"] as const;
+export type GeneralPersonalIdentifiers = (typeof generalPersonalIdentifiers)[number];
+export type DriversLicensePersonalIdentifier = (typeof driversLicensePersonalIdentifier)[number];
 
 const basePersonalIdentifierSchema = z.object({
   value: z.string(),
@@ -26,30 +32,43 @@ const basePersonalIdentifierSchema = z.object({
 });
 
 export const driverLicenseIdentifierSchema = z.object({
-  type: z.literal("driversLicense"), // If another type is added, the UI forms for patient creation/updates will need to be updated to support these types
+  type: z.enum(driversLicensePersonalIdentifier),
   state: usStateSchema,
 });
-
-export const personalIdentifierSchema = basePersonalIdentifierSchema.merge(
+export const driverLicenseIdentifierWithBaseSchema = basePersonalIdentifierSchema.merge(
   driverLicenseIdentifierSchema
+);
+export type DriverLicenseIdentifier = z.infer<typeof driverLicenseIdentifierWithBaseSchema>;
+
+export const generalTypeIdentifierSchema = z.object({
+  type: z.enum(generalPersonalIdentifiers),
+});
+export const generalTypeIdentifierWithBaseSchema = basePersonalIdentifierSchema.merge(
+  generalTypeIdentifierSchema
+);
+export type GeneralTypeIdentifier = z.infer<typeof generalTypeIdentifierWithBaseSchema>;
+
+export const personalIdentifierSchema = driverLicenseIdentifierWithBaseSchema.or(
+  generalTypeIdentifierWithBaseSchema
 );
 export type PersonalIdentifier = z.infer<typeof personalIdentifierSchema>;
 
-export const genderAtBirthSchema = z.enum(["F", "M"]);
+export const genderAtBirthSchema = z.enum(["F", "M", "O", "U"]);
 
-const phoneLength = 10;
 export const contactSchema = z
   .object({
     phone: z.coerce
       .string()
-      .transform(phone => stripNonNumericChars(phone))
-      .refine(phone => phone.length === phoneLength, {
-        message: `Phone must be a string consisting of ${phoneLength} numbers. For example: 4153245540`,
+      .transform(normalizeUsPhoneWithPlusOne)
+      .refine(isPhoneValid, {
+        message: `Phone must be a string consisting of ${phoneLength} numbers. For example: ${examplePhoneNumber}`,
       })
-      .or(defaultOptionalString),
-    email: z.string().email().or(defaultOptionalString),
+      .or(z.null())
+      .or(z.undefined()),
+    email: z.string().email().or(z.null()).or(z.undefined()),
   })
   .refine(c => c.email || c.phone, { message: "Either email or phone must be present" });
+export type Contact = z.infer<typeof contactSchema>;
 
 export const demographicsSchema = z.object({
   firstName: defaultNameString,

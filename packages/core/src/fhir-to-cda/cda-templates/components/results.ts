@@ -1,97 +1,51 @@
 import { Bundle, DiagnosticReport, Observation } from "@medplum/fhirtypes";
-import { base64ToString } from "../../../util/base64";
-import { findResourceInBundle, isDiagnosticReport, isObservation } from "../../fhir";
 import {
-  TIMESTAMP_CLEANUP_REGEX,
+  findResourceInBundle,
+  isDiagnosticReport,
+  isObservation,
+} from "../../../external/fhir/shared";
+import { base64ToString } from "../../../util/base64";
+import { ResultsSection } from "../../cda-types/sections";
+import { ObservationOrganizer } from "../../cda-types/shared-types";
+import {
   buildCodeCe,
   buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
+  formatDateToCdaTimestamp,
+  notOnFilePlaceholder,
   withoutNullFlavorObject,
 } from "../commons";
-import {
-  _classCodeAttribute,
-  _idAttribute,
-  _moodCodeAttribute,
-  _typeCodeAttribute,
-  _valueAttribute,
-} from "../constants";
-import { buildObservations } from "./observations";
+import { extensionValue2015, oids, placeholderOrgOid } from "../constants";
+import { createObservations } from "./observations";
 
-function buildEntriesFromDiagnosticReports(
-  diagnosticReports: DiagnosticReport[],
-  fhirBundle: Bundle
-) {
-  return diagnosticReports.map(report => {
-    const codeElement = buildCodeCvFromCodeableConcept(report.code);
-    const observations: Observation[] = [];
-    report.result?.forEach(result => {
-      if (!result.reference) {
-        return;
-      }
-      const observation = findResourceInBundle(fhirBundle, result.reference);
-      if (isObservation(observation)) {
-        observations.push(observation);
-      }
-    });
+export function buildResult(fhirBundle: Bundle): ResultsSection {
+  const resultsSection: ResultsSection = {
+    templateId: buildInstanceIdentifier({
+      root: oids.resultsSection,
+    }),
+    code: buildCodeCe({
+      code: "30954-2",
+      codeSystem: "2.16.840.1.113883.6.1",
+      codeSystemName: "LOINC",
+      displayName: "Diagnostic Results",
+    }),
+    title: "Diagnostic Results",
+    text: notOnFilePlaceholder,
+  };
 
-    const organizer = {
-      [_classCodeAttribute]: "BATTERY",
-      [_moodCodeAttribute]: "EVN",
-      templateId: buildInstanceIdentifier({
-        root: "2.16.840.1.113883.10.20.22.4.1",
-        extension: "2015-08-01",
-      }),
-      id: buildInstanceIdentifier({
-        root: report.id,
-      }),
-      code: codeElement,
-      statusCode: buildCodeCe({
-        code: report.status,
-      }),
-      effectiveTime: withoutNullFlavorObject(
-        report.effectiveDateTime?.replace(TIMESTAMP_CLEANUP_REGEX, ""),
-        _valueAttribute
-      ),
-      component: buildObservations(observations).map(o => o.component),
-    };
-
-    return {
-      entry: {
-        [_typeCodeAttribute]: "DRIV",
-        organizer,
-      },
-    };
-  });
-}
-
-export function buildResult(fhirBundle: Bundle): unknown {
   const diagnosticReports: DiagnosticReport[] =
     fhirBundle.entry?.flatMap(entry =>
       isDiagnosticReport(entry.resource) ? [entry.resource] : []
     ) || [];
   if (diagnosticReports.length === 0) {
-    return undefined;
+    return resultsSection;
   }
-  const text = getTextItemsFromDiagnosticReports(diagnosticReports);
 
-  const resultsSection = {
-    component: {
-      section: {
-        templateId: buildInstanceIdentifier({
-          root: "2.16.840.1.113883.10.20.22.2.3.1",
-        }),
-        code: buildCodeCe({
-          code: "30954-2",
-          codeSystem: "2.16.840.1.113883.6.1",
-          codeSystemName: "LOINC",
-          displayName: "Diagnostic Results",
-        }),
-        title: "Diagnostic Results",
-        text: text.map(t => t && t.item),
-        entry: buildEntriesFromDiagnosticReports(diagnosticReports, fhirBundle).map(e => e.entry),
-      },
-    },
-  };
+  const text = getTextItemsFromDiagnosticReports(diagnosticReports);
+  const textSection = text.flatMap(t => (t && t.item) || []);
+  resultsSection.text = textSection;
+  resultsSection.entry = buildEntriesFromDiagnosticReports(diagnosticReports, fhirBundle);
+
   return resultsSection;
 }
 
@@ -108,7 +62,7 @@ function getTextItemsFromDiagnosticReports(diagnosticReports: DiagnosticReport[]
         return {
           item: {
             content: {
-              [_idAttribute]: `_${report.id}`,
+              _ID: `_${report.id}`,
               br: contentObjects.map(o => o.br),
             },
           },
@@ -117,4 +71,50 @@ function getTextItemsFromDiagnosticReports(diagnosticReports: DiagnosticReport[]
       return undefined;
     }) || []
   );
+}
+
+function buildEntriesFromDiagnosticReports(
+  diagnosticReports: DiagnosticReport[],
+  fhirBundle: Bundle
+): ObservationOrganizer[] {
+  return diagnosticReports.map(report => {
+    const codeElement = buildCodeCvFromCodeableConcept(report.code);
+    const observations: Observation[] = [];
+    report.result?.forEach(result => {
+      if (!result.reference) {
+        return;
+      }
+      const observation = findResourceInBundle(fhirBundle, result.reference);
+      if (isObservation(observation)) {
+        observations.push(observation);
+      }
+    });
+
+    const organizer = {
+      _classCode: "BATTERY",
+      _moodCode: "EVN",
+      templateId: buildInstanceIdentifier({
+        root: oids.resultOrganizer,
+        extension: extensionValue2015,
+      }),
+      id: buildInstanceIdentifier({
+        root: placeholderOrgOid,
+        extension: report.id,
+      }),
+      code: codeElement,
+      statusCode: buildCodeCe({
+        code: report.status,
+      }),
+      effectiveTime: withoutNullFlavorObject(
+        formatDateToCdaTimestamp(report.effectiveDateTime),
+        "_value"
+      ),
+      component: createObservations(observations).map(o => o.component),
+    };
+
+    return {
+      _typeCode: "DRIV",
+      organizer,
+    };
+  });
 }

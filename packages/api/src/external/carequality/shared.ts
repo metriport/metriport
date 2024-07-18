@@ -1,13 +1,12 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { capture } from "@metriport/core/util/notifications";
-import { IHEGateway } from "@metriport/ihe-gateway-sdk";
 import { PurposeOfUse } from "@metriport/shared";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { OrganizationBizType } from "@metriport/core/domain/organization";
 import { errorToString } from "@metriport/shared/common/error";
 import z from "zod";
-import { isCarequalityEnabled, isCQDirectEnabledForCx } from "../aws/appConfig";
+import { isCarequalityEnabled, isCQDirectEnabledForCx } from "../aws/app-config";
 import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
-import { makeIheGatewayAPIForPatientDiscovery } from "../ihe-gateway/api";
 
 // TODO: adjust when we support multiple POUs
 export function createPurposeOfUse() {
@@ -18,42 +17,36 @@ export function isGWValid(gateway: { homeCommunityId: string; url: string }): bo
   return !!gateway.homeCommunityId && !!gateway.url;
 }
 
-export async function validateCQEnabledAndInitGW(
+export async function isCqEnabled(
   patient: Pick<Patient, "id" | "cxId">,
   facilityId: string,
   forceEnabled: boolean,
-  outerLog: typeof console.log
-): Promise<IHEGateway | undefined> {
+  log: typeof console.log
+): Promise<boolean> {
   const { cxId } = patient;
 
   try {
-    const iheGateway = makeIheGatewayAPIForPatientDiscovery();
     const isCQEnabled = await isCarequalityEnabled();
     const isCQDirectEnabled = await isCQDirectEnabledForCx(cxId);
     const isCqQueryEnabled = await isFacilityEnabledToQueryCQ(facilityId, patient);
 
-    const iheGWNotPresent = !iheGateway;
     const cqIsDisabled = !isCQEnabled && !forceEnabled;
     const cqDirectIsDisabledForCx = !isCQDirectEnabled;
 
-    if (iheGWNotPresent) {
-      outerLog(`IHE GW not available, skipping PD`);
-      return undefined;
-    } else if (cqIsDisabled) {
-      outerLog(`CQ not enabled, skipping PD`);
-      return undefined;
+    if (cqIsDisabled) {
+      log(`CQ not enabled, skipping PD`);
+      return false;
     } else if (cqDirectIsDisabledForCx) {
-      outerLog(`CQ disabled for cx ${cxId}, skipping PD`);
-      return undefined;
+      log(`CQ disabled for cx ${cxId}, skipping PD`);
+      return false;
     } else if (!isCqQueryEnabled) {
-      outerLog(`CQ querying not enabled for facility, skipping PD`);
-      return undefined;
+      log(`CQ querying not enabled for facility, skipping PD`);
+      return false;
     }
-
-    return iheGateway;
+    return true;
   } catch (error) {
     const msg = `Error validating PD enabled`;
-    outerLog(`${msg} - ${errorToString(error)}`);
+    log(`${msg} - ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         cxId,
@@ -62,6 +55,7 @@ export async function validateCQEnabledAndInitGW(
       },
     });
   }
+  return false;
 }
 
 export const cqOrgUrlsSchema = z.object({
@@ -85,7 +79,12 @@ export const cqOrgDetailsSchema = z.object({
   phone: z.string(),
   email: z.string(),
   role: z.enum(["Implementer", "Connection"]),
+  organizationBizType: z.nativeEnum(OrganizationBizType).optional(),
   parentOrgOid: z.string().optional(),
+});
+
+export const cqOrgDetailsOrgBizRequiredSchema = cqOrgDetailsSchema.required({
+  organizationBizType: true,
 });
 
 export type CQOrgDetails = z.infer<typeof cqOrgDetailsSchema>;

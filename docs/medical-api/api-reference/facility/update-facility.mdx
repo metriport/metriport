@@ -21,11 +21,11 @@ api: "PUT /medical/v1/facility/{id}"
 <ResponseExample>
 
 ```javascript Metriport SDK
-import { Metriport, USState } from "@metriport/api-sdk";
+import { MetriportMedicalApi, USState } from "@metriport/api-sdk";
 
-const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
-const facility = await metriportClient.updateFacility({
+const facility = await metriport.updateFacility({
   id: "2.16.840.1.113883.3.666.123",
   name: "Care Facility, LLC",
   npi: "1234567891",

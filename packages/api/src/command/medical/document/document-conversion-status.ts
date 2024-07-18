@@ -12,7 +12,7 @@ import { getPatientOrFail } from "../patient/get-patient";
 import { tallyDocQueryProgress } from "../../../external/hie/tally-doc-query-progress";
 import { getCWData } from "../../../external/commonwell/patient";
 import { getCQData } from "../../../external/carequality/patient";
-import { analytics, EventTypes } from "../../../shared/analytics";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { updateConversionProgress } from "./document-query";
 import { processPatientDocumentRequest } from "./document-webhook";
 import { MAPIWebhookStatus } from "./document-webhook";
@@ -71,6 +71,10 @@ export async function calculateDocumentConversionStatus({
 
     if (isConversionCompleted) {
       const startedAt = updatedPatient.data.documentQueryProgress?.startedAt;
+      const convert = updatedPatient.data.documentQueryProgress?.convert;
+      const totalDocsConverted = convert?.total;
+      const successfulConversions = convert?.successful;
+      const failedConversions = convert?.errors;
 
       analytics({
         distinctId: cxId,
@@ -80,6 +84,9 @@ export async function calculateDocumentConversionStatus({
           patientId,
           hie: source,
           duration: elapsedTimeFromNow(startedAt),
+          totalDocsConverted,
+          successfulConversions,
+          failedConversions,
         },
       });
     }

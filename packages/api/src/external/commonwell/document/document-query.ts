@@ -16,6 +16,7 @@ import NotFoundError from "@metriport/core/util/error/not-found";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import httpStatus from "http-status";
 import { chunk, partition } from "lodash";
 import { removeDocRefMapping } from "../../../command/medical/docref-mapping/remove-docref-mapping";
@@ -25,7 +26,6 @@ import {
   getUrl,
   S3Info,
 } from "../../../command/medical/document/document-query-storage-info";
-import { analytics, EventTypes } from "../../../shared/analytics";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { Util } from "../../../shared/util";
@@ -33,7 +33,7 @@ import {
   isCQDirectEnabledForCx,
   isCWEnabledForCx,
   isEnhancedCoverageEnabledForCx,
-} from "../../aws/appConfig";
+} from "../../aws/app-config";
 import { reportMetric } from "../../aws/cloudwatch";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
@@ -51,7 +51,7 @@ import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
-import { getCWData, linkPatientToCW } from "../patient";
+import { getCWData, update } from "../patient";
 import { getPatientWithCWData, PatientWithCWData } from "../patient-external-data";
 import { getCwInitiator } from "../shared";
 import { makeDocumentDownloader } from "./document-downloader-factory";
@@ -63,7 +63,8 @@ import {
   getFileName,
   getContentTypeOrUnknown,
 } from "./shared";
-import { getDocumentReferenceContentTypeCounts } from "../../hie/get-docr-content-type-counts";
+import { getDocumentReferenceContentTypeCounts } from "../../hie/get-counts-analytics";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -125,12 +126,10 @@ export async function queryAndProcessDocuments({
     source: MedicalDataSource.COMMONWELL,
     log,
   });
-
+  const isCwEnabledForCx = await isCWEnabledForCx(cxId);
+  if (!isCwEnabledForCx) return interrupt(`CW disabled for cx ${cxId}`);
   const isCwQueryEnabled = await isFacilityEnabledToQueryCW(facilityId, patientParam);
-
-  if (!(await isCWEnabledForCx(cxId)) || !isCwQueryEnabled) {
-    return interrupt(`CW disabled for cx ${cxId}`);
-  }
+  if (!isCwQueryEnabled) return interrupt(`CW disabled for facility ${facilityId}`);
 
   try {
     const initiator = await getCwInitiator(patientParam, facilityId);
@@ -155,7 +154,12 @@ export async function queryAndProcessDocuments({
       });
 
       if (hasNoCWStatus) {
-        await linkPatientToCW(patientParam, initiator.facilityId, getOrgIdExcludeList);
+        update({
+          patient: patientParam,
+          facilityId: initiator.facilityId,
+          getOrgIdExcludeList,
+          requestId,
+        }).catch(processAsyncError("CW update"));
       }
 
       return;
@@ -603,7 +607,7 @@ async function downloadDocsAndUpsertFHIR({
             log(`${msg}: (docId ${doc.id}): ${errorToString(error)}`);
             capture.error(msg, {
               extra: {
-                context: `s3.documentUpload`,
+                context: `cw.downloadDocsAndUpsertFHIR.downloadFromCWAndUploadToS3`,
                 patientId: patient.id,
                 documentReference: doc,
                 requestId,

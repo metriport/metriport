@@ -9,19 +9,18 @@ import {
   withoutNullFlavorObject,
   withoutNullFlavorString,
 } from "../commons";
-import { _useAttribute, _valueAttribute } from "../constants";
 
 function buildPatient(patient: Patient): CdaPatientRole {
   return {
     name: patient.name?.map(name => {
       const nameUse = mapNameUse(name.use);
       return {
-        ...withoutNullFlavorObject(nameUse, _useAttribute),
+        ...withoutNullFlavorObject(nameUse, "_use"),
         given: withoutNullFlavorString(name.given?.join(" ")),
         family: name.family,
         validTime: {
-          low: withoutNullFlavorObject(undefined, _valueAttribute),
-          high: withoutNullFlavorObject(undefined, _valueAttribute),
+          low: withoutNullFlavorObject(undefined, "_value"),
+          high: withoutNullFlavorObject(undefined, "_value"),
         },
       };
     }),
@@ -30,11 +29,8 @@ function buildPatient(patient: Patient): CdaPatientRole {
       codeSystem: "2.16.840.1.113883.5.1",
       codeSystemName: "AdministrativeGender",
     }),
-    birthTime: withoutNullFlavorObject(
-      formatDateToCdaTimestamp(patient.birthDate),
-      _valueAttribute
-    ),
-    deceasedInd: withoutNullFlavorObject(patient.deceasedBoolean?.toString(), _valueAttribute),
+    birthTime: withoutNullFlavorObject(formatDateToCdaTimestamp(patient.birthDate), "_value"),
+    deceasedInd: withoutNullFlavorObject(patient.deceasedBoolean?.toString(), "_value"),
     maritalStatusCode: buildCodeCe({
       code: patient.maritalStatus?.coding?.[0]?.code,
       codeSystem: "2.16.840.1.113883.5.2",

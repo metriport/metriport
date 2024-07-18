@@ -7,8 +7,16 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Repository } from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
+import {
+  ApplicationProtocol,
+  NetworkLoadBalancer,
+  NetworkTargetGroup,
+  Protocol,
+} from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import { AlbTarget } from "aws-cdk-lib/aws-elasticloadbalancingv2-targets";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { IFunction as ILambda } from "aws-cdk-lib/aws-lambda";
+import { LogGroup } from "aws-cdk-lib/aws-logs";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
@@ -19,6 +27,7 @@ import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
 import { DnsZones } from "../shared/dns";
+import { buildLbAccessLogPrefix } from "../shared/s3";
 import { Secrets, secretsToECS } from "../shared/secrets";
 import { provideAccessToQueue } from "../shared/sqs";
 import { isProd, isSandbox } from "../shared/util";
@@ -26,6 +35,45 @@ import { isProd, isSandbox } from "../shared/util";
 interface ApiServiceProps extends StackProps {
   config: EnvConfig;
   version: string | undefined;
+}
+
+type EnvSpecificSettings = {
+  desiredTaskCount: number;
+  maxTaskCount: number;
+  memoryLimitMiB: number;
+};
+type Settings = EnvSpecificSettings & {
+  loadBalancerIdleTimeout: Duration;
+  cpu: number;
+};
+
+function getEnvSpecificSettings(config: EnvConfig): EnvSpecificSettings {
+  if (isProd(config)) {
+    return {
+      desiredTaskCount: 6,
+      maxTaskCount: 40,
+      memoryLimitMiB: 4096,
+    };
+  }
+  if (isSandbox(config)) {
+    return {
+      desiredTaskCount: 2,
+      maxTaskCount: 10,
+      memoryLimitMiB: 2048,
+    };
+  }
+  return {
+    desiredTaskCount: 1,
+    maxTaskCount: 5,
+    memoryLimitMiB: 2048,
+  };
+}
+function getSettings(config: EnvConfig): Settings {
+  return {
+    ...getEnvSpecificSettings(config),
+    cpu: 1024, // Keep to 1 vCPU because NodeJS is single-threaded
+    loadBalancerIdleTimeout: Duration.minutes(10),
+  };
 }
 
 export function createAPIService({
@@ -47,6 +95,7 @@ export function createAPIService({
   outboundPatientDiscoveryLambda,
   outboundDocumentQueryLambda,
   outboundDocumentRetrievalLambda,
+  generalBucket,
   medicalDocumentsUploadBucket,
   fhirToMedicalRecordLambda,
   fhirToCdaConverterLambda,
@@ -75,6 +124,7 @@ export function createAPIService({
   outboundPatientDiscoveryLambda: ILambda;
   outboundDocumentQueryLambda: ILambda;
   outboundDocumentRetrievalLambda: ILambda;
+  generalBucket: s3.Bucket;
   medicalDocumentsUploadBucket: s3.Bucket;
   fhirToMedicalRecordLambda: ILambda | undefined;
   fhirToCdaConverterLambda: ILambda | undefined;
@@ -85,11 +135,14 @@ export function createAPIService({
   appConfigEnvVars: {
     appId: string;
     configId: string;
+    envId: string;
+    deploymentStrategyId: string;
   };
   cookieStore: secret.ISecret | undefined;
 }): {
   cluster: ecs.Cluster;
-  service: ecs_patterns.NetworkLoadBalancedFargateService;
+  service: ecs_patterns.ApplicationLoadBalancedFargateService;
+  loadBalancer: NetworkLoadBalancer;
   serverAddress: string;
   loadBalancerAddress: string;
 } {
@@ -109,27 +162,36 @@ export function createAPIService({
     ? props.config.connectWidgetUrl
     : `https://${props.config.connectWidget.subdomain}.${props.config.connectWidget.domain}/`;
 
-  const iheGateway = props.config.iheGateway;
-
   const coverageEnhancementConfig = props.config.commonwell.coverageEnhancement;
   const dbReadReplicaEndpointAsString = JSON.stringify({
     host: dbReadReplicaEndpoint.hostname,
     port: dbReadReplicaEndpoint.port,
   });
+  const dbPoolSettings = JSON.stringify(props.config.apiDatabase.poolSettings);
   // Run some servers on fargate containers
-  const fargateService = new ecs_patterns.NetworkLoadBalancedFargateService(
+  const listenerPort = 80;
+  const containerPort = 8080;
+  const logGroup = LogGroup.fromLogGroupArn(stack, "ApiLogGroup", props.config.logArn);
+  const { cpu, memoryLimitMiB, desiredTaskCount, maxTaskCount, loadBalancerIdleTimeout } =
+    getSettings(props.config);
+  const fargateService = new ecs_patterns.ApplicationLoadBalancedFargateService(
     stack,
-    "APIFargateService",
+    "APIFargateServiceAlb",
     {
       cluster: cluster,
-      // Watch out for the combination of vCPUs and memory, more vCPU requires more memory
+      // Watch out for the combination of vCPUs and memory.
       // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#task_size
-      cpu: isProd(props.config) ? 2048 : 1024,
-      desiredCount: isProd(props.config) ? 2 : 1,
+      cpu,
+      memoryLimitMiB,
+      desiredCount: desiredTaskCount,
       taskImageOptions: {
         image: ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest"),
-        containerPort: 8080,
+        containerPort,
         containerName: "API-Server",
+        logDriver: ecs.LogDrivers.awsLogs({
+          logGroup,
+          streamPrefix: "APIFargateService",
+        }),
         secrets: {
           DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret),
           SEARCH_PASSWORD: ecs.Secret.fromSecretsManager(searchAuth.secret),
@@ -140,7 +202,9 @@ export function createAPIService({
           ENV_TYPE: props.config.environmentType, // staging, production, sandbox
           ...(props.version ? { METRIPORT_VERSION: props.version } : undefined),
           AWS_REGION: props.config.region,
+          LB_TIMEOUT_IN_MILLIS: loadBalancerIdleTimeout.toMilliseconds().toString(),
           DB_READ_REPLICA_ENDPOINT: dbReadReplicaEndpointAsString,
+          DB_POOL_SETTINGS: dbPoolSettings,
           TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
           API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
           ...(props.config.apiGatewayUsagePlanId
@@ -166,14 +230,6 @@ export function createAPIService({
           }),
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
           DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
-          ...(iheGateway
-            ? {
-                IHE_GW_URL: `http://${iheGateway.outboundSubdomain}.${props.config.domain}`,
-                IHE_GW_PORT_PD: iheGateway.outboundPorts.patientDiscovery.toString(),
-                IHE_GW_PORT_DQ: iheGateway.outboundPorts.documentQuery.toString(),
-                IHE_GW_PORT_DR: iheGateway.outboundPorts.documentRetrieval.toString(),
-              }
-            : undefined),
           OUTBOUND_PATIENT_DISCOVERY_LAMBDA_NAME: outboundPatientDiscoveryLambda.functionName,
           OUTBOUND_DOC_QUERY_LAMBDA_NAME: outboundDocumentQueryLambda.functionName,
           OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,
@@ -210,6 +266,8 @@ export function createAPIService({
           // app config
           APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
           APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
+          APPCONFIG_ENVIRONMENT_ID: appConfigEnvVars.envId,
+          APPCONFIG_DEPLOYMENT_STRATEGY_ID: appConfigEnvVars.deploymentStrategyId,
           ...(coverageEnhancementConfig && {
             CW_MANAGEMENT_URL: coverageEnhancementConfig.managementUrl,
           }),
@@ -221,11 +279,16 @@ export function createAPIService({
           }),
         },
       },
-      memoryLimitMiB: isProd(props.config) ? 4096 : 2048,
       healthCheckGracePeriod: Duration.seconds(60),
+      protocol: ApplicationProtocol.HTTP,
+      listenerPort,
       publicLoadBalancer: false,
+      idleTimeout: loadBalancerIdleTimeout,
     }
   );
+  // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
+  // fargateService.taskDefinition.defaultContainer?.addUlimits({ ... });
+
   const serverAddress = fargateService.loadBalancer.loadBalancerDnsName;
   const apiUrl = `${props.config.subdomain}.${props.config.domain}`;
   new r53.ARecord(stack, "APIDomainPrivateRecord", {
@@ -234,6 +297,37 @@ export function createAPIService({
     target: r53.RecordTarget.fromAlias(
       new r53_targets.LoadBalancerTarget(fargateService.loadBalancer)
     ),
+  });
+
+  const alb = fargateService.loadBalancer;
+  alb.logAccessLogs(generalBucket, buildLbAccessLogPrefix("api"));
+
+  const nlb = new NetworkLoadBalancer(stack, `ApiNetworkLoadBalancer`, {
+    vpc,
+    internetFacing: false,
+  });
+  const nlbListener = nlb.addListener(`ApiNetworkLoadBalancerListener`, {
+    port: listenerPort,
+    protocol: Protocol.TCP,
+  });
+  const nlbTargetGroup = new NetworkTargetGroup(stack, `ApiNetworkTargetGroup`, {
+    port: listenerPort,
+    protocol: Protocol.TCP,
+    vpc,
+    targets: [new AlbTarget(alb, listenerPort)],
+  });
+  nlbListener.addTargetGroups("ApiNetworkLoadBalancerTargetGroup", nlbTargetGroup);
+
+  // Health checks
+  const healthcheck = {
+    healthyThresholdCount: 2,
+    unhealthyThresholdCount: 2,
+    interval: Duration.seconds(10),
+  };
+  fargateService.targetGroup.configureHealthCheck(healthcheck);
+  nlbTargetGroup.configureHealthCheck({
+    ...healthcheck,
+    interval: healthcheck.interval.plus(Duration.seconds(3)),
   });
 
   // Access grant for Aurora DB's secret
@@ -277,6 +371,8 @@ export function createAPIService({
             "appconfig:StartConfigurationSession",
             "appconfig:GetLatestConfiguration",
             "appconfig:GetConfiguration",
+            "appconfig:CreateHostedConfigurationVersion",
+            "appconfig:StartDeployment",
             "apigateway:GET",
           ],
           resources: ["*"],
@@ -298,7 +394,7 @@ export function createAPIService({
   const fargateCPUAlarm = fargateService.service
     .metricCpuUtilization()
     .createAlarm(stack, "CPUAlarm", {
-      threshold: 80,
+      threshold: 85,
       evaluationPeriods: 3,
       datapointsToAlarm: 2,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
@@ -309,7 +405,7 @@ export function createAPIService({
   const fargateMemoryAlarm = fargateService.service
     .metricMemoryUtilization()
     .createAlarm(stack, "MemoryAlarm", {
-      threshold: 70,
+      threshold: 85,
       evaluationPeriods: 3,
       datapointsToAlarm: 2,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
@@ -317,7 +413,7 @@ export function createAPIService({
   alarmAction && fargateMemoryAlarm.addAlarmAction(alarmAction);
   alarmAction && fargateMemoryAlarm.addOkAction(alarmAction);
 
-  // allow the NLB to talk to fargate
+  // allow the LB to talk to fargate
   fargateService.service.connections.allowFrom(
     ec2.Peer.ipv4(vpc.vpcCidrBlock),
     ec2.Port.allTraffic(),
@@ -327,29 +423,18 @@ export function createAPIService({
   // from the cluster created above, should be fine for now as it will only accept connections in the VPC
   fargateService.service.connections.allowFromAnyIpv4(ec2.Port.allTcp());
 
-  // This speeds up deployments so the tasks are swapped quicker.
-  // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
-  fargateService.targetGroup.setAttribute("deregistration_delay.timeout_seconds", "17");
-
-  // This also speeds up deployments so the health checks have a faster turnaround.
-  // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/network/target-group-health-checks.html
-  fargateService.targetGroup.configureHealthCheck({
-    healthyThresholdCount: 2,
-    interval: Duration.seconds(10),
-  });
-
-  // hookup autoscaling based on 90% thresholds
+  // hookup autoscaling based on thresholds
   const scaling = fargateService.service.autoScaleTaskCount({
-    minCapacity: isProd(props.config) ? 2 : 1,
-    maxCapacity: isProd(props.config) ? 10 : 2,
+    minCapacity: desiredTaskCount,
+    maxCapacity: maxTaskCount,
   });
   scaling.scaleOnCpuUtilization("autoscale_cpu", {
-    targetUtilizationPercent: 90,
+    targetUtilizationPercent: 80,
     scaleInCooldown: Duration.minutes(2),
     scaleOutCooldown: Duration.seconds(30),
   });
   scaling.scaleOnMemoryUtilization("autoscale_mem", {
-    targetUtilizationPercent: 90,
+    targetUtilizationPercent: 80,
     scaleInCooldown: Duration.minutes(2),
     scaleOutCooldown: Duration.seconds(30),
   });
@@ -358,6 +443,7 @@ export function createAPIService({
     cluster,
     service: fargateService,
     serverAddress: apiUrl,
+    loadBalancer: nlb,
     loadBalancerAddress: serverAddress,
   };
 }

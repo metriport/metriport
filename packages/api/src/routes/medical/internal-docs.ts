@@ -1,10 +1,7 @@
 import { BulkGetDocUrlStatus } from "@metriport/core/domain/bulk-get-document-url";
-import {
-  DocumentBulkSignerLambdaResponse,
-  documentBulkSignerLambdaResponseArraySchema,
-} from "@metriport/core/external/aws/document-signing/document-bulk-signer-response";
 import { convertResult } from "@metriport/core/domain/document-query";
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
+import { documentBulkSignerLambdaResponseArraySchema } from "@metriport/core/external/aws/document-signing/document-bulk-signer-response";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { isMedicalDataSource } from "@metriport/core/external/index";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
@@ -25,12 +22,14 @@ import {
   MAPIWebhookStatus,
   processPatientDocumentRequest,
 } from "../../command/medical/document/document-webhook";
+import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { appendDocQueryProgress } from "../../command/medical/patient/append-doc-query-progress";
 import { appendBulkGetDocUrlProgress } from "../../command/medical/patient/bulk-get-doc-url-progress";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import BadRequestError from "../../errors/bad-request";
-import { generateCcd } from "../../external/cda/generate-ccd";
+import { processCcdRequest, processEmptyCcdRequest } from "../../external/cda/process-ccd-request";
 import { parseJobId } from "../../external/fhir/connector/connector";
+import { toFHIR as toFhirOrganization } from "../../external/fhir/organization";
 import { setDocQueryProgress } from "../../external/hie/set-doc-query-progress";
 import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
@@ -387,8 +386,7 @@ router.post(
     const patientId = getFrom("query").orFail("patientId", req);
     const requestId = getFrom("query").orFail("requestId", req);
     const status = getFrom("query").orFail("status", req);
-    const dtos: DocumentBulkSignerLambdaResponse[] =
-      documentBulkSignerLambdaResponseArraySchema.parse(req.body);
+    const docs = documentBulkSignerLambdaResponseArraySchema.parse(req.body);
 
     const updatedPatient = await appendBulkGetDocUrlProgress({
       patient: { id: patientId, cxId },
@@ -403,7 +401,7 @@ router.post(
       "medical.document-bulk-download-urls",
       status as MAPIWebhookStatus,
       requestId,
-      dtos
+      docs
     );
 
     return res.status(httpStatus.OK).json(updatedPatient.data.bulkGetDocumentsUrlProgress);
@@ -411,21 +409,51 @@ router.post(
 );
 
 /**
- * GET /internal/docs/ccd
+ * POST /internal/docs/ccd
  *
- * Generates a CCD document for the specified patient.
+ * Generates a CCD document and uploads it for the specified patient.
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.patientId - The patient's ID.
  * @return The CCD document string in XML format.
  */
-router.get(
+router.post(
   "/ccd",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
-    const ccd = await generateCcd({ patientId, cxId });
+    const [patient, organization] = await Promise.all([
+      getPatientOrFail({ cxId, id: patientId }),
+      getOrganizationOrFail({ cxId }),
+    ]);
 
+    const fhirOrganization = toFhirOrganization(organization);
+    const ccd = await processCcdRequest(patient, fhirOrganization);
+    return res.type("application/xml").status(httpStatus.OK).send(ccd);
+  })
+);
+
+/**
+ * POST /internal/docs/empty-ccd
+ *
+ * Generates an empty CCD document and uploads it for the specified patient.
+ * @param req.query.cxId - The customer/account's ID.
+ * @param req.query.patientId - The patient's ID.
+ * @return The CCD document string in XML format.
+ */
+router.post(
+  "/empty-ccd",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getFrom("query").orFail("cxId", req);
+    const patientId = getFrom("query").orFail("patientId", req);
+    const [patient, organization] = await Promise.all([
+      getPatientOrFail({ cxId, id: patientId }),
+      getOrganizationOrFail({ cxId }),
+    ]);
+
+    const fhirOrganization = toFhirOrganization(organization);
+    const ccd = await processEmptyCcdRequest(patient, fhirOrganization);
     return res.type("application/xml").status(httpStatus.OK).send(ccd);
   })
 );

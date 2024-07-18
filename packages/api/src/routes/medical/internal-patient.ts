@@ -31,7 +31,7 @@ import BadRequestError from "../../errors/bad-request";
 import {
   getCxsWithCQDirectFeatureFlagValue,
   getCxsWithEnhancedCoverageFeatureFlagValue,
-} from "../../external/aws/appConfig";
+} from "../../external/aws/app-config";
 import { PatientUpdaterCarequality } from "../../external/carequality/patient-updater-carequality";
 import cwCommands from "../../external/commonwell";
 import { findDuplicatedPersons } from "../../external/commonwell/admin/find-patient-duplicates";

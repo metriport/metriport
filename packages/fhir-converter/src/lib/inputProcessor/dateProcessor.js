@@ -22,16 +22,24 @@ function extractEncounterTimePeriod(srcData) {
 }
 
 /**
- * Checks whether the given XML data contains an encompassing encounter, and returns a UUID for it.
+ * Checks whether the given XML data contains an encompassing encounter, and returns a IDs for it.
  * Otherwise, returns undefined.
  * @param {string} srcData - The XML data as a string.
- * @returns {string} A UUID for the encompassing encounter or undefined.
+ * @returns {string} Returns an object containing the new UUID and external ID of the encompassing encounter.
  */
 function getEncompassingEncounterId(srcData) {
   const jsonObj = parser.parse(srcData);
   const encompassingEncounter = jsonObj.ClinicalDocument?.componentOf?.encompassingEncounter;
   if (encompassingEncounter) {
-    return uuidv4();
+    const extIdRef = encompassingEncounter.id;
+    const externalId = {
+      ...(extIdRef.root && { root: extIdRef?.root }),
+      ...(extIdRef.extension && { extension: extIdRef?.extension }),
+    };
+    return {
+      newId: uuidv4(),
+      externalId,
+    };
   }
   return undefined;
 }

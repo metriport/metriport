@@ -7,6 +7,7 @@ import { namespaces, expiresIn } from "../../../constants";
 import { ORGANIZATION_NAME_DEFAULT as metriportOrganization, replyTo } from "../../../../shared";
 import { OutboundDocumentQueryReq, XCAGateway } from "@metriport/ihe-gateway-sdk";
 import { wrapIdInUrnUuid } from "../../../../../../util/urn";
+import { getHomeCommunityId } from "../../../gateways";
 
 const action = "urn:ihe:iti:2007:CrossGatewayQuery";
 const findDocumentId = "14d4debf-8f97-4251-9a74-a90016b0af0d";
@@ -14,7 +15,7 @@ const stableDocumentType = "7edca82f-054d-47f2-a032-9b2a5b5186c1";
 const onDemandDocumentType = "34268e47-fdf5-41a6-ba33-82133c465248";
 const dateFormat = "YYYYMMDDHHmmss";
 
-export type BulkSignedDQ = {
+export type SignedDqRequest = {
   gateway: XCAGateway;
   signedRequest: string;
   outboundRequest: OutboundDocumentQueryReq;
@@ -168,7 +169,7 @@ export function createITI38SoapEnvelope({
   const toUrl = bodyData.gateway.url;
 
   const subjectRole = bodyData.samlAttributes.subjectRole.display;
-  const homeCommunityId = bodyData.samlAttributes.homeCommunityId;
+  const homeCommunityId = getHomeCommunityId(bodyData.gateway, bodyData.samlAttributes);
   const purposeOfUse = bodyData.samlAttributes.purposeOfUse;
 
   const createdTimestamp = dayjs().toISOString();
@@ -243,8 +244,8 @@ export function createAndSignBulkDQRequests({
 }: {
   bulkBodyData: OutboundDocumentQueryReq[];
   samlCertsAndKeys: SamlCertsAndKeys;
-}): BulkSignedDQ[] {
-  const signedRequests: BulkSignedDQ[] = [];
+}): SignedDqRequest[] {
+  const signedRequests: SignedDqRequest[] = [];
 
   for (const bodyData of bulkBodyData) {
     const signedRequest = createAndSignDQRequest(bodyData, samlCertsAndKeys);

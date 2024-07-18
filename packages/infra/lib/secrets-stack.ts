@@ -20,6 +20,8 @@ export class SecretsStack extends Stack {
   constructor(scope: Construct, id: string, props: SecretStackProps) {
     super(scope, id, props);
 
+    this.terminationProtection = true;
+
     //-------------------------------------------
     // Init secrets for the infra stack
     //-------------------------------------------
@@ -40,15 +42,6 @@ export class SecretsStack extends Stack {
       if (!secretName || !secretName.trim().length) continue;
       const secret = makeSecret(secretName);
       logSecretInfo(this, secret, secretName);
-    }
-
-    const iheGwSecretNames = props.config.iheGateway?.secretNames;
-    if (iheGwSecretNames) {
-      for (const secretName of Object.values<string | undefined>(iheGwSecretNames)) {
-        if (!secretName || !secretName.trim().length) continue;
-        const secret = makeSecret(secretName);
-        logSecretInfo(this, secret, secretName);
-      }
     }
 
     if (props.config.carequality?.secretNames) {

@@ -240,8 +240,19 @@ function recordError(stats: any, key: string, operationOutcome: any, item: any) 
   }
 }
 
+function getGatewayOidsWithNullPatientMatch(filePath: string): string[] {
+  const fileContent = readFileSync(filePath, "utf8");
+  const data: Response[] = JSON.parse(fileContent);
+
+  const oids: string[] = data
+    .filter(item => item.patientMatch === null)
+    .map(item => item.gateway.oid);
+
+  return oids;
+}
+
 // Usage
-const filePath = "./runs/saml-coverage/xyz.json";
+const filePath = "";
 analyzeResponsesByVendor(filePath);
 analyzeResponsesWithExclusions(filePath, [
   "surescripts",
@@ -254,3 +265,7 @@ analyzeResponsesWithExclusions(filePath, [
   "medent",
 ]);
 analyzeResponses(filePath);
+const oids = getGatewayOidsWithNullPatientMatch(filePath);
+
+const formattedOids = oids.map(oid => `'${oid}'`).join(", ");
+console.log(formattedOids);

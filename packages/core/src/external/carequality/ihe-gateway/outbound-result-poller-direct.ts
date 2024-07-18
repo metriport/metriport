@@ -1,9 +1,10 @@
-import axios from "axios";
 import {
-  OutboundPatientDiscoveryResp,
   OutboundDocumentQueryResp,
   OutboundDocumentRetrievalResp,
+  OutboundPatientDiscoveryResp,
 } from "@metriport/ihe-gateway-sdk";
+import { executeWithNetworkRetries } from "@metriport/shared";
+import axios from "axios";
 import { OutboundResultPoller, PollOutboundResults } from "./outbound-result-poller";
 import {
   pollOutboundDocQueryResults,
@@ -24,7 +25,7 @@ export type OutboundDocQueryRespParam = {
   patientId: string;
   cxId: string;
   requestId: string;
-  results: OutboundDocumentQueryResp[];
+  response: OutboundDocumentQueryResp[];
 };
 
 export type OutboundDocRetrievalRespParam = {
@@ -81,7 +82,8 @@ export class OutboundResultPollerDirect extends OutboundResultPoller {
       results,
     };
 
-    await api.post(this.patientDiscoveryResultsUrl, payload);
+    // TODO not sure if should retry on timeout
+    await executeWithNetworkRetries(() => api.post(this.patientDiscoveryResultsUrl, payload));
   }
 
   isDQEnabled(): boolean {
@@ -90,7 +92,7 @@ export class OutboundResultPollerDirect extends OutboundResultPoller {
 
   async pollOutboundDocQueryResults(params: PollOutboundResults): Promise<void> {
     if (!this.isDQEnabled()) throw new Error(`DQ polling is not enabled`);
-    const results = await pollOutboundDocQueryResults({
+    const response = await pollOutboundDocQueryResults({
       ...params,
       dbCreds: this.dbCreds,
     });
@@ -100,10 +102,11 @@ export class OutboundResultPollerDirect extends OutboundResultPoller {
       requestId,
       patientId,
       cxId,
-      results,
+      response,
     };
 
-    await api.post(this.docQueryResultsUrl, payload);
+    // TODO not sure if should retry on timeout
+    await executeWithNetworkRetries(() => api.post(this.docQueryResultsUrl, payload));
   }
 
   isDREnabled(): boolean {
@@ -124,6 +127,7 @@ export class OutboundResultPollerDirect extends OutboundResultPoller {
       results,
     };
 
-    await api.post(this.docRetrievalResultsUrl, payload);
+    // TODO not sure if should retry on timeout
+    await executeWithNetworkRetries(() => api.post(this.docRetrievalResultsUrl, payload));
   }
 }

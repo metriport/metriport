@@ -1,16 +1,21 @@
-import { NextFunction, Request, Response } from "express";
-import { nanoid } from "nanoid";
 import { getLocalStorage } from "@metriport/core/util/local-storage";
+import { NextFunction, Request, Response } from "express";
+import { customAlphabet } from "nanoid";
+import { getCxId } from "../util";
 import { analyzeRoute } from "./request-analytics";
 
 const asyncLocalStorage = getLocalStorage("reqId");
+const nanoid = customAlphabet("0123456789abcdefghijklmnopqrstuvwxyz");
 
 export const requestLogger = (req: Request, res: Response, next: NextFunction): void => {
   const reqId = nanoid();
+  // TODO move the asyncLocalStorage logic to its own, dedicated middleware
   asyncLocalStorage.run(reqId, () => {
     const method = req.method;
     const url = req.baseUrl + req.path;
     const urlWithParams = replaceParamWithKey(url, req.params);
+
+    const cxId = getCxId(req);
     const query = req.query && Object.keys(req.query).length ? req.query : undefined;
     const params = req.params && Object.keys(req.params).length ? req.params : undefined;
 
@@ -20,7 +25,8 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
       method,
       url,
       toString(params),
-      toString(query)
+      toString(query),
+      cxId ? `{"cxId":"${cxId}"}` : ""
     );
 
     const startHrTime = process.hrtime();
@@ -37,11 +43,15 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
         elapsedTimeInMs
       );
 
-      const isSuccessful = res.statusCode >= 200 && res.statusCode < 300;
-
-      if (isSuccessful) {
-        analyzeRoute({ req, method, url: urlWithParams, params, query, duration: elapsedTimeInMs });
-      }
+      analyzeRoute({
+        req,
+        method,
+        url: urlWithParams,
+        params,
+        query,
+        duration: elapsedTimeInMs,
+        status: res.statusCode,
+      });
     });
     next();
   });

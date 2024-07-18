@@ -13,7 +13,8 @@
       "request": "launch",
       "cwd": "${workspaceFolder}/packages/api",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run-script", "dev"]
+      "runtimeArgs": ["run-script", "dev"],
+      "console": "integratedTerminal"
     },
     {
       "name": "Debug API - Attach to Node",

@@ -9,7 +9,7 @@ export const makePatient = ({
   id = defaultId(),
   firstName = faker.person.firstName(),
   lastName = faker.person.lastName(),
-  phoneNumber = faker.phone.number("555-###-###"),
+  phoneNumber = faker.phone.number("#########"),
 }: {
   id?: string;
   firstName?: string;

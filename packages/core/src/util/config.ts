@@ -58,6 +58,9 @@ export class Config {
   static getSearchIngestionQueueUrl(): string {
     return getEnvVarOrFail("SEARCH_INGESTION_QUEUE_URL");
   }
+  static getSystemRootOID(): string {
+    return getEnvVarOrFail("SYSTEM_ROOT_OID");
+  }
 
   static getFHIRServerUrl(): string {
     return getEnvVarOrFail("FHIR_SERVER_URL");
@@ -88,8 +91,15 @@ export class Config {
   static getApiUrl(): string {
     return getEnvVarOrFail("API_URL");
   }
+  static getPostHogApiKey(): string | undefined {
+    return getEnvVar("POST_HOG_API_KEY_SECRET");
+  }
 
-  static getUseMockS3Utils(): boolean {
-    return getEnvVar("USE_MOCK_S3_UTILS") === "true";
+  static getIheResponsesBucketName(): string | undefined {
+    return getEnvVar("IHE_RESPONSES_BUCKET_NAME");
+  }
+
+  static getIheRequestsBucketName(): string | undefined {
+    return getEnvVar("IHE_REQUESTS_BUCKET_NAME");
   }
 }

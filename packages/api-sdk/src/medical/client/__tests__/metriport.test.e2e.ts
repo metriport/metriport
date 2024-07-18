@@ -8,6 +8,7 @@ jest.setTimeout(15000);
 
 const METRIPORT = "METRIPORT";
 const COMMONWELL = "COMMONWELL";
+const CAREQUALITY = "CAREQUALITY";
 
 const apiKey = getEnvVarOrFail("TEST_API_KEY");
 const baseAddress = getEnvVarOrFail("API_URL");
@@ -145,7 +146,7 @@ describe("listDocuments", () => {
   });
 
   it("only returns doc refs from Metriport and HIEs", async () => {
-    const expectedExtensionCodes = [METRIPORT, COMMONWELL];
+    const expectedExtensionCodes = [METRIPORT, COMMONWELL, CAREQUALITY];
     const { documents } = await metriport.listDocuments(patientId);
     expect(documents).toBeTruthy();
     expect(documents.length).toBeGreaterThanOrEqual(1);

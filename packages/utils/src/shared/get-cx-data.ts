@@ -40,7 +40,7 @@ export async function getCxData(
       if (!facility) throw new Error("No facility matching the provided ID was found");
       return facility;
     }
-    if (facilities.length > 1) throw new Error("Got more than one facility");
+    if (facilities.length > 1) throw new Error("Got more than one facility - choose one");
     return facilities[0];
   };
   const facility = includeFacility ? await getFacility() : undefined;

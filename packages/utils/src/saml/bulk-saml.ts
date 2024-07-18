@@ -7,8 +7,11 @@ import { v4 as uuidv4 } from "uuid";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import { createAndSignBulkXCPDRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/create/iti55-envelope";
-import { sendSignedXCPDRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/send/xcpd-requests";
-import { processXCPDResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/process/xcpd-response";
+import { sendProcessXcpdRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/ihe-gateway-v2-logic";
+import { setRejectUnauthorized } from "@metriport/core/external/carequality/ihe-gateway-v2/saml/saml-client";
+import { setS3UtilsInstance as setS3UtilsInstanceForStoringIheResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/monitor/store";
+import { MockS3Utils } from "./mock-s3";
+import { Config } from "@metriport/core/util/config";
 
 /** This is a helper script to test constructing your own SOAP+SAML requests. It creates the SOAP 
 Envelope and sends it to the gateway specified in the request body. It logs the output into the 
@@ -18,13 +21,17 @@ Metriport-IHE GW / XML + SAML Constructor - Postman collection.
 */
 
 const timestamp = dayjs().toISOString();
+const env = "STAGING";
+setRejectUnauthorized(false);
+const s3utils = new MockS3Utils(Config.getAWSRegion());
+setS3UtilsInstanceForStoringIheResponse(s3utils);
 
 // Set these to staging if you want to actually test the endpoints in a pre-prod env
 const samlCertsAndKeys = {
-  publicCert: getEnvVarOrFail("CQ_ORG_CERTIFICATE_STAGING"),
-  privateKey: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_STAGING"),
-  privateKeyPassword: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PASSWORD_STAGING"),
-  certChain: getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE_STAGING"),
+  publicCert: getEnvVarOrFail(`CQ_ORG_CERTIFICATE_${env}`),
+  privateKey: getEnvVarOrFail(`CQ_ORG_PRIVATE_KEY_${env}`),
+  privateKeyPassword: getEnvVarOrFail(`CQ_ORG_PRIVATE_KEY_PASSWORD_${env}`),
+  certChain: getEnvVarOrFail(`CQ_ORG_CERTIFICATE_INTERMEDIATE_${env}`),
 };
 
 const patientId = uuidv4();
@@ -42,22 +49,19 @@ async function main() {
   );
 
   console.log("signing bulk requests...", body.gateways.length);
-  const xmlResponses = createAndSignBulkXCPDRequests(body, samlCertsAndKeys);
-  console.log("sending bulk requests...");
-  const responses = await sendSignedXCPDRequests({
-    signedRequests: xmlResponses,
-    samlCertsAndKeys,
-    patientId: uuidv4(),
-    cxId: uuidv4(),
-  });
-  console.log("processing bulk responses...");
-  const results = responses.map(response => {
-    return processXCPDResponse({
-      xcpdResponse: response,
+  const signedRequests = createAndSignBulkXCPDRequests(body, samlCertsAndKeys);
+
+  const resultPromises = signedRequests.map(async (signedRequest, index) => {
+    return sendProcessXcpdRequest({
+      signedRequest,
+      samlCertsAndKeys,
       patientId,
       cxId,
+      index,
     });
   });
+  console.log("sending and processing bulk requests...");
+  const results = await Promise.all(resultPromises);
 
   console.log("writing bulk responses to file...");
   fs.writeFileSync(

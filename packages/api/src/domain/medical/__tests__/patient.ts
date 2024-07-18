@@ -23,16 +23,18 @@ export function makePatientData(data: Partial<PatientData> = {}): PatientData {
     genderAtBirth: data.genderAtBirth ?? faker.helpers.arrayElement(["F", "M"]),
     personalIdentifiers: data.personalIdentifiers ?? [makePersonalIdentifier()],
     address: data.address ?? [makeAddressStrict()],
+    consolidatedLinkDemographics: data.consolidatedLinkDemographics,
     documentQueryProgress: data.documentQueryProgress,
-    patientDiscovery: data.patientDiscovery,
-    consolidatedQuery: data.consolidatedQuery,
+    consolidatedQueries: data.consolidatedQueries,
     cxDocumentRequestMetadata: data.cxDocumentRequestMetadata,
     cxConsolidatedRequestMetadata: data.cxConsolidatedRequestMetadata,
     externalData: data.externalData,
   };
 }
 
-export function makePatient(params: Partial<Patient> = {}): Patient {
+export function makePatient(
+  params: Partial<Omit<Patient, "data"> & { data: Partial<PatientData> }> = {}
+): Patient {
   return {
     ...makeBaseDomain(),
     ...(params.id ? { id: params.id } : {}),

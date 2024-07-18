@@ -1,7 +1,9 @@
 import { Bundle, BundleEntry, Patient } from "@medplum/fhirtypes";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
-import { OPERATION_OUTCOME_EXTENSION_URL } from "../../../external/fhir/shared/extensions/extension";
+import { OPERATION_OUTCOME_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/extension";
 import { Util } from "../../../shared/util";
+import { errorToString } from "@metriport/shared";
+import { MetriportError } from "@metriport/core/util/error/metriport-error";
 
 export async function createOrUpdateConsolidatedPatientData({
   cxId,
@@ -27,13 +29,15 @@ export async function createOrUpdateConsolidatedPatientData({
     });
 
     const bundleResource = await fhir.executeBatch(fhirBundleTransaction);
-
     const transformedBundle = removeUnwantedFhirData(bundleResource);
 
     return transformedBundle;
   } catch (error) {
-    log(`Error converting and executing fhir bundle resources: `, error);
-    throw error;
+    const errorMsg = errorToString(error);
+    const msg = "Error converting and executing fhir bundle resources";
+    log(`${msg}: ${errorMsg}`);
+    if (errorMsg.includes("ID")) throw new MetriportError(errorMsg, error, { cxId, patientId });
+    throw new MetriportError(msg, error, { cxId, patientId });
   }
 }
 
@@ -79,14 +83,16 @@ const convertCollectionBundleToTransactionBundle = ({
       continue;
 
     const transactionEntry: BundleEntry = {
-      resource: {
+      resource,
+      request: { method: "PUT", url: resource.resourceType + "/" + resource.id },
+    };
+
+    if (resource.resourceType !== "Patient") {
+      transactionEntry.resource = {
         ...resource,
         contained: resource.contained ? [...resource.contained, patient] : [patient],
-      },
-      request: resource.id
-        ? { method: "PUT", url: resource.resourceType + "/" + resource.id }
-        : { method: "POST", url: resource.resourceType },
-    };
+      };
+    }
 
     transactionBundle.entry?.push(transactionEntry);
   }

@@ -11,6 +11,18 @@ type ParsedFile = {
   decodedBytes: Buffer;
 };
 
+export function parseFileFromBuffer(buffer: Buffer): ParsedFile {
+  const { mimeType, fileExtension } = detectFileType(buffer);
+  if (mimeType === XML_TXT_MIME_TYPE || mimeType === XML_APP_MIME_TYPE) {
+    return extractNonXmlBody(mimeType, fileExtension, buffer, buffer.toString());
+  }
+  return {
+    mimeType,
+    fileExtension,
+    decodedBytes: buffer,
+  };
+}
+
 export function parseFileFromString(fileAsString: string): ParsedFile {
   let decodedBytes: Buffer;
 

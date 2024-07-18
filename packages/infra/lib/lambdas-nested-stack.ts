@@ -9,11 +9,13 @@ import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { EnvType } from "./env-type";
-import { createLambda } from "./shared/lambda";
+import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { Secrets } from "./shared/secrets";
 
 export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
+
+const pollingBuffer = Duration.seconds(30);
 
 interface LambdasNestedStackProps extends NestedStackProps {
   config: EnvConfig;
@@ -37,6 +39,8 @@ export class LambdasNestedStack extends NestedStack {
 
   constructor(scope: Construct, id: string, props: LambdasNestedStackProps) {
     super(scope, id, props);
+
+    this.terminationProtection = true;
 
     this.lambdaLayers = setupLambdasLayers(this);
 
@@ -66,6 +70,7 @@ export class LambdasNestedStack extends NestedStack {
       vpc: props.vpc,
       medicalDocumentsBucket: props.medicalDocumentsBucket,
       envType: props.config.environmentType,
+      systemRootOid: props.config.systemRootOID,
       sentryDsn: props.config.lambdasSentryDSN,
     });
 
@@ -78,7 +83,7 @@ export class LambdasNestedStack extends NestedStack {
       dbCluster: props.dbCluster,
       dbCredsSecret: props.dbCredsSecret,
       // TODO move this to a config
-      maxPollingDuration: Duration.minutes(11),
+      maxPollingDuration: Duration.minutes(5),
     });
 
     this.outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({
@@ -221,9 +226,11 @@ export class LambdasNestedStack extends NestedStack {
     vpc: ec2.IVpc;
     medicalDocumentsBucket: s3.Bucket;
     envType: EnvType;
+    systemRootOid: string;
     sentryDsn: string | undefined;
   }): Lambda {
-    const { lambdaLayers, vpc, medicalDocumentsBucket, sentryDsn, envType } = ownProps;
+    const { lambdaLayers, vpc, medicalDocumentsBucket, sentryDsn, envType, systemRootOid } =
+      ownProps;
 
     const fhirToCdaConverterLambda = createLambda({
       stack: this,
@@ -233,6 +240,7 @@ export class LambdasNestedStack extends NestedStack {
       envType,
       envVars: {
         MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
+        SYSTEM_ROOT_OID: systemRootOid,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
@@ -268,21 +276,17 @@ export class LambdasNestedStack extends NestedStack {
 
     const outboundPatientDiscoveryLambda = createLambda({
       stack: this,
-      name: "OutboundPatientDiscovery",
-      nameSuffix: "v2",
+      name: "PollOutboundPatientDiscovery",
       entry: "ihe-outbound-patient-discovery",
       envType,
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
-        MAX_POLLING_DURATION: maxPollingDuration
-          .minus(Duration.minutes(1))
-          .toMilliseconds()
-          .toString(),
+        MAX_POLLING_DURATION: this.normalizePollingDuration(maxPollingDuration),
       },
       layers: [lambdaLayers.shared],
       memory: 512,
-      timeout: maxPollingDuration,
+      timeout: this.normalizeLambdaDuration(maxPollingDuration),
       vpc,
       alarmSnsAction: alarmAction,
     });
@@ -316,21 +320,17 @@ export class LambdasNestedStack extends NestedStack {
 
     const outboundDocumentQueryLambda = createLambda({
       stack: this,
-      name: "OutboundDocumentQuery",
-      nameSuffix: "v2",
+      name: "PollOutboundDocumentQuery",
       entry: "ihe-outbound-document-query",
       envType,
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
-        MAX_POLLING_DURATION: maxPollingDuration
-          .minus(Duration.minutes(1))
-          .toMilliseconds()
-          .toString(),
+        MAX_POLLING_DURATION: this.normalizePollingDuration(maxPollingDuration),
       },
       layers: [lambdaLayers.shared],
       memory: 512,
-      timeout: maxPollingDuration,
+      timeout: this.normalizeLambdaDuration(maxPollingDuration),
       vpc,
       alarmSnsAction: alarmAction,
     });
@@ -364,21 +364,17 @@ export class LambdasNestedStack extends NestedStack {
 
     const outboundDocumentRetrievalLambda = createLambda({
       stack: this,
-      name: "OutboundDocumentRetrieval",
-      nameSuffix: "v2",
+      name: "PollOutboundDocumentRetrieval",
       entry: "ihe-outbound-document-retrieval",
       envType,
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
-        MAX_POLLING_DURATION: maxPollingDuration
-          .minus(Duration.minutes(1))
-          .toMilliseconds()
-          .toString(),
+        MAX_POLLING_DURATION: this.normalizePollingDuration(maxPollingDuration),
       },
       layers: [lambdaLayers.shared],
       memory: 512,
-      timeout: maxPollingDuration,
+      timeout: this.normalizeLambdaDuration(maxPollingDuration),
       vpc,
       alarmSnsAction: alarmAction,
     });
@@ -387,5 +383,29 @@ export class LambdasNestedStack extends NestedStack {
     dbCredsSecret.grantRead(outboundDocumentRetrievalLambda);
 
     return outboundDocumentRetrievalLambda;
+  }
+
+  /**
+   * Max polling duration should not exceed the maximum lambda execution time minus
+   * 30 seconds as buffer for the response to make it to the API.
+   */
+  private normalizePollingDuration(duration: Duration): string {
+    return Math.min(
+      duration.toMilliseconds(),
+      MAXIMUM_LAMBDA_TIMEOUT.minus(pollingBuffer).toMilliseconds()
+    ).toString();
+  }
+
+  /**
+   * Max lambda duration/timeout should not be lower than polling duration + 30 seconds
+   * as buffer for the response to make it to the API.
+   */
+  private normalizeLambdaDuration(duration: Duration): Duration {
+    return Duration.millis(
+      Math.min(
+        duration.plus(pollingBuffer).toMilliseconds(),
+        MAXIMUM_LAMBDA_TIMEOUT.toMilliseconds()
+      )
+    );
   }
 }

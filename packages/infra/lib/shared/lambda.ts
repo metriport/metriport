@@ -10,6 +10,7 @@ import {
   Code,
   Function as Lambda,
   ILayerVersion,
+  LambdaInsightsVersion,
   Runtime,
   RuntimeManagementMode,
   SingletonFunction,
@@ -59,6 +60,17 @@ export interface LambdaProps extends StackProps {
   readonly architecture?: Architecture;
   readonly layers: ILayerVersion[];
   readonly version?: string | undefined;
+  /**
+   * Whether to enable Lambda insights.
+   * @see https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Lambda-Insights.html
+   */
+  readonly isEnableInsights?: boolean | undefined;
+  /**
+   * Which lambda insights version to use.
+   * Defaults to the latest version available in the CDK version.
+   * @see https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Lambda-Insights-extension-versions.html
+   */
+  readonly insightsVersion?: LambdaInsightsVersion | undefined;
 }
 
 export function createLambda(props: LambdaProps): Lambda {
@@ -74,6 +86,9 @@ export function createLambda(props: LambdaProps): Lambda {
     ...(props.layers && props.layers.length > 0 ? { layers: props.layers } : {}),
     vpc: props.vpc,
     vpcSubnets: props.subnets ? { subnets: props.subnets } : undefined,
+    insightsVersion: props.isEnableInsights
+      ? props.insightsVersion ?? LambdaInsightsVersion.VERSION_1_0_229_0 // latest version on CDK 2.122.0
+      : undefined,
     /**
      * Watch out if this is more than 60s while using SQS we likely need to update the
      * queue's VisibilityTimeout so the message is not processed more than once.

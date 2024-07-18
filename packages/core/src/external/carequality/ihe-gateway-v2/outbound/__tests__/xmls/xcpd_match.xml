@@ -70,6 +70,10 @@
                                         <postalCode>35080</postalCode>
                                         <country>USA</country>
                                     </addr>
+                                    <asOtherIDs classCode="PAT">
+                                        <id/>
+                                    </asOtherIDs>
+                                    <telecom/>
                                 </patientPerson>
                                 <subjectOf1>
                                     <queryMatchObservation classCode="OBS" moodCode="EVN">

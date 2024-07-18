@@ -32,12 +32,13 @@ export function buildXmlStringFromTemplate(orgDetails: CQOrgDetailsWithUrls) {
 
   const urnOid = "urn:oid:" + oid;
 
-  const endpoints =
-    role === "Implementer"
-      ? getEndpoint(urnOid, XCPD_STRING, urlXCPD) +
-        getEndpoint(urnOid, XCA_DQ_STRING, urlDQ) +
-        getEndpoint(urnOid, XCA_DR_STRING, urlDR)
-      : "";
+  const isImplementer = role === "Implementer";
+
+  const endpoints = isImplementer
+    ? getEndpoint(urnOid, XCPD_STRING, urlXCPD) +
+      getEndpoint(urnOid, XCA_DQ_STRING, urlDQ) +
+      getEndpoint(urnOid, XCA_DR_STRING, urlDR)
+    : "";
 
   return `<Organization>
     <identifier>

@@ -1,11 +1,11 @@
 import { Bundle, Organization, Resource } from "@medplum/fhirtypes";
 import { errorToString } from "@metriport/shared";
-import { createUploadFilePath } from "../domain/document/upload";
 import { S3Utils } from "../external/aws/s3";
 import { cdaDocumentUploaderHandler } from "../shareback/cda-uploader";
 import { Config } from "../util/config";
 import { MetriportError } from "../util/error/metriport-error";
 import { out } from "../util/log";
+import { JSON_APP_MIME_TYPE } from "../util/mime";
 import { capture } from "../util/notifications";
 
 const medicalDocumentsBucket = Config.getMedicalDocumentsBucketName();
@@ -33,7 +33,7 @@ export async function uploadCdaDocuments({
         await cdaDocumentUploaderHandler({
           cxId,
           patientId,
-          cdaBundle,
+          bundle: cdaBundle,
           medicalDocumentsBucket: Config.getMedicalDocumentsBucketName(),
           region: Config.getAWSRegion(),
           organization,
@@ -54,21 +54,22 @@ export async function uploadFhirBundleToS3({
   cxId,
   patientId,
   fhirBundle,
-  docId,
+  destinationKey,
 }: {
   cxId: string;
   patientId: string;
   fhirBundle: Bundle<Resource>;
-  docId: string;
+  destinationKey: string;
 }): Promise<void> {
   const { log } = out(`uploadFhirBundleToS3 - cxId: ${cxId}, patientId: ${patientId}`);
   const s3Utils = new S3Utils(region);
-  const destinationKey = createUploadFilePath(cxId, patientId, `${docId}_FHIR_BUNDLE.json`);
+
   try {
     await s3Utils.uploadFile({
       bucket: Config.getMedicalDocumentsBucketName(),
       key: destinationKey,
       file: Buffer.from(JSON.stringify(fhirBundle)),
+      contentType: JSON_APP_MIME_TYPE,
     });
     log(`Successfully uploaded the file to ${medicalDocumentsBucket} with key ${destinationKey}`);
   } catch (error) {

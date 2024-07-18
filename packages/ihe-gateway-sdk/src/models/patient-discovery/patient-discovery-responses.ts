@@ -5,30 +5,7 @@ import {
   externalGatewayPatientSchema,
   XCPDGatewaySchema,
 } from "../shared";
-
-export const inboundPatientResourceSchema = z.object({
-  name: z
-    .array(
-      z.object({
-        family: z.string().optional(),
-        given: z.array(z.string()).optional(),
-      })
-    )
-    .optional(),
-  gender: z.enum(["male", "female", "undifferentiated"]).optional(),
-  birthDate: z.string().optional(),
-  address: z.array(
-    z.object({
-      line: z.array(z.string()).optional(),
-      city: z.string().optional(),
-      state: z.string().optional(),
-      postalCode: z.string().optional(),
-      country: z.string().optional(),
-    })
-  ),
-});
-
-export type InboundPatientResource = z.infer<typeof inboundPatientResourceSchema>;
+import { patientResourceSchema } from "./patient";
 
 const patientDiscoveryRespSuccessfulDefaultSchema = baseResponseSchema.extend({
   patientMatch: z.literal(true),
@@ -39,7 +16,7 @@ const patientDiscoveryRespSuccessfulDefaultSchema = baseResponseSchema.extend({
 const inboundPatientDiscoveryRespSuccessfulSchema =
   patientDiscoveryRespSuccessfulDefaultSchema.extend({
     patientMatchDegree: z.number().optional(),
-    patientResource: z.object({}),
+    patientResource: patientResourceSchema,
     externalGatewayPatient: externalGatewayPatientSchema,
   });
 
@@ -59,6 +36,10 @@ export const inboundPatientDiscoveryRespSchema = z.union([
   inboundPatientDiscoveryRespFaultSchema,
 ]);
 
+export type InboundPatientDiscoveryRespSuccess = z.infer<
+  typeof inboundPatientDiscoveryRespSuccessfulSchema
+>;
+
 export type InboundPatientDiscoveryResp = z.infer<typeof inboundPatientDiscoveryRespSchema>;
 
 // FROM EXTERNAL GATEWAY
@@ -70,7 +51,7 @@ export const outboundPatientDiscoveryRespSuccessfulSchema =
   outboundPatientDiscoveryRespDefaultSchema
     .merge(patientDiscoveryRespSuccessfulDefaultSchema)
     .extend({
-      patientResource: inboundPatientResourceSchema.optional(),
+      patientResource: patientResourceSchema,
     });
 
 export const outboundPatientDiscoveryRespFaultSchema =
@@ -92,3 +73,9 @@ export const outboundPatientDiscoveryRespSchema = z.union([
 ]);
 
 export type OutboundPatientDiscoveryResp = z.infer<typeof outboundPatientDiscoveryRespSchema>;
+
+export function isSuccessfulPatientDiscoveryResponse(
+  response: InboundPatientDiscoveryResp
+): response is InboundPatientDiscoveryRespSuccess {
+  return "patientResource" in response;
+}

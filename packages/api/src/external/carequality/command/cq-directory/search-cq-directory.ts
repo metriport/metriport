@@ -1,7 +1,10 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { Coordinates } from "@metriport/core/external/aws/location";
+import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
 import convert from "convert-units";
 import { Sequelize } from "sequelize";
+import { CQDirectoryEntry } from "../../cq-directory";
 import { Config } from "../../../../shared/config";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
 
@@ -31,17 +34,25 @@ export async function searchCQDirectoriesAroundPatientAddresses({
   patient,
   radiusInMiles = DEFAULT_RADIUS_IN_MILES,
   mustHaveXcpdLink = false,
+  _searchCQDirectoriesByRadius = searchCQDirectoriesByRadius,
 }: {
   patient: Patient;
   radiusInMiles?: number;
   mustHaveXcpdLink?: boolean;
+  _searchCQDirectoriesByRadius?: typeof searchCQDirectoriesByRadius;
 }): Promise<CQDirectoryEntryModel[]> {
+  const { log } = out(`searchCQDirectoriesAroundPatientAddresses, patient ${patient.id}`);
   const radiusInMeters = convert(radiusInMiles).from("mi").to("m");
 
   const coordinates = patient.data.address.flatMap(address => address.coordinates ?? []);
-  if (!coordinates.length) throw new Error("Failed to get patient coordinates");
+  if (!coordinates.length) {
+    const msg = "Patient address doesn't contain coordinates";
+    log(`${msg}, addresses: ${JSON.stringify(patient.data.address)}`);
+    capture.error(msg, { extra: { patient: patient.id, address: patient.data.address } });
+    return [];
+  }
 
-  const orgs = await searchCQDirectoriesByRadius({
+  const orgs = await _searchCQDirectoriesByRadius({
     coordinates,
     radiusInMeters,
     mustHaveXcpdLink,
@@ -103,7 +114,7 @@ export async function searchCQDirectoriesByRadius({
   return orgs;
 }
 
-export function toBasicOrgAttributes(org: CQDirectoryEntryModel): CQOrgBasicDetails {
+export function toBasicOrgAttributes(org: CQDirectoryEntry): CQOrgBasicDetails {
   return {
     name: org.name,
     id: org.id,
@@ -134,7 +145,13 @@ export function filterCQOrgsToSearch(orgs: CQOrgBasicDetails[]): CQOrgBasicDetai
 function constructGatewayExcludeList(): string[] {
   let excludeList: string[] = [];
   const urlsToExclude = Config.getCQUrlsToExclude();
-  if (urlsToExclude) excludeList = urlsToExclude.split(",");
+  if (urlsToExclude) {
+    try {
+      excludeList = JSON.parse(urlsToExclude);
+    } catch (error) {
+      excludeList = urlsToExclude.split(",");
+    }
+  }
   return excludeList.map(url => url.toLowerCase());
 }
 

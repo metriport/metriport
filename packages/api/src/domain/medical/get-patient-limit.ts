@@ -1,7 +1,7 @@
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared/common/error";
-import { getCxsWithIncreasedSandboxLimitFeatureFlagValue } from "../../external/aws/appConfig";
+import { getCxsWithIncreasedSandboxLimitFeatureFlagValue } from "../../external/aws/app-config";
 import { Config } from "../../shared/config";
 
 export async function getSandboxPatientLimitForCx(cxId: string): Promise<number> {

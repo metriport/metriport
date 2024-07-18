@@ -3,6 +3,9 @@ import { MetriportError } from "./metriport-error";
 
 const numericStatus = httpStatus.BAD_REQUEST;
 
+/**
+ * @deprecated User @metriport/shared instead
+ */
 export default class BadRequestError extends MetriportError {
   constructor(
     message = "Unexpected issue with the request - check inputs and try again",

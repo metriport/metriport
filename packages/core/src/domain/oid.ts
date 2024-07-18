@@ -1,4 +1,5 @@
 import { USState } from "./geographic-locations";
+import { generalPersonalIdentifiers } from "../domain/patient";
 
 export const OID_ID_START = 100;
 export const OID_PREFIX = "urn:oid:";
@@ -83,3 +84,7 @@ export const medicareURI = `${OID_PREFIX}2.16.840.1.113883.4.572`;
 
 // There is one OID for each country: https://terminology.hl7.org/artifacts.html
 export const passportURI = `${OID_PREFIX}2.16.840.1.113883.4.330`;
+
+export const identifierSytemByType: Record<(typeof generalPersonalIdentifiers)[number], string> = {
+  ssn: ssnURI,
+};

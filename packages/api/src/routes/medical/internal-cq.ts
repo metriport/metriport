@@ -42,7 +42,7 @@ import {
 } from "../../external/carequality/ihe-result";
 import { processOutboundPatientDiscoveryResps } from "../../external/carequality/process-outbound-patient-discovery-resps";
 import { processPostRespOutboundPatientDiscoveryResps } from "../../external/carequality/process-subsequent-outbound-patient-discovery-resps";
-import { cqOrgDetailsSchema } from "../../external/carequality/shared";
+import { cqOrgDetailsOrgBizRequiredSchema } from "../../external/carequality/shared";
 import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
@@ -105,6 +105,7 @@ router.post(
  *
  * Retrieves the organization with the specified OID from the Carequality Directory.
  * @param req.params.oid The OID of the organization to retrieve.
+ * @param req.params.getInactive Optional, indicates whether to get the inactive organization(s). If not provided, will fetch active organizations.
  * @returns Returns the organization with the specified OID.
  */
 router.get(
@@ -115,7 +116,8 @@ router.get(
     const cq = makeCarequalityManagementAPI();
     if (!cq) throw new Error("Carequality API not initialized");
     const oid = getFrom("params").orFail("oid", req);
-    const resp = await cq.listOrganizations({ count: 1, oid });
+    const getInactive = getFromQueryAsBoolean("getInactive", req);
+    const resp = await cq.listOrganizations({ count: 1, oid, active: !getInactive });
     const org = parseCQDirectoryEntries(resp);
 
     if (org.length > 1) {
@@ -143,7 +145,7 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const body = req.body;
-    const orgDetails = cqOrgDetailsSchema.parse(body);
+    const orgDetails = cqOrgDetailsOrgBizRequiredSchema.parse(body);
     await createOrUpdateCQOrganization(orgDetails);
 
     return res.sendStatus(httpStatus.OK);

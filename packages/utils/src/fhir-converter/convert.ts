@@ -1,4 +1,5 @@
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
 import { AxiosInstance } from "axios";
 import * as uuid from "uuid";
 import { getFileContents, makeDirIfNeeded, writeFileContents } from "../shared/fs";
@@ -23,7 +24,10 @@ export async function convertCDAsToFHIR(
     fileNames,
     async fileName => {
       try {
-        await convert(baseFolderName, fileName, outputFolderName, api, fhirExtension);
+        const conversionResult = await convert(baseFolderName, fileName, api, fhirExtension);
+        const destFileName = path.join(outputFolderName, fileName.replace(".xml", fhirExtension));
+        makeDirIfNeeded(destFileName);
+        writeFileContents(destFileName, JSON.stringify(conversionResult));
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         if (error.message.includes("File has nonXMLBody")) {
@@ -47,10 +51,9 @@ export async function convertCDAsToFHIR(
   return { errorCount, nonXMLBodyCount };
 }
 
-async function convert(
+export async function convert(
   baseFolderName: string,
   fileName: string,
-  outputFolderName: string,
   api: AxiosInstance,
   fhirExtension: string
 ) {
@@ -60,11 +63,13 @@ async function convert(
     throw new Error(`File has nonXMLBody`);
   }
 
+  const noB64FileContents = removeBase64PdfEntries(fileContents);
+
   const unusedSegments = false;
   const invalidAccess = false;
   const params = { patientId, fileName, unusedSegments, invalidAccess };
   const url = `/api/convert/cda/ccd.hbs`;
-  const payload = (fileContents ?? "").trim();
+  const payload = (noB64FileContents ?? "").trim();
   const res = await api.post(url, payload, {
     params,
     headers: { "Content-Type": "text/plain" },
@@ -79,9 +84,7 @@ async function convert(
   });
   removePatientFromConversion(updatedConversionResult);
 
-  const destFileName = path.join(outputFolderName, fileName.replace(".xml", fhirExtension));
-  makeDirIfNeeded(destFileName);
-  writeFileContents(destFileName, JSON.stringify(updatedConversionResult));
+  return updatedConversionResult;
 }
 
 interface Entry {
@@ -111,7 +114,7 @@ type FHIRExtension = {
   valueString: string;
 };
 
-type FHIRBundle = {
+export type FHIRBundle = {
   resourceType: "Bundle";
   type: "batch";
   entry: {
@@ -154,8 +157,6 @@ function replaceIDs(fhirBundle: FHIRBundle, patientId: string): FHIRBundle {
     const regex = new RegExp(stringToReplace.old, "g");
     fhirBundleStr = fhirBundleStr.replace(regex, stringToReplace.new);
   }
-
-  console.log(`Bundle being sent to FHIR server: ${fhirBundleStr}`);
   return JSON.parse(fhirBundleStr);
 }
 

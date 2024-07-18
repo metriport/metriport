@@ -59,8 +59,10 @@
                         {{#each (toArray encounterEntry.encounter.participant) as |participantEntry|}}
                             {{#if (eq participantEntry.typeCode 'LOC')}}
                                 {{#if (contains (toJsonString participantEntry.participantRole.templateId) '"2.16.840.1.113883.10.20.22.4.32"')}}
-                                    {{>Resources/Location.hbs location=participantEntry.participantRole playingEntity=participantEntry.participantRole.playingEntity ID=(generateUUID (toJsonString participantEntry.participantRole))}},
-                                    {{>References/Encounter/location.location.hbs ID=(generateUUID (toJsonString encounterEntry)) REF=(concat 'Location/' (generateUUID (toJsonString participantEntry.participantRole)))}},                    
+                                    {{#with (evaluate 'Utils/GenerateLocationId.hbs' location=participantEntry.participantRole) as |locationId|}}
+                                        {{>Resources/Location.hbs location=participantEntry.participantRole playingEntity=participantEntry.participantRole.playingEntity ID=locationId.Id}},
+                                        {{>References/Encounter/location.location.hbs ID=(generateUUID (toJsonString encounterEntry)) REF=(concat 'Location/' locationId.Id)}},          
+                                    {{/with}}          
                                 {{/if}}                
                             {{/if}}
                         {{/each}}

@@ -110,7 +110,13 @@ export type GetPatient = {
       lock?: never;
     }
   | {
+      /**
+       * @see executeOnDBTx() for details about the 'transaction' parameter.
+       */
       transaction: Transaction;
+      /**
+       * @see executeOnDBTx() for details about the 'lock' parameter.
+       */
       lock?: boolean;
     }
 );

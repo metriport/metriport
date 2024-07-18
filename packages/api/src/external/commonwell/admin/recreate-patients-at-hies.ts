@@ -5,10 +5,10 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { groupBy } from "lodash";
 import { PatientModel } from "../../../models/medical/patient";
-import { isCWEnabledForCx } from "../../aws/appConfig";
+import { isCWEnabledForCx } from "../../aws/app-config";
 import { getCqOrgIdsToDenyOnCw } from "../../hie/cross-hie-ids";
 import { makeCommonWellAPI } from "../api";
-import { getCWData, registerAndLinkPatientInCW } from "../patient";
+import { getCWData, create } from "../patient";
 import { getCwInitiator } from "../shared";
 
 export type RecreateResultOfPatient = {
@@ -65,7 +65,8 @@ export async function recreatePatientAtCW(
 ): Promise<RecreateResultOfPatient | undefined> {
   const { log } = out(`recreatePatientAtCW - ${patient.id}`);
 
-  if (!(await isCWEnabledForCx(patient.cxId))) {
+  const isCwEnabledForCx = await isCWEnabledForCx(patient.cxId);
+  if (!isCwEnabledForCx) {
     log(`CW disabled for cx ${patient.cxId}, skipping...`);
     return undefined;
   }
@@ -102,14 +103,14 @@ export async function recreatePatientAtCW(
 
     // create new patient, including linkint to person and network link to other patients
     log(`Creating new patient at CW...`);
-    const cwIds = await registerAndLinkPatientInCW(
+    // WARNING This could overwrite the status for any currently running PD
+    // TODO Internal #1832 (rework)
+    const cwIds = await create({
       patient,
       facilityId,
       getOrgIdExcludeList,
-      log,
-      undefined,
-      initiator
-    );
+      initiator,
+    });
 
     if (!cwIds) {
       log(`Missing CW IDs while recreating patient at CW`);

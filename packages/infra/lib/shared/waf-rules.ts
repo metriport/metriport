@@ -54,6 +54,7 @@ export const wafRules: wafv2.CfnWebACL.RuleProperty[] = [
         vendorName: "AWS",
         name: "AWSManagedRulesCommonRuleSet",
         excludedRules: [
+          { name: "CrossSiteScripting_BODY" }, // Excluding generic XSS rule to allow XML payloads
           { name: "GenericRFI_BODY" }, // Excluding generic RFI body rule for things like webhook URLs - SSRF handled internally
           { name: "SizeRestrictions_BODY" }, // Excluding generic size body rule for lar - limits handled internally
           { name: "NoUserAgent_HEADER" }, // Excluding the block for the HTTP User-Agent header missing - TODO: alert customers before putting this block in

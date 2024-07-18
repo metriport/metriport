@@ -44,7 +44,11 @@
               }
             ]
         }
-        "category":[{{>DataType/CodeableConcept.hbs code=categoryCode}}],    
+        "patient": {
+            "reference": "Patient/{{patientId}}"
+        },
+        "policyRule": {{>DataType/CodeableConcept.hbs code=consentEntry.code canBeUnknown=true}},
+        "category":[{{>DataType/CodeableConcept.hbs code=categoryCode canBeUnknown=true}}],
         "dateTime":"{{formatAsDateTime consentEntry.effectiveTime.low.value}}",
         "provision":
         {

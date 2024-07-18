@@ -1,16 +1,18 @@
+import { ConsolidatedQuery } from "@metriport/api-sdk";
 import { USState } from "./geographic-locations";
 import { BaseDomain, BaseDomainCreate } from "./base-domain";
 import { DocumentQueryProgress } from "./document-query";
+import { DiscoveryParams, ScheduledPatientDiscovery } from "./patient-discovery";
 import { BulkGetDocumentsUrlProgress } from "./bulk-get-document-url";
-import { QueryProgress, PatientDiscovery } from "./query-status";
 import { MedicalDataSource } from "../external";
 import { Address, getState } from "./address";
 import { Contact } from "./contact";
+import { LinkDemographics } from "./patient-demographics";
 
-export const generalTypes = ["passport", "ssn", "medicare"] as const;
-export const driversLicenseType = ["driversLicense"] as const;
-export type GeneralTypes = (typeof generalTypes)[number];
-export type DriverLicenseType = (typeof driversLicenseType)[number];
+export const generalPersonalIdentifiers = ["ssn"] as const;
+export const driversLicensePersonalIdentifier = ["driversLicense"] as const;
+export type GeneralPersonalIdentifiers = (typeof generalPersonalIdentifiers)[number];
+export type DriversLicensePersonalIdentifier = (typeof driversLicensePersonalIdentifier)[number];
 
 export type Period =
   | {
@@ -23,34 +25,34 @@ export type Period =
     };
 
 export type BaseIdentifier = {
+  value: string;
   period?: Period;
   assigner?: string;
 };
-// TODO #425 reenable this when we manage to work with diff systems @ CW
-// export type PersonalIdentifier = BaseIdentifier &
-//   (
-//     | { type: GeneralTypes; value: string; state?: never }
-//     | { type: DriverLicenseType; value: string; state: USState }
-//   );
-export type PersonalIdentifier = BaseIdentifier & {
-  type: DriverLicenseType;
-  value: string;
-  state: USState;
-};
+
+export type PersonalIdentifier = BaseIdentifier &
+  (
+    | { type: GeneralPersonalIdentifiers }
+    | { type: DriversLicensePersonalIdentifier; state: USState }
+  );
 
 export type DriversLicense = {
   value: string;
   state: USState;
 };
 
-export const genderAtBirthTypes = ["F", "M"] as const;
+export const genderAtBirthTypes = ["F", "M", "O", "U"] as const;
 export type GenderAtBirth = (typeof genderAtBirthTypes)[number];
 
 export abstract class PatientExternalDataEntry {
   documentQueryProgress?: DocumentQueryProgress;
+  scheduledPdRequest?: ScheduledPatientDiscovery;
+  discoveryParams?: DiscoveryParams;
 }
 
 export type PatientExternalData = Partial<Record<MedicalDataSource, PatientExternalDataEntry>>;
+
+export type ConsolidatedLinkDemographics = Omit<LinkDemographics, "dob" | "gender">;
 
 export type PatientData = {
   firstName: string;
@@ -61,9 +63,9 @@ export type PatientData = {
   address: Address[];
   contact?: Contact[];
   requestId?: string;
+  consolidatedLinkDemographics?: ConsolidatedLinkDemographics;
   documentQueryProgress?: DocumentQueryProgress;
-  consolidatedQuery?: QueryProgress;
-  patientDiscovery?: PatientDiscovery;
+  consolidatedQueries?: ConsolidatedQuery[];
   bulkGetDocumentsUrlProgress?: BulkGetDocumentsUrlProgress;
   externalData?: PatientExternalData;
   cxDocumentRequestMetadata?: unknown;
@@ -88,6 +90,11 @@ export function splitName(name: string): string[] {
   return name.split(/[\s,]+/).filter(str => str);
 }
 
+export function splitDob(dob: string): string[] {
+  // splits by dash delimiter and filters out empty strings
+  return dob.split(/[\s-]+/).filter(str => str);
+}
+
 export function joinName(name: string[]): string {
   return name.join(" ");
 }
@@ -96,4 +103,16 @@ export interface Patient extends BaseDomain, PatientCreate {}
 
 export function getStatesFromAddresses(patient: Patient): USState[] {
   return patient.data.address.map(getState);
+}
+
+export function createDriversLicensePersonalIdentifier(
+  value: string,
+  state: USState
+): PersonalIdentifier {
+  const personalIdentifier: PersonalIdentifier = {
+    type: "driversLicense",
+    value: value,
+    state: state,
+  };
+  return personalIdentifier;
 }

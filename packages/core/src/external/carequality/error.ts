@@ -78,6 +78,7 @@ function constructBaseErrorResponse(
     patientId: payload.patientId,
     timestamp: payload.timestamp,
     responseTimestamp: new Date().toISOString(),
+    signatureConfirmation: payload.signatureConfirmation,
   };
   if (error) {
     baseResponse.operationOutcome = {

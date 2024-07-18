@@ -64,4 +64,4 @@ jobs:
     steps:
       - name: Not running
         run: |
-          echo "NOT making changes to 'check-pr'"
+          echo "NOT making changes to the 'check-pr' status"

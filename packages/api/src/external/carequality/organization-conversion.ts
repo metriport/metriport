@@ -1,37 +1,26 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import { CQOrgBasicDetails } from "./command/cq-directory/search-cq-directory";
-import { getOidsWithIHEGatewayV2Enabled } from "../aws/appConfig";
-import { Config } from "../../shared/config";
 
-export async function cqOrgsToXCPDGateways(cqOrgs: CQOrgBasicDetails[]): Promise<{
-  v1Gateways: XCPDGateway[];
-  v2Gateways: XCPDGateway[];
-}> {
-  const v1Gateways: XCPDGateway[] = [];
+export async function cqOrgsToXCPDGateways(cqOrgs: CQOrgBasicDetails[]): Promise<XCPDGateway[]> {
   const v2Gateways: XCPDGateway[] = [];
-  const iheGatewayV2OIDs: string[] = Config.isDev()
-    ? Config.getOidsWithIHEGatewayV2Enabled().split(",")
-    : await getOidsWithIHEGatewayV2Enabled();
 
   for (const org of cqOrgs) {
     if (org.urlXCPD) {
-      const gateway = {
-        url: org.urlXCPD,
-        oid: org.id,
-        id: uuidv7(),
-      };
-
-      if (iheGatewayV2OIDs.includes(org.id)) {
-        v2Gateways.push(gateway);
-      } else {
-        v1Gateways.push(gateway);
-      }
+      const gateway = buildXcpdGateway({
+        urlXCPD: org.urlXCPD,
+        id: org.id,
+      });
+      v2Gateways.push(gateway);
     }
   }
+  return v2Gateways;
+}
 
+export function buildXcpdGateway(org: { id: string; urlXCPD: string }): XCPDGateway {
   return {
-    v1Gateways,
-    v2Gateways,
+    url: org.urlXCPD,
+    oid: org.id,
+    id: uuidv7(),
   };
 }

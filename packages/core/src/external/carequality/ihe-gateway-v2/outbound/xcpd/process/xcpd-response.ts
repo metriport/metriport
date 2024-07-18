@@ -1,160 +1,165 @@
 import { XMLParser } from "fast-xml-parser";
 import {
   OutboundPatientDiscoveryResp,
-  OutboundPatientDiscoveryRespFaultSchema,
   OutboundPatientDiscoveryReq,
   XCPDGateway,
   OperationOutcome,
+  Name,
+  Address,
+  Telecom,
+  PersonalIdentifier,
 } from "@metriport/ihe-gateway-sdk";
-import { normalizeGender } from "../../../utils";
-import { capture } from "../../../../../../util/notifications";
+import { errorToString, toArray } from "@metriport/shared";
 import { XCPDSamlClientResponse } from "../send/xcpd-requests";
+import { out } from "../../../../../../util/log";
+import { extractText } from "../../../utils";
+import { IheAddress, IheIdentifier, IheName, IheTelecom } from "../../../schema";
+import { Iti55Response, iti55ResponseSchema, PatientRegistryProfile } from "./schema";
+import {
+  handleHttpErrorResponse,
+  handleSchemaErrorResponse,
+  handlePatientErrorResponse,
+} from "./error";
+import { queryResponseCodes, ackCodes } from "../../../shared";
+import { mapIheGenderToFhir } from "../../../../shared";
 
-function handleHTTPErrorResponse({
-  httpError,
-  outboundRequest,
-  gateway,
-}: {
-  httpError: string;
-  outboundRequest: OutboundPatientDiscoveryReq;
-  gateway: XCPDGateway;
-}): OutboundPatientDiscoveryRespFaultSchema {
-  const operationOutcome: OperationOutcome = {
-    resourceType: "OperationOutcome",
-    id: outboundRequest.id,
-    issue: [
-      {
-        severity: "error",
-        code: "http-error",
-        details: {
-          text: httpError,
-        },
-      },
-    ],
-  };
+const { log } = out("Processing XCPD Requests");
+
+function convertIheIdentifierToPersonalIdentifier(
+  identifier: IheIdentifier
+): PersonalIdentifier | undefined {
+  if (!identifier?._extension && !identifier?._root) {
+    return undefined;
+  }
   return {
-    id: outboundRequest.id,
-    timestamp: outboundRequest.timestamp,
-    responseTimestamp: new Date().toISOString(),
-    gateway: gateway,
-    patientId: outboundRequest?.patientId,
-    patientMatch: null,
-    operationOutcome: operationOutcome,
+    value: identifier?._extension,
+    system: identifier?._root,
   };
 }
 
+function iheIdentifiersToPersonalIdentifiers(
+  otherIds: IheIdentifier[]
+): PersonalIdentifier[] | undefined {
+  if (!otherIds) {
+    return undefined;
+  }
+  const personalIdentifiers = otherIds
+    .map(convertIheIdentifierToPersonalIdentifier)
+    .filter((id): id is PersonalIdentifier => id !== undefined);
+
+  return personalIdentifiers.length > 0 ? personalIdentifiers : undefined;
+}
+function convertIheAddressToAddress(address: IheAddress): Address | undefined {
+  if (!address?.city && !address?.state && !address?.postalCode) {
+    return undefined;
+  }
+  const line = toArray(address?.streetAddressLine).map(String);
+  return {
+    ...(line.length > 0 && { line }),
+    city: address?.city ? String(address?.city) : undefined,
+    state: address?.state ? String(address?.state) : undefined,
+    postalCode: address?.postalCode ? String(address?.postalCode) : undefined,
+    country: address?.country ? String(address?.country) : undefined,
+  };
+}
+
+function iheAddressesToAddresses(iheAddresses: IheAddress[] | undefined): Address[] | undefined {
+  if (!iheAddresses) {
+    return undefined;
+  }
+  const addresses = iheAddresses
+    .map(convertIheAddressToAddress)
+    .filter((address): address is Address => address !== undefined);
+
+  return addresses.length > 0 ? addresses : undefined;
+}
+
+function convertIheNameToCarequalityName(name: IheName): Name {
+  return {
+    given: toArray(name.given).map(extractText),
+    family: extractText(name.family),
+  };
+}
+
+function iheNamesToNames(iheNames: IheName[]): Name[] {
+  return iheNames.map(convertIheNameToCarequalityName);
+}
+
+function convertIheTelecomToTelecom(iheTelecom: IheTelecom): Telecom | undefined {
+  if (!iheTelecom?._use && !iheTelecom?._value) {
+    return undefined;
+  }
+  return {
+    system: iheTelecom?._use,
+    value: iheTelecom?._value,
+  };
+}
+
+function iheTelecomsToTelecoms(iheTelecom: IheTelecom[]): Telecom[] | undefined {
+  if (!iheTelecom) {
+    return undefined;
+  }
+  const telecoms = iheTelecom
+    .map(convertIheTelecomToTelecom)
+    .filter((telecom): telecom is Telecom => telecom !== undefined);
+
+  return telecoms.length > 0 ? telecoms : undefined;
+}
+
 function handlePatientMatchResponse({
-  jsonObj,
+  patientRegistryProfile,
   outboundRequest,
   gateway,
 }: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  jsonObj: any;
+  patientRegistryProfile: PatientRegistryProfile;
   outboundRequest: OutboundPatientDiscoveryReq;
   gateway: XCPDGateway;
 }): OutboundPatientDiscoveryResp {
-  const subject1 =
-    getPatientRegistryProfile(jsonObj)?.controlActProcess?.subject?.registrationEvent?.subject1;
-  const addr = subject1?.patient?.patientPerson?.addr;
-  const addressLine1 = addr?.streetAddressLine?._text ?? addr?.streetAddressLine;
-  const city = addr?.city?._text ?? addr?.city;
-  const state = addr?.state?._text ?? addr?.state;
-  const postalCode = addr?.postalCode?._text ?? addr?.postalCode;
-  const country = addr?.country?._text ?? addr?.country;
+  const subject1 = patientRegistryProfile.controlActProcess?.subject?.registrationEvent?.subject1;
 
-  const addresses = [
-    {
-      ...(addressLine1 && { line: [addressLine1] }),
-      ...(city && { city }),
-      ...(state && { state }),
-      ...(postalCode && { postalCode: String(postalCode) }),
-      ...(country && { country: country }),
-    },
-  ];
+  if (!subject1) {
+    return handlePatientNoMatchResponse({
+      outboundRequest,
+      gateway,
+    });
+  }
+  const addr = toArray(subject1?.patient?.patientPerson?.addr);
+  const names = toArray(subject1?.patient?.patientPerson?.name);
+  const telecoms = toArray(subject1?.patient?.patientPerson?.telecom);
+  const otherIds = toArray(subject1?.patient?.patientPerson?.asOtherIDs).flatMap(otherID =>
+    toArray(otherID?.id)
+  );
+  const addresses = iheAddressesToAddresses(addr);
+  const patientNames = iheNamesToNames(names);
+  const patientTelecoms = iheTelecomsToTelecoms(telecoms);
+  const patientIdentifiers = iheIdentifiersToPersonalIdentifiers(otherIds);
 
   const patientResource = {
-    name: [
-      {
-        given: [subject1?.patient?.patientPerson?.name?.given],
-        family: subject1?.patient?.patientPerson?.name?.family,
-      },
-    ],
-    gender: normalizeGender(subject1?.patient?.patientPerson?.administrativeGenderCode?._code),
+    name: patientNames,
+    gender: mapIheGenderToFhir(subject1?.patient?.patientPerson?.administrativeGenderCode?._code),
     birthDate: subject1?.patient?.patientPerson?.birthTime?._value,
-    address: addresses,
+    ...(addresses && { address: addresses }),
+    ...(patientTelecoms && { telecom: patientTelecoms }),
+    ...(patientIdentifiers && { identifier: patientIdentifiers }),
   };
 
   const response: OutboundPatientDiscoveryResp = {
     id: outboundRequest.id,
     timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
     externalGatewayPatient: {
-      id: subject1?.patient?.id?._extension,
-      system: subject1?.patient?.id?._root,
+      id: subject1.patient.id._extension,
+      system: subject1.patient.id._root,
     },
     gateway: gateway,
     patientId: outboundRequest.patientId,
     patientMatch: true,
     gatewayHomeCommunityId: outboundRequest.samlAttributes.homeCommunityId,
     patientResource: patientResource,
+    iheGatewayV2: true,
   };
 
-  return response;
-}
-
-function handlePatientErrorResponse({
-  jsonObj,
-  outboundRequest,
-  gateway,
-  patientId,
-  cxId,
-}: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  jsonObj: any;
-  outboundRequest: OutboundPatientDiscoveryReq;
-  gateway: XCPDGateway;
-  patientId?: string | undefined;
-  cxId?: string | undefined;
-}): OutboundPatientDiscoveryResp {
-  const msg = "An AbortedError (AE) was received from the responding gateway";
-  capture.error(msg, {
-    extra: {
-      context: `ihe-gateway-v2-outbound-patient-discovery`,
-      outboundRequest,
-      jsonObj,
-      gateway,
-      patientId,
-      cxId,
-    },
-  });
-  const acknowledgementDetail =
-    getPatientRegistryProfile(jsonObj)?.acknowledgement?.acknowledgementDetail;
-  const issue = {
-    severity: "error",
-    ...(acknowledgementDetail && {
-      code: acknowledgementDetail?.code?._code,
-      details: {
-        text:
-          acknowledgementDetail?.text?._text ??
-          acknowledgementDetail?.text ??
-          acknowledgementDetail?.location,
-      },
-    }),
-  };
-  const operationOutcome: OperationOutcome = {
-    resourceType: "OperationOutcome",
-    id: outboundRequest.id,
-    issue: [issue],
-  };
-  const response: OutboundPatientDiscoveryResp = {
-    id: outboundRequest.id,
-    timestamp: outboundRequest.timestamp,
-    responseTimestamp: new Date().toISOString(),
-    gateway: gateway,
-    patientId: outboundRequest.patientId,
-    patientMatch: null,
-    operationOutcome: operationOutcome,
-  };
   return response;
 }
 
@@ -180,11 +185,13 @@ function handlePatientNoMatchResponse({
   const response: OutboundPatientDiscoveryResp = {
     id: outboundRequest.id,
     timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
     gateway: gateway,
     patientId: outboundRequest.patientId,
     patientMatch: false,
     operationOutcome: operationOutcome,
+    iheGatewayV2: true,
   };
   return response;
 }
@@ -199,7 +206,7 @@ export function processXCPDResponse({
   cxId?: string;
 }): OutboundPatientDiscoveryResp {
   if (success === false) {
-    return handleHTTPErrorResponse({
+    return handleHttpErrorResponse({
       httpError: response,
       outboundRequest,
       gateway,
@@ -215,55 +222,65 @@ export function processXCPDResponse({
   });
 
   const jsonObj = parser.parse(response);
-  const { ack, queryResponseCode } = getAckAndQueryResponseCodeFromPatientRegistryProfile(jsonObj);
+  try {
+    const iti55Response = iti55ResponseSchema.parse(jsonObj);
+    const patientRegistryProfile = getPatientRegistryProfile(iti55Response);
+    const { ack, queryResponseCode } =
+      getAckAndQueryResponseCodeFromPatientRegistryProfile(patientRegistryProfile);
 
-  if (isApplicationAccept(ack) && isXCPDRespOk(queryResponseCode)) {
-    return handlePatientMatchResponse({
-      jsonObj,
+    if (isApplicationAccept(ack) && isXCPDRespOk(queryResponseCode)) {
+      log(`Found a match for cxId: ${cxId} patient: ${patientId}`);
+      return handlePatientMatchResponse({
+        patientRegistryProfile,
+        outboundRequest,
+        gateway,
+      });
+    } else if (isApplicationAccept(ack) && isXCPDRespNotFound(queryResponseCode)) {
+      return handlePatientNoMatchResponse({
+        outboundRequest,
+        gateway,
+      });
+    } else {
+      return handlePatientErrorResponse({
+        patientRegistryProfile,
+        outboundRequest,
+        gateway,
+      });
+    }
+  } catch (error) {
+    log(`Error processing XCPD response: ${error}`);
+    return handleSchemaErrorResponse({
       outboundRequest,
       gateway,
-    });
-  } else if (isApplicationAccept(ack) && isXCPDRespNotFound(queryResponseCode)) {
-    return handlePatientNoMatchResponse({
-      outboundRequest,
-      gateway,
-    });
-  } else {
-    return handlePatientErrorResponse({
-      jsonObj,
-      outboundRequest,
-      gateway,
-      patientId,
-      cxId,
+      text: errorToString(error),
     });
   }
 }
 
 function isApplicationAccept(ack: string): boolean {
-  return ack === "AA";
+  return ack === ackCodes.AA;
 }
 
 function isXCPDRespOk(queryResponseCode: string): boolean {
-  return queryResponseCode === "OK";
+  return queryResponseCode === queryResponseCodes.OK;
 }
 
 function isXCPDRespNotFound(queryResponseCode: string): boolean {
-  return queryResponseCode === "NF";
+  return queryResponseCode === queryResponseCodes.NF;
 }
 
-//eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getPatientRegistryProfile(jsonObj: any): any {
-  return jsonObj?.Envelope?.Body?.PRPA_IN201306UV02;
+function getPatientRegistryProfile(iti55Response: Iti55Response): PatientRegistryProfile {
+  return iti55Response.Envelope.Body.PRPA_IN201306UV02;
 }
 
-//eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getAckAndQueryResponseCodeFromPatientRegistryProfile(jsonObj: any): {
+function getAckAndQueryResponseCodeFromPatientRegistryProfile(
+  patientRegistryProfile: PatientRegistryProfile
+): {
   ack: string;
   queryResponseCode: string;
 } {
   return {
-    ack: getPatientRegistryProfile(jsonObj)?.acknowledgement?.typeCode?._code,
-    queryResponseCode:
-      getPatientRegistryProfile(jsonObj)?.controlActProcess?.queryAck?.queryResponseCode?._code,
+    ack: patientRegistryProfile.acknowledgement.typeCode._code,
+    queryResponseCode: patientRegistryProfile.controlActProcess.queryAck.queryResponseCode._code,
   };
 }

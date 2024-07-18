@@ -38,14 +38,13 @@ export {
 export {
   InboundPatientDiscoveryResp,
   inboundPatientDiscoveryRespSchema,
+  isSuccessfulPatientDiscoveryResponse,
   outboundPatientDiscoveryRespSuccessfulSchema,
   outboundPatientDiscoveryRespFaultSchema,
   OutboundPatientDiscoveryResp,
   OutboundPatientDiscoveryRespSuccessfulSchema,
   OutboundPatientDiscoveryRespFaultSchema,
   outboundPatientDiscoveryRespSchema,
-  InboundPatientResource,
-  inboundPatientResourceSchema,
 } from "./models/patient-discovery/patient-discovery-responses";
 export {
   BaseErrorResponse,
@@ -63,4 +62,14 @@ export {
   SamlAttributes,
   XCAGateway,
   XCPDGateway,
+  XCPDPatientId,
 } from "./models/shared";
+export {
+  Name,
+  Address,
+  Telecom,
+  PatientResource,
+  patientResourceSchema,
+  PersonalIdentifier,
+  Gender,
+} from "./models/patient-discovery/patient";

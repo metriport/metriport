@@ -2,7 +2,7 @@ import type { JestConfigWithTsJest } from "ts-jest";
 
 const isE2E = process.env.E2E === "true";
 
-process.env.ENV_TYPE = "development";
+process.env.ENV_TYPE = "dev";
 
 const config: JestConfigWithTsJest = {
   preset: "ts-jest",

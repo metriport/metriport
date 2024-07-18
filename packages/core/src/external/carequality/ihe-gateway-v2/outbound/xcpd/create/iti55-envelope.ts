@@ -1,6 +1,6 @@
 import { XMLBuilder } from "fast-xml-parser";
 import dayjs from "dayjs";
-import { Address } from "@medplum/fhirtypes";
+import { Address, Telecom, Name, PersonalIdentifier } from "@metriport/ihe-gateway-sdk";
 import { createSecurityHeader } from "../../../saml/security/security-header";
 import { signFullSaml } from "../../../saml/security/sign";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
@@ -13,13 +13,12 @@ import {
 import { OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import { timestampToSoapBody } from "../../../utils";
 import { wrapIdInUrnUuid } from "../../../../../../util/urn";
+import { requiresUrnInSoapBody, getHomeCommunityId } from "../../../gateways";
+import { mapFhirToIheGender } from "../../../../shared";
 
 const DATE_DASHES_REGEX = /-/g;
 const action = "urn:hl7-org:v3:PRPA_IN201305UV02:CrossGatewayPatientDiscovery";
-const specialNamespaceRequiredUrl =
-  "https://www.medentcq.com:14430/MedentRespondingGateway-1.0-SNAPSHOT/RespondingGateway/xcpd-iti55";
-
-export type BulkSignedXCPD = {
+export type SignedXcpdRequest = {
   gateway: XCPDGateway;
   signedRequest: string;
   outboundRequest: OutboundPatientDiscoveryReq;
@@ -33,10 +32,10 @@ function createSoapBodyContent({
   toUrl,
   patientGender,
   patientBirthtime,
-  patientFamilyName,
-  patientGivenName,
-  patientAddress,
-  patientTelecom,
+  patientNames,
+  patientAddresses,
+  patientTelecoms,
+  identifiers,
   providerId,
   useUrn = true,
 }: {
@@ -46,11 +45,11 @@ function createSoapBodyContent({
   receiverDeviceId: string;
   toUrl: string;
   patientGender: string;
-  patientBirthtime: string;
-  patientFamilyName: string;
-  patientGivenName: string;
-  patientAddress: Address | undefined;
-  patientTelecom: string | undefined;
+  patientBirthtime: string | undefined;
+  patientNames: Name[] | undefined;
+  patientAddresses: Address[] | undefined;
+  patientTelecoms: Telecom[] | undefined;
+  identifiers: PersonalIdentifier[] | undefined;
   providerId: string | undefined;
   useUrn?: boolean;
 }): object {
@@ -145,47 +144,73 @@ function createSoapBodyContent({
             "@_code": "I",
           },
           [`${prefix}parameterList`]: {
-            [`${prefix}livingSubjectAdministrativeGender`]: {
-              [`${prefix}value`]: {
-                "@_code": patientGender,
-                "@_codeSystem": "2.16.840.1.113883.5.1",
+            ...(patientGender !== "UNK" && {
+              [`${prefix}livingSubjectAdministrativeGender`]: {
+                [`${prefix}value`]: {
+                  "@_code": patientGender,
+                  "@_codeSystem": "2.16.840.1.113883.5.1",
+                },
+                [`${prefix}semanticsText`]: "LivingSubject.administrativeGender",
               },
-              [`${prefix}semanticsText`]: "LivingSubject.administrativeGender",
-            },
-            [`${prefix}livingSubjectBirthTime`]: {
-              [`${prefix}value`]: {
-                "@_value": patientBirthtime,
-              },
-              [`${prefix}semanticsText`]: "LivingSubject.birthTime",
-            },
-            [`${prefix}livingSubjectName`]: {
-              [`${prefix}value`]: {
-                [`${prefix}family`]: patientFamilyName,
-                [`${prefix}given`]: patientGivenName,
-              },
-              [`${prefix}semanticsText`]: "LivingSubject.name",
-            },
-            [`${prefix}patientAddress`]: patientAddress
+            }),
+            [`${prefix}livingSubjectBirthTime`]: patientBirthtime
               ? {
                   [`${prefix}value`]: {
-                    [`${prefix}streetAddressLine`]: patientAddress.line?.join(", "),
-                    [`${prefix}city`]: patientAddress?.city,
-                    [`${prefix}state`]: patientAddress?.state,
-                    [`${prefix}postalCode`]: patientAddress?.postalCode,
-                    [`${prefix}country`]: patientAddress?.country,
+                    "@_value": patientBirthtime,
                   },
-                  [`${prefix}semanticsText`]: "Patient.addr",
+                  [`${prefix}semanticsText`]: "LivingSubject.birthTime",
                 }
               : {},
-            [`${prefix}patientTelecom`]: patientTelecom
+            ...(identifiers
               ? {
-                  [`${prefix}value`]: {
-                    "@_use": "HP",
-                    "@_value": patientTelecom,
+                  [`${prefix}livingSubjectId`]: {
+                    [`${prefix}value`]: identifiers.map(identifier => ({
+                      "@_extension": identifier.value,
+                      "@_root": identifier.system,
+                    })),
+                    [`${prefix}semanticsText`]: "LivingSubject.id",
                   },
-                  [`${prefix}semanticsText`]: "Patient.telecom",
                 }
-              : {},
+              : {}),
+            ...(patientNames
+              ? patientNames.map(name => ({
+                  [`${prefix}livingSubjectName`]: {
+                    [`${prefix}value`]: {
+                      [`${prefix}family`]: name.family,
+                      ...name.given?.reduce((acc: { [key: string]: string }, givenName: string) => {
+                        acc[`${prefix}given`] = givenName;
+                        return acc;
+                      }, {}),
+                    },
+                    [`${prefix}semanticsText`]: "LivingSubject.name",
+                  },
+                }))
+              : []),
+            ...(patientAddresses
+              ? {
+                  [`${prefix}patientAddress`]: {
+                    [`${prefix}value`]: patientAddresses.map(address => ({
+                      [`${prefix}streetAddressLine`]: address.line?.join(", "),
+                      [`${prefix}city`]: address.city,
+                      [`${prefix}state`]: address.state,
+                      [`${prefix}postalCode`]: address.postalCode,
+                      [`${prefix}country`]: address.country,
+                    })),
+                    [`${prefix}semanticsText`]: "Patient.addr",
+                  },
+                }
+              : {}),
+            ...(patientTelecoms
+              ? {
+                  [`${prefix}patientTelecom`]: {
+                    [`${prefix}value`]: patientTelecoms.map(telecom => ({
+                      "@_use": telecom.system,
+                      "@_value": telecom.value,
+                    })),
+                    [`${prefix}semanticsText`]: "Patient.telecom",
+                  },
+                }
+              : {}),
             ...(providerId
               ? {
                   [`${prefix}principalCareProviderId`]: {
@@ -221,15 +246,15 @@ function createSoapBody({
   const receiverDeviceId = gateway.oid;
   const toUrl = gateway.url;
   const providerId = bodyData.principalCareProviderIds[0];
-  const homeCommunityId = bodyData.samlAttributes.homeCommunityId;
-  const patientGender = bodyData.patientResource.gender === "female" ? "F" : "M";
-  const patientBirthtime = bodyData.patientResource.birthDate.replace(DATE_DASHES_REGEX, "");
-  const patientFamilyName = bodyData.patientResource.name?.[0]?.family;
-  const patientGivenName = bodyData.patientResource.name?.[0]?.given?.[0];
-  const patientAddress = bodyData.patientResource.address?.[0];
-  const patientTelecom = bodyData.patientResource.telecom?.[0]?.value ?? undefined;
+  const homeCommunityId = getHomeCommunityId(gateway, bodyData.samlAttributes);
+  const patientGender = mapFhirToIheGender(bodyData.patientResource.gender);
+  const patientBirthtime = bodyData.patientResource.birthDate?.replace(DATE_DASHES_REGEX, "");
+  const patientNames = bodyData.patientResource.name;
+  const patientAddresses = bodyData.patientResource.address;
+  const patientTelecoms = bodyData.patientResource.telecom;
+  const identifiers = bodyData.patientResource.identifier;
 
-  const useUrn = gateway.url !== specialNamespaceRequiredUrl;
+  const useUrn = requiresUrnInSoapBody(gateway);
   const soapBody = {
     "soap:Body": createSoapBodyContent({
       messageId,
@@ -239,10 +264,10 @@ function createSoapBody({
       toUrl,
       patientGender,
       patientBirthtime,
-      patientFamilyName,
-      patientGivenName,
-      patientAddress,
-      patientTelecom,
+      patientNames,
+      patientAddresses,
+      patientTelecoms,
+      identifiers,
       providerId,
       useUrn,
     }),
@@ -265,7 +290,7 @@ export function createITI5SoapEnvelope({
   const toUrl = gateway.url;
   const gatewayOid = gateway.oid;
   const subjectRole = bodyData.samlAttributes.subjectRole.display;
-  const homeCommunityId = bodyData.samlAttributes.homeCommunityId;
+  const homeCommunityId = getHomeCommunityId(gateway, bodyData.samlAttributes);
   const purposeOfUse = bodyData.samlAttributes.purposeOfUse;
 
   const createdTimestamp = dayjs().toISOString();
@@ -326,8 +351,8 @@ export function createITI5SoapEnvelope({
 export function createAndSignBulkXCPDRequests(
   bulkBodyData: OutboundPatientDiscoveryReq,
   samlCertsAndKeys: SamlCertsAndKeys
-): BulkSignedXCPD[] {
-  const signedRequests: BulkSignedXCPD[] = [];
+): SignedXcpdRequest[] {
+  const signedRequests: SignedXcpdRequest[] = [];
 
   for (const gateway of bulkBodyData.gateways) {
     const bodyData: OutboundPatientDiscoveryReq = {

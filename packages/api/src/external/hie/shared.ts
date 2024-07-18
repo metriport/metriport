@@ -10,6 +10,10 @@ import { CqOboDetails } from "../../external/carequality/get-obo-data";
 import { buildCqOrgName } from "../../external/carequality/shared";
 import { buildCwOrgName } from "../../external/commonwell/shared";
 import { isOboFacility, isNonOboFacility } from "../../domain/medical/facility";
+import { Config } from "../../shared/config";
+
+const metriportOid = Config.getSystemRootOID();
+const metriportIntermediaryOid = `${metriportOid}.666`;
 
 export async function createOrUpdateInCq(
   facility: Facility,
@@ -18,6 +22,7 @@ export async function createOrUpdateInCq(
   coordinates: Coordinates
 ): Promise<void> {
   const { log } = out("createOrUpdateInCq");
+
   const isObo = isOboFacility(facility.cqType);
   const isProvider = isNonOboFacility(facility.cqType);
   const cqOboDisabled = !isObo || !cqOboData.enabled;
@@ -55,7 +60,7 @@ export async function createOrUpdateInCq(
     contactName: metriportCompanyDetails.name,
     phone: metriportCompanyDetails.phone,
     email: metriportEmailForCq,
-    parentOrgOid: cxOrg.oid,
+    parentOrgOid: isObo ? metriportIntermediaryOid : metriportOid,
     role: "Connection" as const,
   });
 }
@@ -70,7 +75,7 @@ export async function createOrUpdateInCw(
 
   const isProvider = isNonOboFacility(facility.cwType);
   const isObo = isOboFacility(facility.cwType);
-  const cwOboDisabled = !isObo || !facility.cwActive || !facility.cwOboOid;
+  const cwOboDisabled = !isObo || !facility.cwOboOid;
 
   if (cwOboDisabled && !isProvider) {
     log(`CW OBO is not enabled for this facility`);

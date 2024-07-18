@@ -12,11 +12,8 @@ export type CqOboDetails =
       enabled: false;
     };
 
-export async function getCqOboData(
-  cqActive?: boolean | null,
-  cqOboOid?: string | null
-): Promise<CqOboDetails> {
-  if (cqActive && cqOboOid) {
+export async function getCqOboData(cqOboOid?: string | null): Promise<CqOboDetails> {
+  if (cqOboOid) {
     const cqFacilityName = await getCqFacilityName(cqOboOid);
     return {
       enabled: true,

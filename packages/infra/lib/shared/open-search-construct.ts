@@ -1,5 +1,6 @@
 import { CfnOutput, RemovalPolicy } from "aws-cdk-lib";
 import { ComparisonOperator, Metric } from "aws-cdk-lib/aws-cloudwatch";
+import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as iam from "aws-cdk-lib/aws-iam";
 import {
@@ -33,6 +34,7 @@ export interface OpenSearchConstructProps {
   ebs: EbsOptions;
   encryptionAtRest?: boolean;
   alarmThresholds?: OpenSearchAlarmThresholds;
+  alarmAction?: SnsAction | undefined;
 }
 
 export default class OpenSearchConstruct extends Construct {
@@ -116,9 +118,10 @@ export default class OpenSearchConstruct extends Construct {
         slowIndexLogEnabled: true,
         appLogEnabled: true,
       },
+      enableAutoSoftwareUpdate: true,
     });
 
-    this.createAlarms(id, props.alarmThresholds);
+    this.createAlarms(id, props.alarmThresholds, props.alarmAction);
 
     new CfnOutput(this, `${id}DomainID`, {
       description: `OpenSearch ${id} Domain ID`,
@@ -140,7 +143,8 @@ export default class OpenSearchConstruct extends Construct {
       cpuUtilization,
       jvmMemoryPressure,
       searchLatency,
-    }: OpenSearchAlarmThresholds = {}
+    }: OpenSearchAlarmThresholds = {},
+    alarmAction?: SnsAction
   ) {
     const createAlarm = ({
       metric,
@@ -155,12 +159,14 @@ export default class OpenSearchConstruct extends Construct {
       evaluationPeriods: number;
       comparisonOperator?: ComparisonOperator;
     }) => {
-      metric.createAlarm(this, `${id}${name}`, {
+      const alarm = metric.createAlarm(this, `${id}${name}`, {
         threshold,
         evaluationPeriods,
         alarmName: `${id}${name}`,
         comparisonOperator,
       });
+      alarmAction && alarm.addAlarmAction(alarmAction);
+      alarmAction && alarm.addOkAction(alarmAction);
     };
 
     (statusRed == null || statusRed) &&
@@ -182,7 +188,7 @@ export default class OpenSearchConstruct extends Construct {
       metric: this.domain.metricFreeStorageSpace(),
       name: "FreeStorage",
       threshold: freeStorageMB ?? 5_000,
-      evaluationPeriods: 1,
+      evaluationPeriods: 3,
       comparisonOperator: ComparisonOperator.LESS_THAN_THRESHOLD,
     });
 
@@ -209,7 +215,7 @@ export default class OpenSearchConstruct extends Construct {
       metric: this.domain.metricSearchLatency(),
       name: "SearchLatency",
       threshold: searchLatency ?? 300,
-      evaluationPeriods: 1,
+      evaluationPeriods: 2,
     });
   }
 }

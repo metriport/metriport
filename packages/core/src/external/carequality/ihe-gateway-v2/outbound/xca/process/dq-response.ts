@@ -1,12 +1,18 @@
 import { XMLParser } from "fast-xml-parser";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
 import {
   OutboundDocumentQueryReq,
   OutboundDocumentQueryResp,
   DocumentReference,
   XCAGateway,
 } from "@metriport/ihe-gateway-sdk";
-import { handleRegistryErrorResponse, handleHttpErrorResponse, handleEmptyResponse } from "./error";
+import {
+  handleRegistryErrorResponse,
+  handleHttpErrorResponse,
+  handleEmptyResponse,
+  handleSchemaErrorResponse,
+} from "./error";
 import { DQSamlClientResponse } from "../send/dq-requests";
 import { stripUrnPrefix } from "../../../../../../util/urn";
 import {
@@ -16,62 +22,49 @@ import {
 } from "../../../../shared";
 import { successStatus, partialSuccessStatus } from "./constants";
 import { capture } from "../../../../../../util/notifications";
+import { toArray } from "@metriport/shared";
+import { iti38Schema, ExternalIdentifier, Classification, ExtrinsicObject } from "./schema";
+import { Slot } from "../../../schema";
+import { out } from "../../../../../../util/log";
+import { errorToString } from "../../../../../../util/error/shared";
 
-const enforceSameHomeCommunityIdList = [
-  "2.16.840.1.113883.3.6448",
-  "2.16.840.1.113883.3.6147.458",
-  "2.16.840.1.113883.3.6147.458.2",
-];
+dayjs.extend(utc);
 
-type Identifier = {
-  _identificationScheme: string;
-  _value: string;
-};
+const { log } = out("DQ Processing");
 
-type Classification = {
-  _classificationScheme: string;
-  Name: {
-    LocalizedString: {
-      _charset: string;
-      _value: string;
-    };
-  };
-};
-
-type Slot = {
-  _name: string;
-  ValueList: {
-    Value: string | string[];
-  };
-};
-
-function getRequestHomeCommunityId(request: OutboundDocumentQueryReq): string {
-  return request.gateway.homeCommunityId;
-}
-
-function getResponseHomeCommunityId(
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  extrinsicObject: any
-): string {
+function getResponseHomeCommunityId(extrinsicObject: ExtrinsicObject): string {
   return stripUrnPrefix(extrinsicObject?._home);
 }
 
-function getHomeCommunityIdForDr(
-  request: OutboundDocumentQueryReq,
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  extrinsicObject: any
-): string {
-  if (enforceSameHomeCommunityIdList.includes(request.gateway.homeCommunityId)) {
-    return getRequestHomeCommunityId(request);
-  }
+function getHomeCommunityIdForDr(extrinsicObject: ExtrinsicObject): string {
   return getResponseHomeCommunityId(extrinsicObject);
 }
 
-function parseDocumentReference(
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  extrinsicObject: any,
-  outboundRequest: OutboundDocumentQueryReq
-): DocumentReference | undefined {
+function getCreationTime({
+  creationTimeValue,
+  serviceStartTimeValue,
+  serviceStopTimeValue,
+}: {
+  creationTimeValue: string | undefined;
+  serviceStartTimeValue: string | undefined;
+  serviceStopTimeValue: string | undefined;
+}): string | undefined {
+  const time = creationTimeValue ?? serviceStartTimeValue ?? serviceStopTimeValue;
+
+  try {
+    return time ? dayjs.utc(time).toISOString() : undefined;
+  } catch (error) {
+    return undefined;
+  }
+}
+
+export function parseDocumentReference({
+  extrinsicObject,
+  outboundRequest,
+}: {
+  extrinsicObject: ExtrinsicObject;
+  outboundRequest: OutboundDocumentQueryReq;
+}): DocumentReference | undefined {
   const slots = Array.isArray(extrinsicObject?.Slot)
     ? extrinsicObject?.Slot
     : [extrinsicObject?.Slot];
@@ -84,16 +77,12 @@ function parseDocumentReference(
 
   const findSlotValue = (name: string): string | undefined => {
     const slot = slots.find((slot: Slot) => slot._name === name);
-    return slot
-      ? Array.isArray(slot.ValueList.Value)
-        ? slot.ValueList.Value.join(", ")
-        : slot.ValueList.Value
-      : undefined;
+    return slot ? String(slot.ValueList.Value) : undefined;
   };
 
   const findExternalIdentifierValue = (scheme: string): string | undefined => {
     const identifier = externalIdentifiers?.find(
-      (identifier: Identifier) => identifier._identificationScheme === scheme
+      (identifier: ExternalIdentifier) => identifier._identificationScheme === scheme
     );
     return identifier ? identifier._value : undefined;
   };
@@ -107,17 +96,11 @@ function parseDocumentReference(
     );
     if (!classification) return undefined;
 
-    const slotArray = Array.isArray(classification.Slot)
-      ? classification.Slot
-      : [classification.Slot];
+    const slotArray = toArray(classification.Slot);
     const classificationSlots = slotArray.flatMap((slot: Slot) => slot ?? []);
 
     const slot = classificationSlots.find((s: Slot) => s._name === slotName);
-    return slot
-      ? Array.isArray(slot.ValueList.Value)
-        ? slot.ValueList.Value.join(", ")
-        : slot.ValueList.Value
-      : undefined;
+    return slot ? String(slot.ValueList.Value) : undefined;
   };
 
   const findClassificationName = (scheme: string): string | undefined => {
@@ -138,24 +121,25 @@ function parseDocumentReference(
     capture.error(msg, {
       extra: {
         extrinsicObject,
-        repositoryUniqueId,
-        docUniqueId,
+        outboundRequest,
       },
     });
     return undefined;
   }
 
+  const creationTimeValue = findSlotValue("creationTime");
+  const serviceStartTimeValue = findSlotValue("serviceStartTime");
+  const serviceStopTimeValue = findSlotValue("serviceStopTime");
+
   const documentReference: DocumentReference = {
-    homeCommunityId: getHomeCommunityIdForDr(outboundRequest, extrinsicObject),
+    homeCommunityId: getHomeCommunityIdForDr(extrinsicObject),
     repositoryUniqueId,
-    docUniqueId,
+    docUniqueId: stripUrnPrefix(docUniqueId),
     contentType: extrinsicObject?._mimeType,
     language: findSlotValue("languageCode"),
     size: sizeValue ? parseInt(sizeValue) : undefined,
     title: findClassificationName(XDSDocumentEntryClassCode),
-    creation: findSlotValue("creationTime")
-      ? dayjs(findSlotValue("creationTime")).toISOString()
-      : undefined,
+    creation: getCreationTime({ creationTimeValue, serviceStartTimeValue, serviceStopTimeValue }),
     authorInstitution: findClassificationSlotValue(XDSDocumentEntryAuthor, "authorInstitution"),
   };
   return documentReference;
@@ -166,33 +150,32 @@ function handleSuccessResponse({
   outboundRequest,
   gateway,
 }: {
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  extrinsicObjects: any;
+  extrinsicObjects: ExtrinsicObject[];
   outboundRequest: OutboundDocumentQueryReq;
   gateway: XCAGateway;
 }): OutboundDocumentQueryResp {
-  const documentReferences = Array.isArray(extrinsicObjects)
-    ? extrinsicObjects.flatMap(
-        extrinsicObject => parseDocumentReference(extrinsicObject, outboundRequest) ?? []
-      )
-    : [parseDocumentReference(extrinsicObjects, outboundRequest) ?? []].flat();
+  const documentReferences = extrinsicObjects.flatMap(
+    extrinsicObject => parseDocumentReference({ extrinsicObject, outboundRequest }) ?? []
+  );
 
   const response: OutboundDocumentQueryResp = {
     id: outboundRequest.id,
     patientId: outboundRequest.patientId,
     timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
     responseTimestamp: dayjs().toISOString(),
     gateway,
     documentReference: documentReferences,
     externalGatewayPatient: outboundRequest.externalGatewayPatient,
+    iheGatewayV2: true,
   };
   return response;
 }
 
-export function processDQResponse({
-  dqResponse: { response, success, gateway, outboundRequest },
+export function processDqResponse({
+  response: { response, success, gateway, outboundRequest },
 }: {
-  dqResponse: DQSamlClientResponse;
+  response: DQSamlClientResponse;
 }): OutboundDocumentQueryResp {
   if (success === false) {
     return handleHttpErrorResponse({
@@ -208,29 +191,40 @@ export function processDQResponse({
     parseAttributeValue: false,
     removeNSPrefix: true,
   });
-
   const jsonObj = parser.parse(response);
-  const status = jsonObj?.Envelope?.Body?.AdhocQueryResponse?._status?.split(":").pop();
-  const extrinsicObjects =
-    jsonObj?.Envelope?.Body?.AdhocQueryResponse?.RegistryObjectList?.ExtrinsicObject;
-  const registryErrorList = jsonObj?.Envelope?.Body?.AdhocQueryResponse?.RegistryErrorList;
 
-  if ((status === successStatus || status === partialSuccessStatus) && extrinsicObjects) {
-    return handleSuccessResponse({
-      extrinsicObjects,
+  try {
+    const iti38Response = iti38Schema.parse(jsonObj);
+
+    const status = iti38Response.Envelope.Body.AdhocQueryResponse._status.split(":").pop();
+    const registryObjectList = iti38Response.Envelope.Body.AdhocQueryResponse.RegistryObjectList;
+    const extrinsicObjects = registryObjectList ? registryObjectList.ExtrinsicObject : undefined;
+    const registryErrorList = iti38Response.Envelope.Body.AdhocQueryResponse?.RegistryErrorList;
+
+    if ((status === successStatus || status === partialSuccessStatus) && extrinsicObjects) {
+      return handleSuccessResponse({
+        extrinsicObjects: toArray(extrinsicObjects),
+        outboundRequest,
+        gateway,
+      });
+    } else if (registryErrorList) {
+      return handleRegistryErrorResponse({
+        registryErrorList,
+        outboundRequest,
+        gateway,
+      });
+    } else {
+      return handleEmptyResponse({
+        outboundRequest,
+        gateway,
+      });
+    }
+  } catch (error) {
+    log(`Error processing DQ response ${JSON.stringify(jsonObj)}`);
+    return handleSchemaErrorResponse({
       outboundRequest,
       gateway,
-    });
-  } else if (registryErrorList) {
-    return handleRegistryErrorResponse({
-      registryErrorList,
-      outboundRequest,
-      gateway,
-    });
-  } else {
-    return handleEmptyResponse({
-      outboundRequest,
-      gateway,
+      text: errorToString(error),
     });
   }
 }

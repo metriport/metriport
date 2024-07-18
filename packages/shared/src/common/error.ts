@@ -1,5 +1,8 @@
 export type ErrorToStringOptions = { detailed: boolean };
 
+/**
+ * @deprecated User @metriport/shared/error/shared instead
+ */
 export function errorToString(
   err: unknown,
   options: ErrorToStringOptions = { detailed: true }
@@ -10,10 +13,16 @@ export function errorToString(
   return genericErrorToString(err);
 }
 
+/**
+ * @deprecated User @metriport/shared/error/shared instead
+ */
 export function genericErrorToString(err: unknown): string {
   return (err as any)["message"] ?? String(err); // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
+/**
+ * @deprecated User @metriport/shared/error/shared instead
+ */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function detailedErrorToString(error: any): string {
   if (!error) return "undefined";

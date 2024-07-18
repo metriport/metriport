@@ -31,6 +31,9 @@
         "payor":
         [
             {
+                {{#if canBeUnknown}} 
+                "display":"unknown",
+                {{/if}}
                 "reference":"{{REF}}",
             },
         ],
