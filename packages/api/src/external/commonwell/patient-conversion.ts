@@ -2,6 +2,7 @@ import {
   AddressUseCodes,
   Contact,
   ContactSystemCodes,
+  GenderCodes,
   Identifier,
   NameUseCodes,
   Patient as CommonwellPatient,
@@ -10,14 +11,16 @@ import {
 } from "@metriport/commonwell-sdk";
 import { addOidPrefix, driversLicenseURIs } from "@metriport/core/domain/oid";
 import { GenderAtBirth, Patient, splitName } from "@metriport/core/domain/patient";
-import { normalizePhoneNumber } from "@metriport/shared";
+import { MetriportError, normalizePhoneNumber } from "@metriport/shared";
 
-const genderMapping: { [k in GenderAtBirth]: string } = {
-  F: "F",
-  M: "M",
+const genderMapping: { [k in GenderAtBirth]: GenderCodes | undefined } = {
+  F: GenderCodes.F,
+  M: GenderCodes.M,
+  O: GenderCodes.UN,
+  U: undefined,
 };
 
-export function mapGenderAtBirthToCw(k: GenderAtBirth): string {
+export function mapGenderAtBirthToCw(k: GenderAtBirth): GenderCodes | undefined {
   return genderMapping[k];
 }
 
@@ -44,6 +47,11 @@ export function patientToCommonwell({
     assigner: orgName,
   };
   const strongIds = getCwStrongIdsFromPatient(patient);
+  const cwGender = mapGenderAtBirthToCw(patient.data.genderAtBirth);
+  if (!cwGender)
+    throw new MetriportError("Missing gender on patientToCommonwell", undefined, {
+      patientId: patient.id,
+    });
   let addedAddress = false;
   return {
     identifier: [identifier],
@@ -70,7 +78,7 @@ export function patientToCommonwell({
         },
       ],
       gender: {
-        code: mapGenderAtBirthToCw(patient.data.genderAtBirth),
+        code: cwGender,
       },
       telecom: patient.data.contact?.flatMap(contact => {
         const contacts: Contact[] = [];

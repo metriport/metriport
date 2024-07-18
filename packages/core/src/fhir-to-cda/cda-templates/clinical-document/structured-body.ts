@@ -5,11 +5,12 @@ import { buildFamilyHistory } from "../components/family-history";
 import { buildImmunizations } from "../components/immunizations";
 import { buildMedications } from "../components/medications";
 import { buildMentalStatus } from "../components/mental-status";
+import { buildNotes } from "../components/notes";
 import { buildProblems } from "../components/problems";
 import { buildResult } from "../components/results";
 import { buildSocialHistory } from "../components/social-history";
 import { buildVitalSigns } from "../components/vital-signs";
-import { buildNotes } from "../components/notes";
+import { buildAssessmentAndPlan } from "../components/assessment-and-plan";
 
 export function buildStructuredBody(fhirBundle: Bundle): unknown {
   const notes = buildNotes(fhirBundle);
@@ -24,6 +25,7 @@ export function buildStructuredBody(fhirBundle: Bundle): unknown {
     buildImmunizations(fhirBundle),
     buildVitalSigns(fhirBundle),
     buildFamilyHistory(fhirBundle),
+    buildAssessmentAndPlan(),
     ...(notes ? notes : []),
   ];
 

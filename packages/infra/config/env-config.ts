@@ -86,7 +86,10 @@ type EnvConfigBase = {
        * @see https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-serverless-v2.setting-capacity.html#aurora-serverless-v2.max-connections
        */
       max: number;
-      /** Minimum number of connections in pool. Default is 0. */
+      /**
+       * Minimum number of connections in pool. Default is 0.
+       * @see https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-serverless-v2.setting-capacity.html#aurora-serverless-v2.max-connections
+       */
       min: number;
       /** The maximum time, in milliseconds, that pool will try to get connection before throwing error. */
       acquire: number;
@@ -109,6 +112,7 @@ type EnvConfigBase = {
   medicalDocumentsBucketName: string;
   medicalDocumentsUploadBucketName: string;
   iheResponsesBucketName: string;
+  iheRequestsBucketName: string;
   fhirConverterBucketName?: string;
   analyticsSecretNames?: {
     POST_HOG_API_KEY_SECRET: string;
@@ -201,6 +205,12 @@ type EnvConfigBase = {
 
 export type EnvConfigNonSandbox = EnvConfigBase & {
   environmentType: EnvType.staging | EnvType.production;
+  propelAuth: {
+    authUrl: string;
+    secrets: {
+      PROPELAUTH_API_KEY: string;
+    };
+  };
   fhirToMedicalLambda: {
     nodeRuntimeArn: string;
   };

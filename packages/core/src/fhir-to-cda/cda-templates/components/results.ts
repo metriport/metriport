@@ -6,14 +6,15 @@ import {
 } from "../../../external/fhir/shared";
 import { base64ToString } from "../../../util/base64";
 import { ResultsSection } from "../../cda-types/sections";
-import { ObservationOrganizer } from "../../cda-types/shared-types";
+import { ActStatusCode, ObservationOrganizer } from "../../cda-types/shared-types";
 import {
   buildCodeCe,
   buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
+  buildTemplateIds,
   formatDateToCdaTimestamp,
   notOnFilePlaceholder,
-  withoutNullFlavorObject,
+  withNullFlavor,
 } from "../commons";
 import { extensionValue2015, oids, placeholderOrgOid } from "../constants";
 import { createObservations } from "./observations";
@@ -39,7 +40,10 @@ export function buildResult(fhirBundle: Bundle): ResultsSection {
       isDiagnosticReport(entry.resource) ? [entry.resource] : []
     ) || [];
   if (diagnosticReports.length === 0) {
-    return resultsSection;
+    return {
+      _nullFlavor: "NI",
+      ...resultsSection,
+    };
   }
 
   const resultsReports = diagnosticReports.filter(report =>
@@ -100,7 +104,7 @@ function buildEntriesFromDiagnosticReports(
     const organizer = {
       _classCode: "BATTERY",
       _moodCode: "EVN",
-      templateId: buildInstanceIdentifier({
+      templateId: buildTemplateIds({
         root: oids.resultOrganizer,
         extension: extensionValue2015,
       }),
@@ -110,12 +114,12 @@ function buildEntriesFromDiagnosticReports(
       }),
       code: codeElement,
       statusCode: buildCodeCe({
-        code: report.status,
+        code: mapResultsStatusCode(report.status),
       }),
-      effectiveTime: withoutNullFlavorObject(
-        formatDateToCdaTimestamp(report.effectiveDateTime),
-        "_value"
-      ),
+      effectiveTime: {
+        low: withNullFlavor(formatDateToCdaTimestamp(report.effectiveDateTime), "_value"),
+        high: withNullFlavor(undefined, "_value"),
+      },
       component: createObservations(observations).map(o => o.component),
     };
 
@@ -124,4 +128,30 @@ function buildEntriesFromDiagnosticReports(
       organizer,
     };
   });
+}
+
+/**
+ * For FHIR statuses
+ * @see https://hl7.org/fhir/R4/valueset-diagnostic-report-status.html
+ * For CDA statuses:
+ * @see https://terminology.hl7.org/5.2.0/ValueSet-v3-ActStatus.html
+ */
+function mapResultsStatusCode(status: string | undefined): ActStatusCode {
+  if (!status) return "completed";
+  switch (status) {
+    case "final" || "corrected" || "appended" || "amended":
+      return "completed";
+    case "registered":
+      return "active";
+    case "entered-in-error":
+      return "nullified";
+    case "cancelled":
+      return "cancelled";
+    case "preliminary":
+      return "new";
+    case "partial":
+      return "active";
+    default:
+      return "completed";
+  }
 }

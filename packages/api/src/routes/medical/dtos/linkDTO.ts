@@ -77,6 +77,7 @@ function personToPatient(person: { id: string } & Person): PatientOnLinkDTO {
     address: [
       {
         addressLine1: address && address.line ? address.line[0] : "",
+        addressLine2: address && address.line ? address.line.slice(1).join(" ") : undefined,
         city: address && address.city ? address.city : "",
         state: address && address.state ? address.state : "",
         zip: address && address.zip ? address.zip : "",
@@ -88,5 +89,5 @@ function personToPatient(person: { id: string } & Person): PatientOnLinkDTO {
 
 const genderToDTO = (person: Person): GenderDTO => {
   const code = person.details?.gender?.code;
-  return code === "M" || code === "F" ? code : "U";
+  return code === "M" || code === "F" || code === "O" ? code : "U";
 };

@@ -20,12 +20,12 @@ export function log(prefix?: string, suffix?: string) {
   };
 }
 
-export function debug(prefix: string, suffix?: string) {
+export function debug(prefix?: string, suffix?: string) {
   if (Config.isCloudEnv()) return emptyFunction;
   return log(prefix, suffix);
 }
 
-export function out(prefix: string, suffix?: string) {
+export function out(prefix?: string, suffix?: string) {
   return {
     log: log(prefix, suffix),
     debug: debug(prefix, suffix),

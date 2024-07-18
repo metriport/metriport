@@ -62,6 +62,7 @@ import {
   schemaUpdateToPatientData,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
+import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 
 const router = Router();
 
@@ -496,6 +497,30 @@ router.post(
       return res.status(status.OK).json(dtoFromModel(patient));
     }
     throw new NotFoundError("Cannot find patient");
+  })
+);
+/** ---------------------------------------------------------------------------
+ * GET /patient/:id/consolidated/webhook
+ *
+ * Returns the webhook.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.patientId The ID of the patient whose data is to be returned.
+ * @param req.query.requestId The ID of the request.
+ */
+router.get(
+  "/:id/consolidated/webhook",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const patientId = getFrom("params").orFail("id", req);
+    const requestId = getFrom("query").orFail("requestId", req);
+    const patient = await getPatientOrFail({ cxId, id: patientId });
+    const consolidatedQueries = patient.data.consolidatedQueries ?? null;
+
+    const webhook = await getConsolidatedWebhook({ cxId, consolidatedQueries, requestId });
+
+    return res.json(webhook);
   })
 );
 

@@ -20,6 +20,7 @@ import {
   buildInstanceIdentifier,
   buildParticipant,
   buildPerformer,
+  buildTemplateIds,
   buildValueCd,
   formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
@@ -206,7 +207,7 @@ export function createEntryFromEncounter(
     encounter: {
       _classCode: "ENC",
       _moodCode: "EVN",
-      templateId: buildInstanceIdentifier({
+      templateId: buildTemplateIds({
         root: encounter.typeOid,
         extension: extensionValue2015,
       }),
@@ -264,11 +265,11 @@ export function createEntryRelationshipObservation(
   referenceId: string
 ): ConcernActEntry {
   return {
-    _typeCode: "RSON",
+    _typeCode: "SUBJ",
     act: {
       _classCode: "ACT",
       _moodCode: "EVN",
-      templateId: buildInstanceIdentifier({
+      templateId: buildTemplateIds({
         root: oids.encounterDiagnosis,
       }),
       code: buildCodeCe({

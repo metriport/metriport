@@ -10,24 +10,18 @@ import {
   PersonalIdentifier,
 } from "@metriport/ihe-gateway-sdk";
 import { errorToString, toArray } from "@metriport/shared";
-import { normalizeGender } from "../../../utils";
 import { XCPDSamlClientResponse } from "../send/xcpd-requests";
 import { out } from "../../../../../../util/log";
 import { extractText } from "../../../utils";
-import {
-  IheAddress,
-  IheIdentifier,
-  IheName,
-  IheTelecom,
-  iti55Schema,
-  Iti55Response,
-  PatientRegistryProfile,
-} from "./schema";
+import { IheAddress, IheIdentifier, IheName, IheTelecom } from "../../../schema";
+import { Iti55Response, iti55ResponseSchema, PatientRegistryProfile } from "./schema";
 import {
   handleHttpErrorResponse,
   handleSchemaErrorResponse,
   handlePatientErrorResponse,
 } from "./error";
+import { queryResponseCodes, ackCodes } from "../../../shared";
+import { mapIheGenderToFhir } from "../../../../shared";
 
 const { log } = out("Processing XCPD Requests");
 
@@ -142,7 +136,7 @@ function handlePatientMatchResponse({
 
   const patientResource = {
     name: patientNames,
-    gender: normalizeGender(subject1?.patient?.patientPerson?.administrativeGenderCode?._code),
+    gender: mapIheGenderToFhir(subject1?.patient?.patientPerson?.administrativeGenderCode?._code),
     birthDate: subject1?.patient?.patientPerson?.birthTime?._value,
     ...(addresses && { address: addresses }),
     ...(patientTelecoms && { telecom: patientTelecoms }),
@@ -229,7 +223,7 @@ export function processXCPDResponse({
 
   const jsonObj = parser.parse(response);
   try {
-    const iti55Response = iti55Schema.parse(jsonObj);
+    const iti55Response = iti55ResponseSchema.parse(jsonObj);
     const patientRegistryProfile = getPatientRegistryProfile(iti55Response);
     const { ack, queryResponseCode } =
       getAckAndQueryResponseCodeFromPatientRegistryProfile(patientRegistryProfile);
@@ -254,7 +248,7 @@ export function processXCPDResponse({
       });
     }
   } catch (error) {
-    log(`Error processing XCPD response: ${JSON.stringify(error)}`);
+    log(`Error processing XCPD response: ${error}`);
     return handleSchemaErrorResponse({
       outboundRequest,
       gateway,
@@ -264,15 +258,15 @@ export function processXCPDResponse({
 }
 
 function isApplicationAccept(ack: string): boolean {
-  return ack === "AA";
+  return ack === ackCodes.AA;
 }
 
 function isXCPDRespOk(queryResponseCode: string): boolean {
-  return queryResponseCode === "OK";
+  return queryResponseCode === queryResponseCodes.OK;
 }
 
 function isXCPDRespNotFound(queryResponseCode: string): boolean {
-  return queryResponseCode === "NF";
+  return queryResponseCode === queryResponseCodes.NF;
 }
 
 function getPatientRegistryProfile(iti55Response: Iti55Response): PatientRegistryProfile {

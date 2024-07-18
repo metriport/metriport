@@ -42,30 +42,29 @@ export async function handleDataContribution({
     `${requestId}_${FHIR_BUNDLE_SUFFIX}.json`
   );
   const fullBundle = hydrateBundle(bundle, patient, fhirOrganization, fhirBundleDestinationKey);
-  const validatedBundle = validateFhirEntries(fullBundle);
-  const incomingAmount = validatedBundle.entry.length;
 
-  await checkResourceLimit(incomingAmount, patient);
   await uploadFhirBundleToS3({
     cxId,
     patientId,
-    fhirBundle: validatedBundle,
+    fhirBundle: fullBundle,
     destinationKey: fhirBundleDestinationKey,
   });
+
+  const validatedBundle = validateFhirEntries(fullBundle);
+  const incomingAmount = validatedBundle.entry.length;
+  await checkResourceLimit(incomingAmount, patient);
+
   const consolidatedDataUploadResults = await createOrUpdateConsolidatedPatientData({
     cxId,
     patientId: patient.id,
     fhirBundle: validatedBundle,
   });
 
-  const convertAndUploadCdaPromise = async () => {
-    const isValidForCdaConversion = hasCompositionResource(validatedBundle);
-    if (isValidForCdaConversion) {
-      const converted = await convertFhirToCda({
-        cxId,
-        validatedBundle,
-      });
-      await uploadCdaDocuments({
+  if (!Config.isSandbox()) {
+    processCcdRequest(patient, fhirOrganization, requestId);
+    if (hasCompositionResource(validatedBundle)) {
+      const converted = await convertFhirToCda({ cxId, validatedBundle });
+      uploadCdaDocuments({
         cxId,
         patientId,
         cdaBundles: converted,
@@ -73,13 +72,8 @@ export async function handleDataContribution({
         docId: requestId,
       });
     }
-  };
-  const createAndUploadCcdPromise = async () => {
-    // TODO: To minimize generating CCDs, make it a delayed job (run it ~5min after it was initiated, only once for all requests within that time window)
-    await processCcdRequest(patient, fhirOrganization);
-  };
+  }
 
-  await Promise.all([createAndUploadCcdPromise(), convertAndUploadCdaPromise()]);
   return consolidatedDataUploadResults;
 }
 

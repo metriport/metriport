@@ -21,6 +21,7 @@ import {
   buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
   buildOriginalTextReference,
+  buildTemplateIds,
   buildValueCd,
   formatDateToCdaTimestamp,
   getDisplaysFromCodeableConcepts,
@@ -50,7 +51,7 @@ const tableHeaders = ["Medical History", "Onset", "Relation", "Name", "Comments"
 
 export function buildFamilyHistory(fhirBundle: Bundle): FamilyHistorySection {
   const familyHistorySection: FamilyHistorySection = {
-    templateId: buildInstanceIdentifier({
+    templateId: buildTemplateIds({
       root: oids.familyHistorySection,
       extension: extensionValue2015,
     }),
@@ -161,7 +162,7 @@ function createEntryFromMemberHistory(
     organizer: {
       _classCode: "CLUSTER",
       _moodCode: "EVN",
-      templateId: buildInstanceIdentifier({
+      templateId: buildTemplateIds({
         root: augHistory.typeOid,
         extension: extensionValue2015,
       }),
@@ -174,6 +175,7 @@ function createEntryFromMemberHistory(
       },
       subject: {
         relatedSubject: {
+          _classCode: "PRS",
           code: mapRelationship(augHistory.resource.relationship, referenceId),
           subject: buildSubject(augHistory.resource),
         },
@@ -197,8 +199,8 @@ function buildSubject(memberHist: FamilyMemberHistory): Subject {
   const deceasedBoolean = memberHist.deceasedBoolean;
   const deceasedInd = deceasedBoolean
     ? {
-        _value: memberHist.deceasedBoolean,
         [_xmlnsSdtcAttribute]: "urn:hl7-org:sdtc",
+        _value: memberHist.deceasedBoolean,
       }
     : undefined;
 
@@ -206,7 +208,7 @@ function buildSubject(memberHist: FamilyMemberHistory): Subject {
     name: memberHist.name,
     administrativeGenderCode: mappedGenderCode,
     birthTime,
-    deceasedInd, // TODO: Validator not accepting this even though this looks correct based on the spec..
+    "sdtc:deceasedInd": deceasedInd,
   };
 }
 
@@ -270,10 +272,11 @@ function buildComponents(
       observation: {
         _classCode: "OBS",
         _moodCode: "EVN",
-        templateId: buildInstanceIdentifier({
+        templateId: buildTemplateIds({
           root: oids.familyHistoryObservation,
           extension: extensionValue2015,
         }),
+        id: withNullFlavor(undefined, "_value"),
         code: codeCv,
         text: {
           reference: {
@@ -281,6 +284,10 @@ function buildComponents(
           },
           "#text": getMedicalCondition(condition.code),
         },
+        statusCode: {
+          _code: "completed",
+        },
+        effectiveTime: withNullFlavor(undefined, "_value"),
         value: buildValueCd(condition.code, conditionRef),
       },
     };

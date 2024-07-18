@@ -7,6 +7,7 @@ import {
   formatDateToCdaTimestamp,
   withNullFlavor,
 } from "../commons";
+import { clinicalDocumentConstants } from "../constants";
 
 export function buildAuthor(organization: Organization, date?: string | undefined): CdaAuthor {
   const author = {
@@ -17,6 +18,14 @@ export function buildAuthor(organization: Organization, date?: string | undefine
       id: withNullFlavor(organization.id, "_root"),
       addr: buildAddress(organization.address),
       telecom: buildTelecom(organization.telecom),
+      assignedAuthoringDevice: {
+        manufacturerModelName: {
+          "#text": clinicalDocumentConstants.assigningAuthorityName,
+        },
+        softwareName: {
+          "#text": clinicalDocumentConstants.assigningAuthorityName,
+        },
+      },
       representedOrganization: buildRepresentedOrganization(organization),
     },
   };

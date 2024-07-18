@@ -1,11 +1,14 @@
 import { Bundle, DiagnosticReport } from "@medplum/fhirtypes";
 import { isDiagnosticReport, isOrganization, isPractitioner } from "../../../external/fhir/shared";
 import { base64ToString } from "../../../util/base64";
+import { NotesSection } from "../../cda-types/sections";
+import { ConcernActEntry, TextUnstructured } from "../../cda-types/shared-types";
 import { buildAuthor } from "../clinical-document/author";
 import {
   buildCodeCe,
   buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
+  buildTemplateIds,
   formatDateToCdaTimestamp,
   getDisplaysFromCodeableConcepts,
   withoutNullFlavorObject,
@@ -13,8 +16,6 @@ import {
 import { extensionValue2015, oids, placeholderOrgOid } from "../constants";
 import { buildResponsibleParty } from "./encompassing-encounter";
 import { mapEncounterStatusCode } from "./encounters";
-import { NotesSection } from "../../cda-types/sections";
-import { ConcernActEntry, TextUnstructured } from "../../cda-types/shared-types";
 
 export const notesCodingMap = new Map<string, string>([
   ["34111-5", "ED Notes"],
@@ -129,7 +130,7 @@ export function buildEntriesFromDiagnosticReport(
     act: {
       _classCode: "ACT",
       _moodCode: "EVN",
-      templateId: buildInstanceIdentifier({
+      templateId: buildTemplateIds({
         root: oids.noteActivity,
         extension: extensionValue2015,
       }),

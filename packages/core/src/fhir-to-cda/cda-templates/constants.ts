@@ -14,7 +14,6 @@ export const hl7ActCode = "2.16.840.1.113883.5.4";
 export const providerTaxonomy = "2.16.840.1.113883.6.101";
 export const vaccineAdministeredCodeSet = "2.16.840.1.113883.12.292";
 export const icd10SystemCode = "2.16.840.1.113883.6.90";
-export const hl7actCode = "2.16.840.1.113883.5.4";
 export const extensionValue2014 = "2014-06-09";
 export const extensionValue2015 = "2015-08-01";
 export const loincCodeSystem = "2.16.840.1.113883.6.1";
@@ -26,6 +25,7 @@ export const NOT_SPECIFIED = "Not Specified";
 
 // Codes taken from: https://www.hl7.org/ccdasearch/
 export const oids = {
+  assessmentAndPlanSection: "2.16.840.1.113883.10.20.22.2.9",
   medicationsSection: "2.16.840.1.113883.10.20.22.2.1.1",
   mentalStatusSection: "2.16.840.1.113883.10.20.22.2.56",
   problemsSection: "2.16.840.1.113883.10.20.22.2.5.1",

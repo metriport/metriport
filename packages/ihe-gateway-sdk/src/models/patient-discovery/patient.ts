@@ -27,7 +27,7 @@ export const personalIdentifierSchema = z.object({
 });
 export type PersonalIdentifier = z.infer<typeof personalIdentifierSchema>;
 
-export const genderSchema = z.enum(["male", "female", "other", "unknown", "undefined"]).optional();
+export const genderSchema = z.enum(["male", "female", "other", "unknown"]);
 export type Gender = z.infer<typeof genderSchema>;
 
 export const patientResourceSchema = z.object({

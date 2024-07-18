@@ -36,13 +36,24 @@
             {{/each}}
         ],
         "status":{{>ValueSet/MedicationAdministrationStatus.hbs code=medicationAdministration.statusCode.code}},
-        "effectivePeriod":{{>Utils/PeriodOrDefaultPeriod.hbs period=medicationAdministration.effectiveTime}},
+        "effectivePeriod":
+        {{#if (or medicationAdministration.effectiveTime.low medicationAdministration.effectiveTime.high)}}
+          {{>Utils/PeriodOrDefaultPeriod.hbs period=medicationAdministration.effectiveTime}},
+        {{else}}
+          {{>Utils/PeriodOrDefaultPeriod.hbs period=medicationAdministration.effectiveTime.[0]}},
+        {{/if}}
         "dosage":
         {
-                "route":{{>DataType/CodeableConcept.hbs code=medicationAdministration.routeCode}},
-                "dose": {{>DataType/SimpleQuantity.hbs quantity=medicationAdministration.doseQuantity}},
-                "rateQuantity": {{>DataType/SimpleQuantity.hbs quantity=medicationAdministration.rateQuantity}}
-
+            "route":{{>DataType/CodeableConcept.hbs code=medicationAdministration.routeCode}},
+            "dose": 
+              {{#if medicationAdministration.doseQuantity.value}}
+                {{>DataType/SimpleQuantity.hbs quantity=medicationAdministration.doseQuantity}},
+              {{else}}
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v3-NullFlavor"
+                }
+              {{/if}}
+            "rateQuantity": {{>DataType/SimpleQuantity.hbs quantity=medicationAdministration.rateQuantity}}
         }
     },
     "request":{
