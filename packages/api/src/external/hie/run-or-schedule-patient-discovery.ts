@@ -12,6 +12,7 @@ export async function runOrSchedulePatientDiscoveryAcrossHies({
   rerunPdOnNewDemographics,
   forceCommonwell,
   forceCarequality,
+  requestId = uuidv7(),
 }: {
   patient: Patient;
   facilityId: string;
@@ -20,9 +21,9 @@ export async function runOrSchedulePatientDiscoveryAcrossHies({
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
   // END TODO #1572 - remove
+  requestId?: string;
 }): Promise<void> {
   const existingPatient = await getPatientOrFail(patient);
-  const requestId = uuidv7();
   // CAREQUALITY
   runOrScheduleCqPatientDiscovery({
     patient: existingPatient,

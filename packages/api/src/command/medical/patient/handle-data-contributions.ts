@@ -41,7 +41,7 @@ export async function handleDataContribution({
     patientId,
     `${requestId}_${FHIR_BUNDLE_SUFFIX}.json`
   );
-  const fullBundle = hydrateBundle(bundle, patient, fhirOrganization, fhirBundleDestinationKey);
+  const fullBundle = hydrateBundle(bundle, patient, fhirBundleDestinationKey);
 
   await uploadFhirBundleToS3({
     cxId,
