@@ -55,6 +55,8 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       iheResponsesBucket
     );
 
+    this.setupMockDirectDbClient(props);
+
     // granting lambda invoke access to api service
     patientDiscoveryLambda.grantInvoke(props.apiTaskRole);
     documentQueryLambda.grantInvoke(props.apiTaskRole);
@@ -300,5 +302,41 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     cqTrustBundleBucket.grantRead(documentRetrievalLambda);
 
     return documentRetrievalLambda;
+  }
+  private setupMockDirectDbClient(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    secrets: Secrets;
+    cqOrgCertificate: string | undefined;
+    cqOrgPrivateKey: string | undefined;
+    cqOrgPrivateKeyPassword: string | undefined;
+    cqOrgCertificateIntermediate: string | undefined;
+    medicalDocumentsBucket: s3.Bucket;
+    cqTrustBundleBucket: s3.IBucket;
+    apiURL: string;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+    dbCluster: rds.IDatabaseCluster;
+    dbSecretArn: string;
+  }): Lambda {
+    const { lambdaLayers, vpc, envType, dbCluster, dbSecretArn } = ownProps;
+
+    const mockDbClientLambda = createLambda({
+      stack: this,
+      name: "IHEGatewayV2MockDbClient",
+      entry: "ihe-gateway-v2-mock-db-client",
+      envType: envType,
+      envVars: {
+        DB_RESOURCE_ARN: dbCluster.clusterArn,
+        DB_SECRET_ARN: dbSecretArn,
+      },
+      layers: [lambdaLayers.shared],
+      memory: 1024,
+      timeout: Duration.minutes(15),
+      vpc,
+    });
+
+    dbCluster.grantDataApiAccess(mockDbClientLambda);
+    return mockDbClientLambda;
   }
 }

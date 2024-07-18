@@ -448,8 +448,6 @@ export class APIStack extends Stack {
         props.config.iheGateway.trustStoreBucketName
       );
       new IHEGatewayV2LambdasNestedStack(this, "IHEGatewayV2LambdasNestedStack", {
-        config: props.config,
-        version: props.version,
         lambdaLayers,
         vpc: this.vpc,
         apiTaskRole: apiService.taskDefinition.taskRole,
