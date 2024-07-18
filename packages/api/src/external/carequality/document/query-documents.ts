@@ -18,6 +18,7 @@ import { createOutboundDocumentQueryRequests } from "./create-outbound-document-
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { getCqInitiator } from "../shared";
 import { isFacilityEnabledToQueryCQ } from "../../carequality/shared";
+import { filterCqLinksByManagingOrg } from "./filter-oids-by-managing-org";
 
 const resultPoller = makeOutboundResultPoller();
 
@@ -25,10 +26,12 @@ export async function getDocumentsFromCQ({
   requestId,
   facilityId,
   patient,
+  cqManagingOrgFilter,
 }: {
   requestId: string;
   facilityId?: string;
   patient: Patient;
+  cqManagingOrgFilter?: string;
 }) {
   const { log } = out(`CQ DQ - requestId ${requestId}, patient ${patient.id}`);
   const { cxId, id: patientId } = patient;
@@ -107,12 +110,17 @@ export async function getDocumentsFromCQ({
 
     const initiator = await getCqInitiator(patient);
 
+    let cqLinks = linksWithDqUrl;
+    if (cqManagingOrgFilter) {
+      cqLinks = await filterCqLinksByManagingOrg(cqManagingOrgFilter, linksWithDqUrl);
+    }
+
     const documentQueryRequestsV2 = createOutboundDocumentQueryRequests({
       requestId,
       patient,
       initiator,
       cxId,
-      cqLinks: linksWithDqUrl,
+      cqLinks,
     });
 
     // We send the request to IHE Gateway to initiate the doc query.
