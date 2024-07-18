@@ -43,15 +43,19 @@ export async function matchPersonsByDemo({
 export async function matchPersonsByStrongIds({
   commonWell,
   queryMeta,
-  commonwellPatientId,
   strongIds,
+  commonwellPatientId,
 }: {
   commonWell: CommonWellAPI;
   queryMeta: RequestMetadata;
-  commonwellPatientId: string;
   strongIds: StrongId[];
+  commonwellPatientId?: string;
 }): Promise<PersonWithId[]> {
-  const { debug } = out(`CW matchPersonsByStrongIds - CW patientId ${commonwellPatientId}`);
+  const { debug } = out(
+    `CW matchPersonsByStrongIds${
+      commonwellPatientId ? `- CW patientId ${commonwellPatientId}` : ""
+    }}`
+  );
 
   const respSearches = await Promise.allSettled(
     strongIds.map(id =>

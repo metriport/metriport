@@ -56,7 +56,7 @@ export async function findOrCreatePerson({
   const baseContext = `cw.findOrCreatePerson`;
 
   const tempCommonwellPerson = makePersonForPatient(commonwellPatient);
-  const strongIds = tempCommonwellPerson.details.identifier ?? [];
+  const strongIds = tempCommonwellPerson.details?.identifier ?? [];
   if (strongIds.length > 0) {
     // Search by personal ID
     const persons = await matchPersonsByStrongIds({

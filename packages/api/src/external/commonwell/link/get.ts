@@ -28,7 +28,8 @@ import {
   updateCommonwellIdsAndStatus,
   updatePatientDiscoveryStatus,
 } from "../patient-external-data";
-import { PatientDataCommonwell, searchPersons } from "../patient-shared";
+import { PatientDataCommonwell } from "../patient-shared";
+import { matchPersonsByStrongIds } from "../person-shared";
 import { getCwStrongIdsFromPatient } from "../patient-conversion";
 import { getCwInitiator } from "../shared";
 import { commonwellPersonLinks } from "./shared";
@@ -243,7 +244,7 @@ const findAllPersonsStrongId = async (
   }
 
   try {
-    const persons = await searchPersons({
+    const persons = await matchPersonsByStrongIds({
       commonWell,
       queryMeta,
       strongIds,

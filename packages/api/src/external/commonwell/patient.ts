@@ -22,7 +22,6 @@ import {
   createAugmentedPatient,
   getNewDemographics,
 } from "../../domain/medical/patient-demographics";
-import MetriportError from "../../errors/metriport-error";
 import { Config } from "../../shared/config";
 import {
   isCommonwellEnabled,
@@ -812,7 +811,6 @@ async function findOrCreatePersonAndLink({
     log(`Error calling findOrCreatePerson @ CW`);
     throw err;
   }
-  if (!findOrCreateResponse) throw new MetriportError("Programming error: unexpected state");
   const { personId, person } = findOrCreateResponse;
 
   await updateCommonwellIdsAndStatus({ patient, commonwellPersonId: personId });
