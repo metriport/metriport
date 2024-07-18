@@ -1,4 +1,4 @@
-import { Op } from "sequelize";
+import { Op, fn, where, col } from "sequelize";
 import { CQLink } from "../cq-patient-data";
 import { CQDirectoryEntryModel } from "../../../external/carequality/models/cq-directory";
 
@@ -6,12 +6,9 @@ export async function filterCqLinksByManagingOrg(
   name: string,
   cqLinks: CQLink[]
 ): Promise<CQLink[]> {
+  console.log("TESTING ZERO", name);
   const managingOrg = await CQDirectoryEntryModel.findOne({
-    where: {
-      name: {
-        [Op.like]: name,
-      },
-    },
+    where: where(fn("LOWER", col("name")), fn("LOWER", name)),
   });
 
   console.log("TESTING ONE", managingOrg);
