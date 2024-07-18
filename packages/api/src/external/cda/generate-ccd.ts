@@ -37,8 +37,6 @@ export async function generateCcd(patient: Patient, requestId: string): Promise<
     return generateEmptyCcd(patient);
   }
 
-  uploadCcdFhirDataToS3(patient, metriportGenerated, requestId);
-
   const organization = await getOrganizationOrFail({ cxId: patient.cxId });
   const fhirOrganization = toFhirOrganization(organization);
   const bundle: Bundle = {
@@ -47,8 +45,9 @@ export async function generateCcd(patient: Patient, requestId: string): Promise<
     entry: [...metriportGenerated, { resource: fhirOrganization }],
   };
   const parsedBundle = bundleSchema.parse(bundle);
-  const validatedBundle = validateFhirEntries(parsedBundle);
+  uploadCcdFhirDataToS3(patient, parsedBundle, requestId);
 
+  const validatedBundle = validateFhirEntries(parsedBundle);
   const converted = await convertFhirToCda({
     cxId: patient.cxId,
     validatedBundle,
@@ -65,6 +64,7 @@ async function getFhirResourcesForCcd(
   const allResources = await getConsolidatedPatientData({ patient });
   return allResources.entry?.filter(entry => {
     const resource = entry.resource;
+    if (resource?.resourceType === "Composition") return false;
 
     if (resource) {
       // All new FHIR data coming from our CX will now have extensions.
@@ -87,7 +87,7 @@ async function getFhirResourcesForCcd(
 
 async function uploadCcdFhirDataToS3(
   patient: Patient,
-  data: BundleEntry<Resource>[],
+  data: Bundle,
   requestId: string
 ): Promise<void> {
   const { log } = out(`Upload FHIR data for CCD cxId: ${patient.cxId}, patientId: ${patient.id}`);

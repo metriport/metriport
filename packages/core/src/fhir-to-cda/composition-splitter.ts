@@ -26,13 +26,13 @@ export function splitBundleByCompositions(fhirBundle: Bundle): Bundle[] {
       ? findResourceInBundle(fhirBundle, patientReference)
       : undefined;
     if (!patientResource) {
-      throw new BadRequestError("Patient resource not found");
+      throw new BadRequestError("Invalid Patient reference in the subject field");
     }
     const organizationResource = organizationReference
       ? findResourceInBundle(fhirBundle, organizationReference)
       : undefined;
     if (!organizationResource) {
-      throw new BadRequestError("Organization resource not found");
+      throw new BadRequestError("Invalid Organization reference in the author field");
     }
 
     const bundle: Bundle = {

@@ -114,8 +114,13 @@ function getDocumentTypeCode(composition: Composition | undefined): CdaCodeCe {
 }
 
 function getDocumentTitle(composition: Composition | undefined): string {
-  if (composition && composition.type?.text) {
-    return composition.type?.text;
+  if (composition) {
+    if (composition.title) {
+      return composition.title;
+    }
+    if (composition.type?.text) {
+      return composition.type?.text;
+    }
   }
   return "Continuity of Care Document";
 }
