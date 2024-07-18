@@ -32,7 +32,6 @@ export async function createOutboundPatientDiscoveryResp({
     {
       name: "createdAt",
       value: { stringValue: new Date().toISOString() },
-      typeHint: TypeHint.DATE,
     },
   ];
 
