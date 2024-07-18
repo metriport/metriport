@@ -30,7 +30,7 @@ const CHUNK_DELAY_MAX_MS = dayjs.duration({ seconds: 1 }).asMilliseconds();
 const PATIENT_CHUNK_SIZE = 5;
 
 const patientIds: string[] = [];
-const rerunPdOnNewDemographics = true;
+const rerunPdOnNewDemographics = false;
 
 type PdResponse = {
   data: {
@@ -44,8 +44,8 @@ async function main() {
 
     const patientChunks = chunk(patientIds, PATIENT_CHUNK_SIZE);
 
-    for (const [j, patients] of patientChunks.entries()) {
-      console.log(`Chunk ${j + 1} of ${patientChunks.length}`);
+    for (const [i, patients] of patientChunks.entries()) {
+      console.log(`Chunk ${i + 1} of ${patientChunks.length}`);
       console.log(`# of patients ${patients.length}`);
 
       for (const patientId of patients) {
@@ -58,9 +58,9 @@ async function main() {
         const resp = (await axios.post(`${endpointUrl}?${params}`)) as PdResponse;
         log(`Request ID - ${JSON.stringify(resp.data.requestId)}`);
       }
-      if (j < patientChunks.length - 1) {
+      if (i < patientChunks.length - 1) {
         const sleepTime = CHUNK_DELAY_MAX_MS * patients.length;
-        console.log(`Chunk ${j + 1} finished. Sleeping for ${sleepTime} ms...`);
+        console.log(`Chunk ${i + 1} finished. Sleeping for ${sleepTime} ms...`);
         await sleep(sleepTime);
       }
     }
