@@ -112,7 +112,7 @@ type EnvConfigBase = {
   medicalDocumentsBucketName: string;
   medicalDocumentsUploadBucketName: string;
   iheResponsesBucketName: string;
-  iheXcpdResponsesBucketName: string;
+  iheParsedResponsesBucketName: string;
   iheRequestsBucketName: string;
   fhirConverterBucketName?: string;
   analyticsSecretNames?: {

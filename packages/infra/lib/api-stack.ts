@@ -459,7 +459,7 @@ export class APIStack extends Stack {
         envType: props.config.environmentType,
         sentryDsn: props.config.lambdasSentryDSN,
         iheResponsesBucketName: props.config.iheResponsesBucketName,
-        iheXcpdResponsesBucketName: props.config.iheXcpdResponsesBucketName,
+        iheParsedResponsesBucketName: props.config.iheParsedResponsesBucketName,
       });
     }
 

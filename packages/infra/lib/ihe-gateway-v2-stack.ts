@@ -24,7 +24,7 @@ interface IHEGatewayV2LambdasNestedStackProps extends NestedStackProps {
   envType: EnvType;
   sentryDsn: string | undefined;
   iheResponsesBucketName: string;
-  iheXcpdResponsesBucketName: string;
+  iheParsedResponsesBucketName: string;
 }
 
 export class IHEGatewayV2LambdasNestedStack extends NestedStack {
@@ -40,8 +40,8 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       versioned: true,
     });
 
-    const iheXcpdResponsesBucket = new s3.Bucket(this, "IHEXcpdResponsesBucket", {
-      bucketName: props.iheXcpdResponsesBucketName,
+    const iheParsedResponsesBucket = new s3.Bucket(this, "iheParsedResponsesBucket", {
+      bucketName: props.iheParsedResponsesBucketName,
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
       versioned: true,
@@ -50,7 +50,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     const patientDiscoveryLambda = this.setupIHEGatewayV2PatientDiscoveryLambda(
       props,
       iheResponsesBucket,
-      iheXcpdResponsesBucket
+      iheParsedResponsesBucket
     );
     const documentQueryLambda = this.setupIHEGatewayV2DocumentQueryLambda(
       props,
@@ -96,7 +96,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       sentryDsn: string | undefined;
     },
     iheResponsesBucket: s3.Bucket,
-    iheXcpdResponsesBucket: s3.Bucket
+    iheParsedResponsesBucket: s3.Bucket
   ): Lambda {
     const {
       lambdaLayers,
@@ -134,7 +134,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         IHE_RESPONSES_BUCKET_NAME: iheResponsesBucket.bucketName,
-        IHE_XCPD_RESPONSES_BUCKET_NAME: iheXcpdResponsesBucket.bucketName,
+        IHE_PARSED_RESPONSES_BUCKET_NAME: iheParsedResponsesBucket.bucketName,
       },
       layers: [lambdaLayers.shared],
       memory: 4096,
@@ -150,7 +150,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     ]);
 
     iheResponsesBucket.grantReadWrite(patientDiscoveryLambda);
-    iheXcpdResponsesBucket.grantReadWrite(patientDiscoveryLambda);
+    iheParsedResponsesBucket.grantReadWrite(patientDiscoveryLambda);
     medicalDocumentsBucket.grantRead(patientDiscoveryLambda);
     cqTrustBundleBucket.grantRead(patientDiscoveryLambda);
     return patientDiscoveryLambda;
