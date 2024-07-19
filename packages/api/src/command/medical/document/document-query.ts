@@ -49,7 +49,7 @@ export async function queryDocumentsAcrossHIEs({
   forceQuery = false,
   forceCommonwell = false,
   forceCarequality = false,
-  cqManagingOrgFilter,
+  cqManagingOrgName,
 }: {
   cxId: string;
   patientId: string;
@@ -59,7 +59,7 @@ export async function queryDocumentsAcrossHIEs({
   forceQuery?: boolean;
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
-  cqManagingOrgFilter?: string;
+  cqManagingOrgName?: string;
 }): Promise<DocumentQueryProgress> {
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
@@ -119,7 +119,7 @@ export async function queryDocumentsAcrossHIEs({
       patient: updatedPatient,
       facilityId,
       requestId,
-      cqManagingOrgFilter,
+      cqManagingOrgName,
     }).catch(emptyFunction);
   }
 

@@ -26,12 +26,12 @@ export async function getDocumentsFromCQ({
   requestId,
   facilityId,
   patient,
-  cqManagingOrgFilter,
+  cqManagingOrgName,
 }: {
   requestId: string;
   facilityId?: string;
   patient: Patient;
-  cqManagingOrgFilter?: string;
+  cqManagingOrgName?: string;
 }) {
   const { log } = out(`CQ DQ - requestId ${requestId}, patient ${patient.id}`);
   const { cxId, id: patientId } = patient;
@@ -111,8 +111,8 @@ export async function getDocumentsFromCQ({
     const initiator = await getCqInitiator(patient);
 
     let cqLinks = linksWithDqUrl;
-    if (cqManagingOrgFilter) {
-      cqLinks = await filterCqLinksByManagingOrg(cqManagingOrgFilter, linksWithDqUrl);
+    if (cqManagingOrgName) {
+      cqLinks = await filterCqLinksByManagingOrg(cqManagingOrgName, linksWithDqUrl);
     }
 
     const documentQueryRequestsV2 = createOutboundDocumentQueryRequests({
