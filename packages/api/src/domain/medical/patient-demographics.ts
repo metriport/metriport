@@ -300,7 +300,7 @@ export function normalizeTelephone(telephone: string): string {
 }
 
 export function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
+  return email.trim().toLowerCase().replace("mailto:", "");
 }
 
 export function normalizeAndStringifyDriversLicense({
