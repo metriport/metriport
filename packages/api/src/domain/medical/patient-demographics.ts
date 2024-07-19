@@ -20,7 +20,9 @@ import { normalizePhoneNumber, stripNonNumericChars } from "@metriport/shared";
 import dayjs from "dayjs";
 import { ISO_DATE } from "../../shared/date";
 
-const emailRegex = new RegExp(/^([A-Z0-9_+-]+\.?)*[A-Z0-9_+-]@([A-Z0-9][A-Z0-9-]*\.)+[A-Z]{2,}$/);
+const emailRegex = new RegExp(
+  /^([a-zA-Z0-9_+-]+\.?)*[a-zA-Z0-9_+-]@([a-zA-Z0-9][a-zA-Z0-9-]*\.)+[a-zA-Z]{2,}$/
+);
 
 /**
  * Evaluates whether the input linked demographics are similar enough to the Patient to be considered a usable "match".
