@@ -17,7 +17,7 @@ export async function filterCqLinksByManagingOrg(
   const managingOrgChildren = await CQDirectoryEntryModel.findAll({
     where: {
       managingOrganizationId: {
-        [Op.like]: "%" + managingOrg.id + "%",
+        [Op.like]: managingOrg.id + "%",
       },
     },
   });
