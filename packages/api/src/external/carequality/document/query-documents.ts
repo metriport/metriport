@@ -110,10 +110,9 @@ export async function getDocumentsFromCQ({
 
     const initiator = await getCqInitiator(patient);
 
-    let cqLinks = linksWithDqUrl;
-    if (cqManagingOrgName) {
-      cqLinks = await filterCqLinksByManagingOrg(cqManagingOrgName, linksWithDqUrl);
-    }
+    const cqLinks = cqManagingOrgName
+      ? await filterCqLinksByManagingOrg(cqManagingOrgName, linksWithDqUrl)
+      : linksWithDqUrl;
 
     const documentQueryRequestsV2 = createOutboundDocumentQueryRequests({
       requestId,
