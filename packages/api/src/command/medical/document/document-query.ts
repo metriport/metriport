@@ -102,15 +102,17 @@ export async function queryDocumentsAcrossHIEs({
   });
 
   const commonwellEnabled = await isCommonwellEnabled();
-  if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
-    getDocumentsFromCW({
-      patient: updatedPatient,
-      facilityId,
-      forceDownload: override,
-      forceQuery,
-      requestId,
-      getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
-    }).catch(emptyFunction);
+  if (!cqManagingOrgName) {
+    if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
+      getDocumentsFromCW({
+        patient: updatedPatient,
+        facilityId,
+        forceDownload: override,
+        forceQuery,
+        requestId,
+        getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
+      }).catch(emptyFunction);
+    }
   }
 
   const carequalityEnabled = await isCarequalityEnabled();
