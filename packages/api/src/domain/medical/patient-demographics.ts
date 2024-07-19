@@ -20,6 +20,8 @@ import { normalizePhoneNumber, stripNonNumericChars } from "@metriport/shared";
 import dayjs from "dayjs";
 import { ISO_DATE } from "../../shared/date";
 
+const emailRegex = new RegExp(/^([A-Z0-9_+-]+\.?)*[A-Z0-9_+-]@([A-Z0-9][A-Z0-9-]*\.)+[A-Z]{2,}$/);
+
 /**
  * Evaluates whether the input linked demographics are similar enough to the Patient to be considered a usable "match".
  *
@@ -176,7 +178,9 @@ export function patientToNormalizedCoreDemographics(patient: Patient): LinkDemog
   });
   const emails = (patient.data.contact ?? []).flatMap(c => {
     if (!c.email) return [];
-    return [normalizeEmail(c.email)];
+    const email = normalizeEmail(c.email);
+    if (!email) return [];
+    return [email];
   });
   const driversLicenses = (patient.data.personalIdentifiers ?? []).flatMap(p => {
     if (p.type !== "driversLicense") return [];
@@ -299,8 +303,13 @@ export function normalizeTelephone(telephone: string): string {
   return normalizePhoneNumber(telephone);
 }
 
-export function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase().replace("mailto:", "");
+export function normalizeEmail(email: string): string | undefined {
+  let normalEmail = email.trim().toLowerCase();
+  if (normalEmail.startsWith("mailto:")) {
+    normalEmail = normalEmail.slice(7);
+  }
+  if (!emailRegex.test(normalEmail)) return undefined;
+  return normalEmail;
 }
 
 export function normalizeAndStringifyDriversLicense({
