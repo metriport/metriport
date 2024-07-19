@@ -2,6 +2,7 @@ import { genderAtBirthSchema } from "@metriport/api-sdk";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { sleep, stringToBoolean } from "@metriport/shared";
 import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
@@ -13,14 +14,13 @@ import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
-import { getCqOrgIdsToDenyOnCw } from "../../external/hie/cross-hie-ids";
 import { getConsolidated } from "../../command/medical/patient/consolidated-get";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getPatientIds,
   getPatientOrFail,
-  getPatients,
   getPatientStates,
+  getPatients,
 } from "../../command/medical/patient/get-patient";
 import {
   PatientUpdateCmd,
@@ -41,9 +41,11 @@ import { checkStaleEnhancedCoverage } from "../../external/commonwell/cq-bridge/
 import { initEnhancedCoverage } from "../../external/commonwell/cq-bridge/coverage-enhancement-init";
 import { setCQLinkStatuses } from "../../external/commonwell/cq-bridge/cq-link-status";
 import { ECUpdaterLocal } from "../../external/commonwell/cq-bridge/ec-updater-local";
-import { PatientLoaderLocal } from "../../models/helpers/patient-loader-local";
 import { cqLinkStatus } from "../../external/commonwell/patient-shared";
 import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-updater-commonwell";
+import { getCqOrgIdsToDenyOnCw } from "../../external/hie/cross-hie-ids";
+import { runOrSchedulePatientDiscoveryAcrossHies } from "../../external/hie/run-or-schedule-patient-discovery";
+import { PatientLoaderLocal } from "../../models/helpers/patient-loader-local";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
 import { requestLogger } from "../helpers/request-logger";
@@ -59,8 +61,9 @@ import {
   getFromParamsOrFail,
   getFromQueryAsArray,
   getFromQueryAsArrayOrFail,
+  getFromQueryAsBoolean,
 } from "../util";
-import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
+import { PatientLinksDTO, dtoFromCW } from "./dtos/linkDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
@@ -720,6 +723,35 @@ router.get(
     const patient = await getPatientOrFail({ cxId, id });
 
     return res.status(status.OK).json(dtoFromModel(patient));
+  })
+);
+
+/**
+ * POST /internal/patient/:id/patient-discovery
+ *
+ * Kicks off patient discovery for the given patient on both CQ and CW.
+ * @param req.query.cxId The customer ID.
+ * @param req.params.id The patient ID.
+ * @param req.query.rerunPdOnNewDemographics Optional. Indicates whether to use demo augmentation on this PD run.
+ */
+router.post(
+  "/:id/patient-discovery",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const id = getFromParamsOrFail("id", req);
+    const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
+    const patient = await getPatientOrFail({ cxId, id });
+    const facilityId = patient.facilityIds[0];
+    const requestId = uuidv7();
+
+    await runOrSchedulePatientDiscoveryAcrossHies({
+      patient,
+      facilityId,
+      rerunPdOnNewDemographics,
+      requestId,
+    });
+    return res.status(status.OK).json({ requestId });
   })
 );
 
