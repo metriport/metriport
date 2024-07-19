@@ -55,6 +55,8 @@ export type PersonalIdentifier = z.infer<typeof personalIdentifierSchema>;
 
 export const genderAtBirthSchema = z.enum(["F", "M", "O", "U"]);
 
+export const emailSchema = z.string().email();
+
 export const contactSchema = z
   .object({
     phone: z.coerce
@@ -65,7 +67,7 @@ export const contactSchema = z
       })
       .or(z.null())
       .or(z.undefined()),
-    email: z.string().email().or(z.null()).or(z.undefined()),
+    email: emailSchema.nullish(),
   })
   .refine(c => c.email || c.phone, { message: "Either email or phone must be present" });
 export type Contact = z.infer<typeof contactSchema>;
