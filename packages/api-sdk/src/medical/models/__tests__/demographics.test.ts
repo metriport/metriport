@@ -16,30 +16,43 @@ describe("demographicsSchema", () => {
 
     it("accepts undefined email", async () => {
       const contact = makeContact();
-      contact.email = null;
+      contact.email = undefined;
       expect(() => contactSchema.parse(contact)).not.toThrow();
     });
   });
 
   describe("emailSchema", () => {
-    it("accepts simple email", async () => {
-      expect(() => emailSchema.parse("test@metriport.com")).not.toThrow();
-    });
-
-    it("fails when gets null", async () => {
-      expect(() => emailSchema.parse(null)).toThrow();
-    });
-
-    it("fails when gets undefined", async () => {
-      expect(() => emailSchema.parse(undefined)).toThrow();
-    });
-
-    it("accepts email with dot", async () => {
-      expect(() => emailSchema.parse("test.two@metriport.com")).not.toThrow();
-    });
-
-    it("fails when gets email with colon", async () => {
-      expect(() => emailSchema.parse("test:two@metriport.com")).toThrow();
-    });
+    const casesToSucceed: string[] = [
+      "t@m.co",
+      "test@metriport.com",
+      "test.second@metriport.com",
+      "test_second@metriport.com",
+      "test-second@metriport.com",
+      "user123@metriport.com",
+      "123user@metriport.com",
+      "user@metriport.com.br",
+    ];
+    const casesToFail: (string | null | undefined)[] = [
+      null,
+      undefined,
+      " test@metriport.com",
+      "test@metriport.com ",
+      "test:second@metriport.com",
+      "test second@metriport.com",
+      "test metriport.com",
+      "test@ metriport.com",
+      "test@metriport",
+      "test@.com",
+    ];
+    for (const email of casesToSucceed) {
+      it(`accepts '${email}'`, async () => {
+        expect(() => emailSchema.parse(email)).not.toThrow();
+      });
+    }
+    for (const email of casesToFail) {
+      it(`fails when gets '${email}'`, async () => {
+        expect(() => emailSchema.parse(email)).toThrow();
+      });
+    }
   });
 });
