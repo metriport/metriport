@@ -16,13 +16,10 @@ import {
   LinkGenericName,
 } from "@metriport/core/domain/patient-demographics";
 import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/index";
+import { emailSchema } from "@metriport/api-sdk/medical/models/demographics";
 import { normalizePhoneNumber, stripNonNumericChars } from "@metriport/shared";
 import dayjs from "dayjs";
 import { ISO_DATE } from "../../shared/date";
-
-const emailRegex = new RegExp(
-  /^([a-zA-Z0-9_+-]+\.?)*[a-zA-Z0-9_+-]@([a-zA-Z0-9][a-zA-Z0-9-]*\.)+[a-zA-Z]{2,}$/
-);
 
 /**
  * Evaluates whether the input linked demographics are similar enough to the Patient to be considered a usable "match".
@@ -310,8 +307,8 @@ export function normalizeEmail(email: string): string | undefined {
   if (normalEmail.startsWith("mailto:")) {
     normalEmail = normalEmail.slice(7);
   }
-  if (!emailRegex.test(normalEmail)) return undefined;
-  return normalEmail;
+  const validEmail = emailSchema.safeParse(normalEmail);
+  return validEmail.success ? normalEmail : undefined;
 }
 
 export function normalizeAndStringifyDriversLicense({
