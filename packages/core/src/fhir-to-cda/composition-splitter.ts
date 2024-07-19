@@ -1,5 +1,6 @@
 import { Bundle, Composition } from "@medplum/fhirtypes";
 import { findResourceInBundle, isComposition } from "../external/fhir/shared";
+import { capture } from "../util";
 import BadRequestError from "../util/error/bad-request";
 
 /**
@@ -26,6 +27,13 @@ export function splitBundleByCompositions(fhirBundle: Bundle): Bundle[] {
       ? findResourceInBundle(fhirBundle, patientReference)
       : undefined;
     if (!patientResource) {
+      const msg = `Invalid Patient reference in the subject field`;
+      capture.error(msg, {
+        extra: {
+          patientReference,
+          organizationReference,
+        },
+      });
       throw new BadRequestError("Invalid Patient reference in the subject field");
     }
     const organizationResource = organizationReference
