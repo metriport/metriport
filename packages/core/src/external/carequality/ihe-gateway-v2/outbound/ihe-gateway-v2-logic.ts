@@ -178,28 +178,30 @@ export async function createSignSendProcessXCPDRequest({
         capture.error(msg, { extra: { ...extra, error } });
       }
     }
-    try {
-      const filePath = createHivePartitionFilePath({
-        cxId,
-        patientId,
-        keys: {
-          stage: "pd",
-          requestId: result.id,
-          gatewayOid: result.gateway.oid,
-        },
-      });
-      const key = `${filePath}/result.json`;
-      await s3Utils.uploadFile({
-        bucket: parsedResponsesBucket,
-        key,
-        file: Buffer.from(JSON.stringify(result), "utf8"),
-        contentType: "application/json",
-      });
-    } catch (error) {
-      const msg = "Failed to send PD response to S3";
-      const extra = { cxId, patientId, result };
-      log(`${msg} - ${errorToString(error)} - ${JSON.stringify(extra)}`);
-      capture.error(msg, { extra: { ...extra, error } });
+    if (parsedResponsesBucket) {
+      try {
+        const filePath = createHivePartitionFilePath({
+          cxId,
+          patientId,
+          keys: {
+            stage: "pd",
+            requestId: result.id,
+            gatewayOid: result.gateway.oid,
+          },
+        });
+        const key = `${filePath}/result.json`;
+        await s3Utils.uploadFile({
+          bucket: parsedResponsesBucket,
+          key,
+          file: Buffer.from(JSON.stringify(result), "utf8"),
+          contentType: "application/json",
+        });
+      } catch (error) {
+        const msg = "Failed to send PD response to S3";
+        const extra = { cxId, patientId, result };
+        log(`${msg} - ${errorToString(error)} - ${JSON.stringify(extra)}`);
+        capture.error(msg, { extra: { ...extra, error } });
+      }
     }
   });
 
