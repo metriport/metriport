@@ -203,7 +203,6 @@ export function getIsSameResources(
 
 async function getConsolidatedAndSendToCx(params: GetConsolidatedSendToCxParams): Promise<void> {
   const { patient, requestId, resources, dateFrom, dateTo, conversionType, aiBrief } = params;
-  console.log("NEED TO USE AI BRIEF PARAM", aiBrief);
   try {
     const { bundle, filters } = await getConsolidated(params);
     // trigger WH call
@@ -224,6 +223,7 @@ async function getConsolidatedAndSendToCx(params: GetConsolidatedSendToCxParams)
         dateFrom,
         dateTo,
         conversionType,
+        aiBrief,
       },
     }).catch(emptyFunction);
   }
@@ -235,6 +235,7 @@ export async function getConsolidated({
   resources,
   dateFrom,
   dateTo,
+  aiBrief,
   requestId,
   conversionType,
 }: GetConsolidatedParams): Promise<{
@@ -242,7 +243,12 @@ export async function getConsolidated({
   filters: Record<string, string | undefined>;
 }> {
   const { log } = Util.out(`getConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
-  const filters = { resources: resources ? resources.join(", ") : undefined, dateFrom, dateTo };
+  const filters = {
+    resources: resources ? resources.join(", ") : undefined,
+    dateFrom,
+    dateTo,
+    aiBrief,
+  };
   try {
     let bundle = await getConsolidatedPatientData({
       patient,
@@ -282,6 +288,7 @@ export async function getConsolidated({
         dateFrom,
         dateTo,
         conversionType,
+        aiBrief,
       });
 
       analytics({

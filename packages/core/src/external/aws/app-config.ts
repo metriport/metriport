@@ -34,6 +34,7 @@ export const cxBasedFFsSchema = z.object({
   cxsWithCQDirectFeatureFlag: ffStringValuesSchema,
   cxsWithCWFeatureFlag: ffStringValuesSchema,
   cxsWithADHDMRFeatureFlag: ffStringValuesSchema,
+  cxsWithMrBriefFeatureFlag: ffStringValuesSchema,
   cxsWithNoWebhookPongFeatureFlag: ffStringValuesSchema,
   cxsWithIncreasedSandboxLimitFeatureFlag: ffStringValuesSchema,
   cxsWithEpicEnabled: ffStringValuesSchema,

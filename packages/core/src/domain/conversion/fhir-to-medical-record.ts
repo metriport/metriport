@@ -12,6 +12,7 @@ export type Input = {
   dateFrom?: string;
   dateTo?: string;
   conversionType: MedicalRecordFormat;
+  aiBrief?: string;
 };
 
 export type Output = {

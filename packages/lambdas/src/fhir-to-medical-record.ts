@@ -47,17 +47,19 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     dateFrom,
     dateTo,
     conversionType,
+    aiBrief,
   }: Input): Promise<Output> => {
     const { log } = out(`cx ${cxId}, patient ${patientId}`);
     log(
       `Running with conversionType: ${conversionType}, dateFrom: ${dateFrom}, ` +
-        `dateTo: ${dateTo}, fileName: ${fhirFileName}, bucket: ${bucketName}}`
+        `dateTo: ${dateTo}, aiBrief: ${aiBrief}, fileName: ${fhirFileName}, bucket: ${bucketName}}`
     );
     try {
       const cxsWithADHDFeatureFlagValue = await getCxsWithADHDFeatureFlagValue();
       const isADHDFeatureFlagEnabled = cxsWithADHDFeatureFlagValue.includes(cxId);
       const bundle = await getBundleFromS3(fhirFileName);
-      const brief = await bundleToBrief(bundle);
+      const isBriefFeatureFlagEnabled = await isBriefEnabled(aiBrief, cxId);
+      const brief = isBriefFeatureFlagEnabled ? await bundleToBrief(bundle) : undefined;
       const briefFileName = createMRSummaryBriefFileName(cxId, patientId);
 
       const html = isADHDFeatureFlagEnabled
@@ -105,6 +107,16 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
 async function getSignedUrl(fileName: string) {
   return coreGetSignedUrl({ fileName, bucketName, awsRegion: region });
+}
+
+async function isBriefEnabled(aiBrief: string | undefined, cxId: string): Promise<boolean> {
+  const isMrBriefFeatureFlagEnabled = await isMrBriefFeatureFlagEnabledForCx(cxId);
+  return aiBrief === "true" && isMrBriefFeatureFlagEnabled;
+}
+
+export async function isMrBriefFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxsWithADHDFeatureFlagValue = await getCxsWithMrBriefFeatureFlagValue();
+  return cxsWithADHDFeatureFlagValue.includes(cxId);
 }
 
 async function getBundleFromS3(fileName: string) {
@@ -212,6 +224,26 @@ async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {
   } catch (error) {
     const msg = `Failed to get Feature Flag Value`;
     const extra = { featureFlagName: "cxsWithADHDMRFeatureFlag" };
+    capture.error(msg, { extra: { ...extra, error } });
+  }
+
+  return [];
+}
+
+async function getCxsWithMrBriefFeatureFlagValue(): Promise<string[]> {
+  try {
+    const featureFlag = await getFeatureFlagValueStringArray(
+      region,
+      appConfigAppID,
+      appConfigConfigID,
+      getEnvType(),
+      "cxsWithMrBriefFeatureFlag"
+    );
+
+    if (featureFlag?.enabled && featureFlag?.values) return featureFlag.values;
+  } catch (error) {
+    const msg = `Failed to get Feature Flag Value`;
+    const extra = { featureFlagName: "cxsWithMrBriefFeatureFlag" };
     capture.error(msg, { extra: { ...extra, error } });
   }
 

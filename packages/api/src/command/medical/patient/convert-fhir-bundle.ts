@@ -39,6 +39,7 @@ export async function handleBundleToMedicalRecord({
   dateFrom,
   dateTo,
   conversionType,
+  aiBrief,
 }: {
   bundle: Bundle<Resource>;
   patient: Pick<Patient, "id" | "cxId" | "data">;
@@ -46,6 +47,7 @@ export async function handleBundleToMedicalRecord({
   dateFrom?: string;
   dateTo?: string;
   conversionType: MedicalRecordFormat;
+  aiBrief?: string;
 }): Promise<SearchSetBundle<Resource>> {
   const bucketName = Config.getSandboxSeedBucketName();
   if (Config.isSandbox() && bucketName) {
@@ -67,6 +69,7 @@ export async function handleBundleToMedicalRecord({
     dateFrom,
     dateTo,
     conversionType,
+    aiBrief,
   });
 
   const newBundle = buildDocRefBundleWithAttachment(patient.id, url, conversionType);
@@ -115,6 +118,7 @@ async function convertFHIRBundleToMedicalRecord({
   dateFrom,
   dateTo,
   conversionType,
+  aiBrief,
 }: {
   bundle: Bundle<Resource>;
   patient: Pick<Patient, "id" | "cxId" | "data">;
@@ -122,6 +126,7 @@ async function convertFHIRBundleToMedicalRecord({
   dateFrom?: string;
   dateTo?: string;
   conversionType: MedicalRecordFormat;
+  aiBrief?: string;
 }): Promise<ConversionOutput> {
   const lambdaName = Config.getFHIRToMedicalRecordLambdaName();
   if (!lambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
@@ -151,6 +156,7 @@ async function convertFHIRBundleToMedicalRecord({
     dateFrom,
     dateTo,
     conversionType,
+    aiBrief,
   };
 
   const result = await lambdaClient

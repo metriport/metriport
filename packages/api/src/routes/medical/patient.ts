@@ -25,8 +25,9 @@ import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
-import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
+import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
+import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 import {
   getPatientOrFail,
   getPatients,
@@ -38,6 +39,7 @@ import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-li
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import BadRequestError from "../../errors/bad-request";
 import NotFoundError from "../../errors/not-found";
+import { isMrBriefEnabledForCx } from "../../external/aws/app-config";
 import { countResources } from "../../external/fhir/patient/count-resources";
 import { upsertPatientToFHIRServer } from "../../external/fhir/patient/upsert-patient";
 import { PatientModel as Patient } from "../../models/medical/patient";
@@ -51,7 +53,7 @@ import {
   getCxIdOrFail,
   getFrom,
   getFromParamsOrFail,
-  getFromQueryAsBooleanOrFail,
+  getFromQueryAsBoolean,
   getFromQueryOrFail,
 } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
@@ -63,7 +65,6 @@ import {
   schemaUpdateToPatientData,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 
 const router = Router();
 
@@ -340,7 +341,12 @@ router.post(
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
     const type = getFrom("query").optional("conversionType", req);
-    const aiBrief = getFromQueryAsBooleanOrFail("aiBrief", req);
+    const aiBriefBoolean = getFromQueryAsBoolean("aiBrief", req) ?? false;
+    const isMrBriefFeatureFlagEnabled = await isMrBriefEnabledForCx(cxId);
+    if (!isMrBriefFeatureFlagEnabled && aiBriefBoolean) {
+      throw new Error("Contact Metriport to enable the AI Brief feature.");
+    }
+    const aiBrief = aiBriefBoolean ? "true" : "false";
     const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
     const cxConsolidatedRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 

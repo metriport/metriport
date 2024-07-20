@@ -111,6 +111,10 @@ export async function getCxsWithEpicEnabled(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithEpicEnabled");
 }
 
+export async function getCxsWithMrBriefFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithMrBriefFeatureFlag");
+}
+
 export async function getE2eCxIds(): Promise<string | undefined> {
   if (Config.isDev()) {
     const apiKey = getEnvVar("TEST_API_KEY");
@@ -146,8 +150,13 @@ export async function isCWEnabledForCx(cxId: string): Promise<boolean> {
 }
 
 export async function isWebhookPongDisabledForCx(cxId: string): Promise<boolean> {
-  const cxIdsWithECEnabled = await getCxsWithNoWebhookPongFeatureFlagValue();
-  return cxIdsWithECEnabled.some(i => i === cxId);
+  const cxIdsWithNoWebhookPong = await getCxsWithNoWebhookPongFeatureFlagValue();
+  return cxIdsWithNoWebhookPong.some(i => i === cxId);
+}
+
+export async function isMrBriefEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithMrBriefEnabled = await getCxsWithMrBriefFeatureFlag();
+  return cxIdsWithMrBriefEnabled.some(i => i === cxId);
 }
 
 export async function isEpicEnabledForCx(cxId: string): Promise<boolean> {
