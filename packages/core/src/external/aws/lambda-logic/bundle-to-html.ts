@@ -35,7 +35,7 @@ const CPT_CODE = "cpt";
 const UNK_CODE = "UNK";
 const UNKNOWN_DISPLAY = "unknown";
 
-export const bundleToHtml = (fhirBundle: Bundle): string => {
+export const bundleToHtml = (fhirBundle: Bundle, brief?: string): string => {
   const {
     patient,
     practitioners,
@@ -233,6 +233,7 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
 
       <body>
         ${createMRHeader(patient)}
+        ${brief ? createBrief(brief) : undefined}
         <div class="divider"></div>
         <div id="mr-sections">
           ${createAWESection(diagnosticReports, practitioners, aweVisits, organizations)}
@@ -508,6 +509,10 @@ function createHeaderTableRow(label: string, value: string) {
       </td>
     </tr>
   `;
+}
+
+function createBrief(brief: string) {
+  return `<div class="section-content">${brief}</div>`;
 }
 
 type EncounterTypes =

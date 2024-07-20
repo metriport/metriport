@@ -106,4 +106,16 @@ export class Config {
   static getIheParsedResponsesBucketName(): string | undefined {
     return getEnvVar("IHE_PARSED_RESPONSES_BUCKET_NAME");
   }
+
+  static getMRBriefRegion(): string | undefined {
+    return getEnvVar("MR_SUMMARY_BRIEF_MODEL_ID");
+  }
+
+  static getMRBriefModelId(): string | undefined {
+    return getEnvVar("MR_SUMMARY_BRIEF_MODEL_ID");
+  }
+
+  static getMRBriefModelVersionPayload(): string | undefined {
+    return getEnvVar("MR_SUMMARY_BRIEF_MODEL_VERSION");
+  }
 }

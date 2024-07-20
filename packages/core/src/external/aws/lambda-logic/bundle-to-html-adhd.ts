@@ -35,7 +35,7 @@ const CPT_CODE = "cpt";
 const UNK_CODE = "UNK";
 const UNKNOWN_DISPLAY = "unknown";
 
-export const bundleToHtmlADHD = (fhirBundle: Bundle): string => {
+export const bundleToHtmlADHD = (fhirBundle: Bundle, brief?: string): string => {
   const fhirTypes = extractFhirTypesFromBundle(fhirBundle);
 
   const {
@@ -254,6 +254,7 @@ export const bundleToHtmlADHD = (fhirBundle: Bundle): string => {
 
       <body>
         ${createMRHeader(patient)}
+        ${brief ? createBrief(brief) : undefined}
         <div class="divider"></div>
         <div id="mr-sections">
           ${createFilteredReportSection(
@@ -540,6 +541,10 @@ function createMRHeader(patient: Patient) {
       </div>
     </div>
   `;
+}
+
+function createBrief(brief: string) {
+  return `<div class="section-content">${brief}</div>`;
 }
 
 function createHeaderTableRow(label: string, value: string) {

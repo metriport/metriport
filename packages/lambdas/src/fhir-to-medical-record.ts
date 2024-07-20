@@ -1,6 +1,10 @@
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
-import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
+import {
+  createMRSummaryFileName,
+  createMRSummaryBriefFileName,
+} from "@metriport/core/domain/medical-record-summary";
 import { getFeatureFlagValueStringArray } from "@metriport/core/external/aws/app-config";
+import { bundleToBrief } from "@metriport/core/external/aws/lambda-logic/bundle-to-brief";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import { bundleToHtmlADHD } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-adhd";
 import { getSignedUrl as coreGetSignedUrl, makeS3Client } from "@metriport/core/external/aws/s3";
@@ -55,19 +59,33 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       const isADHDFeatureFlagEnabled = cxsWithADHDFeatureFlagValue.includes(cxId);
       const bundle = await getBundleFromS3(fhirFileName);
 
-      const html = isADHDFeatureFlagEnabled ? bundleToHtmlADHD(bundle) : bundleToHtml(bundle);
+      const brief = await bundleToBrief(bundle);
+      const briefFileName = createMRSummaryBriefFileName(cxId, patientId);
+      const html = isADHDFeatureFlagEnabled
+        ? bundleToHtmlADHD(bundle, brief)
+        : bundleToHtml(bundle, brief);
       const hasContents = doesMrSummaryHaveContents(html);
       log(`MR Summary has contents: ${hasContents}`);
       const htmlFileName = createMRSummaryFileName(cxId, patientId, "html");
 
-      await s3Client
-        .putObject({
-          Bucket: bucketName,
-          Key: htmlFileName,
-          Body: html,
-          ContentType: "application/html",
-        })
-        .promise();
+      await Promise.all([
+        s3Client
+          .putObject({
+            Bucket: bucketName,
+            Key: htmlFileName,
+            Body: html,
+            ContentType: "application/html",
+          })
+          .promise(),
+        s3Client
+          .putObject({
+            Bucket: bucketName,
+            Key: briefFileName,
+            Body: brief,
+            ContentType: "text/plain",
+          })
+          .promise(),
+      ]);
 
       let url: string;
 
