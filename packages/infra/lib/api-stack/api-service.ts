@@ -265,6 +265,11 @@ export function createAPIService({
             PLACE_INDEX_NAME: props.config.locationService.placeIndexName,
             PLACE_INDEX_REGION: props.config.locationService.placeIndexRegion,
           }),
+          ...(props.config.bedrock && {
+            BEDROCK_REGION: props.config.bedrock.region,
+            BEDROCK_VERSION: props.config.bedrock.anthropicVersion,
+            MR_BRIEF_MODEL_ID: props.config.bedrock.modelId,
+          }),
           // app config
           APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
           APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,

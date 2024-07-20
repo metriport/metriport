@@ -233,7 +233,7 @@ export const bundleToHtml = (fhirBundle: Bundle, brief?: string): string => {
 
       <body>
         ${createMRHeader(patient)}
-        ${brief ? createBrief(brief) : undefined}
+        ${createBrief(brief)}
         <div class="divider"></div>
         <div id="mr-sections">
           ${createAWESection(diagnosticReports, practitioners, aweVisits, organizations)}
@@ -511,8 +511,15 @@ function createHeaderTableRow(label: string, value: string) {
   `;
 }
 
-function createBrief(brief: string) {
-  return `<div class="section-content">${brief}</div>`;
+export function createBrief(brief: string | undefined): string {
+  if (!brief) return ``;
+  return `
+  <div class="section-content">
+    <div class="section-title">
+      <h3 id="brief" title="brief">AI-generated</h3>
+    ${brief}
+    <p>This Medical Record Brief was generated using AI technologies. Be advised, the information here might be erroneous and should NOT be treated as a source of truth.</p>
+  </div>`;
 }
 
 type EncounterTypes =

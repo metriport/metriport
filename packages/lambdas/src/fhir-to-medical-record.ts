@@ -1,7 +1,7 @@
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import {
-  createMRSummaryFileName,
   createMRSummaryBriefFileName,
+  createMRSummaryFileName,
 } from "@metriport/core/domain/medical-record-summary";
 import { getFeatureFlagValueStringArray } from "@metriport/core/external/aws/app-config";
 import { bundleToBrief } from "@metriport/core/external/aws/lambda-logic/bundle-to-brief";
@@ -53,14 +53,13 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       `Running with conversionType: ${conversionType}, dateFrom: ${dateFrom}, ` +
         `dateTo: ${dateTo}, fileName: ${fhirFileName}, bucket: ${bucketName}}`
     );
-
     try {
       const cxsWithADHDFeatureFlagValue = await getCxsWithADHDFeatureFlagValue();
       const isADHDFeatureFlagEnabled = cxsWithADHDFeatureFlagValue.includes(cxId);
       const bundle = await getBundleFromS3(fhirFileName);
-
       const brief = await bundleToBrief(bundle);
       const briefFileName = createMRSummaryBriefFileName(cxId, patientId);
+
       const html = isADHDFeatureFlagEnabled
         ? bundleToHtmlADHD(bundle, brief)
         : bundleToHtml(bundle, brief);
@@ -68,24 +67,13 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       log(`MR Summary has contents: ${hasContents}`);
       const htmlFileName = createMRSummaryFileName(cxId, patientId, "html");
 
-      await Promise.all([
-        s3Client
-          .putObject({
-            Bucket: bucketName,
-            Key: htmlFileName,
-            Body: html,
-            ContentType: "application/html",
-          })
-          .promise(),
-        s3Client
-          .putObject({
-            Bucket: bucketName,
-            Key: briefFileName,
-            Body: brief,
-            ContentType: "text/plain",
-          })
-          .promise(),
-      ]);
+      await storeMrSummaryAndBriefInS3({
+        bucketName,
+        htmlFileName,
+        briefFileName,
+        html,
+        brief,
+      });
 
       let url: string;
 
@@ -248,4 +236,46 @@ function doesMrSummaryHaveContents(html: string): boolean {
   }
 
   return atLeastOneSectionHasContents;
+}
+
+async function storeMrSummaryAndBriefInS3({
+  bucketName,
+  htmlFileName,
+  briefFileName,
+  html,
+  brief,
+}: {
+  bucketName: string;
+  htmlFileName: string;
+  briefFileName: string;
+  html: string;
+  brief: string | undefined;
+}): Promise<void> {
+  const promiseMrSummary = async () => {
+    s3Client.putObject({
+      Bucket: bucketName,
+      Key: htmlFileName,
+      Body: html,
+      ContentType: "application/html",
+    });
+  };
+
+  const promiseBriefSummary = async () => {
+    if (!brief) return;
+    s3Client.putObject({
+      Bucket: bucketName,
+      Key: briefFileName,
+      Body: brief,
+      ContentType: "text/plain",
+    });
+  };
+
+  const resultPromises = await Promise.allSettled([promiseMrSummary(), promiseBriefSummary()]);
+
+  const failed = resultPromises.flatMap(p => (p.status === "rejected" ? p.reason : []));
+  if (failed.length > 0) {
+    const msg = "Failed to store MR Summary and/or Brief in S3";
+    console.log(`${msg}: ${failed.join("; ")}`);
+    capture.message(msg, { extra: { failed }, level: "info" });
+  }
 }

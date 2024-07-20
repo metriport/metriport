@@ -22,6 +22,7 @@ import {
 } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import { uniqWith } from "lodash";
+import { createBrief } from "./bundle-to-html";
 
 const ISO_DATE = "YYYY-MM-DD";
 
@@ -254,7 +255,7 @@ export const bundleToHtmlADHD = (fhirBundle: Bundle, brief?: string): string => 
 
       <body>
         ${createMRHeader(patient)}
-        ${brief ? createBrief(brief) : undefined}
+        ${createBrief(brief)}
         <div class="divider"></div>
         <div id="mr-sections">
           ${createFilteredReportSection(
@@ -541,10 +542,6 @@ function createMRHeader(patient: Patient) {
       </div>
     </div>
   `;
-}
-
-function createBrief(brief: string) {
-  return `<div class="section-content">${brief}</div>`;
 }
 
 function createHeaderTableRow(label: string, value: string) {

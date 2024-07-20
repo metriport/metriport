@@ -129,6 +129,11 @@ type EnvConfigBase = {
     placeIndexName: string;
     placeIndexRegion: string;
   };
+  bedrock?: {
+    modelId: string;
+    region: string;
+    anthropicVersion: string;
+  };
   openSearch: OpenSearchConnectorConfig;
   carequality?: {
     secretNames: {
