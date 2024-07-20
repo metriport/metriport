@@ -1,5 +1,7 @@
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
+import { errorToString } from "@metriport/shared";
 import { Config } from "../..//util/config";
+import { capture } from "../../util";
 
 const decoder = new TextDecoder();
 const region = Config.getBedrockRegion();
@@ -37,7 +39,7 @@ export class BedrockUtils {
       contentType: "application/json",
       accept: "application/json",
       body: JSON.stringify({
-        anthropicVersion: this._bedrockVersion,
+        anthropic_version: this._bedrockVersion,
         max_tokens: 1000,
         temperature: 0,
         messages: [
@@ -52,7 +54,23 @@ export class BedrockUtils {
       }),
     };
     const command = new InvokeModelCommand(input);
-    const response = await this.bedrock.send(command);
-    return JSON.parse(decoder.decode(response.body));
+
+    try {
+      const response = await this.bedrock.send(command);
+      const decodedResponse = JSON.parse(decoder.decode(response.body));
+      return decodedResponse.content[0].text;
+    } catch (error) {
+      const msg = `Error getting response from Bedrock`;
+      console.log(`${msg} - error: ${errorToString(error)}`);
+      capture.message(msg, {
+        extra: {
+          error,
+          context: "getBedrockResponse",
+          level: "info",
+        },
+      });
+
+      return undefined;
+    }
   }
 }

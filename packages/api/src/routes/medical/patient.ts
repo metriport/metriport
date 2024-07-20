@@ -51,6 +51,7 @@ import {
   getCxIdOrFail,
   getFrom,
   getFromParamsOrFail,
+  getFromQueryAsBooleanOrFail,
   getFromQueryOrFail,
 } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
@@ -326,6 +327,7 @@ const medicalRecordFormatSchema = z.enum(mrFormat);
  *        Accepts "pdf", "html", and "json". If provided, the Webhook payload will contain a signed URL to download
  *        the file, which is active for 3 minutes. If not provided, will send json payload in the webhook.
  * @param req.body Optional metadata to be sent through Webhook.
+ * @param req.aiBrief Optional flag to include an AI-generated medical record brief into the medical record summary.
  * @return status for querying the Patient's consolidated data.
  */
 router.post(
@@ -338,6 +340,7 @@ router.post(
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
     const type = getFrom("query").optional("conversionType", req);
+    const aiBrief = getFromQueryAsBooleanOrFail("aiBrief", req);
     const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
     const cxConsolidatedRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
@@ -349,6 +352,7 @@ router.post(
       dateTo,
       conversionType,
       cxConsolidatedRequestMetadata: cxConsolidatedRequestMetadata?.metadata,
+      aiBrief,
     });
 
     const respPayload: StartConsolidatedQueryProgressResponse = queryResponse;

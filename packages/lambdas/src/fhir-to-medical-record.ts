@@ -251,6 +251,7 @@ async function storeMrSummaryAndBriefInS3({
   html: string;
   brief: string | undefined;
 }): Promise<void> {
+  // TODO: Save both versions of the MR Summary - with and without the brief
   const promiseMrSummary = async () => {
     s3Client.putObject({
       Bucket: bucketName,
