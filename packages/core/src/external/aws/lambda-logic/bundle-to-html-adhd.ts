@@ -250,6 +250,23 @@ export const bundleToHtmlADHD = (fhirBundle: Bundle, brief?: string): string => 
             margin-bottom: 10px
           }
 
+          .beta-flag {
+            position: absolute;
+            top: -15px;
+            right: 0px;
+            background-color: red;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            z-index: 1;
+          }
+
+          .brief-section-content {
+            position: relative;
+          }
+
         </style>
       </head>
 
