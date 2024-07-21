@@ -230,6 +230,7 @@ export function createAPIService({
             SANDBOX_SEED_DATA_BUCKET_NAME: props.config.sandboxSeedDataBucketName,
           }),
           PROPELAUTH_AUTH_URL: props.config.propelAuth.authUrl,
+          PROPELAUTH_PUBLIC_KEY: props.config.propelAuth.publicKey,
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
           DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
           OUTBOUND_PATIENT_DISCOVERY_LAMBDA_NAME: outboundPatientDiscoveryLambda.functionName,
