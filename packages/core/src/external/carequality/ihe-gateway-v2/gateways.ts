@@ -24,6 +24,17 @@ const redoxGatewayOid = "2.16.840.1.113883.3.6147.458.2";
 export const surescriptsOid = "2.16.840.1.113883.3.2054.2.1.1";
 export const epicOidPrefix = "1.2.840.114350.1.13";
 
+export const kno2OidPrefix = "2.16.840.1.113883.3.3126.2.3";
+
+const gatewayPrefixesThatUseSha1 = [kno2OidPrefix];
+
+export function doesGatewayUseSha1(oid: string): boolean {
+  for (const prefix of gatewayPrefixesThatUseSha1) {
+    if (oid.startsWith(prefix)) return true;
+  }
+  return false;
+}
+
 /*
  * These gateways only accept a single document reference per request.
  */

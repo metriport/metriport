@@ -7,7 +7,7 @@ import { namespaces, expiresIn } from "../../../constants";
 import { ORGANIZATION_NAME_DEFAULT as metriportOrganization, replyTo } from "../../../../shared";
 import { OutboundDocumentQueryReq, XCAGateway } from "@metriport/ihe-gateway-sdk";
 import { wrapIdInUrnUuid } from "../../../../../../util/urn";
-import { getHomeCommunityId } from "../../../gateways";
+import { getHomeCommunityId, doesGatewayUseSha1 } from "../../../gateways";
 
 const action = "urn:ihe:iti:2007:CrossGatewayQuery";
 const findDocumentId = "14d4debf-8f97-4251-9a74-a90016b0af0d";
@@ -234,7 +234,8 @@ export function createAndSignDQRequest(
   samlCertsAndKeys: SamlCertsAndKeys
 ): string {
   const xmlString = createITI38SoapEnvelope({ bodyData, publicCert: samlCertsAndKeys.publicCert });
-  const fullySignedSaml = signFullSaml({ xmlString, samlCertsAndKeys });
+  const useSha1 = doesGatewayUseSha1(bodyData.gateway.homeCommunityId);
+  const fullySignedSaml = signFullSaml({ xmlString, samlCertsAndKeys, useSha1 });
   return fullySignedSaml;
 }
 
