@@ -27,7 +27,7 @@ export async function updateFacility({
     cqOboOid,
     cwOboOid,
   });
-  if (data) await validateNPI(cxId, data.npi);
+  if (data) await validateNPI(cxId, data.npi, facility.data.npi);
 
   return facility.update({
     data,

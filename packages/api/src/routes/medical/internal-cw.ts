@@ -6,19 +6,31 @@ import {
   verifyCxProviderAccess,
   verifyCxItVendorAccess,
 } from "../../command/medical/facility/verify-access";
+import { OrganizationModel } from "../../models/medical/organization";
+import { FacilityModel } from "../../models/medical/facility";
 import {
   getOrganizationOrFail,
   getOrganizationByOidOrFail,
 } from "../../command/medical/organization/get-organization";
 import { getFaciltiyByOidOrFail } from "../../command/medical/facility/get-facility";
 import { createOrUpdateCWOrganization } from "../../external/commonwell/command/create-or-update-cw-organization";
-import { get as getCWOrganization, parseCWEntry } from "../../external/commonwell/organization";
+import {
+  CWOrganization,
+  get as getCWOrganization,
+  parseCWEntry,
+} from "../../external/commonwell/organization";
 import { cwOrgActiveSchema } from "../../external/commonwell/shared";
 import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler, getFrom } from "../util";
 import { getUUIDFrom } from "../schemas/uuid";
 
 const router = Router();
+
+async function getParsedOrg(cxId: string, oid: string): Promise<CWOrganization> {
+  const resp = await getCWOrganization(cxId, oid);
+  if (!resp) throw new NotFoundError("Organization not found");
+  return parseCWEntry(resp);
+}
 
 /**
  * GET /internal/commonwell/organization/:oid
@@ -35,14 +47,44 @@ router.get(
     const oid = getFrom("params").orFail("oid", req);
 
     await getOrganizationByOidOrFail({ cxId, oid });
-
-    const resp = await getCWOrganization(cxId, oid);
-    if (!resp) throw new NotFoundError("Organization not found");
-    const cwOrg = parseCWEntry(resp);
-
+    const cwOrg = await getParsedOrg(cxId, oid);
     return res.status(httpStatus.OK).json(cwOrg);
   })
 );
+
+async function checkAndUpdate({
+  cxId,
+  oid,
+  active,
+  org,
+  facility,
+}: {
+  cxId: string;
+  oid: string;
+  active: boolean;
+  org: OrganizationModel;
+  facility?: FacilityModel;
+}): Promise<void> {
+  const cwOrg = await getParsedOrg(cxId, oid);
+  await createOrUpdateCWOrganization(cxId, {
+    oid,
+    data: {
+      name: cwOrg.data.name,
+      type: org.data.type,
+      location: facility ? facility.data.address : org.data.location,
+    },
+    active,
+  });
+  if (facility) {
+    await facility.update({
+      cwActive: active,
+    });
+  } else {
+    await org.update({
+      cwActive: active,
+    });
+  }
+}
 
 /**
  * PUT /internal/commonwell/organization/:oid
@@ -60,24 +102,13 @@ router.put(
     const org = await getOrganizationByOidOrFail({ cxId, oid });
     if (!org.cwApproved) throw new NotFoundError("CW not approved");
 
-    const resp = await getCWOrganization(cxId, oid);
-    if (!resp) throw new NotFoundError("Organization not found");
-    const cwOrg = parseCWEntry(resp);
-
     const orgActive = cwOrgActiveSchema.parse(req.body);
-    await createOrUpdateCWOrganization(cxId, {
-      oid: org.oid,
-      data: {
-        name: cwOrg.data.name,
-        type: org.data.type,
-        location: org.data.location,
-      },
+    await checkAndUpdate({
+      cxId,
+      oid,
       active: orgActive.active,
+      org,
     });
-    await org.update({
-      cwActive: orgActive.active,
-    });
-
     return res.sendStatus(httpStatus.OK);
   })
 );
@@ -101,24 +132,14 @@ router.put(
     const facility = await getFaciltiyByOidOrFail({ cxId, id: facilityId, oid });
     if (!facility.cwApproved) throw new NotFoundError("CW not approved");
 
-    const resp = await getCWOrganization(cxId, oid);
-    if (!resp) throw new NotFoundError("Facility not found");
-    const cwOrg = parseCWEntry(resp);
-
     const facilityActive = cwOrgActiveSchema.parse(req.body);
-    await createOrUpdateCWOrganization(cxId, {
-      oid: facility.oid,
-      data: {
-        name: cwOrg.data.name,
-        type: org.data.type,
-        location: facility.data.address,
-      },
+    await checkAndUpdate({
+      cxId,
+      oid,
       active: facilityActive.active,
+      org,
+      facility,
     });
-    await facility.update({
-      cqActive: facilityActive.active,
-    });
-
     return res.sendStatus(httpStatus.OK);
   })
 );
