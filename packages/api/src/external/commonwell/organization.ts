@@ -216,9 +216,7 @@ export async function initCQOrgIncludeList(orgOid: string): Promise<void> {
 }
 
 export function parseCWEntry(org: CWSdkOrganization): CWOrganization {
-  const location = (
-    org.locations as [CWSdkOrganizationLocation, ...CWSdkOrganizationLocation[]]
-  )[0];
+  const location = org.locations[0] as CWSdkOrganizationLocation;
   return {
     data: {
       name: org.name,

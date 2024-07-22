@@ -27,6 +27,14 @@ export async function getFacilityOrFail({ cxId, id }: GetFacilityQuery): Promise
   return facility;
 }
 
+export async function getFaciltiyByOidOrFail(
+  filter: GetFacilityQuery & { oid: string }
+): Promise<FacilityModel> {
+  const facility = await getFacilityOrFail(filter);
+  if (facility.oid !== filter.oid) throw new NotFoundError(`Could not find facility`);
+  return facility;
+}
+
 type GetFacilityByNpiQuery = Pick<FacilityModel, "cxId"> & { npi: string };
 
 export async function getFacilityByNpi({

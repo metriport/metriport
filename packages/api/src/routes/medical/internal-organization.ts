@@ -57,16 +57,15 @@ router.put(
     };
     let organization: Organization;
     if (orgDetails.id) {
-      const id = orgDetails.id;
-      organization = await updateOrganization({ id, ...organizationCreate });
+      organization = await updateOrganization({ id: orgDetails.id, ...organizationCreate });
     } else {
       organization = await createOrganization(organizationCreate);
     }
-    await verifyCxProviderAccess(cxId);
     const org = await getOrganizationOrFail({ cxId });
+    const syncInHie = await verifyCxProviderAccess(cxId, false);
     // TODO Move to external/hie https://github.com/metriport/metriport-internal/issues/1940
     // CAREQUALITY
-    if (org.cqApproved) {
+    if (syncInHie && org.cqApproved) {
       const { coordinates, addressLine } = await getCqAddress({ cxId, address: org.data.location });
       createOrUpdateCQOrganization({
         name: org.data.name,
@@ -86,7 +85,7 @@ router.put(
       }).catch(processAsyncError("cq.internal.organization"));
     }
     // COMMONWELL
-    if (org.cwApproved) {
+    if (syncInHie && org.cwApproved) {
       createOrUpdateCWOrganization(cxId, {
         oid: org.oid,
         data: org.data,

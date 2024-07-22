@@ -1,11 +1,9 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { OrganizationBizType } from "@metriport/core/domain/organization";
 import { requestLogger } from "../helpers/request-logger";
 import { Facility, FacilityCreate } from "../../domain/medical/facility";
 import { verifyCxItVendorAccess } from "../../command/medical/facility/verify-access";
-import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import { createFacility } from "../../command/medical/facility/create-facility";
 import { updateFacility } from "../../command/medical/facility/update-facility";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
@@ -60,24 +58,16 @@ router.put(
       cwApproved: facilityDetails.cwApproved,
     };
     const org = await getOrganizationOrFail({ cxId });
+    const syncInHie = await verifyCxItVendorAccess(cxId, false);
     let facility: Facility;
     if (facilityDetails.id) {
-      const id = facilityDetails.id;
-      const currentFacility = await getFacilityOrFail({ cxId, id });
-      if (
-        org.type === OrganizationBizType.healthcareITVendor &&
-        currentFacility.data.npi !== facilityDetails.npi
-      ) {
-        throw new Error("Cannot update NPI once the faciilty is created on the HIEs");
-      }
-      facility = await updateFacility({ id, ...facilityCreate });
+      facility = await updateFacility({ id: facilityDetails.id, ...facilityCreate });
     } else {
       facility = await createFacility(facilityCreate);
     }
-    await verifyCxItVendorAccess(cxId);
     // TODO Move to external/hie https://github.com/metriport/metriport-internal/issues/1940
     // CAREQUALITY
-    if (facility.cqApproved) {
+    if (syncInHie && facility.cqApproved) {
       createOrUpdateFacilityInCq({
         cxId,
         facility,
@@ -87,7 +77,7 @@ router.put(
       }).catch(processAsyncError("cq.internal.facility"));
     }
     // COMMONWELL
-    if (facility.cwApproved) {
+    if (syncInHie && facility.cwApproved) {
       createOrUpdateInCw({
         cxId,
         facility,

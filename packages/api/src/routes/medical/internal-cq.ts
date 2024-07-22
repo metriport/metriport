@@ -23,8 +23,11 @@ import {
   verifyCxItVendorAccess,
 } from "../../command/medical/facility/verify-access";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
+import {
+  getOrganizationOrFail,
+  getOrganizationByOidOrFail,
+} from "../../command/medical/organization/get-organization";
+import { getFaciltiyByOidOrFail } from "../../command/medical/facility/get-facility";
 import { makeCarequalityManagementAPI } from "../../external/carequality/api";
 import { bulkInsertCQDirectoryEntries } from "../../external/carequality/command/cq-directory/create-cq-directory-entry";
 import {
@@ -186,8 +189,7 @@ router.get(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const oid = getFrom("params").orFail("oid", req);
 
-    const org = await getOrganizationOrFail({ cxId });
-    if (org.oid !== oid) throw new NotFoundError("Organization not found");
+    const org = await getOrganizationByOidOrFail({ cxId, oid });
 
     const resp = await cq.listOrganizations({ count: 1, oid });
     if (resp.length === 0) throw new NotFoundError("Organization not found");
@@ -224,8 +226,7 @@ router.put(
     const oid = getFrom("params").orFail("oid", req);
     await verifyCxProviderAccess(cxId);
 
-    const org = await getOrganizationOrFail({ cxId });
-    if (org.oid !== oid) throw new NotFoundError("Organization not found");
+    const org = await getOrganizationByOidOrFail({ cxId, oid });
     if (!org.cqApproved) throw new NotFoundError("CQ not approved");
 
     const resp = await cq.listOrganizations({ count: 1, oid });
@@ -290,8 +291,7 @@ router.put(
     await verifyCxItVendorAccess(cxId);
 
     const org = await getOrganizationOrFail({ cxId });
-    const facility = await getFacilityOrFail({ cxId, id: facilityId });
-    if (facility.oid !== oid) throw new NotFoundError("Facility not found");
+    const facility = await getFaciltiyByOidOrFail({ cxId, id: facilityId, oid });
     if (!facility.cqApproved) throw new NotFoundError("CQ not approved");
 
     const resp = await cq.listOrganizations({ count: 1, oid });
