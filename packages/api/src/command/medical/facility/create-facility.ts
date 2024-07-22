@@ -36,15 +36,17 @@ export async function createFacility({
   return FacilityModel.create(input);
 }
 
-export async function validateNPI(cxId: string, npi: string, existingNpi?: string) {
-  const facilityByNpi = await getFacilityByNpi({ cxId, npi });
-  if (facilityByNpi) {
-    throw new BadRequestError(
-      `Can't create a new facility with the same NPI as facility with ID: ${facilityByNpi.id} and name: ${facilityByNpi.data.name}`
-    );
-  }
-  if (existingNpi && npi !== existingNpi) {
+export async function validateNPI(cxId: string, newNpi: string, existingNpi?: string) {
+  if (existingNpi && newNpi !== existingNpi) {
     throw new BadRequestError(`Can't update NPI`);
+  }
+  if (!existingNpi) {
+    const facilityByNpi = await getFacilityByNpi({ cxId, npi: newNpi });
+    if (facilityByNpi) {
+      throw new BadRequestError(
+        `Can't create a new facility with the same NPI as facility with ID: ${facilityByNpi.id} and name: ${facilityByNpi.data.name}`
+      );
+    }
   }
 }
 
