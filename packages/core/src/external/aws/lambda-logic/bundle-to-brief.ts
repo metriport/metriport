@@ -1,52 +1,54 @@
 import { Bundle } from "@medplum/fhirtypes";
+import { errorToString } from "@metriport/shared";
+import { capture, out } from "../../../util";
 import { findDiagnosticReportResources, findPatientResource } from "../../fhir/shared";
 import { BedrockUtils } from "../bedrock";
 
-const relevantResources = [
-  // "AllergyIntolerance",
-  // "Condition",
-  "DiagnosticReport",
-  // "FamilyMemberHistory",
-  // "MedicationStatement", // might be interested.. could filter for active medication and dosage?
-  // "Medication", // maybe only get the ones referenced by MedStmnt and only use code.text?
-  "Patient", // only keep name, gender, dob
-  // "Procedure", // potentially useful, but need to filter heavily
-];
+const MAXIMUM_BRIEF_STRING_LENGTH = 17_500;
 
-// const irrelevantResources = [
-//   "Coverage",
-//   "Consent",
-//   "Composition",
-//   "DocumentReference",
-//   "Encounter",
-//   // "Immunization", // not interested imo
-//   // "MedicationAdministration", // probably not interested, but could keep the latest ones?
-//   "MedicationRequest",
-//   "Organization", // ???
-//   "Observation", // Very prevalent. Very concise and don't provide much value imo. OTOH, we could maybe filter out a ton of irrelevant ones and keep ones that could be useful.
-//   "RelatedPerson",
-//   "Practitioner",
-//   "Device",
-//   "Location",
-// ];
+const relevantResources = ["DiagnosticReport", "Patient"];
+
 function getBedrockUtilsInstance(): BedrockUtils {
   return new BedrockUtils();
 }
 
-export async function bundleToBrief(fhirBundle: Bundle): Promise<string | undefined> {
-  const briefBundle = await prepareBundleForBrief(fhirBundle);
-  if (!briefBundle) return undefined;
+export async function bundleToBrief(
+  fhirBundle: Bundle,
+  cxId: string,
+  patientId: string
+): Promise<string | undefined> {
+  const { log } = out(`MR Brief for cx ${cxId}, patient ${patientId}`);
+  let briefString = await prepareBundleForBrief(fhirBundle);
+  if (!briefString) return undefined;
 
+  if (briefString.length > MAXIMUM_BRIEF_STRING_LENGTH) {
+    briefString = briefString.slice(0, MAXIMUM_BRIEF_STRING_LENGTH);
+    const msg = `Brief string input was truncated`;
+    log(msg);
+    capture.message(msg, {
+      extra: {
+        patientId,
+        cxId,
+        stringLength: briefString.length,
+        maximumLength: MAXIMUM_BRIEF_STRING_LENGTH,
+      },
+      level: "info",
+    });
+  }
+
+  const todaysDate = new Date().toISOString().split("T")[0];
   const bedrockUtils = getBedrockUtilsInstance();
-  const prompt =
-    "Write a short summary of the patient's well-being that is relevant today. Be specific with the dates for any significant events. Provide the lates vitals if they're abnormal. Focus on any diagnoses that occurred in the past year.";
-  const body = JSON.stringify(briefBundle);
+  const prompt = `Today's date is ${todaysDate}. Write a short summary of the patient's well-being that is relevant today. Be specific with the dates for any significant events. Focus on any diagnoses that occurred in the past year.`;
+  const body = JSON.stringify(briefString);
   try {
-    return await bedrockUtils.getBedrockResponse({
+    const brief = bedrockUtils.getBedrockResponse({
       prompt,
       body,
     });
+    log(`Brief generated.`);
+    return brief;
   } catch (error) {
+    log(`Error generating brief: ${errorToString(error)}`);
     return undefined;
   }
 }
@@ -92,9 +94,7 @@ function filterBundleResources(bundle: Bundle): string | undefined {
     JSON.stringify(dr.presentedForm?.map(pf => pf.data).join("\n"))
   );
 
-  const context = `Today is ${new Date().toISOString()}`;
   const filteredString = `
-    ${context}
     ${ptData}
     ${drData}
   `;

@@ -7,7 +7,11 @@ import { getFeatureFlagValueStringArray } from "@metriport/core/external/aws/app
 import { bundleToBrief } from "@metriport/core/external/aws/lambda-logic/bundle-to-brief";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import { bundleToHtmlADHD } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-adhd";
-import { getSignedUrl as coreGetSignedUrl, makeS3Client } from "@metriport/core/external/aws/s3";
+import {
+  getSignedUrl as coreGetSignedUrl,
+  makeS3Client,
+  S3Utils,
+} from "@metriport/core/external/aws/s3";
 import { getEnvType } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
 import * as Sentry from "@sentry/serverless";
@@ -38,6 +42,7 @@ const appConfigConfigID = getEnvOrFail("APPCONFIG_CONFIGURATION_ID");
 const GRACEFUL_SHUTDOWN_ALLOWANCE = dayjs.duration({ seconds: 3 });
 const PDF_CONTENT_LOAD_ALLOWANCE = dayjs.duration({ seconds: 2.5 });
 const s3Client = makeS3Client(region);
+const newS3Client = new S3Utils(region);
 
 export const handler = Sentry.AWSLambda.wrapHandler(
   async ({
@@ -59,7 +64,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       const isADHDFeatureFlagEnabled = cxsWithADHDFeatureFlagValue.includes(cxId);
       const bundle = await getBundleFromS3(fhirFileName);
       const isBriefFeatureFlagEnabled = await isBriefEnabled(aiBrief, cxId);
-      const brief = isBriefFeatureFlagEnabled ? await bundleToBrief(bundle) : undefined;
+      const brief = isBriefFeatureFlagEnabled
+        ? await bundleToBrief(bundle, cxId, patientId)
+        : undefined;
       const briefFileName = createMRSummaryBriefFileName(cxId, patientId);
 
       const html = isADHDFeatureFlagEnabled
@@ -75,6 +82,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         briefFileName,
         html,
         brief,
+        log,
       });
 
       let url: string;
@@ -276,39 +284,40 @@ async function storeMrSummaryAndBriefInS3({
   briefFileName,
   html,
   brief,
+  log,
 }: {
   bucketName: string;
   htmlFileName: string;
   briefFileName: string;
   html: string;
   brief: string | undefined;
+  log: typeof console.log;
 }): Promise<void> {
-  // TODO: Save both versions of the MR Summary - with and without the brief
+  log(`Storing MR Summary and Brief in S3`);
   const promiseMrSummary = async () => {
-    s3Client.putObject({
-      Bucket: bucketName,
-      Key: htmlFileName,
-      Body: html,
-      ContentType: "application/html",
+    newS3Client.uploadFile({
+      bucket: bucketName,
+      key: htmlFileName,
+      file: Buffer.from(html),
+      contentType: "application/html",
     });
   };
 
   const promiseBriefSummary = async () => {
     if (!brief) return;
-    s3Client.putObject({
-      Bucket: bucketName,
-      Key: briefFileName,
-      Body: brief,
-      ContentType: "text/plain",
+    newS3Client.uploadFile({
+      bucket: bucketName,
+      key: briefFileName,
+      file: Buffer.from(brief),
+      contentType: "text/plain",
     });
   };
 
   const resultPromises = await Promise.allSettled([promiseMrSummary(), promiseBriefSummary()]);
-
   const failed = resultPromises.flatMap(p => (p.status === "rejected" ? p.reason : []));
   if (failed.length > 0) {
     const msg = "Failed to store MR Summary and/or Brief in S3";
-    console.log(`${msg}: ${failed.join("; ")}`);
+    log(`${msg}: ${failed.join("; ")}`);
     capture.message(msg, { extra: { failed }, level: "info" });
   }
 }
