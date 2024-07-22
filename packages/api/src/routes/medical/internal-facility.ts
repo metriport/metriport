@@ -57,14 +57,14 @@ router.put(
       cqApproved: facilityDetails.cqApproved,
       cwApproved: facilityDetails.cwApproved,
     };
-    const org = await getOrganizationOrFail({ cxId });
-    const syncInHie = await verifyCxItVendorAccess(cxId, false);
     let facility: Facility;
     if (facilityDetails.id) {
       facility = await updateFacility({ id: facilityDetails.id, ...facilityCreate });
     } else {
       facility = await createFacility(facilityCreate);
     }
+    const org = await getOrganizationOrFail({ cxId });
+    const syncInHie = await verifyCxItVendorAccess(cxId, false);
     // TODO Move to external/hie https://github.com/metriport/metriport-internal/issues/1940
     // CAREQUALITY
     if (syncInHie && facility.cqApproved) {
