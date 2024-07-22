@@ -12,8 +12,8 @@ import {
   API_KEY_HEADER,
   BASE_ADDRESS,
   BASE_ADDRESS_SANDBOX,
-  JWT_HEADER,
   DEFAULT_AXIOS_TIMEOUT_MILLIS,
+  JWT_HEADER,
   optionalDateToISOString,
 } from "../../shared";
 import { getETagHeader } from "../models/common/base-update";
@@ -94,7 +94,7 @@ export class MetriportMedicalApi {
 
     const mode = options.mode || "api-key";
     const headers = {
-      [mode === "api-key" ? API_KEY_HEADER : JWT_HEADER]: apiKey,
+      ...(mode === "api-key" ? { [API_KEY_HEADER]: apiKey } : { [JWT_HEADER]: "Bearer " + apiKey }),
       ...options.additionalHeaders,
     };
 

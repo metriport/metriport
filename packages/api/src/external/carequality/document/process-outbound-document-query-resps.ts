@@ -31,7 +31,7 @@ import {
 import {
   getDocumentReferenceContentTypeCounts,
   getOutboundDocQuerySuccessFailureCount,
-} from "../../hie/get-counts-analytics";
+} from "../../hie/carequality-analytics";
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
 
 const parallelUpsertsToFhir = 10;

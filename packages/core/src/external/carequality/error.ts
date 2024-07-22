@@ -137,3 +137,6 @@ export function constructPDErrorResponse(
     gatewayHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
   };
 }
+
+export const httpErrorCode = "http-error";
+export const schemaErrorCode = "schema-error";

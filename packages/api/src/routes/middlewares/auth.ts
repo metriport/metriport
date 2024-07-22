@@ -6,31 +6,38 @@ import * as jwt from "jsonwebtoken";
 import { MAPIAccess } from "../../models/medical/mapi-access";
 import { Config } from "../../shared/config";
 import { getCxIdOrFail } from "../util";
+import { getAuth, getCxId, PropelAuth } from "./propelauth";
 
 /**
  * Process the API key and get the customer id.
  * The customer id is stored on the Request, property 'cxId'.
  */
-export function processCxId(req: Request, res: Response, next: NextFunction): void {
+export async function processCxId(req: Request, res: Response, next: NextFunction): Promise<void> {
   const { log } = out("processCxId");
   try {
     // Just gets the cxId from the API Key, the actual auth is done on API GW.
     // Downstream routes should check whether `cxId` is present on the request or not.
     const encodedApiKey = req.header("x-api-key");
     req.cxId = getCxIdFromApiKey(encodedApiKey);
-    // TODO 1935 remove this
-    // TODO 1935 remove this
-    // TODO 1935 remove this
-    log(`..... cxId from API Key: ${req.cxId}`);
   } catch (error) {
     try {
-      // TODO 1935 remove this
-      // TODO 1935 remove this
-      // TODO 1935 remove this
-      req.cxId = getCxIdFromJwt(req);
-      log(`..... cxId from JWT: ${req.cxId} 🤘`);
+      // TODO 1986 Remove this after we're fully off of Cognito
+      req.cxId = getCxIdFromCognitoJwt(req);
+      log(`Cognito - cxId ${req.cxId}`);
     } catch (error) {
-      // noop - auth is done on API GW level, this is just to make data available downstream
+      log(`Cognito - ${error}`);
+      // validate it has the needed info
+      const auth = getAuth();
+      try {
+        // TODO 1986 Remove the conditional after we're fully off of Cognito
+        if (auth) {
+          req.cxId = await getCxIdFromJwt(req, auth);
+          log(`PropelAuth - cxId ${req.cxId}`);
+        }
+      } catch (error) {
+        log(`PropelAuth - ${error}`);
+        // noop - auth is done on API GW level, this is just to make data available downstream
+      }
     }
   }
   next();
@@ -46,7 +53,17 @@ export function getCxIdFromApiKey(encodedApiKey: string | undefined): string {
   return cxId;
 }
 
-export function getCxIdFromJwt(req: Request): string {
+export async function getCxIdFromJwt(req: Request, auth: PropelAuth): Promise<string> {
+  const jwtStr = req.header("Authorization");
+  if (!jwtStr) throw new Error("Missing token");
+  const user = await auth.validateAccessTokenAndGetUser(jwtStr);
+  const cxId = getCxId(user);
+  if (!cxId) throw new Error("Could not determine cxId from JWT");
+  return cxId;
+}
+
+// TODO 1935 1986 Remove this after we're fully off of Cognito
+export function getCxIdFromCognitoJwt(req: Request): string {
   const jwtStr = req.header("Authorization");
   if (!jwtStr) throw new Error("Missing token");
   const rawToken = jwt.decode(jwtStr);
@@ -54,6 +71,7 @@ export function getCxIdFromJwt(req: Request): string {
   const token = (typeof rawToken === "string" ? JSON.parse(rawToken) : rawToken) as jwt.JwtPayload;
   const cxId = token["name"] ?? token["sub"];
   if (!isValidCxId(cxId)) throw new Error("Invalid cxId");
+  console.log(`Got cxId from Cognito JWT ${cxId}`);
   return cxId;
 }
 
