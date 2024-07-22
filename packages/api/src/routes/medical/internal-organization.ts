@@ -1,7 +1,11 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { Organization, OrganizationCreate } from "@metriport/core/domain/organization";
+import {
+  Organization,
+  OrganizationCreate,
+  OrganizationBizType,
+} from "@metriport/core/domain/organization";
 import { metriportEmail as metriportEmailForCq } from "../../external/carequality/constants";
 import { metriportCompanyDetails } from "@metriport/shared";
 import { requestLogger } from "../helpers/request-logger";
@@ -66,7 +70,7 @@ router.put(
     const org = await getOrganizationOrFail({ cxId });
     // TODO Move to external/hie https://github.com/metriport/metriport-internal/issues/1940
     // CAREQUALITY
-    if (org.cqApproved) {
+    if (org.type === OrganizationBizType.healthcareProvider && org.cqApproved) {
       const { coordinates, addressLine } = await getCqAddress({ cxId, address: org.data.location });
       createOrUpdateCQOrganization({
         name: org.data.name,
@@ -86,7 +90,7 @@ router.put(
       }).catch(processAsyncError("cq.internal.organization"));
     }
     // COMMONWELL
-    if (org.cwApproved) {
+    if (org.type === OrganizationBizType.healthcareProvider && org.cwApproved) {
       createOrUpdateCWOrganization(cxId, {
         oid: org.oid,
         data: org.data,
