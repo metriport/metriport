@@ -35,6 +35,8 @@ export type CWOrganization = Omit<
   | "updatedAt"
   | "cwActive"
   | "cqActive"
+  | "cwApproved"
+  | "cqApproved"
 > & { active: boolean };
 
 type CWSdkOrganizationWithOrgId = Omit<CWSdkOrganization, "organizationId"> &

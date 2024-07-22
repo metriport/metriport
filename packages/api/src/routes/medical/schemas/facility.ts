@@ -17,16 +17,18 @@ export const facilityCreateSchema = z.object({
 
 export const facilityUpdateSchema = facilityCreateSchema;
 
-export const facilityOboDetailsSchema = z
+export const facilityInternalDetailsSchema = z
   .object({
     id: z.string().optional(),
     nameInMetriport: z.string(),
     npi: z.string(),
     // CQ
+    cqApproved: z.boolean().optional(),
     cqType: z.nativeEnum(FacilityType),
     cqActive: z.boolean().optional(),
     cqOboOid: z.string().optional(),
     // CW
+    cwApproved: z.boolean().optional(),
     cwType: z.nativeEnum(FacilityType),
     cwActive: z.boolean().optional(),
     cwOboOid: z.string().optional(),

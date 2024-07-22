@@ -22,6 +22,8 @@ export class FacilityModel extends BaseModel<FacilityModel> implements Facility 
   declare cwType: FacilityType;
   declare cqType: FacilityType;
   declare data: FacilityData;
+  declare cqApproved: boolean;
+  declare cwApproved: boolean;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     FacilityModel.init(
@@ -63,6 +65,16 @@ export class FacilityModel extends BaseModel<FacilityModel> implements Facility 
         cqType: {
           type: DataTypes.ENUM(...Object.values(FacilityType)),
           defaultValue: FacilityType.initiatorAndResponder,
+        },
+        cqApproved: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: false,
+          allowNull: false,
+        },
+        cwApproved: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: false,
+          allowNull: false,
         },
       },
       {
