@@ -36,6 +36,7 @@ export const config: EnvConfigNonSandbox = {
   logArn: "<your-log-arn>",
   propelAuth: {
     authUrl: "url-to-propel-auth",
+    publicKey: "-----BEGIN PUBLIC KEY-----\nEXAMPLE\n-----END PUBLIC KEY-----",
     secrets: {
       PROPELAUTH_API_KEY: "key-name",
     },
