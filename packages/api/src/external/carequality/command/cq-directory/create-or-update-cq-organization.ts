@@ -5,33 +5,27 @@ import { errorToString } from "@metriport/shared";
 import { makeCarequalityManagementAPI } from "../../api";
 import { CQOrganization } from "../../organization";
 import { CQOrgDetails } from "../../shared";
-import { isCQDirectEnabledForCx } from "../../../aws/app-config";
 
 const cq = makeCarequalityManagementAPI();
 
 export async function createOrUpdateCQOrganization(
-  cxId: string,
   orgDetails: CQOrgDetails
 ): Promise<string | undefined> {
   if (!cq) throw new Error("Carequality API not initialized");
   const org = CQOrganization.fromDetails(orgDetails);
-  const orgExists = await doesOrganizationExistInCQ(cq, cxId, org.oid);
+  const orgExists = await doesOrganizationExistInCQ(cq, org.oid);
   if (orgExists) {
-    return updateCQOrganization(cq, cxId, org);
+    return updateCQOrganization(cq, org);
   }
-  return registerOrganization(cq, cxId, org);
+  return registerOrganization(cq, org);
 }
 
-async function doesOrganizationExistInCQ(
+export async function doesOrganizationExistInCQ(
   cq: CarequalityManagementAPI,
-  cxId: string,
   oid: string
 ): Promise<boolean | undefined> {
   const { log } = out(`CQ get (Organization) - CQ Org OID ${oid}`);
-  if (!(await isCQDirectEnabledForCx(cxId))) {
-    log(`CQ disabled for cx ${cxId}, skipping...`);
-    return undefined;
-  }
+
   try {
     const resp = await cq.listOrganizations({ count: 1, oid });
     return resp.length > 0;
@@ -49,16 +43,11 @@ async function doesOrganizationExistInCQ(
   }
 }
 
-async function updateCQOrganization(
+export async function updateCQOrganization(
   cq: CarequalityManagementAPI,
-  cxId: string,
   cqOrg: CQOrganization
 ): Promise<string | undefined> {
   const { log } = out(`CQ update (Organization) - CQ Org OID ${cqOrg.oid}`);
-  if (!(await isCQDirectEnabledForCx(cxId))) {
-    log(`CQ disabled for cx ${cxId}, skipping...`);
-    return undefined;
-  }
 
   try {
     return await cq.updateOrganization(cqOrg.getXmlString(), cqOrg.oid);
@@ -76,17 +65,12 @@ async function updateCQOrganization(
   }
 }
 
-async function registerOrganization(
+export async function registerOrganization(
   cq: CarequalityManagementAPI,
-  cxId: string,
   cqOrg: CQOrganization
 ): Promise<string | undefined> {
   const { log } = out(`CQ register (Organization) - CQ Org OID ${cqOrg.oid}`);
-  if (!(await isCQDirectEnabledForCx(cxId))) {
-    log(`CQ disabled for cx ${cxId}, skipping...`);
-    return undefined;
-  }
-  console.log(`Registering organization in the CQ Directory with OID: ${cqOrg.oid}...`);
+
   try {
     return await cq.registerOrganization(cqOrg.getXmlString());
   } catch (error) {

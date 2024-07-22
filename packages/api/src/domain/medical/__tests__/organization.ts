@@ -32,5 +32,7 @@ export const makeOrganization = ({
     data: makeOrganizationData(),
     cqActive: false,
     cwActive: false,
+    cqApproved: false,
+    cwApproved: false,
   };
 };

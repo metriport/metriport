@@ -68,7 +68,7 @@ router.put(
     // CAREQUALITY
     if (org.cqApproved) {
       const { coordinates, addressLine } = await getCqAddress({ cxId, address: org.data.location });
-      createOrUpdateCQOrganization(cxId, {
+      createOrUpdateCQOrganization({
         name: org.data.name,
         addressLine1: addressLine,
         lat: coordinates.lat.toString(),

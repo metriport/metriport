@@ -7,7 +7,7 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared";
 import { Config, getEnvVarOrFail } from "../../shared/config";
-import { isCWEnabledForCx, isEnhancedCoverageEnabledForCx } from "../aws/app-config";
+import { isEnhancedCoverageEnabledForCx } from "../aws/app-config";
 import {
   getCertificate,
   makeCommonWellAPI,
@@ -94,10 +94,6 @@ export async function organizationToCommonwell(
 
 export async function get(cxId: string, orgOid: string): Promise<CWSdkOrganization | undefined> {
   const { log, debug } = out(`CW get (Organization) - CW Org OID ${orgOid}`);
-  if (!(await isCWEnabledForCx(cxId))) {
-    log(`CW disabled for cx ${cxId}, skipping...`);
-    return undefined;
-  }
   const cwId = OID_PREFIX.concat(orgOid);
 
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
@@ -124,10 +120,6 @@ export async function get(cxId: string, orgOid: string): Promise<CWSdkOrganizati
 
 export async function create(cxId: string, org: CWOrganization, isObo = false): Promise<void> {
   const { log, debug } = out(`CW create (Organization) - CW Org OID ${org.oid}`);
-  if (!(await isCWEnabledForCx(cxId))) {
-    log(`CW disabled for cx ${cxId}, skipping...`);
-    return;
-  }
   const commonwellOrg = await organizationToCommonwell(org, isObo);
 
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
@@ -164,10 +156,6 @@ export async function create(cxId: string, org: CWOrganization, isObo = false): 
 
 export async function update(cxId: string, org: CWOrganization, isObo = false): Promise<void> {
   const { log, debug } = out(`CW update (Organization) - CW Org OID ${org.oid}`);
-  if (!(await isCWEnabledForCx(cxId))) {
-    log(`CW disabled for cx ${cxId}, skipping...`);
-    return;
-  }
   const commonwellOrg = await organizationToCommonwell(org, isObo);
 
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
