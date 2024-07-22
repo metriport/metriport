@@ -41,6 +41,7 @@ import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as documentUploader from "./api-stack/document-upload";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
+import { createTerminologyService } from "./api-stack/terminology-service";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
@@ -324,6 +325,15 @@ export class APIStack extends Stack {
       lambdaLayers,
       envType: props.config.environmentType,
       alarmSnsAction: slackNotification?.alarmAction,
+    });
+
+    //-------------------------------------------
+    // Terminology Service
+    //-------------------------------------------
+
+    createTerminologyService({
+      stack: this,
+      vpc: this.vpc,
     });
 
     //-------------------------------------------
