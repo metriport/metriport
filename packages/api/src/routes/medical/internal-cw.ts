@@ -57,6 +57,7 @@ router.put(
 
     const org = await getOrganizationOrFail({ cxId });
     if (org.oid !== oid) throw new NotFoundError("Organization not found");
+    if (!org.cwApproved) throw new NotFoundError("CW not approved");
 
     const resp = await getCWOgranization(cxId, oid);
     if (!resp) throw new NotFoundError("Organization not found");
@@ -98,6 +99,7 @@ router.put(
     const org = await getOrganizationOrFail({ cxId });
     const facility = await getFacilityOrFail({ cxId, id: facilityId });
     if (facility.oid !== oid) throw new NotFoundError("Facility not found");
+    if (!facility.cwApproved) throw new NotFoundError("CW not approved");
 
     const resp = await getCWOgranization(cxId, oid);
     if (!resp) throw new NotFoundError("Facility not found");
