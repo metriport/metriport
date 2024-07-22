@@ -6,7 +6,7 @@ import { getOrganizationOrFail } from "./get-organization";
 import { toFHIR } from "../../../external/fhir/organization";
 import { upsertOrgToFHIRServer } from "../../../external/fhir/organization/upsert-organization";
 
-export type OrganizationUpdateCmd = BaseUpdateCmdWithCustomer & OrganizationCreate;
+export type OrganizationUpdateCmd = BaseUpdateCmdWithCustomer & Partial<OrganizationCreate>;
 
 export async function updateOrganization({
   id,

@@ -15,13 +15,13 @@ export class FacilityModel extends BaseModel<FacilityModel> implements Facility 
   declare cxId: string;
   declare oid: string;
   declare facilityNumber: number;
+  declare data: FacilityData;
   declare cqActive: boolean;
   declare cwActive: boolean;
   declare cqOboOid: string | null;
   declare cwOboOid: string | null;
   declare cwType: FacilityType;
   declare cqType: FacilityType;
-  declare data: FacilityData;
   declare cqApproved: boolean;
   declare cwApproved: boolean;
 
