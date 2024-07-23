@@ -66,7 +66,6 @@ export function createTerminologyService({
       cluster,
       taskDefinition,
       desiredCount: settings.taskCountMin,
-      healthCheckGracePeriod: Duration.seconds(60),
       publicLoadBalancer: false,
     }
   );
@@ -80,7 +79,7 @@ export function createTerminologyService({
   // Allow traffic from within the VPC
   securityGroup.addIngressRule(
     ec2.Peer.ipv4(vpc.vpcCidrBlock),
-    ec2.Port.tcp(80),
+    ec2.Port.tcp(29927),
     "Allow HTTP traffic from within the VPC"
   );
 
@@ -89,13 +88,6 @@ export function createTerminologyService({
   // This speeds up deployments so the tasks are swapped quicker.
   // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
   fargateService.targetGroup.setAttribute("deregistration_delay.timeout_seconds", "17");
-
-  // This also speeds up deployments so the health checks have a faster turnaround.
-  // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/network/target-group-health-checks.html
-  fargateService.targetGroup.configureHealthCheck({
-    healthyThresholdCount: 2,
-    interval: Duration.seconds(10),
-  });
 
   const scaling = fargateService.service.autoScaleTaskCount({
     minCapacity: settings.taskCountMin,
