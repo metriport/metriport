@@ -1,3 +1,5 @@
+import NotFoundError from "@metriport/core/util/error/not-found";
+import { CarequalityManagementAPI } from "@metriport/carequality-sdk";
 import { Patient } from "@metriport/core/domain/patient";
 import { AddressStrict } from "@metriport/core/domain/location-address";
 import { Coordinates } from "@metriport/core/domain/address";
@@ -10,6 +12,8 @@ import z from "zod";
 import { isCarequalityEnabled, isCQDirectEnabledForCx } from "../aws/app-config";
 import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
 import { getAddressWithCoordinates } from "../../domain/medical/address";
+import { CQDirectoryEntryData } from "./cq-directory";
+import { parseCQDirectoryEntries } from "./command/cq-directory/parse-cq-directory-entry";
 
 // TODO: adjust when we support multiple POUs
 export function createPurposeOfUse() {
@@ -164,3 +168,22 @@ export async function getCqAddress({
 export const cqOrgActiveSchema = z.object({
   active: z.boolean(),
 });
+
+export async function getParsedCqOrgOrFail(
+  cq: CarequalityManagementAPI,
+  oid: string
+): Promise<CQDirectoryEntryData> {
+  const resp = await cq.listOrganizations({ count: 1, oid });
+  if (resp.length === 0) throw new NotFoundError("Organization not found");
+  const cqOrgs = parseCQDirectoryEntries(resp);
+  const cqOrg = cqOrgs[0] as CQDirectoryEntryData;
+  if (cqOrgs.length > 1) {
+    capture.message("More than one organization with the same OID found in the CQ directory", {
+      extra: {
+        orgOid: oid,
+        context: `cq.org.directory`,
+      },
+    });
+  }
+  return cqOrg;
+}

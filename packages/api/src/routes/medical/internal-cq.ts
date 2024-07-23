@@ -3,7 +3,6 @@ import NotFoundError from "@metriport/core/util/error/not-found";
 import { capture } from "@metriport/core/util/notifications";
 import { initDbPool } from "@metriport/core/util/sequelize";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { CarequalityManagementAPI } from "@metriport/carequality-sdk";
 import {
   isSuccessfulOutboundDocQueryResponse,
   isSuccessfulOutboundDocRetrievalResponse,
@@ -23,9 +22,6 @@ import {
   verifyCxProviderAccess,
   verifyCxItVendorAccess,
 } from "../../command/medical/facility/verify-access";
-import { isOboFacility } from "../../domain/medical/facility";
-import { OrganizationModel } from "../../models/medical/organization";
-import { FacilityModel } from "../../models/medical/facility";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import {
   getOrganizationOrFail,
@@ -34,11 +30,7 @@ import {
 import { getFaciltiyByOidOrFail } from "../../command/medical/facility/get-facility";
 import { makeCarequalityManagementAPI } from "../../external/carequality/api";
 import { bulkInsertCQDirectoryEntries } from "../../external/carequality/command/cq-directory/create-cq-directory-entry";
-import {
-  metriportIntermediaryOid,
-  metriportOid,
-} from "../../external/carequality/command/cq-directory/create-or-update-cq-facility";
-import { createOrUpdateCQOrganization } from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
+import { getAndUpdateCQOrgAndMetriportOrg } from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
 import { parseCQDirectoryEntries } from "../../external/carequality/command/cq-directory/parse-cq-directory-entry";
 import { rebuildCQDirectory } from "../../external/carequality/command/cq-directory/rebuild-cq-directory";
 import {
@@ -59,14 +51,11 @@ import {
 } from "../../external/carequality/ihe-result";
 import { processOutboundPatientDiscoveryResps } from "../../external/carequality/process-outbound-patient-discovery-resps";
 import { processPostRespOutboundPatientDiscoveryResps } from "../../external/carequality/process-subsequent-outbound-patient-discovery-resps";
-import { cqOrgActiveSchema, getCqAddress } from "../../external/carequality/shared";
-import { CQDirectoryEntryData } from "../../external/carequality/cq-directory";
+import { cqOrgActiveSchema, getParsedCqOrgOrFail } from "../../external/carequality/shared";
 import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 import { getUUIDFrom } from "../schemas/uuid";
-import { metriportEmail as metriportEmailForCq } from "../../external/carequality/constants";
-import { metriportCompanyDetails } from "@metriport/shared";
 
 dayjs.extend(duration);
 const router = Router();
@@ -121,26 +110,6 @@ router.post(
   })
 );
 
-async function getParsedCqOrg(
-  cq: CarequalityManagementAPI,
-  cxId: string,
-  oid: string
-): Promise<CQDirectoryEntryData> {
-  const resp = await cq.listOrganizations({ count: 1, oid });
-  if (resp.length === 0) throw new NotFoundError("Organization not found");
-  const cqOrgs = parseCQDirectoryEntries(resp);
-  const cqOrg = cqOrgs[0];
-  if (cqOrgs.length > 1) {
-    capture.message("More than one organization with the same OID found in the CQ directory", {
-      extra: {
-        orgOid: oid,
-        context: `cq.org.directory`,
-      },
-    });
-  }
-  return cqOrg;
-}
-
 /**
  * GET /internal/carequality/directory/organization/:oid
  *
@@ -164,61 +133,10 @@ router.get(
     } else {
       await getOrganizationByOidOrFail({ cxId, oid });
     }
-    const cqOrg = await getParsedCqOrg(cq, cxId, oid);
+    const cqOrg = await getParsedCqOrgOrFail(cq, oid);
     return res.status(httpStatus.OK).json(cqOrg);
   })
 );
-
-async function getAndUpdateCQOrg({
-  cq,
-  cxId,
-  oid,
-  active,
-  org,
-  facility,
-}: {
-  cq: CarequalityManagementAPI;
-  cxId: string;
-  oid: string;
-  active: boolean;
-  org: OrganizationModel;
-  facility?: FacilityModel;
-}): Promise<void> {
-  const cqOrg = await getParsedCqOrg(cq, cxId, oid);
-  if (!cqOrg.name) throw new NotFoundError("CQ org name is not set - cannot update");
-  const address = facility ? facility.data.address : org.data.location;
-  const { coordinates, addressLine } = await getCqAddress({ cxId, address });
-  await createOrUpdateCQOrganization({
-    name: cqOrg.name,
-    addressLine1: addressLine,
-    lat: coordinates.lat.toString(),
-    lon: coordinates.lon.toString(),
-    city: address.city,
-    state: address.state,
-    postalCode: address.zip,
-    oid,
-    contactName: metriportCompanyDetails.name,
-    phone: metriportCompanyDetails.phone,
-    email: metriportEmailForCq,
-    organizationBizType: org.type,
-    parentOrgOid: facility
-      ? isOboFacility(facility.cqType)
-        ? metriportIntermediaryOid
-        : metriportOid
-      : undefined,
-    active,
-    role: "Connection" as const,
-  });
-  if (facility) {
-    await facility.update({
-      cwActive: active,
-    });
-  } else {
-    await org.update({
-      cwActive: active,
-    });
-  }
-}
 
 /**
  * PUT /internal/carequality/directory/organization/:oid
@@ -240,7 +158,7 @@ router.put(
     if (!org.cqApproved) throw new NotFoundError("CQ not approved");
 
     const orgActive = cqOrgActiveSchema.parse(req.body);
-    await getAndUpdateCQOrg({
+    await getAndUpdateCQOrgAndMetriportOrg({
       cq,
       cxId,
       oid,
@@ -274,7 +192,7 @@ router.put(
     if (!facility.cqApproved) throw new NotFoundError("CQ not approved");
 
     const facilityActive = cqOrgActiveSchema.parse(req.body);
-    await getAndUpdateCQOrg({
+    await getAndUpdateCQOrgAndMetriportOrg({
       cq,
       cxId,
       oid,

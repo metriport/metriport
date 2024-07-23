@@ -6,32 +6,19 @@ import {
   verifyCxProviderAccess,
   verifyCxItVendorAccess,
 } from "../../command/medical/facility/verify-access";
-import { isOboFacility } from "../../domain/medical/facility";
-import { OrganizationModel } from "../../models/medical/organization";
-import { FacilityModel } from "../../models/medical/facility";
 import {
   getOrganizationOrFail,
   getOrganizationByOidOrFail,
 } from "../../command/medical/organization/get-organization";
 import { getFaciltiyByOidOrFail } from "../../command/medical/facility/get-facility";
-import { createOrUpdateCWOrganization } from "../../external/commonwell/command/create-or-update-cw-organization";
-import {
-  CWOrganization,
-  get as getCWOrganization,
-  parseCWEntry,
-} from "../../external/commonwell/organization";
 import { cwOrgActiveSchema } from "../../external/commonwell/shared";
+import { getParsedOrgOrFail } from "../../external/commonwell/organization";
+import { getAndUpdateCWOrgAndMetriportOrg } from "../../external/commonwell/command/create-or-update-cw-organization";
 import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler, getFrom } from "../util";
 import { getUUIDFrom } from "../schemas/uuid";
 
 const router = Router();
-
-async function getParsedOrg(oid: string): Promise<CWOrganization> {
-  const resp = await getCWOrganization(oid);
-  if (!resp) throw new NotFoundError("Organization not found");
-  return parseCWEntry(resp);
-}
 
 /**
  * GET /internal/commonwell/organization/:oid
@@ -53,48 +40,10 @@ router.get(
     } else {
       await getOrganizationByOidOrFail({ cxId, oid });
     }
-    const cwOrg = await getParsedOrg(oid);
+    const cwOrg = await getParsedOrgOrFail(oid);
     return res.status(httpStatus.OK).json(cwOrg);
   })
 );
-
-async function getAndUpdateCWOrg({
-  cxId,
-  oid,
-  active,
-  org,
-  facility,
-}: {
-  cxId: string;
-  oid: string;
-  active: boolean;
-  org: OrganizationModel;
-  facility?: FacilityModel;
-}): Promise<void> {
-  const cwOrg = await getParsedOrg(oid);
-  await createOrUpdateCWOrganization({
-    cxId,
-    org: {
-      oid,
-      data: {
-        name: cwOrg.data.name,
-        type: org.data.type,
-        location: facility ? facility.data.address : org.data.location,
-      },
-      active,
-    },
-    isObo: facility ? isOboFacility(facility.cwType) : false,
-  });
-  if (facility) {
-    await facility.update({
-      cwActive: active,
-    });
-  } else {
-    await org.update({
-      cwActive: active,
-    });
-  }
-}
 
 /**
  * PUT /internal/commonwell/organization/:oid
@@ -113,7 +62,7 @@ router.put(
     if (!org.cwApproved) throw new NotFoundError("CW not approved");
 
     const orgActive = cwOrgActiveSchema.parse(req.body);
-    await getAndUpdateCWOrg({
+    await getAndUpdateCWOrgAndMetriportOrg({
       cxId,
       oid,
       active: orgActive.active,
@@ -143,7 +92,7 @@ router.put(
     if (!facility.cwApproved) throw new NotFoundError("CW not approved");
 
     const facilityActive = cwOrgActiveSchema.parse(req.body);
-    await getAndUpdateCWOrg({
+    await getAndUpdateCWOrgAndMetriportOrg({
       cxId,
       oid,
       active: facilityActive.active,

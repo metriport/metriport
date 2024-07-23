@@ -1,3 +1,4 @@
+import NotFoundError from "@metriport/core/util/error/not-found";
 import { Organization as CWSdkOrganization } from "@metriport/commonwell-sdk";
 import { OID_PREFIX } from "@metriport/core/domain/oid";
 import { Organization, OrgType } from "@metriport/core/domain/organization";
@@ -232,4 +233,10 @@ export function parseCWEntry(org: CWSdkOrganization): CWOrganization {
     oid: org.organizationId.replace(OID_PREFIX, ""),
     active: org.isActive,
   };
+}
+
+export async function getParsedOrgOrFail(oid: string): Promise<CWOrganization> {
+  const resp = await get(oid);
+  if (!resp) throw new NotFoundError("Organization not found");
+  return parseCWEntry(resp);
 }
