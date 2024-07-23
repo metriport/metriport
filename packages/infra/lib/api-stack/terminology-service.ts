@@ -55,6 +55,7 @@ export function createTerminologyService({
   taskDefinition.addContainer("TerminologyContainer", {
     image: ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest"),
     logging: ecs.LogDrivers.awsLogs({ streamPrefix: "Terminology" }),
+    portMappings: [{ containerPort: 29927, hostPort: 29927, protocol: ecs.Protocol.TCP }],
   });
 
   // Create the Fargate service
