@@ -1,11 +1,10 @@
 import { OrganizationBizType } from "@metriport/core/domain/organization";
 import { metriportEmail as metriportEmailForCq } from "../../constants";
 import { metriportCompanyDetails } from "@metriport/shared";
-import { Facility } from "../../../../domain/medical/facility";
+import { Facility, isOboFacility } from "../../../../domain/medical/facility";
 import { createOrUpdateCQOrganization } from "./create-or-update-cq-organization";
-import { buildCqOrgNameForFacility } from "../../shared";
+import { buildCqOrgNameForFacility, getCqAddress } from "../../shared";
 import { Config } from "../../../../shared/config";
-import { getAddressWithCoordinates } from "../../../../domain/medical/address";
 
 export const metriportOid = Config.getSystemRootOID();
 export const metriportIntermediaryOid = `${metriportOid}.666`;
@@ -26,30 +25,25 @@ export async function createOrUpdateFacilityInCq({
   const orgName = buildCqOrgNameForFacility({
     vendorName: cxOrgName,
     orgName: facility.data.name,
-    oboOid: cqOboOid,
+    oboOid: isOboFacility(facility.cqType) ? cqOboOid : undefined,
   });
 
-  const { coordinates } = await getAddressWithCoordinates(facility.data.address, cxId);
-  const address = facility.data.address;
-  const addressLine = address.addressLine2
-    ? `${address.addressLine1}, ${address.addressLine2}`
-    : address.addressLine1;
-
+  const { coordinates, addressLine } = await getCqAddress({ cxId, address: facility.data.address });
   await createOrUpdateCQOrganization({
     name: orgName,
     addressLine1: addressLine,
     lat: coordinates.lat.toString(),
     lon: coordinates.lon.toString(),
-    city: address.city,
-    state: address.state,
-    postalCode: address.zip,
+    city: facility.data.address.city,
+    state: facility.data.address.state,
+    postalCode: facility.data.address.zip,
     oid: facility.oid,
     contactName: metriportCompanyDetails.name,
     phone: metriportCompanyDetails.phone,
     email: metriportEmailForCq,
     organizationBizType: cxOrgBizType,
     active: facility.cqActive,
-    parentOrgOid: cqOboOid ? metriportIntermediaryOid : metriportOid,
+    parentOrgOid: isOboFacility(facility.cqType) ? metriportIntermediaryOid : metriportOid,
     role: "Connection" as const,
   });
 }

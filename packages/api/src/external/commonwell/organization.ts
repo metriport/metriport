@@ -35,6 +35,8 @@ export type CWOrganization = Omit<
   | "updatedAt"
   | "cwActive"
   | "cqActive"
+  | "cwApproved"
+  | "cqApproved"
 > & { active: boolean };
 
 type CWSdkOrganizationWithOrgId = Omit<CWSdkOrganization, "organizationId"> &
@@ -129,7 +131,7 @@ export async function create(cxId: string, org: CWOrganization, isObo = false): 
       getCertificate(),
       org.oid
     );
-    debug(`resp respAddCert: `, JSON.stringify(respAddCert));
+    debug(`resp addCertificateToOrg: `, JSON.stringify(respAddCert));
 
     if (await isEnhancedCoverageEnabledForCx(cxId)) {
       // update the CQ bridge include list
@@ -186,7 +188,7 @@ export async function update(cxId: string, org: CWOrganization, isObo = false): 
 }
 
 export async function initCQOrgIncludeList(orgOid: string): Promise<void> {
-  const { log } = out(`CQ initCQOrgIncludeList - CW Org OID ${orgOid}`);
+  const { log } = out(`CW initCQOrgIncludeList - CW Org OID ${orgOid}`);
   try {
     const managementApi = makeCommonWellManagementAPI();
     if (!managementApi) {
@@ -213,9 +215,7 @@ export async function initCQOrgIncludeList(orgOid: string): Promise<void> {
 }
 
 export function parseCWEntry(org: CWSdkOrganization): CWOrganization {
-  const location = (
-    org.locations as [CWSdkOrganizationLocation, ...CWSdkOrganizationLocation[]]
-  )[0];
+  const location = org.locations[0] as CWSdkOrganizationLocation;
   return {
     data: {
       name: org.name,

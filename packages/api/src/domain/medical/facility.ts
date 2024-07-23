@@ -27,11 +27,12 @@ export interface FacilityCreate extends Omit<BaseDomainCreate, "id"> {
   cwOboOid?: string | null;
   cwType?: FacilityType;
   cqType?: FacilityType;
+  cqApproved?: boolean;
+  cwApproved?: boolean;
 }
 
 export interface FacilityRegister extends FacilityCreate {
   id?: string;
-  cwFacilityName?: string /**  Optional name, to override current facility name, for the facility in CommonWell */;
 }
 
 export interface Facility extends BaseDomain, Required<FacilityCreate> {

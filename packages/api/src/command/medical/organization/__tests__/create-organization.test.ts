@@ -1,10 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { faker } from "@faker-js/faker";
 import { v4 as uuidv4 } from "uuid";
-import {
-  makeOrganization,
-  makeOrganizationData,
-} from "../../../../domain/medical/__tests__/organization";
+import { makeOrganization } from "../../../../domain/medical/__tests__/organization";
 import * as address from "../../../../domain/medical/address";
 import * as createTenant from "../../../../external/fhir/admin";
 import { OrganizationModel } from "../../../../models/medical/organization";
@@ -14,6 +11,7 @@ import { createOrganization } from "../create-organization";
 import { addressWithCoordinates } from "./register-organization";
 import * as upsertOrgToFHIRServer from "../../../../external/fhir/organization/upsert-organization";
 import * as cwCommands from "../../../../external/commonwell";
+import * as cqCommands from "../../../../external/carequality";
 
 let createOrganizationId_mock: jest.SpyInstance;
 let createTenantIfNotExistsMock: jest.SpyInstance;
@@ -29,7 +27,8 @@ beforeAll(() => {
     .spyOn(createTenant, "createTenantIfNotExists")
     .mockImplementation(async () => {});
   jest.spyOn(upsertOrgToFHIRServer, "upsertOrgToFHIRServer").mockImplementation(async () => {});
-  jest.spyOn(cwCommands.default.organization, "createOrUpdate").mockImplementation(async () => {});
+  jest.spyOn(cwCommands.default.organization, "createOrUpdate").mockResolvedValue();
+  jest.spyOn(cqCommands.default.organization, "createOrUpdate").mockResolvedValue("test");
   jest.spyOn(address, "getAddressWithCoordinates").mockResolvedValue(addressWithCoordinates);
 });
 beforeEach(() => {
@@ -43,11 +42,10 @@ describe("createOrganization", () => {
     const org = makeOrganization();
     OrganizationModel.findOne = jest.fn().mockResolvedValueOnce(org);
     OrganizationModel.create = jest.fn().mockImplementation(() => Promise.resolve(org));
-    const orgCreate = makeOrganizationData();
 
     await expect(
       createOrganization({
-        ...orgCreate,
+        ...org,
         cxId,
       })
     ).rejects.toThrow();
@@ -60,12 +58,11 @@ describe("createOrganization", () => {
     createOrganizationId_mock.mockResolvedValueOnce({ oid, organizationNumber });
     const org = makeOrganization({ oid, organizationNumber });
     OrganizationModel.create = jest.fn().mockImplementation(() => Promise.resolve(org));
-    const orgCreate = makeOrganizationData();
 
-    await createOrganization({ ...orgCreate, cxId });
+    await createOrganization({ ...org, cxId });
 
     expect(OrganizationModel.create).toHaveBeenCalledWith(
-      expect.objectContaining({ oid, organizationNumber, cxId, data: orgCreate })
+      expect.objectContaining({ oid, organizationNumber, cxId, data: org.data })
     );
   });
 
@@ -76,9 +73,8 @@ describe("createOrganization", () => {
     createOrganizationId_mock.mockResolvedValueOnce({ id, organizationNumber });
     const org = makeOrganization({ id, organizationNumber });
     OrganizationModel.create = jest.fn().mockImplementation(() => Promise.resolve(org));
-    const orgCreate = makeOrganizationData();
 
-    const res = await createOrganization({ ...orgCreate, cxId });
+    const res = await createOrganization({ ...org, cxId });
 
     expect(res).toBeTruthy();
     expect(res).toEqual(expect.objectContaining(org));
@@ -86,15 +82,14 @@ describe("createOrganization", () => {
 
   it("calls createTenant", async () => {
     OrganizationModel.findOne = jest.fn().mockResolvedValueOnce(undefined);
-    const expectedOrg = makeOrganization();
-    OrganizationModel.create = jest.fn().mockImplementation(() => Promise.resolve(expectedOrg));
-    const orgCreate = makeOrganizationData();
+    const org = makeOrganization();
+    OrganizationModel.create = jest.fn().mockImplementation(() => Promise.resolve(org));
 
     await createOrganization({
-      ...orgCreate,
+      ...org,
       cxId,
     });
 
-    expect(createTenantIfNotExistsMock).toHaveBeenCalledWith(expectedOrg);
+    expect(createTenantIfNotExistsMock).toHaveBeenCalledWith(org);
   });
 });

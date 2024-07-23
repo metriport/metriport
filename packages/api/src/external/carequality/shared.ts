@@ -1,4 +1,6 @@
 import { Patient } from "@metriport/core/domain/patient";
+import { AddressStrict } from "@metriport/core/domain/location-address";
+import { Coordinates } from "@metriport/core/domain/address";
 import { capture } from "@metriport/core/util/notifications";
 import { PurposeOfUse } from "@metriport/shared";
 import { MedicalDataSource } from "@metriport/core/external/index";
@@ -7,6 +9,7 @@ import { errorToString } from "@metriport/shared/common/error";
 import z from "zod";
 import { isCarequalityEnabled, isCQDirectEnabledForCx } from "../aws/app-config";
 import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
+import { getAddressWithCoordinates } from "../../domain/medical/address";
 
 // TODO: adjust when we support multiple POUs
 export function createPurposeOfUse() {
@@ -142,6 +145,20 @@ export function buildCqOrgNameForFacility({
   }
 
   return `${vendorName} - ${orgName}`;
+}
+
+export async function getCqAddress({
+  cxId,
+  address,
+}: {
+  cxId: string;
+  address: AddressStrict;
+}): Promise<{ coordinates: Coordinates; addressLine: string }> {
+  const { coordinates } = await getAddressWithCoordinates(address, cxId);
+  const addressLine = address.addressLine2
+    ? `${address.addressLine1}, ${address.addressLine2}`
+    : address.addressLine1;
+  return { coordinates, addressLine };
 }
 
 export const cqOrgActiveSchema = z.object({

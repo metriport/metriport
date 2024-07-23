@@ -15,6 +15,8 @@ export class OrganizationModel extends BaseModel<OrganizationModel> implements O
   declare data: OrganizationData;
   declare cqActive: boolean;
   declare cwActive: boolean;
+  declare cqApproved: boolean;
+  declare cwApproved: boolean;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     OrganizationModel.init(
@@ -40,10 +42,22 @@ export class OrganizationModel extends BaseModel<OrganizationModel> implements O
         cqActive: {
           type: DataTypes.BOOLEAN,
           defaultValue: false,
+          allowNull: false,
         },
         cwActive: {
           type: DataTypes.BOOLEAN,
           defaultValue: false,
+          allowNull: false,
+        },
+        cqApproved: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: false,
+          allowNull: false,
+        },
+        cwApproved: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: false,
+          allowNull: false,
         },
       },
       {

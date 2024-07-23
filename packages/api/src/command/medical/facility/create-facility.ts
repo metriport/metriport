@@ -1,24 +1,21 @@
 import BadRequestError from "@metriport/core/util/error/bad-request";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import {
-  Facility,
-  FacilityCreate,
-  FacilityType,
-  isOboFacility,
-} from "../../../domain/medical/facility";
+import { FacilityCreate, FacilityType, isOboFacility } from "../../../domain/medical/facility";
 import { FacilityModel } from "../../../models/medical/facility";
 import { getFacilityByNpi } from "./get-facility";
 
 export async function createFacility({
   cxId,
   data,
+  cqApproved = false,
   cqActive = false,
   cqType = FacilityType.initiatorAndResponder,
   cqOboOid,
+  cwApproved = false,
   cwActive = false,
   cwType = FacilityType.initiatorAndResponder,
   cwOboOid,
-}: FacilityCreate): Promise<Facility> {
+}: FacilityCreate): Promise<FacilityModel> {
   const input = {
     id: uuidv7(),
     oid: "", // will be set when facility is created in hook
@@ -31,18 +28,29 @@ export async function createFacility({
     cqOboOid: cqOboOid ?? null,
     cwOboOid: cwOboOid ?? null,
     data,
+    cqApproved,
+    cwApproved,
   };
-  validateCreate(input);
-  const facilityByNpi = await getFacilityByNpi({ cxId, npi: data.npi });
-  if (facilityByNpi) {
-    throw new BadRequestError(
-      `Found a matching facility along NPI - please add the corresponding Facility ID to the request to update`
-    );
-  }
+  validateObo(input);
+  validateNPI(cxId, input.data.npi);
   return FacilityModel.create(input);
 }
 
-export function validateCreate(facility: FacilityCreate, throwOnError = true): boolean {
+export async function validateNPI(cxId: string, newNpi: string, existingNpi?: string) {
+  if (existingNpi && newNpi !== existingNpi) {
+    throw new BadRequestError(`Can't update NPI`);
+  }
+  if (!existingNpi) {
+    const facilityByNpi = await getFacilityByNpi({ cxId, npi: newNpi });
+    if (facilityByNpi) {
+      throw new BadRequestError(
+        `Can't create a new facility with the same NPI as facility with ID: ${facilityByNpi.id} and name: ${facilityByNpi.data.name}`
+      );
+    }
+  }
+}
+
+export function validateObo(facility: FacilityCreate, throwOnError = true): boolean {
   const { cwType, cqType, cqOboOid, cwOboOid } = facility;
   if (isOboFacility(cwType) && !cwOboOid) {
     if (!throwOnError) return false;

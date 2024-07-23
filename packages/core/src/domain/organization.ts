@@ -34,17 +34,24 @@ export type OrganizationData = {
   location: AddressStrict;
 };
 
-export interface OrganizationCreate extends BaseDomainCreate {
+export interface OrganizationCreate extends Omit<BaseDomainCreate, "id"> {
   cxId: string;
-  oid: string;
-  organizationNumber: number;
-  type: OrganizationBizType;
+  type?: OrganizationBizType;
   data: OrganizationData;
   cqActive?: boolean;
   cwActive?: boolean;
+  cqApproved?: boolean;
+  cwApproved?: boolean;
 }
 
-export interface Organization extends BaseDomain, OrganizationCreate {}
+export interface OrganizationRegister extends OrganizationCreate {
+  id?: string;
+}
+
+export interface Organization extends BaseDomain, Required<OrganizationCreate> {
+  oid: string;
+  organizationNumber: number;
+}
 
 export function isHealthcareItVendor(type: OrganizationBizType) {
   return type === OrganizationBizType.healthcareITVendor;

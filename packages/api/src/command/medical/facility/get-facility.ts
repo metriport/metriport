@@ -3,23 +3,20 @@ import { FacilityModel } from "../../../models/medical/facility";
 
 type GetFacilitiesQuery = Pick<FacilityModel, "cxId"> & Partial<{ ids: FacilityModel["id"][] }>;
 
-export const getFacilities = async ({
-  cxId,
-  ids,
-}: GetFacilitiesQuery): Promise<FacilityModel[]> => {
-  const facility = await FacilityModel.findAll({
+export async function getFacilities({ cxId, ids }: GetFacilitiesQuery): Promise<FacilityModel[]> {
+  const facilities = await FacilityModel.findAll({
     where: {
       ...(ids ? { id: ids } : undefined),
       cxId,
     },
     order: [["id", "ASC"]],
   });
-  return facility;
-};
+  return facilities;
+}
 
 type GetFacilityQuery = Pick<FacilityModel, "id" | "cxId">;
 
-export const getFacilityOrFail = async ({ cxId, id }: GetFacilityQuery): Promise<FacilityModel> => {
+export async function getFacilityOrFail({ cxId, id }: GetFacilityQuery): Promise<FacilityModel> {
   const facility = await FacilityModel.findOne({
     where: {
       id,
@@ -28,15 +25,22 @@ export const getFacilityOrFail = async ({ cxId, id }: GetFacilityQuery): Promise
   });
   if (!facility) throw new NotFoundError(`Could not find facility`, undefined, { facilityId: id });
   return facility;
-};
+}
 
-export const getFacilityByNpi = async ({
+export async function getFaciltiyByOidOrFail(
+  filter: GetFacilityQuery & { oid: string }
+): Promise<FacilityModel> {
+  const facility = await getFacilityOrFail(filter);
+  if (facility.oid !== filter.oid) throw new NotFoundError(`Could not find facility`);
+  return facility;
+}
+
+type GetFacilityByNpiQuery = Pick<FacilityModel, "cxId"> & { npi: string };
+
+export async function getFacilityByNpi({
   cxId,
   npi,
-}: {
-  cxId: string;
-  npi: string;
-}): Promise<FacilityModel | null> => {
+}: GetFacilityByNpiQuery): Promise<FacilityModel | null> {
   const facility = await FacilityModel.findOne({
     where: {
       cxId,
@@ -46,4 +50,4 @@ export const getFacilityByNpi = async ({
     },
   });
   return facility;
-};
+}

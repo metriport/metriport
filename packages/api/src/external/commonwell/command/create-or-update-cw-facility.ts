@@ -1,5 +1,5 @@
 import { OrgType } from "@metriport/core/domain/organization";
-import { Facility } from "../../../domain/medical/facility";
+import { Facility, isOboFacility } from "../../../domain/medical/facility";
 import { createOrUpdateCWOrganization } from "./create-or-update-cw-organization";
 import { buildCwOrgNameForFacility } from "../shared";
 
@@ -19,12 +19,12 @@ export async function createOrUpdateInCw({
   const orgName = buildCwOrgNameForFacility({
     vendorName: cxOrgName,
     orgName: facility.data.name,
-    oboOid: cwOboOid,
+    oboOid: isOboFacility(facility.cwType) ? cwOboOid : undefined,
   });
 
-  await createOrUpdateCWOrganization(
+  await createOrUpdateCWOrganization({
     cxId,
-    {
+    org: {
       oid: facility.oid,
       data: {
         name: orgName,
@@ -33,6 +33,6 @@ export async function createOrUpdateInCw({
       },
       active: facility.cwActive,
     },
-    !!cwOboOid
-  );
+    isObo: isOboFacility(facility.cwType),
+  });
 }

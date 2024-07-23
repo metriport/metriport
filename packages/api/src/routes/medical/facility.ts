@@ -6,7 +6,6 @@ import { createFacility } from "../../command/medical/facility/create-facility";
 import { deleteFacility } from "../../command/medical/facility/delete-facility";
 import { getFacilities } from "../../command/medical/facility/get-facility";
 import { updateFacility } from "../../command/medical/facility/update-facility";
-import { verifyCxProviderAccess } from "../../command/medical/facility/verify-access";
 import { getETag } from "../../shared/http";
 import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
@@ -27,7 +26,6 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    await verifyCxProviderAccess(cxId);
 
     const facilityData = facilityCreateSchema.parse(req.body);
 
@@ -56,8 +54,6 @@ router.put(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    await verifyCxProviderAccess(cxId);
-
     const facilityId = getFromParamsOrFail("id", req);
     const facilityData = facilityUpdateSchema.parse(req.body);
 
@@ -129,7 +125,6 @@ router.delete(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    await verifyCxProviderAccess(cxId);
 
     const facilityId = getFromParamsOrFail("id", req);
     await deleteFacility({ cxId, id: facilityId });

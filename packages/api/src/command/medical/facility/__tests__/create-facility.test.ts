@@ -1,7 +1,7 @@
 import { FacilityType } from "../../../../domain/medical/facility";
 import { FacilityModel } from "../../../../models/medical/facility";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";
-import { createFacility, validateCreate } from "../create-facility";
+import { createFacility, validateObo } from "../create-facility";
 import { makeFacilityCreate, makeFacilityCreateCmd } from "./create-facility";
 
 describe("createFacility", () => {
@@ -65,13 +65,13 @@ describe("createFacility", () => {
     });
   });
 
-  describe("validateCreate", () => {
+  describe("validateObo", () => {
     it("throws when OBO, CW OBO is active and CW OID is null", async () => {
       const facility = makeFacilityCreate({
         cwType: FacilityType.initiatorOnly,
         cwOboOid: null,
       });
-      expect(() => validateCreate(facility)).toThrow("CW OBO facility must have CW OBO OID");
+      expect(() => validateObo(facility)).toThrow("CW OBO facility must have CW OBO OID");
     });
 
     it("throws when OBO, CQ OBO is active and CQ OID is null", async () => {
@@ -79,7 +79,7 @@ describe("createFacility", () => {
         cqType: FacilityType.initiatorOnly,
         cqOboOid: null,
       });
-      expect(() => validateCreate(facility)).toThrow("CQ OBO facility must have CQ OBO OID");
+      expect(() => validateObo(facility)).toThrow("CQ OBO facility must have CQ OBO OID");
     });
   });
 });
