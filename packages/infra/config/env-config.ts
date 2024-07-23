@@ -105,6 +105,7 @@ type EnvConfigBase = {
   apiGatewayUsagePlanId?: string; // optional since we need to create the stack first, then update this and redeploy
   propelAuth: {
     authUrl: string;
+    publicKey: string;
     secrets: {
       PROPELAUTH_API_KEY: string;
     };

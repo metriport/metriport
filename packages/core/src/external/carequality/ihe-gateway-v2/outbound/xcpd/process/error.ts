@@ -7,6 +7,7 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import { PatientRegistryProfile } from "./schema";
 import { extractText } from "../../../utils";
+import { httpErrorCode, schemaErrorCode } from "../../../../error";
 
 export function handleHttpErrorResponse({
   httpError,
@@ -23,7 +24,7 @@ export function handleHttpErrorResponse({
     issue: [
       {
         severity: "error",
-        code: "http-error",
+        code: httpErrorCode,
         details: {
           text: httpError,
         },
@@ -107,7 +108,7 @@ export function handleSchemaErrorResponse({
     issue: [
       {
         severity: "error",
-        code: "schema-error",
+        code: schemaErrorCode,
         details: {
           text,
         },

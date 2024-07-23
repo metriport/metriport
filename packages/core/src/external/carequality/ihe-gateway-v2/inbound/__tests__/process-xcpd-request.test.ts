@@ -1,4 +1,4 @@
-import { isSuccessfulPatientDiscoveryResponse } from "@metriport/ihe-gateway-sdk";
+import { isSuccessfulInboundPatientDiscoveryResponse } from "@metriport/ihe-gateway-sdk";
 import { processInboundXcpdRequest } from "../xcpd/process/xcpd-request";
 import { createInboundXcpdResponse } from "../xcpd/create/xcpd-response";
 import { createITI5SoapEnvelope } from "../../outbound/xcpd/create/iti55-envelope";
@@ -94,7 +94,7 @@ describe("Process Inbound Xcpd Response", () => {
         gateway: xcpdGateway,
       },
     });
-    const patientResource = isSuccessfulPatientDiscoveryResponse(response)
+    const patientResource = isSuccessfulInboundPatientDiscoveryResponse(response)
       ? response.patientResource
       : undefined;
     expect(patientResource).toEqual(response.patientResource);

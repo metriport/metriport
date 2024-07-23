@@ -1884,7 +1884,12 @@ function createObservationsByDate(observations: Observation[]): string {
               return;
             });
 
-            const hasDisplayValue = observationDisplay?.display ?? observation.code?.text;
+            const observationCodeText =
+              observation.code?.text && observation.code?.text !== UNKNOWN_DISPLAY
+                ? observation.code?.text
+                : undefined;
+
+            const hasDisplayValue = observationDisplay?.display ?? observationCodeText;
 
             return !!hasDisplayValue;
           })
@@ -2068,11 +2073,12 @@ function createOtherObservationsByDate(observations: Observation[]): string {
 }
 
 function renderClassDisplay(encounter: Encounter) {
-  const isDisplayUndefined = encounter.class?.display === undefined;
+  const isDisplayIsNotValid =
+    encounter.class?.display === undefined || encounter.class?.display === "unknown";
 
-  if (encounter.class?.display && !isDisplayUndefined) {
+  if (encounter.class?.display && !isDisplayIsNotValid) {
     return encounter.class?.display;
-  } else if (encounter.class?.code && !isDisplayUndefined) {
+  } else if (encounter.class?.code && !isDisplayIsNotValid) {
     const extension = encounter.class?.extension?.find(coding => {
       return coding.valueCoding?.code === encounter.class?.code;
     });
