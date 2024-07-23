@@ -64,7 +64,6 @@ export function createTerminologyService({
     cluster,
     taskDefinition,
     desiredCount: settings.taskCountMin,
-    healthCheckGracePeriod: Duration.seconds(60),
   });
 
   const securityGroup = new ec2.SecurityGroup(stack, "TerminologyServiceSG", {
