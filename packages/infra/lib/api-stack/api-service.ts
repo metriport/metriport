@@ -28,11 +28,11 @@ import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
 import { DnsZones } from "../shared/dns";
 import { buildLbAccessLogPrefix } from "../shared/s3";
-import { Secrets, secretsToECS } from "../shared/secrets";
+import { buildSecrets, Secrets, secretsToECS } from "../shared/secrets";
 import { provideAccessToQueue } from "../shared/sqs";
 import { isProd, isSandbox } from "../shared/util";
 
-interface ApiServiceProps extends StackProps {
+interface ApiProps extends StackProps {
   config: EnvConfig;
   version: string | undefined;
 }
@@ -107,7 +107,7 @@ export function createAPIService({
   cookieStore,
 }: {
   stack: Construct;
-  props: ApiServiceProps;
+  props: ApiProps;
   secrets: Secrets;
   vpc: ec2.IVpc;
   dbCredsSecret: secret.ISecret;
@@ -196,6 +196,7 @@ export function createAPIService({
           DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret),
           SEARCH_PASSWORD: ecs.Secret.fromSecretsManager(searchAuth.secret),
           ...secretsToECS(secrets),
+          ...secretsToECS(buildSecrets(stack, props.config.propelAuth.secrets)),
         },
         environment: {
           NODE_ENV: "production", // Determines its being run in the cloud, the logical env is set on ENV_TYPE
@@ -228,6 +229,8 @@ export function createAPIService({
           ...(isSandbox(props.config) && {
             SANDBOX_SEED_DATA_BUCKET_NAME: props.config.sandboxSeedDataBucketName,
           }),
+          PROPELAUTH_AUTH_URL: props.config.propelAuth.authUrl,
+          PROPELAUTH_PUBLIC_KEY: props.config.propelAuth.publicKey,
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
           DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
           OUTBOUND_PATIENT_DISCOVERY_LAMBDA_NAME: outboundPatientDiscoveryLambda.functionName,

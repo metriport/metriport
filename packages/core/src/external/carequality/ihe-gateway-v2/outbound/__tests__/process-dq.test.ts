@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { processDqResponse } from "../xca/process/dq-response";
 import { outboundDqRequest, expectedDqDocumentReference } from "./constants";
+import { schemaErrorCode } from "../../../error";
 
 describe("processDqResponse", () => {
   it("should process the successful DQ response correctly", async () => {
@@ -57,6 +58,6 @@ describe("processDqResponse", () => {
       },
     });
     expect(response.operationOutcome).toBeTruthy();
-    expect(response.operationOutcome?.issue[0]?.code).toEqual("schema-error");
+    expect(response.operationOutcome?.issue[0]?.code).toEqual(schemaErrorCode);
   });
 });

@@ -1,5 +1,5 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { createUploadFilePath, FHIR_BUNDLE_SUFFIX } from "@metriport/core/domain/document/upload";
+import { FHIR_BUNDLE_SUFFIX, createUploadFilePath } from "@metriport/core/domain/document/upload";
 import { Patient } from "@metriport/core/domain/patient";
 import { uploadCdaDocuments, uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
@@ -41,7 +41,7 @@ export async function handleDataContribution({
     patientId,
     `${requestId}_${FHIR_BUNDLE_SUFFIX}.json`
   );
-  const fullBundle = hydrateBundle(bundle, patient, fhirOrganization, fhirBundleDestinationKey);
+  const fullBundle = hydrateBundle(bundle, patient, fhirBundleDestinationKey);
 
   await uploadFhirBundleToS3({
     cxId,
@@ -51,7 +51,6 @@ export async function handleDataContribution({
   });
 
   const validatedBundle = validateFhirEntries(fullBundle);
-
   const incomingAmount = validatedBundle.entry.length;
   await checkResourceLimit(incomingAmount, patient);
 
@@ -62,7 +61,7 @@ export async function handleDataContribution({
   });
 
   if (!Config.isSandbox()) {
-    processCcdRequest(patient, fhirOrganization);
+    processCcdRequest(patient, fhirOrganization, requestId);
     if (hasCompositionResource(validatedBundle)) {
       const converted = await convertFhirToCda({ cxId, validatedBundle });
       uploadCdaDocuments({

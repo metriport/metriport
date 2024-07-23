@@ -4,6 +4,7 @@ import { Patient } from "@metriport/core/domain/patient";
 import { cdaDocumentUploaderHandler } from "@metriport/core/shareback/cda-uploader";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Config } from "../../shared/config";
 import { generateCcd } from "./generate-ccd";
 import { generateEmptyCcd } from "./generate-empty-ccd";
@@ -29,10 +30,14 @@ function createDocRef(patientId: string) {
   return { ...ccdDocRefTemplate, subject: { reference: `Patient/${patientId}` } };
 }
 
-export async function processCcdRequest(patient: Patient, organization: Organization) {
+export async function processCcdRequest(
+  patient: Patient,
+  organization: Organization,
+  requestId = uuidv7()
+): Promise<void> {
   const { log } = out(`Generate CCD cxId: ${patient.cxId}, patientId: ${patient.id}`);
   try {
-    const ccd = await generateCcd(patient);
+    const ccd = await generateCcd(patient, requestId);
     const docRef = createDocRef(patient.id);
     log(`CCD generated. Starting the upload...`);
     await cdaDocumentUploaderHandler({

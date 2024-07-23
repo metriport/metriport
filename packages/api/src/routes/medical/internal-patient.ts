@@ -33,7 +33,6 @@ import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
-import { getCqOrgIdsToDenyOnCw } from "../../external/hie/cross-hie-ids";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { getConsolidated } from "../../command/medical/patient/consolidated-get";
@@ -41,7 +40,6 @@ import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getPatientIds,
   getPatientOrFail,
-  getPatients,
   getPatientStates,
   matchPatient,
 } from "../../command/medical/patient/get-patient";
@@ -66,9 +64,10 @@ import { checkStaleEnhancedCoverage } from "../../external/commonwell/cq-bridge/
 import { initEnhancedCoverage } from "../../external/commonwell/cq-bridge/coverage-enhancement-init";
 import { setCQLinkStatuses } from "../../external/commonwell/cq-bridge/cq-link-status";
 import { ECUpdaterLocal } from "../../external/commonwell/cq-bridge/ec-updater-local";
-import { PatientLoaderLocal } from "../../models/helpers/patient-loader-local";
 import { cqLinkStatus } from "../../external/commonwell/patient-shared";
 import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-updater-commonwell";
+import { getCqOrgIdsToDenyOnCw } from "../../external/hie/cross-hie-ids";
+import { PatientLoaderLocal } from "../../models/helpers/patient-loader-local";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
 import { requestLogger } from "../helpers/request-logger";
@@ -85,7 +84,7 @@ import {
   getFromQueryAsArray,
   getFromQueryAsArrayOrFail,
 } from "../util";
-import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
+import { PatientLinksDTO, dtoFromCW } from "./dtos/linkDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";

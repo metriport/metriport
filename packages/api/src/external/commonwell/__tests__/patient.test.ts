@@ -1,17 +1,20 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { faker } from "@faker-js/faker";
 import { makePatient } from "../../../domain/medical/__tests__/patient";
+import { Config } from "../../../shared/config";
 import * as appConfig from "../../aws/app-config";
 import { validateCWEnabled } from "../patient";
 import * as cwShared from "../shared";
 
 describe("patient", () => {
   describe("validateCWEnabled", () => {
+    let config_isSandbox: jest.SpyInstance<boolean, []>;
     beforeAll(() => {
       jest.restoreAllMocks();
       jest.spyOn(appConfig, "isCommonwellEnabled").mockResolvedValue(true);
       jest.spyOn(appConfig, "isCWEnabledForCx").mockResolvedValue(true);
       jest.spyOn(cwShared, "isFacilityEnabledToQueryCW").mockResolvedValue(true);
+      config_isSandbox = jest.spyOn(Config, "isSandbox");
     });
     afterAll(() => {
       jest.restoreAllMocks();
@@ -41,6 +44,29 @@ describe("patient", () => {
     it("returns false when patient has gender U", async () => {
       const facilityId = faker.string.uuid();
       const patient = makePatient({ data: { genderAtBirth: "U" } });
+      const resp = await validateCWEnabled({ patient, facilityId });
+      expect(resp).toEqual(false);
+    });
+
+    it("returns false when forceCW is true and patient has gender U", async () => {
+      const facilityId = faker.string.uuid();
+      const patient = makePatient({ data: { genderAtBirth: "U" } });
+      const resp = await validateCWEnabled({ patient, facilityId, forceCW: true });
+      expect(resp).toEqual(false);
+    });
+
+    it("returns false when isSandbox is false and patient has gender U", async () => {
+      const facilityId = faker.string.uuid();
+      const patient = makePatient({ data: { genderAtBirth: "U" } });
+      config_isSandbox.mockReturnValueOnce(false);
+      const resp = await validateCWEnabled({ patient, facilityId });
+      expect(resp).toEqual(false);
+    });
+
+    it("returns false when isSandbox is true and patient has gender U", async () => {
+      const facilityId = faker.string.uuid();
+      const patient = makePatient({ data: { genderAtBirth: "U" } });
+      config_isSandbox.mockReturnValueOnce(true);
       const resp = await validateCWEnabled({ patient, facilityId });
       expect(resp).toEqual(false);
     });
