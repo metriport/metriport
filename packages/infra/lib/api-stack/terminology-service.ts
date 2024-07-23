@@ -2,7 +2,7 @@ import { Duration, CfnOutput } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecr from "aws-cdk-lib/aws-ecr";
-import * as servicediscovery from "aws-cdk-lib/aws-servicediscovery";
+import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import { Construct } from "constructs";
 import { getConfig } from "../shared/config";
 import { isProd } from "../shared/util";
@@ -35,23 +35,21 @@ export function createTerminologyService({
 }: {
   stack: Construct;
   vpc: ec2.IVpc;
-}): ecs.FargateService {
-  // Create a new Amazon Elastic Container Service (ECS) cluster
-  const cluster = new ecs.Cluster(stack, "TerminologyCluster", { vpc, containerInsights: true });
-
+}): ecs_patterns.ApplicationLoadBalancedFargateService {
   const settings = getSettings();
+
+  const cluster = new ecs.Cluster(stack, "TerminologyCluster", { vpc, containerInsights: true });
+  const ecrRepo = ecr.Repository.fromRepositoryName(
+    stack,
+    "TerminologyECRRepo",
+    "metriport/hawthorn"
+  );
 
   // Define the Fargate task definition
   const taskDefinition = new ecs.FargateTaskDefinition(stack, "TerminologyTaskDef", {
     memoryLimitMiB: settings.memoryLimitMiB,
     cpu: settings.cpu,
   });
-
-  const ecrRepo = ecr.Repository.fromRepositoryName(
-    stack,
-    "TerminologyECRRepo",
-    "metriport/hawthorn"
-  );
 
   // Add container to the task definition
   taskDefinition.addContainer("TerminologyContainer", {
@@ -60,11 +58,17 @@ export function createTerminologyService({
   });
 
   // Create the Fargate service
-  const fargateService = new ecs.FargateService(stack, "TerminologyFargateService", {
-    cluster,
-    taskDefinition,
-    desiredCount: settings.taskCountMin,
-  });
+  const fargateService = new ecs_patterns.ApplicationLoadBalancedFargateService(
+    stack,
+    "TerminologyFargateService",
+    {
+      cluster,
+      taskDefinition,
+      desiredCount: settings.taskCountMin,
+      healthCheckGracePeriod: Duration.seconds(60),
+      publicLoadBalancer: false,
+    }
+  );
 
   const securityGroup = new ec2.SecurityGroup(stack, "TerminologyServiceSG", {
     vpc,
@@ -79,26 +83,36 @@ export function createTerminologyService({
     "Allow HTTP traffic from within the VPC"
   );
 
-  fargateService.connections.addSecurityGroup(securityGroup);
+  fargateService.service.connections.addSecurityGroup(securityGroup);
 
-  const namespace = new servicediscovery.PrivateDnsNamespace(stack, "TerminologyNamespace", {
-    name: "Terminology.local",
-    vpc,
+  // This speeds up deployments so the tasks are swapped quicker.
+  // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
+  fargateService.targetGroup.setAttribute("deregistration_delay.timeout_seconds", "17");
+
+  // This also speeds up deployments so the health checks have a faster turnaround.
+  // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/network/target-group-health-checks.html
+  fargateService.targetGroup.configureHealthCheck({
+    healthyThresholdCount: 2,
+    interval: Duration.seconds(10),
   });
 
-  const service = namespace.createService("TerminologyService", {
-    dnsRecordType: servicediscovery.DnsRecordType.A,
-    dnsTtl: Duration.seconds(60),
-    loadBalancer: false,
+  const scaling = fargateService.service.autoScaleTaskCount({
+    minCapacity: settings.taskCountMin,
+    maxCapacity: settings.taskCountMax,
   });
-
-  fargateService.associateCloudMapService({
-    service,
+  scaling.scaleOnCpuUtilization("autoscale_cpu", {
+    targetUtilizationPercent: 60,
+    scaleInCooldown: Duration.minutes(2),
+    scaleOutCooldown: Duration.seconds(30),
+  });
+  scaling.scaleOnMemoryUtilization("autoscale_mem", {
+    targetUtilizationPercent: 80,
+    scaleInCooldown: Duration.minutes(2),
+    scaleOutCooldown: Duration.seconds(30),
   });
 
   new CfnOutput(stack, "TerminologyServiceDNS", {
-    description: "DNS name of the Terminology service",
-    value: `${service.serviceName}.${namespace.namespaceName}`,
+    value: fargateService.loadBalancer.loadBalancerDnsName,
   });
 
   return fargateService;
