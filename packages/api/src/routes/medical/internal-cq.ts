@@ -110,6 +110,41 @@ router.post(
   })
 );
 
+/***
+ * GET /internal/carequality/directory/organization/legacy/:oid
+ *
+ * Retrieves the organization with the specified OID from the Carequality Directory.
+ * @param req.params.oid The OID of the organization to retrieve.
+ * @param req.params.getInactive Optional, indicates whether to get the inactive organization(s). If not provided, will fetch active organizations.
+ * @returns Returns the organization with the specified OID.
+ */
+router.get(
+  "/directory/organization/legacy/:oid",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
+    const cq = makeCarequalityManagementAPI();
+    if (!cq) throw new Error("Carequality API not initialized");
+    const oid = getFrom("params").orFail("oid", req);
+    const getInactive = getFromQueryAsBoolean("getInactive", req);
+    const resp = await cq.listOrganizations({ count: 1, oid, active: !getInactive });
+    const org = parseCQDirectoryEntries(resp);
+
+    if (org.length > 1) {
+      const msg = "More than one organization with the same OID found in the CQ directory";
+      console.log(msg, oid);
+      capture.message(msg, {
+        extra: { context: `carequality.directory`, oid, organizations: org, level: "info" },
+      });
+    }
+
+    const matchingOrg = org[0];
+    if (!matchingOrg) throw new NotFoundError("Organization not found");
+
+    return res.status(httpStatus.OK).json(matchingOrg);
+  })
+);
+
 /**
  * GET /internal/carequality/directory/organization/:oid
  *
