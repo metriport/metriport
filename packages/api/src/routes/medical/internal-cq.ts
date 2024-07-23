@@ -23,6 +23,7 @@ import {
   verifyCxProviderAccess,
   verifyCxItVendorAccess,
 } from "../../command/medical/facility/verify-access";
+import { isOboFacility } from "../../domain/medical/facility";
 import { OrganizationModel } from "../../models/medical/organization";
 import { FacilityModel } from "../../models/medical/facility";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
@@ -120,7 +121,7 @@ router.post(
   })
 );
 
-async function getParsedOrg(
+async function getParsedCqOrg(
   cq: CarequalityManagementAPI,
   cxId: string,
   oid: string
@@ -155,15 +156,20 @@ router.get(
     const cq = makeCarequalityManagementAPI();
     if (!cq) throw new Error("Carequality API not initialized");
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const facilityId = getFrom("query").optional("facilityId", req);
     const oid = getFrom("params").orFail("oid", req);
 
-    await getOrganizationByOidOrFail({ cxId, oid });
-    const cqOrg = await getParsedOrg(cq, cxId, oid);
+    if (facilityId) {
+      await getFaciltiyByOidOrFail({ cxId, id: facilityId, oid });
+    } else {
+      await getOrganizationByOidOrFail({ cxId, oid });
+    }
+    const cqOrg = await getParsedCqOrg(cq, cxId, oid);
     return res.status(httpStatus.OK).json(cqOrg);
   })
 );
 
-async function checkAndUpdate({
+async function getAndUpdateCQOrg({
   cq,
   cxId,
   oid,
@@ -178,7 +184,7 @@ async function checkAndUpdate({
   org: OrganizationModel;
   facility?: FacilityModel;
 }): Promise<void> {
-  const cqOrg = await getParsedOrg(cq, cxId, oid);
+  const cqOrg = await getParsedCqOrg(cq, cxId, oid);
   if (!cqOrg.name) throw new NotFoundError("CQ org name is not set - cannot update");
   const address = facility ? facility.data.address : org.data.location;
   const { coordinates, addressLine } = await getCqAddress({ cxId, address });
@@ -196,7 +202,7 @@ async function checkAndUpdate({
     email: metriportEmailForCq,
     organizationBizType: org.type,
     parentOrgOid: facility
-      ? facility.cqOboOid
+      ? isOboFacility(facility.cqType)
         ? metriportIntermediaryOid
         : metriportOid
       : undefined,
@@ -234,7 +240,7 @@ router.put(
     if (!org.cqApproved) throw new NotFoundError("CQ not approved");
 
     const orgActive = cqOrgActiveSchema.parse(req.body);
-    await checkAndUpdate({
+    await getAndUpdateCQOrg({
       cq,
       cxId,
       oid,
@@ -268,7 +274,7 @@ router.put(
     if (!facility.cqApproved) throw new NotFoundError("CQ not approved");
 
     const facilityActive = cqOrgActiveSchema.parse(req.body);
-    await checkAndUpdate({
+    await getAndUpdateCQOrg({
       cq,
       cxId,
       oid,

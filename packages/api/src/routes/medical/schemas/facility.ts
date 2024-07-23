@@ -20,8 +20,12 @@ export const facilityUpdateSchema = facilityCreateSchema;
 export const facilityInternalDetailsSchema = z
   .object({
     id: z.string().optional(),
-    nameInMetriport: z.string(),
-    npi: z.string(),
+    nameInMetriport: z.string().min(1),
+    npi: z
+      .string()
+      .length(10)
+      .refine(npi => validateNPI(npi), { message: "NPI is not valid" }),
+    tin: optionalString(z.string()),
     // CQ
     cqApproved: z.boolean().optional(),
     cqType: z.nativeEnum(FacilityType),

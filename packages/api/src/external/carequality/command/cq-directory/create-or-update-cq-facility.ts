@@ -1,7 +1,7 @@
 import { OrganizationBizType } from "@metriport/core/domain/organization";
 import { metriportEmail as metriportEmailForCq } from "../../constants";
 import { metriportCompanyDetails } from "@metriport/shared";
-import { Facility } from "../../../../domain/medical/facility";
+import { Facility, isOboFacility } from "../../../../domain/medical/facility";
 import { createOrUpdateCQOrganization } from "./create-or-update-cq-organization";
 import { buildCqOrgNameForFacility, getCqAddress } from "../../shared";
 import { Config } from "../../../../shared/config";
@@ -25,7 +25,7 @@ export async function createOrUpdateFacilityInCq({
   const orgName = buildCqOrgNameForFacility({
     vendorName: cxOrgName,
     orgName: facility.data.name,
-    oboOid: cqOboOid,
+    oboOid: isOboFacility(facility.cqType) ? cqOboOid : undefined,
   });
 
   const { coordinates, addressLine } = await getCqAddress({ cxId, address: facility.data.address });
@@ -43,7 +43,7 @@ export async function createOrUpdateFacilityInCq({
     email: metriportEmailForCq,
     organizationBizType: cxOrgBizType,
     active: facility.cqActive,
-    parentOrgOid: cqOboOid ? metriportIntermediaryOid : metriportOid,
+    parentOrgOid: isOboFacility(facility.cqType) ? metriportIntermediaryOid : metriportOid,
     role: "Connection" as const,
   });
 }

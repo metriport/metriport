@@ -24,7 +24,7 @@ export async function doesOrganizationExistInCQ(
   cq: CarequalityManagementAPI,
   oid: string
 ): Promise<boolean | undefined> {
-  const { log } = out(`CQ get (Organization) - CQ Org OID ${oid}`);
+  const { log } = out(`CQ doesOrganizationExistInCQ - CQ Org OID ${oid}`);
 
   try {
     const resp = await cq.listOrganizations({ count: 1, oid });
@@ -47,7 +47,7 @@ export async function updateCQOrganization(
   cq: CarequalityManagementAPI,
   cqOrg: CQOrganization
 ): Promise<string | undefined> {
-  const { log } = out(`CQ update (Organization) - CQ Org OID ${cqOrg.oid}`);
+  const { log } = out(`CQ updateCQOrganization - CQ Org OID ${cqOrg.oid}`);
 
   try {
     return await cq.updateOrganization(cqOrg.getXmlString(), cqOrg.oid);
@@ -69,7 +69,7 @@ export async function registerOrganization(
   cq: CarequalityManagementAPI,
   cqOrg: CQOrganization
 ): Promise<string | undefined> {
-  const { log } = out(`CQ register (Organization) - CQ Org OID ${cqOrg.oid}`);
+  const { log } = out(`CQ registerOrganization - CQ Org OID ${cqOrg.oid}`);
 
   try {
     return await cq.registerOrganization(cqOrg.getXmlString());

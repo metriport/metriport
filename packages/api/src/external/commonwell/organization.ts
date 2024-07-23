@@ -92,7 +92,7 @@ export async function organizationToCommonwell(
   return cwOrg;
 }
 
-export async function get(cxId: string, orgOid: string): Promise<CWSdkOrganization | undefined> {
+export async function get(orgOid: string): Promise<CWSdkOrganization | undefined> {
   const { log, debug } = out(`CW get (Organization) - CW Org OID ${orgOid}`);
   const cwId = OID_PREFIX.concat(orgOid);
 

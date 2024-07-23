@@ -11,7 +11,10 @@ import {
 } from "../command/medical/admin/populate-fhir";
 import { getFacilities } from "../command/medical/facility/get-facility";
 import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
-import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
+import {
+  getOrganization,
+  getOrganizationOrFail,
+} from "../command/medical/organization/get-organization";
 import { getCxFFStatus } from "../command/internal/get-hie-enabled-feature-flags-status";
 import { updateCxHieEnabledFFs } from "../command/internal/update-hie-enabled-feature-flags";
 import { isEnhancedCoverageEnabledForCx } from "../external/aws/app-config";
@@ -30,6 +33,7 @@ import hieRoutes from "./medical/internal-hie";
 import mpiRoutes from "./medical/internal-mpi";
 import patientRoutes from "./medical/internal-patient";
 import facilityRoutes from "./medical/internal-facility";
+import organizationRoutes from "./medical/internal-organization";
 import { getUUIDFrom } from "./schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "./util";
 import { requestLogger } from "./helpers/request-logger";
@@ -39,6 +43,7 @@ const router = Router();
 router.use("/docs", docsRoutes);
 router.use("/patient", patientRoutes);
 router.use("/facility", facilityRoutes);
+router.use("/organization", organizationRoutes);
 router.use("/user", userRoutes);
 router.use("/commonwell", commonwellRoutes);
 router.use("/carequality", carequalityRoutes);
@@ -197,12 +202,12 @@ router.get(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const org = await getOrganizationOrFail({ cxId });
-    const facilities = await getFacilities({ cxId: org.cxId });
+    const org = await getOrganization({ cxId });
+    const facilities = org ? await getFacilities({ cxId: org.cxId }) : [];
 
     const response = {
-      cxId: org.cxId,
-      org: orgInternalDto(org),
+      cxId,
+      org: org ? orgInternalDto(org) : undefined,
       facilities: facilities.map(f => facilityInternalDto(f)),
     };
     return res.status(httpStatus.OK).json(response);

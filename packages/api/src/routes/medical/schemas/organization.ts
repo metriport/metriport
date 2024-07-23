@@ -19,8 +19,8 @@ export type OrganizationUpdate = z.infer<typeof organizationUpdateSchema>;
 export const organiationInternalDetailsSchema = z
   .object({
     id: z.string().optional(),
-    nameInMetriport: z.string(),
-    bizType: organizationBizTypeSchema,
+    nameInMetriport: z.string().min(1),
+    businessType: organizationBizTypeSchema,
     type: orgTypeSchema,
     // CQ
     cqApproved: z.boolean().optional(),

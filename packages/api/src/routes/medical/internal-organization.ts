@@ -8,7 +8,6 @@ import { requestLogger } from "../helpers/request-logger";
 import { verifyCxProviderAccess } from "../../command/medical/facility/verify-access";
 import { createOrganization } from "../../command/medical/organization/create-organization";
 import { updateOrganization } from "../../command/medical/organization/update-organization";
-import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { organiationInternalDetailsSchema } from "./schemas/organization";
 import { internalDtoFromModel } from "./dtos/organizationDTO";
 import { getUUIDFrom } from "../schemas/uuid";
@@ -37,7 +36,7 @@ router.put(
     const orgDetails = organiationInternalDetailsSchema.parse(req.body);
     const organizationCreate: OrganizationCreate = {
       cxId,
-      type: orgDetails.bizType,
+      type: orgDetails.businessType,
       data: {
         name: orgDetails.nameInMetriport,
         type: orgDetails.type,
@@ -55,13 +54,12 @@ router.put(
       cqApproved: orgDetails.cqApproved,
       cwApproved: orgDetails.cwApproved,
     };
-    let organization: Organization;
+    let org: Organization;
     if (orgDetails.id) {
-      organization = await updateOrganization({ id: orgDetails.id, ...organizationCreate });
+      org = await updateOrganization({ id: orgDetails.id, ...organizationCreate });
     } else {
-      organization = await createOrganization(organizationCreate);
+      org = await createOrganization(organizationCreate);
     }
-    const org = await getOrganizationOrFail({ cxId });
     const syncInHie = await verifyCxProviderAccess(cxId, false);
     // TODO Move to external/hie https://github.com/metriport/metriport-internal/issues/1940
     // CAREQUALITY
@@ -86,13 +84,17 @@ router.put(
     }
     // COMMONWELL
     if (syncInHie && org.cwApproved) {
-      createOrUpdateCWOrganization(cxId, {
-        oid: org.oid,
-        data: org.data,
-        active: org.cwActive,
+      createOrUpdateCWOrganization({
+        cxId,
+        org: {
+          oid: org.oid,
+          data: org.data,
+          active: org.cwActive,
+        },
+        isObo: false,
       }).catch(processAsyncError("cw.internal.organization"));
     }
-    return res.status(httpStatus.OK).json(internalDtoFromModel(organization));
+    return res.status(httpStatus.OK).json(internalDtoFromModel(org));
   })
 );
 
