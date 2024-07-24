@@ -1,5 +1,6 @@
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
-import { PatientResource } from "@metriport/ihe-gateway-sdk";
+import { PatientResource, Gender } from "@metriport/ihe-gateway-sdk";
+import { GenderAtBirth } from "@metriport/core/domain/patient";
 import {
   removeInvalidArrayValues,
   normalizeDob,
@@ -43,9 +44,9 @@ export function patientResourceToNormalizedLinkDemographics(
     return [];
   });
   /* TODO
-  const driversLicenses = (patientResource.personalIdentifiers ?? []).flatMap(p => { 
+  const driversLicenses = (patientResource.personalIdentifiers ?? []).flatMap(p => {
   });
-  const ssns = (ppatientResource.personalIdentifiers ?? []).flatMap(p => { 
+  const ssns = (ppatientResource.personalIdentifiers ?? []).flatMap(p => {
   });
   */
   return removeInvalidArrayValues({
@@ -66,4 +67,17 @@ export function getPatientResources(linkResults: CQLink[]): PatientResource[] {
     if (!patientResource) return [];
     return patientResource;
   });
+}
+
+export function mapGenderAtBirthFromCq(k: Gender): GenderAtBirth {
+  switch (k) {
+    case "female":
+      return "F";
+    case "male":
+      return "M";
+    case "other":
+      return "O";
+    default:
+      return "U";
+  }
 }

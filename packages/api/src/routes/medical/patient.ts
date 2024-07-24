@@ -504,6 +504,9 @@ router.post(
 
 /** ---------------------------------------------------------------------------
  * GET /patient/:id/facility-matches
+ *
+ * returns the all the facilities the patient is matched to.
+ *
  * @param req.param.id The ID of the patient whose facility matches are to be returned.
  * @return The patient's facility matches.
  */
@@ -518,26 +521,6 @@ router.get(
     return res.json(facilityMatches);
   })
 );
-
-// TODO: Temporary remove endpoint until we prioritize it
-// /** ---------------------------------------------------------------------------
-//  * GET /patient/:id/facility-matches
-//  * @param req.param.id The ID of the patient whose facility matches are to be returned.
-//  * @param req.query.searchTerm The ID of the patient whose facility matches are to be returned.
-//  * @return The patient's facility matches.
-//  */
-// router.get(
-//   "/:id/facility-matches/search",
-//   requestLogger,
-//   asyncHandler(async (req: Request, res: Response) => {
-//     const patientId = getFrom("params").orFail("id", req);
-//     const searchTerm = getFrom("query").optional("searchTerm", req);
-
-//     const facilityMatches = await searchPatientFacilityMatches({ patientId, searchTerm });
-
-//     return res.json(facilityMatches);
-//   })
-// );
 
 /** ---------------------------------------------------------------------------
  * GET /patient/:id/consolidated/webhook

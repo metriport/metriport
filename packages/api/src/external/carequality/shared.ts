@@ -1,3 +1,4 @@
+import { Telecom } from "@metriport/ihe-gateway-sdk";
 import { Patient } from "@metriport/core/domain/patient";
 import { capture } from "@metriport/core/util/notifications";
 import { PurposeOfUse } from "@metriport/shared";
@@ -143,4 +144,23 @@ export function buildCqOrgName({
   }
 
   return `${vendorName} - ${orgName}`;
+}
+
+export function getCqPatientContactType(
+  telecom: Telecom[] | null | undefined,
+  system: "phone" | "email"
+): string[] {
+  if (telecom && telecom.length > 0) {
+    const contacts: string[] = [];
+
+    for (const contact of telecom) {
+      if (contact.system === system && contact.value) {
+        contacts.push(contact.value);
+      }
+    }
+
+    return contacts;
+  }
+
+  return [];
 }
