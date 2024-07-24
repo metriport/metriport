@@ -17,6 +17,7 @@ import {
   Subject,
 } from "../../cda-types/shared-types";
 import {
+  buildCdaGender,
   buildCodeCe,
   buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
@@ -26,7 +27,6 @@ import {
   formatDateToCdaTimestamp,
   getDisplaysFromCodeableConcepts,
   getNotes,
-  mapFhirGenderToCda,
   notOnFilePlaceholder,
   withNullFlavor,
 } from "../commons";
@@ -187,12 +187,7 @@ function createEntryFromMemberHistory(
 
 function buildSubject(memberHist: FamilyMemberHistory): Subject {
   const genderCode = buildCodeCvFromCodeableConcept(memberHist.sex);
-  const mappedGenderCode = buildCodeCe({
-    code: mapFhirGenderToCda(genderCode?._code),
-    codeSystem: "2.16.840.1.113883.5.1",
-    codeSystemName: "AdministrativeGender",
-    displayName: genderCode?._displayName,
-  });
+  const mappedGenderCode = buildCdaGender(genderCode?._code);
 
   const birthTime = withNullFlavor(formatDateToCdaTimestamp(memberHist.bornDate), "_value");
 

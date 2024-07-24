@@ -626,6 +626,17 @@ export function getNotes(note: Annotation[] | undefined): string | undefined {
   return combinedNotes?.length ? combinedNotes : undefined;
 }
 
+export function buildCdaGender(gender: string | undefined): EntryObject {
+  const cdaGender = mapFhirGenderToCda(gender);
+  if (!cdaGender) return withNullFlavor(undefined, "_code");
+
+  return buildCodeCe({
+    code: cdaGender,
+    codeSystem: "2.16.840.1.113883.5.1",
+    codeSystemName: "AdministrativeGender",
+  });
+}
+
 /**
  * For FHIR genders:
  * @see https://hl7.org/fhir/R4/valueset-administrative-gender.html
@@ -638,8 +649,10 @@ export function mapFhirGenderToCda(gender: string | undefined): CdaGender {
       return "M";
     case "female":
       return "F";
-    default:
+    case "other":
       return "UN";
+    default:
+      return undefined;
   }
 }
 

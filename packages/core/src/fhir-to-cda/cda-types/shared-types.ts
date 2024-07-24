@@ -52,7 +52,7 @@ export type CdaAddressUse =
   | "TMP"
   | "WP";
 
-export type CdaGender = "M" | "F" | "UN";
+export type CdaGender = "M" | "F" | "UN" | undefined;
 export type CdaTelecomUse = "AS" | "EC" | "HP" | "HV" | "MC" | "PG" | "WP";
 export type Entry = { [key: string]: string } | string;
 export type EntryObject = { [key: string]: string };
@@ -127,6 +127,7 @@ export type CdaOriginalText = {
 
 // Ce (CE) stands for Coded with Equivalents
 export type CdaCodeCe = {
+  _nullFlavor?: string;
   _code?: string;
   _codeSystem?: string;
   _codeSystemName?: string;
