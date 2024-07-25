@@ -146,7 +146,7 @@ router.get(
 );
 
 /**
- * GET /internal/carequality/directory/organization/:oid
+ * GET /internal/carequality/directory/ops/organization/:oid
  *
  * Retrieves the organization with the specified OID from the Carequality Directory.
  * @param req.params.oid The OID of the organization to retrieve.
@@ -174,7 +174,7 @@ router.get(
 );
 
 /**
- * PUT /internal/carequality/directory/organization/:oid
+ * PUT /internal/carequality/directory/ops/organization/:oid
  *
  * Updates the organization in the Carequality Directory.
  */
@@ -205,7 +205,7 @@ router.put(
 );
 
 /**
- * PUT /internal/carequality/directory/facility/:oid
+ * PUT /internal/carequality/directory/ops/facility/:oid
  *
  * Updates the facility in the Carequality Directory.
  * @param req.params.oid The OID of the facility to update.

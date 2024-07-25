@@ -21,7 +21,7 @@ import { getUUIDFrom } from "../schemas/uuid";
 const router = Router();
 
 /**
- * GET /internal/commonwell/organization/:oid
+ * GET /internal/commonwell/ops/organization/:oid
  *
  * Retrieves the organization with the specified OID from CommonWell.
  * @param req.params.oid The OID of the organization to retrieve.
@@ -46,7 +46,7 @@ router.get(
 );
 
 /**
- * PUT /internal/commonwell/organization/:oid
+ * PUT /internal/commonwell/ops/organization/:oid
  *
  * Updates the organization in the CommonWell.
  */
@@ -73,7 +73,7 @@ router.put(
 );
 
 /**
- * PUT /internal/commonwell/facility/:oid
+ * PUT /internal/commonwell/ops/facility/:oid
  *
  * Updates the facility in the CommonWell.
  * @param req.params.oid The OID of the facility to update.
