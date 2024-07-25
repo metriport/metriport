@@ -38,8 +38,10 @@ export function transformIti55RequestToPatientResource(
     value: id._extension,
   }));
 
-  const iheGender = queryParams.livingSubjectAdministrativeGender?.value;
-  const gender = iheGender ? mapIheGenderToFhir(iheGender._code) : mapIheGenderToFhir(undefined);
+  const iheGender = queryParams.livingSubjectAdministrativeGender?.value
+    ? queryParams.livingSubjectAdministrativeGender?.value._code
+    : undefined;
+  const gender = mapIheGenderToFhir(iheGender);
   const birthDate = dayjs(queryParams.livingSubjectBirthTime.value._value).format("YYYY-MM-DD");
   const patientResource = {
     name,

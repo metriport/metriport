@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import { SamlAttributes } from "@metriport/ihe-gateway-sdk";
+import { toArray } from "@metriport/shared";
 import {
   SamlHeader,
   Code,
@@ -28,9 +29,7 @@ const isPurposeOfUseObject = (value: AttributeValue): value is { PurposeOfUse: C
 };
 
 export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttributes {
-  const attributes = Array.isArray(header.Security.Assertion.AttributeStatement)
-    ? header.Security.Assertion.AttributeStatement?.[0]?.Attribute
-    : header.Security.Assertion.AttributeStatement.Attribute;
+  const attributes = toArray(header.Security.Assertion.AttributeStatement)?.[0]?.Attribute;
   if (!attributes) {
     throw new Error("Attributes are undefined");
   }
