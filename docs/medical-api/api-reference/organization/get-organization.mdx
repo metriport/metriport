@@ -13,9 +13,9 @@ api: "GET /medical/v1/organization"
 ```javascript Metriport SDK
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 
-const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
-const org = await metriportClient.getOrganization();
+const org = await metriport.getOrganization();
 ```
 
 </ResponseExample>

@@ -23,9 +23,9 @@ api: "PUT /medical/v1/organization/{id}"
 ```javascript Metriport SDK
 import { Metriport, OrgType, USState } from "@metriport/api-sdk";
 
-const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
-const org = await metriportClient.updateOrganization({
+const org = await metriport.updateOrganization({
   id: "018a80c4-292a-7486-a1234-7uwe234ert90",
   type: OrgType.postAcuteCare,
   name: "Metriport Inc.",
