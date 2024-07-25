@@ -15,9 +15,7 @@ import { metriportCompanyDetails } from "@metriport/shared";
 
 const cq = makeCarequalityManagementAPI();
 
-export async function createOrUpdateCQOrganization(
-  orgDetails: CQOrgDetails
-): Promise<string | undefined> {
+export async function createOrUpdateCQOrganization(orgDetails: CQOrgDetails): Promise<string> {
   if (!cq) throw new Error("Carequality API not initialized");
   const org = CQOrganization.fromDetails(orgDetails);
   const orgExists = await doesOrganizationExistInCQ(cq, org.oid);
@@ -30,7 +28,7 @@ export async function createOrUpdateCQOrganization(
 export async function doesOrganizationExistInCQ(
   cq: CarequalityManagementAPI,
   oid: string
-): Promise<boolean | undefined> {
+): Promise<boolean> {
   const { log } = out(`CQ doesOrganizationExistInCQ - CQ Org OID ${oid}`);
 
   try {
@@ -53,7 +51,7 @@ export async function doesOrganizationExistInCQ(
 export async function updateCQOrganization(
   cq: CarequalityManagementAPI,
   cqOrg: CQOrganization
-): Promise<string | undefined> {
+): Promise<string> {
   const { log } = out(`CQ updateCQOrganization - CQ Org OID ${cqOrg.oid}`);
 
   try {
@@ -75,7 +73,7 @@ export async function updateCQOrganization(
 export async function registerOrganization(
   cq: CarequalityManagementAPI,
   cqOrg: CQOrganization
-): Promise<string | undefined> {
+): Promise<string> {
   const { log } = out(`CQ registerOrganization - CQ Org OID ${cqOrg.oid}`);
 
   try {
