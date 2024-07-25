@@ -203,9 +203,6 @@ function createIti55SoapBody(
       acceptAckCode: {
         "@_code": "AL",
       },
-      queryResponseCode: {
-        "@_code": queryResponseCode,
-      },
       acknowledgement: {
         typeCode: {
           "@_code": ack,
