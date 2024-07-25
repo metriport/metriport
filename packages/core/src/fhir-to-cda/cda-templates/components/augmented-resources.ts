@@ -10,6 +10,7 @@ import {
   MedicationStatement,
   Observation,
   Practitioner,
+  Procedure,
   Resource,
 } from "@medplum/fhirtypes";
 import { oids } from "../constants";
@@ -83,4 +84,13 @@ export class AugmentedImmunization implements AugmentedResource<Immunization> {
 export class AugmentedFamilyMemberHistory implements AugmentedResource<FamilyMemberHistory> {
   public readonly typeOid = oids.familyHistoryOrganizer;
   constructor(public readonly sectionName: string, public readonly resource: FamilyMemberHistory) {}
+}
+
+export class AssembledNote {
+  constructor(
+    public readonly sectionName: string,
+    public readonly report: DiagnosticReport,
+    public readonly observations: Observation[],
+    public readonly procedures?: Procedure[]
+  ) {}
 }

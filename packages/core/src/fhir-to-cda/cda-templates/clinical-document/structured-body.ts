@@ -1,32 +1,35 @@
 import { Bundle } from "@medplum/fhirtypes";
-import { buildAllergies } from "../components/allergies";
-import { buildEncounters } from "../components/encounters";
-import { buildFamilyHistory } from "../components/family-history";
-import { buildImmunizations } from "../components/immunizations";
-import { buildMedications } from "../components/medications";
-import { buildMentalStatus } from "../components/mental-status";
-import { buildNotes } from "../components/notes";
-import { buildProblems } from "../components/problems";
-import { buildResult } from "../components/results";
-import { buildSocialHistory } from "../components/social-history";
-import { buildVitalSigns } from "../components/vital-signs";
+// import { buildAllergies } from "../components/allergies";
+// import { buildEncounters } from "../components/encounters";
+// import { buildFamilyHistory } from "../components/family-history";
+// import { buildImmunizations } from "../components/immunizations";
+// import { buildMedications } from "../components/medications";
+// import { buildMentalStatus } from "../components/mental-status";
+// import { buildNotes } from "../components/notes";
+// import { buildProblems } from "../components/problems";
+// import { buildResult } from "../components/results";
+// import { buildSocialHistory } from "../components/social-history";
+// import { buildVitalSigns } from "../components/vital-signs";
 import { buildAssessmentAndPlan } from "../components/assessment-and-plan";
+import { buildVariousNotesAndResults } from "../components/notes-and-results";
 
 export function buildStructuredBody(fhirBundle: Bundle): unknown {
-  const notes = buildNotes(fhirBundle);
+  // const notes = buildNotes(fhirBundle);
+  const variousNotes = buildVariousNotesAndResults(fhirBundle);
   const structuredBodySections = [
-    buildResult(fhirBundle),
-    buildSocialHistory(fhirBundle),
-    buildMentalStatus(fhirBundle),
-    buildMedications(fhirBundle),
-    buildProblems(fhirBundle),
-    buildAllergies(fhirBundle),
-    buildEncounters(fhirBundle),
-    buildImmunizations(fhirBundle),
-    buildVitalSigns(fhirBundle),
-    buildFamilyHistory(fhirBundle),
+    // buildResult(fhirBundle),
+    // buildSocialHistory(fhirBundle),
+    // buildMentalStatus(fhirBundle),
+    // buildMedications(fhirBundle),
+    // buildProblems(fhirBundle),
+    // buildAllergies(fhirBundle),
+    // buildEncounters(fhirBundle),
+    // buildImmunizations(fhirBundle),
+    // buildVitalSigns(fhirBundle),
+    // buildFamilyHistory(fhirBundle),
     buildAssessmentAndPlan(),
-    ...(notes ? notes : []),
+    // ...(notes ? notes : []),
+    ...(variousNotes ? variousNotes : []),
   ];
 
   return {
