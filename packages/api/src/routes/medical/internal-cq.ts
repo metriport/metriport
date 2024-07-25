@@ -146,14 +146,14 @@ router.get(
 );
 
 /**
- * GET /internal/carequality/directory/ops/organization/:oid
+ * GET /internal/carequality/ops/directory/organization/:oid
  *
  * Retrieves the organization with the specified OID from the Carequality Directory.
  * @param req.params.oid The OID of the organization to retrieve.
  * @returns Returns the organization with the specified OID.
  */
 router.get(
-  "/directory/ops/organization/:oid",
+  "/ops/directory/organization/:oid",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
@@ -174,12 +174,12 @@ router.get(
 );
 
 /**
- * PUT /internal/carequality/directory/ops/organization/:oid
+ * PUT /internal/carequality/ops/directory/organization/:oid
  *
  * Updates the organization in the Carequality Directory.
  */
 router.put(
-  "/directory/ops/organization/:oid",
+  "/ops/directory/organization/:oid",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
@@ -205,13 +205,13 @@ router.put(
 );
 
 /**
- * PUT /internal/carequality/directory/ops/facility/:oid
+ * PUT /internal/carequality/ops/directory/facility/:oid
  *
  * Updates the facility in the Carequality Directory.
  * @param req.params.oid The OID of the facility to update.
  */
 router.put(
-  "/directory/ops/facility/:oid",
+  "/ops/directory/ops/facility/:oid",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
