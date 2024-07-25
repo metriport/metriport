@@ -6,6 +6,7 @@ import {
   samlHeaderSchema,
   genderCodeSchema,
   schemaOrArrayOrEmpty,
+  schemaOrEmpty,
 } from "../../../schema";
 
 const nameSchema = z.object({
@@ -13,15 +14,22 @@ const nameSchema = z.object({
   given: schemaOrArray(textSchema),
 });
 
+const idSchema = z.object({
+  _extension: z.string(),
+  _root: z.string(),
+});
+
 export const QueryByParameterSchema = z.object({
   parameterList: z.object({
-    livingSubjectAdministrativeGender: z.object({
-      value: z
-        .object({
-          _code: genderCodeSchema,
-        })
-        .optional(),
-    }),
+    livingSubjectAdministrativeGender: z
+      .object({
+        value: schemaOrEmpty(
+          z.object({
+            _code: genderCodeSchema,
+          })
+        ),
+      })
+      .optional(),
     livingSubjectBirthTime: z.object({
       value: z.object({
         _value: z.string(),
@@ -29,12 +37,7 @@ export const QueryByParameterSchema = z.object({
     }),
     livingSubjectId: z
       .object({
-        value: schemaOrArrayOrEmpty(
-          z.object({
-            _extension: z.string(),
-            _root: z.string(),
-          })
-        ).optional(),
+        value: schemaOrArrayOrEmpty(idSchema).optional(),
       })
       .optional(),
     livingSubjectName: schemaOrArray(
@@ -58,12 +61,7 @@ export const QueryByParameterSchema = z.object({
       .optional(),
     principalCareProviderId: z
       .object({
-        value: schemaOrArrayOrEmpty(
-          z.object({
-            _extension: z.string(),
-            _root: z.string(),
-          })
-        ).optional(),
+        value: schemaOrArrayOrEmpty(idSchema).optional(),
       })
       .optional(),
   }),
