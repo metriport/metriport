@@ -3,6 +3,7 @@ import activity from "./activity";
 import biometrics from "./biometrics";
 import body from "./body";
 import connect from "./connect";
+import feedback from "./feedback";
 import { reportClientErrors } from "./helpers/report-client-errors";
 import internal from "./internal";
 import medical from "./medical";
@@ -38,6 +39,9 @@ export default (app: Application) => {
   app.use("/medical/v1", processCxId, checkMAPIAccess, medical);
   app.use(`${dash}/medical/v1`, processCxId, checkMAPIAccess, medical);
   app.use("/fhir/R4", processCxId, checkMAPIAccess, fhirRouter);
+
+  // AuthZ on API GW
+  app.use(`/feedback`, feedback);
 
   // routes with session token auth
   app.use("/connect", connect);
