@@ -171,9 +171,10 @@ export const cqOrgActiveSchema = z.object({
 
 export async function getParsedCqOrgOrFail(
   cq: CarequalityManagementAPI,
-  oid: string
+  oid: string,
+  active: boolean
 ): Promise<CQDirectoryEntryData> {
-  const resp = await cq.listOrganizations({ count: 1, oid });
+  const resp = await cq.listOrganizations({ count: 1, oid, active });
   if (resp.length === 0) throw new NotFoundError("Organization not found");
   const cqOrgs = parseCQDirectoryEntries(resp);
   const cqOrg = cqOrgs[0] as CQDirectoryEntryData;

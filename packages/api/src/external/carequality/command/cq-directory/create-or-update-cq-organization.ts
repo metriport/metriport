@@ -15,10 +15,13 @@ import { metriportCompanyDetails } from "@metriport/shared";
 
 const cq = makeCarequalityManagementAPI();
 
-export async function createOrUpdateCQOrganization(orgDetails: CQOrgDetails): Promise<string> {
+export async function createOrUpdateCQOrganization(
+  orgDetails: CQOrgDetails,
+  active: boolean
+): Promise<string> {
   if (!cq) throw new Error("Carequality API not initialized");
   const org = CQOrganization.fromDetails(orgDetails);
-  const orgExists = await doesOrganizationExistInCQ(cq, org.oid);
+  const orgExists = await doesOrganizationExistInCQ(cq, org.oid, active);
   if (orgExists) {
     return updateCQOrganization(cq, org);
   }
@@ -27,12 +30,13 @@ export async function createOrUpdateCQOrganization(orgDetails: CQOrgDetails): Pr
 
 export async function doesOrganizationExistInCQ(
   cq: CarequalityManagementAPI,
-  oid: string
+  oid: string,
+  active: boolean
 ): Promise<boolean> {
   const { log } = out(`CQ doesOrganizationExistInCQ - CQ Org OID ${oid}`);
 
   try {
-    const resp = await cq.listOrganizations({ count: 1, oid });
+    const resp = await cq.listOrganizations({ count: 1, oid, active });
     return resp.length > 0;
   } catch (error) {
     const msg = `Failure while getting Org @ CQ`;
@@ -107,38 +111,42 @@ export async function getAndUpdateCQOrgAndMetriportOrg({
   org: OrganizationModel;
   facility?: FacilityModel;
 }): Promise<void> {
-  const cqOrg = await getParsedCqOrgOrFail(cq, oid);
+  const currentActive = facility ? facility.cqActive : org.cqActive;
+  const cqOrg = await getParsedCqOrgOrFail(cq, oid, currentActive);
   if (!cqOrg.name) throw new NotFoundError("CQ org name is not set - cannot update");
   const address = facility ? facility.data.address : org.data.location;
   const { coordinates, addressLine } = await getCqAddress({ cxId, address });
-  await createOrUpdateCQOrganization({
-    name: cqOrg.name,
-    addressLine1: addressLine,
-    lat: coordinates.lat.toString(),
-    lon: coordinates.lon.toString(),
-    city: address.city,
-    state: address.state,
-    postalCode: address.zip,
-    oid,
-    contactName: metriportCompanyDetails.name,
-    phone: metriportCompanyDetails.phone,
-    email: metriportEmailForCq,
-    organizationBizType: org.type,
-    parentOrgOid: facility
-      ? isOboFacility(facility.cqType)
-        ? metriportIntermediaryOid
-        : metriportOid
-      : undefined,
-    active,
-    role: "Connection" as const,
-  });
+  await createOrUpdateCQOrganization(
+    {
+      name: cqOrg.name,
+      addressLine1: addressLine,
+      lat: coordinates.lat.toString(),
+      lon: coordinates.lon.toString(),
+      city: address.city,
+      state: address.state,
+      postalCode: address.zip,
+      oid,
+      contactName: metriportCompanyDetails.name,
+      phone: metriportCompanyDetails.phone,
+      email: metriportEmailForCq,
+      organizationBizType: org.type,
+      parentOrgOid: facility
+        ? isOboFacility(facility.cqType)
+          ? metriportIntermediaryOid
+          : metriportOid
+        : undefined,
+      active,
+      role: "Connection" as const,
+    },
+    currentActive
+  );
   if (facility) {
     await facility.update({
-      cwActive: active,
+      cqActive: active,
     });
   } else {
     await org.update({
-      cwActive: active,
+      cqActive: active,
     });
   }
 }

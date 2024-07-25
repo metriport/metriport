@@ -29,6 +29,7 @@ import {
 } from "../../command/medical/organization/get-organization";
 import { getFaciltiyByOidOrFail } from "../../command/medical/facility/get-facility";
 import { makeCarequalityManagementAPI } from "../../external/carequality/api";
+import { CQDirectoryEntryData } from "../../external/carequality/cq-directory";
 import { bulkInsertCQDirectoryEntries } from "../../external/carequality/command/cq-directory/create-cq-directory-entry";
 import { getAndUpdateCQOrgAndMetriportOrg } from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
 import { parseCQDirectoryEntries } from "../../external/carequality/command/cq-directory/parse-cq-directory-entry";
@@ -163,12 +164,15 @@ router.get(
     const facilityId = getFrom("query").optional("facilityId", req);
     const oid = getFrom("params").orFail("oid", req);
 
+    let cqOrg: CQDirectoryEntryData;
     if (facilityId) {
-      await getFaciltiyByOidOrFail({ cxId, id: facilityId, oid });
+      const facility = await getFaciltiyByOidOrFail({ cxId, id: facilityId, oid });
+      cqOrg = await getParsedCqOrgOrFail(cq, oid, facility.cqActive);
     } else {
-      await getOrganizationByOidOrFail({ cxId, oid });
+      const org = await getOrganizationByOidOrFail({ cxId, oid });
+      cqOrg = await getParsedCqOrgOrFail(cq, oid, org.cqActive);
     }
-    const cqOrg = await getParsedCqOrgOrFail(cq, oid);
+
     return res.status(httpStatus.OK).json(cqOrg);
   })
 );
