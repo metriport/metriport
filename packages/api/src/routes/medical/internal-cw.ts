@@ -28,7 +28,7 @@ const router = Router();
  * @returns Returns the organization with the specified OID.
  */
 router.get(
-  "/organization/:oid",
+  "/ops/organization/:oid",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -51,7 +51,7 @@ router.get(
  * Updates the organization in the CommonWell.
  */
 router.put(
-  "/organization/:oid",
+  "/ops/organization/:oid",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -79,7 +79,7 @@ router.put(
  * @param req.params.oid The OID of the facility to update.
  */
 router.put(
-  "/facility/:oid",
+  "/ops/facility/:oid",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
