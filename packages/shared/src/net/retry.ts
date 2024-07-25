@@ -96,7 +96,7 @@ function networkGetTimeToWait({
  *
  */
 export async function executeWithNetworkRetries<T>(
-  fn: () => Promise<T>,
+  fn: (attempt: number) => Promise<T>,
   options?: Partial<ExecuteWithNetworkRetriesOptions>
 ): Promise<T> {
   const actualOptions = { ...defaultOptions, ...options };
