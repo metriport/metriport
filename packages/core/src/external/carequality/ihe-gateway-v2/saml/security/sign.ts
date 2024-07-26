@@ -14,6 +14,7 @@ function createSignature({
   locationReference,
   action,
   transforms,
+  useSha1 = false,
 }: {
   xml: string;
   privateKey: crypto.KeyLike;
@@ -21,15 +22,20 @@ function createSignature({
   locationReference: string;
   action: "append" | "prepend" | "before" | "after";
   transforms: string[];
+  useSha1: boolean;
 }): SignedXml {
   const sig = new SignedXml({ privateKey });
   sig.addReference({
     xpath: xpath,
-    digestAlgorithm: "http://www.w3.org/2001/04/xmlenc#sha256",
+    digestAlgorithm: useSha1
+      ? "http://www.w3.org/2000/09/xmldsig#sha1"
+      : "http://www.w3.org/2001/04/xmlenc#sha256",
     transforms: transforms,
   });
   sig.canonicalizationAlgorithm = "http://www.w3.org/2001/10/xml-exc-c14n#";
-  sig.signatureAlgorithm = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256";
+  sig.signatureAlgorithm = useSha1
+    ? "http://www.w3.org/2000/09/xmldsig#rsa-sha1"
+    : "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256";
   sig.computeSignature(xml, {
     prefix: "ds",
     location: { reference: locationReference, action: action },
@@ -40,9 +46,11 @@ function createSignature({
 export function signTimestamp({
   xml,
   privateKey,
+  useSha1 = false,
 }: {
   xml: string;
   privateKey: crypto.KeyLike;
+  useSha1?: boolean;
 }): string {
   const transforms = ["http://www.w3.org/2001/10/xml-exc-c14n#"];
   return createSignature({
@@ -52,15 +60,18 @@ export function signTimestamp({
     locationReference: "//*[local-name(.)='Assertion']",
     action: "after",
     transforms,
+    useSha1,
   }).getSignedXml();
 }
 
 export function signEnvelope({
   xml,
   privateKey,
+  useSha1 = false,
 }: {
   xml: string;
   privateKey: crypto.KeyLike;
+  useSha1?: boolean;
 }): string {
   const transforms = [
     "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
@@ -73,15 +84,18 @@ export function signEnvelope({
     locationReference: "//*[local-name(.)='Issuer']",
     action: "after",
     transforms,
+    useSha1,
   }).getSignedXml();
 }
 
 export function signFullSaml({
   xmlString,
   samlCertsAndKeys,
+  useSha1 = false,
 }: {
   xmlString: string;
   samlCertsAndKeys: SamlCertsAndKeys;
+  useSha1?: boolean;
 }): string {
   const decryptedPrivateKey = crypto.createPrivateKey({
     key: samlCertsAndKeys.privateKey,
@@ -89,10 +103,15 @@ export function signFullSaml({
     format: "pem",
   });
 
-  const signedTimestamp = signTimestamp({ xml: xmlString, privateKey: decryptedPrivateKey });
+  const signedTimestamp = signTimestamp({
+    xml: xmlString,
+    privateKey: decryptedPrivateKey,
+    useSha1,
+  });
   const signedTimestampAndEnvelope = signEnvelope({
     xml: signedTimestamp,
     privateKey: decryptedPrivateKey,
+    useSha1,
   });
   const insertedKeyInfo = insertKeyInfo({
     xmlContent: signedTimestampAndEnvelope,

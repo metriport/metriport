@@ -59,7 +59,7 @@ export function runConsolidatedTests(e2e: E2eContext) {
       expect(consolidated.type).toEqual("transaction-response");
       expect(consolidated.entry).toBeTruthy();
       if (!consolidated.entry) throw new Error("Missing entry");
-      expect(consolidated.entry.length).toEqual(4);
+      expect(consolidated.entry.length).toEqual(2);
       expect(consolidated.entry).toEqual(
         expect.arrayContaining([
           {

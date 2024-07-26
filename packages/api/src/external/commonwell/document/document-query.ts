@@ -63,7 +63,7 @@ import {
   getFileName,
   getContentTypeOrUnknown,
 } from "./shared";
-import { getDocumentReferenceContentTypeCounts } from "../../hie/get-counts-analytics";
+import { getDocumentReferenceContentTypeCounts } from "../../hie/carequality-analytics";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
