@@ -32,6 +32,8 @@ export function splitBundleByCompositions(fhirBundle: Bundle): Bundle[] {
         extra: {
           patientReference,
           organizationReference,
+          context:
+            "splitBundleByCompositions - creating CDAs from FHIR bundles containing compositions",
         },
       });
       throw new BadRequestError("Invalid Patient reference in the subject field");
