@@ -105,7 +105,7 @@ export class IHEStack extends Stack {
 
     const customStage = new apigwv2.HttpStage(this, "IHEAPIGatewayv2Stage", {
       httpApi: apigw2,
-      stageName: "$default",
+      stageName: "v2",
       domainMapping: {
         domainName: domainName,
       },
