@@ -126,12 +126,11 @@ export class IHEStack extends Stack {
       }),
     };
 
-    stage.routeSettings = {
-      $default: {
-        throttlingBurstLimit: 100,
-        throttlingRateLimit: 100,
-      },
-    };
+    // see https://github.com/aws/aws-cdk/issues/19626#issuecomment-1086844529
+    stage.addPropertyOverride("DefaultRouteSettings", {
+      ThrottlingBurstLimit: 100,
+      ThrottlingRateLimit: 100,
+    });
 
     const role = new iam.Role(this, "ApiGWLogWriterRole", {
       assumedBy: new iam.ServicePrincipal("apigateway.amazonaws.com"),
