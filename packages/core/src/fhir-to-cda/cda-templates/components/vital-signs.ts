@@ -5,11 +5,13 @@ import { isVitalSignsObservation } from "../../fhir";
 import {
   buildCodeCe,
   buildInstanceIdentifier,
+  buildTemplateIds,
   formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
   notOnFilePlaceholder,
+  withNullFlavor,
 } from "../commons";
-import { loincCodeSystem, loincSystemName, oids } from "../constants";
+import { extensionValue2014, loincCodeSystem, loincSystemName, oids } from "../constants";
 import { initiateSectionTable } from "../table";
 import { AugmentedObservation, VitalObservation } from "./augmented-resources";
 import { createEntriesFromObservation } from "./observations";
@@ -62,7 +64,10 @@ export function buildVitalSigns(fhirBundle: Bundle): VitalSignsSection {
     ) || [];
 
   if (vitalSignsObservations.length === 0) {
-    return vitalSignsSection;
+    return {
+      _nullFlavor: "NI",
+      ...vitalSignsSection,
+    };
   }
 
   const augmentedObservations = createAugmentedVitalObservations(vitalSignsObservations);
@@ -171,7 +176,11 @@ function createOrganizedEntryFromSet(
     organizer: {
       _classCode: "CLUSTER",
       _moodCode: "EVN",
-      templateId: buildInstanceIdentifier({ root: oids.vitalSignsOrganizer }),
+      templateId: buildTemplateIds({
+        root: oids.vitalSignsOrganizer,
+        extension: extensionValue2014,
+      }),
+      id: withNullFlavor(undefined, "_value"),
       code: buildCodeCe({
         code: "46680005",
         codeSystem: "2.16.840.1.113883.6.96",
@@ -182,7 +191,7 @@ function createOrganizedEntryFromSet(
         _code: "completed",
       },
       effectiveTime: {
-        _value: formatDateToCdaTimestamp(date),
+        low: withNullFlavor(formatDateToCdaTimestamp(date), "_value"),
       },
       component: set.map(obs => createEntriesFromObservation(obs, referenceId)),
     },

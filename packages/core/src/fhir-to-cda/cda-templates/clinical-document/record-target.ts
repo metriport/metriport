@@ -2,10 +2,12 @@ import { Patient } from "@medplum/fhirtypes";
 import { CdaPatientRole, CdaRecordTarget } from "../../cda-types/shared-types";
 import {
   buildAddress,
+  buildCdaGender,
   buildCodeCe,
   buildInstanceIdentifiersFromIdentifier,
   buildTelecom,
   formatDateToCdaTimestamp,
+  withNullFlavor,
   withoutNullFlavorObject,
   withoutNullFlavorString,
 } from "../commons";
@@ -24,11 +26,7 @@ function buildPatient(patient: Patient): CdaPatientRole {
         },
       };
     }),
-    administrativeGenderCode: buildCodeCe({
-      code: patient.gender,
-      codeSystem: "2.16.840.1.113883.5.1",
-      codeSystemName: "AdministrativeGender",
-    }),
+    administrativeGenderCode: buildCdaGender(patient.gender),
     birthTime: withoutNullFlavorObject(formatDateToCdaTimestamp(patient.birthDate), "_value"),
     deceasedInd: withoutNullFlavorObject(patient.deceasedBoolean?.toString(), "_value"),
     maritalStatusCode: buildCodeCe({
@@ -37,6 +35,8 @@ function buildPatient(patient: Patient): CdaPatientRole {
       codeSystemName: "MaritalStatusCode",
       displayName: patient.maritalStatus?.coding?.[0]?.display,
     }),
+    raceCode: withNullFlavor(undefined, "code"),
+    ethnicGroupCode: withNullFlavor(undefined, "code"),
     languageCommunication: {
       languageCode: buildCodeCe({
         code: patient.communication?.[0]?.language?.coding?.[0]?.code,

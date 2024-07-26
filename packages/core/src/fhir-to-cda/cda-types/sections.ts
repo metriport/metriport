@@ -13,7 +13,8 @@ import {
 
 type CdaSection<T> =
   | {
-      templateId: CdaInstanceIdentifier;
+      _nullFlavor?: string;
+      templateId: CdaInstanceIdentifier | CdaInstanceIdentifier[];
       code: CdaCodeCe;
       title: string;
       text: CdaTable | TextParagraph | TextUnstructured;
@@ -31,3 +32,4 @@ export type AllergiesSection = CdaSection<ConcernActEntry>;
 export type EncountersSection = CdaSection<EncounterEntry>;
 export type VitalSignsSection = CdaSection<ObservationOrganizer>;
 export type FamilyHistorySection = CdaSection<ObservationOrganizer>;
+export type AssessmentAndPlanSection = CdaSection<ObservationOrganizer>;
