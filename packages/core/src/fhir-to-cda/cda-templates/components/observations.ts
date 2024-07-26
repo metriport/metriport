@@ -1,5 +1,6 @@
 import { Observation, ObservationComponent } from "@medplum/fhirtypes";
 import {
+  ActStatusCode,
   CdaValuePq,
   ObservationEntry,
   ObservationEntryRelationship,
@@ -12,6 +13,7 @@ import {
   buildInstanceIdentifier,
   buildReferenceId,
   buildTemplateIds,
+  buildValueEd,
   buildValueSt,
   formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
@@ -29,9 +31,15 @@ import {
 } from "../constants";
 import { AugmentedObservation } from "./augmented-resources";
 
-export function createObservations(observations: Observation[]): { component: ObservationEntry }[] {
+export function createObservations(
+  observations: Observation[],
+  referenceId: string
+): { component: ObservationEntry }[] {
   return observations.map(observation => {
     const effectiveTime = observation.effectiveDateTime?.replace(TIMESTAMP_CLEANUP_REGEX, "");
+    const valueSt = buildValueSt(observation.valueString);
+    const valueEd = buildValueEd(referenceId);
+
     return {
       component: {
         observation: {
@@ -46,12 +54,17 @@ export function createObservations(observations: Observation[]): { component: Ob
             _extension: observation.id ?? observation.identifier?.[0]?.value ?? "",
           },
           code: buildCodeCvFromCodeableConcept(observation.code),
-          statusCode: withoutNullFlavorObject(observation.status, "_code"),
+          text: {
+            reference: {
+              _value: `#${referenceId}`,
+            },
+          },
+          statusCode: withoutNullFlavorObject(fhirStatusToActStatus(observation.status), "_code"),
           effectiveTime: {
             low: withoutNullFlavorObject(effectiveTime, "_value"),
             high: withoutNullFlavorObject(effectiveTime, "_value"),
           },
-          value: buildValueSt(observation.valueString),
+          value: valueSt ?? valueEd,
         },
       },
     };
@@ -231,4 +244,19 @@ function createEntryRelationship(entry: ObservationEntry): ObservationEntryRelat
       ...entry.observation,
     },
   };
+}
+
+export function fhirStatusToActStatus(actStatus: string | undefined): ActStatusCode {
+  switch (actStatus) {
+    case "registered" || "received" || "preliminary":
+      return "active";
+    case "final" || "completed" || "amended" || "corrected" || "appended":
+      return "completed";
+    case "cancelled" || "abandoned":
+      return "cancelled";
+    case "entered-in-error" || "error":
+      return "nullified";
+    default:
+      return "completed";
+  }
 }

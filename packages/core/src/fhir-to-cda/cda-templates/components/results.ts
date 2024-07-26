@@ -14,100 +14,50 @@ import {
 import { extensionValue2015, oids, placeholderOrgOid } from "../constants";
 import { AssembledNote } from "./augmented-resources";
 import { createObservations } from "./observations";
+import { SectionDetails } from "./notes-and-results";
 
-export function buildResultsSection(assembledNotes: AssembledNote[]) {
+export function buildResultsSection(
+  assembledNotes: AssembledNote[],
+  sectionDetails: SectionDetails,
+  sectionCode: string
+): ResultsSection {
   const resultsSection: ResultsSection = {
-    templateId: buildInstanceIdentifier({
+    templateId: buildTemplateIds({
       root: oids.resultsSection,
+      extension: extensionValue2015,
     }),
     code: buildCodeCe({
-      code: "30954-2",
+      code: sectionCode,
       codeSystem: "2.16.840.1.113883.6.1",
       codeSystemName: "LOINC",
-      displayName: "Diagnostic Results",
+      displayName: sectionDetails.display ?? sectionDetails.sectionName,
     }),
-    title: "Diagnostic Results",
+    title: sectionDetails.sectionName,
     text: notOnFilePlaceholder,
   };
 
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
   const combinedText: any = [];
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const entries: any = [];
 
-  assembledNotes.forEach(note => {
-    combinedText.push(getTextItemsFromDiagnosticReport(note.report, note.observations));
-    const entries = buildEntriesFromAssembledNote(note);
-    console.log(entries);
+  assembledNotes.forEach((note, index) => {
+    const referenceId = `results${index + 1}`;
+    combinedText.push(
+      getTextItemsFromDiagnosticReport(note.report, note.observations, referenceId)
+    );
+    entries.push(buildEntriesFromAssembledNote(note, referenceId));
   });
 
   resultsSection.text = combinedText;
-  // resultsSection.entry = buildEntriesFromDiagnosticReports(resultsReports, fhirBundle);
+  resultsSection.entry = entries;
   return resultsSection;
 }
 
-// export function buildResult(fhirBundle: Bundle): ResultsSection {
-//   const resultsSection: ResultsSection = {
-//     templateId: buildInstanceIdentifier({
-//       root: oids.resultsSection,
-//     }),
-//     code: buildCodeCe({
-//       code: "30954-2",
-//       codeSystem: "2.16.840.1.113883.6.1",
-//       codeSystemName: "LOINC",
-//       displayName: "Diagnostic Results",
-//     }),
-//     title: "Diagnostic Results",
-//     text: notOnFilePlaceholder,
-//   };
-
-//   const diagnosticReports: DiagnosticReport[] =
-//     fhirBundle.entry?.flatMap(entry =>
-//       isDiagnosticReport(entry.resource) ? [entry.resource] : []
-//     ) || [];
-//   if (diagnosticReports.length === 0) {
-//     return {
-//       _nullFlavor: "NI",
-//       ...resultsSection,
-//     };
-//   }
-
-//   const resultsReports = diagnosticReports.filter(report =>
-//     report.code?.coding?.some(
-//       coding => coding.code && !Array.from(notesCodingMap.keys()).includes(coding.code)
-//     )
-//   );
-
-//   const text = getTextItemsFromDiagnosticReports(resultsReports);
-//   const textSection = text.flatMap(t => (t && t.item) || []);
-//   resultsSection.text = textSection;
-//   resultsSection.entry = buildEntriesFromDiagnosticReports(resultsReports, fhirBundle);
-//   return resultsSection;
-// }
-
-// function getTextItemsFromDiagnosticReports(diagnosticReports: DiagnosticReport[]) {
-//   return (
-//     diagnosticReports.flatMap(report => {
-//       const contentLines = report.presentedForm?.[0]?.data
-//         ? base64ToString(report.presentedForm[0].data).split(/\n/)
-//         : [];
-//       if (contentLines.length > 0) {
-//         const contentObjects = contentLines.map(line => ({
-//           br: line,
-//         }));
-//         return {
-//           content: {
-//             _ID: `_${report.id}`,
-//             br: contentObjects.map(o => o.br),
-//           },
-//         };
-//       }
-//       return [];
-//     }) || []
-//   );
-// }
-
 function getTextItemsFromDiagnosticReport(
   report: DiagnosticReport,
-  observations: Observation[] | undefined
+  observations: Observation[] | undefined,
+  referenceId: string
 ) {
   const contentLines = report.presentedForm?.[0]?.data
     ? base64ToString(report.presentedForm[0].data).split(/\n/)
@@ -120,7 +70,7 @@ function getTextItemsFromDiagnosticReport(
     }));
     presentedFormText = {
       content: {
-        _ID: `_${report.id}`,
+        _ID: referenceId,
         br: contentObjects.map(o => o.br),
       },
     };
@@ -133,69 +83,10 @@ function getTextItemsFromDiagnosticReport(
   return presentedFormText ?? "";
 }
 
-// function buildEntriesFromDiagnosticReports(
-//   diagnosticReports: DiagnosticReport[],
-//   fhirBundle: Bundle
-// ): ObservationOrganizer[] {
-//   return diagnosticReports.map(report => {
-//     const codeElement = buildCodeCvFromCodeableConcept(report.code);
-//     const observations: Observation[] = [];
-//     report.result?.forEach(result => {
-//       if (!result.reference) {
-//         return;
-//       }
-//       const observation = findResourceInBundle(fhirBundle, result.reference);
-//       if (isObservation(observation)) {
-//         observations.push(observation);
-//       }
-//     });
-
-//     const organizer = {
-//       _classCode: "BATTERY",
-//       _moodCode: "EVN",
-//       templateId: buildTemplateIds({
-//         root: oids.resultOrganizer,
-//         extension: extensionValue2015,
-//       }),
-//       id: buildInstanceIdentifier({
-//         root: placeholderOrgOid,
-//         extension: report.id,
-//       }),
-//       code: codeElement,
-//       statusCode: buildCodeCe({
-//         code: mapResultsStatusCode(report.status),
-//       }),
-//       effectiveTime: {
-//         low: withNullFlavor(formatDateToCdaTimestamp(report.effectiveDateTime), "_value"),
-//         high: withNullFlavor(undefined, "_value"),
-//       },
-//       component: createObservations(observations).map(o => o.component),
-//     };
-
-//     return {
-//       _typeCode: "DRIV",
-//       organizer,
-//     };
-//   });
-// }
-
-function buildEntriesFromAssembledNote(note: AssembledNote) {
+function buildEntriesFromAssembledNote(note: AssembledNote, referenceId: string) {
   const report = note.report;
   const observations = note.observations;
-
-  // return diagnosticReports.map(report => {
   const codeElement = buildCodeCvFromCodeableConcept(report.code);
-  //   const observations: Observation[] = [];
-  //   report.result?.forEach(result => {
-  //     if (!result.reference) {
-  //       return;
-  //     }
-  //     const observation = findResourceInBundle(fhirBundle, result.reference);
-  //     if (isObservation(observation)) {
-  //       observations.push(observation);
-  //     }
-  //   });
-
   const organizer = {
     _classCode: "BATTERY",
     _moodCode: "EVN",
@@ -215,15 +106,13 @@ function buildEntriesFromAssembledNote(note: AssembledNote) {
       low: withNullFlavor(formatDateToCdaTimestamp(report.effectiveDateTime), "_value"),
       high: withNullFlavor(undefined, "_value"),
     },
-    component: createObservations(observations).map(o => o.component), // TODO: Must have an array of observation/procedure components
+    component: createObservations(observations, referenceId).map(o => o.component), // TODO: Add procedure components
   };
-  console.log(organizer);
 
-  //   return {
-  //     _typeCode: "DRIV",
-  //     organizer,
-  //   };
-  // });
+  return {
+    _typeCode: "DRIV",
+    organizer,
+  };
 }
 
 /**

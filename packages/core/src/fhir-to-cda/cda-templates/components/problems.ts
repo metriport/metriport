@@ -188,9 +188,11 @@ function createEntryRelationship(
           codeSystem: snomedCodeSystem,
           codeSystemName: snomedSystemName,
         }),
-        buildCodeCe({
-          code: "75323-6",
-        })
+        [
+          buildCodeCe({
+            code: "75323-6",
+          }),
+        ]
       ),
       statusCode: {
         _code: "completed",

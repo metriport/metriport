@@ -140,6 +140,15 @@ export type CdaValueSt = {
   "#text"?: string;
 };
 
+// Ed (ED) stands for EncapsulatedData
+export type CdaValueEd = {
+  [_xsiTypeAttribute]?: "ED";
+  [_xmlnsXsiAttribute]?: string;
+  reference?: {
+    _value: string;
+  };
+};
+
 // Cd (CD) stands for Concept Descriptor
 export type CdaValueCd = {
   [_xsiTypeAttribute]: "CD";
@@ -246,6 +255,8 @@ export type ObservationEntry = {
       | CdaValuePq[]
       | CdaValueCd
       | CdaValueCd[]
+      | CdaValueEd
+      | CdaValueEd[]
       | CdaValueSt
       | CdaValueSt[]
       | undefined;
@@ -468,9 +479,11 @@ export type TextParagraph = {
   };
 };
 
-export type TextUnstructured = {
+type TextContent = {
   content: {
     _ID: string;
     br: string[];
   };
-}[];
+};
+
+export type TextUnstructured = TextContent | TextContent[];
