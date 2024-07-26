@@ -3,7 +3,7 @@ import { convertResult } from "@metriport/core/domain/document-query";
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
 import { documentBulkSignerLambdaResponseArraySchema } from "@metriport/core/external/aws/document-signing/document-bulk-signer-response";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { isMedicalDataSource } from "@metriport/core/external/index";
+import { isMedicalDataSource, MedicalDataSource } from "@metriport/core/external/index";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
@@ -14,6 +14,11 @@ import {
   createAndUploadDocReference,
   updateDocumentReference,
 } from "../../command/medical/admin/upload-doc";
+import {
+  getOrCreateDocRefMapping,
+  getOrCreateDocRefMappingInsert,
+  getOrCreateDocRefMappingInsertOrSelect,
+} from "../../command/medical/docref-mapping/get-docref-mapping";
 import { checkDocumentQueries } from "../../command/medical/document/check-doc-queries";
 import { calculateDocumentConversionStatus } from "../../command/medical/document/document-conversion-status";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
@@ -458,6 +463,66 @@ router.post(
     const fhirOrganization = toFhirOrganization(organization);
     const ccd = await processEmptyCcdRequest(patient, fhirOrganization);
     return res.type("application/xml").status(httpStatus.OK).send(ccd);
+  })
+);
+
+router.get(
+  "/test-find-or-create",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getFrom("query").orFail("cxId", req);
+    const patientId = getFrom("query").orFail("patientId", req);
+    const externalId = getFrom("query").optional("externalId", req);
+
+    const docRefMapping = await getOrCreateDocRefMapping({
+      cxId,
+      patientId,
+      requestId: "123",
+      externalId: externalId ?? uuidv7(),
+      source: MedicalDataSource.CAREQUALITY,
+    });
+
+    return res.status(httpStatus.OK).json(docRefMapping);
+  })
+);
+
+router.get(
+  "/test-insert-or-select",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getFrom("query").orFail("cxId", req);
+    const patientId = getFrom("query").orFail("patientId", req);
+    const externalId = getFrom("query").optional("externalId", req);
+
+    const docRefMapping = await getOrCreateDocRefMappingInsertOrSelect({
+      cxId,
+      patientId,
+      requestId: "123",
+      externalId: externalId ?? uuidv7(),
+      source: MedicalDataSource.CAREQUALITY,
+    });
+
+    return res.status(httpStatus.OK).json(docRefMapping);
+  })
+);
+
+router.get(
+  "/test-insert",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getFrom("query").orFail("cxId", req);
+    const patientId = getFrom("query").orFail("patientId", req);
+    const externalId = getFrom("query").optional("externalId", req);
+
+    const docRefMapping = await getOrCreateDocRefMappingInsert({
+      cxId,
+      patientId,
+      requestId: "123",
+      externalId: externalId ?? uuidv7(),
+      source: MedicalDataSource.CAREQUALITY,
+    });
+
+    return res.status(httpStatus.OK).json(docRefMapping);
   })
 );
 

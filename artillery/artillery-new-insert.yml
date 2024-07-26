@@ -1,0 +1,23 @@
+config:
+  target: "http://127.0.0.1:8080"
+  # plugins:
+  #   publish-metrics:
+  #     # https://www.artillery.io/docs/guides/plugins/plugin-publish-metrics#cloudwatch
+  #     - type: cloudwatch
+  #       region: "{{ $processEnvironment.REGION }}"
+  phases:
+    - duration: 10
+      arrivalRate: 10
+      name: Warm up
+    - duration: 60
+      arrivalRate: 50
+      rampTo: 200
+      name: Ramp up load
+
+scenarios:
+  - name: 'basic query'
+    flow:
+      - loop:
+          - get:
+              url: '/internal/docs/test-insert?cxId=7526033d-ce08-4e1a-8275-fd3a7f1d74d5&patientId=018f59d9-982a-7a23-bb6f-ac62d4d916aa'
+        count: 10

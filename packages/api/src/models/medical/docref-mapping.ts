@@ -1,7 +1,19 @@
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { DataTypes, Sequelize } from "sequelize";
 import { DocRefMapping } from "../../domain/medical/docref-mapping";
-import { MedicalDataSource } from "@metriport/core/external/index";
 import { BaseModel, ModelSetup } from "../_default";
+
+/**
+ * Exclusively to be used by getOrCreateDocRefMapping() in get-docref-mapping.ts
+ */
+export const docRefMappingModelColumns = {
+  id: "id",
+  externalId: "external_id",
+  cxId: "cx_id",
+  patientId: "patient_id",
+  source: "source",
+  requestId: "request_id",
+};
 
 export class DocRefMappingModel extends BaseModel<DocRefMappingModel> implements DocRefMapping {
   static NAME = "docref_mapping";
