@@ -24,19 +24,6 @@ export function mapGenderAtBirthToCw(k: GenderAtBirth): GenderCodes | undefined 
   return genderMapping[k];
 }
 
-export function mapGenderAtBirthFromCw(k: string): GenderAtBirth {
-  switch (k) {
-    case GenderCodes.F:
-      return "F";
-    case GenderCodes.M:
-      return "M";
-    case GenderCodes.UN:
-      return "O";
-    default:
-      return "U";
-  }
-}
-
 export function makePersonForPatient(cwPatient: CommonwellPatient): CommonwellPerson {
   return {
     details: cwPatient.details,

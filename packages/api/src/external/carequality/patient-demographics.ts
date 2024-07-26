@@ -1,6 +1,5 @@
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
-import { PatientResource, Gender } from "@metriport/ihe-gateway-sdk";
-import { GenderAtBirth } from "@metriport/core/domain/patient";
+import { PatientResource } from "@metriport/ihe-gateway-sdk";
 import {
   removeInvalidArrayValues,
   normalizeDob,
@@ -67,17 +66,4 @@ export function getPatientResources(linkResults: CQLink[]): PatientResource[] {
     if (!patientResource) return [];
     return patientResource;
   });
-}
-
-export function mapGenderAtBirthFromCq(k: Gender): GenderAtBirth {
-  switch (k) {
-    case "female":
-      return "F";
-    case "male":
-      return "M";
-    case "other":
-      return "O";
-    default:
-      return "U";
-  }
 }

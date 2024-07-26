@@ -38,16 +38,14 @@ export function getCwPatientContactType(
   telecom: Contact[] | null | undefined,
   system: "phone" | "email"
 ): string[] {
-  if (telecom && telecom.length > 0) {
-    const contacts: string[] = [];
+  const contacts: string[] = [];
 
+  if (telecom && telecom.length > 0) {
     for (const contact of telecom) {
       if (contact.system === system && contact.value) {
         contacts.push(contact.value);
       }
     }
-
-    return contacts;
   }
 
   return [];
