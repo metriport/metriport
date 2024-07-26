@@ -48,7 +48,9 @@ export const stringValueFFsSchema = cxBasedFFsSchema.merge(
 );
 export type StringValueFeatureFlags = z.infer<typeof stringValueFFsSchema>;
 
-export type CxFeatureFlagStatus = Partial<Record<keyof CxBasedFFsSchema, boolean>>;
+export type CxFeatureFlagStatus = Partial<
+  Record<keyof CxBasedFFsSchema, { cxInFFValues: boolean; ffEnabled: boolean }>
+>;
 
 export const ffDatastoreSchema = stringValueFFsSchema.merge(booleanFFsSchema);
 export type FeatureFlagDatastore = z.infer<typeof ffDatastoreSchema>;
@@ -100,7 +102,10 @@ export async function getFeatureFlagValueCxValues<T extends keyof StringValueFea
     if (featureFlag) {
       response = {
         ...response,
-        [featureFlagName]: featureFlag.values.includes(cxId),
+        [featureFlagName]: {
+          cxInFFValues: featureFlag.values.includes(cxId),
+          ffEnabled: featureFlag.enabled,
+        },
       };
     }
   });

@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import { SamlAttributes } from "@metriport/ihe-gateway-sdk";
+import { toArray } from "@metriport/shared";
 import {
   SamlHeader,
   Code,
@@ -28,7 +29,10 @@ const isPurposeOfUseObject = (value: AttributeValue): value is { PurposeOfUse: C
 };
 
 export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttributes {
-  const attributes = header.Security.Assertion.AttributeStatement.Attribute;
+  const attributes = toArray(header.Security.Assertion.AttributeStatement)?.[0]?.Attribute;
+  if (!attributes) {
+    throw new Error("Attributes are undefined");
+  }
 
   const getAttributeValue = (name: string): string | undefined => {
     const attribute = attributes.find(attr => attr._Name === name);
@@ -60,9 +64,7 @@ export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttribute
   };
 
   const subjectId = getAttributeValue("urn:oasis:names:tc:xspa:1.0:subject:subject-id");
-  if (!subjectId) {
-    throw new Error("Subject ID is required");
-  }
+  const defaultSubjectId = "unknown";
 
   const organization = getAttributeValue("urn:oasis:names:tc:xspa:1.0:subject:organization");
   if (!organization) {
@@ -80,20 +82,21 @@ export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttribute
   }
 
   const subjectRole = getRoleAttributeValue("urn:oasis:names:tc:xacml:2.0:subject:role");
-  if (!subjectRole) {
-    throw new Error("Subject role is required");
-  }
+  const defaultSubjectRole = {
+    code: "106331006",
+    display: "Administrative AND/OR managerial worker",
+  };
 
   const purposeOfUse = getPurposeOfUseAttributeValue(
     "urn:oasis:names:tc:xspa:1.0:subject:purposeofuse"
   );
 
   return {
-    subjectId: subjectId,
+    subjectId: subjectId ?? defaultSubjectId,
     organization: organization,
     organizationId: stripUrnPrefix(organizationId),
     homeCommunityId: stripUrnPrefix(homeCommunityId),
-    subjectRole: subjectRole,
+    subjectRole: subjectRole ?? defaultSubjectRole,
     purposeOfUse: purposeOfUse ?? treatmentPurposeOfUse,
   };
 }

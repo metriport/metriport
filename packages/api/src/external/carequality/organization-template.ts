@@ -27,6 +27,7 @@ export function buildXmlStringFromTemplate(orgDetails: CQOrgDetailsWithUrls) {
     phone,
     email,
     role,
+    active,
     parentOrgOid,
   } = orgDetails;
 
@@ -46,7 +47,7 @@ export function buildXmlStringFromTemplate(orgDetails: CQOrgDetailsWithUrls) {
         <system value="http://www.hl7.org/oid/"/>
         <value value="${urnOid}"/>
     </identifier>
-    <active value="true"/>
+    <active value="${active}"/>
     <name value="${name}"/>
     <type>
         <coding>

@@ -5,6 +5,7 @@ import { processDrResponse } from "../xca/process/dr-response";
 import { outboundDrRequest, testFiles, outboundDrRequestMtom } from "./constants";
 import { S3Utils } from "../../../../aws/s3";
 import { createMtomMessageWithAttachments, createMtomMessageWithoutAttachments } from "./mtom";
+import { schemaErrorCode } from "../../../error";
 
 describe("processDrResponse for MTOM with/without attachments and for different file types", () => {
   beforeEach(() => {
@@ -173,7 +174,7 @@ describe("processDrResponse", () => {
       },
     });
 
-    expect(response?.operationOutcome?.issue[0]?.code).toEqual("schema-error");
+    expect(response?.operationOutcome?.issue[0]?.code).toEqual(schemaErrorCode);
   });
 
   it("should process the registry error DR response correctly", async () => {
@@ -211,6 +212,6 @@ describe("processDrResponse", () => {
         outboundRequest: outboundDrRequest,
       },
     });
-    expect(response.operationOutcome?.issue[0]?.code).toEqual("schema-error");
+    expect(response.operationOutcome?.issue[0]?.code).toEqual(schemaErrorCode);
   });
 });

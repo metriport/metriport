@@ -1,5 +1,6 @@
 import { Bundle, Immunization, Location } from "@medplum/fhirtypes";
 import { findResourceInBundle, isImmunization, isLocation } from "../../../external/fhir/shared";
+import { ImmunizationsSection } from "../../cda-types/sections";
 import {
   Consumable,
   ObservationTableRow,
@@ -12,6 +13,7 @@ import {
   buildInstanceIdentifier,
   buildOriginalTextReference,
   buildPerformerFromLocation,
+  buildTemplateIds,
   formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
   getDisplaysFromCodeableConcepts,
@@ -21,7 +23,7 @@ import {
 import {
   NOT_SPECIFIED,
   extensionValue2015,
-  hl7actCode,
+  hl7ActCode,
   loincCodeSystem,
   loincSystemName,
   oids,
@@ -30,7 +32,6 @@ import {
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { initiateSectionTable } from "../table";
 import { AugmentedImmunization } from "./augmented-resources";
-import { ImmunizationsSection } from "../../cda-types/sections";
 
 const immunizationsSectionName = "immunizations";
 
@@ -56,7 +57,10 @@ export function buildImmunizations(fhirBundle: Bundle) {
     [];
 
   if (immunizations.length === 0) {
-    return immunizationsSection;
+    return {
+      _nullFlavor: "NI",
+      ...immunizationsSection,
+    };
   }
 
   const augmentedImmunizations = createAugmentedImmunizations(immunizations, fhirBundle);
@@ -162,7 +166,7 @@ function createEntryFromImmunization(
       _classCode: "SBADM",
       _moodCode: "EVN",
       _negationInd: false,
-      templateId: buildInstanceIdentifier({
+      templateId: buildTemplateIds({
         root: immunization.typeOid,
         extension: extensionValue2015,
       }),
@@ -172,7 +176,7 @@ function createEntryFromImmunization(
       }),
       code: buildCodeCe({
         code: "IMMUNIZ",
-        codeSystem: hl7actCode,
+        codeSystem: hl7ActCode,
         codeSystemName: "ActCode",
       }),
       text: buildOriginalTextReference(referenceId),
@@ -194,7 +198,7 @@ function buildConsumable(immunization: Immunization, referenceId: string): Consu
     _typeCode: "CSM",
     manufacturedProduct: {
       _classCode: "MANU",
-      templateId: buildInstanceIdentifier({
+      templateId: buildTemplateIds({
         root: oids.immunizationMedicationInformation,
         extension: extensionValue2015,
       }),

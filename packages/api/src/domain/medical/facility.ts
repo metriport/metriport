@@ -20,18 +20,15 @@ export type FacilityData = {
 
 export interface FacilityCreate extends Omit<BaseDomainCreate, "id"> {
   cxId: string;
+  data: FacilityData;
   cqActive?: boolean;
   cwActive?: boolean;
   cqOboOid?: string | null;
   cwOboOid?: string | null;
   cwType?: FacilityType;
   cqType?: FacilityType;
-  data: FacilityData;
-}
-
-export interface FacilityRegister extends FacilityCreate {
-  id?: string;
-  cwFacilityName?: string /**  Optional name, to override current facility name, for the facility in CommonWell */;
+  cqApproved?: boolean;
+  cwApproved?: boolean;
 }
 
 export interface Facility extends BaseDomain, Required<FacilityCreate> {
