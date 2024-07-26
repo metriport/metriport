@@ -120,7 +120,7 @@ router.post(
  * @returns Returns the organization with the specified OID.
  */
 router.get(
-  "/directory/organizationn/:oid",
+  "/directory/organization/:oid",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);

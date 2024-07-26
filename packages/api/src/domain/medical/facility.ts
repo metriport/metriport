@@ -31,10 +31,6 @@ export interface FacilityCreate extends Omit<BaseDomainCreate, "id"> {
   cwApproved?: boolean;
 }
 
-export interface FacilityRegister extends FacilityCreate {
-  id?: string;
-}
-
 export interface Facility extends BaseDomain, Required<FacilityCreate> {
   oid: string;
   facilityNumber: number;
