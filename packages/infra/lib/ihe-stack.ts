@@ -96,6 +96,7 @@ export class IHEStack extends Stack {
     });
 
     const apigw2 = new apigwv2.HttpApi(this, "IHEAPIGatewayv2", {
+      createDefaultStage: false,
       defaultDomainMapping: {
         domainName: domainName,
       },
@@ -106,9 +107,17 @@ export class IHEStack extends Stack {
       disableExecuteApiEndpoint: true,
     });
 
+    const customStage = new apigwv2.HttpStage(this, "IHEAPIGatewayv2Stage", {
+      httpApi: apigw2,
+      throttle: {
+        burstLimit: 100,
+        rateLimit: 100,
+      },
+    });
+
     // no feature to suuport this simply. Copied custom solution from https://github.com/aws/aws-cdk/issues/11100
     const accessLogs = new logs.LogGroup(this, "IHE-APIGW-AccessLogs");
-    const stage = apigw2.defaultStage?.node.defaultChild as CfnStage;
+    const stage = customStage.node.defaultChild as CfnStage;
     stage.accessLogSettings = {
       destinationArn: accessLogs.logGroupArn,
       format: JSON.stringify({
@@ -125,12 +134,6 @@ export class IHEStack extends Stack {
         domainName: "$context.domainName",
       }),
     };
-
-    // see https://github.com/aws/aws-cdk/issues/19626#issuecomment-1086844529
-    stage.addPropertyOverride("DefaultRouteSettings", {
-      ThrottlingBurstLimit: 100,
-      ThrottlingRateLimit: 100,
-    });
 
     const role = new iam.Role(this, "ApiGWLogWriterRole", {
       assumedBy: new iam.ServicePrincipal("apigateway.amazonaws.com"),
