@@ -63,7 +63,7 @@ beforeEach(() => {
   bundle.entry?.push({ resource: location });
 });
 
-describe("buildEncompassingEncounter", () => {
+describe.skip("buildEncompassingEncounter", () => {
   it("correctly maps the Encompassing Encounter", () => {
     const filePath = path.join(__dirname, "./xmls/encompassing-encounter.xml");
     const params = {

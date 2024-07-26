@@ -71,8 +71,17 @@ export async function updateCxHieEnabledFFs({
     `New HIE enabled state: CW: ${currentCwEnabled} CQ: ${currentCqEnabled} Epic: ${currentEpicEnabled}`
   );
   return {
-    cxsWithCWFeatureFlag: currentCwEnabled,
-    cxsWithCQDirectFeatureFlag: currentCqEnabled,
-    cxsWithEpicEnabled: currentEpicEnabled,
+    cxsWithCWFeatureFlag: {
+      cxInFFValues: currentCwEnabled,
+      ffEnabled: newFeatureFlags.cxsWithCWFeatureFlag.enabled,
+    },
+    cxsWithCQDirectFeatureFlag: {
+      cxInFFValues: currentCqEnabled,
+      ffEnabled: newFeatureFlags.cxsWithCQDirectFeatureFlag.enabled,
+    },
+    cxsWithEpicEnabled: {
+      cxInFFValues: currentEpicEnabled,
+      ffEnabled: newFeatureFlags.cxsWithEpicEnabled.enabled,
+    },
   };
 }

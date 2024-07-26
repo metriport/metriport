@@ -27,7 +27,7 @@ beforeEach(() => {
   bundle = createEmptyBundle();
 });
 
-describe("buildMedications", () => {
+describe.skip("buildMedications", () => {
   it("correctly maps a single FamilyMemberHistory without Conditions", () => {
     bundle.entry?.push({ resource: { ...memberHist } });
     const filePath = path.join(

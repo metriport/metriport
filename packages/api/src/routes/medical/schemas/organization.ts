@@ -11,7 +11,20 @@ export const organizationCreateSchema = z.object({
   type: orgTypeSchema,
   location: AddressStrictSchema,
 });
-export type OrganizationCreate = z.infer<typeof organizationCreateSchema>;
 
 export const organizationUpdateSchema = organizationCreateSchema;
-export type OrganizationUpdate = z.infer<typeof organizationUpdateSchema>;
+
+export const organiationInternalDetailsSchema = z
+  .object({
+    id: z.string().optional(),
+    nameInMetriport: z.string().min(1),
+    businessType: organizationBizTypeSchema,
+    type: orgTypeSchema,
+    // CQ
+    cqApproved: z.boolean().optional(),
+    cqActive: z.boolean().optional(),
+    // CW
+    cwApproved: z.boolean().optional(),
+    cwActive: z.boolean().optional(),
+  })
+  .merge(AddressStrictSchema);
