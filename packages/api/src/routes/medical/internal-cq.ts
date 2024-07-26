@@ -215,7 +215,7 @@ router.put(
  * @param req.params.oid The OID of the facility to update.
  */
 router.put(
-  "/ops/directory/ops/facility/:oid",
+  "/ops/directory/facility/:oid",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
