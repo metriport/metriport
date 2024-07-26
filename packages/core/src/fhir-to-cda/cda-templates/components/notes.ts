@@ -45,7 +45,7 @@ export function buildNotes(
     const referenceId = `${sectionDetails.sectionName
       .split(" ")
       .join("_")
-      .replace("&", "")
+      .replace(/&/g, "")
       .toLowerCase()}${index + 1}`;
     combinedText.push(getTextItemsFromDiagnosticReport(note.report, referenceId));
     entries.push(buildEntriesFromDiagnosticReport(note.report, referenceId));
