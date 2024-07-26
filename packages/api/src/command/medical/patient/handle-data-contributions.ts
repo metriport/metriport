@@ -62,12 +62,16 @@ export async function handleDataContribution({
   });
 
   if (!Config.isSandbox()) {
+    // intentionally async
     processCcdRequest(patient, fhirOrganization, requestId);
+
     if (hasCompositionResource(validatedBundle)) {
       const fhirPatient = toFhirPatient(patient);
       validatedBundle.entry.push({ resource: fhirPatient });
       validatedBundle.entry.push({ resource: fhirOrganization });
       const converted = await convertFhirToCda({ cxId, validatedBundle });
+
+      // intentionally async
       uploadCdaDocuments({
         cxId,
         patientId,

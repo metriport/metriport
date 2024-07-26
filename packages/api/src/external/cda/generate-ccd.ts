@@ -45,7 +45,7 @@ export async function generateCcd(patient: Patient, requestId: string): Promise<
     entry: [...metriportGenerated, { resource: fhirOrganization }],
   };
   const parsedBundle = bundleSchema.parse(bundle);
-  uploadCcdFhirDataToS3(patient, parsedBundle, requestId);
+  await uploadCcdFhirDataToS3(patient, parsedBundle, requestId);
 
   const validatedBundle = validateFhirEntries(parsedBundle);
   const converted = await convertFhirToCda({
