@@ -3,8 +3,10 @@ import { errorToString } from "@metriport/shared";
 import { capture, out } from "../../../util";
 import { findDiagnosticReportResources, findPatientResource } from "../../fhir/shared";
 import { BedrockUtils } from "../bedrock";
+import fs from "fs";
+import { base64ToString } from "../../../util/base64";
 
-const MAXIMUM_BRIEF_STRING_LENGTH = 17_500;
+const MAXIMUM_BRIEF_STRING_LENGTH = 525_000;
 
 const relevantResources = ["DiagnosticReport", "Patient"];
 
@@ -24,6 +26,7 @@ export async function bundleToBrief(
   if (briefString.length > MAXIMUM_BRIEF_STRING_LENGTH) {
     briefString = briefString.slice(0, MAXIMUM_BRIEF_STRING_LENGTH);
     const msg = `Brief string input was truncated`;
+    fs.writeFileSync("test-input.txt", briefString);
     log(msg);
     capture.message(msg, {
       extra: {
@@ -39,6 +42,7 @@ export async function bundleToBrief(
   const todaysDate = new Date().toISOString().split("T")[0];
   const bedrockUtils = getBedrockUtilsInstance();
   const prompt = `Today's date is ${todaysDate}. Write a short summary of the patient's well-being that is relevant today. Be specific with the dates for any significant events. Focus on any diagnoses that occurred in the past year.`;
+  // const prompt2 = `Today's date is ${todaysDate}. Given the attached medical documents, summarize them into a concise summary of the patients medical history. In your first sentence, include the patient's age/gender and all significant medical conditions. In the second sentence, summarize any notable recent health events (eg hospitalizations or emergency department visits) and any requested follow-up. Do not include directions on taking medications. Here is an example of an ideal summary: Patient is a 65 yo male with hx of HTN, poorly controlled diabetes, and smoking who presented with 3 hours of crushing substernal chest pain. They underwent a cardiac cath with stent placement and were discharged on aspirin and metoprolol.`;
   const body = JSON.stringify(briefString);
   try {
     const brief = bedrockUtils.getBedrockResponse({
@@ -63,7 +67,7 @@ export async function prepareBundleForBrief(bundle: Bundle): Promise<string | un
 }
 
 function deduplicateBundleResources(bundle: Bundle): Bundle {
-  // TODO: Implement deduplication algorithm
+  // TODO: Implement FHIR deduplication algorithm
   return bundle;
 }
 
@@ -90,8 +94,18 @@ function filterBundleResources(bundle: Bundle): string | undefined {
     : undefined;
 
   const diagnosticReports = findDiagnosticReportResources(bundle);
-  const drData = diagnosticReports.map(dr =>
-    JSON.stringify(dr.presentedForm?.map(pf => pf.data).join("\n"))
+
+  const sortedByDate = diagnosticReports.sort((a, b) => {
+    if (a.effectivePeriod?.start && b.effectivePeriod?.start) {
+      return (
+        new Date(b.effectivePeriod.start).getTime() - new Date(a.effectivePeriod.start).getTime()
+      );
+    }
+    return 0;
+  });
+
+  const drData = sortedByDate.map(dr =>
+    JSON.stringify(dr.presentedForm?.map(pf => pf.data && base64ToString(pf.data)).join("\n"))
   );
 
   const filteredString = `

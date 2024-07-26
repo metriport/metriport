@@ -41,7 +41,8 @@ export class BedrockUtils {
       body: JSON.stringify({
         anthropic_version: this._bedrockVersion,
         max_tokens: 1000,
-        system: "You are a physician, writing a patient health summary for another physician.",
+        system:
+          "You are a senior physician, writing a patient health summary for another physician.",
         temperature: 0,
         messages: [
           {
