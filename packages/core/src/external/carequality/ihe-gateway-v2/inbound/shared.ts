@@ -29,7 +29,8 @@ const isPurposeOfUseObject = (value: AttributeValue): value is { PurposeOfUse: C
 };
 
 export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttributes {
-  const attributes = toArray(header.Security.Assertion.AttributeStatement)?.[0]?.Attribute;
+  const attributeStatements = toArray(header.Security.Assertion.AttributeStatement);
+  const attributes = attributeStatements.flatMap(statement => toArray(statement.Attribute));
   if (!attributes) {
     throw new Error("Attributes are undefined");
   }

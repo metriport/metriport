@@ -98,7 +98,7 @@ export const samlHeaderSchema = z.object({
     Assertion: z.object({
       AttributeStatement: schemaOrArray(
         z.object({
-          Attribute: z.array(
+          Attribute: schemaOrArray(
             z.union([
               z.object({
                 _Name: z.string(),
