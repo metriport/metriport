@@ -1,15 +1,9 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import {
-  OrganizationCreateCmd,
-  createOrganization,
-} from "../../command/medical/organization/create-organization";
+import { createOrganization } from "../../command/medical/organization/create-organization";
 import { getOrganization } from "../../command/medical/organization/get-organization";
-import {
-  OrganizationUpdateCmd,
-  updateOrganization,
-} from "../../command/medical/organization/update-organization";
+import { updateOrganization } from "../../command/medical/organization/update-organization";
 import { getETag } from "../../shared/http";
 import { asyncHandler, getCxIdOrFail, getFromQuery, getFromParamsOrFail } from "../util";
 import { dtoFromModel } from "./dtos/organizationDTO";
@@ -40,8 +34,11 @@ router.post(
     const organizationBizType = organizationBizTypeSchema.optional().parse(type);
     const data = organizationCreateSchema.parse(req.body);
 
-    const createOrg: OrganizationCreateCmd = { cxId, ...data };
-    const org = await createOrganization(createOrg, organizationBizType);
+    const org = await createOrganization({
+      cxId,
+      data,
+      type: organizationBizType,
+    });
 
     return res.status(status.CREATED).json(dtoFromModel(org));
   })
@@ -61,15 +58,14 @@ router.put(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const id = getFromParamsOrFail("id", req);
-    const payload = organizationUpdateSchema.parse(req.body);
+    const data = organizationUpdateSchema.parse(req.body);
 
-    const updateCmd: OrganizationUpdateCmd = {
-      ...payload,
+    const org = await updateOrganization({
+      data,
       ...getETag(req),
       id,
       cxId,
-    };
-    const org = await updateOrganization(updateCmd);
+    });
 
     return res.status(status.OK).json(dtoFromModel(org));
   })
