@@ -96,10 +96,6 @@ export class IHEStack extends Stack {
     });
 
     const apigw2 = new apigwv2.HttpApi(this, "IHEAPIGatewayv2", {
-      createDefaultStage: false,
-      defaultDomainMapping: {
-        domainName: domainName,
-      },
       corsPreflight: {
         allowOrigins: ["*"],
         allowHeaders: ["*"],
@@ -109,6 +105,10 @@ export class IHEStack extends Stack {
 
     const customStage = new apigwv2.HttpStage(this, "IHEAPIGatewayv2Stage", {
       httpApi: apigw2,
+      stageName: "$default",
+      domainMapping: {
+        domainName: domainName,
+      },
       throttle: {
         burstLimit: 100,
         rateLimit: 100,
