@@ -204,7 +204,7 @@ router.get(
 
     const response = {
       cxId,
-      org: org ? orgInternalDto(org) : undefined,
+      org: orgInternalDto(org),
       facilities: facilities.map(f => facilityInternalDto(f)),
     };
     return res.status(httpStatus.OK).json(response);
