@@ -6,7 +6,7 @@ import { BedrockUtils } from "../bedrock";
 import fs from "fs";
 import { base64ToString } from "../../../util/base64";
 
-const MAXIMUM_BRIEF_STRING_LENGTH = 525_000;
+const MAXIMUM_BRIEF_STRING_LENGTH = 500_000;
 
 const relevantResources = ["DiagnosticReport", "Patient"];
 
@@ -24,10 +24,11 @@ export async function bundleToBrief(
   if (!briefString) return undefined;
 
   if (briefString.length > MAXIMUM_BRIEF_STRING_LENGTH) {
+    const initialLength = briefString.length;
     briefString = briefString.slice(0, MAXIMUM_BRIEF_STRING_LENGTH);
     const msg = `Brief string input was truncated`;
     fs.writeFileSync("test-input.txt", briefString);
-    log(msg);
+    log(`${msg}. Initial length was: ${initialLength}`);
     capture.message(msg, {
       extra: {
         patientId,
@@ -41,7 +42,9 @@ export async function bundleToBrief(
 
   const todaysDate = new Date().toISOString().split("T")[0];
   const bedrockUtils = getBedrockUtilsInstance();
-  const prompt = `Today's date is ${todaysDate}. Write a short summary of the patient's well-being that is relevant today. Be specific with the dates for any significant events. Focus on any diagnoses that occurred in the past year.`;
+
+  const prompt = `Today's date is ${todaysDate}. I'm a physician who works with elderly patients (65+). Write a short summary of the patient's well-being that is relevant today. Focus on any diagnoses that occurred in the past few years, and might require immediate attention. In your first sentence, include the patient's gender and age (today's date minus date of birth), and all significant medical conditions. In the next 2-3 sentences, summarize any notable recent health events (eg hospitalizations or emergency department visits). In the response, don't provide lists, and don't give me instructions. If not yet stated, add some context on the most recent developments in the patient's health (with specific dates).`;
+  // const prompt1 = `Today's date is ${todaysDate}. Write a short summary of the patient's well-being that is relevant today. Be specific with the dates for any significant events. Focus on any diagnoses that occurred in the past year.`;
   // const prompt2 = `Today's date is ${todaysDate}. Given the attached medical documents, summarize them into a concise summary of the patients medical history. In your first sentence, include the patient's age/gender and all significant medical conditions. In the second sentence, summarize any notable recent health events (eg hospitalizations or emergency department visits) and any requested follow-up. Do not include directions on taking medications. Here is an example of an ideal summary: Patient is a 65 yo male with hx of HTN, poorly controlled diabetes, and smoking who presented with 3 hours of crushing substernal chest pain. They underwent a cardiac cath with stent placement and were discharged on aspirin and metoprolol.`;
   const body = JSON.stringify(briefString);
   try {
@@ -58,8 +61,10 @@ export async function bundleToBrief(
 }
 
 export async function prepareBundleForBrief(bundle: Bundle): Promise<string | undefined> {
+  const bundleCopy = { ...bundle };
+
   if (!bundle.entry?.length) return undefined;
-  const dedupedBundle = deduplicateBundleResources(bundle);
+  const dedupedBundle = deduplicateBundleResources(bundleCopy);
   if (!dedupedBundle.entry?.length) return undefined;
   const filteredString = filterBundleResources(dedupedBundle);
   if (!filteredString) return undefined;
