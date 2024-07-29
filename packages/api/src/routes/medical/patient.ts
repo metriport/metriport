@@ -344,7 +344,7 @@ router.post(
     const aiBriefBoolean = getFromQueryAsBoolean("aiBrief", req) ?? false;
     const isMrBriefFeatureFlagEnabled = await isMrBriefEnabledForCx(cxId);
     if (!isMrBriefFeatureFlagEnabled && aiBriefBoolean) {
-      throw new Error("Contact Metriport to enable the AI Brief feature.");
+      throw new BadRequestError("Contact Metriport to enable the AI Brief feature.");
     }
     const aiBrief = aiBriefBoolean ? "true" : "false";
     const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
