@@ -60,7 +60,8 @@ function postProcessXml(xml: any, oid: string): string {
     .replaceAll("</br>", "")
     .replaceAll(placeholderOrgOid, oid)
     .replaceAll("&lt;", "<")
-    .replaceAll("&gt;", ">");
+    .replaceAll("&gt;", ">")
+    .replaceAll("</text><text>", "");
 }
 
 function prependStyling(xml: string): string {
