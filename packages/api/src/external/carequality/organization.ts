@@ -25,6 +25,7 @@ export class CQOrganization {
     public phone: string,
     public email: string,
     public role: "Implementer" | "Connection",
+    public active: boolean,
     public parentOrgOid?: string,
     public organizationBizType?: OrganizationBizType,
     public urlXCPD?: string,
@@ -46,6 +47,7 @@ export class CQOrganization {
       orgDetails.phone,
       orgDetails.email,
       orgDetails.role,
+      orgDetails.active,
       orgDetails.parentOrgOid,
       orgDetails.organizationBizType
     );
@@ -74,6 +76,7 @@ export class CQOrganization {
       phone: this.phone,
       email: this.email,
       role: this.role,
+      active: this.active,
       parentOrgOid: this.parentOrgOid,
       organizationBizType: this.organizationBizType,
     };

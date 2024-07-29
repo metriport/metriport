@@ -83,7 +83,7 @@ export class LambdasNestedStack extends NestedStack {
       dbCluster: props.dbCluster,
       dbCredsSecret: props.dbCredsSecret,
       // TODO move this to a config
-      maxPollingDuration: Duration.minutes(5),
+      maxPollingDuration: Duration.minutes(2),
     });
 
     this.outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({

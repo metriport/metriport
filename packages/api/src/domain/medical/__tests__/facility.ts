@@ -55,6 +55,8 @@ export function makeFacility(params: Partial<Facility> = {}): Facility {
       params.cwOboOid !== undefined ? params.cwOboOid : cwActive ? faker.string.uuid() : null,
     cqType,
     cwType,
+    cqApproved: false,
+    cwApproved: false,
     data: makeFacilityData(params.data),
   };
 }

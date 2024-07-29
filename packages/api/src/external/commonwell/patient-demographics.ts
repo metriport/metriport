@@ -43,7 +43,9 @@ export function patientNetworkLinkToNormalizedLinkDemographics(
   const emails = (patientNetworkLink.details.telecom ?? []).flatMap(tc => {
     if (!tc.value || !tc.system) return [];
     if (tc.system !== "email") return [];
-    return [normalizeEmail(tc.value)];
+    const email = normalizeEmail(tc.value);
+    if (!email) return [];
+    return [email];
   });
   /* TODO
   const driversLicenses = (patientNetworkLink.details.identifiers ?? []).flatMap(p => { 

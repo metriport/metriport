@@ -1,5 +1,8 @@
-import { Telecom } from "@metriport/ihe-gateway-sdk";
+import NotFoundError from "@metriport/core/util/error/not-found";
+import { CarequalityManagementAPI } from "@metriport/carequality-sdk";
 import { Patient } from "@metriport/core/domain/patient";
+import { AddressStrict } from "@metriport/core/domain/location-address";
+import { Coordinates } from "@metriport/core/domain/address";
 import { capture } from "@metriport/core/util/notifications";
 import { PurposeOfUse } from "@metriport/shared";
 import { MedicalDataSource } from "@metriport/core/external/index";
@@ -8,6 +11,9 @@ import { errorToString } from "@metriport/shared/common/error";
 import z from "zod";
 import { isCarequalityEnabled, isCQDirectEnabledForCx } from "../aws/app-config";
 import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
+import { getAddressWithCoordinates } from "../../domain/medical/address";
+import { CQDirectoryEntryData } from "./cq-directory";
+import { parseCQDirectoryEntries } from "./command/cq-directory/parse-cq-directory-entry";
 
 // TODO: adjust when we support multiple POUs
 export function createPurposeOfUse() {
@@ -80,6 +86,7 @@ export const cqOrgDetailsSchema = z.object({
   phone: z.string(),
   email: z.string(),
   role: z.enum(["Implementer", "Connection"]),
+  active: z.boolean(),
   organizationBizType: z.nativeEnum(OrganizationBizType).optional(),
   parentOrgOid: z.string().optional(),
 });
@@ -128,37 +135,56 @@ export function getSystemUserName(orgName: string): string {
   return `${orgName} System User`;
 }
 
-export function buildCqOrgName({
+export function buildCqOrgNameForFacility({
   vendorName,
   orgName,
-  isProvider,
   oboOid,
 }: {
   vendorName: string;
   orgName: string;
-  isProvider: boolean;
   oboOid?: string;
 }): string {
-  if (oboOid && !isProvider) {
+  if (oboOid) {
     return `${vendorName} - ${orgName} #OBO# ${oboOid}`;
   }
 
   return `${vendorName} - ${orgName}`;
 }
 
-export function getCqPatientContactType(
-  telecom: Telecom[] | null | undefined,
-  system: "phone" | "email"
-): string[] {
-  const contacts: string[] = [];
+export async function getCqAddress({
+  cxId,
+  address,
+}: {
+  cxId: string;
+  address: AddressStrict;
+}): Promise<{ coordinates: Coordinates; addressLine: string }> {
+  const { coordinates } = await getAddressWithCoordinates(address, cxId);
+  const addressLine = address.addressLine2
+    ? `${address.addressLine1}, ${address.addressLine2}`
+    : address.addressLine1;
+  return { coordinates, addressLine };
+}
 
-  if (telecom && telecom.length > 0) {
-    for (const contact of telecom) {
-      if (contact.system === system && contact.value) {
-        contacts.push(contact.value);
-      }
-    }
+export const cqOrgActiveSchema = z.object({
+  active: z.boolean(),
+});
+
+export async function getParsedCqOrgOrFail(
+  cq: CarequalityManagementAPI,
+  oid: string,
+  active: boolean
+): Promise<CQDirectoryEntryData> {
+  const resp = await cq.listOrganizations({ count: 1, oid, active });
+  if (resp.length === 0) throw new NotFoundError("Organization not found");
+  const cqOrgs = parseCQDirectoryEntries(resp);
+  const cqOrg = cqOrgs[0] as CQDirectoryEntryData;
+  if (cqOrgs.length > 1) {
+    capture.message("More than one organization with the same OID found in the CQ directory", {
+      extra: {
+        orgOid: oid,
+        context: `cq.org.directory`,
+      },
+    });
   }
-
-  return [];
+  return cqOrg;
 }

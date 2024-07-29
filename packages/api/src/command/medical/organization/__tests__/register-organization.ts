@@ -2,16 +2,9 @@
 import { faker } from "@faker-js/faker";
 import { Coordinates } from "@metriport/core/domain/address";
 import { USState } from "@metriport/api-sdk";
-import { OrgType } from "@metriport/core/domain/organization";
 import { AddressWithCoordinates } from "@metriport/core/domain/location-address";
 
-export const getCxOrganizationNameAndOidResult = {
-  name: faker.company.name(),
-  oid: faker.string.uuid(),
-  type: OrgType.acuteCare,
-};
-
-export const coordinates: Coordinates = {
+const coordinates: Coordinates = {
   lat: faker.location.latitude(),
   lon: faker.location.longitude(),
 };

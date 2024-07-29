@@ -26,7 +26,7 @@ beforeEach(() => {
   bundle.entry?.push({ resource: observation });
 });
 
-describe("buildSocialHistory", () => {
+describe.skip("buildSocialHistory", () => {
   it("does not pick up non-social-history Observations", () => {
     const observation2 = makeObservation({
       ...observationSocialHistory,

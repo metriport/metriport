@@ -1,6 +1,6 @@
-import { Contact } from "@metriport/commonwell-sdk";
 import { Patient } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import z from "zod";
 import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
 
 export async function getCwInitiator(
@@ -17,36 +17,21 @@ export async function isFacilityEnabledToQueryCW(
   return await isHieEnabledToQuery(facilityId, patient, MedicalDataSource.COMMONWELL);
 }
 
-export function buildCwOrgName({
+export function buildCwOrgNameForFacility({
   vendorName,
   orgName,
-  isProvider,
   oboOid,
 }: {
   vendorName: string;
   orgName: string;
-  isProvider: boolean;
   oboOid?: string | null;
 }): string {
-  if (oboOid && !isProvider) {
+  if (oboOid) {
     return `${vendorName} - ${orgName} -OBO- ${oboOid}`;
   }
   return `${vendorName} - ${orgName}`;
 }
 
-export function getCwPatientContactType(
-  telecom: Contact[] | null | undefined,
-  system: "phone" | "email"
-): string[] {
-  const contacts: string[] = [];
-
-  if (telecom && telecom.length > 0) {
-    for (const contact of telecom) {
-      if (contact.system === system && contact.value) {
-        contacts.push(contact.value);
-      }
-    }
-  }
-
-  return [];
-}
+export const cwOrgActiveSchema = z.object({
+  active: z.boolean(),
+});
