@@ -20,14 +20,17 @@ import { makeFhirApi } from "../external/fhir/api/api-factory";
 import { countResources } from "../external/fhir/patient/count-resources";
 import { getReferencesFromFHIR } from "../external/fhir/references/get-references";
 import { OrganizationModel } from "../models/medical/organization";
-import { internalDtoFromModel } from "./medical/dtos/facilityDTO";
+import { internalDtoFromModel as facilityInternalDto } from "./medical/dtos/facilityDTO";
+import { internalDtoFromModel as orgInternalDto } from "./medical/dtos/organizationDTO";
 import userRoutes from "./devices/internal-user";
+import commonwellRoutes from "./medical/internal-cw";
 import carequalityRoutes from "./medical/internal-cq";
 import docsRoutes from "./medical/internal-docs";
 import hieRoutes from "./medical/internal-hie";
 import mpiRoutes from "./medical/internal-mpi";
 import patientRoutes from "./medical/internal-patient";
 import facilityRoutes from "./medical/internal-facility";
+import organizationRoutes from "./medical/internal-organization";
 import { getUUIDFrom } from "./schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "./util";
 import { requestLogger } from "./helpers/request-logger";
@@ -37,7 +40,9 @@ const router = Router();
 router.use("/docs", docsRoutes);
 router.use("/patient", patientRoutes);
 router.use("/facility", facilityRoutes);
+router.use("/organization", organizationRoutes);
 router.use("/user", userRoutes);
+router.use("/commonwell", commonwellRoutes);
 router.use("/carequality", carequalityRoutes);
 router.use("/mpi", mpiRoutes);
 router.use("/hie", hieRoutes);
@@ -198,17 +203,9 @@ router.get(
     const facilities = await getFacilities({ cxId: org.cxId });
 
     const response = {
-      cxId: org.cxId,
-      org: {
-        id: org.id,
-        etag: org.eTag,
-        oid: org.oid,
-        businessType: org.type,
-        name: org.data.name,
-        type: org.data.type,
-        location: org.data.location,
-      },
-      facilities: facilities.map(f => internalDtoFromModel(f)),
+      cxId,
+      org: orgInternalDto(org),
+      facilities: facilities.map(f => facilityInternalDto(f)),
     };
     return res.status(httpStatus.OK).json(response);
   })
