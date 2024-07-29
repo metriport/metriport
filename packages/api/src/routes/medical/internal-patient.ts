@@ -1,6 +1,3 @@
-import { Patient } from "@metriport/core/domain/patient";
-import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
-import { Bundle, DocumentReference } from "@medplum/fhirtypes";
 import { genderAtBirthSchema } from "@metriport/api-sdk";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MedicalDataSource } from "@metriport/core/external/index";
@@ -33,28 +30,26 @@ import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
-import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
-import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
+import { PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { getConsolidated } from "../../command/medical/patient/consolidated-get";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getPatientIds,
   getPatientOrFail,
   getPatientStates,
-  matchPatient,
+  getPatients,
 } from "../../command/medical/patient/get-patient";
 import {
   PatientUpdateCmd,
-  updatePatient,
   updatePatientWithoutHIEs,
 } from "../../command/medical/patient/update-patient";
+import { createCoverageAssessments } from "../../command/medical/patient/converage-assessment-create";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import BadRequestError from "../../errors/bad-request";
 import {
   getCxsWithCQDirectFeatureFlagValue,
   getCxsWithEnhancedCoverageFeatureFlagValue,
 } from "../../external/aws/app-config";
-import { countResources } from "../../external/fhir/patient/count-resources";
 import { PatientUpdaterCarequality } from "../../external/carequality/patient-updater-carequality";
 import cwCommands from "../../external/commonwell";
 import { findDuplicatedPersons } from "../../external/commonwell/admin/find-patient-duplicates";
@@ -88,6 +83,7 @@ import { PatientLinksDTO, dtoFromCW } from "./dtos/linkDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
+import { coverageAssessmentSchema, coverageAssessmentValidationSchema } from "./schemas/patient";
 
 dayjs.extend(duration);
 
@@ -747,33 +743,12 @@ router.get(
   })
 );
 
-const coverageAssessmentValidationSchema = z.object({
-  patients: z
-    .object({
-      dob: z.string().optional(),
-      gender: z.string().optional(),
-      firstname: z.string().optional(),
-      lastname: z.string().optional(),
-      zip: z.string().optional(),
-      city: z.string().optional(),
-      state: z.string().optional(),
-      addressLine1: z.string(),
-      addressLine2: z.string().optional(),
-      phone1: z.string().optional(),
-      phone2: z.string().optional(),
-      email1: z.string().optional(),
-      email2: z.string().optional(),
-      externalId: z.string().optional(),
-    })
-    .array(),
-});
-
 /** ---------------------------------------------------------------------------
- * POST /internal/patient/validate-coverage-assessment
+ * POST /internal/patient/coverage-assessment/validate
  *
  */
 router.post(
-  "/validate-coverage-assessment",
+  "coverage-assessment/validate",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const payload = coverageAssessmentValidationSchema.parse(req.body);
@@ -829,27 +804,6 @@ router.post(
   })
 );
 
-const coverageAssessmentSchema = z.object({
-  patients: z
-    .object({
-      dob: z.string(),
-      gender: z.string(),
-      firstname: z.string(),
-      lastname: z.string(),
-      zip: z.string(),
-      city: z.string(),
-      state: z.string(),
-      addressLine1: z.string(),
-      addressLine2: z.string().optional(),
-      phone1: z.string().optional(),
-      phone2: z.string().optional(),
-      email1: z.string().optional(),
-      email2: z.string().optional(),
-      externalId: z.string().optional(),
-    })
-    .array(),
-});
-
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/coverage-assessment
  *
@@ -866,11 +820,10 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getFrom("query").orFail("facilityId", req);
     const payload = coverageAssessmentSchema.parse(req.body);
-    const delayTime = dayjs.duration(30, "seconds").asMilliseconds();
 
     const facility = await getFacilityOrFail({ cxId, id: facilityId });
 
-    const patientsCreateCmds: PatientCreateCmd[] = payload.patients.map(patient => {
+    const patientsCreates: PatientCreateCmd[] = payload.patients.map(patient => {
       const phone1 = patient.phone1 ? normalizePhoneNumber(patient.phone1) : undefined;
       const email1 = patient.email1 ? normalizeEmail(patient.email1) : undefined;
       const phone2 = patient.phone2 ? normalizePhoneNumber(patient.phone2) : undefined;
@@ -901,118 +854,12 @@ router.post(
       };
     });
 
-    const createOrUpdatePatient = async (patient: PatientCreateCmd): Promise<Patient> => {
-      const matchedPatient = await matchPatient(patient);
-      let updatedPatient: Patient;
-      if (matchedPatient) {
-        updatedPatient = await updatePatient({
-          patientUpdate: {
-            ...patient,
-            id: matchedPatient.id,
-          },
-          rerunPdOnNewDemographics: true,
-        });
-      } else {
-        updatedPatient = await createPatient({
-          patient,
-          rerunPdOnNewDemographics: true,
-        });
-      }
-      return updatedPatient;
-    };
-
-    const patientChunkSize = 10;
-    const pdPatients: Patient[] = [];
-    const pdChunks = chunk(patientsCreateCmds, patientChunkSize);
-    for (const chunk of pdChunks) {
-      await sleep(delayTime);
-      const patientCreates: Promise<Patient>[] = [];
-      for (const patient of chunk) {
-        patientCreates.push(createOrUpdatePatient(patient));
-      }
-      const patients = await Promise.allSettled(patientCreates);
-      patients.map(patient => {
-        if (patient.status == "fulfilled") {
-          pdPatients.push(patient.value);
-        }
-      });
-    }
-    const dQChunks = chunk(
-      pdPatients.map(p => p.id),
-      patientChunkSize
-    );
-    for (const chunk of dQChunks) {
-      await sleep(delayTime);
-      const docQueries: Promise<DocumentQueryProgress>[] = [];
-      for (const patientId of chunk) {
-        docQueries.push(
-          queryDocumentsAcrossHIEs({
-            cxId,
-            patientId,
-            facilityId: facility.id,
-          })
-        );
-      }
-      await Promise.allSettled(docQueries);
-    }
-
-    type CoverageAssessment = {
-      patientId: string;
-      downloadStatus: string | undefined;
-      docCount: number | undefined;
-      convertStatus: string | undefined;
-      fhirCount: number;
-      fhirDetails: string;
-      consolidatedUrl: string | undefined;
-    };
-    const getPatientCoverage = async (patient: Patient): Promise<CoverageAssessment> => {
-      const [currentPatient, fhir, fhirResources] = await Promise.all([
-        getPatientOrFail({ cxId, id: patient.id }),
-        getConsolidated({ patient }),
-        countResources({ patient }),
-      ]);
-
-      if (!currentPatient.data.documentQueryProgress) {
-        throw new Error(`Document query status not found for patient ${patient.id}`);
-      }
-
-      const { download, convert } = currentPatient.data.documentQueryProgress;
-      const downloadStatus = download?.status;
-      const docCount = download?.successful;
-      const convertStatus = convert?.status;
-      const fhirCount = fhirResources.total;
-      const fhirDetails = JSON.stringify(fhirResources.resources).replaceAll(",", " ");
-      const bundle = fhir.bundle as Bundle<DocumentReference>;
-      const consolidatedUrl = bundle.entry?.[0]?.resource?.content?.[0]?.attachment?.url;
-
-      return {
-        patientId: patient.id,
-        downloadStatus,
-        docCount,
-        convertStatus,
-        fhirCount,
-        fhirDetails,
-        consolidatedUrl,
-      };
-    };
-
-    const dqCoverageAssessments: CoverageAssessment[] = [];
-    const coverageAssessmentChunks = chunk(pdPatients, patientChunkSize);
-    for (const chunk of coverageAssessmentChunks) {
-      await sleep(delayTime);
-      const getPatientCoverages: Promise<CoverageAssessment>[] = [];
-      for (const patient of chunk) {
-        getPatientCoverages.push(getPatientCoverage(patient));
-      }
-      const coverageAssessments = await Promise.allSettled(getPatientCoverages);
-      coverageAssessments.map(ca => {
-        if (ca.status == "fulfilled") {
-          dqCoverageAssessments.push(ca.value);
-        }
-      });
-    }
-
-    return res.status(status.OK).json({ pdPatients, dqCoverageAssessments });
+    createCoverageAssessments({
+      cxId,
+      facilityId,
+      patientsCreates,
+    });
+    return res.status(status.OK);
   })
 );
 

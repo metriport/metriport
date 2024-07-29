@@ -78,6 +78,7 @@ describe("registerFacility", () => {
         ...mockedFacility,
         ...addressWithCoordinates,
       },
+      facilityCurrentActive: mockedFacility.cqActive,
       cxOrgName,
       cxOrgBizType,
       cqOboOid: mockedFacility.cqOboOid ?? undefined,
@@ -111,6 +112,7 @@ describe("registerFacility", () => {
     await createOrUpdateFacilityInCq({
       cxId,
       facility: mockedOboFacility,
+      facilityCurrentActive: mockedOboFacility.cqActive,
       cxOrgName,
       cxOrgBizType,
       cqOboOid: mockedOboFacility.cqOboOid ?? undefined,
