@@ -88,7 +88,12 @@ export function buildEntriesFromDiagnosticReport(
   referenceId: string
 ): ConcernActEntry {
   const cdCodesFromCodes = buildCodeCvFromCodeableConcept(report.code);
-  const defaultNoteCode = buildCodeCe({ code: "10164-2", codeSystem: "2.16.840.1.113883.6.1" });
+  const defaultNoteCode = buildCodeCe({
+    code: "34109-9",
+    codeSystem: "2.16.840.1.113883.6.1",
+    codeSystemName: "LOINC",
+    displayName: "Note",
+  });
 
   // TODO: Implement if required
   // const author = buildAuthor(primaryOrganization);

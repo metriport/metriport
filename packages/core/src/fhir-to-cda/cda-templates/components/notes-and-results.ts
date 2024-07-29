@@ -9,12 +9,6 @@ import { AssembledNote } from "./augmented-resources";
 import { buildNotes } from "./notes";
 import { buildResultsSection } from "./results";
 
-export const notesCodingMap = new Map<string, string>([
-  ["34111-5", "ED Notes"],
-  ["10164-2", "Progress Notes"],
-  ["34117-2", "H&P Notes"],
-]);
-
 export function buildVariousNotesAndResults(fhirBundle: Bundle) {
   const assembledNotes = buildAssembledNotes(fhirBundle);
   return buildSectionsFromAssembledNotes(assembledNotes);
@@ -98,7 +92,7 @@ function buildAssembledNotes(fhirBundle: Bundle) {
   diagnosticReports.forEach(report => {
     const sectionName = assignSectionName(report);
     const observations = getReferencedObservations(report, fhirBundle);
-    const addedObservation = createObsFromDiagReport(report);
+    const addedObservation = createObsForPresentedForm(report);
     const combinedObservations = combineObs(observations, addedObservation);
     const procedures = getProceduresWithReference(fhirBundle, report.id);
     assembledNotes.push(new AssembledNote(sectionName, report, combinedObservations, procedures));
@@ -116,6 +110,7 @@ function assignSectionName(report: DiagnosticReport) {
   });
   if (reportCodes?.length) {
     for (const code of reportCodes) {
+      // This code stands for "Note", which is very vague and can be used as default. Here, we're looking for more specific codes.
       if (code !== "34109-9") {
         sectionName = findKeyInMapByReportCode(code);
         if (sectionName) return sectionName;
@@ -123,7 +118,7 @@ function assignSectionName(report: DiagnosticReport) {
     }
   }
 
-  return sectionName ?? "34109-9";
+  return "34109-9";
 }
 
 function getReferencedObservations(
@@ -149,7 +144,7 @@ function combineObs(
   return combined;
 }
 
-function createObsFromDiagReport(report: DiagnosticReport): Observation | undefined {
+function createObsForPresentedForm(report: DiagnosticReport): Observation | undefined {
   if (!report.presentedForm?.length) return undefined;
 
   return {
