@@ -1,20 +1,24 @@
 import { DiagnosticReport, Observation } from "@medplum/fhirtypes";
 import { base64ToString } from "../../../util/base64";
 import { ResultsSection } from "../../cda-types/sections";
-import { ActStatusCode } from "../../cda-types/shared-types";
+import { ActStatusCode, ObservationTableRow } from "../../cda-types/shared-types";
 import {
   buildCodeCe,
   buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
   buildTemplateIds,
   formatDateToCdaTimestamp,
+  formatDateToHumanReadableFormat,
   notOnFilePlaceholder,
   withNullFlavor,
 } from "../commons";
-import { extensionValue2015, oids, placeholderOrgOid } from "../constants";
+import { NOT_SPECIFIED, extensionValue2015, oids, placeholderOrgOid } from "../constants";
 import { AssembledNote } from "./augmented-resources";
-import { createObservations } from "./observations";
 import { SectionDetails } from "./notes-and-results";
+import { createObservations } from "./observations";
+import { initiateSectionTable } from "../table";
+
+const resultsTableHeaders = ["Measurement", "Value and Unit", "Score", "Date Recorded"];
 
 export function buildResultsSection(
   assembledNotes: AssembledNote[],
@@ -49,7 +53,7 @@ export function buildResultsSection(
     entries.push(buildEntriesFromAssembledNote(note, referenceId));
   });
 
-  resultsSection.text = combinedText;
+  resultsSection.text = combinedText.flat();
   resultsSection.entry = entries;
   return resultsSection;
 }
@@ -63,24 +67,64 @@ function getTextItemsFromDiagnosticReport(
     ? base64ToString(report.presentedForm[0].data).split(/\n/)
     : [];
 
-  let presentedFormText;
+  const combinedText = [];
   if (contentLines.length > 0) {
     const contentObjects = contentLines.map(line => ({
       br: line,
     }));
-    presentedFormText = {
+    const presentedFormText = {
       content: {
         _ID: referenceId,
         br: contentObjects.map(o => o.br),
       },
     };
+    combinedText.push(presentedFormText);
   }
 
   if (observations) {
-    // TODO: Implement observation text table creation?
+    const rows = observations.map((obs, index) => {
+      const obsReference = `${referenceId}-observation${index + 1}`;
+      return createTableRowFromObservation(obs, obsReference);
+    });
+    const table = initiateSectionTable("results", resultsTableHeaders, rows);
+    combinedText.push(table);
   }
 
-  return presentedFormText ?? "";
+  return combinedText;
+}
+
+function createTableRowFromObservation(
+  observation: Observation,
+  referenceId: string
+): ObservationTableRow {
+  const interpretation = observation.interpretation;
+  const score = interpretation?.[0]?.coding?.[0]?.display ?? interpretation?.[0]?.text;
+  const intValue = score ? parseInt(score) : undefined;
+  const scoreValue = intValue != undefined && !isNaN(intValue) ? intValue.toString() : undefined;
+  const scoreDisplay = scoreValue ?? score;
+
+  const valueAndUnit =
+    `${observation.valueQuantity?.value} ${observation.valueQuantity?.unit}`.trim();
+
+  return {
+    tr: {
+      _ID: referenceId,
+      ["td"]: [
+        {
+          "#text": observation.code?.coding?.[0]?.display ?? observation.code?.text,
+        },
+        {
+          "#text": valueAndUnit ?? NOT_SPECIFIED,
+        },
+        {
+          "#text": scoreDisplay ?? NOT_SPECIFIED,
+        },
+        {
+          "#text": formatDateToHumanReadableFormat(observation.effectiveDateTime) ?? "Unknown",
+        },
+      ],
+    },
+  };
 }
 
 function buildEntriesFromAssembledNote(note: AssembledNote, referenceId: string) {
