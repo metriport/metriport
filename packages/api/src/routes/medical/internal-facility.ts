@@ -4,6 +4,7 @@ import httpStatus from "http-status";
 import { requestLogger } from "../helpers/request-logger";
 import { Facility, FacilityCreate } from "../../domain/medical/facility";
 import { verifyCxItVendorAccess } from "../../command/medical/facility/verify-access";
+import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import { createFacility } from "../../command/medical/facility/create-facility";
 import { updateFacility } from "../../command/medical/facility/update-facility";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
@@ -58,7 +59,10 @@ router.put(
       cwApproved: facilityDetails.cwApproved,
     };
     let facility: Facility;
+    let facilityCurrentActive = false;
     if (facilityDetails.id) {
+      const currentFacility = await getFacilityOrFail({ cxId, id: facilityDetails.id });
+      facilityCurrentActive = currentFacility.cqActive;
       facility = await updateFacility({ id: facilityDetails.id, ...facilityCreate });
     } else {
       facility = await createFacility(facilityCreate);
@@ -71,6 +75,7 @@ router.put(
       createOrUpdateFacilityInCq({
         cxId,
         facility,
+        facilityCurrentActive,
         cxOrgName: org.data.name,
         cxOrgBizType: org.type,
         cqOboOid: facilityDetails.cqOboOid,

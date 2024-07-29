@@ -32,7 +32,7 @@ export async function createFacility({
     cwApproved,
   };
   validateObo(input);
-  validateNPI(cxId, input.data.npi);
+  await validateNPI(cxId, input.data.npi);
   return FacilityModel.create(input);
 }
 

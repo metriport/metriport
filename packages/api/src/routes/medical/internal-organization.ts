@@ -6,6 +6,7 @@ import { metriportEmail as metriportEmailForCq } from "../../external/carequalit
 import { metriportCompanyDetails } from "@metriport/shared";
 import { requestLogger } from "../helpers/request-logger";
 import { verifyCxProviderAccess } from "../../command/medical/facility/verify-access";
+import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { createOrganization } from "../../command/medical/organization/create-organization";
 import { updateOrganization } from "../../command/medical/organization/update-organization";
 import { organiationInternalDetailsSchema } from "./schemas/organization";
@@ -55,7 +56,10 @@ router.put(
       cwApproved: orgDetails.cwApproved,
     };
     let org: Organization;
+    let orgCurrentActive = false;
     if (orgDetails.id) {
+      const currentOrg = await getOrganizationOrFail({ cxId, id: orgDetails.id });
+      orgCurrentActive = currentOrg.cqActive;
       org = await updateOrganization({ id: orgDetails.id, ...organizationCreate });
     } else {
       org = await createOrganization(organizationCreate);
@@ -65,22 +69,25 @@ router.put(
     // CAREQUALITY
     if (syncInHie && org.cqApproved) {
       const { coordinates, addressLine } = await getCqAddress({ cxId, address: org.data.location });
-      createOrUpdateCQOrganization({
-        name: org.data.name,
-        addressLine1: addressLine,
-        lat: coordinates.lat.toString(),
-        lon: coordinates.lon.toString(),
-        city: org.data.location.city,
-        state: org.data.location.state,
-        postalCode: org.data.location.zip,
-        oid: org.oid,
-        organizationBizType: org.type,
-        contactName: metriportCompanyDetails.name,
-        phone: metriportCompanyDetails.phone,
-        email: metriportEmailForCq,
-        active: org.cqActive,
-        role: "Connection" as const,
-      }).catch(processAsyncError("cq.internal.organization"));
+      createOrUpdateCQOrganization(
+        {
+          name: org.data.name,
+          addressLine1: addressLine,
+          lat: coordinates.lat.toString(),
+          lon: coordinates.lon.toString(),
+          city: org.data.location.city,
+          state: org.data.location.state,
+          postalCode: org.data.location.zip,
+          oid: org.oid,
+          organizationBizType: org.type,
+          contactName: metriportCompanyDetails.name,
+          phone: metriportCompanyDetails.phone,
+          email: metriportEmailForCq,
+          active: org.cqActive,
+          role: "Connection" as const,
+        },
+        orgCurrentActive
+      ).catch(processAsyncError("cq.internal.organization"));
     }
     // COMMONWELL
     if (syncInHie && org.cwApproved) {

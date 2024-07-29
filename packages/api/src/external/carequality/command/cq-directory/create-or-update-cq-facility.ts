@@ -12,12 +12,14 @@ export const metriportIntermediaryOid = `${metriportOid}.666`;
 export async function createOrUpdateFacilityInCq({
   cxId,
   facility,
+  facilityCurrentActive,
   cxOrgName,
   cxOrgBizType,
   cqOboOid,
 }: {
   cxId: string;
   facility: Facility;
+  facilityCurrentActive: boolean;
   cxOrgName: string;
   cxOrgBizType: OrganizationBizType;
   cqOboOid: string | undefined;
@@ -29,21 +31,24 @@ export async function createOrUpdateFacilityInCq({
   });
 
   const { coordinates, addressLine } = await getCqAddress({ cxId, address: facility.data.address });
-  await createOrUpdateCQOrganization({
-    name: orgName,
-    addressLine1: addressLine,
-    lat: coordinates.lat.toString(),
-    lon: coordinates.lon.toString(),
-    city: facility.data.address.city,
-    state: facility.data.address.state,
-    postalCode: facility.data.address.zip,
-    oid: facility.oid,
-    contactName: metriportCompanyDetails.name,
-    phone: metriportCompanyDetails.phone,
-    email: metriportEmailForCq,
-    organizationBizType: cxOrgBizType,
-    active: facility.cqActive,
-    parentOrgOid: isOboFacility(facility.cqType) ? metriportIntermediaryOid : metriportOid,
-    role: "Connection" as const,
-  });
+  await createOrUpdateCQOrganization(
+    {
+      name: orgName,
+      addressLine1: addressLine,
+      lat: coordinates.lat.toString(),
+      lon: coordinates.lon.toString(),
+      city: facility.data.address.city,
+      state: facility.data.address.state,
+      postalCode: facility.data.address.zip,
+      oid: facility.oid,
+      contactName: metriportCompanyDetails.name,
+      phone: metriportCompanyDetails.phone,
+      email: metriportEmailForCq,
+      organizationBizType: cxOrgBizType,
+      active: facility.cqActive,
+      parentOrgOid: isOboFacility(facility.cqType) ? metriportIntermediaryOid : metriportOid,
+      role: "Connection" as const,
+    },
+    facilityCurrentActive
+  );
 }

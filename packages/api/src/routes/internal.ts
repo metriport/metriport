@@ -11,10 +11,7 @@ import {
 } from "../command/medical/admin/populate-fhir";
 import { getFacilities } from "../command/medical/facility/get-facility";
 import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
-import {
-  getOrganization,
-  getOrganizationOrFail,
-} from "../command/medical/organization/get-organization";
+import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
 import { getCxFFStatus } from "../command/internal/get-hie-enabled-feature-flags-status";
 import { updateCxHieEnabledFFs } from "../command/internal/update-hie-enabled-feature-flags";
 import { isEnhancedCoverageEnabledForCx } from "../external/aws/app-config";
@@ -202,12 +199,12 @@ router.get(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const org = await getOrganization({ cxId });
-    const facilities = org ? await getFacilities({ cxId: org.cxId }) : [];
+    const org = await getOrganizationOrFail({ cxId });
+    const facilities = await getFacilities({ cxId: org.cxId });
 
     const response = {
       cxId,
-      org: org ? orgInternalDto(org) : undefined,
+      org: orgInternalDto(org),
       facilities: facilities.map(f => facilityInternalDto(f)),
     };
     return res.status(httpStatus.OK).json(response);
