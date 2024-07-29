@@ -39,6 +39,7 @@ describe("createConsolidateData", () => {
     const resp = await createOrUpdateConsolidatedPatientData({
       cxId,
       patientId,
+      requestId: uuidv4(),
       fhirBundle: collectionBundle,
     });
 
