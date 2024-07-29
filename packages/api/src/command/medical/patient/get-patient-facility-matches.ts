@@ -11,8 +11,8 @@ import { patientResourceToNormalizedLinkDemographics as cqPatientResourceToNorma
 import { patientNetworkLinkToNormalizedLinkDemographics as cwPatientResourceToNormalizedLinkDemographics } from "../../../external/commonwell/patient-demographics";
 
 type PatientFacilityMatch = {
-  name: string;
-  oid: string;
+  name?: string;
+  oid?: string;
   address: Partial<Address>;
   patient?: LinkDemographics;
 };
@@ -57,8 +57,8 @@ async function getCqFacilityMatches(cqLinks: CQLink[]): Promise<PatientFacilityM
     const patientMatchDemo = cqPatientResourceToNormalizedLinkDemographics(cqLink.patientResource);
 
     patientFacilityMatches.push({
-      name: cqFacility.name ?? "",
-      oid: cqFacility.id ?? "",
+      name: cqFacility.name ?? undefined,
+      oid: cqFacility.id ?? undefined,
       address: {
         addressLine1: cqFacility.addressLine ?? undefined,
         city: cqFacility.city ?? undefined,
@@ -93,7 +93,7 @@ async function getCwFacilityMatches(cwLinks: CwLink[]): Promise<PatientFacilityM
       oid,
       patient: patientMatchDemo,
       address: {
-        state: org?.state as USState,
+        state: org?.state ? (org.state as USState) : undefined,
         zip: org?.zip,
       },
     });

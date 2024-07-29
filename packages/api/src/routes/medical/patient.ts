@@ -64,7 +64,6 @@ import {
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
-// import { searchPatientFacilityMatches } from "../../command/medical/patient/search-patient-facility-matches";
 
 const router = Router();
 
