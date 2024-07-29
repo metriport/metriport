@@ -117,8 +117,8 @@ export function buildCodeCe({
   const mappedCodeSystem = mapCodingSystem(codeSystem?.trim());
   if (code) codeObject._code = code.trim();
   if (mappedCodeSystem) codeObject._codeSystem = mappedCodeSystem;
-  if (codeSystemName) codeObject._codeSystemName = codeSystemName.trim();
-  if (displayName) codeObject._displayName = displayName.trim();
+  if (codeSystemName) codeObject._codeSystemName = codeSystemName.toString().trim();
+  if (displayName) codeObject._displayName = displayName.toString().trim();
 
   return codeObject;
 }

@@ -262,7 +262,7 @@ export type ObservationEntry = {
       | undefined;
     participant?: Participant | undefined;
     entryRelationship?: ObservationEntryRelationship[] | undefined;
-    interpretationCode?: CdaCodeCe;
+    interpretationCode?: CdaCodeCe | CdaCodeCe[] | undefined;
   };
 };
 

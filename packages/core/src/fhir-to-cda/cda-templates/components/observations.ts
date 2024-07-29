@@ -216,11 +216,16 @@ function createEntryFromObservation(
       },
       effectiveTime: withNullFlavor(date, "_value"),
       value: buildValue(observation),
-      interpretationCode: buildCodeCe({
-        code: observation.interpretation?.[0]?.coding?.[0]?.code,
-        codeSystem: observation.interpretation?.[0]?.coding?.[0]?.system,
-        codeSystemName: observation.interpretation?.[0]?.coding?.[0]?.display,
-        displayName: observation.interpretation?.[0]?.coding?.[0]?.display,
+      interpretationCode: observation.interpretation?.flatMap(interpretation => {
+        return (
+          interpretation.coding?.map(coding => {
+            return buildCodeCe({
+              code: coding.code,
+              codeSystem: coding.system,
+              displayName: coding.display,
+            });
+          }) || []
+        );
       }),
     },
   };
