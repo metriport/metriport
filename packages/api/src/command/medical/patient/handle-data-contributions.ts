@@ -3,6 +3,7 @@ import { FHIR_BUNDLE_SUFFIX, createUploadFilePath } from "@metriport/core/domain
 import { Patient } from "@metriport/core/domain/patient";
 import { toFHIR as toFhirPatient } from "@metriport/core/external/fhir/patient/index";
 import { uploadCdaDocuments, uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
+import { out } from "@metriport/core/util";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import BadRequestError from "../../../errors/bad-request";
 import { processCcdRequest } from "../../../external/cda/process-ccd-request";
@@ -31,6 +32,8 @@ export async function handleDataContribution({
   cxId: string;
   bundle: ValidBundle;
 }): Promise<Bundle<Resource> | undefined> {
+  const { log } = out(`handleDataContribution - cxId ${cxId}, patientId ${patientId}`);
+  let startedAt = Date.now();
   const [organization, patient] = await Promise.all([
     getOrganizationOrFail({ cxId }),
     getPatientOrFail({ id: patientId, cxId }),
@@ -44,22 +47,30 @@ export async function handleDataContribution({
   );
   const fullBundle = hydrateBundle(bundle, patient, fhirBundleDestinationKey);
 
+  log(`${startedAt - Date.now()}ms to prepare before uploadFhirBundleToS3`);
+  startedAt = Date.now();
   await uploadFhirBundleToS3({
     cxId,
     patientId,
     fhirBundle: fullBundle,
     destinationKey: fhirBundleDestinationKey,
   });
+  log(`${startedAt - Date.now()}ms to execute uploadFhirBundleToS3`);
+  startedAt = Date.now();
 
   const validatedBundle = validateFhirEntries(fullBundle);
   const incomingAmount = validatedBundle.entry.length;
   await checkResourceLimit(incomingAmount, patient);
 
+  log(`${startedAt - Date.now()}ms to validate bundle and check resources`);
+  startedAt = Date.now();
   const consolidatedDataUploadResults = await createOrUpdateConsolidatedPatientData({
     cxId,
     patientId: patient.id,
     fhirBundle: validatedBundle,
   });
+  log(`${startedAt - Date.now()}ms to store bundle on FHIR server`);
+  startedAt = Date.now();
 
   if (!Config.isSandbox()) {
     // intentionally async
@@ -79,6 +90,7 @@ export async function handleDataContribution({
         organization: fhirOrganization,
         docId: requestId,
       });
+      log(`${startedAt - Date.now()}ms to store bundle on FHIR server`);
     }
   }
 
