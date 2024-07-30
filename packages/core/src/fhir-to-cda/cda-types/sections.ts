@@ -6,6 +6,7 @@ import {
   EncounterEntry,
   ObservationEntry,
   ObservationOrganizer,
+  ProcedureActivityEntry,
   SubstanceAdministationEntry,
   TextParagraph,
   TextUnstructured,
@@ -33,4 +34,5 @@ export type EncountersSection = CdaSection<EncounterEntry>;
 export type VitalSignsSection = CdaSection<ObservationOrganizer>;
 export type FamilyHistorySection = CdaSection<ObservationOrganizer>;
 export type NotesSection = CdaSection<ConcernActEntry>;
+export type ProceduresSection = CdaSection<ProcedureActivityEntry>;
 export type AssessmentAndPlanSection = CdaSection<ObservationOrganizer>;

@@ -359,6 +359,22 @@ export type ConcernActEntry = {
   };
 };
 
+export type ProcedureActivityEntry = {
+  _typeCode?: string;
+  procedure: {
+    _classCode: string;
+    _moodCode: string;
+    templateId: CdaInstanceIdentifier[];
+    id?: CdaInstanceIdentifier;
+    code?: CdaCodeCv | undefined;
+    text?: CdaOriginalText | undefined;
+    statusCode?: {
+      _code: string;
+    };
+    effectiveTime?: EffectiveTimeLowHigh;
+  };
+};
+
 export type EncounterEntry = {
   encounter: {
     _classCode?: string;

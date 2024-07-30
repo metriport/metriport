@@ -29,6 +29,7 @@ export const oids = {
   medicationsSection: "2.16.840.1.113883.10.20.22.2.1.1",
   mentalStatusSection: "2.16.840.1.113883.10.20.22.2.56",
   problemsSection: "2.16.840.1.113883.10.20.22.2.5.1",
+  proceduresSection: "2.16.840.1.113883.10.20.22.2.7",
   resultsSection: "2.16.840.1.113883.10.20.22.2.3.1",
   socialHistorySection: "2.16.840.1.113883.10.20.22.2.17",
   encountersSection: "2.16.840.1.113883.10.20.22.2.22",
@@ -58,6 +59,7 @@ export const oids = {
   serviceDeliveryLocation: "2.16.840.1.113883.10.20.22.4.32",
   vitalSignsOrganizer: "2.16.840.1.113883.10.20.22.4.26",
   noteActivity: "2.16.840.1.113883.10.20.22.4.202",
+  procedureActivity: "2.16.840.1.113883.10.20.22.4.14",
 };
 
 export const mentalHealthSurveyCodes = ["44249-1"];

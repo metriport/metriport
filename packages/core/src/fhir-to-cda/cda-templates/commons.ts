@@ -520,7 +520,7 @@ export function isLoinc(system: string | undefined): boolean {
 export function getTextFromCode(code: CodeableConcept | undefined): string {
   if (!code) return NOT_SPECIFIED;
   const primaryCoding = code.coding?.[0];
-  return primaryCoding?.display ?? code.text ?? NOT_SPECIFIED;
+  return code.text ?? primaryCoding?.display ?? NOT_SPECIFIED;
 }
 
 export function getDisplaysFromCodeableConcepts(

@@ -6,6 +6,7 @@ import { buildImmunizations } from "../components/immunizations";
 import { buildMedications } from "../components/medications";
 import { buildMentalStatus } from "../components/mental-status";
 import { buildProblems } from "../components/problems";
+import { buildProcedures } from "../components/procedures";
 import { buildSocialHistory } from "../components/social-history";
 import { buildVitalSigns } from "../components/vital-signs";
 import { buildAssessmentAndPlan } from "../components/assessment-and-plan";
@@ -23,6 +24,7 @@ export function buildStructuredBody(fhirBundle: Bundle): unknown {
     buildImmunizations(fhirBundle),
     buildVitalSigns(fhirBundle),
     buildFamilyHistory(fhirBundle),
+    buildProcedures(fhirBundle),
     buildAssessmentAndPlan(),
     ...(variousNotes ? variousNotes : []),
   ];

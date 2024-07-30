@@ -47,6 +47,11 @@ export class AugmentedCondition implements AugmentedResource<Condition> {
   constructor(public readonly sectionName: string, public readonly resource: Condition) {}
 }
 
+export class AugmentedProcedure implements AugmentedResource<Procedure> {
+  public readonly typeOid = oids.problemConcernAct; // TODO: Fix the typeOid
+  constructor(public readonly sectionName: string, public readonly resource: Procedure) {}
+}
+
 export class AugmentedMedicationStatement implements AugmentedResource<MedicationStatement> {
   public readonly typeOid = oids.medicationActivity;
   constructor(
