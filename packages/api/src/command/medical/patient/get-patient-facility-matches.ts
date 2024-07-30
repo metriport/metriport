@@ -93,7 +93,7 @@ async function getCwFacilityMatches(cwLinks: CwLink[]): Promise<PatientFacilityM
       oid,
       patient: patientMatchDemo,
       address: {
-        state: org?.state ? (org.state as USState) : undefined,
+        state: org?.state as USState | undefined,
         zip: org?.zip,
       },
     });
