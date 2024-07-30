@@ -5,7 +5,13 @@ import { makeS3Client } from "../../aws/s3";
 import { FHIRServerConnector, FHIRServerRequest } from "./connector";
 
 export class FHIRServerConnectorHTTP implements FHIRServerConnector {
-  async upsertBatch({ cxId, patientId, payload, requestId }: FHIRServerRequest): Promise<void> {
+  async upsertBatch({
+    cxId,
+    patientId,
+    payload,
+    requestId,
+    sendResponse = true,
+  }: FHIRServerRequest): Promise<void> {
     const serverUrl = Config.getFHIRServerUrl();
 
     // Gotta download the contents from S3 since the payload is just a reference to the actual file
@@ -38,6 +44,11 @@ export class FHIRServerConnectorHTTP implements FHIRServerConnector {
       fhirUrlPath: `fhir/${cxId}`,
     });
     await fhirApi.executeBatch(batch);
+
+    if (sendResponse) {
+      // TODO 1557 check sendResponse and send a response to the API
+    }
+
     log(`Done.`);
   }
 }

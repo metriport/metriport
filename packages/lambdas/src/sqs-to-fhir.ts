@@ -6,6 +6,7 @@ import {
   executeWithNetworkRetries,
   executeWithRetries,
   MetriportError,
+  stringToBoolean,
 } from "@metriport/shared";
 import { uuid4 } from "@sentry/utils";
 import { SQSEvent } from "aws-lambda";
@@ -104,6 +105,8 @@ export async function handler(event: SQSEvent) {
       const jobId = attrib.jobId?.stringValue;
       const jobStartedAt = attrib.startedAt?.stringValue;
       const source = attrib.source?.stringValue;
+      const isSendResponseRaw = stringToBoolean(attrib.sendResponse?.stringValue);
+      const isSendResponse = isSendResponseRaw === undefined ? true : isSendResponseRaw;
       if (!cxId) throw new Error(`Missing cxId`);
       if (!patientId) throw new Error(`Missing patientId`);
       const log = prefixedLog(`${i}, patient ${patientId}, job ${jobId}`);
@@ -192,7 +195,9 @@ export async function handler(event: SQSEvent) {
       processFHIRResponse(response, event, log);
 
       await cloudWatchUtils.reportMetrics(metrics);
-      await ossApi.notifyApi({ ...lambdaParams, status: "success" }, log);
+      if (isSendResponse) {
+        await ossApi.notifyApi({ ...lambdaParams, status: "success" }, log);
+      }
     }
     console.log(`Done`);
   } catch (error) {

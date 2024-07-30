@@ -1,4 +1,3 @@
-import { Bundle, Resource } from "@medplum/fhirtypes";
 import { createUploadFilePath, FHIR_BUNDLE_SUFFIX } from "@metriport/core/domain/document/upload";
 import { Patient } from "@metriport/core/domain/patient";
 import { uploadCdaDocuments, uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
@@ -30,7 +29,7 @@ export async function handleDataContribution({
   patientId: string;
   cxId: string;
   bundle: ValidBundle;
-}): Promise<Bundle<Resource> | undefined> {
+}): Promise<void> {
   const { log } = out(`handleDataContribution - cxId ${cxId}, patientId ${patientId}`);
   const fhirBundleDestinationKey = createUploadFilePath(
     cxId,
@@ -71,7 +70,7 @@ export async function handleDataContribution({
     startedAt = Date.now();
   }
 
-  const consolidatedDataUploadResults = await createOrUpdateConsolidatedPatientData({
+  await createOrUpdateConsolidatedPatientData({
     cxId,
     patientId: patient.id,
     requestId,
@@ -84,8 +83,6 @@ export async function handleDataContribution({
     // intentionally async
     processCcdRequest(patient, fhirOrganization, requestId);
   }
-
-  return consolidatedDataUploadResults;
 }
 
 /**

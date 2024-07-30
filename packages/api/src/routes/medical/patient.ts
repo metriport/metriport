@@ -27,6 +27,7 @@ import {
 } from "../../command/medical/patient/create-medical-record";
 import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
+import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 import {
   getPatientOrFail,
   getPatients,
@@ -62,7 +63,6 @@ import {
   schemaUpdateToPatientData,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 
 const router = Router();
 
@@ -431,8 +431,11 @@ async function putConsolidated(req: Request, res: Response) {
   const cxId = getCxIdOrFail(req);
   const patientId = getFrom("params").orFail("id", req);
   const bundle = bundleSchema.parse(req.body);
-  const results = await handleDataContribution({ requestId, patientId, cxId, bundle });
-  return res.setHeader(REQUEST_ID_HEADER_NAME, requestId).status(status.OK).json(results);
+  await handleDataContribution({ requestId, patientId, cxId, bundle });
+  return res
+    .setHeader(REQUEST_ID_HEADER_NAME, requestId)
+    .status(status.OK)
+    .json({ message: "FHIR resources being processed" });
 }
 
 /** ---------------------------------------------------------------------------

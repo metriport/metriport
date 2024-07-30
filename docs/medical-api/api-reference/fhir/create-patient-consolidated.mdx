@@ -31,8 +31,10 @@ api: "PUT /medical/v1/patient/{id}/consolidated"
 
 ## Response
 
-Returns a [Bundle](/medical-api/fhir/resources/bundle) of type "transaction-response" with the 
-entry being the outcome of the query.
+Returns a message indicating the FHIR resources are being processed in the background.
+
+If there are errors with the payload, returns HTTP status code 400 with a message indicating
+the errors.
 
 <ResponseExample>
 
@@ -76,37 +78,6 @@ await metriport.createPatientConsolidated(patientId, {
 
 ```json
 {
-  "resourceType": "Bundle",
-  "id": "bc0fcad0-6457-4b9e-93b3-44212e386138",
-  "type": "transaction-response",
-  "entry": [
-    {
-      "response": {
-        "status": "201 Created",
-        "location": "Appointment/3/_history/1",
-        "etag": "1",
-        "lastModified": "2023-07-27T21:29:31.491+00:00",
-        "outcome": {
-          "resourceType": "OperationOutcome",
-          "issue": [
-            {
-              "severity": "information",
-              "code": "informational",
-              "details": {
-                "coding": [
-                  {
-                    "system": "https://public.metriport.com/fhir/StructureDefinition/operation-outcome",
-                    "code": "SUCCESSFUL_CREATE",
-                    "display": "Create succeeded."
-                  }
-                ]
-              },
-              "diagnostics": "Successfully created resource \"Appointment/3/_history/1\". Took 7ms."
-            }
-          ]
-        }
-      }
-    }
-  ]
+  "message": "FHIR resources being processed"
 }
 ```

@@ -36,7 +36,7 @@ describe("createConsolidateData", () => {
       entry: [diagnosticReportWithId],
     };
 
-    const resp = await createOrUpdateConsolidatedPatientData({
+    await createOrUpdateConsolidatedPatientData({
       cxId,
       patientId,
       requestId: uuidv4(),
@@ -61,8 +61,6 @@ describe("createConsolidateData", () => {
       entry: [putDiagnosticReport],
     };
 
-    expect(resp).toBeTruthy();
-    expect(resp).toEqual(transactionRespBundle);
     expect(fhir_executeBatch).toHaveBeenCalledTimes(1);
     expect(fhir_executeBatch).toHaveBeenCalledWith(convertedFhirBundle);
   });

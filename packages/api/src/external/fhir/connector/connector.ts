@@ -4,6 +4,7 @@ export type FHIRServerRequest = {
   documentId: string;
   payload: string;
   requestId?: string;
+  sendResponse?: boolean;
 };
 
 export interface FHIRServerConnector {
