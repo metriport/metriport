@@ -10,6 +10,7 @@ app.post("/", async (req: Request, res: Response) => {
   if (!req.is("application/json")) {
     return res.status(400).send({ detail: "Invalid content type. Expected 'application/json'." });
   }
+  console.log(`[MOCK-SERVER] Received request: ${JSON.stringify(req.body, null, 2)}`);
   fs.writeFileSync("canvas-request.json", JSON.stringify(req.body, null, 2));
   res.send({ detail: "ok" });
 });

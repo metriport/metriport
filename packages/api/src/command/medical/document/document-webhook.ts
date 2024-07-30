@@ -13,6 +13,7 @@ import { createWebhookRequest } from "../../webhook/webhook-request";
 import { updateProgressWebhookSent } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
 import { CONVERSION_WEBHOOK_TYPE, DOWNLOAD_WEBHOOK_TYPE } from "./process-doc-query-webhook";
+import { patientEvents } from "../../../event/medical/patient-event";
 
 const log = Util.log(`Document Webhook`);
 
@@ -68,7 +69,6 @@ export const processPatientDocumentRequest = async (
         },
       ],
     };
-
     const metadata = getMetadata(whType, patient.data);
 
     // send it to the customer and update the request status
@@ -107,6 +107,10 @@ export const processPatientDocumentRequest = async (
         },
         progressType
       );
+    }
+
+    if (whType === CONVERSION_WEBHOOK_TYPE) {
+      patientEvents().emitCanvasIntegration({ id: patientId, cxId });
     }
 
     const shouldReportUsage =

@@ -16,6 +16,7 @@ export class PatientEvents extends EventEmitter {
   static readonly CREATED = "patient-created";
   static readonly UPDATED = "patient-updated";
   static readonly DELETED = "patient-deleted";
+  static readonly CANVAS_INTEGRATION = "canvas-integration";
 
   emitCreated(patient: PatientEvent) {
     this.emit(PatientEvents.CREATED, { id: patient.id, cxId: patient.cxId });
@@ -27,5 +28,9 @@ export class PatientEvents extends EventEmitter {
 
   emitDeleted(patient: PatientEvent) {
     this.emit(PatientEvents.DELETED, { id: patient.id, cxId: patient.cxId });
+  }
+
+  emitCanvasIntegration(patient: PatientEvent) {
+    this.emit(PatientEvents.CANVAS_INTEGRATION, { id: patient.id, cxId: patient.cxId });
   }
 }
