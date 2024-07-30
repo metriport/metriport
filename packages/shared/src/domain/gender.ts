@@ -1,6 +1,6 @@
-import { GenderAtBirth } from "@metriport/core/domain/patient";
+export type GenderAtBirth = "F" | "M" | "O" | "U";
 
-export function normalizeGender(gender: string): GenderAtBirth | undefined {
+export function normalizeGender(gender: string): "F" | "M" | "O" | "U" | undefined {
   const lowerGender = gender.toLowerCase().trim();
   if (lowerGender === "male" || lowerGender === "m") {
     return "M";
