@@ -1,5 +1,6 @@
 import { Bundle } from "@medplum/fhirtypes";
 import { buildAllergies } from "../components/allergies";
+import { buildAssessmentAndPlan } from "../components/assessment-and-plan";
 import { buildEncounters } from "../components/encounters";
 import { buildFamilyHistory } from "../components/family-history";
 import { buildImmunizations } from "../components/immunizations";
@@ -22,6 +23,7 @@ export function buildStructuredBody(fhirBundle: Bundle): unknown {
     buildImmunizations(fhirBundle),
     buildVitalSigns(fhirBundle),
     buildFamilyHistory(fhirBundle),
+    buildAssessmentAndPlan(),
   ];
 
   return {

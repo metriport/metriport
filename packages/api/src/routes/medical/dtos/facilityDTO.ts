@@ -3,7 +3,7 @@ import { BaseDTO, toBaseDTO } from "./baseDTO";
 import { AddressStrictDTO } from "./location-address-dto";
 
 export type FacilityDTO = BaseDTO & {
-  id: string;
+  oid: string;
   name: string;
   npi: string;
   tin: string | undefined;
@@ -13,9 +13,11 @@ export type FacilityDTO = BaseDTO & {
 
 export type InternalFacilityDTO = BaseDTO &
   FacilityDTO & {
+    cqApproved: boolean;
     cqType: FacilityType;
     cqActive: boolean;
     cqOboOid: string | null;
+    cwApproved: boolean;
     cwType: FacilityType;
     cwActive: boolean;
     cwOboOid: string | null;
@@ -25,7 +27,7 @@ export function dtoFromModel(facility: Facility): FacilityDTO {
   const { name, npi, tin, active, address } = facility.data;
   return {
     ...toBaseDTO(facility),
-    id: facility.id,
+    oid: facility.oid,
     name,
     npi,
     tin,
@@ -38,15 +40,17 @@ export function internalDtoFromModel(facility: Facility): InternalFacilityDTO {
   const { name, npi, tin, active, address } = facility.data;
   return {
     ...toBaseDTO(facility),
-    id: facility.id,
+    oid: facility.oid,
     name,
     npi,
     tin,
     active,
     address,
+    cqApproved: facility.cqApproved,
     cqType: facility.cqType,
     cqActive: facility.cqActive,
     cqOboOid: facility.cqOboOid,
+    cwApproved: facility.cwApproved,
     cwType: facility.cwType,
     cwActive: facility.cwActive,
     cwOboOid: facility.cwOboOid,

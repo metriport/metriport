@@ -1,8 +1,15 @@
-import { AllergyIntolerance, AllergyIntoleranceReaction, Bundle, Coding } from "@medplum/fhirtypes";
+import {
+  AllergyIntolerance,
+  AllergyIntoleranceReaction,
+  Bundle,
+  CodeableConcept,
+  Coding,
+} from "@medplum/fhirtypes";
 import { isAllergyIntolerance } from "../../../external/fhir/shared";
 import { AllergiesSection } from "../../cda-types/sections";
 import {
   ActStatusCode,
+  CdaValueCd,
   ConcernActEntry,
   ObservationEntryRelationship,
   ObservationTableRow,
@@ -12,26 +19,33 @@ import {
   buildCodeCe,
   buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
+  buildOriginalTextReference,
+  buildTemplateIds,
   buildValueCd,
   formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
   getTextFromCode,
-  isLoinc,
   notOnFilePlaceholder,
-  withoutNullFlavorObject,
+  withNullFlavor,
 } from "../commons";
 import {
   NOT_SPECIFIED,
+  _xsiTypeAttribute,
   extensionValue2014,
   extensionValue2015,
+  hl7ActCode,
   loincCodeSystem,
   loincSystemName,
   oids,
   placeholderOrgOid,
+  snomedCodeSystem,
+  snomedSystemName,
 } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { initiateSectionTable } from "../table";
 import { AugmentedAllergy } from "./augmented-resources";
+
+type AllergyType = "food" | "medication" | "environment" | "biologic";
 
 export const allergiesSectionName = "allergies";
 const tableHeaders = [
@@ -45,9 +59,9 @@ const tableHeaders = [
 
 export function buildAllergies(fhirBundle: Bundle): AllergiesSection {
   const allergiesSection: AllergiesSection = {
-    templateId: buildInstanceIdentifier({
+    templateId: buildTemplateIds({
       root: oids.allergiesSection,
-      extension: extensionValue2015,
+      extension: extensionValue2014,
     }),
     code: buildCodeCe({
       code: "48765-2",
@@ -65,7 +79,10 @@ export function buildAllergies(fhirBundle: Bundle): AllergiesSection {
     ) || [];
 
   if (allergies.length === 0) {
-    return allergiesSection;
+    return {
+      _nullFlavor: "NI",
+      ...allergiesSection,
+    };
   }
 
   const augmentedAllergies = allergies.map(allergy => {
@@ -74,7 +91,7 @@ export function buildAllergies(fhirBundle: Bundle): AllergiesSection {
 
   const { trs, entries } = createTableRowsAndEntries(
     augmentedAllergies,
-    createTableRowFromAllergyIntolerance,
+    createTableRowsFromAllergyIntolerance,
     createEntryFromAllergy
   );
 
@@ -86,10 +103,12 @@ export function buildAllergies(fhirBundle: Bundle): AllergiesSection {
   return allergiesSection;
 }
 
-function createTableRowFromAllergyIntolerance(
+function createTableRowsFromAllergyIntolerance(
   allergy: AugmentedAllergy,
   referenceId: string
-): ObservationTableRow[] {
+): ObservationTableRow | ObservationTableRow[] {
+  const onsetDate = formatDateToHumanReadableFormat(allergy.resource.onsetDateTime);
+  const category = allergy.resource.category;
   const allergenName = allergy.resource.reaction
     ?.flatMap(reaction => {
       return (
@@ -102,7 +121,46 @@ function createTableRowFromAllergyIntolerance(
     })
     .join(", ");
   const name = getTextFromCode(allergy.resource.code);
-  const manifestation = getTextFromCode(allergy.resource.reaction?.[0]?.manifestation?.[0]);
+  const note = allergy.resource.note?.[0]?.text;
+  if (!allergy.resource.reaction) {
+    return createTableRowFromAllergyIntolerance(
+      undefined,
+      allergenName,
+      name,
+      category,
+      onsetDate,
+      note,
+      createReactionReference(referenceId)
+    );
+  }
+  return allergy.resource.reaction?.flatMap(
+    (reaction, index) =>
+      createTableRowFromAllergyIntolerance(
+        reaction,
+        allergenName,
+        name,
+        category,
+        onsetDate,
+        note,
+        createReactionReference(referenceId, index)
+      ) || []
+  );
+}
+
+function createReactionReference(ref: string, index = 0): string {
+  return `${ref}-reaction${index + 1}`;
+}
+
+function createTableRowFromAllergyIntolerance(
+  reaction: AllergyIntoleranceReaction | undefined,
+  allergenName: string | undefined,
+  name: string | undefined,
+  category: string[] | undefined,
+  onsetDate: string | undefined,
+  note: string | undefined,
+  referenceId: string
+) {
+  const manifestation = getTextFromCode(reaction?.manifestation?.[0]);
   return [
     {
       tr: {
@@ -110,26 +168,23 @@ function createTableRowFromAllergyIntolerance(
         ["td"]: [
           {
             _ID: `${referenceId}-substance`,
-            "#text": allergenName ?? name,
+            "#text": allergenName ?? name ?? NOT_SPECIFIED,
           },
           {
-            "#text": allergy.resource.category?.join(", ") ?? NOT_SPECIFIED,
+            "#text": category?.join(", ") ?? NOT_SPECIFIED,
           },
           {
-            _ID: `${referenceId}-reaction`,
+            _ID: `${referenceId}-manifestation`,
             "#text": manifestation,
           },
           {
-            "#text":
-              formatDateToHumanReadableFormat(allergy.resource.reaction?.[0]?.onset) ??
-              NOT_SPECIFIED,
+            "#text": formatDateToHumanReadableFormat(reaction?.onset) ?? NOT_SPECIFIED,
           },
           {
-            "#text":
-              formatDateToHumanReadableFormat(allergy.resource.onsetDateTime) ?? NOT_SPECIFIED,
+            "#text": onsetDate ?? NOT_SPECIFIED,
           },
           {
-            "#text": allergy.resource.note?.[0]?.text ?? NOT_SPECIFIED,
+            "#text": note ?? NOT_SPECIFIED,
           },
         ],
       },
@@ -138,13 +193,18 @@ function createTableRowFromAllergyIntolerance(
 }
 
 function createEntryFromAllergy(allergy: AugmentedAllergy, referenceId: string): ConcernActEntry {
+  const statusCode = mapAllergyStatusCode(allergy.resource.clinicalStatus?.coding);
+  const resolutionDate = getResolutionDate(statusCode, allergy.resource.lastOccurrence);
+  const reactionReference = `#${createReactionReference(referenceId, 0)}`;
   return {
+    _typeCode: "DRIV",
+    _contextConductionInd: true,
     act: {
-      _classCode: "ACT",
       _moodCode: "EVN",
-      templateId: buildInstanceIdentifier({
+      _classCode: "ACT",
+      templateId: buildTemplateIds({
         root: allergy.typeOid,
-        extension: extensionValue2014,
+        extension: extensionValue2015,
       }),
       id: buildInstanceIdentifier({
         root: placeholderOrgOid,
@@ -155,32 +215,47 @@ function createEntryFromAllergy(allergy: AugmentedAllergy, referenceId: string):
         codeSystem: "2.16.840.1.113883.5.6",
         displayName: "Concern",
       }),
+      text: {
+        reference: {
+          _value: reactionReference,
+        },
+      },
       statusCode: {
-        _code: mapAllergyStatusCode(allergy.resource.clinicalStatus?.coding) ?? "active",
+        _code: statusCode ?? "active",
       },
       effectiveTime: {
-        low: withoutNullFlavorObject(
-          formatDateToCdaTimestamp(allergy.resource.recordedDate),
-          "_value"
-        ),
+        low: withNullFlavor(formatDateToCdaTimestamp(allergy.resource.recordedDate), "_value"),
+        ...(resolutionDate && {
+          high: resolutionDate,
+        }),
       },
-      entryRelationship: createEntryRelationship(allergy.resource, referenceId),
+      entryRelationship: createEntryRelationship(allergy.resource, referenceId, reactionReference),
     },
   };
 }
 
+function getResolutionDate(
+  statusCode: ActStatusCode | undefined,
+  lastOccurrence: string | undefined
+) {
+  if (statusCode === "completed") {
+    return withNullFlavor(formatDateToCdaTimestamp(lastOccurrence), "_value");
+  }
+  return undefined;
+}
+
 function createEntryRelationship(
   allergy: AllergyIntolerance,
-  referenceId: string
+  referenceId: string,
+  reactionReferenceId: string
 ): ObservationEntryRelationship {
-  const codeSystem = allergy.code?.coding?.[0]?.system;
-  const systemIsLoinc = isLoinc(codeSystem);
   return {
     _typeCode: "SUBJ",
+    _contextConductionInd: true,
     observation: {
       _classCode: "OBS",
       _moodCode: "EVN",
-      templateId: buildInstanceIdentifier({
+      templateId: buildTemplateIds({
         root: oids.allergyIntoleranceObservation,
         extension: extensionValue2014,
       }),
@@ -189,23 +264,64 @@ function createEntryRelationship(
         extension: allergy.id,
       }),
       code: buildCodeCe({
-        code: allergy.code?.coding?.[0]?.code,
-        codeSystem: systemIsLoinc ? loincCodeSystem : codeSystem,
-        codeSystemName: systemIsLoinc ? loincSystemName : undefined,
-        displayName: allergy.code?.coding?.[0]?.display,
+        code: "ASSERTION",
+        codeSystem: hl7ActCode,
+        codeSystemName: "HL7 ActCode",
+        displayName: "Assertion",
       }),
-      value: buildValueCd(allergy.code, referenceId),
-      participant: createParticipant(allergy.reaction?.[0], referenceId),
-      entryRelationship: [createReactionEntryRelationship(allergy, referenceId)],
+      statusCode: {
+        _code: "completed",
+      },
+      effectiveTime: {
+        low: withNullFlavor(formatDateToCdaTimestamp(allergy.onsetDateTime), "_value"),
+      },
+      value: buildAllergyTypeValue(allergy.category?.[0], reactionReferenceId),
+      participant: createParticipant(allergy.code, reactionReferenceId),
+      entryRelationship: createReactionEntryRelationship(allergy.reaction, referenceId),
     },
   };
 }
 
+function buildAllergyTypeValue(category: AllergyType | undefined, referenceId: string): CdaValueCd {
+  const valueCd: CdaValueCd = {
+    [_xsiTypeAttribute]: "CD",
+    _codeSystem: snomedCodeSystem,
+    _codeSystemName: snomedSystemName,
+    originalText: buildOriginalTextReference(referenceId),
+  };
+  switch (category) {
+    case "medication":
+      return {
+        ...valueCd,
+        _code: "416098002",
+        _displayName: "Drug allergy",
+      };
+    case "food":
+      return {
+        ...valueCd,
+        _code: "414285001",
+        _displayName: "Allergy to food",
+      };
+    case "environment":
+      return {
+        ...valueCd,
+        _code: "426232007",
+        _displayName: "Environmental allergy",
+      };
+    default:
+      return {
+        ...valueCd,
+        _code: "419199007",
+        _displayName: "Allergy to substance",
+      };
+  }
+}
+
 function createParticipant(
-  reaction: AllergyIntoleranceReaction | undefined,
+  concept: CodeableConcept | undefined,
   referenceId: string
 ): Participant | undefined {
-  if (!reaction) return undefined;
+  if (!concept) return undefined;
   return {
     _typeCode: "CSM",
     _contextControlCode: "OP",
@@ -213,43 +329,49 @@ function createParticipant(
       _classCode: "MANU",
       playingEntity: {
         _classCode: "MMAT",
-        code: buildCodeCvFromCodeableConcept(reaction.substance, `${referenceId}-substance`),
+        code: buildCodeCvFromCodeableConcept(concept, `${referenceId}-substance`),
       },
     },
   };
 }
 
 function createReactionEntryRelationship(
-  allergy: AllergyIntolerance,
+  reactions: AllergyIntoleranceReaction[] | undefined,
   referenceId: string
-): ObservationEntryRelationship {
-  const codeSystem = allergy.code?.coding?.[0]?.system;
-  const systemIsLoinc = isLoinc(codeSystem);
-  return {
-    _typeCode: "MFST",
-    _inversionInd: true,
-    observation: {
-      _classCode: "OBS",
-      _moodCode: "EVN",
-      templateId: buildInstanceIdentifier({
-        root: oids.reactionObservation,
-        extension: extensionValue2014,
-      }),
-      id: { _nullFlavor: "NI" },
-      code: buildCodeCe({
-        code: allergy.reaction?.[0]?.manifestation?.[0]?.coding?.[0]?.code,
-        codeSystem: systemIsLoinc ? loincCodeSystem : codeSystem,
-        codeSystemName: systemIsLoinc ? loincSystemName : undefined,
-        displayName: allergy.reaction?.[0]?.manifestation?.[0]?.coding?.[0]?.display,
-      }),
-      text: {
-        reference: {
-          _value: `${referenceId}-reaction`,
+): ObservationEntryRelationship[] | undefined {
+  return reactions?.map((reaction, index) => {
+    return {
+      _typeCode: "MFST",
+      _inversionInd: true,
+      observation: {
+        _classCode: "OBS",
+        _moodCode: "EVN",
+        templateId: buildTemplateIds({
+          root: oids.reactionObservation,
+          extension: extensionValue2014,
+        }),
+        id: { _nullFlavor: "NI" },
+        code: buildCodeCe({
+          code: "ASSERTION",
+          codeSystem: hl7ActCode,
+          codeSystemName: "HL7 ActCode",
+          displayName: "Assertion",
+        }),
+        text: {
+          reference: {
+            _value: `${createReactionReference(referenceId, index)}-substance`,
+          },
         },
+        statusCode: {
+          _code: "completed",
+        },
+        value: buildValueCd(
+          reaction.manifestation?.[0],
+          `${createReactionReference(referenceId, index)}-manifestation`
+        ),
       },
-      value: buildValueCd(allergy.code, `${referenceId}-reaction`),
-    },
-  };
+    };
+  });
 }
 
 /**
