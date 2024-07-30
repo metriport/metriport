@@ -1,7 +1,6 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { FHIR_BUNDLE_SUFFIX, createUploadFilePath } from "@metriport/core/domain/document/upload";
+import { createUploadFilePath, FHIR_BUNDLE_SUFFIX } from "@metriport/core/domain/document/upload";
 import { Patient } from "@metriport/core/domain/patient";
-import { toFHIR as toFhirPatient } from "@metriport/core/external/fhir/patient/index";
 import { uploadCdaDocuments, uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
@@ -33,70 +32,66 @@ export async function handleDataContribution({
   bundle: ValidBundle;
 }): Promise<Bundle<Resource> | undefined> {
   const { log } = out(`handleDataContribution - cxId ${cxId}, patientId ${patientId}`);
-  let startedAt = Date.now();
-  const [organization, patient] = await Promise.all([
-    getOrganizationOrFail({ cxId }),
-    getPatientOrFail({ id: patientId, cxId }),
-  ]);
-
-  const fhirOrganization = toFhirOrganization(organization);
   const fhirBundleDestinationKey = createUploadFilePath(
     cxId,
     patientId,
     `${requestId}_${FHIR_BUNDLE_SUFFIX}.json`
   );
+  let startedAt = Date.now();
+  const [, organization, patient] = await Promise.all([
+    uploadFhirBundleToS3({
+      fhirBundle: bundle,
+      destinationKey: fhirBundleDestinationKey,
+    }),
+    getOrganizationOrFail({ cxId }),
+    getPatientOrFail({ id: patientId, cxId }),
+  ]);
+  log(`${startedAt - Date.now()}ms to get org and patient, and store on S3`);
+  startedAt = Date.now();
+
+  const fhirOrganization = toFhirOrganization(organization);
   const fullBundle = hydrateBundle(bundle, patient, fhirBundleDestinationKey);
-
-  log(`${startedAt - Date.now()}ms to prepare before uploadFhirBundleToS3`);
-  startedAt = Date.now();
-  await uploadFhirBundleToS3({
-    cxId,
-    patientId,
-    fhirBundle: fullBundle,
-    destinationKey: fhirBundleDestinationKey,
-  });
-  log(`${startedAt - Date.now()}ms to execute uploadFhirBundleToS3`);
-  startedAt = Date.now();
-
   const validatedBundle = validateFhirEntries(fullBundle);
   const incomingAmount = validatedBundle.entry.length;
   await checkResourceLimit(incomingAmount, patient);
-
-  log(`${startedAt - Date.now()}ms to validate bundle and check resources`);
+  log(`${startedAt - Date.now()}ms to validate and check limits`);
   startedAt = Date.now();
+
+  // Do it before storing on the FHIR server since this also validates the bundle
+  if (!Config.isSandbox() && hasCompositionResource(validatedBundle)) {
+    const converted = await convertFhirToCda({ cxId, validatedBundle });
+    // intentionally async
+    uploadCdaDocuments({
+      cxId,
+      patientId,
+      cdaBundles: converted,
+      organization: fhirOrganization,
+      docId: requestId,
+    });
+    log(`${startedAt - Date.now()}ms to convert to CDA`);
+    startedAt = Date.now();
+  }
+
   const consolidatedDataUploadResults = await createOrUpdateConsolidatedPatientData({
     cxId,
     patientId: patient.id,
+    requestId,
     fhirBundle: validatedBundle,
   });
-  log(`${startedAt - Date.now()}ms to store bundle on FHIR server`);
+  log(`${startedAt - Date.now()}ms to store on FHIR server and S3`);
   startedAt = Date.now();
 
   if (!Config.isSandbox()) {
     // intentionally async
     processCcdRequest(patient, fhirOrganization, requestId);
-
-    if (hasCompositionResource(validatedBundle)) {
-      const fhirPatient = toFhirPatient(patient);
-      validatedBundle.entry.push({ resource: fhirPatient });
-      validatedBundle.entry.push({ resource: fhirOrganization });
-      const converted = await convertFhirToCda({ cxId, validatedBundle });
-
-      // intentionally async
-      uploadCdaDocuments({
-        cxId,
-        patientId,
-        cdaBundles: converted,
-        organization: fhirOrganization,
-        docId: requestId,
-      });
-      log(`${startedAt - Date.now()}ms to store bundle on FHIR server`);
-    }
   }
 
   return consolidatedDataUploadResults;
 }
 
+/**
+ * SANDBOX ONLY. Checks if the incoming amount of resources, plus what's already stored, exceeds the limit.
+ */
 async function checkResourceLimit(incomingAmount: number, patient: Patient) {
   if (!Config.isCloudEnv() || Config.isSandbox()) {
     const { total: currentAmount } = await countResources({
