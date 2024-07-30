@@ -7,7 +7,7 @@ import { out } from "@metriport/core/util/log";
 import { errorToString } from "@metriport/shared";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 
-const sentToFhirServerPrefix = "toFhirServer";
+export const sentToFhirServerPrefix = "toFhirServer";
 
 export async function createOrUpdateConsolidatedPatientData({
   cxId,
