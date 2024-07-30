@@ -13,6 +13,7 @@ import { getConsolidated, ConsolidatedData } from "./consolidated-get";
 dayjs.extend(duration);
 
 const delayTime = dayjs.duration(30, "seconds").asMilliseconds();
+const dqDrMaxFinish = dayjs.duration(10, "minutes").asMilliseconds();
 
 export type CoverageAssessment = {
   patientId: string;
@@ -86,6 +87,7 @@ export async function createCoverageAssessments({
     }
     await Promise.allSettled(docQueries);
   }
+  await sleep(dqDrMaxFinish);
   const consolidatedChunks = chunk(pdPatients, dqChunkSize);
   for (const chunk of consolidatedChunks) {
     await sleep(delayTime);
