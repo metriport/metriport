@@ -84,6 +84,7 @@ import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
 import { coverageAssessmentSchema, coverageAssessmentValidationSchema } from "./schemas/patient";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 
 dayjs.extend(duration);
 
@@ -744,11 +745,11 @@ router.get(
 );
 
 /** ---------------------------------------------------------------------------
- * POST /internal/patient/coverage-assessment/validate
+ * POST /internal/patient/ops/coverage-assessment/validate
  *
  */
 router.post(
-  "coverage-assessment/validate",
+  "/ops/coverage-assessment/validate",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const payload = coverageAssessmentValidationSchema.parse(req.body);
@@ -783,8 +784,7 @@ router.post(
       if (!patient.zip) {
         errors.push("Missing Zip");
       } else {
-        const zip = normalizeZipCodePassive(patient.zip);
-        if (!zip) errors.push("Invalid Zip");
+        if (!normalizeZipCodePassive(patient.zip)) errors.push("Invalid Zip");
       }
       // City
       if (!patient.city) errors.push("Missing City");
@@ -796,7 +796,7 @@ router.post(
         if (!state) errors.push("Invalid State");
       }
       // Address
-      if (!patient.addressLine1) errors.push("Missing Address Line");
+      if (!patient.addressline1) errors.push("Missing Address Line");
       if (errors.length > 0) invalidPatients.push({ patient, errors });
     });
 
@@ -805,7 +805,7 @@ router.post(
 );
 
 /** ---------------------------------------------------------------------------
- * POST /internal/patient/coverage-assessment
+ * POST /internal/patient/ops/coverage-assessment
  *
  * return the coverage
  * @param req.query.cxId The customer ID.
@@ -814,7 +814,7 @@ router.post(
  *
  */
 router.post(
-  "/coverage-assessment",
+  "/ops/coverage-assessment",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -831,7 +831,7 @@ router.post(
       const contact1 = phone1 || email1 ? { phone: phone1, email: email1 } : undefined;
       const contact2 = phone2 || email2 ? { phone: phone2, email: email2 } : undefined;
       const contact = [contact1, contact2].flatMap(c => c ?? []);
-      const externalId = patient.externalId ? normalizeExternalId(patient.externalId) : undefined;
+      const externalId = patient.externalid ? normalizeExternalId(patient.externalid) : undefined;
       return {
         cxId,
         facilityId: facility.id,
@@ -842,8 +842,8 @@ router.post(
         genderAtBirth: normalizeGenderStrict(patient.gender),
         address: [
           {
-            addressLine1: toTitleCase(patient.addressLine1),
-            addressLine2: patient.addressLine2 ? toTitleCase(patient.addressLine2) : undefined,
+            addressLine1: toTitleCase(patient.addressline1),
+            addressLine2: patient.addressline2 ? toTitleCase(patient.addressline2) : undefined,
             city: toTitleCase(patient.city),
             state: normalizeStateStrict(patient.state),
             zip: normalizeZipCodeStrict(patient.zip),
@@ -853,13 +853,14 @@ router.post(
         contact,
       };
     });
+    console.log(patientsCreates);
 
     createCoverageAssessments({
       cxId,
       facilityId,
       patientsCreates,
-    });
-    return res.status(status.OK);
+    }).catch(processAsyncError("createCoverageAssessments"));
+    return res.sendStatus(status.OK);
   })
 );
 

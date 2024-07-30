@@ -228,15 +228,20 @@ router.get(
     const facilityId = getFrom("query").orFail("facilityId", req);
     const patients = await getPatients({ cxId, facilityId });
 
-    patients.map(async patient => {
-      const coverageAsessment = await getCoverageAssessment({ cxId, patient });
+    const assessments = await Promise.all(
+      patients.map(async patient => {
+        return await getCoverageAssessment({ cxId, patient });
+      })
+    );
+    const assessmentPatients = patients.map(patient => {
+      const coverageAsessment = assessments.find(a => a.patientId === patient.id);
       return {
         ...internalDtoFromModel(patient),
         ...coverageAsessment,
       };
     });
 
-    const response = { cxId, patients };
+    const response = { patients: assessmentPatients };
     return res.status(httpStatus.OK).json(response);
   })
 );

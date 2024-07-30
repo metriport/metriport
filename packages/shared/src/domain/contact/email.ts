@@ -1,9 +1,12 @@
+import { z } from "zod";
+
 export const exampleEmail = "test@test.com";
 
 export function isEmailValid(email: string): boolean {
   if (!email) return false;
   if (email.length === 0) return false;
-  if (email.match(/(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)/)) return false;
+  const safeParseEmail = z.string().email().safeParse(email);
+  if (!safeParseEmail.success) return false;
   return true;
 }
 

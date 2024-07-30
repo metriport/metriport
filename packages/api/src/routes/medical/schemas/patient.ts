@@ -47,13 +47,13 @@ const coverageAssessmentPatientSchema = z.object({
   zip: z.string(),
   city: z.string(),
   state: z.string(),
-  addressLine1: z.string(),
-  addressLine2: z.string().optional(),
+  addressline1: z.string(),
+  addressline2: z.string().optional(),
   phone1: z.string().optional(),
   phone2: z.string().optional(),
   email1: z.string().optional(),
   email2: z.string().optional(),
-  externalId: z.string().optional(),
+  externalid: z.string().optional(),
 });
 
 export const coverageAssessmentSchema = z.object({
@@ -65,12 +65,12 @@ export const coverageAssessmentValidationSchema = z.object({
     .omit({
       dob: true,
       gender: true,
-      firstName: true,
-      lastName: true,
+      firstname: true,
+      lastname: true,
       zip: true,
       cty: true,
       state: true,
-      addressLine1: true,
+      addressline1: true,
     })
     .merge(
       z.object({
@@ -81,7 +81,7 @@ export const coverageAssessmentValidationSchema = z.object({
         zip: z.string().optional(),
         city: z.string().optional(),
         state: z.string().optional(),
-        addressLine1: z.string(),
+        addressline1: z.string().optional(),
       })
     )
     .array(),

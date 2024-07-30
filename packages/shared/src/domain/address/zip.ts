@@ -1,7 +1,7 @@
 function isValidZipCode(zipCode: string): boolean {
   if (!zipCode) return false;
   if (zipCode.length === 0) return false;
-  if (zipCode.match(/^[0-9-]+$/)) return false;
+  if (!zipCode.match(/^[0-9-]+$/)) return false;
   return true;
 }
 
