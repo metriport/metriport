@@ -57,6 +57,7 @@ export async function handleDataContribution({
   log(`${startedAt - Date.now()}ms to validate and check limits`);
   startedAt = Date.now();
 
+  // Do it before storing on the FHIR server since this also validates the bundle
   if (!Config.isSandbox() && hasCompositionResource(validatedBundle)) {
     const converted = await convertFhirToCda({ cxId, validatedBundle });
     // intentionally async
