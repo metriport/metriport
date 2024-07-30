@@ -99,8 +99,6 @@ service:
           docs: The ID of the Patient
       request:
         body: ConsolidatedBundleUpload
-      response:
-        type: fhir.Bundle
       examples:
         - name: Example1
           path-parameters:
@@ -108,27 +106,7 @@ service:
           request: $ConsolidatedBundleUpload.Example1
           response:
             body:
-              resourceType: "Bundle"
-              id: "12345"
-              type: "transaction-response"
-              entry:
-                - resource: ""
-                  response:
-                    status: 201 Created
-                    location: Observation/3/_history/1
-                    etag: "1"
-                    lastModified: "2023-07-27T21:29:31.491+00:00"
-                    outcome:
-                      resourceType: OperationOutcome
-                      issue:
-                        - severity: information
-                          code: informational
-                          details:
-                            coding:
-                              - system: https://public.metriport.com/fhir/StructureDefinition/operation-outcome
-                                code: SUCCESSFUL_CREATE
-                                display: Create succeeded.
-                          diagnostics: Successfully created resource "Observation/3/_history/1". Took 7ms.
+              message: "FHIR resources being processed"
 
     countPatientData:
       display-name: Count Patient Data

@@ -423,17 +423,15 @@ export class MetriportMedicalApi {
    * Add patient data as FHIR resources. Those can later be queried with startConsolidatedQuery(),
    * and will be made available to HIEs.
    *
-   * Note: each call to this function is limited to 50 resources and 1Mb of data. You can make multiple
-   * calls to this function to add more data.
+   * Note: each call to this function is limited to 1Mb of data (and 50 resources when in sandbox).
+   * You can make multiple calls to this function to add more data.
    *
    * @param patientId The ID of the patient to associate resources to.
    * @param payload The FHIR Bundle to create resources.
-   * @return FHIR Bundle with operation outcome.
    */
-  async createPatientConsolidated(patientId: string, payload: Bundle): Promise<Bundle<Resource>> {
+  async createPatientConsolidated(patientId: string, payload: Bundle): Promise<void> {
     const resp = await this.api.put(`${PATIENT_URL}/${patientId}/consolidated`, payload);
     this._lastRequestId = resp.headers[REQUEST_ID_HEADER_NAME];
-    return resp.data;
   }
 
   /** ---------------------------------------------------------------------------

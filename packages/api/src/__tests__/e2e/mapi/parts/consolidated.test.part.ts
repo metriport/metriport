@@ -9,8 +9,6 @@ import { AxiosError } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import isBetween from "dayjs/plugin/isBetween";
-import fs from "fs";
-import { e2eResultsFolderName } from "../../shared";
 import { cxId, E2eContext, medicalApi } from "../shared";
 import { getConsolidatedWebhookRequest, resetConsolidatedData } from "../webhook/consolidated";
 import { checkWebhookRequestMeta } from "../webhook/shared";
@@ -49,50 +47,8 @@ export function runConsolidatedTests(e2e: E2eContext) {
     if (!e2e.patient) throw new Error("Missing patient");
     createAndStoreConsolidatedData();
     if (!e2e.consolidatedPayload) throw new Error("Missing consolidatedPayload");
-    const consolidated = await medicalApi.createPatientConsolidated(
-      e2e.patient.id,
-      e2e.consolidatedPayload
-    );
+    await medicalApi.createPatientConsolidated(e2e.patient.id, e2e.consolidatedPayload);
     e2e.putConsolidatedDataRequestId = medicalApi.lastRequestId;
-    expect(consolidated).toBeTruthy();
-    try {
-      expect(consolidated.type).toEqual("transaction-response");
-      expect(consolidated.entry).toBeTruthy();
-      if (!consolidated.entry) throw new Error("Missing entry");
-      expect(consolidated.entry.length).toEqual(2);
-      expect(consolidated.entry).toEqual(
-        expect.arrayContaining([
-          {
-            response: expect.objectContaining({
-              status: "201 Created",
-              location: expect.stringMatching(/AllergyIntolerance\/.+/),
-              outcome: expect.objectContaining({
-                resourceType: "OperationOutcome",
-              }),
-            }),
-          },
-          {
-            response: expect.objectContaining({
-              status: "201 Created",
-              location: expect.stringMatching(/DocumentReference\/.+/),
-              outcome: expect.objectContaining({
-                resourceType: "OperationOutcome",
-              }),
-            }),
-          },
-        ])
-      );
-    } catch (err) {
-      fs.writeFileSync(
-        e2eResultsFolderName + "/consolidated-received.json",
-        JSON.stringify(consolidated, null, 2)
-      );
-      fs.writeFileSync(
-        e2eResultsFolderName + "/consolidated-expected.json",
-        JSON.stringify(e2e.consolidatedPayload, null, 2)
-      );
-      throw err;
-    }
   });
 
   it("awaits data to be replicated to FHIR server", async () => {
