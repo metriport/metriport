@@ -2,6 +2,7 @@ import { genderAtBirthSchema } from "@metriport/api-sdk";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
   sleep,
   stringToBoolean,
@@ -62,6 +63,7 @@ import { ECUpdaterLocal } from "../../external/commonwell/cq-bridge/ec-updater-l
 import { cqLinkStatus } from "../../external/commonwell/patient-shared";
 import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-updater-commonwell";
 import { getCqOrgIdsToDenyOnCw } from "../../external/hie/cross-hie-ids";
+import { runOrSchedulePatientDiscoveryAcrossHies } from "../../external/hie/run-or-schedule-patient-discovery";
 import { PatientLoaderLocal } from "../../models/helpers/patient-loader-local";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
@@ -78,6 +80,7 @@ import {
   getFromParamsOrFail,
   getFromQueryAsArray,
   getFromQueryAsArrayOrFail,
+  getFromQueryAsBoolean,
 } from "../util";
 import { PatientLinksDTO, dtoFromCW } from "./dtos/linkDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
@@ -741,6 +744,35 @@ router.get(
     const patient = await getPatientOrFail({ cxId, id });
 
     return res.status(status.OK).json(dtoFromModel(patient));
+  })
+);
+
+/**
+ * POST /internal/patient/:id/patient-discovery
+ *
+ * Kicks off patient discovery for the given patient on both CQ and CW.
+ * @param req.query.cxId The customer ID.
+ * @param req.params.id The patient ID.
+ * @param req.query.rerunPdOnNewDemographics Optional. Indicates whether to use demo augmentation on this PD run.
+ */
+router.post(
+  "/:id/patient-discovery",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const id = getFromParamsOrFail("id", req);
+    const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
+    const patient = await getPatientOrFail({ cxId, id });
+    const facilityId = patient.facilityIds[0];
+    const requestId = uuidv7();
+
+    await runOrSchedulePatientDiscoveryAcrossHies({
+      patient,
+      facilityId,
+      rerunPdOnNewDemographics,
+      requestId,
+    });
+    return res.status(status.OK).json({ requestId });
   })
 );
 
