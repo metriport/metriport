@@ -108,6 +108,7 @@ jobs:
     needs: files-changed
     with:
       deploy_env: "production"
+      secrets_cdk_stack: ${{ vars.SECRET_STACK_NAME_PRODUCTION }}
       location_services_cdk_stack: ${{ vars.LOCATION_SERVICES_STACK_NAME_PRODUCTION }}
       cdk_stack: ${{ vars.API_STACK_NAME_PRODUCTION }}
       ihe_stack: ${{ vars.IHE_STACK_NAME }}
@@ -126,6 +127,7 @@ jobs:
     if: ${{ !failure() && needs.infra-api-lambdas.result == 'success' }}
     with:
       deploy_env: "sandbox"
+      secrets_cdk_stack: ${{ vars.SECRET_STACK_NAME_SANDBOX }}
       cdk_stack: ${{ vars.API_STACK_NAME_SANDBOX }}
       AWS_REGION: ${{ vars.API_REGION_SANDBOX  }}
     secrets:
