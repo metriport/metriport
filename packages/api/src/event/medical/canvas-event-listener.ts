@@ -1,11 +1,8 @@
 import CanvasSDK from "@metriport/core/external/canvas/index";
 import { getEnvVarOrFail } from "@metriport/shared";
-import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
 import { PatientEvents, patientEvents, PatientEvent } from "./patient-event";
 import { getConsolidatedPatientData } from "../../command/medical/patient/consolidated-get";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-
-const region = getEnvVarOrFail("AWS_REGION");
 
 export default function () {
   console.log("[CANVAS-EVENT-LISTENER] Setting up listener for CANVAS_INTEGRATION");
@@ -13,8 +10,8 @@ export default function () {
     console.log(`[CANVAS-EVENT-LISTENER] Received event: ${JSON.stringify(event, null, 2)}`);
     const patient = await getPatientOrFail({ id: event.id, cxId: event.cxId });
 
-    const canvasClientId = await getSecretValue(`CANVAS_CLIENT_ID`, region);
-    const canvasClientSecret = await getSecretValue(`CANVAS_CLIENT_SECRET`, region);
+    const canvasClientId = getEnvVarOrFail(`CANVAS_CLIENT_ID`);
+    const canvasClientSecret = getEnvVarOrFail(`CANVAS_CLIENT_SECRET`);
     if (!canvasClientId || !canvasClientSecret) {
       throw new Error("Canvas client ID or secret is undefined");
     }
