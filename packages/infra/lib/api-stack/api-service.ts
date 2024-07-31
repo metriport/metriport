@@ -337,16 +337,6 @@ export function createAPIService({
     interval: healthcheck.interval.plus(Duration.seconds(3)),
   });
 
-  // Access grant for Canvas secrets
-  if (props.config.canvas?.secretNames) {
-    secrets[props.config.canvas.secretNames.clientId]?.grantRead(
-      fargateService.taskDefinition.taskRole
-    );
-    secrets[props.config.canvas.secretNames.clientSecret]?.grantRead(
-      fargateService.taskDefinition.taskRole
-    );
-  }
-
   // Access grant for Aurora DB's secret
   dbCredsSecret.grantRead(fargateService.taskDefinition.taskRole);
   // RW grant for Dynamo DB
