@@ -14,7 +14,7 @@ import { getConsolidated, ConsolidatedData } from "./consolidated-get";
 dayjs.extend(duration);
 
 const delayTime = dayjs.duration(30, "seconds").asMilliseconds();
-const dqDrMaxFinish = dayjs.duration(10, "minutes").asMilliseconds();
+const dqDrBuffer = dayjs.duration(10, "minutes").asMilliseconds();
 
 export async function createCoverageAssessments({
   cxId,
@@ -58,7 +58,7 @@ export async function createCoverageAssessments({
     }
     await Promise.allSettled(docQueries);
   }
-  await sleep(dqDrMaxFinish);
+  await sleep(dqDrBuffer);
   const pollingAttempts = 20;
   let remaininPatients = patients;
   for (let i = 0; i < pollingAttempts; i++) {
