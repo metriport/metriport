@@ -45,7 +45,6 @@ import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
 import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
-import { EHRStack } from "./ehr-stack";
 import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
@@ -437,16 +436,6 @@ export class APIStack extends Stack {
       cookieStore,
     });
     const apiLoadBalancerAddress = apiLoadBalancer.loadBalancerDnsName;
-
-    // -------------------------------------------
-    // EHR Integrations Stack
-    // -------------------------------------------
-    new EHRStack(this, "EHRStack", {
-      lambdaLayers,
-      vpc: this.vpc,
-      config: props.config,
-      secrets,
-    });
 
     if (props.config.iheGateway) {
       const mtlsBucketName = s3.Bucket.fromBucketName(

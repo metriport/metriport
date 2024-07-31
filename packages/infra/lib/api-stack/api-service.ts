@@ -266,6 +266,10 @@ export function createAPIService({
             PLACE_INDEX_NAME: props.config.locationService.placeIndexName,
             PLACE_INDEX_REGION: props.config.locationService.placeIndexRegion,
           }),
+          ...(props.config.canvas?.clientId && {
+            CANVAS_CLIENT_ID: props.config.canvas.clientId,
+            CANVAS_CLIENT_SECRET: props.config.canvas.clientSecret,
+          }),
           // app config
           APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
           APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,

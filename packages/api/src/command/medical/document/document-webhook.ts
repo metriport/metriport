@@ -109,7 +109,12 @@ export const processPatientDocumentRequest = async (
       );
     }
 
-    if (whType === CONVERSION_WEBHOOK_TYPE) {
+    if (
+      whType === CONVERSION_WEBHOOK_TYPE &&
+      metadata &&
+      typeof metadata === "object" &&
+      "canvas" in metadata
+    ) {
       patientEvents().emitCanvasIntegration({ id: patientId, cxId });
     }
 

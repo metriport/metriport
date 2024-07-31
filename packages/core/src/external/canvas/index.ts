@@ -167,7 +167,7 @@ class CanvasSDK {
     return response.headers["location"]?.split("/").pop() ?? "";
   }
 
-  async createMedication({
+  async createMedicationStatement({
     medication,
     patientId,
     encounterId,

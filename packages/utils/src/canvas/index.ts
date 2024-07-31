@@ -149,7 +149,7 @@ async function main() {
     const location = await canvas.getLocation();
     const locationId = location.id;
 
-    const encounter = await canvas.getFirstEncounter(patientId);
+    const encounter = await canvas.getFirstEncounter(canvasPatientId);
     const encounterId = encounter.id;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const noteKey = (encounter.extension as any)[0].valueId;
@@ -177,7 +177,7 @@ async function main() {
     });
 
     const medicationData = generateFakeMedicationData(canvasPatientId, encounterId);
-    await canvas.createMedication({
+    await canvas.createMedicationStatement({
       medication: medicationData,
       patientId: canvasPatientId,
       encounterId,
