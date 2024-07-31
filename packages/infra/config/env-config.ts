@@ -191,8 +191,8 @@ type EnvConfigBase = {
   iheGateway?: IHEGatewayProps;
   canvas?: {
     secretNames: {
-      clientId: string;
-      clientSecret: string;
+      CANVAS_CLIENT_ID: string;
+      CANVAS_CLIENT_SECRET: string;
     };
   };
   sentryDSN?: string; // API's Sentry DSN
