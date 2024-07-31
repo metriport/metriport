@@ -3,6 +3,9 @@ import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-s
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { countResources } from "../../../external/fhir/patient/count-resources";
 import { Config } from "../../../shared/config";
+import { log } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
+import { errorToString } from "@metriport/shared";
 
 const region = Config.getAWSRegion();
 const bucket = Config.getMedicalDocumentsBucketName();
@@ -40,6 +43,13 @@ export async function getCoverageAssessment({
       }
       return undefined;
     } catch (error) {
+      const msg = "Failed to get get MR Summary url";
+      log(`${msg}. Cause: ${errorToString(error)}.`);
+      capture.error(msg, {
+        extra: {
+          fileName,
+        },
+      });
       return undefined;
     }
   };
