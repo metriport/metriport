@@ -16,13 +16,26 @@ import {
 
 export function makeCwDataLink(): CwLink {
   const address = makeAddressStrict();
+  const assuranceLevel = faker.helpers.arrayElement(["1", "2", "3"]);
   return {
-    _links: {
-      self: {
-        href: faker.internet.url(),
-      },
-    },
-    assuranceLevel: "2",
+    _links:
+      assuranceLevel === "1"
+        ? {
+            downgrade: {
+              href: faker.internet.url(),
+            },
+            upgrade: {
+              href: faker.internet.url(),
+            },
+          }
+        : assuranceLevel === "2"
+        ? {
+            downgrade: {
+              href: faker.internet.url(),
+            },
+          }
+        : undefined,
+    assuranceLevel,
     patient: {
       details: {
         name: [
@@ -56,6 +69,25 @@ export function makeCwDataLink(): CwLink {
           },
         ],
       },
+      provider: {
+        type: "organization",
+        display: faker.company.name(),
+        reference: faker.string.uuid(),
+      },
+      identifier: [
+        {
+          key: faker.string.uuid(),
+          use: "unspecified",
+          system: faker.string.uuid(),
+        },
+        {
+          key: faker.string.uuid(),
+          use: "official",
+          label: faker.string.uuid(),
+          system: faker.string.uuid(),
+          assigner: "CommonWell",
+        },
+      ],
     },
   };
 }
