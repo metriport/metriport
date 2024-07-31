@@ -12,6 +12,9 @@ export default function () {
 
     const canvasClientId = getEnvVarOrFail(`CANVAS_CLIENT_ID`);
     const canvasClientSecret = getEnvVarOrFail(`CANVAS_CLIENT_SECRET`);
+    console.log(`[CANVAS-EVENT-LISTENER] Canvas client ID: ${canvasClientId}`);
+    console.log(`[CANVAS-EVENT-LISTENER] Canvas client secret: ${canvasClientSecret}`);
+
     if (!canvasClientId || !canvasClientSecret) {
       throw new Error("Canvas client ID or secret is undefined");
     }
