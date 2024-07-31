@@ -12,7 +12,7 @@ export function isEmailValid(email: string): boolean {
 
 /**
  * Normalize an email.
- * @param email the phone number to be normalized
+ * @param email the email to be normalized
  */
 export function normalizeEmail(email: string): string {
   const trimmedEmail = email.trim();

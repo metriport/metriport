@@ -1,3 +1,20 @@
+export function normalizeState(state: string): USState | undefined {
+  if (Object.values(states).includes(USState[state as keyof typeof USState])) {
+    return USState[state as keyof typeof USState];
+  } else if (states[state]) {
+    return states[state];
+  } else if (state === "DC") {
+    return USState.DC;
+  }
+  return undefined;
+}
+
+export function normalizeStateStrict(state: string): USState {
+  const stateOrUndefined = normalizeState(state);
+  if (!stateOrUndefined) throw new Error("Invalid state.");
+  return stateOrUndefined;
+}
+
 export enum USState {
   AL = "AL",
   AK = "AK",
@@ -50,23 +67,6 @@ export enum USState {
   WV = "WV",
   WI = "WI",
   WY = "WY",
-}
-
-export function normalizeState(state: string): USState | undefined {
-  if (Object.values(states).includes(USState[state as keyof typeof USState])) {
-    return USState[state as keyof typeof USState];
-  } else if (states[state]) {
-    return states[state];
-  } else if (state === "DC") {
-    return USState.DC;
-  }
-  return undefined;
-}
-
-export function normalizeStateStrict(state: string): USState {
-  const stateOrUndefined = normalizeState(state);
-  if (!stateOrUndefined) throw new Error("Invalid state.");
-  return stateOrUndefined;
 }
 
 const states: { [k in string]: USState } = {

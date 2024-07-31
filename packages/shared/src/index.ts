@@ -11,7 +11,6 @@ export * from "./domain/address/state";
 export * from "./domain/address/zip";
 export * from "./domain/contact/email";
 export * from "./domain/contact/phone";
-export * from "./domain/contact/phone";
 export * from "./domain/dob";
 export * from "./domain/externalId";
 export * from "./domain/gender";
