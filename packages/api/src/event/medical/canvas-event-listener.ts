@@ -10,6 +10,7 @@ const region = getEnvVarOrFail("AWS_REGION");
 export default function () {
   console.log("[CANVAS-EVENT-LISTENER] Setting up listener for CANVAS_INTEGRATION");
   patientEvents().on(PatientEvents.CANVAS_INTEGRATION, async (event: PatientEvent) => {
+    console.log(`[CANVAS-EVENT-LISTENER] Received event: ${JSON.stringify(event, null, 2)}`);
     const patient = await getPatientOrFail({ id: event.id, cxId: event.cxId });
 
     const canvasClientId = await getSecretValue(`CANVAS_CLIENT_ID`, region);
@@ -49,6 +50,8 @@ export default function () {
     if (!data.entry) {
       throw new Error("Consolidated patient data is undefined");
     }
+
+    console.log(`[CANVAS-EVENT-LISTENER] Creating canvas resources for patient ${patient.id}`);
 
     for (const entry of data.entry) {
       const resource = entry.resource;

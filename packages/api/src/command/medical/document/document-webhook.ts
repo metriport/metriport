@@ -116,6 +116,8 @@ export const processPatientDocumentRequest = async (
       "canvas" in metadata
     ) {
       patientEvents().emitCanvasIntegration({ id: patientId, cxId });
+    } else {
+      console.log(`[DOCUMENT-WEBHOOK] Not emitting ehr integration event for ${patientId}`);
     }
 
     const shouldReportUsage =
