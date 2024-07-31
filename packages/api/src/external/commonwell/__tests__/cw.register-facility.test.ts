@@ -11,6 +11,7 @@ import { createOrUpdateFacilityInCw } from "../command/create-or-update-cw-facil
 import { buildCwOrgNameForFacility } from "../shared";
 import * as createOrUpdateCwOrg from "../command/create-or-update-cw-organization";
 import { Config } from "../../../shared/config";
+import * as api from "../api";
 
 let mockedFacility: Facility;
 let mockedOboFacility: Facility;
@@ -44,6 +45,9 @@ beforeEach(() => {
   jest
     .spyOn(CommonWell.prototype, "addCertificateToOrg")
     .mockImplementation(() => Promise.resolve({} as CertificateResp));
+  jest.spyOn(api, "getCertificate").mockImplementation(() => {
+    return { Certificates: [] };
+  });
   jest.spyOn(Config, "getGatewayEndpoint").mockImplementation(() => "");
   jest.spyOn(Config, "getGatewayAuthorizationServerEndpoint").mockImplementation(() => "");
   jest.spyOn(Config, "getGatewayAuthorizationClientId").mockImplementation(() => "");
