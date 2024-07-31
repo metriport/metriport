@@ -22,10 +22,10 @@ export function buildNotes(
   sectionCode: string
 ): NotesSection {
   const resultsSection: NotesSection = {
-    templateId: buildTemplateIds({
-      root: oids.resultsSection,
-      extension: extensionValue2015,
-    }),
+    // templateId: buildTemplateIds({
+    //   root: oids.resultsSection,
+    //   extension: extensionValue2015,
+    // }),
     code: buildCodeCe({
       code: sectionCode,
       codeSystem: "2.16.840.1.113883.6.1",
