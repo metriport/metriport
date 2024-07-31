@@ -855,7 +855,7 @@ router.post(
 
     const facility = await getFacilityOrFail({ cxId, id: facilityId });
 
-    const patientsCreates: PatientCreateCmd[] = payload.patients.map(patient => {
+    const patientCreates: PatientCreateCmd[] = payload.patients.map(patient => {
       const phone1 = patient.phone1 ? normalizePhoneNumber(patient.phone1) : undefined;
       const email1 = patient.email1 ? normalizeEmail(patient.email1) : undefined;
       const phone2 = patient.phone2 ? normalizePhoneNumber(patient.phone2) : undefined;
@@ -889,7 +889,7 @@ router.post(
     createCoverageAssessments({
       cxId,
       facilityId,
-      patientsCreates,
+      patientCreates,
     }).catch(processAsyncError("createCoverageAssessments"));
     return res.sendStatus(status.OK);
   })

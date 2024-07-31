@@ -19,15 +19,15 @@ const dqDrBuffer = dayjs.duration(10, "minutes").asMilliseconds();
 export async function createCoverageAssessments({
   cxId,
   facilityId,
-  patientsCreates,
+  patientCreates,
 }: {
   cxId: string;
   facilityId: string;
-  patientsCreates: PatientCreateCmd[];
+  patientCreates: PatientCreateCmd[];
 }): Promise<void> {
   const patients: Patient[] = [];
   const pdChunkSize = 50;
-  const pdChunks = chunk(patientsCreates, pdChunkSize);
+  const pdChunks = chunk(patientCreates, pdChunkSize);
   for (const chunk of pdChunks) {
     await sleep(delayTime);
     const createPatients: Promise<Patient>[] = [];
@@ -36,9 +36,7 @@ export async function createCoverageAssessments({
     }
     const patientsPromises = await Promise.allSettled(createPatients);
     patientsPromises.map(promise => {
-      if (promise.status == "fulfilled") {
-        patients.push(promise.value);
-      }
+      if (promise.status == "fulfilled") patients.push(promise.value);
     });
   }
   const patientIds = patients.map(patient => patient.id);
