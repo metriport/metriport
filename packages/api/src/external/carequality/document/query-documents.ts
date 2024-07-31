@@ -9,32 +9,29 @@ import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { setDocQueryStartAt } from "../../hie/set-doc-query-start";
-import { makeIheGatewayAPIForDocQuery } from "../../ihe-gateway/api";
 import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poller-factory";
 import { getCQDirectoryEntry } from "../command/cq-directory/get-cq-directory-entry";
 import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
 import { CQLink } from "../cq-patient-data";
 import { getCQData } from "../patient";
 import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
-import {
-  getOrgOidsWithIHEGatewayV2Enabled,
-  isIHEGatewayV2EnabledForCx,
-} from "../../aws/app-config";
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { getCqInitiator } from "../shared";
 import { isFacilityEnabledToQueryCQ } from "../../carequality/shared";
+import { filterCqLinksByManagingOrg } from "./filter-oids-by-managing-org";
 
-const iheGateway = makeIheGatewayAPIForDocQuery();
 const resultPoller = makeOutboundResultPoller();
 
 export async function getDocumentsFromCQ({
   requestId,
   facilityId,
   patient,
+  cqManagingOrgName,
 }: {
   requestId: string;
   facilityId?: string;
   patient: Patient;
+  cqManagingOrgName?: string;
 }) {
   const { log } = out(`CQ DQ - requestId ${requestId}, patient ${patient.id}`);
   const { cxId, id: patientId } = patient;
@@ -49,7 +46,6 @@ export async function getDocumentsFromCQ({
 
   const isCqQueryEnabled = await isFacilityEnabledToQueryCQ(facilityId, { id: patientId, cxId });
 
-  if (!iheGateway) return interrupt(`IHE GW not available`);
   if (!resultPoller.isDQEnabled()) return interrupt(`IHE DQ result poller not available`);
   if (!(await isCQDirectEnabledForCx(cxId))) return interrupt(`CQ disabled for cx ${cxId}`);
   if (!isCqQueryEnabled) return interrupt(`CQ disabled for facility ${facilityId}`);
@@ -112,44 +108,23 @@ export async function getDocumentsFromCQ({
       numberOfParallelExecutions: 20,
     });
 
-    const linksWithDqUrlV1Gateway: CQLink[] = [];
-    const linksWithDqUrlV2Gateway: CQLink[] = [];
-    const v2GatewayOIDs = await getOrgOidsWithIHEGatewayV2Enabled();
-    const isV2EnabledForCx = await isIHEGatewayV2EnabledForCx(cxId);
-
-    for (const link of linksWithDqUrl) {
-      if (isV2EnabledForCx || v2GatewayOIDs.includes(link.oid)) {
-        linksWithDqUrlV2Gateway.push(link);
-      } else {
-        linksWithDqUrlV1Gateway.push(link);
-      }
-    }
-
     const initiator = await getCqInitiator(patient);
 
-    const documentQueryRequestsV1 = createOutboundDocumentQueryRequests({
-      requestId,
-      patient,
-      initiator,
-      cxId,
-      cqLinks: linksWithDqUrlV1Gateway,
-    });
+    const cqLinks = cqManagingOrgName
+      ? await filterCqLinksByManagingOrg(cqManagingOrgName, linksWithDqUrl)
+      : linksWithDqUrl;
 
     const documentQueryRequestsV2 = createOutboundDocumentQueryRequests({
       requestId,
       patient,
       initiator,
       cxId,
-      cqLinks: linksWithDqUrlV2Gateway,
+      cqLinks,
     });
 
     // We send the request to IHE Gateway to initiate the doc query.
     // Then as they are processed by each gateway it will start
     // sending them to the internal route one by one
-    if (documentQueryRequestsV1.length > 0) {
-      log(`Starting document query - Gateway V1`);
-      await iheGateway.startDocumentsQuery({ outboundDocumentQueryReq: documentQueryRequestsV1 });
-    }
     if (documentQueryRequestsV2.length > 0) {
       log(`Starting document query - Gateway V2`);
       const iheGatewayV2 = makeIHEGatewayV2();
@@ -165,7 +140,7 @@ export async function getDocumentsFromCQ({
       requestId,
       patientId: patient.id,
       cxId: patient.cxId,
-      numOfGateways: documentQueryRequestsV1.length + documentQueryRequestsV2.length,
+      numOfGateways: documentQueryRequestsV2.length,
     });
   } catch (error) {
     const msg = `Failed to query and process documents - Carequality`;

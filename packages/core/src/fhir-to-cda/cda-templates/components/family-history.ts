@@ -17,15 +17,17 @@ import {
   Subject,
 } from "../../cda-types/shared-types";
 import {
+  buildCdaGender,
   buildCodeCe,
   buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
   buildOriginalTextReference,
+  buildTemplateIds,
   buildValueCd,
   formatDateToCdaTimestamp,
   getDisplaysFromCodeableConcepts,
   getNotes,
-  mapFhirGenderToCda,
+  notOnFilePlaceholder,
   withNullFlavor,
 } from "../commons";
 import {
@@ -48,13 +50,27 @@ const familyHistorySectionName = "familyhistory";
 const tableHeaders = ["Medical History", "Onset", "Relation", "Name", "Comments"];
 
 export function buildFamilyHistory(fhirBundle: Bundle): FamilyHistorySection {
+  const familyHistorySection: FamilyHistorySection = {
+    templateId: buildTemplateIds({
+      root: oids.familyHistorySection,
+      extension: extensionValue2015,
+    }),
+    code: buildCodeCe({
+      code: "10157-6",
+      codeSystem: loincCodeSystem,
+      codeSystemName: loincSystemName,
+      displayName: "Family History",
+    }),
+    title: "FAMILY HISTORY",
+    text: notOnFilePlaceholder,
+  };
   const familyHistory: FamilyMemberHistory[] =
     fhirBundle.entry?.flatMap(entry =>
       isFamilyMemberHistory(entry.resource) ? [entry.resource] : []
     ) || [];
 
   if (familyHistory.length === 0) {
-    return undefined;
+    return familyHistorySection;
   }
 
   const augmentedMemberHistories = familyHistory.map(memberHistory => {
@@ -68,22 +84,10 @@ export function buildFamilyHistory(fhirBundle: Bundle): FamilyHistorySection {
   );
 
   const table = initiateSectionTable(familyHistorySectionName, tableHeaders, trs);
+  familyHistorySection.text = table;
+  familyHistorySection.entry = entries;
 
-  return {
-    templateId: buildInstanceIdentifier({
-      root: oids.familyHistorySection,
-      extension: extensionValue2015,
-    }),
-    code: buildCodeCe({
-      code: "10157-6",
-      codeSystem: loincCodeSystem,
-      codeSystemName: loincSystemName,
-      displayName: "Family History",
-    }),
-    title: "FAMILY HISTORY",
-    text: table,
-    entry: entries,
-  };
+  return familyHistorySection;
 }
 
 function createTableRowsFromMemberHistory(
@@ -158,7 +162,7 @@ function createEntryFromMemberHistory(
     organizer: {
       _classCode: "CLUSTER",
       _moodCode: "EVN",
-      templateId: buildInstanceIdentifier({
+      templateId: buildTemplateIds({
         root: augHistory.typeOid,
         extension: extensionValue2015,
       }),
@@ -171,6 +175,7 @@ function createEntryFromMemberHistory(
       },
       subject: {
         relatedSubject: {
+          _classCode: "PRS",
           code: mapRelationship(augHistory.resource.relationship, referenceId),
           subject: buildSubject(augHistory.resource),
         },
@@ -182,20 +187,15 @@ function createEntryFromMemberHistory(
 
 function buildSubject(memberHist: FamilyMemberHistory): Subject {
   const genderCode = buildCodeCvFromCodeableConcept(memberHist.sex);
-  const mappedGenderCode = buildCodeCe({
-    code: mapFhirGenderToCda(genderCode?._code),
-    codeSystem: "2.16.840.1.113883.5.1",
-    codeSystemName: "AdministrativeGender",
-    displayName: genderCode?._displayName,
-  });
+  const mappedGenderCode = buildCdaGender(genderCode?._code);
 
   const birthTime = withNullFlavor(formatDateToCdaTimestamp(memberHist.bornDate), "_value");
 
   const deceasedBoolean = memberHist.deceasedBoolean;
   const deceasedInd = deceasedBoolean
     ? {
-        _value: memberHist.deceasedBoolean,
         [_xmlnsSdtcAttribute]: "urn:hl7-org:sdtc",
+        _value: memberHist.deceasedBoolean,
       }
     : undefined;
 
@@ -203,7 +203,7 @@ function buildSubject(memberHist: FamilyMemberHistory): Subject {
     name: memberHist.name,
     administrativeGenderCode: mappedGenderCode,
     birthTime,
-    deceasedInd, // TODO: Validator not accepting this even though this looks correct based on the spec..
+    "sdtc:deceasedInd": deceasedInd,
   };
 }
 
@@ -267,10 +267,11 @@ function buildComponents(
       observation: {
         _classCode: "OBS",
         _moodCode: "EVN",
-        templateId: buildInstanceIdentifier({
+        templateId: buildTemplateIds({
           root: oids.familyHistoryObservation,
           extension: extensionValue2015,
         }),
+        id: withNullFlavor(undefined, "_value"),
         code: codeCv,
         text: {
           reference: {
@@ -278,6 +279,10 @@ function buildComponents(
           },
           "#text": getMedicalCondition(condition.code),
         },
+        statusCode: {
+          _code: "completed",
+        },
+        effectiveTime: withNullFlavor(undefined, "_value"),
         value: buildValueCd(condition.code, conditionRef),
       },
     };

@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import { createAndSignBulkXCPDRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/create/iti55-envelope";
-import { sendProcessXcpdRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2-logic";
+import { sendProcessXcpdRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/ihe-gateway-v2-logic";
 import { setRejectUnauthorized } from "@metriport/core/external/carequality/ihe-gateway-v2/saml/saml-client";
 import { setS3UtilsInstance as setS3UtilsInstanceForStoringIheResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/monitor/store";
 import { MockS3Utils } from "./mock-s3";

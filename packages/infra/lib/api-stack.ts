@@ -72,6 +72,8 @@ export class APIStack extends Stack {
     const awsAccount = props.env?.account;
     if (!awsAccount) throw new Error("Missing AWS account");
 
+    this.terminationProtection = true;
+
     //-------------------------------------------
     // Secrets
     //-------------------------------------------
@@ -136,10 +138,11 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Application-wide feature flags
     //-------------------------------------------
-    const { appConfigAppId, appConfigConfigId } = createAppConfigStack({
-      stack: this,
-      props: { config: props.config },
-    });
+    const { appConfigAppId, appConfigConfigId, appConfigEnvId, deploymentStrategyId } =
+      createAppConfigStack({
+        stack: this,
+        props: { config: props.config },
+      });
 
     //-------------------------------------------
     // Aurora Database for backend data
@@ -330,7 +333,7 @@ export class APIStack extends Stack {
     if (!isSandbox(props.config)) {
       fhirConverter = createFHIRConverterService(
         this,
-        props,
+        { ...props, generalBucket },
         this.vpc,
         slackNotification?.alarmAction
       );
@@ -416,6 +419,7 @@ export class APIStack extends Stack {
       outboundPatientDiscoveryLambda,
       outboundDocumentQueryLambda,
       outboundDocumentRetrievalLambda,
+      generalBucket,
       medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
       fhirToCdaConverterLambda,
@@ -426,6 +430,8 @@ export class APIStack extends Stack {
       appConfigEnvVars: {
         appId: appConfigAppId,
         configId: appConfigConfigId,
+        envId: appConfigEnvId,
+        deploymentStrategyId: deploymentStrategyId,
       },
       cookieStore,
     });
@@ -453,6 +459,7 @@ export class APIStack extends Stack {
         envType: props.config.environmentType,
         sentryDsn: props.config.lambdasSentryDSN,
         iheResponsesBucketName: props.config.iheResponsesBucketName,
+        iheParsedResponsesBucketName: props.config.iheParsedResponsesBucketName,
       });
     }
 
@@ -629,7 +636,12 @@ export class APIStack extends Stack {
       apiKeyRequired: true,
     });
 
-    this.setupTestLambda(lambdaLayers, props.config.environmentType, props.config.lambdasSentryDSN);
+    this.setupTestLambda(
+      lambdaLayers,
+      props.config.environmentType,
+      apiDirectUrl,
+      props.config.lambdasSentryDSN
+    );
 
     // token auth for connect sessions
     const tokenAuth = this.setupTokenAuthLambda(
@@ -661,6 +673,8 @@ export class APIStack extends Stack {
       bucket: medicalDocumentsBucket,
     });
 
+    // TODO move this to its own stack/nested stack, name it accordingly so it doesn't
+    // confuse with the regular FHIRConverter service/lambda
     // CONVERT API
     const convertResource = api.root.addResource("convert");
     const convertBaseResource = convertResource.addResource("v1");
@@ -884,6 +898,7 @@ export class APIStack extends Stack {
   private setupTestLambda(
     lambdaLayers: LambdaLayers,
     envType: EnvType,
+    apiAddress: string,
     sentryDsn: string | undefined
   ) {
     return createLambda({
@@ -895,6 +910,7 @@ export class APIStack extends Stack {
       entry: "tester",
       envType,
       envVars: {
+        API_URL: apiAddress,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       architecture: lambda.Architecture.ARM_64,
@@ -1215,6 +1231,7 @@ export class APIStack extends Stack {
       layers: [lambdaLayers.shared, lambdaLayers.chromium],
       memory: 4096,
       timeout: lambdaTimeout,
+      isEnableInsights: true,
       vpc,
       alarmSnsAction: alarmAction,
     });

@@ -11,6 +11,8 @@ import dayjs from "dayjs";
 import { out } from "../../../../../../util/log";
 import { capture } from "../../../../../../util/notifications";
 import { RegistryError, RegistryErrorList } from "./schema";
+import { CODE_SYSTEM_ERROR } from "../../../../shared";
+import { httpErrorCode, schemaErrorCode } from "../../../../error";
 
 const { log } = out("XCA Error Handling");
 const knownNonRetryableErrors = ["No active consent for patient id"];
@@ -33,19 +35,16 @@ export function processRegistryErrorList(
         code: entry?._errorCode?.toString() ?? "unknown-error",
         details: {
           text: entry?._codeContext?.toString() ?? "No details",
+          coding: [
+            {
+              code: entry?._errorCode?.toString() ?? "",
+              system: CODE_SYSTEM_ERROR,
+            },
+          ],
         },
       };
 
       operationOutcome.issue.push(issue);
-    });
-
-    const msg = "RegistryErrorList is present in response";
-    capture.error(msg, {
-      extra: {
-        outboundRequest,
-        registryErrorList,
-        outboundRequestId: outboundRequest.id,
-      },
     });
   } catch (error) {
     const msg = "Error processing RegistryErrorList";
@@ -102,7 +101,7 @@ export function handleHttpErrorResponse({
     issue: [
       {
         severity: "error",
-        code: "http-error",
+        code: httpErrorCode,
         details: {
           text: httpError,
         },
@@ -173,7 +172,7 @@ export function handleSchemaErrorResponse({
     issue: [
       {
         severity: "error",
-        code: "schema-error",
+        code: schemaErrorCode,
         details: {
           text,
         },
@@ -205,11 +204,10 @@ export function isRetryable(
     outboundResponse.operationOutcome?.issue.some(
       issue =>
         issue.severity === "error" &&
-        issue.code !== "http-error" &&
-        issue.code !== "schema-error" &&
-        !knownNonRetryableErrors.some(
-          nonRetryableError =>
-            "text" in issue.details && issue.details.text.includes(nonRetryableError)
+        issue.code !== httpErrorCode &&
+        issue.code !== schemaErrorCode &&
+        !knownNonRetryableErrors.some(nonRetryableError =>
+          issue.details.text?.includes(nonRetryableError)
         )
     ) ?? false
   );

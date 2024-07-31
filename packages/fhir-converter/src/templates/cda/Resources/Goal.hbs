@@ -36,9 +36,9 @@
             	{{>DataType/Identifier.hbs id=this}},
             {{/each}}
         ],
-        
-        "description":{{>DataType/CodeableConcept.hbs code=goalEntry.code}},
-        
+
+        "description":{{>DataType/CodeableConcept.hbs code=goalEntry.code canBeUnknown=true}},
+
         "lifecycleStatus":"{{goalEntry.statusCode.code}}",
        
         
@@ -47,18 +47,18 @@
         {{/with}}
 
         "target":
-        {
+        [
+          {
             "measure":
-            [
             	{{#if goalEntry.code.translation}}
                     {{>DataType/CodeableConcept.hbs code=goalEntry.code.translation}},
                 {{else}}
                     {{>DataType/CodeableConcept.hbs code=goalEntry.code}},
-                {{/if}}
-            ],  
+                {{/if}}  
             "detailQuantity":"{{goalEntry.value.low.value}}{{goalEntry.value.low.unit}}",
-            "dueDate":"{{addHyphensDate goalEntry.effectiveTime.value}}",         
-        },
+            "dueDate":"{{addHyphensDate goalEntry.effectiveTime.value}}",
+          }
+        ],
     },
     "request":{
         "method":"PUT",

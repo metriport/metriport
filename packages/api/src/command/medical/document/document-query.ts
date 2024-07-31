@@ -49,6 +49,7 @@ export async function queryDocumentsAcrossHIEs({
   forceQuery = false,
   forceCommonwell = false,
   forceCarequality = false,
+  cqManagingOrgName,
 }: {
   cxId: string;
   patientId: string;
@@ -58,6 +59,7 @@ export async function queryDocumentsAcrossHIEs({
   forceQuery?: boolean;
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
+  cqManagingOrgName?: string;
 }): Promise<DocumentQueryProgress> {
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
@@ -100,15 +102,17 @@ export async function queryDocumentsAcrossHIEs({
   });
 
   const commonwellEnabled = await isCommonwellEnabled();
-  if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
-    getDocumentsFromCW({
-      patient: updatedPatient,
-      facilityId,
-      forceDownload: override,
-      forceQuery,
-      requestId,
-      getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
-    }).catch(emptyFunction);
+  if (!cqManagingOrgName) {
+    if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
+      getDocumentsFromCW({
+        patient: updatedPatient,
+        facilityId,
+        forceDownload: override,
+        forceQuery,
+        requestId,
+        getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
+      }).catch(emptyFunction);
+    }
   }
 
   const carequalityEnabled = await isCarequalityEnabled();
@@ -117,6 +121,7 @@ export async function queryDocumentsAcrossHIEs({
       patient: updatedPatient,
       facilityId,
       requestId,
+      cqManagingOrgName,
     }).catch(emptyFunction);
   }
 

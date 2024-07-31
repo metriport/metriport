@@ -22,7 +22,7 @@ import { createAndSignBulkDRRequests } from "@metriport/core/external/carequalit
 import {
   sendProcessRetryDrRequest,
   sendProcessXcpdRequest,
-} from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2-logic";
+} from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/ihe-gateway-v2-logic";
 import { setS3UtilsInstance as setS3UtilsInstanceForStoringDrResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
 import { setS3UtilsInstance as setS3UtilsInstanceForStoringIheResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/monitor/store";
 import { Config } from "@metriport/core/util/config";
@@ -185,7 +185,7 @@ async function XcpdIntegrationTest() {
       samlAttributes: samlAttributes,
       patientResource: isSuccessfulResponse(xcpdResult)
         ? xcpdResult.patientResource
-        : { name: [], birthDate: "" },
+        : { name: [], birthDate: "", gender: "unknown" },
       principalCareProviderIds: [""],
     };
     try {

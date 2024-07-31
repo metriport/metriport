@@ -24,7 +24,7 @@ const defaultS3RetriesConfig = {
   initialDelay: 500,
 };
 
-async function executeWithRetriesS3<T>(
+export async function executeWithRetriesS3<T>(
   fn: () => Promise<T>,
   options?: ExecuteWithRetriesOptions<T>
 ): Promise<T> {
@@ -311,6 +311,7 @@ export class S3Utils {
     file: Buffer;
     contentType?: string;
   }): Promise<AWS.S3.ManagedUpload.SendData> {
+    const { log } = out("uploadFile");
     const uploadParams: AWS.S3.PutObjectRequest = {
       Bucket: bucket,
       Key: key,
@@ -321,10 +322,10 @@ export class S3Utils {
     }
     try {
       const resp = await executeWithRetriesS3(() => this._s3.upload(uploadParams).promise());
-      console.log("Upload successful");
+      log("Upload successful");
       return resp;
     } catch (error) {
-      console.error(`Error during upload: ${JSON.stringify(error)}`);
+      log(`Error during upload: ${JSON.stringify(error)}`);
       throw error;
     }
   }
@@ -338,7 +339,8 @@ export class S3Utils {
       const resp = await executeWithRetriesS3(() => this._s3.getObject(params).promise());
       return resp.Body as Buffer;
     } catch (error) {
-      console.error(`Error during download: ${JSON.stringify(error)}`);
+      const { log } = out("downloadFile");
+      log(`Error during download: ${JSON.stringify(error)}`);
       throw error;
     }
   }
@@ -351,44 +353,10 @@ export class S3Utils {
     try {
       await executeWithRetriesS3(() => this._s3.deleteObject(deleteParams).promise());
     } catch (error) {
-      console.error(`Error during file deletion: ${JSON.stringify(error)}`);
+      const { log } = out("deleteFile");
+      log(`Error during file deletion: ${JSON.stringify(error)}`);
       throw error;
     }
-  }
-
-  async retrieveDocumentIdsFromS3(
-    cxId: string,
-    patientId: string,
-    bucketName: string
-  ): Promise<string[]> {
-    const Prefix = `${cxId}/${patientId}/uploads/`;
-
-    const params = {
-      Bucket: bucketName,
-      Prefix,
-    };
-
-    const data = await executeWithRetriesS3(() => this._s3.listObjectsV2(params).promise());
-    const documentContents = (
-      await Promise.all(
-        data.Contents?.filter(item => item.Key && item.Key.endsWith("_metadata.xml")).map(
-          async item => {
-            if (item.Key) {
-              const params = {
-                Bucket: bucketName,
-                Key: item.Key,
-              };
-
-              const data = await executeWithRetriesS3(() => this._s3.getObject(params).promise());
-              return data.Body?.toString();
-            }
-            return undefined;
-          }
-        ) || []
-      )
-    ).filter((item): item is string => Boolean(item));
-
-    return documentContents;
   }
 
   async listObjects(bucket: string, prefix: string): Promise<AWS.S3.ObjectList | undefined> {

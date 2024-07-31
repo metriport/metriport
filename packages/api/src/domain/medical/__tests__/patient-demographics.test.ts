@@ -10,7 +10,6 @@ import {
   normalizeAndStringifyNames,
   normalizeDob,
   normalizeEmail,
-  normalizeGender,
   normalizeSsn,
   patientToNormalizedCoreDemographics,
   stringifyAddress,
@@ -32,25 +31,6 @@ describe("normalization", () => {
   it("dob split", async () => {
     const result = splitDob(dobValid);
     expect(result).toMatchObject(["2023", "08", "01"]);
-  });
-
-  describe("normalizeGender", () => {
-    const genderValid = "male";
-    const gendersToCheck = [genderValid, " male ", "Male", "M", undefined];
-    for (const gender of gendersToCheck) {
-      it(`gender: ${gender}`, async () => {
-        const result = normalizeGender(gender);
-        expect(result).toBe(gender ? genderValid : undefined);
-      });
-    }
-    const genderValidF = "female";
-    const gendersToCheckF = [genderValidF, " female ", "Female", "F", undefined];
-    for (const genderf of gendersToCheckF) {
-      it(`gender: ${genderf}`, async () => {
-        const result = normalizeGender(genderf);
-        expect(result).toBe(genderf ? genderValidF : undefined);
-      });
-    }
   });
 
   describe("normalizeAndStringifyNames", () => {
@@ -139,11 +119,23 @@ describe("normalization", () => {
 
   describe("normalizeEmail", () => {
     const emailValid = "john.smith@gmail.com";
-    const emailsToCheck = [emailValid, " john.smith@gmail.com ", "JOHN.SMITH@GMAIL.COM"];
+    const emailsToCheck = [
+      emailValid,
+      " john.smith@gmail.com ",
+      "JOHN.SMITH@GMAIL.COM",
+      "mailto:john.smith@gmail.com",
+    ];
     for (const email of emailsToCheck) {
       it(`email: ${email}`, async () => {
         const result = normalizeEmail(email);
         expect(result).toBe(emailValid);
+      });
+    }
+    const emailsToCheckInvalid = ["john:smith@gmail.com"];
+    for (const email of emailsToCheckInvalid) {
+      it(`email: ${email}`, async () => {
+        const result = normalizeEmail(email);
+        expect(result).toBe(undefined);
       });
     }
   });

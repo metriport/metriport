@@ -4,8 +4,10 @@ import { Patient } from "@metriport/core/domain/patient";
 import { cdaDocumentUploaderHandler } from "@metriport/core/shareback/cda-uploader";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Config } from "../../shared/config";
 import { generateCcd } from "./generate-ccd";
+import { generateEmptyCcd } from "./generate-empty-ccd";
 
 const medicalBucket = Config.getMedicalDocumentsBucketName();
 const awsRegion = Config.getAWSRegion();
@@ -28,10 +30,14 @@ function createDocRef(patientId: string) {
   return { ...ccdDocRefTemplate, subject: { reference: `Patient/${patientId}` } };
 }
 
-export async function processCcdRequest(patient: Patient, organization: Organization) {
+export async function processCcdRequest(
+  patient: Patient,
+  organization: Organization,
+  requestId = uuidv7()
+): Promise<void> {
   const { log } = out(`Generate CCD cxId: ${patient.cxId}, patientId: ${patient.id}`);
   try {
-    const ccd = await generateCcd(patient);
+    const ccd = await generateCcd(patient, requestId);
     const docRef = createDocRef(patient.id);
     log(`CCD generated. Starting the upload...`);
     await cdaDocumentUploaderHandler({
@@ -47,6 +53,31 @@ export async function processCcdRequest(patient: Patient, organization: Organiza
     log(`CCD uploaded into ${medicalBucket}`);
   } catch (error) {
     const msg = `Error creating and uploading CCD`;
+    log(`${msg}: error - ${error}`);
+    capture.error(msg, { extra: { error, cxId: patient.cxId, patientId: patient.id } });
+    throw error;
+  }
+}
+
+export async function processEmptyCcdRequest(patient: Patient, organization: Organization) {
+  const { log } = out(`Generate empty CCD cxId: ${patient.cxId}, patientId: ${patient.id}`);
+  try {
+    const ccd = await generateEmptyCcd(patient);
+    const docRef = createDocRef(patient.id);
+    log(`Empty CCD generated. Starting the upload...`);
+    await cdaDocumentUploaderHandler({
+      cxId: patient.cxId,
+      patientId: patient.id,
+      bundle: ccd,
+      medicalDocumentsBucket: medicalBucket,
+      region: awsRegion,
+      organization,
+      docId: CCD_SUFFIX,
+      docRef,
+    });
+    log(`CCD uploaded into ${medicalBucket}`);
+  } catch (error) {
+    const msg = `Error creating and uploading empty CCD`;
     log(`${msg}: error - ${error}`);
     capture.error(msg, { extra: { error, cxId: patient.cxId, patientId: patient.id } });
     throw error;

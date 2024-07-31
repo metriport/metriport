@@ -13,6 +13,7 @@ import {
   BASE_ADDRESS,
   BASE_ADDRESS_SANDBOX,
   DEFAULT_AXIOS_TIMEOUT_MILLIS,
+  JWT_HEADER,
   optionalDateToISOString,
 } from "../../shared";
 import { getETagHeader } from "../models/common/base-update";
@@ -52,6 +53,7 @@ export type Options = {
   axios?: AxiosStatic; // Set axios if it fails to load
   timeout?: number;
   additionalHeaders?: Record<string, string>;
+  mode?: "api-key" | "jwt";
 } & (
   | {
       sandbox?: boolean;
@@ -88,12 +90,18 @@ export class MetriportMedicalApi {
    * @param options.timeout - Connection timeout in milliseconds, default 20 seconds.
    */
   constructor(apiKey: string, options: Options = {}) {
-    const headers = { [API_KEY_HEADER]: apiKey, ...options.additionalHeaders };
     const { sandbox, timeout } = options;
+
+    const mode = options.mode || "api-key";
+    const headers = {
+      ...(mode === "api-key" ? { [API_KEY_HEADER]: apiKey } : { [JWT_HEADER]: "Bearer " + apiKey }),
+      ...options.additionalHeaders,
+    };
 
     const baseHostAndProtocol =
       options.baseAddress ?? (sandbox ? BASE_ADDRESS_SANDBOX : BASE_ADDRESS);
     const baseURL = baseHostAndProtocol + BASE_PATH;
+
     const axiosConfig: CreateAxiosDefaults = {
       timeout: timeout ?? DEFAULT_AXIOS_TIMEOUT_MILLIS,
       baseURL,
@@ -415,8 +423,8 @@ export class MetriportMedicalApi {
    * Add patient data as FHIR resources. Those can later be queried with startConsolidatedQuery(),
    * and will be made available to HIEs.
    *
-   * Note: each call to this function is limited to 50 resources and 1Mb of data. You can make multiple
-   * calls to this function to add more data.
+   * Note: each call to this function is limited to 1Mb of data (and 50 resources when in sandbox).
+   * You can make multiple calls to this function to add more data.
    *
    * @param patientId The ID of the patient to associate resources to.
    * @param payload The FHIR Bundle to create resources.

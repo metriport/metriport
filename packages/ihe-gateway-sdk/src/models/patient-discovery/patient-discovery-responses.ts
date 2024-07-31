@@ -16,7 +16,7 @@ const patientDiscoveryRespSuccessfulDefaultSchema = baseResponseSchema.extend({
 const inboundPatientDiscoveryRespSuccessfulSchema =
   patientDiscoveryRespSuccessfulDefaultSchema.extend({
     patientMatchDegree: z.number().optional(),
-    patientResource: z.object({}),
+    patientResource: patientResourceSchema,
     externalGatewayPatient: externalGatewayPatientSchema,
   });
 
@@ -35,6 +35,10 @@ export const inboundPatientDiscoveryRespSchema = z.union([
   inboundPatientDiscoveryRespSuccessfulNoMatchSchema,
   inboundPatientDiscoveryRespFaultSchema,
 ]);
+
+export type InboundPatientDiscoveryRespSuccess = z.infer<
+  typeof inboundPatientDiscoveryRespSuccessfulSchema
+>;
 
 export type InboundPatientDiscoveryResp = z.infer<typeof inboundPatientDiscoveryRespSchema>;
 
@@ -69,3 +73,21 @@ export const outboundPatientDiscoveryRespSchema = z.union([
 ]);
 
 export type OutboundPatientDiscoveryResp = z.infer<typeof outboundPatientDiscoveryRespSchema>;
+
+export function isSuccessfulInboundPatientDiscoveryResponse(
+  response: InboundPatientDiscoveryResp
+): response is InboundPatientDiscoveryRespSuccess {
+  return "patientResource" in response;
+}
+
+export function isSuccessfulOutboundPatientDiscoveryResponse(
+  response: OutboundPatientDiscoveryResp
+): response is OutboundPatientDiscoveryRespSuccessfulSchema {
+  return "patientResource" in response;
+}
+
+export function isNonErroringOutboundPatientDiscoveryResponse(
+  response: OutboundPatientDiscoveryResp
+): response is OutboundPatientDiscoveryResp {
+  return response.patientMatch != null;
+}

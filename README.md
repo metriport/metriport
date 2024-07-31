@@ -31,14 +31,6 @@
    <a href="https://www.ycombinator.com/companies/metriport"><img src="https://img.shields.io/static/v1?label=Y Combinator&message=Metriport&color=orange" alt="YC"></a>
 </p>
 
-<div align="center">
-
-#### Support us on [Product Hunt](https://www.producthunt.com/products/metriport-api) and [Launch YC](https://www.ycombinator.com/launches/Ghx-metriport-universal-api-for-healthcare-data)
-
-<a href="https://www.producthunt.com/posts/metriport-health-devices-api?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-metriport&#0045;health&#0045;devices&#0045;api" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=371762&theme=light" alt="Metriport&#0032;&#0045;&#0032;Health&#0032;Devices&#0032;API - Open&#0045;source&#0032;Plaid&#0032;for&#0032;healthcare&#0032;data | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a> <a href='https://www.ycombinator.com/launches/Ghx-metriport-universal-api-for-healthcare-data' target="_blank"><img src='https://www.ycombinator.com/launches/Ghx-metriport-universal-api-for-healthcare-data/upvote_embed.svg' alt='Launch YC: Metriport - Universal API for Healthcare Data'></a>
-
-</div>
-
 ### **[Join us on our Slack Community](https://join.slack.com/t/metriport-oss/shared_invite/zt-2jezazysw-~AuXop_rFmWQXKmjYRr~cA) 💬**
 
 ## **Overview**

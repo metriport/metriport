@@ -63,7 +63,7 @@ import {
   getFileName,
   getContentTypeOrUnknown,
 } from "./shared";
-import { getDocumentReferenceContentTypeCounts } from "../../hie/get-counts-analytics";
+import { getDocumentReferenceContentTypeCounts } from "../../hie/carequality-analytics";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
@@ -607,7 +607,7 @@ async function downloadDocsAndUpsertFHIR({
             log(`${msg}: (docId ${doc.id}): ${errorToString(error)}`);
             capture.error(msg, {
               extra: {
-                context: `s3.documentUpload`,
+                context: `cw.downloadDocsAndUpsertFHIR.downloadFromCWAndUploadToS3`,
                 patientId: patient.id,
                 documentReference: doc,
                 requestId,

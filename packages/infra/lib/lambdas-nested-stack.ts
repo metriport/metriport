@@ -40,6 +40,8 @@ export class LambdasNestedStack extends NestedStack {
   constructor(scope: Construct, id: string, props: LambdasNestedStackProps) {
     super(scope, id, props);
 
+    this.terminationProtection = true;
+
     this.lambdaLayers = setupLambdasLayers(this);
 
     this.cdaToVisualizationLambda = this.setupCdaToVisualization({
@@ -81,7 +83,7 @@ export class LambdasNestedStack extends NestedStack {
       dbCluster: props.dbCluster,
       dbCredsSecret: props.dbCredsSecret,
       // TODO move this to a config
-      maxPollingDuration: Duration.minutes(5),
+      maxPollingDuration: Duration.minutes(2),
     });
 
     this.outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({
@@ -274,8 +276,7 @@ export class LambdasNestedStack extends NestedStack {
 
     const outboundPatientDiscoveryLambda = createLambda({
       stack: this,
-      name: "OutboundPatientDiscovery",
-      nameSuffix: "v2",
+      name: "PollOutboundPatientDiscovery",
       entry: "ihe-outbound-patient-discovery",
       envType,
       envVars: {
@@ -319,8 +320,7 @@ export class LambdasNestedStack extends NestedStack {
 
     const outboundDocumentQueryLambda = createLambda({
       stack: this,
-      name: "OutboundDocumentQuery",
-      nameSuffix: "v2",
+      name: "PollOutboundDocumentQuery",
       entry: "ihe-outbound-document-query",
       envType,
       envVars: {
@@ -364,8 +364,7 @@ export class LambdasNestedStack extends NestedStack {
 
     const outboundDocumentRetrievalLambda = createLambda({
       stack: this,
-      name: "OutboundDocumentRetrieval",
-      nameSuffix: "v2",
+      name: "PollOutboundDocumentRetrieval",
       entry: "ihe-outbound-document-retrieval",
       envType,
       envVars: {

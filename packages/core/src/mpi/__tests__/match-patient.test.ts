@@ -50,4 +50,16 @@ describe("matchingContactDetailsRule", () => {
     const resultPatient: PatientMPI = testPatientMPI.sampleExclusions[0]!; // Choose a non-matching patient
     expect(matchingContactDetailsRule(searchPatient, resultPatient)).toBeFalsy();
   });
+
+  it("identifies non-matching contact details only phones", async () => {
+    const searchPatient: PatientMPI = testPatientMPI.sampleSearch[1]!;
+    const resultPatient: PatientMPI = testPatientMPI.sampleExclusions[1]!; // Choose a non-matching patient
+    expect(matchingContactDetailsRule(searchPatient, resultPatient)).toBeFalsy();
+  });
+
+  it("identifies non-matching contact details only emails", async () => {
+    const searchPatient: PatientMPI = testPatientMPI.sampleSearch[2]!;
+    const resultPatient: PatientMPI = testPatientMPI.sampleExclusions[2]!; // Choose a non-matching patient
+    expect(matchingContactDetailsRule(searchPatient, resultPatient)).toBeFalsy();
+  });
 });

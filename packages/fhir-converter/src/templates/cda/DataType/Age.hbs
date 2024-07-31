@@ -1,0 +1,13 @@
+{{!-- 
+  // ------------------------------------------------------------------------------------------------- 
+  // Copyright (c) 2022-present Metriport Inc.   
+  //  
+  // Licensed under AGPLv3. See LICENSE in the repo root for license information.
+  // -------------------------------------------------------------------------------------------------
+--}}
+{        
+  "value": {{quantity.value}},
+  "unit": "{{quantity.unit}}",
+  "system": "http://unitsofmeasure.org",
+  "code": {{#if quantity.code}} "{{quantity.code}}" {{else}} "unknown" {{/if}}
+}

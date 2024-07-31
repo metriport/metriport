@@ -2,6 +2,9 @@ import * as AWS from "aws-sdk";
 import { Sequelize } from "sequelize";
 import { CQDirectoryEntryModel } from "../external/carequality/models/cq-directory";
 import { CQPatientDataModel } from "../external/carequality/models/cq-patient-data";
+import { OutboundDocumentQueryRespModel } from "../external/carequality/models/outbound-document-query-resp";
+import { OutboundDocumentRetrievalRespModel } from "../external/carequality/models/outbound-document-retrieval-resp";
+import { OutboundPatientDiscoveryRespModel } from "../external/carequality/models/outbound-patient-discovery-resp";
 import { CwPatientDataModel } from "../external/commonwell/models/cw-patient-data";
 import { FacilityModel } from "../models/medical/facility";
 import { OrganizationModel } from "../models/medical/organization";
@@ -11,9 +14,6 @@ import { ConnectedUser } from "./connected-user";
 import { initDDBDev, initLocalCxAccount } from "./db-dev";
 import { CoverageEnhancementModel } from "./medical/coverage-enhancement";
 import { DocRefMappingModel } from "./medical/docref-mapping";
-import { OutboundDocumentQueryRespModel } from "../external/carequality/models/outbound-document-query-resp";
-import { OutboundPatientDiscoveryRespModel } from "../external/carequality/models/outbound-patient-discovery-resp";
-import { OutboundDocumentRetrievalRespModel } from "../external/carequality/models/outbound-document-retrieval-resp";
 import { MAPIAccess } from "./medical/mapi-access";
 import { PatientModel } from "./medical/patient";
 import { Settings } from "./settings";
@@ -39,10 +39,18 @@ const models: ModelSetup[] = [
   CoverageEnhancementModel.setup,
 ];
 
+export type DbPoolProps = {
+  max: number;
+  min: number;
+  acquire: number;
+  idle: number;
+};
+
 export type MetriportDB = {
   sequelize: Sequelize;
   doc: AWS.DynamoDB.DocumentClient;
 };
+
 let db: MetriportDB | undefined;
 export const getDB = (): MetriportDB => {
   if (!db) throw new Error("DB not initialized");
@@ -54,11 +62,12 @@ export interface DocTableNames {
 }
 export let docTableNames: DocTableNames;
 
-const initDB = async (): Promise<void> => {
+async function initDB(): Promise<void> {
   // make sure we have the env vars we need
   const sqlDBCreds = Config.getDBCreds();
   const tokenTableName = Config.getTokenTableName();
   const logDBOperations = Config.isCloudEnv() ? false : true;
+  const dbPoolSettings = getDbPoolSettings();
 
   docTableNames = {
     token: tokenTableName,
@@ -71,12 +80,7 @@ const initDB = async (): Promise<void> => {
     host: dbCreds.host,
     port: dbCreds.port,
     dialect: dbCreds.engine,
-    pool: {
-      max: 300,
-      min: 50,
-      acquire: 30000,
-      idle: 10000,
-    },
+    pool: dbPoolSettings,
     logging: logDBOperations,
     logQueryParameters: logDBOperations,
   });
@@ -107,6 +111,38 @@ const initDB = async (): Promise<void> => {
     console.log(err);
     throw err;
   }
-};
+}
+
+function getDbPoolSettings(): DbPoolProps {
+  function getAndParseSettings(): Partial<Record<keyof DbPoolProps, string>> {
+    try {
+      const rawProps = Config.getDbPoolSettings();
+      const parsedProps = rawProps ? JSON.parse(rawProps) : {};
+      return parsedProps;
+    } catch (error) {
+      console.log("Error parsing db pool settings", error);
+      return {};
+    }
+  }
+  const parsedProps = getAndParseSettings();
+  // https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-serverless-v2.setting-capacity.html#aurora-serverless-v2.max-connections
+  const max = getOptionalInteger(parsedProps.max) ?? 500;
+  const min = getOptionalInteger(parsedProps.min) ?? 50;
+  const acquire = getOptionalInteger(parsedProps.acquire) ?? 10_000;
+  const idle = getOptionalInteger(parsedProps.idle) ?? 10_000;
+  return {
+    max,
+    min,
+    acquire,
+    idle,
+  };
+}
+
+function getOptionalInteger(prop: string | undefined): number | undefined {
+  if (!prop) return undefined;
+  const resp = parseInt(prop);
+  if (isNaN(resp)) return undefined;
+  return resp;
+}
 
 export default initDB;

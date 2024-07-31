@@ -6,15 +6,23 @@ import {
 } from "../../../external/fhir/shared";
 import BadRequestError from "../../../util/error/bad-request";
 import { MedicationSection } from "../../cda-types/sections";
-import { ObservationTableRow, SubstanceAdministationEntry } from "../../cda-types/shared-types";
+import {
+  CdaValuePq,
+  EntryObject,
+  ObservationTableRow,
+  SubstanceAdministationEntry,
+} from "../../cda-types/shared-types";
 import {
   buildCodeCe,
   buildCodeCeFromCoding,
   buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
+  buildTemplateIds,
   formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
   getDisplaysFromCodeableConcepts,
+  notOnFilePlaceholder,
+  withNullFlavor,
   withoutNullFlavorObject,
 } from "../commons";
 import {
@@ -43,13 +51,30 @@ const tableHeaders = [
 ];
 
 export function buildMedications(fhirBundle: Bundle): MedicationSection {
+  const medicationsSection: MedicationSection = {
+    templateId: buildInstanceIdentifier({
+      root: oids.medicationsSection,
+    }),
+    code: buildCodeCe({
+      code: "10160-0",
+      codeSystem: loincCodeSystem,
+      codeSystemName: loincSystemName,
+      displayName: "History of Medication use Narrative",
+    }),
+    title: "MEDICATIONS",
+    text: notOnFilePlaceholder,
+  };
+
   const medicationStatements: MedicationStatement[] =
     fhirBundle.entry?.flatMap(entry =>
       isMedicationStatement(entry.resource) ? [entry.resource] : []
     ) || [];
 
   if (medicationStatements.length === 0) {
-    return undefined;
+    return {
+      _nullFlavor: "NI",
+      ...medicationsSection,
+    };
   }
 
   const augmentedMedStatements = createAugmentedMedicationStatements(
@@ -65,20 +90,9 @@ export function buildMedications(fhirBundle: Bundle): MedicationSection {
 
   const table = initiateSectionTable(medicationsSectionName, tableHeaders, trs);
 
-  const medicationsSection = {
-    templateId: buildInstanceIdentifier({
-      root: oids.medicationsSection,
-    }),
-    code: buildCodeCe({
-      code: "10160-0",
-      codeSystem: loincCodeSystem,
-      codeSystemName: loincSystemName,
-      displayName: "History of Medication use Narrative",
-    }),
-    title: "MEDICATIONS",
-    text: table,
-    entry: entries,
-  };
+  medicationsSection.text = table;
+  medicationsSection.entry = entries;
+
   return medicationsSection;
 }
 
@@ -162,18 +176,22 @@ function getFrequencyFromMedicationStatement(statement: MedicationStatement): st
   return (
     statement.dosage
       ?.map(dosage => {
-        return dosage.doseAndRate
-          ?.map(doseAndRate => {
-            if (doseAndRate.rateQuantity?.value && doseAndRate.rateQuantity?.unit) {
-              return `${doseAndRate.rateQuantity.value} ${doseAndRate.rateQuantity.unit}`;
-            }
-            return undefined;
-          })
-          .filter(Boolean);
+        const frequency = extractFrequency(dosage);
+        return frequency?.map(pair => {
+          return pair._value && pair._unit ? `${pair._value} ${pair._unit}` : undefined;
+        });
       })
-      .flat()
       .join(", ") || NOT_SPECIFIED
   );
+}
+
+function extractFrequency(dosage: Dosage | undefined): CdaValuePq[] | undefined {
+  return dosage?.doseAndRate?.flatMap(doseAndRate => {
+    if (doseAndRate.rateQuantity?.value && doseAndRate.rateQuantity?.unit) {
+      return { _value: doseAndRate.rateQuantity.value, _unit: doseAndRate.rateQuantity.unit };
+    }
+    return [];
+  });
 }
 
 function createEntryFromStatement(
@@ -188,7 +206,7 @@ function createEntryFromStatement(
     substanceAdministration: {
       _classCode: "SBADM",
       _moodCode: "INT",
-      templateId: buildInstanceIdentifier({
+      templateId: buildTemplateIds({
         root: statement.typeOid,
         extension: extensionValue2014,
       }),
@@ -210,10 +228,12 @@ function createEntryFromStatement(
           "_value"
         ),
       },
+      doseQuantity: buildDoseQuantity(statement.resource.dosage),
       consumable: {
         _typeCode: "CSM",
         manufacturedProduct: {
-          templateId: buildInstanceIdentifier({
+          _classCode: "MANU",
+          templateId: buildTemplateIds({
             root: oids.medicationInformation,
             extension: extensionValue2014,
           }),
@@ -224,4 +244,23 @@ function createEntryFromStatement(
       },
     },
   };
+}
+
+function buildDoseQuantity(dosages: Dosage[] | undefined): EntryObject | CdaValuePq {
+  if (!dosages) return withNullFlavor(undefined, "_value");
+
+  for (const dosage of dosages) {
+    const frequencies = extractFrequency(dosage);
+    if (frequencies) {
+      for (const freq of frequencies) {
+        if (freq._value && freq._unit) {
+          return {
+            _value: freq._value,
+            _unit: freq._unit,
+          };
+        }
+      }
+    }
+  }
+  return withNullFlavor(undefined, "_value");
 }

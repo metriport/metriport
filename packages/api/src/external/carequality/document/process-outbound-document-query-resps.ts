@@ -15,7 +15,6 @@ import { isCQDirectEnabledForCx } from "../../aws/app-config";
 import { isConvertible } from "../../fhir-converter/converter";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
-import { makeIheGatewayAPIForDocRetrieval } from "../../ihe-gateway/api";
 import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poller-factory";
 import { getCQDirectoryEntry } from "../command/cq-directory/get-cq-directory-entry";
 import { getCqInitiator } from "../shared";
@@ -32,15 +31,10 @@ import {
 import {
   getDocumentReferenceContentTypeCounts,
   getOutboundDocQuerySuccessFailureCount,
-} from "../../hie/get-counts-analytics";
+} from "../../hie/carequality-analytics";
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
-import {
-  getOrgOidsWithIHEGatewayV2Enabled,
-  isIHEGatewayV2EnabledForCx,
-} from "../../aws/app-config";
 
 const parallelUpsertsToFhir = 10;
-const iheGateway = makeIheGatewayAPIForDocRetrieval();
 const resultPoller = makeOutboundResultPoller();
 
 export async function processOutboundDocumentQueryResps({
@@ -52,7 +46,6 @@ export async function processOutboundDocumentQueryResps({
   const { log } = out(`CQ DR - requestId ${requestId}, patient ${patientId}`);
 
   const interrupt = buildInterrupt({ requestId, patientId, cxId, log });
-  if (!iheGateway) return interrupt(`IHE GW not available`);
   if (!resultPoller.isDREnabled()) return interrupt(`IHE DR result poller not available`);
   if (!(await isCQDirectEnabledForCx(cxId))) return interrupt(`CQ disabled for cx ${cxId}`);
 
@@ -147,7 +140,7 @@ export async function processOutboundDocumentQueryResps({
     // when doing the doc retrieval
     await storeInitDocRefInFHIR(docsToDownload, cxId, patientId, log);
 
-    const resultsWithMetriportIdAndDrUrl = await replaceDqUrlWithDrUrl({
+    const outboundDocumentQueryResults = await replaceDqUrlWithDrUrl({
       patientId,
       requestId,
       cxId,
@@ -155,45 +148,17 @@ export async function processOutboundDocumentQueryResps({
       log,
     });
 
-    const outboundDocumentQueryResultsV1: OutboundDocumentQueryResp[] = [];
-    const outboundDocumentQueryResultsV2: OutboundDocumentQueryResp[] = [];
-
-    const v2GatewayOIDs = await getOrgOidsWithIHEGatewayV2Enabled();
-    const isV2EnabledForCx = await isIHEGatewayV2EnabledForCx(cxId);
-
-    for (const result of resultsWithMetriportIdAndDrUrl) {
-      if (isV2EnabledForCx || v2GatewayOIDs.includes(result.gateway.homeCommunityId)) {
-        outboundDocumentQueryResultsV2.push(result);
-      } else {
-        outboundDocumentQueryResultsV1.push(result);
-      }
-    }
-
     const initiator = await getCqInitiator(patient);
-
-    const documentRetrievalRequestsV1 = createOutboundDocumentRetrievalReqs({
-      requestId,
-      patient,
-      initiator,
-      outboundDocumentQueryResults: outboundDocumentQueryResultsV1,
-    });
 
     const documentRetrievalRequestsV2 = createOutboundDocumentRetrievalReqs({
       requestId,
       patient,
       initiator,
-      outboundDocumentQueryResults: outboundDocumentQueryResultsV2,
+      outboundDocumentQueryResults,
     });
 
     // We send the request to IHE Gateway to initiate the doc retrieval with doc references by each respective gateway.
     log(`Starting document retrieval, ${docsToDownload.length} docs to download`);
-
-    if (documentRetrievalRequestsV1.length > 0) {
-      log(`Starting document retrieval - Gateway V1`);
-      await iheGateway.startDocumentsRetrieval({
-        outboundDocumentRetrievalReq: documentRetrievalRequestsV1,
-      });
-    }
 
     if (documentRetrievalRequestsV2.length > 0) {
       log(`Starting document retrieval - Gateway V2`);
@@ -210,7 +175,7 @@ export async function processOutboundDocumentQueryResps({
       requestId,
       patientId: patientId,
       cxId: cxId,
-      numOfGateways: documentRetrievalRequestsV1.length + documentRetrievalRequestsV2.length,
+      numOfGateways: documentRetrievalRequestsV2.length,
     });
   } catch (error) {
     const msg = `Failed to process documents in Carequality.`;

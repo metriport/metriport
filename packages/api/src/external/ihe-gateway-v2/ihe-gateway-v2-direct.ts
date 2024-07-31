@@ -3,12 +3,12 @@ import {
   OutboundDocumentQueryReq,
   OutboundDocumentRetrievalReq,
 } from "@metriport/ihe-gateway-sdk";
-import { IHEGatewayV2 } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2";
+import { IHEGatewayV2 } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/ihe-gateway-v2";
 import {
   createSignSendProcessXCPDRequest,
   createSignSendProcessDqRequests,
   createSignSendProcessDrRequests,
-} from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2-logic";
+} from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/ihe-gateway-v2-logic";
 import { SamlCertsAndKeys } from "@metriport/core/external/carequality/ihe-gateway-v2/saml/security/types";
 import { Config } from "../../shared/config";
 

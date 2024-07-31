@@ -610,8 +610,6 @@ function convertCWGenderToFHIR(genders: Gender[] | null | undefined): PatientFHI
         return "female";
       case GenderCodes.UN:
         return "other";
-      case GenderCodes.UNK:
-        return "unknown";
     }
   }
   return undefined;

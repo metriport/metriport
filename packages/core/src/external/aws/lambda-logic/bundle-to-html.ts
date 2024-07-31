@@ -32,6 +32,8 @@ const ICD_10_CODE = "icd-10";
 const LOINC_CODE = "loinc";
 const MEDICARE_CODE = "medicare";
 const CPT_CODE = "cpt";
+const UNK_CODE = "UNK";
+const UNKNOWN_DISPLAY = "unknown";
 
 export const bundleToHtml = (fhirBundle: Bundle): string => {
   const {
@@ -604,7 +606,6 @@ function createDiagnosticReportsSection(
     </div>
   `;
 }
-
 function buildEncounterSections(
   encounterSections: EncounterSection,
   diagnosticReports: DiagnosticReport[]
@@ -640,8 +641,9 @@ function buildEncounterSections(
               const reportInsideDate = dayjs(reportInsideTime).format(ISO_DATE) ?? "";
               const isDuplicateDate = reportInsideDate === reportDate;
 
-              const hasSamePresentedForm =
-                reportInside.presentedForm?.[0]?.data === report.presentedForm?.[0]?.data;
+              const hasSamePresentedForm = report.presentedForm?.some(pf =>
+                reportInside.presentedForm?.some(ripf => pf.data === ripf.data)
+              );
 
               return isDuplicateDate && hasSamePresentedForm;
             }
@@ -698,11 +700,13 @@ function buildReports(
       .filter(([key, value]) => {
         const documentation = value.documentation;
         const validDocumentation = documentation?.filter(doc => {
-          const note = doc.presentedForm?.[0]?.data ?? "";
-          const decodeNote = Buffer.from(note, "base64").toString("utf-8");
-          const containsB64 = decodeNote.includes("^application^pdf^BASE64^");
+          const containsB64InAnyPresentedForm = doc.presentedForm?.some(form => {
+            const note = form.data ?? "";
+            const decodeNote = Buffer.from(note, "base64").toString("utf-8");
+            return decodeNote.includes("^application^pdf^BASE64^");
+          });
 
-          return !containsB64;
+          return !containsB64InAnyPresentedForm;
         });
 
         return validDocumentation && validDocumentation.length > 0;
@@ -756,9 +760,12 @@ function buildReports(
 function filterEncounterSections(encounterSections: EncounterSection): EncounterSection {
   return Object.entries(encounterSections).reduce((acc, [key, value]) => {
     const documentation = value.documentation?.filter(doc => {
-      const note = doc.presentedForm?.[0]?.data ?? "";
+      const hasValidNote = doc.presentedForm?.some(form => {
+        const note = form.data ?? "";
+        return note && note.length > 0;
+      });
 
-      return note || note.length > 0;
+      return hasValidNote;
     });
 
     acc[key] = {
@@ -770,28 +777,61 @@ function filterEncounterSections(encounterSections: EncounterSection): Encounter
   }, {} as EncounterSection);
 }
 
-const REMOVE_FROM_NOTE = ["xLabel", "5/5", "Â°F", "â¢", "documented in this encounter"];
+const REMOVE_FROM_NOTE = [
+  "xLabel",
+  "5/5",
+  "Â°F",
+  "â¢",
+  "documented in this encounter",
+  "xnoIndent",
+  "Formatting of this note might be different from the original.",
+];
+
+function cleanUpNote(note: string): string {
+  return note
+    .trim()
+    .replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "")
+    .replace(/<ID>.*?<\/ID>/g, "")
+    .replace(/<styleCode>.*?<\/styleCode>/g, "");
+}
+
+function removeEncodedStrings(valueString: string): string {
+  return valueString.replace(/&#x3D;/g, "").trim();
+}
 
 function createWhatWasDocumentedFromDiagnosticReports(
   documentation: DiagnosticReport[],
   mappedPractitioners: Record<string, Practitioner>,
   mappedOrganizations: Record<string, Organization>
-) {
+): string {
   const documentations = documentation
-    .map(documentation => {
-      const note = documentation.presentedForm?.[0]?.data ?? "";
-      const decodeNote = Buffer.from(note, "base64").toString("utf-8");
-      const cleanNote = decodeNote.replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "");
+    .map(doc => {
+      const notes =
+        doc.presentedForm?.map(form => {
+          const note = form.data ?? "";
+          const noJunkNote = removeEncodedStrings(note);
+          const decodeNote = Buffer.from(noJunkNote, "base64").toString("utf-8");
+          return cleanUpNote(decodeNote);
+        }) ?? [];
 
-      const practitionerField = createPractionerField(documentation, mappedPractitioners);
-      const organizationField = createOrganiztionField(documentation, mappedOrganizations);
+      const practitionerField = createPractionerField(doc, mappedPractitioners) || "";
+      const organizationField = createOrganiztionField(doc, mappedOrganizations) || "";
+
+      const fields = [practitionerField, organizationField].filter(
+        field => field.trim().length > 0
+      );
 
       return `
-        <div>
-        ${practitionerField}
-        ${organizationField}
-          <p style="margin-bottom: 10px; line-height: 25px; white-space: pre-line;">${cleanNote}</p>
-        </div>
+      <div>
+        ${fields.join("<br />")}
+        ${
+          notes.length > 0
+            ? `<p style="margin-bottom: 10px; line-height: 25px; white-space: pre-line;">${notes.join(
+                "<br />"
+              )}</p>`
+            : ""
+        }
+      </div>
       `;
     })
     .join("");
@@ -810,7 +850,8 @@ function createPractionerField(
   const practitioner = mappedPractitioners[practitionerRefId];
   const practitionerName =
     (practitioner?.name?.[0]?.given?.[0] ?? "") + " " + (practitioner?.name?.[0]?.family ?? "");
-  const practitionerTitle = practitioner?.qualification?.[0]?.code?.coding?.[0]?.display ?? "";
+  const practitionerTitle =
+    getValidCode(practitioner?.qualification?.[0]?.code?.coding)[0]?.display ?? "";
 
   const hasName = practitionerName.trim().length > 0;
   const hasTitle = practitionerTitle.trim().length > 0;
@@ -1002,9 +1043,12 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
       );
 
       const name =
-        idc10Code?.display ?? condition.code?.coding?.[0]?.display ?? condition.code?.text ?? "";
+        idc10Code?.display ??
+        getValidCode(condition.code?.coding)[0]?.display ??
+        condition.code?.text ??
+        "";
       const onsetDateTime = condition.onsetDateTime ?? "";
-      const clinicalStatus = condition.clinicalStatus?.coding?.[0]?.display ?? "";
+      const clinicalStatus = getValidCode(condition.clinicalStatus?.coding)[0]?.display ?? "";
       let onsetStartTime = condition.onsetPeriod?.start ?? "";
       let onsetEndTime = condition.onsetPeriod?.end ?? "";
 
@@ -1325,8 +1369,8 @@ function createObservationSocialHistorySection(observations: Observation[]) {
   const removeDuplicate = uniqWith(observationsSortedByDate, (a, b) => {
     const aDate = dayjs(a.effectiveDateTime).format(ISO_DATE);
     const bDate = dayjs(b.effectiveDateTime).format(ISO_DATE);
-    const aText = a.code?.text ?? a.code?.coding?.[0]?.display;
-    const bText = b.code?.text ?? b.code?.coding?.[0]?.display;
+    const aText = a.code?.text ?? getValidCode(a.code?.coding)[0]?.display;
+    const bText = b.code?.text ?? getValidCode(b.code?.coding)[0]?.display;
     const aValue = renderSocialHistoryValue(a) ?? "";
     const bValue = renderSocialHistoryValue(b) ?? "";
     if (aText === undefined || bText === undefined) {
@@ -1337,13 +1381,13 @@ function createObservationSocialHistorySection(observations: Observation[]) {
     .filter(observation => {
       const value = renderSocialHistoryValue(observation) ?? "";
       const blacklistValues = ["sex assigned at birth"];
-      const display = observation.code?.coding?.[0]?.display ?? "";
+      const display = getValidCode(observation.code?.coding)[0]?.display ?? "";
       const valueIsBlacklisted = blacklistValues.includes(display);
 
       return value && value.length > 0 && !valueIsBlacklisted;
     })
     .reduce((acc, observation) => {
-      const display = observation.code?.coding?.[0]?.display ?? "";
+      const display = getValidCode(observation.code?.coding)[0]?.display ?? "";
       const value = renderSocialHistoryValue(observation) ?? "";
       const observationDate = formatDateForDisplay(observation.effectiveDateTime);
       const lastItemInArray = acc[acc.length - 1];
@@ -1437,7 +1481,7 @@ function renderSocialHistoryValue(observation: Observation) {
   } else if (observation.valueCodeableConcept) {
     return (
       observation.valueCodeableConcept?.text ??
-      observation.valueCodeableConcept.coding?.[0]?.display
+      getValidCode(observation.valueCodeableConcept.coding)[0]?.display
     );
   } else {
     return "";
@@ -1496,7 +1540,9 @@ function createVitalsByDate(observations: Observation[]): string {
 
           return `
             <tr>
-              <td>${observation.code?.coding?.[0]?.display ?? observation.code?.text ?? ""}</td>
+              <td>${
+                getValidCode(observation.code?.coding)[0]?.display ?? observation.code?.text ?? ""
+              }</td>
               <td>${renderVitalsValue(observation)}</td>
               <td>${code ?? ""}</td>
             </tr>
@@ -1580,10 +1626,18 @@ function createObservationsByDate(observations: Observation[]): string {
         ${tables.observations
           .filter(observation => {
             const observationDisplay = observation.code?.coding?.find(coding => {
-              return coding.display;
+              if (coding.code !== UNK_CODE && coding.display !== UNKNOWN_DISPLAY) {
+                return coding.display;
+              }
+              return;
             });
 
-            const hasDisplayValue = observationDisplay?.display ?? observation.code?.text;
+            const observationCodeText =
+              observation.code?.text && observation.code?.text !== UNKNOWN_DISPLAY
+                ? observation.code?.text
+                : undefined;
+
+            const hasDisplayValue = observationDisplay?.display ?? observationCodeText;
 
             return !!hasDisplayValue;
           })
@@ -1602,7 +1656,10 @@ function createObservationsByDate(observations: Observation[]): string {
                 }`;
 
             const observationDisplay = observation.code?.coding?.find(coding => {
-              return coding.display;
+              if (coding.code !== UNK_CODE && coding.display !== UNKNOWN_DISPLAY) {
+                return coding.display;
+              }
+              return;
             });
 
             return `
@@ -1687,7 +1744,9 @@ function createOtherObservationsByDate(observations: Observation[]): string {
 
             return `
               <tr>
-                <td>${observation.code?.coding?.[0]?.display ?? observation.code?.text ?? ""}</td>
+                <td>${
+                  getValidCode(observation.code?.coding)[0]?.display ?? observation.code?.text ?? ""
+                }</td>
                 <td>${observation.valueQuantity?.value ?? observation.valueString ?? ""}</td>
                 <td>${code ?? ""}</td>
               </tr>
@@ -1740,11 +1799,12 @@ function filterObservationsByDate(observations: Observation[]): FilteredObservat
 }
 
 function renderClassDisplay(encounter: Encounter) {
-  const isDisplayUndefined = encounter.class?.display === undefined;
+  const isDisplayIsNotValid =
+    encounter.class?.display === undefined || encounter.class?.display === "unknown";
 
-  if (encounter.class?.display && !isDisplayUndefined) {
+  if (encounter.class?.display && !isDisplayIsNotValid) {
     return encounter.class?.display;
-  } else if (encounter.class?.code && !isDisplayUndefined) {
+  } else if (encounter.class?.code && !isDisplayIsNotValid) {
     const extension = encounter.class?.extension?.find(coding => {
       return coding.valueCoding?.code === encounter.class?.code;
     });
@@ -1823,7 +1883,8 @@ function createFamilyHistorySection(familyMemberHistories: FamilyMemberHistory[]
     return (
       renderFamilyHistoryConditions(a)?.join(", ") ===
         renderFamilyHistoryConditions(b)?.join(", ") &&
-      a.relationship?.coding?.[0]?.display === b.relationship?.coding?.[0]?.display
+      getValidCode(a.relationship?.coding)[0]?.display ===
+        getValidCode(b.relationship?.coding)[0]?.display
     );
   });
 
@@ -1855,7 +1916,7 @@ function createFamilyHistorySection(familyMemberHistories: FamilyMemberHistory[]
 
           return `
             <tr>
-              <td>${familyMemberHistory.relationship?.coding?.[0]?.display ?? ""}</td>
+              <td>${getValidCode(familyMemberHistory.relationship?.coding)[0]?.display ?? ""}</td>
               <td>${renderAdministrativeGender(familyMemberHistory) ?? ""}</td>
               <td>${renderFamilyHistoryConditions(familyMemberHistory)?.join(", ") ?? ""}</td>
               <td>${deceasedFamilyMember ? "yes" : "no"}</td>
@@ -1878,7 +1939,7 @@ function createFamilyHistorySection(familyMemberHistories: FamilyMemberHistory[]
 
 function renderFamilyHistoryConditions(familyMemberHistory: FamilyMemberHistory) {
   return familyMemberHistory.condition?.map(condition => {
-    return condition.code?.text ?? condition.code?.coding?.[0]?.display;
+    return condition.code?.text ?? getValidCode(condition.code?.coding)[0]?.display;
   });
 }
 
@@ -1906,7 +1967,7 @@ function createRelatedPersonSection(relatedPersons: RelatedPerson[]) {
   function getRelationship(relatedPerson: RelatedPerson) {
     return (
       relatedPerson.relationship?.[0]?.text ??
-      relatedPerson.relationship?.[0]?.coding?.[0]?.display ??
+      getValidCode(relatedPerson.relationship?.[0]?.coding)[0]?.display ??
       ""
     );
   }
@@ -2007,7 +2068,7 @@ function createTaskSection(tasks: Task[]) {
           return `
             <tr>
               <td>${task.description ?? ""}</td>
-              <td>${task.reasonCode?.coding?.[0]?.display ?? ""}</td>
+              <td>${getValidCode(task.reasonCode?.coding)[0]?.display ?? ""}</td>
               <td>${code ?? ""}</td>
               <td>${task.note?.[0]?.text ?? ""}</td>
               <td>${formatDateForDisplay(task.authoredOn)}</td>
@@ -2066,7 +2127,7 @@ function createEncountersSection(encounters: Encounter[], locations: Location[])
             <tr>
               <td>${
                 encounter.reasonCode?.[0]?.text ??
-                encounter.reasonCode?.[0]?.coding?.[0]?.display ??
+                getValidCode(encounter.reasonCode?.[0]?.coding)[0]?.display ??
                 ""
               }</td>
               <td>${(locationId && mappedLocations[locationId]?.name) ?? ""}</td>
@@ -2232,4 +2293,17 @@ function getAnnualWellnessVisits(conditions: Condition[]) {
   });
 
   return annualWellnessVisit;
+}
+
+function getValidCode(coding: Coding[] | undefined): Coding[] {
+  if (!coding) return [];
+
+  return coding.filter(coding => {
+    return (
+      coding.code &&
+      coding.code !== UNK_CODE &&
+      coding.display &&
+      coding.display.toLowerCase() !== UNKNOWN_DISPLAY
+    );
+  });
 }

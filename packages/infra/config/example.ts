@@ -1,3 +1,5 @@
+import { Duration } from "aws-cdk-lib";
+import { EbsDeviceVolumeType } from "aws-cdk-lib/aws-ec2";
 import { EnvType } from "../lib/env-type";
 import { EnvConfigNonSandbox } from "./env-config";
 
@@ -23,9 +25,22 @@ export const config: EnvConfigNonSandbox = {
       volumeReadIops: 2_000,
       volumeWriteIops: 2_000,
     },
+    poolSettings: {
+      max: 200,
+      min: 10,
+      acquire: 5_000,
+      idle: 5_000,
+    },
   },
   loadBalancerDnsName: "<your-load-balancer-dns-name>",
   logArn: "<your-log-arn>",
+  propelAuth: {
+    authUrl: "url-to-propel-auth",
+    publicKey: "-----BEGIN PUBLIC KEY-----\nEXAMPLE\n-----END PUBLIC KEY-----",
+    secrets: {
+      PROPELAUTH_API_KEY: "key-name",
+    },
+  },
   fhirToMedicalLambda: {
     nodeRuntimeArn: "arn:aws:lambda:<region>::runtime:<id>",
   },
@@ -99,10 +114,35 @@ export const config: EnvConfigNonSandbox = {
       CW_TECHNICAL_CONTACT_PHONE: "(123)-123-1234",
     },
   },
+  openSearch: {
+    openSearch: {
+      capacity: {
+        dataNodes: 2,
+        dataNodeInstanceType: "t3.medium.search",
+        masterNodes: 0,
+        masterNodeInstanceType: undefined,
+        warmNodes: 0,
+      },
+      ebs: {
+        volumeSize: 10,
+        volumeType: EbsDeviceVolumeType.GENERAL_PURPOSE_SSD_GP3,
+      },
+      encryptionAtRest: true,
+      indexName: "test-index-name",
+    },
+    lambda: {
+      memory: 512,
+      batchSize: 1,
+      maxConcurrency: 5,
+      timeout: Duration.minutes(2),
+    },
+  },
   generalBucketName: "test-bucket",
   medicalDocumentsBucketName: "test-bucket",
   medicalDocumentsUploadBucketName: "test-upload-bucket",
   iheResponsesBucketName: "test-ihe-responses-bucket",
+  iheParsedResponsesBucketName: "test-ihe-parsed-responses-bucket",
+  iheRequestsBucketName: "test-ihe-requests-bucket",
   engineeringCxId: "12345678-1234-1234-1234-123456789012",
 };
 export default config;

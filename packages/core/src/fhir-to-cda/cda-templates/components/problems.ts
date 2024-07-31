@@ -8,22 +8,25 @@ import {
 } from "../../cda-types/shared-types";
 import {
   buildCodeCe,
+  buildCodeCv,
   buildInstanceIdentifier,
+  buildTemplateIds,
   buildValueCd,
   formatDateToCdaTimestamp,
   getTextFromCode,
-  isLoinc,
   mapCodingSystem,
-  withoutNullFlavorObject,
+  notOnFilePlaceholder,
+  withNullFlavor,
 } from "../commons";
 import {
   NOT_SPECIFIED,
-  extensionValue2014,
   extensionValue2015,
   loincCodeSystem,
   loincSystemName,
   oids,
   placeholderOrgOid,
+  snomedCodeSystem,
+  snomedSystemName,
 } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { initiateSectionTable } from "../table";
@@ -40,11 +43,29 @@ const tableHeaders = [
 ];
 
 export function buildProblems(fhirBundle: Bundle): ProblemsSection {
+  const problemsSection: ProblemsSection = {
+    templateId: buildInstanceIdentifier({
+      root: oids.problemsSection,
+      extension: extensionValue2015,
+    }),
+    code: buildCodeCe({
+      code: "11450-4",
+      codeSystem: loincCodeSystem,
+      codeSystemName: loincSystemName,
+      displayName: "Problem list - Reported",
+    }),
+    title: "PROBLEMS",
+    text: notOnFilePlaceholder,
+  };
+
   const conditions: Condition[] =
     fhirBundle.entry?.flatMap(entry => (isCondition(entry.resource) ? [entry.resource] : [])) || [];
 
   if (conditions.length === 0) {
-    return undefined;
+    return {
+      _nullFlavor: "NI",
+      ...problemsSection,
+    };
   }
 
   const augmentedConditions = conditions.map(condition => {
@@ -59,21 +80,9 @@ export function buildProblems(fhirBundle: Bundle): ProblemsSection {
 
   const table = initiateSectionTable(problemsSectionName, tableHeaders, trs);
 
-  const problemsSection = {
-    templateId: buildInstanceIdentifier({
-      root: oids.problemsSection,
-      extension: extensionValue2015,
-    }),
-    code: buildCodeCe({
-      code: "11450-4",
-      codeSystem: loincCodeSystem,
-      codeSystemName: loincSystemName,
-      displayName: "Problem list - Reported",
-    }),
-    title: "PROBLEMS",
-    text: table,
-    entry: entries,
-  };
+  problemsSection.text = table;
+  problemsSection.entry = entries;
+
   return problemsSection;
 }
 
@@ -119,9 +128,9 @@ function createEntryFromCondition(
     act: {
       _classCode: "ACT",
       _moodCode: "EVN",
-      templateId: buildInstanceIdentifier({
+      templateId: buildTemplateIds({
         root: condition.typeOid,
-        extension: extensionValue2014,
+        extension: extensionValue2015,
       }),
       id: buildInstanceIdentifier({
         root: placeholderOrgOid,
@@ -136,10 +145,7 @@ function createEntryFromCondition(
         _code: condition.resource.clinicalStatus?.coding?.[0]?.code ?? "active", // TODO: Check if this is the correct approach
       },
       effectiveTime: {
-        low: withoutNullFlavorObject(
-          formatDateToCdaTimestamp(condition.resource.recordedDate),
-          "_value"
-        ),
+        low: withNullFlavor(formatDateToCdaTimestamp(condition.resource.onsetDateTime), "_value"),
       },
       entryRelationship: createEntryRelationship(condition.resource, referenceId),
     },
@@ -163,14 +169,12 @@ function createEntryRelationship(
   condition: Condition,
   referenceId: string
 ): ObservationEntryRelationship {
-  const codeSystem = condition.code?.coding?.[0]?.system;
-  const systemIsLoinc = isLoinc(codeSystem);
   return {
     _typeCode: "SUBJ",
     observation: {
       _classCode: "OBS",
       _moodCode: "EVN",
-      templateId: buildInstanceIdentifier({
+      templateId: buildTemplateIds({
         root: oids.problemObs,
         extension: extensionValue2015,
       }),
@@ -178,12 +182,22 @@ function createEntryRelationship(
         root: placeholderOrgOid,
         extension: condition.id,
       }),
-      code: buildCodeCe({
-        code: condition.code?.coding?.[0]?.code,
-        codeSystem: systemIsLoinc ? loincCodeSystem : codeSystem,
-        codeSystemName: systemIsLoinc ? loincSystemName : undefined,
-        displayName: condition.code?.coding?.[0]?.display,
-      }),
+      code: buildCodeCv(
+        buildCodeCe({
+          code: "64572001",
+          codeSystem: snomedCodeSystem,
+          codeSystemName: snomedSystemName,
+        }),
+        buildCodeCe({
+          code: "75323-6",
+        })
+      ),
+      statusCode: {
+        _code: "completed",
+      },
+      effectiveTime: {
+        low: withNullFlavor(formatDateToCdaTimestamp(condition.recordedDate), "_value"),
+      },
       value: buildValueCd(condition.code, referenceId),
     },
   };

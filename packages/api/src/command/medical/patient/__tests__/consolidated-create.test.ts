@@ -1,73 +1,53 @@
+import { faker } from "@faker-js/faker";
 import { Bundle, BundleEntry, DiagnosticReport } from "@medplum/fhirtypes";
+import { createUploadFilePath } from "@metriport/core/domain/document/upload";
 import { HapiFhirClient } from "@metriport/core/external/fhir/api/api-hapi";
+import * as s3Upload from "@metriport/core/fhir-to-cda/upload";
 import { v4 as uuidv4 } from "uuid";
 import { diagnosticReport, patient, transactionRespBundle } from "../../__tests__/fhir-payloads";
-import { createOrUpdateConsolidatedPatientData } from "../consolidated-create";
+import {
+  createOrUpdateConsolidatedPatientData,
+  sentToFhirServerPrefix,
+} from "../consolidated-create";
 
 let fhir_readResource: jest.SpyInstance;
 let fhir_executeBatch: jest.SpyInstance;
-beforeEach(() => {
+let uploadFhirBundleToS3_mock: jest.SpyInstance;
+beforeAll(() => {
   jest.restoreAllMocks();
   fhir_readResource = jest.spyOn(HapiFhirClient.prototype, "readResource");
   fhir_executeBatch = jest.spyOn(HapiFhirClient.prototype, "executeBatch");
+  uploadFhirBundleToS3_mock = jest.spyOn(s3Upload, "uploadFhirBundleToS3").mockResolvedValue();
+});
+afterAll(() => {
+  jest.restoreAllMocks();
 });
 
 describe("createConsolidateData", () => {
-  const cxId = uuidv4();
-  const patientId = uuidv4();
-
-  it("appends POST transaction and patient when resource does not exist and converting fhir bundle", async () => {
-    fhir_readResource.mockReturnValueOnce(patient);
-
-    fhir_executeBatch.mockReturnValueOnce(transactionRespBundle);
-
-    const collectionBundle: Bundle = {
-      resourceType: "Bundle",
-      type: "collection",
-      entry: [diagnosticReport],
-    };
-
-    const resp = await createOrUpdateConsolidatedPatientData({
-      cxId,
-      patientId,
-      fhirBundle: collectionBundle,
-    });
-
-    const postDiagnosticReport: BundleEntry<DiagnosticReport> = {
-      resource: {
-        ...diagnosticReport.resource,
-        resourceType: "DiagnosticReport",
-        contained: [patient],
-      },
-      request: {
-        method: "POST",
-        url: diagnosticReport?.resource?.resourceType,
-      },
-    };
-
-    const convertedFhirBundle: Bundle = {
-      resourceType: "Bundle",
-      type: "transaction",
-      entry: [postDiagnosticReport],
-    };
-
-    expect(resp).toBeTruthy();
-    expect(resp).toEqual(transactionRespBundle);
-    expect(fhir_executeBatch).toHaveBeenCalledTimes(1);
-    expect(fhir_executeBatch).toHaveBeenCalledWith(convertedFhirBundle);
+  let cxId: string;
+  let patientId: string;
+  let requestId: string;
+  beforeEach(() => {
+    cxId = uuidv4();
+    patientId = uuidv4();
+    requestId = uuidv4();
   });
 
   it("appends PUT transaction and patient when resource does exist and converting fhir bundle", async () => {
     fhir_readResource.mockReturnValueOnce(patient);
-
     fhir_executeBatch.mockReturnValueOnce(transactionRespBundle);
-    const DIAGNOSTIC_ID = "1234";
+    const diagnosticId = faker.number.int();
+    const toFhirServerBundleKey = createUploadFilePath(
+      cxId,
+      patientId,
+      `${requestId}_${sentToFhirServerPrefix}.json`
+    );
 
     const diagnosticReportWithId: BundleEntry<DiagnosticReport> = {
       resource: {
         ...diagnosticReport.resource,
         resourceType: "DiagnosticReport",
-        id: DIAGNOSTIC_ID,
+        id: diagnosticId.toString(),
       },
     };
 
@@ -80,6 +60,7 @@ describe("createConsolidateData", () => {
     const resp = await createOrUpdateConsolidatedPatientData({
       cxId,
       patientId,
+      requestId,
       fhirBundle: collectionBundle,
     });
 
@@ -91,10 +72,9 @@ describe("createConsolidateData", () => {
       },
       request: {
         method: "PUT",
-        url: diagnosticReportWithId?.resource?.resourceType + `/${DIAGNOSTIC_ID}`,
+        url: diagnosticReportWithId?.resource?.resourceType + `/${diagnosticId}`,
       },
     };
-
     const convertedFhirBundle: Bundle = {
       resourceType: "Bundle",
       type: "transaction",
@@ -105,5 +85,12 @@ describe("createConsolidateData", () => {
     expect(resp).toEqual(transactionRespBundle);
     expect(fhir_executeBatch).toHaveBeenCalledTimes(1);
     expect(fhir_executeBatch).toHaveBeenCalledWith(convertedFhirBundle);
+    expect(uploadFhirBundleToS3_mock).toHaveBeenCalledTimes(1);
+    expect(uploadFhirBundleToS3_mock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fhirBundle: convertedFhirBundle,
+        destinationKey: toFhirServerBundleKey,
+      })
+    );
   });
 });

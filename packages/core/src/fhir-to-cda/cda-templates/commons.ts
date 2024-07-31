@@ -30,16 +30,20 @@ import {
   Entry,
   EntryObject,
   Participant,
+  TextParagraph,
 } from "../cda-types/shared-types";
 import {
   NOT_SPECIFIED,
   _xmlnsXsiAttribute,
   _xsiTypeAttribute,
   amaAssnSystemCode,
+  extensionValue2014,
   fdasisSystemCode,
   hl7ActCode,
   icd10SystemCode,
+  loincCodeSystem,
   loincSystemCode,
+  loincSystemName,
   nlmNihSystemCode,
   oids,
   placeholderOrgOid,
@@ -74,7 +78,7 @@ export function withoutNullFlavorString(value: string | undefined): Entry {
   return value;
 }
 
-export function withNullFlavor(value: string | undefined, key: string): Entry {
+export function withNullFlavor(value: string | undefined, key: string): EntryObject {
   if (value == undefined) return { _nullFlavor: "UNK" };
   return { [key]: value };
 }
@@ -190,6 +194,30 @@ export function buildCodeCvFromCodeCe(codeCe: CdaCodeCe, concepts: CodeableConce
   return codeCv;
 }
 
+export function buildCodeCv(code: CdaCodeCe, codeLoinc?: Partial<CdaCodeCe>) {
+  const providedCode = buildCodeCe({
+    code: code._code,
+    codeSystem: code._codeSystem,
+    codeSystemName: code._codeSystemName,
+  });
+
+  const isLoincCode = isLoinc(providedCode._codeSystemName);
+  if (isLoincCode) {
+    return providedCode;
+  }
+
+  return {
+    ...providedCode,
+    translation: [
+      buildCodeCe({
+        code: codeLoinc?._code,
+        codeSystem: loincCodeSystem,
+        codeSystemName: loincSystemName,
+      }),
+    ],
+  };
+}
+
 export function buildInstanceIdentifier({
   root,
   extension,
@@ -205,6 +233,20 @@ export function buildInstanceIdentifier({
   if (assigningAuthorityName) identifier._assigningAuthorityName = assigningAuthorityName;
 
   return identifier;
+}
+
+export function buildTemplateIds({
+  root,
+  extension,
+}: {
+  root: string;
+  extension?: string;
+}): CdaInstanceIdentifier[] {
+  const templateIds = [buildInstanceIdentifier({ root })];
+  if (extension) {
+    templateIds.push(buildInstanceIdentifier({ root, extension }));
+  }
+  return templateIds;
 }
 
 export function buildInstanceIdentifiersFromIdentifier(
@@ -547,9 +589,10 @@ export function buildParticipant(locations: Location[] | undefined): Participant
       _typeCode: "LOC",
       participantRole: {
         _classCode: "SDLOC",
-        templateId: {
-          _root: oids.serviceDeliveryLocation,
-        },
+        templateId: buildTemplateIds({
+          root: oids.serviceDeliveryLocation, // TODO: Check that this is correct
+          extension: extensionValue2014,
+        }),
         id: buildInstanceIdentifier({
           root: placeholderOrgOid,
           extension: location.id,
@@ -583,13 +626,38 @@ export function getNotes(note: Annotation[] | undefined): string | undefined {
   return combinedNotes?.length ? combinedNotes : undefined;
 }
 
+export function buildCdaGender(gender: string | undefined): EntryObject {
+  const cdaGender = mapFhirGenderToCda(gender);
+  if (!cdaGender) return withNullFlavor(undefined, "_code");
+
+  return buildCodeCe({
+    code: cdaGender,
+    codeSystem: "2.16.840.1.113883.5.1",
+    codeSystemName: "AdministrativeGender",
+  });
+}
+
+/**
+ * For FHIR genders:
+ * @see https://hl7.org/fhir/R4/valueset-administrative-gender.html
+ * For CDA genders:
+ * @see https://terminology.hl7.org/5.2.0/ValueSet-v3-AdministrativeGender.html
+ */
 export function mapFhirGenderToCda(gender: string | undefined): CdaGender {
   switch (gender?.toLowerCase().trim()) {
     case "male":
       return "M";
     case "female":
       return "F";
+    case "other":
+      return "UN";
     default:
-      return "UK";
+      return undefined;
   }
 }
+
+export const notOnFilePlaceholder: TextParagraph = {
+  paragraph: {
+    "#text": "Not on file",
+  },
+};

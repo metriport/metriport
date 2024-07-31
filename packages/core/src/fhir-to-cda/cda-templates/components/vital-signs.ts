@@ -1,14 +1,17 @@
 import { Bundle, Observation, Quantity } from "@medplum/fhirtypes";
 import { VitalSignsSection } from "../../cda-types/sections";
-import { ObservationTableRow, ObservationOrganizer } from "../../cda-types/shared-types";
+import { ObservationOrganizer, ObservationTableRow } from "../../cda-types/shared-types";
 import { isVitalSignsObservation } from "../../fhir";
 import {
   buildCodeCe,
   buildInstanceIdentifier,
+  buildTemplateIds,
   formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
+  notOnFilePlaceholder,
+  withNullFlavor,
 } from "../commons";
-import { loincCodeSystem, loincSystemName, oids } from "../constants";
+import { extensionValue2014, loincCodeSystem, loincSystemName, oids } from "../constants";
 import { initiateSectionTable } from "../table";
 import { AugmentedObservation, VitalObservation } from "./augmented-resources";
 import { createEntriesFromObservation } from "./observations";
@@ -41,20 +44,7 @@ const tableHeaders = [
 ];
 
 export function buildVitalSigns(fhirBundle: Bundle): VitalSignsSection {
-  const vitalSignsObservations: Observation[] =
-    fhirBundle.entry?.flatMap(entry =>
-      isVitalSignsObservation(entry.resource) ? [entry.resource] : []
-    ) || [];
-
-  if (vitalSignsObservations.length === 0) {
-    return undefined;
-  }
-
-  const augmentedObservations = createAugmentedVitalObservations(vitalSignsObservations);
-  const { trs, entries } = createTableRowsAndEntries(augmentedObservations);
-  const table = initiateSectionTable(sectionName, tableHeaders, trs);
-
-  const vitalSignsSection = {
+  const vitalSignsSection: VitalSignsSection = {
     templateId: buildInstanceIdentifier({
       root: oids.vitalSignsSection,
     }),
@@ -65,9 +55,28 @@ export function buildVitalSigns(fhirBundle: Bundle): VitalSignsSection {
       displayName: "Vital Signs",
     }),
     title: "VITAL SIGNS",
-    text: table,
-    entry: entries,
+    text: notOnFilePlaceholder,
   };
+
+  const vitalSignsObservations: Observation[] =
+    fhirBundle.entry?.flatMap(entry =>
+      isVitalSignsObservation(entry.resource) ? [entry.resource] : []
+    ) || [];
+
+  if (vitalSignsObservations.length === 0) {
+    return {
+      _nullFlavor: "NI",
+      ...vitalSignsSection,
+    };
+  }
+
+  const augmentedObservations = createAugmentedVitalObservations(vitalSignsObservations);
+  const { trs, entries } = createTableRowsAndEntries(augmentedObservations);
+  const table = initiateSectionTable(sectionName, tableHeaders, trs);
+
+  vitalSignsSection.text = table;
+  vitalSignsSection.entry = entries;
+
   return vitalSignsSection;
 }
 
@@ -167,7 +176,11 @@ function createOrganizedEntryFromSet(
     organizer: {
       _classCode: "CLUSTER",
       _moodCode: "EVN",
-      templateId: buildInstanceIdentifier({ root: oids.vitalSignsOrganizer }),
+      templateId: buildTemplateIds({
+        root: oids.vitalSignsOrganizer,
+        extension: extensionValue2014,
+      }),
+      id: withNullFlavor(undefined, "_value"),
       code: buildCodeCe({
         code: "46680005",
         codeSystem: "2.16.840.1.113883.6.96",
@@ -178,7 +191,7 @@ function createOrganizedEntryFromSet(
         _code: "completed",
       },
       effectiveTime: {
-        _value: formatDateToCdaTimestamp(date),
+        low: withNullFlavor(formatDateToCdaTimestamp(date), "_value"),
       },
       component: set.map(obs => createEntriesFromObservation(obs, referenceId)),
     },

@@ -33,6 +33,8 @@ const elementTime00010101Replacement = "";
 const valueTime00010101Regex = new RegExp('value="00010101000000*"s*/>', "g");
 const valueTime00010101Replacement = 'nullFlavor="NI" />';
 
+const ampersandRegex = new RegExp('&(?!(?:#\\d+|#x[\\da-fA-F]+|amp|lt|gt|quot|apos);)', 'g');
+
 module.exports = class cda extends dataHandler {
   constructor() {
     super("cda");
@@ -126,6 +128,8 @@ module.exports = class cda extends dataHandler {
     }
     res = res.replace(elementTime00010101Regex, elementTime00010101Replacement);
     res = res.replace(valueTime00010101Regex, valueTime00010101Replacement);
+    res = res.replace(ampersandRegex, "&amp;");
+
     return res;
   }
 

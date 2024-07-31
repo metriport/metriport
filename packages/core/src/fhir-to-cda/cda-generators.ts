@@ -15,24 +15,24 @@ import { placeholderOrgOid } from "./cda-templates/constants";
 
 export function generateCdaFromFhirBundle(fhirBundle: Bundle, oid: string): string {
   const patientResource = findPatientResource(fhirBundle);
-  const organizationResources = findOrganizationResource(fhirBundle);
+  const organizationResource = findOrganizationResource(fhirBundle);
 
-  if (!patientResource || !organizationResources) {
+  if (!patientResource || !organizationResource) {
     const missing = [];
     if (!patientResource) {
       missing.push("Patient");
     }
-    if (!organizationResources) {
+    if (!organizationResource) {
       missing.push("Organization");
     }
     throw new BadRequestError(`${missing.join(", ")} resource(s) not found`);
   }
   const recordTarget = buildRecordTargetFromFhirPatient(patientResource);
-  const author = buildAuthor(organizationResources);
+  const author = buildAuthor(organizationResource);
   const custodian = buildCustodian();
-  const encompassingEncounter = buildEncompassingEncounter(fhirBundle);
-  const structuredBody = buildStructuredBody(fhirBundle);
   const composition = findCompositionResource(fhirBundle);
+  const encompassingEncounter = buildEncompassingEncounter(fhirBundle, composition);
+  const structuredBody = buildStructuredBody(fhirBundle);
 
   if (!structuredBody) {
     throw new BadRequestError(

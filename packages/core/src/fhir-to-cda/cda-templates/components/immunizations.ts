@@ -1,6 +1,11 @@
 import { Bundle, Immunization, Location } from "@medplum/fhirtypes";
 import { findResourceInBundle, isImmunization, isLocation } from "../../../external/fhir/shared";
-import { ObservationTableRow } from "../../cda-types/shared-types";
+import { ImmunizationsSection } from "../../cda-types/sections";
+import {
+  Consumable,
+  ObservationTableRow,
+  SubstanceAdministationEntry,
+} from "../../cda-types/shared-types";
 import {
   buildAddressText,
   buildCodeCe,
@@ -8,15 +13,17 @@ import {
   buildInstanceIdentifier,
   buildOriginalTextReference,
   buildPerformerFromLocation,
+  buildTemplateIds,
   formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
   getDisplaysFromCodeableConcepts,
+  notOnFilePlaceholder,
   withoutNullFlavorObject,
 } from "../commons";
 import {
   NOT_SPECIFIED,
   extensionValue2015,
-  hl7actCode,
+  hl7ActCode,
   loincCodeSystem,
   loincSystemName,
   oids,
@@ -31,25 +38,7 @@ const immunizationsSectionName = "immunizations";
 const tableHeaders = ["Immunization", "Status", "Location", "Date"];
 
 export function buildImmunizations(fhirBundle: Bundle) {
-  const immunizations: Immunization[] =
-    fhirBundle.entry?.flatMap(entry => (isImmunization(entry.resource) ? [entry.resource] : [])) ||
-    [];
-
-  if (immunizations.length === 0) {
-    return undefined;
-  }
-
-  const augmentedImmunizations = createAugmentedImmunizations(immunizations, fhirBundle);
-
-  const { trs, entries } = createTableRowsAndEntries(
-    augmentedImmunizations,
-    createTableRowFromImmunization,
-    createEntryFromEncounter
-  );
-
-  const table = initiateSectionTable(immunizationsSectionName, tableHeaders, trs);
-
-  return {
+  const immunizationsSection: ImmunizationsSection = {
     templateId: buildInstanceIdentifier({
       root: oids.immunizationsSection,
     }),
@@ -60,9 +49,34 @@ export function buildImmunizations(fhirBundle: Bundle) {
       displayName: "History of immunizations",
     }),
     title: "IMMUNIZATIONS",
-    text: table,
-    entry: entries,
+    text: notOnFilePlaceholder,
   };
+
+  const immunizations: Immunization[] =
+    fhirBundle.entry?.flatMap(entry => (isImmunization(entry.resource) ? [entry.resource] : [])) ||
+    [];
+
+  if (immunizations.length === 0) {
+    return {
+      _nullFlavor: "NI",
+      ...immunizationsSection,
+    };
+  }
+
+  const augmentedImmunizations = createAugmentedImmunizations(immunizations, fhirBundle);
+
+  const { trs, entries } = createTableRowsAndEntries(
+    augmentedImmunizations,
+    createTableRowFromImmunization,
+    createEntryFromImmunization
+  );
+
+  const table = initiateSectionTable(immunizationsSectionName, tableHeaders, trs);
+
+  immunizationsSection.text = table;
+  immunizationsSection.entry = entries;
+
+  return immunizationsSection;
 }
 
 function createAugmentedImmunizations(
@@ -143,13 +157,16 @@ function mapImmunizationStatusCode(status: string | undefined): string | undefin
   }
 }
 
-function createEntryFromEncounter(immunization: AugmentedImmunization, referenceId: string) {
+function createEntryFromImmunization(
+  immunization: AugmentedImmunization,
+  referenceId: string
+): SubstanceAdministationEntry {
   return {
     substanceAdministration: {
       _classCode: "SBADM",
       _moodCode: "EVN",
-      _negationInd: "false",
-      templateId: buildInstanceIdentifier({
+      _negationInd: false,
+      templateId: buildTemplateIds({
         root: immunization.typeOid,
         extension: extensionValue2015,
       }),
@@ -159,7 +176,7 @@ function createEntryFromEncounter(immunization: AugmentedImmunization, reference
       }),
       code: buildCodeCe({
         code: "IMMUNIZ",
-        codeSystem: hl7actCode,
+        codeSystem: hl7ActCode,
         codeSystemName: "ActCode",
       }),
       text: buildOriginalTextReference(referenceId),
@@ -176,12 +193,12 @@ function createEntryFromEncounter(immunization: AugmentedImmunization, reference
   };
 }
 
-function buildConsumable(immunization: Immunization, referenceId: string) {
+function buildConsumable(immunization: Immunization, referenceId: string): Consumable {
   return {
     _typeCode: "CSM",
     manufacturedProduct: {
       _classCode: "MANU",
-      templateId: buildInstanceIdentifier({
+      templateId: buildTemplateIds({
         root: oids.immunizationMedicationInformation,
         extension: extensionValue2015,
       }),

@@ -94,6 +94,7 @@ export function makeCwDataLink(): CwLink {
 
 export function makeLinksHistory(): LinkDemographicsHistory {
   const address = makeAddressStrict();
+  const email = normalizeEmail(faker.internet.email()) ?? "test@test.com";
   return {
     [faker.string.uuid()]: [
       {
@@ -117,7 +118,7 @@ export function makeLinksHistory(): LinkDemographicsHistory {
           ),
         ],
         telephoneNumbers: [normalizeTelephone(faker.phone.number("##########"))],
-        emails: [normalizeEmail(faker.internet.email())],
+        emails: [email],
         driversLicenses: [], // TODO
         ssns: [normalizeSsn(faker.phone.number("#########"))],
       },
