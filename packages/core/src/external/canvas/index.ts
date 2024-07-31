@@ -2,30 +2,69 @@ import axios, { AxiosInstance, AxiosResponse, AxiosError } from "axios";
 import {
   Patient,
   Practitioner,
-  Appointment,
-  Encounter,
   Condition,
   MedicationStatement,
   AllergyIntolerance,
+  Location,
+  Encounter,
 } from "@medplum/fhirtypes";
+import { out } from "../../util/log";
+const { log } = out("Canvas SDK");
 
 interface SDKConfig {
   environment: string;
-  token: string;
+  clientId: string;
+  clientSecret: string;
 }
 
 class CanvasSDK {
-  private axiosInstance: AxiosInstance;
-  public practitionerId?: string;
-  public patientId?: string;
-  public encounterId?: string;
+  private axiosInstanceFhirApi: AxiosInstance;
+  private axiosInstanceCustomApi: AxiosInstance;
+  private OAuthToken: string;
 
-  constructor(config: SDKConfig) {
-    this.axiosInstance = axios.create({
-      baseURL: `https://fumage-${config.environment}.canvasmedical.com/`,
+  private constructor(private config: SDKConfig) {
+    this.OAuthToken = "";
+    this.axiosInstanceFhirApi = axios.create({});
+    this.axiosInstanceCustomApi = axios.create({});
+  }
+
+  public static async create(config: SDKConfig): Promise<CanvasSDK> {
+    const instance = new CanvasSDK(config);
+    await instance.initialize();
+    return instance;
+  }
+
+  private async fetchOAuthToken(): Promise<void> {
+    const url = `https://${this.config.environment}.canvasmedical.com/auth/token/`;
+    const payload = `grant_type=client_credentials&client_id=${this.config.clientId}&client_secret=${this.config.clientSecret}`;
+
+    try {
+      const response = await axios.post(url, payload, {
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      });
+
+      this.OAuthToken = response.data.access_token;
+    } catch (error) {
+      throw new Error("Failed to fetch OAuth token");
+    }
+  }
+
+  async initialize(): Promise<void> {
+    await this.fetchOAuthToken();
+
+    this.axiosInstanceFhirApi = axios.create({
+      baseURL: `https://fumage-${this.config.environment}.canvasmedical.com/`,
       headers: {
         accept: "application/json",
-        Authorization: `Bearer ${config.token}`,
+        Authorization: `Bearer ${this.OAuthToken}`,
+        "content-type": "application/json",
+      },
+    });
+
+    this.axiosInstanceCustomApi = axios.create({
+      baseURL: `https://${this.config.environment}.canvasmedical.com/core/api`,
+      headers: {
+        Authorization: `Bearer ${this.OAuthToken}`,
         "content-type": "application/json",
       },
     });
@@ -45,7 +84,7 @@ class CanvasSDK {
         const msg = `Request failed. Status: ${statusCode}. Message: ${JSON.stringify(
           errorMessage
         )}`;
-        console.log("msg", msg);
+        log(`${msg}`);
         throw new Error(msg);
       }
       throw new Error("An unexpected error occurred during the request");
@@ -54,107 +93,142 @@ class CanvasSDK {
 
   async getPractitioner(name: string): Promise<Practitioner> {
     return this.handleAxiosRequest(() =>
-      this.axiosInstance.get(
+      this.axiosInstanceFhirApi.get(
         `Practitioner?name=${name}&include-non-scheduleable-practitioners=true`
       )
     ).then(data => data.data.entry[0].resource);
   }
 
-  setPractitionerId(id: string | undefined): string {
-    if (!id) throw new Error("Undefined Practitioner Id");
-    this.practitionerId = id;
-    return this.practitionerId;
-  }
-
   async createPatient(patient: Patient): Promise<string> {
     const response = await this.handleAxiosRequest(() =>
-      this.axiosInstance.post("Patient", patient)
+      this.axiosInstanceFhirApi.post("Patient", patient)
     );
 
     const locationHeader = response.headers["location"];
     const patientId = locationHeader?.split("/").pop() ?? "";
-    this.setPatientId(patientId);
     return patientId;
   }
 
-  setPatientId(id: string | undefined): string {
-    if (!id) throw new Error("Invalid Patient Id: id is undefined");
-    this.patientId = id;
-    return this.patientId;
+  async getLocation(): Promise<Location> {
+    return this.handleAxiosRequest(() => this.axiosInstanceFhirApi.get(`Location`)).then(
+      data => data.data.entry[0].resource
+    );
   }
 
-  async createAppointment(appointment: Appointment): Promise<string> {
-    if (!this.patientId || !this.practitionerId) {
-      throw new Error("Patient ID and Practitioner ID must be set before creating an appointment");
-    }
-    appointment.participant = [
-      { actor: { reference: `Patient/${this.patientId}` }, status: "accepted" },
-      { actor: { reference: `Practitioner/${this.practitionerId}` }, status: "accepted" },
+  async createNote({
+    patientKey,
+    providerKey,
+    practiceLocationKey,
+    noteTypeName,
+  }: {
+    patientKey: string;
+    providerKey: string;
+    practiceLocationKey: string;
+    noteTypeName: string;
+  }) {
+    const payload = {
+      title: "Metriport Chart Import",
+      noteTypeName,
+      patientKey,
+      providerKey,
+      practiceLocationKey,
+      encounterStartTime: new Date().toISOString(),
+    };
+
+    const response = await this.handleAxiosRequest(() =>
+      this.axiosInstanceCustomApi.post("notes/v1/Note", payload)
+    );
+    console.log(response.data);
+    return response.data.noteKey;
+  }
+
+  async createCondition({
+    condition,
+    patientId,
+    practitionerId,
+    noteId,
+  }: {
+    condition: Condition;
+    patientId: string;
+    practitionerId: string;
+    noteId: string;
+  }): Promise<string> {
+    condition.subject = { reference: `Patient/${patientId}` };
+    condition.recorder = { reference: `Practitioner/${practitionerId}` };
+    condition.extension = [
+      {
+        url: "http://schemas.canvasmedical.com/fhir/extensions/note-id",
+        valueId: noteId,
+      },
     ];
     const response = await this.handleAxiosRequest(() =>
-      this.axiosInstance.post("Appointment", appointment)
+      this.axiosInstanceFhirApi.post("Condition", condition)
     );
     return response.headers["location"]?.split("/").pop() ?? "";
   }
 
-  async getEncounter(): Promise<Encounter> {
-    if (!this.patientId) {
-      throw new Error("Patient ID must be set before getting an encounter");
-    }
+  async createMedication({
+    medication,
+    patientId,
+    encounterId,
+    noteId,
+  }: {
+    medication: MedicationStatement;
+    patientId: string;
+    encounterId: string;
+    noteId: string;
+  }): Promise<string> {
+    medication.subject = { reference: `Patient/${patientId}` };
+    medication.context = { reference: `Encounter/${encounterId}` };
+    medication.extension = [
+      {
+        url: "http://schemas.canvasmedical.com/fhir/extensions/note-id",
+        valueId: noteId,
+      },
+    ];
     const response = await this.handleAxiosRequest(() =>
-      this.axiosInstance.get(`Encounter?patient=Patient/${this.patientId}`)
+      this.axiosInstanceFhirApi.post("MedicationStatement", medication)
     );
-    const encounter = response.data.entry[0].resource;
-    this.setEncounterId(encounter.id ?? "");
-    return encounter;
+    return response.headers["location"]?.split("/").pop() ?? "";
   }
 
-  setEncounterId(id: string | undefined): string {
-    if (!id) throw new Error("Undefined Encounter Id");
-    this.encounterId = id;
-    return this.encounterId;
-  }
-
-  async createCondition(condition: Condition): Promise<string> {
-    if (!this.patientId || !this.encounterId || !this.practitionerId) {
+  async createAllergy({
+    allergy,
+    patientId,
+    noteId,
+    practitionerId,
+    encounterId,
+  }: {
+    allergy: AllergyIntolerance;
+    patientId: string;
+    noteId: string;
+    practitionerId: string;
+    encounterId: string;
+  }): Promise<string> {
+    if (!patientId || !noteId || !practitionerId) {
       throw new Error(
-        "Patient ID, Encounter ID, and Practitioner ID must be set before adding a condition"
+        "Patient ID, Note ID, and Practitioner ID must be set before adding an allergy"
       );
     }
-    condition.subject = { reference: `Patient/${this.patientId}` };
-    condition.encounter = { reference: `Encounter/${this.encounterId}` };
-    condition.recorder = { reference: `Practitioner/${this.practitionerId}` };
+    allergy.patient = { reference: `Patient/${patientId}` };
+    allergy.recorder = { reference: `Practitioner/${practitionerId}` };
+    allergy.encounter = { reference: `Encounter/${encounterId}` };
+    allergy.extension = [
+      {
+        url: "http://schemas.canvasmedical.com/fhir/extensions/note-id",
+        valueId: noteId,
+      },
+    ];
     const response = await this.handleAxiosRequest(() =>
-      this.axiosInstance.post("Condition", condition)
+      this.axiosInstanceFhirApi.post("AllergyIntolerance", allergy)
     );
     return response.headers["location"]?.split("/").pop() ?? "";
   }
 
-  async createMedication(medication: MedicationStatement): Promise<string> {
-    if (!this.patientId || !this.encounterId) {
-      throw new Error("Patient ID and Encounter ID must be set before adding a medication");
-    }
-    medication.subject = { reference: `Patient/${this.patientId}` };
-    medication.context = { reference: `Encounter/${this.encounterId}` };
-    const response = await this.handleAxiosRequest(() =>
-      this.axiosInstance.post("MedicationStatement", medication)
-    );
-    return response.headers["location"]?.split("/").pop() ?? "";
-  }
-
-  async createAllergy(allergy: AllergyIntolerance): Promise<string> {
-    if (!this.patientId || !this.encounterId || !this.practitionerId) {
-      throw new Error(
-        "Patient ID, Encounter ID, and Practitioner ID must be set before adding an allergy"
-      );
-    }
-    allergy.patient = { reference: `Patient/${this.patientId}` };
-    allergy.encounter = { reference: `Encounter/${this.encounterId}` };
-    allergy.recorder = { reference: `Practitioner/${this.practitionerId}` };
-    const response = await this.handleAxiosRequest(() =>
-      this.axiosInstance.post("AllergyIntolerance", allergy)
-    );
-    return response.headers["location"]?.split("/").pop() ?? "";
+  async getFirstEncounter(patientId: string): Promise<Encounter> {
+    return this.handleAxiosRequest(() =>
+      this.axiosInstanceFhirApi.get(`Encounter?patient=${patientId}&_sort=-date&_count=1`)
+    ).then(data => data.data.entry[0].resource);
   }
 }
 

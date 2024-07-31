@@ -1,6 +1,9 @@
-import { APIGatewayProxyEventV2 } from "aws-lambda";
+type CanvasIntegrationLambdaRequest = {
+  patientId: string;
+  cxId: string;
+};
 
-export async function handler(event: APIGatewayProxyEventV2) {
+export async function handler(event: CanvasIntegrationLambdaRequest) {
   console.log("Received event:", JSON.stringify(event, null, 2));
 
   return {
