@@ -58,20 +58,21 @@ export async function createCoverageAssessments({
   }
   await sleep(dqDrBuffer);
   const pollingAttempts = 20;
-  let remainingPatients = [...patients];
+  const remainingPatientIds = [...patientIds];
   for (let i = 0; i < pollingAttempts; i++) {
     await sleep(delayTime);
     const drDone: Promise<string | undefined>[] = [];
-    for (const patient of patients) {
-      drDone.push(pollDrDone(patient.id, cxId));
+    for (const patientId of patientIds) {
+      drDone.push(pollDrDone(patientId, cxId));
     }
     const drDonePromises = await Promise.allSettled(drDone);
     drDonePromises.map(promise => {
       if (promise.status == "fulfilled" && promise.value !== undefined) {
-        remainingPatients = remainingPatients.filter(p => p.id !== promise.value);
+        const index = remainingPatientIds.indexOf(promise.value);
+        if (index > -1) remainingPatientIds.splice(index, 1);
       }
     });
-    if (remainingPatients.length === 0) break;
+    if (remainingPatientIds.length === 0) break;
   }
   const consolidatedChunkSize = 10;
   const consolidatedChunks = chunk(patients, consolidatedChunkSize);
