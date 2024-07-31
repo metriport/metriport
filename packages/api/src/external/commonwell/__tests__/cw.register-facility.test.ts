@@ -45,6 +45,7 @@ beforeEach(() => {
     .spyOn(CommonWell.prototype, "addCertificateToOrg")
     .mockImplementation(() => Promise.resolve({} as CertificateResp));
   jest.spyOn(Config, "getCWMemberOrgName").mockImplementation(() => "");
+  jest.spyOn(Config, "getCWMemberOID").mockImplementation(() => "");
   createOrUpdateCqOrganizationMock = jest.spyOn(
     createOrUpdateCwOrg,
     "createOrUpdateCWOrganization"
