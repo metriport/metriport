@@ -40,8 +40,7 @@ export async function updatePatientDiscoveryStatus({
     const externalData = existingPatient.data.externalData ?? {};
 
     if (!params && !externalData.CAREQUALITY?.discoveryParams) {
-      // Backward compatability during deployment phase
-      //throw new Error(`Cannot update discovery status before assigning discovery params @ CQ`);
+      throw new Error(`Cannot update discovery status before assigning discovery params @ CQ`);
     }
 
     const updatePatientDiscoveryStatus = {
