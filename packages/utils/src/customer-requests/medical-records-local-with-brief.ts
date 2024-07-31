@@ -11,13 +11,19 @@ import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-t
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import fs from "fs";
 
-const s3Client = new S3Utils("us-east-2");
+/**
+ * Script to trigger MR Summary generation on a FHIR payload locally, with the AI Brief included in it.
+ *
+ * Set the cxId and patientId to save the MR Summary and Brief in S3. If that's not needed, comment it out.
+ */
 
+const s3Client = new S3Utils("us-east-2");
 const bucketName = "medical-documents-staging";
 const cxId = "";
 const patientId = "";
 
 async function main() {
+  // TODO: Condense this functionality under a single function and put it on `@metriport/core`, so this can be used both here, and on the Lambda.
   const bundle = fs.readFileSync("test-fhir-fry.json", "utf8");
   const bundleParsed = JSON.parse(bundle);
 
