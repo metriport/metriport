@@ -20,7 +20,7 @@ let createOrUpdateCqOrganizationMock: jest.SpyInstance;
 beforeEach(() => {
   mockedFacility = makeFacility({
     cqType: FacilityType.initiatorAndResponder,
-    cqActive: false,
+    cqActive: true,
     cqOboOid: undefined,
     cwType: FacilityType.initiatorAndResponder,
     cwActive: true,
@@ -29,7 +29,7 @@ beforeEach(() => {
 
   mockedOboFacility = makeFacility({
     cqType: FacilityType.initiatorOnly,
-    cqActive: false,
+    cqActive: true,
     cqOboOid: faker.string.uuid(),
     cwType: FacilityType.initiatorOnly,
     cwActive: true,
