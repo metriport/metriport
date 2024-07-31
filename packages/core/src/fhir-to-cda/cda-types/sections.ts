@@ -15,7 +15,7 @@ import {
 type CdaSection<T> =
   | {
       _nullFlavor?: string;
-      templateId: CdaInstanceIdentifier | CdaInstanceIdentifier[];
+      templateId?: CdaInstanceIdentifier | CdaInstanceIdentifier[];
       code: CdaCodeCe;
       title: string;
       text: CdaTable | TextParagraph | TextUnstructured | string;
