@@ -60,7 +60,7 @@ export class BedrockUtils {
     try {
       const response = await this.bedrock.send(command);
       const decodedResponse = JSON.parse(decoder.decode(response.body));
-      return decodedResponse.content[0].text;
+      return decodedResponse.content?.[0]?.text || undefined;
     } catch (error) {
       const msg = `Error getting response from Bedrock`;
       console.log(`${msg} - error: ${errorToString(error)}`);

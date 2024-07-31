@@ -52,26 +52,28 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     dateFrom,
     dateTo,
     conversionType,
-    aiBrief,
+    generateAiBrief,
   }: Input): Promise<Output> => {
     const { log } = out(`cx ${cxId}, patient ${patientId}`);
     log(
       `Running with conversionType: ${conversionType}, dateFrom: ${dateFrom}, ` +
-        `dateTo: ${dateTo}, aiBrief: ${aiBrief}, fileName: ${fhirFileName}, bucket: ${bucketName}}`
+        `dateTo: ${dateTo}, generateAiBrief: ${generateAiBrief}, fileName: ${fhirFileName}, bucket: ${bucketName}}`
     );
     try {
       const cxsWithADHDFeatureFlagValue = await getCxsWithADHDFeatureFlagValue();
       const isADHDFeatureFlagEnabled = cxsWithADHDFeatureFlagValue.includes(cxId);
       const bundle = await getBundleFromS3(fhirFileName);
-      const isBriefFeatureFlagEnabled = await isBriefEnabled(aiBrief, cxId);
-      const brief = isBriefFeatureFlagEnabled
+      const isBriefFeatureFlagEnabled = await isBriefEnabled(generateAiBrief, cxId);
+
+      // TODO: Condense this functionality under a single function and put it on `@metriport/core`, so this can be used both here, and on the Lambda.
+      const aiBrief = isBriefFeatureFlagEnabled
         ? await bundleToBrief(bundle, cxId, patientId)
         : undefined;
       const briefFileName = createMRSummaryBriefFileName(cxId, patientId);
 
       const html = isADHDFeatureFlagEnabled
-        ? bundleToHtmlADHD(bundle, brief)
-        : bundleToHtml(bundle, brief);
+        ? bundleToHtmlADHD(bundle, aiBrief)
+        : bundleToHtml(bundle, aiBrief);
       const hasContents = doesMrSummaryHaveContents(html);
       log(`MR Summary has contents: ${hasContents}`);
       const htmlFileName = createMRSummaryFileName(cxId, patientId, "html");
@@ -81,7 +83,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         htmlFileName,
         briefFileName,
         html,
-        brief,
+        aiBrief,
         log,
       });
 
@@ -117,13 +119,14 @@ async function getSignedUrl(fileName: string) {
   return coreGetSignedUrl({ fileName, bucketName, awsRegion: region });
 }
 
-async function isBriefEnabled(aiBrief: string | undefined, cxId: string): Promise<boolean> {
-  const isMrBriefFeatureFlagEnabled = await isMrBriefFeatureFlagEnabledForCx(cxId);
-  return aiBrief === "true" && isMrBriefFeatureFlagEnabled;
+async function isBriefEnabled(generateAiBrief: string | undefined, cxId: string): Promise<boolean> {
+  if (generateAiBrief !== "true") return false;
+  const isAiBriefFeatureFlagEnabled = await isAiBriefFeatureFlagEnabledForCx(cxId);
+  return generateAiBrief === "true" && isAiBriefFeatureFlagEnabled;
 }
 
-export async function isMrBriefFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
-  const cxsWithADHDFeatureFlagValue = await getCxsWithMrBriefFeatureFlagValue();
+export async function isAiBriefFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxsWithADHDFeatureFlagValue = await getCxsWithAiBriefFeatureFlagValue();
   return cxsWithADHDFeatureFlagValue.includes(cxId);
 }
 
@@ -238,20 +241,20 @@ async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {
   return [];
 }
 
-async function getCxsWithMrBriefFeatureFlagValue(): Promise<string[]> {
+async function getCxsWithAiBriefFeatureFlagValue(): Promise<string[]> {
   try {
     const featureFlag = await getFeatureFlagValueStringArray(
       region,
       appConfigAppID,
       appConfigConfigID,
       getEnvType(),
-      "cxsWithMrBriefFeatureFlag"
+      "cxsWithAiBriefFeatureFlag"
     );
 
     if (featureFlag?.enabled && featureFlag?.values) return featureFlag.values;
   } catch (error) {
     const msg = `Failed to get Feature Flag Value`;
-    const extra = { featureFlagName: "cxsWithMrBriefFeatureFlag" };
+    const extra = { featureFlagName: "cxsWithAiBriefFeatureFlag" };
     capture.error(msg, { extra: { ...extra, error } });
   }
 
@@ -283,14 +286,14 @@ async function storeMrSummaryAndBriefInS3({
   htmlFileName,
   briefFileName,
   html,
-  brief,
+  aiBrief,
   log,
 }: {
   bucketName: string;
   htmlFileName: string;
   briefFileName: string;
   html: string;
-  brief: string | undefined;
+  aiBrief: string | undefined;
   log: typeof console.log;
 }): Promise<void> {
   log(`Storing MR Summary and Brief in S3`);
@@ -304,11 +307,11 @@ async function storeMrSummaryAndBriefInS3({
   };
 
   const promiseBriefSummary = async () => {
-    if (!brief) return;
+    if (!aiBrief) return;
     newS3Client.uploadFile({
       bucket: bucketName,
       key: briefFileName,
-      file: Buffer.from(brief),
+      file: Buffer.from(aiBrief),
       contentType: "text/plain",
     });
   };

@@ -72,7 +72,7 @@ export async function startConsolidatedQuery({
   dateTo,
   conversionType,
   cxConsolidatedRequestMetadata,
-  aiBrief,
+  generateAiBrief,
 }: ConsolidatedQueryParams): Promise<ConsolidatedQuery> {
   const { log } = Util.out(`startConsolidatedQuery - M patient ${patientId}`);
   const patient = await getPatientOrFail({ id: patientId, cxId });
@@ -133,7 +133,7 @@ export async function startConsolidatedQuery({
     dateTo,
     conversionType,
     requestId,
-    aiBrief,
+    generateAiBrief,
   }).catch(emptyFunction);
 
   return progress;
@@ -202,7 +202,8 @@ export function getIsSameResources(
 }
 
 async function getConsolidatedAndSendToCx(params: GetConsolidatedSendToCxParams): Promise<void> {
-  const { patient, requestId, resources, dateFrom, dateTo, conversionType, aiBrief } = params;
+  const { patient, requestId, resources, dateFrom, dateTo, conversionType, generateAiBrief } =
+    params;
   try {
     const { bundle, filters } = await getConsolidated(params);
     // trigger WH call
@@ -223,7 +224,7 @@ async function getConsolidatedAndSendToCx(params: GetConsolidatedSendToCxParams)
         dateFrom,
         dateTo,
         conversionType,
-        aiBrief,
+        generateAiBrief,
       },
     }).catch(emptyFunction);
   }
@@ -235,7 +236,7 @@ export async function getConsolidated({
   resources,
   dateFrom,
   dateTo,
-  aiBrief,
+  generateAiBrief,
   requestId,
   conversionType,
 }: GetConsolidatedParams): Promise<{
@@ -247,7 +248,7 @@ export async function getConsolidated({
     resources: resources ? resources.join(", ") : undefined,
     dateFrom,
     dateTo,
-    aiBrief,
+    generateAiBrief,
   };
   try {
     let bundle = await getConsolidatedPatientData({
@@ -288,7 +289,7 @@ export async function getConsolidated({
         dateFrom,
         dateTo,
         conversionType,
-        aiBrief,
+        generateAiBrief,
       });
 
       analytics({

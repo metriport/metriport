@@ -111,8 +111,8 @@ export async function getCxsWithEpicEnabled(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithEpicEnabled");
 }
 
-export async function getCxsWithMrBriefFeatureFlag(): Promise<string[]> {
-  return getCxsWithFeatureFlagEnabled("cxsWithMrBriefFeatureFlag");
+export async function getCxsWithAiBriefFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithAiBriefFeatureFlag");
 }
 
 export async function getE2eCxIds(): Promise<string | undefined> {
@@ -154,9 +154,9 @@ export async function isWebhookPongDisabledForCx(cxId: string): Promise<boolean>
   return cxIdsWithNoWebhookPong.some(i => i === cxId);
 }
 
-export async function isMrBriefEnabledForCx(cxId: string): Promise<boolean> {
-  const cxIdsWithMrBriefEnabled = await getCxsWithMrBriefFeatureFlag();
-  return cxIdsWithMrBriefEnabled.some(i => i === cxId);
+export async function isAiBriefEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithAiBriefEnabled = await getCxsWithAiBriefFeatureFlag();
+  return cxIdsWithAiBriefEnabled.some(i => i === cxId);
 }
 
 export async function isEpicEnabledForCx(cxId: string): Promise<boolean> {
