@@ -34,8 +34,8 @@ export async function createCoverageAssessments({
     for (const patient of chunk) {
       createPatients.push(createOrUpdatePatient(patient));
     }
-    const patientsPromises = await Promise.allSettled(createPatients);
-    patientsPromises.map(promise => {
+    const patientPromises = await Promise.allSettled(createPatients);
+    patientPromises.map(promise => {
       if (promise.status == "fulfilled") patients.push(promise.value);
     });
   }

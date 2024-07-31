@@ -816,7 +816,8 @@ router.post(
       if (!patient.zip) {
         errors.push("Missing Zip");
       } else {
-        if (!normalizeZipCodePassive(patient.zip)) errors.push("Invalid Zip");
+        const zip = normalizeZipCodePassive(patient.zip);
+        if (!zip) errors.push("Invalid Zip");
       }
       // City
       if (!patient.city) errors.push("Missing City");
