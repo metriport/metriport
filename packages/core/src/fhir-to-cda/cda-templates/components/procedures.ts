@@ -10,6 +10,7 @@ import {
   formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
   getTextFromCode,
+  getNotes,
   mapCodingSystem,
   notOnFilePlaceholder,
   withNullFlavor,
@@ -94,11 +95,11 @@ function createTableRowFromProcedure(
           },
           {
             "#text":
-              formatDateToHumanReadableFormat(procedure.resource.performedDateTime) ??
+              formatDateToHumanReadableFormat(procedure.resource.performedPeriod?.start) ??
               NOT_SPECIFIED,
           },
           {
-            "#text": procedure.resource.note?.[0]?.text ?? NOT_SPECIFIED,
+            "#text": getNotes(procedure.resource.note) ?? NOT_SPECIFIED, // procedure.resource.note?.[0]?.text ?? NOT_SPECIFIED,
           },
         ],
       },
@@ -133,7 +134,11 @@ function createEntryFromProcedure(
       },
       effectiveTime: {
         low: withNullFlavor(
-          formatDateToCdaTimestamp(procedure.resource.performedDateTime),
+          formatDateToCdaTimestamp(procedure.resource.performedPeriod?.start),
+          "_value"
+        ),
+        high: withNullFlavor(
+          formatDateToCdaTimestamp(procedure.resource.performedPeriod?.end),
           "_value"
         ),
       },
