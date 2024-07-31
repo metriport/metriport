@@ -885,7 +885,6 @@ router.post(
         contact,
       };
     });
-    console.log(patientsCreates);
 
     createCoverageAssessments({
       cxId,

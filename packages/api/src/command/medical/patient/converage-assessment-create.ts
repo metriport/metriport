@@ -24,26 +24,6 @@ export async function createCoverageAssessments({
   facilityId: string;
   patientsCreates: PatientCreateCmd[];
 }): Promise<void> {
-  const createOrUpdatePatient = async (patient: PatientCreateCmd): Promise<Patient> => {
-    const matchedPatient = await matchPatient(patient);
-    let updatedPatient: Patient;
-    if (matchedPatient) {
-      updatedPatient = await updatePatient({
-        patientUpdate: {
-          ...patient,
-          id: matchedPatient.id,
-        },
-        rerunPdOnNewDemographics: true,
-      });
-    } else {
-      updatedPatient = await createPatient({
-        patient,
-        rerunPdOnNewDemographics: true,
-      });
-    }
-    return updatedPatient;
-  };
-
   const pdChunkSize = 50;
   const pdPatients: Patient[] = [];
   const pdChunks = chunk(patientsCreates, pdChunkSize);
@@ -87,4 +67,24 @@ export async function createCoverageAssessments({
     }
     await Promise.allSettled(getConsolidateds);
   }
+}
+
+async function createOrUpdatePatient(patient: PatientCreateCmd): Promise<Patient> {
+  const matchedPatient = await matchPatient(patient);
+  let updatedPatient: Patient;
+  if (matchedPatient) {
+    updatedPatient = await updatePatient({
+      patientUpdate: {
+        ...patient,
+        id: matchedPatient.id,
+      },
+      rerunPdOnNewDemographics: true,
+    });
+  } else {
+    updatedPatient = await createPatient({
+      patient,
+      rerunPdOnNewDemographics: true,
+    });
+  }
+  return updatedPatient;
 }

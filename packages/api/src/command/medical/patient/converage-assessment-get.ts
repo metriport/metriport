@@ -31,29 +31,6 @@ export async function getCoverageAssessment({
   cxId: string;
   patient: Patient;
 }): Promise<CoverageAssessment> {
-  const getMrSummaryUrl = async (fileName: string): Promise<string | undefined> => {
-    const s3Utils = getS3UtilsInstance();
-    try {
-      const object = await s3Utils.getFileInfoFromS3(fileName, bucket);
-      if (object.exists) {
-        return await s3Utils.getSignedUrl({
-          bucketName: bucket,
-          fileName,
-        });
-      }
-      return undefined;
-    } catch (error) {
-      const msg = "Failed to get get MR Summary url";
-      log(`${msg}. Cause: ${errorToString(error)}.`);
-      capture.error(msg, {
-        extra: {
-          fileName,
-        },
-      });
-      return undefined;
-    }
-  };
-
   const mrSummaryFileName = createMRSummaryFileName(cxId, patient.id, "json");
   const [fhirResources, mrSummaryUrl] = await Promise.all([
     countResources({ patient }),
@@ -77,4 +54,27 @@ export async function getCoverageAssessment({
     fhirDetails,
     mrSummaryUrl,
   };
+}
+
+async function getMrSummaryUrl(fileName: string): Promise<string | undefined> {
+  const s3Utils = getS3UtilsInstance();
+  try {
+    const object = await s3Utils.getFileInfoFromS3(fileName, bucket);
+    if (object.exists) {
+      return await s3Utils.getSignedUrl({
+        bucketName: bucket,
+        fileName,
+      });
+    }
+    return undefined;
+  } catch (error) {
+    const msg = "Failed to get get MR Summary url";
+    log(`${msg}. Cause: ${errorToString(error)}.`);
+    capture.error(msg, {
+      extra: {
+        fileName,
+      },
+    });
+    return undefined;
+  }
 }
