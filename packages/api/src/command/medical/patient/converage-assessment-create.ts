@@ -7,6 +7,7 @@ import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
 import { createPatient, PatientCreateCmd } from "./create-patient";
 import { matchPatient } from "./get-patient";
 import { updatePatient } from "./update-patient";
+import { getPatientOrFail } from "./get-patient";
 import { queryDocumentsAcrossHIEs } from "../document/document-query";
 import { getConsolidated, ConsolidatedData } from "./consolidated-get";
 
@@ -24,8 +25,8 @@ export async function createCoverageAssessments({
   facilityId: string;
   patientsCreates: PatientCreateCmd[];
 }): Promise<void> {
+  const patients: Patient[] = [];
   const pdChunkSize = 50;
-  const pdPatients: Patient[] = [];
   const pdChunks = chunk(patientsCreates, pdChunkSize);
   for (const chunk of pdChunks) {
     await sleep(delayTime);
@@ -33,14 +34,14 @@ export async function createCoverageAssessments({
     for (const patient of chunk) {
       createPatients.push(createOrUpdatePatient(patient));
     }
-    const patients = await Promise.allSettled(createPatients);
-    patients.map(patient => {
-      if (patient.status == "fulfilled") {
-        pdPatients.push(patient.value);
+    const patientsPromises = await Promise.allSettled(createPatients);
+    patientsPromises.map(promise => {
+      if (promise.status == "fulfilled") {
+        patients.push(promise.value);
       }
     });
   }
-  const patientIds = pdPatients.map(p => p.id);
+  const patientIds = patients.map(patient => patient.id);
   const dqChunkSize = 10;
   const dQChunks = chunk(patientIds, dqChunkSize);
   for (const chunk of dQChunks) {
@@ -58,7 +59,24 @@ export async function createCoverageAssessments({
     await Promise.allSettled(docQueries);
   }
   await sleep(dqDrMaxFinish);
-  const consolidatedChunks = chunk(pdPatients, dqChunkSize);
+  const pollingAttempts = 20;
+  let remaininPatients = patients;
+  for (let i = 0; i < pollingAttempts; i++) {
+    await sleep(delayTime);
+    const drDone: Promise<string | undefined>[] = [];
+    for (const patient of patients) {
+      drDone.push(pollDrDone(patient.id, cxId));
+    }
+    const drDonePromises = await Promise.allSettled(drDone);
+    drDonePromises.map(promise => {
+      if (promise.status == "fulfilled" && promise.value !== undefined) {
+        remaininPatients = remaininPatients.filter(p => p.id !== promise.value);
+      }
+    });
+    if (remaininPatients.length === 0) break;
+  }
+  const consolidatedChunkSize = 5;
+  const consolidatedChunks = chunk(patients, consolidatedChunkSize);
   for (const chunk of consolidatedChunks) {
     await sleep(delayTime);
     const getConsolidateds: Promise<ConsolidatedData>[] = [];
@@ -87,4 +105,12 @@ async function createOrUpdatePatient(patient: PatientCreateCmd): Promise<Patient
     });
   }
   return updatedPatient;
+}
+
+async function pollDrDone(id: string, cxId: string): Promise<string | undefined> {
+  const patient = await getPatientOrFail({ id, cxId });
+  if (patient?.data.documentQueryProgress?.convert?.status === "completed") {
+    return id;
+  }
+  return undefined;
 }
