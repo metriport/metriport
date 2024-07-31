@@ -266,9 +266,9 @@ export function createAPIService({
             PLACE_INDEX_NAME: props.config.locationService.placeIndexName,
             PLACE_INDEX_REGION: props.config.locationService.placeIndexRegion,
           }),
-          ...(props.config.canvas?.clientId && {
-            CANVAS_CLIENT_ID: props.config.canvas.clientId,
-            CANVAS_CLIENT_SECRET: props.config.canvas.clientSecret,
+          ...(props.config.canvas?.secretNames && {
+            CANVAS_CLIENT_ID: props.config.canvas.secretNames.clientId,
+            CANVAS_CLIENT_SECRET: props.config.canvas.secretNames.clientSecret,
           }),
           // app config
           APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
@@ -336,6 +336,16 @@ export function createAPIService({
     ...healthcheck,
     interval: healthcheck.interval.plus(Duration.seconds(3)),
   });
+
+  // Access grant for Canvas secrets
+  if (props.config.canvas?.secretNames) {
+    secrets[props.config.canvas.secretNames.clientId]?.grantRead(
+      fargateService.taskDefinition.taskRole
+    );
+    secrets[props.config.canvas.secretNames.clientSecret]?.grantRead(
+      fargateService.taskDefinition.taskRole
+    );
+  }
 
   // Access grant for Aurora DB's secret
   dbCredsSecret.grantRead(fargateService.taskDefinition.taskRole);
