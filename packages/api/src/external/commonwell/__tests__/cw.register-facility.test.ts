@@ -44,6 +44,14 @@ beforeEach(() => {
   jest
     .spyOn(CommonWell.prototype, "addCertificateToOrg")
     .mockImplementation(() => Promise.resolve({} as CertificateResp));
+  jest.spyOn(Config, "getGatewayEndpoint").mockImplementation(() => "");
+  jest.spyOn(Config, "getGatewayAuthorizationServerEndpoint").mockImplementation(() => "");
+  jest.spyOn(Config, "getGatewayAuthorizationClientId").mockImplementation(() => "");
+  jest.spyOn(Config, "getGatewayAuthorizationClientSecret").mockImplementation(() => "");
+  jest.spyOn(Config, "getCWOrgPrivateKey").mockImplementation(() => "");
+  jest.spyOn(Config, "getCWOrgCertificate").mockImplementation(() => "");
+  jest.spyOn(Config, "getCWMemberPrivateKey").mockImplementation(() => "");
+  jest.spyOn(Config, "getCWMemberCertificate").mockImplementation(() => "");
   jest.spyOn(Config, "getCWMemberOrgName").mockImplementation(() => "");
   jest.spyOn(Config, "getCWMemberOID").mockImplementation(() => "");
   createOrUpdateCqOrganizationMock = jest.spyOn(
