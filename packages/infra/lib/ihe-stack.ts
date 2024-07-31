@@ -106,13 +106,16 @@ export class IHEStack extends Stack {
     const customStage = new apigwv2.HttpStage(this, "IHEAPIGatewayv2Stage", {
       httpApi: apigw2,
       stageName: "v2",
-      domainMapping: {
-        domainName: domainName,
-      },
       throttle: {
         burstLimit: 100,
         rateLimit: 100,
       },
+    });
+
+    new apigwv2.ApiMapping(this, "IHEApiMapping", {
+      api: apigw2,
+      stage: customStage,
+      domainName: domainName,
     });
 
     // no feature to suuport this simply. Copied custom solution from https://github.com/aws/aws-cdk/issues/11100
