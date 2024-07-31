@@ -2,6 +2,7 @@
 import { faker } from "@faker-js/faker";
 import * as uuidv7_file from "@metriport/core/util/uuid-v7";
 import { OrganizationBizType } from "@metriport/core/domain/organization";
+import { CarequalityManagementAPIImpl } from "@metriport/carequality-sdk/client/carequality";
 import { metriportEmail as metriportEmailForCq } from "../constants";
 import { metriportCompanyDetails } from "@metriport/shared";
 import { Facility, FacilityType } from "../../../domain/medical/facility";
@@ -41,12 +42,16 @@ beforeEach(() => {
   });
 
   jest.spyOn(getAddress, "getAddressWithCoordinates").mockResolvedValue(addressWithCoordinates);
+  jest
+    .spyOn(CarequalityManagementAPIImpl.prototype, "listOrganizations")
+    .mockImplementation(() => Promise.resolve([]));
+  jest
+    .spyOn(CarequalityManagementAPIImpl.prototype, "registerOrganization")
+    .mockImplementation(() => Promise.resolve(""));
   createOrUpdateCqOrganizationMock = jest.spyOn(
     createOrUpdateCqOrg,
     "createOrUpdateCQOrganization"
   );
-  jest.spyOn(createOrUpdateCqOrg, "doesOrganizationExistInCQ").mockResolvedValue(false);
-  jest.spyOn(createOrUpdateCqOrg, "registerOrganization").mockResolvedValue("test");
 });
 
 afterEach(() => {
@@ -84,23 +89,26 @@ describe("registerFacility", () => {
       cqOboOid: mockedFacility.cqOboOid ?? undefined,
     });
 
-    expect(createOrUpdateCqOrganizationMock).toHaveBeenCalledWith({
-      name: orgName,
-      addressLine1: addressLine,
-      lat: coordinates.lat.toString(),
-      lon: coordinates.lon.toString(),
-      city: address.city,
-      state: address.state,
-      postalCode: address.zip,
-      oid: mockedFacility.oid,
-      contactName: metriportCompanyDetails.name,
-      phone: metriportCompanyDetails.phone,
-      email: metriportEmailForCq,
-      organizationBizType: cxOrgBizType,
-      active: mockedFacility.cqActive,
-      parentOrgOid: metriportOid,
-      role: "Connection" as const,
-    });
+    expect(createOrUpdateCqOrganizationMock).toHaveBeenCalledWith(
+      {
+        name: orgName,
+        addressLine1: addressLine,
+        lat: coordinates.lat.toString(),
+        lon: coordinates.lon.toString(),
+        city: address.city,
+        state: address.state,
+        postalCode: address.zip,
+        oid: mockedFacility.oid,
+        contactName: metriportCompanyDetails.name,
+        phone: metriportCompanyDetails.phone,
+        email: metriportEmailForCq,
+        organizationBizType: cxOrgBizType,
+        active: mockedFacility.cqActive,
+        parentOrgOid: metriportOid,
+        role: "Connection" as const,
+      },
+      mockedFacility.cqActive
+    );
   });
 
   it("calls hie creates with expected params when createOrUpdateFacilityInCq is called - obo", async () => {
@@ -130,22 +138,25 @@ describe("registerFacility", () => {
       ? `${address.addressLine1}, ${address.addressLine2}`
       : address.addressLine1;
 
-    expect(createOrUpdateCqOrganizationMock).toHaveBeenCalledWith({
-      name: orgName,
-      addressLine1: addressLine,
-      lat: coordinates.lat.toString(),
-      lon: coordinates.lon.toString(),
-      city: address.city,
-      state: address.state,
-      postalCode: address.zip,
-      oid: mockedOboFacility.oid,
-      contactName: metriportCompanyDetails.name,
-      phone: metriportCompanyDetails.phone,
-      email: metriportEmailForCq,
-      organizationBizType: cxOrgBizType,
-      active: mockedOboFacility.cqActive,
-      parentOrgOid: metriportIntermediaryOid,
-      role: "Connection" as const,
-    });
+    expect(createOrUpdateCqOrganizationMock).toHaveBeenCalledWith(
+      {
+        name: orgName,
+        addressLine1: addressLine,
+        lat: coordinates.lat.toString(),
+        lon: coordinates.lon.toString(),
+        city: address.city,
+        state: address.state,
+        postalCode: address.zip,
+        oid: mockedOboFacility.oid,
+        contactName: metriportCompanyDetails.name,
+        phone: metriportCompanyDetails.phone,
+        email: metriportEmailForCq,
+        organizationBizType: cxOrgBizType,
+        active: mockedOboFacility.cqActive,
+        parentOrgOid: metriportIntermediaryOid,
+        role: "Connection" as const,
+      },
+      mockedFacility.cqActive
+    );
   });
 });
