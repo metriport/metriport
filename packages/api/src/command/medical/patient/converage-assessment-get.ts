@@ -73,6 +73,7 @@ async function getMrSummaryUrl(fileName: string): Promise<string | undefined> {
     capture.error(msg, {
       extra: {
         fileName,
+        context: "coverage-assessment.get",
       },
     });
     return undefined;
