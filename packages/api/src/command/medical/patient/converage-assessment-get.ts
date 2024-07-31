@@ -1,12 +1,25 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
-import { getSignedUrl } from "@metriport/core/external/aws/s3";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import { countResources } from "../../../external/fhir/patient/count-resources";
 import { Config } from "../../../shared/config";
-import { CoverageAssessment } from "./converage-assessment-create";
 
 const region = Config.getAWSRegion();
 const bucket = Config.getMedicalDocumentsBucketName();
+
+function getS3UtilsInstance(): S3Utils {
+  return new S3Utils(region);
+}
+
+type CoverageAssessment = {
+  patientId: string;
+  downloadStatus: string | undefined;
+  docCount: number | undefined;
+  convertStatus: string | undefined;
+  fhirCount: number;
+  fhirDetails: string;
+  mrSummaryUrl: string | undefined;
+};
 
 export async function getCoverageAssessment({
   cxId,
@@ -16,12 +29,16 @@ export async function getCoverageAssessment({
   patient: Patient;
 }): Promise<CoverageAssessment> {
   const getMrSummaryUrl = async (fileName: string): Promise<string | undefined> => {
+    const s3Utils = getS3UtilsInstance();
     try {
-      return await getSignedUrl({
-        bucketName: bucket,
-        fileName,
-        awsRegion: region,
-      });
+      const object = await s3Utils.getFileInfoFromS3(fileName, bucket);
+      if (object.exists) {
+        return await s3Utils.getSignedUrl({
+          bucketName: bucket,
+          fileName,
+        });
+      }
+      return undefined;
     } catch (error) {
       return undefined;
     }

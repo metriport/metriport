@@ -15,16 +15,6 @@ dayjs.extend(duration);
 const delayTime = dayjs.duration(30, "seconds").asMilliseconds();
 const dqDrMaxFinish = dayjs.duration(10, "minutes").asMilliseconds();
 
-export type CoverageAssessment = {
-  patientId: string;
-  downloadStatus: string | undefined;
-  docCount: number | undefined;
-  convertStatus: string | undefined;
-  fhirCount: number;
-  fhirDetails: string;
-  mrSummaryUrl: string | undefined;
-};
-
 export async function createCoverageAssessments({
   cxId,
   facilityId,
