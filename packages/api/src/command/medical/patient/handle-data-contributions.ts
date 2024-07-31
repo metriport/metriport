@@ -46,7 +46,7 @@ export async function handleDataContribution({
     getOrganizationOrFail({ cxId }),
     getPatientOrFail({ id: patientId, cxId }),
   ]);
-  log(`${startedAt - Date.now()}ms to get org and patient, and store on S3`);
+  log(`${Date.now() - startedAt}ms to get org and patient, and store on S3`);
   startedAt = Date.now();
 
   const fhirOrganization = toFhirOrganization(organization);
@@ -54,7 +54,7 @@ export async function handleDataContribution({
   const validatedBundle = validateFhirEntries(fullBundle);
   const incomingAmount = validatedBundle.entry.length;
   await checkResourceLimit(incomingAmount, patient);
-  log(`${startedAt - Date.now()}ms to validate and check limits`);
+  log(`${Date.now() - startedAt}ms to validate and check limits`);
   startedAt = Date.now();
 
   // Do it before storing on the FHIR server since this also validates the bundle
@@ -68,7 +68,7 @@ export async function handleDataContribution({
       organization: fhirOrganization,
       docId: requestId,
     });
-    log(`${startedAt - Date.now()}ms to convert to CDA`);
+    log(`${Date.now() - startedAt}ms to convert to CDA`);
     startedAt = Date.now();
   }
 
@@ -78,8 +78,7 @@ export async function handleDataContribution({
     requestId,
     fhirBundle: validatedBundle,
   });
-  log(`${startedAt - Date.now()}ms to store on FHIR server and S3`);
-  startedAt = Date.now();
+  log(`${Date.now() - startedAt}ms to store on FHIR server and S3`);
 
   if (!Config.isSandbox()) {
     // intentionally async
