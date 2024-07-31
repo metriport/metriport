@@ -10,6 +10,7 @@ import { makeFacility } from "../../../domain/medical/__tests__/facility";
 import { createOrUpdateFacilityInCw } from "../command/create-or-update-cw-facility";
 import { buildCwOrgNameForFacility } from "../shared";
 import * as createOrUpdateCwOrg from "../command/create-or-update-cw-organization";
+import { Config } from "../../../shared/config";
 
 let mockedFacility: Facility;
 let mockedOboFacility: Facility;
@@ -43,6 +44,7 @@ beforeEach(() => {
   jest
     .spyOn(CommonWell.prototype, "addCertificateToOrg")
     .mockImplementation(() => Promise.resolve({} as CertificateResp));
+  jest.spyOn(Config, "getCWMemberOrgName").mockImplementation(() => "");
   createOrUpdateCqOrganizationMock = jest.spyOn(
     createOrUpdateCwOrg,
     "createOrUpdateCWOrganization"
