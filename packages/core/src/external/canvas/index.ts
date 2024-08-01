@@ -7,9 +7,13 @@ import {
   AllergyIntolerance,
   Location,
   Encounter,
+  Medication,
+  Bundle,
 } from "@medplum/fhirtypes";
 import { out } from "../../util/log";
 const { log } = out("Canvas SDK");
+
+const RXNORM_SYSTEM = "http://www.nlm.nih.gov/research/umls/rxnorm";
 
 interface SDKConfig {
   environment: string;
@@ -92,11 +96,12 @@ class CanvasSDK {
   }
 
   async getPractitioner(name: string): Promise<Practitioner> {
-    return this.handleAxiosRequest(() =>
+    const response = await this.handleAxiosRequest(() =>
       this.axiosInstanceFhirApi.get(
         `Practitioner?name=${name}&include-non-scheduleable-practitioners=true`
       )
-    ).then(data => data.data.entry[0].resource);
+    );
+    return response.data.entry[0].resource;
   }
 
   async createPatient(patient: Patient): Promise<string> {
@@ -110,9 +115,8 @@ class CanvasSDK {
   }
 
   async getLocation(): Promise<Location> {
-    return this.handleAxiosRequest(() => this.axiosInstanceFhirApi.get(`Location`)).then(
-      data => data.data.entry[0].resource
-    );
+    const response = await this.handleAxiosRequest(() => this.axiosInstanceFhirApi.get(`Location`));
+    return response.data.entry[0].resource;
   }
 
   async createNote({
@@ -226,9 +230,48 @@ class CanvasSDK {
   }
 
   async getFirstEncounter(patientId: string): Promise<Encounter> {
-    return this.handleAxiosRequest(() =>
+    const response = await this.handleAxiosRequest(() =>
       this.axiosInstanceFhirApi.get(`Encounter?patient=${patientId}&_sort=-date&_count=1`)
-    ).then(data => data.data.entry[0].resource);
+    );
+    return response.data.entry[0].resource;
+  }
+
+  async getMedication(medicationId: string): Promise<Medication> {
+    const response = await this.handleAxiosRequest(() =>
+      this.axiosInstanceFhirApi.get(`Medication/${medicationId}`)
+    );
+    return response.data;
+  }
+
+  async searchMedication({
+    rxNormCode,
+    medicationName,
+  }: {
+    rxNormCode?: string;
+    medicationName?: string;
+  }): Promise<Bundle> {
+    if (!rxNormCode && !medicationName) {
+      throw new Error("At least one of rxNormCode or medicationName must be provided");
+    }
+
+    let url = "Medication?";
+    const params: string[] = [];
+
+    if (rxNormCode) {
+      params.push(`code=${RXNORM_SYSTEM}|${rxNormCode}`);
+    }
+
+    if (medicationName) {
+      params.push(`_text=${encodeURIComponent(medicationName)}`);
+    }
+
+    url += params.join("&");
+
+    const response = await this.handleAxiosRequest(() => this.axiosInstanceFhirApi.get(url));
+    if (response.data.entry && response.data.entry.length > 0) {
+      return response.data.entry[0].resource;
+    }
+    throw new Error("Medication not found");
   }
 }
 
