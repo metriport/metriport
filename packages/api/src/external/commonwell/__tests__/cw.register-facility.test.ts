@@ -5,7 +5,7 @@ import { OrgType } from "@metriport/core/domain/organization";
 import { CommonWell } from "@metriport/commonwell-sdk/client/commonwell";
 import { Organization } from "@metriport/commonwell-sdk/models/organization";
 import { CertificateResp } from "@metriport/commonwell-sdk/models/certificates";
-import { Facility, FacilityType } from "../../../domain/medical/facility";
+import { FacilityType } from "../../../domain/medical/facility";
 import { makeFacility } from "../../../domain/medical/__tests__/facility";
 import { createOrUpdateFacilityInCw } from "../command/create-or-update-cw-facility";
 import { buildCwOrgNameForFacility } from "../shared";
@@ -13,51 +13,48 @@ import * as createOrUpdateCwOrg from "../command/create-or-update-cw-organizatio
 import { Config } from "../../../shared/config";
 import * as api from "../api";
 
-let mockedFacility: Facility;
-let mockedOboFacility: Facility;
 let createOrUpdateCqOrganizationMock: jest.SpyInstance;
 
+const mockedFacility = makeFacility({
+  cqType: FacilityType.initiatorAndResponder,
+  cqActive: true,
+  cqOboOid: undefined,
+  cwType: FacilityType.initiatorAndResponder,
+  cwActive: true,
+  cwOboOid: undefined,
+});
+
+const mockedOboFacility = makeFacility({
+  cqType: FacilityType.initiatorOnly,
+  cqActive: true,
+  cqOboOid: faker.string.uuid(),
+  cwType: FacilityType.initiatorOnly,
+  cwActive: true,
+  cwOboOid: faker.string.uuid(),
+});
+
+jest.spyOn(CommonWell.prototype, "getOneOrg").mockImplementation(() => Promise.resolve(undefined));
+jest
+  .spyOn(CommonWell.prototype, "createOrg")
+  .mockImplementation(() => Promise.resolve({} as Organization));
+jest
+  .spyOn(CommonWell.prototype, "addCertificateToOrg")
+  .mockImplementation(() => Promise.resolve({} as CertificateResp));
+jest.spyOn(api, "getCertificate").mockImplementation(() => {
+  return { Certificates: [] };
+});
+jest.spyOn(Config, "getGatewayEndpoint").mockImplementation(() => "");
+jest.spyOn(Config, "getGatewayAuthorizationServerEndpoint").mockImplementation(() => "");
+jest.spyOn(Config, "getGatewayAuthorizationClientId").mockImplementation(() => "");
+jest.spyOn(Config, "getGatewayAuthorizationClientSecret").mockImplementation(() => "");
+jest.spyOn(Config, "getCWOrgPrivateKey").mockImplementation(() => "");
+jest.spyOn(Config, "getCWOrgCertificate").mockImplementation(() => "");
+jest.spyOn(Config, "getCWMemberPrivateKey").mockImplementation(() => "");
+jest.spyOn(Config, "getCWMemberCertificate").mockImplementation(() => "");
+jest.spyOn(Config, "getCWMemberOrgName").mockImplementation(() => "");
+jest.spyOn(Config, "getCWMemberOID").mockImplementation(() => "");
+
 beforeEach(() => {
-  mockedFacility = makeFacility({
-    cqType: FacilityType.initiatorAndResponder,
-    cqActive: true,
-    cqOboOid: undefined,
-    cwType: FacilityType.initiatorAndResponder,
-    cwActive: true,
-    cwOboOid: undefined,
-  });
-
-  mockedOboFacility = makeFacility({
-    cqType: FacilityType.initiatorOnly,
-    cqActive: true,
-    cqOboOid: faker.string.uuid(),
-    cwType: FacilityType.initiatorOnly,
-    cwActive: true,
-    cwOboOid: faker.string.uuid(),
-  });
-
-  jest
-    .spyOn(CommonWell.prototype, "getOneOrg")
-    .mockImplementation(() => Promise.resolve(undefined));
-  jest
-    .spyOn(CommonWell.prototype, "createOrg")
-    .mockImplementation(() => Promise.resolve({} as Organization));
-  jest
-    .spyOn(CommonWell.prototype, "addCertificateToOrg")
-    .mockImplementation(() => Promise.resolve({} as CertificateResp));
-  jest.spyOn(api, "getCertificate").mockImplementation(() => {
-    return { Certificates: [] };
-  });
-  jest.spyOn(Config, "getGatewayEndpoint").mockImplementation(() => "");
-  jest.spyOn(Config, "getGatewayAuthorizationServerEndpoint").mockImplementation(() => "");
-  jest.spyOn(Config, "getGatewayAuthorizationClientId").mockImplementation(() => "");
-  jest.spyOn(Config, "getGatewayAuthorizationClientSecret").mockImplementation(() => "");
-  jest.spyOn(Config, "getCWOrgPrivateKey").mockImplementation(() => "");
-  jest.spyOn(Config, "getCWOrgCertificate").mockImplementation(() => "");
-  jest.spyOn(Config, "getCWMemberPrivateKey").mockImplementation(() => "");
-  jest.spyOn(Config, "getCWMemberCertificate").mockImplementation(() => "");
-  jest.spyOn(Config, "getCWMemberOrgName").mockImplementation(() => "");
-  jest.spyOn(Config, "getCWMemberOID").mockImplementation(() => "");
   createOrUpdateCqOrganizationMock = jest.spyOn(
     createOrUpdateCwOrg,
     "createOrUpdateCWOrganization"
@@ -65,7 +62,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  jest.restoreAllMocks();
+  jest.clearAllMocks();
 });
 
 describe("registerFacility", () => {
