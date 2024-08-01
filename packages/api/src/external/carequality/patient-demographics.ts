@@ -47,9 +47,9 @@ export function patientResourceToNormalizedLinkDemographics(
     return [];
   });
   /* TODO
-  const driversLicenses = (patientResource.personalIdentifiers ?? []).flatMap(p => { 
+  const driversLicenses = (patientResource.personalIdentifiers ?? []).flatMap(p => {
   });
-  const ssns = (ppatientResource.personalIdentifiers ?? []).flatMap(p => { 
+  const ssns = (ppatientResource.personalIdentifiers ?? []).flatMap(p => {
   });
   */
   return removeInvalidArrayValues({

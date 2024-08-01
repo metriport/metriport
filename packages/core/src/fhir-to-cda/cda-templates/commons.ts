@@ -26,6 +26,7 @@ import {
   CdaTelecom,
   CdaTelecomUse,
   CdaValueCd,
+  CdaValueEd,
   CdaValueSt,
   Entry,
   EntryObject,
@@ -116,8 +117,8 @@ export function buildCodeCe({
   const mappedCodeSystem = mapCodingSystem(codeSystem?.trim());
   if (code) codeObject._code = code.trim();
   if (mappedCodeSystem) codeObject._codeSystem = mappedCodeSystem;
-  if (codeSystemName) codeObject._codeSystemName = codeSystemName.trim();
-  if (displayName) codeObject._displayName = displayName.trim();
+  if (codeSystemName) codeObject._codeSystemName = codeSystemName.toString().trim();
+  if (displayName) codeObject._displayName = displayName.toString().trim();
 
   return codeObject;
 }
@@ -135,14 +136,17 @@ export function buildOriginalTextReference(value: string): CdaOriginalText {
  * @see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CV.html for more details
  */
 export function buildCodeCvFromCodeableConcept(
-  codeableConcept: CodeableConcept | undefined,
+  codeableConcept: CodeableConcept | CodeableConcept[] | undefined,
   textReference?: string
 ): CdaCodeCv | undefined {
   if (!codeableConcept) {
     return undefined;
   }
 
-  const primaryCodingRaw = codeableConcept.coding?.[0];
+  const codeableConceptArray = toArray(codeableConcept);
+  const codings: Coding[] = codeableConceptArray.flatMap(concept => concept.coding || []);
+
+  const primaryCodingRaw = codings[0];
   const primaryCoding = cleanUpCoding(primaryCodingRaw);
   const baseCE = primaryCoding
     ? buildCodeCe({
@@ -153,7 +157,8 @@ export function buildCodeCvFromCodeableConcept(
       })
     : {};
 
-  const translations = (codeableConcept.coding?.slice(1) || []).map(coding =>
+  // TODO: Use term server to include a LOINC code
+  const translations = (codings.slice(1) || []).map(coding =>
     buildCodeCe({
       code: coding.code,
       codeSystem: mapCodingSystem(coding.system),
@@ -164,7 +169,9 @@ export function buildCodeCvFromCodeableConcept(
 
   const codeCV: CdaCodeCv = {
     ...baseCE,
-    originalText: textReference ? buildOriginalTextReference(textReference) : codeableConcept.text,
+    originalText: textReference
+      ? buildOriginalTextReference(textReference)
+      : codeableConceptArray[0]?.text,
     translation: translations?.length ? translations : undefined,
   };
 
@@ -194,27 +201,21 @@ export function buildCodeCvFromCodeCe(codeCe: CdaCodeCe, concepts: CodeableConce
   return codeCv;
 }
 
-export function buildCodeCv(code: CdaCodeCe, codeLoinc?: Partial<CdaCodeCe>) {
-  const providedCode = buildCodeCe({
-    code: code._code,
-    codeSystem: code._codeSystem,
-    codeSystemName: code._codeSystemName,
-  });
-
+export function buildCodeCv(providedCode: CdaCodeCe, codeLoinc?: Partial<CdaCodeCe[]>) {
   const isLoincCode = isLoinc(providedCode._codeSystemName);
   if (isLoincCode) {
     return providedCode;
   }
 
+  const loincCode = buildCodeCe({
+    code: codeLoinc?.[0]?._code, // TODO: Use term server to get the actual LOINC code
+    codeSystem: loincCodeSystem,
+    codeSystemName: loincSystemName,
+  });
+
   return {
     ...providedCode,
-    translation: [
-      buildCodeCe({
-        code: codeLoinc?._code,
-        codeSystem: loincCodeSystem,
-        codeSystemName: loincSystemName,
-      }),
-    ],
+    translation: [loincCode, ...(codeLoinc?.slice(1) || [])],
   };
 }
 
@@ -361,6 +362,23 @@ export function buildValueSt(value: string | undefined): CdaValueSt | undefined 
 }
 
 /**
+ * ED stands for EncapsulatedData
+ * @see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ED.html for more details
+ */
+export function buildValueEd(reference: string | undefined): CdaValueEd | undefined {
+  if (!reference) return undefined;
+
+  const valueObject: CdaValueEd = {};
+  valueObject[_xsiTypeAttribute] = "ED";
+  valueObject[_xmlnsXsiAttribute] = "http://www.w3.org/2001/XMLSchema-instance";
+  valueObject.reference = {
+    _value: `#${reference}`,
+  };
+
+  return valueObject;
+}
+
+/**
  * CD stands for ConceptDescriptor
  * @see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CD.html for more details
  */
@@ -502,7 +520,7 @@ export function isLoinc(system: string | undefined): boolean {
 export function getTextFromCode(code: CodeableConcept | undefined): string {
   if (!code) return NOT_SPECIFIED;
   const primaryCoding = code.coding?.[0];
-  return primaryCoding?.display ?? code.text ?? NOT_SPECIFIED;
+  return code.text ?? primaryCoding?.display ?? NOT_SPECIFIED;
 }
 
 export function getDisplaysFromCodeableConcepts(

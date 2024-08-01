@@ -19,6 +19,7 @@ import {
   Organization,
   Patient,
   Practitioner,
+  Procedure,
   Reference,
   Resource,
 } from "@medplum/fhirtypes";
@@ -183,6 +184,10 @@ export function isObservation(resource: Resource | undefined): resource is Obser
 
 export function isDiagnosticReport(resource: Resource | undefined): resource is DiagnosticReport {
   return resource?.resourceType === "DiagnosticReport";
+}
+
+export function isProcedure(resource: Resource | undefined): resource is Procedure {
+  return resource?.resourceType === "Procedure";
 }
 
 export function isCondition(resource: Resource | undefined): resource is Condition {
