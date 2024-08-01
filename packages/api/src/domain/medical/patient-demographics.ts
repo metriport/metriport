@@ -1,6 +1,5 @@
 import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
-import { USState } from "@metriport/core/domain/geographic-locations";
 import {
   ConsolidatedLinkDemographics,
   Patient,
@@ -17,7 +16,7 @@ import {
 } from "@metriport/core/domain/patient-demographics";
 import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/index";
 import { emailSchema } from "@metriport/api-sdk/medical/models/demographics";
-import { normalizePhoneNumber, stripNonNumericChars } from "@metriport/shared";
+import { normalizePhoneNumber, stripNonNumericChars, USState } from "@metriport/shared";
 import dayjs from "dayjs";
 import { ISO_DATE } from "../../shared/date";
 

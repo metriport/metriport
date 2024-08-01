@@ -62,7 +62,6 @@ import {
   schemaUpdateToPatientData,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 
 const router = Router();
@@ -500,27 +499,6 @@ router.post(
     throw new NotFoundError("Cannot find patient");
   })
 );
-
-/** ---------------------------------------------------------------------------
- * GET /patient/:id/facility-matches
- *
- * returns the all the facilities the patient is matched to.
- *
- * @param req.param.id The ID of the patient whose facility matches are to be returned.
- * @return The patient's facility matches.
- */
-router.get(
-  "/:id/facility-matches",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const patientId = getFrom("params").orFail("id", req);
-
-    const facilityMatches = await getPatientFacilityMatches({ patientId });
-
-    return res.json(facilityMatches);
-  })
-);
-
 /** ---------------------------------------------------------------------------
  * GET /patient/:id/consolidated/webhook
  *
