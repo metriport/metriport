@@ -40,29 +40,6 @@ export async function createNote({
     if (!resource) {
       throw new Error("Resource is undefined");
     }
-    if (resource.resourceType === "MedicationStatement") {
-      const medicationReference = resource.medicationReference?.reference;
-      if (medicationReference) {
-        const medicationId = medicationReference.split("/").pop();
-        const medication = data.entry.find(
-          entry =>
-            entry.resource?.resourceType === "Medication" && entry.resource?.id === medicationId
-        )?.resource;
-        if (medication?.resourceType === "Medication" && medication.code?.text) {
-          resource.medicationReference = {
-            ...resource.medicationReference,
-            display: medication.code.text,
-          };
-        }
-      }
-    }
-  }
-
-  for (const entry of data.entry) {
-    const resource = entry.resource;
-    if (!resource) {
-      throw new Error("Resource is undefined");
-    }
     if (resource.resourceType === "AllergyIntolerance") {
       console.log("Creating allergy");
       await canvas.createAllergy({
