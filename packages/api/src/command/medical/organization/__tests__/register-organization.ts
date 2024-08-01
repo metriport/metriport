@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { faker } from "@faker-js/faker";
-import { Coordinates } from "@metriport/core/domain/address";
 import { USState } from "@metriport/shared";
+import { Coordinates } from "@metriport/core/domain/address";
 import { AddressWithCoordinates } from "@metriport/core/domain/location-address";
 
 const coordinates: Coordinates = {

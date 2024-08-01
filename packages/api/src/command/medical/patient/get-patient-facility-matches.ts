@@ -1,5 +1,5 @@
-import { Address } from "@metriport/core/domain/address";
 import { USState } from "@metriport/shared";
+import { Address } from "@metriport/core/domain/address";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { CQLink } from "../../../external/carequality/cq-patient-data";
 import { CwLink } from "../../../external/commonwell/cw-patient-data";
