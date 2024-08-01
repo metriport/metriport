@@ -61,6 +61,7 @@ function postProcessXml(xml: any, oid: string): string {
     .replaceAll(placeholderOrgOid, oid)
     .replaceAll("&lt;", "<")
     .replaceAll("&gt;", ">")
+    .replaceAll("&quot;", '"')
     .replaceAll("</text><text>", "");
 }
 
