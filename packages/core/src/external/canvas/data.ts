@@ -366,7 +366,7 @@ export function generateFakeMedicationData2(
       resourceType: "MedicationStatement",
       status: "active",
       medicationReference: {
-        reference: "Medication/fdb-271753",
+        reference: "Medication/fdb-157536",
         display: "albuterol (90 mcg/dose) MDI",
       },
       subject: { reference: `Patient/${patientId}` },

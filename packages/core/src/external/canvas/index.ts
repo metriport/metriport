@@ -142,7 +142,6 @@ class CanvasSDK {
     const response = await this.handleAxiosRequest(() =>
       this.axiosInstanceCustomApi.post("notes/v1/Note", payload)
     );
-    console.log(response.data);
     return response.data.noteKey;
   }
 
@@ -269,7 +268,7 @@ class CanvasSDK {
 
     const response = await this.handleAxiosRequest(() => this.axiosInstanceFhirApi.get(url));
     if (response.data.entry && response.data.entry.length > 0) {
-      return response.data.entry[0].resource;
+      return response.data.entry;
     }
     throw new Error("Medication not found");
   }

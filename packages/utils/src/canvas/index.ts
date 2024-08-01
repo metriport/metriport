@@ -17,7 +17,7 @@ async function main() {
     });
 
     const canvasPatientId = "";
-    await createNote({ canvas, canvasPatientId, patientGender: "F" });
+    await createNote({ canvas, canvasPatientId, patientA: false, patientB: true });
     console.log("note created");
   } catch (error) {
     console.error("Error:", error);

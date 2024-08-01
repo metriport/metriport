@@ -9,14 +9,26 @@ export default function () {
   patientEvents().on(PatientEvents.CANVAS_INTEGRATION, async (event: PatientEvent) => {
     console.log(`[CANVAS-EVENT-LISTENER] Received event: ${JSON.stringify(event, null, 2)}`);
     const patient = await getPatientOrFail({ id: event.id, cxId: event.cxId });
-    const gender = patient.data.genderAtBirth;
+    const patientFirstName = patient.data.firstName;
+
+    let patientA = false;
+    let patientB = false;
+    if (patientFirstName.toLowerCase() === "jane") {
+      patientA = true;
+    } else if (patientFirstName.toLowerCase() === "john") {
+      patientB = true;
+    } else {
+      console.log(`[CANVAS-EVENT-LISTENER] Patient not demo patient: ${patientFirstName}`);
+      return;
+    }
 
     const canvasClientId = getEnvVarOrFail(`CANVAS_CLIENT_ID`);
     const canvasClientSecret = getEnvVarOrFail(`CANVAS_CLIENT_SECRET`);
+    const canvasEnvironment = getEnvVarOrFail(`CANVAS_ENVIRONMENT`);
     console.log(`[CANVAS-EVENT-LISTENER] Canvas client ID: ${canvasClientId}`);
     console.log(`[CANVAS-EVENT-LISTENER] Canvas client secret: ${canvasClientSecret}`);
 
-    if (!canvasClientId || !canvasClientSecret) {
+    if (!canvasClientId || !canvasClientSecret || !canvasEnvironment) {
       throw new Error("Canvas client ID or secret is undefined");
     }
 
@@ -24,11 +36,11 @@ export default function () {
     if (!canvasPatientId) throw new Error("Canvas patient ID is undefined");
 
     const canvas = await CanvasSDK.create({
-      environment: "metriport-sandbox",
+      environment: canvasEnvironment,
       clientId: canvasClientId,
       clientSecret: canvasClientSecret,
     });
 
-    await createNote({ canvas, canvasPatientId, patientGender: gender });
+    await createNote({ canvas, canvasPatientId, patientA, patientB });
   });
 }

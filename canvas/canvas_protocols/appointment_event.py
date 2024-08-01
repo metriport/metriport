@@ -11,7 +11,7 @@ from canvas_workflow_kit.fhir import FumageHelper
 class AppointmentNotification2(ClinicalQualityMeasure):
     class Meta:
         title = 'Appointment Creation Notification'
-        version = 'v1.1.9'
+        version = 'v1.2.5'
         description = 'Listens for appointment creation and sends a notification.'
         types = ['Notification']
         compute_on_change_types = [CHANGE_TYPE.APPOINTMENT]
@@ -20,7 +20,8 @@ class AppointmentNotification2(ClinicalQualityMeasure):
     def compute_results(self):
         result = ProtocolResult()
         result.status = STATUS_NOT_APPLICABLE
-
+        ## manually change this before uploading protocol to production account to sandbox URL
+        base_url = 'https://api.staging.metriport.com'
         changed_model = self.field_changes.get('model_name', '')
 
         if changed_model == 'appointment' and self.field_changes.get('created'):
@@ -61,7 +62,7 @@ class AppointmentNotification2(ClinicalQualityMeasure):
             metriport_facility_id = self.settings.get("METRIPORT_FACILITY_ID")
 
             pd_response = send_notification(
-                f'https://staging.metriport.com/medical/v1/patient?facilityId={metriport_facility_id}',
+                f'{base_url}/medical/v1/patient?facilityId={metriport_facility_id}',
                 json.dumps(payload),
                 headers={
                     'Content-Type': 'application/json',
@@ -69,7 +70,6 @@ class AppointmentNotification2(ClinicalQualityMeasure):
                 })
             result.add_narrative("Successfully sent patient data to Metriport API")
         
-            
             pd_response_data = pd_response.json()
             patient_id = pd_response_data.get('id')
             result.add_narrative(json.dumps({
@@ -78,11 +78,14 @@ class AppointmentNotification2(ClinicalQualityMeasure):
 
             if patient_id:
                 metadata = {
-                    'cx_id': self.settings.get('METRIPORT_CX_ID'),
+                    'metadata': {
+                        'cx_id': f'{self.settings.get("METRIPORT_CX_ID")}',
+                        'canvas': "true"
+                    }
                 };
             
                 dq_response = send_notification(
-                    f'https://e5935d6661f8.ngrok.app/medical/v1/document/query?patientId={patient_id}',
+                    f'{base_url}/medical/v1/document/query?patientId={patient_id}',
                     json.dumps(metadata),
                     headers={
                         'Content-Type': 'application/json',

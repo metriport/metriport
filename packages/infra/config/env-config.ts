@@ -193,6 +193,7 @@ type EnvConfigBase = {
     secretNames: {
       CANVAS_CLIENT_ID: string;
       CANVAS_CLIENT_SECRET: string;
+      CANVAS_ENVIRONMENT: string;
     };
   };
   sentryDSN?: string; // API's Sentry DSN

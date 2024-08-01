@@ -14,6 +14,7 @@ import { updateProgressWebhookSent } from "../patient/append-doc-query-progress"
 import { getPatientOrFail } from "../patient/get-patient";
 import { CONVERSION_WEBHOOK_TYPE, DOWNLOAD_WEBHOOK_TYPE } from "./process-doc-query-webhook";
 import { patientEvents } from "../../../event/medical/patient-event";
+import { Config } from "../../../shared/config";
 
 const log = Util.log(`Document Webhook`);
 
@@ -110,6 +111,7 @@ export const processPatientDocumentRequest = async (
     }
 
     if (
+      !Config.isProdEnv() &&
       whType === CONVERSION_WEBHOOK_TYPE &&
       metadata &&
       typeof metadata === "object" &&
