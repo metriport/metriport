@@ -22,7 +22,7 @@ export { MetriportMedicalApi } from "./medical/client/metriport";
 export { Address, addressSchema } from "./medical/models/common/address";
 export { BaseUpdate, baseUpdateSchema } from "./medical/models/common/base-update";
 export { MedicalDataSource } from "./medical/models/common/medical-data-source";
-export { USState, usStateSchema } from "./medical/models/common/us-data";
+export { usStateSchema } from "./medical/models/common/us-data";
 export {
   Contact,
   contactSchema,
