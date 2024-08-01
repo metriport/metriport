@@ -1,8 +1,11 @@
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { Op } from "sequelize";
-import { DocRefMapping } from "../../../domain/medical/docref-mapping";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { DocRefMappingModel } from "../../../models/medical/docref-mapping";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { Op, QueryTypes } from "sequelize";
+import { DocRefMapping } from "../../../domain/medical/docref-mapping";
+import {
+  DocRefMappingModel,
+  docRefMappingModelColumns as c,
+} from "../../../models/medical/docref-mapping";
 
 export const getDocRefMapping = async (id: string): Promise<DocRefMapping | undefined> => {
   const docRef = await DocRefMappingModel.findByPk(id);
@@ -28,7 +31,16 @@ export const getAllDocRefMapping = async ({
   return docRefs;
 };
 
-export const getOrCreateDocRefMapping = async ({
+const sql = `
+  WITH neworexisting AS (
+    INSERT INTO ${DocRefMappingModel.NAME}(${c.id},${c.externalId},${c.cxId},${c.patientId},${c.source},${c.requestId})
+      VALUES(:id, :externalId, :cxId, :patientId, :source, :requestId)
+    ON CONFLICT(${c.externalId}, ${c.patientId}, ${c.cxId}, ${c.source}) DO UPDATE SET ${c.udpatedAt}=now()
+    RETURNING *
+  )
+  SELECT * FROM neworexisting
+`;
+export async function getOrCreateDocRefMapping({
   cxId,
   patientId,
   requestId,
@@ -40,19 +52,27 @@ export const getOrCreateDocRefMapping = async ({
   requestId: string;
   externalId: string;
   source: MedicalDataSource;
-}): Promise<DocRefMapping> => {
-  const docRef = { cxId, patientId, externalId, source };
-  const [res] = await DocRefMappingModel.findOrCreate({
-    where: docRef,
-    defaults: {
-      id: uuidv7(),
-      requestId,
-      ...docRef,
-    },
+}): Promise<DocRefMapping> {
+  const replacements = {
+    id: uuidv7(),
+    externalId,
+    cxId,
+    patientId,
+    source,
+    requestId,
+  };
+  const res = await DocRefMappingModel.sequelize?.query(sql, {
+    replacements,
+    type: QueryTypes.SELECT,
+    mapToModel: true,
+    model: DocRefMappingModel,
   });
-
-  return res;
-};
+  const docRefMapping = res ? res[0] : undefined;
+  if (!docRefMapping) {
+    throw new Error("DocRefMapping not found");
+  }
+  return docRefMapping;
+}
 
 export const getDocRefMappings = async ({
   cxId,
