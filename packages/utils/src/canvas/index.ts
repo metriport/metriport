@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 import CanvasSDK from "@metriport/core/external/canvas/index";
-import { createNote } from "@metriport/core/external/canvas/note";
+import { createFullNote } from "@metriport/core/external/canvas/note";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 
 const canvasClientSecret = getEnvVarOrFail(`CANVAS_CLIENT_SECRET`);
@@ -17,10 +17,10 @@ async function main() {
     });
 
     const canvasPatientId = "";
-    await createNote({ canvas, canvasPatientId, patientA: false, patientB: true });
+    await createFullNote({ canvas, canvasPatientId, patientA: false, patientB: true });
     console.log("note created");
   } catch (error) {
-    console.error("Error:", error);
+    console.log("Error:", error);
   }
 }
 

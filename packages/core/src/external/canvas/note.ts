@@ -1,7 +1,9 @@
 import CanvasSDK from "./index";
 import { generateFakeBundleFemale, generateFakeBundleMale } from "./data";
+import { out } from "../../util/log";
+const { log } = out("[CANVAS NOTE]");
 
-export async function createNote({
+export async function createFullNote({
   canvas,
   canvasPatientId,
   patientA,
@@ -48,7 +50,7 @@ export async function createNote({
         throw new Error("Resource is undefined");
       }
       if (resource.resourceType === "AllergyIntolerance") {
-        console.log("Creating allergy");
+        log("Creating allergy");
         await canvas.createAllergy({
           allergy: resource,
           patientId: canvasPatientId,
@@ -58,7 +60,7 @@ export async function createNote({
         });
       }
       if (resource.resourceType === "MedicationStatement") {
-        console.log("Creating medication statement");
+        log("Creating medication statement");
         await canvas.createMedicationStatement({
           medication: resource,
           patientId: canvasPatientId,
@@ -67,7 +69,7 @@ export async function createNote({
         });
       }
       if (resource.resourceType === "Condition") {
-        console.log("Creating condition");
+        log("Creating condition");
         await canvas.createCondition({
           condition: resource,
           patientId: canvasPatientId,
@@ -77,7 +79,7 @@ export async function createNote({
       }
     }
   } catch (error) {
-    console.log("Error in createNote:", error);
+    log(`Error in createNote: ${error}`);
     throw error;
   }
 }

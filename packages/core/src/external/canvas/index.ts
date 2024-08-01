@@ -10,8 +10,6 @@ import {
   Medication,
   Bundle,
 } from "@medplum/fhirtypes";
-import { out } from "../../util/log";
-const { log } = out("Canvas SDK");
 
 const RXNORM_SYSTEM = "http://www.nlm.nih.gov/research/umls/rxnorm";
 
@@ -88,7 +86,6 @@ class CanvasSDK {
         const msg = `Request failed. Status: ${statusCode}. Message: ${JSON.stringify(
           errorMessage
         )}`;
-        log(`${msg}`);
         throw new Error(msg);
       }
       throw new Error("An unexpected error occurred during the request");
