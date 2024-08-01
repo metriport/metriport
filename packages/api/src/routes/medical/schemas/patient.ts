@@ -59,30 +59,3 @@ const coverageAssessmentPatientSchema = z.object({
 export const coverageAssessmentSchema = z.object({
   patients: coverageAssessmentPatientSchema.array(),
 });
-
-export const coverageAssessmentValidationSchema = z.object({
-  patients: coverageAssessmentPatientSchema
-    .omit({
-      dob: true,
-      gender: true,
-      firstname: true,
-      lastname: true,
-      zip: true,
-      cty: true,
-      state: true,
-      addressline1: true,
-    })
-    .merge(
-      z.object({
-        dob: z.string().optional(),
-        gender: z.string().optional(),
-        firstname: z.string().optional(),
-        lastname: z.string().optional(),
-        zip: z.string().optional(),
-        city: z.string().optional(),
-        state: z.string().optional(),
-        addressline1: z.string().optional(),
-      })
-    )
-    .array(),
-});

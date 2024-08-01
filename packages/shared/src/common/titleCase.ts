@@ -1,8 +1,6 @@
+import { startCase } from "lodash";
+
 export function toTitleCase(str: string): string {
-  return str
-    .toLowerCase()
-    .split(" ")
-    .map(s => s.charAt(0).toUpperCase() + s.substring(1))
-    .join(" ")
-    .trim();
+  const trimmedStr = str.trim();
+  return startCase(trimmedStr.toLowerCase());
 }

@@ -1,6 +1,6 @@
 export type GenderAtBirth = "F" | "M" | "O" | "U";
 
-export function normalizeGender(gender: string): "F" | "M" | "O" | "U" | undefined {
+export function normalizeGenderSafe(gender: string): "F" | "M" | "O" | "U" | undefined {
   const lowerGender = gender.toLowerCase().trim();
   if (lowerGender === "male" || lowerGender === "m") {
     return "M";
@@ -14,8 +14,8 @@ export function normalizeGender(gender: string): "F" | "M" | "O" | "U" | undefin
   return undefined;
 }
 
-export function normalizeGenderStrict(gender: string): GenderAtBirth {
-  const genderOrUndefined = normalizeGender(gender);
+export function normalizeGender(gender: string): GenderAtBirth {
+  const genderOrUndefined = normalizeGenderSafe(gender);
   if (!genderOrUndefined) throw new Error("Invalid gender");
   return genderOrUndefined;
 }

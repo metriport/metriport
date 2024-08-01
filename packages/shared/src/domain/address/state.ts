@@ -1,4 +1,4 @@
-export function normalizeState(state: string): USState | undefined {
+export function normalizeStateSafe(state: string): USState | undefined {
   if (Object.values(states).includes(USState[state as keyof typeof USState])) {
     return USState[state as keyof typeof USState];
   } else if (states[state]) {
@@ -9,8 +9,8 @@ export function normalizeState(state: string): USState | undefined {
   return undefined;
 }
 
-export function normalizeStateStrict(state: string): USState {
-  const stateOrUndefined = normalizeState(state);
+export function normalizeState(state: string): USState {
+  const stateOrUndefined = normalizeStateSafe(state);
   if (!stateOrUndefined) throw new Error("Invalid state.");
   return stateOrUndefined;
 }
@@ -69,7 +69,7 @@ export enum USState {
   WY = "WY",
 }
 
-const states: { [k in string]: USState } = {
+export const states: { [k in string]: USState } = {
   Arizona: USState.AZ,
   Alabama: USState.AL,
   Alaska: USState.AK,

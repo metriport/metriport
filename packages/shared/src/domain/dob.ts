@@ -1,7 +1,7 @@
 import { ISO_DATE } from "../common/date";
 import dayjs from "dayjs";
 
-export function normalizeDate(date: string): string | undefined {
+export function normalizeDateSafe(date: string): string | undefined {
   const trimmedDate = date.trim();
   const parsedDate = dayjs(trimmedDate);
   if (!parsedDate.isValid()) return undefined;
@@ -9,8 +9,8 @@ export function normalizeDate(date: string): string | undefined {
   return parsedDate.format(ISO_DATE);
 }
 
-export function normalizeDateStrict(date: string): string {
-  const dateOrUndefined = normalizeDate(date);
+export function normalizeDate(date: string): string {
+  const dateOrUndefined = normalizeDateSafe(date);
   if (!dateOrUndefined) throw new Error("Invalid date.");
   return dateOrUndefined;
 }

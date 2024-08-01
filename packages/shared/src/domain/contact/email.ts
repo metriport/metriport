@@ -10,11 +10,13 @@ export function isEmailValid(email: string): boolean {
   return true;
 }
 
-/**
- * Normalize an email.
- * @param email the email to be normalized
- */
 export function normalizeEmail(email: string): string {
   const trimmedEmail = email.trim();
   return trimmedEmail.toLowerCase();
+}
+
+export function normalizeEmailStrict(email: string): string {
+  const normalEmail = normalizeEmail(email);
+  if (!isEmailValid(normalEmail)) throw new Error("Invalid email.");
+  return normalEmail;
 }

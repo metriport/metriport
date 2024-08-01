@@ -7,17 +7,17 @@ import {
   sleep,
   stringToBoolean,
   normalizeDate,
-  normalizeDateStrict,
+  normalizeDateSafe,
   normalizeGender,
-  normalizeGenderStrict,
+  normalizeGenderSafe,
   isPhoneValid,
-  normalizePhoneNumber,
+  normalizePhoneNumberStrict,
   isEmailValid,
-  normalizeEmail,
+  normalizeEmailStrict,
   normalizeState,
-  normalizeStateStrict,
-  normalizeZipCodePassive,
-  normalizeZipCodeStrict,
+  normalizeStateSafe,
+  normalizeZipCode,
+  normalizeZipCodeSafe,
   normalizeExternalId,
   toTitleCase,
 } from "@metriport/shared";
@@ -86,7 +86,7 @@ import { PatientLinksDTO, dtoFromCW } from "./dtos/linkDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
-import { coverageAssessmentSchema, coverageAssessmentValidationSchema } from "./schemas/patient";
+import { coverageAssessmentSchema } from "./schemas/patient";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 
 dayjs.extend(duration);
@@ -777,72 +777,13 @@ router.post(
 );
 
 /** ---------------------------------------------------------------------------
- * POST /internal/patient/ops/coverage-assessment/validate
- *
- */
-router.post(
-  "/ops/coverage-assessment/validate",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const payload = coverageAssessmentValidationSchema.parse(req.body);
-
-    const invalidPatients: { patient: unknown; errors: string[] }[] = [];
-    payload.patients.map(patient => {
-      const errors: string[] = [];
-      // DOB
-      if (!patient.dob) {
-        errors.push("Missing DOB");
-      } else {
-        const dob = normalizeDate(patient.dob);
-        if (!dob) errors.push("Invalid DOB");
-      }
-      // Gender
-      if (!patient.gender) {
-        errors.push("Missing Gender");
-      } else {
-        const gender = normalizeGender(patient.gender);
-        if (!gender) errors.push("Invalid Gender");
-      }
-      // Name
-      if (!patient.firstname) errors.push("Missing First Name");
-      if (!patient.lastname) errors.push("Missing Last Name");
-      // Email
-      if (patient.email1 && !isEmailValid(patient.email1)) errors.push("Invalid Email 1");
-      if (patient.email2 && !isEmailValid(patient.email2)) errors.push("Invalid Email 2");
-      // Phone
-      if (patient.phone1 && !isPhoneValid(patient.phone1)) errors.push("Invalid Phone 1");
-      if (patient.phone2 && !isPhoneValid(patient.phone2)) errors.push("Invalid Phone 2");
-      // Zip
-      if (!patient.zip) {
-        errors.push("Missing Zip");
-      } else {
-        const zip = normalizeZipCodePassive(patient.zip);
-        if (!zip) errors.push("Invalid Zip");
-      }
-      // City
-      if (!patient.city) errors.push("Missing City");
-      // State
-      if (!patient.state) {
-        errors.push("Missing State");
-      } else {
-        const state = normalizeState(patient.state);
-        if (!state) errors.push("Invalid State");
-      }
-      // Address
-      if (!patient.addressline1) errors.push("Missing Address Line");
-      if (errors.length > 0) invalidPatients.push({ patient, errors });
-    });
-
-    return res.status(status.OK).json({ invalidPatients });
-  })
-);
-
-/** ---------------------------------------------------------------------------
  * POST /internal/patient/ops/coverage-assessment
  *
  * return the coverage
  * @param req.query.cxId The customer ID.
  * @param req.params.id The patient ID.
+ * @param req.query.facilityId The facility ID for running the coverage assessment.
+ * @param req.query.dryrun Whether to simply validate or run the assessment.
  * @return A patient.
  *
  */
@@ -852,15 +793,33 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getFrom("query").orFail("facilityId", req);
+    const dryrun = getFromQueryAsBoolean("dryrun", req);
     const payload = coverageAssessmentSchema.parse(req.body);
+    if (dryrun) {
+      const invalidPatients: { patient: unknown; errors: string[] }[] = [];
+      payload.patients.map(patient => {
+        const errors: string[] = [];
+        if (!normalizeDateSafe(patient.dob)) errors.push("Invalid DOB");
+        if (!normalizeGenderSafe(patient.gender)) errors.push("Invalid Gender");
+        if (patient.email1 && !isEmailValid(patient.email1)) errors.push("Invalid Email 1");
+        if (patient.email2 && !isEmailValid(patient.email2)) errors.push("Invalid Email 2");
+        if (patient.phone1 && !isPhoneValid(patient.phone1)) errors.push("Invalid Phone 1");
+        if (patient.phone2 && !isPhoneValid(patient.phone2)) errors.push("Invalid Phone 2");
+        if (!normalizeZipCodeSafe(patient.zip)) errors.push("Invalid Zip");
+        if (!normalizeStateSafe(patient.state)) errors.push("Invalid State");
+        if (errors.length > 0) invalidPatients.push({ patient, errors });
+      });
+
+      return res.status(status.OK).json({ invalidPatients });
+    }
 
     const facility = await getFacilityOrFail({ cxId, id: facilityId });
 
     const patientCreates: PatientCreateCmd[] = payload.patients.map(patient => {
-      const phone1 = patient.phone1 ? normalizePhoneNumber(patient.phone1) : undefined;
-      const email1 = patient.email1 ? normalizeEmail(patient.email1) : undefined;
-      const phone2 = patient.phone2 ? normalizePhoneNumber(patient.phone2) : undefined;
-      const email2 = patient.email2 ? normalizeEmail(patient.email2) : undefined;
+      const phone1 = patient.phone1 ? normalizePhoneNumberStrict(patient.phone1) : undefined;
+      const email1 = patient.email1 ? normalizeEmailStrict(patient.email1) : undefined;
+      const phone2 = patient.phone2 ? normalizePhoneNumberStrict(patient.phone2) : undefined;
+      const email2 = patient.email2 ? normalizeEmailStrict(patient.email2) : undefined;
       const contact1 = phone1 || email1 ? { phone: phone1, email: email1 } : undefined;
       const contact2 = phone2 || email2 ? { phone: phone2, email: email2 } : undefined;
       const contact = [contact1, contact2].flatMap(c => c ?? []);
@@ -871,15 +830,15 @@ router.post(
         externalId,
         firstName: toTitleCase(patient.firstname),
         lastName: toTitleCase(patient.lastname),
-        dob: normalizeDateStrict(patient.dob),
-        genderAtBirth: normalizeGenderStrict(patient.gender),
+        dob: normalizeDate(patient.dob),
+        genderAtBirth: normalizeGender(patient.gender),
         address: [
           {
             addressLine1: toTitleCase(patient.addressline1),
             addressLine2: patient.addressline2 ? toTitleCase(patient.addressline2) : undefined,
             city: toTitleCase(patient.city),
-            state: normalizeStateStrict(patient.state),
-            zip: normalizeZipCodeStrict(patient.zip),
+            state: normalizeState(patient.state),
+            zip: normalizeZipCode(patient.zip),
             country: "USA",
           },
         ],
