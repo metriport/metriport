@@ -66,7 +66,7 @@ async function initDB(): Promise<void> {
   // make sure we have the env vars we need
   const sqlDBCreds = Config.getDBCreds();
   const tokenTableName = Config.getTokenTableName();
-  const logDBOperations = Config.isCloudEnv() ? false : true;
+  const logDBOperations = Config.isCloudEnv() ? false : false;
   const dbPoolSettings = getDbPoolSettings();
 
   docTableNames = {

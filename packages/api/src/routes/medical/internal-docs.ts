@@ -18,6 +18,7 @@ import {
   getOrCreateDocRefMapping,
   getOrCreateDocRefMappingInsert,
   getOrCreateDocRefMappingInsertOrSelect,
+  getOrCreateDocRefMappingUpsert,
 } from "../../command/medical/docref-mapping/get-docref-mapping";
 import { checkDocumentQueries } from "../../command/medical/document/check-doc-queries";
 import { calculateDocumentConversionStatus } from "../../command/medical/document/document-conversion-status";
@@ -475,6 +476,26 @@ router.get(
     const externalId = getFrom("query").optional("externalId", req);
 
     const docRefMapping = await getOrCreateDocRefMapping({
+      cxId,
+      patientId,
+      requestId: "123",
+      externalId: externalId ?? uuidv7(),
+      source: MedicalDataSource.CAREQUALITY,
+    });
+
+    return res.status(httpStatus.OK).json(docRefMapping);
+  })
+);
+
+router.get(
+  "/test-upsert",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getFrom("query").orFail("cxId", req);
+    const patientId = getFrom("query").orFail("patientId", req);
+    const externalId = getFrom("query").optional("externalId", req);
+
+    const docRefMapping = await getOrCreateDocRefMappingUpsert({
       cxId,
       patientId,
       requestId: "123",

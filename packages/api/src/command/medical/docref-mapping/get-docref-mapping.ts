@@ -59,6 +59,43 @@ export async function getOrCreateDocRefMapping({
 }
 
 /**
+ * TEST (1.5)
+ */
+export async function getOrCreateDocRefMappingUpsert({
+  cxId,
+  patientId,
+  requestId,
+  externalId,
+  source,
+}: {
+  cxId: string;
+  patientId: string;
+  requestId: string;
+  externalId: string;
+  source: MedicalDataSource;
+}): Promise<DocRefMapping> {
+  const [res] = await DocRefMappingModel.upsert(
+    {
+      id: uuidv7(),
+      cxId,
+      patientId,
+      externalId,
+      source,
+      requestId,
+    },
+    {
+      conflictFields: [
+        "external_id" as unknown as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+        "patient_id" as unknown as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+        "cx_id" as unknown as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+        "source" as unknown as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+      ],
+    }
+  );
+  return res;
+}
+
+/**
  * TEST (2)
  */
 export async function getOrCreateDocRefMappingInsertOrSelect({
