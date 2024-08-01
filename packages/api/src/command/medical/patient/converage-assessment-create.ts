@@ -13,8 +13,8 @@ import { getConsolidated, ConsolidatedData } from "./consolidated-get";
 
 dayjs.extend(duration);
 
-const delayTime = dayjs.duration(30, "seconds").asMilliseconds();
-const dqDrBuffer = dayjs.duration(10, "minutes").asMilliseconds();
+const delayTime = dayjs.duration(30, "seconds");
+const dqDrBuffer = dayjs.duration(10, "minutes");
 
 export async function createCoverageAssessments({
   cxId,
@@ -29,21 +29,21 @@ export async function createCoverageAssessments({
   const pdChunkSize = 50;
   const pdChunks = chunk(patientCreates, pdChunkSize);
   for (const chunk of pdChunks) {
-    await sleep(delayTime);
+    await sleep(delayTime.asMilliseconds());
     const createPatients: Promise<Patient>[] = [];
     for (const patient of chunk) {
       createPatients.push(createOrUpdatePatient(patient));
     }
-    const patientPromises = await Promise.allSettled(createPatients);
-    patientPromises.map(promise => {
-      if (promise.status == "fulfilled") patients.push(promise.value);
+    const patientResults = await Promise.allSettled(createPatients);
+    patientResults.map(result => {
+      if (result.status == "fulfilled") patients.push(result.value);
     });
   }
   const patientIds = patients.map(patient => patient.id);
   const dqChunkSize = 10;
   const dQChunks = chunk(patientIds, dqChunkSize);
   for (const chunk of dQChunks) {
-    await sleep(delayTime);
+    await sleep(delayTime.asMilliseconds());
     const docQueries: Promise<DocumentQueryProgress>[] = [];
     for (const patientId of chunk) {
       docQueries.push(
@@ -56,19 +56,19 @@ export async function createCoverageAssessments({
     }
     await Promise.allSettled(docQueries);
   }
-  await sleep(dqDrBuffer);
+  await sleep(dqDrBuffer.asMilliseconds());
   const pollingAttempts = 20;
   const remainingPatientIds = [...patientIds];
   for (let i = 0; i < pollingAttempts; i++) {
-    await sleep(delayTime);
+    await sleep(delayTime.asMilliseconds());
     const drDone: Promise<string | undefined>[] = [];
     for (const patientId of patientIds) {
       drDone.push(pollDrDone(patientId, cxId));
     }
-    const drDonePromises = await Promise.allSettled(drDone);
-    drDonePromises.map(promise => {
-      if (promise.status == "fulfilled" && promise.value !== undefined) {
-        const index = remainingPatientIds.indexOf(promise.value);
+    const drDoneResults = await Promise.allSettled(drDone);
+    drDoneResults.map(result => {
+      if (result.status == "fulfilled" && result.value !== undefined) {
+        const index = remainingPatientIds.indexOf(result.value);
         if (index > -1) remainingPatientIds.splice(index, 1);
       }
     });
@@ -77,7 +77,7 @@ export async function createCoverageAssessments({
   const consolidatedChunkSize = 10;
   const consolidatedChunks = chunk(patients, consolidatedChunkSize);
   for (const chunk of consolidatedChunks) {
-    await sleep(delayTime);
+    await sleep(delayTime.asMilliseconds());
     const getConsolidateds: Promise<ConsolidatedData>[] = [];
     for (const patient of chunk) {
       getConsolidateds.push(getConsolidated({ patient, conversionType: "pdf" }));
