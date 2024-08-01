@@ -10,8 +10,6 @@ import {
   PopulateFhirServerResponse,
 } from "../command/medical/admin/populate-fhir";
 import { getFacilities } from "../command/medical/facility/get-facility";
-import { getPatients } from "../command/medical/patient/get-patient";
-import { getCoverageAssessment } from "../command/medical/patient/converage-assessment-get";
 import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
 import { getCxFFStatus } from "../command/internal/get-hie-enabled-feature-flags-status";
@@ -22,7 +20,6 @@ import { makeFhirApi } from "../external/fhir/api/api-factory";
 import { countResources } from "../external/fhir/patient/count-resources";
 import { getReferencesFromFHIR } from "../external/fhir/references/get-references";
 import { OrganizationModel } from "../models/medical/organization";
-import { internalDtoFromModel } from "./medical/dtos/patientDTO";
 import { internalDtoFromModel as facilityInternalDto } from "./medical/dtos/facilityDTO";
 import { internalDtoFromModel as orgInternalDto } from "./medical/dtos/organizationDTO";
 import userRoutes from "./devices/internal-user";
@@ -210,38 +207,6 @@ router.get(
       org: orgInternalDto(org),
       facilities: facilities.map(f => facilityInternalDto(f)),
     };
-    return res.status(httpStatus.OK).json(response);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * GET /internal/cx-data/patients
- *
- * Returns the cx patients for a given facility used for internal scripts
- * @param req.query.facilityId - The facility ID.
- */
-router.get(
-  "/cx-data/patients",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const facilityId = getFrom("query").orFail("facilityId", req);
-    const patients = await getPatients({ cxId, facilityId });
-
-    const assessments = await Promise.all(
-      patients.map(async patient => {
-        return await getCoverageAssessment({ cxId, patient });
-      })
-    );
-    const assessmentPatients = patients.map(patient => {
-      const coverageAsessment = assessments.find(a => a.patientId === patient.id);
-      return {
-        ...internalDtoFromModel(patient),
-        ...coverageAsessment,
-      };
-    });
-
-    const response = { patients: assessmentPatients };
     return res.status(httpStatus.OK).json(response);
   })
 );

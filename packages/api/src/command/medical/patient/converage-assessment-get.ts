@@ -14,7 +14,7 @@ function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
-type CoverageAssessment = {
+export type CoverageAssessment = {
   patientId: string;
   downloadStatus: string | undefined;
   docCount: number | undefined;

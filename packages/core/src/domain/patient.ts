@@ -116,3 +116,13 @@ export function createDriversLicensePersonalIdentifier(
   };
   return personalIdentifier;
 }
+
+export type CoverageAssessment = {
+  patientId: string;
+  downloadStatus: string | undefined;
+  docCount: number | undefined;
+  convertStatus: string | undefined;
+  fhirCount: number;
+  fhirDetails: string;
+  mrSummaryUrl: string | undefined;
+};

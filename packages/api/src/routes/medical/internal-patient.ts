@@ -35,6 +35,10 @@ import {
   getPatients,
 } from "../../command/medical/patient/get-patient";
 import {
+  getCoverageAssessment,
+  CoverageAssessment,
+} from "../../command/medical/patient/converage-assessment-get";
+import {
   PatientUpdateCmd,
   updatePatientWithoutHIEs,
 } from "../../command/medical/patient/update-patient";
@@ -77,6 +81,7 @@ import {
   getFromQueryAsBoolean,
 } from "../util";
 import { PatientLinksDTO, dtoFromCW } from "./dtos/linkDTO";
+import { internalDtoFromModel } from "./dtos/patientDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
@@ -830,6 +835,47 @@ router.post(
       patientCreates,
     }).catch(processAsyncError("createCoverageAssessments"));
     return res.sendStatus(status.OK);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/paitnet/ops/coverage-assessment
+ *
+ * Returns the cx patients for a given facility used for internal scripts
+ * @param req.query.facilityId - The facility ID.
+ */
+router.get(
+  "/coverage-assessment",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const facilityId = getFrom("query").orFail("facilityId", req);
+    const patients = await getPatients({ cxId, facilityId });
+
+    const assessmentsMap: { [key: string]: CoverageAssessment | undefined } = {};
+    const converageChunkSize = 50;
+    const converageChunks = chunk(patients, converageChunkSize);
+    for (const chunk of converageChunks) {
+      const getCoverageAssessments: Promise<CoverageAssessment>[] = [];
+      for (const patient of chunk) {
+        getCoverageAssessments.push(getCoverageAssessment({ cxId, patient }));
+      }
+      const coverageAssessmentReults = await Promise.allSettled(getCoverageAssessments);
+      coverageAssessmentReults.map(result => {
+        if (result.status == "fulfilled") assessmentsMap[result.value.patientId] = result.value;
+      });
+    }
+
+    const assessmentPatients = patients.map(patient => {
+      const coverageAsessment = assessmentsMap[patient.id];
+      return {
+        ...internalDtoFromModel(patient),
+        ...coverageAsessment,
+      };
+    });
+
+    const response = { patients: assessmentPatients };
+    return res.status(status.OK).json(response);
   })
 );
 
