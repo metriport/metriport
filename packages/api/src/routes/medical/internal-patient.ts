@@ -7,17 +7,11 @@ import {
   sleep,
   stringToBoolean,
   normalizeDate,
-  normalizeDateSafe,
   normalizeGender,
-  normalizeGenderSafe,
-  isPhoneValid,
   normalizePhoneNumberStrict,
-  isEmailValid,
   normalizeEmailStrict,
   normalizeState,
-  normalizeStateSafe,
   normalizeZipCode,
-  normalizeZipCodeSafe,
   normalizeExternalId,
   toTitleCase,
 } from "@metriport/shared";
@@ -795,26 +789,10 @@ router.post(
     const facilityId = getFrom("query").orFail("facilityId", req);
     const dryrun = getFromQueryAsBoolean("dryrun", req);
     const payload = coverageAssessmentSchema.parse(req.body);
-    if (dryrun) {
-      const invalidPatients: { patient: unknown; errors: string[] }[] = [];
-      payload.patients.map(patient => {
-        const errors: string[] = [];
-        if (!normalizeDateSafe(patient.dob)) errors.push("Invalid DOB");
-        if (!normalizeGenderSafe(patient.gender)) errors.push("Invalid Gender");
-        if (patient.email1 && !isEmailValid(patient.email1)) errors.push("Invalid Email 1");
-        if (patient.email2 && !isEmailValid(patient.email2)) errors.push("Invalid Email 2");
-        if (patient.phone1 && !isPhoneValid(patient.phone1)) errors.push("Invalid Phone 1");
-        if (patient.phone2 && !isPhoneValid(patient.phone2)) errors.push("Invalid Phone 2");
-        if (!normalizeZipCodeSafe(patient.zip)) errors.push("Invalid Zip");
-        if (!normalizeStateSafe(patient.state)) errors.push("Invalid State");
-        if (errors.length > 0) invalidPatients.push({ patient, errors });
-      });
 
-      return res.status(status.OK).json({ invalidPatients });
-    }
+    if (dryrun) return res.status(status.OK);
 
     const facility = await getFacilityOrFail({ cxId, id: facilityId });
-
     const patientCreates: PatientCreateCmd[] = payload.patients.map(patient => {
       const phone1 = patient.phone1 ? normalizePhoneNumberStrict(patient.phone1) : undefined;
       const email1 = patient.email1 ? normalizeEmailStrict(patient.email1) : undefined;
