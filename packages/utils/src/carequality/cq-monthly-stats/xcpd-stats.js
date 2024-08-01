@@ -1,11 +1,11 @@
-import * as dotenv from "dotenv";
+const dotenv = require("dotenv");
 dotenv.config();
 // keep that ^ on top
-import { OutboundPatientDiscoveryResp } from "@metriport/ihe-gateway-sdk";
-import dayjs from "dayjs";
-import { merge } from "lodash";
-import duration from "dayjs/plugin/duration";
-import {
+const { OutboundPatientDiscoveryResp } = require("@metriport/ihe-gateway-sdk");
+const dayjs = require("dayjs");
+const { merge } = require("lodash");
+const duration = require("dayjs/plugin/duration");
+const {
   queryResultsTable,
   associateGWToImplementer,
   GWWithStats,
@@ -15,47 +15,37 @@ import {
   RequestParams,
   ImplementerStatsByDay,
   MonthlyImplementerStats,
-} from "./shared";
+} = require("./shared");
 
 dayjs.extend(duration);
 
 const patientDiscoveryResultTableName = "patient_discovery_result";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function xcpdStats({
-  cqDirectory,
-  endOfPreviousMonth,
-  dayIndex,
-}: RequestParams): Promise<ImplementerWithGwStats[]> {
-  const xcpdGWStats: GWWithStats[] = await aggregateXCPDGWStats(endOfPreviousMonth, dayIndex);
+// eslint-disable-next-line no-undef
+async function xcpdStats({ cqDirectory, endOfPreviousMonth, dayIndex }) {
+  const xcpdGWStats = await aggregateXCPDGWStats(endOfPreviousMonth, dayIndex);
 
-  const xcpdStats: ImplementerWithGwStats[] = await associateGWToImplementer(
-    xcpdGWStats,
-    cqDirectory
-  );
+  const xcpdStats = await associateGWToImplementer(xcpdGWStats, cqDirectory);
 
   return xcpdStats;
 }
 
-async function aggregateXCPDGWStats(
-  endOfPreviousMonth: string,
-  dayIndex: number
-): Promise<GWWithStats[]> {
-  const tableResults = await queryResultsTable<OutboundPatientDiscoveryResp>(
+async function aggregateXCPDGWStats(endOfPreviousMonth, dayIndex) {
+  const tableResults = await queryResultsTable(
     patientDiscoveryResultTableName,
     endOfPreviousMonth,
     dayIndex
   );
 
-  const durationsPerGW: GWWithStats[] = getDurationsPerGW(tableResults);
-  const nonErroredResponsesPerGW: GWWithStats[] = getNonErroredResponsesPerGW(tableResults);
+  const durationsPerGW = getDurationsPerGW(tableResults);
+  const nonErroredResponsesPerGW = getNonErroredResponsesPerGW(tableResults);
 
   return merge(durationsPerGW, nonErroredResponsesPerGW);
 }
 
-function getNonErroredResponsesPerGW(results: OutboundPatientDiscoveryResp[]): GWWithStats[] {
-  const nonErroredResponsesPerGW: CountPerGW = {};
-  const xcpdGWStats: GWWithStats[] = [];
+function getNonErroredResponsesPerGW(results) {
+  const nonErroredResponsesPerGW = {};
+  const xcpdGWStats = [];
 
   results.forEach(result => {
     const gwId = result.gateway.oid;
@@ -80,10 +70,8 @@ function getNonErroredResponsesPerGW(results: OutboundPatientDiscoveryResp[]): G
   return xcpdGWStats;
 }
 
-export function aggregateNonXcpdErrRespByMonth(
-  statsByDay: ImplementerStatsByDay
-): MonthlyImplementerStats[] {
-  const monthlyStats: MonthlyImplementerStats[] = [];
+function aggregateNonXcpdErrRespByMonth(statsByDay) {
+  const monthlyStats = [];
 
   Object.entries(statsByDay).forEach(([day, stats]) => {
     stats.forEach(stat => {
@@ -116,9 +104,15 @@ export function aggregateNonXcpdErrRespByMonth(
   return monthlyStats;
 }
 
-export function aggregateGwNonErroredResponses(gwWithStats: GWWithStats[]): number {
+function aggregateGwNonErroredResponses(gwWithStats) {
   return gwWithStats.reduce((acc, curr) => {
     const gwStat = curr.nonErroredResponses ?? 0;
     return acc + gwStat;
   }, 0);
 }
+
+module.exports = {
+  xcpdStats,
+  aggregateNonXcpdErrRespByMonth,
+  aggregateGwNonErroredResponses,
+};

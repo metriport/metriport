@@ -1,33 +1,33 @@
-import * as dotenv from "dotenv";
+const dotenv = require("dotenv");
 dotenv.config();
 // keep that ^ on top
-import { QueryTypes } from "sequelize";
-import dayjs from "dayjs";
-import duration from "dayjs/plugin/duration";
-import fs from "fs";
-import { sleep } from "@metriport/shared";
-import { xcpdStats, aggregateNonXcpdErrRespByMonth } from "./xcpd-stats";
-import { xcaDQStats } from "./xca-dq-stats";
-import { xcaDRStats, aggregateDocRetrievedByMonth } from "./xca-dr-stats";
-import {
-  readOnlyDBPool,
-  ImplementerStatsByDay,
-  MonthlyImplementerStats,
-  aggregateDurationAvgByMonth,
-} from "./shared";
+const { QueryTypes } = require("sequelize");
+const dayjs = require("dayjs");
+const duration = require("dayjs/plugin/duration");
+const fs = require("fs");
+const { sleep } = require("@metriport/shared");
+const { xcpdStats, aggregateNonXcpdErrRespByMonth } = require("./xcpd-stats");
+const { xcaDQStats } = require("./xca-dq-stats");
+const { xcaDRStats, aggregateDocRetrievedByMonth } = require("./xca-dr-stats");
+const { readOnlyDBPool, aggregateDurationAvgByMonth } = require("./shared");
 
 dayjs.extend(duration);
 
 // USE STORED RESULTS ON SUBSEQUENT RUNS TO AVOID REPEATEDLY RUNNING THE SAME EXPENSIVE QUERIES
 
+const v8 = require("v8");
+const totalHeapSize = v8.getHeapStatistics().total_available_size;
+const totalHeapSizeinGB = (totalHeapSize / 1024 / 1024 / 1024).toFixed(2);
+console.log(`Total heap size: ${totalHeapSizeinGB} GB`);
+
 async function main() {
-  let cqDirectory: object[] = [];
+  let cqDirectory = [];
 
   if (fs.existsSync("./runs/cq-directory.json")) {
     console.log("Using stored CQ directory");
     cqDirectory = JSON.parse(fs.readFileSync("./runs/cq-directory.json", "utf8"));
   } else {
-    const sqlCQDirectory = `SELECT * FROM cq_directory_entry`;
+    const sqlCQDirectory = "SELECT * FROM cq_directory_entry";
     cqDirectory = await readOnlyDBPool.query(sqlCQDirectory, {
       type: QueryTypes.SELECT,
     });
@@ -37,18 +37,18 @@ async function main() {
 
   console.log("cqDirectory:", cqDirectory.length);
 
-  const previousMonth = dayjs().subtract(1, "month");
+  const previousMonth = dayjs().subtract(2, "month");
   const previousMonthYear = previousMonth.year();
   const daysInPreviousMonth = previousMonth.daysInMonth();
   const endOfPreviousMonth = previousMonth.endOf("month").format("YYYY-MM-DD");
 
-  const xcpdByDate: ImplementerStatsByDay = {};
-  const xcaDQByDate: ImplementerStatsByDay = {};
-  const xcaDRByDate: ImplementerStatsByDay = {};
+  const xcpdByDate = {};
+  const xcaDQByDate = {};
+  const xcaDRByDate = {};
 
-  for (let i = 0; i < daysInPreviousMonth; i++) {
+  for (let i = 0; i < 3; i++) {
     const day = previousMonth.endOf("month").subtract(i, "day").format("YYYY-MM-DD");
-    const baseDir = `./runs`;
+    const baseDir = "./runs";
     const baseDirDay = `${baseDir}/${day}`;
     fs.mkdirSync(baseDirDay, { recursive: true });
 
@@ -106,7 +106,7 @@ async function main() {
   process.exit(0);
 }
 
-function createXcpdNonErrRespCsv(monthlyStats: MonthlyImplementerStats[]) {
+function createXcpdNonErrRespCsv(monthlyStats) {
   let csv =
     "Year,Month,Implementer Id,Implementer Name,Number of Non-errored XCPD query responses received\n";
 
@@ -118,7 +118,7 @@ function createXcpdNonErrRespCsv(monthlyStats: MonthlyImplementerStats[]) {
   fs.writeFileSync("./runs/xcpd-non-err-resp.csv", csv);
 }
 
-function createDocRetrievedCsv(monthlyStats: MonthlyImplementerStats[]) {
+function createDocRetrievedCsv(monthlyStats) {
   let csv = "Year,Month,Implementer Id,Implementer Name,Number of Documents Retrieved\n";
 
   monthlyStats.forEach(stat => {
@@ -129,7 +129,7 @@ function createDocRetrievedCsv(monthlyStats: MonthlyImplementerStats[]) {
   fs.writeFileSync("./runs/xca-doc-retrieved.csv", csv);
 }
 
-function createAvgCsv(monthlyStats: MonthlyImplementerStats[]) {
+function createAvgCsv(monthlyStats) {
   let csv =
     "Year,Month,Implementer Id,Implementer Name,Median XCPD (in ms),Median XCA Query (in ms),Median XCA Retrieve (in ms)\n";
 

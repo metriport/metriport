@@ -1,71 +1,17 @@
-import * as dotenv from "dotenv";
+const dotenv = require("dotenv");
 dotenv.config();
 // keep that ^ on top
-import { getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { initReadonlyDbPool } from "@metriport/core/util/sequelize";
-import { QueryTypes } from "sequelize";
-import { mean } from "lodash";
+const { getEnvVarOrFail } = require("@metriport/core/util/env-var");
+const { initReadonlyDbPool } = require("@metriport/core/util/sequelize");
+const { QueryTypes } = require("sequelize");
+const { mean } = require("lodash");
 
 const sqlDBCreds = getEnvVarOrFail("DB_CREDS");
 const sqlReadReplicaEndpoint = getEnvVarOrFail("DB_READ_REPLICA_ENDPOINT");
 
-export const readOnlyDBPool = initReadonlyDbPool(sqlDBCreds, sqlReadReplicaEndpoint);
+const readOnlyDBPool = initReadonlyDbPool(sqlDBCreds, sqlReadReplicaEndpoint);
 
-export type RequestParams = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  cqDirectory: any[];
-  endOfPreviousMonth: string;
-  dayIndex: number;
-};
-
-export type GWStats = {
-  nonErroredResponses?: number;
-  totalDocRetrieved?: number;
-  avgResponseTimeMs?: number;
-};
-
-export type GWWithStats = {
-  gwId: string;
-} & GWStats;
-
-export type Implementer = {
-  implementerId: string;
-  implementerName: string;
-};
-
-export type ImplementerWithAvgResp = Implementer & {
-  avgResponseTimeMs: number;
-};
-
-export type ImplementerWithGwStats = Implementer & {
-  gwStats: GWWithStats[];
-};
-
-export type ImplementerStats = Implementer & GWStats;
-
-export type ImplementerStatsByDay = {
-  [day: string]: ImplementerWithGwStats[];
-};
-
-export type DurationAvgs = {
-  xcpdAvgResponseTimeMs?: number;
-  xcaDQAvgResponseTimeMs?: number;
-  xcaDRAvgResponseTimeMs?: number;
-};
-
-export type MonthlyImplementerStats = {
-  year: number;
-  month: number;
-} & ImplementerStats &
-  DurationAvgs;
-
-export type CountPerGW = { [key: string]: [number] };
-
-export async function queryResultsTable<TableResults>(
-  tableName: string,
-  endOfPreviousMonth: string,
-  dayIndex: number
-): Promise<TableResults[]> {
+async function queryResultsTable(tableName, endOfPreviousMonth, dayIndex) {
   const dayPlusOne = dayIndex + 1;
 
   console.log(`Querying table ${tableName} for day ${dayPlusOne}...`);
@@ -80,18 +26,17 @@ export async function queryResultsTable<TableResults>(
     type: QueryTypes.SELECT,
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const resultsData = results.map((result: any) => result.data) as TableResults[];
+  // Map to extract data from results
+  const resultsData = results.map(result => result.data);
 
   console.log(`Results for table ${tableName} day ${dayPlusOne}:`, results.length);
 
   return resultsData;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function getDurationsPerGW(results: any[]): GWWithStats[] {
-  const durationsPerGW: CountPerGW = {};
-  const gwStats: GWWithStats[] = [];
+function getDurationsPerGW(results) {
+  const durationsPerGW = {};
+  const gwStats = [];
 
   results.forEach(result => {
     const gwId = result.gateway.oid || result.gateway.homeCommunityId;
@@ -119,12 +64,8 @@ export function getDurationsPerGW(results: any[]): GWWithStats[] {
   return gwStats;
 }
 
-export function associateGWToImplementer(
-  xcpdGWStats: GWWithStats[],
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  cqDirectory: any[]
-): ImplementerWithGwStats[] {
-  const implementerStats: ImplementerWithGwStats[] = [];
+function associateGWToImplementer(xcpdGWStats, cqDirectory) {
+  const implementerStats = [];
 
   for (const gwStats of xcpdGWStats) {
     const implementer = findGWImplementer(gwStats.gwId, gwStats, cqDirectory);
@@ -152,12 +93,7 @@ export function associateGWToImplementer(
   return implementerStats;
 }
 
-function findGWImplementer(
-  gateway: string,
-  stats: GWStats,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  cqDirectory: any[]
-): { name: string; oid: string } | undefined {
+function findGWImplementer(gateway, stats, cqDirectory) {
   const cqDirectoryGW = cqDirectory.find(entry => entry.id === gateway);
 
   if (cqDirectoryGW) {
@@ -176,14 +112,14 @@ function findGWImplementer(
   return undefined;
 }
 
-export function aggregateDurationAvgByMonth(
-  year: number,
-  month: number,
-  xcpdStatsByDay: ImplementerStatsByDay,
-  xcaDQStatsByDay: ImplementerStatsByDay,
-  xcaDRStatsByDay: ImplementerStatsByDay
-): MonthlyImplementerStats[] {
-  const monthlyStats: MonthlyImplementerStats[] = [];
+function aggregateDurationAvgByMonth(
+  year,
+  month,
+  xcpdStatsByDay,
+  xcaDQStatsByDay,
+  xcaDRStatsByDay
+) {
+  const monthlyStats = [];
 
   const xcpdDailyAvgsByImplementer = getMonthlyAvgByImplementer(xcpdStatsByDay);
   const xcaDQDailyAvgsByImplementer = getMonthlyAvgByImplementer(xcaDQStatsByDay);
@@ -252,14 +188,8 @@ export function aggregateDurationAvgByMonth(
   return monthlyStats;
 }
 
-function getMonthlyAvgByImplementer(statsByDay: ImplementerStatsByDay): ImplementerWithAvgResp[] {
-  const monthlyAvgsByImplementer: {
-    [key: string]: {
-      implementerId: string;
-      implementerName: string;
-      avgResponseTimeMs: number[];
-    };
-  } = {};
+function getMonthlyAvgByImplementer(statsByDay) {
+  const monthlyAvgsByImplementer = {};
 
   Object.values(statsByDay).forEach(stats => {
     stats.forEach(stat => {
@@ -290,7 +220,7 @@ function getMonthlyAvgByImplementer(statsByDay: ImplementerStatsByDay): Implemen
   });
 }
 
-export function aggregateGwAvgResponseTime(gwWithStats: GWWithStats[]): number {
+function aggregateGwAvgResponseTime(gwWithStats) {
   const totalAvgResponseTime = gwWithStats.reduce((acc, curr) => {
     const gwStat = curr.avgResponseTimeMs ?? 0;
     return acc + gwStat;
@@ -298,3 +228,14 @@ export function aggregateGwAvgResponseTime(gwWithStats: GWWithStats[]): number {
 
   return totalAvgResponseTime / gwWithStats.length;
 }
+
+module.exports = {
+  queryResultsTable,
+  getDurationsPerGW,
+  associateGWToImplementer,
+  findGWImplementer,
+  aggregateDurationAvgByMonth,
+  getMonthlyAvgByImplementer,
+  aggregateGwAvgResponseTime,
+  readOnlyDBPool,
+};

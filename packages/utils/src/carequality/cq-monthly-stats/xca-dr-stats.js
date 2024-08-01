@@ -1,11 +1,11 @@
-import * as dotenv from "dotenv";
+const dotenv = require("dotenv");
 dotenv.config();
 // keep that ^ on top
-import { OutboundDocumentRetrievalResp } from "@metriport/ihe-gateway-sdk";
-import dayjs from "dayjs";
-import { merge } from "lodash";
-import duration from "dayjs/plugin/duration";
-import {
+const { OutboundDocumentRetrievalResp } = require("@metriport/ihe-gateway-sdk");
+const dayjs = require("dayjs");
+const { merge } = require("lodash");
+const duration = require("dayjs/plugin/duration");
+const {
   ImplementerWithGwStats,
   GWWithStats,
   queryResultsTable,
@@ -15,56 +15,46 @@ import {
   CountPerGW,
   ImplementerStatsByDay,
   MonthlyImplementerStats,
-} from "./shared";
+} = require("./shared");
 
 dayjs.extend(duration);
 
 const documentRetrievalResultTableName = "document_retrieval_result";
 
-export async function xcaDRStats({
-  cqDirectory,
-  endOfPreviousMonth,
-  dayIndex,
-}: RequestParams): Promise<ImplementerWithGwStats[]> {
-  const xcaDRGWStats: GWWithStats[] = await aggregateXcaDRGWStats(endOfPreviousMonth, dayIndex);
+async function xcaDRStats({ cqDirectory, endOfPreviousMonth, dayIndex }) {
+  const xcaDRGWStats = await aggregateXcaDRGWStats(endOfPreviousMonth, dayIndex);
 
-  const xcaDRStats: ImplementerWithGwStats[] = await associateGWToImplementer(
-    xcaDRGWStats,
-    cqDirectory
-  );
+  const xcaDRStats = await associateGWToImplementer(xcaDRGWStats, cqDirectory);
 
   return xcaDRStats;
 }
 
-async function aggregateXcaDRGWStats(
-  endOfPreviousMonth: string,
-  dayIndex: number
-): Promise<GWWithStats[]> {
-  const tableResults = await queryResultsTable<OutboundDocumentRetrievalResp>(
+async function aggregateXcaDRGWStats(endOfPreviousMonth, dayIndex) {
+  const tableResults = await queryResultsTable(
     documentRetrievalResultTableName,
     endOfPreviousMonth,
     dayIndex
   );
 
-  const durationsPerGW: GWWithStats[] = getDurationsPerGW(tableResults);
-  const totalDocRetrievedPerGW: GWWithStats[] = getTotalDocRetrievedPerGW(tableResults);
+  const durationsPerGW = getDurationsPerGW(tableResults);
+  const totalDocRetrievedPerGW = getTotalDocRetrievedPerGW(tableResults);
 
   return merge(durationsPerGW, totalDocRetrievedPerGW);
 }
 
-function getTotalDocRetrievedPerGW(results: OutboundDocumentRetrievalResp[]): GWWithStats[] {
-  const totalDocRetrievedPerGW: CountPerGW = {};
-  const xcaDQGWStats: GWWithStats[] = [];
+function getTotalDocRetrievedPerGW(results) {
+  const totalDocRetrievedPerGW = {};
+  const xcaDQGWStats = [];
 
   results.forEach(result => {
     const gwId = result.gateway.homeCommunityId;
-    const totalDocRetrieved = result.documentReference?.length ?? 0;
+    const totalDocRetrieved = result.documentReference ? result.documentReference.length : 0;
 
     if (!totalDocRetrievedPerGW[gwId]) {
       totalDocRetrievedPerGW[gwId] = [totalDocRetrieved];
+    } else {
+      totalDocRetrievedPerGW[gwId].push(totalDocRetrieved);
     }
-
-    totalDocRetrievedPerGW[gwId].push(totalDocRetrieved);
   });
 
   for (const [gwId, totalDocRetrieved] of Object.entries(totalDocRetrievedPerGW)) {
@@ -79,10 +69,8 @@ function getTotalDocRetrievedPerGW(results: OutboundDocumentRetrievalResp[]): GW
   return xcaDQGWStats;
 }
 
-export function aggregateDocRetrievedByMonth(
-  statsByDay: ImplementerStatsByDay
-): MonthlyImplementerStats[] {
-  const monthlyStats: MonthlyImplementerStats[] = [];
+function aggregateDocRetrievedByMonth(statsByDay) {
+  const monthlyStats = [];
 
   Object.entries(statsByDay).forEach(([day, stats]) => {
     stats.forEach(stat => {
@@ -98,7 +86,7 @@ export function aggregateDocRetrievedByMonth(
 
       const totalDocRetrieved = aggregateGwTotalDocReceived(gwStats);
 
-      if (existingStat && existingStat.totalDocRetrieved) {
+      if (existingStat) {
         existingStat.totalDocRetrieved += totalDocRetrieved;
       } else {
         monthlyStats.push({
@@ -115,9 +103,17 @@ export function aggregateDocRetrievedByMonth(
   return monthlyStats;
 }
 
-export function aggregateGwTotalDocReceived(gwWithStats: GWWithStats[]): number {
+function aggregateGwTotalDocReceived(gwWithStats) {
   return gwWithStats.reduce((acc, curr) => {
-    const gwStat = curr.totalDocRetrieved ?? 0;
+    const gwStat = curr.totalDocRetrieved || 0;
     return acc + gwStat;
   }, 0);
 }
+
+module.exports = {
+  xcaDRStats,
+  aggregateXcaDRGWStats,
+  getTotalDocRetrievedPerGW,
+  aggregateDocRetrievedByMonth,
+  aggregateGwTotalDocReceived,
+};
