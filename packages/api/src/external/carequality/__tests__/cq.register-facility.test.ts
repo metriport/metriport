@@ -5,49 +5,48 @@ import { OrganizationBizType } from "@metriport/core/domain/organization";
 import { CarequalityManagementAPIImpl } from "@metriport/carequality-sdk/client/carequality";
 import { metriportEmail as metriportEmailForCq } from "../constants";
 import { metriportCompanyDetails } from "@metriport/shared";
-import { Facility, FacilityType } from "../../../domain/medical/facility";
+import { FacilityType } from "../../../domain/medical/facility";
 import { makeFacility } from "../../../domain/medical/__tests__/facility";
 import * as getAddress from "../../../domain/medical/address";
-import { addressWithCoordinates } from "./register-facility";
 import {
   createOrUpdateFacilityInCq,
   metriportIntermediaryOid,
   metriportOid,
 } from "../command/cq-directory/create-or-update-cq-facility";
-import { getAddressWithCoordinates } from "../../../domain/medical/address";
+import { makeAddressWithCoordinates } from "../../../domain/medical/__tests__/location-address";
 import { buildCqOrgNameForFacility } from "../shared";
 import * as createOrUpdateCqOrg from "../command/cq-directory/create-or-update-cq-organization";
 
-let mockedFacility: Facility;
-let mockedOboFacility: Facility;
+let getAddressWithCoordination: jest.SpyInstance;
 let createOrUpdateCqOrganizationMock: jest.SpyInstance;
 
+const mockedFacility = makeFacility({
+  cqType: FacilityType.initiatorAndResponder,
+  cqActive: true,
+  cqOboOid: undefined,
+  cwType: FacilityType.initiatorAndResponder,
+  cwActive: true,
+  cwOboOid: undefined,
+});
+
+const mockedOboFacility = makeFacility({
+  cqType: FacilityType.initiatorOnly,
+  cqActive: true,
+  cqOboOid: faker.string.uuid(),
+  cwType: FacilityType.initiatorOnly,
+  cwActive: true,
+  cwOboOid: faker.string.uuid(),
+});
+
+jest
+  .spyOn(CarequalityManagementAPIImpl.prototype, "listOrganizations")
+  .mockImplementation(() => Promise.resolve([]));
+jest
+  .spyOn(CarequalityManagementAPIImpl.prototype, "registerOrganization")
+  .mockImplementation(() => Promise.resolve(""));
+
 beforeEach(() => {
-  mockedFacility = makeFacility({
-    cqType: FacilityType.initiatorAndResponder,
-    cqActive: true,
-    cqOboOid: undefined,
-    cwType: FacilityType.initiatorAndResponder,
-    cwActive: true,
-    cwOboOid: undefined,
-  });
-
-  mockedOboFacility = makeFacility({
-    cqType: FacilityType.initiatorOnly,
-    cqActive: true,
-    cqOboOid: faker.string.uuid(),
-    cwType: FacilityType.initiatorOnly,
-    cwActive: true,
-    cwOboOid: faker.string.uuid(),
-  });
-
-  jest.spyOn(getAddress, "getAddressWithCoordinates").mockResolvedValue(addressWithCoordinates);
-  jest
-    .spyOn(CarequalityManagementAPIImpl.prototype, "listOrganizations")
-    .mockImplementation(() => Promise.resolve([]));
-  jest
-    .spyOn(CarequalityManagementAPIImpl.prototype, "registerOrganization")
-    .mockImplementation(() => Promise.resolve(""));
+  getAddressWithCoordination = jest.spyOn(getAddress, "getAddressWithCoordinates");
   createOrUpdateCqOrganizationMock = jest.spyOn(
     createOrUpdateCqOrg,
     "createOrUpdateCQOrganization"
@@ -55,7 +54,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  jest.restoreAllMocks();
+  jest.clearAllMocks();
 });
 
 describe("registerFacility", () => {
@@ -71,7 +70,11 @@ describe("registerFacility", () => {
       oboOid: mockedFacility.cqOboOid ?? undefined,
     });
 
-    const { coordinates } = await getAddressWithCoordinates(mockedFacility.data.address, cxId);
+    const mockedAddress = makeAddressWithCoordinates();
+    getAddressWithCoordination.mockImplementation(() => {
+      return Promise.resolve(mockedAddress);
+    });
+
     const address = mockedFacility.data.address;
     const addressLine = address.addressLine2
       ? `${address.addressLine1}, ${address.addressLine2}`
@@ -79,10 +82,7 @@ describe("registerFacility", () => {
 
     await createOrUpdateFacilityInCq({
       cxId,
-      facility: {
-        ...mockedFacility,
-        ...addressWithCoordinates,
-      },
+      facility: mockedFacility,
       facilityCurrentActive: mockedFacility.cqActive,
       cxOrgName,
       cxOrgBizType,
@@ -93,8 +93,8 @@ describe("registerFacility", () => {
       {
         name: orgName,
         addressLine1: addressLine,
-        lat: coordinates.lat.toString(),
-        lon: coordinates.lon.toString(),
+        lat: mockedAddress.coordinates.lat.toString(),
+        lon: mockedAddress.coordinates.lon.toString(),
         city: address.city,
         state: address.state,
         postalCode: address.zip,
@@ -117,6 +117,22 @@ describe("registerFacility", () => {
     const cxOrgName = "Test";
     const cxOrgBizType = OrganizationBizType.healthcareITVendor;
 
+    const orgName = buildCqOrgNameForFacility({
+      vendorName: cxOrgName,
+      orgName: mockedOboFacility.data.name,
+      oboOid: mockedOboFacility.cqOboOid ?? undefined,
+    });
+
+    const mockedAddress = makeAddressWithCoordinates();
+    getAddressWithCoordination.mockImplementation(() => {
+      return Promise.resolve(mockedAddress);
+    });
+
+    const address = mockedOboFacility.data.address;
+    const addressLine = address.addressLine2
+      ? `${address.addressLine1}, ${address.addressLine2}`
+      : address.addressLine1;
+
     await createOrUpdateFacilityInCq({
       cxId,
       facility: mockedOboFacility,
@@ -126,24 +142,12 @@ describe("registerFacility", () => {
       cqOboOid: mockedOboFacility.cqOboOid ?? undefined,
     });
 
-    const orgName = buildCqOrgNameForFacility({
-      vendorName: cxOrgName,
-      orgName: mockedOboFacility.data.name,
-      oboOid: mockedOboFacility.cqOboOid ?? undefined,
-    });
-
-    const { coordinates } = await getAddressWithCoordinates(mockedOboFacility.data.address, cxId);
-    const address = mockedOboFacility.data.address;
-    const addressLine = address.addressLine2
-      ? `${address.addressLine1}, ${address.addressLine2}`
-      : address.addressLine1;
-
     expect(createOrUpdateCqOrganizationMock).toHaveBeenCalledWith(
       {
         name: orgName,
         addressLine1: addressLine,
-        lat: coordinates.lat.toString(),
-        lon: coordinates.lon.toString(),
+        lat: mockedAddress.coordinates.lat.toString(),
+        lon: mockedAddress.coordinates.lon.toString(),
         city: address.city,
         state: address.state,
         postalCode: address.zip,

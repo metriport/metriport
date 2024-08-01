@@ -9,7 +9,7 @@ export function makeAddressStrict(params: Partial<AddressStrict> = {}): AddressS
     zip: params.zip ?? faker.location.zipCode(),
     city: params.city ?? faker.location.city(),
     state: params.state ?? Object.values(USState)[randomIndex],
-    country: params.country ?? "US",
+    country: params.country ?? "USA",
   };
 }
 
