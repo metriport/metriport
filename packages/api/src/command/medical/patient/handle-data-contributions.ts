@@ -1,6 +1,7 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { createUploadFilePath, FHIR_BUNDLE_SUFFIX } from "@metriport/core/domain/document/upload";
+import { FHIR_BUNDLE_SUFFIX, createUploadFilePath } from "@metriport/core/domain/document/upload";
 import { Patient } from "@metriport/core/domain/patient";
+import { toFHIR as toFhirPatient } from "@metriport/core/external/fhir/patient/index";
 import { uploadCdaDocuments, uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
@@ -59,7 +60,11 @@ export async function handleDataContribution({
 
   // Do it before storing on the FHIR server since this also validates the bundle
   if (!Config.isSandbox() && hasCompositionResource(validatedBundle)) {
+    const fhirPatient = toFhirPatient(patient);
+    validatedBundle.entry.push({ resource: fhirPatient });
+    validatedBundle.entry.push({ resource: fhirOrganization });
     const converted = await convertFhirToCda({ cxId, validatedBundle });
+
     // intentionally async
     uploadCdaDocuments({
       cxId,
