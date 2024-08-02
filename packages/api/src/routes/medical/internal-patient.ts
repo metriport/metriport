@@ -772,7 +772,7 @@ router.post(
 );
 
 /** ---------------------------------------------------------------------------
- * POST /internal/patient/ops/coverage-assessment
+ * POST /internal/patient/coverage-assessment
  *
  * return the coverage
  * @param req.query.cxId The customer ID.
@@ -835,7 +835,7 @@ router.post(
 );
 
 /** ---------------------------------------------------------------------------
- * GET /internal/paitnet/ops/coverage-assessment
+ * GET /internal/paitnet/coverage-assessment
  *
  * Returns the cx patients for a given facility used for internal scripts
  * @param req.query.facilityId - The facility ID.
