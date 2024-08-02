@@ -44,19 +44,19 @@ export async function updateCxHieEnabledFFs({
   } else if (cwEnabled === false) {
     disableFeatureFlagForCustomer(featureFlags.cxsWithCWFeatureFlag, cxId);
   }
-  if (cqEnabled == true) {
+  if (cqEnabled === true) {
     enableFeatureFlagForCustomer(featureFlags.cxsWithCQDirectFeatureFlag, cxId);
   } else if (cqEnabled === false) {
     disableFeatureFlagForCustomer(featureFlags.cxsWithCQDirectFeatureFlag, cxId);
   }
-  if (epicEnabled == true) {
+  if (epicEnabled === true) {
     enableFeatureFlagForCustomer(featureFlags.cxsWithEpicEnabled, cxId);
-  } else if (epicEnabled == false) {
+  } else if (epicEnabled === false) {
     disableFeatureFlagForCustomer(featureFlags.cxsWithEpicEnabled, cxId);
   }
-  if (demoAugEnabled == true) {
+  if (demoAugEnabled === true) {
     enableFeatureFlagForCustomer(featureFlags.cxsWithDemoAugEnabled, cxId);
-  } else if (demoAugEnabled == false) {
+  } else if (demoAugEnabled === false) {
     disableFeatureFlagForCustomer(featureFlags.cxsWithDemoAugEnabled, cxId);
   }
   deduplicateFeatureFlagValues(featureFlags.cxsWithCWFeatureFlag);
