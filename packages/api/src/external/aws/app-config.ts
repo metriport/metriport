@@ -111,6 +111,10 @@ export async function getCxsWithEpicEnabled(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithEpicEnabled");
 }
 
+export async function getCxsWitDemoAugEnabled(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithDemoAugEnabled");
+}
+
 export async function getE2eCxIds(): Promise<string | undefined> {
   if (Config.isDev()) {
     const apiKey = getEnvVar("TEST_API_KEY");
@@ -154,6 +158,14 @@ export async function isEpicEnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithEpicEnabled = await getCxsWithEpicEnabled();
 
   return cxIdsWithEpicEnabled.length === 0 ? true : cxIdsWithEpicEnabled.some(i => i === cxId);
+}
+
+export async function isDemoAugEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithDemoAugEnabled = await getCxsWitDemoAugEnabled();
+
+  return cxIdsWithDemoAugEnabled.length === 0
+    ? true
+    : cxIdsWithDemoAugEnabled.some(i => i === cxId);
 }
 
 export async function isCommonwellEnabled(): Promise<boolean> {
