@@ -249,6 +249,10 @@ export const bundleToHtmlADHD = (fhirBundle: Bundle): string => {
             margin-bottom: 10px
           }
 
+          .p-line {
+            white-space: pre-line;
+          }
+
         </style>
       </head>
 
@@ -1028,6 +1032,8 @@ const REMOVE_FROM_NOTE = [
   "documented in this encounter",
   "xnoIndent",
   "Formatting of this note might be different from the original.",
+  "StartCited",
+  "EndCited",
 ];
 
 function cleanUpNote(note: string): string {
@@ -1037,7 +1043,8 @@ function cleanUpNote(note: string): string {
     .replace(/<ID>.*?<\/ID>/g, "")
     .replace(/<styleCode>.*?<\/styleCode>/g, "")
     .replace(/<width>.*?<\/width>/g, "") // https://metriport.slack.com/archives/C0616FCPAKZ/p1722627448791109?thread_ts=1722612577.018299&cid=C0616FCPAKZ
-    .replace(/(<paragraph>|<content>)/g, "<p>") // https://metriport.slack.com/archives/C0616FCPAKZ/p1722625692474229?thread_ts=1722612577.018299&cid=C0616FCPAKZ
+    .replace(/(<paragraph>|<content>)/g, '<p class="p-line">') // https://metriport.slack.com/archives/C0616FCPAKZ/p1722625692474229?thread_ts=1722612577.018299&cid=C0616FCPAKZ
+    .replace(/(<paragraph\s?\/>|<content\s?\/>)/g, "<p>&nbsp;</p>") // https://metriport.slack.com/archives/C0616FCPAKZ/p1722625692474229?thread_ts=1722612577.018299&cid=C0616FCPAKZ
     .replace(/(<\/paragraph>|<\/content>)/g, "</p>"); // https://metriport.slack.com/archives/C0616FCPAKZ/p1722625692474229?thread_ts=1722612577.018299&cid=C0616FCPAKZ
 }
 
