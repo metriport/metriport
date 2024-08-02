@@ -3,6 +3,9 @@ import { consolidationConversionType } from "@metriport/core/domain/conversion/f
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { Patient } from "@metriport/core/domain/patient";
+import { capture } from "@metriport/core/util/notifications";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import {
   sleep,
   stringToBoolean,
@@ -851,22 +854,41 @@ router.get(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getFrom("query").orFail("facilityId", req);
     const patients = await getPatients({ cxId, facilityId });
-
     const assessmentsMap: { [key: string]: CoverageAssessment | undefined } = {};
-    const converageChunkSize = 50;
-    const converageChunks = chunk(patients, converageChunkSize);
-    for (const chunk of converageChunks) {
-      const getCoverageAssessments: Promise<CoverageAssessment>[] = [];
-      for (const patient of chunk) {
-        getCoverageAssessments.push(getCoverageAssessment({ cxId, patient }));
+
+    async function getCoverageAssessmentWrapper({
+      cxId,
+      patient,
+      assessmentsMap,
+    }: {
+      cxId: string;
+      patient: Patient;
+      assessmentsMap: { [key: string]: CoverageAssessment | undefined };
+    }): Promise<void> {
+      try {
+        const coverageAssessment = await getCoverageAssessment({ cxId, patient });
+        assessmentsMap[coverageAssessment.patientId] = coverageAssessment;
+      } catch (error) {
+        const msg = `Failed to get coverage assessment. Cause: ${errorToString(error)}`;
+        capture.error(msg, {
+          extra: {
+            cxId,
+            patientId: patient.id,
+            context: "coverage-assessment.get",
+          },
+        });
       }
-      const coverageAssessmentReults = await Promise.allSettled(getCoverageAssessments);
-      coverageAssessmentReults.map(result => {
-        if (result.status == "fulfilled") assessmentsMap[result.value.patientId] = result.value;
-      });
     }
 
-    const assessmentPatients = patients.map(patient => {
+    await executeAsynchronously(
+      patients.map(patient => {
+        return { cxId, patient, assessmentsMap };
+      }),
+      getCoverageAssessmentWrapper,
+      { numberOfParallelExecutions: 50 }
+    );
+
+    const patientsWithAssessments = patients.map(patient => {
       const coverageAsessment = assessmentsMap[patient.id];
       return {
         ...internalDtoFromModel(patient),
@@ -874,7 +896,7 @@ router.get(
       };
     });
 
-    const response = { patients: assessmentPatients };
+    const response = { patients: patientsWithAssessments };
     return res.status(status.OK).json(response);
   })
 );

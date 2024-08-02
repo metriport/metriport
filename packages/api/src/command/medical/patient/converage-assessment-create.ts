@@ -1,9 +1,7 @@
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { chunk } from "lodash";
 import { Patient } from "@metriport/core/domain/patient";
-import { sleep } from "@metriport/shared";
-import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared";
@@ -26,77 +24,88 @@ export async function createCoverageAssessments({
   patientCreates: PatientCreateCmd[];
 }): Promise<void> {
   const { log } = out(`createCoverageAssessments - cxId ${cxId}`);
-  const chunkSize = 50;
   const patients: Patient[] = [];
 
-  const failedPatients: Error[] = [];
-  const pdChunks = chunk(patientCreates, chunkSize);
-  for (const chunk of pdChunks) {
-    await sleep(delayTime.asMilliseconds());
-    const createPatients: Promise<Patient>[] = [];
-    for (const patient of chunk) {
-      createPatients.push(createOrUpdatePatient(patient));
-    }
-    const patientResults = await Promise.allSettled(createPatients);
-    patientResults.map(result => {
-      if (result.status == "fulfilled") {
-        patients.push(result.value);
-      } else {
-        failedPatients.push(result.reason);
-      }
-    });
-  }
-
-  if (failedPatients.length > 0) {
-    const msg = `Failed to create or updated patient for ${
-      failedPatients.length
-    } patients. Causes: ${errorToString(failedPatients.join(","))}`;
-    log(msg);
-    capture.error(msg, {
-      extra: {
-        cxId,
-        facilityId,
-        context: "coverage-assessment.create",
-      },
-    });
-  }
-
-  const failedPatientsDq: Error[] = [];
-  const dQChunks = chunk(patients, chunkSize);
-  for (const chunk of dQChunks) {
-    await sleep(delayTime.asMilliseconds());
-    const docQueries: Promise<DocumentQueryProgress>[] = [];
-    for (const patient of chunk) {
-      docQueries.push(
-        queryDocumentsAcrossHIEs({
+  async function createOrUpdatePatientWrapper({
+    patientCreateCmd,
+    patients,
+    log,
+  }: {
+    patientCreateCmd: PatientCreateCmd;
+    patients: Patient[];
+    log: typeof console.log;
+  }): Promise<void> {
+    try {
+      const patient = await createOrUpdatePatient(patientCreateCmd);
+      patients.push(patient);
+    } catch (error) {
+      const msg = `Failed to create or update patient. Cause: ${errorToString(error)}`;
+      log(msg);
+      capture.error(msg, {
+        extra: {
           cxId,
-          patientId: patient.id,
           facilityId,
-          triggerConsolidated: true,
-        })
-      );
+          context: "coverage-assessment.create",
+        },
+      });
     }
-    const dqResults = await Promise.allSettled(docQueries);
-    dqResults.map(result => {
-      if (result.status == "rejected") {
-        failedPatientsDq.push(result.reason);
-      }
-    });
   }
 
-  if (failedPatientsDq.length > 0) {
-    const msg = `Failed to start document query across HIEs for ${
-      failedPatientsDq.length
-    } patients. Causes: ${errorToString(failedPatientsDq.join(","))}`;
-    log(msg);
-    capture.error(msg, {
-      extra: {
+  await executeAsynchronously(
+    patientCreates.map(patientCreateCmd => {
+      return { patientCreateCmd, patients, log };
+    }),
+    createOrUpdatePatientWrapper,
+    {
+      numberOfParallelExecutions: 50,
+      minJitterMillis: delayTime.asMilliseconds(),
+    }
+  );
+
+  async function queryDocumentsAcrossHIEsWrapper({
+    cxId,
+    patient,
+    facilityId,
+    log,
+  }: {
+    cxId: string;
+    patient: Patient;
+    facilityId: string;
+    log: typeof console.log;
+  }): Promise<void> {
+    try {
+      await queryDocumentsAcrossHIEs({
         cxId,
+        patientId: patient.id,
         facilityId,
-        context: "coverage-assessment.create",
-      },
-    });
+        triggerConsolidated: true,
+      });
+    } catch (error) {
+      const msg = `Failed query docuemnts for patient ${patient.id}. Cause: ${errorToString(
+        error
+      )}`;
+      log(msg);
+      capture.error(msg, {
+        extra: {
+          cxId,
+          facilityId,
+          patientId: patient.id,
+          context: "coverage-assessment.create",
+        },
+      });
+    }
   }
+
+  await executeAsynchronously(
+    patients.map(patient => {
+      return { cxId, patient, facilityId, log };
+    }),
+    queryDocumentsAcrossHIEsWrapper,
+    {
+      numberOfParallelExecutions: 10,
+      minJitterMillis: delayTime.asMilliseconds(),
+    }
+  );
 }
 
 async function createOrUpdatePatient(patient: PatientCreateCmd): Promise<Patient> {

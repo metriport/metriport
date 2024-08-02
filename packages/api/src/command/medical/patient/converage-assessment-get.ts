@@ -72,7 +72,9 @@ async function getMrSummaryUrl(
     }
     return undefined;
   } catch (error) {
-    const msg = "Failed to get get MR Summary url";
+    const msg = `Failed to get get MR Summary url for coverage assessment. Cause: ${errorToString(
+      error
+    )}`;
     log(`${msg}. Cause: ${errorToString(error)}.`);
     capture.error(msg, {
       extra: {
