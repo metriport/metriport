@@ -189,6 +189,13 @@ type EnvConfigBase = {
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: string;
   };
   iheGateway?: IHEGatewayProps;
+  canvas?: {
+    secretNames: {
+      CANVAS_CLIENT_ID: string;
+      CANVAS_CLIENT_SECRET: string;
+      CANVAS_ENVIRONMENT: string;
+    };
+  };
   sentryDSN?: string; // API's Sentry DSN
   lambdasSentryDSN?: string;
   slack?: {
