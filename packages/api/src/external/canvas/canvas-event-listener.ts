@@ -23,6 +23,14 @@ function isCanvasIntegrationEvent(event: CanvasIntegrationEvent): boolean {
   );
 }
 
+function getProviderLastName(event: CanvasIntegrationEvent): string | undefined {
+  if (event.metadata && typeof event.metadata === "object" && "canvas" in event.metadata) {
+    const canvasMetadata = event.metadata as { canvas: { providerLastName: string } };
+    return canvasMetadata.canvas.providerLastName;
+  }
+  return undefined;
+}
+
 export default function () {
   log(`Setting up listener`);
   patientEvents().on(PatientEvents.CANVAS_INTEGRATION, async (event: CanvasIntegrationEvent) => {
@@ -50,6 +58,12 @@ export default function () {
       }
 
       const canvasPatientId = patient.externalId;
+      const providerLastName = getProviderLastName(event);
+      if (!providerLastName) {
+        log("Canvas provider name is undefined");
+        return;
+      }
+
       if (!canvasPatientId) {
         log("Canvas patient ID is undefined");
         return;
@@ -61,7 +75,7 @@ export default function () {
         clientSecret: canvasClientSecret,
       });
 
-      await createFullNote({ canvas, canvasPatientId, patientA, patientB });
+      await createFullNote({ canvas, canvasPatientId, patientA, patientB, providerLastName });
     }
   });
 }

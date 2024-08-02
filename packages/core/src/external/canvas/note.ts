@@ -10,16 +10,18 @@ export async function createFullNote({
   canvasPatientId,
   patientA,
   patientB,
+  providerLastName,
 }: {
   canvas: CanvasSDK;
   canvasPatientId: string;
   patientA: boolean;
   patientB: boolean;
+  providerLastName: string;
 }) {
   try {
     // TODO remove this as per https://github.com/metriport/metriport-internal/issues/2088
     const [canvasPractitioner, canvasLocation, canvasEncounter] = await Promise.all([
-      canvas.getPractitioner("Wilson"),
+      canvas.getPractitioner(providerLastName),
       canvas.getLocation(),
       canvas.getFirstEncounter(canvasPatientId),
     ]);

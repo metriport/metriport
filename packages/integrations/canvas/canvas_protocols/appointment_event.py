@@ -11,7 +11,7 @@ from canvas_workflow_kit.fhir import FumageHelper
 class AppointmentNotification2(ClinicalQualityMeasure):
     class Meta:
         title = 'Appointment Creation Notification'
-        version = 'v1.2.5'
+        version = 'v1.2.8'
         description = 'Listens for appointment creation and sends a notification.'
         types = ['Notification']
         compute_on_change_types = [CHANGE_TYPE.APPOINTMENT]
@@ -60,6 +60,8 @@ class AppointmentNotification2(ClinicalQualityMeasure):
 
             metriport_api_key = self.settings.get("METRIPORT_API_KEY")
             metriport_facility_id = self.settings.get("METRIPORT_FACILITY_ID")
+            provider_name = self.settings.get("CANVAS_PROVIDER_NAME")
+
 
             pd_response = send_notification(
                 f'{base_url}/medical/v1/patient?facilityId={metriport_facility_id}',
@@ -68,18 +70,18 @@ class AppointmentNotification2(ClinicalQualityMeasure):
                     'Content-Type': 'application/json',
                     'x-api-key': metriport_api_key
                 })
-            result.add_narrative("Successfully sent patient data to the Metriport API")
         
             pd_response_data = pd_response.json()
             patient_id = pd_response_data.get('id')
             result.add_narrative(json.dumps({
-                'patient_id': patient_id,
+                'patient': patient_data
             }))
 
             if patient_id:
                 metadata = {
                     'metadata': {
-                        'canvas': "true"
+                        'canvas': "true",
+                        'providerLastName': provider_name
                     }
                 };
             
@@ -91,12 +93,6 @@ class AppointmentNotification2(ClinicalQualityMeasure):
                         'x-api-key': metriport_api_key
                     }
                 )
-                
-                dq_response_data = {
-                    'status_code': dq_response.status_code,
-                    'content': dq_response.json()
-                }
-                result.add_narrative(json.dumps(dq_response_data))
             else:
                 result.add_narrative("Unable to retrieve patient ID from the response")
 
