@@ -71,8 +71,8 @@ export function generateFakeConditionData1(patientId: string): Condition[] {
       code: {
         coding: [
           {
-            system: "http://snomed.info/sct",
-            code: "1149345007",
+            system: "http://hl7.org/fhir/sid/icd-10-cm",
+            code: "O99.213",
             display: "Maternal obesity syndrome in third trimester",
           },
         ],
@@ -110,8 +110,8 @@ export function generateFakeConditionData1(patientId: string): Condition[] {
       code: {
         coding: [
           {
-            system: "http://snomed.info/sct",
-            code: "134328007",
+            system: "http://hl7.org/fhir/sid/icd-10-cm",
+            code: "D17.9",
             display: "Lipoma (Benign)",
           },
         ],
@@ -149,13 +149,13 @@ export function generateFakeConditionData1(patientId: string): Condition[] {
       code: {
         coding: [
           {
-            system: "http://snomed.info/sct",
-            code: "722596001",
+            system: "http://hl7.org/fhir/sid/icd-10-cm",
+            code: "E66.01",
             display:
               "Class 1 obesity due to excess calories with serious comorbidity and body mass index (BMI) of 31.0 to 31.9 in adult",
           },
         ],
-        text: "Lipoma (Benign)",
+        text: "Class 1 obesity due to excess calories with serious comorbidity and body mass index (BMI) of 31.0 to 31.9 in adult",
       },
       subject: {
         reference: `Patient/${patientId}`,
@@ -194,8 +194,8 @@ export function generateFakeConditionData2(patientId: string): Condition[] {
       code: {
         coding: [
           {
-            system: "http://snomed.info/sct",
-            code: "161833006",
+            system: "http://hl7.org/fhir/sid/icd-10-cm",
+            code: "R63.5",
             display: "Abnormal Weight Gain",
           },
         ],
@@ -233,8 +233,8 @@ export function generateFakeConditionData2(patientId: string): Condition[] {
       code: {
         coding: [
           {
-            system: "http://snomed.info/sct",
-            code: "267434003",
+            system: "http://hl7.org/fhir/sid/icd-10-cm",
+            code: "E78.2",
             display: "Hyperlipidemia (Mixed)",
           },
         ],
@@ -272,8 +272,8 @@ export function generateFakeConditionData2(patientId: string): Condition[] {
       code: {
         coding: [
           {
-            system: "http://snomed.info/sct",
-            code: "195967001",
+            system: "http://hl7.org/fhir/sid/icd-10-cm",
+            code: "J45.909",
             display: "Asthma (disorder)",
           },
         ],
@@ -311,8 +311,8 @@ export function generateFakeConditionData2(patientId: string): Condition[] {
       code: {
         coding: [
           {
-            system: "http://snomed.info/sct",
-            code: "255032005",
+            system: "http://hl7.org/fhir/sid/icd-10-cm",
+            code: "C73.03",
             display: "Medullary Thyroid Cancer",
           },
         ],
