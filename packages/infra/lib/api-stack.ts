@@ -379,7 +379,7 @@ export class APIStack extends Stack {
       });
     }
 
-    const fhirBundleLambda = this.setupFhirBundleLambda({
+    const fhirToBundleLambda = this.setupFhirBundleLambda({
       lambdaLayers,
       vpc: this.vpc,
       fhirServerUrl: props.config.fhirServerUrl,
@@ -432,7 +432,7 @@ export class APIStack extends Stack {
       medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
       fhirToCdaConverterLambda,
-      fhirBundleLambda,
+      fhirToBundleLambda,
       searchIngestionQueue: ccdaSearchQueue,
       searchEndpoint: ccdaSearchDomain.domainEndpoint,
       searchAuth: { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
