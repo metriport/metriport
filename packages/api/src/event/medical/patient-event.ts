@@ -1,7 +1,12 @@
 import EventEmitter from "events";
 import { Patient } from "@metriport/core/domain/patient";
+import { MAPIWebhookType } from "../../domain/webhook";
 
 export type PatientEvent = Pick<Patient, "id" | "cxId">;
+export type CanvasIntegrationEvent = PatientEvent & {
+  metadata: unknown;
+  whType: MAPIWebhookType;
+};
 
 let patientEventsInstance: PatientEvents;
 
@@ -30,7 +35,7 @@ export class PatientEvents extends EventEmitter {
     this.emit(PatientEvents.DELETED, { id: patient.id, cxId: patient.cxId });
   }
 
-  emitCanvasIntegration(patient: PatientEvent) {
-    this.emit(PatientEvents.CANVAS_INTEGRATION, { id: patient.id, cxId: patient.cxId });
+  emitCanvasIntegration(canvas: CanvasIntegrationEvent) {
+    this.emit(PatientEvents.CANVAS_INTEGRATION, canvas);
   }
 }

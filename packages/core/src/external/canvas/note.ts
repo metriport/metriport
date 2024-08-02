@@ -1,7 +1,9 @@
 import CanvasSDK from "./index";
 import { generateFakeBundleFemale, generateFakeBundleMale } from "./data";
 import { out } from "../../util/log";
-const { log } = out("[CANVAS NOTE]");
+import { capture } from "../../util/notifications";
+
+const { log } = out("CANVAS NOTE");
 
 export async function createFullNote({
   canvas,
@@ -15,22 +17,26 @@ export async function createFullNote({
   patientB: boolean;
 }) {
   try {
-    const canvasPractitioner = await canvas.getPractitioner("Wilson");
+    // TODO remove this as per https://github.com/metriport/metriport-internal/issues/2088
+    const [canvasPractitioner, canvasLocation, canvasEncounter] = await Promise.all([
+      canvas.getPractitioner("Wilson"),
+      canvas.getLocation(),
+      canvas.getFirstEncounter(canvasPatientId),
+    ]);
+
     const canvasPractitionerId = canvasPractitioner.id;
-
-    const canvasLocation = await canvas.getLocation();
     const canvasLocationId = canvasLocation.id;
-
-    const canvasEncounter = await canvas.getFirstEncounter(canvasPatientId);
     const canvasEncounterId = canvasEncounter.id;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const canvasNoteId = (canvasEncounter.extension as any)[0].valueId;
+    const canvasNoteId = (canvasEncounter.extension as any)[0]?.valueId;
 
-    if (!canvasLocationId || !canvasPractitionerId || !canvasEncounterId) {
-      throw new Error("Canvas Location ID or Practitioner ID is undefined");
+    if (!canvasLocationId || !canvasPractitionerId || !canvasEncounterId || !canvasNoteId) {
+      throw new Error(
+        "Canvas Location ID or Practitioner ID or Encounter ID or Note ID is undefined"
+      );
     }
 
-    console.log(`[CANVAS-EVENT-LISTENER] Creating canvas resources for patient ${canvasPatientId}`);
+    log(`Creating canvas resources for patient ${canvasPatientId}`);
     let data;
     if (patientA) {
       data = generateFakeBundleFemale(canvasPatientId, canvasPractitionerId, canvasEncounterId);
@@ -79,7 +85,10 @@ export async function createFullNote({
       }
     }
   } catch (error) {
-    log(`Error in createNote: ${error}`);
+    const msg = "Error in createFullNote Canvas";
+    const extra = { canvasPatientId };
+    log(`${msg} - ${JSON.stringify(extra)}`);
+    capture.error(msg, { extra });
     throw error;
   }
 }

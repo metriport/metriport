@@ -68,7 +68,7 @@ class AppointmentNotification2(ClinicalQualityMeasure):
                     'Content-Type': 'application/json',
                     'x-api-key': metriport_api_key
                 })
-            result.add_narrative("Successfully sent patient data to Metriport API")
+            result.add_narrative("Successfully sent patient data to the Metriport API")
         
             pd_response_data = pd_response.json()
             patient_id = pd_response_data.get('id')
@@ -79,7 +79,6 @@ class AppointmentNotification2(ClinicalQualityMeasure):
             if patient_id:
                 metadata = {
                     'metadata': {
-                        'cx_id': f'{self.settings.get("METRIPORT_CX_ID")}',
                         'canvas': "true"
                     }
                 };
@@ -95,7 +94,7 @@ class AppointmentNotification2(ClinicalQualityMeasure):
                 
                 dq_response_data = {
                     'status_code': dq_response.status_code,
-                    'content': dq_response.json() if dq_response.headers.get('content-type') == 'application/json' else dq_response.text
+                    'content': dq_response.json()
                 }
                 result.add_narrative(json.dumps(dq_response_data))
             else:

@@ -14,7 +14,6 @@ import { updateProgressWebhookSent } from "../patient/append-doc-query-progress"
 import { getPatientOrFail } from "../patient/get-patient";
 import { CONVERSION_WEBHOOK_TYPE, DOWNLOAD_WEBHOOK_TYPE } from "./process-doc-query-webhook";
 import { patientEvents } from "../../../event/medical/patient-event";
-import { Config } from "../../../shared/config";
 
 const log = Util.log(`Document Webhook`);
 
@@ -110,21 +109,7 @@ export const processPatientDocumentRequest = async (
       );
     }
 
-    if (
-      !Config.isProdEnv() &&
-      whType === CONVERSION_WEBHOOK_TYPE &&
-      metadata &&
-      typeof metadata === "object" &&
-      "canvas" in metadata
-    ) {
-      patientEvents().emitCanvasIntegration({ id: patientId, cxId });
-    } else {
-      log(
-        `Not emitting ehr integration event for ${patientId}, whType: ${whType}, metadata: ${JSON.stringify(
-          metadata
-        )}`
-      );
-    }
+    patientEvents().emitCanvasIntegration({ id: patientId, cxId, metadata, whType });
 
     const shouldReportUsage =
       status === MAPIWebhookStatus.completed &&
