@@ -795,8 +795,6 @@ router.post(
     const dryrun = getFromQueryAsBoolean("dryrun", req);
     const payload = coverageAssessmentSchema.parse(req.body);
 
-    if (dryrun) return res.status(status.OK);
-
     const facility = await getFacilityOrFail({ cxId, id: facilityId });
     const patientCreates: PatientCreateCmd[] = payload.patients.map(patient => {
       const phone1 = patient.phone1 ? normalizePhoneNumberStrict(patient.phone1) : undefined;
@@ -828,6 +826,8 @@ router.post(
         contact,
       };
     });
+
+    if (dryrun) return res.status(status.OK);
 
     createCoverageAssessments({
       cxId,
