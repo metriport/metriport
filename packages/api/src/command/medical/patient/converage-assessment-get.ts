@@ -3,7 +3,7 @@ import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-s
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { countResources } from "../../../external/fhir/patient/count-resources";
 import { Config } from "../../../shared/config";
-import { log } from "@metriport/core/util/log";
+import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared";
 
@@ -31,10 +31,11 @@ export async function getCoverageAssessment({
   cxId: string;
   patient: Patient;
 }): Promise<CoverageAssessment> {
+  const { log } = out(`getCoverageAssessment - cxId ${cxId}`);
   const mrSummaryFileName = createMRSummaryFileName(cxId, patient.id, "json");
   const [fhirResources, mrSummaryUrl] = await Promise.all([
     countResources({ patient }),
-    getMrSummaryUrl(mrSummaryFileName),
+    getMrSummaryUrl(mrSummaryFileName, log),
   ]);
 
   const download = patient.data.documentQueryProgress?.download;
@@ -56,7 +57,10 @@ export async function getCoverageAssessment({
   };
 }
 
-async function getMrSummaryUrl(fileName: string): Promise<string | undefined> {
+async function getMrSummaryUrl(
+  fileName: string,
+  log: typeof console.log
+): Promise<string | undefined> {
   const s3Utils = getS3UtilsInstance();
   try {
     const object = await s3Utils.getFileInfoFromS3(fileName, bucket);

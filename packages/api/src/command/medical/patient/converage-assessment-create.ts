@@ -4,6 +4,9 @@ import { chunk } from "lodash";
 import { Patient } from "@metriport/core/domain/patient";
 import { sleep } from "@metriport/shared";
 import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
+import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
+import { errorToString } from "@metriport/shared";
 import { createPatient, PatientCreateCmd } from "./create-patient";
 import { matchPatient } from "./get-patient";
 import { updatePatient } from "./update-patient";
@@ -22,9 +25,11 @@ export async function createCoverageAssessments({
   facilityId: string;
   patientCreates: PatientCreateCmd[];
 }): Promise<void> {
+  const { log } = out(`createCoverageAssessments - cxId ${cxId}`);
   const chunkSize = 50;
   const patients: Patient[] = [];
 
+  const failedPatients: Error[] = [];
   const pdChunks = chunk(patientCreates, chunkSize);
   for (const chunk of pdChunks) {
     await sleep(delayTime.asMilliseconds());
@@ -34,10 +39,29 @@ export async function createCoverageAssessments({
     }
     const patientResults = await Promise.allSettled(createPatients);
     patientResults.map(result => {
-      if (result.status == "fulfilled") patients.push(result.value);
+      if (result.status == "fulfilled") {
+        patients.push(result.value);
+      } else {
+        failedPatients.push(result.reason);
+      }
     });
   }
 
+  if (failedPatients.length > 0) {
+    const msg = `Failed to create or updated patient for ${
+      failedPatients.length
+    } patients. Causes: ${errorToString(failedPatients.join(","))}`;
+    log(msg);
+    capture.error(msg, {
+      extra: {
+        cxId,
+        facilityId,
+        context: "coverage-assessment.create",
+      },
+    });
+  }
+
+  const failedPatientsDq: Error[] = [];
   const dQChunks = chunk(patients, chunkSize);
   for (const chunk of dQChunks) {
     await sleep(delayTime.asMilliseconds());
@@ -52,7 +76,26 @@ export async function createCoverageAssessments({
         })
       );
     }
-    await Promise.allSettled(docQueries);
+    const dqResults = await Promise.allSettled(docQueries);
+    dqResults.map(result => {
+      if (result.status == "rejected") {
+        failedPatientsDq.push(result.reason);
+      }
+    });
+  }
+
+  if (failedPatientsDq.length > 0) {
+    const msg = `Failed to start document query across HIEs for ${
+      failedPatientsDq.length
+    } patients. Causes: ${errorToString(failedPatientsDq.join(","))}`;
+    log(msg);
+    capture.error(msg, {
+      extra: {
+        cxId,
+        facilityId,
+        context: "coverage-assessment.create",
+      },
+    });
   }
 }
 
