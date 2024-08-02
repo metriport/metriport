@@ -783,7 +783,7 @@ router.post(
  *
  */
 router.post(
-  "/ops/coverage-assessment",
+  "/coverage-assessment",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
