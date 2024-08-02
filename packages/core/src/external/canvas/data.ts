@@ -71,8 +71,8 @@ export function generateFakeConditionData1(patientId: string): Condition[] {
       code: {
         coding: [
           {
-            system: "http://hl7.org/fhir/sid/icd-10-cm",
-            code: "O99.213",
+            system: "ICD-10",
+            code: "O99213",
             display: "Maternal obesity syndrome in third trimester",
           },
         ],
@@ -110,8 +110,8 @@ export function generateFakeConditionData1(patientId: string): Condition[] {
       code: {
         coding: [
           {
-            system: "http://hl7.org/fhir/sid/icd-10-cm",
-            code: "D17.9",
+            system: "ICD-10",
+            code: "D179",
             display: "Lipoma (Benign)",
           },
         ],
@@ -149,8 +149,8 @@ export function generateFakeConditionData1(patientId: string): Condition[] {
       code: {
         coding: [
           {
-            system: "http://hl7.org/fhir/sid/icd-10-cm",
-            code: "E66.01",
+            system: "ICD-10",
+            code: "E6601",
             display:
               "Class 1 obesity due to excess calories with serious comorbidity and body mass index (BMI) of 31.0 to 31.9 in adult",
           },
@@ -194,8 +194,8 @@ export function generateFakeConditionData2(patientId: string): Condition[] {
       code: {
         coding: [
           {
-            system: "http://hl7.org/fhir/sid/icd-10-cm",
-            code: "R63.5",
+            system: "ICD-10",
+            code: "R635",
             display: "Abnormal Weight Gain",
           },
         ],
@@ -233,8 +233,8 @@ export function generateFakeConditionData2(patientId: string): Condition[] {
       code: {
         coding: [
           {
-            system: "http://hl7.org/fhir/sid/icd-10-cm",
-            code: "E78.2",
+            system: "ICD-10",
+            code: "E782",
             display: "Hyperlipidemia (Mixed)",
           },
         ],
@@ -272,8 +272,8 @@ export function generateFakeConditionData2(patientId: string): Condition[] {
       code: {
         coding: [
           {
-            system: "http://hl7.org/fhir/sid/icd-10-cm",
-            code: "J45.909",
+            system: "ICD-10",
+            code: "J45909",
             display: "Asthma (disorder)",
           },
         ],
@@ -311,8 +311,8 @@ export function generateFakeConditionData2(patientId: string): Condition[] {
       code: {
         coding: [
           {
-            system: "http://hl7.org/fhir/sid/icd-10-cm",
-            code: "C73.03",
+            system: "ICD-10",
+            code: "C7303",
             display: "Medullary Thyroid Cancer",
           },
         ],

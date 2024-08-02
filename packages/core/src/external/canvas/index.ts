@@ -14,11 +14,26 @@ import {
 
 const RXNORM_SYSTEM = "http://www.nlm.nih.gov/research/umls/rxnorm";
 
-interface SDKConfig {
+type SDKConfig = {
   environment: string;
   clientId: string;
   clientSecret: string;
-}
+};
+
+export type CommandResponse = {
+  uuid: string;
+  state: string;
+  created_at: string;
+  updated_at: string;
+  schema_key: string;
+  patient_key: string;
+  note_key: string;
+  originated_by: string;
+  edited_by: string[];
+  committed_by: string | null;
+  entered_in_error_by: string | null;
+  data: Record<string, unknown>;
+};
 
 class CanvasSDK {
   private axiosInstanceFhirApi: AxiosInstance;
@@ -281,6 +296,166 @@ class CanvasSDK {
       this.axiosInstanceFhirApi.get(`Appointment/${appointmentId}`)
     );
     return response.data;
+  }
+
+  async getCommands(options?: {
+    patient_key?: string;
+    note_key?: string;
+    originator_key?: string;
+    committer_key?: string;
+    schema_key?: string;
+    state?: string;
+    created_at?: string;
+    created_at__lt?: string;
+    created_at__lte?: string;
+    created_at__gt?: string;
+    created_at__gte?: string;
+    updated_at?: string;
+    updated_at__lt?: string;
+    updated_at__lte?: string;
+    updated_at__gt?: string;
+    updated_at__gte?: string;
+  }): Promise<CommandResponse[]> {
+    const params = new URLSearchParams();
+
+    if (options) {
+      Object.entries(options).forEach(([key, value]) => {
+        if (value !== undefined) {
+          params.append(key, value);
+        }
+      });
+    }
+
+    const response = await this.handleAxiosRequest(() =>
+      this.axiosInstanceCustomApi.get(`v1/commands?${params.toString()}`)
+    );
+
+    return response.data;
+  }
+
+  async getCommandFields(commandUuid: string): Promise<CommandResponse> {
+    const response = await this.handleAxiosRequest(() =>
+      this.axiosInstanceCustomApi.get(`v1/commands/${commandUuid}/fields`)
+    );
+
+    return response.data;
+  }
+
+  async getCommand(commandUuid: string): Promise<CommandResponse> {
+    const response = await this.handleAxiosRequest(() =>
+      this.axiosInstanceCustomApi.get(`v1/commands/${commandUuid}`)
+    );
+
+    return response.data;
+  }
+
+  async createCommand(params: {
+    schemaKey: string;
+    noteKey: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    values?: Record<string, any>;
+  }): Promise<CommandResponse> {
+    const payload = {
+      schemaKey: params.schemaKey,
+      noteKey: params.noteKey,
+      values: params.values || {},
+    };
+
+    const response = await this.handleAxiosRequest(() =>
+      this.axiosInstanceCustomApi.post("v1/commands/", payload)
+    );
+
+    return response.data;
+  }
+
+  async createAllergyCommand({
+    noteId,
+    allergy,
+  }: {
+    noteId: string;
+    allergy: AllergyIntolerance;
+  }): Promise<CommandResponse> {
+    const values = {
+      allergy: {
+        text: allergy?.code?.text,
+        extra: {
+          coding: allergy?.code?.coding,
+        },
+      },
+      severity: allergy?.reaction?.[0]?.severity,
+      narrative: allergy?.note?.[0]?.text,
+      approximate_date: {
+        date: allergy.onsetDateTime,
+        input: allergy.onsetDateTime,
+      },
+    };
+    return this.createCommand({
+      noteKey: noteId,
+      schemaKey: "allergy",
+      values,
+    });
+  }
+
+  async createMedicationStatementCommand({
+    noteId,
+    medication,
+  }: {
+    noteId: string;
+    medication: MedicationStatement;
+  }): Promise<CommandResponse> {
+    const code = medication.medicationReference?.reference?.match(/\d+/)?.[0];
+    const values = {
+      medication: {
+        text: medication.medicationReference?.display,
+        value: code,
+        extra: {
+          coding: [
+            {
+              code,
+              display: medication.medicationReference?.display,
+              system: "http://www.fdbhealth.com/",
+            },
+          ],
+        },
+      },
+      sig: medication.dosage?.[0]?.text,
+    };
+    return this.createCommand({
+      noteKey: noteId,
+      schemaKey: "medicationStatement",
+      values,
+    });
+  }
+
+  async createConditionCommand({
+    noteId,
+    condition,
+  }: {
+    noteId: string;
+    condition: Condition;
+  }): Promise<CommandResponse> {
+    const code = condition.code?.coding?.[0]?.code;
+    console.log("condition.onsetDateTime", condition.onsetDateTime);
+    const values = {
+      diagnose: {
+        text: condition.code?.text,
+        extra: {
+          coding: condition.code?.coding,
+        },
+        value: code,
+      },
+      background: "",
+      today_assessment: "",
+      approximate_date_of_onset: {
+        date: condition.onsetDateTime,
+        input: condition.onsetDateTime,
+      },
+    };
+    return this.createCommand({
+      noteKey: noteId,
+      schemaKey: "diagnose",
+      values,
+    });
   }
 }
 
