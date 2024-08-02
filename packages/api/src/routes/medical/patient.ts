@@ -25,7 +25,7 @@ import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
-import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
+import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 import {
@@ -341,12 +341,11 @@ router.post(
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
     const type = getFrom("query").optional("conversionType", req);
-    const generateAiBriefBoolean = getFromQueryAsBoolean("generateAiBrief", req) ?? false;
+    const generateAiBrief = getFromQueryAsBoolean("generateAiBrief", req) ?? false;
     const isAiBriefFeatureFlagEnabled = await isAiBriefEnabledForCx(cxId);
-    if (!isAiBriefFeatureFlagEnabled && generateAiBriefBoolean) {
+    if (!isAiBriefFeatureFlagEnabled && generateAiBrief) {
       throw new BadRequestError("Contact Metriport to enable the AI Brief feature.");
     }
-    const generateAiBrief = generateAiBriefBoolean ? "true" : "false";
     const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
     const cxConsolidatedRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 

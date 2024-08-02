@@ -119,10 +119,13 @@ async function getSignedUrl(fileName: string) {
   return coreGetSignedUrl({ fileName, bucketName, awsRegion: region });
 }
 
-async function isBriefEnabled(generateAiBrief: string | undefined, cxId: string): Promise<boolean> {
-  if (generateAiBrief !== "true") return false;
+async function isBriefEnabled(
+  generateAiBrief: boolean | undefined,
+  cxId: string
+): Promise<boolean> {
+  if (generateAiBrief !== true) return false;
   const isAiBriefFeatureFlagEnabled = await isAiBriefFeatureFlagEnabledForCx(cxId);
-  return generateAiBrief === "true" && isAiBriefFeatureFlagEnabled;
+  return isAiBriefFeatureFlagEnabled;
 }
 
 export async function isAiBriefFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {

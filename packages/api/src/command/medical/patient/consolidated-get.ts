@@ -241,7 +241,7 @@ export async function getConsolidated({
   conversionType,
 }: GetConsolidatedParams): Promise<{
   bundle: SearchSetBundle<Resource>;
-  filters: Record<string, string | undefined>;
+  filters: Record<string, string | boolean | undefined>;
 }> {
   const { log } = Util.out(`getConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
   const filters = {
@@ -306,7 +306,7 @@ export async function getConsolidated({
       return await uploadConsolidatedJsonAndReturnUrl({
         patient,
         bundle,
-        filters,
+        filters: filtersToString(filters),
       });
     }
     return { bundle, filters };
@@ -323,6 +323,15 @@ export async function getConsolidated({
     });
     throw error;
   }
+}
+
+function filtersToString(
+  filters: Record<string, string | boolean | undefined>
+): Record<string, string> {
+  return Object.entries(filters).reduce((acc, [key, value]) => {
+    acc[key] = value === undefined ? "" : String(value);
+    return acc;
+  }, {} as Record<string, string>);
 }
 
 export function filterOutPrelimDocRefs(
