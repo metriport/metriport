@@ -1,4 +1,5 @@
 import { Patient } from "@metriport/core/domain/patient";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { countResources } from "../../../external/fhir/patient/count-resources";
@@ -24,14 +25,69 @@ export type CoverageAssessment = {
   mrSummaryUrl: string | undefined;
 };
 
-export async function getCoverageAssessment({
+export type PatientWithCoverageAssessment = Patient &
+  Partial<Omit<CoverageAssessment, "patientId">>;
+
+export async function getCoverageAssessments({
+  cxId,
+  patients,
+}: {
+  cxId: string;
+  patients: Patient[];
+}): Promise<PatientWithCoverageAssessment[]> {
+  const { log } = out(`getCoverageAssessments - cxId ${cxId}`);
+  const patientsWithAssessment: PatientWithCoverageAssessment[] = [];
+
+  async function getCoverageAssessmentWrapper({
+    cxId,
+    patient,
+    patientsWithAssessment,
+    log,
+  }: {
+    cxId: string;
+    patient: Patient;
+    patientsWithAssessment: PatientWithCoverageAssessment[];
+    log: typeof console.log;
+  }): Promise<void> {
+    try {
+      const coverageAssessment = await getCoverageAssessment({ cxId, patient, log });
+      patientsWithAssessment.push({
+        ...patient,
+        ...coverageAssessment,
+      });
+    } catch (error) {
+      const msg = `Failed to get coverage assessment. Cause: ${errorToString(error)}`;
+      capture.error(msg, {
+        extra: {
+          cxId,
+          patientId: patient.id,
+          context: "coverage-assessment.get",
+        },
+      });
+      patientsWithAssessment.push(patient);
+    }
+  }
+
+  await executeAsynchronously(
+    patients.map(patient => {
+      return { cxId, patient, patientsWithAssessment, log };
+    }),
+    getCoverageAssessmentWrapper,
+    { numberOfParallelExecutions: 50 }
+  );
+
+  return patientsWithAssessment;
+}
+
+async function getCoverageAssessment({
   cxId,
   patient,
+  log,
 }: {
   cxId: string;
   patient: Patient;
+  log: typeof console.log;
 }): Promise<CoverageAssessment> {
-  const { log } = out(`getCoverageAssessment - cxId ${cxId}`);
   const mrSummaryFileName = createMRSummaryFileName(cxId, patient.id, "json");
   const [fhirResources, mrSummaryUrl] = await Promise.all([
     countResources({ patient }),
