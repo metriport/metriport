@@ -51,9 +51,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         dateTo,
       });
       if (isAsync) {
-        if (!requestId || !conversionType) {
-          throw new Error("requestId and conversionType must be defined when isAsync = true");
-        }
         ossApi.postConsolidated({
           patientId: patient.id,
           bundle,

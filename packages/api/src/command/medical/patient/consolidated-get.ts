@@ -129,7 +129,7 @@ export async function startConsolidatedQuery({
     dateFrom,
     dateTo,
     requestId,
-    conversionType: "pdf",
+    conversionType,
   }).catch(emptyFunction);
 
   return progress;
@@ -414,8 +414,8 @@ export async function getConsolidatedPatientDataAsync({
   requestId,
   conversionType,
 }: ConsolidatedFhirToBundlePayload & {
-  requestId: string;
-  conversionType: ConsolidationConversionType;
+  requestId?: string;
+  conversionType?: ConsolidationConversionType;
 }): Promise<void> {
   const lambdaName = Config.getFHIRtoBundleLambdaName();
   if (!lambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");

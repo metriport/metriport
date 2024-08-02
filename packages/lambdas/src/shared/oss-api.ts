@@ -37,8 +37,8 @@ export function apiClient(apiURL: string) {
     }: {
       patientId: string;
       bundle: medical.SearchSetBundle;
-      requestId: string;
-      conversionType: medical.ConsolidationConversionType;
+      requestId?: string;
+      conversionType?: medical.ConsolidationConversionType;
       resources?: medical.ResourceTypeForConsolidation[];
       dateFrom?: string;
       dateTo?: string;
