@@ -24,11 +24,13 @@ export async function updateCxHieEnabledFFs({
   cwEnabled,
   cqEnabled,
   epicEnabled,
+  demoAugEnabled,
 }: {
   cxId: string;
   cwEnabled?: boolean;
   cqEnabled?: boolean;
   epicEnabled?: boolean;
+  demoAugEnabled?: boolean;
 }): Promise<CxFeatureFlagStatus> {
   const region = Config.getAWSRegion();
   const appId = Config.getAppConfigAppId();
@@ -52,9 +54,15 @@ export async function updateCxHieEnabledFFs({
   } else if (epicEnabled == false) {
     disableFeatureFlagForCustomer(featureFlags.cxsWithEpicEnabled, cxId);
   }
+  if (demoAugEnabled == true) {
+    enableFeatureFlagForCustomer(featureFlags.cxsWithDemoAugEnabled, cxId);
+  } else if (demoAugEnabled == false) {
+    disableFeatureFlagForCustomer(featureFlags.cxsWithDemoAugEnabled, cxId);
+  }
   deduplicateFeatureFlagValues(featureFlags.cxsWithCWFeatureFlag);
   deduplicateFeatureFlagValues(featureFlags.cxsWithCQDirectFeatureFlag);
   deduplicateFeatureFlagValues(featureFlags.cxsWithEpicEnabled);
+  deduplicateFeatureFlagValues(featureFlags.cxsWithDemoAugEnabled);
   const newFeatureFlags = await createAndDeployConfigurationContent({
     region,
     appId,
@@ -66,9 +74,14 @@ export async function updateCxHieEnabledFFs({
   const currentCwEnabled = newFeatureFlags.cxsWithCWFeatureFlag.values.includes(cxId);
   const currentCqEnabled = newFeatureFlags.cxsWithCQDirectFeatureFlag.values.includes(cxId);
   const currentEpicEnabled = newFeatureFlags.cxsWithEpicEnabled.values.includes(cxId);
+  const currentDemoAugEnabled = newFeatureFlags.cxsWithDemoAugEnabled.values.includes(cxId);
   const { log } = out(`Customer ${cxId}`);
   log(
-    `New HIE enabled state: CW: ${currentCwEnabled} CQ: ${currentCqEnabled} Epic: ${currentEpicEnabled}`
+    `New HIE enabled state: ` +
+      `CW: ${currentCwEnabled} ` +
+      `CQ: ${currentCqEnabled} ` +
+      `Epic: ${currentEpicEnabled} ` +
+      `Demo Aug: ${currentDemoAugEnabled}`
   );
   return {
     cxsWithCWFeatureFlag: {
@@ -82,6 +95,10 @@ export async function updateCxHieEnabledFFs({
     cxsWithEpicEnabled: {
       cxInFFValues: currentEpicEnabled,
       ffEnabled: newFeatureFlags.cxsWithEpicEnabled.enabled,
+    },
+    cxsWithDemoAugEnabled: {
+      cxInFFValues: currentDemoAugEnabled,
+      ffEnabled: newFeatureFlags.cxsWithDemoAugEnabled.enabled,
     },
   };
 }
