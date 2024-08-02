@@ -14,7 +14,10 @@ import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
-import { getConsolidated } from "../../command/medical/patient/consolidated-get";
+import {
+  getConsolidated,
+  getConsolidatedAndSendToCx,
+} from "../../command/medical/patient/consolidated-get";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getPatientIds,
@@ -752,6 +755,37 @@ router.post(
       requestId,
     });
     return res.status(status.OK).json({ requestId });
+  })
+);
+
+/**
+ * POST /internal/patient/:id/consolidated
+ *
+ * Kicks off patient discovery for the given patient on both CQ and CW.
+ * @param req.query.cxId The customer ID.
+ * @param req.params.id The patient ID.
+ * @param req.query.rerunPdOnNewDemographics Optional. Indicates whether to use demo augmentation on this PD run.
+ */
+router.post(
+  "/:id/consolidated",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const id = getFromParamsOrFail("id", req);
+    const patient = await getPatientOrFail({ cxId, id });
+
+    //TODO Parse body?
+
+    await getConsolidatedAndSendToCx({
+      patient,
+      bundle: req.body["bundle"],
+      requestId: req.body["bundle"],
+      conversionType: req.body["bundle"],
+      resources: req.body["resources"],
+      dateFrom: req.body["dateFrom"],
+      dateTo: req.body["dateTo"],
+    });
+    return res.status(status.OK);
   })
 );
 

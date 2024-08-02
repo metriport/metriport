@@ -4,6 +4,7 @@ import {
   GetConsolidatedFilters,
   resourcesSearchableByPatient,
   ResourceTypeForConsolidation,
+  ConsolidationConversionType,
 } from "@metriport/api-sdk";
 import { ConsolidatedFhirToBundlePayload } from "@metriport/core/external/fhir/consolidated";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
@@ -40,6 +41,7 @@ const lambdaClient = makeLambdaClient(region, TIMEOUT_CALLING_CONVERTER_LAMBDA.a
 
 export type GetConsolidatedParams = {
   patient: Pick<Patient, "id" | "cxId" | "data">;
+  bundle?: SearchSetBundle<Resource>;
   requestId?: string;
   documentIds?: string[];
 } & GetConsolidatedFilters;
@@ -53,6 +55,12 @@ export type ConsolidatedQueryParams = {
   patientId: string;
   cxConsolidatedRequestMetadata?: unknown;
 } & GetConsolidatedFilters;
+
+export type ConsolidatedFhirToBundlePayloadLambda = ConsolidatedFhirToBundlePayload & {
+  requestId?: string;
+  conversionType?: ConsolidationConversionType;
+  isAsync: boolean;
+};
 
 export async function startConsolidatedQuery({
   cxId,
@@ -115,13 +123,13 @@ export async function startConsolidatedQuery({
     },
   });
 
-  getConsolidatedAndSendToCx({
+  getConsolidatedPatientDataAsync({
     patient: updatedPatient,
     resources,
     dateFrom,
     dateTo,
-    conversionType,
     requestId,
+    conversionType: "pdf",
   }).catch(emptyFunction);
 
   return progress;
@@ -189,7 +197,9 @@ export function getIsSameResources(
   );
 }
 
-async function getConsolidatedAndSendToCx(params: GetConsolidatedSendToCxParams): Promise<void> {
+export async function getConsolidatedAndSendToCx(
+  params: GetConsolidatedSendToCxParams
+): Promise<void> {
   const { patient, requestId, resources, dateFrom, dateTo, conversionType } = params;
   try {
     const { bundle, filters } = await getConsolidated(params);
@@ -224,6 +234,7 @@ export async function getConsolidated({
   dateTo,
   requestId,
   conversionType,
+  bundle,
 }: GetConsolidatedParams): Promise<{
   bundle: SearchSetBundle<Resource>;
   filters: Record<string, string | undefined>;
@@ -231,14 +242,15 @@ export async function getConsolidated({
   const { log } = Util.out(`getConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
   const filters = { resources: resources ? resources.join(", ") : undefined, dateFrom, dateTo };
   try {
-    let bundle = await getConsolidatedPatientData({
-      patient,
-      documentIds,
-      resources,
-      dateFrom,
-      dateTo,
-    });
-
+    if (!bundle) {
+      bundle = await getConsolidatedPatientData({
+        patient,
+        documentIds,
+        resources,
+        dateFrom,
+        dateTo,
+      });
+    }
     bundle.entry = filterOutPrelimDocRefs(bundle.entry);
     const hasResources = bundle.entry && bundle.entry.length > 0;
     const shouldCreateMedicalRecord = conversionType && conversionType != "json" && hasResources;
@@ -373,12 +385,13 @@ export async function getConsolidatedPatientData({
   const lambdaName = Config.getFHIRtoBundleLambdaName();
   if (!lambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
 
-  const payload: ConsolidatedFhirToBundlePayload = {
+  const payload: ConsolidatedFhirToBundlePayloadLambda = {
     patient,
     documentIds,
     resources,
     dateFrom,
     dateTo,
+    isAsync: false,
   };
 
   const result = await lambdaClient
@@ -390,4 +403,39 @@ export async function getConsolidatedPatientData({
     .promise();
   const resultPayload = getLambdaResultPayload({ result, lambdaName });
   return JSON.parse(resultPayload) as SearchSetBundle;
+}
+
+export async function getConsolidatedPatientDataAsync({
+  patient,
+  documentIds,
+  resources,
+  dateFrom,
+  dateTo,
+  requestId,
+  conversionType,
+}: ConsolidatedFhirToBundlePayload & {
+  requestId: string;
+  conversionType: ConsolidationConversionType;
+}): Promise<void> {
+  const lambdaName = Config.getFHIRtoBundleLambdaName();
+  if (!lambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
+
+  const payload: ConsolidatedFhirToBundlePayloadLambda = {
+    patient,
+    requestId,
+    conversionType,
+    documentIds,
+    resources,
+    dateFrom,
+    dateTo,
+    isAsync: true,
+  };
+
+  await lambdaClient
+    .invoke({
+      FunctionName: lambdaName,
+      InvocationType: "RequestResponse",
+      Payload: JSON.stringify(payload),
+    })
+    .promise();
 }
