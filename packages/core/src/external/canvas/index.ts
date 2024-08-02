@@ -9,6 +9,7 @@ import {
   Encounter,
   Medication,
   Bundle,
+  Appointment,
 } from "@medplum/fhirtypes";
 
 const RXNORM_SYSTEM = "http://www.nlm.nih.gov/research/umls/rxnorm";
@@ -86,6 +87,7 @@ class CanvasSDK {
         const msg = `Request failed. Status: ${statusCode}. Message: ${JSON.stringify(
           errorMessage
         )}`;
+        console.log("error", JSON.stringify(error, null, 2));
         throw new Error(msg);
       }
       throw new Error("An unexpected error occurred during the request");
@@ -140,6 +142,16 @@ class CanvasSDK {
       this.axiosInstanceCustomApi.post("notes/v1/Note", payload)
     );
     return response.data.noteKey;
+  }
+
+  async updateNoteTitle({ noteKey, title }: { noteKey: string; title: string }): Promise<void> {
+    const payload = {
+      title,
+    };
+
+    await this.handleAxiosRequest(() =>
+      this.axiosInstanceCustomApi.patch(`notes/v1/Note/${noteKey}`, payload)
+    );
   }
 
   async createCondition({
@@ -268,6 +280,13 @@ class CanvasSDK {
       return response.data.entry;
     }
     throw new Error("Medication not found");
+  }
+
+  async getAppointment(appointmentId: string): Promise<Appointment> {
+    const response = await this.handleAxiosRequest(() =>
+      this.axiosInstanceFhirApi.get(`Appointment/${appointmentId}`)
+    );
+    return response.data;
   }
 }
 

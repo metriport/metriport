@@ -38,6 +38,11 @@ export async function createFullNote({
       );
     }
 
+    await canvas.updateNoteTitle({
+      noteKey: canvasNoteId,
+      title: "Metriport Chart Import",
+    });
+
     log(`Creating canvas resources for patient ${canvasPatientId}`);
     let data;
     if (patientA) {
