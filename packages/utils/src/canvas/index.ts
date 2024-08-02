@@ -17,7 +17,13 @@ async function main() {
     });
 
     const canvasPatientId = "";
-    await createFullNote({ canvas, canvasPatientId, patientA: false, patientB: true });
+    await createFullNote({
+      canvas,
+      canvasPatientId,
+      patientA: false,
+      patientB: true,
+      providerLastName: "Wilson",
+    });
     console.log("note created");
   } catch (error) {
     console.log("Error:", error);
