@@ -782,7 +782,7 @@ router.post(
  * @param req.query.cxId The customer ID.
  * @param req.params.id The patient ID.
  * @param req.query.facilityId The facility ID for running the coverage assessment.
- * @param req.query.dryrun Whether to simply validate or run the assessment.
+ * @param req.query.dryrun Whether to simply validate or run the assessment (optional, defaults to false).
  * @return A patient.
  *
  */
@@ -792,7 +792,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getFrom("query").orFail("facilityId", req);
-    const dryrun = getFromQueryAsBoolean("dryrun", req);
+    const dryrun = getFromQueryAsBoolean("dryrun", req) ?? false;
     const payload = coverageAssessmentSchema.parse(req.body);
 
     const facility = await getFacilityOrFail({ cxId, id: facilityId });
