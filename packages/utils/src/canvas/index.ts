@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 import CanvasSDK from "@metriport/core/external/canvas/index";
-import { createFullNoteFromScratch } from "@metriport/core/external/canvas/note";
+import { createFullNote } from "@metriport/core/external/canvas/note";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 
 const canvasClientSecret = getEnvVarOrFail(`CANVAS_CLIENT_SECRET`);
@@ -20,7 +20,7 @@ async function main() {
     // console.log(JSON.stringify(appointment, null, 2));
 
     const canvasPatientId = "69927f85b48643e59e69d9e07d2759ef";
-    await createFullNoteFromScratch({
+    await createFullNote({
       canvas,
       canvasPatientId,
       patientA: false,
