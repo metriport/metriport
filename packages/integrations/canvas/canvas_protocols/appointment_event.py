@@ -74,7 +74,7 @@ class AppointmentNotification2(ClinicalQualityMeasure):
             pd_response_data = pd_response.json()
             patient_id = pd_response_data.get('id')
             result.add_narrative(json.dumps({
-                'patient': patient_data
+                'patient': pd_response_data
             }))
 
             if patient_id:

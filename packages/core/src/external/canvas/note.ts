@@ -20,35 +20,31 @@ export async function createFullNote({
 }) {
   try {
     // TODO remove this as per https://github.com/metriport/metriport-internal/issues/2088
-    const [canvasPractitioner, canvasLocation, canvasEncounter] = await Promise.all([
+    const [canvasPractitioner, canvasLocation] = await Promise.all([
       canvas.getPractitioner(providerLastName),
       canvas.getLocation(),
-      canvas.getFirstEncounter(canvasPatientId),
     ]);
 
     const canvasPractitionerId = canvasPractitioner.id;
     const canvasLocationId = canvasLocation.id;
-    const canvasEncounterId = canvasEncounter.id;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const canvasNoteId = (canvasEncounter.extension as any)[0]?.valueId;
 
-    if (!canvasLocationId || !canvasPractitionerId || !canvasEncounterId || !canvasNoteId) {
-      throw new Error(
-        "Canvas Location ID or Practitioner ID or Encounter ID or Note ID is undefined"
-      );
+    if (!canvasLocationId || !canvasPractitionerId) {
+      throw new Error("Canvas Location ID or Practitioner ID is undefined");
     }
 
-    await canvas.updateNoteTitle({
-      noteKey: canvasNoteId,
-      title: "Metriport Chart Import",
+    const canvasNoteId = await canvas.createNote({
+      patientKey: canvasPatientId,
+      providerKey: canvasPractitionerId,
+      practiceLocationKey: canvasLocationId,
+      noteTypeName: "Office visit",
     });
 
     log(`Creating canvas resources for patient ${canvasPatientId}`);
     let data;
     if (patientA) {
-      data = generateFakeBundleFemale(canvasPatientId, canvasPractitionerId, canvasEncounterId);
+      data = generateFakeBundleFemale(canvasPatientId, canvasPractitionerId);
     } else if (patientB) {
-      data = generateFakeBundleMale(canvasPatientId, canvasPractitionerId, canvasEncounterId);
+      data = generateFakeBundleMale(canvasPatientId, canvasPractitionerId);
     } else {
       throw new Error("Either patientA or patientB must be true");
     }
@@ -69,7 +65,16 @@ export async function createFullNote({
           patientId: canvasPatientId,
           practitionerId: canvasPractitionerId,
           noteId: canvasNoteId,
-          encounterId: canvasEncounterId,
+        });
+      }
+
+      if (resource.resourceType === "Condition") {
+        log("Creating condition");
+        await canvas.createCondition({
+          condition: resource,
+          patientId: canvasPatientId,
+          practitionerId: canvasPractitionerId,
+          noteId: canvasNoteId,
         });
       }
       if (resource.resourceType === "MedicationStatement") {
@@ -77,16 +82,6 @@ export async function createFullNote({
         await canvas.createMedicationStatement({
           medication: resource,
           patientId: canvasPatientId,
-          encounterId: canvasEncounterId,
-          noteId: canvasNoteId,
-        });
-      }
-      if (resource.resourceType === "Condition") {
-        log("Creating condition");
-        await canvas.createCondition({
-          condition: resource,
-          patientId: canvasPatientId,
-          practitionerId: canvasPractitionerId,
           noteId: canvasNoteId,
         });
       }

@@ -182,16 +182,13 @@ class CanvasSDK {
   async createMedicationStatement({
     medication,
     patientId,
-    encounterId,
     noteId,
   }: {
     medication: MedicationStatement;
     patientId: string;
-    encounterId: string;
     noteId: string;
   }): Promise<string> {
     medication.subject = { reference: `Patient/${patientId}` };
-    medication.context = { reference: `Encounter/${encounterId}` };
     medication.extension = [
       {
         url: "http://schemas.canvasmedical.com/fhir/extensions/note-id",
@@ -209,13 +206,11 @@ class CanvasSDK {
     patientId,
     noteId,
     practitionerId,
-    encounterId,
   }: {
     allergy: AllergyIntolerance;
     patientId: string;
     noteId: string;
     practitionerId: string;
-    encounterId: string;
   }): Promise<string> {
     if (!patientId || !noteId || !practitionerId) {
       throw new Error(
@@ -224,7 +219,6 @@ class CanvasSDK {
     }
     allergy.patient = { reference: `Patient/${patientId}` };
     allergy.recorder = { reference: `Practitioner/${practitionerId}` };
-    allergy.encounter = { reference: `Encounter/${encounterId}` };
     allergy.extension = [
       {
         url: "http://schemas.canvasmedical.com/fhir/extensions/note-id",

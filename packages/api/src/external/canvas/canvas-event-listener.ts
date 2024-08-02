@@ -24,9 +24,13 @@ function isCanvasIntegrationEvent(event: CanvasIntegrationEvent): boolean {
 }
 
 function getProviderLastName(event: CanvasIntegrationEvent): string | undefined {
-  if (event.metadata && typeof event.metadata === "object" && "canvas" in event.metadata) {
-    const canvasMetadata = event.metadata as { canvas: { providerLastName: string } };
-    return canvasMetadata.canvas.providerLastName;
+  if (
+    event.metadata &&
+    typeof event.metadata === "object" &&
+    "providerLastName" in event.metadata &&
+    typeof event.metadata.providerLastName === "string"
+  ) {
+    return event.metadata.providerLastName;
   }
   return undefined;
 }

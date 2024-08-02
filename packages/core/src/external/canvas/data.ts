@@ -7,14 +7,10 @@ import {
 } from "@medplum/fhirtypes";
 import { faker } from "@faker-js/faker";
 
-export function generateFakeBundleFemale(
-  patientId: string,
-  practitionerId: string,
-  encounterId: string
-): Bundle {
+export function generateFakeBundleFemale(patientId: string, practitionerId: string): Bundle {
   const conditions = generateFakeConditionData1(patientId);
-  const medications = generateFakeMedicationData1(patientId, encounterId);
-  const allergies = generateFakeAllergyData1(patientId, encounterId, practitionerId);
+  const medications = generateFakeMedicationData1(patientId);
+  const allergies = generateFakeAllergyData1(patientId, practitionerId);
 
   const entries: BundleEntry[] = [
     ...conditions.map(resource => ({ resource })),
@@ -30,14 +26,10 @@ export function generateFakeBundleFemale(
   };
 }
 
-export function generateFakeBundleMale(
-  patientId: string,
-  practitionerId: string,
-  encounterId: string
-): Bundle {
+export function generateFakeBundleMale(patientId: string, practitionerId: string): Bundle {
   const conditions = generateFakeConditionData2(patientId);
-  const medications = generateFakeMedicationData2(patientId, encounterId);
-  const allergies = generateFakeAllergyData1(patientId, encounterId, practitionerId);
+  const medications = generateFakeMedicationData2(patientId);
+  const allergies = generateFakeAllergyData1(patientId, practitionerId);
 
   const entries: BundleEntry[] = [
     ...conditions.map(resource => ({ resource })),
@@ -337,10 +329,7 @@ export function generateFakeConditionData2(patientId: string): Condition[] {
   ];
 }
 
-export function generateFakeMedicationData1(
-  patientId: string,
-  encounterId: string
-): MedicationStatement[] {
+export function generateFakeMedicationData1(patientId: string): MedicationStatement[] {
   return [
     {
       resourceType: "MedicationStatement",
@@ -350,17 +339,13 @@ export function generateFakeMedicationData1(
         display: "metFORMIN (GLUCOPHAGE) 1000 MG tablet",
       },
       subject: { reference: `Patient/${patientId}` },
-      context: { reference: `Encounter/${encounterId}` },
       effectivePeriod: { start: faker.date.past().toISOString() },
       dosage: [{ text: "Take 1 capsule daily" }],
     },
   ];
 }
 
-export function generateFakeMedicationData2(
-  patientId: string,
-  encounterId: string
-): MedicationStatement[] {
+export function generateFakeMedicationData2(patientId: string): MedicationStatement[] {
   return [
     {
       resourceType: "MedicationStatement",
@@ -370,7 +355,6 @@ export function generateFakeMedicationData2(
         display: "albuterol (90 mcg/dose) MDI",
       },
       subject: { reference: `Patient/${patientId}` },
-      context: { reference: `Encounter/${encounterId}` },
       effectivePeriod: { start: faker.date.past().toISOString() },
       dosage: [{ text: "Take 1 capsule daily" }],
     },
@@ -379,7 +363,6 @@ export function generateFakeMedicationData2(
 
 export function generateFakeAllergyData1(
   patientId: string,
-  encounterId: string,
   practitionerId: string
 ): AllergyIntolerance[] {
   return [
@@ -411,7 +394,6 @@ export function generateFakeAllergyData1(
         text: "bee pollen",
       },
       patient: { reference: `Patient/${patientId}` },
-      encounter: { reference: `Encounter/${encounterId}` },
       onsetDateTime: "2024-01-01",
       recorder: { reference: `Practitioner/${practitionerId}` },
       lastOccurrence: "2024-01-01",
