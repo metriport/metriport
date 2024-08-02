@@ -21,6 +21,7 @@ export function getSecrets(scope: Construct, config: EnvConfig): Secrets {
       ? buildSecrets(scope, config.carequality.secretNames)
       : undefined),
     ...(config.analyticsSecretNames ? buildSecrets(scope, config.analyticsSecretNames) : undefined),
+    ...(config.canvas?.secretNames ? buildSecrets(scope, config.canvas.secretNames) : undefined),
   };
   return secrets;
 }
