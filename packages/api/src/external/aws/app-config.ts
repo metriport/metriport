@@ -68,9 +68,7 @@ async function getCxsWithFeatureFlagEnabled(
  *
  * @returns true if enabled; false otherwise
  */
-async function isFeatureFlagEnabledBoolean(
-  featureFlagName: keyof BooleanFeatureFlags
-): Promise<boolean> {
+async function isFeatureFlagEnabled(featureFlagName: keyof BooleanFeatureFlags): Promise<boolean> {
   try {
     const featureFlag = await getFeatureFlagValueBoolean(
       Config.getAWSRegion(),
@@ -167,9 +165,9 @@ export async function isDemoAugEnabledForCx(cxId: string): Promise<boolean> {
 }
 
 export async function isCommonwellEnabled(): Promise<boolean> {
-  return isFeatureFlagEnabledBoolean("commonwellFeatureFlag");
+  return isFeatureFlagEnabled("commonwellFeatureFlag");
 }
 
 export async function isCarequalityEnabled(): Promise<boolean> {
-  return isFeatureFlagEnabledBoolean("carequalityFeatureFlag");
+  return isFeatureFlagEnabled("carequalityFeatureFlag");
 }
