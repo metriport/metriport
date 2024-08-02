@@ -218,8 +218,8 @@ async function getConsolidatedAndSendToCx(params: GetConsolidatedSendToCxParams)
 
 export async function getConsolidated({
   patient,
-  documentIds = [],
-  resources = [],
+  documentIds,
+  resources,
   dateFrom,
   dateTo,
   requestId,
