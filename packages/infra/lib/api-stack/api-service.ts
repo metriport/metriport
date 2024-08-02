@@ -97,6 +97,7 @@ export function createAPIService({
   outboundDocumentRetrievalLambda,
   generalBucket,
   medicalDocumentsUploadBucket,
+  fhirBundleLambda,
   fhirToMedicalRecordLambda,
   fhirToCdaConverterLambda,
   searchIngestionQueue,
@@ -126,6 +127,7 @@ export function createAPIService({
   outboundDocumentRetrievalLambda: ILambda;
   generalBucket: s3.Bucket;
   medicalDocumentsUploadBucket: s3.Bucket;
+  fhirBundleLambda: ILambda;
   fhirToMedicalRecordLambda: ILambda | undefined;
   fhirToCdaConverterLambda: ILambda | undefined;
   searchIngestionQueue: IQueue;
@@ -237,6 +239,7 @@ export function createAPIService({
           OUTBOUND_PATIENT_DISCOVERY_LAMBDA_NAME: outboundPatientDiscoveryLambda.functionName,
           OUTBOUND_DOC_QUERY_LAMBDA_NAME: outboundDocumentQueryLambda.functionName,
           OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,
+          FHIR_BUNDLE_LAMBDA_NAME: fhirBundleLambda.functionName,
           ...(fhirToMedicalRecordLambda && {
             FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
           }),
@@ -344,6 +347,7 @@ export function createAPIService({
   outboundDocumentQueryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   outboundDocumentRetrievalLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToCdaConverterLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
+  fhirBundleLambda.grantInvoke(fargateService.taskDefinition.taskRole);
 
   // Access grant for medical document buckets
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);

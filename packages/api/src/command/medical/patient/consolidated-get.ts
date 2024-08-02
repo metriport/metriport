@@ -1,37 +1,22 @@
-import { OperationOutcomeError } from "@medplum/core";
-import {
-  Bundle,
-  BundleEntry,
-  ExtractResource,
-  OperationOutcomeIssue,
-  Resource,
-  ResourceType,
-} from "@medplum/fhirtypes";
+import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
 import {
   ConsolidatedQuery,
   GetConsolidatedFilters,
   resourcesSearchableByPatient,
   ResourceTypeForConsolidation,
 } from "@metriport/api-sdk";
+import { ConsolidatedFhirToBundlePayload } from "@metriport/core/external/fhir/consolidated";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
+import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
-import {
-  buildBundle,
-  getReferencesFromResources,
-} from "@metriport/core/external/fhir/shared/bundle";
-import { isResourceDerivedFromDocRef } from "@metriport/core/external/fhir/shared/index";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { emptyFunction } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import { intersection } from "lodash";
-import { makeFhirApi } from "../../../external/fhir/api/api-factory";
-import {
-  fullDateQueryForResource,
-  getPatientFilter,
-} from "../../../external/fhir/patient/resource-filter";
-import { getReferencesFromFHIR } from "../../../external/fhir/references/get-references";
 import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
@@ -46,7 +31,12 @@ import {
 import { getPatientOrFail } from "./get-patient";
 import { storeQueryInit } from "./query-init";
 
-const MAX_HYDRATION_ROUNDS = 3;
+dayjs.extend(duration);
+
+export const TIMEOUT_CALLING_CONVERTER_LAMBDA = dayjs.duration(15, "minutes").add(2, "seconds");
+
+const region = Config.getAWSRegion();
+const lambdaClient = makeLambdaClient(region, TIMEOUT_CALLING_CONVERTER_LAMBDA.asMilliseconds());
 
 export type GetConsolidatedParams = {
   patient: Pick<Patient, "id" | "cxId" | "data">;
@@ -228,8 +218,8 @@ async function getConsolidatedAndSendToCx(params: GetConsolidatedSendToCxParams)
 
 export async function getConsolidated({
   patient,
-  documentIds,
-  resources,
+  documentIds = [],
+  resources = [],
   dateFrom,
   dateTo,
   requestId,
@@ -375,143 +365,29 @@ async function uploadConsolidatedJsonAndReturnUrl({
  */
 export async function getConsolidatedPatientData({
   patient,
-  documentIds = [],
+  documentIds,
   resources,
   dateFrom,
   dateTo,
-}: {
-  patient: Pick<Patient, "id" | "cxId">;
-  documentIds?: string[];
-  resources?: ResourceTypeForConsolidation[];
-  dateFrom?: string;
-  dateTo?: string;
-}): Promise<SearchSetBundle<Resource>> {
-  const { log } = Util.out(
-    `getConsolidatedPatientData - cxId ${patient.cxId}, patientId ${patient.id}`
-  );
-  const { id: patientId, cxId } = patient;
-  const {
-    resourcesByPatient,
-    resourcesBySubject,
-    generalResourcesNoFilter,
-    dateFilter: fullDateQuery,
-  } = getPatientFilter({
+}: ConsolidatedFhirToBundlePayload): Promise<SearchSetBundle<Resource>> {
+  const lambdaName = Config.getFHIRtoBundleLambdaName();
+  if (!lambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
+
+  const payload: ConsolidatedFhirToBundlePayload = {
+    patient,
+    documentIds,
     resources,
     dateFrom,
     dateTo,
-  });
-  log(`Getting consolidated data with resources by patient: ${resourcesByPatient.join(", ")}...`);
-  log(`...and by subject: ${resourcesBySubject.join(", ")}`);
-  documentIds.length > 0 && log(`...and document IDs: ${documentIds.join(", ")}`);
-  log(`...and general resources with no specific filter: ${generalResourcesNoFilter.join(", ")}`);
+  };
 
-  const fhir = makeFhirApi(cxId);
-  const errorsToReport: Record<string, string> = {};
-
-  const settled = await Promise.allSettled([
-    ...resourcesByPatient.map(async resource => {
-      const dateFilter = fullDateQueryForResource(fullDateQuery, resource);
-      return searchResources(
-        resource,
-        () => fhir.searchResourcePages(resource, `patient=${patientId}${dateFilter}`),
-        errorsToReport
-      );
-    }),
-    ...resourcesBySubject.map(async resource => {
-      const dateFilter = fullDateQueryForResource(fullDateQuery, resource);
-      return searchResources(
-        resource,
-        () => fhir.searchResourcePages(resource, `subject=${patientId}${dateFilter}`),
-        errorsToReport
-      );
-    }),
-    // ...generalResourcesNoFilter.map(async resource => {
-    //   return searchResources(resource, () => fhir.searchResourcePages(resource), errorsToReport);
-    // }),
-  ]);
-
-  const success: Resource[] = settled.flatMap(s => (s.status === "fulfilled" ? s.value : []));
-
-  const failuresAmount = Object.keys(errorsToReport).length;
-  if (failuresAmount > 0) {
-    log(
-      `Failed to get FHIR resources (${failuresAmount} failures, ${
-        success.length
-      } succeeded): ${JSON.stringify(errorsToReport)}`
-    );
-    capture.message(`Failed to get FHIR resources`, {
-      extra: {
-        context: `getConsolidatedPatientData`,
-        patientId,
-        errorsToReport,
-        succeeded: success.length,
-        failed: failuresAmount,
-      },
-      level: "error",
-    });
-  }
-
-  let filtered = filterByDocumentIds(success, documentIds, log);
-
-  for (let i = 0; i < MAX_HYDRATION_ROUNDS; i++) {
-    const { missingReferences } = getReferencesFromResources({
-      resources: filtered,
-    });
-    if (missingReferences.length === 0) {
-      break;
-    }
-    const missingRefsOnFHIR = await getReferencesFromFHIR(missingReferences, fhir, log);
-    filtered = [...filtered, ...missingRefsOnFHIR];
-  }
-
-  const entry: BundleEntry[] = filtered.map(r => ({ resource: r }));
-  return buildBundle(entry);
-}
-
-function filterByDocumentIds(
-  resources: Resource[],
-  documentIds: string[],
-  log = console.log
-): Resource[] {
-  const defaultMsg = `Got ${resources.length} resources from FHIR server`;
-  if (documentIds.length <= 0) {
-    log(`${defaultMsg}, not filtering by documentIds`);
-    return resources;
-  }
-  const isDerivedFromDocRefs = (r: Resource) =>
-    documentIds.some(id => isResourceDerivedFromDocRef(r, id));
-  const filtered = documentIds.length > 0 ? resources.filter(isDerivedFromDocRefs) : resources;
-  log(`${defaultMsg}, filtered by documentIds to ${filtered.length} resources`);
-  return filtered;
-}
-
-const searchResources = async <K extends ResourceType>(
-  resource: K,
-  searchFunction: () => AsyncGenerator<ExtractResource<K>[]>,
-  errorsToReport: Record<string, string>
-) => {
-  try {
-    const pages: Resource[] = [];
-    for await (const page of searchFunction()) {
-      pages.push(...page);
-    }
-    return pages;
-  } catch (err) {
-    if (err instanceof OperationOutcomeError && err.outcome.id === "not-found") throw err;
-    if (err instanceof OperationOutcomeError) errorsToReport[resource] = getMessage(err);
-    else errorsToReport[resource] = String(err);
-    throw err;
-  }
-};
-
-function getMessage(err: OperationOutcomeError): string {
-  return err.outcome.issue ? err.outcome.issue.map(issueToString).join(",") : "";
-}
-
-function issueToString(issue: OperationOutcomeIssue): string {
-  return (
-    issue.details?.text ??
-    (issue.diagnostics ? issue.diagnostics.slice(0, 100) + "..." : null) ??
-    JSON.stringify(issue)
-  );
+  const result = await lambdaClient
+    .invoke({
+      FunctionName: lambdaName,
+      InvocationType: "RequestResponse",
+      Payload: JSON.stringify(payload),
+    })
+    .promise();
+  const resultPayload = getLambdaResultPayload({ result, lambdaName });
+  return JSON.parse(resultPayload) as SearchSetBundle;
 }

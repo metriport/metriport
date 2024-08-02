@@ -379,6 +379,15 @@ export class APIStack extends Stack {
       });
     }
 
+    const fhirBundleLambda = this.setupFhirBundleLambda({
+      lambdaLayers,
+      vpc: this.vpc,
+      fhirServerUrl: props.config.fhirServerUrl,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: slackNotification?.alarmAction,
+    });
+
     const cwEnhancedQueryQueues = cwEnhancedCoverageConnector.setupRequiredInfra({
       stack: this,
       vpc: this.vpc,
@@ -423,6 +432,7 @@ export class APIStack extends Stack {
       medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
       fhirToCdaConverterLambda,
+      fhirBundleLambda,
       searchIngestionQueue: ccdaSearchQueue,
       searchEndpoint: ccdaSearchDomain.domainEndpoint,
       searchAuth: { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
@@ -1254,6 +1264,39 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambda);
 
     return fhirToMedicalRecordLambda;
+  }
+
+  private setupFhirBundleLambda(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    fhirServerUrl: string;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const { lambdaLayers, vpc, fhirServerUrl, sentryDsn, envType, alarmAction } = ownProps;
+
+    const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
+
+    const fhirToBundleLambda = createLambda({
+      stack: this,
+      name: "FhirToBundle",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      entry: "fhir-to-bundle",
+      envType,
+      envVars: {
+        FHIR_SERVER_URL: fhirServerUrl,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared, lambdaLayers.chromium],
+      memory: 4096,
+      timeout: lambdaTimeout,
+      isEnableInsights: true,
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    return fhirToBundleLambda;
   }
 
   private setupCWDocContribution(ownProps: {
