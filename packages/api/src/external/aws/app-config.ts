@@ -68,32 +68,6 @@ async function getCxsWithFeatureFlagEnabled(
  *
  * @returns true if enabled; false otherwise
  */
-async function isFeatureFlagEnabledStringArray(
-  featureFlagName: keyof StringValueFeatureFlags
-): Promise<boolean> {
-  try {
-    const featureFlag = await getFeatureFlagValueStringArray(
-      Config.getAWSRegion(),
-      Config.getAppConfigAppId(),
-      Config.getAppConfigConfigId(),
-      Config.getEnvType(),
-      featureFlagName
-    );
-    if (featureFlag) return featureFlag.enabled;
-  } catch (error) {
-    const msg = `Failed to get Feature Flag Value`;
-    const extra = { featureFlagName };
-    log(`${msg} - ${JSON.stringify(extra)} - ${errorToString(error)}`);
-    capture.error(msg, { extra: { ...extra, error } });
-  }
-  return false;
-}
-
-/**
- * Checks whether the specified feature flag is enabled.
- *
- * @returns true if enabled; false otherwise
- */
 async function isFeatureFlagEnabledBoolean(
   featureFlagName: keyof BooleanFeatureFlags
 ): Promise<boolean> {
@@ -184,20 +158,12 @@ export async function isWebhookPongDisabledForCx(cxId: string): Promise<boolean>
 
 export async function isEpicEnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithEpicEnabled = await getCxsWithEpicEnabled();
-  const globalEnabled = await isFeatureFlagEnabledStringArray("cxsWithEpicEnabled");
-  if (!globalEnabled) return false;
-
-  return cxIdsWithEpicEnabled.length === 0 ? true : cxIdsWithEpicEnabled.some(i => i === cxId);
+  return cxIdsWithEpicEnabled.some(i => i === cxId);
 }
 
 export async function isDemoAugEnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithDemoAugEnabled = await getCxsWitDemoAugEnabled();
-  const globalEnabled = await isFeatureFlagEnabledStringArray("cxsWithDemoAugEnabled");
-  if (!globalEnabled) return false;
-
-  return cxIdsWithDemoAugEnabled.length === 0
-    ? true
-    : cxIdsWithDemoAugEnabled.some(i => i === cxId);
+  return cxIdsWithDemoAugEnabled.some(i => i === cxId);
 }
 
 export async function isCommonwellEnabled(): Promise<boolean> {
