@@ -8,23 +8,25 @@ import {
 } from "../../cda-types/shared-types";
 import {
   buildCodeCe,
+  buildCodeCv,
   buildInstanceIdentifier,
+  buildTemplateIds,
   buildValueCd,
   formatDateToCdaTimestamp,
   getTextFromCode,
-  isLoinc,
   mapCodingSystem,
   notOnFilePlaceholder,
-  withoutNullFlavorObject,
+  withNullFlavor,
 } from "../commons";
 import {
   NOT_SPECIFIED,
-  extensionValue2014,
   extensionValue2015,
   loincCodeSystem,
   loincSystemName,
   oids,
   placeholderOrgOid,
+  snomedCodeSystem,
+  snomedSystemName,
 } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { initiateSectionTable } from "../table";
@@ -60,7 +62,10 @@ export function buildProblems(fhirBundle: Bundle): ProblemsSection {
     fhirBundle.entry?.flatMap(entry => (isCondition(entry.resource) ? [entry.resource] : [])) || [];
 
   if (conditions.length === 0) {
-    return problemsSection;
+    return {
+      _nullFlavor: "NI",
+      ...problemsSection,
+    };
   }
 
   const augmentedConditions = conditions.map(condition => {
@@ -123,9 +128,9 @@ function createEntryFromCondition(
     act: {
       _classCode: "ACT",
       _moodCode: "EVN",
-      templateId: buildInstanceIdentifier({
+      templateId: buildTemplateIds({
         root: condition.typeOid,
-        extension: extensionValue2014,
+        extension: extensionValue2015,
       }),
       id: buildInstanceIdentifier({
         root: placeholderOrgOid,
@@ -140,10 +145,7 @@ function createEntryFromCondition(
         _code: condition.resource.clinicalStatus?.coding?.[0]?.code ?? "active", // TODO: Check if this is the correct approach
       },
       effectiveTime: {
-        low: withoutNullFlavorObject(
-          formatDateToCdaTimestamp(condition.resource.recordedDate),
-          "_value"
-        ),
+        low: withNullFlavor(formatDateToCdaTimestamp(condition.resource.onsetDateTime), "_value"),
       },
       entryRelationship: createEntryRelationship(condition.resource, referenceId),
     },
@@ -167,14 +169,12 @@ function createEntryRelationship(
   condition: Condition,
   referenceId: string
 ): ObservationEntryRelationship {
-  const codeSystem = condition.code?.coding?.[0]?.system;
-  const systemIsLoinc = isLoinc(codeSystem);
   return {
     _typeCode: "SUBJ",
     observation: {
       _classCode: "OBS",
       _moodCode: "EVN",
-      templateId: buildInstanceIdentifier({
+      templateId: buildTemplateIds({
         root: oids.problemObs,
         extension: extensionValue2015,
       }),
@@ -182,12 +182,24 @@ function createEntryRelationship(
         root: placeholderOrgOid,
         extension: condition.id,
       }),
-      code: buildCodeCe({
-        code: condition.code?.coding?.[0]?.code,
-        codeSystem: systemIsLoinc ? loincCodeSystem : codeSystem,
-        codeSystemName: systemIsLoinc ? loincSystemName : undefined,
-        displayName: condition.code?.coding?.[0]?.display,
-      }),
+      code: buildCodeCv(
+        buildCodeCe({
+          code: "64572001",
+          codeSystem: snomedCodeSystem,
+          codeSystemName: snomedSystemName,
+        }),
+        [
+          buildCodeCe({
+            code: "75323-6",
+          }),
+        ]
+      ),
+      statusCode: {
+        _code: "completed",
+      },
+      effectiveTime: {
+        low: withNullFlavor(formatDateToCdaTimestamp(condition.recordedDate), "_value"),
+      },
       value: buildValueCd(condition.code, referenceId),
     },
   };

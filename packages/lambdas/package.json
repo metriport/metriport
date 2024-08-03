@@ -37,7 +37,7 @@
     "aws-sdk": "^2.1248.0",
     "axios": "^1.4.0",
     "dayjs": "^1.11.10",
-    "fast-xml-parser": "^4.3.6",
+    "fast-xml-parser": "^4.4.1",
     "formidable": "^3.5.1",
     "http-status": "^1.7.0",
     "jaro-winkler": "^0.2.8",

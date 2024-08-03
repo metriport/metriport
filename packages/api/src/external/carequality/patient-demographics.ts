@@ -39,13 +39,17 @@ export function patientResourceToNormalizedLinkDemographics(
   });
   const emails = (patientResource.telecom ?? []).flatMap(tc => {
     if (!tc.value) return [];
-    if (tc.system === "email" || tc.value.includes("@")) return [normalizeEmail(tc.value)];
+    if (tc.system === "email" || tc.value.includes("@")) {
+      const email = normalizeEmail(tc.value);
+      if (!email) return [];
+      return [email];
+    }
     return [];
   });
   /* TODO
-  const driversLicenses = (patientResource.personalIdentifiers ?? []).flatMap(p => { 
+  const driversLicenses = (patientResource.personalIdentifiers ?? []).flatMap(p => {
   });
-  const ssns = (ppatientResource.personalIdentifiers ?? []).flatMap(p => { 
+  const ssns = (ppatientResource.personalIdentifiers ?? []).flatMap(p => {
   });
   */
   return removeInvalidArrayValues({

@@ -7,14 +7,25 @@ import {
   formatDateToCdaTimestamp,
   withNullFlavor,
 } from "../commons";
+import { clinicalDocumentConstants } from "../constants";
 
-export function buildAuthor(organization: Organization): CdaAuthor {
+export function buildAuthor(organization: Organization, date?: string | undefined): CdaAuthor {
   const author = {
-    time: withNullFlavor(formatDateToCdaTimestamp(new Date().toISOString()), "_value"),
+    time: date
+      ? withNullFlavor(formatDateToCdaTimestamp(date), "_value")
+      : withNullFlavor(formatDateToCdaTimestamp(new Date().toISOString()), "_value"),
     assignedAuthor: {
       id: withNullFlavor(organization.id, "_root"),
       addr: buildAddress(organization.address),
       telecom: buildTelecom(organization.telecom),
+      assignedAuthoringDevice: {
+        manufacturerModelName: {
+          "#text": clinicalDocumentConstants.assigningAuthorityName,
+        },
+        softwareName: {
+          "#text": clinicalDocumentConstants.assigningAuthorityName,
+        },
+      },
       representedOrganization: buildRepresentedOrganization(organization),
     },
   };

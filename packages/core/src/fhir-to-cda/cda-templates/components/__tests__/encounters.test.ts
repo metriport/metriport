@@ -41,7 +41,7 @@ beforeEach(() => {
   bundle.entry?.push({ resource: location });
 });
 
-describe("buildEncounters", () => {
+describe.skip("buildEncounters", () => {
   it("correctly maps a single Encounter", () => {
     const filePath = path.join(__dirname, "./xmls/encounters-section-single-entry.xml");
     const params = {

@@ -41,8 +41,8 @@ service:
       examples:
         - name: Example1
           query-parameters:
-            patientId: "12345678"
-            facilityId: "12345678"
+            patientId: "018a80c4-292a-7486-a1234-76yuhe23yu14"
+            facilityId: "018a80c4-292a-7486-a1234-9uiu76yhe234"
           request: {"youCan": "putAny", "stringKeyValue": "pairsHere"}
           response:
             body: $DocumentQuery.Example1
@@ -66,7 +66,7 @@ service:
       examples:
         - name: Example1
           query-parameters:
-            patientId: "12345678"
+            patientId: "018a80c4-292a-7486-a1234-76yuhe23yu14"
           response:
             body: $DocumentQuery.Example1
 
@@ -151,7 +151,7 @@ service:
       examples:
         - name: Example1
           query-parameters:
-            patientId: "12345678"
+            patientId: "018a80c4-292a-7486-a1234-76yuhe23yu14"
           request:
             resourceType: "DocumentReference"
             content:
@@ -205,7 +205,7 @@ service:
       examples:
         - name: Example1
           query-parameters:
-            patientId: "12345678"
+            patientId: "018a80c4-292a-7486-a1234-76yuhe23yu14"
           request: {"youCan": "putAny", "stringKeyValue": "pairsHere"}
           response:
             body: $BulkGetDocumentUrlQuery.Example1

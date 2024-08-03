@@ -1,21 +1,32 @@
 import { Bundle, BundleEntry, Patient } from "@medplum/fhirtypes";
-import { makeFhirApi } from "../../../external/fhir/api/api-factory";
+import { createUploadFilePath } from "@metriport/core/domain/document/upload";
 import { OPERATION_OUTCOME_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/extension";
-import { Util } from "../../../shared/util";
-import { errorToString } from "@metriport/shared";
+import { uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
+import { out } from "@metriport/core/util/log";
+import { errorToString } from "@metriport/shared";
+import { makeFhirApi } from "../../../external/fhir/api/api-factory";
+
+export const sentToFhirServerPrefix = "toFhirServer";
 
 export async function createOrUpdateConsolidatedPatientData({
   cxId,
   patientId,
+  requestId,
   fhirBundle,
 }: {
   cxId: string;
   patientId: string;
+  requestId: string;
   fhirBundle: Bundle;
 }): Promise<Bundle | undefined> {
-  const { log } = Util.out(
-    `createOrUpdateConsolidatedPatientData - cxId ${cxId}, patientId ${patientId}`
+  const { log } = out(
+    `createOrUpdateConsolidatedPatientData - cxId ${cxId}, patientId ${patientId}, requestId ${requestId}`
+  );
+  const toFhirServerBundleKey = createUploadFilePath(
+    cxId,
+    patientId,
+    `${requestId}_${sentToFhirServerPrefix}.json`
   );
 
   try {
@@ -28,16 +39,23 @@ export async function createOrUpdateConsolidatedPatientData({
       fhirBundle,
     });
 
-    const bundleResource = await fhir.executeBatch(fhirBundleTransaction);
+    const [bundleResource] = await Promise.all([
+      fhir.executeBatch(fhirBundleTransaction),
+      uploadFhirBundleToS3({
+        fhirBundle: fhirBundleTransaction,
+        destinationKey: toFhirServerBundleKey,
+      }),
+    ]);
     const transformedBundle = removeUnwantedFhirData(bundleResource);
 
     return transformedBundle;
   } catch (error) {
     const errorMsg = errorToString(error);
-    const msg = "Error converting and executing fhir bundle resources";
-    log(`${msg}: ${errorMsg}`);
-    if (errorMsg.includes("ID")) throw new MetriportError(errorMsg, error, { cxId, patientId });
-    throw new MetriportError(msg, error, { cxId, patientId });
+    const msg = "Error converting and storing fhir bundle resources";
+    const additionalInfo = { cxId, patientId, toFhirServerBundleKey };
+    log(`${msg}: ${errorMsg}, additionalInfo: ${JSON.stringify(additionalInfo)}`);
+    if (errorMsg.includes("ID")) throw new MetriportError(errorMsg, error, additionalInfo);
+    throw new MetriportError(msg, error, additionalInfo);
   }
 }
 

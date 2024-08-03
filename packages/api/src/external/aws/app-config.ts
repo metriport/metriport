@@ -51,7 +51,7 @@ async function getCxsWithFeatureFlagEnabled(
       Config.getEnvType(),
       featureFlagName
     );
-    if (featureFlag && featureFlag.enabled && featureFlag.values) {
+    if (featureFlag && featureFlag.enabled) {
       return featureFlag.values;
     }
   } catch (error) {
@@ -115,6 +115,10 @@ export async function getCxsWithAiBriefFeatureFlag(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithAiBriefFeatureFlag");
 }
 
+export async function getCxsWitDemoAugEnabled(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithDemoAugEnabled");
+}
+
 export async function getE2eCxIds(): Promise<string | undefined> {
   if (Config.isDev()) {
     const apiKey = getEnvVar("TEST_API_KEY");
@@ -161,8 +165,12 @@ export async function isAiBriefEnabledForCx(cxId: string): Promise<boolean> {
 
 export async function isEpicEnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithEpicEnabled = await getCxsWithEpicEnabled();
+  return cxIdsWithEpicEnabled.some(i => i === cxId);
+}
 
-  return cxIdsWithEpicEnabled.length === 0 ? true : cxIdsWithEpicEnabled.some(i => i === cxId);
+export async function isDemoAugEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithDemoAugEnabled = await getCxsWitDemoAugEnabled();
+  return cxIdsWithDemoAugEnabled.some(i => i === cxId);
 }
 
 export async function isCommonwellEnabled(): Promise<boolean> {

@@ -20,6 +20,7 @@ import {
   buildInstanceIdentifier,
   buildParticipant,
   buildPerformer,
+  buildTemplateIds,
   buildValueCd,
   formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
@@ -190,7 +191,7 @@ function buildNameText(names: HumanName[] | undefined): string | undefined {
   return Array.from(uniqueNames).join("\n");
 }
 
-function createEntryFromEncounter(
+export function createEntryFromEncounter(
   encounter: AugmentedEncounter,
   referenceId: string
 ): EncounterEntry {
@@ -206,7 +207,7 @@ function createEntryFromEncounter(
     encounter: {
       _classCode: "ENC",
       _moodCode: "EVN",
-      templateId: buildInstanceIdentifier({
+      templateId: buildTemplateIds({
         root: encounter.typeOid,
         extension: extensionValue2015,
       }),
@@ -241,7 +242,7 @@ function createEntryFromEncounter(
  * For CDA statuses:
  * @see https://terminology.hl7.org/5.2.0/ValueSet-v3-ActStatus.html
  */
-function mapEncounterStatusCode(status: string | undefined): ActStatusCode {
+export function mapEncounterStatusCode(status: string | undefined): ActStatusCode {
   if (!status) return "completed";
   switch (status) {
     case "planned":
@@ -264,11 +265,11 @@ export function createEntryRelationshipObservation(
   referenceId: string
 ): ConcernActEntry {
   return {
-    _typeCode: "RSON",
+    _typeCode: "SUBJ",
     act: {
       _classCode: "ACT",
       _moodCode: "EVN",
-      templateId: buildInstanceIdentifier({
+      templateId: buildTemplateIds({
         root: oids.encounterDiagnosis,
       }),
       code: buildCodeCe({

@@ -17,9 +17,9 @@ api: "POST /medical/v1/organization"
 ```javascript Metriport SDK
 import { Metriport, OrgType, USState } from "@metriport/api-sdk";
 
-const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
-const org = await metriportClient.createOrganization({
+const org = await metriport.createOrganization({
   type: OrgType.postAcuteCare,
   name: "Metriport Inc.",
   location: {
@@ -35,18 +35,4 @@ const org = await metriportClient.createOrganization({
 
 </ResponseExample>
 
-```json
-{
-    "id": "2.16.840.1.113883.3.666.123",
-    "type": "postAcuteCare",
-    "name": "Metriport Inc.",
-    "location": {
-        "addressLine1": "2261 Market Street",
-        "addressLine2": "#4818",
-        "city": "San Francisco",
-        "state": "CA",
-        "zip": "94114",
-        "country": "USA"
-    }
-}
-```
+<Snippet file="organization-response-json.mdx" />

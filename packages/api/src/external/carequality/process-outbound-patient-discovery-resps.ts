@@ -71,13 +71,9 @@ export async function processOutboundPatientDiscoveryResps({
 
     const discoveryParams = getCQData(patient.data.externalData)?.discoveryParams;
     if (!discoveryParams) {
-      // Backward compatability during deployment phase
-      await updatePatientDiscoveryStatus({ patient, status: "completed" });
-      await queryDocsIfScheduled({ patientIds: patient });
-      return;
-      //const msg = `Failed to find discovery params @ CQ`;
-      //log(`${msg}. Patient ID: ${patient.id}.`);
-      //throw new Error(msg);
+      const msg = `Failed to find discovery params @ CQ`;
+      log(`${msg}. Patient ID: ${patient.id}.`);
+      throw new Error(msg);
     }
 
     if (discoveryParams.rerunPdOnNewDemographics) {

@@ -26,6 +26,7 @@ import {
   CdaTelecom,
   CdaTelecomUse,
   CdaValueCd,
+  CdaValueEd,
   CdaValueSt,
   Entry,
   EntryObject,
@@ -37,10 +38,13 @@ import {
   _xmlnsXsiAttribute,
   _xsiTypeAttribute,
   amaAssnSystemCode,
+  extensionValue2014,
   fdasisSystemCode,
   hl7ActCode,
   icd10SystemCode,
+  loincCodeSystem,
   loincSystemCode,
+  loincSystemName,
   nlmNihSystemCode,
   oids,
   placeholderOrgOid,
@@ -75,7 +79,7 @@ export function withoutNullFlavorString(value: string | undefined): Entry {
   return value;
 }
 
-export function withNullFlavor(value: string | undefined, key: string): Entry {
+export function withNullFlavor(value: string | undefined, key: string): EntryObject {
   if (value == undefined) return { _nullFlavor: "UNK" };
   return { [key]: value };
 }
@@ -113,8 +117,8 @@ export function buildCodeCe({
   const mappedCodeSystem = mapCodingSystem(codeSystem?.trim());
   if (code) codeObject._code = code.trim();
   if (mappedCodeSystem) codeObject._codeSystem = mappedCodeSystem;
-  if (codeSystemName) codeObject._codeSystemName = codeSystemName.trim();
-  if (displayName) codeObject._displayName = displayName.trim();
+  if (codeSystemName) codeObject._codeSystemName = codeSystemName.toString().trim();
+  if (displayName) codeObject._displayName = displayName.toString().trim();
 
   return codeObject;
 }
@@ -132,14 +136,17 @@ export function buildOriginalTextReference(value: string): CdaOriginalText {
  * @see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CV.html for more details
  */
 export function buildCodeCvFromCodeableConcept(
-  codeableConcept: CodeableConcept | undefined,
+  codeableConcept: CodeableConcept | CodeableConcept[] | undefined,
   textReference?: string
 ): CdaCodeCv | undefined {
   if (!codeableConcept) {
     return undefined;
   }
 
-  const primaryCodingRaw = codeableConcept.coding?.[0];
+  const codeableConceptArray = toArray(codeableConcept);
+  const codings: Coding[] = codeableConceptArray.flatMap(concept => concept.coding || []);
+
+  const primaryCodingRaw = codings[0];
   const primaryCoding = cleanUpCoding(primaryCodingRaw);
   const baseCE = primaryCoding
     ? buildCodeCe({
@@ -150,7 +157,8 @@ export function buildCodeCvFromCodeableConcept(
       })
     : {};
 
-  const translations = (codeableConcept.coding?.slice(1) || []).map(coding =>
+  // TODO: Use term server to include a LOINC code
+  const translations = (codings.slice(1) || []).map(coding =>
     buildCodeCe({
       code: coding.code,
       codeSystem: mapCodingSystem(coding.system),
@@ -161,7 +169,9 @@ export function buildCodeCvFromCodeableConcept(
 
   const codeCV: CdaCodeCv = {
     ...baseCE,
-    originalText: textReference ? buildOriginalTextReference(textReference) : codeableConcept.text,
+    originalText: textReference
+      ? buildOriginalTextReference(textReference)
+      : codeableConceptArray[0]?.text,
     translation: translations?.length ? translations : undefined,
   };
 
@@ -191,6 +201,24 @@ export function buildCodeCvFromCodeCe(codeCe: CdaCodeCe, concepts: CodeableConce
   return codeCv;
 }
 
+export function buildCodeCv(providedCode: CdaCodeCe, codeLoinc?: Partial<CdaCodeCe[]>) {
+  const isLoincCode = isLoinc(providedCode._codeSystemName);
+  if (isLoincCode) {
+    return providedCode;
+  }
+
+  const loincCode = buildCodeCe({
+    code: codeLoinc?.[0]?._code, // TODO: Use term server to get the actual LOINC code
+    codeSystem: loincCodeSystem,
+    codeSystemName: loincSystemName,
+  });
+
+  return {
+    ...providedCode,
+    translation: [loincCode, ...(codeLoinc?.slice(1) || [])],
+  };
+}
+
 export function buildInstanceIdentifier({
   root,
   extension,
@@ -206,6 +234,20 @@ export function buildInstanceIdentifier({
   if (assigningAuthorityName) identifier._assigningAuthorityName = assigningAuthorityName;
 
   return identifier;
+}
+
+export function buildTemplateIds({
+  root,
+  extension,
+}: {
+  root: string;
+  extension?: string;
+}): CdaInstanceIdentifier[] {
+  const templateIds = [buildInstanceIdentifier({ root })];
+  if (extension) {
+    templateIds.push(buildInstanceIdentifier({ root, extension }));
+  }
+  return templateIds;
 }
 
 export function buildInstanceIdentifiersFromIdentifier(
@@ -316,6 +358,23 @@ export function buildValueSt(value: string | undefined): CdaValueSt | undefined 
   valueObject[_xsiTypeAttribute] = "ST";
   valueObject[_xmlnsXsiAttribute] = "http://www.w3.org/2001/XMLSchema-instance";
   valueObject["#text"] = value;
+  return valueObject;
+}
+
+/**
+ * ED stands for EncapsulatedData
+ * @see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ED.html for more details
+ */
+export function buildValueEd(reference: string | undefined): CdaValueEd | undefined {
+  if (!reference) return undefined;
+
+  const valueObject: CdaValueEd = {};
+  valueObject[_xsiTypeAttribute] = "ED";
+  valueObject[_xmlnsXsiAttribute] = "http://www.w3.org/2001/XMLSchema-instance";
+  valueObject.reference = {
+    _value: `#${reference}`,
+  };
+
   return valueObject;
 }
 
@@ -461,7 +520,7 @@ export function isLoinc(system: string | undefined): boolean {
 export function getTextFromCode(code: CodeableConcept | undefined): string {
   if (!code) return NOT_SPECIFIED;
   const primaryCoding = code.coding?.[0];
-  return primaryCoding?.display ?? code.text ?? NOT_SPECIFIED;
+  return code.text ?? primaryCoding?.display ?? NOT_SPECIFIED;
 }
 
 export function getDisplaysFromCodeableConcepts(
@@ -548,9 +607,10 @@ export function buildParticipant(locations: Location[] | undefined): Participant
       _typeCode: "LOC",
       participantRole: {
         _classCode: "SDLOC",
-        templateId: {
-          _root: oids.serviceDeliveryLocation,
-        },
+        templateId: buildTemplateIds({
+          root: oids.serviceDeliveryLocation, // TODO: Check that this is correct
+          extension: extensionValue2014,
+        }),
         id: buildInstanceIdentifier({
           root: placeholderOrgOid,
           extension: location.id,
@@ -584,14 +644,33 @@ export function getNotes(note: Annotation[] | undefined): string | undefined {
   return combinedNotes?.length ? combinedNotes : undefined;
 }
 
+export function buildCdaGender(gender: string | undefined): EntryObject {
+  const cdaGender = mapFhirGenderToCda(gender);
+  if (!cdaGender) return withNullFlavor(undefined, "_code");
+
+  return buildCodeCe({
+    code: cdaGender,
+    codeSystem: "2.16.840.1.113883.5.1",
+    codeSystemName: "AdministrativeGender",
+  });
+}
+
+/**
+ * For FHIR genders:
+ * @see https://hl7.org/fhir/R4/valueset-administrative-gender.html
+ * For CDA genders:
+ * @see https://terminology.hl7.org/5.2.0/ValueSet-v3-AdministrativeGender.html
+ */
 export function mapFhirGenderToCda(gender: string | undefined): CdaGender {
   switch (gender?.toLowerCase().trim()) {
     case "male":
       return "M";
     case "female":
       return "F";
+    case "other":
+      return "UN";
     default:
-      return "UK";
+      return undefined;
   }
 }
 

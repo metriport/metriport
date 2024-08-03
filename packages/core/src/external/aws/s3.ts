@@ -6,7 +6,12 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl as getPresignedUrl } from "@aws-sdk/s3-request-presigner";
-import { ExecuteWithRetriesOptions, emptyFunction, executeWithRetries } from "@metriport/shared";
+import {
+  emptyFunction,
+  errorToString,
+  executeWithRetries,
+  ExecuteWithRetriesOptions,
+} from "@metriport/shared";
 import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -287,11 +292,14 @@ export class S3Utils {
       });
       await executeWithRetriesS3(() => this.s3Client.send(deleteObjectCommand));
     } catch (error) {
-      capture.error(error, {
+      const msg = "Failed to delete the original file from S3";
+      const { log } = out("updateContentTypeInS3");
+      log(`${msg}: ${errorToString(error)}`);
+      capture.error(msg, {
         extra: {
           bucket,
           key,
-          context: `document-downloader-local.updateContentTypeInS3.delete`,
+          context: `updateContentTypeInS3.delete`,
           error,
         },
       });
@@ -311,7 +319,6 @@ export class S3Utils {
     file: Buffer;
     contentType?: string;
   }): Promise<AWS.S3.ManagedUpload.SendData> {
-    const { log } = out("uploadFile");
     const uploadParams: AWS.S3.PutObjectRequest = {
       Bucket: bucket,
       Key: key,
@@ -322,10 +329,10 @@ export class S3Utils {
     }
     try {
       const resp = await executeWithRetriesS3(() => this._s3.upload(uploadParams).promise());
-      log("Upload successful");
       return resp;
     } catch (error) {
-      log(`Error during upload: ${JSON.stringify(error)}`);
+      const { log } = out("uploadFile");
+      log(`Error during upload: ${errorToString(error)}`);
       throw error;
     }
   }
@@ -340,7 +347,7 @@ export class S3Utils {
       return resp.Body as Buffer;
     } catch (error) {
       const { log } = out("downloadFile");
-      log(`Error during download: ${JSON.stringify(error)}`);
+      log(`Error during download: ${errorToString(error)}`);
       throw error;
     }
   }
@@ -354,7 +361,7 @@ export class S3Utils {
       await executeWithRetriesS3(() => this._s3.deleteObject(deleteParams).promise());
     } catch (error) {
       const { log } = out("deleteFile");
-      log(`Error during file deletion: ${JSON.stringify(error)}`);
+      log(`Error during file deletion: ${errorToString(error)}`);
       throw error;
     }
   }

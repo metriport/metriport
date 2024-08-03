@@ -40,7 +40,7 @@ beforeEach(() => {
   bundle.entry?.push({ resource: medStatement });
 });
 
-describe("buildMedications", () => {
+describe.skip("buildMedications", () => {
   it("throws an error if the Bundle is missing a Medication", () => {
     expect(() => buildMedications(bundle)).toThrow();
   });

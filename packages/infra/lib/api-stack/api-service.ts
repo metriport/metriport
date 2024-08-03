@@ -152,6 +152,7 @@ export function createAPIService({
   // Create an ECR repo where we'll deploy our Docker images to, and where ECS will pull from
   const ecrRepo = new Repository(stack, "APIRepo", {
     repositoryName: "metriport/api",
+    lifecycleRules: [{ maxImageCount: 5000 }],
   });
   new CfnOutput(stack, "APIECRRepoURI", {
     description: "API ECR repository URI",

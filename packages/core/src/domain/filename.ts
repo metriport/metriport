@@ -30,9 +30,9 @@ export function createHivePartitionFilePath({
   }
   let keysPath: string[] = [];
   if (keys) {
-    keysPath = Object.entries(keys).map(([key, value]) => `${key}=${value}`);
+    keysPath = Object.entries(keys).map(([key, value]) => `${key.toLowerCase()}=${value}`);
   }
-  return [...datePath, `cxId=${cxId}`, `patientId=${patientId}`, ...keysPath].join("/");
+  return [...datePath, `cxid=${cxId}`, `patientid=${patientId}`, ...keysPath].join("/");
 }
 
 export type ParsedFileName = { cxId: string; patientId: string; fileId: string };

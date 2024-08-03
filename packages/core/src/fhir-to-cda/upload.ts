@@ -1,4 +1,4 @@
-import { Bundle, Organization, Resource } from "@medplum/fhirtypes";
+import { Organization } from "@medplum/fhirtypes";
 import { errorToString } from "@metriport/shared";
 import { S3Utils } from "../external/aws/s3";
 import { cdaDocumentUploaderHandler } from "../shareback/cda-uploader";
@@ -51,19 +51,14 @@ export async function uploadCdaDocuments({
 }
 
 export async function uploadFhirBundleToS3({
-  cxId,
-  patientId,
   fhirBundle,
   destinationKey,
 }: {
-  cxId: string;
-  patientId: string;
-  fhirBundle: Bundle<Resource>;
+  fhirBundle: unknown;
   destinationKey: string;
 }): Promise<void> {
-  const { log } = out(`uploadFhirBundleToS3 - cxId: ${cxId}, patientId: ${patientId}`);
+  const { log } = out(`uploadFhirBundleToS3`);
   const s3Utils = new S3Utils(region);
-
   try {
     await s3Utils.uploadFile({
       bucket: Config.getMedicalDocumentsBucketName(),
@@ -73,7 +68,7 @@ export async function uploadFhirBundleToS3({
     });
     log(`Successfully uploaded the file to ${medicalDocumentsBucket} with key ${destinationKey}`);
   } catch (error) {
-    const msg = "Error uploading file to medical documents bucket";
+    const msg = "Error uploading contribution FHIR bundle to medical documents bucket";
     log(`${msg}: ${errorToString(error)}`);
     throw new MetriportError(msg, error, {
       medicalDocumentsBucket,

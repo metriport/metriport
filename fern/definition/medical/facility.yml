@@ -42,7 +42,7 @@ service:
       examples:
         - name: Example1
           path-parameters:
-            id: "2.16.840.1.113883.3.666.123"
+            id: "018a80c4-292a-7486-a1234-9uiu76yhe234"
           response:
             body: $Facility.Example1
 
@@ -62,7 +62,7 @@ service:
       examples:
         - name: Example1
           path-parameters:
-            id: "2.16.840.1.113883.3.666.123"
+            id: "018a80c4-292a-7486-a1234-9uiu76yhe234"
           request:
             name: Care Facility, LLC
             npi: "1234567891"
@@ -100,7 +100,7 @@ service:
       examples:
         - name: Example1
           path-parameters:
-            id: "2.16.840.1.113883.3.666.123"
+            id: "018a80c4-292a-7486-a1234-9uiu76yhe234"
 
 types:
   BaseFacility:
@@ -130,7 +130,8 @@ types:
     examples:
       - name: Example1
         value:
-          id: "2.16.840.1.113883.3.666.123"
+          id: "018a80c4-292a-7486-a1234-9uiu76yhe234"
+          oid: "2.16.840.1.113883.3.666.123.4.101"
           name: Care Facility, LLC
           npi: "1234567891"
           address: $commons.Address.Example1
