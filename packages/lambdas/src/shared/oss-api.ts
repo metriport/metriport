@@ -1,4 +1,4 @@
-import { CreateFeedback } from "@metriport/core/interface";
+import { CreateFeedback } from "@metriport/shared";
 import { executeWithNetworkRetries } from "@metriport/shared";
 import axios, { AxiosResponse } from "axios";
 import { Log } from "./log";
