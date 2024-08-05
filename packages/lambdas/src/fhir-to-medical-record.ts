@@ -123,7 +123,7 @@ async function isBriefEnabled(
   generateAiBrief: boolean | undefined,
   cxId: string
 ): Promise<boolean> {
-  if (generateAiBrief !== true) return false;
+  if (!generateAiBrief) return false;
   const isAiBriefFeatureFlagEnabled = await isAiBriefFeatureFlagEnabledForCx(cxId);
   return isAiBriefFeatureFlagEnabled;
 }
