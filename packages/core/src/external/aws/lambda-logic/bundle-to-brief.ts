@@ -1,5 +1,6 @@
 import { Bundle } from "@medplum/fhirtypes";
 import { errorToString } from "@metriport/shared";
+import { cloneDeep } from "lodash";
 import { capture, out } from "../../../util";
 import { base64ToString } from "../../../util/base64";
 import { findDiagnosticReportResources, findPatientResource } from "../../fhir/shared";
@@ -18,7 +19,7 @@ export async function bundleToBrief(
   cxId: string,
   patientId: string
 ): Promise<string | undefined> {
-  const { log } = out(`MR Brief for cx ${cxId}, patient ${patientId}`);
+  const { log } = out(`AI Brief for cx ${cxId}, patient ${patientId}`);
   let processedBundleInput = await prepareBundleForBrief(fhirBundle);
   if (!processedBundleInput) return undefined;
 
@@ -60,7 +61,7 @@ export async function bundleToBrief(
 }
 
 export async function prepareBundleForBrief(bundle: Bundle): Promise<string | undefined> {
-  const bundleCopy = { ...bundle };
+  const bundleCopy = cloneDeep(bundle);
 
   if (!bundle.entry?.length) return undefined;
   const dedupedBundle = deduplicateBundleResources(bundleCopy);
@@ -91,10 +92,7 @@ function filterBundleResources(bundle: Bundle): string | undefined {
 
   const patient = findPatientResource(bundle);
   if (!patient) return undefined;
-  const ptData = `PT family name: ${patient.name?.[0]?.family}, given: ${patient.name?.[0]?.given}, DOB: ${patient.birthDate}`;
-
-  console.log("ptData is", ptData);
-
+  const ptData = `Patient's family name: ${patient.name?.[0]?.family}, given: ${patient.name?.[0]?.given}, date of birth: ${patient.birthDate}`;
   const diagnosticReports = findDiagnosticReportResources(bundle);
 
   const sortedByDateDesc = diagnosticReports.sort((a, b) => {

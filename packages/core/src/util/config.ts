@@ -115,7 +115,7 @@ export class Config {
     return getEnvVar("BEDROCK_VERSION");
   }
 
-  static getMrBriefModelId(): string | undefined {
-    return getEnvVar("MR_BRIEF_MODEL_ID");
+  static getAiBriefModelId(): string | undefined {
+    return getEnvVar("AI_BRIEF_MODEL_ID");
   }
 }

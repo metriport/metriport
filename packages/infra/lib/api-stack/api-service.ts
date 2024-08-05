@@ -270,7 +270,7 @@ export function createAPIService({
           ...(props.config.bedrock && {
             BEDROCK_REGION: props.config.bedrock.region,
             BEDROCK_VERSION: props.config.bedrock.anthropicVersion,
-            MR_BRIEF_MODEL_ID: props.config.bedrock.modelId,
+            AI_BRIEF_MODEL_ID: props.config.bedrock.modelId,
           }),
           // app config
           APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,

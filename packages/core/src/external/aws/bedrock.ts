@@ -1,11 +1,11 @@
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
 import { errorToString } from "@metriport/shared";
 import { Config } from "../..//util/config";
-import { capture } from "../../util";
+import { capture, out } from "../../util";
 
 const decoder = new TextDecoder();
 const region = Config.getBedrockRegion();
-const defaultModelId = Config.getMrBriefModelId();
+const defaultModelId = Config.getAiBriefModelId();
 const defaultBedrockVersion = Config.getBedrockVersion();
 
 export function makeBedrockClient(): BedrockRuntimeClient {
@@ -34,6 +34,7 @@ export class BedrockUtils {
 
   // TODO: Define return type
   async getBedrockResponse({ prompt, body }: { prompt: string; body: string }) {
+    const { log } = out(`getBedrockResponse`);
     const input = {
       modelId: this._modelId,
       contentType: "application/json",
@@ -60,15 +61,15 @@ export class BedrockUtils {
     try {
       const response = await this.bedrock.send(command);
       const decodedResponse = JSON.parse(decoder.decode(response.body));
-      return decodedResponse.content?.[0]?.text || undefined;
+      return decodedResponse.content?.[0]?.text;
     } catch (error) {
       const msg = `Error getting response from Bedrock`;
-      console.log(`${msg} - error: ${errorToString(error)}`);
+      log(`${msg} - error: ${errorToString(error)}`);
       capture.message(msg, {
         extra: {
           error,
           context: "getBedrockResponse",
-          level: "info",
+          level: "warning",
         },
       });
 
