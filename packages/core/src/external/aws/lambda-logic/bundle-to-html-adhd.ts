@@ -22,6 +22,7 @@ import {
 } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import { uniqWith } from "lodash";
+import { Brief } from "./bundle-to-brief";
 import { createBrief } from "./bundle-to-html";
 
 const ISO_DATE = "YYYY-MM-DD";
@@ -36,7 +37,7 @@ const CPT_CODE = "cpt";
 const UNK_CODE = "UNK";
 const UNKNOWN_DISPLAY = "unknown";
 
-export const bundleToHtmlADHD = (fhirBundle: Bundle, brief?: string): string => {
+export function bundleToHtmlADHD(fhirBundle: Bundle, brief?: Brief): string {
   const fhirTypes = extractFhirTypesFromBundle(fhirBundle);
 
   const {
@@ -325,7 +326,7 @@ export const bundleToHtmlADHD = (fhirBundle: Bundle, brief?: string): string => 
   `;
 
   return htmlPage;
-};
+}
 
 function formatDateForDisplay(date?: string | undefined): string {
   return date ? dayjs(date).format(ISO_DATE) : "";

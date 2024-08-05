@@ -34,14 +34,12 @@ export default (app: Application) => {
   app.use("/nutrition", processCxId, reportDeviceUsage, nutrition);
   app.use("/sleep", processCxId, reportDeviceUsage, sleep);
   app.use("/user", processCxId, reportDeviceUsage, user);
+  app.use(`/feedback`, feedback);
 
   // medical routes with API key auth - report usage is on individual routes
   app.use("/medical/v1", processCxId, checkMAPIAccess, medical);
   app.use(`${dash}/medical/v1`, processCxId, checkMAPIAccess, medical);
   app.use("/fhir/R4", processCxId, checkMAPIAccess, fhirRouter);
-
-  // AuthZ on API GW
-  app.use(`/feedback`, feedback);
 
   // routes with session token auth
   app.use("/connect", connect);

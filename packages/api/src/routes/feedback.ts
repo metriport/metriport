@@ -1,52 +1,53 @@
-import NotFoundError from "@metriport/core/util/error/not-found";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { z } from "zod";
+import { getFeedbackOrFail } from "../command/feedback/feedback";
+import { createFeedbackEntry } from "../command/feedback/feedback-entry";
 import { requestLogger } from "./helpers/request-logger";
 import { asyncHandler, getFromParamsOrFail } from "./util";
 
 const router = Router();
 
 /** ---------------------------------------------------------------------------
- * GET /feedback
+ * GET /feedback/:id
  *
- * WIP
- * WIP
- * WIP
- * WIP
- *
+ * Returns the id and status of the feedback.
+ * Mostly to validate it exists.
  */
 router.get(
   "/:id",
-  // processFeedbackAccess,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const id = getFromParamsOrFail("id", req);
-    if (id === "123") {
-      return res.status(status.OK).json({ id, status: "active" });
-    }
-    if (id === "000") {
-      return res.sendStatus(500);
-    }
-    throw new NotFoundError(`Feedback ${id} not found`);
+    await getFeedbackOrFail({ id });
+    // TODO add status to the feedback and return it here
+    return res.status(status.OK).json({ id, status: "active" });
   })
 );
 
 const feedbackSubmissionSchema = z.object({
+  feedbackId: z.string(),
+  comment: z.string(),
   name: z.string().nullish(),
-  details: z.string(),
 });
 
+/** ---------------------------------------------------------------------------
+ * POST /feedback/entry
+ *
+ * Creates a feedback entry.
+ */
 router.post(
-  "/:id",
-  // processFeedbackAccess,
+  "/entry",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const id = getFromParamsOrFail("id", req);
-    const { name, details } = feedbackSubmissionSchema.parse(req.body);
-    console.log(`Storing the feedback for ${id}, from '${name}': ${details}`);
-    return res.status(status.OK).json({ id, status: "submitted" });
+    const { feedbackId, name, comment } = feedbackSubmissionSchema.parse(req.body);
+    await createFeedbackEntry({
+      feedbackId,
+      comment,
+      authorName: name ?? undefined,
+    });
+    return res.status(status.OK).json({ status: "created" });
   })
 );
 

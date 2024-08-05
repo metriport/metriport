@@ -2,27 +2,20 @@ import * as Sentry from "@sentry/node";
 import { Extras, ScopeContext } from "@sentry/types";
 import stringify from "json-stringify-safe";
 import {
-  sendAlert as coreSendAlert,
-  sendNotification as coreSendNotification,
-  SlackMessage as CoreSlackMessage,
+  sendAlert as sendAlertToSlack,
+  sendNotification as sendNotificationToSlack,
+  SlackMessage as SlackMessage,
 } from "../external/slack/index";
 import { Capture } from "./capture";
 import { MetriportError } from "./error/metriport-error";
 
-/**
- * @deprecated Use core's instead
- */
-export type SlackMessage = CoreSlackMessage;
-/**
- * @deprecated Use core's instead
- */
-export const sendNotification = async (notif: SlackMessage | string): Promise<void> =>
-  coreSendNotification(notif);
-/**
- * @deprecated Use core's instead
- */
-export const sendAlert = async (notif: SlackMessage | string): Promise<void> =>
-  coreSendAlert(notif);
+export type NotificationMessage = SlackMessage;
+
+export const sendNotification = async (notif: NotificationMessage | string): Promise<void> =>
+  sendNotificationToSlack(notif);
+
+export const sendAlert = async (notif: NotificationMessage | string): Promise<void> =>
+  sendAlertToSlack(notif);
 
 export type UserData = Pick<Sentry.User, "id" | "email">;
 
