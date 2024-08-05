@@ -19,7 +19,6 @@
     "./domain/*": "./dist/domain/*.js",
     "./command/*": "./dist/command/*.js",
     "./external/*": "./dist/external/*.js",
-    "./interface/*": "./dist/interface/*.js",
     "./util": "./dist/util/index.js",
     "./util/*": "./dist/util/*.js",
     "./mpi/*": "./dist/mpi/*.js",
@@ -48,12 +47,6 @@
       ],
       "external/*": [
         "dist/external/*"
-      ],
-      "interface": [
-        "dist/interface/index.d.ts"
-      ],
-      "interface/*": [
-        "dist/interface/*"
       ],
       "util": [
         "dist/util/index.d.ts"
