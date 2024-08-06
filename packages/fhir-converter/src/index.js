@@ -36,7 +36,7 @@ var server = app.listen(port, function () {
   console.log("FHIR Converter listening at http://%s:%s", host, port);
 });
 
-var loadbalancerTimeout = dayjs.duration({ minutes: 10 }).asMilliseconds();
+var loadbalancerTimeout = dayjs.duration({ minutes: 15 }).asMilliseconds();
 var oneSecond = dayjs.duration({ seconds: 1 }).asMilliseconds();
 
 var timeout = loadbalancerTimeout - oneSecond;
