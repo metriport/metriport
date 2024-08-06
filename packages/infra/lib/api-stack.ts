@@ -1261,6 +1261,12 @@ export class APIStack extends Stack {
 
     medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambda);
 
+    const bedrockPolicyStatement = new iam.PolicyStatement({
+      actions: ["bedrock:InvokeModel"],
+      resources: ["*"],
+    });
+
+    fhirToMedicalRecordLambda.addToRolePolicy(bedrockPolicyStatement);
     return fhirToMedicalRecordLambda;
   }
 
