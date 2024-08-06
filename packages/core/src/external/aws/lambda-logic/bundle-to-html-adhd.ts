@@ -22,6 +22,7 @@ import {
 } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import { uniqWith } from "lodash";
+import { createBrief } from "./bundle-to-html";
 
 const ISO_DATE = "YYYY-MM-DD";
 
@@ -35,7 +36,7 @@ const CPT_CODE = "cpt";
 const UNK_CODE = "UNK";
 const UNKNOWN_DISPLAY = "unknown";
 
-export const bundleToHtmlADHD = (fhirBundle: Bundle): string => {
+export const bundleToHtmlADHD = (fhirBundle: Bundle, brief?: string): string => {
   const fhirTypes = extractFhirTypesFromBundle(fhirBundle);
 
   const {
@@ -253,11 +254,29 @@ export const bundleToHtmlADHD = (fhirBundle: Bundle): string => {
             white-space: pre-line;
           }
 
+          .beta-flag {
+            position: absolute;
+            top: -15px;
+            right: 0px;
+            background-color: red;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            z-index: 1;
+          }
+
+          .brief-section-content {
+            position: relative;
+          }
+
         </style>
       </head>
 
       <body>
         ${createMRHeader(patient)}
+        ${createBrief(brief)}
         <div class="divider"></div>
         <div id="mr-sections">
           ${createFilteredReportSection(

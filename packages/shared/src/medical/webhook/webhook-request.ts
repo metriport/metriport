@@ -59,7 +59,7 @@ export const pingWebhookRequestDataSchema = z.object({
 });
 export type PingWebhookRequest = z.infer<typeof pingWebhookRequestDataSchema>;
 
-export const filtersSchema = z.record(z.string(), z.string().nullish());
+export const filtersSchema = z.record(z.string(), z.string().or(z.boolean().nullish()));
 
 export const consolidatedWebhookPatientSchema = z.object({
   patientId: z.string(),
