@@ -1,12 +1,6 @@
 import { demographicsSchema, patientCreateSchema } from "@metriport/api-sdk";
-import {
-  GetConsolidatedQueryProgressResponse,
-  StartConsolidatedQueryProgressResponse,
-} from "@metriport/api-sdk/medical/models/patient";
-import {
-  consolidationConversionType,
-  mrFormat,
-} from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { GetConsolidatedQueryProgressResponse } from "@metriport/api-sdk/medical/models/patient";
+import { mrFormat } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { getRequestId } from "@metriport/core/util/request";
@@ -17,11 +11,8 @@ import status from "http-status";
 import { orderBy } from "lodash";
 import { z } from "zod";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
-import { checkAiBriefEnabled } from "../../command/medical/patient/check-brief-enabled";
-import {
-  getConsolidatedPatientData,
-  startConsolidatedQuery,
-} from "../../command/medical/patient/consolidated-get";
+import { getConsolidatedPatientData } from "../../command/medical/patient/consolidated-get";
+import { processConsolidatedQuery } from "../../command/medical/patient/consolidated-post";
 import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
@@ -311,7 +302,6 @@ router.get(
   })
 );
 
-const consolidationConversionTypeSchema = z.enum(consolidationConversionType);
 const medicalRecordFormatSchema = z.enum(mrFormat);
 
 /** ---------------------------------------------------------------------------
@@ -345,23 +335,19 @@ router.post(
     const generateAiBrief = Config.isSandbox()
       ? false
       : getFromQueryAsBoolean("generateAiBrief", req) ?? false;
-    await checkAiBriefEnabled({ cxId, generateAiBrief });
 
-    const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
     const cxConsolidatedRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
-    const queryResponse = await startConsolidatedQuery({
+    const respPayload = await processConsolidatedQuery({
       cxId,
       patientId,
       resources,
       dateFrom,
       dateTo,
-      conversionType,
-      cxConsolidatedRequestMetadata: cxConsolidatedRequestMetadata?.metadata,
+      type,
+      cxConsolidatedRequestMetadata,
       generateAiBrief,
     });
-
-    const respPayload: StartConsolidatedQueryProgressResponse = queryResponse;
 
     return res.json(respPayload);
   })
