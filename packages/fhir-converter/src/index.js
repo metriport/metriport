@@ -26,6 +26,7 @@
 require("events").EventEmitter.defaultMaxListeners = 20;
 var express = require("express");
 var app = require("./routes")(express());
+var dayjs = require('dayjs');
 
 var port = process.env.PORT || 8080;
 
@@ -34,3 +35,13 @@ var server = app.listen(port, function () {
   console.log(`NODE_OPTIONS=${process.env.NODE_OPTIONS}`);
   console.log("FHIR Converter listening at http://%s:%s", host, port);
 });
+
+var loadbalancerTimeout = dayjs.duration({ minutes: 10 }).asMilliseconds();
+var oneSecond = dayjs.duration({ seconds: 1 }).asMilliseconds();
+
+var timeout = loadbalancerTimeout - oneSecond;
+server.setTimeout(timeout);
+
+var keepalive = loadbalancerTimeout + oneSecond;
+server.keepAliveTimeout = keepalive;
+server.headersTimeout = keepalive + oneSecond;
