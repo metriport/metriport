@@ -10,12 +10,12 @@ import {
 import {
   ConsolidatedQuery,
   GetConsolidatedFilters,
-  resourcesSearchableByPatient,
   ResourceTypeForConsolidation,
+  resourcesSearchableByPatient,
 } from "@metriport/api-sdk";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
-import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { EventTypes, analytics } from "@metriport/core/external/analytics/posthog";
 import {
   buildBundle,
   getReferencesFromResources,
@@ -36,6 +36,7 @@ import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getSignedURL } from "../document/document-download";
+import { checkAiBriefEnabled } from "./check-ai-brief-enabled";
 import { processConsolidatedDataWebhook } from "./consolidated-webhook";
 import {
   buildDocRefBundleWithAttachment,
@@ -72,8 +73,10 @@ export async function startConsolidatedQuery({
   dateTo,
   conversionType,
   cxConsolidatedRequestMetadata,
-  generateAiBrief,
+  generateAiBrief = false,
 }: ConsolidatedQueryParams): Promise<ConsolidatedQuery> {
+  await checkAiBriefEnabled({ cxId, generateAiBrief });
+
   const { log } = Util.out(`startConsolidatedQuery - M patient ${patientId}`);
   const patient = await getPatientOrFail({ id: patientId, cxId });
   const currentConsolidatedProgress = getCurrentConsolidatedProgress(

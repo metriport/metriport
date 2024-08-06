@@ -1,4 +1,8 @@
-import { demographicsSchema, patientCreateSchema } from "@metriport/api-sdk";
+import {
+  consolidationConversionType,
+  demographicsSchema,
+  patientCreateSchema,
+} from "@metriport/api-sdk";
 import { GetConsolidatedQueryProgressResponse } from "@metriport/api-sdk/medical/models/patient";
 import { mrFormat } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
@@ -11,8 +15,10 @@ import status from "http-status";
 import { orderBy } from "lodash";
 import { z } from "zod";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
-import { getConsolidatedPatientData } from "../../command/medical/patient/consolidated-get";
-import { processConsolidatedQuery } from "../../command/medical/patient/consolidated-post";
+import {
+  getConsolidatedPatientData,
+  startConsolidatedQuery,
+} from "../../command/medical/patient/consolidated-get";
 import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
@@ -302,6 +308,7 @@ router.get(
   })
 );
 
+const consolidationConversionTypeSchema = z.enum(consolidationConversionType);
 const medicalRecordFormatSchema = z.enum(mrFormat);
 
 /** ---------------------------------------------------------------------------
@@ -336,16 +343,17 @@ router.post(
       ? false
       : getFromQueryAsBoolean("generateAiBrief", req) ?? false;
 
+    const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
     const cxConsolidatedRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
-    const respPayload = await processConsolidatedQuery({
+    const respPayload = await startConsolidatedQuery({
       cxId,
       patientId,
       resources,
       dateFrom,
       dateTo,
-      type,
-      cxConsolidatedRequestMetadata,
+      conversionType,
+      cxConsolidatedRequestMetadata: cxConsolidatedRequestMetadata?.metadata,
       generateAiBrief,
     });
 
