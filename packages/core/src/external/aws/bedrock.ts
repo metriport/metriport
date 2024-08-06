@@ -1,6 +1,6 @@
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
 import { errorToString } from "@metriport/shared";
-import { Config } from "../..//util/config";
+import { Config } from "../../util/config";
 import { capture, out } from "../../util";
 
 const decoder = new TextDecoder();
