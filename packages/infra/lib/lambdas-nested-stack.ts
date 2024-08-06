@@ -115,6 +115,7 @@ export class LambdasNestedStack extends NestedStack {
       lambdaLayers: this.lambdaLayers,
       vpc: props.vpc,
       fhirServerUrl: props.config.fhirServerUrl,
+      bucket: props.medicalDocumentsBucket,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
@@ -398,16 +399,23 @@ export class LambdasNestedStack extends NestedStack {
     return outboundDocumentRetrievalLambda;
   }
 
-  private setupFhirBundleLambda(ownProps: {
+  private setupFhirBundleLambda({
+    lambdaLayers,
+    vpc,
+    fhirServerUrl,
+    bucket,
+    sentryDsn,
+    envType,
+    alarmAction,
+  }: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     fhirServerUrl: string;
+    bucket: s3.Bucket;
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
   }): Lambda {
-    const { lambdaLayers, vpc, fhirServerUrl, sentryDsn, envType, alarmAction } = ownProps;
-
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
 
     const fhirToBundleLambda = createLambda({
@@ -419,6 +427,7 @@ export class LambdasNestedStack extends NestedStack {
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
         FHIR_SERVER_URL: fhirServerUrl,
+        BUCKET_NAME: bucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
@@ -428,6 +437,8 @@ export class LambdasNestedStack extends NestedStack {
       vpc,
       alarmSnsAction: alarmAction,
     });
+
+    bucket.grantReadWrite(fhirToBundleLambda);
 
     return fhirToBundleLambda;
   }

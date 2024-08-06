@@ -6,7 +6,11 @@ import {
   resourcesSearchableByPatient,
   ResourceTypeForConsolidation,
 } from "@metriport/api-sdk";
-import { ConsolidatedFhirToBundlePayloadLambda } from "@metriport/core/command/consolidated";
+import {
+  ConsolidatedFhirToBundleRequest,
+  ConsolidatedFhirToBundleResponse,
+  getConsolidatedBundleFromS3,
+} from "@metriport/core/command/consolidated";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
@@ -381,7 +385,7 @@ export async function getConsolidatedPatientData({
   const lambdaName = Config.getFHIRtoBundleLambdaName();
   if (!lambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
 
-  const payload: ConsolidatedFhirToBundlePayloadLambda = {
+  const payload: ConsolidatedFhirToBundleRequest = {
     patient,
     documentIds,
     resources,
@@ -398,7 +402,15 @@ export async function getConsolidatedPatientData({
     })
     .promise();
   const resultPayload = getLambdaResultPayload({ result, lambdaName });
-  return JSON.parse(resultPayload) as SearchSetBundle;
+  const { bundleLocation, bundleFilename } = JSON.parse(
+    resultPayload
+  ) as ConsolidatedFhirToBundleResponse;
+
+  const bundle = await getConsolidatedBundleFromS3({
+    bundleLocation,
+    bundleFilename,
+  });
+  return bundle;
 }
 
 export async function getConsolidatedPatientDataAsync({
@@ -410,13 +422,13 @@ export async function getConsolidatedPatientDataAsync({
   requestId,
   conversionType,
 }: ConsolidatedFhirToBundlePayload & {
-  requestId?: string;
+  requestId: string;
   conversionType?: ConsolidationConversionType;
 }): Promise<void> {
   const lambdaName = Config.getFHIRtoBundleLambdaName();
   if (!lambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
 
-  const payload: ConsolidatedFhirToBundlePayloadLambda = {
+  const payload: ConsolidatedFhirToBundleRequest = {
     patient,
     requestId,
     conversionType,

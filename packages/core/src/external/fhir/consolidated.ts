@@ -23,6 +23,7 @@ const fhirUrl = Config.getFHIRServerUrl();
 
 export type ConsolidatedFhirToBundlePayload = {
   patient: Pick<Patient, "id" | "cxId">;
+  requestId?: string;
   documentIds?: string[];
   resources?: medical.ResourceTypeForConsolidation[];
   dateFrom?: string;

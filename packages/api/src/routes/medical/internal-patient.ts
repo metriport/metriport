@@ -1,9 +1,10 @@
 import { genderAtBirthSchema } from "@metriport/api-sdk";
+import { getConsolidatedBundleFromS3 } from "@metriport/core/command/consolidated";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { sleep, stringToBoolean } from "@metriport/shared";
+import { internalSendConsolidatedSchema, sleep, stringToBoolean } from "@metriport/shared";
 import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -22,8 +23,8 @@ import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getPatientIds,
   getPatientOrFail,
-  getPatientStates,
   getPatients,
+  getPatientStates,
 } from "../../command/medical/patient/get-patient";
 import {
   PatientUpdateCmd,
@@ -66,7 +67,7 @@ import {
   getFromQueryAsArrayOrFail,
   getFromQueryAsBoolean,
 } from "../util";
-import { PatientLinksDTO, dtoFromCW } from "./dtos/linkDTO";
+import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
@@ -762,6 +763,7 @@ router.post(
  * POST /internal/patient/:id/consolidated
  *
  * Kicks off patient discovery for the given patient on both CQ and CW.
+ *
  * @param req.query.cxId The customer ID.
  * @param req.params.id The patient ID.
  * @param req.query.rerunPdOnNewDemographics Optional. Indicates whether to use demo augmentation on this PD run.
@@ -773,17 +775,29 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFromParamsOrFail("id", req);
     const patient = await getPatientOrFail({ cxId, id });
+    const {
+      requestId,
+      conversionType,
+      resources,
+      dateFrom,
+      dateTo,
+      bundleLocation,
+      bundleFilename,
+    } = internalSendConsolidatedSchema.parse(req.body);
 
-    //TODO Parse body?
+    const bundle = await getConsolidatedBundleFromS3({
+      bundleLocation,
+      bundleFilename,
+    });
 
     await getConsolidatedAndSendToCx({
       patient,
-      bundle: req.body["bundle"],
-      requestId: req.body["bundle"],
-      conversionType: req.body["bundle"],
-      resources: req.body["resources"],
-      dateFrom: req.body["dateFrom"],
-      dateTo: req.body["dateTo"],
+      bundle,
+      requestId,
+      conversionType,
+      resources,
+      dateFrom,
+      dateTo,
     });
     return res.status(status.OK);
   })
