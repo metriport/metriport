@@ -100,6 +100,7 @@
     "codemirror": "^5.62.0",
     "convert-units": "^2.3.4",
     "cookie-parser": "^1.4.4",
+    "dayjs": "^1.11.12",
     "deepmerge": "^4.2.2",
     "express": "^4.19.2",
     "fast-xml-parser": "^4.4.1",
