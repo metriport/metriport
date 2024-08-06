@@ -27,6 +27,9 @@ require("events").EventEmitter.defaultMaxListeners = 20;
 var express = require("express");
 var app = require("./routes")(express());
 var dayjs = require('dayjs');
+var duration = require('dayjs/plugin/duration');
+
+dayjs.extend(duration);
 
 var port = process.env.PORT || 8080;
 
