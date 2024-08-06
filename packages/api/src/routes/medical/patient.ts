@@ -17,6 +17,7 @@ import status from "http-status";
 import { orderBy } from "lodash";
 import { z } from "zod";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
+import { checkAiBriefEnabled } from "../../command/medical/patient/check-brief-enabled";
 import {
   getConsolidatedPatientData,
   startConsolidatedQuery,
@@ -25,7 +26,7 @@ import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
-import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
+import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 import {
@@ -40,7 +41,6 @@ import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-li
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import BadRequestError from "../../errors/bad-request";
 import NotFoundError from "../../errors/not-found";
-import { isAiBriefEnabledForCx } from "../../external/aws/app-config";
 import { countResources } from "../../external/fhir/patient/count-resources";
 import { upsertPatientToFHIRServer } from "../../external/fhir/patient/upsert-patient";
 import { PatientModel as Patient } from "../../models/medical/patient";
@@ -342,11 +342,11 @@ router.post(
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
     const type = getFrom("query").optional("conversionType", req);
-    const generateAiBrief = getFromQueryAsBoolean("generateAiBrief", req) ?? false;
-    const isAiBriefFeatureFlagEnabled = await isAiBriefEnabledForCx(cxId);
-    if (!isAiBriefFeatureFlagEnabled && generateAiBrief) {
-      throw new BadRequestError("Contact Metriport to enable the AI Brief feature.");
-    }
+    const generateAiBrief = Config.isSandbox()
+      ? false
+      : getFromQueryAsBoolean("generateAiBrief", req) ?? false;
+    await checkAiBriefEnabled({ cxId, generateAiBrief });
+
     const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
     const cxConsolidatedRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
