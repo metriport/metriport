@@ -1,23 +1,25 @@
 import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
 import {
   ConsolidatedQuery,
+  ConsolidationConversionType,
   GetConsolidatedFilters,
   resourcesSearchableByPatient,
   ResourceTypeForConsolidation,
-  ConsolidationConversionType,
 } from "@metriport/api-sdk";
-import { ConsolidatedFhirToBundlePayload } from "@metriport/core/external/fhir/consolidated";
+import { ConsolidatedFhirToBundlePayloadLambda } from "@metriport/core/command/consolidated";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
-import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
-import dayjs from "dayjs";
-import duration from "dayjs/plugin/duration";
+import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
+import { ConsolidatedFhirToBundlePayload } from "@metriport/core/external/fhir/consolidated";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { emptyFunction } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { intersection } from "lodash";
+import { processAsyncError } from "../../../errors";
 import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
@@ -55,12 +57,6 @@ export type ConsolidatedQueryParams = {
   patientId: string;
   cxConsolidatedRequestMetadata?: unknown;
 } & GetConsolidatedFilters;
-
-export type ConsolidatedFhirToBundlePayloadLambda = ConsolidatedFhirToBundlePayload & {
-  requestId?: string;
-  conversionType?: ConsolidationConversionType;
-  isAsync: boolean;
-};
 
 export async function startConsolidatedQuery({
   cxId,
@@ -431,11 +427,12 @@ export async function getConsolidatedPatientDataAsync({
     isAsync: true,
   };
 
-  await lambdaClient
+  lambdaClient
     .invoke({
       FunctionName: lambdaName,
       InvocationType: "RequestResponse",
       Payload: JSON.stringify(payload),
     })
-    .promise();
+    .promise()
+    .catch(processAsyncError("Failed to get consolidated patient data async", true));
 }

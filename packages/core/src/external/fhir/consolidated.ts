@@ -8,15 +8,15 @@ import {
 } from "@medplum/fhirtypes";
 import { medical } from "@metriport/shared";
 import { SearchSetBundle } from "@metriport/shared/medical";
+import { Patient } from "../../domain/patient";
+import { Config } from "../../util/config";
 import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
-import { Patient } from "../../domain/patient";
-import { getPatientFilter, fullDateQueryForResource } from "./patient/resource-filter";
-import { getReferencesFromFHIR } from "./shared/references";
 import { makeFhirApi } from "./api/api-factory";
+import { fullDateQueryForResource, getPatientFilter } from "./patient/resource-filter";
 import { buildBundle, getReferencesFromResources } from "./shared/bundle";
 import { isResourceDerivedFromDocRef } from "./shared/index";
-import { Config } from "../../util/config";
+import { getReferencesFromFHIR } from "./shared/references";
 
 const MAX_HYDRATION_ROUNDS = 3;
 const fhirUrl = Config.getFHIRServerUrl();
