@@ -1,16 +1,12 @@
 import {
-  ConsolidatedFhirToBundleRequest,
-  ConsolidatedFhirToBundleResponse,
-  uploadConsolidatedBundleToS3,
-} from "@metriport/core/command/consolidated";
-import {
-  ConsolidatedFhirToBundlePayload,
-  getConsolidatedFhirBundle,
-} from "@metriport/core/external/fhir/consolidated";
+  ConsolidatedDataRequestAsync,
+  ConsolidatedDataRequestSync,
+  ConsolidatedDataResponse,
+} from "@metriport/core/command/consolidated/consolidated-connector";
+import { ConsolidatedDataConnectorLocal } from "@metriport/core/command/consolidated/consolidated-connector-local";
 import { out } from "@metriport/core/util/log";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
-import { apiClient } from "./shared/oss-api";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -18,59 +14,21 @@ capture.init();
 // Set by us
 const apiURL = getEnvOrFail("API_URL");
 const bucketName = getEnvOrFail("BUCKET_NAME");
-const ossApi = apiClient(apiURL);
 
-export async function handler({
-  patient,
-  requestId,
-  conversionType,
-  documentIds,
-  resources,
-  dateFrom,
-  dateTo,
-  isAsync,
-}: ConsolidatedFhirToBundleRequest): Promise<ConsolidatedFhirToBundleResponse> {
+export async function handler(
+  params: ConsolidatedDataRequestSync | ConsolidatedDataRequestAsync
+): Promise<ConsolidatedDataResponse | void> {
+  const { patient, requestId, documentIds, resources, dateFrom, dateTo } = params;
+  const conversionType = params.isAsync ? params.conversionType : undefined;
   const { log } = out(`cx ${patient.cxId}, patient ${patient.id}, req ${requestId}`);
   try {
     log(
-      `Running with dateFrom: ${dateFrom}, dateTo: ${dateTo}, ` +
-        `documentIds: ${documentIds}, resources: ${resources}}`
+      `Running with dateFrom: ${dateFrom}, dateTo: ${dateTo}, conversionType: ${conversionType}` +
+        `, documentIds: ${documentIds}, resources: ${resources}}`
     );
-    const getConsolidatedParams: ConsolidatedFhirToBundlePayload = {
-      patient,
-      documentIds,
-      resources,
-      dateFrom,
-      dateTo,
-    };
-    const bundle = await getConsolidatedFhirBundle(getConsolidatedParams);
-
-    const { bucket, key } = await uploadConsolidatedBundleToS3({
-      patient,
-      requestId,
-      documentIds,
-      resources,
-      dateFrom,
-      dateTo,
-      bundle,
-      s3BucketName: bucketName,
-    });
-    const bundleInfo: ConsolidatedFhirToBundleResponse = {
-      bundleLocation: bucket,
-      bundleFilename: key,
-    };
-    if (isAsync) {
-      await ossApi.postConsolidated({
-        ...bundleInfo,
-        patientId: patient.id,
-        requestId,
-        conversionType,
-        resources,
-        dateFrom,
-        dateTo,
-      });
-    }
-    return bundleInfo;
+    const conn = new ConsolidatedDataConnectorLocal(bucketName, apiURL);
+    const result = await conn.execute(params);
+    return result;
   } catch (error) {
     const msg = "Failed to get FHIR resources";
     const filters = {

@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { Observation } from "@medplum/fhirtypes";
 import { v4 as uuidv4 } from "uuid";
-import { HapiFhirClient } from "../api/api-hapi";
+import { HapiFhirClient } from "../../api/api-hapi";
 import { getConsolidatedFhirBundle } from "../consolidated";
-import * as fhirBundle from "../shared/bundle";
-import * as fhirReferences from "../shared/references";
+import * as fhirBundle from "../../shared/bundle";
+import * as fhirReferences from "../../shared/references";
 
 let fhir_searchResourcePages: jest.SpyInstance;
 let fhir_getReferencesFromResources: jest.SpyInstance;

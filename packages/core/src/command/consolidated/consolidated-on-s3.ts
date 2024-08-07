@@ -1,21 +1,11 @@
 import { Resource } from "@medplum/fhirtypes";
-import { ConsolidationConversionType } from "@metriport/api-sdk";
 import { SearchSetBundle } from "@metriport/shared/medical";
-import { createFilePath } from "../domain/filename";
-import { S3Utils } from "../external/aws/s3";
-import { ConsolidatedFhirToBundlePayload } from "../external/fhir/consolidated";
-import { Config } from "../util/config";
+import { createFilePath } from "../../domain/filename";
+import { S3Utils } from "../../external/aws/s3";
+import { Config } from "../../util/config";
+import { ConsolidatedPatientDataRequest } from "./consolidated-connector";
 
 const NULL = "null";
-
-export type ConsolidatedFhirToBundleRequest = ConsolidatedFhirToBundlePayload & {
-  conversionType?: ConsolidationConversionType;
-} & ({ requestId: string; isAsync: true } | { requestId?: string; isAsync: false });
-
-export type ConsolidatedFhirToBundleResponse = {
-  bundleLocation: string;
-  bundleFilename: string;
-};
 
 export async function getConsolidatedBundleFromS3({
   bundleLocation,
@@ -39,7 +29,8 @@ export async function uploadConsolidatedBundleToS3({
   dateTo,
   bundle,
   s3BucketName,
-}: Omit<ConsolidatedFhirToBundleRequest, "isAsync" | "conversionType"> & {
+}: Omit<ConsolidatedPatientDataRequest, "requestId" | "isAsync" | "conversionType"> & {
+  requestId?: string;
   bundle: unknown;
   s3BucketName: string;
 }): Promise<{

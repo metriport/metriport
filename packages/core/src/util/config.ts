@@ -106,4 +106,8 @@ export class Config {
   static getIheParsedResponsesBucketName(): string | undefined {
     return getEnvVar("IHE_PARSED_RESPONSES_BUCKET_NAME");
   }
+
+  static getFHIRtoBundleLambdaName(): string | undefined {
+    return getEnvVar("FHIR_TO_BUNDLE_LAMBDA_NAME");
+  }
 }

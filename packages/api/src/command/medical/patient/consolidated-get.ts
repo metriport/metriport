@@ -6,16 +6,15 @@ import {
   resourcesSearchableByPatient,
   ResourceTypeForConsolidation,
 } from "@metriport/api-sdk";
+import { getConsolidatedBundleFromS3 } from "@metriport/core/command/consolidated";
 import {
-  ConsolidatedFhirToBundleRequest,
-  ConsolidatedFhirToBundleResponse,
-  getConsolidatedBundleFromS3,
-} from "@metriport/core/command/consolidated";
+  ConsolidatedDataRequestAsync,
+  ConsolidatedDataRequestSync,
+} from "@metriport/core/command/consolidated/consolidated-connector";
+import { buildConsolidatedDataConnector } from "@metriport/core/command/consolidated/consolidated-connector-factory";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
-import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
-import { ConsolidatedFhirToBundlePayload } from "@metriport/core/external/fhir/consolidated";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { emptyFunction } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
@@ -40,17 +39,20 @@ import { storeQueryInit } from "./query-init";
 
 dayjs.extend(duration);
 
-export const TIMEOUT_CALLING_CONVERTER_LAMBDA = dayjs.duration(15, "minutes").add(2, "seconds");
-
-const region = Config.getAWSRegion();
-const lambdaClient = makeLambdaClient(region, TIMEOUT_CALLING_CONVERTER_LAMBDA.asMilliseconds());
-
 export type GetConsolidatedParams = {
   patient: Pick<Patient, "id" | "cxId" | "data">;
   bundle?: SearchSetBundle<Resource>;
   requestId?: string;
   documentIds?: string[];
 } & GetConsolidatedFilters;
+
+type GetConsolidatedPatientData = {
+  patient: Pick<Patient, "id" | "cxId">;
+  documentIds?: string[];
+  resources?: ResourceTypeForConsolidation[];
+  dateFrom?: string;
+  dateTo?: string;
+};
 
 export type GetConsolidatedSendToCxParams = GetConsolidatedParams & {
   requestId: string;
@@ -381,11 +383,8 @@ export async function getConsolidatedPatientData({
   resources,
   dateFrom,
   dateTo,
-}: ConsolidatedFhirToBundlePayload): Promise<SearchSetBundle<Resource>> {
-  const lambdaName = Config.getFHIRtoBundleLambdaName();
-  if (!lambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
-
-  const payload: ConsolidatedFhirToBundleRequest = {
+}: GetConsolidatedPatientData): Promise<SearchSetBundle<Resource>> {
+  const payload: ConsolidatedDataRequestSync = {
     patient,
     documentIds,
     resources,
@@ -393,23 +392,9 @@ export async function getConsolidatedPatientData({
     dateTo,
     isAsync: false,
   };
-
-  const result = await lambdaClient
-    .invoke({
-      FunctionName: lambdaName,
-      InvocationType: "RequestResponse",
-      Payload: JSON.stringify(payload),
-    })
-    .promise();
-  const resultPayload = getLambdaResultPayload({ result, lambdaName });
-  const { bundleLocation, bundleFilename } = JSON.parse(
-    resultPayload
-  ) as ConsolidatedFhirToBundleResponse;
-
-  const bundle = await getConsolidatedBundleFromS3({
-    bundleLocation,
-    bundleFilename,
-  });
+  const connector = buildConsolidatedDataConnector();
+  const { bundleLocation, bundleFilename } = await connector.execute(payload);
+  const bundle = await getConsolidatedBundleFromS3({ bundleLocation, bundleFilename });
   return bundle;
 }
 
@@ -421,14 +406,11 @@ export async function getConsolidatedPatientDataAsync({
   dateTo,
   requestId,
   conversionType,
-}: ConsolidatedFhirToBundlePayload & {
+}: GetConsolidatedPatientData & {
   requestId: string;
   conversionType?: ConsolidationConversionType;
 }): Promise<void> {
-  const lambdaName = Config.getFHIRtoBundleLambdaName();
-  if (!lambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
-
-  const payload: ConsolidatedFhirToBundleRequest = {
+  const payload: ConsolidatedDataRequestAsync = {
     patient,
     requestId,
     conversionType,
@@ -438,13 +420,8 @@ export async function getConsolidatedPatientDataAsync({
     dateTo,
     isAsync: true,
   };
-
-  lambdaClient
-    .invoke({
-      FunctionName: lambdaName,
-      InvocationType: "RequestResponse",
-      Payload: JSON.stringify(payload),
-    })
-    .promise()
+  const connector = buildConsolidatedDataConnector();
+  connector
+    .execute(payload)
     .catch(processAsyncError("Failed to get consolidated patient data async", true));
 }

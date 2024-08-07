@@ -1,4 +1,4 @@
-import { executeWithNetworkRetries, InternalSendConsolidated } from "@metriport/shared";
+import { executeWithNetworkRetries } from "@metriport/shared";
 import axios from "axios";
 import { Log } from "./log";
 
@@ -26,37 +26,5 @@ export function apiClient(apiURL: string) {
         maxAttempts: MAX_API_NOTIFICATION_ATTEMPTS,
       });
     },
-    postConsolidated: postConsolidated(apiURL),
-  };
-}
-
-function postConsolidated(apiURL: string) {
-  return async function ({
-    patientId,
-    bundleLocation,
-    bundleFilename,
-    requestId,
-    conversionType,
-    resources,
-    dateFrom,
-    dateTo,
-  }: InternalSendConsolidated & { patientId: string }) {
-    const postConsolidated = `${apiURL}/internal/patient/${patientId}/consolidated`;
-    await executeWithNetworkRetries(
-      () =>
-        ossApi.post(postConsolidated, {
-          bundleLocation,
-          bundleFilename,
-          requestId,
-          conversionType,
-          resources,
-          dateFrom,
-          dateTo,
-        }),
-      {
-        retryOnTimeout: false,
-        maxAttempts: MAX_API_NOTIFICATION_ATTEMPTS,
-      }
-    );
   };
 }
