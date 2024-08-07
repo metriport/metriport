@@ -301,7 +301,7 @@ async function storeMrSummaryAndBriefInS3({
 }): Promise<void> {
   log(`Storing MR Summary and Brief in S3`);
   const promiseMrSummary = async () => {
-    newS3Client.uploadFile({
+    return newS3Client.uploadFile({
       bucket: bucketName,
       key: htmlFileName,
       file: Buffer.from(html),
@@ -311,7 +311,7 @@ async function storeMrSummaryAndBriefInS3({
 
   const promiseBriefSummary = async () => {
     if (!aiBrief) return;
-    newS3Client.uploadFile({
+    return newS3Client.uploadFile({
       bucket: bucketName,
       key: briefFileName,
       file: Buffer.from(aiBrief),
