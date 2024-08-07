@@ -39,6 +39,7 @@
     "@aws-sdk/client-bedrock-runtime": "^3.616.0",
     "@aws-sdk/client-cognito-identity-provider": "^3.301.0",
     "@medplum/core": "^2.0.32",
+    "@medplum/fhir-router": "^2.0.32",
     "@medplum/fhirtypes": "^2.0.32",
     "@metriport/api-sdk": "file:packages/api-sdk",
     "@metriport/core": "file:packages/core",
@@ -59,7 +60,8 @@
     "mime-types": "^2.1.35",
     "playwright": "^1.39.0",
     "readline-sync": "^1.4.10",
-    "sequelize": "^6.31.0"
+    "sequelize": "^6.31.0",
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.1",
