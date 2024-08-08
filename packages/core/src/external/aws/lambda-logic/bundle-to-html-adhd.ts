@@ -22,6 +22,7 @@ import {
 } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import { uniqWith } from "lodash";
+import { createBrief } from "./bundle-to-html";
 
 const ISO_DATE = "YYYY-MM-DD";
 
@@ -35,7 +36,7 @@ const CPT_CODE = "cpt";
 const UNK_CODE = "UNK";
 const UNKNOWN_DISPLAY = "unknown";
 
-export const bundleToHtmlADHD = (fhirBundle: Bundle): string => {
+export const bundleToHtmlADHD = (fhirBundle: Bundle, brief?: string): string => {
   const fhirTypes = extractFhirTypesFromBundle(fhirBundle);
 
   const {
@@ -249,11 +250,33 @@ export const bundleToHtmlADHD = (fhirBundle: Bundle): string => {
             margin-bottom: 10px
           }
 
+          .p-line {
+            white-space: pre-line;
+          }
+
+          .beta-flag {
+            position: absolute;
+            top: -15px;
+            right: 0px;
+            background-color: red;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            z-index: 1;
+          }
+
+          .brief-section-content {
+            position: relative;
+          }
+
         </style>
       </head>
 
       <body>
         ${createMRHeader(patient)}
+        ${createBrief(brief)}
         <div class="divider"></div>
         <div id="mr-sections">
           ${createFilteredReportSection(
@@ -1028,6 +1051,8 @@ const REMOVE_FROM_NOTE = [
   "documented in this encounter",
   "xnoIndent",
   "Formatting of this note might be different from the original.",
+  "StartCited",
+  "EndCited",
 ];
 
 function cleanUpNote(note: string): string {
@@ -1035,7 +1060,11 @@ function cleanUpNote(note: string): string {
     .trim()
     .replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "")
     .replace(/<ID>.*?<\/ID>/g, "")
-    .replace(/<styleCode>.*?<\/styleCode>/g, "");
+    .replace(/<styleCode>.*?<\/styleCode>/g, "")
+    .replace(/<width>.*?<\/width>/g, "") // https://metriport.slack.com/archives/C0616FCPAKZ/p1722627448791109?thread_ts=1722612577.018299&cid=C0616FCPAKZ
+    .replace(/(<paragraph>|<content>)/g, '<p class="p-line">') // https://metriport.slack.com/archives/C0616FCPAKZ/p1722625692474229?thread_ts=1722612577.018299&cid=C0616FCPAKZ
+    .replace(/(<paragraph\s?\/>|<content\s?\/>)/g, "<p>&nbsp;</p>") // https://metriport.slack.com/archives/C0616FCPAKZ/p1722625692474229?thread_ts=1722612577.018299&cid=C0616FCPAKZ
+    .replace(/(<\/paragraph>|<\/content>)/g, "</p>"); // https://metriport.slack.com/archives/C0616FCPAKZ/p1722625692474229?thread_ts=1722612577.018299&cid=C0616FCPAKZ
 }
 
 function removeEncodedStrings(valueString: string): string {

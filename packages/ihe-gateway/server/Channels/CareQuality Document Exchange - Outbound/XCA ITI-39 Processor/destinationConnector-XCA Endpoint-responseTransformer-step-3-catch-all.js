@@ -1,2 +1,0 @@
-responseStatus = ERROR;
-return;

@@ -1,7 +1,9 @@
 import { ConsolidationConversionType } from "@metriport/api-sdk";
 import { ConsolidatedFhirToBundlePayload } from "../../external/fhir/consolidated/consolidated";
 
-export type ConsolidatedPatientDataRequest = ConsolidatedFhirToBundlePayload;
+export type ConsolidatedPatientDataRequest = ConsolidatedFhirToBundlePayload & {
+  generateAiBrief?: boolean;
+};
 
 export type ConsolidatedDataRequestAsync = ConsolidatedPatientDataRequest & {
   isAsync: true;

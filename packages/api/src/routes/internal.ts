@@ -289,6 +289,7 @@ router.get(
  * @param req.query.cwEnabled - Whether to enabled CommonWell.
  * @param req.query.cqEnabled - Whether to enabled CareQuality.
  * @param req.query.epicEnabled - Whether to enabled Epic.
+ * @param req.query.demoAugEnabled - Whether to enabled Demo Aug.
  */
 router.put(
   "/cx-ff-status",
@@ -298,11 +299,13 @@ router.put(
     const cwEnabled = getFromQueryAsBoolean("cwEnabled", req);
     const cqEnabled = getFromQueryAsBoolean("cqEnabled", req);
     const epicEnabled = getFromQueryAsBoolean("epicEnabled", req);
+    const demoAugEnabled = getFromQueryAsBoolean("demoAugEnabled", req);
     const result = await updateCxHieEnabledFFs({
       cxId,
       cwEnabled,
       cqEnabled,
       epicEnabled,
+      demoAugEnabled,
     });
     return res.status(httpStatus.OK).json(result);
   })

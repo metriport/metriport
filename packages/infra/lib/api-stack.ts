@@ -376,6 +376,7 @@ export class APIStack extends Stack {
           appId: appConfigAppId,
           configId: appConfigConfigId,
         },
+        bedrock: props.config.bedrock,
         ...props.config.fhirToMedicalLambda,
       });
     }
@@ -1200,6 +1201,7 @@ export class APIStack extends Stack {
       appId: string;
       configId: string;
     };
+    bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
   }): Lambda {
     const {
       nodeRuntimeArn,
@@ -1210,6 +1212,7 @@ export class APIStack extends Stack {
       alarmAction,
       medicalDocumentsBucket,
       appConfigEnvVars,
+      bedrock,
     } = ownProps;
 
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
@@ -1229,6 +1232,11 @@ export class APIStack extends Stack {
         PDF_CONVERT_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
         APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
         APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
+        ...(bedrock && {
+          BEDROCK_REGION: bedrock?.region,
+          BEDROCK_VERSION: bedrock?.anthropicVersion,
+          AI_BRIEF_MODEL_ID: bedrock?.modelId,
+        }),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared, lambdaLayers.chromium],
@@ -1256,6 +1264,12 @@ export class APIStack extends Stack {
 
     medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambda);
 
+    const bedrockPolicyStatement = new iam.PolicyStatement({
+      actions: ["bedrock:InvokeModel"],
+      resources: ["*"],
+    });
+
+    fhirToMedicalRecordLambda.addToRolePolicy(bedrockPolicyStatement);
     return fhirToMedicalRecordLambda;
   }
 
