@@ -1,0 +1,31 @@
+{
+  "name": "terminology",
+  "version": "1.0.0",
+  "description": "embedded term server",
+  "main": "app.js",
+  "scripts": {
+    "start": "node dist/app.js",
+    "clean": "rimraf dist && rimraf node_modules",
+    "build": "tsc -p tsconfig.build.json",
+    "prettier-fix": "npx prettier '**/*.ts' --write"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/metriport/metriport.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/metriport/metriport/issues"
+  },
+  "homepage": "https://github.com/metriport/metriport#readme",
+  "dependencies": {
+    "@medplum/core": "^3.2.5",
+    "@medplum/fhir-router": "^3.2.5",
+    "@medplum/fhirtypes": "^3.2.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "sqlite3": "^5.1.7",
+    "uuid": "^10.0.0"
+  }
+}

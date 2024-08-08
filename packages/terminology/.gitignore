@@ -1,0 +1,4 @@
+**/terminology.db
+.env
+dist
+node_modules

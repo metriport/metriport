@@ -1,5 +1,5 @@
-import { getSqliteClient } from "../../sqlite";
 import { CodeSystem } from "@medplum/fhirtypes";
+import { getSqliteClient } from "../../sqlite";
 
 export const parentProperty = "http://hl7.org/fhir/concept-properties#parent";
 export const childProperty = "http://hl7.org/fhir/concept-properties#child";
