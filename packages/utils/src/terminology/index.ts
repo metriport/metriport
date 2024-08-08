@@ -73,7 +73,7 @@ async function importConcepts(token: string, system: string) {
     {
       headers: {
         Authorization: `Bearer ${token}`,
-        "Content-Type": "application/fhir+json",
+        "Content-Type": "application/json",
       },
     }
   );

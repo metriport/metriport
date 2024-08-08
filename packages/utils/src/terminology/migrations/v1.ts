@@ -3,5 +3,6 @@ export const sql = `
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       code TEXT NOT NULL,
       system UUID NOT NULL,
-      display TEXT
+      display TEXT,
+      UNIQUE(system, code)
     )`;

@@ -3,8 +3,9 @@ import { mkdirSync } from "fs";
 
 import { SqliteClient } from "./sqlClient";
 import * as migrations from "./migrations/index";
+import { seedCodeSystems } from "./seed";
 
-let dbClient: SqliteClient;
+let dbClient: SqliteClient | undefined;
 
 type Migration = {
   sql: string;
@@ -50,8 +51,14 @@ export async function initSqliteFhirServer(): Promise<void> {
     throw err;
   }
 
-  const dbClient = new SqliteClient(dbPath);
+  dbClient = new SqliteClient(dbPath);
   await migrate(dbClient);
+  await seedCodeSystems(dbClient);
 }
 
-export { dbClient };
+export function getSqliteClient(): SqliteClient {
+  if (!dbClient) {
+    throw new Error("Database client is not initialized. Call initSqliteFhirServer first.");
+  }
+  return dbClient;
+}
