@@ -15,7 +15,7 @@ const log = Util.log(`Consolidated Webhook`);
 const consolidatedWebhookStatus = ["completed", "failed"] as const;
 export type ConsolidatedWebhookStatus = (typeof consolidatedWebhookStatus)[number];
 
-type Filters = Record<string, string | undefined>;
+type Filters = Record<string, string | boolean | undefined>;
 
 type PayloadWithoutMeta = Omit<ConsolidatedWebhookRequest, "meta">;
 

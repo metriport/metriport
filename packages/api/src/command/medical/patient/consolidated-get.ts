@@ -10,12 +10,12 @@ import {
 import {
   ConsolidatedQuery,
   GetConsolidatedFilters,
-  resourcesSearchableByPatient,
   ResourceTypeForConsolidation,
+  resourcesSearchableByPatient,
 } from "@metriport/api-sdk";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
-import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { EventTypes, analytics } from "@metriport/core/external/analytics/posthog";
 import {
   buildBundle,
   getReferencesFromResources,
@@ -36,6 +36,7 @@ import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getSignedURL } from "../document/document-download";
+import { checkAiBriefEnabled } from "./check-ai-brief-enabled";
 import { processConsolidatedDataWebhook } from "./consolidated-webhook";
 import {
   buildDocRefBundleWithAttachment,
@@ -66,7 +67,7 @@ export type ConsolidatedQueryParams = {
 
 export type ConsolidatedData = {
   bundle: SearchSetBundle<Resource>;
-  filters: Record<string, string | undefined>;
+  filters: Record<string, string | boolean | undefined>;
 };
 
 export async function startConsolidatedQuery({
@@ -77,7 +78,10 @@ export async function startConsolidatedQuery({
   dateTo,
   conversionType,
   cxConsolidatedRequestMetadata,
+  generateAiBrief = false,
 }: ConsolidatedQueryParams): Promise<ConsolidatedQuery> {
+  await checkAiBriefEnabled({ cxId, generateAiBrief });
+
   const { log } = Util.out(`startConsolidatedQuery - M patient ${patientId}`);
   const patient = await getPatientOrFail({ id: patientId, cxId });
   const currentConsolidatedProgress = getCurrentConsolidatedProgress(
@@ -137,6 +141,7 @@ export async function startConsolidatedQuery({
     dateTo,
     conversionType,
     requestId,
+    generateAiBrief,
   }).catch(emptyFunction);
 
   return progress;
@@ -205,7 +210,8 @@ export function getIsSameResources(
 }
 
 async function getConsolidatedAndSendToCx(params: GetConsolidatedSendToCxParams): Promise<void> {
-  const { patient, requestId, resources, dateFrom, dateTo, conversionType } = params;
+  const { patient, requestId, resources, dateFrom, dateTo, conversionType, generateAiBrief } =
+    params;
   try {
     const { bundle, filters } = await getConsolidated(params);
     // trigger WH call
@@ -226,6 +232,7 @@ async function getConsolidatedAndSendToCx(params: GetConsolidatedSendToCxParams)
         dateFrom,
         dateTo,
         conversionType,
+        generateAiBrief,
       },
     }).catch(emptyFunction);
   }
@@ -237,11 +244,17 @@ export async function getConsolidated({
   resources,
   dateFrom,
   dateTo,
+  generateAiBrief,
   requestId,
   conversionType,
 }: GetConsolidatedParams): Promise<ConsolidatedData> {
   const { log } = Util.out(`getConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
-  const filters = { resources: resources ? resources.join(", ") : undefined, dateFrom, dateTo };
+  const filters = {
+    resources: resources ? resources.join(", ") : undefined,
+    dateFrom,
+    dateTo,
+    generateAiBrief,
+  };
   try {
     let bundle = await getConsolidatedPatientData({
       patient,
@@ -281,6 +294,7 @@ export async function getConsolidated({
         dateFrom,
         dateTo,
         conversionType,
+        generateAiBrief,
       });
 
       analytics({
@@ -297,7 +311,7 @@ export async function getConsolidated({
       return await uploadConsolidatedJsonAndReturnUrl({
         patient,
         bundle,
-        filters,
+        filters: filtersToString(filters),
       });
     }
     return { bundle, filters };
@@ -314,6 +328,15 @@ export async function getConsolidated({
     });
     throw error;
   }
+}
+
+function filtersToString(
+  filters: Record<string, string | boolean | undefined>
+): Record<string, string> {
+  return Object.entries(filters).reduce((acc, [key, value]) => {
+    acc[key] = value === undefined ? "" : String(value);
+    return acc;
+  }, {} as Record<string, string>);
 }
 
 export function filterOutPrelimDocRefs(
