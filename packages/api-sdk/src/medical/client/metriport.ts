@@ -293,7 +293,7 @@ export class MetriportMedicalApi {
   async createPatient(
     data: PatientCreate,
     facilityId: string,
-    additionalQueryParams: Record<string, string> = {}
+    additionalQueryParams: Record<string, string | number | boolean> = {}
   ): Promise<PatientDTO> {
     const resp = await this.api.post(`${PATIENT_URL}`, data, {
       params: { facilityId, ...additionalQueryParams },
@@ -342,7 +342,7 @@ export class MetriportMedicalApi {
   async updatePatient(
     patient: PatientUpdate,
     facilityId?: string,
-    additionalQueryParams: Record<string, string> = {}
+    additionalQueryParams: Record<string, string | number | boolean> = {}
   ): Promise<PatientDTO> {
     type FieldsToOmit = "id";
     const payload: Omit<PatientUpdate, FieldsToOmit> & Record<FieldsToOmit, undefined> = {
