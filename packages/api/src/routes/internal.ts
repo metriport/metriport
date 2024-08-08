@@ -3,6 +3,8 @@ import { getReferencesFromResources } from "@metriport/core/external/fhir/shared
 import BadRequestError from "@metriport/core/util/error/bad-request";
 import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
+import { getCxFFStatus } from "../command/internal/get-hie-enabled-feature-flags-status";
+import { updateCxHieEnabledFFs } from "../command/internal/update-hie-enabled-feature-flags";
 import { checkApiQuota } from "../command/medical/admin/api";
 import { dbMaintenance } from "../command/medical/admin/db-maintenance";
 import {
@@ -12,28 +14,27 @@ import {
 import { getFacilities } from "../command/medical/facility/get-facility";
 import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
-import { getCxFFStatus } from "../command/internal/get-hie-enabled-feature-flags-status";
-import { updateCxHieEnabledFFs } from "../command/internal/update-hie-enabled-feature-flags";
 import { isEnhancedCoverageEnabledForCx } from "../external/aws/app-config";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
 import { makeFhirApi } from "../external/fhir/api/api-factory";
 import { countResources } from "../external/fhir/patient/count-resources";
 import { getReferencesFromFHIR } from "../external/fhir/references/get-references";
 import { OrganizationModel } from "../models/medical/organization";
+import userRoutes from "./devices/internal-user";
+import { requestLogger } from "./helpers/request-logger";
 import { internalDtoFromModel as facilityInternalDto } from "./medical/dtos/facilityDTO";
 import { internalDtoFromModel as orgInternalDto } from "./medical/dtos/organizationDTO";
-import userRoutes from "./devices/internal-user";
-import commonwellRoutes from "./medical/internal-cw";
 import carequalityRoutes from "./medical/internal-cq";
+import commonwellRoutes from "./medical/internal-cw";
 import docsRoutes from "./medical/internal-docs";
+import facilityRoutes from "./medical/internal-facility";
+import feedbackRoutes from "./medical/internal-feedback";
 import hieRoutes from "./medical/internal-hie";
 import mpiRoutes from "./medical/internal-mpi";
-import patientRoutes from "./medical/internal-patient";
-import facilityRoutes from "./medical/internal-facility";
 import organizationRoutes from "./medical/internal-organization";
+import patientRoutes from "./medical/internal-patient";
 import { getUUIDFrom } from "./schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "./util";
-import { requestLogger } from "./helpers/request-logger";
 
 const router = Router();
 
@@ -46,6 +47,7 @@ router.use("/commonwell", commonwellRoutes);
 router.use("/carequality", carequalityRoutes);
 router.use("/mpi", mpiRoutes);
 router.use("/hie", hieRoutes);
+router.use("/feedback", feedbackRoutes);
 
 /** ---------------------------------------------------------------------------
  * POST /internal/mapi-access

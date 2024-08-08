@@ -9,12 +9,19 @@ import {
 import { bundleToBrief } from "@metriport/core/external/aws/lambda-logic/bundle-to-brief";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import { S3Utils } from "@metriport/core/external/aws/s3";
+import { MetriportError } from "@metriport/shared";
 import fs from "fs";
+import { uuidv7 } from "../shared/uuid-v7";
 
 /**
  * Script to trigger MR Summary generation on a FHIR payload locally, with the AI Brief included in it.
  *
  * Set the cxId and patientId to save the MR Summary and Brief in S3. If that's not needed, comment it out.
+ *
+ * Set the env vars:
+ * - BEDROCK_REGION
+ * - BEDROCK_VERSION
+ * - MR_BRIEF_MODEL_ID
  */
 
 const s3Client = new S3Utils("us-east-2");
@@ -28,13 +35,19 @@ async function main() {
   const bundleParsed = JSON.parse(bundle);
 
   const brief = await bundleToBrief(bundleParsed as Bundle<Resource>, cxId, patientId);
+  const briefId = uuidv7();
 
   if (!cxId || !patientId) throw new Error("cxId or patientId is missing");
   const briefFileName = createMRSummaryBriefFileName(cxId, patientId);
   const htmlFileName = createMRSummaryFileName(cxId, patientId, "html");
 
   // Response from FHIR Converter
-  const html = bundleToHtml(bundleParsed, brief);
+  const html = bundleToHtml(
+    bundleParsed,
+    brief
+      ? { content: brief, id: briefId, link: `http://localhost:3000/feedback/${briefId}` }
+      : undefined
+  );
   await storeMrSummaryAndBriefInS3({
     bucketName,
     htmlFileName,
@@ -62,7 +75,7 @@ async function storeMrSummaryAndBriefInS3({
   brief: string | undefined;
 }): Promise<void> {
   const promiseMrSummary = async () => {
-    s3Client.uploadFile({
+    return s3Client.uploadFile({
       bucket: bucketName,
       key: htmlFileName,
       file: Buffer.from(html),
@@ -72,7 +85,7 @@ async function storeMrSummaryAndBriefInS3({
 
   const promiseBriefSummary = async () => {
     if (!brief) return;
-    s3Client.uploadFile({
+    return s3Client.uploadFile({
       bucket: bucketName,
       key: briefFileName,
       file: Buffer.from(brief),
@@ -80,11 +93,16 @@ async function storeMrSummaryAndBriefInS3({
     });
   };
 
-  const resultPromises = await Promise.allSettled([promiseMrSummary(), promiseBriefSummary()]);
-  const failed = resultPromises.flatMap(p => (p.status === "rejected" ? p.reason : []));
-  if (failed.length > 0) {
-    const msg = "Failed to store MR Summary and/or Brief in S3";
-    console.log(`${msg}: ${failed.join("; ")}`);
-    // capture.message(msg, { extra: { failed }, level: "info" });
+  const [mrResp, briefResp] = await Promise.allSettled([promiseMrSummary(), promiseBriefSummary()]);
+  if (mrResp.status === "rejected" || briefResp?.status === "rejected") {
+    const failed = [mrResp, briefResp].map(p => (p.status === "rejected" ? p.reason : []));
+    const message = "Failed to store MR Summary and/or Brief in S3";
+    const additionalInfo = { reason: failed.join("; "), bucketName, htmlFileName, briefFileName };
+    console.log(`${message}: ${JSON.stringify(additionalInfo)}`);
+    throw new MetriportError(message, null, additionalInfo);
   }
+
+  const version = "VersionId" in mrResp.value ? (mrResp.value.VersionId as string) : undefined;
+  const res = { location: mrResp.value.Location, version };
+  console.log(`Stored MR Summary and Brief in S3: ${JSON.stringify(res)}`);
 }

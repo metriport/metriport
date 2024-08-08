@@ -22,6 +22,7 @@ import {
 } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import { uniqWith } from "lodash";
+import { Brief } from "./bundle-to-brief";
 
 const ISO_DATE = "YYYY-MM-DD";
 
@@ -35,7 +36,7 @@ const CPT_CODE = "cpt";
 const UNK_CODE = "UNK";
 const UNKNOWN_DISPLAY = "unknown";
 
-export const bundleToHtml = (fhirBundle: Bundle, brief?: string): string => {
+export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
   const {
     patient,
     practitioners,
@@ -284,7 +285,7 @@ export const bundleToHtml = (fhirBundle: Bundle, brief?: string): string => {
   `;
 
   return htmlPage;
-};
+}
 
 function formatDateForDisplay(date?: string | undefined): string {
   return date ? dayjs(date).format(ISO_DATE) : "";
@@ -532,12 +533,13 @@ function createHeaderTableRow(label: string, value: string) {
   `;
 }
 
-export function createBrief(brief: string | undefined): string {
-  if (!brief) return ``;
+export function createBrief(brief?: Brief): string {
+  if (!brief || !brief.content) return ``;
+  const { link, content } = brief;
   const briefContents = `
   <div class="brief-section-content">
     <div class="beta-flag">BETA</div>
-    <table><tbody><tr><td>${brief.replace(/\n/g, "<br/>")}</td></tr></tbody></table>
+    <table><tbody><tr><td>${content.replace(/\n/g, "<br/>")}</td></tr></tbody></table>
     <div style="border: 2px solid #FFCC00; background-color: #FFF8E1; padding: 10px; border-radius: 5px; margin-top: 20px;">
       <div style="display: flex; align-items: center;">
         <div style="margin-right: 10px;">
@@ -547,12 +549,16 @@ export function createBrief(brief: string | undefined): string {
           </svg>
         </div>
         <div>
-          <strong style="color: #FF6F00;">Warning:</strong> This Medical Record Brief was generated using AI technologies. The information contained within might contain errors. DO NOT use this as a single source of truth and verify this information with the data below.
+          <strong style="color: #FF6F00;">Warning:</strong>
+        </div>
+        <div style="margin-left: 10px;">
+          This Medical Record Brief was generated using AI technologies. The information contained within might contain errors. DO NOT use this as a single source of truth and verify this information with the data below.
+          Provide feedback about the AI-generated brief <a href="${link}" target="_blank">here</a>.
         </div>
       </div>
     </div>
   </div>
- `;
+  `;
   return createSection("Brief (AI-generated)", briefContents);
 }
 

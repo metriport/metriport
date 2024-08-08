@@ -69,7 +69,7 @@ export type GetTimeToWaitParams = {
  * @see https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
  */
 export async function executeWithRetries<T>(
-  fn: () => Promise<T>,
+  fn: (attempt: number) => Promise<T>,
   options: ExecuteWithRetriesOptions<T> = defaultOptions
 ): Promise<T> {
   const actualOptions = { ...defaultOptions, ...options };
@@ -87,7 +87,7 @@ export async function executeWithRetries<T>(
   let attempt = 0;
   while (++attempt <= maxAttempts) {
     try {
-      const result = await fn();
+      const result = await fn(attempt);
       if (await shouldRetry(result, undefined, attempt)) {
         if (attempt >= maxAttempts) {
           log(`[${context}] Gave up after ${attempt} attempts.`);
