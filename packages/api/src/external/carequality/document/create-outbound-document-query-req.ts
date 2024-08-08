@@ -8,6 +8,7 @@ import { doesGatewayNeedDateRanges } from "@metriport/core/external/carequality/
 
 const SUBJECT_ROLE_CODE = "106331006";
 const SUBJECT_ROLE_DISPLAY = "Administrative AND/OR managerial worker";
+const maxLookbackYears = 25;
 
 function buildRequest({
   requestId,
@@ -90,7 +91,7 @@ function buildRequestsWithDateRanges({
     const dateFrom =
       i !== length - 1
         ? now.subtract((i + 1) * 6, "month").toISOString()
-        : now.subtract(25, "year").toISOString();
+        : now.subtract(maxLookbackYears, "year").toISOString();
     requests.push(
       buildRequest({
         requestId,
