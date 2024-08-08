@@ -17,7 +17,7 @@ export async function createFullNote({
   patientA: boolean;
   patientB: boolean;
   providerLastName: string;
-}) {
+}): Promise<string> {
   try {
     // TODO remove this as per https://github.com/metriport/metriport-internal/issues/2088
     const [canvasPractitioner, canvasLocation] = await Promise.all([
@@ -60,32 +60,28 @@ export async function createFullNote({
       }
       if (resource.resourceType === "AllergyIntolerance") {
         log("Creating allergy");
-        await canvas.createAllergy({
+        await canvas.createAllergyCommand({
           allergy: resource,
-          patientId: canvasPatientId,
-          practitionerId: canvasPractitionerId,
           noteId: canvasNoteId,
         });
       }
 
       if (resource.resourceType === "Condition") {
         log("Creating condition");
-        await canvas.createCondition({
+        await canvas.createConditionCommand({
           condition: resource,
-          patientId: canvasPatientId,
-          practitionerId: canvasPractitionerId,
           noteId: canvasNoteId,
         });
       }
       if (resource.resourceType === "MedicationStatement") {
         log("Creating medication statement");
-        await canvas.createMedicationStatement({
+        await canvas.createMedicationStatementCommand({
           medication: resource,
-          patientId: canvasPatientId,
           noteId: canvasNoteId,
         });
       }
     }
+    return canvasNoteId;
   } catch (error) {
     const msg = "Error in createFullNote Canvas";
     const extra = { canvasPatientId };
