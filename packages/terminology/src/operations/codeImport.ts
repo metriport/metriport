@@ -4,7 +4,7 @@ import { OperationOutcomeError, allOk, badRequest, normalizeOperationOutcome } f
 import { v4 as uuidv4 } from "uuid";
 import { getSqliteClient } from "../sqlite";
 import { buildOutputParameters, parseInputParameters } from "./utils/parameters";
-import { findCodeSystemResource, parentProperty } from "./utils/terminology";
+import { findCodeSystemResource, parentProperty } from "./utils/codeSystemLookup";
 
 const operation: OperationDefinition = {
   resourceType: "OperationDefinition",

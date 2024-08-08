@@ -8,12 +8,12 @@ import {
   notFound,
   append,
 } from "@medplum/core";
-import { codeSystemLookupOperationDefinition } from "./definitions/codeSystemLookup";
+import { codeLookupOperationDefinition } from "./definitions/codeLookupOperation";
 import { parseInputParameters } from "./utils/parameters";
-import { findCodeSystemResource } from "./utils/terminology";
+import { findCodeSystemResource } from "./utils/codeSystemLookup";
 import { getSqliteClient } from "../sqlite";
 
-const operation: OperationDefinition = codeSystemLookupOperationDefinition;
+const operation: OperationDefinition = codeLookupOperationDefinition;
 
 type CodeSystemLookupParameters = {
   code?: string;
