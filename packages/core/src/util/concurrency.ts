@@ -7,6 +7,10 @@ export type ExecuteInChunksOptions = {
    */
   numberOfParallelExecutions?: number;
   /**
+   * Explict delay between runs. Defaults to 0, no delay.
+   */
+  delay?: number;
+  /**
    * Maximum jitter in milliseconds before each run. Makes promises
    * start at slight different times. Defaults to 0, no jitter.
    */
@@ -79,12 +83,14 @@ export async function executeAsynchronously<T>(
   fn: FunctionType<T>,
   {
     numberOfParallelExecutions = collection.length,
+    delay = 0,
     maxJitterMillis = 0,
     minJitterMillis = 0,
     keepExecutingOnError = false,
     log,
   }: ExecuteInChunksOptions = {}
 ): Promise<PromiseSettledResult<void>[]> {
+  if (delay < 0) throw new Error("delay must be >= 0");
   if (minJitterMillis < 0) throw new Error("minJitterMillis must be >= 0");
   if (maxJitterMillis < 0) throw new Error("maxJitterMillis must be >= 0");
   if (minJitterMillis > maxJitterMillis) {
@@ -102,6 +108,7 @@ export async function executeAsynchronously<T>(
     // possible jitter before each run so that they don't start at the same time
     const jitter = Math.max(minJitterMillis, Math.random() * maxJitterMillis);
     await sleep(jitter);
+    await sleep(delay);
 
     await executeSynchronously(
       itemsToProcess,

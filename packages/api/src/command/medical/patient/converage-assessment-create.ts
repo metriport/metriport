@@ -12,7 +12,7 @@ import { queryDocumentsAcrossHIEs } from "../document/document-query";
 
 dayjs.extend(duration);
 
-const pdJitter = dayjs.duration(30, "seconds");
+const delay = dayjs.duration(30, "seconds");
 
 export async function createCoverageAssessments({
   cxId,
@@ -53,10 +53,7 @@ export async function createCoverageAssessments({
       return { patientCreateCmd, patients, errors: pdWrapperErrors, log };
     }),
     createOrUpdatePatientWrapper,
-    {
-      numberOfParallelExecutions: 10,
-      minJitterMillis: pdJitter.asMilliseconds(),
-    }
+    { numberOfParallelExecutions: 10, delay: delay.asMilliseconds() }
   );
 
   if (pdWrapperErrors.length > 0) {
@@ -106,7 +103,7 @@ export async function createCoverageAssessments({
       return { cxId, patient, facilityId, errors: dqWrapperErrors, log };
     }),
     queryDocumentsAcrossHIEsWrapper,
-    { numberOfParallelExecutions: 10 }
+    { numberOfParallelExecutions: 10, delay: delay.asMilliseconds() }
   );
 
   if (dqWrapperErrors.length > 0) {
