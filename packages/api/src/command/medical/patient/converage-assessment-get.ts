@@ -1,3 +1,5 @@
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { Patient } from "@metriport/core/domain/patient";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
@@ -10,6 +12,10 @@ import { errorToString } from "@metriport/shared";
 
 const region = Config.getAWSRegion();
 const bucket = Config.getMedicalDocumentsBucketName();
+
+dayjs.extend(duration);
+
+const signedUrlDuration = dayjs.duration(1, "hour");
 
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
@@ -37,16 +43,19 @@ export async function getCoverageAssessments({
 }): Promise<PatientWithCoverageAssessment[]> {
   const { log } = out(`getCoverageAssessments - cxId ${cxId}`);
   const patientsWithAssessment: PatientWithCoverageAssessment[] = [];
+  const wrapperErrors: string[] = [];
 
   async function getCoverageAssessmentWrapper({
     cxId,
     patient,
     patientsWithAssessment,
+    errors,
     log,
   }: {
     cxId: string;
     patient: Patient;
     patientsWithAssessment: PatientWithCoverageAssessment[];
+    errors: string[];
     log: typeof console.log;
   }): Promise<void> {
     try {
@@ -56,25 +65,32 @@ export async function getCoverageAssessments({
         ...coverageAssessment,
       });
     } catch (error) {
-      const msg = `Failed to get coverage assessment. Cause: ${errorToString(error)}`;
-      capture.error(msg, {
-        extra: {
-          cxId,
-          patientId: patient.id,
-          context: "coverage-assessment.get",
-        },
-      });
+      const msg = `Patient: ${patient.id}. Cause: ${errorToString(error)}`;
+      log(msg);
+      errors.push(msg);
       patientsWithAssessment.push(patient);
     }
   }
 
   await executeAsynchronously(
     patients.map(patient => {
-      return { cxId, patient, patientsWithAssessment, log };
+      return { cxId, patient, patientsWithAssessment, errors: wrapperErrors, log };
     }),
     getCoverageAssessmentWrapper,
-    { numberOfParallelExecutions: 50 }
+    { numberOfParallelExecutions: 20 }
   );
+
+  if (wrapperErrors.length > 0) {
+    capture.error("Failed to get coverage assessments.", {
+      extra: {
+        cxId,
+        patientCount: patients.length,
+        errorCount: wrapperErrors.length,
+        errors: wrapperErrors.join(","),
+        context: "coverage-assessment.get",
+      },
+    });
+  }
 
   return patientsWithAssessment;
 }
@@ -124,6 +140,7 @@ async function getMrSummaryUrl(
       return await s3Utils.getSignedUrl({
         bucketName: bucket,
         fileName,
+        durationSeconds: signedUrlDuration.asSeconds(),
       });
     }
     return undefined;
