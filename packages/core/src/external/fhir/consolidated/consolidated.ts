@@ -18,7 +18,6 @@ import { isResourceDerivedFromDocRef } from "../shared/index";
 import { getReferencesFromFHIR } from "../shared/references";
 
 const MAX_HYDRATION_ROUNDS = 3;
-const fhirUrl = Config.getFHIRServerUrl();
 
 export type ConsolidatedFhirToBundlePayload = {
   patient: Pick<Patient, "id" | "cxId">;
@@ -60,6 +59,7 @@ export async function getConsolidatedFhirBundle({
   documentIds.length > 0 && log(`...and document IDs: ${documentIds.join(", ")}`);
   log(`...and general resources with no specific filter: ${generalResourcesNoFilter.join(", ")}`);
 
+  const fhirUrl = Config.getFHIRServerUrl();
   const fhir = makeFhirApi(cxId, fhirUrl);
   const errorsToReport: Record<string, string> = {};
 

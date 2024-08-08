@@ -6,12 +6,12 @@ import {
   resourcesSearchableByPatient,
   ResourceTypeForConsolidation,
 } from "@metriport/api-sdk";
-import { getConsolidatedBundleFromS3 } from "@metriport/core/command/consolidated";
 import {
   ConsolidatedDataRequestAsync,
   ConsolidatedDataRequestSync,
 } from "@metriport/core/command/consolidated/consolidated-connector";
 import { buildConsolidatedDataConnector } from "@metriport/core/command/consolidated/consolidated-connector-factory";
+import { getConsolidatedBundleFromS3 } from "@metriport/core/command/consolidated/consolidated-on-s3";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
@@ -397,9 +397,15 @@ async function uploadConsolidatedJsonAndReturnUrl({
 
 /**
  * Get consolidated patient data from FHIR server.
+ * Uses ConsolidatedDataConnector, which uses an environment-specific strategy/implementation
+ * to load data from the FHIR server:
+ * - dev/local: loads data from the FHIR server directly;
+ * - cloud envs, calls a lambda to execute the loadingn of data from the FHIR server.
  *
  * @param documentIds (Optional) List of document reference IDs to filter by. If provided, only
  *            resources derived from these document references will be returned.
+ * @param resources (Optional) List of resources to filter by. If provided, only
+ *            those resources will be included.
  * @returns FHIR bundle of resources matching the filters.
  */
 export async function getConsolidatedPatientData({

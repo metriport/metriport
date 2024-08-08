@@ -277,10 +277,6 @@ export class Config {
     return getEnvVarOrFail("DOCUMENT_DOWNLOADER_LAMBDA_NAME");
   }
 
-  static getFHIRtoBundleLambdaName(): string | undefined {
-    return getEnvVar("FHIR_TO_BUNDLE_LAMBDA_NAME");
-  }
-
   static getFHIRToMedicalRecordLambdaName(): string | undefined {
     return getEnvVar("FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME");
   }

@@ -1,5 +1,5 @@
 import { genderAtBirthSchema } from "@metriport/api-sdk";
-import { getConsolidatedBundleFromS3 } from "@metriport/core/command/consolidated";
+import { getConsolidatedBundleFromS3 } from "@metriport/core/command/consolidated/consolidated-on-s3";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
@@ -762,11 +762,12 @@ router.post(
 /**
  * POST /internal/patient/:id/consolidated
  *
- * Kicks off patient discovery for the given patient on both CQ and CW.
+ * Continues the process of consolidating a patient's data by sending the consolidated bundle to the customer.
  *
  * @param req.query.cxId The customer ID.
  * @param req.params.id The patient ID.
- * @param req.query.rerunPdOnNewDemographics Optional. Indicates whether to use demo augmentation on this PD run.
+ * @param req.body The data to send to getConsolidatedAndSendToCx and S3 info about the bundle to be loaded.
+ * @see internalSendConsolidatedSchema on @metriport/shared
  */
 router.post(
   "/:id/consolidated",
@@ -779,6 +780,7 @@ router.post(
       requestId,
       conversionType,
       resources,
+      generateAiBrief,
       dateFrom,
       dateTo,
       bundleLocation,
@@ -795,6 +797,7 @@ router.post(
       bundle,
       requestId,
       conversionType,
+      generateAiBrief,
       resources,
       dateFrom,
       dateTo,

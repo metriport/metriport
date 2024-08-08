@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { getLambdaResultPayload, makeLambdaClient } from "../../external/aws/lambda";
 import { Config } from "../../util/config";
 import {
@@ -8,6 +9,8 @@ import {
   ConsolidatedDataResponse,
   ConsolidatedPatientDataRequest,
 } from "./consolidated-connector";
+
+dayjs.extend(duration);
 
 export type ConsolidatedRequestLambda = ConsolidatedPatientDataRequest & {
   bucketName: string;

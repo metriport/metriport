@@ -1,20 +1,27 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { Observation } from "@medplum/fhirtypes";
 import { v4 as uuidv4 } from "uuid";
+import { Config } from "../../../../util/config";
 import { HapiFhirClient } from "../../api/api-hapi";
-import { getConsolidatedFhirBundle } from "../consolidated";
 import * as fhirBundle from "../../shared/bundle";
 import * as fhirReferences from "../../shared/references";
+import { getConsolidatedFhirBundle } from "../consolidated";
 
 let fhir_searchResourcePages: jest.SpyInstance;
 let fhir_getReferencesFromResources: jest.SpyInstance;
 let fhir_getReferencesFromFHIR: jest.SpyInstance;
 
+beforeAll(() => {
+  jest.spyOn(Config, "getFHIRServerUrl").mockReturnValue("http://localhost:8888");
+});
 beforeEach(() => {
   jest.restoreAllMocks();
   fhir_searchResourcePages = jest.spyOn(HapiFhirClient.prototype, "searchResourcePages");
   fhir_getReferencesFromResources = jest.spyOn(fhirBundle, "getReferencesFromResources");
   fhir_getReferencesFromFHIR = jest.spyOn(fhirReferences, "getReferencesFromFHIR");
+});
+afterAll(() => {
+  jest.restoreAllMocks();
 });
 
 describe("getConsolidatedFhirBundle", () => {
@@ -131,6 +138,7 @@ describe("getConsolidatedFhirBundle", () => {
     expect(fhir_getReferencesFromResources).toHaveBeenCalledTimes(3);
     expect(fhir_getReferencesFromFHIR).toHaveBeenCalledTimes(3);
   });
+
   it("hydration full 2 levels", async () => {
     const initialResource: Observation = {
       resourceType: "Observation",

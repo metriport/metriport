@@ -46,27 +46,12 @@ async function postConsolidated({
   apiURL,
   cxId,
   patientId,
-  bundleLocation,
-  bundleFilename,
-  requestId,
-  conversionType,
-  resources,
-  dateFrom,
-  dateTo,
+  ...payload
 }: InternalSendConsolidated & { cxId: string; patientId: string; apiURL: string }) {
   const postConsolidated = `${apiURL}/internal/patient/${patientId}/consolidated`;
   const queryParams = new URLSearchParams({ cxId });
   await executeWithNetworkRetries(
-    () =>
-      axios.post(postConsolidated + "/" + queryParams.toString(), {
-        bundleLocation,
-        bundleFilename,
-        requestId,
-        conversionType,
-        resources,
-        dateFrom,
-        dateTo,
-      }),
+    () => axios.post(postConsolidated + "/" + queryParams.toString(), payload),
     {
       retryOnTimeout: false,
       maxAttempts: MAX_API_NOTIFICATION_ATTEMPTS,
