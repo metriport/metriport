@@ -6,4 +6,5 @@ export const sql = `CREATE TABLE IF NOT EXISTS Coding_Property (
     FOREIGN KEY (coding) REFERENCES Coding(id),
     FOREIGN KEY (property) REFERENCES CodeSystem_Property(id),
     FOREIGN KEY (target) REFERENCES Coding(id)
+    UNIQUE (coding, property)
 );`;

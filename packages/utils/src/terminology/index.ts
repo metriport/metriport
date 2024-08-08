@@ -44,30 +44,30 @@ async function importConcepts(token: string, system: string) {
           valueCoding: { code: "118690002", display: "Procedure on head (procedure)" },
         },
         { name: "concept", valueCoding: { code: "71388002", display: "Procedure (procedure)" } },
-        // {
-        //   name: 'property',
-        //   part: [
-        //     { name: 'code', valueCode: '184598004' },
-        //     { name: 'property', valueCode: 'parent' },
-        //     { name: 'value', valueString: '702707005' },
-        //   ],
-        // },
-        // {
-        //   name: 'property',
-        //   part: [
-        //     { name: 'code', valueCode: '702707005' },
-        //     { name: 'property', valueCode: 'parent' },
-        //     { name: 'value', valueString: '118690002' },
-        //   ],
-        // },
-        // {
-        //   name: 'property',
-        //   part: [
-        //     { name: 'code', valueCode: '118690002' },
-        //     { name: 'property', valueCode: 'parent' },
-        //     { name: 'value', valueString: '71388002' },
-        //   ],
-        // },
+        {
+          name: "property",
+          part: [
+            { name: "code", valueCode: "184598004" },
+            { name: "property", valueCode: "parent" },
+            { name: "value", valueString: "702707005" },
+          ],
+        },
+        {
+          name: "property",
+          part: [
+            { name: "code", valueCode: "702707005" },
+            { name: "property", valueCode: "parent" },
+            { name: "value", valueString: "118690002" },
+          ],
+        },
+        {
+          name: "property",
+          part: [
+            { name: "code", valueCode: "118690002" },
+            { name: "property", valueCode: "parent" },
+            { name: "value", valueString: "71388002" },
+          ],
+        },
       ],
     },
     {

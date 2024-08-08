@@ -1,5 +1,5 @@
 export const sql = `CREATE TABLE IF NOT EXISTS "CodeSystem_Property" (
-    id BIGSERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY,
     system UUID NOT NULL,
     code TEXT NOT NULL,
     type TEXT NOT NULL,

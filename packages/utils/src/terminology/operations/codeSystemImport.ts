@@ -1,6 +1,7 @@
 import { FhirRequest, FhirResponse } from "@medplum/fhir-router";
 import { OperationDefinition, Coding, CodeSystem } from "@medplum/fhirtypes";
 import { OperationOutcomeError, allOk, badRequest, normalizeOperationOutcome } from "@medplum/core";
+import { v4 as uuidv4 } from "uuid";
 import { getSqliteClient } from "../sqlite";
 import { buildOutputParameters, parseInputParameters } from "./utils/parameters";
 import { findCodeSystemResource, parentProperty } from "./utils/terminology";
@@ -113,10 +114,11 @@ async function processProperties(
     }
 
     const lookupCodes = isRelationship ? [imported.code, imported.value] : [imported.code];
-    const codingIds = await db.select(
-      "SELECT id, code FROM Coding WHERE system = ? AND code IN (?)",
-      [codeSystem.id, lookupCodes]
-    );
+
+    const placeholders = lookupCodes.map(() => "?").join(",");
+    const query = `SELECT id, code FROM Coding WHERE system = ? AND code IN (${placeholders})`;
+    const params = [codeSystem.id, ...lookupCodes];
+    const codingIds = await db.select(query, params);
 
     const sourceCodingId = codingIds.find(r => r.code === imported.code)?.id;
     if (!sourceCodingId) {
@@ -163,20 +165,20 @@ async function resolveProperty(codeSystem: CodeSystem, code: string): Promise<[n
   const db = getSqliteClient();
   const selectQuery = 'SELECT id FROM "CodeSystem_Property" WHERE "system" = ? AND "code" = ?';
   const knownProp = await db.selectOne(selectQuery, [codeSystem.id, code]);
-  console.log("knownProp", knownProp);
   if (knownProp) {
     return [knownProp.id, isRelationship];
   }
 
+  const uuid = uuidv4();
   const insertQuery =
-    'INSERT INTO "CodeSystem_Property" ("system", "code", "type", "uri", "description") VALUES (?, ?, ?, ?, ?) RETURNING "id"';
+    'INSERT INTO "CodeSystem_Property" ("id", "system", "code", "type", "uri", "description") VALUES (?, ?, ?, ?, ?, ?) RETURNING "id"';
   const newProp = await db.runAndReturn(insertQuery, [
+    uuid,
     codeSystem.id,
     code,
     prop.type,
     prop.uri,
     prop.description,
   ]);
-  console.log("newProp", newProp);
   return [newProp.id, isRelationship];
 }
