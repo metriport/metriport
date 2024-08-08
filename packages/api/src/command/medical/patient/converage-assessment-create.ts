@@ -1,3 +1,5 @@
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { Patient } from "@metriport/core/domain/patient";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
@@ -7,6 +9,10 @@ import { createPatient, PatientCreateCmd } from "./create-patient";
 import { matchPatient } from "./get-patient";
 import { updatePatient } from "./update-patient";
 import { queryDocumentsAcrossHIEs } from "../document/document-query";
+
+dayjs.extend(duration);
+
+const pdJitter = dayjs.duration(30, "seconds");
 
 export async function createCoverageAssessments({
   cxId,
@@ -47,7 +53,10 @@ export async function createCoverageAssessments({
       return { patientCreateCmd, patients, errors: pdWrapperErrors, log };
     }),
     createOrUpdatePatientWrapper,
-    { numberOfParallelExecutions: 10 }
+    {
+      numberOfParallelExecutions: 10,
+      minJitterMillis: pdJitter.asMilliseconds(),
+    }
   );
 
   if (pdWrapperErrors.length > 0) {
