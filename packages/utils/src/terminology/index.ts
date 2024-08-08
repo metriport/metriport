@@ -3,6 +3,7 @@ dotenv.config();
 
 import axios from "axios";
 
+// TODO MAKE THIS USE CLIENT
 export async function lookupCode(system: string, code: string) {
   const response = await axios.post(
     "http://127.0.0.1:3000/fhir/R4/CodeSystem/lookup",
@@ -84,7 +85,7 @@ async function main() {
     console.log("Import Result:", JSON.stringify(importResult, null, 2));
 
     // Lookup example
-    const lookupResult = await lookupCode("http://snomed.info/sct", "184598004");
+    const lookupResult = await lookupCode("http://hl7.org/fhir/sid/icd-10-cm", "W61.42");
     console.log("Lookup Result:", JSON.stringify(lookupResult, null, 2));
   } catch (error) {
     console.error("Error:", error);

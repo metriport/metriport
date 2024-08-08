@@ -3,7 +3,7 @@ import { mkdirSync } from "fs";
 
 import { SqliteClient } from "./sqlClient";
 import * as migrations from "./migrations/index";
-import { seedCodeSystems } from "./seed/seedCodeSystem";
+import { seedCodeSystems } from "./seed";
 
 let dbClient: SqliteClient | undefined;
 
