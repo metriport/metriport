@@ -47,7 +47,7 @@ export async function createCoverageAssessments({
       return { patientCreateCmd, patients, errors: pdWrapperErrors, log };
     }),
     createOrUpdatePatientWrapper,
-    { numberOfParallelExecutions: 15 }
+    { numberOfParallelExecutions: 10 }
   );
 
   if (pdWrapperErrors.length > 0) {
@@ -97,7 +97,7 @@ export async function createCoverageAssessments({
       return { cxId, patient, facilityId, errors: dqWrapperErrors, log };
     }),
     queryDocumentsAcrossHIEsWrapper,
-    { numberOfParallelExecutions: 15 }
+    { numberOfParallelExecutions: 10 }
   );
 
   if (dqWrapperErrors.length > 0) {
