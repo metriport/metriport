@@ -1,6 +1,10 @@
 import { getSqliteClient } from "../../sqlite";
 import { CodeSystem } from "@medplum/fhirtypes";
 
+export const parentProperty = "http://hl7.org/fhir/concept-properties#parent";
+export const childProperty = "http://hl7.org/fhir/concept-properties#child";
+export const abstractProperty = "http://hl7.org/fhir/concept-properties#notSelectable";
+
 export async function findCodeSystemResource(system: string): Promise<CodeSystem> {
   const query = 'SELECT * FROM "CodeSystem" WHERE "system" = ?';
   const params = [system];

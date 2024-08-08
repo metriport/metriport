@@ -27,6 +27,18 @@ export class SqliteClient {
     });
   }
 
+  async runAndReturn(query: string, params: any[] = []): Promise<any> {
+    return new Promise<any>((resolve, reject) => {
+      this.db.get(query, params, (err, row) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(row);
+        }
+      });
+    });
+  }
+
   async select(query: string, params: any[] = []): Promise<any[]> {
     return new Promise<any[]>((resolve, reject) => {
       this.db.all(query, params, (err, rows) => {

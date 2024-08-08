@@ -1,9 +1,9 @@
 import { FhirRequest, FhirResponse } from "@medplum/fhir-router";
 import { OperationDefinition, Coding, CodeSystem } from "@medplum/fhirtypes";
-import { normalizeOperationOutcome, allOk } from "@medplum/core";
+import { OperationOutcomeError, allOk, badRequest, normalizeOperationOutcome } from "@medplum/core";
 import { getSqliteClient } from "../sqlite";
 import { buildOutputParameters, parseInputParameters } from "./utils/parameters";
-import { findCodeSystemResource } from "./utils/terminology";
+import { findCodeSystemResource, parentProperty } from "./utils/terminology";
 
 const operation: OperationDefinition = {
   resourceType: "OperationDefinition",
@@ -53,7 +53,7 @@ export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirRes
       return [normalizeOperationOutcome(new Error("System is Required"))];
     }
     const codeSystem = await findCodeSystemResource(params.system);
-    await importCodeSystemSqlite(codeSystem, params.concept);
+    await importCodeSystemSqlite(codeSystem, params.concept, params.property);
     return [allOk, buildOutputParameters(operation, codeSystem)];
   } catch (err) {
     return [normalizeOperationOutcome(err)];
@@ -62,8 +62,8 @@ export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirRes
 
 export async function importCodeSystemSqlite(
   codeSystem: CodeSystem,
-  concepts?: Coding[]
-  // properties?: ImportedProperty[]
+  concepts?: Coding[],
+  properties?: ImportedProperty[]
 ): Promise<void> {
   const db = getSqliteClient();
   if (concepts?.length) {
@@ -81,9 +81,9 @@ export async function importCodeSystemSqlite(
     await db.run(query, params);
   }
 
-  // if (properties?.length) {
-  //   await processProperties(properties, codeSystem, db);
-  // }
+  if (properties?.length) {
+    await processProperties(properties, codeSystem);
+  }
 }
 
 function uniqueOn<T>(arr: T[], keyFn: (el: T) => string): T[] {
@@ -93,4 +93,90 @@ function uniqueOn<T>(arr: T[], keyFn: (el: T) => string): T[] {
     seen[key] = el;
   }
   return Object.values(seen);
+}
+
+async function processProperties(
+  importedProperties: ImportedProperty[],
+  codeSystem: CodeSystem
+): Promise<void> {
+  const cache: Record<string, { id: number; isRelationship: boolean }> = Object.create(null);
+  const rows = [];
+  const db = getSqliteClient();
+
+  for (const imported of importedProperties) {
+    const propertyCode = imported.property;
+    const cacheKey = codeSystem.url + "|" + propertyCode;
+    let { id: propId, isRelationship } = cache[cacheKey] ?? {};
+    if (!propId) {
+      [propId, isRelationship] = await resolveProperty(codeSystem, propertyCode);
+      cache[cacheKey] = { id: propId, isRelationship };
+    }
+
+    const lookupCodes = isRelationship ? [imported.code, imported.value] : [imported.code];
+    const codingIds = await db.select(
+      "SELECT id, code FROM Coding WHERE system = ? AND code IN (?)",
+      [codeSystem.id, lookupCodes]
+    );
+
+    const sourceCodingId = codingIds.find(r => r.code === imported.code)?.id;
+    if (!sourceCodingId) {
+      throw new OperationOutcomeError(
+        badRequest(`Unknown code: ${codeSystem.url}|${imported.code}`)
+      );
+    }
+
+    const targetCodingId = codingIds.find(r => r.code === imported.value)?.id;
+    //eslint-disable-next-line
+    const property: Record<string, any> = {
+      coding: sourceCodingId,
+      property: propId,
+      value: imported.value,
+      target: isRelationship && targetCodingId ? targetCodingId : null,
+    };
+
+    rows.push(property);
+  }
+
+  const insertQuery = `
+    INSERT INTO Coding_Property (coding, property, value, target)
+    VALUES ${rows.map(() => "(?, ?, ?, ?)").join(", ")}
+    ON CONFLICT(coding, property) DO UPDATE SET value=excluded.value, target=excluded.target
+  `;
+  const params = rows.flatMap(row => [row.coding, row.property, row.value, row.target]);
+  await db.run(insertQuery, params);
+}
+
+async function resolveProperty(codeSystem: CodeSystem, code: string): Promise<[number, boolean]> {
+  let prop = codeSystem.property?.find(p => p.code === code);
+  if (!prop) {
+    if (
+      code === codeSystem.hierarchyMeaning ||
+      (code === "parent" && !codeSystem.hierarchyMeaning)
+    ) {
+      prop = { code, uri: parentProperty, type: "code" };
+    } else {
+      throw new OperationOutcomeError(badRequest(`Unknown property: ${code}`));
+    }
+  }
+  const isRelationship = prop.type === "code";
+
+  const db = getSqliteClient();
+  const selectQuery = 'SELECT id FROM "CodeSystem_Property" WHERE "system" = ? AND "code" = ?';
+  const knownProp = await db.selectOne(selectQuery, [codeSystem.id, code]);
+  console.log("knownProp", knownProp);
+  if (knownProp) {
+    return [knownProp.id, isRelationship];
+  }
+
+  const insertQuery =
+    'INSERT INTO "CodeSystem_Property" ("system", "code", "type", "uri", "description") VALUES (?, ?, ?, ?, ?) RETURNING "id"';
+  const newProp = await db.runAndReturn(insertQuery, [
+    codeSystem.id,
+    code,
+    prop.type,
+    prop.uri,
+    prop.description,
+  ]);
+  console.log("newProp", newProp);
+  return [newProp.id, isRelationship];
 }

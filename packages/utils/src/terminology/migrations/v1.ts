@@ -1,8 +1,6 @@
 export const sql = `
-    CREATE TABLE IF NOT EXISTS Coding (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      code TEXT NOT NULL,
-      system UUID NOT NULL,
-      display TEXT,
-      UNIQUE(system, code)
+    CREATE TABLE IF NOT EXISTS CodeSystem (
+      id UUID NOT NULL PRIMARY KEY,
+      content TEXT NOT NULL,
+      system TEXT NOT NULL
     )`;
