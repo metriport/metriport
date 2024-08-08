@@ -40,7 +40,6 @@ jobs:
               - "packages/commonwell-sdk/**"
               - "packages/connect-widget/**"
               - "packages/core/**"
-              - "packages/ihe-gateway/**"
               - "packages/ihe-gateway-sdk/**"
               - "packages/infra/**"
               - "packages/lambdas/**"
