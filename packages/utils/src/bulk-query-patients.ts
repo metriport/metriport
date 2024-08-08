@@ -13,11 +13,11 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
 import { chunk } from "lodash";
-import path from "path";
 import { getPatientIds } from "./patient/get-ids";
+import { initFile } from "./shared/file";
 import { buildGetDirPathInside, initRunsFolder } from "./shared/folder";
 import { getCxData } from "./shared/get-cx-data";
-import { logNotDryRun } from "./shared/log";
+import { logErrorToFile, logNotDryRun } from "./shared/log";
 
 dayjs.extend(duration);
 
@@ -61,30 +61,22 @@ const detailedConfig: DetailedConfig = {
 };
 const confirmationTime = dayjs.duration(10, "seconds");
 
-// csv stuff
+// output stuff
 const csvHeader =
   "patientId,firstName,lastName,state,queryAttemptCount,docCount,fhirResourceCount,fhirResourceDetails,status\n";
-
-const csvName = buildGetDirPathInside(`bulk-query`);
-
+const getOutputFileName = buildGetDirPathInside(`bulk-query`);
+const patientsWithErrors: string[] = [];
 const triggerAndQueryDocRefs = new TriggerAndQueryDocRefsRemote(apiUrl);
-
-function initCsv(fileName: string) {
-  const dirName = path.dirname(fileName);
-  if (!fs.existsSync(dirName)) {
-    fs.mkdirSync(dirName, { recursive: true });
-  }
-  fs.writeFileSync(fileName, csvHeader);
-}
 
 async function displayWarningAndConfirmation(
   patientCount: number | undefined,
   isAllPatients: boolean,
+  orgName: string,
   dryRun: boolean,
   log: typeof console.log
 ) {
-  const msgForAllPatients = `You are about to trigger a document query for ALL patients of the CX (${patientCount}). This is very expensive!`;
-  const msgForFewPatients = `You are about to trigger a document query for ${patientCount} patients of the CX. This can be expensive!`;
+  const msgForAllPatients = `You are about to trigger a document query for ALL patients of the org/cx ${orgName} (${patientCount}). This is very expensive!`;
+  const msgForFewPatients = `You are about to trigger a document query for ${patientCount} patients of the org/cx ${orgName}. This can be expensive!`;
   const msg = isAllPatients ? msgForAllPatients : msgForFewPatients;
   if (!dryRun) logNotDryRun(log);
   log(msg);
@@ -94,7 +86,8 @@ async function displayWarningAndConfirmation(
 
 async function queryDocsForPatient(
   patientId: string,
-  fileName: string,
+  outputFileName: string,
+  errorFileName: string,
   dryRun: boolean,
   log: typeof console.log
 ) {
@@ -144,7 +137,7 @@ async function queryDocsForPatient(
     // write line to results csv
     const state = Array.isArray(patient.address) ? patient.address[0].state : patient.address.state;
     fs.appendFileSync(
-      fileName,
+      outputFileName,
       `${patient.id},${patient.firstName},${
         patient.lastName
       },${state},${docQueryAttempts},${docCount},${totalFhirResourceCount},${JSON.stringify(
@@ -154,7 +147,10 @@ async function queryDocsForPatient(
     log(`>>> Done doc query for patient ${patient.id} with status ${status}...`);
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    log(`ERROR processing patient ${patientId}: `, error.message);
+    const msg = `ERROR processing patient ${patientId}: `;
+    log(msg, error.message);
+    patientsWithErrors.push(patientId);
+    logErrorToFile(errorFileName, msg, error);
   }
 }
 
@@ -185,10 +181,20 @@ async function main() {
     axios,
   });
 
-  await displayWarningAndConfirmation(patientIdsToQuery.length, isAllPatients, dryRun, log);
+  await displayWarningAndConfirmation(
+    patientIdsToQuery.length,
+    isAllPatients,
+    orgName,
+    dryRun,
+    log
+  );
 
-  const fileName = csvName(orgName) + ".csv";
-  if (!dryRun) initCsv(fileName);
+  const outputFileName = getOutputFileName(orgName) + ".csv";
+  const errorFileName = getOutputFileName(orgName) + ".error";
+  if (!dryRun) {
+    initFile(outputFileName, csvHeader);
+    initFile(errorFileName);
+  }
 
   log(`>>> Running it...`);
 
@@ -198,7 +204,7 @@ async function main() {
     log(`>>> Querying docs for chunk of ${chunk.length} patient from ${orgName}...`);
     const docQueries: Promise<void>[] = [];
     for (const patientId of chunk) {
-      docQueries.push(queryDocsForPatient(patientId, fileName, dryRun, log));
+      docQueries.push(queryDocsForPatient(patientId, outputFileName, errorFileName, dryRun, log));
       count++;
     }
     await Promise.allSettled(docQueries);
@@ -211,6 +217,14 @@ async function main() {
     }
   }
 
+  if (patientsWithErrors.length > 0) {
+    log(
+      `>>> Patients with errors (${patientsWithErrors.length}): ${patientsWithErrors.join(", ")}`
+    );
+    log(`>>> See file ${errorFileName} for more details.`);
+  } else {
+    log(`>>> No patient with errors!`);
+  }
   log(`>>> Done querying docs for all patients in ${Date.now() - startedAt} ms`);
   process.exit(0);
 }

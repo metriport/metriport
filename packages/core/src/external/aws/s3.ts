@@ -25,7 +25,7 @@ dayjs.extend(duration);
 const pipeline = util.promisify(stream.pipeline);
 const DEFAULT_SIGNED_URL_DURATION = dayjs.duration({ minutes: 3 }).asSeconds();
 const defaultS3RetriesConfig = {
-  maxAttempts: 3,
+  maxAttempts: 5,
   initialDelay: 500,
 };
 

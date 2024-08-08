@@ -287,11 +287,16 @@ export class MetriportMedicalApi {
    *
    * @param data The data to be used to create a new patient.
    * @param facilityId The facility providing the NPI to support this operation.
+   * @param additionalQueryParams Optional, additional query parameters to be sent with the request.
    * @return The newly created patient.
    */
-  async createPatient(data: PatientCreate, facilityId: string): Promise<PatientDTO> {
+  async createPatient(
+    data: PatientCreate,
+    facilityId: string,
+    additionalQueryParams: Record<string, string | number | boolean> = {}
+  ): Promise<PatientDTO> {
     const resp = await this.api.post(`${PATIENT_URL}`, data, {
-      params: { facilityId },
+      params: { facilityId, ...additionalQueryParams },
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return resp.data as PatientDTO;
@@ -331,16 +336,21 @@ export class MetriportMedicalApi {
    *
    * @param patient The patient data to be updated.
    * @param facilityId Optional. The facility providing the NPI to support this operation. If not provided and the patient has only one facility, that one will be used. If not provided and the patient has multiple facilities, an error will be thrown.
+   * @param additionalQueryParams Optional, additional query parameters to be sent with the request.
    * @return The updated patient.
    */
-  async updatePatient(patient: PatientUpdate, facilityId?: string): Promise<PatientDTO> {
+  async updatePatient(
+    patient: PatientUpdate,
+    facilityId?: string,
+    additionalQueryParams: Record<string, string | number | boolean> = {}
+  ): Promise<PatientDTO> {
     type FieldsToOmit = "id";
     const payload: Omit<PatientUpdate, FieldsToOmit> & Record<FieldsToOmit, undefined> = {
       ...patient,
       id: undefined,
     };
     const resp = await this.api.put(`${PATIENT_URL}/${patient.id}`, payload, {
-      params: { facilityId },
+      params: { facilityId, ...additionalQueryParams },
       headers: { ...getETagHeader(patient) },
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
