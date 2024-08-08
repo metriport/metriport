@@ -8,7 +8,7 @@ import { initSqliteFhirServer } from "./sqlite";
 async function main() {
   const app = express();
 
-  app.use(express.json());
+  app.use(express.json({ limit: "50mb" }));
   await initSqliteFhirServer();
 
   app.use("/fhir/R4/", fhirRouter);

@@ -1,7 +1,15 @@
 import { CodeSystem } from "@medplum/fhirtypes";
 import { v4 as uuidv4 } from "uuid";
-import { cpt, cvx, icd10cm, icd10pcs, loinc, rxnorm, snomed } from "./codeSystem";
-import { SqliteClient } from "./sqlClient";
+import {
+  cpt,
+  cvx,
+  icd10cm,
+  icd10pcs,
+  loinc,
+  rxnorm,
+  snomed,
+} from "../operations/definitions/codeSystem";
+import { SqliteClient } from "../sqlClient";
 
 type UmlsSource = { system: string; resource: CodeSystem };
 const umlsSources: Record<string, UmlsSource> = {
