@@ -34,7 +34,7 @@ router.put(
 /** ---------------------------------------------------------------------------
  * GET /internal/feedback/entry/:id
  *
- * Returns data about a single feedback entry and it's original content.
+ * Returns data about a single feedback entry and its original content.
  */
 router.get(
   "/entry/:id",

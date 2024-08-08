@@ -1,5 +1,4 @@
-import { CreateFeedback } from "@metriport/shared";
-import { executeWithNetworkRetries } from "@metriport/shared";
+import { CreateFeedback, executeWithNetworkRetries } from "@metriport/shared";
 import axios, { AxiosResponse } from "axios";
 import { Log } from "./log";
 
@@ -26,7 +25,7 @@ export function apiClient(apiURL: string) {
     return `${apiURL}/feedback/${id}`;
   }
 
-  async function notifyApi(params: NotificationParams, log: Log) {
+  async function notifyApi(params: NotificationParams, log: Log): Promise<void> {
     log(`Notifying API on ${docProgressURL} w/ ${JSON.stringify(params)}`);
     await executeWithNetworkRetries(() => ossApi.post(docProgressURL, null, { params }), {
       retryOnTimeout: true,

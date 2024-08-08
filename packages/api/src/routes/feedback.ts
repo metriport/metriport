@@ -21,8 +21,7 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const id = getFromParamsOrFail("id", req);
     await getFeedbackOrFail({ id });
-    // TODO add status to the feedback and return it here
-    return res.status(status.OK).json({ id, status: "active" });
+    return res.status(status.OK).json({ id });
   })
 );
 

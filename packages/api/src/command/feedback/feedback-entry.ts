@@ -38,14 +38,12 @@ export async function createFeedbackEntry({
 export async function getFeedbackEntry({
   id,
 }: GetFeedback): Promise<FeedbackEntryModel | undefined> {
-  const patient = await FeedbackEntryModel.findOne({
-    where: { id },
-  });
-  return patient ?? undefined;
+  const entry = await FeedbackEntryModel.findOne({ where: { id } });
+  return entry ?? undefined;
 }
 
 export async function getFeedbackEntryOrFail({ id }: GetFeedback): Promise<FeedbackEntryModel> {
   const entry = await getFeedbackEntry({ id });
   if (!entry) throw new NotFoundError("Feedback entry not found");
-  return entry ?? undefined;
+  return entry;
 }

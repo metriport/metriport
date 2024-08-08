@@ -4,18 +4,20 @@ import stringify from "json-stringify-safe";
 import {
   sendAlert as sendAlertToSlack,
   sendNotification as sendNotificationToSlack,
-  SlackMessage as SlackMessage,
+  SlackMessage,
 } from "../external/slack/index";
 import { Capture } from "./capture";
 import { MetriportError } from "./error/metriport-error";
 
 export type NotificationMessage = SlackMessage;
 
-export const sendNotification = async (notif: NotificationMessage | string): Promise<void> =>
-  sendNotificationToSlack(notif);
+export async function sendNotification(notif: NotificationMessage | string): Promise<void> {
+  return sendNotificationToSlack(notif);
+}
 
-export const sendAlert = async (notif: NotificationMessage | string): Promise<void> =>
-  sendAlertToSlack(notif);
+export async function sendAlert(notif: NotificationMessage | string): Promise<void> {
+  return sendAlertToSlack(notif);
+}
 
 export type UserData = Pick<Sentry.User, "id" | "email">;
 
