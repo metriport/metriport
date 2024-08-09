@@ -1,5 +1,5 @@
+import { USState } from "@metriport/shared";
 import { PatientMPI } from "../shared";
-import { USState } from "../../domain/geographic-locations";
 
 export const testPatientMPI: {
   sampleSearch: PatientMPI[];

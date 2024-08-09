@@ -18,6 +18,7 @@ export type DocumentQueryProgress = Partial<
   Record<ProgressType, Progress> & {
     requestId: string;
     startedAt: Date;
+    triggerConsolidated: boolean;
   }
 >;
 

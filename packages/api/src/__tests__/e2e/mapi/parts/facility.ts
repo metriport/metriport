@@ -1,5 +1,6 @@
 import { faker } from "@faker-js/faker";
-import { Facility, FacilityCreate, USState } from "@metriport/api-sdk";
+import { USState } from "@metriport/shared";
+import { Facility, FacilityCreate } from "@metriport/api-sdk";
 
 export const createFacility: FacilityCreate = {
   name: faker.word.noun(),

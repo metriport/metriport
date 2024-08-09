@@ -1,5 +1,5 @@
 import { uniqBy } from "lodash";
-import { USState } from "./geographic-locations";
+import { USState } from "@metriport/shared";
 
 export type Coordinates = {
   lat: number;

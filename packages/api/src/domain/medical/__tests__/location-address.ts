@@ -1,5 +1,5 @@
 import { fakerEN_US as faker } from "@faker-js/faker";
-import { USState } from "@metriport/core/domain/geographic-locations";
+import { USState } from "@metriport/shared";
 import { AddressStrict, AddressWithCoordinates } from "@metriport/core/domain/location-address";
 
 export function makeAddressStrict(params: Partial<AddressStrict> = {}): AddressStrict {
@@ -9,7 +9,7 @@ export function makeAddressStrict(params: Partial<AddressStrict> = {}): AddressS
     zip: params.zip ?? faker.location.zipCode(),
     city: params.city ?? faker.location.city(),
     state: params.state ?? Object.values(USState)[randomIndex],
-    country: params.country ?? "US",
+    country: params.country ?? "USA",
   };
 }
 

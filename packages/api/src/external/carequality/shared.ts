@@ -142,7 +142,7 @@ export function buildCqOrgNameForFacility({
 }: {
   vendorName: string;
   orgName: string;
-  oboOid?: string;
+  oboOid: string | undefined;
 }): string {
   if (oboOid) {
     return `${vendorName} - ${orgName} #OBO# ${oboOid}`;

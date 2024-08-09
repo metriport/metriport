@@ -1,5 +1,5 @@
-import { PatientDTO, USState } from "@metriport/api-sdk";
-import { executeWithNetworkRetries } from "@metriport/shared";
+import { PatientDTO } from "@metriport/api-sdk";
+import { executeWithNetworkRetries, USState } from "@metriport/shared";
 import axios from "axios";
 import { Patient } from "../domain/patient";
 import { errorToString } from "../util/error/shared";

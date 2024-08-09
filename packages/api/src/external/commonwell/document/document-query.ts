@@ -26,6 +26,7 @@ import {
   getUrl,
   S3Info,
 } from "../../../command/medical/document/document-query-storage-info";
+import { getConsolidated } from "../../../command/medical/patient/consolidated-get";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { Util } from "../../../shared/util";
@@ -98,6 +99,7 @@ export async function queryAndProcessDocuments({
   ignoreFhirConversionAndUpsert,
   requestId,
   getOrgIdExcludeList,
+  triggerConsolidated = false,
 }: {
   patient: Patient;
   facilityId?: string | undefined;
@@ -107,6 +109,7 @@ export async function queryAndProcessDocuments({
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
   getOrgIdExcludeList: () => Promise<string[]>;
+  triggerConsolidated?: boolean;
 }): Promise<void> {
   const { id: patientId, cxId } = patientParam;
   const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
@@ -140,6 +143,7 @@ export async function queryAndProcessDocuments({
       convertProgress: { status: "processing" },
       requestId,
       source: MedicalDataSource.COMMONWELL,
+      triggerConsolidated,
     });
 
     const patientCWData = getCWData(patientParam.data.externalData);
@@ -743,7 +747,7 @@ async function downloadDocsAndUpsertFHIR({
     await sleepBetweenChunks();
   }
 
-  await setDocQueryProgress({
+  const finalPatient = await setDocQueryProgress({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: { status: "completed" },
     ...(convertibleDocCount <= 0
@@ -759,6 +763,16 @@ async function downloadDocsAndUpsertFHIR({
     requestId,
     source: MedicalDataSource.COMMONWELL,
   });
+
+  if (
+    finalPatient.data.documentQueryProgress?.convert?.status === "completed" &&
+    finalPatient.data.documentQueryProgress?.triggerConsolidated
+  ) {
+    log(`Kicking off getConsolidated for patient ${finalPatient.id} in CW`);
+    getConsolidated({ patient: finalPatient, conversionType: "pdf" }).catch(
+      processAsyncError("CW getConsolidated")
+    );
+  }
 
   return docsNewLocation;
 }

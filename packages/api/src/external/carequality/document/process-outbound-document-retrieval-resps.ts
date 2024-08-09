@@ -26,8 +26,10 @@ import {
 } from "./shared";
 
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { getConsolidated } from "../../../command/medical/patient/consolidated-get";
 import { getCQData } from "../patient";
 import { getOutboundDocRetrievalSuccessFailureCount } from "../../hie/carequality-analytics";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 
 export async function processOutboundDocumentRetrievalResps({
   requestId,
@@ -57,7 +59,6 @@ export async function processOutboundDocumentRetrievalResps({
         hie: MedicalDataSource.CAREQUALITY,
         successCount,
         failureCount,
-        documentCount: successDocsRetrievedCount,
         duration,
       },
     });
@@ -169,7 +170,7 @@ export async function processOutboundDocumentRetrievalResps({
       });
     }
 
-    await tallyDocQueryProgress({
+    const finalPatient = await tallyDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
       progress: {
         successful: successDocsRetrievedCount,
@@ -179,6 +180,16 @@ export async function processOutboundDocumentRetrievalResps({
       requestId,
       source: MedicalDataSource.CAREQUALITY,
     });
+
+    if (
+      finalPatient.data.documentQueryProgress?.convert?.status === "completed" &&
+      finalPatient.data.documentQueryProgress?.triggerConsolidated
+    ) {
+      log(`Kicking off getConsolidated for patient ${finalPatient.id} in CQ`);
+      getConsolidated({ patient: finalPatient, conversionType: "pdf" }).catch(
+        processAsyncError("CQ getConsolidated")
+      );
+    }
   } catch (error) {
     const msg = `Failed to process documents in Carequality.`;
     log(`${msg}. Error: ${errorToString(error)}`);

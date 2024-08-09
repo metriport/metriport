@@ -24,7 +24,7 @@ export function buildCwOrgNameForFacility({
 }: {
   vendorName: string;
   orgName: string;
-  oboOid?: string | null;
+  oboOid: string | undefined;
 }): string {
   if (oboOid) {
     return `${vendorName} - ${orgName} -OBO- ${oboOid}`;

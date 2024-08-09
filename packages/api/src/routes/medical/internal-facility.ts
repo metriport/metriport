@@ -13,7 +13,7 @@ import { internalDtoFromModel } from "./dtos/facilityDTO";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler } from "../util";
 import { createOrUpdateFacilityInCq } from "../../external/carequality/command/cq-directory/create-or-update-cq-facility";
-import { createOrUpdateInCw } from "../../external/commonwell/command/create-or-update-cw-facility";
+import { createOrUpdateFacilityInCw } from "../../external/commonwell/command/create-or-update-cw-facility";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 
 const router = Router();
@@ -83,7 +83,7 @@ router.put(
     }
     // COMMONWELL
     if (syncInHie && facility.cwApproved) {
-      createOrUpdateInCw({
+      createOrUpdateFacilityInCw({
         cxId,
         facility,
         cxOrgName: org.data.name,

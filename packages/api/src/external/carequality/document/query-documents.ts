@@ -27,11 +27,13 @@ export async function getDocumentsFromCQ({
   facilityId,
   patient,
   cqManagingOrgName,
+  triggerConsolidated = false,
 }: {
   requestId: string;
   facilityId?: string;
   patient: Patient;
   cqManagingOrgName?: string;
+  triggerConsolidated?: boolean;
 }) {
   const { log } = out(`CQ DQ - requestId ${requestId}, patient ${patient.id}`);
   const { cxId, id: patientId } = patient;
@@ -59,6 +61,7 @@ export async function getDocumentsFromCQ({
         convertProgress: { status: "processing" },
         requestId,
         source: MedicalDataSource.CAREQUALITY,
+        triggerConsolidated,
       }),
     ]);
 

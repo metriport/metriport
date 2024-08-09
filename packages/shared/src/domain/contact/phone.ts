@@ -43,3 +43,9 @@ export function normalizePhoneNumber(
   }
   return normalized;
 }
+
+export function normalizePhoneNumberStrict(telephone: string): string {
+  const normalPhone = normalizePhoneNumber(telephone);
+  if (!isPhoneValid(normalPhone)) throw new Error("Invalid phone.");
+  return normalPhone;
+}

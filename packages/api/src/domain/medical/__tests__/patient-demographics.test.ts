@@ -1,4 +1,4 @@
-import { USState } from "@metriport/core/domain/geographic-locations";
+import { USState } from "@metriport/shared";
 import { Patient, PatientDemoData, splitDob } from "@metriport/core/domain/patient";
 import { LinkDemographics, LinkGender } from "@metriport/core/domain/patient-demographics";
 import {

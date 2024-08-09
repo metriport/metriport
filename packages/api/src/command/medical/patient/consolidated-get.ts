@@ -65,6 +65,11 @@ export type ConsolidatedQueryParams = {
   cxConsolidatedRequestMetadata?: unknown;
 } & GetConsolidatedFilters;
 
+export type ConsolidatedData = {
+  bundle: SearchSetBundle<Resource>;
+  filters: Record<string, string | boolean | undefined>;
+};
+
 export async function startConsolidatedQuery({
   cxId,
   patientId,
@@ -242,10 +247,7 @@ export async function getConsolidated({
   generateAiBrief,
   requestId,
   conversionType,
-}: GetConsolidatedParams): Promise<{
-  bundle: SearchSetBundle<Resource>;
-  filters: Record<string, string | boolean | undefined>;
-}> {
+}: GetConsolidatedParams): Promise<ConsolidatedData> {
   const { log } = Util.out(`getConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
   const filters = {
     resources: resources ? resources.join(", ") : undefined,

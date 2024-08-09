@@ -2,9 +2,9 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { MetriportMedicalApi, USState, PatientCreate } from "@metriport/api-sdk";
+import { MetriportMedicalApi, PatientCreate } from "@metriport/api-sdk";
 import { Sequelize, QueryTypes } from "sequelize";
-import { sleep } from "@metriport/shared";
+import { sleep, USState } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import {
