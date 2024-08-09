@@ -108,7 +108,7 @@ export async function executeAsynchronously<T>(
     // possible jitter before each run so that they don't start at the same time
     const jitter = Math.max(minJitterMillis, Math.random() * maxJitterMillis);
     await sleep(jitter);
-    await sleep(delay);
+    if (delay > 0) await sleep(delay);
 
     await executeSynchronously(
       itemsToProcess,
