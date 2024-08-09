@@ -107,6 +107,10 @@ export class Config {
     return getEnvVar("IHE_PARSED_RESPONSES_BUCKET_NAME");
   }
 
+  static getFHIRtoBundleLambdaName(): string {
+    return getEnvVarOrFail("FHIR_TO_BUNDLE_LAMBDA_NAME");
+  }
+
   static getBedrockRegion(): string | undefined {
     return getEnvVar("BEDROCK_REGION");
   }

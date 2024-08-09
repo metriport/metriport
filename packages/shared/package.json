@@ -19,6 +19,7 @@
   "exports": {
     ".": "./dist/index.js",
     "./common/*": "./dist/common/*.js",
+    "./interface/*": "./dist/interface/*.js",
     "./medical": "./dist/medical/index.js"
   },
   "typesVersions": {
@@ -28,6 +29,9 @@
       ],
       "common/*": [
         "dist/common/*"
+      ],
+      "interface/*": [
+        "dist/interface/*"
       ],
       "medical": [
         "dist/medical/index.d.ts"

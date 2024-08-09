@@ -1,35 +1,29 @@
 import { HumanName, ResourceType } from "@medplum/fhirtypes";
-import {
-  resourcesSearchableByPatient,
-  resourcesSearchableBySubject,
-  generalResources,
-  ResourceTypeForConsolidation,
-} from "@metriport/api-sdk";
+import { medical } from "@metriport/shared";
 import { intersection } from "lodash";
-import {
-  isoDateRangeToFHIRDateQuery,
-  resourceSupportsDateQuery,
-} from "@metriport/core/external/fhir/shared/index";
+import { isoDateRangeToFHIRDateQuery, resourceSupportsDateQuery } from "../shared/index";
 
 export function getPatientFilter({
-  resources = [],
+  resources,
   dateFrom,
   dateTo,
 }: {
-  resources?: ResourceTypeForConsolidation[];
-  dateFrom?: string;
-  dateTo?: string;
+  resources: medical.ResourceTypeForConsolidation[];
+  dateFrom: string | undefined;
+  dateTo: string | undefined;
 }) {
   const resourcesByPatient =
     resources && resources.length
-      ? intersection(resources, resourcesSearchableByPatient)
-      : resourcesSearchableByPatient;
+      ? intersection(resources, medical.resourcesSearchableByPatient)
+      : medical.resourcesSearchableByPatient;
   const resourcesBySubject =
     resources && resources.length
-      ? intersection(resources, resourcesSearchableBySubject)
-      : resourcesSearchableBySubject;
+      ? intersection(resources, medical.resourcesSearchableBySubject)
+      : medical.resourcesSearchableBySubject;
   const generalResourcesNoFilter =
-    resources && resources.length ? intersection(resources, generalResources) : generalResources;
+    resources && resources.length
+      ? intersection(resources, medical.generalResources)
+      : medical.generalResources;
 
   const fhirDateFilter = isoDateRangeToFHIRDateQuery(dateFrom, dateTo);
   const dateFilter = fhirDateFilter ? `&${fhirDateFilter}` : "";
