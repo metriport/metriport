@@ -1,0 +1,38 @@
+## Devices API messages
+
+When using the Devices API, Metriport will send Webhook messages containing [new provider connections](https://docs.metriport.com/devices-api/more-info/webhooks#provider-connected-message) for each user, as well as [user data](https://docs.metriport.com/devices-api/more-info/webhooks#user-health-data-message) to your app from [our supported Providers](https://docs.metriport.com/devices-api/more-info/our-integrations), as soon as the data becomes available.
+
+You can see Webhook details specific to the Devices API on [this page](https://docs.metriport.com/devices-api/more-info/webhooks).
+​
+## Medical API messages
+
+When using the Medical API, Metriport will send Webhook messages containing status updates to your app, as soon as the data becomes available.
+
+You can see Webhook details specific to the Medical API, including which operations trigger Webhook messages, on [this page](https://docs.metriport.com/medical-api/more-info/webhooks)
+​
+## Retries
+
+Sometimes, due to temporary network disruption (or whatever other reason), a Webhook payload may fail to be delivered to your app. In these cases, Metriport will store the failed requests, and you can then manually retry them - using either the dashboard, or the API.
+
+<Callout intent="warn">
+If you do not have the Webhook URL configured, the Metriport will not attempt to deliver Webhook messages for the Medical API - in which case retries are not applicable.
+</Callout>
+
+## Retry Using the Dashboard
+
+On the [Developers page](https://dash.metriport.com/developers) in the dashboard, you’re able to see the count of Webhook requests currently processing, and a count of outstanding ones that failed:
+
+
+![image](https://mintlify.s3-us-west-1.amazonaws.com/metriport/images/dash-webhook-retry.png)
+
+
+To retry failed requests, simply click the `Retry` button, and those requests will be sent to your app again.
+​
+## Retry Using the API
+
+  1. Using the [Get Webhook Status endpoint](https://docs.metriport.com/home/api-reference/settings/get-webhook), check to see if there are any failed requests;
+  2. Then, use the [Retry Webhook requests endpoint](https://docs.metriport.com/home/api-reference/settings/retry-webhook), to kick off the retry.
+
+<Callout intent="warn">
+Currently, the Metriport API doesn’t implement automatic retries - let us know if this is something you need.
+</Callout>

@@ -1,0 +1,47 @@
+We currently support many of the top providers with many more to come. A full
+  list can be seen below.
+
+## Supported Providers
+
+| Providers    | Status | Activity | Biometrics | Body | Nutrition | Sleep | User | REST | Webhooks |
+| ------------ | ------ | -------- | ---------- | ---- | --------- | ----- | ---- | ---- | -------- |
+| Apple Health | Active | Yes      | Yes        | Yes  | Yes       | Yes   | No   | No   | Yes      |
+| Google Fit   | Active | Yes      | Yes        | Yes  | Yes       | Yes   | No   | Yes  | No       |
+| Fitbit       | Active | Yes      | Yes        | Yes  | Yes       | Yes   | Yes  | Yes  | Yes      |
+| Garmin       | Active | Yes      | Yes        | Yes  | No        | Yes   | No   | No   | Yes      |
+| Oura         | Active | Yes      | Yes        | Yes  | No        | Yes   | Yes  | Yes  | No       |
+| Whoop        | Active | Yes      | Yes        | Yes  | No        | Yes   | Yes  | Yes  | No       |
+| Withings     | Active | Yes      | Yes        | Yes  | Yes       | Yes   | No   | Yes  | Yes      |
+| Dexcom       | Active | No       | Yes        | No   | Yes       | No    | No   | Yes  | No       |
+| Cronometer   | Active | No       | No         | No   | Yes       | No    | No   | Yes  | No       |
+| Tenovi       | Active | No       | Yes        | Yes  | No        | No    | No   | Yes  | Yes      |
+
+## Coming Soon
+
+<Callout intent="info">
+  [Let us know](mailto:contact@metriport.com) if you need an integration we currently don't support.
+  We also happily accept community contributions in [our GitHub
+  repo](https://github.com/metriport/metriport)!
+</Callout>
+
+## Notes
+
+### Garmin
+
+Garmin is only supported through [webhooks](/home/api-info/webhooks).
+
+As of now, our Garmin integration only supports new data - there's no option to
+"backfill"/request a users' past data. [Let us know](mailto:contact@metriport.com) about
+your use case if that's something you're looking for.
+
+### Withings
+
+For webhooks, Withings data will be returned as a summary for the entire day and will​ be updated as new data is added. We suggest taking this into account by potentially replacing the current data that you have with the new available summary.
+
+### Connecting to Providers
+
+<Callout intent="warn">
+  Multiple connected users should not access the same provider account - even across enviroments.
+  There are known issues where if you connect one user to an account and then later connect another
+  user to that same provider account, the previous user's tokens will be revoked.
+</Callout>
