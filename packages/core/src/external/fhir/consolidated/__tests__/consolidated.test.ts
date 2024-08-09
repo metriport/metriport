@@ -11,11 +11,9 @@ let fhir_searchResourcePages: jest.SpyInstance;
 let fhir_getReferencesFromResources: jest.SpyInstance;
 let fhir_getReferencesFromFHIR: jest.SpyInstance;
 
-beforeAll(() => {
-  jest.spyOn(Config, "getFHIRServerUrl").mockReturnValue("http://localhost:8888");
-});
 beforeEach(() => {
   jest.restoreAllMocks();
+  Config.getFHIRServerUrl = jest.fn(() => "http://localhost:8888");
   fhir_searchResourcePages = jest.spyOn(HapiFhirClient.prototype, "searchResourcePages");
   fhir_getReferencesFromResources = jest.spyOn(fhirBundle, "getReferencesFromResources");
   fhir_getReferencesFromFHIR = jest.spyOn(fhirReferences, "getReferencesFromFHIR");
@@ -27,6 +25,9 @@ afterAll(() => {
 describe("getConsolidatedFhirBundle", () => {
   const cxId = uuidv4();
   const patientId = uuidv4();
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
 
   it("paginates appropriately", async () => {
     const returnedResource: Observation = {
