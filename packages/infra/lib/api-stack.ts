@@ -516,6 +516,7 @@ export class APIStack extends Stack {
       : undefined;
 
     // Add ENV after the API service is created
+    fhirToMedicalRecordLambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundPatientDiscoveryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentRetrievalLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
@@ -1265,6 +1266,7 @@ export class APIStack extends Stack {
         APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
         APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
         ...(bedrock && {
+          // API_URL set on the api-stack after the OSS API is created
           BEDROCK_REGION: bedrock?.region,
           BEDROCK_VERSION: bedrock?.anthropicVersion,
           AI_BRIEF_MODEL_ID: bedrock?.modelId,
