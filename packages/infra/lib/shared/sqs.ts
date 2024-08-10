@@ -24,6 +24,7 @@ const DEFAULT_VISIBILITY_TIMEOUT_MULTIPLIER = 6;
 
 const DEFAULT_MAX_RECEIVE_COUNT = 5;
 const DEFAULT_MAX_AGE_OF_OLDEST_MESSAGE = Duration.minutes(10);
+const DEFAULT_MAX_AGE_OF_OLDEST_MESSAGE_DLQ = Duration.hours(2);
 
 export type QueueProps = (StandardQueueProps | FifoQueueProps) & {
   dlq?: never;
@@ -186,7 +187,10 @@ export function defaultDLQ(
   scope: Construct,
   name: string,
   fifo?: boolean,
-  { alarmSnsAction, alarmMaxAgeOfOldestMessage = Duration.minutes(10) }: DefaultDLQProps = {}
+  {
+    alarmSnsAction,
+    alarmMaxAgeOfOldestMessage = DEFAULT_MAX_AGE_OF_OLDEST_MESSAGE_DLQ,
+  }: DefaultDLQProps = {}
 ): Queue {
   const dlq = new Queue(scope, name + "DLQ", {
     queueName: fifo ? name + "DLQ.fifo" : name + "DLQ",
