@@ -637,6 +637,8 @@ export class APIStack extends Stack {
       apiKeyRequired: true,
     });
 
+    this.createFeedbackRoutes(api, integration, props.config);
+
     this.setupTestLambda(
       lambdaLayers,
       props.config.environmentType,
@@ -893,6 +895,39 @@ export class APIStack extends Stack {
     new CfnOutput(this, "ClientSecretUserpoolID", {
       description: "Userpool for client secret based apps",
       value: userPoolClientSecret.userPoolId,
+    });
+  }
+  createFeedbackRoutes(api: apig.RestApi, integration: apig.Integration, config: EnvConfig) {
+    if (isSandbox(config)) return;
+
+    const id = "FeedbackApi";
+    api.addUsagePlan(`${id}UsagePlan`, {
+      name: "Feedback API Usage Plan",
+      description: "Usage Plan for the Feedback API",
+      apiStages: [{ api: api, stage: api.deploymentStage }],
+      throttle: {
+        burstLimit: 5,
+        rateLimit: 10,
+      },
+      quota: {
+        limit: 1_000,
+        period: apig.Period.DAY,
+      },
+    });
+    const proxyPath = "feedback";
+    const apiGwResource = api.root.addResource(proxyPath, {
+      defaultCorsPreflightOptions: { allowOrigins: ["*"], allowHeaders: ["*"] },
+    });
+    const apiGwProxy = new apig.ProxyResource(this, `${id}/${proxyPath}/Proxy`, {
+      parent: apiGwResource,
+      anyMethod: false,
+      defaultCorsPreflightOptions: { allowOrigins: ["*"], allowHeaders: ["*"] },
+    });
+    apiGwProxy.addMethod("ANY", integration, {
+      requestParameters: {
+        "method.request.path.proxy": true,
+      },
+      apiKeyRequired: true,
     });
   }
 
