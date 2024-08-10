@@ -369,7 +369,7 @@ async function sendCodings(
 }
 
 async function sendParameters(parameters: Parameters, client: TerminologyClient): Promise<void> {
-  await client.import(parameters).catch(err => {
+  await client.importCode(parameters).catch(err => {
     console.error(
       "Error sending batch for system",
       parameters.parameter?.find(p => p.name === "system")?.valueUri,
