@@ -40,7 +40,7 @@ async function migrate(dbClient: SqliteClient): Promise<void> {
 
 // Function to initialize SQLite
 export async function initSqliteFhirServer(): Promise<void> {
-  const dbDir = join(process.cwd(), "src/terminology/data");
+  const dbDir = join(process.cwd(), "data");
   const dbPath = join(dbDir, "terminology.db");
 
   // Ensure the directory exists

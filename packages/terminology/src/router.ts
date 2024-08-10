@@ -1,6 +1,8 @@
 import { Router, Request, Response } from "express";
 import { codeSystemImportHandler } from "./operations/codeImport";
 import { codeSystemLookupHandler } from "./operations/codeLookup";
+import { conceptMapImportHandler } from "./operations/conceptMapImport";
+import { conceptMapTranslateHandler } from "./operations/conceptMapTranslate";
 import { FhirRequest, HttpMethod } from "@medplum/fhir-router";
 
 const fhirRouter = Router();
@@ -25,6 +27,18 @@ fhirRouter.post("/CodeSystem/import", async (req: Request, res: Response) => {
 fhirRouter.post("/CodeSystem/lookup", async (req: Request, res: Response) => {
   const fhirRequest = createFhirRequest(req);
   const response = await codeSystemLookupHandler(fhirRequest);
+  res.status(200).json(response);
+});
+
+fhirRouter.post("/ConceptMap/import", async (req: Request, res: Response) => {
+  const fhirRequest = createFhirRequest(req);
+  const response = await conceptMapImportHandler(fhirRequest);
+  res.status(200).json(response);
+});
+
+fhirRouter.post("/ConceptMap/translate", async (req: Request, res: Response) => {
+  const fhirRequest = createFhirRequest(req);
+  const response = await conceptMapTranslateHandler(fhirRequest);
   res.status(200).json(response);
 });
 

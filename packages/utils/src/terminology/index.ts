@@ -23,6 +23,64 @@ export async function lookupCode(system: string, code: string) {
   return response.data;
 }
 
+export async function translateCode(system: string, code: string) {
+  const response = await axios.post(
+    "http://127.0.0.1:3000/fhir/R4/ConceptMap/translate",
+    {
+      resourceType: "Parameters",
+      parameter: [
+        { name: "system", valueUri: system },
+        { name: "code", valueCode: code },
+        { name: "targetsystem", valueUri: "http://hl7.org/fhir/sid/icd-10-cm" },
+        { name: "coding", valueCoding: { system, code } },
+      ],
+    },
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+  return response.data;
+}
+
+export async function importConceptMap() {
+  const response = await axios.post(
+    "http://127.0.0.1:3000/fhir/R4/ConceptMap/import",
+    {
+      resourceType: "ConceptMap",
+      status: "active",
+      group: [
+        {
+          source: "http://snomed.info/sct",
+          target: "http://hl7.org/fhir/sid/icd-10-cm",
+          element: [
+            {
+              code: "80018001",
+              target: [
+                {
+                  code: "K29.63",
+                  equivalence: "equivalent",
+                },
+                {
+                  code: "K29.64",
+                  equivalence: "equivalent",
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+  return response.data;
+}
+
 async function importConcepts(system: string) {
   const response = await axios.post(
     "http://127.0.0.1:3000/fhir/R4/CodeSystem/import",
@@ -84,9 +142,15 @@ async function main() {
     const importResult = await importConcepts("http://snomed.info/sct");
     console.log("Import Result:", JSON.stringify(importResult, null, 2));
 
-    // Lookup example
-    const lookupResult = await lookupCode("http://hl7.org/fhir/sid/icd-10-cm", "W61.42");
+    const lookupResult = await lookupCode("http://snomed.info/sct", "702707005");
     console.log("Lookup Result:", JSON.stringify(lookupResult, null, 2));
+
+    // const importResult = await importConceptMap();
+    // console.log("Import Result:", JSON.stringify(importResult, null, 2));
+
+    // Lookup example
+    // const lookupResult = await translateCode("http://snomed.info/sct", "80018001");
+    // console.log("Lookup Result:", JSON.stringify(lookupResult, null, 2));
   } catch (error) {
     console.error("Error:", error);
   }

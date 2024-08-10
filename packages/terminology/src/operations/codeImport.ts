@@ -3,7 +3,7 @@ import { OperationDefinition, Coding, CodeSystem } from "@medplum/fhirtypes";
 import { OperationOutcomeError, allOk, badRequest, normalizeOperationOutcome } from "@medplum/core";
 import { v4 as uuidv4 } from "uuid";
 import { getSqliteClient } from "../sqlite";
-import { buildOutputParameters, parseInputParameters } from "./utils/parameters";
+import { parseInputParameters } from "./utils/parameters";
 import { findCodeSystemResource, parentProperty } from "./utils/codeSystemLookup";
 
 const operation: OperationDefinition = {
@@ -55,7 +55,7 @@ export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirRes
     }
     const codeSystem = await findCodeSystemResource(params.system);
     await importCodeSystemSqlite(codeSystem, params.concept, params.property);
-    return [allOk, buildOutputParameters(operation, codeSystem)];
+    return [allOk];
   } catch (err) {
     return [normalizeOperationOutcome(err)];
   }

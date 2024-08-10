@@ -1,8 +1,9 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 import axios from "axios";
-import { Parameters } from "@medplum/fhirtypes";
+import { Parameters, ConceptMap, OperationOutcome } from "@medplum/fhirtypes";
 import { getEnvVar } from "@metriport/shared";
+import { CodeSystemLookupOutput } from "../operations/codeLookup";
 
 export class TerminologyClient {
   private baseUrl: string;
@@ -11,9 +12,7 @@ export class TerminologyClient {
     this.baseUrl = getEnvVar("TERMINOLOGY_BASE_URL") ?? "http://127.0.0.1:3000/fhir/R4";
   }
 
-  // TODO: ADD RETURN TYPES
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async lookup(parameters: Parameters): Promise<any> {
+  async lookupCode(parameters: Parameters): Promise<CodeSystemLookupOutput | OperationOutcome[]> {
     const response = await axios.post(`${this.baseUrl}/CodeSystem/lookup`, parameters, {
       headers: {
         "Content-Type": "application/json",
@@ -22,10 +21,26 @@ export class TerminologyClient {
     return response.data;
   }
 
-  // TODO: ADD RETURN TYPES
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async import(parameters: Parameters): Promise<any> {
+  async importCode(parameters: Parameters): Promise<OperationOutcome[]> {
     const response = await axios.post(`${this.baseUrl}/CodeSystem/import`, parameters, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    return response.data;
+  }
+
+  async importConceptMap(conceptMap: ConceptMap): Promise<ConceptMap[] | OperationOutcome[]> {
+    const response = await axios.post(`${this.baseUrl}/ConceptMap/import`, conceptMap, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    return response.data;
+  }
+
+  async translateCode(parameters: Parameters): Promise<ConceptMap | OperationOutcome[]> {
+    const response = await axios.post(`${this.baseUrl}/ConceptMap/translate`, parameters, {
       headers: {
         "Content-Type": "application/json",
       },

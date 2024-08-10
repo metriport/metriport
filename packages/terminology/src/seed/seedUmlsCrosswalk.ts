@@ -4,7 +4,7 @@ import { createInterface } from "node:readline";
 import { argv } from "node:process";
 import { Readable, Transform, TransformCallback } from "node:stream";
 import * as unzip from "unzip-stream";
-// import { TerminologyClient } from "../client";
+import { TerminologyClient } from "../client";
 
 const IFA_RULE_REGEX = /^IFA \d+ &#x7C;/;
 
@@ -222,10 +222,14 @@ async function processConceptMap(inStream: Readable): Promise<void> {
     }
   }
 
-  // const client = new TerminologyClient();
-  // for (const conceptMap of Object.values(mappedConcepts)) {
-  //   await sendConceptMap(conceptMap, client);
-  // }
+  const client = new TerminologyClient();
+  for (const conceptMap of Object.values(mappedConcepts)) {
+    try {
+      await client.importConceptMap(conceptMap);
+    } catch (error) {
+      console.error("Error importing concept map:", error);
+    }
+  }
 }
 
 async function main(): Promise<void> {

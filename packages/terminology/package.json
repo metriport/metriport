@@ -8,7 +8,8 @@
     "clean": "rimraf dist && rimraf node_modules",
     "build": "tsc -p tsconfig.build.json",
     "prettier-fix": "npx prettier '**/*.ts' --write",
-    "seed-lookup": "ts-node src/seed/seedUmlsLookup.ts"
+    "seed-lookup": "ts-node src/seed/seedUmlsLookup.ts",
+    "seed-crosswalk": "ts-node src/seed/seedUmlsCrosswalk.ts"
   },
   "repository": {
     "type": "git",
