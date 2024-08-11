@@ -209,6 +209,7 @@ export function createAPIService({
           DB_POOL_SETTINGS: dbPoolSettings,
           TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
           API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
+          API_LB_ADDRESS: props.config.loadBalancerDnsName,
           ...(props.config.apiGatewayUsagePlanId
             ? { API_GW_USAGE_PLAN_ID: props.config.apiGatewayUsagePlanId }
             : {}),
