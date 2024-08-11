@@ -25,7 +25,8 @@ export async function createFeedbackEntry({
     authorName: normalizeString(authorName),
   });
 
-  const detailsUrl = Config.getApiUrl() + "/internal/feedback/entry/" + feedbackEntry.id;
+  const lbAddress = Config.getApiLoadBalancerAddress();
+  const detailsUrl = lbAddress ? lbAddress + "/internal/feedback/entry/" + feedbackEntry.id : "N/A";
   sendNotification({
     message: `Author: ${authorName}\nComment: ${comment.length} characters`,
     subject: `Feedback received about AI Brief - details on ${detailsUrl} (requires VPN)`,
