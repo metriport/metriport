@@ -39,6 +39,7 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const apiURL = getEnvOrFail("API_URL");
+const dashURL = getEnvOrFail("DASH_URL");
 // converter config
 const pdfConvertTimeout = getEnvOrFail("PDF_CONVERT_TIMEOUT_MS");
 const appConfigAppID = getEnvOrFail("APPCONFIG_APPLICATION_ID");
@@ -354,7 +355,7 @@ async function storeMrSummaryAndBriefInS3({
 function prepareBriefToBundle({ aiBrief }: { aiBrief: string | undefined }): Brief | undefined {
   if (!aiBrief) return undefined;
   const feedbackId = uuidv7();
-  const feedbackLink = ossApi.getRetrieveFeedbackUrl(feedbackId);
+  const feedbackLink = `${dashURL}/feedback/${feedbackId}`;
   return {
     id: feedbackId,
     content: aiBrief,

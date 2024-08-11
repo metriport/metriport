@@ -21,9 +21,6 @@ export function apiClient(apiURL: string) {
   function getCreateFeedbackUrl(id: string): string {
     return `${apiURL}/internal/feedback/${id}`;
   }
-  function getRetrieveFeedbackUrl(id: string): string {
-    return `${apiURL}/feedback/${id}`;
-  }
 
   async function notifyApi(params: NotificationParams, log: Log): Promise<void> {
     log(`Notifying API on ${docProgressURL} w/ ${JSON.stringify(params)}`);
@@ -45,6 +42,5 @@ export function apiClient(apiURL: string) {
       notifyApi,
       createFeedback,
     },
-    getRetrieveFeedbackUrl,
   };
 }
