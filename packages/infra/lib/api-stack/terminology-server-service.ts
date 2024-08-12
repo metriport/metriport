@@ -49,12 +49,14 @@ export function createTermServerService(
   const { cpu, memoryLimitMiB, taskCountMin, taskCountMax, maxExecutionTimeout } = settings();
 
   const bucketName = "umls-terminology-db";
-  const terminologyBucket = new s3.Bucket(stack, "TerminologyBucket", {
-    bucketName,
-    publicReadAccess: false,
-    encryption: s3.BucketEncryption.S3_MANAGED,
-    versioned: true,
-  });
+  // const terminologyBucket = new s3.Bucket(stack, "TerminologyBucket", {
+  //   bucketName,
+  //   publicReadAccess: false,
+  //   encryption: s3.BucketEncryption.S3_MANAGED,
+  //   versioned: true,
+  // });
+
+  const terminologyBucket = s3.Bucket.fromBucketName(stack, "TerminologyBucket", bucketName);
 
   const cluster = new ecs.Cluster(stack, "TermServerCluster", { vpc, containerInsights: true });
 
