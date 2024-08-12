@@ -41,6 +41,7 @@ export const config: EnvConfigNonSandbox = {
       PROPELAUTH_API_KEY: "key-name",
     },
   },
+  dashUrl: "https://url-of-your-dashboard.com",
   fhirToMedicalLambda: {
     nodeRuntimeArn: "arn:aws:lambda:<region>::runtime:<id>",
   },

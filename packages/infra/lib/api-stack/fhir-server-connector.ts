@@ -81,8 +81,7 @@ export function createConnector({
     lambdaLayers: [lambdaLayers.shared],
     envType,
     alarmSnsAction,
-    alarmMaxAgeOfOldestMessage: Duration.minutes(2),
-    alarmMaxAgeOfOldestMessageDlq: Duration.minutes(5),
+    alarmMaxAgeOfOldestMessage: Duration.minutes(4),
     maxMessageCountAlarmThreshold: 2000,
   });
 

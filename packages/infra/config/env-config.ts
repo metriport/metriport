@@ -224,6 +224,7 @@ type EnvConfigBase = {
 
 export type EnvConfigNonSandbox = EnvConfigBase & {
   environmentType: EnvType.staging | EnvType.production;
+  dashUrl: string;
   fhirToMedicalLambda: {
     nodeRuntimeArn: string;
   };
