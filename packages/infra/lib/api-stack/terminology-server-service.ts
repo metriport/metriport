@@ -72,7 +72,7 @@ export function createTermServerService(
       desiredCount: taskCountMin,
       taskImageOptions: {
         image: ecs.ContainerImage.fromDockerImageAsset(dockerImage),
-        containerPort: 8080,
+        containerPort: 3000,
         containerName: "TermServer-Server",
         environment: {
           NODE_ENV: "production", // Determines its being run in the cloud, the logical env is set on ENV_TYPE
