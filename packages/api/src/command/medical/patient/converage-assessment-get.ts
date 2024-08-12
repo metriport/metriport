@@ -1,9 +1,10 @@
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { Patient } from "@metriport/core/domain/patient";
+import { PatientModel } from "../../../models/medical/patient";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { S3Utils } from "@metriport/core/external/aws/s3";
+import { InternalPatientDTO, internalDtoFromModel } from "../../../routes/medical/dtos/patientDTO";
 import { countResources } from "../../../external/fhir/patient/count-resources";
 import { Config } from "../../../shared/config";
 import { out } from "@metriport/core/util/log";
@@ -21,8 +22,7 @@ function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
-export type CoverageAssessment = {
-  patientId: string;
+type CoverageAssessment = {
   downloadStatus: string | undefined;
   docCount: number | undefined;
   convertStatus: string | undefined;
@@ -31,15 +31,14 @@ export type CoverageAssessment = {
   mrSummaryUrl: string | undefined;
 };
 
-export type PatientWithCoverageAssessment = Patient &
-  Partial<Omit<CoverageAssessment, "patientId">>;
+export type PatientWithCoverageAssessment = InternalPatientDTO & Partial<CoverageAssessment>;
 
 export async function getCoverageAssessments({
   cxId,
   patients,
 }: {
   cxId: string;
-  patients: Patient[];
+  patients: PatientModel[];
 }): Promise<PatientWithCoverageAssessment[]> {
   const { log } = out(`getCoverageAssessments - cxId ${cxId}`);
   const patientsWithAssessment: PatientWithCoverageAssessment[] = [];
@@ -53,7 +52,7 @@ export async function getCoverageAssessments({
     log,
   }: {
     cxId: string;
-    patient: Patient;
+    patient: PatientModel;
     patientsWithAssessment: PatientWithCoverageAssessment[];
     errors: string[];
     log: typeof console.log;
@@ -61,14 +60,14 @@ export async function getCoverageAssessments({
     try {
       const coverageAssessment = await getCoverageAssessment({ cxId, patient, log });
       patientsWithAssessment.push({
-        ...patient,
+        ...internalDtoFromModel(patient),
         ...coverageAssessment,
       });
     } catch (error) {
       const msg = `Patient: ${patient.id}. Cause: ${errorToString(error)}`;
       log(msg);
       errors.push(msg);
-      patientsWithAssessment.push(patient);
+      patientsWithAssessment.push(internalDtoFromModel(patient));
     }
   }
 
@@ -101,7 +100,7 @@ async function getCoverageAssessment({
   log,
 }: {
   cxId: string;
-  patient: Patient;
+  patient: PatientModel;
   log: typeof console.log;
 }): Promise<CoverageAssessment> {
   const mrSummaryFileName = createMRSummaryFileName(cxId, patient.id, "json");
@@ -119,7 +118,6 @@ async function getCoverageAssessment({
   const fhirDetails = JSON.stringify(fhirResources.resources).replaceAll(",", " ");
 
   return {
-    patientId: patient.id,
     downloadStatus,
     docCount,
     convertStatus,

@@ -772,18 +772,17 @@ router.post(
 );
 
 /** ---------------------------------------------------------------------------
- * POST /internal/patient/coverage-assessment
+ * POST /internal/patient/bulk/coverage-assessment
  *
  * return the coverage
  * @param req.query.cxId The customer ID.
  * @param req.params.id The patient ID.
  * @param req.query.facilityId The facility ID for running the coverage assessment.
  * @param req.query.dryrun Whether to simply validate or run the assessment (optional, defaults to false).
- * @return A patient.
  *
  */
 router.post(
-  "/coverage-assessment",
+  "/bulk/coverage-assessment",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -823,7 +822,7 @@ router.post(
       };
     });
 
-    if (dryrun) return res.status(status.OK);
+    if (dryrun) return res.sendStatus(status.OK);
 
     createCoverageAssessments({
       cxId,
@@ -835,13 +834,14 @@ router.post(
 );
 
 /** ---------------------------------------------------------------------------
- * GET /internal/paitnet/coverage-assessment
+ * GET /internal/patient/bulk/coverage-assessment
  *
  * Returns the cx patients for a given facility used for internal scripts
  * @param req.query.facilityId - The facility ID.
+ * @return list of patients.
  */
 router.get(
-  "/coverage-assessment",
+  "/bulk/coverage-assessment",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
