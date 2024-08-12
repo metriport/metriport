@@ -16,79 +16,77 @@ function createQueryByParameter(request: InboundPatientDiscoveryReq): object {
   const { id, samlAttributes, patientResource } = request;
 
   const queryByParameter = {
-    queryByParameter: {
-      queryId: {
-        "@_extension": id,
-        "@_root": samlAttributes.homeCommunityId,
-      },
-      statusCode: {
-        "@_code": "new",
-      },
-      responseModalityCode: {
-        "@_code": "R",
-      },
-      responsePriorityCode: {
-        "@_code": "I",
-      },
-      parameterList: {
-        livingSubjectAdministrativeGender: {
-          value: {
-            "@_code": patientResource.gender,
-            "@_codeSystem": "2.16.840.1.113883.5.1",
-          },
-          semanticsText: "LivingSubject.administrativeGender",
+    queryId: {
+      "@_extension": id,
+      "@_root": samlAttributes.homeCommunityId,
+    },
+    statusCode: {
+      "@_code": "new",
+    },
+    responseModalityCode: {
+      "@_code": "R",
+    },
+    responsePriorityCode: {
+      "@_code": "I",
+    },
+    parameterList: {
+      livingSubjectAdministrativeGender: {
+        value: {
+          "@_code": patientResource.gender,
+          "@_codeSystem": "2.16.840.1.113883.5.1",
         },
-        livingSubjectBirthTime: patientResource.birthDate
-          ? {
-              value: {
-                "@_value": patientResource.birthDate,
-              },
-              semanticsText: "LivingSubject.birthTime",
-            }
-          : {},
-        livingSubjectId: patientResource.identifier
-          ? {
-              value: patientResource.identifier.map(identifier => ({
-                "@_extension": identifier.value,
-                "@_root": identifier.system,
-              })),
-              semanticsText: "LivingSubject.id",
-            }
-          : {},
-        livingSubjectName: patientResource.name
-          ? {
-              value: patientResource.name.map(name => ({
-                family: name.family,
-                ...name.given?.reduce((acc: { [key: string]: string }, givenName: string) => {
-                  acc.given = givenName;
-                  return acc;
-                }, {}),
-              })),
-              semanticsText: "LivingSubject.name",
-            }
-          : {},
-        patientAddress: patientResource.address
-          ? {
-              value: patientResource.address.map(address => ({
-                streetAddressLine: address.line?.join(", "),
-                city: address.city,
-                state: address.state,
-                postalCode: address.postalCode,
-                country: address.country,
-              })),
-              semanticsText: "Patient.addr",
-            }
-          : {},
-        patientTelecom: patientResource.telecom
-          ? {
-              value: patientResource.telecom.map(telecom => ({
-                "@_use": telecom.system,
-                "@_value": telecom.value,
-              })),
-              semanticsText: "Patient.telecom",
-            }
-          : {},
+        semanticsText: "LivingSubject.administrativeGender",
       },
+      livingSubjectBirthTime: patientResource.birthDate
+        ? {
+            value: {
+              "@_value": patientResource.birthDate,
+            },
+            semanticsText: "LivingSubject.birthTime",
+          }
+        : {},
+      livingSubjectId: patientResource.identifier
+        ? {
+            value: patientResource.identifier.map(identifier => ({
+              "@_extension": identifier.value,
+              "@_root": identifier.system,
+            })),
+            semanticsText: "LivingSubject.id",
+          }
+        : {},
+      livingSubjectName: patientResource.name
+        ? {
+            value: patientResource.name.map(name => ({
+              family: name.family,
+              ...name.given?.reduce((acc: { [key: string]: string }, givenName: string) => {
+                acc.given = givenName;
+                return acc;
+              }, {}),
+            })),
+            semanticsText: "LivingSubject.name",
+          }
+        : {},
+      patientAddress: patientResource.address
+        ? {
+            value: patientResource.address.map(address => ({
+              streetAddressLine: address.line?.join(", "),
+              city: address.city,
+              state: address.state,
+              postalCode: address.postalCode,
+              country: address.country,
+            })),
+            semanticsText: "Patient.addr",
+          }
+        : {},
+      patientTelecom: patientResource.telecom
+        ? {
+            value: patientResource.telecom.map(telecom => ({
+              "@_use": telecom.system,
+              "@_value": telecom.value,
+            })),
+            semanticsText: "Patient.telecom",
+          }
+        : {},
     },
   };
   return queryByParameter;

@@ -382,6 +382,7 @@ export class APIStack extends Stack {
         vpc: this.vpc,
         medicalDocumentsBucket,
         envType: props.config.environmentType,
+        dashUrl: props.config.dashUrl,
         sentryDsn: props.config.lambdasSentryDSN,
         alarmAction: slackNotification?.alarmAction,
         appConfigEnvVars: {
@@ -529,6 +530,7 @@ export class APIStack extends Stack {
       : undefined;
 
     // Add ENV after the API service is created
+    fhirToMedicalRecordLambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundPatientDiscoveryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentRetrievalLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
@@ -648,6 +650,13 @@ export class APIStack extends Stack {
         "method.request.path.proxy": true,
       },
       apiKeyRequired: true,
+    });
+
+    this.createFeedbackRoutes({
+      apiGateway: api,
+      link,
+      apiAddress: apiLoadBalancerAddress,
+      config: props.config,
     });
 
     this.setupTestLambda(
@@ -906,6 +915,62 @@ export class APIStack extends Stack {
     new CfnOutput(this, "ClientSecretUserpoolID", {
       description: "Userpool for client secret based apps",
       value: userPoolClientSecret.userPoolId,
+    });
+  }
+
+  createFeedbackRoutes({
+    apiGateway: api,
+    link,
+    apiAddress,
+    config,
+  }: {
+    apiGateway: apig.RestApi;
+    link: apig.VpcLink;
+    apiAddress: string;
+    config: EnvConfig;
+  }) {
+    if (isSandbox(config)) return;
+
+    const id = "FeedbackApi";
+    api.addUsagePlan(`${id}UsagePlan`, {
+      name: "Feedback API Usage Plan",
+      description: "Usage Plan for the Feedback API",
+      apiStages: [{ api: api, stage: api.deploymentStage }],
+      throttle: {
+        burstLimit: 5,
+        rateLimit: 10,
+      },
+      quota: {
+        limit: 1_000,
+        period: apig.Period.DAY,
+      },
+    });
+    const proxyPath = "feedback";
+    const apiGwResource = api.root.addResource(proxyPath, {
+      defaultCorsPreflightOptions: { allowOrigins: ["*"], allowHeaders: ["*"] },
+    });
+    const apiGwProxy = new apig.ProxyResource(this, `${id}/${proxyPath}/Proxy`, {
+      parent: apiGwResource,
+      anyMethod: false,
+      defaultCorsPreflightOptions: { allowOrigins: ["*"], allowHeaders: ["*"] },
+    });
+    const apiGwProxyIntegration = new apig.Integration({
+      type: apig.IntegrationType.HTTP_PROXY,
+      options: {
+        connectionType: apig.ConnectionType.VPC_LINK,
+        vpcLink: link,
+        requestParameters: {
+          "integration.request.path.proxy": "method.request.path.proxy",
+        },
+      },
+      integrationHttpMethod: "ANY",
+      uri: `http://${apiAddress}/${proxyPath}/{proxy}`,
+    });
+    apiGwProxy.addMethod("ANY", apiGwProxyIntegration, {
+      requestParameters: {
+        "method.request.path.proxy": true,
+      },
+      apiKeyRequired: true,
     });
   }
 
@@ -1205,6 +1270,7 @@ export class APIStack extends Stack {
     vpc: ec2.IVpc;
     medicalDocumentsBucket: s3.Bucket;
     envType: EnvType;
+    dashUrl: string;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     appConfigEnvVars: {
@@ -1219,6 +1285,7 @@ export class APIStack extends Stack {
       vpc,
       sentryDsn,
       envType,
+      dashUrl,
       alarmAction,
       medicalDocumentsBucket,
       appConfigEnvVars,
@@ -1243,6 +1310,8 @@ export class APIStack extends Stack {
         APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
         APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
         ...(bedrock && {
+          // API_URL set on the api-stack after the OSS API is created
+          DASH_URL: dashUrl,
           BEDROCK_REGION: bedrock?.region,
           BEDROCK_VERSION: bedrock?.anthropicVersion,
           AI_BRIEF_MODEL_ID: bedrock?.modelId,

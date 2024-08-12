@@ -31,6 +31,7 @@ export function runPatientTestsPart1(e2e: E2eContext) {
     if (!e2e.facility) throw new Error("Missing facility");
     e2e.patient = await medicalApi.createPatient(createPatient, e2e.facility.id);
     e2e.patientFhir = patientDtoToFhir(e2e.patient);
+    console.log(`Created patient: ${e2e.patient.id}`);
     await sleep(100);
     const [createdPatient, fhirPatient] = await Promise.all([
       getPatient(e2e.patient.id),
