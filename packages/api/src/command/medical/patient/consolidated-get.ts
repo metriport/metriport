@@ -10,17 +10,18 @@ import {
 import {
   ConsolidatedQuery,
   GetConsolidatedFilters,
-  resourcesSearchableByPatient,
   ResourceTypeForConsolidation,
+  resourcesSearchableByPatient,
 } from "@metriport/api-sdk";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
-import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { EventTypes, analytics } from "@metriport/core/external/analytics/posthog";
 import {
   buildBundle,
   getReferencesFromResources,
 } from "@metriport/core/external/fhir/shared/bundle";
 import { isResourceDerivedFromDocRef } from "@metriport/core/external/fhir/shared/index";
+import { deduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { emptyFunction } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
@@ -269,6 +270,7 @@ export async function getConsolidated({
 
     analytics(defaultAnalyticsProps);
 
+    bundle = deduplicateSearchSetBundle(bundle);
     if (shouldCreateMedicalRecord) {
       // If we need to convert to medical record, we also have to update the resulting
       // FHIR bundle to represent that.
@@ -328,6 +330,16 @@ export function filterOutPrelimDocRefs(
 
     return true;
   });
+}
+
+function deduplicateSearchSetBundle(
+  fhirBundle: SearchSetBundle<Resource>
+): SearchSetBundle<Resource> {
+  const deduplicatedBundle = deduplicateFhir(fhirBundle);
+  return {
+    ...deduplicatedBundle,
+    type: "searchset",
+  };
 }
 
 async function uploadConsolidatedJsonAndReturnUrl({

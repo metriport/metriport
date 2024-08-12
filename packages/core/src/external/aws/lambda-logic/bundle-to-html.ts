@@ -272,6 +272,7 @@ function formatDateForDisplay(date?: string | undefined): string {
   return date ? dayjs(date).format(ISO_DATE) : "";
 }
 
+// TODO: Use the version from "@metriport/core/external/fhir/shared/bundle.ts"
 function extractFhirTypesFromBundle(bundle: Bundle): {
   diagnosticReports: DiagnosticReport[];
   patient?: Patient | undefined;
