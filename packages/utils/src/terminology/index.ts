@@ -81,7 +81,7 @@ export async function importConceptMap() {
   return response.data;
 }
 
-async function importConcepts(system: string) {
+export async function importConcepts(system: string) {
   const response = await axios.post(
     "http://127.0.0.1:3000/fhir/R4/CodeSystem/import",
     {
@@ -139,8 +139,8 @@ async function importConcepts(system: string) {
 async function main() {
   try {
     // Import example
-    const importResult = await importConcepts("http://snomed.info/sct");
-    console.log("Import Result:", JSON.stringify(importResult, null, 2));
+    // const importResult = await importConcepts("http://snomed.info/sct");
+    // console.log("Import Result:", JSON.stringify(importResult, null, 2));
 
     const lookupResult = await lookupCode("http://snomed.info/sct", "702707005");
     console.log("Lookup Result:", JSON.stringify(lookupResult, null, 2));

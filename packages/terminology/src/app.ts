@@ -13,6 +13,16 @@ async function main() {
 
   app.use("/fhir/R4/", fhirRouter);
 
+  // Health check
+  app
+    .route("/")
+    .get((req, res) => {
+      res.status(200).send("OK");
+    })
+    .post((req, res) => {
+      res.status(200).send("Ok");
+    });
+
   const PORT = 3000;
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

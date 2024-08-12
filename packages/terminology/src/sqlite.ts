@@ -1,9 +1,14 @@
 import { join } from "path";
-import { mkdirSync } from "fs";
+import { writeFileSync, existsSync } from "fs";
+
+import { S3Utils } from "./s3";
 
 import { SqliteClient } from "./sqlClient";
 import * as migrations from "./migrations/index";
 import { seedCodeSystems } from "./seed/seedCodeSystem";
+import { Config } from "./config";
+
+const region = Config.getAWSRegion();
 
 let dbClient: SqliteClient | undefined;
 
@@ -40,15 +45,19 @@ async function migrate(dbClient: SqliteClient): Promise<void> {
 
 // Function to initialize SQLite
 export async function initSqliteFhirServer(): Promise<void> {
-  const dbDir = join(process.cwd(), "data");
-  const dbPath = join(dbDir, "terminology.db");
+  const key = "terminology.db";
 
-  // Ensure the directory exists
-  try {
-    mkdirSync(dbDir, { recursive: true });
-  } catch (err) {
-    console.error("Error creating database directory:", err);
-    throw err;
+  const dbPath = join(process.cwd(), key);
+
+  if (!existsSync(dbPath)) {
+    const s3Utils = new S3Utils(region);
+    const bucket = Config.getTerminologyBucket();
+    console.log(`Downloading file from S3: ${bucket}/${key}`);
+    const db = await s3Utils.downloadFile({ bucket, key });
+    console.log(`Downloaded file size: ${db.length} bytes`);
+    writeFileSync(dbPath, db);
+  } else {
+    console.log(`Database file already exists at ${dbPath}`);
   }
 
   dbClient = new SqliteClient(dbPath);

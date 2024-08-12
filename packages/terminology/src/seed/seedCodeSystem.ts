@@ -31,9 +31,7 @@ export async function seedCodeSystems(client: SqliteClient): Promise<void> {
       source.system,
     ]);
 
-    if (result) {
-      console.log("CodeSystem already exists", result);
-    } else {
+    if (!result) {
       const uuid = uuidv4();
       const resource = { ...source.resource, id: uuid };
       await client.run('INSERT INTO "CodeSystem" ("id", "system", "content") VALUES (?, ?, ?)', [
