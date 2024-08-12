@@ -4,6 +4,10 @@ dotenv.config();
 import express from "express";
 import { fhirRouter } from "./router";
 import { initSqliteFhirServer } from "./sqlite";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
+
+dayjs.extend(duration);
 
 async function main() {
   const app = express();
@@ -24,9 +28,19 @@ async function main() {
     });
 
   const PORT = 3000;
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
   });
+
+  const loadbalancerTimeout = dayjs.duration({ minutes: 15 }).asMilliseconds();
+  const oneSecond = dayjs.duration({ seconds: 1 }).asMilliseconds();
+
+  const timeout = loadbalancerTimeout - oneSecond;
+  server.setTimeout(timeout);
+
+  const keepalive = loadbalancerTimeout + oneSecond;
+  server.keepAliveTimeout = keepalive;
+  server.headersTimeout = keepalive + oneSecond;
 }
 
 main();
