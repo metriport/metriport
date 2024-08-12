@@ -154,13 +154,14 @@ export async function getPatientWithDependencies({
   id: string;
   cxId: string;
 }): Promise<{
+  patient: PatientModel;
   facilities: Facility[];
   organization: Organization;
 }> {
   const patient = await getPatientOrFail({ id, cxId });
   const facilities = await getFacilities({ cxId, ids: patient.facilityIds });
   const organization = await getOrganizationOrFail({ cxId });
-  return { facilities, organization };
+  return { patient, facilities, organization };
 }
 
 export async function getPatientStates({
