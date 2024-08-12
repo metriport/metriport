@@ -48,8 +48,9 @@ export function createTermServerService(
 ): { service: FargateService; address: string } {
   const { cpu, memoryLimitMiB, taskCountMin, taskCountMax, maxExecutionTimeout } = settings();
 
+  const bucketName = "umls-terminology-db";
   const terminologyBucket = new s3.Bucket(stack, "TerminologyBucket", {
-    bucketName: "umls-terminology",
+    bucketName,
     publicReadAccess: false,
     encryption: s3.BucketEncryption.S3_MANAGED,
     versioned: true,
@@ -77,7 +78,7 @@ export function createTermServerService(
           NODE_ENV: "production", // Determines its being run in the cloud, the logical env is set on ENV_TYPE
           ENV_TYPE: props.config.environmentType, // staging, production, sandbox
           ...(props.version ? { METRIPORT_VERSION: props.version } : undefined),
-          TERMINOLOGY_BUCKET: "umls-terminology",
+          TERMINOLOGY_BUCKET: bucketName,
         },
       },
       healthCheckGracePeriod: Duration.seconds(60),
