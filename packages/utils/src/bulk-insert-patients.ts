@@ -54,7 +54,7 @@ const facilityId: string = ""; // eslint-disable-line @typescript-eslint/no-infe
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 const cxId = getEnvVarOrFail("CX_ID");
-const delayTime = dayjs.duration(30, "seconds").asMilliseconds(); // Let's keep this 10+ seconds while we're using IHE GW v1
+const delayTime = dayjs.duration(5, "seconds").asMilliseconds();
 const inputFileName = "bulk-insert-patients.csv";
 const confirmationTime = dayjs.duration(10, "seconds");
 
@@ -105,12 +105,12 @@ async function loadData(
   outputFileName: string,
   dryRun: boolean
 ) {
-  console.log(
-    `Loaded ${results.length} patients from the CSV file to be inserted at org/cx ${orgName}`
-  );
+  const msg = `Loaded ${results.length} patients from the CSV file to be inserted at org/cx ${orgName}`;
+  console.log(msg);
   if (dryRun) {
     console.log("Dry run, not inserting patients.");
     console.log(`List of patients: ${JSON.stringify(results, null, 2)}`);
+    console.log(msg);
     console.log("Done.");
     return;
   }
@@ -120,11 +120,13 @@ async function loadData(
 
   for (const [i, patient] of results.entries()) {
     try {
-      await sleep(delayTime);
-      const createdPatient = await metriportAPI.createPatient(patient, localFacilityId);
+      const createdPatient = await metriportAPI.createPatient(patient, localFacilityId, {
+        rerunPdOnNewDemographics: true,
+      });
       successfulCount++;
       console.log(i + 1, createdPatient);
       storePatientId(createdPatient.id, outputFileName);
+      if (i < results.length - 1) await sleep(delayTime);
     } catch (error) {
       errors.push({
         firstName: patient.firstName,
@@ -140,8 +142,13 @@ async function loadData(
 
 async function displayWarningAndConfirmation(results: unknown[], orgName: string, dryRun: boolean) {
   if (!dryRun) logNotDryRun();
-  console.log(`Inserting ${results.length} patients at org/cx ${orgName}`);
+  console.log(
+    `Inserting ${
+      results.length
+    } patients at org/cx ${orgName} in ${confirmationTime.asSeconds()} seconds...`
+  );
   await sleep(confirmationTime.asMilliseconds());
+  console.log(`running...`);
 }
 
 function initPatientIdRepository(fileName: string) {

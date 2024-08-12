@@ -30,3 +30,4 @@ export * as medical from "./medical";
 export * from "./net/error";
 export * from "./net/retry";
 export * from "./net/url";
+export * from "./interface";
