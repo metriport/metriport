@@ -55,6 +55,7 @@ export function deepMerge(target: any, source: any): any {
       target[key] = deepMerge(target[key], source[key]);
     } else {
       // Directly assign values
+      if (key === "__proto__" || key === "constructor") continue;
       target[key] = source[key];
     }
   }
