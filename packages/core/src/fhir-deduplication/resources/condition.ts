@@ -24,32 +24,6 @@ export function deduplicateConditions(conditions: Condition[]) {
   return combineConditions(snomedMap, icd10Map, remainingConditions);
 }
 
-export function combineConditions(
-  snomedMap: Map<string, Condition>,
-  icd10Map: Map<string, Condition>,
-  remainingConditions: Condition[]
-): Condition[] {
-  const combinedConditions: Condition[] = [];
-  for (const condition of icd10Map.values()) {
-    combinedConditions.push(condition);
-  }
-  for (const condition of snomedMap.values()) {
-    combinedConditions.push(condition);
-  }
-  combinedConditions.push(...remainingConditions);
-  return combinedConditions;
-}
-
-export function createDateKey(condition: Condition): string | undefined {
-  if (condition.onsetPeriod?.start) {
-    return getDateFromString(condition.onsetPeriod?.start);
-  } else if (condition.onsetDateTime) {
-    return getDateFromString(condition.onsetDateTime);
-  }
-
-  return undefined;
-}
-
 export function groupSameConditions(conditions: Condition[]): {
   icd10Map: Map<string, Condition>;
   snomedMap: Map<string, Condition>;
@@ -89,6 +63,16 @@ export function groupSameConditions(conditions: Condition[]): {
   return { icd10Map, snomedMap, remainingConditions };
 }
 
+export function createDateKey(condition: Condition): string | undefined {
+  if (condition.onsetPeriod?.start) {
+    return getDateFromString(condition.onsetPeriod?.start);
+  } else if (condition.onsetDateTime) {
+    return getDateFromString(condition.onsetDateTime);
+  }
+
+  return undefined;
+}
+
 export function extractCodes(concept: CodeableConcept | undefined): {
   snomedCode: string | undefined;
   icd10Code: string | undefined;
@@ -111,4 +95,20 @@ export function extractCodes(concept: CodeableConcept | undefined): {
     }
   }
   return { snomedCode, icd10Code };
+}
+
+export function combineConditions(
+  snomedMap: Map<string, Condition>,
+  icd10Map: Map<string, Condition>,
+  remainingConditions: Condition[]
+): Condition[] {
+  const combinedConditions: Condition[] = [];
+  for (const condition of icd10Map.values()) {
+    combinedConditions.push(condition);
+  }
+  for (const condition of snomedMap.values()) {
+    combinedConditions.push(condition);
+  }
+  combinedConditions.push(...remainingConditions);
+  return combinedConditions;
 }
