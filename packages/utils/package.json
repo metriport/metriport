@@ -29,7 +29,8 @@
     "compare-resource-counts-per-file": "bash src/fhir-converter/scripts/compare_resource_counts_per_file.sh",
     "compare-total-resource-count-post-fhir-insert": "bash src/fhir-converter/scripts/compare_total_resource_count_post_fhir_insert.sh",
     "uuidv7": "ts-node src/make-uuidv7",
-    "saml-server": "ts-node src/saml/saml-server"
+    "saml-server": "ts-node src/saml/saml-server",
+    "load-test": "k6 run --duration 7m --summary-trend-stats 'avg,min,med,p(75),p(90),p(95),p(99),p(99.9),p(99.99),max' dist/utils/src/terminology/k6.js"
   },
   "keywords": [],
   "author": "",
@@ -55,6 +56,7 @@
     "express": "^4.19.2",
     "express-promise-router": "^4.1.1",
     "jsonschema": "^1.4.1",
+    "k6": "^0.0.0",
     "lodash": "^4.17.21",
     "mime-types": "^2.1.35",
     "playwright": "^1.39.0",
@@ -65,6 +67,7 @@
     "@tsconfig/recommended": "^1.0.1",
     "@types/aws-serverless-express": "^3.3.9",
     "@types/express": "^4.17.14",
+    "@types/k6": "^0.52.0",
     "@types/lodash": "^4.14.192",
     "@types/node": "^18.11.12",
     "@types/readline-sync": "^1.4.6",

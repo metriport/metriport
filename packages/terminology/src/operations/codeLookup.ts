@@ -1,13 +1,6 @@
 import { FhirRequest, FhirResponse } from "@medplum/fhir-router";
 import { OperationDefinition, Coding, CodeSystem } from "@medplum/fhirtypes";
-import {
-  OperationOutcomeError,
-  normalizeOperationOutcome,
-  badRequest,
-  TypedValue,
-  notFound,
-  append,
-} from "@medplum/core";
+import { normalizeOperationOutcome, badRequest, TypedValue, notFound, append } from "@medplum/core";
 import { codeLookupOperationDefinition } from "./definitions/codeLookupOperation";
 import { parseInputParameters } from "./utils/parameters";
 import { findCodeSystemResource } from "./utils/codeSystemLookup";
@@ -52,9 +45,9 @@ export const codeSystemLookupHandler = async (
 export async function lookupCoding(
   codeSystem: CodeSystem,
   coding: Coding
-): Promise<CodeSystemLookupOutput> {
+): Promise<CodeSystemLookupOutput | FhirResponse> {
   if (coding.system && coding.system !== codeSystem.url) {
-    throw new OperationOutcomeError(notFound);
+    return [notFound];
   }
 
   const dbClient = getSqliteClient();
@@ -77,7 +70,8 @@ export async function lookupCoding(
   const result = await dbClient.select(query, params);
 
   if (result.length === 0) {
-    throw new OperationOutcomeError(notFound);
+    console.log(`Code not found: system=${codeSystem.url}, code=${coding.code}`);
+    return [notFound];
   }
 
   const resolved = result[0];
