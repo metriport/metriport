@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { Condition } from "@medplum/fhirtypes";
 import { makeCondition } from "../../fhir-to-cda/cda-templates/components/__tests__/make-condition";
-import { combineTwoConditions } from "../deduplicate-fhir";
+import { combineTwoResources } from "../deduplicate-fhir";
 import { icd10CodeMd, onsetPeriod2, snomedCodeMd } from "./condition-examples";
 
 let conditionId: string;
@@ -18,7 +18,7 @@ beforeAll(() => {
 
 describe("groupSameConditions", () => {
   it("keeps the id of the first condition", () => {
-    const combinedCondition = combineTwoConditions(condition, condition2);
+    const combinedCondition = combineTwoResources(condition, condition2);
     expect(combinedCondition.id).toBe(conditionId);
   });
 
@@ -26,7 +26,7 @@ describe("groupSameConditions", () => {
     condition.subject = { reference: "Patient/123" };
     condition2.recorder = { reference: "Some ref" };
 
-    const combinedCondition = combineTwoConditions(condition, condition2);
+    const combinedCondition = combineTwoResources(condition, condition2);
     expect(combinedCondition).toHaveProperty("recorder.reference", "Some ref");
     expect(combinedCondition).toHaveProperty("subject.reference", "Patient/123");
   });
@@ -35,7 +35,7 @@ describe("groupSameConditions", () => {
     condition.code = { coding: [snomedCodeMd] };
     condition2.code = { coding: [icd10CodeMd] };
 
-    const combinedCondition = combineTwoConditions(condition, condition2);
+    const combinedCondition = combineTwoResources(condition, condition2);
     expect(combinedCondition.code).toEqual(
       expect.objectContaining({
         coding: expect.arrayContaining([
@@ -54,12 +54,12 @@ describe("groupSameConditions", () => {
     condition.code = { coding: [snomedCodeMd] };
     condition2.code = { coding: [snomedCodeMd] };
 
-    const combinedCondition = combineTwoConditions(condition, condition2);
+    const combinedCondition = combineTwoResources(condition, condition2);
     expect(combinedCondition.code?.coding?.length).toBe(1);
   });
 
   it("contains references to combined conditions inside the extension", () => {
-    const combinedCondition = combineTwoConditions(condition, condition2);
+    const combinedCondition = combineTwoResources(condition, condition2);
     expect(combinedCondition.extension).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
