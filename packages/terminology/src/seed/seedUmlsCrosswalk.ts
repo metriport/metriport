@@ -157,11 +157,10 @@ function createConceptMap(concept: UmlsConceptMap, config: UmlsConceptMapConfig)
         element: [
           {
             code: concept.FROMID,
-            // could perform a lookup to get display name or integrate with the rest of the concept flow
             target: [
               {
                 code: concept.TOID,
-                // could perform a lookup to get display name or integrate with the rest of the concept flow
+                //TODO could perform a lookup to get display name or integrate with the rest of the concept flow
                 equivalence: "equivalent",
               },
             ],
@@ -227,7 +226,7 @@ async function processConceptMap(inStream: Readable): Promise<void> {
     try {
       await client.importConceptMap(conceptMap);
     } catch (error) {
-      console.error("Error importing concept map:", error);
+      console.log(`Error importing concept map: ${error}`);
     }
   }
 }

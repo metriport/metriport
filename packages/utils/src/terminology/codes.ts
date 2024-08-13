@@ -30,7 +30,7 @@ export async function translateCode() {
   const system = "http://snomed.info/sct";
   const code = getRandomCode();
   const response = await axios.post(
-    "http://127.0.0.1:3000/fhir/R4/ConceptMap/translate",
+    "http://localhost:3000/fhir/R4/ConceptMap/translate",
     {
       resourceType: "Parameters",
       parameter: [

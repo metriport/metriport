@@ -3,20 +3,20 @@ import { writeFileSync, existsSync } from "fs";
 
 import { S3Utils } from "./s3";
 
-import { SqliteClient } from "./sqlClient";
+import { TermServerClient, createTermServerClient } from "./sqlClient";
 import * as migrations from "./migrations/index";
 import { seedCodeSystems } from "./seed/seedCodeSystem";
 import { Config } from "./config";
 
 const region = Config.getAWSRegion();
 
-let dbClient: SqliteClient | undefined;
+let dbClient: TermServerClient | undefined;
 
 type Migration = {
   sql: string;
 };
 
-async function migrate(dbClient: SqliteClient): Promise<void> {
+async function migrate(dbClient: TermServerClient): Promise<void> {
   await dbClient.run(`CREATE TABLE IF NOT EXISTS "DatabaseMigration" (
         "id" INTEGER NOT NULL PRIMARY KEY,
         "version" INTEGER NOT NULL,
@@ -36,15 +36,14 @@ async function migrate(dbClient: SqliteClient): Promise<void> {
   for (let i = version + 1; i <= migrationKeys.length; i++) {
     const migration = (migrations as Record<string, Migration>)["v" + i];
     if (migration) {
-      console.log("Running migration", migration.sql);
+      console.log(`Running migration: ${migration.sql}`);
       await dbClient.run(migration.sql);
       await dbClient.run(`UPDATE "DatabaseMigration" SET "version"=${i}`);
     }
   }
 }
 
-// Function to initialize SQLite
-export async function initSqliteFhirServer(): Promise<void> {
+export async function initTermServer(): Promise<void> {
   const key = "terminology.db";
 
   const dbPath = join(process.cwd(), key);
@@ -60,14 +59,14 @@ export async function initSqliteFhirServer(): Promise<void> {
     console.log(`Database file already exists at ${dbPath}`);
   }
 
-  dbClient = new SqliteClient(dbPath);
+  dbClient = createTermServerClient(dbPath);
   await migrate(dbClient);
   await seedCodeSystems(dbClient);
 }
 
-export function getSqliteClient(): SqliteClient {
+export function getTermServerClient(): TermServerClient {
   if (!dbClient) {
-    throw new Error("Database client is not initialized. Call initSqliteFhirServer first.");
+    throw new Error("Database client is not initialized. Call initTermServer first.");
   }
   return dbClient;
 }

@@ -3,7 +3,7 @@ dotenv.config();
 
 import express from "express";
 import { fhirRouter } from "./router";
-import { initSqliteFhirServer } from "./sqlite";
+import { initTermServer } from "./sqlite";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 
@@ -13,11 +13,10 @@ async function main() {
   const app = express();
 
   app.use(express.json({ limit: "50mb" }));
-  await initSqliteFhirServer();
+  await initTermServer();
 
   app.use("/fhir/R4/", fhirRouter);
 
-  // Health check
   app
     .route("/")
     .get((req, res) => {

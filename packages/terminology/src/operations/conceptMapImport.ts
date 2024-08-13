@@ -3,7 +3,7 @@ import { ConceptMap } from "@medplum/fhirtypes";
 import { normalizeOperationOutcome } from "@medplum/core";
 import { v4 as uuidv4 } from "uuid";
 
-import { getSqliteClient } from "../sqlite";
+import { getTermServerClient } from "../sqlite";
 
 function generateReverseConceptMaps(conceptMap: ConceptMap): ConceptMap[] {
   const reverseMaps: ConceptMap[] = [];
@@ -52,7 +52,7 @@ export async function conceptMapImportHandler(
     const reverseMaps = generateReverseConceptMaps(conceptMap);
     const allMaps = [conceptMap, ...reverseMaps];
 
-    const dbClient = getSqliteClient();
+    const dbClient = getTermServerClient();
     const query = `
       INSERT INTO "ConceptMap" ("id", "content", "source", "sourceCode", "target", "targetCode")
       VALUES (?, ?, ?, ?, ?, ?)
@@ -108,11 +108,11 @@ export async function conceptMapImportHandler(
 
       return allMaps;
     } catch (error) {
-      console.error("Operation failed:", error);
+      console.log(`Operation failed: ${error}`);
       throw error;
     }
   } catch (error) {
-    console.error("Error:", error);
+    console.log(`Error: ${error}`);
     return [normalizeOperationOutcome(error)];
   }
 }

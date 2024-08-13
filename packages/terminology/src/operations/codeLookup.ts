@@ -4,7 +4,7 @@ import { normalizeOperationOutcome, badRequest, TypedValue, notFound, append } f
 import { codeLookupOperationDefinition } from "./definitions/codeLookupOperation";
 import { parseInputParameters } from "./utils/parameters";
 import { findCodeSystemResource } from "./utils/codeSystemLookup";
-import { getSqliteClient } from "../sqlite";
+import { getTermServerClient } from "../sqlite";
 
 const operation: OperationDefinition = codeLookupOperationDefinition;
 
@@ -50,7 +50,7 @@ export async function lookupCoding(
     return [notFound];
   }
 
-  const dbClient = getSqliteClient();
+  const dbClient = getTermServerClient();
 
   const query = `
       SELECT 

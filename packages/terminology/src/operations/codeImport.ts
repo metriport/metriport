@@ -2,7 +2,7 @@ import { FhirRequest, FhirResponse } from "@medplum/fhir-router";
 import { OperationDefinition, Coding, CodeSystem } from "@medplum/fhirtypes";
 import { OperationOutcomeError, allOk, badRequest, normalizeOperationOutcome } from "@medplum/core";
 import { v4 as uuidv4 } from "uuid";
-import { getSqliteClient } from "../sqlite";
+import { getTermServerClient } from "../sqlite";
 import { parseInputParameters } from "./utils/parameters";
 import { findCodeSystemResource, parentProperty } from "./utils/codeSystemLookup";
 
@@ -66,7 +66,7 @@ export async function importCodeSystemSqlite(
   concepts?: Coding[],
   properties?: ImportedProperty[]
 ): Promise<void> {
-  const db = getSqliteClient();
+  const db = getTermServerClient();
   if (concepts?.length) {
     const rows = uniqueOn(concepts, c => c.code ?? "").map(c => ({
       system: codeSystem.id,
@@ -102,7 +102,7 @@ async function processProperties(
 ): Promise<void> {
   const cache: Record<string, { id: number; isRelationship: boolean }> = Object.create(null);
   const rows = [];
-  const db = getSqliteClient();
+  const db = getTermServerClient();
 
   for (const imported of importedProperties) {
     const propertyCode = imported.property;
@@ -162,7 +162,7 @@ async function resolveProperty(codeSystem: CodeSystem, code: string): Promise<[n
   }
   const isRelationship = prop.type === "code";
 
-  const db = getSqliteClient();
+  const db = getTermServerClient();
   const selectQuery = 'SELECT id FROM "CodeSystem_Property" WHERE "system" = ? AND "code" = ?';
   const knownProp = await db.selectOne(selectQuery, [codeSystem.id, code]);
   if (knownProp) {

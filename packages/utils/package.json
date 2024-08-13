@@ -30,7 +30,7 @@
     "compare-total-resource-count-post-fhir-insert": "bash src/fhir-converter/scripts/compare_total_resource_count_post_fhir_insert.sh",
     "uuidv7": "ts-node src/make-uuidv7",
     "saml-server": "ts-node src/saml/saml-server",
-    "load-test": "k6 run --duration 7m --summary-trend-stats 'avg,min,med,p(75),p(90),p(95),p(99),p(99.9),p(99.99),max' dist/utils/src/terminology/k6.js"
+    "load-test": "artillery run ./src/terminology/load-test.yml"
   },
   "keywords": [],
   "author": "",

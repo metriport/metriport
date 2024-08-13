@@ -44,6 +44,30 @@ import { TerminologyClient } from "../client";
  * https://www.nlm.nih.gov/research/umls/knowledge_sources/metathesaurus/release/abbreviations.html
  */
 
+type UmlsSource = { system: string; tty: string[]; resource: CodeSystem };
+
+export const umlsSources: Record<string, UmlsSource> = {
+  SNOMEDCT_US: { system: "http://snomed.info/sct", tty: ["FN", "PT", "SY"], resource: snomed },
+  LNC: {
+    system: "http://loinc.org",
+    tty: ["LC", "LPDN", "LA", "DN", "HC", "LN", "LG"],
+    resource: loinc,
+  },
+  RXNORM: {
+    system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+    tty: ["PSN", "MIN", "SBD", "SCD", "SBDG", "SCDG", "GPCK", "SY"],
+    resource: rxnorm,
+  },
+  CPT: {
+    system: "http://www.ama-assn.org/go/cpt",
+    tty: ["PT", "HT", "POS", "MP", "GLP"],
+    resource: cpt,
+  },
+  CVX: { system: "http://hl7.org/fhir/sid/cvx", tty: ["PT"], resource: cvx },
+  ICD10PCS: { system: "http://hl7.org/fhir/sid/icd-10-pcs", tty: ["PT", "HT"], resource: icd10pcs },
+  ICD10CM: { system: "http://hl7.org/fhir/sid/icd-10-cm", tty: ["PT", "HT"], resource: icd10cm },
+};
+
 class EOF extends Error {
   message = "<EOF>";
 }
@@ -240,30 +264,6 @@ class UmlsConcept {
     ].join("|");
   }
 }
-
-type UmlsSource = { system: string; tty: string[]; resource: CodeSystem };
-
-const umlsSources: Record<string, UmlsSource> = {
-  SNOMEDCT_US: { system: "http://snomed.info/sct", tty: ["FN", "PT", "SY"], resource: snomed },
-  LNC: {
-    system: "http://loinc.org",
-    tty: ["LC", "LPDN", "LA", "DN", "HC", "LN", "LG"],
-    resource: loinc,
-  },
-  RXNORM: {
-    system: "http://www.nlm.nih.gov/research/umls/rxnorm",
-    tty: ["PSN", "MIN", "SBD", "SCD", "SBDG", "SCDG", "GPCK", "SY"],
-    resource: rxnorm,
-  },
-  CPT: {
-    system: "http://www.ama-assn.org/go/cpt",
-    tty: ["PT", "HT", "POS", "MP", "GLP"],
-    resource: cpt,
-  },
-  CVX: { system: "http://hl7.org/fhir/sid/cvx", tty: ["PT"], resource: cvx },
-  ICD10PCS: { system: "http://hl7.org/fhir/sid/icd-10-pcs", tty: ["PT", "HT"], resource: icd10pcs },
-  ICD10CM: { system: "http://hl7.org/fhir/sid/icd-10-cm", tty: ["PT", "HT"], resource: icd10cm },
-};
 
 async function processConcepts(
   inStream: Readable,
