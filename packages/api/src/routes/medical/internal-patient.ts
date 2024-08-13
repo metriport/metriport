@@ -802,7 +802,7 @@ router.post(
       dateFrom,
       dateTo,
     });
-    return res.status(status.OK);
+    return res.sendStatus(status.OK);
   })
 );
 
