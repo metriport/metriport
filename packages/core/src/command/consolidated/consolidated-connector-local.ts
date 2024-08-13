@@ -51,7 +51,7 @@ async function postConsolidated({
   const postConsolidated = `${apiURL}/internal/patient/${patientId}/consolidated`;
   const queryParams = new URLSearchParams({ cxId });
   await executeWithNetworkRetries(
-    () => axios.post(postConsolidated + "/" + queryParams.toString(), payload),
+    () => axios.post(postConsolidated + "?" + queryParams.toString(), payload),
     {
       retryOnTimeout: false,
       maxAttempts: MAX_API_NOTIFICATION_ATTEMPTS,
