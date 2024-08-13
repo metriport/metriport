@@ -31,7 +31,7 @@ function settings() {
     maxReceiveCount: 1,
     // How long messages should be invisible for other consumers, based on the lambda timeout
     // We don't care if the message gets reprocessed, so no need to have a huge visibility timeout that makes it harder to move messages to the DLQ
-    visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
+    visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() + 1),
   };
 }
 
