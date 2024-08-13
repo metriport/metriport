@@ -10,12 +10,12 @@ import {
 import {
   ConsolidatedQuery,
   GetConsolidatedFilters,
-  ResourceTypeForConsolidation,
   resourcesSearchableByPatient,
+  ResourceTypeForConsolidation,
 } from "@metriport/api-sdk";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
-import { EventTypes, analytics } from "@metriport/core/external/analytics/posthog";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import {
   buildBundle,
   getReferencesFromResources,
@@ -73,9 +73,9 @@ export async function startConsolidatedQuery({
   dateTo,
   conversionType,
   cxConsolidatedRequestMetadata,
-  generateAiBrief = false,
+  generateAiBrief,
 }: ConsolidatedQueryParams): Promise<ConsolidatedQuery> {
-  await checkAiBriefEnabled({ cxId, generateAiBrief });
+  const isGenerateAiBrief = await checkAiBriefEnabled({ cxId, generateAiBrief });
 
   const { log } = Util.out(`startConsolidatedQuery - M patient ${patientId}`);
   const patient = await getPatientOrFail({ id: patientId, cxId });
@@ -136,7 +136,7 @@ export async function startConsolidatedQuery({
     dateTo,
     conversionType,
     requestId,
-    generateAiBrief,
+    generateAiBrief: isGenerateAiBrief,
   }).catch(emptyFunction);
 
   return progress;
