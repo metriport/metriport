@@ -9,6 +9,7 @@ import {
   ConsolidatedDataResponse,
   ConsolidatedPatientDataRequest,
 } from "./consolidated-connector";
+import { ConsolidatedDataConnectorLocal } from "./consolidated-connector-local";
 
 dayjs.extend(duration);
 
@@ -31,7 +32,13 @@ export class ConsolidatedDataConnectorLambda implements ConsolidatedDataConnecto
   async execute(
     params: ConsolidatedDataRequestSync | ConsolidatedDataRequestAsync
   ): Promise<ConsolidatedDataResponse> {
-    if (!this.lambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
+    // TODO 1319 Remove this once the first release has been shipped and the lambda name is requires
+    if (!this.lambdaName) {
+      const bucketName = Config.getMedicalDocumentsBucketName();
+      const apiURL = Config.getApiUrl();
+      const connector = new ConsolidatedDataConnectorLocal(bucketName, apiURL);
+      return connector.execute(params);
+    }
     const result = await this.lambdaClient
       .invoke({
         FunctionName: this.lambdaName,
