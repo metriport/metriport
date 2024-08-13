@@ -41,7 +41,6 @@
     "packages/commonwell-sdk",
     "packages/carequality-sdk",
     "packages/core",
-    "packages/terminology",
     "packages/commonwell-cert-runner",
     "packages/commonwell-jwt-maker",
     "packages/carequality-cert-runner",
