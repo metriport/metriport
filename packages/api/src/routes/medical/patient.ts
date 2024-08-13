@@ -23,7 +23,7 @@ import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
-import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
+import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 import {
@@ -341,7 +341,7 @@ router.post(
     const type = getFrom("query").optional("conversionType", req);
     const generateAiBrief = Config.isSandbox()
       ? false
-      : getFromQueryAsBoolean("generateAiBrief", req) ?? false;
+      : getFromQueryAsBoolean("generateAiBrief", req);
 
     const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
     const cxConsolidatedRequestMetadata = cxRequestMetadataSchema.parse(req.body);

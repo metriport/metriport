@@ -69,7 +69,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       const cxsWithADHDFeatureFlagValue = await getCxsWithADHDFeatureFlagValue();
       const isADHDFeatureFlagEnabled = cxsWithADHDFeatureFlagValue.includes(cxId);
       const bundle = await getBundleFromS3(fhirFileName);
-      const isBriefFeatureFlagEnabled = await isBriefEnabled(generateAiBrief, cxId);
+      const isBriefFeatureFlagEnabled = await isAiBriefEnabled(generateAiBrief, cxId);
 
       // TODO: Condense this functionality under a single function and put it on `@metriport/core`, so this can be used both here, and on the Lambda.
       const aiBriefContent = isBriefFeatureFlagEnabled
@@ -139,11 +139,13 @@ async function getSignedUrl(fileName: string) {
   return coreGetSignedUrl({ fileName, bucketName, awsRegion: region });
 }
 
-async function isBriefEnabled(
+// TODO merge this with API's checkAiBriefEnabled and move it to Core
+async function isAiBriefEnabled(
   generateAiBrief: boolean | undefined,
   cxId: string
 ): Promise<boolean> {
   if (!generateAiBrief) return false;
+  // TODO checking for the FF, keep that no the OSS API
   const isAiBriefFeatureFlagEnabled = await isAiBriefFeatureFlagEnabledForCx(cxId);
   return isAiBriefFeatureFlagEnabled;
 }
