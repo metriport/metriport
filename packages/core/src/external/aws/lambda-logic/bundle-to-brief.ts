@@ -10,6 +10,12 @@ const MAXIMUM_BRIEF_STRING_LENGTH = 500_000;
 
 const relevantResources = ["DiagnosticReport", "Patient"];
 
+export type Brief = {
+  id: string;
+  content: string;
+  link: string;
+};
+
 function getBedrockUtilsInstance(): BedrockUtils {
   return new BedrockUtils();
 }

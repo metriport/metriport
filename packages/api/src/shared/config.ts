@@ -87,6 +87,9 @@ export class Config {
   static getApiUrl(): string {
     return getEnvVarOrFail("API_URL");
   }
+  static getApiLoadBalancerAddress(): string | undefined {
+    return getEnvVar("API_LB_ADDRESS");
+  }
 
   static getApiGatewayUsagePlanId(): string | undefined {
     return getEnvVar("API_GW_USAGE_PLAN_ID");
