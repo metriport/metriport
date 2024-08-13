@@ -17,8 +17,9 @@ import { Config } from "../../../shared/config";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
 import { createSandboxMRSummaryFileName } from "./shared";
 
-const s3Utils = new S3Utils(Config.getAWSRegion());
 dayjs.extend(duration);
+
+const s3Utils = new S3Utils(Config.getAWSRegion());
 
 /**
  * Keep this a couple seconds higher than the respective lambda's timeout.
