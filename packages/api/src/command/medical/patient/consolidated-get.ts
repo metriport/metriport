@@ -74,9 +74,9 @@ export async function startConsolidatedQuery({
   dateTo,
   conversionType,
   cxConsolidatedRequestMetadata,
-  generateAiBrief = false,
+  generateAiBrief,
 }: ConsolidatedQueryParams): Promise<ConsolidatedQuery> {
-  await checkAiBriefEnabled({ cxId, generateAiBrief });
+  const isGenerateAiBrief = await checkAiBriefEnabled({ cxId, generateAiBrief });
 
   const { log } = Util.out(`startConsolidatedQuery - M patient ${patientId}`);
   const patient = await getPatientOrFail({ id: patientId, cxId });
@@ -137,7 +137,7 @@ export async function startConsolidatedQuery({
     dateTo,
     requestId,
     conversionType,
-    generateAiBrief,
+    generateAiBrief: isGenerateAiBrief,
   }).catch(emptyFunction);
 
   return progress;
