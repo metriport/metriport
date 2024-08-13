@@ -1,3 +1,4 @@
+// Licensed under Apache. See LICENSE-APACHE in the repo root for license information.
 import { CodeSystem, Coding, Parameters } from "@medplum/fhirtypes";
 import { WriteStream, createReadStream } from "node:fs";
 import { createInterface } from "node:readline";

@@ -1,3 +1,4 @@
+// Licensed under Apache. See LICENSE-APACHE in the repo root for license information.
 import { OperationDefinition } from "@medplum/fhirtypes";
 
 export const conceptMapTranslateOperationDefinition: OperationDefinition = {
