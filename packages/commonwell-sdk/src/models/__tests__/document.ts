@@ -40,7 +40,7 @@ type MakeDocumentContent = DeepPartial<DocumentContent> &
 
 export function makeDocumentContent(params?: MakeDocumentContent): DocumentContent {
   const containedOrgId = faker.string.nanoid();
-  const containedPractionerId = faker.string.nanoid();
+  const containedPractitionerId = faker.string.nanoid();
   const to = faker.date.recent();
   const from = faker.date.past({ years: 5, refDate: to });
   return {
@@ -48,7 +48,7 @@ export function makeDocumentContent(params?: MakeDocumentContent): DocumentConte
     contained: params?.contained ?? [
       makeContainedOrg({ id: containedOrgId }),
       makeContainedPractitioner({
-        id: containedPractionerId,
+        id: containedPractitionerId,
         organization: { reference: `#${containedOrgId}` },
       }),
     ],
@@ -79,7 +79,7 @@ export function makeDocumentContent(params?: MakeDocumentContent): DocumentConte
     },
     author: params?.author ?? [
       {
-        reference: `Practitioner/${containedPractionerId}`,
+        reference: `Practitioner/${containedPractitionerId}`,
       },
     ],
     indexed: params?.indexed ?? faker.date.past().toISOString(),
