@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { Condition } from "@medplum/fhirtypes";
 import { makeCondition } from "../../fhir-to-cda/cda-templates/components/__tests__/make-condition";
-import { combineTwoResources } from "../deduplicate-fhir";
+import { combineTwoResources } from "../shared";
 import { icd10CodeMd, onsetPeriod2, snomedCodeMd } from "./condition-examples";
 
 let conditionId: string;
