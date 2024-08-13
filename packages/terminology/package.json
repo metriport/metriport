@@ -26,13 +26,14 @@
     "@medplum/fhir-router": "^3.2.5",
     "@medplum/fhirtypes": "^3.2.5",
     "aws-sdk": "^2.1672.0",
+    "axios": "^1.7.3",
+    "dayjs": "^1.11.9",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "sqlite3": "^5.1.7",
     "ts-node": "^10.9.2",
     "unzip-stream": "^0.3.4",
-    "uuid": "^10.0.0",
-    "dayjs": "^1.11.9"
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.627.0",

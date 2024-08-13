@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 import axios from "axios";
 import { Parameters, ConceptMap, OperationOutcome } from "@medplum/fhirtypes";
-import { getEnvVar } from "@metriport/shared";
+import { getEnvVar } from "../config";
 import { CodeSystemLookupOutput } from "../operations/codeLookup";
 
 export class TerminologyClient {
