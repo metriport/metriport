@@ -125,3 +125,30 @@ export function combineResources<T>({
   combinedResources.push(...remainingResources);
   return combinedResources;
 }
+
+/**
+ * Fills in existing maps.
+ */
+export function fillMaps<T extends Resource>(
+  map: Map<string, T>,
+  key: string,
+  resource: T,
+  idReplacementMap: Map<string, string[]>
+): void {
+  const existing = map.get(key);
+  if (existing?.id) {
+    const merged = combineTwoResources(existing, resource, false);
+    map.set(key, merged);
+
+    const existingReplacementIds = idReplacementMap.get(existing.id);
+    if (resource.id) {
+      if (existingReplacementIds) {
+        idReplacementMap.set(existing.id, [...existingReplacementIds, resource.id]);
+      } else {
+        idReplacementMap.set(existing.id, [resource.id]);
+      }
+    }
+  } else {
+    map.set(key, resource);
+  }
+}

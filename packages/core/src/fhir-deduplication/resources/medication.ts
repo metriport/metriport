@@ -7,7 +7,7 @@ import {
   SNOMED_CODE,
   SNOMED_OID,
   combineResources,
-  combineTwoResources,
+  fillMaps,
 } from "../shared";
 
 export function deduplicateMedications(medications: Medication[]): {
@@ -35,7 +35,6 @@ export function groupSameMedications(medications: Medication[]): {
   const rxnormMap = new Map<string, Medication>();
   const ndcMap = new Map<string, Medication>();
   const snomedMap = new Map<string, Medication>();
-
   const idReplacementMap = new Map<string, string[]>();
   const remainingMedications: Medication[] = [];
 
@@ -44,59 +43,11 @@ export function groupSameMedications(medications: Medication[]): {
     const { rxnormCode, ndcCode, snomedCode } = extractCodes(medication.code);
 
     if (rxnormCode) {
-      const key = rxnormCode;
-      const existing = rxnormMap.get(key);
-      if (existing?.id) {
-        const merged = combineTwoResources(existing, medication, false);
-        rxnormMap.set(key, merged);
-
-        const existingReplacementIds = idReplacementMap.get(existing.id);
-        if (medication.id) {
-          if (existingReplacementIds) {
-            idReplacementMap.set(existing.id, [...existingReplacementIds, medication.id]);
-          } else {
-            idReplacementMap.set(existing.id, [medication.id]);
-          }
-        }
-      } else {
-        rxnormMap.set(key, medication);
-      }
+      fillMaps(rxnormMap, rxnormCode, medication, idReplacementMap);
     } else if (ndcCode) {
-      const key = ndcCode;
-      const existing = ndcMap.get(key);
-      if (existing?.id) {
-        const merged = combineTwoResources(existing, medication, false);
-        ndcMap.set(key, merged);
-
-        const existingReplacementIds = idReplacementMap.get(existing.id);
-        if (medication.id) {
-          if (existingReplacementIds) {
-            idReplacementMap.set(existing.id, [...existingReplacementIds, medication.id]);
-          } else {
-            idReplacementMap.set(existing.id, [medication.id]);
-          }
-        }
-      } else {
-        ndcMap.set(key, medication);
-      }
+      fillMaps(ndcMap, ndcCode, medication, idReplacementMap);
     } else if (snomedCode) {
-      const key = snomedCode;
-      const existing = snomedMap.get(key);
-      if (existing?.id) {
-        const merged = combineTwoResources(existing, medication, false);
-        snomedMap.set(key, merged);
-
-        const existingReplacementIds = idReplacementMap.get(existing.id);
-        if (medication.id) {
-          if (existingReplacementIds) {
-            idReplacementMap.set(existing.id, [...existingReplacementIds, medication.id]);
-          } else {
-            idReplacementMap.set(existing.id, [medication.id]);
-          }
-        }
-      } else {
-        snomedMap.set(key, medication);
-      }
+      fillMaps(snomedMap, snomedCode, medication, idReplacementMap);
     } else {
       remainingMedications.push(medication);
     }

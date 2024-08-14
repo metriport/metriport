@@ -5,8 +5,8 @@ import {
   SNOMED_CODE,
   SNOMED_OID,
   combineResources,
-  combineTwoResources,
   createCompositeKey,
+  fillMaps,
   getDateFromString,
 } from "../shared";
 
@@ -49,40 +49,10 @@ export function groupSameConditions(conditions: Condition[]): {
 
     if (icd10Code) {
       const compKey = JSON.stringify(createCompositeKey(icd10Code, date));
-      const existingCondition = icd10Map.get(compKey);
-      if (existingCondition?.id) {
-        const mergedCondition = combineTwoResources(existingCondition, condition);
-        icd10Map.set(compKey, mergedCondition);
-
-        const existingReplacementIds = idReplacementMap.get(existingCondition.id);
-        if (condition.id) {
-          if (existingReplacementIds) {
-            idReplacementMap.set(existingCondition.id, [...existingReplacementIds, condition.id]);
-          } else {
-            idReplacementMap.set(existingCondition.id, [condition.id]);
-          }
-        }
-      } else {
-        icd10Map.set(compKey, condition);
-      }
+      fillMaps(icd10Map, compKey, condition, idReplacementMap);
     } else if (snomedCode) {
       const compKey = JSON.stringify(createCompositeKey(snomedCode, date));
-      const existingCondition = snomedMap.get(compKey);
-      if (existingCondition?.id) {
-        const mergedCondition = combineTwoResources(existingCondition, condition);
-        snomedMap.set(compKey, mergedCondition);
-
-        const existingReplacementIds = idReplacementMap.get(existingCondition.id);
-        if (condition.id) {
-          if (existingReplacementIds) {
-            idReplacementMap.set(existingCondition.id, [...existingReplacementIds, condition.id]);
-          } else {
-            idReplacementMap.set(existingCondition.id, [condition.id]);
-          }
-        }
-      } else {
-        snomedMap.set(compKey, condition);
-      }
+      fillMaps(snomedMap, compKey, condition, idReplacementMap);
     } else {
       remainingConditions.push(condition);
     }
