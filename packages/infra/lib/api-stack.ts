@@ -296,7 +296,6 @@ export class APIStack extends Stack {
       outboundPatientDiscoveryLambda,
       outboundDocumentQueryLambda,
       outboundDocumentRetrievalLambda,
-      fhirToBundleLambda,
     } = new LambdasNestedStack(this, "LambdasNestedStack", {
       config: props.config,
       vpc: this.vpc,
@@ -426,7 +425,6 @@ export class APIStack extends Stack {
       medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
       fhirToCdaConverterLambda,
-      fhirToBundleLambda,
       searchIngestionQueue: ccdaSearchQueue,
       searchEndpoint: ccdaSearchDomain.domainEndpoint,
       searchAuth: { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
@@ -523,7 +521,6 @@ export class APIStack extends Stack {
     outboundPatientDiscoveryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentRetrievalLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
-    fhirToBundleLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
 
     // Access grant for medical documents bucket
     sandboxSeedDataBucket &&

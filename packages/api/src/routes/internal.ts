@@ -1,6 +1,5 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { getReferencesFromResources } from "@metriport/core/external/fhir/shared/bundle";
-import { getReferencesFromFHIR } from "@metriport/core/external/fhir/shared/references";
 import BadRequestError from "@metriport/core/util/error/bad-request";
 import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
@@ -19,6 +18,7 @@ import { isEnhancedCoverageEnabledForCx } from "../external/aws/app-config";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
 import { makeFhirApi } from "../external/fhir/api/api-factory";
 import { countResources } from "../external/fhir/patient/count-resources";
+import { getReferencesFromFHIR } from "../external/fhir/references/get-references";
 import { OrganizationModel } from "../models/medical/organization";
 import userRoutes from "./devices/internal-user";
 import { requestLogger } from "./helpers/request-logger";

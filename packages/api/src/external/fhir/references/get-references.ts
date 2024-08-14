@@ -1,10 +1,10 @@
 import { Reference, Resource, ResourceType } from "@medplum/fhirtypes";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { chunk, groupBy } from "lodash";
-import { executeAsynchronously } from "../../../util/concurrency";
-import { makeFhirApi } from "../api/api-factory";
+import { makeFhirApi } from "../../../external/fhir/api/api-factory";
+import { MAX_IDS_PER_REQUEST } from "../shared/paginated";
 
 const queriesInParallel = 5;
-export const MAX_IDS_PER_REQUEST = 150;
 
 export async function getReferencesFromFHIR(
   references: Reference[],

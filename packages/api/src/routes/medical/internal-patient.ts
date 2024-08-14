@@ -1,10 +1,9 @@
 import { genderAtBirthSchema } from "@metriport/api-sdk";
-import { getConsolidatedBundleFromS3 } from "@metriport/core/command/consolidated/consolidated-on-s3";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { internalSendConsolidatedSchema, sleep, stringToBoolean } from "@metriport/shared";
+import { sleep, stringToBoolean } from "@metriport/shared";
 import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -15,16 +14,13 @@ import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
-import {
-  getConsolidated,
-  getConsolidatedAndSendToCx,
-} from "../../command/medical/patient/consolidated-get";
+import { getConsolidated } from "../../command/medical/patient/consolidated-get";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getPatientIds,
   getPatientOrFail,
-  getPatients,
   getPatientStates,
+  getPatients,
 } from "../../command/medical/patient/get-patient";
 import {
   PatientUpdateCmd,
@@ -67,7 +63,7 @@ import {
   getFromQueryAsArrayOrFail,
   getFromQueryAsBoolean,
 } from "../util";
-import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
+import { PatientLinksDTO, dtoFromCW } from "./dtos/linkDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
@@ -756,53 +752,6 @@ router.post(
       requestId,
     });
     return res.status(status.OK).json({ requestId });
-  })
-);
-
-/**
- * POST /internal/patient/:id/consolidated
- *
- * Continues the process of consolidating a patient's data by sending the consolidated bundle to the customer.
- *
- * @param req.query.cxId The customer ID.
- * @param req.params.id The patient ID.
- * @param req.body The data to send to getConsolidatedAndSendToCx and S3 info about the bundle to be loaded.
- * @see internalSendConsolidatedSchema on @metriport/shared
- */
-router.post(
-  "/:id/consolidated",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const id = getFromParamsOrFail("id", req);
-    const patient = await getPatientOrFail({ cxId, id });
-    const {
-      requestId,
-      conversionType,
-      resources,
-      generateAiBrief,
-      dateFrom,
-      dateTo,
-      bundleLocation,
-      bundleFilename,
-    } = internalSendConsolidatedSchema.parse(req.body);
-
-    const bundle = await getConsolidatedBundleFromS3({
-      bundleLocation,
-      bundleFilename,
-    });
-
-    await getConsolidatedAndSendToCx({
-      patient,
-      bundle,
-      requestId,
-      conversionType,
-      generateAiBrief,
-      resources,
-      dateFrom,
-      dateTo,
-    });
-    return res.sendStatus(status.OK);
   })
 );
 
