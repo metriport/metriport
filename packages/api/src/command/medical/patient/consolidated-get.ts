@@ -270,7 +270,22 @@ export async function getConsolidated({
 
     analytics(defaultAnalyticsProps);
 
+    const startedAt = new Date();
+    const initialBundleLength = bundle.entry?.length;
     bundle = deduplicateSearchSetBundle(bundle);
+    const finalBundleLength = bundle.entry?.length;
+
+    const deduplicationAnalyticsProps = {
+      distinctId: patient.cxId,
+      event: EventTypes.fhirDeduplication,
+      properties: {
+        patientId: patient.id,
+        initialBundleLength,
+        finalBundleLength,
+        duration: elapsedTimeFromNow(startedAt),
+      },
+    };
+    analytics(deduplicationAnalyticsProps);
     if (shouldCreateMedicalRecord) {
       // If we need to convert to medical record, we also have to update the resulting
       // FHIR bundle to represent that.

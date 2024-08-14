@@ -20,38 +20,62 @@ import {
  * 2. Combine the Conditions in each group into one master condition and return the array of only unique and maximally filled out Conditions
  */
 export function deduplicateConditions(conditions: Condition[]) {
-  const { snomedMap, icd10Map, remainingConditions } = groupSameConditions(conditions);
-  return combineConditions(snomedMap, icd10Map, remainingConditions);
+  const { snomedMap, icd10Map, remainingConditions, idReplacementMap } =
+    groupSameConditions(conditions);
+  return {
+    combinedConditions: combineConditions(snomedMap, icd10Map, remainingConditions),
+    idReplacementMap,
+  };
 }
 
 export function groupSameConditions(conditions: Condition[]): {
   icd10Map: Map<string, Condition>;
   snomedMap: Map<string, Condition>;
   remainingConditions: Condition[];
+  idReplacementMap: Map<string, string[]>;
 } {
   const snomedMap = new Map<string, Condition>();
   const icd10Map = new Map<string, Condition>();
   const remainingConditions: Condition[] = [];
+  const idReplacementMap = new Map<string, string[]>();
 
   for (const condition of conditions) {
-    const date = createDateKey(condition);
+    const date = getDate(condition);
     const { snomedCode, icd10Code } = extractCodes(condition.code);
 
     if (icd10Code) {
       const compKey = JSON.stringify(createCompositeKey(icd10Code, date));
       const existingCondition = icd10Map.get(compKey);
-      if (existingCondition) {
+      if (existingCondition?.id) {
         const mergedCondition = combineTwoResources(existingCondition, condition);
         icd10Map.set(compKey, mergedCondition);
+
+        const existingReplacementIds = idReplacementMap.get(existingCondition.id);
+        if (condition.id) {
+          if (existingReplacementIds) {
+            idReplacementMap.set(existingCondition.id, [...existingReplacementIds, condition.id]);
+          } else {
+            idReplacementMap.set(existingCondition.id, [condition.id]);
+          }
+        }
       } else {
         icd10Map.set(compKey, condition);
       }
     } else if (snomedCode) {
       const compKey = JSON.stringify(createCompositeKey(snomedCode, date));
       const existingCondition = snomedMap.get(compKey);
-      if (existingCondition) {
+      if (existingCondition?.id) {
         const mergedCondition = combineTwoResources(existingCondition, condition);
         snomedMap.set(compKey, mergedCondition);
+
+        const existingReplacementIds = idReplacementMap.get(existingCondition.id);
+        if (condition.id) {
+          if (existingReplacementIds) {
+            idReplacementMap.set(existingCondition.id, [...existingReplacementIds, condition.id]);
+          } else {
+            idReplacementMap.set(existingCondition.id, [condition.id]);
+          }
+        }
       } else {
         snomedMap.set(compKey, condition);
       }
@@ -60,14 +84,16 @@ export function groupSameConditions(conditions: Condition[]): {
     }
   }
 
-  return { icd10Map, snomedMap, remainingConditions };
+  return { icd10Map, snomedMap, remainingConditions, idReplacementMap };
 }
 
-export function createDateKey(condition: Condition): string | undefined {
+export function getDate(condition: Condition): string | undefined {
   if (condition.onsetPeriod?.start) {
     return getDateFromString(condition.onsetPeriod?.start);
   } else if (condition.onsetDateTime) {
     return getDateFromString(condition.onsetDateTime);
+  } else if (condition.onsetAge?.value) {
+    return condition.onsetAge.value.toString() + condition.onsetAge.unit;
   }
 
   return undefined;

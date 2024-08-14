@@ -11,6 +11,20 @@ export const SNOMED_OID = "2.16.840.1.113883.6.96";
 export const ICD_10_CODE = "icd-10";
 export const ICD_10_OID = "2.16.840.1.113883.6.90";
 
+// Keeping these for future reference. We're likely going to use some of these with other resources
+// const RX_NORM_CODE = "rxnorm";
+// const NDC_CODE = "ndc";
+
+// const ICD_9_CODE = "icd-9";
+// const LOINC_CODE = "loinc";
+// const MEDICARE_CODE = "medicare";
+// const CPT_CODE = "cpt";
+// const IMO_CODE = "imo";
+
+// common code systems
+// const NUCC_SYSTEM = "nucc";
+// const US_NPI_SYSTEM = "npi";
+
 export function createCompositeKey(code: string, date: string | undefined): CompositeKey {
   return {
     code,
@@ -25,8 +39,8 @@ export function getDateFromString(dateString: string): string {
 
 function createExtensionReference(resourceType: string, id: string | undefined) {
   return {
-    url: "http://example.org/fhir/StructureDefinition/original-resource",
-    valueReference: { reference: `${resourceType}/${id}` },
+    url: "http://hl7.org/fhir/StructureDefinition/codesystem-sourceReference",
+    sourceReference: { value: `${resourceType}/${id}` },
   };
 }
 

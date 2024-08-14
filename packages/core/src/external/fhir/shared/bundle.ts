@@ -94,7 +94,7 @@ export function buildBundle(entries: BundleEntry[]): SearchSetBundle<Resource> {
   return { resourceType: "Bundle", total: entries.length, type: "searchset", entry: entries };
 }
 
-export function extractFhirTypesFromBundle(bundle: Bundle): {
+export type ExtractedFhirTypes = {
   diagnosticReports: DiagnosticReport[];
   patient?: Patient | undefined;
   practitioners: Practitioner[];
@@ -115,7 +115,9 @@ export function extractFhirTypesFromBundle(bundle: Bundle): {
   relatedPersons: RelatedPerson[];
   coverages: Coverage[];
   organizations: Organization[];
-} {
+};
+
+export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
   let patient: Patient | undefined;
   const practitioners: Practitioner[] = [];
   const diagnosticReports: DiagnosticReport[] = [];

@@ -1,31 +1,23 @@
 import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
-import { extractFhirTypesFromBundle } from "../external/fhir/shared/bundle";
+import { ExtractedFhirTypes, extractFhirTypesFromBundle } from "../external/fhir/shared/bundle";
 import { deduplicateConditions } from "./resources/condition";
 
-// Keeping these for future reference. We're likely going to use some of these with other resources
-// const RX_NORM_CODE = "rxnorm";
-// const NDC_CODE = "ndc";
-
-// const ICD_9_CODE = "icd-9";
-// const LOINC_CODE = "loinc";
-// const MEDICARE_CODE = "medicare";
-// const CPT_CODE = "cpt";
-// const IMO_CODE = "imo";
-
-// common code systems
-// const NUCC_SYSTEM = "nucc";
-// const US_NPI_SYSTEM = "npi";
-
 export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> {
-  const resourceArrays = extractFhirTypesFromBundle(fhirBundle);
+  let resourceArrays = extractFhirTypesFromBundle(fhirBundle);
   const deduplicatedEntries: BundleEntry<Resource>[] = [];
+
+  // TODO: Add unit tests for the ID replacements
+
+  // Conditions deduplication
+  const output = deduplicateConditions(resourceArrays.conditions);
+  resourceArrays = replaceResourceReferences(resourceArrays, output.idReplacementMap, "Condition");
+  deduplicatedEntries.push(...output.combinedConditions);
 
   // Rebuild the entries with deduplicated resources and add whatever is left unprocessed
   for (const [key, resources] of Object.entries(resourceArrays)) {
     if (key === "conditions") {
-      const deduplicatedConditions = deduplicateConditions(resourceArrays.conditions);
-      deduplicatedEntries.push(...deduplicatedConditions);
+      continue;
     } else {
       // Push all other resources unchanged
       const entriesArray = resources && Array.isArray(resources) ? resources : [resources];
@@ -41,4 +33,23 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   deduplicatedBundle.total = deduplicatedEntries.length;
 
   return deduplicatedBundle;
+}
+
+/**
+ * Finds and updates references to the deduplicated resources
+ */
+function replaceResourceReferences(
+  resourceArrays: ExtractedFhirTypes,
+  idMap: Map<string, string[]>,
+  resourceType: string
+): ExtractedFhirTypes {
+  let updatedArrays = JSON.stringify(resourceArrays);
+  for (const [masterId, otherIds] of idMap.entries()) {
+    for (const id of otherIds) {
+      const regex = new RegExp(`${resourceType}/${id}`, "g");
+      updatedArrays = updatedArrays.replace(regex, masterId);
+    }
+  }
+
+  return JSON.parse(updatedArrays);
 }
