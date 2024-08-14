@@ -10,6 +10,7 @@ import {
   Immunization,
   Location,
   Medication,
+  MedicationAdministration,
   MedicationRequest,
   MedicationStatement,
   Observation,
@@ -100,6 +101,7 @@ export type ExtractedFhirTypes = {
   practitioners: Practitioner[];
   medications: Medication[];
   medicationRequests: MedicationRequest[];
+  medicationAdministrations: MedicationAdministration[];
   medicationStatements: MedicationStatement[];
   conditions: Condition[];
   allergies: AllergyIntolerance[];
@@ -122,6 +124,7 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
   const practitioners: Practitioner[] = [];
   const diagnosticReports: DiagnosticReport[] = [];
   const medicationRequests: MedicationRequest[] = [];
+  const medicationAdministrations: MedicationAdministration[] = [];
   const medicationStatements: MedicationStatement[] = [];
   const medications: Medication[] = [];
   const conditions: Condition[] = [];
@@ -146,6 +149,8 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
         patient = resource as Patient;
       } else if (resource?.resourceType === "MedicationRequest") {
         medicationRequests.push(resource as MedicationRequest);
+      } else if (resource?.resourceType === "MedicationAdministration") {
+        medicationAdministrations.push(resource as MedicationAdministration);
       } else if (resource?.resourceType === "MedicationStatement") {
         medicationStatements.push(resource as MedicationStatement);
       } else if (resource?.resourceType === "Medication") {
@@ -205,6 +210,7 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
     practitioners,
     diagnosticReports,
     medications,
+    medicationAdministrations,
     medicationStatements,
     medicationRequests,
     conditions,
