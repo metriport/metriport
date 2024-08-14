@@ -21,15 +21,20 @@ import {
  * 2. Combine the Conditions in each group into one master condition and return the array of only unique and maximally filled out Conditions
  */
 export function deduplicateConditions(conditions: Condition[]) {
-  const { maps, remainingConditions, idReplacementMap } = groupSameConditions(conditions);
+  const { snomedMap, icd10Map, remainingConditions, idReplacementMap } =
+    groupSameConditions(conditions);
   return {
-    combinedConditions: combineResources(maps, remainingConditions),
+    combinedConditions: combineResources({
+      combinedMaps: [snomedMap, icd10Map],
+      remainingResources: remainingConditions,
+    }),
     idReplacementMap,
   };
 }
 
 export function groupSameConditions(conditions: Condition[]): {
-  maps: Map<string, Condition>[];
+  snomedMap: Map<string, Condition>;
+  icd10Map: Map<string, Condition>;
   remainingConditions: Condition[];
   idReplacementMap: Map<string, string[]>;
 } {
@@ -83,7 +88,7 @@ export function groupSameConditions(conditions: Condition[]): {
     }
   }
 
-  return { maps: [snomedMap, icd10Map], remainingConditions, idReplacementMap };
+  return { snomedMap, icd10Map, remainingConditions, idReplacementMap };
 }
 
 export function getDate(condition: Condition): string | undefined {

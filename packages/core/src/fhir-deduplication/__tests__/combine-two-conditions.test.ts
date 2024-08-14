@@ -2,7 +2,7 @@ import { faker } from "@faker-js/faker";
 import { Condition } from "@medplum/fhirtypes";
 import { makeCondition } from "../../fhir-to-cda/cda-templates/components/__tests__/make-condition";
 import { combineTwoResources } from "../shared";
-import { icd10CodeMd, onsetPeriod2, snomedCodeMd } from "./condition-examples";
+import { icd10CodeMd, onsetPeriod2, snomedCodeMd } from "./examples/condition-examples";
 
 let conditionId: string;
 let conditionId2: string;
@@ -63,11 +63,29 @@ describe("groupSameConditions", () => {
     expect(combinedCondition.extension).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          valueReference: expect.objectContaining({
-            reference: expect.stringContaining(conditionId2),
+          sourceReference: expect.objectContaining({
+            value: expect.stringContaining(conditionId2),
           }),
         }),
       ])
     );
+  });
+
+  it("does not combine extensions when it's disabled", () => {
+    condition.extension = [
+      {
+        url: "https://public.metriport.com/fhir/StructureDefinition/doc-id-extension.json",
+        valueString: "some_cda_file.xml",
+      },
+    ];
+    condition2.extension = [
+      {
+        url: "https://public.metriport.com/fhir/StructureDefinition/doc-id-extension.json",
+        valueString: "some_other_cda_file.xml",
+      },
+    ];
+    const combinedCondition = combineTwoResources(condition, condition2, false);
+    console.log(combinedCondition);
+    expect(combinedCondition.extension).toBe(undefined);
   });
 });

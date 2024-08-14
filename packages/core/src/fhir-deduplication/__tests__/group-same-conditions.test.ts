@@ -10,7 +10,7 @@ import {
   onsetPeriod2,
   snomedCodeAo,
   snomedCodeMd,
-} from "./condition-examples";
+} from "./examples/condition-examples";
 
 let conditionId: string;
 let conditionId2: string;

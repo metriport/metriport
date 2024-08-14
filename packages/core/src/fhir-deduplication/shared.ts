@@ -1,4 +1,4 @@
-import { Condition } from "@medplum/fhirtypes";
+import { Resource } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
 
 export type CompositeKey = {
@@ -12,8 +12,11 @@ export const ICD_10_CODE = "icd-10";
 export const ICD_10_OID = "2.16.840.1.113883.6.90";
 
 // Keeping these for future reference. We're likely going to use some of these with other resources
-// const RX_NORM_CODE = "rxnorm";
-// const NDC_CODE = "ndc";
+export const RXNORM_CODE = "rxnorm";
+export const RXNORM_OID = "2.16.840.1.113883.6.88";
+
+export const NDC_CODE = "ndc";
+export const NDC_OID = "2.16.840.1.113883.6.69";
 
 // const ICD_9_CODE = "icd-9";
 // const LOINC_CODE = "loinc";
@@ -44,12 +47,24 @@ function createExtensionReference(resourceType: string, id: string | undefined) 
   };
 }
 
-export function combineTwoResources(c1: Condition, c2: Condition): Condition {
-  const combined = deepMerge({ ...c1 }, c2);
-  const extensionRef = createExtensionReference(c2.resourceType, c2.id);
+export function combineTwoResources<T extends Resource>(
+  r1: T,
+  r2: T,
+  isExtensionIncluded = true
+): T {
+  const combined = deepMerge({ ...r1 }, r2, isExtensionIncluded);
+  const extensionRef = createExtensionReference(r2.resourceType, r2.id);
 
-  // This part combines conditions together and adds the ID references of the duplicates into the master condition (regardless of whether new information was found)
-  combined.extension = [...(c1.extension || []), extensionRef];
+  // This part combines resources together and adds the ID references of the duplicates into the master resource
+  // regardless of whether new information was found
+
+  if (!isExtensionIncluded) {
+    delete combined.extension;
+  } else if ("extension" in r1) {
+    combined.extension = [...r1.extension, extensionRef];
+  } else {
+    combined.extension = [extensionRef];
+  }
   return combined;
 }
 
@@ -57,8 +72,9 @@ export function combineTwoResources(c1: Condition, c2: Condition): Condition {
 const conditionKeysToIgnore = ["id", "resourceType", "subject"];
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function deepMerge(target: any, source: any): any {
+export function deepMerge(target: any, source: any, isExtensionIncluded: boolean): any {
   for (const key of Object.keys(source)) {
+    if (key === "extension" && !isExtensionIncluded) continue;
     if (conditionKeysToIgnore.includes(key)) continue;
 
     if (Array.isArray(source[key]) && Array.isArray(target[key])) {
@@ -66,7 +82,7 @@ export function deepMerge(target: any, source: any): any {
       target[key] = mergeArrays(target[key], source[key]);
     } else if (source[key] instanceof Object && key in target) {
       // Recursively merge objects
-      target[key] = deepMerge(target[key], source[key]);
+      target[key] = deepMerge(target[key], source[key], isExtensionIncluded);
     } else {
       // Directly assign values
       if (key === "__proto__" || key === "constructor") continue;
@@ -93,7 +109,13 @@ export function mergeArrays(targetArray: any[], sourceArray: any[]): any[] {
   return combinedArray;
 }
 
-export function combineResources<T>(combinedMaps: Map<string, T>[], remainingResources: T[]): T[] {
+export function combineResources<T>({
+  combinedMaps,
+  remainingResources,
+}: {
+  combinedMaps: Map<string, T>[];
+  remainingResources: T[];
+}): T[] {
   const combinedResources: T[] = [];
   for (const map of combinedMaps) {
     for (const condition of map.values()) {

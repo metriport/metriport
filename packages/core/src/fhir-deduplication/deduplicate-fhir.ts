@@ -10,9 +10,13 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   // TODO: Add unit tests for the ID replacements
 
   // Conditions deduplication
-  const output = deduplicateConditions(resourceArrays.conditions);
-  resourceArrays = replaceResourceReferences(resourceArrays, output.idReplacementMap, "Condition");
-  deduplicatedEntries.push(...output.combinedConditions);
+  const conditionsResult = deduplicateConditions(resourceArrays.conditions);
+  resourceArrays = replaceResourceReferences(
+    resourceArrays,
+    conditionsResult.idReplacementMap,
+    "Condition"
+  );
+  deduplicatedEntries.push(...conditionsResult.combinedConditions);
 
   // Rebuild the entries with deduplicated resources and add whatever is left unprocessed
   for (const [key, resources] of Object.entries(resourceArrays)) {
