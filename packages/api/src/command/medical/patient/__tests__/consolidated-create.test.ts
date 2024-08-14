@@ -4,7 +4,6 @@ import { createUploadFilePath } from "@metriport/core/domain/document/upload";
 import { HapiFhirClient } from "@metriport/core/external/fhir/api/api-hapi";
 import * as s3Upload from "@metriport/core/fhir-to-cda/upload";
 import { v4 as uuidv4 } from "uuid";
-import { Config } from "../../../../shared/config";
 import { diagnosticReport, patient, transactionRespBundle } from "../../__tests__/fhir-payloads";
 import {
   createOrUpdateConsolidatedPatientData,
@@ -16,7 +15,6 @@ let fhir_executeBatch: jest.SpyInstance;
 let uploadFhirBundleToS3_mock: jest.SpyInstance;
 beforeAll(() => {
   jest.restoreAllMocks();
-  Config.getFHIRServerUrl = jest.fn(() => "http://localhost:8888");
   fhir_readResource = jest.spyOn(HapiFhirClient.prototype, "readResource");
   fhir_executeBatch = jest.spyOn(HapiFhirClient.prototype, "executeBatch");
   uploadFhirBundleToS3_mock = jest.spyOn(s3Upload, "uploadFhirBundleToS3").mockResolvedValue();

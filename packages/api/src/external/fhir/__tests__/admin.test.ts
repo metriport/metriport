@@ -2,27 +2,18 @@
 import { HapiFhirAdminClient } from "@metriport/core/external/fhir/api/api-hapi";
 import { v4 as uuidv4 } from "uuid";
 import { makeOrgNumber } from "../../../domain/medical/__tests__/organization";
-import { Config } from "../../../shared/config";
 import { createTenant, createTenantIfNotExists } from "../admin";
 
 let apiMock_createTenant: jest.SpyInstance;
 let apiMock_listTenants: jest.SpyInstance;
-
-beforeAll(() => {
+beforeEach(() => {
   jest.restoreAllMocks();
-  Config.getFHIRServerUrl = jest.fn(() => "http://localhost:8888");
   apiMock_createTenant = jest
     .spyOn(HapiFhirAdminClient.prototype, "createTenant")
     .mockImplementation(async () => {});
   apiMock_listTenants = jest
     .spyOn(HapiFhirAdminClient.prototype, "listTenants")
     .mockImplementation(async () => []);
-});
-afterAll(() => {
-  jest.restoreAllMocks();
-});
-beforeEach(() => {
-  jest.clearAllMocks();
 });
 
 describe("fhir admin", () => {
