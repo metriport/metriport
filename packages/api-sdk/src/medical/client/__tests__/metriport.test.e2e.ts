@@ -18,7 +18,7 @@ const metriport = new MetriportMedicalApi(apiKey, { baseAddress });
 
 describe("listDocuments", () => {
   if (!patientId) {
-    console.log(`Missing TEST_PATIENT_ID env var, SKIPPING E2E TESTS!!!`);
+    console.log(`Missing TEST_PATIENT_ID env var, SKIPPING the listDocuments related E2E TESTS!!!`);
     it.skip("skipping e2e tests", () => {});
     return;
   }

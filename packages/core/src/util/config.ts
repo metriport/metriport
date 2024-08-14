@@ -106,4 +106,21 @@ export class Config {
   static getIheParsedResponsesBucketName(): string | undefined {
     return getEnvVar("IHE_PARSED_RESPONSES_BUCKET_NAME");
   }
+
+  // TODO 1319 Move this to required
+  static getFHIRtoBundleLambdaName(): string | undefined {
+    return getEnvVar("FHIR_TO_BUNDLE_LAMBDA_NAME");
+  }
+
+  static getBedrockRegion(): string | undefined {
+    return getEnvVar("BEDROCK_REGION");
+  }
+
+  static getBedrockVersion(): string | undefined {
+    return getEnvVar("BEDROCK_VERSION");
+  }
+
+  static getAiBriefModelId(): string | undefined {
+    return getEnvVar("AI_BRIEF_MODEL_ID");
+  }
 }

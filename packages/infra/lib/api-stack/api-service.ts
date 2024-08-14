@@ -97,6 +97,7 @@ export function createAPIService({
   outboundDocumentRetrievalLambda,
   generalBucket,
   medicalDocumentsUploadBucket,
+  fhirToBundleLambda,
   fhirToMedicalRecordLambda,
   fhirToCdaConverterLambda,
   searchIngestionQueue,
@@ -126,6 +127,7 @@ export function createAPIService({
   outboundDocumentRetrievalLambda: ILambda;
   generalBucket: s3.Bucket;
   medicalDocumentsUploadBucket: s3.Bucket;
+  fhirToBundleLambda: ILambda;
   fhirToMedicalRecordLambda: ILambda | undefined;
   fhirToCdaConverterLambda: ILambda | undefined;
   searchIngestionQueue: IQueue;
@@ -209,6 +211,7 @@ export function createAPIService({
           DB_POOL_SETTINGS: dbPoolSettings,
           TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
           API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
+          API_LB_ADDRESS: props.config.loadBalancerDnsName,
           ...(props.config.apiGatewayUsagePlanId
             ? { API_GW_USAGE_PLAN_ID: props.config.apiGatewayUsagePlanId }
             : {}),
@@ -237,6 +240,7 @@ export function createAPIService({
           OUTBOUND_PATIENT_DISCOVERY_LAMBDA_NAME: outboundPatientDiscoveryLambda.functionName,
           OUTBOUND_DOC_QUERY_LAMBDA_NAME: outboundDocumentQueryLambda.functionName,
           OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,
+          FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
           ...(fhirToMedicalRecordLambda && {
             FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
           }),
@@ -344,6 +348,7 @@ export function createAPIService({
   outboundDocumentQueryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   outboundDocumentRetrievalLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToCdaConverterLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
+  fhirToBundleLambda.grantInvoke(fargateService.taskDefinition.taskRole);
 
   // Access grant for medical document buckets
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);

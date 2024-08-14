@@ -1,11 +1,21 @@
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
-import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
+import {
+  createMRSummaryBriefFileName,
+  createMRSummaryFileName,
+} from "@metriport/core/domain/medical-record-summary";
 import { getFeatureFlagValueStringArray } from "@metriport/core/external/aws/app-config";
+import { Brief, bundleToBrief } from "@metriport/core/external/aws/lambda-logic/bundle-to-brief";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import { bundleToHtmlADHD } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-adhd";
-import { getSignedUrl as coreGetSignedUrl, makeS3Client } from "@metriport/core/external/aws/s3";
+import {
+  getSignedUrl as coreGetSignedUrl,
+  makeS3Client,
+  S3Utils,
+} from "@metriport/core/external/aws/s3";
 import { getEnvType } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { errorToString, MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import chromium from "@sparticuz/chromium";
 import dayjs from "dayjs";
@@ -16,6 +26,7 @@ import puppeteer from "puppeteer-core";
 import * as uuid from "uuid";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
+import { apiClient } from "./shared/oss-api";
 import { sleep } from "./shared/sleep";
 
 // Keep this as early on the file as possible
@@ -27,6 +38,8 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
+const apiURL = getEnvOrFail("API_URL");
+const dashURL = getEnvOrFail("DASH_URL");
 // converter config
 const pdfConvertTimeout = getEnvOrFail("PDF_CONVERT_TIMEOUT_MS");
 const appConfigAppID = getEnvOrFail("APPCONFIG_APPLICATION_ID");
@@ -34,6 +47,8 @@ const appConfigConfigID = getEnvOrFail("APPCONFIG_CONFIGURATION_ID");
 const GRACEFUL_SHUTDOWN_ALLOWANCE = dayjs.duration({ seconds: 3 });
 const PDF_CONTENT_LOAD_ALLOWANCE = dayjs.duration({ seconds: 2.5 });
 const s3Client = makeS3Client(region);
+const newS3Client = new S3Utils(region);
+const ossApi = apiClient(apiURL);
 
 export const handler = Sentry.AWSLambda.wrapHandler(
   async ({
@@ -43,53 +58,76 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     dateFrom,
     dateTo,
     conversionType,
+    generateAiBrief,
   }: Input): Promise<Output> => {
     const { log } = out(`cx ${cxId}, patient ${patientId}`);
     log(
       `Running with conversionType: ${conversionType}, dateFrom: ${dateFrom}, ` +
-        `dateTo: ${dateTo}, fileName: ${fhirFileName}, bucket: ${bucketName}}`
+        `dateTo: ${dateTo}, generateAiBrief: ${generateAiBrief}, fileName: ${fhirFileName}, bucket: ${bucketName}}`
     );
-
     try {
       const cxsWithADHDFeatureFlagValue = await getCxsWithADHDFeatureFlagValue();
       const isADHDFeatureFlagEnabled = cxsWithADHDFeatureFlagValue.includes(cxId);
       const bundle = await getBundleFromS3(fhirFileName);
+      const isBriefFeatureFlagEnabled = await isAiBriefEnabled(generateAiBrief, cxId);
 
-      const html = isADHDFeatureFlagEnabled ? bundleToHtmlADHD(bundle) : bundleToHtml(bundle);
+      // TODO: Condense this functionality under a single function and put it on `@metriport/core`, so this can be used both here, and on the Lambda.
+      const aiBriefContent = isBriefFeatureFlagEnabled
+        ? await bundleToBrief(bundle, cxId, patientId)
+        : undefined;
+      const briefFileName = createMRSummaryBriefFileName(cxId, patientId);
+      const aiBrief = prepareBriefToBundle({ aiBrief: aiBriefContent });
+
+      const html = isADHDFeatureFlagEnabled
+        ? bundleToHtmlADHD(bundle, aiBrief)
+        : bundleToHtml(bundle, aiBrief);
       const hasContents = doesMrSummaryHaveContents(html);
       log(`MR Summary has contents: ${hasContents}`);
       const htmlFileName = createMRSummaryFileName(cxId, patientId, "html");
 
-      await s3Client
-        .putObject({
-          Bucket: bucketName,
-          Key: htmlFileName,
-          Body: html,
-          ContentType: "application/html",
-        })
-        .promise();
+      const mrS3Info = await storeMrSummaryAndBriefInS3({
+        bucketName,
+        htmlFileName,
+        briefFileName,
+        html,
+        aiBrief: aiBriefContent,
+        log,
+      });
 
-      let url: string;
+      const getSignedUrlPromise = async function () {
+        if (conversionType === "pdf") {
+          const pdfFileName = createMRSummaryFileName(cxId, patientId, "pdf");
+          return await convertStoreAndReturnPdfUrl({ fileName: pdfFileName, html, bucketName });
+        } else {
+          return await getSignedUrl(htmlFileName);
+        }
+      };
 
-      if (conversionType === "pdf") {
-        const pdfFileName = createMRSummaryFileName(cxId, patientId, "pdf");
-        url = await convertStoreAndReturnPdfUrl({ fileName: pdfFileName, html, bucketName });
-      } else {
-        url = await getSignedUrl(htmlFileName);
-      }
+      const [urlResp] = await Promise.allSettled([
+        getSignedUrlPromise(),
+        createFeedbackForBrief({
+          cxId,
+          patientId,
+          aiBrief,
+          mrVersion: mrS3Info.version,
+          mrLocation: mrS3Info.location,
+        }),
+      ]);
+      if (urlResp.status === "rejected") throw new Error(urlResp.reason);
+      const url = urlResp.value;
 
       return { url, hasContents };
-      //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+    } catch (error) {
       const msg = `Error converting FHIR to MR Summary`;
-      log(`${msg} - error: ${error.message}`);
+      log(`${msg} - error: ${errorToString(error)}`);
       capture.error(msg, {
         extra: {
-          error,
           patientId,
           dateFrom,
           dateTo,
+          conversionType,
           context: lambdaName,
+          error,
         },
       });
       throw error;
@@ -99,6 +137,22 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
 async function getSignedUrl(fileName: string) {
   return coreGetSignedUrl({ fileName, bucketName, awsRegion: region });
+}
+
+// TODO merge this with API's checkAiBriefEnabled and move it to Core
+async function isAiBriefEnabled(
+  generateAiBrief: boolean | undefined,
+  cxId: string
+): Promise<boolean> {
+  if (!generateAiBrief) return false;
+  // TODO checking for the FF, keep that no the OSS API
+  const isAiBriefFeatureFlagEnabled = await isAiBriefFeatureFlagEnabledForCx(cxId);
+  return isAiBriefFeatureFlagEnabled;
+}
+
+export async function isAiBriefFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxsWithADHDFeatureFlagValue = await getCxsWithAiBriefFeatureFlagValue();
+  return cxsWithADHDFeatureFlagValue.includes(cxId);
 }
 
 async function getBundleFromS3(fileName: string) {
@@ -212,6 +266,26 @@ async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {
   return [];
 }
 
+async function getCxsWithAiBriefFeatureFlagValue(): Promise<string[]> {
+  try {
+    const featureFlag = await getFeatureFlagValueStringArray(
+      region,
+      appConfigAppID,
+      appConfigConfigID,
+      getEnvType(),
+      "cxsWithAiBriefFeatureFlag"
+    );
+
+    if (featureFlag?.enabled && featureFlag?.values) return featureFlag.values;
+  } catch (error) {
+    const msg = `Failed to get Feature Flag Value`;
+    const extra = { featureFlagName: "cxsWithAiBriefFeatureFlag" };
+    capture.error(msg, { extra: { ...extra, error } });
+  }
+
+  return [];
+}
+
 function doesMrSummaryHaveContents(html: string): boolean {
   let atLeastOneSectionHasContents = false;
 
@@ -230,4 +304,100 @@ function doesMrSummaryHaveContents(html: string): boolean {
   }
 
   return atLeastOneSectionHasContents;
+}
+
+async function storeMrSummaryAndBriefInS3({
+  bucketName,
+  htmlFileName,
+  briefFileName,
+  html,
+  aiBrief,
+  log,
+}: {
+  bucketName: string;
+  htmlFileName: string;
+  briefFileName: string;
+  html: string;
+  aiBrief: string | undefined;
+  log: typeof console.log;
+}): Promise<{ location: string; version?: string | undefined }> {
+  log(`Storing MR Summary and Brief in S3`);
+  const promiseMrSummary = async function () {
+    return newS3Client.uploadFile({
+      bucket: bucketName,
+      key: htmlFileName,
+      file: Buffer.from(html),
+      contentType: "application/html",
+    });
+  };
+
+  const promiseBriefSummary = async function () {
+    if (!aiBrief) return;
+    return newS3Client.uploadFile({
+      bucket: bucketName,
+      key: briefFileName,
+      file: Buffer.from(aiBrief),
+      contentType: "text/plain",
+    });
+  };
+
+  const [mrResp, briefResp] = await Promise.allSettled([promiseMrSummary(), promiseBriefSummary()]);
+  if (mrResp.status === "rejected" || briefResp?.status === "rejected") {
+    const failed = [mrResp, briefResp].map(p => (p.status === "rejected" ? p.reason : []));
+    const message = "Failed to store MR Summary and/or Brief in S3";
+    const additionalInfo = { reason: failed.join("; "), bucketName, htmlFileName, briefFileName };
+    log(`${message}: ${JSON.stringify(additionalInfo)}`);
+    throw new MetriportError(message, null, additionalInfo);
+  }
+
+  const version = "VersionId" in mrResp.value ? (mrResp.value.VersionId as string) : undefined;
+  return { location: mrResp.value.Location, version };
+}
+
+function prepareBriefToBundle({ aiBrief }: { aiBrief: string | undefined }): Brief | undefined {
+  if (!aiBrief) return undefined;
+  const feedbackId = uuidv7();
+  const feedbackLink = `${dashURL}/feedback/${feedbackId}`;
+  return {
+    id: feedbackId,
+    content: aiBrief,
+    link: feedbackLink,
+  };
+}
+
+async function createFeedbackForBrief({
+  cxId,
+  patientId,
+  aiBrief,
+  mrVersion,
+  mrLocation,
+}: {
+  cxId: string;
+  patientId: string;
+  aiBrief: Brief | undefined;
+  mrVersion: string | undefined;
+  mrLocation: string | undefined;
+}): Promise<void> {
+  if (!aiBrief) return;
+  try {
+    await ossApi.internal.createFeedback({
+      cxId,
+      entityId: patientId,
+      id: aiBrief.id,
+      content: aiBrief.content,
+      version: mrVersion,
+      location: mrLocation,
+    });
+  } catch (error) {
+    const msg = `Failed to create feedback for AI Brief`;
+    const extra = { cxId, patientId, aiBriefId: aiBrief.id };
+    const { log } = out("createFeedbackForBrief");
+    log(`${msg} - error: ${errorToString(error)}, extra: ${JSON.stringify(extra)}`);
+    capture.error(msg, {
+      extra: {
+        ...extra,
+        error,
+      },
+    });
+  }
 }

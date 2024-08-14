@@ -24,7 +24,7 @@ function settings() {
     // Number of messages the lambda pull from SQS at once
     lambdaBatchSize: 1,
     // Max number of concurrent instances of the lambda that an Amazon SQS event source can invoke [2 - 1000].
-    maxConcurrency: prod ? 128 : 4,
+    maxConcurrency: prod ? 384 : 4,
     // How long can the lambda run for, max is 900 seconds (15 minutes)
     lambdaTimeout,
     // Number of times we want to retry a message, this includes throttles!
@@ -81,8 +81,7 @@ export function createConnector({
     lambdaLayers: [lambdaLayers.shared],
     envType,
     alarmSnsAction,
-    alarmMaxAgeOfOldestMessage: Duration.minutes(2),
-    alarmMaxAgeOfOldestMessageDlq: Duration.minutes(5),
+    alarmMaxAgeOfOldestMessage: Duration.minutes(4),
     maxMessageCountAlarmThreshold: 2000,
   });
 

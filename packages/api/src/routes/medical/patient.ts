@@ -1,12 +1,10 @@
-import { demographicsSchema, patientCreateSchema } from "@metriport/api-sdk";
-import {
-  GetConsolidatedQueryProgressResponse,
-  StartConsolidatedQueryProgressResponse,
-} from "@metriport/api-sdk/medical/models/patient";
 import {
   consolidationConversionType,
-  mrFormat,
-} from "@metriport/core/domain/conversion/fhir-to-medical-record";
+  demographicsSchema,
+  patientCreateSchema,
+} from "@metriport/api-sdk";
+import { GetConsolidatedQueryProgressResponse } from "@metriport/api-sdk/medical/models/patient";
+import { mrFormat } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { getRequestId } from "@metriport/core/util/request";
@@ -27,11 +25,13 @@ import {
 } from "../../command/medical/patient/create-medical-record";
 import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
+import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 import {
   getPatientOrFail,
   getPatients,
   matchPatient,
 } from "../../command/medical/patient/get-patient";
+import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
 import { handleDataContribution } from "../../command/medical/patient/handle-data-contributions";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
@@ -51,6 +51,7 @@ import {
   getCxIdOrFail,
   getFrom,
   getFromParamsOrFail,
+  getFromQueryAsBoolean,
   getFromQueryOrFail,
 } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
@@ -62,8 +63,6 @@ import {
   schemaUpdateToPatientData,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
-import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 
 const router = Router();
 
@@ -327,6 +326,7 @@ const medicalRecordFormatSchema = z.enum(mrFormat);
  *        Accepts "pdf", "html", and "json". If provided, the Webhook payload will contain a signed URL to download
  *        the file, which is active for 3 minutes. If not provided, will send json payload in the webhook.
  * @param req.body Optional metadata to be sent through Webhook.
+ * @param req.generateAiBrief Optional flag to include an AI-generated medical record brief into the medical record summary. Note, that you have to request access to this feature by contacting Metriport directly.
  * @return status for querying the Patient's consolidated data.
  */
 router.post(
@@ -339,10 +339,14 @@ router.post(
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
     const type = getFrom("query").optional("conversionType", req);
+    const generateAiBrief = Config.isSandbox()
+      ? false
+      : getFromQueryAsBoolean("generateAiBrief", req);
+
     const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
     const cxConsolidatedRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
-    const queryResponse = await startConsolidatedQuery({
+    const respPayload = await startConsolidatedQuery({
       cxId,
       patientId,
       resources,
@@ -350,9 +354,8 @@ router.post(
       dateTo,
       conversionType,
       cxConsolidatedRequestMetadata: cxConsolidatedRequestMetadata?.metadata,
+      generateAiBrief,
     });
-
-    const respPayload: StartConsolidatedQueryProgressResponse = queryResponse;
 
     return res.json(respPayload);
   })

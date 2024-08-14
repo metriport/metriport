@@ -130,6 +130,11 @@ type EnvConfigBase = {
     placeIndexName: string;
     placeIndexRegion: string;
   };
+  bedrock?: {
+    modelId: string;
+    region: string;
+    anthropicVersion: string;
+  };
   openSearch: OpenSearchConnectorConfig;
   carequality?: {
     secretNames: {
@@ -219,6 +224,7 @@ type EnvConfigBase = {
 
 export type EnvConfigNonSandbox = EnvConfigBase & {
   environmentType: EnvType.staging | EnvType.production;
+  dashUrl: string;
   fhirToMedicalLambda: {
     nodeRuntimeArn: string;
   };
