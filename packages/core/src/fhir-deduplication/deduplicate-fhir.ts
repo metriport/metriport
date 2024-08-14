@@ -10,6 +10,7 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
 
   // TODO: Add unit tests for the ID replacements
 
+  const processedArrays: string[] = [];
   // Conditions deduplication
   const conditionsResult = deduplicateConditions(resourceArrays.conditions);
   resourceArrays = replaceResourceReferences(
@@ -17,6 +18,7 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
     conditionsResult.idReplacementMap,
     "Condition"
   );
+  processedArrays.push("conditions");
   deduplicatedEntries.push(...conditionsResult.combinedConditions);
 
   // Medication deduplication
@@ -26,11 +28,12 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
     medicationsResult.idReplacementMap,
     "Medication"
   );
+  processedArrays.push("medications");
   deduplicatedEntries.push(...medicationsResult.combinedMedications);
 
   // Rebuild the entries with deduplicated resources and add whatever is left unprocessed
   for (const [key, resources] of Object.entries(resourceArrays)) {
-    if (key === "conditions" || key === "medications") {
+    if (processedArrays.includes(key)) {
       continue;
     } else {
       // Push all other resources unchanged
