@@ -92,3 +92,14 @@ export function mergeArrays(targetArray: any[], sourceArray: any[]): any[] {
 
   return combinedArray;
 }
+
+export function combineResources<T>(combinedMaps: Map<string, T>[], remainingResources: T[]): T[] {
+  const combinedResources: T[] = [];
+  for (const map of combinedMaps) {
+    for (const condition of map.values()) {
+      combinedResources.push(condition);
+    }
+  }
+  combinedResources.push(...remainingResources);
+  return combinedResources;
+}
