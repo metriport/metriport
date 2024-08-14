@@ -2,7 +2,6 @@ import {
   OutboundPatientDiscoveryResp,
   OutboundDocumentQueryResp,
   OutboundDocumentRetrievalResp,
-  isSuccessfulOutboundDocQueryResponse,
   isSuccessfulOutboundDocRetrievalResponse,
   isNonErroringOutboundPatientDiscoveryResponse,
   isSuccessfulOutboundPatientDiscoveryResponse,
@@ -151,6 +150,13 @@ export function getOutboundPatientDiscoverySuccessFailureCount(
     specificErrorCount,
     gatewayCounts,
   };
+}
+
+export function isSuccessfulOutboundDocQueryResponse(obj: OutboundDocumentQueryResp): boolean {
+  return (
+    "documentReference" in obj ||
+    (obj.operationOutcome?.issue?.some(issue => issue.code === "no-documents-found") ?? false)
+  );
 }
 
 export function getOutboundDocQuerySuccessFailureCount(response: OutboundDocumentQueryResp[]): {
