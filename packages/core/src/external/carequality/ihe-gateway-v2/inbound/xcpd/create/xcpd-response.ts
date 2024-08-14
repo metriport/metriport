@@ -213,7 +213,7 @@ function createIti55SoapBody(
         },
         ...(response.operationOutcome && {
           acknowledgementDetail: {
-            typeCode: "E",
+            "@_typeCode": "E",
             code: response.operationOutcome?.issue?.[0]?.details?.coding?.[0]
               ? {
                   "@_code": response.operationOutcome.issue[0].details?.coding[0].code,
