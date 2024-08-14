@@ -168,7 +168,6 @@ module.exports = class cda extends dataHandler {
           // if parsing throws an error on minified data, try on original
           parseString(data, parseOptions, (err, result) => {
             if (err) {
-              // if still throwing an error, give up
               const parser = new XMLParser({
                 ignoreAttributes: false,
                 attributeNamePrefix: "",
@@ -189,6 +188,7 @@ module.exports = class cda extends dataHandler {
                 result._originalData = data;
                 fulfill(result);
               } catch (err) {
+                // if still throwing an error, give up
                 reject(err);
               }
             }
