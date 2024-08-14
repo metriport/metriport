@@ -313,19 +313,16 @@ export class S3Utils {
     key,
     file,
     contentType,
-    metadata,
   }: {
     bucket: string;
     key: string;
     file: Buffer;
     contentType?: string;
-    metadata?: Record<string, string>;
   }): Promise<AWS.S3.ManagedUpload.SendData> {
     const uploadParams: AWS.S3.PutObjectRequest = {
       Bucket: bucket,
       Key: key,
       Body: file,
-      ...(metadata ? { Metadata: metadata } : undefined),
     };
     if (contentType) {
       uploadParams.ContentType = contentType;

@@ -1,23 +1,89 @@
 import { z } from "zod";
-import { medical } from "@metriport/shared";
 import { queryStatusSchema } from "./patient";
 
-export const resourcesSearchableByPatient = medical.resourcesSearchableByPatient;
+export const resourcesSearchableByPatient = [
+  "Account",
+  "AllergyIntolerance",
+  "Appointment",
+  "AppointmentResponse",
+  "AuditEvent",
+  "Basic",
+  "BodyStructure",
+  "CarePlan",
+  "CareTeam",
+  "ChargeItem",
+  "Claim",
+  "ClaimResponse",
+  "ClinicalImpression",
+  "Communication",
+  "CommunicationRequest",
+  "Composition",
+  "Condition",
+  "Consent",
+  "Contract",
+  "Coverage",
+  "CoverageEligibilityRequest",
+  "CoverageEligibilityResponse",
+  "DetectedIssue",
+  "Device",
+  "DeviceRequest",
+  "DeviceUseStatement",
+  "DiagnosticReport",
+  "DocumentManifest",
+  "DocumentReference",
+  "Encounter",
+  "EnrollmentRequest",
+  "EpisodeOfCare",
+  "ExplanationOfBenefit",
+  "FamilyMemberHistory",
+  "Flag",
+  "Goal",
+  "GuidanceResponse",
+  "ImagingStudy",
+  "Immunization",
+  "ImmunizationEvaluation",
+  "ImmunizationRecommendation",
+  "Invoice",
+  "List",
+  "MeasureReport",
+  "Media",
+  "MedicationAdministration",
+  "MedicationDispense",
+  "MedicationRequest",
+  "MedicationStatement",
+  "MolecularSequence",
+  "NutritionOrder",
+  "Observation",
+  "Person",
+  "Procedure",
+  "Provenance",
+  "QuestionnaireResponse",
+  "RelatedPerson",
+  "RequestGroup",
+  "ResearchSubject",
+  "RiskAssessment",
+  "ServiceRequest",
+  "Specimen",
+] as const;
 export type ResourceSearchableByPatient = (typeof resourcesSearchableByPatient)[number];
 
-export const resourcesSearchableBySubject = medical.resourcesSearchableBySubject;
+export const resourcesSearchableBySubject = ["AdverseEvent", "Task"] as const;
 export type ResourceSearchableBySubject = (typeof resourcesSearchableBySubject)[number];
 
-export const generalResources = medical.generalResources;
+export const generalResources = ["Practitioner"] as const;
 export type GeneralResources = (typeof generalResources)[number];
 
-export const resourceTypeForConsolidation = medical.resourceTypeForConsolidation;
+export const resourceTypeForConsolidation = [
+  ...resourcesSearchableByPatient,
+  ...resourcesSearchableBySubject,
+  ...generalResources,
+] as const;
 
-export type ResourceTypeForConsolidation = medical.ResourceTypeForConsolidation;
+export type ResourceTypeForConsolidation = (typeof resourceTypeForConsolidation)[number];
 
 export const resourceSchema = z.array(z.enum(resourceTypeForConsolidation));
 
-export const consolidationConversionType = medical.consolidationConversionType;
+export const consolidationConversionType = ["html", "pdf", "json"] as const;
 export type ConsolidationConversionType = (typeof consolidationConversionType)[number];
 
 export const getConsolidatedFiltersSchema = z.object({

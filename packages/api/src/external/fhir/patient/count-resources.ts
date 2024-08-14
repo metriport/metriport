@@ -1,12 +1,9 @@
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import { Patient } from "@metriport/core/domain/patient";
-import {
-  fullDateQueryForResource,
-  getPatientFilter,
-} from "@metriport/core/external/fhir/patient/resource-filter";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { makeFhirApi } from "../api/api-factory";
+import { fullDateQueryForResource, getPatientFilter } from "./resource-filter";
 
 export type ResourceCount = {
   total: number;
