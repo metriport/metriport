@@ -32,12 +32,12 @@ export function groupSameMedAdmins(medAdmins: MedicationAdministration[]): {
   const remainingMedAdmins: MedicationAdministration[] = [];
 
   for (const medAdmin of medAdmins) {
+    const medRef = medAdmin.medicationReference?.reference;
     const date = getDateFromResource(medAdmin, "date-hm");
     const status = medAdmin.status;
-    const medRef = medAdmin.medicationReference?.reference;
     const dosage = medAdmin.dosage;
 
-    if (medRef && dosage) {
+    if (medRef) {
       const key = JSON.stringify({ medRef, status, date, dosage });
       fillMaps(medAdminsMap, key, medAdmin, refReplacementMap);
     } else {
@@ -51,21 +51,3 @@ export function groupSameMedAdmins(medAdmins: MedicationAdministration[]): {
     refReplacementMap: refReplacementMap,
   };
 }
-
-// type CompositeKey = {
-//   refId: string;
-//   date: string | undefined;
-//   dosage: MedicationAdministrationDosage | undefined;
-// };
-
-// function createCompositeKey(
-//   refId: string,
-//   date: string | undefined,
-//   dosage: MedicationAdministrationDosage | undefined
-// ): CompositeKey {
-//   return {
-//     refId,
-//     date,
-//     dosage,
-//   };
-// }

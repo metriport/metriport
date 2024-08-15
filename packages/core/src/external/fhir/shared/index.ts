@@ -12,6 +12,8 @@ import {
   Immunization,
   Location,
   Medication,
+  MedicationAdministration,
+  MedicationRequest,
   MedicationStatement,
   ResourceType as MedplumResourceType,
   Observation,
@@ -204,6 +206,16 @@ export function isMedication(resource: Resource | undefined): resource is Medica
   return resource?.resourceType === "Medication";
 }
 
+export function isMedicationAdministration(
+  resource: Resource | undefined
+): resource is MedicationAdministration {
+  return resource?.resourceType === "MedicationAdministration";
+}
+
+export function isMedicationRequest(resource: Resource | undefined): resource is MedicationRequest {
+  return resource?.resourceType === "MedicationRequest";
+}
+
 export function isAllergyIntolerance(
   resource: Resource | undefined
 ): resource is AllergyIntolerance {
@@ -228,6 +240,20 @@ export function findConditionResources(fhirBundle: Bundle): Condition[] {
 
 export function findMedicationResources(fhirBundle: Bundle): Medication[] {
   return fhirBundle.entry?.map(e => e.resource).filter(isMedication) || [];
+}
+
+export function findMedicationAdministrationResources(
+  fhirBundle: Bundle
+): MedicationAdministration[] {
+  return fhirBundle.entry?.map(e => e.resource).filter(isMedicationAdministration) || [];
+}
+
+export function findMedicationRequestResources(fhirBundle: Bundle): MedicationRequest[] {
+  return fhirBundle.entry?.map(e => e.resource).filter(isMedicationRequest) || [];
+}
+
+export function findMedicationStatementResources(fhirBundle: Bundle): MedicationStatement[] {
+  return fhirBundle.entry?.map(e => e.resource).filter(isMedicationStatement) || [];
 }
 
 export function findPatientResource(fhirBundle: Bundle): Patient | undefined {

@@ -4,6 +4,8 @@ import { ExtractedFhirTypes, extractFhirTypesFromBundle } from "../external/fhir
 import { deduplicateConditions } from "./resources/condition";
 import { deduplicateMedications } from "./resources/medication";
 import { deduplicateMedAdmins } from "./resources/medication-administration";
+import { deduplicateMedRequests } from "./resources/medication-request";
+import { deduplicateMedStatements } from "./resources/medication-statement";
 
 export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> {
   let resourceArrays = extractFhirTypesFromBundle(fhirBundle);
@@ -28,6 +30,18 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   resourceArrays = replaceResourceReferences(resourceArrays, medAdminsResult.refReplacementMap);
   processedArrays.push("medicationAdministrations");
   deduplicatedEntries.push(...medAdminsResult.combinedMedAdmins);
+
+  // MedicationRequest deduplication
+  const medRequestResult = deduplicateMedRequests(resourceArrays.medicationRequests);
+  resourceArrays = replaceResourceReferences(resourceArrays, medRequestResult.refReplacementMap);
+  processedArrays.push("medicationRequests");
+  deduplicatedEntries.push(...medRequestResult.combinedMedRequests);
+
+  // MedicationStatement deduplication
+  const medStatementResult = deduplicateMedStatements(resourceArrays.medicationStatements);
+  resourceArrays = replaceResourceReferences(resourceArrays, medStatementResult.refReplacementMap);
+  processedArrays.push("medicationStatements");
+  deduplicatedEntries.push(...medStatementResult.combinedMedStatements);
 
   // Rebuild the entries with deduplicated resources and add whatever is left unprocessed
   for (const [key, resources] of Object.entries(resourceArrays)) {

@@ -1,8 +1,9 @@
+import { faker } from "@faker-js/faker";
 import { Medication } from "@medplum/fhirtypes";
 
 export function makeMedication(params: Partial<Medication> = {}): Medication {
   return {
-    ...(params.id ? { id: params.id } : {}),
+    ...(params.id ? { id: params.id } : { id: faker.string.uuid() }),
     resourceType: "Medication",
     code: params.code ?? {
       coding: [
