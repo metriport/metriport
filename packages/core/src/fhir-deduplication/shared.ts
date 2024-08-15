@@ -158,32 +158,25 @@ export function getDateFromResource<T extends Resource>(
   resource: T,
   dateFormat?: DateFormats
 ): string | undefined {
-  console.log("getDate started");
   if ("onsetPeriod" in resource) {
-    console.log("onsetPeriod triggered");
     const onsetPeriod = resource.onsetPeriod;
     if (onsetPeriod.start) {
       return getDateFromString(onsetPeriod.start);
     }
   } else if ("onsetDateTime" in resource) {
-    console.log("onsetDateTime triggered");
     return getDateFromString(resource.onsetDateTime);
   } else if ("onsetAge" in resource) {
-    console.log("onsetAge triggered");
     const onsetAge = resource.onsetAge;
     if (onsetAge.value) {
       return onsetAge.value.toString() + resource.onsetAge.unit;
     }
   } else if ("effectiveDateTime" in resource) {
-    console.log("effectiveDateTime triggered");
     return getDateFromString(resource.effectiveDateTime, dateFormat);
   } else if ("effectivePeriod" in resource) {
-    console.log("effectivePeriod triggered");
     if (resource.effectivePeriod.start) {
       return getDateFromString(resource.effectivePeriod.start);
     }
   }
 
-  console.log("NO DATE FOUND!!");
   return undefined;
 }

@@ -27,20 +27,18 @@ export function groupSameMedAdmins(medAdmins: MedicationAdministration[]): {
   remainingMedAdmins: MedicationAdministration[];
   refReplacementMap: Map<string, string[]>;
 } {
-  console.log("groupSameMedAdmins!!!");
   const medAdminsMap = new Map<string, MedicationAdministration>();
   const refReplacementMap = new Map<string, string[]>();
   const remainingMedAdmins: MedicationAdministration[] = [];
 
   for (const medAdmin of medAdmins) {
-    console.log("STARTING DATE FOR", medAdmin.id);
     const date = getDateFromResource(medAdmin, "date-hm");
-    console.log("DATE FOR", medAdmin.id, "IS", date);
+    const status = medAdmin.status;
     const medRef = medAdmin.medicationReference?.reference;
     const dosage = medAdmin.dosage;
 
     if (medRef && dosage) {
-      const key = JSON.stringify({ medRef, date, dosage });
+      const key = JSON.stringify({ medRef, status, date, dosage });
       fillMaps(medAdminsMap, key, medAdmin, refReplacementMap);
     } else {
       remainingMedAdmins.push(medAdmin);
