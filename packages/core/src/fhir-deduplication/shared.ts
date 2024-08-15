@@ -1,6 +1,9 @@
 import { Resource } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
 
+const dateFormats = ["date-hm", "date"] as const;
+export type DateFormats = (typeof dateFormats)[number];
+
 export type CompositeKey = {
   code: string;
   date: string | undefined;
@@ -13,9 +16,26 @@ export function createCompositeKey(code: string, date: string | undefined): Comp
   };
 }
 
-export function getDateFromString(dateString: string): string {
+export function getDateFromString(dateString: string, dateFormat?: DateFormats): string {
   const date = new Date(dateString);
-  return date.toLocaleDateString();
+
+  if (isNaN(date.getTime())) {
+    throw new Error("Invalid date string");
+  }
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+
+  if (dateFormat === "date") {
+    return `${year}-${month}-${day}`;
+  } else if (dateFormat === "date-hm") {
+    return `${year}-${month}-${day}-${hours}${minutes}`;
+  } else {
+    return date.toLocaleDateString();
+  }
 }
 
 function createExtensionReference(resourceType: string, id: string | undefined) {
@@ -111,12 +131,13 @@ export function fillMaps<T extends Resource>(
   map: Map<string, T>,
   key: string,
   resource: T,
-  refReplacementMap: Map<string, string[]>
+  refReplacementMap: Map<string, string[]>,
+  isExtensionIncluded = true
 ): void {
   const existing = map.get(key);
   if (existing?.id) {
     const masterRef = `${existing.resourceType}/${existing.id}`;
-    const merged = combineTwoResources(existing, resource, false);
+    const merged = combineTwoResources(existing, resource, isExtensionIncluded);
     map.set(key, merged);
 
     const existingReplacementIds = refReplacementMap.get(masterRef);
@@ -131,4 +152,38 @@ export function fillMaps<T extends Resource>(
   } else {
     map.set(key, resource);
   }
+}
+
+export function getDateFromResource<T extends Resource>(
+  resource: T,
+  dateFormat?: DateFormats
+): string | undefined {
+  console.log("getDate started");
+  if ("onsetPeriod" in resource) {
+    console.log("onsetPeriod triggered");
+    const onsetPeriod = resource.onsetPeriod;
+    if (onsetPeriod.start) {
+      return getDateFromString(onsetPeriod.start);
+    }
+  } else if ("onsetDateTime" in resource) {
+    console.log("onsetDateTime triggered");
+    return getDateFromString(resource.onsetDateTime);
+  } else if ("onsetAge" in resource) {
+    console.log("onsetAge triggered");
+    const onsetAge = resource.onsetAge;
+    if (onsetAge.value) {
+      return onsetAge.value.toString() + resource.onsetAge.unit;
+    }
+  } else if ("effectiveDateTime" in resource) {
+    console.log("effectiveDateTime triggered");
+    return getDateFromString(resource.effectiveDateTime, dateFormat);
+  } else if ("effectivePeriod" in resource) {
+    console.log("effectivePeriod triggered");
+    if (resource.effectivePeriod.start) {
+      return getDateFromString(resource.effectivePeriod.start);
+    }
+  }
+
+  console.log("NO DATE FOUND!!");
+  return undefined;
 }

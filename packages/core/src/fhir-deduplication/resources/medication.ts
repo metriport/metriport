@@ -6,9 +6,8 @@ import {
   RXNORM_OID,
   SNOMED_CODE,
   SNOMED_OID,
-  combineResources,
-  fillMaps,
-} from "../shared";
+} from "../../util/constants";
+import { combineResources, fillMaps } from "../shared";
 
 export function deduplicateMedications(medications: Medication[]): {
   combinedMedications: Medication[];
@@ -43,11 +42,11 @@ export function groupSameMedications(medications: Medication[]): {
     const { rxnormCode, ndcCode, snomedCode } = extractCodes(medication.code);
 
     if (rxnormCode) {
-      fillMaps(rxnormMap, rxnormCode, medication, idReplacementMap);
+      fillMaps(rxnormMap, rxnormCode, medication, idReplacementMap, false);
     } else if (ndcCode) {
-      fillMaps(ndcMap, ndcCode, medication, idReplacementMap);
+      fillMaps(ndcMap, ndcCode, medication, idReplacementMap, false);
     } else if (snomedCode) {
-      fillMaps(snomedMap, snomedCode, medication, idReplacementMap);
+      fillMaps(snomedMap, snomedCode, medication, idReplacementMap, false);
     } else {
       remainingMedications.push(medication);
     }

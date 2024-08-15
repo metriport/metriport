@@ -1,17 +1,17 @@
-import { MedicationAdministration, MedicationAdministrationDosage } from "@medplum/fhirtypes";
-import { combineResources, fillMaps } from "../shared";
+import { MedicationAdministration } from "@medplum/fhirtypes";
+import { combineResources, fillMaps, getDateFromResource } from "../shared";
 
 export function deduplicateMedAdmins(medications: MedicationAdministration[]): {
   combinedMedAdmins: MedicationAdministration[];
-  idReplacementMap: Map<string, string[]>;
+  refReplacementMap: Map<string, string[]>;
 } {
-  const { medAdminsMap, remainingMedAdmins, idReplacementMap } = groupSameMedAdmins(medications);
+  const { medAdminsMap, remainingMedAdmins, refReplacementMap } = groupSameMedAdmins(medications);
   return {
     combinedMedAdmins: combineResources({
       combinedMaps: [medAdminsMap],
       remainingResources: remainingMedAdmins,
     }),
-    idReplacementMap,
+    refReplacementMap,
   };
 }
 
@@ -25,21 +25,23 @@ export function deduplicateMedAdmins(medications: MedicationAdministration[]): {
 export function groupSameMedAdmins(medAdmins: MedicationAdministration[]): {
   medAdminsMap: Map<string, MedicationAdministration>;
   remainingMedAdmins: MedicationAdministration[];
-  idReplacementMap: Map<string, string[]>;
+  refReplacementMap: Map<string, string[]>;
 } {
+  console.log("groupSameMedAdmins!!!");
   const medAdminsMap = new Map<string, MedicationAdministration>();
-  const idReplacementMap = new Map<string, string[]>();
+  const refReplacementMap = new Map<string, string[]>();
   const remainingMedAdmins: MedicationAdministration[] = [];
 
   for (const medAdmin of medAdmins) {
-    // TODO: Deal with medications that contain >1 rxnorm / ndc code
-    // const date = getDate(medAdmin);
+    console.log("STARTING DATE FOR", medAdmin.id);
+    const date = getDateFromResource(medAdmin, "date-hm");
+    console.log("DATE FOR", medAdmin.id, "IS", date);
     const medRef = medAdmin.medicationReference?.reference;
     const dosage = medAdmin.dosage;
 
     if (medRef && dosage) {
-      const key = JSON.stringify(createCompositeKey(medRef, dosage));
-      fillMaps(medAdminsMap, key, medAdmin, idReplacementMap);
+      const key = JSON.stringify({ medRef, date, dosage });
+      fillMaps(medAdminsMap, key, medAdmin, refReplacementMap);
     } else {
       remainingMedAdmins.push(medAdmin);
     }
@@ -48,21 +50,24 @@ export function groupSameMedAdmins(medAdmins: MedicationAdministration[]): {
   return {
     medAdminsMap,
     remainingMedAdmins,
-    idReplacementMap,
+    refReplacementMap: refReplacementMap,
   };
 }
 
-type CompositeKey = {
-  refId: string;
-  dosage: MedicationAdministrationDosage | undefined;
-};
+// type CompositeKey = {
+//   refId: string;
+//   date: string | undefined;
+//   dosage: MedicationAdministrationDosage | undefined;
+// };
 
-function createCompositeKey(
-  refId: string,
-  dosage: MedicationAdministrationDosage | undefined
-): CompositeKey {
-  return {
-    refId,
-    dosage,
-  };
-}
+// function createCompositeKey(
+//   refId: string,
+//   date: string | undefined,
+//   dosage: MedicationAdministrationDosage | undefined
+// ): CompositeKey {
+//   return {
+//     refId,
+//     date,
+//     dosage,
+//   };
+// }

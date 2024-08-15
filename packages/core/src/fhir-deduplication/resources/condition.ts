@@ -1,6 +1,6 @@
 import { CodeableConcept, Condition } from "@medplum/fhirtypes";
 import { ICD_10_CODE, ICD_10_OID, SNOMED_CODE, SNOMED_OID } from "../../util/constants";
-import { combineResources, createCompositeKey, fillMaps, getDateFromString } from "../shared";
+import { combineResources, createCompositeKey, fillMaps, getDateFromResource } from "../shared";
 
 /**
  * Approach:
@@ -36,7 +36,7 @@ export function groupSameConditions(conditions: Condition[]): {
   const refReplacementMap = new Map<string, string[]>();
 
   for (const condition of conditions) {
-    const date = getDate(condition);
+    const date = getDateFromResource(condition);
     const { snomedCode, icd10Code } = extractCodes(condition.code);
 
     if (icd10Code) {
@@ -51,18 +51,6 @@ export function groupSameConditions(conditions: Condition[]): {
   }
 
   return { snomedMap, icd10Map, remainingConditions, refReplacementMap };
-}
-
-export function getDate(condition: Condition): string | undefined {
-  if (condition.onsetPeriod?.start) {
-    return getDateFromString(condition.onsetPeriod?.start);
-  } else if (condition.onsetDateTime) {
-    return getDateFromString(condition.onsetDateTime);
-  } else if (condition.onsetAge?.value) {
-    return condition.onsetAge.value.toString() + condition.onsetAge.unit;
-  }
-
-  return undefined;
 }
 
 export function extractCodes(concept: CodeableConcept | undefined): {
