@@ -101,7 +101,7 @@ export async function calculateDocumentConversionStatus({
     const conversionStatus = expectedPatient.data.documentQueryProgress?.convert?.status;
     if (conversionStatus === "completed") {
       if (expectedPatient.data.documentQueryProgress?.triggerConsolidated) {
-        log(`Kicking off getConsolidated for patient ${expectedPatient.id} in CQ`);
+        log(`Kicking off getConsolidated for patient ${expectedPatient.id}`);
         getConsolidated({ patient: expectedPatient, conversionType: "pdf" }).catch(
           processAsyncError("Post-DQ getConsolidated")
         );
