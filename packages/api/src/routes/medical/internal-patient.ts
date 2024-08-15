@@ -2,6 +2,7 @@ import { genderAtBirthSchema } from "@metriport/api-sdk";
 import { getConsolidatedBundleFromS3 } from "@metriport/core/command/consolidated/consolidated-on-s3";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { internalSendConsolidatedSchema, sleep, stringToBoolean } from "@metriport/shared";
@@ -792,7 +793,7 @@ router.post(
       bundleFilename,
     });
 
-    await getConsolidatedAndSendToCx({
+    getConsolidatedAndSendToCx({
       patient,
       bundle,
       requestId,
@@ -801,7 +802,11 @@ router.post(
       resources,
       dateFrom,
       dateTo,
-    });
+    }).catch(
+      processAsyncError(
+        "POST /internal/patient/:id/consolidated, calling getConsolidatedAndSendToCx"
+      )
+    );
     return res.sendStatus(status.OK);
   })
 );
