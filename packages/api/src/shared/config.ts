@@ -84,11 +84,9 @@ export class Config {
     return `${Config.getApiUrl()}/connect`;
   }
 
+  /** @deprecated Use core's version of Config instead */
   static getApiUrl(): string {
-    return getEnvVarOrFail("API_URL");
-  }
-  static getApiLoadBalancerAddress(): string | undefined {
-    return getEnvVar("API_LB_ADDRESS");
+    return CoreConfig.getApiUrl();
   }
 
   static getApiGatewayUsagePlanId(): string | undefined {
