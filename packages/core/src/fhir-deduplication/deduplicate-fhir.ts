@@ -11,11 +11,7 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
 
   // Conditions deduplication
   const conditionsResult = deduplicateConditions(resourceArrays.conditions);
-  resourceArrays = replaceResourceReferences(
-    resourceArrays,
-    conditionsResult.idReplacementMap,
-    "Condition"
-  );
+  resourceArrays = replaceResourceReferences(resourceArrays, conditionsResult.refReplacementMap);
   deduplicatedEntries.push(...conditionsResult.combinedConditions);
 
   // Rebuild the entries with deduplicated resources and add whatever is left unprocessed
@@ -44,14 +40,13 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
  */
 function replaceResourceReferences(
   resourceArrays: ExtractedFhirTypes,
-  idMap: Map<string, string[]>,
-  resourceType: string
+  idMap: Map<string, string[]>
 ): ExtractedFhirTypes {
   let updatedArrays = JSON.stringify(resourceArrays);
-  for (const [masterId, otherIds] of idMap.entries()) {
-    for (const id of otherIds) {
-      const regex = new RegExp(`${resourceType}/${id}`, "g");
-      updatedArrays = updatedArrays.replace(regex, masterId);
+  for (const [masterRef, consumedRefs] of idMap.entries()) {
+    for (const consumedRef of consumedRefs) {
+      const regex = new RegExp(consumedRef, "g");
+      updatedArrays = updatedArrays.replace(regex, masterRef);
     }
   }
 

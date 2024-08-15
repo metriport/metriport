@@ -24,6 +24,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { intersection } from "lodash";
 import { processAsyncError } from "../../../errors";
+import { isFhirDeduplicationEnabledForCx } from "../../../external/aws/app-config";
 import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
@@ -291,7 +292,10 @@ export async function getConsolidated({
 
     const startedAt = new Date();
     const initialBundleLength = bundle.entry?.length;
-    bundle = deduplicateSearchSetBundle(bundle);
+
+    if (await isFhirDeduplicationEnabledForCx(patient.cxId)) {
+      bundle = deduplicateSearchSetBundle(bundle);
+    }
     const finalBundleLength = bundle.entry?.length;
 
     const deduplicationAnalyticsProps = {

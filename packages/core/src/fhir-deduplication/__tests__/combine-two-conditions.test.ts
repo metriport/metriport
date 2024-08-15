@@ -85,7 +85,6 @@ describe("groupSameConditions", () => {
       },
     ];
     const combinedCondition = combineTwoResources(condition, condition2, false);
-    console.log(combinedCondition);
     expect(combinedCondition.extension).toBe(undefined);
   });
 });

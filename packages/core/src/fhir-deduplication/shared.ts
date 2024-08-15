@@ -6,28 +6,6 @@ export type CompositeKey = {
   date: string | undefined;
 };
 
-export const SNOMED_CODE = "snomed";
-export const SNOMED_OID = "2.16.840.1.113883.6.96";
-export const ICD_10_CODE = "icd-10";
-export const ICD_10_OID = "2.16.840.1.113883.6.90";
-
-// Keeping these for future reference. We're likely going to use some of these with other resources
-export const RXNORM_CODE = "rxnorm";
-export const RXNORM_OID = "2.16.840.1.113883.6.88";
-
-export const NDC_CODE = "ndc";
-export const NDC_OID = "2.16.840.1.113883.6.69";
-
-// const ICD_9_CODE = "icd-9";
-// const LOINC_CODE = "loinc";
-// const MEDICARE_CODE = "medicare";
-// const CPT_CODE = "cpt";
-// const IMO_CODE = "imo";
-
-// common code systems
-// const NUCC_SYSTEM = "nucc";
-// const US_NPI_SYSTEM = "npi";
-
 export function createCompositeKey(code: string, date: string | undefined): CompositeKey {
   return {
     code,
@@ -124,4 +102,33 @@ export function combineResources<T>({
   }
   combinedResources.push(...remainingResources);
   return combinedResources;
+}
+
+/**
+ * Fills in existing maps.
+ */
+export function fillMaps<T extends Resource>(
+  map: Map<string, T>,
+  key: string,
+  resource: T,
+  refReplacementMap: Map<string, string[]>
+): void {
+  const existing = map.get(key);
+  if (existing?.id) {
+    const masterRef = `${existing.resourceType}/${existing.id}`;
+    const merged = combineTwoResources(existing, resource, false);
+    map.set(key, merged);
+
+    const existingReplacementIds = refReplacementMap.get(masterRef);
+    if (resource.id) {
+      const consumedRef = `${resource.resourceType}/${resource.id}`;
+      if (existingReplacementIds) {
+        refReplacementMap.set(masterRef, [...existingReplacementIds, consumedRef]);
+      } else {
+        refReplacementMap.set(masterRef, [consumedRef]);
+      }
+    }
+  } else {
+    map.set(key, resource);
+  }
 }
