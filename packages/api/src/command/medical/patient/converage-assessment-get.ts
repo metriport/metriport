@@ -103,7 +103,7 @@ async function getCoverageAssessment({
   patient: PatientModel;
   log: typeof console.log;
 }): Promise<CoverageAssessment> {
-  const mrSummaryFileName = createMRSummaryFileName(cxId, patient.id, "json");
+  const mrSummaryFileName = createMRSummaryFileName(cxId, patient.id, "pdf");
   const [fhirResources, mrSummaryUrl] = await Promise.all([
     countResources({ patient }),
     getMrSummaryUrl(mrSummaryFileName, log),
