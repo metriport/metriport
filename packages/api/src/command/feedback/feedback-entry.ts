@@ -1,10 +1,10 @@
+import { Config } from "@metriport/core/util/config";
 import { sendNotification } from "@metriport/core/util/notifications";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { NotFoundError } from "@metriport/shared";
 import { FeedbackEntry, FeedbackEntryCreate } from "../../domain/feedback";
 import { FeedbackEntryModel } from "../../models/feedback-entry";
 import { normalizeString } from "../../models/_default";
-import { Config } from "../../shared/config";
 import { getFeedbackOrFail } from "./feedback";
 
 const maxLargeColumnLength = 5_000;
