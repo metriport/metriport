@@ -770,10 +770,11 @@ async function downloadDocsAndUpsertFHIR({
     requestId,
     source: MedicalDataSource.COMMONWELL,
   });
+  const finalPatientCWData = getCWData(finalPatient.data.externalData);
 
   if (
     finalPatient.data.documentQueryProgress?.convert?.status === "completed" &&
-    finalPatient.data.documentQueryProgress?.triggerConsolidated
+    finalPatientCWData?.documentQueryProgress?.triggerConsolidated
   ) {
     log(`Kicking off getConsolidated for patient ${finalPatient.id} in CW`);
     getConsolidated({ patient: finalPatient, conversionType: "pdf" }).catch(

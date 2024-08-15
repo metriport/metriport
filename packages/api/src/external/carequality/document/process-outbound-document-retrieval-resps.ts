@@ -180,10 +180,11 @@ export async function processOutboundDocumentRetrievalResps({
       requestId,
       source: MedicalDataSource.CAREQUALITY,
     });
+    const finalPatientCqData = getCQData(patient.data.externalData);
 
     if (
       finalPatient.data.documentQueryProgress?.convert?.status === "completed" &&
-      finalPatient.data.documentQueryProgress?.triggerConsolidated
+      finalPatientCqData?.documentQueryProgress?.triggerConsolidated
     ) {
       log(`Kicking off getConsolidated for patient ${finalPatient.id} in CQ`);
       getConsolidated({ patient: finalPatient, conversionType: "pdf" }).catch(
