@@ -12,7 +12,10 @@ import { makePatient } from "../../../../domain/medical/__tests__/patient";
 import { Facility, FacilityType } from "../../../../domain/medical/facility";
 import { HieInitiator } from "../../../hie/get-hie-initiator";
 import { createOutboundDocumentRetrievalReqs } from "../create-outbound-document-retrieval-req";
-import { defaultDocRefsPerRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/gateways";
+import {
+  defaultDocRefsPerRequest,
+  redoxOidPrefix,
+} from "@metriport/core/external/carequality/ihe-gateway-v2/gateways";
 import { makeDocumentReferenceWithMetriportId } from "./make-document-reference-with-metriport-id";
 import { makeOutboundDocumentQueryResp, makeXcaGateway } from "./shared";
 import {
@@ -126,6 +129,28 @@ describe("outboundDocumentRetrievalRequest", () => {
     const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
       makeOutboundDocumentQueryResp({
         gateway: makeXcaGateway({ homeCommunityId: surescriptsOid }),
+        documentReference: [
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
+        ],
+      }),
+    ];
+    const res: OutboundDocumentRetrievalReq[] = createOutboundDocumentRetrievalReqs({
+      patient,
+      requestId,
+      initiator,
+      outboundDocumentQueryResults: outboundDocumentQueryResps,
+    });
+    expect(res).toBeTruthy();
+    expect(res.length).toEqual(2);
+    expect(res[0].documentReference.length).toEqual(1);
+    expect(res[1].documentReference.length).toEqual(1);
+  });
+
+  it("returns 2 req with 1 doc refs when we have an redox prefix gw", async () => {
+    const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
+      makeOutboundDocumentQueryResp({
+        gateway: makeXcaGateway({ homeCommunityId: redoxOidPrefix }),
         documentReference: [
           makeDocumentReferenceWithMetriportId(),
           makeDocumentReferenceWithMetriportId(),
