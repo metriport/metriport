@@ -16,6 +16,8 @@ import { analytics, EventTypes } from "@metriport/core/external/analytics/postho
 import { updateConversionProgress } from "./document-query";
 import { processPatientDocumentRequest } from "./document-webhook";
 import { MAPIWebhookStatus } from "./document-webhook";
+import { getConsolidated } from "../patient/consolidated-get";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 
 export async function calculateDocumentConversionStatus({
   patientId,
@@ -98,6 +100,12 @@ export async function calculateDocumentConversionStatus({
 
     const conversionStatus = expectedPatient.data.documentQueryProgress?.convert?.status;
     if (conversionStatus === "completed") {
+      if (expectedPatient.data.documentQueryProgress?.triggerConsolidated) {
+        log(`Kicking off getConsolidated for patient ${expectedPatient.id} in CQ`);
+        getConsolidated({ patient: expectedPatient, conversionType: "pdf" }).catch(
+          processAsyncError("Post-DQ getConsolidated")
+        );
+      }
       processPatientDocumentRequest(
         cxId,
         patientId,

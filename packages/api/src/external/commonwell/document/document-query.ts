@@ -26,7 +26,6 @@ import {
   getUrl,
   S3Info,
 } from "../../../command/medical/document/document-query-storage-info";
-import { getConsolidated } from "../../../command/medical/patient/consolidated-get";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { Util } from "../../../shared/util";
@@ -754,7 +753,7 @@ async function downloadDocsAndUpsertFHIR({
     await sleepBetweenChunks();
   }
 
-  const finalPatient = await setDocQueryProgress({
+  await setDocQueryProgress({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: { status: "completed" },
     ...(convertibleDocCount <= 0
@@ -770,17 +769,6 @@ async function downloadDocsAndUpsertFHIR({
     requestId,
     source: MedicalDataSource.COMMONWELL,
   });
-  const finalPatientCWData = getCWData(finalPatient.data.externalData);
-
-  if (
-    finalPatient.data.documentQueryProgress?.convert?.status === "completed" &&
-    finalPatientCWData?.documentQueryProgress?.triggerConsolidated
-  ) {
-    log(`Kicking off getConsolidated for patient ${finalPatient.id} in CW`);
-    getConsolidated({ patient: finalPatient, conversionType: "pdf" }).catch(
-      processAsyncError("CW getConsolidated")
-    );
-  }
 
   return docsNewLocation;
 }
