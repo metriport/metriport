@@ -1,14 +1,6 @@
 import { CodeableConcept, Condition } from "@medplum/fhirtypes";
-import {
-  ICD_10_CODE,
-  ICD_10_OID,
-  SNOMED_CODE,
-  SNOMED_OID,
-  combineResources,
-  createCompositeKey,
-  fillMaps,
-  getDateFromString,
-} from "../shared";
+import { ICD_10_CODE, ICD_10_OID, SNOMED_CODE, SNOMED_OID } from "../../util/constants";
+import { combineResources, createCompositeKey, fillMaps, getDateFromString } from "../shared";
 
 /**
  * Approach:
@@ -21,14 +13,14 @@ import {
  * 2. Combine the Conditions in each group into one master condition and return the array of only unique and maximally filled out Conditions
  */
 export function deduplicateConditions(conditions: Condition[]) {
-  const { snomedMap, icd10Map, remainingConditions, idReplacementMap } =
+  const { snomedMap, icd10Map, remainingConditions, refReplacementMap } =
     groupSameConditions(conditions);
   return {
     combinedConditions: combineResources({
       combinedMaps: [snomedMap, icd10Map],
       remainingResources: remainingConditions,
     }),
-    idReplacementMap,
+    refReplacementMap,
   };
 }
 
@@ -36,12 +28,12 @@ export function groupSameConditions(conditions: Condition[]): {
   snomedMap: Map<string, Condition>;
   icd10Map: Map<string, Condition>;
   remainingConditions: Condition[];
-  idReplacementMap: Map<string, string[]>;
+  refReplacementMap: Map<string, string[]>;
 } {
   const snomedMap = new Map<string, Condition>();
   const icd10Map = new Map<string, Condition>();
   const remainingConditions: Condition[] = [];
-  const idReplacementMap = new Map<string, string[]>();
+  const refReplacementMap = new Map<string, string[]>();
 
   for (const condition of conditions) {
     const date = getDate(condition);
@@ -49,16 +41,16 @@ export function groupSameConditions(conditions: Condition[]): {
 
     if (icd10Code) {
       const compKey = JSON.stringify(createCompositeKey(icd10Code, date));
-      fillMaps(icd10Map, compKey, condition, idReplacementMap);
+      fillMaps(icd10Map, compKey, condition, refReplacementMap);
     } else if (snomedCode) {
       const compKey = JSON.stringify(createCompositeKey(snomedCode, date));
-      fillMaps(snomedMap, compKey, condition, idReplacementMap);
+      fillMaps(snomedMap, compKey, condition, refReplacementMap);
     } else {
       remainingConditions.push(condition);
     }
   }
 
-  return { snomedMap, icd10Map, remainingConditions, idReplacementMap };
+  return { snomedMap, icd10Map, remainingConditions, refReplacementMap };
 }
 
 export function getDate(condition: Condition): string | undefined {

@@ -14,31 +14,18 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   const processedArrays: string[] = [];
   // Conditions deduplication
   const conditionsResult = deduplicateConditions(resourceArrays.conditions);
-  resourceArrays = replaceResourceReferences(
-    resourceArrays,
-    conditionsResult.idReplacementMap,
-    "Condition"
-  );
-  processedArrays.push("conditions");
+  resourceArrays = replaceResourceReferences(resourceArrays, conditionsResult.refReplacementMap);
   deduplicatedEntries.push(...conditionsResult.combinedConditions);
 
   // Medication deduplication
   const medicationsResult = deduplicateMedications(resourceArrays.medications);
-  resourceArrays = replaceResourceReferences(
-    resourceArrays,
-    medicationsResult.idReplacementMap,
-    "Medication"
-  );
+  resourceArrays = replaceResourceReferences(resourceArrays, medicationsResult.idReplacementMap);
   processedArrays.push("medications");
   deduplicatedEntries.push(...medicationsResult.combinedMedications);
 
   // MedicationAdministration deduplication
   const medAdminsResult = deduplicateMedAdmins(resourceArrays.medicationAdministrations);
-  resourceArrays = replaceResourceReferences(
-    resourceArrays,
-    medAdminsResult.idReplacementMap,
-    "MedicationAdministration"
-  );
+  resourceArrays = replaceResourceReferences(resourceArrays, medAdminsResult.idReplacementMap);
   processedArrays.push("medicationAdministrations");
   deduplicatedEntries.push(...medAdminsResult.combinedMedAdmins);
 
@@ -68,14 +55,13 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
  */
 function replaceResourceReferences(
   resourceArrays: ExtractedFhirTypes,
-  idMap: Map<string, string[]>,
-  resourceType: string
+  idMap: Map<string, string[]>
 ): ExtractedFhirTypes {
   let updatedArrays = JSON.stringify(resourceArrays);
-  for (const [masterId, otherIds] of idMap.entries()) {
-    for (const id of otherIds) {
-      const regex = new RegExp(`${resourceType}/${id}`, "g");
-      updatedArrays = updatedArrays.replace(regex, masterId);
+  for (const [masterRef, consumedRefs] of idMap.entries()) {
+    for (const consumedRef of consumedRefs) {
+      const regex = new RegExp(consumedRef, "g");
+      updatedArrays = updatedArrays.replace(regex, masterRef);
     }
   }
 
