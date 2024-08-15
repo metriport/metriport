@@ -1,4 +1,5 @@
 import { genderAtBirthSchema } from "@metriport/api-sdk";
+import { getConsolidatedBundleFromS3 } from "@metriport/core/command/consolidated/consolidated-on-s3";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
@@ -14,6 +15,7 @@ import {
   normalizeZipCode,
   normalizeExternalId,
   toTitleCase,
+  internalSendConsolidatedSchema,
 } from "@metriport/shared";
 import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
@@ -26,13 +28,16 @@ import { chunk } from "lodash";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import { PatientCreateCmd } from "../../command/medical/patient/create-patient";
-import { getConsolidated } from "../../command/medical/patient/consolidated-get";
+import {
+  getConsolidated,
+  getConsolidatedAndSendToCx,
+} from "../../command/medical/patient/consolidated-get";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getPatientIds,
   getPatientOrFail,
-  getPatientStates,
   getPatients,
+  getPatientStates,
 } from "../../command/medical/patient/get-patient";
 import { getCoverageAssessments } from "../../command/medical/patient/converage-assessment-get";
 import {
@@ -77,7 +82,7 @@ import {
   getFromQueryAsArrayOrFail,
   getFromQueryAsBoolean,
 } from "../util";
-import { PatientLinksDTO, dtoFromCW } from "./dtos/linkDTO";
+import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
@@ -829,6 +834,54 @@ router.post(
       facilityId,
       patientCreates,
     }).catch(processAsyncError("createCoverageAssessments"));
+
+    return res.sendStatus(status.OK);
+  })
+);
+
+/**
+ * POST /internal/patient/:id/consolidated
+ *
+ * Continues the process of consolidating a patient's data by sending the consolidated bundle to the customer.
+ *
+ * @param req.query.cxId The customer ID.
+ * @param req.params.id The patient ID.
+ * @param req.body The data to send to getConsolidatedAndSendToCx and S3 info about the bundle to be loaded.
+ * @see internalSendConsolidatedSchema on @metriport/shared
+ */
+router.post(
+  "/:id/consolidated",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const id = getFromParamsOrFail("id", req);
+    const patient = await getPatientOrFail({ cxId, id });
+    const {
+      requestId,
+      conversionType,
+      resources,
+      generateAiBrief,
+      dateFrom,
+      dateTo,
+      bundleLocation,
+      bundleFilename,
+    } = internalSendConsolidatedSchema.parse(req.body);
+
+    const bundle = await getConsolidatedBundleFromS3({
+      bundleLocation,
+      bundleFilename,
+    });
+
+    await getConsolidatedAndSendToCx({
+      patient,
+      bundle,
+      requestId,
+      conversionType,
+      generateAiBrief,
+      resources,
+      dateFrom,
+      dateTo,
+    });
     return res.sendStatus(status.OK);
   })
 );
