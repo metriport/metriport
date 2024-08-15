@@ -9,7 +9,6 @@ import {
   ConsolidatedDataResponse,
   ConsolidatedPatientDataRequest,
 } from "./consolidated-connector";
-import { ConsolidatedDataConnectorLocal } from "./consolidated-connector-local";
 
 dayjs.extend(duration);
 
@@ -21,8 +20,8 @@ export type ConsolidatedRequestLambda = ConsolidatedPatientDataRequest & {
 export const TIMEOUT_CALLING_CONVERTER_LAMBDA = dayjs.duration(15, "minutes").add(2, "seconds");
 
 export class ConsolidatedDataConnectorLambda implements ConsolidatedDataConnector {
-  lambdaName: string | undefined;
-  lambdaClient: AWS.Lambda;
+  readonly lambdaName: string;
+  readonly lambdaClient: AWS.Lambda;
   constructor() {
     const region = Config.getAWSRegion();
     this.lambdaName = Config.getFHIRtoBundleLambdaName();
@@ -32,13 +31,6 @@ export class ConsolidatedDataConnectorLambda implements ConsolidatedDataConnecto
   async execute(
     params: ConsolidatedDataRequestSync | ConsolidatedDataRequestAsync
   ): Promise<ConsolidatedDataResponse> {
-    // TODO 1319 Remove this once the first release has been shipped and the lambda name is requires
-    if (!this.lambdaName) {
-      const bucketName = Config.getMedicalDocumentsBucketName();
-      const apiURL = Config.getApiLoadBalancerAddress();
-      const connector = new ConsolidatedDataConnectorLocal(bucketName, apiURL);
-      return connector.execute(params);
-    }
     const result = await this.lambdaClient
       .invoke({
         FunctionName: this.lambdaName,
