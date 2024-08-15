@@ -155,6 +155,7 @@ export async function queryAndProcessDocuments({
         requestId,
         patient: { id: patientId, cxId },
         source: MedicalDataSource.COMMONWELL,
+        triggerConsolidated,
       });
 
       if (hasNoCWStatus) {

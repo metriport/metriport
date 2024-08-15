@@ -67,7 +67,12 @@ export async function getDocumentsFromCQ({
 
     // If DQ is triggered while the PD is in progress, schedule it to be done when PD is completed
     if (getCQData(patient.data.externalData)?.discoveryStatus === "processing") {
-      await scheduleDocQuery({ requestId, patient, source: MedicalDataSource.CAREQUALITY });
+      await scheduleDocQuery({
+        requestId,
+        patient,
+        source: MedicalDataSource.CAREQUALITY,
+        triggerConsolidated,
+      });
       return;
     }
     if (!cqPatientData || cqPatientData.data.links.length <= 0) {
