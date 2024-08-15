@@ -80,7 +80,7 @@ export async function getDocumentsFromCQ({
     }
 
     await setDocQueryStartAt({
-      patient: { id: patient.id, cxId: patient.cxId },
+      patient: { id: patient.id, cxId },
       source: MedicalDataSource.CAREQUALITY,
       startedAt: new Date(),
     });

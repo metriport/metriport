@@ -161,8 +161,8 @@ export function setHIEDocProgress(
     ...externalData[source],
     documentQueryProgress: {
       ...docQueryProgress,
-      startedAt,
-      triggerConsolidated,
+      ...(startedAt !== undefined && { startedAt }),
+      ...(triggerConsolidated !== undefined && { triggerConsolidated }),
     },
   };
 

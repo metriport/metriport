@@ -49,6 +49,7 @@ import { isFacilityEnabledToQueryCW } from "../../commonwell/shared";
 import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
+import { setDocQueryStartAt } from "../../hie/set-doc-query-start";
 import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
@@ -171,6 +172,11 @@ export async function queryAndProcessDocuments({
     }
 
     const startedAt = new Date();
+    await setDocQueryStartAt({
+      patient: { id: patientId, cxId },
+      source: MedicalDataSource.COMMONWELL,
+      startedAt,
+    });
 
     const [patient, isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all([
       getPatientWithCWData(patientParam),
