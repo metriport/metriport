@@ -2,6 +2,7 @@ import {
   AllergyIntolerance,
   Bundle,
   BundleEntry,
+  Composition,
   Condition,
   Coverage,
   DiagnosticReport,
@@ -10,6 +11,7 @@ import {
   Immunization,
   Location,
   Medication,
+  MedicationAdministration,
   MedicationRequest,
   MedicationStatement,
   Observation,
@@ -98,7 +100,9 @@ export type ExtractedFhirTypes = {
   diagnosticReports: DiagnosticReport[];
   patient?: Patient | undefined;
   practitioners: Practitioner[];
+  compositions: Composition[];
   medications: Medication[];
+  medicationAdministrations: MedicationAdministration[];
   medicationRequests: MedicationRequest[];
   medicationStatements: MedicationStatement[];
   conditions: Condition[];
@@ -121,6 +125,8 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
   let patient: Patient | undefined;
   const practitioners: Practitioner[] = [];
   const diagnosticReports: DiagnosticReport[] = [];
+  const compositions: Composition[] = [];
+  const medicationAdministrations: MedicationAdministration[] = [];
   const medicationRequests: MedicationRequest[] = [];
   const medicationStatements: MedicationStatement[] = [];
   const medications: Medication[] = [];
@@ -144,6 +150,10 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
       const resource = entry.resource;
       if (resource?.resourceType === "Patient") {
         patient = resource as Patient;
+      } else if (resource?.resourceType === "Composition") {
+        compositions.push(resource as Composition);
+      } else if (resource?.resourceType === "MedicationAdministration") {
+        medicationAdministrations.push(resource as MedicationAdministration);
       } else if (resource?.resourceType === "MedicationRequest") {
         medicationRequests.push(resource as MedicationRequest);
       } else if (resource?.resourceType === "MedicationStatement") {
@@ -203,8 +213,10 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
   return {
     patient,
     practitioners,
+    compositions,
     diagnosticReports,
     medications,
+    medicationAdministrations,
     medicationStatements,
     medicationRequests,
     conditions,
