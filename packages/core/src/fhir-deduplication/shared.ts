@@ -111,12 +111,13 @@ export function fillMaps<T extends Resource>(
   map: Map<string, T>,
   key: string,
   resource: T,
-  refReplacementMap: Map<string, string[]>
+  refReplacementMap: Map<string, string[]>,
+  isExtensionIncluded = true
 ): void {
   const existing = map.get(key);
   if (existing?.id) {
     const masterRef = `${existing.resourceType}/${existing.id}`;
-    const merged = combineTwoResources(existing, resource, false);
+    const merged = combineTwoResources(existing, resource, isExtensionIncluded);
     map.set(key, merged);
 
     const existingReplacementIds = refReplacementMap.get(masterRef);
