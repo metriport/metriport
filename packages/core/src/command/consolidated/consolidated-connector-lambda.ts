@@ -35,7 +35,7 @@ export class ConsolidatedDataConnectorLambda implements ConsolidatedDataConnecto
     // TODO 1319 Remove this once the first release has been shipped and the lambda name is requires
     if (!this.lambdaName) {
       const bucketName = Config.getMedicalDocumentsBucketName();
-      const apiURL = Config.getApiUrl();
+      const apiURL = Config.getApiLoadBalancerAddress();
       const connector = new ConsolidatedDataConnectorLocal(bucketName, apiURL);
       return connector.execute(params);
     }

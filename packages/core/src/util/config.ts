@@ -91,6 +91,10 @@ export class Config {
   static getApiUrl(): string {
     return getEnvVarOrFail("API_URL");
   }
+  static getApiLoadBalancerAddress(): string {
+    return getEnvVarOrFail("API_LB_ADDRESS");
+  }
+
   static getPostHogApiKey(): string | undefined {
     return getEnvVar("POST_HOG_API_KEY_SECRET");
   }
