@@ -57,13 +57,11 @@ const docRefsPerRequestByGateway: Record<string, number> = {
 export const defaultDocRefsPerRequest = 5;
 
 export function getGatewaySpecificDocRefsPerRequest(gateway: XCAGateway): number {
-  // Direct dictionary search
   if (gateway.homeCommunityId in docRefsPerRequestByGateway) {
     const numDocRefs = docRefsPerRequestByGateway[gateway.homeCommunityId];
     if (numDocRefs) return numDocRefs;
   }
 
-  // Prefix search
   for (const prefix in prefixDocRefsPerRequest) {
     if (gateway.homeCommunityId.startsWith(prefix)) {
       const numDocRefs = prefixDocRefsPerRequest[prefix];
