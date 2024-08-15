@@ -872,7 +872,7 @@ function createWhatWasDocumentedFromDiagnosticReports(
           return cleanUpNote(decodeNote);
         }) ?? [];
 
-      const practitionerField = createPractionerField(doc, mappedPractitioners) || "";
+      const practitionerField = createPractitionerField(doc, mappedPractitioners) || "";
       const organizationField = createOrganiztionField(doc, mappedOrganizations) || "";
 
       const fields = [practitionerField, organizationField].filter(
@@ -900,7 +900,7 @@ function createWhatWasDocumentedFromDiagnosticReports(
   </div>`;
 }
 
-function createPractionerField(
+function createPractitionerField(
   diagnosticReport: DiagnosticReport,
   mappedPractitioners: Record<string, Practitioner>
 ) {

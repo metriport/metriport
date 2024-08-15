@@ -15,7 +15,7 @@ import { DocumentBulkSignerLambdaResponse } from "./document-bulk-signer-respons
 dayjs.extend(duration);
 
 const ossApi = axios.create();
-const SIGNED_URL_DURATION_SECONDS = dayjs.duration({ minutes: 3 }).asSeconds();
+const SIGNED_URL_DURATION_SECONDS = dayjs.duration({ minutes: 10 }).asSeconds();
 
 export type DocumentBulkSignerLambdaRequest = {
   patientId: string;
