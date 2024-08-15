@@ -13,12 +13,13 @@ import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poll
 import { getCQDirectoryEntry } from "../command/cq-directory/get-cq-directory-entry";
 import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
 import { CQLink } from "../cq-patient-data";
-import { getCQData } from "../patient";
+import { getCQData, discover } from "../patient";
 import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { getCqInitiator } from "../shared";
 import { isFacilityEnabledToQueryCQ } from "../../carequality/shared";
 import { filterCqLinksByManagingOrg } from "./filter-oids-by-managing-org";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 
 const resultPoller = makeOutboundResultPoller();
 
@@ -27,11 +28,13 @@ export async function getDocumentsFromCQ({
   facilityId,
   patient,
   cqManagingOrgName,
+  forcePatientDiscovery = false,
 }: {
   requestId: string;
   facilityId?: string;
   patient: Patient;
   cqManagingOrgName?: string;
+  forcePatientDiscovery?: boolean;
 }) {
   const { log } = out(`CQ DQ - requestId ${requestId}, patient ${patient.id}`);
   const { cxId, id: patientId } = patient;
@@ -51,8 +54,9 @@ export async function getDocumentsFromCQ({
   if (!isCqQueryEnabled) return interrupt(`CQ disabled for facility ${facilityId}`);
 
   try {
-    const [cqPatientData] = await Promise.all([
+    const [cqPatientData, initiator] = await Promise.all([
       getCQPatientData({ id: patient.id, cxId }),
+      getCqInitiator(patient, facilityId),
       setDocQueryProgress({
         patient: { id: patient.id, cxId: patient.cxId },
         downloadProgress: { status: "processing" },
@@ -62,9 +66,25 @@ export async function getDocumentsFromCQ({
       }),
     ]);
 
-    // If DQ is triggered while the PD is in progress, schedule it to be done when PD is completed
-    if (getCQData(patient.data.externalData)?.discoveryStatus === "processing") {
-      await scheduleDocQuery({ requestId, patient, source: MedicalDataSource.CAREQUALITY });
+    const patientCQData = getCQData(patient.data.externalData);
+    const hasNoCQStatus = !patientCQData || !patientCQData.discoveryStatus;
+    const isProcessing = patientCQData?.discoveryStatus === "processing";
+
+    if (hasNoCQStatus || isProcessing || forcePatientDiscovery) {
+      await scheduleDocQuery({
+        requestId,
+        patient,
+        source: MedicalDataSource.CAREQUALITY,
+      });
+
+      if (forcePatientDiscovery && !isProcessing) {
+        discover({
+          patient,
+          facilityId: initiator.facilityId,
+          requestId,
+        }).catch(processAsyncError("CQ discover"));
+      }
+
       return;
     }
     if (!cqPatientData || cqPatientData.data.links.length <= 0) {
@@ -107,8 +127,6 @@ export async function getDocumentsFromCQ({
     await executeAsynchronously(cqPatientData.data.links, addDqUrlToCqLink, {
       numberOfParallelExecutions: 20,
     });
-
-    const initiator = await getCqInitiator(patient);
 
     const cqLinks = cqManagingOrgName
       ? await filterCqLinksByManagingOrg(cqManagingOrgName, linksWithDqUrl)

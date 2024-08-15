@@ -47,6 +47,7 @@ export async function queryDocumentsAcrossHIEs({
   override,
   cxDocumentRequestMetadata,
   forceQuery = false,
+  forcePatientDiscovery = false,
   forceCommonwell = false,
   forceCarequality = false,
   cqManagingOrgName,
@@ -57,6 +58,7 @@ export async function queryDocumentsAcrossHIEs({
   override?: boolean;
   cxDocumentRequestMetadata?: unknown;
   forceQuery?: boolean;
+  forcePatientDiscovery?: boolean;
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
   cqManagingOrgName?: string;
@@ -109,6 +111,7 @@ export async function queryDocumentsAcrossHIEs({
         facilityId,
         forceDownload: override,
         forceQuery,
+        forcePatientDiscovery,
         requestId,
         getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
       }).catch(emptyFunction);
@@ -122,6 +125,7 @@ export async function queryDocumentsAcrossHIEs({
       facilityId,
       requestId,
       cqManagingOrgName,
+      forcePatientDiscovery,
     }).catch(emptyFunction);
   }
 

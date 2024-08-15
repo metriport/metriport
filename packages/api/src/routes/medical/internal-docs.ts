@@ -355,6 +355,7 @@ router.post(
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
     const facilityId = getFrom("query").optional("facilityId", req);
+    const forcePatientDiscovery = getFromQueryAsBoolean("forcePatientDiscovery", req);
     const cqManagingOrgName = getFrom("query").optional("cqManagingOrgName", req);
     const cxDocumentRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
@@ -363,6 +364,7 @@ router.post(
       patientId,
       facilityId,
       forceQuery: true,
+      forcePatientDiscovery,
       cqManagingOrgName,
       cxDocumentRequestMetadata: cxDocumentRequestMetadata?.metadata,
     });

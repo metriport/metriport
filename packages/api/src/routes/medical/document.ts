@@ -23,7 +23,13 @@ import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { sanitize } from "../helpers/string";
 import { optionalDateSchema } from "../schemas/date";
-import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
+import {
+  asyncHandler,
+  getCxIdOrFail,
+  getFrom,
+  getFromQueryOrFail,
+  getFromQueryAsBoolean,
+} from "../util";
 import { toDTO } from "./dtos/documentDTO";
 import { docConversionTypeSchema, docFileNameSchema } from "./schemas/documents";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
@@ -117,6 +123,7 @@ router.post(
     const facilityId = getFrom("query").optional("facilityId", req);
     const override = stringToBoolean(getFrom("query").optional("override", req));
     const cxDocumentRequestMetadata = cxRequestMetadataSchema.parse(req.body);
+    const forcePatientDiscovery = getFromQueryAsBoolean("forcePatientDiscovery", req);
     const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
 
@@ -125,6 +132,7 @@ router.post(
       patientId,
       facilityId,
       override,
+      forcePatientDiscovery,
       cxDocumentRequestMetadata: cxDocumentRequestMetadata?.metadata,
       forceCommonwell,
       forceCarequality,
