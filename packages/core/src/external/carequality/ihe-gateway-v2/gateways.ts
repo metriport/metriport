@@ -21,7 +21,9 @@ const specialNamespaceRequiredUrl =
 export const eHexUrlPrefix = "https://hub002prodcq.ehealthexchange.org";
 
 export const pointClickCareOid = "2.16.840.1.113883.3.6448";
+export const centralOhioPrimaryCarePhysiciansOid = "1.2.840.114350.1.13.698.2.7.3.688884.100";
 export const surescriptsOid = "2.16.840.1.113883.3.2054.2.1.1";
+
 export const epicOidPrefix = "1.2.840.114350.1.13";
 export const redoxOidPrefix = "2.16.840.1.113883.3.6147";
 
@@ -43,23 +45,33 @@ const gatewaysThatAcceptOneDocRefPerRequest = [pointClickCareOid, surescriptsOid
 
 const prefixDocRefsPerRequest: Record<string, number> = {
   [epicOidPrefix]: 10,
-  [redoxOidPrefix]: 5,
+  [redoxOidPrefix]: 1,
 };
 
 const docRefsPerRequestByGateway: Record<string, number> = {
   [pointClickCareOid]: 1,
   [surescriptsOid]: 1,
+  [centralOhioPrimaryCarePhysiciansOid]: 9,
 };
 
 export const defaultDocRefsPerRequest = 5;
 
 export function getGatewaySpecificDocRefsPerRequest(gateway: XCAGateway): number {
+  // Direct dictionary search
+  if (gateway.homeCommunityId in docRefsPerRequestByGateway) {
+    const numDocRefs = docRefsPerRequestByGateway[gateway.homeCommunityId];
+    if (numDocRefs) return numDocRefs;
+  }
+
+  // Prefix search
   for (const prefix in prefixDocRefsPerRequest) {
     if (gateway.homeCommunityId.startsWith(prefix)) {
-      return prefixDocRefsPerRequest[prefix] ?? defaultDocRefsPerRequest;
+      const numDocRefs = prefixDocRefsPerRequest[prefix];
+      if (numDocRefs) return numDocRefs;
     }
   }
-  return docRefsPerRequestByGateway[gateway.homeCommunityId] ?? defaultDocRefsPerRequest;
+
+  return defaultDocRefsPerRequest;
 }
 
 export function doesGatewayNeedDateRanges(url: string): boolean {

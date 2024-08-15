@@ -122,7 +122,7 @@ describe("outboundDocumentRetrievalRequest", () => {
     expect(res[1].documentReference.length).toEqual(1);
   });
 
-  it("returns 1 req with 6 doc refs when we have an epic gw", async () => {
+  it("returns 2 req with 1 doc refs when we have an surescripts gw", async () => {
     const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
       makeOutboundDocumentQueryResp({
         gateway: makeXcaGateway({ homeCommunityId: surescriptsOid }),
