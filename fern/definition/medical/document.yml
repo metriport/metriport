@@ -32,9 +32,6 @@ service:
           facilityId:
             docs: The ID of the Facility where the patient is receiving care.
             type: string
-          forcePatientDiscovery:
-            docs: Whether to run patient discovery before running documnet query. If patient discovery is already running, this parameter will be ignored.
-            type: string
         body:
           docs: |
             Metadata holds a record of up to 50 custom string key-value pairs. Key names can be up to 40 characters long and values up to 500 characters long. 
