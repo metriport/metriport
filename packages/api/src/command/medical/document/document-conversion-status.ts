@@ -72,6 +72,15 @@ export async function calculateDocumentConversionStatus({
     });
 
     if (isConversionCompleted) {
+      if (
+        externalData?.documentQueryProgress?.triggerConsolidated &&
+        !updatedPatient.data.documentQueryProgress?.triggerConsolidated
+      ) {
+        log(`Kicking off getConsolidated for patient ${updatedPatient.id}`);
+        getConsolidated({ patient: updatedPatient, conversionType: "pdf" }).catch(
+          processAsyncError(`Post-DQ getConsolidated ${source}`)
+        );
+      }
       const startedAt = updatedPatient.data.documentQueryProgress?.startedAt;
       const convert = updatedPatient.data.documentQueryProgress?.convert;
       const totalDocsConverted = convert?.total;

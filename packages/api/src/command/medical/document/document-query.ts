@@ -118,7 +118,6 @@ export async function queryDocumentsAcrossHIEs({
         forceQuery,
         requestId,
         getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
-        triggerConsolidated,
       }).catch(emptyFunction);
     }
   }
@@ -130,7 +129,6 @@ export async function queryDocumentsAcrossHIEs({
       facilityId,
       requestId,
       cqManagingOrgName,
-      triggerConsolidated,
     }).catch(emptyFunction);
   }
 
