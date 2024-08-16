@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { USState } from "@metriport/core/domain/geographic-locations";
+import { USState } from "@metriport/shared";
 import { Patient, PatientData, PersonalIdentifier } from "@metriport/core/domain/patient";
 import dayjs from "dayjs";
 import { PatientCreateCmd } from "../../../command/medical/patient/create-patient";

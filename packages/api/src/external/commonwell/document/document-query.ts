@@ -48,6 +48,7 @@ import { isFacilityEnabledToQueryCW } from "../../commonwell/shared";
 import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
+import { setDocQueryStartAt } from "../../hie/set-doc-query-start";
 import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
@@ -98,6 +99,7 @@ export async function queryAndProcessDocuments({
   ignoreFhirConversionAndUpsert,
   requestId,
   getOrgIdExcludeList,
+  triggerConsolidated = false,
 }: {
   patient: Patient;
   facilityId?: string | undefined;
@@ -107,6 +109,7 @@ export async function queryAndProcessDocuments({
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
   getOrgIdExcludeList: () => Promise<string[]>;
+  triggerConsolidated?: boolean;
 }): Promise<void> {
   const { id: patientId, cxId } = patientParam;
   const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
@@ -140,6 +143,7 @@ export async function queryAndProcessDocuments({
       convertProgress: { status: "processing" },
       requestId,
       source: MedicalDataSource.COMMONWELL,
+      triggerConsolidated,
     });
 
     const patientCWData = getCWData(patientParam.data.externalData);
@@ -151,6 +155,7 @@ export async function queryAndProcessDocuments({
         requestId,
         patient: { id: patientId, cxId },
         source: MedicalDataSource.COMMONWELL,
+        triggerConsolidated,
       });
 
       if (hasNoCWStatus) {
@@ -166,6 +171,11 @@ export async function queryAndProcessDocuments({
     }
 
     const startedAt = new Date();
+    await setDocQueryStartAt({
+      patient: { id: patientId, cxId },
+      source: MedicalDataSource.COMMONWELL,
+      startedAt,
+    });
 
     const [patient, isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all([
       getPatientWithCWData(patientParam),

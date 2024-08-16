@@ -50,9 +50,17 @@ export function makeFacility(params: Partial<Facility> = {}): Facility {
     cqActive,
     cwActive,
     cqOboOid:
-      params.cqOboOid !== undefined ? params.cqOboOid : cqActive ? faker.string.uuid() : null,
+      params.cqOboOid !== undefined
+        ? params.cqOboOid
+        : cqType === FacilityType.initiatorOnly
+        ? faker.string.uuid()
+        : null,
     cwOboOid:
-      params.cwOboOid !== undefined ? params.cwOboOid : cwActive ? faker.string.uuid() : null,
+      params.cwOboOid !== undefined
+        ? params.cwOboOid
+        : cqType === FacilityType.initiatorOnly
+        ? faker.string.uuid()
+        : null,
     cqType,
     cwType,
     cqApproved: false,

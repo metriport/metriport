@@ -27,11 +27,13 @@ export async function getDocumentsFromCQ({
   facilityId,
   patient,
   cqManagingOrgName,
+  triggerConsolidated = false,
 }: {
   requestId: string;
   facilityId?: string;
   patient: Patient;
   cqManagingOrgName?: string;
+  triggerConsolidated?: boolean;
 }) {
   const { log } = out(`CQ DQ - requestId ${requestId}, patient ${patient.id}`);
   const { cxId, id: patientId } = patient;
@@ -59,12 +61,18 @@ export async function getDocumentsFromCQ({
         convertProgress: { status: "processing" },
         requestId,
         source: MedicalDataSource.CAREQUALITY,
+        triggerConsolidated,
       }),
     ]);
 
     // If DQ is triggered while the PD is in progress, schedule it to be done when PD is completed
     if (getCQData(patient.data.externalData)?.discoveryStatus === "processing") {
-      await scheduleDocQuery({ requestId, patient, source: MedicalDataSource.CAREQUALITY });
+      await scheduleDocQuery({
+        requestId,
+        patient,
+        source: MedicalDataSource.CAREQUALITY,
+        triggerConsolidated,
+      });
       return;
     }
     if (!cqPatientData || cqPatientData.data.links.length <= 0) {
@@ -72,7 +80,7 @@ export async function getDocumentsFromCQ({
     }
 
     await setDocQueryStartAt({
-      patient: { id: patient.id, cxId: patient.cxId },
+      patient: { id: patient.id, cxId },
       source: MedicalDataSource.CAREQUALITY,
       startedAt: new Date(),
     });
