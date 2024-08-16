@@ -101,7 +101,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
           compressed: false,
           inputFormat: "org.apache.hadoop.mapred.TextInputFormat",
           outputFormat: "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
-          location: `s3://${iheParsedResponsesBucket.name}/`,
+          location: `s3://${iheParsedResponsesBucket.bucketName}/`,
           serdeInfo: { serializationLibrary: "org.openx.data.jsonserde.JsonSerDe" },
         },
         tableType: "EXTERNAL_TABLE",
