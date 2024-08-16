@@ -4,7 +4,19 @@ import { consolidationConversionType } from "@metriport/core/domain/conversion/f
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { internalSendConsolidatedSchema, sleep, stringToBoolean } from "@metriport/shared";
+import {
+  sleep,
+  stringToBoolean,
+  normalizeDate,
+  normalizeGender,
+  normalizePhoneNumberStrict,
+  normalizeEmailStrict,
+  normalizeState,
+  normalizeZipCode,
+  normalizeExternalId,
+  toTitleCase,
+  internalSendConsolidatedSchema,
+} from "@metriport/shared";
 import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -15,6 +27,7 @@ import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
+import { PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import {
   getConsolidated,
   getConsolidatedAndSendToCx,
@@ -26,10 +39,12 @@ import {
   getPatients,
   getPatientStates,
 } from "../../command/medical/patient/get-patient";
+import { getCoverageAssessments } from "../../command/medical/patient/converage-assessment-get";
 import {
   PatientUpdateCmd,
   updatePatientWithoutHIEs,
 } from "../../command/medical/patient/update-patient";
+import { createCoverageAssessments } from "../../command/medical/patient/converage-assessment-create";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import BadRequestError from "../../errors/bad-request";
 import {
@@ -71,6 +86,8 @@ import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
+import { coverageAssessmentSchema } from "./schemas/patient";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 
 dayjs.extend(duration);
 
@@ -756,6 +773,90 @@ router.post(
       requestId,
     });
     return res.status(status.OK).json({ requestId });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/patient/bulk/coverage-assessment
+ *
+ * return the coverage
+ * @param req.query.cxId The customer ID.
+ * @param req.params.id The patient ID.
+ * @param req.query.facilityId The facility ID for running the coverage assessment.
+ * @param req.query.dryrun Whether to simply validate or run the assessment (optional, defaults to false).
+ *
+ */
+router.post(
+  "/bulk/coverage-assessment",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const facilityId = getFrom("query").orFail("facilityId", req);
+    const dryrun = getFromQueryAsBoolean("dryrun", req) ?? false;
+    const payload = coverageAssessmentSchema.parse(req.body);
+
+    const facility = await getFacilityOrFail({ cxId, id: facilityId });
+    const patientCreates: PatientCreateCmd[] = payload.patients.map(patient => {
+      const phone1 = patient.phone1 ? normalizePhoneNumberStrict(patient.phone1) : undefined;
+      const email1 = patient.email1 ? normalizeEmailStrict(patient.email1) : undefined;
+      const phone2 = patient.phone2 ? normalizePhoneNumberStrict(patient.phone2) : undefined;
+      const email2 = patient.email2 ? normalizeEmailStrict(patient.email2) : undefined;
+      const contact1 = phone1 || email1 ? { phone: phone1, email: email1 } : undefined;
+      const contact2 = phone2 || email2 ? { phone: phone2, email: email2 } : undefined;
+      const contact = [contact1, contact2].flatMap(c => c ?? []);
+      const externalId = patient.externalid ? normalizeExternalId(patient.externalid) : undefined;
+      return {
+        cxId,
+        facilityId: facility.id,
+        externalId,
+        firstName: toTitleCase(patient.firstname),
+        lastName: toTitleCase(patient.lastname),
+        dob: normalizeDate(patient.dob),
+        genderAtBirth: normalizeGender(patient.gender),
+        address: [
+          {
+            addressLine1: toTitleCase(patient.addressline1),
+            addressLine2: patient.addressline2 ? toTitleCase(patient.addressline2) : undefined,
+            city: toTitleCase(patient.city),
+            state: normalizeState(patient.state),
+            zip: normalizeZipCode(patient.zip),
+            country: "USA",
+          },
+        ],
+        contact,
+      };
+    });
+
+    if (dryrun) return res.sendStatus(status.OK);
+
+    createCoverageAssessments({
+      cxId,
+      facilityId,
+      patientCreates,
+    }).catch(processAsyncError("createCoverageAssessments"));
+
+    return res.sendStatus(status.OK);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/patient/bulk/coverage-assessment
+ *
+ * Returns the cx patients for a given facility used for internal scripts
+ * @param req.query.facilityId - The facility ID.
+ * @return list of patients.
+ */
+router.get(
+  "/bulk/coverage-assessment",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const facilityId = getFrom("query").orFail("facilityId", req);
+    const patients = await getPatients({ cxId, facilityId });
+    const patientsWithAssessments = await getCoverageAssessments({ cxId, patients });
+
+    const response = { patientsWithAssessments };
+    return res.status(status.OK).json(response);
   })
 );
 

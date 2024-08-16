@@ -267,9 +267,10 @@ export async function queryDocsIfScheduled({
 }): Promise<void> {
   const patient = await getPatientOrFail(patientIds);
 
-  const scheduledDocQueryRequestId = getCQData(
-    patient.data.externalData
-  )?.scheduledDocQueryRequestId;
+  const cqData = getCQData(patient.data.externalData);
+  const scheduledDocQueryRequestId = cqData?.scheduledDocQueryRequestId;
+  const scheduledDocQueryRequestTriggerConsolidated =
+    cqData?.scheduledDocQueryRequestTriggerConsolidated;
   if (!scheduledDocQueryRequestId) {
     return;
   }
@@ -290,6 +291,7 @@ export async function queryDocsIfScheduled({
     getDocumentsFromCQ({
       patient,
       requestId: scheduledDocQueryRequestId,
+      triggerConsolidated: scheduledDocQueryRequestTriggerConsolidated,
     }).catch(processAsyncError("CQ getDocumentsFromCQ"));
   }
 }

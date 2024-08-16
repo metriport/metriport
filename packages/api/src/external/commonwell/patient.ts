@@ -635,9 +635,10 @@ export async function queryDocsIfScheduled({
 }): Promise<void> {
   const patient = await getPatientOrFail(patientIds);
 
-  const scheduledDocQueryRequestId = getCWData(
-    patient.data.externalData
-  )?.scheduledDocQueryRequestId;
+  const cwData = getCWData(patient.data.externalData);
+  const scheduledDocQueryRequestId = cwData?.scheduledDocQueryRequestId;
+  const scheduledDocQueryRequestTriggerConsolidated =
+    cwData?.scheduledDocQueryRequestTriggerConsolidated;
   if (!scheduledDocQueryRequestId) {
     return;
   }
@@ -658,6 +659,7 @@ export async function queryDocsIfScheduled({
     queryAndProcessDocuments({
       patient,
       requestId: scheduledDocQueryRequestId,
+      triggerConsolidated: scheduledDocQueryRequestTriggerConsolidated,
       getOrgIdExcludeList,
     }).catch(processAsyncError("CW queryAndProcessDocuments"));
   }
