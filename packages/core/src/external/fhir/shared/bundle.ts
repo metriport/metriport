@@ -2,16 +2,21 @@ import {
   AllergyIntolerance,
   Bundle,
   BundleEntry,
+  Communication,
   Composition,
   Condition,
+  Consent,
   Coverage,
+  Device,
   DiagnosticReport,
   Encounter,
   FamilyMemberHistory,
+  Goal,
   Immunization,
   Location,
   Medication,
   MedicationAdministration,
+  MedicationDispense,
   MedicationRequest,
   MedicationStatement,
   Observation,
@@ -23,6 +28,7 @@ import {
   RelatedPerson,
   Resource,
   ResourceType,
+  ServiceRequest,
 } from "@medplum/fhirtypes";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
@@ -104,6 +110,7 @@ export type ExtractedFhirTypes = {
   medications: Medication[];
   medicationAdministrations: MedicationAdministration[];
   medicationRequests: MedicationRequest[];
+  medicationDispenses: MedicationDispense[];
   medicationStatements: MedicationStatement[];
   conditions: Condition[];
   allergies: AllergyIntolerance[];
@@ -119,6 +126,11 @@ export type ExtractedFhirTypes = {
   relatedPersons: RelatedPerson[];
   coverages: Coverage[];
   organizations: Organization[];
+  communications: Communication[];
+  consents: Consent[];
+  devices: Device[];
+  goals: Goal[];
+  serviceRequests: ServiceRequest[];
 };
 
 export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
@@ -144,6 +156,12 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
   const relatedPersons: RelatedPerson[] = [];
   const coverages: Coverage[] = [];
   const organizations: Organization[] = [];
+  const medicationDispenses: MedicationDispense[] = [];
+  const communications: Communication[] = [];
+  const consents: Consent[] = [];
+  const devices: Device[] = [];
+  const goals: Goal[] = [];
+  const serviceRequests: ServiceRequest[] = [];
 
   if (bundle.entry) {
     for (const entry of bundle.entry) {
@@ -154,6 +172,8 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
         compositions.push(resource as Composition);
       } else if (resource?.resourceType === "MedicationAdministration") {
         medicationAdministrations.push(resource as MedicationAdministration);
+      } else if (resource?.resourceType === "MedicationDispense") {
+        medicationDispenses.push(resource as MedicationDispense);
       } else if (resource?.resourceType === "MedicationRequest") {
         medicationRequests.push(resource as MedicationRequest);
       } else if (resource?.resourceType === "MedicationStatement") {
@@ -206,6 +226,16 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
         practitioners.push(resource as Practitioner);
       } else if (resource?.resourceType === "Organization") {
         organizations.push(resource as Organization);
+      } else if (resource?.resourceType === "Communication") {
+        communications.push(resource as Communication);
+      } else if (resource?.resourceType === "Consent") {
+        consents.push(resource as Consent);
+      } else if (resource?.resourceType === "Device") {
+        devices.push(resource as Device);
+      } else if (resource?.resourceType === "Goal") {
+        goals.push(resource as Goal);
+      } else if (resource?.resourceType === "ServiceRequest") {
+        serviceRequests.push(resource as ServiceRequest);
       }
     }
   }
@@ -233,5 +263,11 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
     relatedPersons,
     coverages,
     organizations,
+    medicationDispenses,
+    communications,
+    consents,
+    devices,
+    goals,
+    serviceRequests,
   };
 }
