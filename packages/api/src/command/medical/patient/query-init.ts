@@ -16,7 +16,7 @@ export type InitDocumentQueryCmd = {
   documentQueryProgress: Required<
     Pick<DocumentQueryProgress, "download" | "requestId" | "startedAt">
   > &
-    Partial<Pick<DocumentQueryProgress, "triggerConsolidated">>;
+    Pick<DocumentQueryProgress, "triggerConsolidated">;
   cxDocumentRequestMetadata?: unknown;
   consolidatedQueries?: never;
   patientDiscovery?: never;
