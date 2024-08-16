@@ -91,6 +91,10 @@ export class Config {
   static getApiUrl(): string {
     return getEnvVarOrFail("API_URL");
   }
+  static getApiLoadBalancerAddress(): string {
+    return getEnvVarOrFail("API_LB_ADDRESS");
+  }
+
   static getPostHogApiKey(): string | undefined {
     return getEnvVar("POST_HOG_API_KEY_SECRET");
   }
@@ -105,6 +109,10 @@ export class Config {
 
   static getIheParsedResponsesBucketName(): string | undefined {
     return getEnvVar("IHE_PARSED_RESPONSES_BUCKET_NAME");
+  }
+
+  static getFHIRtoBundleLambdaName(): string {
+    return getEnvVarOrFail("FHIR_TO_BUNDLE_LAMBDA_NAME");
   }
 
   static getBedrockRegion(): string | undefined {

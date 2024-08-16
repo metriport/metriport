@@ -222,6 +222,10 @@ export function findCompositionResources(fhirBundle: Bundle): Composition[] {
   return fhirBundle.entry?.map(e => e.resource).filter(isComposition) || [];
 }
 
+export function findConditionResources(fhirBundle: Bundle): Condition[] {
+  return fhirBundle.entry?.map(e => e.resource).filter(isCondition) || [];
+}
+
 export function findPatientResource(fhirBundle: Bundle): Patient | undefined {
   return fhirBundle.entry?.map(e => e.resource).find(isPatient);
 }

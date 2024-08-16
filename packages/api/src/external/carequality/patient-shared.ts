@@ -12,6 +12,10 @@ export class PatientDataCarequality extends PatientExternalDataEntry {
      */
     public scheduledDocQueryRequestId?: string | undefined,
     /**
+     * The trigger consolidated status for the document query triggered while the patient discovery was processing.
+     */
+    public scheduledDocQueryRequestTriggerConsolidated?: boolean | undefined,
+    /**
      * The start time for document retrieval.
      */
     public documentRetrievalStartTime?: Date | undefined

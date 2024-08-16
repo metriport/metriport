@@ -29,12 +29,14 @@ export async function getDocumentsFromCQ({
   patient,
   cqManagingOrgName,
   forcePatientDiscovery = false,
+  triggerConsolidated = false,
 }: {
   requestId: string;
   facilityId?: string;
   patient: Patient;
   cqManagingOrgName?: string;
   forcePatientDiscovery?: boolean;
+  triggerConsolidated?: boolean;
 }) {
   const { log } = out(`CQ DQ - requestId ${requestId}, patient ${patient.id}`);
   const { cxId, id: patientId } = patient;
@@ -63,6 +65,7 @@ export async function getDocumentsFromCQ({
         convertProgress: { status: "processing" },
         requestId,
         source: MedicalDataSource.CAREQUALITY,
+        triggerConsolidated,
       }),
     ]);
 
@@ -75,6 +78,7 @@ export async function getDocumentsFromCQ({
         requestId,
         patient,
         source: MedicalDataSource.CAREQUALITY,
+        triggerConsolidated,
       });
 
       if (forcePatientDiscovery && !isProcessing) {
@@ -92,7 +96,7 @@ export async function getDocumentsFromCQ({
     }
 
     await setDocQueryStartAt({
-      patient: { id: patient.id, cxId: patient.cxId },
+      patient: { id: patient.id, cxId },
       source: MedicalDataSource.CAREQUALITY,
       startedAt: new Date(),
     });

@@ -1,4 +1,4 @@
-import { normalizeZipCode } from "../normalize-zip";
+import { normalizeZipCode } from "../zip";
 
 describe("normalizeZipCode", () => {
   test("should handle short zip codes", () => {

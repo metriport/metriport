@@ -1,5 +1,5 @@
+import { USState } from "@metriport/shared";
 import { STATE_MAPPINGS } from "../shared";
-import { USState } from "../../../domain/geographic-locations";
 
 describe("State Mappings Validation", () => {
   it("should have an entry for every USState", () => {
