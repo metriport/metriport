@@ -1,6 +1,7 @@
 import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as iam from "aws-cdk-lib/aws-iam";
+import * as glue from "aws-cdk-lib/aws-glue";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
@@ -47,6 +48,8 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       versioned: true,
     });
 
+    this.createParsedReponseTables(iheParsedResponsesBucket);
+
     const patientDiscoveryLambda = this.setupIHEGatewayV2PatientDiscoveryLambda(
       props,
       iheResponsesBucket,
@@ -65,6 +68,45 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     patientDiscoveryLambda.grantInvoke(props.apiTaskRole);
     documentQueryLambda.grantInvoke(props.apiTaskRole);
     documentRetrievalLambda.grantInvoke(props.apiTaskRole);
+  }
+
+  private createParsedReponseTables(iheParsedResponsesBucket: s3.Bucket) {
+    new glue.CfnTable(this, "iheParsedResponsesDebugTable", {
+      catalogId: this.account,
+      databaseName: "default",
+      tableInput: {
+        description: "Table used for debugging IHE parsed responses",
+        name: "ihe_parsed_respones_debug_table",
+        partitionKeys: [
+          { name: "cxid", type: "string" },
+          { name: "patientid", type: "string" },
+          { name: "stage", type: "string" },
+          { name: "requestid", type: "string" },
+          { name: "gatewayoid", type: "string" },
+        ],
+        storageDescriptor: {
+          columns: [
+            { name: "id", type: "string" },
+            { name: "timestamp", type: "string" },
+            { name: "requesttimestamp", type: "string" },
+            { name: "responsetimestamp", type: "string" },
+            { name: "gateway", type: "struct<url:string,oid:string,id:string>" },
+            { name: "patientmatch", type: "string" },
+            { name: "ihegatewayv2", type: "boolean" },
+            {
+              name: "operationoutcome",
+              type: "struct<resourcetype:string,id:string,issue:array<struct<severity:string,code:string,details:struct<text:string>>>>",
+            },
+          ],
+          compressed: false,
+          inputFormat: "org.apache.hadoop.mapred.TextInputFormat",
+          outputFormat: "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
+          location: `s3://${iheParsedResponsesBucket.bucketName}/`,
+          serdeInfo: { serializationLibrary: "org.openx.data.jsonserde.JsonSerDe" },
+        },
+        tableType: "EXTERNAL_TABLE",
+      },
+    });
   }
 
   private grantSecretsReadAccess(

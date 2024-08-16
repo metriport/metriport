@@ -2,20 +2,21 @@ import { genderAtBirthSchema } from "@metriport/api-sdk";
 import { getConsolidatedBundleFromS3 } from "@metriport/core/command/consolidated/consolidated-on-s3";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
-  sleep,
-  stringToBoolean,
+  internalSendConsolidatedSchema,
   normalizeDate,
+  normalizeEmailStrict,
+  normalizeExternalId,
   normalizeGender,
   normalizePhoneNumberStrict,
-  normalizeEmailStrict,
   normalizeState,
   normalizeZipCode,
-  normalizeExternalId,
+  sleep,
+  stringToBoolean,
   toTitleCase,
-  internalSendConsolidatedSchema,
 } from "@metriport/shared";
 import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
@@ -27,11 +28,13 @@ import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
-import { PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import {
   getConsolidated,
   getConsolidatedAndSendToCx,
 } from "../../command/medical/patient/consolidated-get";
+import { createCoverageAssessments } from "../../command/medical/patient/converage-assessment-create";
+import { getCoverageAssessments } from "../../command/medical/patient/converage-assessment-get";
+import { PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getPatientIds,
@@ -39,12 +42,10 @@ import {
   getPatients,
   getPatientStates,
 } from "../../command/medical/patient/get-patient";
-import { getCoverageAssessments } from "../../command/medical/patient/converage-assessment-get";
 import {
   PatientUpdateCmd,
   updatePatientWithoutHIEs,
 } from "../../command/medical/patient/update-patient";
-import { createCoverageAssessments } from "../../command/medical/patient/converage-assessment-create";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import BadRequestError from "../../errors/bad-request";
 import {
@@ -87,7 +88,6 @@ import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
 import { coverageAssessmentSchema } from "./schemas/patient";
-import { processAsyncError } from "@metriport/core/util/error/shared";
 
 dayjs.extend(duration);
 
@@ -893,7 +893,7 @@ router.post(
       bundleFilename,
     });
 
-    await getConsolidatedAndSendToCx({
+    getConsolidatedAndSendToCx({
       patient,
       bundle,
       requestId,
@@ -902,7 +902,11 @@ router.post(
       resources,
       dateFrom,
       dateTo,
-    });
+    }).catch(
+      processAsyncError(
+        "POST /internal/patient/:id/consolidated, calling getConsolidatedAndSendToCx"
+      )
+    );
     return res.sendStatus(status.OK);
   })
 );
