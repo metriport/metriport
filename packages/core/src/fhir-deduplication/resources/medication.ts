@@ -11,16 +11,16 @@ import { combineResources, fillMaps } from "../shared";
 
 export function deduplicateMedications(medications: Medication[]): {
   combinedMedications: Medication[];
-  idReplacementMap: Map<string, string[]>;
+  refReplacementMap: Map<string, string[]>;
 } {
-  const { rxnormMap, ndcMap, snomedMap, remainingMedications, idReplacementMap } =
+  const { rxnormMap, ndcMap, snomedMap, remainingMedications, refReplacementMap } =
     groupSameMedications(medications);
   return {
     combinedMedications: combineResources({
       combinedMaps: [rxnormMap, ndcMap, snomedMap],
       remainingResources: remainingMedications,
     }),
-    idReplacementMap,
+    refReplacementMap,
   };
 }
 
@@ -29,12 +29,12 @@ export function groupSameMedications(medications: Medication[]): {
   ndcMap: Map<string, Medication>;
   snomedMap: Map<string, Medication>;
   remainingMedications: Medication[];
-  idReplacementMap: Map<string, string[]>;
+  refReplacementMap: Map<string, string[]>;
 } {
   const rxnormMap = new Map<string, Medication>();
   const ndcMap = new Map<string, Medication>();
   const snomedMap = new Map<string, Medication>();
-  const idReplacementMap = new Map<string, string[]>();
+  const refReplacementMap = new Map<string, string[]>();
   const remainingMedications: Medication[] = [];
 
   for (const medication of medications) {
@@ -42,11 +42,11 @@ export function groupSameMedications(medications: Medication[]): {
     const { rxnormCode, ndcCode, snomedCode } = extractCodes(medication.code);
 
     if (rxnormCode) {
-      fillMaps(rxnormMap, rxnormCode, medication, idReplacementMap, false);
+      fillMaps(rxnormMap, rxnormCode, medication, refReplacementMap, false);
     } else if (ndcCode) {
-      fillMaps(ndcMap, ndcCode, medication, idReplacementMap, false);
+      fillMaps(ndcMap, ndcCode, medication, refReplacementMap, false);
     } else if (snomedCode) {
-      fillMaps(snomedMap, snomedCode, medication, idReplacementMap, false);
+      fillMaps(snomedMap, snomedCode, medication, refReplacementMap, false);
     } else {
       remainingMedications.push(medication);
     }
@@ -57,7 +57,7 @@ export function groupSameMedications(medications: Medication[]): {
     ndcMap,
     snomedMap,
     remainingMedications,
-    idReplacementMap,
+    refReplacementMap,
   };
 }
 

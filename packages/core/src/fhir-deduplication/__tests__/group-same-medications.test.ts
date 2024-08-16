@@ -16,7 +16,7 @@ let medicationId2: string;
 let medication: Medication;
 let medication2: Medication;
 
-beforeAll(() => {
+beforeEach(() => {
   medicationId = faker.string.uuid();
   medicationId2 = faker.string.uuid();
   medication = makeMedication({ id: medicationId });

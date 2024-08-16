@@ -21,7 +21,7 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
 
   // Medication deduplication
   const medicationsResult = deduplicateMedications(resourceArrays.medications);
-  resourceArrays = replaceResourceReferences(resourceArrays, medicationsResult.idReplacementMap);
+  resourceArrays = replaceResourceReferences(resourceArrays, medicationsResult.refReplacementMap);
   processedArrays.push("medications");
   deduplicatedEntries.push(...medicationsResult.combinedMedications);
 

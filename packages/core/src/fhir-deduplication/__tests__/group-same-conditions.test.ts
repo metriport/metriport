@@ -17,7 +17,7 @@ let conditionId2: string;
 let condition: Condition;
 let condition2: Condition;
 
-beforeAll(() => {
+beforeEach(() => {
   conditionId = faker.string.uuid();
   conditionId2 = faker.string.uuid();
   condition = makeCondition({ id: conditionId });
