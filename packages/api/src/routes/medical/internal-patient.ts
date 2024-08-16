@@ -839,6 +839,27 @@ router.post(
   })
 );
 
+/** ---------------------------------------------------------------------------
+ * GET /internal/patient/bulk/coverage-assessment
+ *
+ * Returns the cx patients for a given facility used for internal scripts
+ * @param req.query.facilityId - The facility ID.
+ * @return list of patients.
+ */
+router.get(
+  "/bulk/coverage-assessment",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const facilityId = getFrom("query").orFail("facilityId", req);
+    const patients = await getPatients({ cxId, facilityId });
+    const patientsWithAssessments = await getCoverageAssessments({ cxId, patients });
+
+    const response = { patientsWithAssessments };
+    return res.status(status.OK).json(response);
+  })
+);
+
 /**
  * POST /internal/patient/:id/consolidated
  *
@@ -883,27 +904,6 @@ router.post(
       dateTo,
     });
     return res.sendStatus(status.OK);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * GET /internal/patient/bulk/coverage-assessment
- *
- * Returns the cx patients for a given facility used for internal scripts
- * @param req.query.facilityId - The facility ID.
- * @return list of patients.
- */
-router.get(
-  "/bulk/coverage-assessment",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const facilityId = getFrom("query").orFail("facilityId", req);
-    const patients = await getPatients({ cxId, facilityId });
-    const patientsWithAssessments = await getCoverageAssessments({ cxId, patients });
-
-    const response = { patientsWithAssessments };
-    return res.status(status.OK).json(response);
   })
 );
 
