@@ -50,6 +50,7 @@ export async function queryDocumentsAcrossHIEs({
   forceCommonwell = false,
   forceCarequality = false,
   cqManagingOrgName,
+  triggerConsolidated = false,
 }: {
   cxId: string;
   patientId: string;
@@ -60,6 +61,7 @@ export async function queryDocumentsAcrossHIEs({
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
   cqManagingOrgName?: string;
+  triggerConsolidated?: boolean;
 }): Promise<DocumentQueryProgress> {
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
@@ -87,7 +89,12 @@ export async function queryDocumentsAcrossHIEs({
     id: patient.id,
     cxId: patient.cxId,
     cmd: {
-      documentQueryProgress: { requestId, startedAt, download: { status: "processing" } },
+      documentQueryProgress: {
+        requestId,
+        startedAt,
+        triggerConsolidated,
+        download: { status: "processing" },
+      },
       cxDocumentRequestMetadata,
     },
   });

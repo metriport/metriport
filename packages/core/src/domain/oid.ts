@@ -1,4 +1,4 @@
-import { USState } from "./geographic-locations";
+import { USState } from "@metriport/shared";
 import { generalPersonalIdentifiers } from "../domain/patient";
 
 export const OID_ID_START = 100;
