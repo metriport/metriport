@@ -72,7 +72,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
 
   private createParsedReponseTables(iheParsedResponsesBucket: s3.Bucket) {
     new glue.CfnTable(this, "iheParsedResponsesDebugTable", {
-      catalogId: `arn:aws:glue:${this.region}:${this.account}:catalog`,
+      catalogId: this.account,
       databaseName: "default",
       tableInput: {
         description: "Table used for debugging IHE parsed responses",
