@@ -17,7 +17,6 @@ export function makeCondition(params: Partial<Condition> = {}): Condition {
       ],
       text: "NICOTINE DEPENDENCE, UNSP, UNCOMPLI",
     },
-    note: params.note ?? [],
     ...params,
   };
 }
