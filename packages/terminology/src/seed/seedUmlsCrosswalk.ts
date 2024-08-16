@@ -203,7 +203,7 @@ async function processConceptMap(inStream: Readable): Promise<void> {
   const mappedConcepts: Record<string, ConceptMap> = Object.create(null);
   for await (const line of rl) {
     const concept = new UmlsConceptMap(line);
-    if (concept.MAPSETCUI != "C5847627") {
+    if (concept.MAPSETCUI != "C5885096") {
       continue;
     }
     if (concept.MAPRULE && IFA_RULE_REGEX.test(concept.MAPRULE)) {
