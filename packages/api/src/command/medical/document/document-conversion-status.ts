@@ -65,22 +65,21 @@ export async function calculateDocumentConversionStatus({
         ? await getCWData(updatedPatient.data.externalData)
         : await getCQData(updatedPatient.data.externalData);
 
-    const isConversionCompleted = isProgressStatusValid({
+    const globalTriggerConsolidated =
+      updatedPatient.data.documentQueryProgress?.triggerConsolidated;
+    const hieTriggerConsolidated = externalData?.documentQueryProgress?.triggerConsolidated;
+    const isGloablConversionCompleted = isProgressStatusValid({
+      documentQueryProgress: updatedPatient.data.documentQueryProgress,
+      progressType: "convert",
+      status: "completed",
+    });
+    const isHieConversionCompleted = isProgressStatusValid({
       documentQueryProgress: externalData?.documentQueryProgress,
       progressType: "convert",
       status: "completed",
     });
 
-    if (isConversionCompleted) {
-      if (
-        externalData?.documentQueryProgress?.triggerConsolidated &&
-        !updatedPatient.data.documentQueryProgress?.triggerConsolidated
-      ) {
-        log(`Kicking off getConsolidated for patient ${updatedPatient.id}`);
-        getConsolidated({ patient: updatedPatient, conversionType: "pdf" }).catch(
-          processAsyncError(`Post-DQ getConsolidated ${source}`)
-        );
-      }
+    if (isHieConversionCompleted) {
       const startedAt = updatedPatient.data.documentQueryProgress?.startedAt;
       const convert = updatedPatient.data.documentQueryProgress?.convert;
       const totalDocsConverted = convert?.total;
@@ -101,20 +100,31 @@ export async function calculateDocumentConversionStatus({
         },
       });
     }
+
+    if (
+      (hieTriggerConsolidated && isHieConversionCompleted) ||
+      (globalTriggerConsolidated && isGloablConversionCompleted)
+    ) {
+      log(
+        `Kicking off getConsolidated for patient ${updatedPatient.id} - hie: ${hieTriggerConsolidated} global: ${globalTriggerConsolidated}`
+      );
+      getConsolidated({ patient: updatedPatient, conversionType: "pdf" }).catch(
+        processAsyncError(`Post-DQ getConsolidated ${source}`)
+      );
+    }
   } else {
     const expectedPatient = await updateConversionProgress({
       patient: { id: patientId, cxId },
       convertResult,
     });
 
-    const conversionStatus = expectedPatient.data.documentQueryProgress?.convert?.status;
-    if (conversionStatus === "completed") {
-      if (expectedPatient.data.documentQueryProgress?.triggerConsolidated) {
-        log(`Kicking off getConsolidated for patient ${expectedPatient.id}`);
-        getConsolidated({ patient: expectedPatient, conversionType: "pdf" }).catch(
-          processAsyncError("Post-DQ getConsolidated")
-        );
-      }
+    const isConversionCompleted = isProgressStatusValid({
+      documentQueryProgress: expectedPatient.data.documentQueryProgress,
+      progressType: "convert",
+      status: "completed",
+    });
+
+    if (isConversionCompleted) {
       processPatientDocumentRequest(
         cxId,
         patientId,
