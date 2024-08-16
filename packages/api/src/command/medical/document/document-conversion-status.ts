@@ -68,6 +68,7 @@ export async function calculateDocumentConversionStatus({
     const globalTriggerConsolidated =
       updatedPatient.data.documentQueryProgress?.triggerConsolidated;
     const hieTriggerConsolidated = externalData?.documentQueryProgress?.triggerConsolidated;
+
     const isGloablConversionCompleted = isProgressStatusValid({
       documentQueryProgress: updatedPatient.data.documentQueryProgress,
       progressType: "convert",
