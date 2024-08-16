@@ -1,0 +1,86 @@
+import { faker } from "@faker-js/faker";
+import { Encounter } from "@medplum/fhirtypes";
+import { makeEncounter } from "../../fhir-to-cda/cda-templates/components/__tests__/make-encounter";
+import { groupSameEncounters } from "../resources/encounter";
+import { dateTime, dateTime2 } from "./examples/condition-examples";
+
+let encounterId: string;
+let encounterId2: string;
+let encounter: Encounter;
+let encounter2: Encounter;
+
+beforeEach(() => {
+  encounterId = faker.string.uuid();
+  encounterId2 = faker.string.uuid();
+  encounter = makeEncounter({ id: encounterId });
+  encounter2 = makeEncounter({ id: encounterId2 });
+});
+
+describe("groupSameEncounters", () => {
+  it("correctly groups duplicate encounters based on date and status", () => {
+    encounter.period = { start: dateTime.start };
+    encounter2.period = { start: dateTime.start };
+    encounter.status = "finished";
+    encounter2.status = "finished";
+
+    const { encountersMap, refReplacementMap } = groupSameEncounters([encounter, encounter2]);
+    expect(encountersMap.size).toBe(1);
+
+    // Making sure ref to encounter2.id is present in the array of refs being replaced
+    expect(refReplacementMap.entries().next().value).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining(encounterId),
+        expect.arrayContaining([expect.stringContaining(`Encounter/${encounterId2}`)]),
+      ])
+    );
+  });
+
+  it("correctly groups duplicate encounters based on date and class codes", () => {
+    encounter.period = { start: dateTime.start };
+    encounter2.period = { start: dateTime.start };
+    encounter.class = { code: "AMB" };
+    encounter2.class = { code: "AMB" };
+
+    const { encountersMap } = groupSameEncounters([encounter, encounter2]);
+    expect(encountersMap.size).toBe(1);
+  });
+
+  it("does not group encounters with different dates", () => {
+    encounter.period = { start: dateTime.start };
+    encounter2.period = { start: dateTime2.start };
+    encounter.status = "finished";
+    encounter2.status = "finished";
+
+    const { encountersMap } = groupSameEncounters([encounter, encounter2]);
+    expect(encountersMap.size).toBe(2);
+  });
+
+  it("does not group encounters with different status", () => {
+    encounter.period = { start: dateTime.start };
+    encounter2.period = { start: dateTime.start };
+    encounter.status = "finished";
+    encounter2.status = "arrived";
+
+    const { encountersMap } = groupSameEncounters([encounter, encounter2]);
+    expect(encountersMap.size).toBe(2);
+  });
+
+  it("does not group encounters with different class codes", () => {
+    encounter.period = { start: dateTime.start };
+    encounter2.period = { start: dateTime.start };
+    encounter.class = { code: "AMB" };
+    encounter2.class = { code: "EMER" };
+
+    const { encountersMap } = groupSameEncounters([encounter, encounter2]);
+    expect(encountersMap.size).toBe(2);
+  });
+
+  it("does not group encounters when dates are missing", () => {
+    encounter.class = { code: "AMB" };
+    encounter2.class = { code: "AMB" };
+
+    const { encountersMap, remainingEncounters } = groupSameEncounters([encounter, encounter2]);
+    expect(encountersMap.size).toBe(0);
+    expect(remainingEncounters.length).toBe(2);
+  });
+});

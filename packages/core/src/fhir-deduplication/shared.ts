@@ -172,6 +172,9 @@ export function getDateFromResource<T extends Resource>(
     }
   } else if ("effectiveDateTime" in resource) {
     return getDateFromString(resource.effectiveDateTime, dateFormat);
+  } else if ("period" in resource) {
+    const period = resource.period;
+    if (period.start) return getDateFromString(period.start, dateFormat);
   } else if ("effectivePeriod" in resource) {
     if (resource.effectivePeriod.start) {
       return getDateFromString(resource.effectivePeriod.start);

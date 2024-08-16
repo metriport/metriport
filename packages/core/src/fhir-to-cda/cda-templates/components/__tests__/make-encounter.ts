@@ -1,5 +1,6 @@
-import { Encounter, Practitioner, Location } from "@medplum/fhirtypes";
-import { makeBaseDomain, makeSubjectReference } from "./shared";
+import { faker } from "@faker-js/faker";
+import { Encounter, Location, Practitioner } from "@medplum/fhirtypes";
+import { makeSubjectReference } from "./shared";
 
 export function makePractitioner(params: Partial<Practitioner>): Practitioner {
   return {
@@ -17,15 +18,16 @@ export function makeLocation(params: Partial<Location>): Location {
 
 export function makeEncounter(
   params: Partial<Encounter> = {},
-  ids: { enc: string; pract: string; loc: string }
+  ids?: { enc?: string; pract?: string; loc?: string }
 ): Encounter {
   return {
-    ...makeBaseDomain(),
     ...makeSubjectReference(),
-    id: ids.enc,
+    id: ids?.enc ?? faker.string.uuid(),
     resourceType: "Encounter",
+    participant: [
+      { individual: { reference: `Practitioner/${ids?.pract ?? faker.string.uuid()}` } },
+    ],
+    location: [{ location: { reference: `Location/${ids?.loc ?? faker.string.uuid()}` } }],
     ...params,
-    participant: [{ individual: { reference: `Practitioner/${ids.pract}` } }],
-    location: [{ location: { reference: `Location/${ids.loc}` } }],
   };
 }

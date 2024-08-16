@@ -2,6 +2,7 @@ import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
 import { ExtractedFhirTypes, extractFhirTypesFromBundle } from "../external/fhir/shared/bundle";
 import { deduplicateConditions } from "./resources/condition";
+import { deduplicateEncounters } from "./resources/encounter";
 import { deduplicateMedications } from "./resources/medication";
 import { deduplicateMedAdmins } from "./resources/medication-administration";
 import { deduplicateMedRequests } from "./resources/medication-request";
@@ -42,6 +43,12 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   resourceArrays = replaceResourceReferences(resourceArrays, medStatementResult.refReplacementMap);
   processedArrays.push("medicationStatements");
   deduplicatedEntries.push(...medStatementResult.combinedMedStatements);
+
+  // Encounter deduplication
+  const encountersResult = deduplicateEncounters(resourceArrays.encounters);
+  resourceArrays = replaceResourceReferences(resourceArrays, encountersResult.refReplacementMap);
+  processedArrays.push("encounters");
+  deduplicatedEntries.push(...encountersResult.combinedEncounters);
 
   // Rebuild the entries with deduplicated resources and add whatever is left unprocessed
   for (const [key, resources] of Object.entries(resourceArrays)) {
