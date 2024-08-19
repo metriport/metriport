@@ -28,6 +28,17 @@ const defaultS3RetriesConfig = {
   maxAttempts: 5,
   initialDelay: 500,
 };
+const protocolRegex = /^https?:\/\//;
+
+export type GetSignedUrlWithBucketAndKey = {
+  bucketName: string;
+  fileName: string;
+  durationSeconds?: number;
+};
+export type GetSignedUrlWithLocation = {
+  location: string;
+  durationSeconds?: number;
+};
 
 export async function executeWithRetriesS3<T>(
   fn: () => Promise<T>,
@@ -204,7 +215,26 @@ export class S3Utils {
     return false;
   }
 
-  async getSignedUrl({
+  async getSignedUrl(params: GetSignedUrlWithBucketAndKey): Promise<string>;
+  async getSignedUrl(params: GetSignedUrlWithLocation): Promise<string>;
+  async getSignedUrl(
+    params: GetSignedUrlWithBucketAndKey | GetSignedUrlWithLocation
+  ): Promise<string> {
+    if ("location" in params) {
+      const tmp = splitS3Location(params.location);
+      if (!tmp) throw new Error("Could not parse S3 location");
+      const { bucketName, key } = tmp;
+      return this.getSignedUrlInternal({
+        bucketName,
+        fileName: key,
+        ...(params.durationSeconds ? { durationSeconds: params.durationSeconds } : undefined),
+      });
+    } else {
+      return this.getSignedUrlInternal(params);
+    }
+  }
+
+  private async getSignedUrlInternal({
     bucketName,
     fileName,
     durationSeconds,
@@ -375,4 +405,16 @@ export class S3Utils {
     );
     return res.Contents;
   }
+}
+
+export function splitS3Location(location: string): { bucketName: string; key: string } | undefined {
+  // convert S3 location to bucket and key based on this format: "https://metriport-medical-documents.s3.us-west-1.amazonaws.com/6faef82d-dae0-48b7-9929-8dc5aeb984a6/01900d1a-7323-732b-90b2-936f3835bf74/6faef82d-dae0-48b7-9929-8dc5aeb984a6_01900d1a-7323-732b-90b2-936f3835bf74_MR.html"
+  if (!location.match(protocolRegex)) return undefined;
+  const [domain, ...path] = location.replace(protocolRegex, "").split("/");
+  if (!domain) return undefined;
+  if (!path || path.length < 1) return undefined;
+  const bucketName = domain.split(".")[0];
+  if (!bucketName) return undefined;
+  const key = path.join("/");
+  return { bucketName, key };
 }
