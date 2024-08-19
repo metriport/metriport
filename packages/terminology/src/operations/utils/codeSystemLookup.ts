@@ -1,12 +1,12 @@
 import { CodeSystem } from "@medplum/fhirtypes";
-import { getTermServerClient } from "../../sqlite";
+import { getTermServerClient } from "../../initTermServer";
 
 export const parentProperty = "http://hl7.org/fhir/concept-properties#parent";
 export const childProperty = "http://hl7.org/fhir/concept-properties#child";
 export const abstractProperty = "http://hl7.org/fhir/concept-properties#notSelectable";
 
 export async function findCodeSystemResource(system: string): Promise<CodeSystem> {
-  const query = 'SELECT * FROM "CodeSystem" WHERE "system" = ?';
+  const query = 'SELECT * FROM "code_system" WHERE "system" = ?';
   const params = [system];
 
   try {

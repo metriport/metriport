@@ -4,7 +4,7 @@ import { createInterface } from "node:readline";
 import { argv } from "node:process";
 import { Readable, Transform, TransformCallback } from "node:stream";
 import * as unzip from "unzip-stream";
-import { TerminologyClient } from "../client";
+import { TerminologyClient } from "../tables";
 
 const IFA_RULE_REGEX = /^IFA \d+ &#x7C;/;
 

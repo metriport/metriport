@@ -2,7 +2,7 @@ import { Database } from "sqlite3";
 import { promisify } from "util";
 /* eslint-disable */
 
-interface DbClient {
+export interface DbClient {
   run(query: string, params?: any[]): Promise<void>;
   runAndReturn(query: string, params?: any[]): Promise<any>;
   select(query: string, params?: any[]): Promise<any[]>;

@@ -3,7 +3,7 @@ import { OperationDefinition, ConceptMap } from "@medplum/fhirtypes";
 import { ConceptMapTranslateParameters, normalizeOperationOutcome } from "@medplum/core";
 import { conceptMapTranslateOperationDefinition } from "./definitions/conceptMapTranslate";
 import { parseInputParameters } from "./utils/parameters";
-import { getTermServerClient } from "../sqlite";
+import { getTermServerClient } from "../initTermServer";
 
 const operation: OperationDefinition = conceptMapTranslateOperationDefinition;
 
@@ -21,7 +21,7 @@ export async function conceptMapTranslateHandler(
 async function lookupConceptMap(params: ConceptMapTranslateParameters): Promise<ConceptMap> {
   const dbClient = getTermServerClient();
   const query =
-    'SELECT * FROM "ConceptMap" WHERE "source" = ? AND "sourceCode" = ? AND "target" = ?';
+    'SELECT * FROM "concept_map" WHERE "source" = ? AND "sourceCode" = ? AND "target" = ?';
   const result = await dbClient.selectOne(query, [params.system, params.code, params.targetsystem]);
   const conceptMap = JSON.parse(result.content);
   console.log(`ConceptMap: ${JSON.stringify(conceptMap)}`);

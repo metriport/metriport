@@ -13,5 +13,5 @@ COPY . /app
 FROM node:18-slim
 COPY --from=build /app /app
 WORKDIR /app
-EXPOSE 3000
+EXPOSE 8080
 ENTRYPOINT [ "npm", "run", "start" ]

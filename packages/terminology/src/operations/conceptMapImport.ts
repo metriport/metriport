@@ -3,7 +3,7 @@ import { ConceptMap } from "@medplum/fhirtypes";
 import { normalizeOperationOutcome } from "@medplum/core";
 import { v4 as uuidv4 } from "uuid";
 
-import { getTermServerClient } from "../sqlite";
+import { getTermServerClient } from "../initTermServer";
 
 function generateReverseConceptMaps(conceptMap: ConceptMap): ConceptMap[] {
   const reverseMaps: ConceptMap[] = [];
@@ -54,7 +54,7 @@ export async function conceptMapImportHandler(
 
     const dbClient = getTermServerClient();
     const query = `
-      INSERT INTO "ConceptMap" ("id", "content", "source", "sourceCode", "target", "targetCode")
+      INSERT INTO "concept_map" ("id", "content", "source", "sourceCode", "target", "targetCode")
       VALUES (?, ?, ?, ?, ?, ?)
       ON CONFLICT(source, sourceCode, target) DO UPDATE SET
       content = json_patch(

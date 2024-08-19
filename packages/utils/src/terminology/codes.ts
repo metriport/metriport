@@ -9,7 +9,7 @@ export function getRandomCode() {
 
 export async function lookupCode() {
   const response = await axios.post(
-    "http://localhost:3000/fhir/R4/CodeSystem/lookup",
+    "http://localhost:8080/fhir/R4/CodeSystem/lookup",
     {
       resourceType: "Parameters",
       parameter: [
@@ -30,7 +30,7 @@ export async function translateCode() {
   const system = "http://snomed.info/sct";
   const code = getRandomCode();
   const response = await axios.post(
-    "http://localhost:3000/fhir/R4/ConceptMap/translate",
+    "http://localhost:8080/fhir/R4/ConceptMap/translate",
     {
       resourceType: "Parameters",
       parameter: [

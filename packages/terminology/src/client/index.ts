@@ -2,14 +2,14 @@ import * as dotenv from "dotenv";
 dotenv.config();
 import axios from "axios";
 import { Parameters, ConceptMap, OperationOutcome } from "@medplum/fhirtypes";
-import { getEnvVar } from "../config";
+import { getEnvVarOrFail } from "@metriport/shared";
 import { CodeSystemLookupOutput } from "../operations/codeLookup";
 
 export class TerminologyClient {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = getEnvVar("TERMINOLOGY_BASE_URL") ?? "http://127.0.0.1:3000/fhir/R4";
+    this.baseUrl = getEnvVarOrFail("TERMINOLOGY_BASE_URL");
   }
 
   async lookupCode(parameters: Parameters): Promise<CodeSystemLookupOutput | OperationOutcome[]> {

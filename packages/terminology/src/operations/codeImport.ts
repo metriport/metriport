@@ -2,7 +2,7 @@ import { FhirRequest, FhirResponse } from "@medplum/fhir-router";
 import { OperationDefinition, Coding, CodeSystem } from "@medplum/fhirtypes";
 import { OperationOutcomeError, allOk, badRequest, normalizeOperationOutcome } from "@medplum/core";
 import { v4 as uuidv4 } from "uuid";
-import { getTermServerClient } from "../sqlite";
+import { getTermServerClient } from "../initTermServer";
 import { parseInputParameters } from "./utils/parameters";
 import { findCodeSystemResource, parentProperty } from "./utils/codeSystemLookup";
 
@@ -75,7 +75,7 @@ export async function importCodeSystemSqlite(
     }));
     const params = rows.flatMap(row => [row.system, row.code, row.display]);
     const query = `
-      INSERT INTO Coding (system, code, display)
+      INSERT INTO coding (system, code, display)
       VALUES ${rows.map(() => "(?, ?, ?)").join(", ")}
       ON CONFLICT(system, code) DO NOTHING
     `;
@@ -116,7 +116,7 @@ async function processProperties(
     const lookupCodes = isRelationship ? [imported.code, imported.value] : [imported.code];
 
     const placeholders = lookupCodes.map(() => "?").join(",");
-    const query = `SELECT id, code FROM Coding WHERE system = ? AND code IN (${placeholders})`;
+    const query = `SELECT id, code FROM coding WHERE system = ? AND code IN (${placeholders})`;
     const params = [codeSystem.id, ...lookupCodes];
     const codingIds = await db.select(query, params);
 
@@ -140,7 +140,7 @@ async function processProperties(
   }
 
   const insertQuery = `
-    INSERT INTO Coding_Property (coding, property, value, target)
+    INSERT INTO coding_property (coding, property, value, target)
     VALUES ${rows.map(() => "(?, ?, ?, ?)").join(", ")}
     ON CONFLICT(coding, property) DO UPDATE SET value=excluded.value, target=excluded.target
   `;
@@ -163,7 +163,7 @@ async function resolveProperty(codeSystem: CodeSystem, code: string): Promise<[n
   const isRelationship = prop.type === "code";
 
   const db = getTermServerClient();
-  const selectQuery = 'SELECT id FROM "CodeSystem_Property" WHERE "system" = ? AND "code" = ?';
+  const selectQuery = 'SELECT id FROM code_system_property WHERE "system" = ? AND "code" = ?';
   const knownProp = await db.selectOne(selectQuery, [codeSystem.id, code]);
   if (knownProp) {
     return [knownProp.id, isRelationship];
@@ -171,7 +171,7 @@ async function resolveProperty(codeSystem: CodeSystem, code: string): Promise<[n
 
   const uuid = uuidv4();
   const insertQuery =
-    'INSERT INTO "CodeSystem_Property" ("id", "system", "code", "type", "uri", "description") VALUES (?, ?, ?, ?, ?, ?) RETURNING "id"';
+    'INSERT INTO code_system_property ("id", "system", "code", "type", "uri", "description") VALUES (?, ?, ?, ?, ?, ?) RETURNING "id"';
   const newProp = await db.runAndReturn(insertQuery, [
     uuid,
     codeSystem.id,

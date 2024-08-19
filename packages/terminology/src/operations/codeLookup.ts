@@ -4,7 +4,7 @@ import { normalizeOperationOutcome, badRequest, TypedValue, notFound, append } f
 import { codeLookupOperationDefinition } from "./definitions/codeLookupOperation";
 import { parseInputParameters } from "./utils/parameters";
 import { findCodeSystemResource } from "./utils/codeSystemLookup";
-import { getTermServerClient } from "../sqlite";
+import { getTermServerClient } from "../initTermServer";
 
 const operation: OperationDefinition = codeLookupOperationDefinition;
 
@@ -59,10 +59,10 @@ export async function lookupCoding(
         csp.type,
         csp.description,
         cp.value
-      FROM Coding c
-      INNER JOIN CodeSystem cs ON c.system = cs.id
-      LEFT JOIN Coding_Property cp ON cp.coding = c.id
-      LEFT JOIN CodeSystem_Property csp ON cp.property = csp.id
+      FROM coding c
+      INNER JOIN code_system cs ON c.system = cs.id
+      LEFT JOIN coding_property cp ON cp.coding = c.id
+      LEFT JOIN code_system_property csp ON cp.property = csp.id
       WHERE cs.id = ? AND c.code = ?
     `;
 

@@ -27,7 +27,7 @@ export function settings() {
     cpuAmount,
     cpu: cpuAmount * vCPU,
     memoryLimitMiB: prod ? 8192 : 4096,
-    taskCountMin: prod ? 1 : 1,
+    taskCountMin: prod ? 2 : 1,
     taskCountMax: prod ? 10 : 2,
     // How long this service can run for
     maxExecutionTimeout: MAXIMUM_LAMBDA_TIMEOUT,
@@ -75,7 +75,7 @@ export function createTermServerService(
       taskImageOptions: {
         image: ecs.ContainerImage.fromDockerImageAsset(dockerImage),
         containerPort: 3000,
-        containerName: "TermServer-Server",
+        containerName: "Terminology-Server",
         environment: {
           NODE_ENV: "production", // Determines its being run in the cloud, the logical env is set on ENV_TYPE
           ENV_TYPE: props.config.environmentType, // staging, production, sandbox
@@ -98,7 +98,7 @@ export function createTermServerService(
   );
 
   // CloudWatch Alarms and Notifications
-  const fargateCPUAlarm = fargateService.service
+  const fargateCpuAlarm = fargateService.service
     .metricCpuUtilization()
     .createAlarm(stack, "TermServerCPUAlarm", {
       threshold: 80,
@@ -106,8 +106,8 @@ export function createTermServerService(
       datapointsToAlarm: 2,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
-  alarmAction && fargateCPUAlarm.addAlarmAction(alarmAction);
-  alarmAction && fargateCPUAlarm.addOkAction(alarmAction);
+  alarmAction && fargateCpuAlarm.addAlarmAction(alarmAction);
+  alarmAction && fargateCpuAlarm.addOkAction(alarmAction);
 
   const fargateMemoryAlarm = fargateService.service
     .metricMemoryUtilization()
