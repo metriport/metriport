@@ -76,13 +76,12 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       databaseName: "default",
       tableInput: {
         description: "Table used for debugging IHE parsed responses",
-        name: "ihe_parsed_respones_debug_table",
+        name: "ihe_parsed_respones_debug",
         partitionKeys: [
           { name: "cxid", type: "string" },
           { name: "patientid", type: "string" },
           { name: "stage", type: "string" },
           { name: "requestid", type: "string" },
-          { name: "gatewayoid", type: "string" },
         ],
         storageDescriptor: {
           columns: [

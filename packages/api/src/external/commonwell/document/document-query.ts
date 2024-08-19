@@ -94,6 +94,7 @@ export async function queryAndProcessDocuments({
   patient: patientParam,
   facilityId,
   forceQuery = false,
+  forcePatientDiscovery = false,
   forceDownload,
   ignoreDocRefOnFHIRServer,
   ignoreFhirConversionAndUpsert,
@@ -104,6 +105,7 @@ export async function queryAndProcessDocuments({
   patient: Patient;
   facilityId?: string | undefined;
   forceQuery?: boolean;
+  forcePatientDiscovery?: boolean;
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
@@ -135,22 +137,22 @@ export async function queryAndProcessDocuments({
   if (!isCwQueryEnabled) return interrupt(`CW disabled for facility ${facilityId}`);
 
   try {
-    const initiator = await getCwInitiator(patientParam, facilityId);
-
-    await setDocQueryProgress({
-      patient: { id: patientId, cxId },
-      downloadProgress: { status: "processing" },
-      convertProgress: { status: "processing" },
-      requestId,
-      source: MedicalDataSource.COMMONWELL,
-      triggerConsolidated,
-    });
+    const [initiator] = await Promise.all([
+      getCwInitiator(patientParam, facilityId),
+      setDocQueryProgress({
+        patient: { id: patientId, cxId },
+        downloadProgress: { status: "processing" },
+        convertProgress: { status: "processing" },
+        requestId,
+        source: MedicalDataSource.COMMONWELL,
+      }),
+    ]);
 
     const patientCWData = getCWData(patientParam.data.externalData);
     const hasNoCWStatus = !patientCWData || !patientCWData.status;
     const isProcessing = patientCWData?.status === "processing";
 
-    if (hasNoCWStatus || isProcessing) {
+    if (hasNoCWStatus || isProcessing || forcePatientDiscovery) {
       await scheduleDocQuery({
         requestId,
         patient: { id: patientId, cxId },
@@ -158,7 +160,7 @@ export async function queryAndProcessDocuments({
         triggerConsolidated,
       });
 
-      if (hasNoCWStatus) {
+      if (forcePatientDiscovery && !isProcessing) {
         update({
           patient: patientParam,
           facilityId: initiator.facilityId,
