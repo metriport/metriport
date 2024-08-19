@@ -16,9 +16,10 @@ const medicationStatementStatus = [
   "unknown",
   "not-taken",
 ] as const;
+
 export type MedicationStatementStatus = (typeof medicationStatementStatus)[number];
 
-const statusRanking = {
+export const statusRanking = {
   unknown: 0,
   "entered-in-error": 1,
   intended: 2,
@@ -33,12 +34,10 @@ export function deduplicateMedStatements(medications: MedicationStatement[]): {
   combinedMedStatements: MedicationStatement[];
   refReplacementMap: Map<string, string[]>;
 } {
-  const { medStatementsMap, remainingMedStatements, refReplacementMap } =
-    groupSameMedStatements(medications);
+  const { medStatementsMap, refReplacementMap } = groupSameMedStatements(medications);
   return {
     combinedMedStatements: combineResources({
       combinedMaps: [medStatementsMap],
-      remainingResources: remainingMedStatements,
     }),
     refReplacementMap,
   };
@@ -52,12 +51,10 @@ export function deduplicateMedStatements(medications: MedicationStatement[]): {
  */
 export function groupSameMedStatements(medStatements: MedicationStatement[]): {
   medStatementsMap: Map<string, MedicationStatement>;
-  remainingMedStatements: MedicationStatement[];
   refReplacementMap: Map<string, string[]>;
 } {
   const medStatementsMap = new Map<string, MedicationStatement>();
   const refReplacementMap = new Map<string, string[]>();
-  const remainingMedStatements: MedicationStatement[] = [];
 
   function assignMostDescriptiveStatus(
     master: MedicationStatement,
@@ -72,7 +69,7 @@ export function groupSameMedStatements(medStatements: MedicationStatement[]): {
     const date = getDateFromResource(medStatement, "date-hm");
     const medRef = medStatement.medicationReference?.reference;
     const dosage = medStatement.dosage;
-    if (medRef) {
+    if (medRef && date && dosage) {
       const key = JSON.stringify({ medRef, date, dosage });
       fillMaps(
         medStatementsMap,
@@ -82,14 +79,11 @@ export function groupSameMedStatements(medStatements: MedicationStatement[]): {
         undefined,
         assignMostDescriptiveStatus
       );
-    } else {
-      remainingMedStatements.push(medStatement);
     }
   }
 
   return {
     medStatementsMap,
-    remainingMedStatements,
     refReplacementMap: refReplacementMap,
   };
 }

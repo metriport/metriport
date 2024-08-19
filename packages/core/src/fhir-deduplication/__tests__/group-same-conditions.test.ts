@@ -57,14 +57,13 @@ describe("groupSameConditions", () => {
     expect(snomedMap.size).toBe(1);
   });
 
-  it("does not lose conditions that have neither snomed nor icd-10 codes", () => {
+  it("loses conditions that have neither snomed nor icd-10 codes", () => {
     condition.code = { coding: [{ system: "some other system", code: "123" }] };
     condition.onsetPeriod = onsetPeriod;
 
-    const { icd10Map, snomedMap, remainingConditions } = groupSameConditions([condition]);
+    const { icd10Map, snomedMap } = groupSameConditions([condition]);
     expect(icd10Map.size).toBe(0);
     expect(snomedMap.size).toBe(0);
-    expect(remainingConditions.length).toBe(1);
   });
 
   it("does not group conditions with different snomed codes", () => {

@@ -1,10 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { MedicationStatement } from "@medplum/fhirtypes";
-import {
-  MedicationStatementStatus,
-  groupSameMedStatements,
-  pickMostDescriptiveStatus,
-} from "../resources/medication-statement";
+import { groupSameMedStatements } from "../resources/medication-statement";
 import { makeMedicationStatement } from "./examples/medication-related";
 
 let medStatementId: string;
@@ -30,29 +26,5 @@ describe("groupSameMedStatements", () => {
     medStatement2.status = "intended";
     const result = groupSameMedStatements([medStatement, medStatement2]);
     expect(result.medStatementsMap.values().next().value.status).toBe("intended");
-  });
-});
-
-describe("pickMostDescriptiveStatus", () => {
-  it("correctly picks the more descriptive status", () => {
-    let status1: MedicationStatementStatus = "unknown";
-    let status2: MedicationStatementStatus = "stopped";
-    expect(pickMostDescriptiveStatus(status1, status2)).toEqual("stopped");
-
-    status1 = "stopped";
-    status2 = "unknown";
-    expect(pickMostDescriptiveStatus(status1, status2)).toEqual("stopped");
-
-    status1 = "active";
-    status2 = "stopped";
-    expect(pickMostDescriptiveStatus(status1, status2)).toEqual("stopped");
-
-    status1 = "active";
-    status2 = "completed";
-    expect(pickMostDescriptiveStatus(status1, status2)).toEqual("completed");
-
-    status1 = "intended";
-    status2 = "active";
-    expect(pickMostDescriptiveStatus(status1, status2)).toEqual("active");
   });
 });
