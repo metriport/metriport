@@ -37,6 +37,13 @@
         ],
         "intent":"order",
         "status":{{>ValueSet/MedicationRequestStatus.hbs code=medicationRequest.statusCode.code}},
+        {{#if medicationRequest.effectiveTime.high.value}}
+            "authoredOn": "{{formatAsDateTime medicationRequest.effectiveTime.high.value}}",
+        {{else if medicationRequest.effectiveTime.low.value}}
+            "authoredOn": "{{formatAsDateTime medicationRequest.effectiveTime.low.value}}",
+        {{else if medicationRequest.author.time}}
+            "authoredOn": "{{formatAsDateTime medicationRequest.author.time}}",
+        {{/if}}
     },
     "request":{
         "method":"PUT",
