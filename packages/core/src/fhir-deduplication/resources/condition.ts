@@ -35,16 +35,34 @@ export function groupSameConditions(conditions: Condition[]): {
   const remainingConditions: Condition[] = [];
   const refReplacementMap = new Map<string, string[]>();
 
+  function removeOtherCodes(master: Condition): Condition {
+    const code = master.code;
+    const filtered = code?.coding?.filter(
+      coding =>
+        coding.system?.includes(SNOMED_CODE) ||
+        coding.system?.includes(SNOMED_OID) ||
+        coding.system?.includes(ICD_10_CODE) ||
+        coding.system?.includes(ICD_10_OID)
+    );
+    if (filtered) {
+      master.code = {
+        ...code,
+        coding: filtered,
+      };
+    }
+    return master;
+  }
+
   for (const condition of conditions) {
     const date = getDateFromResource(condition);
     const { snomedCode, icd10Code } = extractCodes(condition.code);
 
     if (icd10Code) {
       const compKey = JSON.stringify(createCompositeKey(icd10Code, date));
-      fillMaps(icd10Map, compKey, condition, refReplacementMap);
+      fillMaps(icd10Map, compKey, condition, refReplacementMap, undefined, removeOtherCodes);
     } else if (snomedCode) {
       const compKey = JSON.stringify(createCompositeKey(snomedCode, date));
-      fillMaps(snomedMap, compKey, condition, refReplacementMap);
+      fillMaps(snomedMap, compKey, condition, refReplacementMap, undefined, removeOtherCodes);
     } else {
       remainingConditions.push(condition);
     }

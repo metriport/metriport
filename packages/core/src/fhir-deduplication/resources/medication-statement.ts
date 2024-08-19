@@ -1,5 +1,33 @@
 import { MedicationStatement } from "@medplum/fhirtypes";
-import { combineResources, fillMaps, getDateFromResource } from "../shared";
+import {
+  combineResources,
+  fillMaps,
+  getDateFromResource,
+  pickMostDescriptiveStatus,
+} from "../shared";
+
+const medicationStatementStatus = [
+  "active",
+  "completed",
+  "entered-in-error",
+  "intended",
+  "stopped",
+  "on-hold",
+  "unknown",
+  "not-taken",
+] as const;
+export type MedicationStatementStatus = (typeof medicationStatementStatus)[number];
+
+const statusRanking = {
+  unknown: 0,
+  "entered-in-error": 1,
+  intended: 2,
+  "not-taken": 3,
+  "on-hold": 4,
+  active: 5,
+  stopped: 6,
+  completed: 7,
+};
 
 export function deduplicateMedStatements(medications: MedicationStatement[]): {
   combinedMedStatements: MedicationStatement[];
@@ -20,7 +48,6 @@ export function deduplicateMedStatements(medications: MedicationStatement[]): {
  * Approach:
  * 1 map, where the key is made of:
  * - medicationReference ID
- * - status
  * - date
  */
 export function groupSameMedStatements(medStatements: MedicationStatement[]): {
@@ -32,13 +59,29 @@ export function groupSameMedStatements(medStatements: MedicationStatement[]): {
   const refReplacementMap = new Map<string, string[]>();
   const remainingMedStatements: MedicationStatement[] = [];
 
+  function assignMostDescriptiveStatus(
+    master: MedicationStatement,
+    existing: MedicationStatement,
+    target: MedicationStatement
+  ): MedicationStatement {
+    master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
+    return master;
+  }
+
   for (const medStatement of medStatements) {
-    const medRef = medStatement.medicationReference?.reference;
     const date = getDateFromResource(medStatement, "date-hm");
-    const status = medStatement.status;
+    const medRef = medStatement.medicationReference?.reference;
+    const dosage = medStatement.dosage;
     if (medRef) {
-      const key = JSON.stringify({ medRef, status, date });
-      fillMaps(medStatementsMap, key, medStatement, refReplacementMap);
+      const key = JSON.stringify({ medRef, date, dosage });
+      fillMaps(
+        medStatementsMap,
+        key,
+        medStatement,
+        refReplacementMap,
+        undefined,
+        assignMostDescriptiveStatus
+      );
     } else {
       remainingMedStatements.push(medStatement);
     }

@@ -5,6 +5,8 @@ import {
   MedicationStatement,
 } from "@medplum/fhirtypes";
 
+const DEFAULT_MEDICATION_REF = `Medication/${faker.string.uuid()}`;
+
 export function makeMedicationAdministration(params: Partial<MedicationAdministration>) {
   return {
     resourceType: "MedicationAdministration",
@@ -16,8 +18,8 @@ export function makeMedicationAdministration(params: Partial<MedicationAdministr
       },
     ],
     status: "completed",
-    effectiveDateTime: "2017-11-14T11:15:00.000Z",
-    medicationReference: { reference: "Medication/107fc532-e583-4aed-be84-333677a558b0" },
+    effectiveDateTime: "2020-01-20T11:15:00.000Z",
+    medicationReference: { reference: DEFAULT_MEDICATION_REF },
     dosage: {
       route: {
         coding: [
@@ -35,7 +37,7 @@ export function makeMedicationAdministration(params: Partial<MedicationAdministr
   };
 }
 
-export function makeMedicationRequest(params: Partial<MedicationRequest>) {
+export function makeMedicationRequest(params: Partial<MedicationRequest>): MedicationRequest {
   return {
     resourceType: "MedicationRequest",
     ...(params.id ? { id: params.id } : { id: faker.string.uuid() }),
@@ -46,26 +48,15 @@ export function makeMedicationRequest(params: Partial<MedicationRequest>) {
       },
     ],
     status: "completed",
-    effectiveDateTime: "2017-11-14T11:15:00.000Z",
-    medicationReference: { reference: "Medication/107fc532-e583-4aed-be84-333677a558b0" },
-    dosage: {
-      route: {
-        coding: [
-          {
-            system: "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl",
-            code: "C38288",
-            display: "Oral",
-          },
-        ],
-        text: "Oral",
-      },
-      dose: { value: 0.4, unit: "mg", system: "http://unitsofmeasure.org" },
-    },
+    authoredOn: "2020-01-20T11:15:00.000Z",
+    medicationReference: { reference: DEFAULT_MEDICATION_REF },
     ...params,
   };
 }
 
-export function makeMedicationStatement(params: Partial<MedicationStatement>) {
+export function makeMedicationStatement(
+  params: Partial<MedicationStatement> = {}
+): MedicationStatement {
   return {
     resourceType: "MedicationStatement",
     ...(params.id ? { id: params.id } : { id: faker.string.uuid() }),
@@ -76,10 +67,11 @@ export function makeMedicationStatement(params: Partial<MedicationStatement>) {
       },
     ],
     status: "completed",
-    effectiveDateTime: "2017-11-14T11:15:00.000Z",
-    medicationReference: { reference: "Medication/107fc532-e583-4aed-be84-333677a558b0" },
+    effectiveDateTime: "2020-01-20T11:15:00.000Z",
+    medicationReference: { reference: DEFAULT_MEDICATION_REF },
     dosage: [
       {
+        text: "3 tablet, Oral, Once, On Sat 1/20/20 at 1600",
         route: {
           coding: [
             {
@@ -90,7 +82,15 @@ export function makeMedicationStatement(params: Partial<MedicationStatement>) {
           ],
           text: "Oral",
         },
-        dose: { value: 0.4, unit: "mg", system: "http://unitsofmeasure.org" },
+        doseAndRate: [
+          {
+            doseQuantity: {
+              value: 3,
+              unit: "{tbl}",
+              system: "http://unitsofmeasure.org",
+            },
+          },
+        ],
       },
     ],
     ...params,

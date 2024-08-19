@@ -8,6 +8,7 @@ import {
   icd10CodeMd,
   onsetPeriod,
   onsetPeriod2,
+  otherCodeSystemMd,
   snomedCodeAo,
   snomedCodeMd,
 } from "./examples/condition-examples";
@@ -94,5 +95,36 @@ describe("groupSameConditions", () => {
 
     const { snomedMap } = groupSameConditions([condition, condition2]);
     expect(snomedMap.size).toBe(2);
+  });
+
+  it("correctly removes codes that aren't SNOMED or ICD-10", () => {
+    condition.code = { coding: [icd10CodeMd] };
+    condition2.code = { coding: [icd10CodeMd, snomedCodeMd, otherCodeSystemMd] };
+    condition.onsetPeriod = onsetPeriod;
+    condition2.onsetPeriod = onsetPeriod;
+
+    const { icd10Map } = groupSameConditions([condition, condition2]);
+    expect(icd10Map.size).toBe(1);
+    const resultingCoding = icd10Map.values().next().value.code.coding;
+
+    expect(resultingCoding.length).toEqual(2);
+    expect(resultingCoding).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          system: expect.stringContaining(snomedCodeMd.system),
+        }),
+        expect.objectContaining({
+          system: expect.stringContaining(icd10CodeMd.system),
+        }),
+      ])
+    );
+
+    expect(resultingCoding).toEqual(
+      expect.not.arrayContaining([
+        expect.objectContaining({
+          system: expect.stringContaining(otherCodeSystemMd.system),
+        }),
+      ])
+    );
   });
 });
