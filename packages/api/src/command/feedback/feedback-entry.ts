@@ -1,5 +1,5 @@
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { sendToSlack } from "@metriport/core/external/slack";
+import { sendToSlack } from "@metriport/core/external/slack/index";
 import { Config } from "@metriport/core/util/config";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { NotFoundError } from "@metriport/shared";
