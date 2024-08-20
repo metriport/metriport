@@ -1,7 +1,5 @@
 import { faker } from "@faker-js/faker";
 import { Bundle, BundleEntry, Medication, Resource } from "@medplum/fhirtypes";
-import { makeMedication } from "../../fhir-to-cda/cda-templates/components/__tests__/make-medication";
-
 import { makeBundle } from "../../external/fhir/__tests__/bundle";
 import {
   findMedicationAdministrationResources,
@@ -9,6 +7,7 @@ import {
   findMedicationResources,
   findMedicationStatementResources,
 } from "../../external/fhir/shared";
+import { makeMedication } from "../../fhir-to-cda/cda-templates/components/__tests__/make-medication";
 import { deduplicateFhir } from "../deduplicate-fhir";
 import { rxnormCodeAm } from "./examples/medication-examples";
 import {
