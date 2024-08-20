@@ -64,12 +64,33 @@ describe("groupSameMedications", () => {
     expect(snomedMap.size).toBe(0);
   });
 
-  it("loses medications that have neither of the expected codes", () => {
+  it("removes medications that have neither of the expected codes", () => {
     medication.code = { coding: [rxnormCodeAm] };
     medication2.code = { coding: [{ system: "some other system", code: "123" }] };
 
     const { rxnormMap, ndcMap, snomedMap } = groupSameMedications([medication, medication2]);
     expect(rxnormMap.size).toBe(1);
+    expect(ndcMap.size).toBe(0);
+    expect(snomedMap.size).toBe(0);
+  });
+
+  it("strips out irrelevant codes", () => {
+    medication.code = { coding: [rxnormCodeAm] };
+    medication2.code = { coding: [rxnormCodeAm, { system: "some other system", code: "123" }] };
+
+    const { rxnormMap, ndcMap, snomedMap } = groupSameMedications([medication, medication2]);
+    expect(rxnormMap.size).toBe(1);
+    const masterMedication = rxnormMap.values().next().value;
+    expect(masterMedication.code?.coding.length).toBe(1);
+    expect(masterMedication.code).toEqual(
+      expect.objectContaining({
+        coding: expect.arrayContaining([
+          expect.objectContaining({
+            system: rxnormCodeAm.system,
+          }),
+        ]),
+      })
+    );
     expect(ndcMap.size).toBe(0);
     expect(snomedMap.size).toBe(0);
   });

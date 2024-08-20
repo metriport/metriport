@@ -56,7 +56,7 @@ describe("groupSameConditions", () => {
     expect(snomedMap.size).toBe(1);
   });
 
-  it("loses conditions that have neither snomed nor icd-10 codes", () => {
+  it("removes conditions that have neither snomed nor icd-10 codes", () => {
     condition.code = { coding: [{ system: "some other system", code: "123" }] };
     condition.onsetPeriod = dateTime;
 
@@ -95,7 +95,7 @@ describe("groupSameConditions", () => {
     expect(snomedMap.size).toBe(2);
   });
 
-  it("correctly removes codes that aren't SNOMED or ICD-10", () => {
+  it("strips away codes that aren't SNOMED or ICD-10", () => {
     condition.code = { coding: [icd10CodeMd] };
     condition2.code = { coding: [icd10CodeMd, snomedCodeMd, otherCodeSystemMd] };
     condition.onsetPeriod = dateTime;
