@@ -1,10 +1,10 @@
-import { ConceptMap } from "@medplum/fhirtypes";
+import { ConceptMap, Parameters } from "@medplum/fhirtypes";
 import { createReadStream } from "node:fs";
 import { createInterface } from "node:readline";
 import { argv } from "node:process";
 import { Readable, Transform, TransformCallback } from "node:stream";
 import * as unzip from "unzip-stream";
-import { TerminologyClient } from "../tables";
+import { TerminologyClient } from "../client";
 
 const IFA_RULE_REGEX = /^IFA \d+ &#x7C;/;
 
@@ -17,7 +17,7 @@ type UmlsConceptMapConfig = {
   target: string;
 };
 
-const C5847627: UmlsConceptMapConfig = {
+const C5885096: UmlsConceptMapConfig = {
   system: "http://snomed.info/sct",
   target: "http://hl7.org/fhir/sid/icd-10-cm",
 };
@@ -61,7 +61,7 @@ class UmlsConceptMap {
   /** Identifier for the entity being mapped to.
    *  This is the in the target mapping system
    */
-  readonly TOID: string;
+  TOID: string;
   /** Source asserted identifier for the entity being mapped to (optional). */
   readonly TOSID?: string;
   /** Entity being mapped to
@@ -146,7 +146,27 @@ class UmlsConceptMap {
   }
 }
 
-function createConceptMap(concept: UmlsConceptMap, config: UmlsConceptMapConfig): ConceptMap {
+function createLookupParameters(system: string, code: string): Parameters {
+  return {
+    resourceType: "Parameters",
+    parameter: [
+      { name: "system", valueUri: system },
+      { name: "code", valueCode: code },
+    ],
+  };
+}
+
+async function createConceptMap({
+  concept,
+  config,
+  sourceDisplay,
+  targetDisplay,
+}: {
+  concept: UmlsConceptMap;
+  config: UmlsConceptMapConfig;
+  sourceDisplay: string | undefined;
+  targetDisplay: string | undefined;
+}): Promise<ConceptMap> {
   return {
     resourceType: "ConceptMap",
     status: "active",
@@ -157,10 +177,11 @@ function createConceptMap(concept: UmlsConceptMap, config: UmlsConceptMapConfig)
         element: [
           {
             code: concept.FROMID,
+            display: sourceDisplay,
             target: [
               {
                 code: concept.TOID,
-                //TODO could perform a lookup to get display name or integrate with the rest of the concept flow
+                display: targetDisplay,
                 equivalence: "equivalent",
               },
             ],
@@ -171,7 +192,15 @@ function createConceptMap(concept: UmlsConceptMap, config: UmlsConceptMapConfig)
   };
 }
 
-function updateConceptMap(umlsConcept: UmlsConceptMap, conceptMap: ConceptMap): ConceptMap {
+function updateConceptMap({
+  umlsConcept,
+  conceptMap,
+  targetDisplay,
+}: {
+  umlsConcept: UmlsConceptMap;
+  conceptMap: ConceptMap;
+  targetDisplay: string | undefined;
+}): ConceptMap {
   return {
     ...conceptMap,
     group:
@@ -185,6 +214,7 @@ function updateConceptMap(umlsConcept: UmlsConceptMap, conceptMap: ConceptMap): 
                   ...(element.target?.map(t => ({ ...t, equivalence: "narrower" as const })) ?? []),
                   {
                     code: umlsConcept.TOID,
+                    display: targetDisplay,
                     equivalence: "narrower",
                   },
                 ],
@@ -197,6 +227,7 @@ function updateConceptMap(umlsConcept: UmlsConceptMap, conceptMap: ConceptMap): 
 
 async function processConceptMap(inStream: Readable): Promise<void> {
   const rl = createInterface(inStream);
+  const client = new TerminologyClient();
 
   // const counts = Object.create(null) as Record<string, number>;
   // const codings = Object.create(null) as Record<string, Coding[]>;
@@ -214,14 +245,34 @@ async function processConceptMap(inStream: Readable): Promise<void> {
     }
 
     const key = concept.MAPSETCUI + "|" + concept.FROMID;
+    const updatedConcept = {
+      ...concept,
+      TOID: concept.TOID.endsWith("?") ? concept.TOID.slice(0, -1) + "A" : concept.TOID,
+    };
+
+    const sourceParameters = createLookupParameters(C5885096.system, updatedConcept.FROMID);
+    const sourceLookup = await client.lookupCode(sourceParameters);
+    const sourceDisplay = Array.isArray(sourceLookup) ? undefined : sourceLookup.display;
+
+    const targetParameters = createLookupParameters(C5885096.target, updatedConcept.TOID);
+    const targetLookup = await client.lookupCode(targetParameters);
+    const targetDisplay = Array.isArray(targetLookup) ? undefined : targetLookup.display;
+
     if (!mappedConcepts[key]) {
-      mappedConcepts[key] = createConceptMap(concept, C5847627);
+      mappedConcepts[key] = await createConceptMap({
+        concept: updatedConcept,
+        config: C5885096,
+        sourceDisplay,
+        targetDisplay,
+      });
     } else {
-      mappedConcepts[key] = updateConceptMap(concept, mappedConcepts[key]);
+      mappedConcepts[key] = updateConceptMap({
+        umlsConcept: updatedConcept,
+        conceptMap: mappedConcepts[key],
+        targetDisplay,
+      });
     }
   }
-
-  const client = new TerminologyClient();
   for (const conceptMap of Object.values(mappedConcepts)) {
     try {
       await client.importConceptMap(conceptMap);
