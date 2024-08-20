@@ -36,12 +36,15 @@ export async function createFeedbackEntry({
   });
 
   const mrUrl = mrLocation
-    ? s3Utils.getSignedUrl({ location: mrLocation, durationSeconds: mrLinkDuration.asSeconds() })
+    ? await s3Utils.getSignedUrl({
+        location: mrLocation,
+        durationSeconds: mrLinkDuration.asSeconds(),
+      })
     : "N/A";
   sendToSlack(
     {
       subject: `Feedback received about AI Brief`,
-      message: `Feedback author: ${authorName}\nOriginal MR (valid for 1h): ${mrUrl}\nAI Brief:${brief}\nComment: ${comment}`,
+      message: `FEEDBACK AUTHOR: ${authorName}\n\nLINK TO MR (valid for 1h): ${mrUrl}\n\nAI BRIEF: ${brief}\n\nCOMMENT: ${comment}`,
       emoji: ":mega:",
     },
     Config.getSlackSensitiveDataChannelUrl()
