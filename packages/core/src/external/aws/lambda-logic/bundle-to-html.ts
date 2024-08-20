@@ -1099,7 +1099,8 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
       const snomedCode = condition.code?.coding?.find(coding =>
         coding.system?.toLowerCase().includes(SNOMED_CODE)
       )?.code;
-      const blacklistCodes = ["55607006"];
+      const genericSnomedProblemCode = "55607006";
+      const blacklistCodes = [genericSnomedProblemCode];
       return snomedCode && !blacklistCodes.includes(snomedCode);
     })
     .reduce((acc, condition) => {
