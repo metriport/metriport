@@ -206,6 +206,7 @@ type EnvConfigBase = {
   slack?: {
     SLACK_ALERT_URL?: string;
     SLACK_NOTIFICATION_URL?: string;
+    SLACK_SENSITIVE_DATA_URL?: string;
     workspaceId: string;
     alertsChannelId: string;
   };
