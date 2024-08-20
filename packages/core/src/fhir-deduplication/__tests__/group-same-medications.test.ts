@@ -64,18 +64,14 @@ describe("groupSameMedications", () => {
     expect(snomedMap.size).toBe(0);
   });
 
-  it("does not lose medications that have neither snomed nor icd-10 codes", () => {
+  it("loses medications that have neither of the expected codes", () => {
     medication.code = { coding: [rxnormCodeAm] };
     medication2.code = { coding: [{ system: "some other system", code: "123" }] };
 
-    const { rxnormMap, ndcMap, snomedMap, remainingMedications } = groupSameMedications([
-      medication,
-      medication2,
-    ]);
+    const { rxnormMap, ndcMap, snomedMap } = groupSameMedications([medication, medication2]);
     expect(rxnormMap.size).toBe(1);
     expect(ndcMap.size).toBe(0);
     expect(snomedMap.size).toBe(0);
-    expect(remainingMedications.length).toBe(1);
   });
 
   it("does not group medications with different codes", () => {

@@ -4,6 +4,8 @@ import { cloneDeep } from "lodash";
 const dateFormats = ["date-hm", "date"] as const;
 export type DateFormats = (typeof dateFormats)[number];
 
+export type ApplySpecialModificationsCallback<T> = (merged: T, existing: T, target: T) => T;
+
 export type CompositeKey = {
   code: string;
   date: string | undefined;
@@ -107,20 +109,13 @@ export function mergeArrays(targetArray: any[], sourceArray: any[]): any[] {
   return combinedArray;
 }
 
-export function combineResources<T>({
-  combinedMaps,
-  remainingResources,
-}: {
-  combinedMaps: Map<string, T>[];
-  remainingResources: T[];
-}): T[] {
+export function combineResources<T>({ combinedMaps }: { combinedMaps: Map<string, T>[] }): T[] {
   const combinedResources: T[] = [];
   for (const map of combinedMaps) {
     for (const condition of map.values()) {
       combinedResources.push(condition);
     }
   }
-  combinedResources.push(...remainingResources);
   return combinedResources;
 }
 
@@ -130,19 +125,23 @@ export function combineResources<T>({
 export function fillMaps<T extends Resource>(
   map: Map<string, T>,
   key: string,
-  resource: T,
+  targetResource: T,
   refReplacementMap: Map<string, string[]>,
-  isExtensionIncluded = true
+  isExtensionIncluded = true,
+  applySpecialModifications?: ApplySpecialModificationsCallback<T>
 ): void {
-  const existing = map.get(key);
-  if (existing?.id) {
-    const masterRef = `${existing.resourceType}/${existing.id}`;
-    const merged = combineTwoResources(existing, resource, isExtensionIncluded);
+  const existingResource = map.get(key);
+  if (existingResource?.id) {
+    const masterRef = `${existingResource.resourceType}/${existingResource.id}`;
+    let merged = combineTwoResources(existingResource, targetResource, isExtensionIncluded);
+    if (applySpecialModifications) {
+      merged = applySpecialModifications(merged, existingResource, targetResource);
+    }
     map.set(key, merged);
 
     const existingReplacementIds = refReplacementMap.get(masterRef);
-    if (resource.id) {
-      const consumedRef = `${resource.resourceType}/${resource.id}`;
+    if (targetResource.id) {
+      const consumedRef = `${targetResource.resourceType}/${targetResource.id}`;
       if (existingReplacementIds) {
         refReplacementMap.set(masterRef, [...existingReplacementIds, consumedRef]);
       } else {
@@ -150,7 +149,7 @@ export function fillMaps<T extends Resource>(
       }
     }
   } else {
-    map.set(key, resource);
+    map.set(key, targetResource);
   }
 }
 
@@ -182,4 +181,27 @@ export function getDateFromResource<T extends Resource>(
   }
 
   return undefined;
+}
+
+/**
+ * Of the two statuses, picks the more desciptive one based on the ranking provided.
+ */
+export function pickMostDescriptiveStatus<T extends string>(
+  statusRanking: Record<T, number>,
+  status1: T | undefined,
+  status2: T | undefined
+): T {
+  if (status1 && status2) {
+    return statusRanking[status1] > statusRanking[status2] ? status1 : status2;
+  }
+
+  const status = status1 ?? status2;
+  if (!status) {
+    const lowestRanking = (Object.keys(statusRanking) as T[]).find(key => statusRanking[key] === 0);
+    if (!lowestRanking) {
+      throw new Error("unreachable");
+    }
+    return lowestRanking;
+  }
+  return status;
 }

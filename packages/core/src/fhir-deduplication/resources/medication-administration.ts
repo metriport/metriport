@@ -1,15 +1,40 @@
 import { MedicationAdministration } from "@medplum/fhirtypes";
-import { combineResources, fillMaps, getDateFromResource } from "../shared";
+import {
+  combineResources,
+  fillMaps,
+  getDateFromResource,
+  pickMostDescriptiveStatus,
+} from "../shared";
+
+const medicationAdministrationStatus = [
+  "in-progress",
+  "not-done",
+  "on-hold",
+  "completed",
+  "entered-in-error",
+  "stopped",
+  "unknown",
+] as const;
+export type MedicationAdministrationStatus = (typeof medicationAdministrationStatus)[number];
+
+const statusRanking = {
+  unknown: 0,
+  "entered-in-error": 0,
+  "on-hold": 0,
+  "not-done": 0,
+  "in-progress": 0,
+  stopped: 0,
+  completed: 0,
+};
 
 export function deduplicateMedAdmins(medications: MedicationAdministration[]): {
   combinedMedAdmins: MedicationAdministration[];
   refReplacementMap: Map<string, string[]>;
 } {
-  const { medAdminsMap, remainingMedAdmins, refReplacementMap } = groupSameMedAdmins(medications);
+  const { medAdminsMap, refReplacementMap } = groupSameMedAdmins(medications);
   return {
     combinedMedAdmins: combineResources({
       combinedMaps: [medAdminsMap],
-      remainingResources: remainingMedAdmins,
     }),
     refReplacementMap,
   };
@@ -19,35 +44,45 @@ export function deduplicateMedAdmins(medications: MedicationAdministration[]): {
  * Approach:
  * 1 map, where the key is made of:
  * - medicationReference ID
- * - status
  * - date
+ * - dosage
  */
 export function groupSameMedAdmins(medAdmins: MedicationAdministration[]): {
   medAdminsMap: Map<string, MedicationAdministration>;
-  remainingMedAdmins: MedicationAdministration[];
   refReplacementMap: Map<string, string[]>;
 } {
   const medAdminsMap = new Map<string, MedicationAdministration>();
   const refReplacementMap = new Map<string, string[]>();
-  const remainingMedAdmins: MedicationAdministration[] = [];
+
+  function assignMostDescriptiveStatus(
+    master: MedicationAdministration,
+    existing: MedicationAdministration,
+    target: MedicationAdministration
+  ): MedicationAdministration {
+    master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
+    return master;
+  }
 
   for (const medAdmin of medAdmins) {
     const medRef = medAdmin.medicationReference?.reference;
     const date = getDateFromResource(medAdmin, "date-hm");
-    const status = medAdmin.status;
     const dosage = medAdmin.dosage;
 
-    if (medRef) {
-      const key = JSON.stringify({ medRef, status, date, dosage });
-      fillMaps(medAdminsMap, key, medAdmin, refReplacementMap);
-    } else {
-      remainingMedAdmins.push(medAdmin);
+    if (medRef && date && dosage) {
+      const key = JSON.stringify({ medRef, date, dosage });
+      fillMaps(
+        medAdminsMap,
+        key,
+        medAdmin,
+        refReplacementMap,
+        undefined,
+        assignMostDescriptiveStatus
+      );
     }
   }
 
   return {
     medAdminsMap,
-    remainingMedAdmins,
     refReplacementMap: refReplacementMap,
   };
 }

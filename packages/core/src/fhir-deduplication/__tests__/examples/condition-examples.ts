@@ -4,6 +4,11 @@ export const icd10CodeMd = {
   code: "H35.30",
   display: "Macular degeneration",
 };
+export const otherCodeSystemMd = {
+  system: "http://terminology.hl7.org/CodeSystem-IMO.html",
+  code: "86946",
+  display: "Macular degeneration",
+};
 
 export const snomedCodeAo = { system: "http://snomed.info/sct", code: "87224000" };
 export const icd10CodeAo = {

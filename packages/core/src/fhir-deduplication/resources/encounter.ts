@@ -1,16 +1,45 @@
 import { Encounter } from "@medplum/fhirtypes";
-import { combineResources, fillMaps, getDateFromResource } from "../shared";
+import {
+  combineResources,
+  fillMaps,
+  getDateFromResource,
+  pickMostDescriptiveStatus,
+} from "../shared";
 
-export function deduplicateEncounters(medications: Encounter[]): {
+const encounterStatus = [
+  "entered-in-error",
+  "unknown",
+  "planned",
+  "arrived",
+  "triaged",
+  "in-progress",
+  "onleave",
+  "finished",
+  "cancelled",
+] as const;
+
+export type EncounterStatus = (typeof encounterStatus)[number];
+
+export const statusRanking = {
+  unknown: 0,
+  "entered-in-error": 1,
+  planned: 2,
+  cancelled: 3,
+  arrived: 4,
+  triaged: 5,
+  "in-progress": 6,
+  onleave: 7,
+  finished: 8,
+};
+
+export function deduplicateEncounters(encounters: Encounter[]): {
   combinedEncounters: Encounter[];
   refReplacementMap: Map<string, string[]>;
 } {
-  const { encountersMap, remainingEncounters, refReplacementMap } =
-    groupSameEncounters(medications);
+  const { encountersMap, refReplacementMap } = groupSameEncounters(encounters);
   return {
     combinedEncounters: combineResources({
       combinedMaps: [encountersMap],
-      remainingResources: remainingEncounters,
     }),
     refReplacementMap,
   };
@@ -19,36 +48,43 @@ export function deduplicateEncounters(medications: Encounter[]): {
 /**
  * Approach:
  * 1 map, where the key is made of:
- * - status
  * - date
  * - class.code
  */
 export function groupSameEncounters(encounters: Encounter[]): {
   encountersMap: Map<string, Encounter>;
-  remainingEncounters: Encounter[];
   refReplacementMap: Map<string, string[]>;
 } {
   const encountersMap = new Map<string, Encounter>();
   const refReplacementMap = new Map<string, string[]>();
-  const remainingEncounters: Encounter[] = [];
+
+  function assignMostDescriptiveStatus(
+    master: Encounter,
+    existing: Encounter,
+    target: Encounter
+  ): Encounter {
+    master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
+    return master;
+  }
 
   for (const encounter of encounters) {
     const classCode = encounter.class?.code;
-    const date = getDateFromResource(encounter, "date");
-    const status = encounter.status;
-    console.log("DATE IS", date);
-    if (date) {
-      console.log("LOL??");
-      const key = JSON.stringify({ date, status, classCode });
-      fillMaps(encountersMap, key, encounter, refReplacementMap);
-    } else {
-      remainingEncounters.push(encounter);
+    const date = getDateFromResource(encounter, "date-hm");
+    if (date && classCode) {
+      const key = JSON.stringify({ date, classCode });
+      fillMaps(
+        encountersMap,
+        key,
+        encounter,
+        refReplacementMap,
+        undefined,
+        assignMostDescriptiveStatus
+      );
     }
   }
 
   return {
     encountersMap,
-    remainingEncounters,
     refReplacementMap,
   };
 }
