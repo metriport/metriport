@@ -43,6 +43,10 @@
             "authoredOn": "{{formatAsDateTime medicationRequest.effectiveTime.low.value}}",
         {{else if medicationRequest.author.time}}
             "authoredOn": "{{formatAsDateTime medicationRequest.author.time}}",
+        {{else if @encounterTimePeriod.low}}
+            "authoredOn": "{{formatAsDateTime @encounterTimePeriod.low.value}}",
+        {{else if @encounterTimePeriod.high}}
+            "authoredOn": "{{formatAsDateTime @encounterTimePeriod.high.value}}",
         {{/if}}
     },
     "request":{
