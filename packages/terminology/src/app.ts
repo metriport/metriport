@@ -13,13 +13,14 @@ async function main() {
   const app = express();
 
   app.use(express.json({ limit: "50mb" }));
-  await initTermServer();
-
-  app.use("/fhir/R4/", fhirRouter);
 
   app.route("/").get((req, res) => {
     res.status(200).send("OK");
   });
+
+  await initTermServer();
+
+  app.use("/fhir/R4/", fhirRouter);
 
   const PORT = 8080;
   const server = app.listen(PORT, () => {

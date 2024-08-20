@@ -233,8 +233,6 @@ async function processConceptMap(inStream: Readable): Promise<void> {
   const rl = createInterface(inStream);
   const client = new TerminologyClient();
 
-  // const counts = Object.create(null) as Record<string, number>;
-  // const codings = Object.create(null) as Record<string, Coding[]>;
   const mappedConcepts: Record<string, ConceptMap> = Object.create(null);
   for await (const line of rl) {
     const concept = new UmlsConceptMap(line);
