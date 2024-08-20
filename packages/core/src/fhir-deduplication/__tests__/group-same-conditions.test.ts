@@ -8,6 +8,7 @@ import {
   icd10CodeMd,
   onsetPeriod,
   onsetPeriod2,
+  otherCodeSystemMd,
   snomedCodeAo,
   snomedCodeMd,
 } from "./examples/condition-examples";
@@ -17,7 +18,7 @@ let conditionId2: string;
 let condition: Condition;
 let condition2: Condition;
 
-beforeAll(() => {
+beforeEach(() => {
   conditionId = faker.string.uuid();
   conditionId2 = faker.string.uuid();
   condition = makeCondition({ id: conditionId });
@@ -56,14 +57,13 @@ describe("groupSameConditions", () => {
     expect(snomedMap.size).toBe(1);
   });
 
-  it("does not lose conditions that have neither snomed nor icd-10 codes", () => {
+  it("removes conditions that have neither snomed nor icd-10 codes", () => {
     condition.code = { coding: [{ system: "some other system", code: "123" }] };
     condition.onsetPeriod = onsetPeriod;
 
-    const { icd10Map, snomedMap, remainingConditions } = groupSameConditions([condition]);
+    const { icd10Map, snomedMap } = groupSameConditions([condition]);
     expect(icd10Map.size).toBe(0);
     expect(snomedMap.size).toBe(0);
-    expect(remainingConditions.length).toBe(1);
   });
 
   it("does not group conditions with different snomed codes", () => {
@@ -94,5 +94,36 @@ describe("groupSameConditions", () => {
 
     const { snomedMap } = groupSameConditions([condition, condition2]);
     expect(snomedMap.size).toBe(2);
+  });
+
+  it("strips away codes that aren't SNOMED or ICD-10", () => {
+    condition.code = { coding: [icd10CodeMd] };
+    condition2.code = { coding: [icd10CodeMd, snomedCodeMd, otherCodeSystemMd] };
+    condition.onsetPeriod = onsetPeriod;
+    condition2.onsetPeriod = onsetPeriod;
+
+    const { icd10Map } = groupSameConditions([condition, condition2]);
+    expect(icd10Map.size).toBe(1);
+    const resultingCoding = icd10Map.values().next().value.code.coding;
+
+    expect(resultingCoding.length).toEqual(2);
+    expect(resultingCoding).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          system: expect.stringContaining(snomedCodeMd.system),
+        }),
+        expect.objectContaining({
+          system: expect.stringContaining(icd10CodeMd.system),
+        }),
+      ])
+    );
+
+    expect(resultingCoding).toEqual(
+      expect.not.arrayContaining([
+        expect.objectContaining({
+          system: expect.stringContaining(otherCodeSystemMd.system),
+        }),
+      ])
+    );
   });
 });
