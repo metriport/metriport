@@ -1,7 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { Condition } from "@medplum/fhirtypes";
 import { makeCondition } from "../../fhir-to-cda/cda-templates/components/__tests__/make-condition";
-
 import { groupSameConditions } from "../resources/condition";
 import {
   icd10CodeAo,
