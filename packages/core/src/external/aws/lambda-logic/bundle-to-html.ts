@@ -1095,6 +1095,13 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
 
     return aDate === bDate && aText === bText;
   })
+    .filter(condition => {
+      const snomedCode = condition.code?.coding?.find(coding =>
+        coding.system?.toLowerCase().includes(SNOMED_CODE)
+      )?.code;
+      const blacklistCodes = ["55607006"];
+      return snomedCode && !blacklistCodes.includes(snomedCode);
+    })
     .reduce((acc, condition) => {
       const codeName = getSpecificCode(condition.code?.coding ?? [], [ICD_10_CODE, SNOMED_CODE]);
       const idc10Code = condition.code?.coding?.find(code =>
