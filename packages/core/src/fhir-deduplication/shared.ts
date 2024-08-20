@@ -187,6 +187,34 @@ export function getDateFromResource<T extends Resource>(
       return getDateFromString(resource.effectivePeriod.start);
     }
   }
+  return undefined;
+}
+
+export function getPerformedDateFromResource<T extends Resource>(
+  resource: T,
+  dateFormat?: DateFormats
+): string | undefined {
+  if ("performedDateTime" in resource) {
+    return getDateFromString(resource.performedDateTime, dateFormat);
+  } else if ("performedPeriod" in resource) {
+    if (resource.performedPeriod.start) {
+      return getDateFromString(resource.performedPeriod.start);
+    }
+  } else if ("performedString" in resource) {
+    return getDateFromString(resource.performedString, dateFormat);
+  } else if ("performedAge" in resource) {
+    const onsetAge = resource.performedAge;
+    if (onsetAge.value) {
+      return onsetAge.value.toString() + resource.performedAge.unit;
+    }
+  } else if ("performedRange" in resource) {
+    const range = resource.performedRange;
+    if (range.low?.value) {
+      return range.low.value.toString() + range.low.unit;
+    } else if (range.high?.value) {
+      return range.high.value.toString() + range.high.unit;
+    }
+  }
 
   return undefined;
 }

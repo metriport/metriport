@@ -4,6 +4,8 @@ import { ExtractedFhirTypes, extractFhirTypesFromBundle } from "../external/fhir
 import { deduplicateConditions } from "./resources/condition";
 import { deduplicateDiagReports } from "./resources/diagnostic-report";
 import { deduplicateEncounters } from "./resources/encounter";
+import { deduplicateFamilyMemberHistories } from "./resources/family-member-history";
+import { deduplicateImmunizations } from "./resources/immunization";
 import { deduplicateMedications } from "./resources/medication";
 import { deduplicateMedAdmins } from "./resources/medication-administration";
 import { deduplicateMedRequests } from "./resources/medication-request";
@@ -56,6 +58,20 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   resourceArrays = replaceResourceReferences(resourceArrays, diagReportsResult.refReplacementMap);
   processedArrays.push("diagnosticReports");
   deduplicatedEntries.push(...diagReportsResult.combinedDiagnosticReports);
+
+  // Immunization deduplication
+  const immunizationsResult = deduplicateImmunizations(resourceArrays.immunizations);
+  resourceArrays = replaceResourceReferences(resourceArrays, immunizationsResult.refReplacementMap);
+  processedArrays.push("immunizations");
+  deduplicatedEntries.push(...immunizationsResult.combinedImmunizations);
+
+  // FamilyMemberHistory deduplication
+  const familyMemHistResult = deduplicateFamilyMemberHistories(
+    resourceArrays.familyMemberHistories
+  );
+  resourceArrays = replaceResourceReferences(resourceArrays, familyMemHistResult.refReplacementMap);
+  processedArrays.push("familyMemberHistories");
+  deduplicatedEntries.push(...familyMemHistResult.combinedFamMemHistories);
 
   // Rebuild the entries with deduplicated resources and add whatever is left unprocessed
   for (const [key, resources] of Object.entries(resourceArrays)) {

@@ -1,13 +1,13 @@
 import { CodeableConcept, FamilyMemberHistory } from "@medplum/fhirtypes";
 import { combineResources, fillMaps } from "../shared";
 
-export function deduplicateFamilyMemberHistorys(famMemberHists: FamilyMemberHistory[]): {
-  combinedFamilyMemberHistorys: FamilyMemberHistory[];
+export function deduplicateFamilyMemberHistories(famMemberHists: FamilyMemberHistory[]): {
+  combinedFamMemHistories: FamilyMemberHistory[];
   refReplacementMap: Map<string, string[]>;
 } {
-  const { famMemberHistsMap, refReplacementMap } = groupSameFamilyMemberHistorys(famMemberHists);
+  const { famMemberHistsMap, refReplacementMap } = groupSameFamilyMemberHistories(famMemberHists);
   return {
-    combinedFamilyMemberHistorys: combineResources({
+    combinedFamMemHistories: combineResources({
       combinedMaps: [famMemberHistsMap],
     }),
     refReplacementMap,
@@ -21,7 +21,7 @@ export function deduplicateFamilyMemberHistorys(famMemberHists: FamilyMemberHist
  * - date - I don't think the date should matter, as we can combine the conditions into one
  * -
  */
-export function groupSameFamilyMemberHistorys(famMemberHists: FamilyMemberHistory[]): {
+export function groupSameFamilyMemberHistories(famMemberHists: FamilyMemberHistory[]): {
   famMemberHistsMap: Map<string, FamilyMemberHistory>;
   refReplacementMap: Map<string, string[]>;
 } {

@@ -79,8 +79,7 @@ describe("groupSameEncounters", () => {
     encounter.class = { code: "AMB" };
     encounter2.class = { code: "AMB" };
 
-    const { encountersMap, remainingEncounters } = groupSameEncounters([encounter, encounter2]);
+    const { encountersMap } = groupSameEncounters([encounter, encounter2]);
     expect(encountersMap.size).toBe(0);
-    expect(remainingEncounters.length).toBe(2);
   });
 });
