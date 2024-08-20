@@ -26,7 +26,13 @@ fhirRouter.post("/CodeSystem/import", async (req: Request, res: Response) => {
 
 fhirRouter.post("/CodeSystem/lookup", async (req: Request, res: Response) => {
   const fhirRequest = createFhirRequest(req);
-  const response = await codeSystemLookupHandler(fhirRequest);
+  const response = await codeSystemLookupHandler(fhirRequest, false);
+  res.status(200).json(response);
+});
+
+fhirRouter.post("/CodeSystem/lookup/partial", async (req: Request, res: Response) => {
+  const fhirRequest = createFhirRequest(req);
+  const response = await codeSystemLookupHandler(fhirRequest, true);
   res.status(200).json(response);
 });
 

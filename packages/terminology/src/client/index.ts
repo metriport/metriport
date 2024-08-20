@@ -12,8 +12,17 @@ export class TerminologyClient {
     this.baseUrl = getEnvVarOrFail("TERMINOLOGY_BASE_URL");
   }
 
-  async lookupCode(parameters: Parameters): Promise<CodeSystemLookupOutput | OperationOutcome[]> {
+  async lookupCode(parameters: Parameters): Promise<CodeSystemLookupOutput[]> {
     const response = await axios.post(`${this.baseUrl}/CodeSystem/lookup`, parameters, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    return response.data;
+  }
+
+  async lookupPartialCode(parameters: Parameters): Promise<CodeSystemLookupOutput[]> {
+    const response = await axios.post(`${this.baseUrl}/CodeSystem/lookup/partial`, parameters, {
       headers: {
         "Content-Type": "application/json",
       },

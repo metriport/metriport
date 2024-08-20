@@ -161,11 +161,13 @@ async function createConceptMap({
   config,
   sourceDisplay,
   targetDisplay,
+  targetCode,
 }: {
   concept: UmlsConceptMap;
   config: UmlsConceptMapConfig;
   sourceDisplay: string | undefined;
   targetDisplay: string | undefined;
+  targetCode?: string | undefined;
 }): Promise<ConceptMap> {
   return {
     resourceType: "ConceptMap",
@@ -180,7 +182,7 @@ async function createConceptMap({
             display: sourceDisplay,
             target: [
               {
-                code: concept.TOID,
+                code: targetCode ?? concept.TOID,
                 display: targetDisplay,
                 equivalence: "equivalent",
               },
@@ -196,10 +198,12 @@ function updateConceptMap({
   umlsConcept,
   conceptMap,
   targetDisplay,
+  targetCode,
 }: {
   umlsConcept: UmlsConceptMap;
   conceptMap: ConceptMap;
   targetDisplay: string | undefined;
+  targetCode?: string | undefined;
 }): ConceptMap {
   return {
     ...conceptMap,
@@ -213,7 +217,7 @@ function updateConceptMap({
                 target: [
                   ...(element.target?.map(t => ({ ...t, equivalence: "narrower" as const })) ?? []),
                   {
-                    code: umlsConcept.TOID,
+                    code: targetCode ?? umlsConcept.TOID,
                     display: targetDisplay,
                     equivalence: "narrower",
                   },
@@ -245,32 +249,54 @@ async function processConceptMap(inStream: Readable): Promise<void> {
     }
 
     const key = concept.MAPSETCUI + "|" + concept.FROMID;
-    const updatedConcept = {
-      ...concept,
-      TOID: concept.TOID.endsWith("?") ? concept.TOID.slice(0, -1) + "A" : concept.TOID,
-    };
 
-    const sourceParameters = createLookupParameters(C5885096.system, updatedConcept.FROMID);
+    const sourceParameters = createLookupParameters(C5885096.system, concept.FROMID);
     const sourceLookup = await client.lookupCode(sourceParameters);
-    const sourceDisplay = Array.isArray(sourceLookup) ? undefined : sourceLookup.display;
+    const sourceDisplay = sourceLookup[0].display;
 
-    const targetParameters = createLookupParameters(C5885096.target, updatedConcept.TOID);
-    const targetLookup = await client.lookupCode(targetParameters);
-    const targetDisplay = Array.isArray(targetLookup) ? undefined : targetLookup.display;
-
-    if (!mappedConcepts[key]) {
-      mappedConcepts[key] = await createConceptMap({
-        concept: updatedConcept,
-        config: C5885096,
-        sourceDisplay,
-        targetDisplay,
-      });
+    if (concept.TOID.endsWith("?")) {
+      const partialCode = concept.TOID.slice(0, -1);
+      const targetParameters = createLookupParameters(C5885096.target, partialCode);
+      const partialTargetLookup = await client.lookupPartialCode(targetParameters);
+      for (const partialTarget of partialTargetLookup) {
+        const targetDisplay = partialTarget.display;
+        const targetCode = partialTarget.code;
+        if (!mappedConcepts[key]) {
+          mappedConcepts[key] = await createConceptMap({
+            concept,
+            config: C5885096,
+            sourceDisplay,
+            targetDisplay,
+            targetCode,
+          });
+        } else {
+          mappedConcepts[key] = updateConceptMap({
+            umlsConcept: concept,
+            conceptMap: mappedConcepts[key],
+            targetDisplay,
+            targetCode,
+          });
+        }
+      }
     } else {
-      mappedConcepts[key] = updateConceptMap({
-        umlsConcept: updatedConcept,
-        conceptMap: mappedConcepts[key],
-        targetDisplay,
-      });
+      const targetParameters = createLookupParameters(C5885096.target, concept.TOID);
+      const targetLookup = await client.lookupCode(targetParameters);
+      const targetDisplay = targetLookup[0]?.display;
+
+      if (!mappedConcepts[key]) {
+        mappedConcepts[key] = await createConceptMap({
+          concept,
+          config: C5885096,
+          sourceDisplay,
+          targetDisplay,
+        });
+      } else {
+        mappedConcepts[key] = updateConceptMap({
+          umlsConcept: concept,
+          conceptMap: mappedConcepts[key],
+          targetDisplay,
+        });
+      }
     }
   }
   for (const conceptMap of Object.values(mappedConcepts)) {

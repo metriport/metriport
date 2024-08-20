@@ -11,12 +11,15 @@ function generateReverseConceptMaps(conceptMap: ConceptMap): ConceptMap[] {
   const targetSystem = conceptMap.group?.[0]?.target;
   const sourceCode = conceptMap.group?.[0]?.element?.[0]?.code;
   const targets = conceptMap.group?.[0]?.element?.[0]?.target;
+  const sourceDisplay = conceptMap.group?.[0]?.element?.[0]?.display;
 
   if (!sourceSystem || !targetSystem || !sourceCode || !targets) {
     return [];
   }
 
   for (const target of targets) {
+    const targetDisplay = target.display;
+
     const reverseMap: ConceptMap = {
       resourceType: "ConceptMap",
       status: "active",
@@ -27,9 +30,11 @@ function generateReverseConceptMaps(conceptMap: ConceptMap): ConceptMap[] {
           element: [
             {
               code: target.code,
+              display: targetDisplay,
               target: [
                 {
                   code: sourceCode,
+                  display: sourceDisplay,
                   equivalence: targets.length === 1 ? "equivalent" : "wider",
                 },
               ],
