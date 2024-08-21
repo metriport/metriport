@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "embedded term server",
   "main": "app.js",
+  "private": true,
   "scripts": {
+    "test": "jest",
     "start": "ts-node src/app.ts",
     "clean": "rimraf dist && rimraf node_modules",
     "build": "tsc -p tsconfig.build.json",

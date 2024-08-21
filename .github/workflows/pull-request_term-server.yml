@@ -48,3 +48,7 @@ jobs:
       - name: Build (linters)
         run: npm run build
         working-directory: ${{env.working-directory}}
+
+      - name: Test
+        run: npm run test
+        working-directory: ${{env.working-directory}}

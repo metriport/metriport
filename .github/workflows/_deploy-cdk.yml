@@ -147,6 +147,10 @@ jobs:
         run: npm install --only=production --no-fund --no-optional --no-audit
         working-directory: "metriport/packages/fhir-converter"
 
+      - name: Build terminology dependencies
+        run: npm install
+        working-directory: "metriport/packages/terminology"
+
       - name: Lambdas build shared layer
         run: npm run prep-deploy
         working-directory: "metriport/packages/lambdas/"
@@ -155,6 +159,9 @@ jobs:
       - name: Infra build/compile
         run: npm run build:cloud
         working-directory: "metriport/packages/infra"
+      - name: Terminology build
+        run: npm run build
+        working-directory: "metriport/packages/terminology"
 
       # TESTS
       - name: Test root dependencies
@@ -166,6 +173,9 @@ jobs:
       - name: FHIR Converter test
         run: npm run test
         working-directory: "metriport/packages/fhir-converter"
+      - name: Terminology test
+        run: npm run test
+        working-directory: "metriport/packages/terminology"
 
         # SENTRY
       - name: Create Sentry release

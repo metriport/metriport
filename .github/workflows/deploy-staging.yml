@@ -60,9 +60,9 @@ jobs:
               - "packages/fhir-converter/test/**"
               - "packages/fhir-converter/deploy/**"
             terminology:
-              - "packages/fhir-converter/Dockerfile"
-              - "packages/fhir-converter/package*.json"
-              - "packages/fhir-converter/src/**"
+              - "packages/terminology/Dockerfile"
+              - "packages/terminology/package*.json"
+              - "packages/terminology/src/**"
               - "packages/infra/**"
             infra-lambdas:
               - "packages/shared/**"
