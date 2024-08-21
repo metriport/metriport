@@ -4,6 +4,7 @@ import { codeSystemLookupHandler } from "./operations/codeLookup";
 import { conceptMapImportHandler } from "./operations/conceptMapImport";
 import { conceptMapTranslateHandler } from "./operations/conceptMapTranslate";
 import { FhirRequest, HttpMethod } from "@medplum/fhir-router";
+import { asyncHandler } from "./util";
 
 const fhirRouter = Router();
 
@@ -18,34 +19,49 @@ function createFhirRequest(req: Request): FhirRequest {
   };
 }
 
-fhirRouter.post("/CodeSystem/import", async (req: Request, res: Response) => {
-  const fhirRequest = createFhirRequest(req);
-  const response = await codeSystemImportHandler(fhirRequest);
-  res.status(200).json(response);
-});
+fhirRouter.post(
+  "/CodeSystem/import",
+  asyncHandler(async (req: Request, res: Response) => {
+    const fhirRequest = createFhirRequest(req);
+    const response = await codeSystemImportHandler(fhirRequest);
+    res.status(200).json(response);
+  })
+);
 
-fhirRouter.post("/CodeSystem/lookup", async (req: Request, res: Response) => {
-  const fhirRequest = createFhirRequest(req);
-  const response = await codeSystemLookupHandler(fhirRequest, false);
-  res.status(200).json(response);
-});
+fhirRouter.post(
+  "/CodeSystem/lookup",
+  asyncHandler(async (req: Request, res: Response) => {
+    const fhirRequest = createFhirRequest(req);
+    const response = await codeSystemLookupHandler(fhirRequest, false);
+    res.status(200).json(response);
+  })
+);
 
-fhirRouter.post("/CodeSystem/lookup/partial", async (req: Request, res: Response) => {
-  const fhirRequest = createFhirRequest(req);
-  const response = await codeSystemLookupHandler(fhirRequest, true);
-  res.status(200).json(response);
-});
+fhirRouter.post(
+  "/CodeSystem/lookup/partial",
+  asyncHandler(async (req: Request, res: Response) => {
+    const fhirRequest = createFhirRequest(req);
+    const response = await codeSystemLookupHandler(fhirRequest, true);
+    res.status(200).json(response);
+  })
+);
 
-fhirRouter.post("/ConceptMap/import", async (req: Request, res: Response) => {
-  const fhirRequest = createFhirRequest(req);
-  const response = await conceptMapImportHandler(fhirRequest);
-  res.status(200).json(response);
-});
+fhirRouter.post(
+  "/ConceptMap/import",
+  asyncHandler(async (req: Request, res: Response) => {
+    const fhirRequest = createFhirRequest(req);
+    const response = await conceptMapImportHandler(fhirRequest);
+    res.status(200).json(response);
+  })
+);
 
-fhirRouter.post("/ConceptMap/translate", async (req: Request, res: Response) => {
-  const fhirRequest = createFhirRequest(req);
-  const response = await conceptMapTranslateHandler(fhirRequest);
-  res.status(200).json(response);
-});
+fhirRouter.post(
+  "/ConceptMap/translate",
+  asyncHandler(async (req: Request, res: Response) => {
+    const fhirRequest = createFhirRequest(req);
+    const response = await conceptMapTranslateHandler(fhirRequest);
+    res.status(200).json(response);
+  })
+);
 
 export { fhirRouter };
