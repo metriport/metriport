@@ -16,7 +16,6 @@ import { getEnvType } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { errorToString, MetriportError } from "@metriport/shared";
-import * as Sentry from "@sentry/serverless";
 import chromium from "@sparticuz/chromium";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -50,90 +49,89 @@ const s3Client = makeS3Client(region);
 const newS3Client = new S3Utils(region);
 const ossApi = apiClient(apiURL);
 
-export const handler = Sentry.AWSLambda.wrapHandler(
-  async ({
-    fileName: fhirFileName,
-    patientId,
-    cxId,
-    dateFrom,
-    dateTo,
-    conversionType,
-    generateAiBrief,
-  }: Input): Promise<Output> => {
-    const { log } = out(`cx ${cxId}, patient ${patientId}`);
-    log(
-      `Running with conversionType: ${conversionType}, dateFrom: ${dateFrom}, ` +
-        `dateTo: ${dateTo}, generateAiBrief: ${generateAiBrief}, fileName: ${fhirFileName}, bucket: ${bucketName}}`
-    );
-    try {
-      const cxsWithADHDFeatureFlagValue = await getCxsWithADHDFeatureFlagValue();
-      const isADHDFeatureFlagEnabled = cxsWithADHDFeatureFlagValue.includes(cxId);
-      const bundle = await getBundleFromS3(fhirFileName);
-      const isBriefFeatureFlagEnabled = await isAiBriefEnabled(generateAiBrief, cxId);
+// Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
+export async function handler({
+  fileName: fhirFileName,
+  patientId,
+  cxId,
+  dateFrom,
+  dateTo,
+  conversionType,
+  generateAiBrief,
+}: Input): Promise<Output> {
+  const { log } = out(`cx ${cxId}, patient ${patientId}`);
+  log(
+    `Running with conversionType: ${conversionType}, dateFrom: ${dateFrom}, ` +
+      `dateTo: ${dateTo}, generateAiBrief: ${generateAiBrief}, fileName: ${fhirFileName}, bucket: ${bucketName}}`
+  );
+  try {
+    const cxsWithADHDFeatureFlagValue = await getCxsWithADHDFeatureFlagValue();
+    const isADHDFeatureFlagEnabled = cxsWithADHDFeatureFlagValue.includes(cxId);
+    const bundle = await getBundleFromS3(fhirFileName);
+    const isBriefFeatureFlagEnabled = await isAiBriefEnabled(generateAiBrief, cxId);
 
-      // TODO: Condense this functionality under a single function and put it on `@metriport/core`, so this can be used both here, and on the Lambda.
-      const aiBriefContent = isBriefFeatureFlagEnabled
-        ? await bundleToBrief(bundle, cxId, patientId)
-        : undefined;
-      const briefFileName = createMRSummaryBriefFileName(cxId, patientId);
-      const aiBrief = prepareBriefToBundle({ aiBrief: aiBriefContent });
+    // TODO: Condense this functionality under a single function and put it on `@metriport/core`, so this can be used both here, and on the Lambda.
+    const aiBriefContent = isBriefFeatureFlagEnabled
+      ? await bundleToBrief(bundle, cxId, patientId)
+      : undefined;
+    const briefFileName = createMRSummaryBriefFileName(cxId, patientId);
+    const aiBrief = prepareBriefToBundle({ aiBrief: aiBriefContent });
 
-      const html = isADHDFeatureFlagEnabled
-        ? bundleToHtmlADHD(bundle, aiBrief)
-        : bundleToHtml(bundle, aiBrief);
-      const hasContents = doesMrSummaryHaveContents(html);
-      log(`MR Summary has contents: ${hasContents}`);
-      const htmlFileName = createMRSummaryFileName(cxId, patientId, "html");
+    const html = isADHDFeatureFlagEnabled
+      ? bundleToHtmlADHD(bundle, aiBrief)
+      : bundleToHtml(bundle, aiBrief);
+    const hasContents = doesMrSummaryHaveContents(html);
+    log(`MR Summary has contents: ${hasContents}`);
+    const htmlFileName = createMRSummaryFileName(cxId, patientId, "html");
 
-      const mrS3Info = await storeMrSummaryAndBriefInS3({
-        bucketName,
-        htmlFileName,
-        briefFileName,
-        html,
-        aiBrief: aiBriefContent,
-        log,
-      });
+    const mrS3Info = await storeMrSummaryAndBriefInS3({
+      bucketName,
+      htmlFileName,
+      briefFileName,
+      html,
+      aiBrief: aiBriefContent,
+      log,
+    });
 
-      const getSignedUrlPromise = async function () {
-        if (conversionType === "pdf") {
-          const pdfFileName = createMRSummaryFileName(cxId, patientId, "pdf");
-          return await convertStoreAndReturnPdfUrl({ fileName: pdfFileName, html, bucketName });
-        } else {
-          return await getSignedUrl(htmlFileName);
-        }
-      };
+    const getSignedUrlPromise = async function () {
+      if (conversionType === "pdf") {
+        const pdfFileName = createMRSummaryFileName(cxId, patientId, "pdf");
+        return await convertStoreAndReturnPdfUrl({ fileName: pdfFileName, html, bucketName });
+      } else {
+        return await getSignedUrl(htmlFileName);
+      }
+    };
 
-      const [urlResp] = await Promise.allSettled([
-        getSignedUrlPromise(),
-        createFeedbackForBrief({
-          cxId,
-          patientId,
-          aiBrief,
-          mrVersion: mrS3Info.version,
-          mrLocation: mrS3Info.location,
-        }),
-      ]);
-      if (urlResp.status === "rejected") throw new Error(urlResp.reason);
-      const url = urlResp.value;
+    const [urlResp] = await Promise.allSettled([
+      getSignedUrlPromise(),
+      createFeedbackForBrief({
+        cxId,
+        patientId,
+        aiBrief,
+        mrVersion: mrS3Info.version,
+        mrLocation: mrS3Info.location,
+      }),
+    ]);
+    if (urlResp.status === "rejected") throw new Error(urlResp.reason);
+    const url = urlResp.value;
 
-      return { url, hasContents };
-    } catch (error) {
-      const msg = `Error converting FHIR to MR Summary`;
-      log(`${msg} - error: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          patientId,
-          dateFrom,
-          dateTo,
-          conversionType,
-          context: lambdaName,
-          error,
-        },
-      });
-      throw error;
-    }
+    return { url, hasContents };
+  } catch (error) {
+    const msg = `Error converting FHIR to MR Summary`;
+    log(`${msg} - error: ${errorToString(error)}`);
+    capture.error(msg, {
+      extra: {
+        patientId,
+        dateFrom,
+        dateTo,
+        conversionType,
+        context: lambdaName,
+        error,
+      },
+    });
+    throw error;
   }
-);
+}
 
 async function getSignedUrl(fileName: string) {
   return coreGetSignedUrl({ fileName, bucketName, awsRegion: region });
