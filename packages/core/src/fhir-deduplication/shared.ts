@@ -34,7 +34,7 @@ export function getDateFromString(dateString: string, dateFormat?: DateFormats):
   if (dateFormat === "date") {
     return `${year}-${month}-${day}`;
   } else if (dateFormat === "date-hm") {
-    return `${year}-${month}-${day}-${hours}${minutes}`;
+    return `${year}-${month}-${day}T${hours}:${minutes}:00.000Z`;
   } else {
     return date.toLocaleDateString();
   }
@@ -73,23 +73,24 @@ const conditionKeysToIgnore = ["id", "resourceType", "subject"];
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function deepMerge(target: any, source: any, isExtensionIncluded: boolean): any {
+  const combined = cloneDeep(target);
   for (const key of Object.keys(source)) {
     if (key === "extension" && !isExtensionIncluded) continue;
     if (conditionKeysToIgnore.includes(key)) continue;
 
-    if (Array.isArray(source[key]) && Array.isArray(target[key])) {
+    if (Array.isArray(source[key]) && Array.isArray(combined[key])) {
       // Combine arrays and remove duplicates based on unique properties
-      target[key] = mergeArrays(target[key], source[key]);
-    } else if (source[key] instanceof Object && key in target) {
+      combined[key] = mergeArrays(combined[key], source[key]);
+    } else if (source[key] instanceof Object && key in combined) {
       // Recursively merge objects
-      target[key] = deepMerge(target[key], source[key], isExtensionIncluded);
+      combined[key] = deepMerge(combined[key], source[key], isExtensionIncluded);
     } else {
       // Directly assign values
       if (key === "__proto__" || key === "constructor") continue;
-      target[key] = source[key];
+      combined[key] = source[key];
     }
   }
-  return target;
+  return combined;
 }
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
