@@ -43,7 +43,7 @@
         {{else}}
           {{#with (extractDecimal decodedValue) as |decimal|}}
             {
-              "value": {{decimal}},
+              "value": {{decimal.value}},
               "unit": "{{../../../../quantity.unit}}",
               "system": "http://unitsofmeasure.org"
             }
