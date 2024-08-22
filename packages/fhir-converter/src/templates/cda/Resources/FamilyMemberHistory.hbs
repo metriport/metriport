@@ -36,7 +36,7 @@
             {{/each}}
         ],
         "status":"completed"
-        
+        {{!-- TODO: add date from effectiveTime--}}
         "relationship":{{>DataType/CodeableConcept.hbs code=familyEntry.subject.relatedSubject.code canBeUnknown=true}},
         "sex":{{>DataType/CodeableConcept.hbs code=familyEntry.subject.relatedSubject.subject.administrativeGenderCode}},
         "bornString":"{{familyEntry.subject.relatedSubject.subject.birthTime.value}}",

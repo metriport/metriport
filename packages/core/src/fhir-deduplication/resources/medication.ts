@@ -35,15 +35,17 @@ export function groupSameMedications(medications: Medication[]): {
 
   function removeOtherCodes(master: Medication): Medication {
     const code = master.code;
-    const filtered = code?.coding?.filter(
-      coding =>
-        coding.system?.includes(SNOMED_CODE) ||
-        coding.system?.includes(SNOMED_OID) ||
-        coding.system?.includes(NDC_CODE) ||
-        coding.system?.includes(NDC_OID) ||
-        coding.system?.includes(RXNORM_CODE) ||
-        coding.system?.includes(RXNORM_OID)
-    );
+    const filtered = code?.coding?.filter(coding => {
+      const system = coding.system?.toLowerCase();
+      return (
+        system?.includes(SNOMED_CODE) ||
+        system?.includes(SNOMED_OID) ||
+        system?.includes(NDC_CODE) ||
+        system?.includes(NDC_OID) ||
+        system?.includes(RXNORM_CODE) ||
+        system?.includes(RXNORM_OID)
+      );
+    });
     if (filtered) {
       master.code = {
         ...code,

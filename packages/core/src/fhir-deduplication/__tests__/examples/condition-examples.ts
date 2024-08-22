@@ -17,10 +17,10 @@ export const icd10CodeAo = {
   display: "Transient arterial occlusion of retina",
 };
 
-export const onsetPeriod = {
+export const dateTime = {
   start: "2012-01-01T10:00:00.000Z",
 };
 
-export const onsetPeriod2 = {
+export const dateTime2 = {
   start: "2014-02-01T10:00:00.000Z",
 };
