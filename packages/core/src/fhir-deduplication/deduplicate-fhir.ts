@@ -87,6 +87,12 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   processedArrays.push("observationSocialHistory");
   deduplicatedEntries.push(...obsSocialResult.combinedObservations);
 
+  // Observation (labs) deduplication
+  const obsLabsResult = deduplicateObservationsSocial(resourceArrays.observationLaboratory);
+  resourceArrays = replaceResourceReferences(resourceArrays, obsLabsResult.refReplacementMap);
+  processedArrays.push("observationLaboratory");
+  deduplicatedEntries.push(...obsLabsResult.combinedObservations);
+
   // Rebuild the entries with deduplicated resources and add whatever is left unprocessed
   for (const [key, resources] of Object.entries(resourceArrays)) {
     if (processedArrays.includes(key)) {
