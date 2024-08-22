@@ -17,11 +17,9 @@ beforeEach(() => {
 });
 
 describe("groupSameEncounters", () => {
-  it("correctly groups duplicate encounters based on date and class codes", () => {
+  it("correctly groups duplicate encounters based on date", () => {
     encounter.period = { start: dateTime.start };
     encounter2.period = { start: dateTime.start };
-    encounter.class = { code: "AMB" };
-    encounter2.class = { code: "AMB" };
 
     const { encountersMap, refReplacementMap } = groupSameEncounters([encounter, encounter2]);
     expect(encountersMap.size).toBe(1);
@@ -38,8 +36,6 @@ describe("groupSameEncounters", () => {
   it("does not group encounters with different dates", () => {
     encounter.period = { start: dateTime.start };
     encounter2.period = { start: dateTime2.start };
-    encounter.class = { code: "AMB" };
-    encounter2.class = { code: "AMB" };
 
     const { encountersMap } = groupSameEncounters([encounter, encounter2]);
     expect(encountersMap.size).toBe(2);
@@ -48,8 +44,7 @@ describe("groupSameEncounters", () => {
   it("keeps the more informative status", () => {
     encounter.period = { start: dateTime.start };
     encounter2.period = { start: dateTime.start };
-    encounter.class = { code: "AMB" };
-    encounter2.class = { code: "AMB" };
+
     encounter.status = "finished";
     encounter2.status = "arrived";
 
@@ -73,20 +68,7 @@ describe("groupSameEncounters", () => {
     expect(masterEncounter.status).toBe("triaged");
   });
 
-  it("does not group encounters with different class codes", () => {
-    encounter.period = { start: dateTime.start };
-    encounter2.period = { start: dateTime.start };
-    encounter.class = { code: "AMB" };
-    encounter2.class = { code: "EMER" };
-
-    const { encountersMap } = groupSameEncounters([encounter, encounter2]);
-    expect(encountersMap.size).toBe(2);
-  });
-
   it("does not group encounters when dates are missing", () => {
-    encounter.class = { code: "AMB" };
-    encounter2.class = { code: "AMB" };
-
     const { encountersMap } = groupSameEncounters([encounter, encounter2]);
     expect(encountersMap.size).toBe(0);
   });

@@ -42,6 +42,9 @@ describe("groupSameDiagnosticReports", () => {
   it("does not group duplicate diagReports if effectiveDateTime are different", () => {
     diagReport.effectiveDateTime = dateTime.start;
     diagReport2.effectiveDateTime = dateTime2.start;
+    diagReport.presentedForm = presentedFormExample;
+    diagReport2.result = resultExample;
+
     const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
     expect(diagReportsMap.size).toBe(2);
   });
@@ -49,6 +52,8 @@ describe("groupSameDiagnosticReports", () => {
   it("discards codes that don't come from loinc", () => {
     diagReport.effectiveDateTime = dateTime.start;
     diagReport2.effectiveDateTime = dateTime.start;
+    diagReport.presentedForm = presentedFormExample;
+    diagReport2.presentedForm = presentedFormExample;
 
     diagReport.code = {
       coding: [
