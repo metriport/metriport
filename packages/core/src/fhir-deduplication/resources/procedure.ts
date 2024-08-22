@@ -47,7 +47,7 @@ export function deduplicateProcedures(procedures: Procedure[]): {
 /**
  * Approach:
  * 1 map, where the key is made of:
- * - vaccineCode
+ * - code - using CPT or LOINC, while removing codes from other code systems
  * - date (occurenceDateTime or occurenceString)
  */
 export function groupSameProcedures(procedures: Procedure[]): {
