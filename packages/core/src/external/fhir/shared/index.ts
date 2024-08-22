@@ -256,6 +256,18 @@ export function findMedicationStatementResources(fhirBundle: Bundle): Medication
   return fhirBundle.entry?.map(e => e.resource).filter(isMedicationStatement) || [];
 }
 
+export function findProcedureResources(fhirBundle: Bundle): Procedure[] {
+  return fhirBundle.entry?.map(e => e.resource).filter(isProcedure) || [];
+}
+
+export function findFamilyMemberHistoryResources(fhirBundle: Bundle): FamilyMemberHistory[] {
+  return fhirBundle.entry?.map(e => e.resource).filter(isFamilyMemberHistory) || [];
+}
+
+export function findImmunizationResources(fhirBundle: Bundle): Immunization[] {
+  return fhirBundle.entry?.map(e => e.resource).filter(isImmunization) || [];
+}
+
 export function findPatientResource(fhirBundle: Bundle): Patient | undefined {
   return fhirBundle.entry?.map(e => e.resource).find(isPatient);
 }
