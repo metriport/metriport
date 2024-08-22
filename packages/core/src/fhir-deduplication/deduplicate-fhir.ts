@@ -10,6 +10,7 @@ import { deduplicateMedications } from "./resources/medication";
 import { deduplicateMedAdmins } from "./resources/medication-administration";
 import { deduplicateMedRequests } from "./resources/medication-request";
 import { deduplicateMedStatements } from "./resources/medication-statement";
+import { deduplicateObservationsLabs } from "./resources/observation-labs";
 import { deduplicateObservationsSocial } from "./resources/observation-social";
 import { deduplicateProcedures } from "./resources/procedure";
 
@@ -88,10 +89,16 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   deduplicatedEntries.push(...obsSocialResult.combinedObservations);
 
   // Observation (labs) deduplication
-  const obsLabsResult = deduplicateObservationsSocial(resourceArrays.observationLaboratory);
+  const obsLabsResult = deduplicateObservationsLabs(resourceArrays.observationLaboratory);
   resourceArrays = replaceResourceReferences(resourceArrays, obsLabsResult.refReplacementMap);
   processedArrays.push("observationLaboratory");
   deduplicatedEntries.push(...obsLabsResult.combinedObservations);
+
+  // Observation (vitals) deduplication
+  const obsVitalsResult = deduplicateObservationsLabs(resourceArrays.observationVitals);
+  resourceArrays = replaceResourceReferences(resourceArrays, obsVitalsResult.refReplacementMap);
+  processedArrays.push("observationVitals");
+  deduplicatedEntries.push(...obsVitalsResult.combinedObservations);
 
   // Rebuild the entries with deduplicated resources and add whatever is left unprocessed
   for (const [key, resources] of Object.entries(resourceArrays)) {
