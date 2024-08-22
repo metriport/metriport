@@ -21,10 +21,11 @@ export function deduplicateImmunizations(immunizations: Immunization[]): {
   combinedImmunizations: Immunization[];
   refReplacementMap: Map<string, string[]>;
 } {
-  const { immunizationsMap, refReplacementMap } = groupSameImmunizations(immunizations);
+  const { immunizationsNdcMap, immunizationsCvxMap, refReplacementMap } =
+    groupSameImmunizations(immunizations);
   return {
     combinedImmunizations: combineResources({
-      combinedMaps: [immunizationsMap],
+      combinedMaps: [immunizationsNdcMap, immunizationsCvxMap],
     }),
     refReplacementMap,
   };
@@ -37,10 +38,12 @@ export function deduplicateImmunizations(immunizations: Immunization[]): {
  * - vaccineCode
  */
 export function groupSameImmunizations(immunizations: Immunization[]): {
-  immunizationsMap: Map<string, Immunization>;
+  immunizationsCvxMap: Map<string, Immunization>;
+  immunizationsNdcMap: Map<string, Immunization>;
   refReplacementMap: Map<string, string[]>;
 } {
-  const immunizationsMap = new Map<string, Immunization>();
+  const immunizationsCvxMap = new Map<string, Immunization>();
+  const immunizationsNdcMap = new Map<string, Immunization>();
   const refReplacementMap = new Map<string, string[]>();
 
   function assignMostDescriptiveStatus(
@@ -54,27 +57,37 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
 
   for (const immunization of immunizations) {
     const date = getDateFromResource(immunization, "date-hm");
-    const { cvxCode, ndcCode } = extractCodes(immunization.vaccineCode);
+    if (date && date !== "unknown") {
+      // TODO: should we keep date a mandatory field for dedup? If yes, then should we also add a default date to the FHIR encounter?
+      const { cvxCode, ndcCode } = extractCodes(immunization.vaccineCode);
 
-    const key = cvxCode
-      ? JSON.stringify({ date, cvxCode })
-      : ndcCode
-      ? JSON.stringify({ date, ndcCode })
-      : undefined;
-    if (key) {
-      fillMaps(
-        immunizationsMap,
-        key,
-        immunization,
-        refReplacementMap,
-        undefined,
-        assignMostDescriptiveStatus
-      );
+      if (cvxCode) {
+        const key = JSON.stringify({ date, cvxCode });
+        fillMaps(
+          immunizationsCvxMap,
+          key,
+          immunization,
+          refReplacementMap,
+          undefined,
+          assignMostDescriptiveStatus
+        );
+      } else if (ndcCode) {
+        const key = JSON.stringify({ date, ndcCode });
+        fillMaps(
+          immunizationsNdcMap,
+          key,
+          immunization,
+          refReplacementMap,
+          undefined,
+          assignMostDescriptiveStatus
+        );
+      }
     }
   }
 
   return {
-    immunizationsMap,
+    immunizationsCvxMap,
+    immunizationsNdcMap,
     refReplacementMap,
   };
 }

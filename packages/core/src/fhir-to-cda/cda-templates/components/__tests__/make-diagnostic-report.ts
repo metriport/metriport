@@ -19,3 +19,16 @@ export function makeDiagnosticReport(params: Partial<DiagnosticReport> = {}): Di
     ...params,
   };
 }
+
+export const presentedFormExample = [
+  {
+    contentType: "text/html",
+    data: "some b-64 encoded data",
+  },
+];
+
+export const resultExample = [
+  {
+    reference: "Observation/some-obs-ID",
+  },
+];

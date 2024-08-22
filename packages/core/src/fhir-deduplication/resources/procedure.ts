@@ -1,5 +1,12 @@
 import { CodeableConcept, Procedure } from "@medplum/fhirtypes";
-import { CPT_CODE, CPT_OID, LOINC_CODE, LOINC_OID } from "../../util/constants";
+import {
+  CPT_CODE,
+  CPT_OID,
+  EPIC_CODE,
+  EPIC_OID,
+  LOINC_CODE,
+  LOINC_OID,
+} from "../../util/constants";
 import {
   combineResources,
   fillMaps,
@@ -68,12 +75,14 @@ export function groupSameProcedures(procedures: Procedure[]): {
 
   for (const procedure of procedures) {
     const date = getPerformedDateFromResource(procedure, "date-hm");
-    const { cptCode, loincCode } = extractCodes(procedure.code);
+    const { cptCode, loincCode, epicCode } = extractCodes(procedure.code);
 
     const key = cptCode
       ? JSON.stringify({ date, cptCode })
       : loincCode
       ? JSON.stringify({ date, loincCode })
+      : epicCode
+      ? JSON.stringify({ date, epicCode })
       : undefined;
     if (key) {
       fillMaps(
@@ -96,10 +105,12 @@ export function groupSameProcedures(procedures: Procedure[]): {
 export function extractCodes(concept: CodeableConcept | undefined): {
   cptCode: string | undefined;
   loincCode: string | undefined;
+  epicCode: string | undefined;
 } {
   let cptCode = undefined;
   let loincCode = undefined;
-  if (!concept) return { cptCode, loincCode };
+  let epicCode = undefined;
+  if (!concept) return { cptCode, loincCode, epicCode };
 
   if (concept && concept.coding) {
     for (const coding of concept.coding) {
@@ -110,9 +121,12 @@ export function extractCodes(concept: CodeableConcept | undefined): {
           cptCode = code;
         } else if (system.includes(LOINC_CODE) || system.includes(LOINC_OID)) {
           loincCode = code;
-        } // TODO: Decide whether we want to use Epic's codes for deduplication here
+        } else if (system.includes(EPIC_CODE) || system.includes(EPIC_OID)) {
+          // TODO: Decide whether we want to use the Epic codes for Procedure dedup
+          epicCode = code;
+        }
       }
     }
   }
-  return { cptCode, loincCode };
+  return { cptCode, loincCode, epicCode };
 }

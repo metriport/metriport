@@ -10,6 +10,7 @@ import { deduplicateMedications } from "./resources/medication";
 import { deduplicateMedAdmins } from "./resources/medication-administration";
 import { deduplicateMedRequests } from "./resources/medication-request";
 import { deduplicateMedStatements } from "./resources/medication-statement";
+import { deduplicateProcedures } from "./resources/procedure";
 
 export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> {
   let resourceArrays = extractFhirTypesFromBundle(fhirBundle);
@@ -72,6 +73,12 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   resourceArrays = replaceResourceReferences(resourceArrays, familyMemHistResult.refReplacementMap);
   processedArrays.push("familyMemberHistories");
   deduplicatedEntries.push(...familyMemHistResult.combinedFamMemHistories);
+
+  // Procedure deduplication
+  const proceduresResult = deduplicateProcedures(resourceArrays.procedures);
+  resourceArrays = replaceResourceReferences(resourceArrays, proceduresResult.refReplacementMap);
+  processedArrays.push("procedures");
+  deduplicatedEntries.push(...proceduresResult.combinedProcedures);
 
   // Rebuild the entries with deduplicated resources and add whatever is left unprocessed
   for (const [key, resources] of Object.entries(resourceArrays)) {

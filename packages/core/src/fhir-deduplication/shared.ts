@@ -173,12 +173,11 @@ export function getDateFromResource<T extends Resource>(
     return getDateFromString(resource.effectiveDateTime, dateFormat);
   } else if ("date" in resource) {
     return getDateFromString(resource.date, dateFormat);
-  } else if ("occurenceDateTime" in resource) {
-    const dateTime = resource.occurenceDateTime as string;
+  } else if ("occurrenceDateTime" in resource) {
+    const dateTime = resource.occurrenceDateTime;
     return getDateFromString(dateTime, dateFormat);
-  } else if ("occurenceString" in resource) {
-    const dateString = resource.occurenceString as string;
-    return getDateFromString(dateString, dateFormat);
+  } else if ("occurrenceString" in resource) {
+    return resource.occurrenceString;
   } else if ("period" in resource) {
     const period = resource.period;
     if (period.start) return getDateFromString(period.start, dateFormat);
