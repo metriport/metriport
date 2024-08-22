@@ -4,6 +4,7 @@ import { ExtractedFhirTypes, extractFhirTypesFromBundle } from "../external/fhir
 import { deduplicateConditions } from "./resources/condition";
 import { deduplicateDiagReports } from "./resources/diagnostic-report";
 import { deduplicateEncounters } from "./resources/encounter";
+import { deduplicateFamilyMemberHistories } from "./resources/family-member-history";
 import { deduplicateImmunizations } from "./resources/immunization";
 import { deduplicateMedications } from "./resources/medication";
 import { deduplicateMedAdmins } from "./resources/medication-administration";
@@ -65,6 +66,14 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   resourceArrays = replaceResourceReferences(resourceArrays, immunizationsResult.refReplacementMap);
   processedArrays.push("immunizations");
   deduplicatedEntries.push(...immunizationsResult.combinedImmunizations);
+
+  // FamilyMemberHistory deduplication
+  const familyMemHistResult = deduplicateFamilyMemberHistories(
+    resourceArrays.familyMemberHistories
+  );
+  resourceArrays = replaceResourceReferences(resourceArrays, familyMemHistResult.refReplacementMap);
+  processedArrays.push("familyMemberHistories");
+  deduplicatedEntries.push(...familyMemHistResult.combinedFamMemHistories);
 
   // Procedure deduplication
   const proceduresResult = deduplicateProcedures(resourceArrays.procedures);
