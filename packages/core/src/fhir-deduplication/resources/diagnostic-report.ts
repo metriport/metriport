@@ -86,8 +86,9 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
 
   for (const diagReport of diagReports) {
     const date = getDateFromResource(diagReport, "date-hm");
-
-    if (date) {
+    const isPresentedFormPresent = diagReport.presentedForm?.length;
+    const isResultPresent = diagReport.result?.length;
+    if (date && (isPresentedFormPresent || isResultPresent)) {
       const key = JSON.stringify({ date });
       fillMaps(
         diagReportsMap,
