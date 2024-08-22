@@ -1205,10 +1205,11 @@ function createSectionInMedications(
 }
 
 type RenderCondition = {
+  id: string | undefined;
   code: string | null;
   name: string;
-  firstSeen: string;
-  lastSeen: string;
+  firstSeen: string | undefined;
+  lastSeen: string | undefined;
   clinicalStatus: string;
 };
 
@@ -1243,19 +1244,20 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
         getValidCode(condition.code?.coding)[0]?.display ??
         condition.code?.text ??
         "";
-      const onsetDateTime = condition.onsetDateTime ?? "";
+      const onsetDateTime = condition.onsetDateTime;
       const clinicalStatus = getValidCode(condition.clinicalStatus?.coding)[0]?.display ?? "";
-      let onsetStartTime = condition.onsetPeriod?.start ?? "";
-      let onsetEndTime = condition.onsetPeriod?.end ?? "";
+      let onsetStartTime = condition.onsetPeriod?.start;
+      let onsetEndTime = condition.onsetPeriod?.end;
 
       if (!onsetStartTime && condition.id) {
-        onsetStartTime = conditionDateDict[condition.id]?.start ?? "";
+        onsetStartTime = conditionDateDict[condition.id]?.start;
       }
       if (!onsetEndTime && condition.id) {
-        onsetEndTime = conditionDateDict[condition.id]?.end ?? "";
+        onsetEndTime = conditionDateDict[condition.id]?.end;
       }
 
       const newCondition: RenderCondition = {
+        id: condition.id,
         code: codeName,
         name,
         firstSeen: onsetStartTime && onsetStartTime.length ? onsetStartTime : onsetDateTime,
@@ -1341,7 +1343,7 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
       ${removeDuplicate
         .map(condition => {
           return `
-            <tr>
+            <tr data-id="${condition.id}">
               <td>${condition.name}</td>
               <td>${condition.code ?? ""}</td>
               <td>${formatDateForDisplay(condition.firstSeen)}</td>
@@ -1362,11 +1364,12 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
 }
 
 type RenderAllergy = {
+  id: string | undefined;
   name: string;
   manifestation: string;
   code: string | null;
-  firstSeen: string;
-  lastSeen: string;
+  firstSeen: string | undefined;
+  lastSeen: string | undefined;
   clinicalStatus: string;
 };
 
@@ -1392,12 +1395,13 @@ function createAllergySection(allergies: AllergyIntolerance[]) {
         ? allergy.onsetDateTime
         : allergy.recordedDate
         ? allergy.recordedDate
-        : "";
+        : undefined;
       const clinicalStatus = allergy.clinicalStatus?.coding?.[0]?.code ?? "";
       const onsetStartTime = allergy.onsetPeriod?.start;
       const onsetEndTime = allergy.onsetPeriod?.end;
 
       const newAllergy: RenderAllergy = {
+        id: allergy.id,
         code,
         name,
         manifestation,
@@ -1461,7 +1465,7 @@ function createAllergySection(allergies: AllergyIntolerance[]) {
           });
 
           return `
-            <tr>
+            <tr data-id="${allergy.id}">
               <td>${allergy.name}</td>
               <td>${blacklistManifestation ? "" : allergy.manifestation}</td>
               <td>${allergy.code}</td>
