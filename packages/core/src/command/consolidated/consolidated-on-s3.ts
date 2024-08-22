@@ -29,15 +29,17 @@ export async function uploadConsolidatedBundleToS3({
   dateTo,
   bundle,
   s3BucketName,
+  dedupEnabled,
 }: Omit<ConsolidatedPatientDataRequest, "requestId" | "isAsync" | "conversionType"> & {
   requestId?: string;
   bundle: unknown;
   s3BucketName: string;
+  dedupEnabled?: boolean;
 }): Promise<{
   bucket: string;
   key: string;
 }> {
-  const key = createConsolidatedFileName(patient.cxId, patient.id, requestId);
+  const key = createConsolidatedFileName(patient.cxId, patient.id, requestId, dedupEnabled);
   const s3Utils = new S3Utils(Config.getAWSRegion());
   const uploadPayloadWithoutMeta = {
     bucket: s3BucketName,
@@ -70,7 +72,16 @@ export async function uploadConsolidatedBundleToS3({
   return { bucket: s3BucketName, key };
 }
 
-function createConsolidatedFileName(cxId: string, patientId: string, requestId?: string): string {
+function createConsolidatedFileName(
+  cxId: string,
+  patientId: string,
+  requestId?: string,
+  dedupEnabled?: boolean
+): string {
   const date = new Date().toISOString();
-  return createFilePath(cxId, patientId, `consolidated_${date}_${requestId}.json`);
+  return createFilePath(
+    cxId,
+    patientId,
+    `consolidated_${date}_${requestId}${dedupEnabled ? "_deduped" : ""}.json`
+  );
 }

@@ -35,27 +35,37 @@ export class ConsolidatedDataConnectorLocal implements ConsolidatedDataConnector
     const startedAt = new Date();
     const initialBundleLength = bundle.entry?.length;
 
-    if (await isFhirDeduplicationEnabledForCx(params.patient.cxId)) {
-      bundle = deduplicateSearchSetBundle(bundle);
-    }
-    const finalBundleLength = bundle.entry?.length;
+    const dedupEnabled = await isFhirDeduplicationEnabledForCx(params.patient.cxId);
+    if (dedupEnabled) {
+      // if dedup is enabled, lets first upload the bundle to s3 without dedup
+      await uploadConsolidatedBundleToS3({
+        ...params,
+        bundle,
+        s3BucketName: this.bucketName,
+      });
 
-    const deduplicationAnalyticsProps = {
-      distinctId: params.patient.cxId,
-      event: EventTypes.fhirDeduplication,
-      properties: {
-        patientId: params.patient.id,
-        initialBundleLength,
-        finalBundleLength,
-        duration: elapsedTimeFromNow(startedAt),
-      },
-    };
-    analytics(deduplicationAnalyticsProps);
+      bundle = deduplicateSearchSetBundle(bundle);
+
+      const finalBundleLength = bundle.entry?.length;
+
+      const deduplicationAnalyticsProps = {
+        distinctId: params.patient.cxId,
+        event: EventTypes.fhirDeduplication,
+        properties: {
+          patientId: params.patient.id,
+          initialBundleLength,
+          finalBundleLength,
+          duration: elapsedTimeFromNow(startedAt),
+        },
+      };
+      analytics(deduplicationAnalyticsProps);
+    }
 
     const { bucket, key } = await uploadConsolidatedBundleToS3({
       ...params,
       bundle,
       s3BucketName: this.bucketName,
+      dedupEnabled,
     });
     const info = {
       bundleLocation: bucket,
