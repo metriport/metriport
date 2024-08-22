@@ -31,7 +31,6 @@ export class ConsolidatedDataConnectorLocal implements ConsolidatedDataConnector
     params: ConsolidatedDataRequestSync | ConsolidatedDataRequestAsync
   ): Promise<ConsolidatedDataResponse> {
     let bundle = await getConsolidatedFhirBundle(params);
-    //here
     const startedAt = new Date();
     const initialBundleLength = bundle.entry?.length;
 
