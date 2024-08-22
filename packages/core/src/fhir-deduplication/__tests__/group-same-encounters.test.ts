@@ -1,6 +1,16 @@
 import { faker } from "@faker-js/faker";
 import { Encounter } from "@medplum/fhirtypes";
-import { makeEncounter } from "../../fhir-to-cda/cda-templates/components/__tests__/make-encounter";
+import {
+  exampleDiagnosis,
+  exampleDiagnosis2,
+  exampleHospitalization,
+  exampleHospitalization2,
+  exampleReasonCode,
+  exampleReasonCode2,
+  exampleType,
+  exampleType2,
+  makeEncounter,
+} from "../../fhir-to-cda/cda-templates/components/__tests__/make-encounter";
 import { groupSameEncounters } from "../resources/encounter";
 import { dateTime, dateTime2 } from "./examples/condition-examples";
 
@@ -39,6 +49,60 @@ describe("groupSameEncounters", () => {
 
     const { encountersMap } = groupSameEncounters([encounter, encounter2]);
     expect(encountersMap.size).toBe(2);
+  });
+
+  it("combines all fields as expected", () => {
+    encounter.period = { start: dateTime.start };
+    encounter2.period = { start: dateTime.start };
+
+    encounter.type = exampleType;
+    encounter.hospitalization = exampleHospitalization;
+    encounter.reasonCode = exampleReasonCode;
+    encounter.diagnosis = exampleDiagnosis;
+
+    const { encountersMap } = groupSameEncounters([encounter, encounter2]);
+    expect(encountersMap.size).toBe(1);
+    const masterEncounter = encountersMap.values().next().value as Encounter;
+    expect(masterEncounter.type).toEqual(exampleType);
+    expect(masterEncounter.hospitalization).toEqual(exampleHospitalization);
+    expect(masterEncounter.reasonCode).toEqual(exampleReasonCode);
+    expect(masterEncounter.diagnosis).toEqual(exampleDiagnosis);
+  });
+
+  it("combines all fields as expected", () => {
+    encounter.period = { start: dateTime.start };
+    encounter2.period = { start: dateTime.start };
+
+    encounter.type = exampleType;
+    encounter.hospitalization = exampleHospitalization;
+    encounter.reasonCode = exampleReasonCode;
+    encounter.diagnosis = exampleDiagnosis;
+
+    encounter2.type = exampleType2;
+    encounter2.hospitalization = exampleHospitalization2;
+    encounter2.reasonCode = exampleReasonCode2;
+    encounter2.diagnosis = exampleDiagnosis2;
+
+    const { encountersMap } = groupSameEncounters([encounter, encounter2]);
+    expect(encountersMap.size).toBe(1);
+    const masterEncounter = encountersMap.values().next().value as Encounter;
+    expect(masterEncounter.type).toEqual(expect.arrayContaining([...exampleType, ...exampleType2]));
+    expect(masterEncounter.hospitalization).toEqual(
+      expect.objectContaining({
+        dischargeDisposition: expect.objectContaining({
+          coding: expect.arrayContaining([
+            ...exampleHospitalization.dischargeDisposition.coding,
+            ...exampleHospitalization2.dischargeDisposition.coding,
+          ]),
+        }),
+      })
+    );
+    expect(masterEncounter.reasonCode).toEqual(
+      expect.arrayContaining([...exampleReasonCode, ...exampleReasonCode2])
+    );
+    expect(masterEncounter.diagnosis).toEqual(
+      expect.arrayContaining([...exampleDiagnosis, ...exampleDiagnosis2])
+    );
   });
 
   it("keeps the more informative status", () => {
