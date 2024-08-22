@@ -1405,7 +1405,7 @@ module.exports.external = [
       "Returns true if following the FHIR decimal specification: https://www.hl7.org/fhir/R4/datatypes.html#decimal ",
     func: function (str) {
       if (!str) {
-        return undefined;
+        return { isValid: false };
       }
       const match = str.match(new RegExp(`^(${DECIMAL_REGEX_STR})$`));
 
@@ -1414,13 +1414,13 @@ module.exports.external = [
         const leadsWithDecimal = decimal.startsWith(".");
 
         if (leadsWithDecimal) {
-          return parseFloat(`0${decimal}`);
+          return { isValid: true, value: parseFloat(`0${decimal}`)};
         }
 
-        return parseFloat(decimal);
+        return { isValid: true, value: parseFloat(decimal) };
       }
 
-      return undefined;
+      return { isValid: false };
     },
   },
   {
