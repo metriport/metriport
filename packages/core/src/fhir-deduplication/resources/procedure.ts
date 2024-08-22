@@ -1,12 +1,5 @@
 import { CodeableConcept, Procedure } from "@medplum/fhirtypes";
-import {
-  CPT_CODE,
-  CPT_OID,
-  EPIC_CODE,
-  EPIC_OID,
-  LOINC_CODE,
-  LOINC_OID,
-} from "../../util/constants";
+import { CPT_CODE, CPT_OID, LOINC_CODE, LOINC_OID } from "../../util/constants";
 import {
   combineResources,
   fillMaps,
@@ -54,8 +47,8 @@ export function deduplicateProcedures(procedures: Procedure[]): {
 /**
  * Approach:
  * 1 map, where the key is made of:
- * - date (occurenceDateTime or occurenceString)
  * - vaccineCode
+ * - date (occurenceDateTime or occurenceString)
  */
 export function groupSameProcedures(procedures: Procedure[]): {
   proceduresMap: Map<string, Procedure>;
@@ -64,25 +57,40 @@ export function groupSameProcedures(procedures: Procedure[]): {
   const proceduresMap = new Map<string, Procedure>();
   const refReplacementMap = new Map<string, string[]>();
 
-  function assignMostDescriptiveStatus(
+  function removeCodesAndAssignStatus(
     master: Procedure,
     existing: Procedure,
     target: Procedure
   ): Procedure {
+    const code = master.code;
+    const filtered = code?.coding?.filter(coding => {
+      const system = coding.system?.toLowerCase();
+      return (
+        system?.includes(CPT_CODE) ||
+        system?.includes(CPT_OID) ||
+        system?.includes(LOINC_CODE) ||
+        system?.includes(LOINC_OID)
+      );
+    });
+    if (filtered) {
+      master.code = {
+        ...code,
+        coding: filtered,
+      };
+    }
+
     master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
     return master;
   }
 
   for (const procedure of procedures) {
     const date = getPerformedDateFromResource(procedure, "date-hm");
-    const { cptCode, loincCode, epicCode } = extractCodes(procedure.code);
+    const { cptCode, loincCode } = extractCodes(procedure.code);
 
     const key = cptCode
       ? JSON.stringify({ date, cptCode })
       : loincCode
       ? JSON.stringify({ date, loincCode })
-      : epicCode
-      ? JSON.stringify({ date, epicCode })
       : undefined;
     if (key) {
       fillMaps(
@@ -91,7 +99,7 @@ export function groupSameProcedures(procedures: Procedure[]): {
         procedure,
         refReplacementMap,
         undefined,
-        assignMostDescriptiveStatus
+        removeCodesAndAssignStatus
       );
     }
   }
@@ -105,12 +113,10 @@ export function groupSameProcedures(procedures: Procedure[]): {
 export function extractCodes(concept: CodeableConcept | undefined): {
   cptCode: string | undefined;
   loincCode: string | undefined;
-  epicCode: string | undefined;
 } {
   let cptCode = undefined;
   let loincCode = undefined;
-  let epicCode = undefined;
-  if (!concept) return { cptCode, loincCode, epicCode };
+  if (!concept) return { cptCode, loincCode };
 
   if (concept && concept.coding) {
     for (const coding of concept.coding) {
@@ -121,12 +127,9 @@ export function extractCodes(concept: CodeableConcept | undefined): {
           cptCode = code;
         } else if (system.includes(LOINC_CODE) || system.includes(LOINC_OID)) {
           loincCode = code;
-        } else if (system.includes(EPIC_CODE) || system.includes(EPIC_OID)) {
-          // TODO: Decide whether we want to use the Epic codes for Procedure dedup
-          epicCode = code;
         }
       }
     }
   }
-  return { cptCode, loincCode, epicCode };
+  return { cptCode, loincCode };
 }
