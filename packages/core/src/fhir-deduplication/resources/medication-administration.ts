@@ -19,12 +19,12 @@ export type MedicationAdministrationStatus = (typeof medicationAdministrationSta
 
 const statusRanking = {
   unknown: 0,
-  "entered-in-error": 0,
-  "on-hold": 0,
-  "not-done": 0,
-  "in-progress": 0,
-  stopped: 0,
-  completed: 0,
+  "entered-in-error": 1,
+  "on-hold": 2,
+  "not-done": 3,
+  "in-progress": 4,
+  stopped: 5,
+  completed: 6,
 };
 
 export function deduplicateMedAdmins(medications: MedicationAdministration[]): {

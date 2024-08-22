@@ -1,6 +1,10 @@
 import { faker } from "@faker-js/faker";
 import { DiagnosticReport } from "@medplum/fhirtypes";
-import { makeDiagnosticReport } from "../../fhir-to-cda/cda-templates/components/__tests__/make-diagnostic-report";
+import {
+  makeDiagnosticReport,
+  presentedFormExample,
+  resultExample,
+} from "../../fhir-to-cda/cda-templates/components/__tests__/make-diagnostic-report";
 import { groupSameDiagnosticReports } from "../resources/diagnostic-report";
 import { dateTime, dateTime2 } from "./examples/condition-examples";
 
@@ -17,7 +21,20 @@ beforeEach(() => {
 });
 
 describe("groupSameDiagnosticReports", () => {
+  it("correctly groups duplicate diagReports based on effectiveDateTime and data presence", () => {
+    diagReport.effectiveDateTime = dateTime.start;
+    diagReport2.effectiveDateTime = dateTime.start;
+    diagReport.result = resultExample;
+    diagReport2.presentedForm = presentedFormExample;
+
+    const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
+    expect(diagReportsMap.size).toBe(1);
+  });
+
   it("does not group duplicate diagReports if effectiveDateTime is not present", () => {
+    diagReport.presentedForm = presentedFormExample;
+    diagReport2.presentedForm = presentedFormExample;
+
     const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
     expect(diagReportsMap.size).toBe(0);
   });
@@ -25,20 +42,18 @@ describe("groupSameDiagnosticReports", () => {
   it("does not group duplicate diagReports if effectiveDateTime are different", () => {
     diagReport.effectiveDateTime = dateTime.start;
     diagReport2.effectiveDateTime = dateTime2.start;
+    diagReport.presentedForm = presentedFormExample;
+    diagReport2.result = resultExample;
+
     const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
     expect(diagReportsMap.size).toBe(2);
-  });
-
-  it("correctly groups duplicate diagReports based on effectiveDateTime", () => {
-    diagReport.effectiveDateTime = dateTime.start;
-    diagReport2.effectiveDateTime = dateTime.start;
-    const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
-    expect(diagReportsMap.size).toBe(1);
   });
 
   it("discards codes that don't come from loinc", () => {
     diagReport.effectiveDateTime = dateTime.start;
     diagReport2.effectiveDateTime = dateTime.start;
+    diagReport.presentedForm = presentedFormExample;
+    diagReport2.presentedForm = presentedFormExample;
 
     diagReport.code = {
       coding: [
