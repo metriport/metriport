@@ -6,7 +6,6 @@ import {
 import { GetConsolidatedQueryProgressResponse } from "@metriport/api-sdk/medical/models/patient";
 import { mrFormat } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
-import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { getRequestId } from "@metriport/core/util/request";
 import { stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
@@ -39,7 +38,6 @@ import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import BadRequestError from "../../errors/bad-request";
 import NotFoundError from "../../errors/not-found";
 import { countResources } from "../../external/fhir/patient/count-resources";
-import { upsertPatientToFHIRServer } from "../../external/fhir/patient/upsert-patient";
 import { PatientModel as Patient } from "../../models/medical/patient";
 import { REQUEST_ID_HEADER_NAME } from "../../routes/header";
 import { Config } from "../../shared/config";
@@ -112,9 +110,6 @@ router.post(
       forceCarequality,
     });
 
-    // temp solution until we migrate to FHIR
-    const fhirPatient = toFHIR(patient);
-    await upsertPatientToFHIRServer(patient.cxId, fhirPatient);
     return res.status(status.CREATED).json(dtoFromModel(patient));
   })
 );
