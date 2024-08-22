@@ -13,10 +13,12 @@ export async function scheduleDocQuery({
   requestId,
   patient,
   source,
+  triggerConsolidated,
 }: {
   requestId: string;
   patient: Pick<Patient, "id" | "cxId">;
   source: MedicalDataSource;
+  triggerConsolidated?: boolean;
 }): Promise<void> {
   const { log } = out(`${source} DQ - requestId ${requestId}, patient ${patient.id}`);
 
@@ -41,6 +43,9 @@ export async function scheduleDocQuery({
       [source]: {
         ...externalData[source],
         scheduledDocQueryRequestId: requestId,
+        ...(triggerConsolidated && {
+          scheduledDocQueryRequestTriggerConsolidated: triggerConsolidated,
+        }),
       },
     };
 

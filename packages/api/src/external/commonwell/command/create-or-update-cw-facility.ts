@@ -3,7 +3,7 @@ import { Facility, isOboFacility } from "../../../domain/medical/facility";
 import { createOrUpdateCWOrganization } from "./create-or-update-cw-organization";
 import { buildCwOrgNameForFacility } from "../shared";
 
-export async function createOrUpdateInCw({
+export async function createOrUpdateFacilityInCw({
   cxId,
   facility,
   cxOrgName,

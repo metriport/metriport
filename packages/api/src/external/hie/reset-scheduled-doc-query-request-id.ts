@@ -30,6 +30,7 @@ export async function resetPatientScheduledDocQueryRequestId({
       [source]: {
         ...externalData[source],
         scheduledDocQueryRequestId: undefined,
+        scheduledDocQueryRequestTriggerConsolidated: undefined,
       },
     };
 

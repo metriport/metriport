@@ -23,9 +23,9 @@ export async function createOrUpdateCQOrganization(
   const org = CQOrganization.fromDetails(orgDetails);
   const orgExists = await doesOrganizationExistInCQ(cq, org.oid, active);
   if (orgExists) {
-    return updateCQOrganization(cq, org);
+    return await updateCQOrganization(cq, org);
   }
-  return registerOrganization(cq, org);
+  return await registerOrganization(cq, org);
 }
 
 export async function doesOrganizationExistInCQ(

@@ -2,9 +2,9 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 import { faker } from "@faker-js/faker";
-import { FacilityCreate, MetriportMedicalApi, PatientDTO, USState } from "@metriport/api-sdk";
+import { FacilityCreate, MetriportMedicalApi, PatientDTO } from "@metriport/api-sdk";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { executeWithNetworkRetries, sleep } from "@metriport/shared";
+import { executeWithNetworkRetries, sleep, USState } from "@metriport/shared";
 import axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
