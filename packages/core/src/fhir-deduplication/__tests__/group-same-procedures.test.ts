@@ -65,9 +65,9 @@ describe("groupSameProcedures", () => {
 
     const { proceduresMap } = groupSameProcedures([procedure, procedure2]);
     expect(proceduresMap.size).toBe(1);
-    const masterProcedure = proceduresMap.values().next().value;
+    const masterProcedure = proceduresMap.values().next().value as Procedure;
     const coding = masterProcedure.code?.coding;
-    expect(coding.length).toEqual(2);
+    expect(coding?.length).toEqual(2);
     expect(coding).toEqual(expect.arrayContaining([...cptCodeAb.coding, ...loincCodeAb.coding]));
   });
 });
