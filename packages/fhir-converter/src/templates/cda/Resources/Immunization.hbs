@@ -46,6 +46,10 @@
         	"occurrenceDateTime":"{{formatAsDateTime imm.effectiveTime.low.value}}",
         {{else if imm.effectiveTime.value}}
         	"occurrenceDateTime":"{{formatAsDateTime imm.effectiveTime.value}}",
+        {{else if @encounterTimePeriod.low}}
+            "occurrenceDateTime": "{{formatAsDateTime @encounterTimePeriod.low.value}}",
+        {{else if @encounterTimePeriod.high}}
+            "occurrenceDateTime": "{{formatAsDateTime @encounterTimePeriod.high.value}}",
         {{else}}
           "occurrenceString":"unknown" 
         {{/if}}
