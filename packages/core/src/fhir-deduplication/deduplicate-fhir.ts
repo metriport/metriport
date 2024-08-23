@@ -1,16 +1,20 @@
 import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
 import { ExtractedFhirTypes, extractFhirTypesFromBundle } from "../external/fhir/shared/bundle";
+import { deduplicateAllergyIntolerances } from "./resources/allergy-intolerance";
 import { deduplicateConditions } from "./resources/condition";
 import { deduplicateDiagReports } from "./resources/diagnostic-report";
 import { deduplicateEncounters } from "./resources/encounter";
 import { deduplicateImmunizations } from "./resources/immunization";
+import { deduplicateLocations } from "./resources/location";
 import { deduplicateMedications } from "./resources/medication";
 import { deduplicateMedAdmins } from "./resources/medication-administration";
 import { deduplicateMedRequests } from "./resources/medication-request";
 import { deduplicateMedStatements } from "./resources/medication-statement";
 import { deduplicateObservationsLabsAndVitals } from "./resources/observation-labs-and-vitals";
 import { deduplicateObservationsSocial } from "./resources/observation-social";
+import { deduplicateOrganizations } from "./resources/organization";
+import { deduplicatePractitioners } from "./resources/practitioner";
 import { deduplicateProcedures } from "./resources/procedure";
 
 export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> {
@@ -20,10 +24,24 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   // TODO: Add unit tests for the ID replacements
 
   const processedArrays: string[] = [];
+
+  // Practitioner deduplication
+  const practitionersResult = deduplicatePractitioners(resourceArrays.practitioners);
+  resourceArrays = replaceResourceReferences(resourceArrays, practitionersResult.refReplacementMap);
+  processedArrays.push("practitioners");
+  deduplicatedEntries.push(...practitionersResult.combinedPractitioners);
+
   // Conditions deduplication
   const conditionsResult = deduplicateConditions(resourceArrays.conditions);
   resourceArrays = replaceResourceReferences(resourceArrays, conditionsResult.refReplacementMap);
+  processedArrays.push("conditions");
   deduplicatedEntries.push(...conditionsResult.combinedConditions);
+
+  // Allergies deduplication
+  const allergiesResult = deduplicateAllergyIntolerances(resourceArrays.allergies);
+  resourceArrays = replaceResourceReferences(resourceArrays, allergiesResult.refReplacementMap);
+  processedArrays.push("allergies");
+  deduplicatedEntries.push(...allergiesResult.combinedAllergies);
 
   // Medication deduplication
   const medicationsResult = deduplicateMedications(resourceArrays.medications);
@@ -90,6 +108,18 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   resourceArrays = replaceResourceReferences(resourceArrays, obsVitalsResult.refReplacementMap);
   processedArrays.push("observationVitals");
   deduplicatedEntries.push(...obsVitalsResult.combinedObservations);
+
+  // Location deduplication
+  const locationsResult = deduplicateLocations(resourceArrays.locations);
+  resourceArrays = replaceResourceReferences(resourceArrays, locationsResult.refReplacementMap);
+  processedArrays.push("locations");
+  deduplicatedEntries.push(...locationsResult.combinedLocations);
+
+  // Organization deduplication
+  const organizationsResult = deduplicateOrganizations(resourceArrays.organizations);
+  resourceArrays = replaceResourceReferences(resourceArrays, organizationsResult.refReplacementMap);
+  processedArrays.push("organizations");
+  deduplicatedEntries.push(...organizationsResult.combinedOrganizations);
 
   // Rebuild the entries with deduplicated resources and add whatever is left unprocessed
   for (const [key, resources] of Object.entries(resourceArrays)) {
