@@ -20,10 +20,6 @@ import { capture } from "../../util/notifications";
 
 const MAX_API_NOTIFICATION_ATTEMPTS = 5;
 
-const region = getEnvVarOrFail("AWS_REGION");
-const appConfigAppID = getEnvVarOrFail("APPCONFIG_APPLICATION_ID");
-const appConfigConfigID = getEnvVarOrFail("APPCONFIG_CONFIGURATION_ID");
-
 export class ConsolidatedDataConnectorLocal implements ConsolidatedDataConnector {
   constructor(private readonly bucketName: string, private readonly apiURL: string) {}
 
@@ -119,6 +115,10 @@ async function isFhirDeduplicationEnabledForCx(cxId: string): Promise<boolean> {
 
 async function getCxsWithFhirDedupFeatureFlag(): Promise<string[]> {
   try {
+    const region = getEnvVarOrFail("AWS_REGION");
+    const appConfigAppID = getEnvVarOrFail("APPCONFIG_APPLICATION_ID");
+    const appConfigConfigID = getEnvVarOrFail("APPCONFIG_CONFIGURATION_ID");
+
     const featureFlag = await getFeatureFlagValueStringArray(
       region,
       appConfigAppID,
