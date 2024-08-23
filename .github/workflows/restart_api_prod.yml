@@ -7,6 +7,7 @@ jobs:
   restart:
     uses: ./.github/workflows/_restart-ecs.yml
     with:
+      deploy_env: "production"
       ECR_REPO_URI: ${{ vars.ECR_REPO_URI_PRODUCTION }}
       ECS_CLUSTER: ${{ vars.ECS_CLUSTER_PRODUCTION }}
       ECS_SERVICE: ${{ vars.ECS_SERVICE_PRODUCTION }}
