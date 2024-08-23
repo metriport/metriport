@@ -6,6 +6,7 @@ import {
 import { getFeatureFlagValueStringArray } from "@metriport/core/external/aws/app-config";
 import { Brief, bundleToBrief } from "@metriport/core/external/aws/lambda-logic/bundle-to-brief";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
+import { bundleToHtml as bundleToHtmlNoDedup } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-no-dedup";
 import { bundleToHtmlADHD } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-adhd";
 import {
   getSignedUrl as coreGetSignedUrl,
@@ -119,9 +120,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         const briefFileName = createMRSummaryBriefFileName(cxId, patientId, dedupEnabled);
         const aiBrief = prepareBriefToBundle({ aiBrief: aiBriefContent });
 
-        const html = isADHDFeatureFlagEnabled
-          ? bundleToHtmlADHD(bundle, aiBrief)
-          : bundleToHtml(bundle, aiBrief);
+        const html = bundleToHtmlNoDedup(bundle, aiBrief);
         const hasContents = doesMrSummaryHaveContents(html);
         log(`MR Summary has contents: ${hasContents}`);
         const htmlFileName = createMRSummaryFileName(cxId, patientId, "html", dedupEnabled);
