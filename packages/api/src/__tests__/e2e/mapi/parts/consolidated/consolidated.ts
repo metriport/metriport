@@ -75,12 +75,14 @@ export function checkConsolidatedJson(
 export function checkConsolidatedHtml({
   patientId,
   lastName,
+  allergyId,
   ...params
 }: {
   patientId: string;
   lastName: string;
+  allergyId: string;
 } & Consolidated): boolean {
-  const templateParams = { patientId, lastName };
+  const templateParams = { patientId, lastName, allergyId };
   return checkConsolidated({ ...params, templateParams, extension: "html" });
 }
 
