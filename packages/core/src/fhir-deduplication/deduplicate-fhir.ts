@@ -9,6 +9,8 @@ import { deduplicateMedications } from "./resources/medication";
 import { deduplicateMedAdmins } from "./resources/medication-administration";
 import { deduplicateMedRequests } from "./resources/medication-request";
 import { deduplicateMedStatements } from "./resources/medication-statement";
+import { deduplicateObservationsLabsAndVitals } from "./resources/observation-labs-and-vitals";
+import { deduplicateObservationsSocial } from "./resources/observation-social";
 import { deduplicateProcedures } from "./resources/procedure";
 
 export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> {
@@ -70,6 +72,24 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   resourceArrays = replaceResourceReferences(resourceArrays, proceduresResult.refReplacementMap);
   processedArrays.push("procedures");
   deduplicatedEntries.push(...proceduresResult.combinedProcedures);
+
+  // Observation (social history) deduplication
+  const obsSocialResult = deduplicateObservationsSocial(resourceArrays.observationSocialHistory);
+  resourceArrays = replaceResourceReferences(resourceArrays, obsSocialResult.refReplacementMap);
+  processedArrays.push("observationSocialHistory");
+  deduplicatedEntries.push(...obsSocialResult.combinedObservations);
+
+  // Observation (labs) deduplication
+  const obsLabsResult = deduplicateObservationsLabsAndVitals(resourceArrays.observationLaboratory);
+  resourceArrays = replaceResourceReferences(resourceArrays, obsLabsResult.refReplacementMap);
+  processedArrays.push("observationLaboratory");
+  deduplicatedEntries.push(...obsLabsResult.combinedObservations);
+
+  // Observation (vitals) deduplication
+  const obsVitalsResult = deduplicateObservationsLabsAndVitals(resourceArrays.observationVitals);
+  resourceArrays = replaceResourceReferences(resourceArrays, obsVitalsResult.refReplacementMap);
+  processedArrays.push("observationVitals");
+  deduplicatedEntries.push(...obsVitalsResult.combinedObservations);
 
   // Rebuild the entries with deduplicated resources and add whatever is left unprocessed
   for (const [key, resources] of Object.entries(resourceArrays)) {

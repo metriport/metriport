@@ -20,7 +20,7 @@ const procedureStatus = [
 
 export type ProcedureStatus = (typeof procedureStatus)[number];
 
-export const statusRanking = {
+export const statusRanking: Record<ProcedureStatus, number> = {
   unknown: 0,
   "entered-in-error": 1,
   preparation: 2,
@@ -84,7 +84,7 @@ export function groupSameProcedures(procedures: Procedure[]): {
   }
 
   for (const procedure of procedures) {
-    const date = getPerformedDateFromResource(procedure, "date-hm");
+    const date = getPerformedDateFromResource(procedure, "datetime");
     if (!date) continue;
 
     const { cptCode, loincCode } = extractCodes(procedure.code);
