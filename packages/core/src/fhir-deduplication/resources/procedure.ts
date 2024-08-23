@@ -47,7 +47,7 @@ export function deduplicateProcedures(procedures: Procedure[]): {
 /**
  * Approach:
  * 1 map, where the key is made of:
- * - vaccineCode
+ * - code - using CPT or LOINC, while removing codes from other code systems
  * - date (occurenceDateTime or occurenceString)
  */
 export function groupSameProcedures(procedures: Procedure[]): {
@@ -85,6 +85,8 @@ export function groupSameProcedures(procedures: Procedure[]): {
 
   for (const procedure of procedures) {
     const date = getPerformedDateFromResource(procedure, "datetime");
+    if (!date) continue;
+
     const { cptCode, loincCode } = extractCodes(procedure.code);
 
     const key = cptCode

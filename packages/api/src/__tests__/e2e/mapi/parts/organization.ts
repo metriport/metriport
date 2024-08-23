@@ -1,6 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { Organization as FhirOrg } from "@medplum/fhirtypes";
-import { Organization, OrganizationCreate, OrgType, USState } from "@metriport/api-sdk";
+import { USState } from "@metriport/shared";
+import { Organization, OrganizationCreate, OrgType } from "@metriport/api-sdk";
 import { Organization as CqOrganization } from "@metriport/carequality-sdk";
 import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
 

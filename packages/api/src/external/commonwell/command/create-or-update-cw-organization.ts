@@ -14,9 +14,9 @@ export async function createOrUpdateCWOrganization({
 }): Promise<void> {
   const orgExists = await doesOrganizationExistInCW(org.oid);
   if (orgExists) {
-    return update(cxId, org, isObo);
+    return await update(cxId, org, isObo);
   }
-  return create(cxId, org, isObo);
+  return await create(cxId, org, isObo);
 }
 
 async function doesOrganizationExistInCW(oid: string): Promise<boolean> {

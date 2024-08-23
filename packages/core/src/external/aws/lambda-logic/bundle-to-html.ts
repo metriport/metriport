@@ -23,8 +23,13 @@ import {
 import dayjs from "dayjs";
 import { uniqWith } from "lodash";
 import { Brief } from "./bundle-to-brief";
-
-const ISO_DATE = "YYYY-MM-DD";
+import {
+  buildEncounterSections,
+  formatDateForDisplay,
+  ISO_DATE,
+  MISSING_DATE_KEY,
+  MISSING_DATE_TEXT,
+} from "./bundle-to-html-shared";
 
 const RX_NORM_CODE = "rxnorm";
 const NDC_CODE = "ndc";
@@ -287,10 +292,6 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
   return htmlPage;
 }
 
-function formatDateForDisplay(date?: string | undefined): string {
-  return date ? dayjs(date).format(ISO_DATE) : "";
-}
-
 // TODO: Use the version from "@metriport/core/external/fhir/shared/bundle.ts"
 function extractFhirTypesFromBundle(bundle: Bundle): {
   diagnosticReports: DiagnosticReport[];
@@ -427,7 +428,7 @@ function createMRHeader(patient: Patient) {
         <img src="https://raw.githubusercontent.com/metriport/metriport/develop/assets/logo-black.png" alt="Logo">
       </div>
       <h1 class="title">
-        Medical Record Summary (${dayjs().format(ISO_DATE)})
+        Medical Record Summary (${formatDateForDisplay(new Date())})
       </h1>
       <div class="header-tables">
         <div style="margin-right: 10px" class="header-table">
@@ -450,7 +451,7 @@ function createMRHeader(patient: Patient) {
             <table class="header-table-author">
               <tbody>
                 ${createHeaderTableRow("Name", "Metriport")}
-                ${createHeaderTableRow("Authored On", dayjs().format(ISO_DATE))}
+                ${createHeaderTableRow("Authored On", formatDateForDisplay(new Date()))}
               </tbody>
             </table>
           </div>
@@ -589,9 +590,9 @@ function createAWESection(
     return "";
   }
 
-  const encounterSections: EncounterSection = buildEncounterSections({}, diagnosticReports);
+  const encounterSections = buildEncounterSections({}, diagnosticReports);
 
-  const AWEreports = buildReports(
+  const aweReports = buildReports(
     encounterSections,
     mappedPractitioners,
     mappedOrganizations,
@@ -599,7 +600,7 @@ function createAWESection(
     true
   );
 
-  const hasAWEreports = AWEreports.length > 0;
+  const hasAweReports = aweReports.length > 0;
 
   return `
     <div id="awe" class="section">
@@ -609,8 +610,8 @@ function createAWESection(
       </div>
       <div class="section-content">
         ${
-          hasAWEreports
-            ? AWEreports
+          hasAweReports
+            ? aweReports
             : `<table><tbody><tr><td>No annual wellness exam info found</td></tr></tbody></table>`
         }
       </div>
@@ -631,7 +632,7 @@ function createDiagnosticReportsSection(
     return "";
   }
 
-  const encounterSections: EncounterSection = buildEncounterSections({}, diagnosticReports);
+  const encounterSections = buildEncounterSections({}, diagnosticReports);
 
   const nonAWEreports = buildReports(
     encounterSections,
@@ -659,68 +660,6 @@ function createDiagnosticReportsSection(
     </div>
   `;
 }
-function buildEncounterSections(
-  encounterSections: EncounterSection,
-  diagnosticReports: DiagnosticReport[]
-): EncounterSection {
-  for (const report of diagnosticReports) {
-    const time = report.effectiveDateTime ?? report.effectivePeriod?.start;
-    const formattedDate = dayjs(time).format(ISO_DATE) ?? "";
-
-    if (formattedDate) {
-      if (!encounterSections[formattedDate]) {
-        encounterSections[formattedDate] = {};
-      }
-
-      let diagnosticReportsType: EncounterTypes | undefined = "documentation";
-
-      if (report.category) {
-        for (const iterator of report.category) {
-          if (iterator.text?.toLowerCase() === "lab") {
-            diagnosticReportsType = "labs";
-          }
-        }
-      }
-
-      if (diagnosticReportsType) {
-        const reportDate = dayjs(time).format(ISO_DATE) ?? "";
-        let isReportDuplicate = false;
-
-        if (encounterSections[formattedDate]?.[diagnosticReportsType]) {
-          const isDuplicate = encounterSections[formattedDate]?.[diagnosticReportsType]?.find(
-            reportInside => {
-              const reportInsideTime =
-                reportInside.effectiveDateTime ?? reportInside.effectivePeriod?.start;
-              const reportInsideDate = dayjs(reportInsideTime).format(ISO_DATE) ?? "";
-              const isDuplicateDate = reportInsideDate === reportDate;
-
-              const hasSamePresentedForm = report.presentedForm?.some(pf =>
-                reportInside.presentedForm?.some(ripf => pf.data === ripf.data)
-              );
-
-              return isDuplicateDate && hasSamePresentedForm;
-            }
-          );
-
-          isReportDuplicate = !!isDuplicate;
-        }
-
-        if (!encounterSections?.[formattedDate]?.[diagnosticReportsType]) {
-          encounterSections[formattedDate] = {
-            ...encounterSections[formattedDate],
-            [diagnosticReportsType]: [],
-          };
-        }
-
-        if (!isReportDuplicate) {
-          encounterSections[formattedDate]?.[diagnosticReportsType]?.push(report);
-        }
-      }
-    }
-  }
-
-  return encounterSections;
-}
 
 function buildReports(
   encounterSections: EncounterSection,
@@ -735,22 +674,22 @@ function buildReports(
     Object.entries(docsWithNotes)
       // SORT BY ENCOUNTER DATE DESCENDING
       .sort(([keyA], [keyB]) => {
+        if (keyA === MISSING_DATE_KEY) return 1;
+        if (keyB === MISSING_DATE_KEY) return -1;
         return dayjs(keyA).isBefore(dayjs(keyB)) ? 1 : -1;
       })
       .filter(([key]) => {
         // FILTER FOR ENCOUNTERS WITH AWE DIAGNOSTIC REPORTS
-        const encounterDateFormatted = dayjs(key).format(ISO_DATE);
+        const encounterDateFormatted = key;
         const aweVisit = aweVisits.find(aweVisit => {
-          const aweVisitDate = aweVisit.onsetDateTime ?? "";
-          const aweVisitDateFormatted = dayjs(aweVisitDate).format(ISO_DATE);
-
+          const aweVisitDate = aweVisit.onsetDateTime;
+          const aweVisitDateFormatted = aweVisitDate;
           return aweVisitDateFormatted === encounterDateFormatted;
         });
 
         return onlyAWE ? aweVisit : !aweVisit;
       })
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      .filter(([key, value]) => {
+      .filter(([, value]) => {
         const documentation = value.documentation;
         const validDocumentation = documentation?.filter(doc => {
           const containsB64InAnyPresentedForm = doc.presentedForm?.some(form => {
@@ -779,7 +718,7 @@ function buildReports(
         <div id="report">
           <div class="header">
             <h3 class="title">Encounter</h3>
-            <span>Date: ${formatDateForDisplay(key) ?? ""}</span>
+            <span>Date: ${key === MISSING_DATE_KEY ? MISSING_DATE_TEXT : key}</span>
           </div>
           <div>
             ${
@@ -881,7 +820,7 @@ function createWhatWasDocumentedFromDiagnosticReports(
       );
 
       return `
-      <div>
+      <div data-id="${doc.id}">
         ${fields.join("<br />")}
         ${
           notes.length > 0
@@ -1045,7 +984,7 @@ function createSectionInMedications(
           });
 
           return `
-            <tr>
+            <tr data-id"${medicationStatement.id}">
               <td>${medication?.code?.text ?? ""}</td>
               <td>${blacklistedInstruction ? "" : medicationStatement.dosage?.[0]?.text ?? ""}</td>
               <td>${medicationStatement.dosage?.[0]?.doseAndRate?.[0]?.doseQuantity?.value ?? ""} ${
@@ -1068,10 +1007,11 @@ function createSectionInMedications(
 }
 
 type RenderCondition = {
+  id: string | undefined;
   code: string | null;
   name: string;
-  firstSeen: string;
-  lastSeen: string;
+  firstSeen: string | undefined;
+  lastSeen: string | undefined;
   clinicalStatus: string;
 };
 
@@ -1095,6 +1035,14 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
 
     return aDate === bDate && aText === bText;
   })
+    .filter(condition => {
+      const snomedCode = condition.code?.coding?.find(coding =>
+        coding.system?.toLowerCase().includes(SNOMED_CODE)
+      )?.code;
+      const genericSnomedProblemCode = "55607006";
+      const blacklistCodes = [genericSnomedProblemCode];
+      return snomedCode && !blacklistCodes.includes(snomedCode);
+    })
     .reduce((acc, condition) => {
       const codeName = getSpecificCode(condition.code?.coding ?? [], [ICD_10_CODE, SNOMED_CODE]);
       const idc10Code = condition.code?.coding?.find(code =>
@@ -1106,19 +1054,20 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
         getValidCode(condition.code?.coding)[0]?.display ??
         condition.code?.text ??
         "";
-      const onsetDateTime = condition.onsetDateTime ?? "";
+      const onsetDateTime = condition.onsetDateTime;
       const clinicalStatus = getValidCode(condition.clinicalStatus?.coding)[0]?.display ?? "";
-      let onsetStartTime = condition.onsetPeriod?.start ?? "";
-      let onsetEndTime = condition.onsetPeriod?.end ?? "";
+      let onsetStartTime = condition.onsetPeriod?.start;
+      let onsetEndTime = condition.onsetPeriod?.end;
 
       if (!onsetStartTime && condition.id) {
-        onsetStartTime = conditionDateDict[condition.id]?.start ?? "";
+        onsetStartTime = conditionDateDict[condition.id]?.start;
       }
       if (!onsetEndTime && condition.id) {
-        onsetEndTime = conditionDateDict[condition.id]?.end ?? "";
+        onsetEndTime = conditionDateDict[condition.id]?.end;
       }
 
       const newCondition: RenderCondition = {
+        id: condition.id,
         code: codeName,
         name,
         firstSeen: onsetStartTime && onsetStartTime.length ? onsetStartTime : onsetDateTime,
@@ -1227,11 +1176,12 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
 }
 
 type RenderAllergy = {
+  id: string | undefined;
   name: string;
   manifestation: string;
   code: string | null;
-  firstSeen: string;
-  lastSeen: string;
+  firstSeen: string | undefined;
+  lastSeen: string | undefined;
   clinicalStatus: string;
 };
 
@@ -1257,12 +1207,13 @@ function createAllergySection(allergies: AllergyIntolerance[]) {
         ? allergy.onsetDateTime
         : allergy.recordedDate
         ? allergy.recordedDate
-        : "";
+        : undefined;
       const clinicalStatus = allergy.clinicalStatus?.coding?.[0]?.code ?? "";
       const onsetStartTime = allergy.onsetPeriod?.start;
       const onsetEndTime = allergy.onsetPeriod?.end;
 
       const newAllergy: RenderAllergy = {
+        id: allergy.id,
         code,
         name,
         manifestation,
@@ -1327,7 +1278,7 @@ function createAllergySection(allergies: AllergyIntolerance[]) {
           });
 
           return `
-            <tr>
+            <tr data-id="${allergy.id}">
               <td>${allergy.name}</td>
               <td>${blacklistManifestation ? "" : allergy.manifestation}</td>
               <td>${allergy.code}</td>

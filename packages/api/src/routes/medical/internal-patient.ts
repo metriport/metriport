@@ -2,9 +2,22 @@ import { genderAtBirthSchema } from "@metriport/api-sdk";
 import { getConsolidatedBundleFromS3 } from "@metriport/core/command/consolidated/consolidated-on-s3";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { internalSendConsolidatedSchema, sleep, stringToBoolean } from "@metriport/shared";
+import {
+  internalSendConsolidatedSchema,
+  normalizeDate,
+  normalizeEmailStrict,
+  normalizeExternalId,
+  normalizeGender,
+  normalizePhoneNumberStrict,
+  normalizeState,
+  normalizeZipCode,
+  sleep,
+  stringToBoolean,
+  toTitleCase,
+} from "@metriport/shared";
 import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -19,6 +32,9 @@ import {
   getConsolidated,
   getConsolidatedAndSendToCx,
 } from "../../command/medical/patient/consolidated-get";
+import { createCoverageAssessments } from "../../command/medical/patient/converage-assessment-create";
+import { getCoverageAssessments } from "../../command/medical/patient/converage-assessment-get";
+import { PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getPatientIds,
@@ -71,6 +87,7 @@ import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
+import { coverageAssessmentSchema } from "./schemas/patient";
 
 dayjs.extend(duration);
 
@@ -759,6 +776,90 @@ router.post(
   })
 );
 
+/** ---------------------------------------------------------------------------
+ * POST /internal/patient/bulk/coverage-assessment
+ *
+ * return the coverage
+ * @param req.query.cxId The customer ID.
+ * @param req.params.id The patient ID.
+ * @param req.query.facilityId The facility ID for running the coverage assessment.
+ * @param req.query.dryrun Whether to simply validate or run the assessment (optional, defaults to false).
+ *
+ */
+router.post(
+  "/bulk/coverage-assessment",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const facilityId = getFrom("query").orFail("facilityId", req);
+    const dryrun = getFromQueryAsBoolean("dryrun", req) ?? false;
+    const payload = coverageAssessmentSchema.parse(req.body);
+
+    const facility = await getFacilityOrFail({ cxId, id: facilityId });
+    const patientCreates: PatientCreateCmd[] = payload.patients.map(patient => {
+      const phone1 = patient.phone1 ? normalizePhoneNumberStrict(patient.phone1) : undefined;
+      const email1 = patient.email1 ? normalizeEmailStrict(patient.email1) : undefined;
+      const phone2 = patient.phone2 ? normalizePhoneNumberStrict(patient.phone2) : undefined;
+      const email2 = patient.email2 ? normalizeEmailStrict(patient.email2) : undefined;
+      const contact1 = phone1 || email1 ? { phone: phone1, email: email1 } : undefined;
+      const contact2 = phone2 || email2 ? { phone: phone2, email: email2 } : undefined;
+      const contact = [contact1, contact2].flatMap(c => c ?? []);
+      const externalId = patient.externalid ? normalizeExternalId(patient.externalid) : undefined;
+      return {
+        cxId,
+        facilityId: facility.id,
+        externalId,
+        firstName: toTitleCase(patient.firstname),
+        lastName: toTitleCase(patient.lastname),
+        dob: normalizeDate(patient.dob),
+        genderAtBirth: normalizeGender(patient.gender),
+        address: [
+          {
+            addressLine1: toTitleCase(patient.addressline1),
+            addressLine2: patient.addressline2 ? toTitleCase(patient.addressline2) : undefined,
+            city: toTitleCase(patient.city),
+            state: normalizeState(patient.state),
+            zip: normalizeZipCode(patient.zip),
+            country: "USA",
+          },
+        ],
+        contact,
+      };
+    });
+
+    if (dryrun) return res.sendStatus(status.OK);
+
+    createCoverageAssessments({
+      cxId,
+      facilityId,
+      patientCreates,
+    }).catch(processAsyncError("createCoverageAssessments"));
+
+    return res.sendStatus(status.OK);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/patient/bulk/coverage-assessment
+ *
+ * Returns the cx patients for a given facility used for internal scripts
+ * @param req.query.facilityId - The facility ID.
+ * @return list of patients.
+ */
+router.get(
+  "/bulk/coverage-assessment",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const facilityId = getFrom("query").orFail("facilityId", req);
+    const patients = await getPatients({ cxId, facilityId });
+    const patientsWithAssessments = await getCoverageAssessments({ cxId, patients });
+
+    const response = { patientsWithAssessments };
+    return res.status(status.OK).json(response);
+  })
+);
+
 /**
  * POST /internal/patient/:id/consolidated
  *
@@ -792,7 +893,7 @@ router.post(
       bundleFilename,
     });
 
-    await getConsolidatedAndSendToCx({
+    getConsolidatedAndSendToCx({
       patient,
       bundle,
       requestId,
@@ -801,7 +902,11 @@ router.post(
       resources,
       dateFrom,
       dateTo,
-    });
+    }).catch(
+      processAsyncError(
+        "POST /internal/patient/:id/consolidated, calling getConsolidatedAndSendToCx"
+      )
+    );
     return res.sendStatus(status.OK);
   })
 );

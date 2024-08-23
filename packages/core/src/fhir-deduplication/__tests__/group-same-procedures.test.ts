@@ -49,6 +49,8 @@ describe("groupSameProcedures", () => {
   });
 
   it("preserves cpt and loinc codes, but removes epic codes", () => {
+    procedure.performedDateTime = dateTime.start;
+    procedure2.performedDateTime = dateTime.start;
     procedure.code = {
       coding: [
         ...cptCodeAb.coding,

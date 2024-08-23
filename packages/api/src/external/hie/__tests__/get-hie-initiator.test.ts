@@ -32,15 +32,14 @@ beforeEach(() => {
     facilities: [makeOboFacility()],
     patient: makePatient(),
   };
-  getPatientWithDependencies_mock = jest
-    .spyOn(getPatient, "getPatientWithDependencies")
-    .mockImplementation(async () => defaultDeps);
+  getPatientWithDependencies_mock = jest.spyOn(getPatient, "getPatientWithDependencies");
 });
 
 describe("getHieInitiator", () => {
   it("gets data from DB with expected params", async () => {
     const patient = defaultDeps.patient;
     const facility = defaultDeps.facilities[0];
+    getPatientWithDependencies_mock.mockResolvedValueOnce(defaultDeps);
     await getHieInitiator(defaultDeps.patient, facility.id);
     expect(getPatientWithDependencies_mock).toHaveBeenCalledWith(patient);
   });

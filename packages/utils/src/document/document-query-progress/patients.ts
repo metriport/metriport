@@ -1,4 +1,5 @@
-import { PatientCreate, USState } from "@metriport/api-sdk";
+import { PatientCreate } from "@metriport/api-sdk";
+import { USState } from "@metriport/shared";
 
 /**
  * List of patients to run doc queries for.

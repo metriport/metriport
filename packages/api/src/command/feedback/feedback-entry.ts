@@ -1,13 +1,21 @@
-import { sendNotification } from "@metriport/core/util/notifications";
+import { S3Utils } from "@metriport/core/external/aws/s3";
+import { sendToSlack } from "@metriport/core/external/slack/index";
+import { Config } from "@metriport/core/util/config";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { NotFoundError } from "@metriport/shared";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { FeedbackEntry, FeedbackEntryCreate } from "../../domain/feedback";
 import { FeedbackEntryModel } from "../../models/feedback-entry";
 import { normalizeString } from "../../models/_default";
-import { Config } from "../../shared/config";
 import { getFeedbackOrFail } from "./feedback";
 
+dayjs.extend(duration);
+
 const maxLargeColumnLength = 5_000;
+const region = Config.getAWSRegion();
+const s3Utils = new S3Utils(region);
+const mrLinkDuration = dayjs.duration(1, "hour");
 
 export type GetFeedback = { id: string };
 
@@ -16,7 +24,9 @@ export async function createFeedbackEntry({
   comment,
   authorName,
 }: FeedbackEntryCreate): Promise<FeedbackEntry> {
-  await getFeedbackOrFail({ id: feedbackId });
+  const feedback = await getFeedbackOrFail({ id: feedbackId });
+  const mrLocation = feedback.data.location;
+  const brief = feedback.data.content;
 
   const feedbackEntry = await FeedbackEntryModel.create({
     id: uuidv7(),
@@ -25,13 +35,20 @@ export async function createFeedbackEntry({
     authorName: normalizeString(authorName),
   });
 
-  const lbAddress = Config.getApiLoadBalancerAddress();
-  const detailsUrl = lbAddress ? lbAddress + "/internal/feedback/entry/" + feedbackEntry.id : "N/A";
-  sendNotification({
-    message: `Author: ${authorName}\nComment: ${comment.length} characters`,
-    subject: `Feedback received about AI Brief - details on ${detailsUrl} (requires VPN)`,
-    emoji: ":mega:",
-  });
+  const mrUrl = mrLocation
+    ? await s3Utils.getSignedUrl({
+        location: mrLocation,
+        durationSeconds: mrLinkDuration.asSeconds(),
+      })
+    : "N/A";
+  sendToSlack(
+    {
+      subject: `Feedback received about AI Brief`,
+      message: `FEEDBACK AUTHOR: ${authorName}\n\nLINK TO MR (valid for 1h): ${mrUrl}\n\nAI BRIEF: ${brief}\n\nCOMMENT: ${comment}`,
+      emoji: ":mega:",
+    },
+    Config.getSlackSensitiveDataChannelUrl()
+  );
 
   return feedbackEntry.dataValues;
 }
