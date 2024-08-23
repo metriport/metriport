@@ -85,7 +85,7 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
   }
 
   for (const diagReport of diagReports) {
-    const date = getDateFromResource(diagReport, "date-hm");
+    const date = getDateFromResource(diagReport, "datetime");
     const isPresentedFormPresent = diagReport.presentedForm?.length;
     const isResultPresent = diagReport.result?.length;
     if (date && (isPresentedFormPresent || isResultPresent)) {

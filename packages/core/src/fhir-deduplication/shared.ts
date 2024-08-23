@@ -2,7 +2,7 @@ import { Resource } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
 import dayjs from "dayjs";
 
-const dateFormats = ["date-hm", "date"] as const;
+const dateFormats = ["datetime", "date"] as const;
 export type DateFormats = (typeof dateFormats)[number];
 
 export type ApplySpecialModificationsCallback<T> = (merged: T, existing: T, target: T) => T;
@@ -19,15 +19,15 @@ export function createCompositeKey(code: string, date: string | undefined): Comp
   };
 }
 
-export function getDateFromString(dateString: string, dateFormat?: "date" | "date-hm"): string {
+export function getDateFromString(dateString: string, dateFormat?: "date" | "datetime"): string {
   const date = dayjs(dateString);
 
   if (!date.isValid()) {
     throw new Error("Invalid date string");
   }
 
-  if (dateFormat === "date-hm") {
-    return date.utc().format("YYYY-MM-DDTHH:mm:00.000[Z]");
+  if (dateFormat === "datetime") {
+    return date.toISOString();
   } else {
     return date.format("YYYY-MM-DD");
   }

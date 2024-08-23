@@ -30,7 +30,6 @@ export function groupSameFamilyMemberHistories(famMemberHists: FamilyMemberHisto
   for (const famMemberHist of famMemberHists) {
     const relationship = extractCode(famMemberHist.relationship);
     const dob = famMemberHist.bornDate;
-    console.log(JSON.stringify({ relationship, dob }));
     // const date = getDateFromResource(famMemberHist, "date"); // We're currently not mapping the date for FamilyMemberHistory.hbs
     if (relationship) {
       const key = JSON.stringify({ relationship, dob });

@@ -107,8 +107,8 @@ function handleDates(master: Observation, obs1: Observation, obs2: Observation):
 
   deleteMasterTimestamp(master);
 
-  const startDateString = earliestDate?.utc().format("YYYY-MM-DDTHH:mm:00.000[Z]");
-  const endDateString = latestDate?.utc().format("YYYY-MM-DDTHH:mm:00.000[Z]");
+  const startDateString = earliestDate?.toISOString();
+  const endDateString = latestDate?.toISOString();
 
   const period = buildPeriod(startDateString, endDateString);
   if (period) master.effectivePeriod = period;

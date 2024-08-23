@@ -84,7 +84,7 @@ export function groupSameProcedures(procedures: Procedure[]): {
   }
 
   for (const procedure of procedures) {
-    const date = getPerformedDateFromResource(procedure, "date-hm");
+    const date = getPerformedDateFromResource(procedure, "datetime");
     const { cptCode, loincCode } = extractCodes(procedure.code);
 
     const key = cptCode

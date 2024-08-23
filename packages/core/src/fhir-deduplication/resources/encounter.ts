@@ -68,7 +68,7 @@ export function groupSameEncounters(encounters: Encounter[]): {
   }
 
   for (const encounter of encounters) {
-    const date = getDateFromResource(encounter, "date-hm");
+    const date = getDateFromResource(encounter, "datetime");
     if (date) {
       const key = JSON.stringify({ date });
       fillMaps(

@@ -66,7 +66,7 @@ export function groupSameMedStatements(medStatements: MedicationStatement[]): {
   }
 
   for (const medStatement of medStatements) {
-    const date = getDateFromResource(medStatement, "date-hm");
+    const date = getDateFromResource(medStatement, "datetime");
     const medRef = medStatement.medicationReference?.reference;
     const dosage = medStatement.dosage;
     if (medRef && date && dosage) {
