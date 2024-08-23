@@ -18,7 +18,6 @@ export function deduplicateFamilyMemberHistories(famMemberHists: FamilyMemberHis
  * Approach:
  * 1 map, where the key is made of:
  * - relationship
- * - name
  * - dob
  */
 export function groupSameFamilyMemberHistories(famMemberHists: FamilyMemberHistory[]): {
@@ -30,11 +29,11 @@ export function groupSameFamilyMemberHistories(famMemberHists: FamilyMemberHisto
 
   for (const famMemberHist of famMemberHists) {
     const relationship = extractCode(famMemberHist.relationship);
-    const name = famMemberHist.name;
     const dob = famMemberHist.bornDate;
+    console.log(JSON.stringify({ relationship, dob }));
     // const date = getDateFromResource(famMemberHist, "date"); // We're currently not mapping the date for FamilyMemberHistory.hbs
     if (relationship) {
-      const key = JSON.stringify({ relationship, name, dob });
+      const key = JSON.stringify({ relationship, dob });
       fillMaps(famMemberHistsMap, key, famMemberHist, refReplacementMap, undefined);
     }
   }
@@ -51,11 +50,11 @@ export function extractCode(concept: CodeableConcept | undefined): string | unde
   if (concept && concept.coding) {
     for (const coding of concept.coding) {
       const system = coding.system?.toLowerCase();
+      const code = coding.code?.trim().toLowerCase();
       const display = coding.display?.trim().toLowerCase();
       if (system && display) {
-        if (system.includes("rolecode")) {
-          return display;
-        }
+        if (display !== "unknown") return display;
+        if (code !== "unk") return code;
       }
     }
   }

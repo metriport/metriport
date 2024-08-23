@@ -35,23 +35,11 @@ describe("groupSameFamilyMemberHistories", () => {
     expect(result.famMemberHistsMap.size).toBe(2);
   });
 
-  it("does not group the same relationship if names are different", () => {
-    famMemHistory.name = "Stephen";
-    famMemHistory2.name = "Randy";
-    const { famMemberHistsMap } = groupSameFamilyMemberHistories([famMemHistory, famMemHistory2]);
-    expect(famMemberHistsMap.size).toBe(2);
-    const mapValues = famMemberHistsMap.values();
-    const father1 = mapValues.next().value as FamilyMemberHistory;
-    expect(father1.name).toEqual("Stephen");
-    const father2 = mapValues.next().value as FamilyMemberHistory;
-    expect(father2.name).toEqual("Randy");
-  });
-
   it("does not group people with the same name if the relationship is different", () => {
     famMemHistory2.relationship = naturalBrotherCode;
 
-    famMemHistory.name = "Steven";
-    famMemHistory2.name = "Steven";
+    famMemHistory.bornDate = "1930-01-01";
+    famMemHistory2.bornDate = "1930-01-01";
 
     const { famMemberHistsMap } = groupSameFamilyMemberHistories([famMemHistory, famMemHistory2]);
     expect(famMemberHistsMap.size).toBe(2);

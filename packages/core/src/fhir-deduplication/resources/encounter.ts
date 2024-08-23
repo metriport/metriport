@@ -20,7 +20,7 @@ const encounterStatus = [
 
 export type EncounterStatus = (typeof encounterStatus)[number];
 
-export const statusRanking = {
+export const statusRanking: Record<EncounterStatus, number> = {
   unknown: 0,
   "entered-in-error": 1,
   planned: 2,

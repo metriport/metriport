@@ -20,7 +20,7 @@ const procedureStatus = [
 
 export type ProcedureStatus = (typeof procedureStatus)[number];
 
-export const statusRanking = {
+export const statusRanking: Record<ProcedureStatus, number> = {
   unknown: 0,
   "entered-in-error": 1,
   preparation: 2,

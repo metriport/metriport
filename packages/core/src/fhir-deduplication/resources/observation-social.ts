@@ -84,7 +84,7 @@ export function groupSameObservationsSocial(observations: Observation[]): {
 }
 
 // TODO: do we need to handle	effectiveTiming	and effectiveInstant?
-function handleDates(master: Observation, obs1: Observation, obs2: Observation) {
+function handleDates(master: Observation, obs1: Observation, obs2: Observation): Observation {
   // Extract dates from the first observation
   const date1Start = obs1.effectiveDateTime || obs1.effectivePeriod?.start;
   const date1End = obs1.effectivePeriod?.end || obs1.effectiveDateTime;
@@ -109,8 +109,8 @@ function handleDates(master: Observation, obs1: Observation, obs2: Observation) 
 
   deleteMasterTimestamp(master);
 
-  const startDateString = getDateFromString(earliestDate.toString(), "date-hm");
-  const endDateString = getDateFromString(latestDate.toString(), "date-hm");
+  const startDateString = getDateFromString(earliestDate.toISOString(), "date-hm");
+  const endDateString = getDateFromString(latestDate.toISOString(), "date-hm");
 
   const period = {
     start: startDateString,
@@ -121,7 +121,7 @@ function handleDates(master: Observation, obs1: Observation, obs2: Observation) 
   return master;
 }
 
-function deleteMasterTimestamp(obs: Observation) {
+function deleteMasterTimestamp(obs: Observation): void {
   if ("effectiveDateTime" in obs) {
     delete obs.effectiveDateTime;
   } else if ("effectiveTiming" in obs) {

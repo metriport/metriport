@@ -1,4 +1,11 @@
-import { CodeableConcept, Observation } from "@medplum/fhirtypes";
+import {
+  CodeableConcept,
+  Observation,
+  Period,
+  Quantity,
+  Ratio,
+  SampledData,
+} from "@medplum/fhirtypes";
 import { LOINC_CODE, LOINC_OID, SNOMED_CODE, SNOMED_OID } from "../../util/constants";
 
 export const observationStatus = [
@@ -14,7 +21,7 @@ export const observationStatus = [
 
 export type ObservationStatus = (typeof observationStatus)[number];
 
-export const statusRanking = {
+export const statusRanking: Record<ObservationStatus, number> = {
   unknown: 0,
   "entered-in-error": 1,
   registered: 2,
@@ -79,7 +86,19 @@ export function retrieveCode({
   return undefined;
 }
 
-export function extractValueFromObservation(observation: Observation) {
+export function extractValueFromObservation(
+  observation: Observation
+):
+  | string
+  | number
+  | true
+  | CodeableConcept
+  | Quantity
+  | Range
+  | Ratio
+  | SampledData
+  | Period
+  | undefined {
   if (observation.valueQuantity) {
     return observation.valueQuantity;
   } else if (observation.valueCodeableConcept) {

@@ -19,7 +19,7 @@ const medicationStatementStatus = [
 
 export type MedicationStatementStatus = (typeof medicationStatementStatus)[number];
 
-export const statusRanking = {
+export const statusRanking: Record<MedicationStatementStatus, number> = {
   unknown: 0,
   "entered-in-error": 1,
   intended: 2,

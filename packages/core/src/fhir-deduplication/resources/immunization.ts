@@ -11,7 +11,7 @@ const immunizationStatus = ["entered-in-error", "completed", "not-done"] as cons
 
 export type ImmunizationStatus = (typeof immunizationStatus)[number];
 
-export const statusRanking = {
+export const statusRanking: Record<ImmunizationStatus, number> = {
   "entered-in-error": 0,
   "not-done": 1,
   completed: 2,
