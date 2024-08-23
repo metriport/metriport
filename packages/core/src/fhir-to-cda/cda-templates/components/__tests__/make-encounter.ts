@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { Encounter, Location, Practitioner } from "@medplum/fhirtypes";
+import { Address, Encounter, HumanName, Location, Practitioner } from "@medplum/fhirtypes";
 import { makeSubjectReference } from "./shared";
 
 export function makePractitioner(params: Partial<Practitioner>): Practitioner {
@@ -8,6 +8,21 @@ export function makePractitioner(params: Partial<Practitioner>): Practitioner {
     ...params,
   };
 }
+
+export const practitionerNameZoidberg: HumanName = {
+  family: "Zoidberg",
+  given: ["John A."],
+  suffix: ["MD"],
+};
+
+export const exampleAddress: Address = {
+  use: "work",
+  line: ["1111 Sample Street", "Suite 987"],
+  city: "Springfield",
+  state: "CA",
+  country: "USA",
+  postalCode: "12123",
+};
 
 export function makeLocation(params: Partial<Location>): Location {
   return {

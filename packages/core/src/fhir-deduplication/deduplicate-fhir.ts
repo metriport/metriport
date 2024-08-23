@@ -11,7 +11,7 @@ import { deduplicateMedications } from "./resources/medication";
 import { deduplicateMedAdmins } from "./resources/medication-administration";
 import { deduplicateMedRequests } from "./resources/medication-request";
 import { deduplicateMedStatements } from "./resources/medication-statement";
-import { deduplicateObservationsLabsAndVitals } from "./resources/observation-labs-and-vitals";
+import { deduplicateObservations } from "./resources/observation";
 import { deduplicateObservationsSocial } from "./resources/observation-social";
 import { deduplicateOrganizations } from "./resources/organization";
 import { deduplicatePractitioners } from "./resources/practitioner";
@@ -98,16 +98,22 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   deduplicatedEntries.push(...obsSocialResult.combinedObservations);
 
   // Observation (labs) deduplication
-  const obsLabsResult = deduplicateObservationsLabsAndVitals(resourceArrays.observationLaboratory);
+  const obsLabsResult = deduplicateObservations(resourceArrays.observationLaboratory);
   resourceArrays = replaceResourceReferences(resourceArrays, obsLabsResult.refReplacementMap);
   processedArrays.push("observationLaboratory");
   deduplicatedEntries.push(...obsLabsResult.combinedObservations);
 
   // Observation (vitals) deduplication
-  const obsVitalsResult = deduplicateObservationsLabsAndVitals(resourceArrays.observationVitals);
+  const obsVitalsResult = deduplicateObservations(resourceArrays.observationVitals);
   resourceArrays = replaceResourceReferences(resourceArrays, obsVitalsResult.refReplacementMap);
   processedArrays.push("observationVitals");
   deduplicatedEntries.push(...obsVitalsResult.combinedObservations);
+
+  // Observation (other) deduplication
+  const obsOthersResult = deduplicateObservations(resourceArrays.observationOther);
+  resourceArrays = replaceResourceReferences(resourceArrays, obsOthersResult.refReplacementMap);
+  processedArrays.push("observationOther");
+  deduplicatedEntries.push(...obsOthersResult.combinedObservations);
 
   // Location deduplication
   const locationsResult = deduplicateLocations(resourceArrays.locations);
