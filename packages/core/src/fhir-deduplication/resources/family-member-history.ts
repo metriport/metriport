@@ -17,8 +17,9 @@ export function deduplicateFamilyMemberHistories(famMemberHists: FamilyMemberHis
 /**
  * Approach:
  * 1 map, where the key is made of:
- * - relationship - Could be a sufficient key for mother and father, but probably not for anyone else?
- * - date - I don't think the date should matter, as we can combine the conditions into one
+ * - relationship
+ * - name
+ * - dob
  */
 export function groupSameFamilyMemberHistories(famMemberHists: FamilyMemberHistory[]): {
   famMemberHistsMap: Map<string, FamilyMemberHistory>;
@@ -30,14 +31,10 @@ export function groupSameFamilyMemberHistories(famMemberHists: FamilyMemberHisto
   for (const famMemberHist of famMemberHists) {
     const relationship = extractCode(famMemberHist.relationship);
     const name = famMemberHist.name;
+    const dob = famMemberHist.bornDate;
     // const date = getDateFromResource(famMemberHist, "date"); // We're currently not mapping the date for FamilyMemberHistory.hbs
     if (relationship) {
-      let key;
-      if (relationship === "father" || relationship === "mother") {
-        key = JSON.stringify({ relationship });
-      } else {
-        key = JSON.stringify({ relationship, name });
-      }
+      const key = JSON.stringify({ relationship, name, dob });
       fillMaps(famMemberHistsMap, key, famMemberHist, refReplacementMap, undefined);
     }
   }

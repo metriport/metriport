@@ -1,12 +1,17 @@
 import { Observation } from "@medplum/fhirtypes";
-import { LOINC_CODE, LOINC_OID, SNOMED_CODE, SNOMED_OID } from "../../util/constants";
 import {
   combineResources,
   fillMaps,
   getDateFromString,
   pickMostDescriptiveStatus,
 } from "../shared";
-import { extractCodes, extractValueFromObservation, statusRanking } from "./observation-shared";
+import {
+  extractCodes,
+  extractValueFromObservation,
+  retrieveCode,
+  statusRanking,
+  unknownCoding,
+} from "./observation-shared";
 
 export function deduplicateObservationsSocial(observations: Observation[]): {
   combinedObservations: Observation[];
@@ -44,12 +49,8 @@ export function groupSameObservationsSocial(observations: Observation[]): {
     const code = master.code;
     const filtered = code?.coding?.filter(coding => {
       const system = coding.system?.toLowerCase();
-      return (
-        system?.includes(LOINC_CODE) ||
-        system?.includes(LOINC_OID) ||
-        system?.includes(SNOMED_CODE) ||
-        system?.includes(SNOMED_OID)
-      );
+      const code = coding.code?.toLowerCase();
+      return !system?.includes(unknownCoding.system) && !code?.includes(unknownCoding.code);
     });
     if (filtered) {
       master.code = {
@@ -64,15 +65,12 @@ export function groupSameObservationsSocial(observations: Observation[]): {
   }
 
   for (const observation of observations) {
-    const { loincCode, snomedCode } = extractCodes(observation.code);
+    const keyCodes = extractCodes(observation.code);
+    const keyCode = retrieveCode(keyCodes);
     const value = extractValueFromObservation(observation);
 
-    if (value && (loincCode || snomedCode)) {
-      const key = loincCode
-        ? JSON.stringify({ value, loincCode })
-        : snomedCode
-        ? JSON.stringify({ value, snomedCode })
-        : undefined;
+    if (value && keyCode) {
+      const key = keyCode ? JSON.stringify({ value, keyCode }) : undefined;
       if (key) {
         fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
       }
@@ -111,8 +109,8 @@ function handleDates(master: Observation, obs1: Observation, obs2: Observation) 
 
   deleteMasterTimestamp(master);
 
-  const startDateString = getDateFromString(earliestDate.toISOString(), "date-hm");
-  const endDateString = getDateFromString(latestDate.toISOString(), "date-hm");
+  const startDateString = getDateFromString(earliestDate.toString(), "date-hm");
+  const endDateString = getDateFromString(latestDate.toString(), "date-hm");
 
   const period = {
     start: startDateString,

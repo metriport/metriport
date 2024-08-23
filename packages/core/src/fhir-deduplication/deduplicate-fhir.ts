@@ -10,7 +10,7 @@ import { deduplicateMedications } from "./resources/medication";
 import { deduplicateMedAdmins } from "./resources/medication-administration";
 import { deduplicateMedRequests } from "./resources/medication-request";
 import { deduplicateMedStatements } from "./resources/medication-statement";
-import { deduplicateObservationsLabs } from "./resources/observation-labs";
+import { deduplicateObservationsLabsAndVitals } from "./resources/observation-labs-and-vitals";
 import { deduplicateObservationsSocial } from "./resources/observation-social";
 import { deduplicateProcedures } from "./resources/procedure";
 
@@ -89,13 +89,13 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   deduplicatedEntries.push(...obsSocialResult.combinedObservations);
 
   // Observation (labs) deduplication
-  const obsLabsResult = deduplicateObservationsLabs(resourceArrays.observationLaboratory);
+  const obsLabsResult = deduplicateObservationsLabsAndVitals(resourceArrays.observationLaboratory);
   resourceArrays = replaceResourceReferences(resourceArrays, obsLabsResult.refReplacementMap);
   processedArrays.push("observationLaboratory");
   deduplicatedEntries.push(...obsLabsResult.combinedObservations);
 
   // Observation (vitals) deduplication
-  const obsVitalsResult = deduplicateObservationsLabs(resourceArrays.observationVitals);
+  const obsVitalsResult = deduplicateObservationsLabsAndVitals(resourceArrays.observationVitals);
   resourceArrays = replaceResourceReferences(resourceArrays, obsVitalsResult.refReplacementMap);
   processedArrays.push("observationVitals");
   deduplicatedEntries.push(...obsVitalsResult.combinedObservations);

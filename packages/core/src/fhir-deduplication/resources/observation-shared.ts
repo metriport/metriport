@@ -28,10 +28,12 @@ export const statusRanking = {
 export function extractCodes(concept: CodeableConcept | undefined): {
   loincCode: string | undefined;
   snomedCode: string | undefined;
+  otherCode: string | undefined;
 } {
   let loincCode = undefined;
   let snomedCode = undefined;
-  if (!concept) return { loincCode, snomedCode };
+  let otherCode = undefined;
+  if (!concept) return { loincCode, snomedCode, otherCode };
 
   if (concept && concept.coding) {
     for (const coding of concept.coding) {
@@ -40,14 +42,41 @@ export function extractCodes(concept: CodeableConcept | undefined): {
       if (system && code) {
         if (system.includes(LOINC_CODE) || system.includes(LOINC_OID)) {
           loincCode = code;
-        }
-        if (system.includes(SNOMED_CODE) || system.includes(SNOMED_OID)) {
+        } else if (system.includes(SNOMED_CODE) || system.includes(SNOMED_OID)) {
           snomedCode = code;
+        } else {
+          const display = coding.display?.trim().toLowerCase();
+          const text = concept.text?.trim().toLowerCase();
+          if (
+            system.includes("unknown") &&
+            code.includes(unknownCoding.code) &&
+            (display === unknownCoding.display || text === unknownCode.text)
+          ) {
+            // This identifies and ignores unknown codes
+            continue;
+          } else {
+            otherCode = system + code;
+          }
         }
       }
     }
   }
-  return { loincCode, snomedCode };
+  return { loincCode, snomedCode, otherCode };
+}
+
+export function retrieveCode({
+  loincCode,
+  snomedCode,
+  otherCode,
+}: {
+  loincCode: string | undefined;
+  snomedCode: string | undefined;
+  otherCode: string | undefined;
+}): string | undefined {
+  if (loincCode) return loincCode;
+  if (snomedCode) return snomedCode;
+  if (otherCode) return otherCode;
+  return undefined;
 }
 
 export function extractValueFromObservation(observation: Observation) {
@@ -78,8 +107,8 @@ export function extractValueFromObservation(observation: Observation) {
 }
 
 export const unknownCoding = {
-  system: "http://terminology.hl7.org/ValueSet/v3-Unknown",
-  code: "UNK",
+  system: "http://terminology.hl7.org/valueset/v3-unknown",
+  code: "unk",
   display: "unknown",
 };
 
