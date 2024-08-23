@@ -52,7 +52,7 @@ jobs:
     # https://serverlessfirst.com/emails/how-to-prevent-concurrent-deployments-of-serverless-stacks-in-github-actions/
     # TODO Consider the solution here: https://github.com/tj-actions/aws-cdk/blob/main/action.yml
     concurrency:
-      group: ${{ format('{0}-{1}-{2}', github.job, inputs.script_name, inputs.deploy_env) }}
+      group: ${{ format('{0}-{1}', inputs.script_name, inputs.deploy_env) }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.deploy_env }}
     steps:
