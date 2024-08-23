@@ -1,4 +1,4 @@
-import { USState } from "@metriport/core/domain/geographic-locations";
+import { USState } from "@metriport/shared";
 import { Patient, PatientDemoData, splitDob } from "@metriport/core/domain/patient";
 import { LinkDemographics, LinkGender } from "@metriport/core/domain/patient-demographics";
 import {
@@ -119,11 +119,23 @@ describe("normalization", () => {
 
   describe("normalizeEmail", () => {
     const emailValid = "john.smith@gmail.com";
-    const emailsToCheck = [emailValid, " john.smith@gmail.com ", "JOHN.SMITH@GMAIL.COM"];
+    const emailsToCheck = [
+      emailValid,
+      " john.smith@gmail.com ",
+      "JOHN.SMITH@GMAIL.COM",
+      "mailto:john.smith@gmail.com",
+    ];
     for (const email of emailsToCheck) {
       it(`email: ${email}`, async () => {
         const result = normalizeEmail(email);
         expect(result).toBe(emailValid);
+      });
+    }
+    const emailsToCheckInvalid = ["john:smith@gmail.com"];
+    for (const email of emailsToCheckInvalid) {
+      it(`email: ${email}`, async () => {
+        const result = normalizeEmail(email);
+        expect(result).toBe(undefined);
       });
     }
   });

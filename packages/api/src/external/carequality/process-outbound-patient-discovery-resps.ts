@@ -26,6 +26,7 @@ import {
   getPatientResources,
   patientResourceToNormalizedLinkDemographics,
 } from "./patient-demographics";
+import { getOutboundPatientDiscoverySuccessFailureCount } from "../hie/carequality-analytics";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 
 dayjs.extend(duration);
@@ -42,6 +43,7 @@ export async function processOutboundPatientDiscoveryResps({
   const { log } = out(`${baseLogMessage}, requestId: ${requestId}`);
   const { log: outerLog } = out(baseLogMessage);
   const patientIds = { id: patientId, cxId };
+  const countStats = getOutboundPatientDiscoverySuccessFailureCount(results);
 
   try {
     const patient = await getPatientOrFail({ id: patientId, cxId });
@@ -69,13 +71,9 @@ export async function processOutboundPatientDiscoveryResps({
 
     const discoveryParams = getCQData(patient.data.externalData)?.discoveryParams;
     if (!discoveryParams) {
-      // Backward compatability during deployment phase
-      await updatePatientDiscoveryStatus({ patient, status: "completed" });
-      await queryDocsIfScheduled({ patientIds: patient });
-      return;
-      //const msg = `Failed to find discovery params @ CQ`;
-      //log(`${msg}. Patient ID: ${patient.id}.`);
-      //throw new Error(msg);
+      const msg = `Failed to find discovery params @ CQ`;
+      log(`${msg}. Patient ID: ${patient.id}.`);
+      throw new Error(msg);
     }
 
     if (discoveryParams.rerunPdOnNewDemographics) {
@@ -97,6 +95,7 @@ export async function processOutboundPatientDiscoveryResps({
         requestId,
         pdLinks: cqLinks.length,
         duration: elapsedTimeFromNow(discoveryParams.startedAt),
+        ...countStats,
       },
     });
 
@@ -268,9 +267,10 @@ export async function queryDocsIfScheduled({
 }): Promise<void> {
   const patient = await getPatientOrFail(patientIds);
 
-  const scheduledDocQueryRequestId = getCQData(
-    patient.data.externalData
-  )?.scheduledDocQueryRequestId;
+  const cqData = getCQData(patient.data.externalData);
+  const scheduledDocQueryRequestId = cqData?.scheduledDocQueryRequestId;
+  const scheduledDocQueryRequestTriggerConsolidated =
+    cqData?.scheduledDocQueryRequestTriggerConsolidated;
   if (!scheduledDocQueryRequestId) {
     return;
   }
@@ -291,6 +291,7 @@ export async function queryDocsIfScheduled({
     getDocumentsFromCQ({
       patient,
       requestId: scheduledDocQueryRequestId,
+      triggerConsolidated: scheduledDocQueryRequestTriggerConsolidated,
     }).catch(processAsyncError("CQ getDocumentsFromCQ"));
   }
 }

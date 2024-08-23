@@ -7,6 +7,7 @@ import { DOMParser } from "xmldom";
 import { MetriportError } from "../../../util/error/metriport-error";
 import NotFoundError from "../../../util/error/not-found";
 import { detectFileType, isContentTypeAccepted } from "../../../util/file-type";
+import { out } from "../../../util/log";
 import { isMimeTypeXML } from "../../../util/mime";
 import { makeS3Client, S3Utils } from "../../aws/s3";
 import {
@@ -45,13 +46,14 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     document: Document;
     fileInfo: FileInfo;
   }): Promise<DownloadResult> {
+    const { log } = out("S3.download");
     let downloadedDocument = "";
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
     const onData = (chunk: any) => {
       downloadedDocument += chunk;
     };
     const onEnd = () => {
-      console.log("Finished downloading document");
+      log("Finished downloading document");
     };
     let downloadResult = await executeWithNetworkRetries(
       () => this.downloadFromCommonwellIntoS3(document, fileInfo, onData, onEnd),
@@ -99,6 +101,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     downloadedDocument: string;
     downloadResult: DownloadResult;
   }): Promise<DownloadResult> {
+    const { log } = out("checkAndUpdateMimeType");
     if (isContentTypeAccepted(document.mimeType)) {
       return { ...downloadResult };
     }
@@ -113,7 +116,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     }
 
     // If the file type has changed
-    console.log(
+    log(
       `Updating content type in S3 ${fileInfo.name} from previous mimeType: ${document.mimeType} to detected mimeType ${mimeType} and ${fileExtension}`
     );
     const newKey = await this.s3Utils.updateContentTypeInS3(
@@ -142,13 +145,14 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     requestedFileInfo,
     ...downloadedFile
   }: DownloadResult & { contents: string; requestedFileInfo: FileInfo }): Promise<DownloadResult> {
+    const { log } = out("parseXmlFile");
     const parser = new DOMParser();
     const document = parser.parseFromString(contents, "text/xml");
 
     const nonXMLBodies = document.getElementsByTagName("nonXMLBody");
     if (nonXMLBodies.length > 1) {
       const msg = `Multiple nonXmlBody inside CDA`;
-      console.log(msg);
+      log(msg);
       this.config.capture &&
         this.config.capture.message(msg, {
           extra: {
@@ -165,7 +169,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     const xmlBodyTexts = nonXMLBody.getElementsByTagName("text");
     if (xmlBodyTexts.length > 1) {
       const msg = `Multiple text inside CDA.nonXmlBody`;
-      console.log(msg);
+      log(msg);
       this.config.capture &&
         this.config.capture.message(msg, {
           extra: {
@@ -179,7 +183,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     const b64 = xmlBodyTexts[0]?.textContent;
     if (!b64) {
       const msg = `No b64 found in xml`;
-      console.log(msg);
+      log(msg);
       this.config.capture &&
         this.config.capture.message(msg, {
           extra: {
@@ -230,6 +234,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     size: number | undefined;
     contentType: string | undefined;
   }> {
+    const { log } = out("downloadFromCommonwellIntoS3");
     const { writeStream, promise } = this.getUploadStreamToS3(
       fileInfo.name,
       fileInfo.location,
@@ -246,7 +251,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
 
     const uploadResult = await promise;
 
-    console.log(`Uploaded ${document.id}, ${document.mimeType}, to ${uploadResult.Location}`);
+    log(`Uploaded ${document.id}, ${document.mimeType}, to ${uploadResult.Location}`);
 
     const { size, contentType } = await this.s3Utils.getFileInfoFromS3(
       uploadResult.Key,
@@ -307,7 +312,8 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
       };
       if (error instanceof CommonwellError && error.cause?.response?.status === 404) {
         const msg = "CW - Document not found";
-        console.log(`${msg} - ${JSON.stringify(additionalInfo)}`);
+        const { log } = out("downloadDocumentFromCW");
+        log(`${msg} - ${JSON.stringify(additionalInfo)}`);
         throw new NotFoundError(msg, error, additionalInfo);
       }
       throw new MetriportError(`CW - Error downloading document`, error, additionalInfo);

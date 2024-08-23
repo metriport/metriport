@@ -12,9 +12,11 @@ import updateDB from "../sequelize";
 import { Config } from "../shared/config";
 import { ConnectedUser } from "./connected-user";
 import { initDDBDev, initLocalCxAccount } from "./db-dev";
+import { FeedbackEntryModel } from "./feedback-entry";
 import { CoverageEnhancementModel } from "./medical/coverage-enhancement";
 import { DocRefMappingModel } from "./medical/docref-mapping";
 import { MAPIAccess } from "./medical/mapi-access";
+import { FeedbackModel } from "./feedback";
 import { PatientModel } from "./medical/patient";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
@@ -37,6 +39,8 @@ const models: ModelSetup[] = [
   OutboundDocumentQueryRespModel.setup,
   OutboundDocumentRetrievalRespModel.setup,
   CoverageEnhancementModel.setup,
+  FeedbackModel.setup,
+  FeedbackEntryModel.setup,
 ];
 
 export type DbPoolProps = {
@@ -125,6 +129,7 @@ function getDbPoolSettings(): DbPoolProps {
     }
   }
   const parsedProps = getAndParseSettings();
+  // https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-serverless-v2.setting-capacity.html#aurora-serverless-v2.max-connections
   const max = getOptionalInteger(parsedProps.max) ?? 500;
   const min = getOptionalInteger(parsedProps.min) ?? 50;
   const acquire = getOptionalInteger(parsedProps.acquire) ?? 10_000;

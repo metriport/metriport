@@ -38,6 +38,9 @@ export class Config {
   static getSlackNotificationUrl(): string | undefined {
     return getEnvVar("SLACK_NOTIFICATION_URL");
   }
+  static getSlackSensitiveDataChannelUrl(): string | undefined {
+    return getEnvVar("SLACK_SENSITIVE_DATA_URL");
+  }
 
   static getAWSRegion(): string {
     return getEnvVarOrFail("AWS_REGION");
@@ -91,6 +94,10 @@ export class Config {
   static getApiUrl(): string {
     return getEnvVarOrFail("API_URL");
   }
+  static getApiLoadBalancerAddress(): string {
+    return getEnvVarOrFail("API_LB_ADDRESS");
+  }
+
   static getPostHogApiKey(): string | undefined {
     return getEnvVar("POST_HOG_API_KEY_SECRET");
   }
@@ -101,5 +108,25 @@ export class Config {
 
   static getIheRequestsBucketName(): string | undefined {
     return getEnvVar("IHE_REQUESTS_BUCKET_NAME");
+  }
+
+  static getIheParsedResponsesBucketName(): string | undefined {
+    return getEnvVar("IHE_PARSED_RESPONSES_BUCKET_NAME");
+  }
+
+  static getFHIRtoBundleLambdaName(): string {
+    return getEnvVarOrFail("FHIR_TO_BUNDLE_LAMBDA_NAME");
+  }
+
+  static getBedrockRegion(): string | undefined {
+    return getEnvVar("BEDROCK_REGION");
+  }
+
+  static getBedrockVersion(): string | undefined {
+    return getEnvVar("BEDROCK_VERSION");
+  }
+
+  static getAiBriefModelId(): string | undefined {
+    return getEnvVar("AI_BRIEF_MODEL_ID");
   }
 }

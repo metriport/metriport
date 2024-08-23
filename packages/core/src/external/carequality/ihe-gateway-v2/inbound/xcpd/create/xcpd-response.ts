@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import {
   InboundPatientDiscoveryResp,
   InboundPatientDiscoveryReq,
-  isSuccessfulPatientDiscoveryResponse,
+  isSuccessfulInboundPatientDiscoveryResponse,
 } from "@metriport/ihe-gateway-sdk";
 import { createSecurityHeader } from "../../shared";
 import { queryResponseCodes, ackCodes, xmlBuilderAttributes } from "../../../shared";
@@ -16,79 +16,77 @@ function createQueryByParameter(request: InboundPatientDiscoveryReq): object {
   const { id, samlAttributes, patientResource } = request;
 
   const queryByParameter = {
-    queryByParameter: {
-      queryId: {
-        "@_extension": id,
-        "@_root": samlAttributes.homeCommunityId,
-      },
-      statusCode: {
-        "@_code": "new",
-      },
-      responseModalityCode: {
-        "@_code": "R",
-      },
-      responsePriorityCode: {
-        "@_code": "I",
-      },
-      parameterList: {
-        livingSubjectAdministrativeGender: {
-          value: {
-            "@_code": patientResource.gender,
-            "@_codeSystem": "2.16.840.1.113883.5.1",
-          },
-          semanticsText: "LivingSubject.administrativeGender",
+    queryId: {
+      "@_extension": id,
+      "@_root": samlAttributes.homeCommunityId,
+    },
+    statusCode: {
+      "@_code": "new",
+    },
+    responseModalityCode: {
+      "@_code": "R",
+    },
+    responsePriorityCode: {
+      "@_code": "I",
+    },
+    parameterList: {
+      livingSubjectAdministrativeGender: {
+        value: {
+          "@_code": patientResource.gender,
+          "@_codeSystem": "2.16.840.1.113883.5.1",
         },
-        livingSubjectBirthTime: patientResource.birthDate
-          ? {
-              value: {
-                "@_value": patientResource.birthDate,
-              },
-              semanticsText: "LivingSubject.birthTime",
-            }
-          : {},
-        livingSubjectId: patientResource.identifier
-          ? {
-              value: patientResource.identifier.map(identifier => ({
-                "@_extension": identifier.value,
-                "@_root": identifier.system,
-              })),
-              semanticsText: "LivingSubject.id",
-            }
-          : {},
-        livingSubjectName: patientResource.name
-          ? {
-              value: patientResource.name.map(name => ({
-                family: name.family,
-                ...name.given?.reduce((acc: { [key: string]: string }, givenName: string) => {
-                  acc.given = givenName;
-                  return acc;
-                }, {}),
-              })),
-              semanticsText: "LivingSubject.name",
-            }
-          : {},
-        patientAddress: patientResource.address
-          ? {
-              value: patientResource.address.map(address => ({
-                streetAddressLine: address.line?.join(", "),
-                city: address.city,
-                state: address.state,
-                postalCode: address.postalCode,
-                country: address.country,
-              })),
-              semanticsText: "Patient.addr",
-            }
-          : {},
-        patientTelecom: patientResource.telecom
-          ? {
-              value: patientResource.telecom.map(telecom => ({
-                "@_use": telecom.system,
-                "@_value": telecom.value,
-              })),
-              semanticsText: "Patient.telecom",
-            }
-          : {},
+        semanticsText: "LivingSubject.administrativeGender",
       },
+      livingSubjectBirthTime: patientResource.birthDate
+        ? {
+            value: {
+              "@_value": patientResource.birthDate,
+            },
+            semanticsText: "LivingSubject.birthTime",
+          }
+        : {},
+      livingSubjectId: patientResource.identifier
+        ? {
+            value: patientResource.identifier.map(identifier => ({
+              "@_extension": identifier.value,
+              "@_root": identifier.system,
+            })),
+            semanticsText: "LivingSubject.id",
+          }
+        : {},
+      livingSubjectName: patientResource.name
+        ? {
+            value: patientResource.name.map(name => ({
+              family: name.family,
+              ...name.given?.reduce((acc: { [key: string]: string }, givenName: string) => {
+                acc.given = givenName;
+                return acc;
+              }, {}),
+            })),
+            semanticsText: "LivingSubject.name",
+          }
+        : {},
+      patientAddress: patientResource.address
+        ? {
+            value: patientResource.address.map(address => ({
+              streetAddressLine: address.line?.join(", "),
+              city: address.city,
+              state: address.state,
+              postalCode: address.postalCode,
+              country: address.country,
+            })),
+            semanticsText: "Patient.addr",
+          }
+        : {},
+      patientTelecom: patientResource.telecom
+        ? {
+            value: patientResource.telecom.map(telecom => ({
+              "@_use": telecom.system,
+              "@_value": telecom.value,
+            })),
+            semanticsText: "Patient.telecom",
+          }
+        : {},
     },
   };
   return queryByParameter;
@@ -96,7 +94,7 @@ function createQueryByParameter(request: InboundPatientDiscoveryReq): object {
 
 function createSubjectAndRegistrationEvent(response: InboundPatientDiscoveryResp): object {
   const externalGatewayPatient = response.externalGatewayPatient;
-  const patientResource = isSuccessfulPatientDiscoveryResponse(response)
+  const patientResource = isSuccessfulInboundPatientDiscoveryResponse(response)
     ? response.patientResource
     : undefined;
   if (!patientResource) {
@@ -182,7 +180,9 @@ function createIti55SoapBody(
   const subject = response.patientMatch ? createSubjectAndRegistrationEvent(response) : undefined;
 
   const soapBody = {
-    "@_xmlns:urn": namespaces.hl7,
+    "@_xmlns": namespaces.hl7,
+    "@_xmlns:xsd": namespaces.xs,
+    "@_xmlns:xsi": namespaces.xsi,
     PRPA_IN201306UV02: {
       id: {
         "@_root": uuidv4(), // TODO #1776 monitoring PR
@@ -201,9 +201,6 @@ function createIti55SoapBody(
       acceptAckCode: {
         "@_code": "AL",
       },
-      queryResponseCode: {
-        "@_code": queryResponseCode,
-      },
       acknowledgement: {
         typeCode: {
           "@_code": ack,
@@ -216,7 +213,7 @@ function createIti55SoapBody(
         },
         ...(response.operationOutcome && {
           acknowledgementDetail: {
-            typeCode: "E",
+            "@_typeCode": "E",
             code: response.operationOutcome?.issue?.[0]?.details?.coding?.[0]
               ? {
                   "@_code": response.operationOutcome.issue[0].details?.coding[0].code,

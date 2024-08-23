@@ -1,10 +1,8 @@
-import { Bundle, Encounter, Location, Practitioner } from "@medplum/fhirtypes";
+import { Bundle, Composition, Encounter, Location, Practitioner } from "@medplum/fhirtypes";
 import { toArray } from "@metriport/shared";
-import {
-  findCompositionResource,
-  findResourceInBundle,
-  isEncounter,
-} from "../../../external/fhir/shared";
+import { findResourceInBundle, isEncounter } from "../../../external/fhir/shared";
+import BadRequestError from "../../../util/error/bad-request";
+import { EncompassingEncounter, ResponsibleParty } from "../../cda-types/shared-types";
 import {
   buildAddress,
   buildCodeCe,
@@ -17,7 +15,6 @@ import {
 import { placeholderOrgOid } from "../constants";
 import { AugmentedEncounter } from "./augmented-resources";
 import { createAugmentedEncounters } from "./encounters";
-import { EncompassingEncounter, ResponsibleParty } from "../../cda-types/shared-types";
 
 function findEncounterInBundle(
   fhirBundle: Bundle,
@@ -28,11 +25,16 @@ function findEncounterInBundle(
   return isEncounter(resource) ? resource : undefined;
 }
 
-export function buildEncompassingEncounter(fhirBundle: Bundle): EncompassingEncounter | undefined {
-  const composition = findCompositionResource(fhirBundle);
-  const encompassingEncId = composition?.encounter?.reference;
+export function buildEncompassingEncounter(
+  fhirBundle: Bundle,
+  composition?: Composition | undefined
+): EncompassingEncounter | undefined {
+  if (!composition) {
+    return undefined;
+  }
+  const encompassingEncId = composition.encounter?.reference;
   const encounter = findEncounterInBundle(fhirBundle, encompassingEncId);
-  if (!encounter) return undefined;
+  if (!encounter) throw new BadRequestError("Encounter resource not found!");
 
   const augmentedEncounters = createAugmentedEncounters(encounter, fhirBundle);
   const augmentedEncounter = augmentedEncounters[0];
@@ -90,9 +92,9 @@ function buildLocation(location: Location | Location[] | undefined) {
   };
 }
 
-function buildResponsibleParty(
+export function buildResponsibleParty(
   practitioner: Practitioner | undefined,
-  location: Location | undefined
+  location?: Location | undefined
 ): ResponsibleParty | undefined {
   if (!practitioner) return undefined;
 

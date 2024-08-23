@@ -1,6 +1,6 @@
 {
   "name": "api",
-  "version": "1.21.0-alpha.0",
+  "version": "1.22.0",
   "description": "",
   "main": "app.js",
   "private": true,
@@ -27,8 +27,7 @@
   "license": "ISC",
   "dependencies": {
     "@aws-sdk/client-cloudwatch": "^3.338.0",
-    "@medplum/core": "^2.0.32",
-    "@medplum/fhirtypes": "^2.0.32",
+    "@medplum/core": "^2.2.10",
     "@metriport/api-sdk": "file:packages/api-sdk",
     "@metriport/carequality-sdk": "file:packages/carequality-sdk",
     "@metriport/commonwell-sdk": "file:packages/commonwell-sdk",
@@ -36,6 +35,7 @@
     "@metriport/ihe-gateway-sdk": "file:packages/ihe-gateway-sdk",
     "@metriport/shared": "file:packages/shared",
     "@opensearch-project/opensearch": "^2.3.1",
+    "@propelauth/express": "^2.1.19",
     "@sentry/node": "^7.45.0",
     "@sentry/tracing": "^7.45.0",
     "ajv": "^8.12.0",
@@ -72,6 +72,7 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^8.0.2",
+    "@medplum/fhirtypes": "^2.2.10",
     "@ngrok/ngrok": "^1.2.0",
     "@tsconfig/node18": "^1.0.1",
     "@types/convert-units": "^2.3.5",

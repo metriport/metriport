@@ -49,6 +49,12 @@ export class Config {
     return getEnvVarOrFail("AWS_REGION");
   }
 
+  static getLbTimeoutInMillis(): number | undefined {
+    const timeoutAsString = getEnvVar("LB_TIMEOUT_IN_MILLIS");
+    if (timeoutAsString) return parseInt(timeoutAsString);
+    return undefined;
+  }
+
   /**
    * @deprecated Use core's Config instead
    */
@@ -78,8 +84,9 @@ export class Config {
     return `${Config.getApiUrl()}/connect`;
   }
 
+  /** @deprecated Use core's version of Config instead */
   static getApiUrl(): string {
-    return getEnvVarOrFail("API_URL");
+    return CoreConfig.getApiUrl();
   }
 
   static getApiGatewayUsagePlanId(): string | undefined {

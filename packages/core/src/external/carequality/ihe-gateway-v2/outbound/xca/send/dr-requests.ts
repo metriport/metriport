@@ -1,6 +1,5 @@
 import { XCAGateway, OutboundDocumentRetrievalReq } from "@metriport/ihe-gateway-sdk";
 import { errorToString } from "../../../../../../util/error/shared";
-import { capture } from "../../../../../../util/notifications";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
 import { sendSignedXmlMtom } from "../../../saml/saml-client";
 import { MtomAttachments } from "../mtom/parser";
@@ -9,7 +8,6 @@ import { out } from "../../../../../../util/log";
 import { storeDrResponse } from "../../../monitor/store";
 
 const { log } = out("Sending DR Requests");
-const context = "ihe-gateway-v2-dr-saml-client";
 
 export type DrSamlClientResponse = {
   gateway: XCAGateway;
@@ -71,18 +69,6 @@ export async function sendSignedDrRequest({
     }
 
     const errorString: string = errorToString(error);
-    const extra = {
-      errorString,
-      outboundRequest: request.outboundRequest,
-      patientId,
-      cxId,
-    };
-    capture.error(msg, {
-      extra: {
-        context,
-        ...extra,
-      },
-    });
     return {
       gateway: request.gateway,
       outboundRequest: request.outboundRequest,

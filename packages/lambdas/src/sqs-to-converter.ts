@@ -1,12 +1,13 @@
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
+import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE, XML_APP_MIME_TYPE } from "@metriport/core/util/mime";
 import {
   errorToString,
   executeWithNetworkRetries,
   executeWithRetries,
   MetriportError,
 } from "@metriport/shared";
-import { SQSEvent } from "aws-lambda";
+import { SQSEvent, SQSRecord } from "aws-lambda";
 import AWS from "aws-sdk";
 import axios from "axios";
 import * as uuid from "uuid";
@@ -208,57 +209,54 @@ export async function handler(event: SQSEvent) {
       const unusedSegments = attrib.unusedSegments?.stringValue;
       const invalidAccess = attrib.invalidAccess?.stringValue;
       const converterParams = { patientId, fileName: s3FileName, unusedSegments, invalidAccess };
+
+      const preConversionFilename = `${s3FileName}.pre-conversion.xml`;
+      const conversionResultFilename = `${s3FileName}.from_converter.json`;
+
       log(
         `Calling converter on url ${converterUrl} with params ${JSON.stringify(converterParams)}`
       );
-      const res = await executeWithNetworkRetries(
-        () =>
-          fhirConverter.post(converterUrl, payloadClean, {
-            params: converterParams,
-            headers: { "Content-Type": "text/plain" },
-          }),
-        {
-          // No retries on timeout b/c we want to re-enqueue instead of trying within the same lambda run,
-          // it could lead to timing out the lambda execution.
+      const convertPayloadToFHIR = () =>
+        executeWithNetworkRetries(
+          () =>
+            fhirConverter.post(converterUrl, payloadClean, {
+              params: converterParams,
+              headers: { "Content-Type": TXT_MIME_TYPE },
+            }),
+          {
+            // No retries on timeout b/c we want to re-enqueue instead of trying within the same lambda run,
+            // it could lead to timing out the lambda execution.
+            log,
+          }
+        );
+      // The actual payload we send to the Converter
+      const storePayloadInS3 = () =>
+        storePreConversionPayloadInS3({
+          payload: payloadClean,
+          preConversionFilename,
+          message,
+          lambdaParams,
           log,
-        }
-      );
-      const conversionResult = res.data.fhirResource as FHIRBundle;
+        });
+
+      const [responseFromConverter] = await Promise.all([
+        convertPayloadToFHIR(),
+        storePayloadInS3(),
+      ]);
+      const conversionResult = responseFromConverter.data.fhirResource as FHIRBundle;
       metrics.conversion = {
         duration: Date.now() - conversionStart,
         timestamp: new Date(),
       };
 
-      const preProcessedFilename = `${s3FileName}.from_converter.json`;
-
-      try {
-        await executeWithRetries(
-          () =>
-            s3Utils.s3
-              .upload({
-                Bucket: conversionResultBucketName,
-                Key: preProcessedFilename,
-                Body: JSON.stringify(conversionResult),
-                ContentType: "application/fhir+json",
-              })
-              .promise(),
-          {
-            ...defaultS3RetriesConfig,
-            log,
-          }
-        );
-      } catch (error) {
-        console.log(`Error uploading pre-processed file: ${error}`);
-        capture.error(error, {
-          extra: {
-            message,
-            ...lambdaParams,
-            preProcessedFilename,
-            context: lambdaName,
-            error,
-          },
-        });
-      }
+      // Result from Converter before we process it (e.g., replace IDs)
+      await storePreProcessedConversionResult({
+        conversionResult,
+        conversionResultFilename,
+        message,
+        lambdaParams,
+        log,
+      });
 
       await cloudWatchUtils.reportMemoryUsage();
 
@@ -274,6 +272,8 @@ export async function handler(event: SQSEvent) {
       };
 
       await cloudWatchUtils.reportMemoryUsage();
+
+      // Store the conversion result in S3 and send it to the FHIR server
       await sendConversionResult(
         cxId,
         patientId,
@@ -370,7 +370,7 @@ async function sendConversionResult(
           Bucket: conversionResultBucketName,
           Key: fileName,
           Body: JSON.stringify(conversionPayload),
-          ContentType: "application/fhir+json",
+          ContentType: FHIR_APP_MIME_TYPE,
         })
         .promise(),
     {
@@ -397,4 +397,92 @@ async function sendConversionResult(
     },
   };
   await sqs.sendMessage(sendParams).promise();
+}
+
+async function storePreProcessedConversionResult({
+  conversionResult,
+  conversionResultFilename,
+  message,
+  lambdaParams,
+  log,
+}: {
+  conversionResult: FHIRBundle;
+  conversionResultFilename: string;
+  message: SQSRecord;
+  lambdaParams: Record<string, string | undefined>;
+  log: typeof console.log;
+}) {
+  try {
+    await executeWithRetries(
+      () =>
+        s3Utils.s3
+          .upload({
+            Bucket: conversionResultBucketName,
+            Key: conversionResultFilename,
+            Body: JSON.stringify(conversionResult),
+            ContentType: FHIR_APP_MIME_TYPE,
+          })
+          .promise(),
+      {
+        ...defaultS3RetriesConfig,
+        log,
+      }
+    );
+  } catch (error) {
+    const msg = "Error uploading conversion result";
+    log(`${msg}: ${error}`);
+    capture.error(msg, {
+      extra: {
+        message,
+        ...lambdaParams,
+        conversionResultFilename,
+        context: lambdaName,
+        error,
+      },
+    });
+  }
+}
+
+async function storePreConversionPayloadInS3({
+  payload,
+  preConversionFilename: preProcessedFilename,
+  message,
+  lambdaParams,
+  log,
+}: {
+  payload: string;
+  preConversionFilename: string;
+  message: SQSRecord;
+  lambdaParams: Record<string, string | undefined>;
+  log: typeof console.log;
+}) {
+  try {
+    await executeWithRetries(
+      () =>
+        s3Utils.s3
+          .upload({
+            Bucket: conversionResultBucketName,
+            Key: preProcessedFilename,
+            Body: payload,
+            ContentType: XML_APP_MIME_TYPE,
+          })
+          .promise(),
+      {
+        ...defaultS3RetriesConfig,
+        log,
+      }
+    );
+  } catch (error) {
+    const msg = "Error uploading pre-convert file";
+    log(`${msg}: ${error}`);
+    capture.error(msg, {
+      extra: {
+        message,
+        ...lambdaParams,
+        preProcessedFilename,
+        context: lambdaName,
+        error,
+      },
+    });
+  }
 }

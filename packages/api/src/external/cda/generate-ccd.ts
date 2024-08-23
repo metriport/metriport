@@ -1,8 +1,16 @@
-import { Bundle } from "@medplum/fhirtypes";
-import { FHIR_BUNDLE_SUFFIX, createUploadFilePath } from "@metriport/core/domain/document/upload";
+import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
+import {
+  CCD_SUFFIX,
+  FHIR_BUNDLE_SUFFIX,
+  createUploadFilePath,
+} from "@metriport/core/domain/document/upload";
 import { Patient } from "@metriport/core/domain/patient";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
+import { out } from "@metriport/core/util/log";
+import { JSON_APP_MIME_TYPE } from "@metriport/core/util/mime";
+import { capture } from "@metriport/core/util/notifications";
+import { errorToString } from "@metriport/shared";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { getConsolidatedPatientData } from "../../command/medical/patient/consolidated-get";
 import { convertFhirToCda } from "../../command/medical/patient/convert-fhir-to-cda";
@@ -16,7 +24,7 @@ const region = Config.getAWSRegion();
 const bucket = Config.getMedicalDocumentsBucketName();
 const s3Utils = new S3Utils(region);
 
-export async function generateCcd(patient: Patient): Promise<string> {
+export async function generateCcd(patient: Patient, requestId: string): Promise<string> {
   const uploadsExist = await s3Utils.fileExists(bucket, {
     targetString: FHIR_BUNDLE_SUFFIX,
     path: createUploadFilePath(patient.cxId, patient.id, ""),
@@ -24,10 +32,39 @@ export async function generateCcd(patient: Patient): Promise<string> {
   if (!uploadsExist) {
     return generateEmptyCcd(patient);
   }
+  const metriportGenerated = await getFhirResourcesForCcd(patient);
+  if (!metriportGenerated || !metriportGenerated.length) {
+    return generateEmptyCcd(patient);
+  }
 
+  const organization = await getOrganizationOrFail({ cxId: patient.cxId });
+  const fhirOrganization = toFhirOrganization(organization);
+  const bundle: Bundle = {
+    resourceType: "Bundle",
+    type: "collection",
+    entry: [...metriportGenerated, { resource: fhirOrganization }],
+  };
+  const parsedBundle = bundleSchema.parse(bundle);
+  await uploadCcdFhirDataToS3(patient, parsedBundle, requestId);
+
+  const validatedBundle = validateFhirEntries(parsedBundle);
+  const converted = await convertFhirToCda({
+    cxId: patient.cxId,
+    validatedBundle,
+    splitCompositions: false,
+  });
+  const ccd = converted[0];
+  if (!ccd) throw new Error("Failed to create CCD");
+  return ccd;
+}
+
+async function getFhirResourcesForCcd(
+  patient: Patient
+): Promise<BundleEntry<Resource>[] | undefined> {
   const allResources = await getConsolidatedPatientData({ patient });
-  const metriportGenerated = allResources.entry?.filter(entry => {
+  return allResources.entry?.filter(entry => {
     const resource = entry.resource;
+    if (resource?.resourceType === "Composition") return false;
 
     if (resource) {
       // All new FHIR data coming from our CX will now have extensions.
@@ -46,27 +83,29 @@ export async function generateCcd(patient: Patient): Promise<string> {
 
     return false;
   });
+}
 
-  if (!metriportGenerated || !metriportGenerated.length) {
-    return generateEmptyCcd(patient);
+async function uploadCcdFhirDataToS3(
+  patient: Patient,
+  data: Bundle,
+  requestId: string
+): Promise<void> {
+  const { log } = out(`Upload FHIR data for CCD cxId: ${patient.cxId}, patientId: ${patient.id}`);
+  const key = createUploadFilePath(
+    patient.cxId,
+    patient.id,
+    `${requestId}_${CCD_SUFFIX}_${FHIR_BUNDLE_SUFFIX}.json`
+  );
+  try {
+    await s3Utils.uploadFile({
+      bucket,
+      key,
+      file: Buffer.from(JSON.stringify(data)),
+      contentType: JSON_APP_MIME_TYPE,
+    });
+  } catch (error) {
+    const msg = `Error uploading FHIR data for CCD`;
+    log(`${msg}: error - ${errorToString(error)}`);
+    capture.error(msg, { extra: { cxId: patient.cxId, patientId: patient.id } });
   }
-
-  const organization = await getOrganizationOrFail({ cxId: patient.cxId });
-  const fhirOrganization = toFhirOrganization(organization);
-  const bundle: Bundle = {
-    resourceType: "Bundle",
-    type: "collection",
-    entry: [...metriportGenerated, { resource: fhirOrganization }],
-  };
-  const parsedBundle = bundleSchema.parse(bundle);
-  const validatedBundle = validateFhirEntries(parsedBundle);
-
-  const converted = await convertFhirToCda({
-    cxId: patient.cxId,
-    validatedBundle,
-    splitCompositions: false,
-  });
-  const ccd = converted[0];
-  if (!ccd) throw new Error("Failed to create CCD");
-  return ccd;
 }

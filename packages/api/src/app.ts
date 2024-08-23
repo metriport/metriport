@@ -5,6 +5,8 @@ import { capture } from "@metriport/core/util";
 import { sleep } from "@metriport/shared";
 import * as Sentry from "@sentry/node";
 import cors from "cors";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import express, { Application, Request, Response } from "express";
 import helmet from "helmet";
 import { initEvents } from "./event";
@@ -17,6 +19,8 @@ import mountRoutes from "./routes/index";
 import { initSentry, isSentryEnabled } from "./sentry";
 import { Config } from "./shared/config";
 import { isClientError } from "./shared/http";
+
+dayjs.extend(duration);
 
 const app: Application = express();
 const version = Config.getVersion();
@@ -64,7 +68,7 @@ app.all("*", ...notFoundHandlers);
 initEvents();
 
 const port = 8080;
-app.listen(port, "0.0.0.0", async () => {
+const server = app.listen(port, "0.0.0.0", async () => {
   try {
     // Initialize connection to the database and feature flags
     await Promise.all([initDB(), initFeatureFlags()]);
@@ -78,3 +82,19 @@ app.listen(port, "0.0.0.0", async () => {
     process.exit(1);
   }
 });
+
+/**
+ * Make sure the server's keep alive is greater than the LB's timeout and the timeout is lower.
+ * @see https://github.com/metriport/metriport-internal/issues/1973
+ */
+const loadbalancerTimeout =
+  Config.getLbTimeoutInMillis() ?? dayjs.duration({ minutes: 10 }).asMilliseconds();
+const oneSecond = dayjs.duration({ seconds: 1 }).asMilliseconds();
+
+const timeout = loadbalancerTimeout - oneSecond;
+server.setTimeout(timeout);
+
+const keepalive = loadbalancerTimeout + oneSecond;
+server.keepAliveTimeout = keepalive;
+// Just in case: https://github.com/nodejs/node/issues/27363#issuecomment-603489130
+server.headersTimeout = keepalive + oneSecond;

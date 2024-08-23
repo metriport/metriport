@@ -10,7 +10,7 @@ Initially, the status will be `processing`, and when the process is finished, th
 `completed` or `failed`.
 
 Once completed, a webhook request will be sent [your configured URL](/home/api-reference/settings/post-settings)
-containing the document download URLs.
+containing the document download URLs. The URL will be valid for 10 minutes after which it will expire.
 
 Webhook message type - see [the respective section on the webhooks page](/medical-api/more-info/webhooks#bulk-downloadable-url-generation)
 for more details:
@@ -53,15 +53,15 @@ for more details:
 ```javascript Metriport SDK
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 
-const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
 const metadata = {
   youCan: "putAny",
   stringKeyValue: "pairsHere",
 };
 
-const status = await api.startBulkGetDocumentUrl(
-  "<your-patient-id>",
+const status = await metriport.startBulkGetDocumentUrl(
+  "018a80c4-292a-7486-a1234-76yuhe23yu14",
   metadata
 );
 

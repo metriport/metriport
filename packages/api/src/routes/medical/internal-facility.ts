@@ -2,12 +2,19 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { requestLogger } from "../helpers/request-logger";
-import { facilityOboDetailsSchema } from "./schemas/facility";
+import { Facility, FacilityCreate } from "../../domain/medical/facility";
+import { verifyCxItVendorAccess } from "../../command/medical/facility/verify-access";
+import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
+import { createFacility } from "../../command/medical/facility/create-facility";
+import { updateFacility } from "../../command/medical/facility/update-facility";
+import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
+import { facilityInternalDetailsSchema } from "./schemas/facility";
 import { internalDtoFromModel } from "./dtos/facilityDTO";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler } from "../util";
-import { registerFacilityWithinHIEs } from "../../external/hie/register-facility";
-import { FacilityRegister } from "../../domain/medical/facility";
+import { createOrUpdateFacilityInCq } from "../../external/carequality/command/cq-directory/create-or-update-cq-facility";
+import { createOrUpdateFacilityInCw } from "../../external/commonwell/command/create-or-update-cw-facility";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 
 const router = Router();
 
@@ -15,7 +22,7 @@ const router = Router();
  *
  * PUT /internal/facility
  *
- * Creates a new facility and registers it within HIEs.
+ * Creates or updates a facility and registers it within HIEs if new.
  *
  * TODO: Search existing facility by NPI, cqOboOid, and cwOboOid (individually), and fail if it exists?
  *
@@ -26,33 +33,64 @@ router.put(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const facilityInput = facilityOboDetailsSchema.parse(req.body);
 
-    const facilityUpdate: FacilityRegister = {
-      id: facilityInput.id,
+    const facilityDetails = facilityInternalDetailsSchema.parse(req.body);
+    const facilityCreate: FacilityCreate = {
       cxId,
-      cqActive: facilityInput.cqActive,
-      cqType: facilityInput.cqType,
-      cqOboOid: facilityInput.cqOboOid,
-      cwActive: facilityInput.cwActive,
-      cwType: facilityInput.cwType,
-      cwOboOid: facilityInput.cwOboOid,
-      cwFacilityName: facilityInput.cwFacilityName,
       data: {
-        name: facilityInput.nameInMetriport,
-        npi: facilityInput.npi,
+        name: facilityDetails.nameInMetriport,
+        npi: facilityDetails.npi,
         address: {
-          addressLine1: facilityInput.addressLine1,
-          city: facilityInput.city,
-          state: facilityInput.state,
-          zip: facilityInput.zip,
-          country: facilityInput.country,
+          addressLine1: facilityDetails.addressLine1,
+          addressLine2: facilityDetails.addressLine2,
+          city: facilityDetails.city,
+          state: facilityDetails.state,
+          zip: facilityDetails.zip,
+          country: facilityDetails.country,
         },
       },
+      cqType: facilityDetails.cqType,
+      cwType: facilityDetails.cwType,
+      cqActive: facilityDetails.cqActive,
+      cwActive: facilityDetails.cwActive,
+      cqOboOid: facilityDetails.cqOboOid,
+      cwOboOid: facilityDetails.cwOboOid,
+      cqApproved: facilityDetails.cqApproved,
+      cwApproved: facilityDetails.cwApproved,
     };
-
-    const facility = await registerFacilityWithinHIEs(cxId, facilityUpdate);
-
+    let facility: Facility;
+    let facilityCurrentActive = false;
+    if (facilityDetails.id) {
+      const currentFacility = await getFacilityOrFail({ cxId, id: facilityDetails.id });
+      facilityCurrentActive = currentFacility.cqActive;
+      facility = await updateFacility({ id: facilityDetails.id, ...facilityCreate });
+    } else {
+      facility = await createFacility(facilityCreate);
+    }
+    const org = await getOrganizationOrFail({ cxId });
+    const syncInHie = await verifyCxItVendorAccess(cxId, false);
+    // TODO Move to external/hie https://github.com/metriport/metriport-internal/issues/1940
+    // CAREQUALITY
+    if (syncInHie && facility.cqApproved) {
+      createOrUpdateFacilityInCq({
+        cxId,
+        facility,
+        facilityCurrentActive,
+        cxOrgName: org.data.name,
+        cxOrgBizType: org.type,
+        cqOboOid: facilityDetails.cqOboOid,
+      }).catch(processAsyncError("cq.internal.facility"));
+    }
+    // COMMONWELL
+    if (syncInHie && facility.cwApproved) {
+      createOrUpdateFacilityInCw({
+        cxId,
+        facility,
+        cxOrgName: org.data.name,
+        cxOrgType: org.data.type,
+        cwOboOid: facilityDetails.cwOboOid,
+      }).catch(processAsyncError("cw.internal.facility"));
+    }
     return res.status(httpStatus.OK).json(internalDtoFromModel(facility));
   })
 );

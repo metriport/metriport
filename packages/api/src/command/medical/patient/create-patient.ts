@@ -4,6 +4,8 @@ import {
   PatientData,
   PatientDemoData,
 } from "@metriport/core/domain/patient";
+import { toFHIR } from "@metriport/core/external/fhir/patient/index";
+import { upsertPatientToFHIRServer } from "../../../external/fhir/patient/upsert-patient";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { PatientModel } from "../../../models/medical/patient";
@@ -73,6 +75,9 @@ export async function createPatient({
   if (addressWithCoordinates) patientCreate.data.address = addressWithCoordinates;
 
   const newPatient = await PatientModel.create(patientCreate);
+
+  const fhirPatient = toFHIR(newPatient);
+  await upsertPatientToFHIRServer(newPatient.cxId, fhirPatient);
 
   runInitialPatientDiscoveryAcrossHies({
     patient: newPatient.dataValues,

@@ -1,6 +1,6 @@
+import { normalizePhoneNumber, stripNonNumericChars, USState } from "@metriport/shared";
 import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
-import { USState } from "@metriport/core/domain/geographic-locations";
 import {
   ConsolidatedLinkDemographics,
   Patient,
@@ -16,7 +16,7 @@ import {
   LinkGenericName,
 } from "@metriport/core/domain/patient-demographics";
 import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/index";
-import { normalizePhoneNumber, stripNonNumericChars } from "@metriport/shared";
+import { emailSchema } from "@metriport/api-sdk/medical/models/demographics";
 import dayjs from "dayjs";
 import { ISO_DATE } from "../../shared/date";
 
@@ -176,7 +176,9 @@ export function patientToNormalizedCoreDemographics(patient: Patient): LinkDemog
   });
   const emails = (patient.data.contact ?? []).flatMap(c => {
     if (!c.email) return [];
-    return [normalizeEmail(c.email)];
+    const email = normalizeEmail(c.email);
+    if (!email) return [];
+    return [email];
   });
   const driversLicenses = (patient.data.personalIdentifiers ?? []).flatMap(p => {
     if (p.type !== "driversLicense") return [];
@@ -299,8 +301,13 @@ export function normalizeTelephone(telephone: string): string {
   return normalizePhoneNumber(telephone);
 }
 
-export function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
+export function normalizeEmail(email: string): string | undefined {
+  let normalEmail = email.trim().toLowerCase();
+  if (normalEmail.startsWith("mailto:")) {
+    normalEmail = normalEmail.slice(7);
+  }
+  const validEmail = emailSchema.safeParse(normalEmail);
+  return validEmail.success ? normalEmail : undefined;
 }
 
 export function normalizeAndStringifyDriversLicense({

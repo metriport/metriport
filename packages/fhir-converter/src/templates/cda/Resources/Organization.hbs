@@ -35,12 +35,20 @@
             	{{>DataType/Identifier.hbs id=this}},
             {{/each}}
         ],
-        "name":"{{org.name._}}",
+        
+        "name": 
+          {{#if org.name._}} 
+            "{{org.name._}}" 
+          {{else if org.representedOrganization.name._}} 
+            "{{org.representedOrganization.name._}}"  
+          {{else}}
+            "unknown"
+          {{/if}},
         "address":
         [
         	{{#each (toArray org.addr)}}
-        		{{>DataType/Address.hbs addr=this}},
-            {{/each}}
+        		{{>DataType/Address.hbs addr=this isOrg=true}},
+          {{/each}}
         ],
         "telecom":
         [

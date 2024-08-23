@@ -7,7 +7,11 @@ import { SamlCertsAndKeys } from "../../../saml/security/types";
 import { namespaces, expiresIn } from "../../../constants";
 import { ORGANIZATION_NAME_DEFAULT as metriportOrganization, replyTo } from "../../../../shared";
 import { wrapIdInUrnUuid, wrapIdInUrnOid } from "../../../../../../util/urn";
-import { getHomeCommunityId, getDocumentUniqueIdFunctionByGateway } from "../../../gateways";
+import {
+  getHomeCommunityId,
+  getDocumentUniqueIdFunctionByGateway,
+  doesGatewayUseSha1,
+} from "../../../gateways";
 
 const action = "urn:ihe:iti:2007:CrossGatewayRetrieve";
 
@@ -99,7 +103,8 @@ export function createAndSignDRRequest(
   samlCertsAndKeys: SamlCertsAndKeys
 ): string {
   const xmlString = createITI39SoapEnvelope({ bodyData, publicCert: samlCertsAndKeys.publicCert });
-  const fullySignedSaml = signFullSaml({ xmlString, samlCertsAndKeys });
+  const useSha1 = doesGatewayUseSha1(bodyData.gateway.homeCommunityId);
+  const fullySignedSaml = signFullSaml({ xmlString, samlCertsAndKeys, useSha1 });
   return fullySignedSaml;
 }
 

@@ -28,6 +28,7 @@ import {
   isCommonwellEnabled,
   isCWEnabledForCx,
   isEnhancedCoverageEnabledForCx,
+  isDemoAugEnabledForCx,
 } from "../aws/app-config";
 import { isFacilityEnabledToQueryCW } from "../commonwell/shared";
 import { checkLinkDemographicsAcrossHies } from "../hie/check-patient-link-demographics";
@@ -119,6 +120,9 @@ export async function create({
     log,
   });
 
+  const demoAugEnabled = await isDemoAugEnabledForCx(patient.cxId);
+  const cxRerunPdOnNewDemographics = demoAugEnabled || rerunPdOnNewDemographics;
+
   if (cwCreateEnabled) {
     const requestId = inputRequestId ?? uuidv7();
     const startedAt = new Date();
@@ -129,7 +133,7 @@ export async function create({
         requestId,
         facilityId,
         startedAt,
-        rerunPdOnNewDemographics,
+        rerunPdOnNewDemographics: cxRerunPdOnNewDemographics,
       },
     });
 
@@ -137,7 +141,7 @@ export async function create({
       patient: createAugmentedPatient(updatedPatient),
       facilityId,
       getOrgIdExcludeList,
-      rerunPdOnNewDemographics,
+      rerunPdOnNewDemographics: cxRerunPdOnNewDemographics,
       requestId,
       startedAt,
       debug,
@@ -287,6 +291,9 @@ export async function update({
     log,
   });
 
+  const demoAugEnabled = await isDemoAugEnabledForCx(patient.cxId);
+  const cxRerunPdOnNewDemographics = demoAugEnabled || rerunPdOnNewDemographics;
+
   if (cwUpdateEnabled) {
     const requestId = inputRequestId ?? uuidv7();
     const startedAt = new Date();
@@ -297,7 +304,7 @@ export async function update({
         requestId,
         facilityId,
         startedAt,
-        rerunPdOnNewDemographics,
+        rerunPdOnNewDemographics: cxRerunPdOnNewDemographics,
       },
     });
 
@@ -305,7 +312,7 @@ export async function update({
       patient: createAugmentedPatient(updatedPatient),
       facilityId,
       getOrgIdExcludeList,
-      rerunPdOnNewDemographics,
+      rerunPdOnNewDemographics: cxRerunPdOnNewDemographics,
       requestId,
       startedAt,
       debug,
@@ -449,16 +456,17 @@ export async function validateCWEnabled({
   const { cxId } = patient;
   const isSandbox = Config.isSandbox();
 
+  if (!isCommonwellEnabledForPatient(patient)) {
+    log(`CW disabled for patient, skipping...`);
+    return false;
+  }
+
   if (forceCW || isSandbox) {
     log(`CW forced, proceeding...`);
     return true;
   }
 
   try {
-    if (!isCommonwellEnabledForPatient(patient)) {
-      log(`CW disabled for patient, skipping...`);
-      return false;
-    }
     const [isCwEnabledGlobally, isCwEnabledForCx] = await Promise.all([
       isCommonwellEnabled(),
       isCWEnabledForCx(cxId),
@@ -627,9 +635,10 @@ export async function queryDocsIfScheduled({
 }): Promise<void> {
   const patient = await getPatientOrFail(patientIds);
 
-  const scheduledDocQueryRequestId = getCWData(
-    patient.data.externalData
-  )?.scheduledDocQueryRequestId;
+  const cwData = getCWData(patient.data.externalData);
+  const scheduledDocQueryRequestId = cwData?.scheduledDocQueryRequestId;
+  const scheduledDocQueryRequestTriggerConsolidated =
+    cwData?.scheduledDocQueryRequestTriggerConsolidated;
   if (!scheduledDocQueryRequestId) {
     return;
   }
@@ -650,6 +659,7 @@ export async function queryDocsIfScheduled({
     queryAndProcessDocuments({
       patient,
       requestId: scheduledDocQueryRequestId,
+      triggerConsolidated: scheduledDocQueryRequestTriggerConsolidated,
       getOrgIdExcludeList,
     }).catch(processAsyncError("CW queryAndProcessDocuments"));
   }

@@ -34,6 +34,14 @@ export const config: EnvConfigNonSandbox = {
   },
   loadBalancerDnsName: "<your-load-balancer-dns-name>",
   logArn: "<your-log-arn>",
+  propelAuth: {
+    authUrl: "url-to-propel-auth",
+    publicKey: "-----BEGIN PUBLIC KEY-----\nEXAMPLE\n-----END PUBLIC KEY-----",
+    secrets: {
+      PROPELAUTH_API_KEY: "key-name",
+    },
+  },
+  dashUrl: "https://url-of-your-dashboard.com",
   fhirToMedicalLambda: {
     nodeRuntimeArn: "arn:aws:lambda:<region>::runtime:<id>",
   },
@@ -134,6 +142,7 @@ export const config: EnvConfigNonSandbox = {
   medicalDocumentsBucketName: "test-bucket",
   medicalDocumentsUploadBucketName: "test-upload-bucket",
   iheResponsesBucketName: "test-ihe-responses-bucket",
+  iheParsedResponsesBucketName: "test-ihe-parsed-responses-bucket",
   iheRequestsBucketName: "test-ihe-requests-bucket",
   engineeringCxId: "12345678-1234-1234-1234-123456789012",
 };

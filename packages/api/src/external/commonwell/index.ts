@@ -1,14 +1,10 @@
 import * as link from "./link";
-import * as organization from "./organization";
+import * as organization from "./command/create-or-update-cw-organization";
 import * as patient from "./patient";
 
 const cwCommands = {
   organization: {
-    get: organization.get,
-    create: organization.create,
-    update: organization.update,
-    initCQOrgIncludeList: organization.initCQOrgIncludeList,
-    organizationToCommonwell: organization.organizationToCommonwell,
+    createOrUpdate: organization.createOrUpdateCWOrganization,
   },
   patient: {
     create: patient.create,

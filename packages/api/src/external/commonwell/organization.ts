@@ -1,12 +1,13 @@
-import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
+import { errorToString, USState } from "@metriport/shared";
+import NotFoundError from "@metriport/core/util/error/not-found";
+import { Organization as CWSdkOrganization } from "@metriport/commonwell-sdk";
 import { OID_PREFIX } from "@metriport/core/domain/oid";
-import { Organization } from "@metriport/core/domain/organization";
+import { Organization, OrgType } from "@metriport/core/domain/organization";
 import { getOrgsByPrio } from "@metriport/core/external/commonwell/cq-bridge/get-orgs";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { errorToString } from "@metriport/shared/common/error";
 import { Config, getEnvVarOrFail } from "../../shared/config";
-import { isCWEnabledForCx, isEnhancedCoverageEnabledForCx } from "../aws/app-config";
+import { isEnhancedCoverageEnabledForCx } from "../aws/app-config";
 import {
   getCertificate,
   makeCommonWellAPI,
@@ -23,15 +24,31 @@ const technicalContact = {
   phone: getEnvVarOrFail("CW_TECHNICAL_CONTACT_PHONE"),
 };
 
-type CWOrganizationWithOrgId = Omit<CWOrganization, "organizationId"> &
-  Required<Pick<CWOrganization, "organizationId">>;
+export type CWOrganization = Omit<
+  Organization,
+  | "id"
+  | "cxId"
+  | "type"
+  | "organizationNumber"
+  | "eTag"
+  | "createdAt"
+  | "updatedAt"
+  | "cwActive"
+  | "cqActive"
+  | "cwApproved"
+  | "cqApproved"
+> & { active: boolean };
+
+type CWSdkOrganizationWithOrgId = Omit<CWSdkOrganization, "organizationId"> &
+  Required<Pick<CWSdkOrganization, "organizationId">>;
+type CWSdkOrganizationLocation = Pick<CWSdkOrganization, "locations">["locations"][number];
 
 export async function organizationToCommonwell(
-  org: Omit<Organization, "type" | "eTag">,
+  org: CWOrganization,
   isObo = false
-): Promise<CWOrganizationWithOrgId> {
+): Promise<CWSdkOrganizationWithOrgId> {
   const cwId = OID_PREFIX.concat(org.oid);
-  const cwOrg: CWOrganizationWithOrgId = {
+  const cwOrg: CWSdkOrganizationWithOrgId = {
     name: org.data.name,
     type: org.data.type,
     locations: [
@@ -53,10 +70,9 @@ export async function organizationToCommonwell(
     displayName: org.data.name,
     memberName: Config.getCWMemberOrgName(),
     securityTokenKeyType: "BearerKey",
-    isActive: true,
+    isActive: org.active,
     technicalContacts: [technicalContact],
   };
-  // if this org isn't OBO, then we need to provide query responder details
   if (!isObo) {
     cwOrg.authorizationInformation = {
       authorizationServerEndpoint: Config.getGatewayAuthorizationServerEndpoint(),
@@ -76,22 +92,24 @@ export async function organizationToCommonwell(
   return cwOrg;
 }
 
-export async function get(orgOid: string): Promise<CWOrganization | undefined> {
-  const { log, debug } = out(`CW get org oid ${orgOid}`);
-  const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
+export async function get(orgOid: string): Promise<CWSdkOrganization | undefined> {
+  const { log, debug } = out(`CW get (Organization) - CW Org OID ${orgOid}`);
   const cwId = OID_PREFIX.concat(orgOid);
+
+  const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   try {
     const resp = await commonWell.getOneOrg(metriportQueryMeta, cwId);
-    debug(`resp: `, JSON.stringify(resp));
+    debug(`resp getOneOrg: `, JSON.stringify(resp));
     return resp;
   } catch (error) {
-    const msg = `Failure getting Org @ CW`;
-    log(msg, error);
+    const msg = `Failure while getting Org @ CW`;
+    const cwRef = commonWell.lastReferenceHeader;
+    log(`${msg}. Org OID: ${orgOid}. Cause: ${errorToString(error)}. CW Reference: ${cwRef}`);
     capture.error(msg, {
       extra: {
         orgOid,
         cwId,
-        cwReference: commonWell.lastReferenceHeader,
+        cwReference: cwRef,
         context: `cw.org.get`,
         error,
       },
@@ -100,110 +118,124 @@ export async function get(orgOid: string): Promise<CWOrganization | undefined> {
   }
 }
 
-export async function create(
-  org: Omit<Organization, "type" | "eTag">,
-  isObo = false
-): Promise<void> {
-  const { log, debug } = out(`CW create - M oid ${org.oid}, id ${org.id}`);
+export async function create(cxId: string, org: CWOrganization, isObo = false): Promise<void> {
+  const { log, debug } = out(`CW create (Organization) - CW Org OID ${org.oid}`);
+  const commonwellOrg = await organizationToCommonwell(org, isObo);
 
-  if (!(await isCWEnabledForCx(org.cxId))) {
-    log(`CW disabled for cx ${org.cxId}, skipping CW org creation`);
-    return undefined;
-  }
-
-  const cwOrg = await organizationToCommonwell(org, isObo);
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   try {
-    const respCreate = await commonWell.createOrg(metriportQueryMeta, cwOrg);
-    debug(`resp respCreate: `, JSON.stringify(respCreate));
+    const respCreate = await commonWell.createOrg(metriportQueryMeta, commonwellOrg);
+    debug(`resp createOrg: `, JSON.stringify(respCreate));
     const respAddCert = await commonWell.addCertificateToOrg(
       metriportQueryMeta,
       getCertificate(),
       org.oid
     );
-    debug(`resp respAddCert: `, JSON.stringify(respAddCert));
+    debug(`resp addCertificateToOrg: `, JSON.stringify(respAddCert));
 
-    if (await isEnhancedCoverageEnabledForCx(org.cxId)) {
+    if (await isEnhancedCoverageEnabledForCx(cxId)) {
       // update the CQ bridge include list
       await initCQOrgIncludeList(org.oid);
     }
   } catch (error) {
-    const msg = `Failure creating Org @ CW`;
-    log(msg, error);
-    capture.message(msg, {
+    const msg = `Failure while creating org @ CW`;
+    const cwRef = commonWell.lastReferenceHeader;
+    log(`${msg}. Org OID: ${org.oid}. Cause: ${errorToString(error)}. CW Reference: ${cwRef}`);
+    capture.error(msg, {
       extra: {
-        orgId: org.id,
-        orgOID: org.oid,
-        cwReference: commonWell.lastReferenceHeader,
+        orgOid: org.oid,
+        cwReference: cwRef,
         context: `cw.org.create`,
-        payload: cwOrg,
+        commonwellOrg,
+        error,
       },
-      level: "error",
     });
     throw error;
   }
 }
 
-export async function update(
-  org: Omit<Organization, "type" | "eTag">,
-  isObo = false
-): Promise<void> {
-  const { log, debug } = out(`CW update - M oid ${org.oid}, id ${org.id}`);
+export async function update(cxId: string, org: CWOrganization, isObo = false): Promise<void> {
+  const { log, debug } = out(`CW update (Organization) - CW Org OID ${org.oid}`);
+  const commonwellOrg = await organizationToCommonwell(org, isObo);
 
-  if (!(await isCWEnabledForCx(org.cxId))) {
-    log(`CW disabled for cx ${org.cxId}, skipping...`);
-    return undefined;
-  }
-
-  const cwOrg = await organizationToCommonwell(org, isObo);
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   try {
-    const respUpdate = await commonWell.updateOrg(metriportQueryMeta, cwOrg, cwOrg.organizationId);
-    debug(`resp respUpdate: `, JSON.stringify(respUpdate));
-
+    const resp = await commonWell.updateOrg(
+      metriportQueryMeta,
+      commonwellOrg,
+      commonwellOrg.organizationId
+    );
+    debug(`resp updateOrg: `, JSON.stringify(resp));
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
+    const cwRef = commonWell.lastReferenceHeader;
     const extra = {
-      orgId: org.id,
-      orgOID: org.oid,
-      cwReference: commonWell.lastReferenceHeader,
+      orgOid: org.oid,
+      cwReference: cwRef,
       context: `cw.org.update`,
+      commonwellOrg,
       error,
     };
-    // Try to create the org if it doesn't exist
     if (error.response?.status === 404) {
-      capture.message("Got 404 when updating Org @ CW, creating it", { extra });
-      return create(org);
+      capture.message("Got 404 while updating Org @ CW, creating it", { extra });
+      await create(cxId, org, isObo);
     }
-    // General error handling
-    const msg = `Failure updating Org @ CW`;
-    log(msg, error);
-    capture.message(msg, { extra: { ...extra, payload: cwOrg }, level: "error" });
+    const msg = `Failure while updating org @ CW`;
+    log(`${msg}. Org OID: ${org.oid}. Cause: ${errorToString(error)}. CW Reference: ${cwRef}`);
+    capture.error(msg, { extra });
     throw error;
   }
 }
 
-export async function initCQOrgIncludeList(orgOID: string): Promise<void> {
-  const { log } = out(`initCQOrgIncludeList - orgOID ${orgOID}`);
+export async function initCQOrgIncludeList(orgOid: string): Promise<void> {
+  const { log } = out(`CW initCQOrgIncludeList - CW Org OID ${orgOid}`);
   try {
     const managementApi = makeCommonWellManagementAPI();
     if (!managementApi) {
-      log(`Not linking org ${orgOID} to CQ Bridge b/c no managementAPI is available`);
+      log(`Not linking org ${orgOid} to CQ Bridge b/c no managementAPI is available`);
       return;
     }
     const highPrioOrgs = getOrgsByPrio().high;
     const cqOrgIds = highPrioOrgs.map(o => o.id);
     const cqOrgIdsLimited =
       cqOrgIds.length > MAX_HIGH_PRIO_ORGS ? cqOrgIds.slice(0, MAX_HIGH_PRIO_ORGS) : cqOrgIds;
-    log(`Updating CQ include list for org ${orgOID} with ${cqOrgIdsLimited.length} high prio orgs`);
-    await managementApi.updateIncludeList({ oid: orgOID, careQualityOrgIds: cqOrgIdsLimited });
+    log(`Updating CQ include list for org ${orgOid} with ${cqOrgIdsLimited.length} high prio orgs`);
+    await managementApi.updateIncludeList({ oid: orgOid, careQualityOrgIds: cqOrgIdsLimited });
   } catch (error) {
-    const extra = { orgOID, context: `initCQOrgIncludeList` };
     const msg = `Error while updating CQ include list`;
-    log(`${msg}. Cause: ${errorToString(error)}`, extra);
-    capture.message(msg, {
-      extra: { ...extra, error },
-      level: "error",
+    log(`${msg}. Cause: ${errorToString(error)}`);
+    capture.error(msg, {
+      extra: {
+        orgOid,
+        context: `cw.org.initCQOrgIncludeList`,
+        error,
+      },
     });
   }
+}
+
+export function parseCWEntry(org: CWSdkOrganization): CWOrganization {
+  const location = org.locations[0] as CWSdkOrganizationLocation;
+  return {
+    data: {
+      name: org.name,
+      location: {
+        addressLine1: location.address1,
+        addressLine2: location.address2 ? location.address2 : undefined,
+        city: location.city,
+        state: location.state as USState,
+        zip: location.postalCode,
+        country: location.country,
+      },
+      type: org.type as OrgType,
+    },
+    oid: org.organizationId.replace(OID_PREFIX, ""),
+    active: org.isActive,
+  };
+}
+
+export async function getParsedOrgOrFail(oid: string): Promise<CWOrganization> {
+  const resp = await get(oid);
+  if (!resp) throw new NotFoundError("Organization not found");
+  return parseCWEntry(resp);
 }

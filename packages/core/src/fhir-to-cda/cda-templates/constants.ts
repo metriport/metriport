@@ -14,7 +14,6 @@ export const hl7ActCode = "2.16.840.1.113883.5.4";
 export const providerTaxonomy = "2.16.840.1.113883.6.101";
 export const vaccineAdministeredCodeSet = "2.16.840.1.113883.12.292";
 export const icd10SystemCode = "2.16.840.1.113883.6.90";
-export const hl7actCode = "2.16.840.1.113883.5.4";
 export const extensionValue2014 = "2014-06-09";
 export const extensionValue2015 = "2015-08-01";
 export const loincCodeSystem = "2.16.840.1.113883.6.1";
@@ -26,15 +25,18 @@ export const NOT_SPECIFIED = "Not Specified";
 
 // Codes taken from: https://www.hl7.org/ccdasearch/
 export const oids = {
+  assessmentAndPlanSection: "2.16.840.1.113883.10.20.22.2.9",
   medicationsSection: "2.16.840.1.113883.10.20.22.2.1.1",
   mentalStatusSection: "2.16.840.1.113883.10.20.22.2.56",
   problemsSection: "2.16.840.1.113883.10.20.22.2.5.1",
+  proceduresSection: "2.16.840.1.113883.10.20.22.2.7",
   resultsSection: "2.16.840.1.113883.10.20.22.2.3.1",
   socialHistorySection: "2.16.840.1.113883.10.20.22.2.17",
   encountersSection: "2.16.840.1.113883.10.20.22.2.22",
   immunizationsSection: "2.16.840.1.113883.10.20.22.2.2.1",
   familyHistorySection: "2.16.840.1.113883.10.20.22.2.15",
   allergiesSection: "2.16.840.1.113883.10.20.22.2.6.1",
+  notesSection: "2.16.840.1.113883.10.20.22.2.65",
   problemConcernAct: "2.16.840.1.113883.10.20.22.4.3",
   socialHistoryObs: "2.16.840.1.113883.10.20.22.4.38",
   vitalSignsObs: "2.16.840.1.113883.10.20.22.4.27",
@@ -56,6 +58,8 @@ export const oids = {
   immunizationMedicationInformation: "2.16.840.1.113883.10.20.22.4.54",
   serviceDeliveryLocation: "2.16.840.1.113883.10.20.22.4.32",
   vitalSignsOrganizer: "2.16.840.1.113883.10.20.22.4.26",
+  noteActivity: "2.16.840.1.113883.10.20.22.4.202",
+  procedureActivity: "2.16.840.1.113883.10.20.22.4.14",
 };
 
 export const mentalHealthSurveyCodes = ["44249-1"];

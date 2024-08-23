@@ -27,7 +27,7 @@ import {
 
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { getCQData } from "../patient";
-import { getOutboundDocRetrievalSuccessFailureCount } from "../../hie/get-counts-analytics";
+import { getOutboundDocRetrievalSuccessFailureCount } from "../../hie/carequality-analytics";
 
 export async function processOutboundDocumentRetrievalResps({
   requestId,
@@ -57,7 +57,6 @@ export async function processOutboundDocumentRetrievalResps({
         hie: MedicalDataSource.CAREQUALITY,
         successCount,
         failureCount,
-        documentCount: successDocsRetrievedCount,
         duration,
       },
     });

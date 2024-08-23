@@ -1,6 +1,7 @@
 import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as iam from "aws-cdk-lib/aws-iam";
+import * as glue from "aws-cdk-lib/aws-glue";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
@@ -24,11 +25,14 @@ interface IHEGatewayV2LambdasNestedStackProps extends NestedStackProps {
   envType: EnvType;
   sentryDsn: string | undefined;
   iheResponsesBucketName: string;
+  iheParsedResponsesBucketName: string;
 }
 
 export class IHEGatewayV2LambdasNestedStack extends NestedStack {
   constructor(scope: Construct, id: string, props: IHEGatewayV2LambdasNestedStackProps) {
     super(scope, id, props);
+
+    this.terminationProtection = true;
 
     const iheResponsesBucket = new s3.Bucket(this, "IHEResponsesBucket", {
       bucketName: props.iheResponsesBucketName,
@@ -37,9 +41,19 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       versioned: true,
     });
 
+    const iheParsedResponsesBucket = new s3.Bucket(this, "iheParsedResponsesBucket", {
+      bucketName: props.iheParsedResponsesBucketName,
+      publicReadAccess: false,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      versioned: true,
+    });
+
+    this.createParsedReponseTables(iheParsedResponsesBucket);
+
     const patientDiscoveryLambda = this.setupIHEGatewayV2PatientDiscoveryLambda(
       props,
-      iheResponsesBucket
+      iheResponsesBucket,
+      iheParsedResponsesBucket
     );
     const documentQueryLambda = this.setupIHEGatewayV2DocumentQueryLambda(
       props,
@@ -54,6 +68,44 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     patientDiscoveryLambda.grantInvoke(props.apiTaskRole);
     documentQueryLambda.grantInvoke(props.apiTaskRole);
     documentRetrievalLambda.grantInvoke(props.apiTaskRole);
+  }
+
+  private createParsedReponseTables(iheParsedResponsesBucket: s3.Bucket) {
+    new glue.CfnTable(this, "iheParsedResponsesDebugTable", {
+      catalogId: this.account,
+      databaseName: "default",
+      tableInput: {
+        description: "Table used for debugging IHE parsed responses",
+        name: "ihe_parsed_respones_debug",
+        partitionKeys: [
+          { name: "cxid", type: "string" },
+          { name: "patientid", type: "string" },
+          { name: "stage", type: "string" },
+          { name: "requestid", type: "string" },
+        ],
+        storageDescriptor: {
+          columns: [
+            { name: "id", type: "string" },
+            { name: "timestamp", type: "string" },
+            { name: "requesttimestamp", type: "string" },
+            { name: "responsetimestamp", type: "string" },
+            { name: "gateway", type: "struct<url:string,oid:string,id:string>" },
+            { name: "patientmatch", type: "string" },
+            { name: "ihegatewayv2", type: "boolean" },
+            {
+              name: "operationoutcome",
+              type: "struct<resourcetype:string,id:string,issue:array<struct<severity:string,code:string,details:struct<text:string>>>>",
+            },
+          ],
+          compressed: false,
+          inputFormat: "org.apache.hadoop.mapred.TextInputFormat",
+          outputFormat: "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
+          location: `s3://${iheParsedResponsesBucket.bucketName}/`,
+          serdeInfo: { serializationLibrary: "org.openx.data.jsonserde.JsonSerDe" },
+        },
+        tableType: "EXTERNAL_TABLE",
+      },
+    });
   }
 
   private grantSecretsReadAccess(
@@ -84,7 +136,8 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       envType: EnvType;
       sentryDsn: string | undefined;
     },
-    iheResponsesBucket: s3.Bucket
+    iheResponsesBucket: s3.Bucket,
+    iheParsedResponsesBucket: s3.Bucket
   ): Lambda {
     const {
       lambdaLayers,
@@ -122,6 +175,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         IHE_RESPONSES_BUCKET_NAME: iheResponsesBucket.bucketName,
+        IHE_PARSED_RESPONSES_BUCKET_NAME: iheParsedResponsesBucket.bucketName,
       },
       layers: [lambdaLayers.shared],
       memory: 4096,
@@ -137,6 +191,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     ]);
 
     iheResponsesBucket.grantReadWrite(patientDiscoveryLambda);
+    iheParsedResponsesBucket.grantReadWrite(patientDiscoveryLambda);
     medicalDocumentsBucket.grantRead(patientDiscoveryLambda);
     cqTrustBundleBucket.grantRead(patientDiscoveryLambda);
     return patientDiscoveryLambda;

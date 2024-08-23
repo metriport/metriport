@@ -48,6 +48,7 @@ import { isFacilityEnabledToQueryCW } from "../../commonwell/shared";
 import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
+import { setDocQueryStartAt } from "../../hie/set-doc-query-start";
 import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
@@ -63,7 +64,7 @@ import {
   getFileName,
   getContentTypeOrUnknown,
 } from "./shared";
-import { getDocumentReferenceContentTypeCounts } from "../../hie/get-counts-analytics";
+import { getDocumentReferenceContentTypeCounts } from "../../hie/carequality-analytics";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
@@ -93,20 +94,24 @@ export async function queryAndProcessDocuments({
   patient: patientParam,
   facilityId,
   forceQuery = false,
+  forcePatientDiscovery = false,
   forceDownload,
   ignoreDocRefOnFHIRServer,
   ignoreFhirConversionAndUpsert,
   requestId,
   getOrgIdExcludeList,
+  triggerConsolidated = false,
 }: {
   patient: Patient;
   facilityId?: string | undefined;
   forceQuery?: boolean;
+  forcePatientDiscovery?: boolean;
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
   getOrgIdExcludeList: () => Promise<string[]>;
+  triggerConsolidated?: boolean;
 }): Promise<void> {
   const { id: patientId, cxId } = patientParam;
   const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
@@ -132,28 +137,31 @@ export async function queryAndProcessDocuments({
   if (!isCwQueryEnabled) return interrupt(`CW disabled for facility ${facilityId}`);
 
   try {
-    const initiator = await getCwInitiator(patientParam, facilityId);
-
-    await setDocQueryProgress({
-      patient: { id: patientId, cxId },
-      downloadProgress: { status: "processing" },
-      convertProgress: { status: "processing" },
-      requestId,
-      source: MedicalDataSource.COMMONWELL,
-    });
+    const [initiator] = await Promise.all([
+      getCwInitiator(patientParam, facilityId),
+      setDocQueryProgress({
+        patient: { id: patientId, cxId },
+        downloadProgress: { status: "processing" },
+        convertProgress: { status: "processing" },
+        requestId,
+        source: MedicalDataSource.COMMONWELL,
+        triggerConsolidated,
+      }),
+    ]);
 
     const patientCWData = getCWData(patientParam.data.externalData);
     const hasNoCWStatus = !patientCWData || !patientCWData.status;
     const isProcessing = patientCWData?.status === "processing";
 
-    if (hasNoCWStatus || isProcessing) {
+    if (hasNoCWStatus || isProcessing || forcePatientDiscovery) {
       await scheduleDocQuery({
         requestId,
         patient: { id: patientId, cxId },
         source: MedicalDataSource.COMMONWELL,
+        triggerConsolidated,
       });
 
-      if (hasNoCWStatus) {
+      if (forcePatientDiscovery && !isProcessing) {
         update({
           patient: patientParam,
           facilityId: initiator.facilityId,
@@ -166,6 +174,11 @@ export async function queryAndProcessDocuments({
     }
 
     const startedAt = new Date();
+    await setDocQueryStartAt({
+      patient: { id: patientId, cxId },
+      source: MedicalDataSource.COMMONWELL,
+      startedAt,
+    });
 
     const [patient, isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all([
       getPatientWithCWData(patientParam),

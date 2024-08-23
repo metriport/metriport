@@ -36,9 +36,12 @@ export class LambdasNestedStack extends NestedStack {
   readonly outboundPatientDiscoveryLambda: lambda.Function;
   readonly outboundDocumentQueryLambda: lambda.Function;
   readonly outboundDocumentRetrievalLambda: lambda.Function;
+  readonly fhirToBundleLambda: lambda.Function;
 
   constructor(scope: Construct, id: string, props: LambdasNestedStackProps) {
     super(scope, id, props);
+
+    this.terminationProtection = true;
 
     this.lambdaLayers = setupLambdasLayers(this);
 
@@ -81,7 +84,7 @@ export class LambdasNestedStack extends NestedStack {
       dbCluster: props.dbCluster,
       dbCredsSecret: props.dbCredsSecret,
       // TODO move this to a config
-      maxPollingDuration: Duration.minutes(5),
+      maxPollingDuration: Duration.minutes(2),
     });
 
     this.outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({
@@ -106,6 +109,16 @@ export class LambdasNestedStack extends NestedStack {
       dbCredsSecret: props.dbCredsSecret,
       // TODO move this to a config
       maxPollingDuration: Duration.minutes(15),
+    });
+
+    this.fhirToBundleLambda = this.setupFhirBundleLambda({
+      lambdaLayers: this.lambdaLayers,
+      vpc: props.vpc,
+      fhirServerUrl: props.config.fhirServerUrl,
+      bucket: props.medicalDocumentsBucket,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: props.alarmAction,
     });
   }
 
@@ -278,6 +291,7 @@ export class LambdasNestedStack extends NestedStack {
       entry: "ihe-outbound-patient-discovery",
       envType,
       envVars: {
+        // API_URL set on the api-stack after the OSS API is created
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
         MAX_POLLING_DURATION: this.normalizePollingDuration(maxPollingDuration),
@@ -322,6 +336,7 @@ export class LambdasNestedStack extends NestedStack {
       entry: "ihe-outbound-document-query",
       envType,
       envVars: {
+        // API_URL set on the api-stack after the OSS API is created
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
         MAX_POLLING_DURATION: this.normalizePollingDuration(maxPollingDuration),
@@ -366,6 +381,7 @@ export class LambdasNestedStack extends NestedStack {
       entry: "ihe-outbound-document-retrieval",
       envType,
       envVars: {
+        // API_URL set on the api-stack after the OSS API is created
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
         MAX_POLLING_DURATION: this.normalizePollingDuration(maxPollingDuration),
@@ -381,6 +397,50 @@ export class LambdasNestedStack extends NestedStack {
     dbCredsSecret.grantRead(outboundDocumentRetrievalLambda);
 
     return outboundDocumentRetrievalLambda;
+  }
+
+  private setupFhirBundleLambda({
+    lambdaLayers,
+    vpc,
+    fhirServerUrl,
+    bucket,
+    sentryDsn,
+    envType,
+    alarmAction,
+  }: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    fhirServerUrl: string;
+    bucket: s3.Bucket;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
+
+    const fhirToBundleLambda = createLambda({
+      stack: this,
+      name: "FhirToBundle",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      entry: "fhir-to-bundle",
+      envType,
+      envVars: {
+        // API_URL set on the api-stack after the OSS API is created
+        FHIR_SERVER_URL: fhirServerUrl,
+        BUCKET_NAME: bucket.bucketName,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 4096,
+      timeout: lambdaTimeout,
+      isEnableInsights: true,
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    bucket.grantReadWrite(fhirToBundleLambda);
+
+    return fhirToBundleLambda;
   }
 
   /**

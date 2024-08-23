@@ -48,7 +48,11 @@
                             {{/with}}
                         {{else}}
                           {{>References/Coverage/payor.hbs ID=(generateUUID (toJsonString payerEntry.act)) canBeUnknown=true  }},
+                          {{>References/Coverage/beneficiary.hbs ID=(generateUUID (toJsonString payerEntry.act)) canBeUnknown=true  }},
                         {{/if}}
+                    {{else}}
+                          {{>References/Coverage/payor.hbs ID=(generateUUID (toJsonString payerEntry.act)) canBeUnknown=true  }},
+                          {{>References/Coverage/beneficiary.hbs ID=(generateUUID (toJsonString payerEntry.act)) canBeUnknown=true  }},
                     {{/if}}
                 {{/each}}
             {{/each}}

@@ -1,17 +1,22 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
+import { MetriportMedicalApi, PatientCreate, PatientDTO, Address } from "@metriport/api-sdk";
 import {
-  MetriportMedicalApi,
-  PatientCreate,
-  USState,
-  PatientDTO,
-  Address,
-} from "@metriport/api-sdk";
+  normalizeExternalId,
+  normalizeEmail,
+  isEmailValid,
+  normalizePhoneNumber,
+  isPhoneValid,
+  normalizeDate,
+  normalizeGender,
+  normalizeZipCode,
+  normalizeState,
+  toTitleCase,
+} from "@metriport/shared";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { sleep } from "@metriport/core/util/sleep";
-import { GenderAtBirth } from "@metriport/core/domain/patient";
 import { Command } from "commander";
 import csv from "csv-parser";
 import dayjs from "dayjs";
@@ -49,9 +54,8 @@ const facilityId: string = ""; // eslint-disable-line @typescript-eslint/no-infe
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 const cxId = getEnvVarOrFail("CX_ID");
-const delayTime = dayjs.duration(30, "seconds").asMilliseconds(); // Let's keep this 10+ seconds while we're using IHE GW v1
+const delayTime = dayjs.duration(5, "seconds").asMilliseconds();
 const inputFileName = "bulk-insert-patients.csv";
-const ISO_DATE = "YYYY-MM-DD";
 const confirmationTime = dayjs.duration(10, "seconds");
 
 const getFileName = buildGetDirPathInside(`bulk-insert`);
@@ -101,12 +105,12 @@ async function loadData(
   outputFileName: string,
   dryRun: boolean
 ) {
-  console.log(
-    `Loaded ${results.length} patients from the CSV file to be inserted at org/cx ${orgName}`
-  );
+  const msg = `Loaded ${results.length} patients from the CSV file to be inserted at org/cx ${orgName}`;
+  console.log(msg);
   if (dryRun) {
     console.log("Dry run, not inserting patients.");
     console.log(`List of patients: ${JSON.stringify(results, null, 2)}`);
+    console.log(msg);
     console.log("Done.");
     return;
   }
@@ -117,41 +121,52 @@ async function loadData(
   for (const [i, patient] of results.entries()) {
     try {
       await sleep(delayTime);
-      const exitingPatient = await metriportAPI.matchPatient(patient);
+      const existingPatient = await metriportAPI.matchPatient(patient);
       let updatedPatient: PatientDTO;
-      if (exitingPatient) {
+      if (existingPatient) {
         console.log(
-          `Patient ${exitingPatient.firstName} ${exitingPatient.lastName} exists with Id ${exitingPatient.id}`
+          `Patient ${existingPatient.firstName} ${existingPatient.lastName} exists with Id ${existingPatient.id}`
         );
         const updatePatient = {
-          id: exitingPatient.id,
-          dob: exitingPatient.dob,
-          genderAtBirth: exitingPatient.genderAtBirth,
-          firstName: exitingPatient.firstName,
-          lastName: exitingPatient.lastName,
-          address: (Array.isArray(exitingPatient.address)
-            ? exitingPatient.address
-            : [exitingPatient.address]) as [Address, ...Address[]],
-          ...(exitingPatient.contact
+          id: existingPatient.id,
+          dob: existingPatient.dob,
+          genderAtBirth: existingPatient.genderAtBirth,
+          firstName: existingPatient.firstName,
+          lastName: existingPatient.lastName,
+          address: (Array.isArray(existingPatient.address)
+            ? existingPatient.address
+            : [existingPatient.address]) as [Address, ...Address[]],
+          ...(existingPatient.contact
             ? {
-                contact: Array.isArray(exitingPatient.contact)
-                  ? exitingPatient.contact
-                  : [exitingPatient.contact],
+                contact: Array.isArray(existingPatient.contact)
+                  ? existingPatient.contact
+                  : [existingPatient.contact],
               }
             : undefined),
-          ...(exitingPatient.personalIdentifiers
-            ? { personalIdentifiers: exitingPatient.personalIdentifiers }
+          ...(existingPatient.personalIdentifiers
+            ? { personalIdentifiers: existingPatient.personalIdentifiers }
             : undefined),
-          ...(exitingPatient.externalId ? { externalId: exitingPatient.externalId } : undefined),
+          ...(existingPatient.externalId ? { externalId: existingPatient.externalId } : undefined),
         };
-        updatedPatient = await metriportAPI.updatePatient(updatePatient, localFacilityId, true);
+        updatedPatient = await metriportAPI.updatePatient(updatePatient, localFacilityId, {
+          rerunPdOnNewDemographics: true,
+        });
       } else {
         console.log(`Patient ${patient.firstName} ${patient.lastName} does not exist`);
-        updatedPatient = await metriportAPI.createPatient(patient, localFacilityId, true);
+        updatedPatient = await metriportAPI.createPatient(patient, localFacilityId, {
+          rerunPdOnNewDemographics: true,
+        });
       }
       successfulCount++;
       console.log(i + 1, updatedPatient);
       storePatientId(updatedPatient.id, outputFileName);
+      const createdPatient = await metriportAPI.createPatient(patient, localFacilityId, {
+        rerunPdOnNewDemographics: true,
+      });
+      successfulCount++;
+      console.log(i + 1, createdPatient);
+      storePatientId(createdPatient.id, outputFileName);
+      if (i < results.length - 1) await sleep(delayTime);
     } catch (error) {
       errors.push({
         firstName: patient.firstName,
@@ -167,8 +182,13 @@ async function loadData(
 
 async function displayWarningAndConfirmation(results: unknown[], orgName: string, dryRun: boolean) {
   if (!dryRun) logNotDryRun();
-  console.log(`Inserting ${results.length} patients at org/cx ${orgName}`);
+  console.log(
+    `Inserting ${
+      results.length
+    } patients at org/cx ${orgName} in ${confirmationTime.asSeconds()} seconds...`
+  );
   await sleep(confirmationTime.asMilliseconds());
+  console.log(`running...`);
 }
 
 function initPatientIdRepository(fileName: string) {
@@ -183,46 +203,9 @@ function storePatientId(patientId: string, fileName: string) {
   fs.appendFileSync(fileName, patientId + "\n");
 }
 
-function toTitleCase(str: string): string {
-  return str
-    .toLowerCase()
-    .split(" ")
-    .map(s => s.charAt(0).toUpperCase() + s.substring(1))
-    .join(" ")
-    .trim();
-}
-
-function normalizeGender(gender: string | undefined): GenderAtBirth {
-  if (gender == undefined) throw new Error(`Missing gender`);
-  const lowerGender = gender.toLowerCase().trim();
-  if (lowerGender === "male" || lowerGender === "m") {
-    return "M";
-  } else if (lowerGender === "female" || lowerGender === "f") {
-    return "F";
-  } else if (lowerGender === "other" || lowerGender === "un" || lowerGender === "o") {
-    return "O";
-  } else if (lowerGender === "unknown" || lowerGender === "unk" || lowerGender === "u") {
-    return "U";
-  }
-  throw new Error(`Invalid gender ${gender}`);
-}
-
 function normalizeName(name: string | undefined, propName: string): string {
   if (name == undefined) throw new Error(`Missing ` + propName);
   return toTitleCase(name);
-}
-
-const phoneRegex = /^\+?1?\d{10}$/;
-
-function normalizePhone(phone: string | undefined): string | undefined {
-  if (phone == undefined) return undefined;
-  const trimmedPhone = phone.trim().replaceAll("-", "");
-  if (trimmedPhone.length === 0) return undefined;
-  if (trimmedPhone.match(phoneRegex)) {
-    // removes leading country code +1
-    return trimmedPhone.slice(-10);
-  }
-  throw new Error(`Invalid phone ${phone}`);
 }
 
 function normalizeAddressLine(addressLine: string | undefined, propName: string): string {
@@ -235,45 +218,27 @@ function normalizeCity(city: string | undefined): string {
   return toTitleCase(city);
 }
 
-function normalizeEmail(email: string | undefined): string | undefined {
+function normalizePhoneNumberUtils(phone: string | undefined): string | undefined {
+  if (phone == undefined) return undefined;
+  const normalPhone = normalizePhoneNumber(phone);
+  if (normalPhone.length === 0) return undefined;
+  if (!isPhoneValid(normalPhone)) throw new Error("Invalid Phone");
+  return normalPhone;
+}
+
+function normalizeEmailUtils(email: string | undefined): string | undefined {
   if (email == undefined) return undefined;
-  const trimmedEmail = email.trim();
-  if (trimmedEmail.length === 0) return undefined;
-  return trimmedEmail.toLowerCase();
+  const normalEmail = normalizeEmail(email);
+  if (normalEmail.length === 0) return undefined;
+  if (!isEmailValid(normalEmail)) throw new Error("Invalid Email");
+  return normalEmail;
 }
 
-function normalizeExternalId(id: string | undefined): string | undefined {
+function normalizeExternalIdUtils(id: string | undefined): string | undefined {
   if (id == undefined) return undefined;
-  const trimmedId = id.trim();
-  if (trimmedId.length === 0) return undefined;
-  return trimmedId;
-}
-
-function normalizeZip(zip: string | undefined): string {
-  if (zip == undefined) throw new Error(`Missing zip`);
-  return zip.trim();
-}
-
-function normalizeDate(date: string | undefined): string {
-  if (date == undefined) throw new Error(`Missing dob`);
-  const trimmedDate = date.trim();
-  const parsedDate = dayjs(trimmedDate, ISO_DATE, true);
-  if (!parsedDate.isValid()) {
-    throw new Error(`Invalid date ${date}`);
-  }
-  return parsedDate.format(ISO_DATE);
-}
-
-function normalizeState(state: string | undefined): USState {
-  if (state == undefined) throw new Error(`Missing state`);
-  if (Object.values(states).includes(USState[state as keyof typeof USState])) {
-    return USState[state as keyof typeof USState];
-  } else if (states[state]) {
-    return states[state];
-  } else if (state === "DC") {
-    return USState.DC;
-  }
-  throw new Error(`Invalid state ${state}`);
+  const normalId = normalizeExternalId(id);
+  if (normalId.length === 0) return undefined;
+  return normalId;
 }
 
 const mapCSVPatientToMetriportPatient = (csvPatient: {
@@ -302,111 +267,38 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
   id: string | undefined;
   externalId: string | undefined;
 }): PatientCreate | undefined => {
-  const phone1 = normalizePhone(csvPatient.phone ?? csvPatient.phone1);
-  const email1 = normalizeEmail(csvPatient.email ?? csvPatient.email1);
-  const phone2 = normalizePhone(csvPatient.phone2);
-  const email2 = normalizeEmail(csvPatient.email2);
+  const phone1 = normalizePhoneNumberUtils(csvPatient.phone ?? csvPatient.phone1);
+  const email1 = normalizeEmailUtils(csvPatient.email ?? csvPatient.email1);
+  const phone2 = normalizePhoneNumberUtils(csvPatient.phone2);
+  const email2 = normalizeEmailUtils(csvPatient.email2);
   const contact1 = phone1 || email1 ? { phone: phone1, email: email1 } : undefined;
   const contact2 = phone2 || email2 ? { phone: phone2, email: email2 } : undefined;
   const contact = [contact1, contact2].flatMap(c => c ?? []);
   const externalId = csvPatient.id
-    ? normalizeExternalId(csvPatient.id)
-    : normalizeExternalId(csvPatient.externalId) ?? undefined;
+    ? normalizeExternalIdUtils(csvPatient.id)
+    : normalizeExternalIdUtils(csvPatient.externalId) ?? undefined;
   return {
     externalId,
     firstName: normalizeName(csvPatient.firstname, "firstname"),
     lastName: normalizeName(csvPatient.lastname, "lastname"),
-    dob: normalizeDate(csvPatient.dob),
-    genderAtBirth: normalizeGender(csvPatient.gender),
-    address: [
-      {
-        addressLine1: normalizeAddressLine(
-          csvPatient.address1 ?? csvPatient.addressLine1,
-          "address1 | addressLine1"
-        ),
-        addressLine2: normalizeAddressLine(
-          csvPatient.address2 ?? csvPatient.addressLine2,
-          "address2 | addressLine2"
-        ),
-        city: normalizeCity(csvPatient.city),
-        state: normalizeState(csvPatient.state),
-        zip: normalizeZip(csvPatient.zip),
-        country: "USA",
-      },
-      ...(csvPatient.address2AddressLine1
-        ? [
-            {
-              addressLine1: normalizeAddressLine(
-                csvPatient.address2AddressLine1,
-                "address2AddressLine1"
-              ),
-              addressLine2: normalizeAddressLine(
-                csvPatient.address2AddressLine2,
-                "address2AddressLine2"
-              ),
-              city: normalizeCity(csvPatient.address2City),
-              state: normalizeState(csvPatient.address2State),
-              zip: normalizeZip(csvPatient.address2Zip),
-              country: "USA" as const,
-            },
-          ]
-        : []),
-    ],
+    dob: normalizeDate(csvPatient.dob ?? ""),
+    genderAtBirth: normalizeGender(csvPatient.gender ?? ""),
+    address: {
+      addressLine1: normalizeAddressLine(
+        csvPatient.address1 ?? csvPatient.addressLine1,
+        "address1 | addressLine1"
+      ),
+      addressLine2: normalizeAddressLine(
+        csvPatient.address2 ?? csvPatient.addressLine2,
+        "address2 | addressLine2"
+      ),
+      city: normalizeCity(csvPatient.city),
+      state: normalizeState(csvPatient.state ?? ""),
+      zip: normalizeZipCode(csvPatient.zip ?? ""),
+      country: "USA",
+    },
     contact,
   };
-};
-
-const states: { [k in string]: USState } = {
-  Arizona: USState.AZ,
-  Alabama: USState.AL,
-  Alaska: USState.AK,
-  Arkansas: USState.AR,
-  California: USState.CA,
-  Colorado: USState.CO,
-  Connecticut: USState.CT,
-  Delaware: USState.DE,
-  Florida: USState.FL,
-  Georgia: USState.GA,
-  Hawaii: USState.HI,
-  Idaho: USState.ID,
-  Illinois: USState.IL,
-  Indiana: USState.IN,
-  Iowa: USState.IA,
-  Kansas: USState.KS,
-  Kentucky: USState.KY,
-  Louisiana: USState.LA,
-  Maine: USState.ME,
-  Maryland: USState.MD,
-  Massachusetts: USState.MA,
-  Michigan: USState.MI,
-  Minnesota: USState.MN,
-  Mississippi: USState.MS,
-  Missouri: USState.MO,
-  Montana: USState.MT,
-  Nebraska: USState.NE,
-  Nevada: USState.NV,
-  "New Hampshire": USState.NH,
-  "New Jersey": USState.NJ,
-  "New Mexico": USState.NM,
-  "New York": USState.NY,
-  "North Carolina": USState.NC,
-  "North Dakota": USState.ND,
-  Ohio: USState.OH,
-  Oklahoma: USState.OK,
-  Oregon: USState.OR,
-  Pennsylvania: USState.PA,
-  "Rhode Island": USState.RI,
-  "South Carolina": USState.SC,
-  "South Dakota": USState.SD,
-  Tennessee: USState.TN,
-  Texas: USState.TX,
-  Utah: USState.UT,
-  Vermont: USState.VT,
-  Virginia: USState.VA,
-  Washington: USState.WA,
-  "West Virginia": USState.WV,
-  Wisconsin: USState.WI,
-  Wyoming: USState.WY,
 };
 
 main();

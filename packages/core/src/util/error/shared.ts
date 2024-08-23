@@ -1,4 +1,5 @@
 import { inspect } from "node:util";
+import { out } from "../log";
 import { capture } from "../notifications";
 
 /**
@@ -51,9 +52,11 @@ export function getErrorMessage(error: unknown) {
   return errorToString(error);
 }
 
-export function processAsyncError(msg: string, log = console.error) {
+export function processAsyncError(msg: string, log?: typeof console.log | undefined) {
+  if (!log) log = out().log;
   return (err: unknown) => {
-    log(`${msg}: ${getErrorMessage(err)}`);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    log!(`${msg}: ${getErrorMessage(err)}`);
     capture.error(err, { extra: { message: msg, err } });
   };
 }

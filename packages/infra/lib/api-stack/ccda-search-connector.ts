@@ -89,8 +89,7 @@ export function setup({
     lambdaLayers: [lambdaLayers.shared],
     envType,
     alarmSnsAction,
-    alarmMaxAgeOfOldestMessage: Duration.minutes(1),
-    alarmMaxAgeOfOldestMessageDlq: Duration.minutes(5),
+    alarmMaxAgeOfOldestMessage: Duration.minutes(2),
   });
 
   const dlq = queue.deadLetterQueue;

@@ -27,11 +27,15 @@ let parseString = require("xml2js").parseString;
 let Builder = require("xml2js").Builder;
 let dataHandler = require("../dataHandler/dataHandler");
 let minifyXML = require("minify-xml");
+const { XMLParser } = require("fast-xml-parser");
+
 
 const elementTime00010101Regex = new RegExp('<time value="00010101000000+0000"s*/>', "g");
 const elementTime00010101Replacement = "";
 const valueTime00010101Regex = new RegExp('value="00010101000000*"s*/>', "g");
 const valueTime00010101Replacement = 'nullFlavor="NI" />';
+
+const ampersandRegex = new RegExp('&(?!(?:#\\d+|#x[\\da-fA-F]+|amp|lt|gt|quot|apos);)', 'g');
 
 module.exports = class cda extends dataHandler {
   constructor() {
@@ -126,6 +130,8 @@ module.exports = class cda extends dataHandler {
     }
     res = res.replace(elementTime00010101Regex, elementTime00010101Replacement);
     res = res.replace(valueTime00010101Regex, valueTime00010101Replacement);
+    res = res.replace(ampersandRegex, "&amp;");
+
     return res;
   }
 
@@ -162,8 +168,29 @@ module.exports = class cda extends dataHandler {
           // if parsing throws an error on minified data, try on original
           parseString(data, parseOptions, (err, result) => {
             if (err) {
-              // if still throwing an error, give up
-              reject(err);
+              const parser = new XMLParser({
+                ignoreAttributes: false,
+                attributeNamePrefix: "",
+                textNodeName: "_",
+                alwaysCreateTextNode: true,
+                parseAttributeValue: false,
+                removeNSPrefix: false,
+                trimValues: true,
+                numberParseOptions: {
+                  hex: false,
+                  leadingZeros: false,
+                },
+              });
+
+              try {
+                result = parser.parse(data);
+                this.findAndReplaceAllReferencesWithTextValues(result);
+                result._originalData = data;
+                fulfill(result);
+              } catch (err) {
+                // if still throwing an error, give up
+                reject(err);
+              }
             }
             this.findAndReplaceAllReferencesWithTextValues(result);
             result._originalData = data;

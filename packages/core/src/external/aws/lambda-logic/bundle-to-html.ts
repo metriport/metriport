@@ -22,8 +22,14 @@ import {
 } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import { uniqWith } from "lodash";
-
-const ISO_DATE = "YYYY-MM-DD";
+import { Brief } from "./bundle-to-brief";
+import {
+  buildEncounterSections,
+  formatDateForDisplay,
+  ISO_DATE,
+  MISSING_DATE_KEY,
+  MISSING_DATE_TEXT,
+} from "./bundle-to-html-shared";
 
 const RX_NORM_CODE = "rxnorm";
 const NDC_CODE = "ndc";
@@ -35,7 +41,7 @@ const CPT_CODE = "cpt";
 const UNK_CODE = "UNK";
 const UNKNOWN_DISPLAY = "unknown";
 
-export const bundleToHtml = (fhirBundle: Bundle): string => {
+export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
   const {
     patient,
     practitioners,
@@ -228,11 +234,33 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
             margin-bottom: 10px
           }
 
+          .p-line {
+            white-space: pre-line;
+          }
+
+          .beta-flag {
+            position: absolute;
+            top: -15px;
+            right: 0px;
+            background-color: red;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            z-index: 1;
+          }
+
+          .brief-section-content {
+            position: relative;
+          }
+
         </style>
       </head>
 
       <body>
         ${createMRHeader(patient)}
+        ${createBrief(brief)}
         <div class="divider"></div>
         <div id="mr-sections">
           ${createAWESection(diagnosticReports, practitioners, aweVisits, organizations)}
@@ -262,12 +290,9 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
   `;
 
   return htmlPage;
-};
-
-function formatDateForDisplay(date?: string | undefined): string {
-  return date ? dayjs(date).format(ISO_DATE) : "";
 }
 
+// TODO: Use the version from "@metriport/core/external/fhir/shared/bundle.ts"
 function extractFhirTypesFromBundle(bundle: Bundle): {
   diagnosticReports: DiagnosticReport[];
   patient?: Patient | undefined;
@@ -403,7 +428,7 @@ function createMRHeader(patient: Patient) {
         <img src="https://raw.githubusercontent.com/metriport/metriport/develop/assets/logo-black.png" alt="Logo">
       </div>
       <h1 class="title">
-        Medical Record Summary (${dayjs().format(ISO_DATE)})
+        Medical Record Summary (${formatDateForDisplay(new Date())})
       </h1>
       <div class="header-tables">
         <div style="margin-right: 10px" class="header-table">
@@ -426,7 +451,7 @@ function createMRHeader(patient: Patient) {
             <table class="header-table-author">
               <tbody>
                 ${createHeaderTableRow("Name", "Metriport")}
-                ${createHeaderTableRow("Authored On", dayjs().format(ISO_DATE))}
+                ${createHeaderTableRow("Authored On", formatDateForDisplay(new Date()))}
               </tbody>
             </table>
           </div>
@@ -510,6 +535,35 @@ function createHeaderTableRow(label: string, value: string) {
   `;
 }
 
+export function createBrief(brief?: Brief): string {
+  if (!brief || !brief.content) return ``;
+  const { link, content } = brief;
+  const briefContents = `
+  <div class="brief-section-content">
+    <div class="beta-flag">BETA</div>
+    <table><tbody><tr><td>${content.replace(/\n/g, "<br/>")}</td></tr></tbody></table>
+    <div style="border: 2px solid #FFCC00; background-color: #FFF8E1; padding: 10px; border-radius: 5px; margin-top: 20px;">
+      <div style="display: flex; align-items: center;">
+        <div style="margin-right: 10px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C11.448 2 11 2.448 11 3V11C11 11.552 11.448 12 12 12C12.552 12 13 11.552 13 11V3C13 2.448 12.552 2 12 2ZM11 15C11 14.448 11.448 14 12 14C12.552 14 13 14.448 13 15V17C13 17.552 12.552 18 12 18C11.448 18 11 17.552 11 17V15Z" fill="#FFCC00"/>
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M22 20C22 21.1046 21.1046 22 20 22H4C2.89543 22 2 21.1046 2 20V4C2 2.89543 2.89543 2 4 2H20C21.1046 2 22 2.89543 22 4V20ZM20 4H4V20H20V4Z" fill="#FFCC00"/>
+          </svg>
+        </div>
+        <div>
+          <strong style="color: #FF6F00;">Warning:</strong>
+        </div>
+        <div style="margin-left: 10px;">
+          This Medical Record Brief was generated using AI technologies. The information contained within might contain errors. DO NOT use this as a single source of truth and verify this information with the data below.
+          Provide feedback about the AI-generated brief <a href="${link}" target="_blank">here</a>.
+        </div>
+      </div>
+    </div>
+  </div>
+  `;
+  return createSection("Brief (AI-generated)", briefContents);
+}
+
 type EncounterTypes =
   | "labs"
   | "progressNotes"
@@ -536,9 +590,9 @@ function createAWESection(
     return "";
   }
 
-  const encounterSections: EncounterSection = buildEncounterSections({}, diagnosticReports);
+  const encounterSections = buildEncounterSections({}, diagnosticReports);
 
-  const AWEreports = buildReports(
+  const aweReports = buildReports(
     encounterSections,
     mappedPractitioners,
     mappedOrganizations,
@@ -546,7 +600,7 @@ function createAWESection(
     true
   );
 
-  const hasAWEreports = AWEreports.length > 0;
+  const hasAweReports = aweReports.length > 0;
 
   return `
     <div id="awe" class="section">
@@ -556,8 +610,8 @@ function createAWESection(
       </div>
       <div class="section-content">
         ${
-          hasAWEreports
-            ? AWEreports
+          hasAweReports
+            ? aweReports
             : `<table><tbody><tr><td>No annual wellness exam info found</td></tr></tbody></table>`
         }
       </div>
@@ -578,7 +632,7 @@ function createDiagnosticReportsSection(
     return "";
   }
 
-  const encounterSections: EncounterSection = buildEncounterSections({}, diagnosticReports);
+  const encounterSections = buildEncounterSections({}, diagnosticReports);
 
   const nonAWEreports = buildReports(
     encounterSections,
@@ -606,68 +660,6 @@ function createDiagnosticReportsSection(
     </div>
   `;
 }
-function buildEncounterSections(
-  encounterSections: EncounterSection,
-  diagnosticReports: DiagnosticReport[]
-): EncounterSection {
-  for (const report of diagnosticReports) {
-    const time = report.effectiveDateTime ?? report.effectivePeriod?.start;
-    const formattedDate = dayjs(time).format(ISO_DATE) ?? "";
-
-    if (formattedDate) {
-      if (!encounterSections[formattedDate]) {
-        encounterSections[formattedDate] = {};
-      }
-
-      let diagnosticReportsType: EncounterTypes | undefined = "documentation";
-
-      if (report.category) {
-        for (const iterator of report.category) {
-          if (iterator.text?.toLowerCase() === "lab") {
-            diagnosticReportsType = "labs";
-          }
-        }
-      }
-
-      if (diagnosticReportsType) {
-        const reportDate = dayjs(time).format(ISO_DATE) ?? "";
-        let isReportDuplicate = false;
-
-        if (encounterSections[formattedDate]?.[diagnosticReportsType]) {
-          const isDuplicate = encounterSections[formattedDate]?.[diagnosticReportsType]?.find(
-            reportInside => {
-              const reportInsideTime =
-                reportInside.effectiveDateTime ?? reportInside.effectivePeriod?.start;
-              const reportInsideDate = dayjs(reportInsideTime).format(ISO_DATE) ?? "";
-              const isDuplicateDate = reportInsideDate === reportDate;
-
-              const hasSamePresentedForm = report.presentedForm?.some(pf =>
-                reportInside.presentedForm?.some(ripf => pf.data === ripf.data)
-              );
-
-              return isDuplicateDate && hasSamePresentedForm;
-            }
-          );
-
-          isReportDuplicate = !!isDuplicate;
-        }
-
-        if (!encounterSections?.[formattedDate]?.[diagnosticReportsType]) {
-          encounterSections[formattedDate] = {
-            ...encounterSections[formattedDate],
-            [diagnosticReportsType]: [],
-          };
-        }
-
-        if (!isReportDuplicate) {
-          encounterSections[formattedDate]?.[diagnosticReportsType]?.push(report);
-        }
-      }
-    }
-  }
-
-  return encounterSections;
-}
 
 function buildReports(
   encounterSections: EncounterSection,
@@ -682,22 +674,22 @@ function buildReports(
     Object.entries(docsWithNotes)
       // SORT BY ENCOUNTER DATE DESCENDING
       .sort(([keyA], [keyB]) => {
+        if (keyA === MISSING_DATE_KEY) return 1;
+        if (keyB === MISSING_DATE_KEY) return -1;
         return dayjs(keyA).isBefore(dayjs(keyB)) ? 1 : -1;
       })
       .filter(([key]) => {
         // FILTER FOR ENCOUNTERS WITH AWE DIAGNOSTIC REPORTS
-        const encounterDateFormatted = dayjs(key).format(ISO_DATE);
+        const encounterDateFormatted = key;
         const aweVisit = aweVisits.find(aweVisit => {
-          const aweVisitDate = aweVisit.onsetDateTime ?? "";
-          const aweVisitDateFormatted = dayjs(aweVisitDate).format(ISO_DATE);
-
+          const aweVisitDate = aweVisit.onsetDateTime;
+          const aweVisitDateFormatted = aweVisitDate;
           return aweVisitDateFormatted === encounterDateFormatted;
         });
 
         return onlyAWE ? aweVisit : !aweVisit;
       })
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      .filter(([key, value]) => {
+      .filter(([, value]) => {
         const documentation = value.documentation;
         const validDocumentation = documentation?.filter(doc => {
           const containsB64InAnyPresentedForm = doc.presentedForm?.some(form => {
@@ -726,7 +718,7 @@ function buildReports(
         <div id="report">
           <div class="header">
             <h3 class="title">Encounter</h3>
-            <span>Date: ${formatDateForDisplay(key) ?? ""}</span>
+            <span>Date: ${key === MISSING_DATE_KEY ? MISSING_DATE_TEXT : key}</span>
           </div>
           <div>
             ${
@@ -785,6 +777,8 @@ const REMOVE_FROM_NOTE = [
   "documented in this encounter",
   "xnoIndent",
   "Formatting of this note might be different from the original.",
+  "StartCited",
+  "EndCited",
 ];
 
 function cleanUpNote(note: string): string {
@@ -792,7 +786,11 @@ function cleanUpNote(note: string): string {
     .trim()
     .replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "")
     .replace(/<ID>.*?<\/ID>/g, "")
-    .replace(/<styleCode>.*?<\/styleCode>/g, "");
+    .replace(/<styleCode>.*?<\/styleCode>/g, "")
+    .replace(/<width>.*?<\/width>/g, "") // https://metriport.slack.com/archives/C0616FCPAKZ/p1722627448791109?thread_ts=1722612577.018299&cid=C0616FCPAKZ
+    .replace(/(<paragraph>|<content>)/g, '<p class="p-line">') // https://metriport.slack.com/archives/C0616FCPAKZ/p1722625692474229?thread_ts=1722612577.018299&cid=C0616FCPAKZ
+    .replace(/(<paragraph\s?\/>|<content\s?\/>)/g, "<p>&nbsp;</p>") // https://metriport.slack.com/archives/C0616FCPAKZ/p1722625692474229?thread_ts=1722612577.018299&cid=C0616FCPAKZ
+    .replace(/(<\/paragraph>|<\/content>)/g, "</p>"); // https://metriport.slack.com/archives/C0616FCPAKZ/p1722625692474229?thread_ts=1722612577.018299&cid=C0616FCPAKZ
 }
 
 function removeEncodedStrings(valueString: string): string {
@@ -814,7 +812,7 @@ function createWhatWasDocumentedFromDiagnosticReports(
           return cleanUpNote(decodeNote);
         }) ?? [];
 
-      const practitionerField = createPractionerField(doc, mappedPractitioners) || "";
+      const practitionerField = createPractitionerField(doc, mappedPractitioners) || "";
       const organizationField = createOrganiztionField(doc, mappedOrganizations) || "";
 
       const fields = [practitionerField, organizationField].filter(
@@ -822,7 +820,7 @@ function createWhatWasDocumentedFromDiagnosticReports(
       );
 
       return `
-      <div>
+      <div data-id="${doc.id}">
         ${fields.join("<br />")}
         ${
           notes.length > 0
@@ -842,7 +840,7 @@ function createWhatWasDocumentedFromDiagnosticReports(
   </div>`;
 }
 
-function createPractionerField(
+function createPractitionerField(
   diagnosticReport: DiagnosticReport,
   mappedPractitioners: Record<string, Practitioner>
 ) {
@@ -986,7 +984,7 @@ function createSectionInMedications(
           });
 
           return `
-            <tr>
+            <tr data-id"${medicationStatement.id}">
               <td>${medication?.code?.text ?? ""}</td>
               <td>${blacklistedInstruction ? "" : medicationStatement.dosage?.[0]?.text ?? ""}</td>
               <td>${medicationStatement.dosage?.[0]?.doseAndRate?.[0]?.doseQuantity?.value ?? ""} ${
@@ -1009,10 +1007,11 @@ function createSectionInMedications(
 }
 
 type RenderCondition = {
+  id: string | undefined;
   code: string | null;
   name: string;
-  firstSeen: string;
-  lastSeen: string;
+  firstSeen: string | undefined;
+  lastSeen: string | undefined;
   clinicalStatus: string;
 };
 
@@ -1036,6 +1035,14 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
 
     return aDate === bDate && aText === bText;
   })
+    .filter(condition => {
+      const snomedCode = condition.code?.coding?.find(coding =>
+        coding.system?.toLowerCase().includes(SNOMED_CODE)
+      )?.code;
+      const genericSnomedProblemCode = "55607006";
+      const blacklistCodes = [genericSnomedProblemCode];
+      return snomedCode && !blacklistCodes.includes(snomedCode);
+    })
     .reduce((acc, condition) => {
       const codeName = getSpecificCode(condition.code?.coding ?? [], [ICD_10_CODE, SNOMED_CODE]);
       const idc10Code = condition.code?.coding?.find(code =>
@@ -1047,19 +1054,20 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
         getValidCode(condition.code?.coding)[0]?.display ??
         condition.code?.text ??
         "";
-      const onsetDateTime = condition.onsetDateTime ?? "";
+      const onsetDateTime = condition.onsetDateTime;
       const clinicalStatus = getValidCode(condition.clinicalStatus?.coding)[0]?.display ?? "";
-      let onsetStartTime = condition.onsetPeriod?.start ?? "";
-      let onsetEndTime = condition.onsetPeriod?.end ?? "";
+      let onsetStartTime = condition.onsetPeriod?.start;
+      let onsetEndTime = condition.onsetPeriod?.end;
 
       if (!onsetStartTime && condition.id) {
-        onsetStartTime = conditionDateDict[condition.id]?.start ?? "";
+        onsetStartTime = conditionDateDict[condition.id]?.start;
       }
       if (!onsetEndTime && condition.id) {
-        onsetEndTime = conditionDateDict[condition.id]?.end ?? "";
+        onsetEndTime = conditionDateDict[condition.id]?.end;
       }
 
       const newCondition: RenderCondition = {
+        id: condition.id,
         code: codeName,
         name,
         firstSeen: onsetStartTime && onsetStartTime.length ? onsetStartTime : onsetDateTime,
@@ -1168,11 +1176,12 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
 }
 
 type RenderAllergy = {
+  id: string | undefined;
   name: string;
   manifestation: string;
   code: string | null;
-  firstSeen: string;
-  lastSeen: string;
+  firstSeen: string | undefined;
+  lastSeen: string | undefined;
   clinicalStatus: string;
 };
 
@@ -1198,12 +1207,13 @@ function createAllergySection(allergies: AllergyIntolerance[]) {
         ? allergy.onsetDateTime
         : allergy.recordedDate
         ? allergy.recordedDate
-        : "";
+        : undefined;
       const clinicalStatus = allergy.clinicalStatus?.coding?.[0]?.code ?? "";
       const onsetStartTime = allergy.onsetPeriod?.start;
       const onsetEndTime = allergy.onsetPeriod?.end;
 
       const newAllergy: RenderAllergy = {
+        id: allergy.id,
         code,
         name,
         manifestation,
@@ -1268,7 +1278,7 @@ function createAllergySection(allergies: AllergyIntolerance[]) {
           });
 
           return `
-            <tr>
+            <tr data-id="${allergy.id}">
               <td>${allergy.name}</td>
               <td>${blacklistManifestation ? "" : allergy.manifestation}</td>
               <td>${allergy.code}</td>
@@ -1626,13 +1636,18 @@ function createObservationsByDate(observations: Observation[]): string {
         ${tables.observations
           .filter(observation => {
             const observationDisplay = observation.code?.coding?.find(coding => {
-              if (coding.code !== UNK_CODE) {
+              if (coding.code !== UNK_CODE && coding.display !== UNKNOWN_DISPLAY) {
                 return coding.display;
               }
               return;
             });
 
-            const hasDisplayValue = observationDisplay?.display ?? observation.code?.text;
+            const observationCodeText =
+              observation.code?.text && observation.code?.text !== UNKNOWN_DISPLAY
+                ? observation.code?.text
+                : undefined;
+
+            const hasDisplayValue = observationDisplay?.display ?? observationCodeText;
 
             return !!hasDisplayValue;
           })
@@ -1651,7 +1666,7 @@ function createObservationsByDate(observations: Observation[]): string {
                 }`;
 
             const observationDisplay = observation.code?.coding?.find(coding => {
-              if (coding.code !== UNK_CODE) {
+              if (coding.code !== UNK_CODE && coding.display !== UNKNOWN_DISPLAY) {
                 return coding.display;
               }
               return;
@@ -1794,11 +1809,12 @@ function filterObservationsByDate(observations: Observation[]): FilteredObservat
 }
 
 function renderClassDisplay(encounter: Encounter) {
-  const isDisplayUndefined = encounter.class?.display === undefined;
+  const isDisplayIsNotValid =
+    encounter.class?.display === undefined || encounter.class?.display === "unknown";
 
-  if (encounter.class?.display && !isDisplayUndefined) {
+  if (encounter.class?.display && !isDisplayIsNotValid) {
     return encounter.class?.display;
-  } else if (encounter.class?.code && !isDisplayUndefined) {
+  } else if (encounter.class?.code && !isDisplayIsNotValid) {
     const extension = encounter.class?.extension?.find(coding => {
       return coding.valueCoding?.code === encounter.class?.code;
     });
