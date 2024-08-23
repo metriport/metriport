@@ -1,4 +1,4 @@
-export const snomedCodeTb = {
+export const snomedCodeTobacco = {
   coding: [
     {
       system: "http://snomed.info/sct",
@@ -8,7 +8,7 @@ export const snomedCodeTb = {
   ],
 };
 
-export const loincCodeTb = {
+export const loincCodeTobacco = {
   coding: [
     {
       system: "http://loinc.org",
@@ -18,7 +18,7 @@ export const loincCodeTb = {
   ],
 };
 
-export const valueConceptTb = {
+export const valueConceptTobacco = {
   coding: [
     {
       system: "http://snomed.info/sct",

@@ -1,5 +1,6 @@
 import { Resource } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
+import dayjs from "dayjs";
 
 const dateFormats = ["date-hm", "date"] as const;
 export type DateFormats = (typeof dateFormats)[number];
@@ -18,25 +19,17 @@ export function createCompositeKey(code: string, date: string | undefined): Comp
   };
 }
 
-export function getDateFromString(dateString: string, dateFormat?: DateFormats): string {
-  const date = new Date(dateString);
+export function getDateFromString(dateString: string, dateFormat?: "date" | "date-hm"): string {
+  const date = dayjs(dateString);
 
-  if (isNaN(date.getTime())) {
+  if (!date.isValid()) {
     throw new Error("Invalid date string");
   }
 
-  const year = date.getFullYear();
-  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(date.getUTCDate()).padStart(2, "0");
-  const hours = String(date.getUTCHours()).padStart(2, "0");
-  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
-
-  if (dateFormat === "date") {
-    return `${year}-${month}-${day}`;
-  } else if (dateFormat === "date-hm") {
-    return `${year}-${month}-${day}T${hours}:${minutes}:00.000Z`;
+  if (dateFormat === "date-hm") {
+    return date.utc().format("YYYY-MM-DDTHH:mm:00.000[Z]");
   } else {
-    return date.toLocaleDateString();
+    return date.format("YYYY-MM-DD");
   }
 }
 

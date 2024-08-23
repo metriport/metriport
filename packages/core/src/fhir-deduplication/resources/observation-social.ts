@@ -1,10 +1,7 @@
 import { Observation } from "@medplum/fhirtypes";
-import {
-  combineResources,
-  fillMaps,
-  getDateFromString,
-  pickMostDescriptiveStatus,
-} from "../shared";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import { combineResources, fillMaps, pickMostDescriptiveStatus } from "../shared";
 import {
   extractCodes,
   extractValueFromObservation,
@@ -12,6 +9,8 @@ import {
   statusRanking,
   unknownCoding,
 } from "./observation-shared";
+
+dayjs.extend(utc);
 
 export function deduplicateObservationsSocial(observations: Observation[]): {
   combinedObservations: Observation[];
@@ -96,29 +95,47 @@ function handleDates(master: Observation, obs1: Observation, obs2: Observation):
   // Gather all possible dates, filtering out undefined and invalid dates
   const dates = [date1Start, date1End, date2Start, date2End]
     .filter(Boolean)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    .map(date => new Date(date!))
-    .filter(date => !isNaN(date.getTime()));
+    .map(date => dayjs(date))
+    .filter(date => date.isValid());
 
   if (dates.length === 0) {
     return master;
   }
 
-  const earliestDate = new Date(Math.min(...dates.map(date => date.getTime())));
-  const latestDate = new Date(Math.max(...dates.map(date => date.getTime())));
+  const earliestDate = dates.reduce((min, curr) => (curr.isBefore(min) ? curr : min), dates[0]);
+  const latestDate = dates.reduce((max, curr) => (curr.isAfter(max) ? curr : max), dates[0]);
 
   deleteMasterTimestamp(master);
 
-  const startDateString = getDateFromString(earliestDate.toISOString(), "date-hm");
-  const endDateString = getDateFromString(latestDate.toISOString(), "date-hm");
+  const startDateString = earliestDate?.utc().format("YYYY-MM-DDTHH:mm:00.000[Z]");
+  const endDateString = latestDate?.utc().format("YYYY-MM-DDTHH:mm:00.000[Z]");
 
-  const period = {
-    start: startDateString,
-    end: endDateString,
-  };
-  master.effectivePeriod = period;
+  const period = buildPeriod(startDateString, endDateString);
+  if (period) master.effectivePeriod = period;
 
   return master;
+}
+
+function buildPeriod(
+  date1: string | undefined,
+  date2: string | undefined
+):
+  | {
+      start?: string;
+      end?: string;
+    }
+  | undefined {
+  if (date1 && date2) {
+    return {
+      start: date1,
+      end: date2,
+    };
+  } else if (date1) {
+    return { start: date1 };
+  } else if (date2) {
+    return { start: date2 };
+  }
+  return undefined;
 }
 
 function deleteMasterTimestamp(obs: Observation): void {
