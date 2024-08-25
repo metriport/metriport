@@ -145,6 +145,7 @@ export async function queryAndProcessDocuments({
         convertProgress: { status: "processing" },
         requestId,
         source: MedicalDataSource.COMMONWELL,
+        triggerConsolidated,
       }),
     ]);
 

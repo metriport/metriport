@@ -2,7 +2,7 @@ import { faker } from "@faker-js/faker";
 import { Condition } from "@medplum/fhirtypes";
 import { makeCondition } from "../../fhir-to-cda/cda-templates/components/__tests__/make-condition";
 import { combineTwoResources } from "../shared";
-import { icd10CodeMd, onsetPeriod2, snomedCodeMd } from "./examples/condition-examples";
+import { icd10CodeMd, dateTime2, snomedCodeMd } from "./examples/condition-examples";
 
 let conditionId: string;
 let conditionId2: string;
@@ -13,7 +13,7 @@ beforeAll(() => {
   conditionId = faker.string.uuid();
   conditionId2 = faker.string.uuid();
   condition = makeCondition({ id: conditionId });
-  condition2 = makeCondition({ id: conditionId2, onsetPeriod: onsetPeriod2 });
+  condition2 = makeCondition({ id: conditionId2, onsetPeriod: dateTime2 });
 });
 
 describe("groupSameConditions", () => {

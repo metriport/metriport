@@ -17,7 +17,7 @@ const medicationAdministrationStatus = [
 ] as const;
 export type MedicationAdministrationStatus = (typeof medicationAdministrationStatus)[number];
 
-const statusRanking = {
+const statusRanking: Record<MedicationAdministrationStatus, number> = {
   unknown: 0,
   "entered-in-error": 1,
   "on-hold": 2,
@@ -65,7 +65,7 @@ export function groupSameMedAdmins(medAdmins: MedicationAdministration[]): {
 
   for (const medAdmin of medAdmins) {
     const medRef = medAdmin.medicationReference?.reference;
-    const date = getDateFromResource(medAdmin, "date-hm");
+    const date = getDateFromResource(medAdmin, "datetime");
     const dosage = medAdmin.dosage;
 
     if (medRef && date && dosage) {

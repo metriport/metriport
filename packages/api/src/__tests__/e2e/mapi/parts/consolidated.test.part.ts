@@ -269,12 +269,15 @@ export function runConsolidatedTests(e2e: E2eContext) {
         const lastName = e2e.patient?.lastName;
         if (!lastName) throw new Error("Missing patient.lastName");
         if (!e2e.mrContentBuffer) throw new Error("Missing mrContentBuffer");
+        const allergyId = e2e.allergyIntolerance?.id;
+        if (!allergyId) throw new Error("Missing allergyIntolerance.id");
         const contents = e2e.mrContentBuffer.toString("utf-8");
         expect(contents).toBeTruthy();
         expect(
           checkConsolidatedHtml({
             contents,
             patientId: e2e.patient.id,
+            allergyId,
             lastName,
           })
         ).toBeTrue();
