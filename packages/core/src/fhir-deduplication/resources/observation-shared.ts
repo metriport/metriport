@@ -126,8 +126,8 @@ export function extractValueFromObservation(
 }
 
 export const unknownCoding = {
-  system: "http://terminology.hl7.org/valueset/v3-unknown",
-  code: "unk",
+  system: "http://terminology.hl7.org/ValueSet/v3-Unknown",
+  code: "UNK",
   display: "unknown",
 };
 
