@@ -1,5 +1,12 @@
 import { CodeableConcept, Procedure } from "@medplum/fhirtypes";
-import { CPT_CODE, CPT_OID, LOINC_CODE, LOINC_OID } from "../../util/constants";
+import {
+  CPT_CODE,
+  CPT_OID,
+  LOINC_CODE,
+  LOINC_OID,
+  SNOMED_CODE,
+  SNOMED_OID,
+} from "../../util/constants";
 import {
   combineResources,
   fillMaps,
@@ -69,7 +76,9 @@ export function groupSameProcedures(procedures: Procedure[]): {
         system?.includes(CPT_CODE) ||
         system?.includes(CPT_OID) ||
         system?.includes(LOINC_CODE) ||
-        system?.includes(LOINC_OID)
+        system?.includes(LOINC_OID) ||
+        system?.includes(SNOMED_CODE) ||
+        system?.includes(SNOMED_OID)
       );
     });
     if (filtered) {
@@ -87,12 +96,14 @@ export function groupSameProcedures(procedures: Procedure[]): {
     const date = getPerformedDateFromResource(procedure, "datetime");
     if (!date) continue;
 
-    const { cptCode, loincCode } = extractCodes(procedure.code);
+    const { cptCode, loincCode, snomedCode } = extractCodes(procedure.code);
 
     const key = cptCode
       ? JSON.stringify({ date, cptCode })
       : loincCode
       ? JSON.stringify({ date, loincCode })
+      : snomedCode
+      ? JSON.stringify({ date, snomedCode })
       : undefined;
     if (key) {
       fillMaps(
@@ -115,10 +126,12 @@ export function groupSameProcedures(procedures: Procedure[]): {
 export function extractCodes(concept: CodeableConcept | undefined): {
   cptCode: string | undefined;
   loincCode: string | undefined;
+  snomedCode: string | undefined;
 } {
   let cptCode = undefined;
   let loincCode = undefined;
-  if (!concept) return { cptCode, loincCode };
+  let snomedCode = undefined;
+  if (!concept) return { cptCode, loincCode, snomedCode };
 
   if (concept && concept.coding) {
     for (const coding of concept.coding) {
@@ -129,9 +142,11 @@ export function extractCodes(concept: CodeableConcept | undefined): {
           cptCode = code;
         } else if (system.includes(LOINC_CODE) || system.includes(LOINC_OID)) {
           loincCode = code;
+        } else if (system.includes(SNOMED_CODE) || system.includes(SNOMED_OID)) {
+          snomedCode = code;
         }
       }
     }
   }
-  return { cptCode, loincCode };
+  return { cptCode, loincCode, snomedCode };
 }

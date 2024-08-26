@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { Observation } from "@medplum/fhirtypes";
 import { makeObservation } from "../../fhir-to-cda/cda-templates/components/__tests__/make-observation";
-import { unknownCoding } from "../resources/observation-shared";
+import { unknownCoding, unknownCode } from "../resources/observation-shared";
 import { groupSameObservationsSocial } from "../resources/observation-social";
 import { dateTime, dateTime2 } from "./examples/condition-examples";
 import {
@@ -106,9 +106,7 @@ describe("groupSameObservationsSocial", () => {
 
   it("removes observations with unknown codes", () => {
     observation.code = loincCodeTobacco;
-    observation2.code = {
-      coding: [unknownCoding],
-    };
+    observation2.code = unknownCode;
     observation.valueCodeableConcept = valueConceptTobacco;
     observation2.valueCodeableConcept = valueConceptTobacco;
 

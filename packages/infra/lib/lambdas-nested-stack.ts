@@ -26,6 +26,10 @@ interface LambdasNestedStackProps extends NestedStackProps {
   medicalDocumentsBucket: s3.Bucket;
   sandboxSeedDataBucket: s3.IBucket | undefined;
   alarmAction?: SnsAction;
+  appConfigEnvVars: {
+    appId: string;
+    configId: string;
+  };
 }
 
 export class LambdasNestedStack extends NestedStack {
@@ -119,6 +123,8 @@ export class LambdasNestedStack extends NestedStack {
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
+      appId: props.appConfigEnvVars.appId,
+      configId: props.appConfigEnvVars.configId,
     });
   }
 
@@ -407,6 +413,8 @@ export class LambdasNestedStack extends NestedStack {
     sentryDsn,
     envType,
     alarmAction,
+    appId,
+    configId,
   }: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
@@ -415,6 +423,8 @@ export class LambdasNestedStack extends NestedStack {
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
+    appId: string;
+    configId: string;
   }): Lambda {
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
 
@@ -428,6 +438,8 @@ export class LambdasNestedStack extends NestedStack {
         // API_URL set on the api-stack after the OSS API is created
         FHIR_SERVER_URL: fhirServerUrl,
         BUCKET_NAME: bucket.bucketName,
+        APPCONFIG_APPLICATION_ID: appId,
+        APPCONFIG_CONFIGURATION_ID: configId,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
