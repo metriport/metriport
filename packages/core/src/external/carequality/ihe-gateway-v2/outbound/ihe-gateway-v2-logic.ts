@@ -188,7 +188,9 @@ export async function createSignSendProcessXCPDRequest({
             requestId: result.id,
             gatewayOid: result.gateway.oid,
           },
-          date: result.requestTimestamp ? new Date(result.requestTimestamp) : new Date(),
+          date: result.requestTimestamp
+            ? new Date(Date.parse(result.requestTimestamp))
+            : new Date(),
         });
         const key = `${filePath}/result.json`;
         const extendedResult = {
