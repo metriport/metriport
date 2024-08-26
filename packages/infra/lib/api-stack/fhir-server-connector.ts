@@ -32,7 +32,7 @@ function settings() {
     // How long messages should be invisible for other consumers, based on the lambda timeout
     // We don't care if the message gets reprocessed, so no need to have a huge visibility timeout that makes it harder to move messages to the DLQ
     visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
-    retryAttempts: 3,
+    retryAttempts: 2,
   };
 }
 
