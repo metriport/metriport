@@ -36,17 +36,134 @@ const CPT_CODE = "cpt";
 const UNK_CODE = "UNK";
 const UNKNOWN_DISPLAY = "unknown";
 
+const featuredSpecialties = ["Dermatology", "Primary", "Rheumatology", "Asthma", "Other"];
+type ReportSpecialtyMap = {
+  [key in (typeof featuredSpecialties)[number]]: DiagnosticReport[] | undefined;
+};
+
+export function categorizeReports(bundle: Bundle<Resource>): ReportSpecialtyMap {
+  // find some relevant key terms for different specialties (alternatively you can do this by codings)
+  const reportsBySpecialty: ReportSpecialtyMap = {
+    Dermatology: [],
+    Primary: [],
+    Rheumatology: [],
+    Asthma: [],
+    Other: [],
+  };
+
+  // extract the DiagnosticReports (notes) from the bundle
+  const notes = getAllDiagnosticReports(bundle);
+
+  for (const note of notes) {
+    // extract the encounter reference from each note, and get the corresponding encounter
+    const encounterRef = getEncounterRefFromDiagnosticReport(note);
+    const encounter = getEncounterFromBundle(bundle, encounterRef);
+    // get the specialty from the encounter location
+    const locationRefs = getLocationRefsFromEncounter(encounter);
+    const locations = getLocationsFromBundle(bundle, locationRefs);
+    const specialties = getSpecialtyFromLocation(locations);
+    // note: as a fallback, you can use the encounter Practitioer, and then use the
+    // qualification property if present
+
+    let categorized = false;
+    for (const specialty of specialties) {
+      const hasFeaturedSpecialty = featuredSpecialties.some(featuredSpecialty =>
+        specialty.toLowerCase().includes(featuredSpecialty.toLowerCase())
+      );
+      if (hasFeaturedSpecialty) {
+        if (!reportsBySpecialty[specialty]) {
+          reportsBySpecialty[specialty] = [];
+        }
+
+        reportsBySpecialty[specialty]?.push(note);
+        categorized = true;
+        break;
+      }
+    }
+
+    if (!categorized) {
+      (reportsBySpecialty["Other"] ??= []).push(note);
+    }
+  }
+  return reportsBySpecialty;
+}
+
+function getAllDiagnosticReports(bundle: Bundle<Resource>): DiagnosticReport[] {
+  const reports: DiagnosticReport[] = [];
+
+  for (const entry of bundle.entry || []) {
+    if (entry.resource?.resourceType === "DiagnosticReport") {
+      reports.push(entry.resource);
+    }
+  }
+
+  return reports;
+}
+
+function getEncounterRefFromDiagnosticReport(report: DiagnosticReport): string {
+  return report.encounter?.reference?.split("/")[1] || "";
+}
+
+function getEncounterFromBundle(
+  bundle: Bundle<Resource>,
+  encounterRef: string
+): Encounter | undefined {
+  const encounter = bundle.entry?.find(
+    entry => entry.resource?.resourceType === "Encounter" && entry.resource.id === encounterRef
+  );
+
+  return encounter?.resource as Encounter;
+}
+
+function getLocationRefsFromEncounter(encounter: Encounter | undefined): string[] {
+  if (!encounter) {
+    return [];
+  }
+
+  return (
+    encounter.location?.map(location => location.location?.reference?.split("/")[1] || "") || []
+  );
+}
+
+function getLocationsFromBundle(bundle: Bundle<Resource>, locationRefs: string[]): Location[] {
+  const locations: Location[] = [];
+
+  for (const locationRef of locationRefs) {
+    const location = bundle.entry?.find(
+      entry => entry.resource?.resourceType === "Location" && entry.resource.id === locationRef
+    );
+
+    if (location) {
+      locations.push(location.resource as Location);
+    }
+  }
+
+  return locations;
+}
+
+export function getSpecialtyFromLocation(locations: Location[]): string[] {
+  const specialties: string[] = [];
+
+  for (const location of locations) {
+    const specialty = location.type?.[0]?.text || location.type?.[0]?.coding?.[0]?.display;
+
+    if (specialty) {
+      specialties.push(specialty);
+    }
+  }
+
+  return specialties;
+}
+
 export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
   const {
     patient,
     practitioners,
-    diagnosticReports,
+    specialtyReports,
     medications,
     medicationStatements,
     conditions,
     allergies,
-    locations,
-    procedures,
     observationOther,
     observationSocialHistory,
     observationVitals,
@@ -54,9 +171,6 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
     encounters,
     immunizations,
     familyMemberHistories,
-    relatedPersons,
-    tasks,
-    coverages,
     organizations,
   } = extractFhirTypesFromBundle(fhirBundle);
 
@@ -69,25 +183,26 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
   // Create variables for each section
 
   const briefSection = createBrief(brief);
-  const { numAweReports, aweHtml } = createAWESection(
-    diagnosticReports,
-    practitioners,
-    aweVisits,
-    organizations
-  );
+
   const { numMedications, medicationsHtml } = createMedicationSection(
     medications,
     medicationStatements
   );
-  const { numReports, reportsHtml } = createDiagnosticReportsSection(
-    diagnosticReports,
-    practitioners,
-    aweVisits,
-    organizations
-  );
+  const specialtyCounts = {};
+  const specialtyHtml = Object.entries(specialtyReports).reduce((acc, [specialty, reports]) => {
+    const { numReports, reportsHtml } = createDiagnosticReportsSection(
+      reports ?? [],
+      practitioners,
+      aweVisits,
+      organizations,
+      specialty
+    );
+    (specialtyCounts as Record<string, number>)[specialty] = numReports;
+    return acc + reportsHtml; // Always add the HTML, even if numReports is 0
+  }, "");
+
   const { numConditions, conditionsHtml } = createConditionSection(conditions, encounters);
   const { numAllergies, allergiesHtml } = createAllergySection(allergies);
-  const { numProcedures, proceduresHtml } = createProcedureSection(procedures);
   const { numSocialHistory, socialHistoryHtml } =
     createObservationSocialHistorySection(observationSocialHistory);
   const { numVitals, vitalsHtml } = createObservationVitalsSection(observationVitals);
@@ -98,28 +213,18 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
   const { numImmunizations, immunizationHtml } = createImmunizationSection(immunizations);
   const { numFamilyMemberHistory, familyMemberHistoryHtml } =
     createFamilyHistorySection(familyMemberHistories);
-  const { numRelatedPersons, relatedPersonHtml } = createRelatedPersonSection(relatedPersons);
-  const { numTasks, taskHtml } = createTaskSection(tasks);
-  const { numCoverages, coverageHtml } = createCoverageSection(coverages, organizations);
-  const { numEncounters, encountersHtml } = createEncountersSection(encounters, locations);
 
   const counts = {
-    awe: numAweReports,
-    reports: numReports,
+    ...specialtyCounts,
     medications: numMedications,
     conditions: numConditions,
     allergies: numAllergies,
-    procedures: numProcedures,
     socialHistory: numSocialHistory,
     vitals: numVitals,
     laboratory: numLaboratory,
     otherObservations: numOtherObservations,
     immunizations: numImmunizations,
     familyMemberHistory: numFamilyMemberHistory,
-    relatedPersons: numRelatedPersons,
-    tasks: numTasks,
-    coverage: numCoverages,
-    encounters: numEncounters,
   };
   const mrHeader = createMRHeader(patient, counts);
 
@@ -315,22 +420,16 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
           ${briefSection}
           <div class="divider"></div>
           <div id="mr-sections">
-            ${aweHtml}
-            ${medicationsHtml}
-            ${reportsHtml}
+            ${specialtyHtml}
             ${conditionsHtml}
-            ${allergiesHtml}
-            ${proceduresHtml}
+            ${familyMemberHistoryHtml}
             ${socialHistoryHtml}
+            ${medicationsHtml}
+            ${allergiesHtml}
             ${vitalsHtml}
             ${laboratoryHtml}
             ${otherObservationsHtml}
             ${immunizationHtml}
-            ${familyMemberHistoryHtml}
-            ${relatedPersonHtml}
-            ${taskHtml}
-            ${coverageHtml}
-            ${encountersHtml}
           </div>
         </body>
       </html>
@@ -345,7 +444,7 @@ function formatDateForDisplay(date?: string | undefined): string {
 
 // TODO: Use the version from "@metriport/core/external/fhir/shared/bundle.ts"
 function extractFhirTypesFromBundle(bundle: Bundle): {
-  diagnosticReports: DiagnosticReport[];
+  specialtyReports: ReportSpecialtyMap;
   patient?: Patient | undefined;
   practitioners: Practitioner[];
   medications: Medication[];
@@ -368,7 +467,6 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
 } {
   let patient: Patient | undefined;
   const practitioners: Practitioner[] = [];
-  const diagnosticReports: DiagnosticReport[] = [];
   const medicationStatements: MedicationStatement[] = [];
   const medications: Medication[] = [];
   const conditions: Condition[] = [];
@@ -387,20 +485,20 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
   const coverages: Coverage[] = [];
   const organizations: Organization[] = [];
 
-  const documentReferencesMitSet: Set<string> = new Set();
+  const documentReferencesOlderThanTwoYears: Set<string> = new Set();
+  const twoYearsAgo = dayjs().subtract(2, "years");
+
   if (bundle.entry) {
     for (const entry of bundle.entry) {
       if (entry.resource?.resourceType === "DocumentReference") {
         const docRef = entry.resource;
-        const patient = docRef.contained?.find(r => r.resourceType === "Patient") as Patient;
-        if (patient && patient.identifier) {
-          const mitIdentifier = patient.identifier.find(
-            id =>
-              id.system && id.system.replace("urn:oid:", "").includes("2.16.840.1.113883.3.7743.11")
-          );
-          if (mitIdentifier) {
-            documentReferencesMitSet.add(docRef.id ?? "");
+        if (docRef.date) {
+          const docDate = dayjs(docRef.date);
+          if (docDate.isBefore(twoYearsAgo)) {
+            documentReferencesOlderThanTwoYears.add(docRef.id ?? "");
           }
+        } else {
+          documentReferencesOlderThanTwoYears.add(docRef.id ?? "");
         }
       }
     }
@@ -417,7 +515,7 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
         );
         if (docIdExtension && docIdExtension.valueString) {
           const docId = docIdExtension.valueString.split("_").pop()?.split(".")[0];
-          return !documentReferencesMitSet.has(docId ?? "");
+          return !documentReferencesOlderThanTwoYears.has(docId ?? "");
         }
       }
       return true;
@@ -475,8 +573,6 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
         tasks.push(resource as Task);
       } else if (resource?.resourceType === "Coverage") {
         coverages.push(resource as Coverage);
-      } else if (resource?.resourceType === "DiagnosticReport") {
-        diagnosticReports.push(resource as DiagnosticReport);
       } else if (resource?.resourceType === "Practitioner") {
         practitioners.push(resource as Practitioner);
       } else if (resource?.resourceType === "Organization") {
@@ -485,10 +581,12 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
     }
   }
 
+  const specialtyReports = categorizeReports(bundle);
+
   return {
     patient,
     practitioners,
-    diagnosticReports,
+    specialtyReports,
     medications,
     medicationStatements,
     conditions,
@@ -510,6 +608,18 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
 }
 
 function createMRHeader(patient: Patient, counts: Record<string, number>) {
+  const specialtyLinks = featuredSpecialties
+    .map(
+      specialty => `
+    <li>
+      <a href="#${specialty.toLowerCase()}-reports">${specialty} Reports (${
+        counts[specialty] || 0
+      })</a>
+    </li>
+  `
+    )
+    .join("");
+
   return `
       <div id="mr-header">
         <div class='logo-container'>
@@ -553,9 +663,7 @@ function createMRHeader(patient: Patient, counts: Record<string, number>) {
                 <li>
                   <a href="#awe">Annual Wellness Exams (${counts.awe || 0})</a>
                 </li>
-                <li>
-                  <a href="#reports">Reports (${counts.reports || 0})</a>
-                </li>
+                ${specialtyLinks}
                 <li>
                   <a href="#medications">Medications (${counts.medications || 0})</a>
                 </li>
@@ -564,9 +672,6 @@ function createMRHeader(patient: Patient, counts: Record<string, number>) {
                 </li>
                 <li>
                   <a href="#allergies">Allergies (${counts.allergies || 0})</a>
-                </li>
-                <li>
-                  <a href="#procedures">Procedures (${counts.procedures || 0})</a>
                 </li>
                 <li>
                   <a href="#social-history">Social History (${counts.socialHistory || 0})</a>
@@ -592,17 +697,6 @@ function createMRHeader(patient: Patient, counts: Record<string, number>) {
                     counts.familyMemberHistory || 0
                   })</a>
                 </li>
-                <li>
-                  <a href="#related-persons">Related Persons (${counts.relatedPersons || 0})</a>
-                </li>
-                <li>
-                  <a href="#tasks">Tasks (${counts.tasks || 0})</a>
-                </li>
-                <li>
-                  <a href="#coverage">Coverage (${counts.coverage || 0})</a>
-                </li>
-                <li>
-                  <a href="#encounters">Encounters (${counts.encounters || 0})</a>
                 </li>
               </div>
               </ul>
@@ -667,7 +761,7 @@ type EncounterSection = {
   };
 };
 
-function createAWESection(
+export function createAWESection(
   diagnosticReports: DiagnosticReport[],
   practitioners: Practitioner[],
   aweVisits: Condition[],
@@ -716,7 +810,8 @@ function createDiagnosticReportsSection(
   diagnosticReports: DiagnosticReport[],
   practitioners: Practitioner[],
   aweVisits: Condition[],
-  organizations: Organization[]
+  organizations: Organization[],
+  specialty: string
 ): { numReports: number; reportsHtml: string } {
   const mappedPractitioners = mapResourceToId<Practitioner>(practitioners);
   const mappedOrganizations = mapResourceToId<Organization>(organizations);
@@ -740,14 +835,14 @@ function createDiagnosticReportsSection(
   const reportsHtml = `
       <div id="reports" class="section">
         <div class="section-title">
-          <h3 id="reports" title="reports">&#x276F; Reports</h3>
+          <h3 id="reports" title="reports">&#x276F; ${specialty} Reports</h3>
           <a href="#mr-header">&#x25B2; Back to Top</a>
         </div>
         <div class="section-content">
           ${
             hasNonAWEreports
               ? reports
-              : `<table><tbody><tr><td>No reports found</td></tr></tbody></table>`
+              : `<table><tbody><tr><td>No ${specialty} reports found</td></tr></tbody></table>`
           }
         </div>
       </div>
@@ -1474,7 +1569,7 @@ function createAllergySection(allergies: AllergyIntolerance[]): {
   return { numAllergies: filterBlacklistText.length, allergiesHtml };
 }
 
-function createProcedureSection(procedures: Procedure[]): {
+export function createProcedureSection(procedures: Procedure[]): {
   numProcedures: number;
   proceduresHtml: string;
 } {
@@ -1805,7 +1900,7 @@ function createObservationLaboratorySection(observations: Observation[]): {
 }
 
 function createObservationsByDate(observations: Observation[]): string {
-  const blacklistReferenceRangeText = ["unknown", "not detected"];
+  const blacklistReferenceRangeText = ["unknown", "not detected", "No observation recorded"];
 
   const filteredObservations = filterObservationsByDate(observations);
 
@@ -2171,7 +2266,7 @@ function renderAdministrativeGender(familyMemberHistory: FamilyMemberHistory): s
   return null;
 }
 
-function createRelatedPersonSection(relatedPersons: RelatedPerson[]): {
+export function createRelatedPersonSection(relatedPersons: RelatedPerson[]): {
   numRelatedPersons: number;
   relatedPersonHtml: string;
 } {
@@ -2245,7 +2340,7 @@ function renderRelatedPersonAddresses(relatedPerson: RelatedPerson) {
   });
 }
 
-function createTaskSection(tasks: Task[]): { numTasks: number; taskHtml: string } {
+export function createTaskSection(tasks: Task[]): { numTasks: number; taskHtml: string } {
   if (!tasks) {
     return { numTasks: 0, taskHtml: "" };
   }
@@ -2308,7 +2403,7 @@ function createTaskSection(tasks: Task[]): { numTasks: number; taskHtml: string 
   return { numTasks: removeDuplicate.length, taskHtml };
 }
 
-function createEncountersSection(
+export function createEncountersSection(
   encounters: Encounter[],
   locations: Location[]
 ): { numEncounters: number; encountersHtml: string } {
@@ -2374,7 +2469,7 @@ function createEncountersSection(
   return { numEncounters: removeDuplicate.length, encountersHtml };
 }
 
-function createCoverageSection(
+export function createCoverageSection(
   coverages: Coverage[],
   organizations: Organization[]
 ): { numCoverages: number; coverageHtml: string } {
