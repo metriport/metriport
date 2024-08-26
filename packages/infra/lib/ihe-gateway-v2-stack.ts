@@ -76,12 +76,12 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       databaseName: "default",
       tableInput: {
         description: "Table used for debugging IHE parsed responses",
-        name: "ihe_parsed_respones_debug",
+        name: "ihe_parsed_responses_by_date",
         partitionKeys: [
-          { name: "cxid", type: "string" },
-          { name: "patientid", type: "string" },
+          { name: "date", type: "string" },
+          { name: "cx_id", type: "string" },
+          { name: "patient_id", type: "string" },
           { name: "stage", type: "string" },
-          { name: "requestid", type: "string" },
         ],
         storageDescriptor: {
           columns: [
@@ -96,6 +96,11 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
               name: "operationoutcome",
               type: "struct<resourcetype:string,id:string,issue:array<struct<severity:string,code:string,details:struct<text:string>>>>",
             },
+            // Partition columns flat in data - duplicate columns are prepended "_"
+            { name: "_date", type: "string" },
+            { name: "cxid", type: "string" },
+            { name: "patientid", type: "string" },
+            { name: "_stage", type: "string" },
           ],
           compressed: false,
           inputFormat: "org.apache.hadoop.mapred.TextInputFormat",
