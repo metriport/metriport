@@ -13,20 +13,26 @@ export function createHivePartitionFilePath({
   patientId,
   keys,
   date,
+  dateGranularity = "day",
 }: {
   cxId: string;
   patientId: string;
   keys?: { [key: string]: string };
   date?: Date;
+  dateGranularity?: "day" | "hour" | "minute" | "second";
 }): string {
-  let datePath: string[] = [];
+  const datePath: string[] = [];
   if (date) {
-    datePath = [
-      `date=${date.toISOString().slice(0, 10)}`,
-      `hour=${date.getUTCHours()}`,
-      `minute=${date.getUTCMinutes()}`,
-      `second=${date.getUTCSeconds()}`,
-    ];
+    datePath.push(`date=${date.toISOString().slice(0, 10)}`);
+    if (["hour", "minute", "second"].includes(dateGranularity)) {
+      datePath.push(`hour=${date.getUTCHours()}`);
+    }
+    if (["minute", "second"].includes(dateGranularity)) {
+      datePath.push(`minute=${date.getUTCMinutes()}`);
+    }
+    if (["second"].includes(dateGranularity)) {
+      datePath.push(`second=${date.getUTCSeconds()}`);
+    }
   }
   let keysPath: string[] = [];
   if (keys) {

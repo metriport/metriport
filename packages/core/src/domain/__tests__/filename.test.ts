@@ -20,11 +20,55 @@ describe("hive partition path", () => {
       patientId,
       keys,
       date,
+      dateGranularity: "second",
+    });
+    expect(result).toBe(targetPath);
+  });
+  it(`full - minute granularity`, async () => {
+    const targetPath = `date=2019-01-01/hour=12/minute=15/cxid=${cxId}/patientid=${patientId}/key1=value1/key2=value2`;
+    const result = createHivePartitionFilePath({
+      cxId,
+      patientId,
+      keys,
+      date,
+      dateGranularity: "minute",
+    });
+    expect(result).toBe(targetPath);
+  });
+  it(`full - hour granularity`, async () => {
+    const targetPath = `date=2019-01-01/hour=12/cxid=${cxId}/patientid=${patientId}/key1=value1/key2=value2`;
+    const result = createHivePartitionFilePath({
+      cxId,
+      patientId,
+      keys,
+      date,
+      dateGranularity: "hour",
+    });
+    expect(result).toBe(targetPath);
+  });
+  it(`full - day granularity (arg)`, async () => {
+    const targetPath = `date=2019-01-01/cxid=${cxId}/patientid=${patientId}/key1=value1/key2=value2`;
+    const result = createHivePartitionFilePath({
+      cxId,
+      patientId,
+      keys,
+      date,
+      dateGranularity: "day",
+    });
+    expect(result).toBe(targetPath);
+  });
+  it(`full - day granularity (no arg)`, async () => {
+    const targetPath = `date=2019-01-01/cxid=${cxId}/patientid=${patientId}/key1=value1/key2=value2`;
+    const result = createHivePartitionFilePath({
+      cxId,
+      patientId,
+      keys,
+      date,
     });
     expect(result).toBe(targetPath);
   });
   it(`full-uppercase`, async () => {
-    const targetPath = `date=2019-01-01/hour=12/minute=15/second=30/cxid=${cxId}/patientid=${patientId}/key1=value1/key2=value2`;
+    const targetPath = `date=2019-01-01/cxid=${cxId}/patientid=${patientId}/key1=value1/key2=value2`;
     const result = createHivePartitionFilePath({
       cxId,
       patientId,
@@ -43,7 +87,7 @@ describe("hive partition path", () => {
     expect(result).toBe(targetPath);
   });
   it(`no keys`, async () => {
-    const targetPath = `date=2019-01-01/hour=12/minute=15/second=30/cxid=${cxId}/patientid=${patientId}`;
+    const targetPath = `date=2019-01-01/cxid=${cxId}/patientid=${patientId}`;
     const result = createHivePartitionFilePath({
       cxId,
       patientId,

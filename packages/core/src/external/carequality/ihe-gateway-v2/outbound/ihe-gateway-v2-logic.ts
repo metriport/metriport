@@ -188,12 +188,19 @@ export async function createSignSendProcessXCPDRequest({
             requestId: result.id,
             gatewayOid: result.gateway.oid,
           },
+          date: result.requestTimestamp ? new Date(result.requestTimestamp) : new Date(),
         });
         const key = `${filePath}/result.json`;
+        const extendedResult = {
+          ...result,
+          cxId,
+          patientId,
+          stage: "pd",
+        };
         await s3Utils.uploadFile({
           bucket: parsedResponsesBucket,
           key,
-          file: Buffer.from(JSON.stringify(result), "utf8"),
+          file: Buffer.from(JSON.stringify(extendedResult), "utf8"),
           contentType: "application/json",
         });
       } catch (error) {
