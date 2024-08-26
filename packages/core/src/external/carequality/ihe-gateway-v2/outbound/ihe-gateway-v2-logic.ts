@@ -198,7 +198,6 @@ export async function createSignSendProcessXCPDRequest({
           ...result,
           _date: partitionDate.toISOString().slice(0, 10),
           cxid: cxId,
-          patientid: patientId,
           _stage: "pd",
         };
         await s3Utils.uploadFile({
