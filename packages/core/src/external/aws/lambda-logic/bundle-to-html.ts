@@ -1041,7 +1041,7 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
       )?.code;
       const genericSnomedProblemCode = "55607006";
       const blacklistCodes = [genericSnomedProblemCode];
-      return snomedCode && !blacklistCodes.includes(snomedCode);
+      return !blacklistCodes.includes(snomedCode ?? "");
     })
     .reduce((acc, condition) => {
       const codeName = getSpecificCode(condition.code?.coding ?? [], [ICD_10_CODE, SNOMED_CODE]);
