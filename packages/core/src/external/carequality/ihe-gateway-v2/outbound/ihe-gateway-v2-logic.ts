@@ -188,8 +188,8 @@ export async function createSignSendProcessXCPDRequest({
           patientId,
           keys: {
             stage: "pd",
-            requestId: result.id,
-            gatewayOid: result.gateway.oid,
+            request_id: result.id,
+            gateway_oid: result.gateway.oid,
           },
           date: partitionDate,
         });
@@ -197,8 +197,8 @@ export async function createSignSendProcessXCPDRequest({
         const extendedResult = {
           ...result,
           _date: partitionDate.toISOString().slice(0, 10),
-          _cxId: cxId,
-          _patientId: patientId,
+          cxid: cxId,
+          patientid: patientId,
           _stage: "pd",
         };
         await s3Utils.uploadFile({

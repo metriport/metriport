@@ -79,16 +79,16 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         name: "ihe_parsed_responses_by_date",
         partitionKeys: [
           { name: "date", type: "string" },
-          { name: "cxid", type: "string" },
-          { name: "patientid", type: "string" },
+          { name: "cx_id", type: "string" },
+          { name: "patient_id", type: "string" },
           { name: "stage", type: "string" },
         ],
         storageDescriptor: {
           columns: [
             { name: "id", type: "string" },
             { name: "_date", type: "string" },
-            { name: "_cxId", type: "string" },
-            { name: "_patientId", type: "string" },
+            { name: "cxid", type: "string" },
+            { name: "patientid", type: "string" },
             { name: "_stage", type: "string" },
             { name: "timestamp", type: "string" },
             { name: "requesttimestamp", type: "string" },

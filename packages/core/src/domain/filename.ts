@@ -29,6 +29,7 @@ export function createHivePartitionFilePath({
     }
     if (["minute", "second"].includes(dateGranularity)) {
       datePath.push(`minute=${date.getUTCMinutes()}`);
+      x;
     }
     if (["second"].includes(dateGranularity)) {
       datePath.push(`second=${date.getUTCSeconds()}`);
@@ -38,7 +39,7 @@ export function createHivePartitionFilePath({
   if (keys) {
     keysPath = Object.entries(keys).map(([key, value]) => `${key.toLowerCase()}=${value}`);
   }
-  return [...datePath, `cxid=${cxId}`, `patientid=${patientId}`, ...keysPath].join("/");
+  return [...datePath, `cx_id=${cxId}`, `patient_id=${patientId}`, ...keysPath].join("/");
 }
 
 export type ParsedFileName = { cxId: string; patientId: string; fileId: string };
