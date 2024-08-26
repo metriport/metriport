@@ -16,6 +16,7 @@ import settings from "./settings";
 import sleep from "./sleep";
 import user from "./user";
 import webhook from "./webhook";
+import ehr from "./ehr";
 
 // Supports requests from the Dashboard through the dedicated JWT-based auth on API GW
 const dash = "/dash-oss";
@@ -48,4 +49,6 @@ export default (app: Application) => {
 
   // routes with OAuth based authentication
   app.use("/oauth", reportClientErrors, oauthRoutes);
+
+  app.use("/ehr", ehr);
 };

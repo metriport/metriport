@@ -135,4 +135,8 @@ export class Config {
   static getAppConfigConfigId(): string {
     return getEnvVarOrFail("APPCONFIG_CONFIGURATION_ID");
   }
+
+  static getAthenaHealthUrl(): string | undefined {
+    return getEnvVar("ATHENA_BASE_URL");
+  }
 }
