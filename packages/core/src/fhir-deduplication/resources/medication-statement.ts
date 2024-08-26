@@ -19,7 +19,7 @@ const medicationStatementStatus = [
 
 export type MedicationStatementStatus = (typeof medicationStatementStatus)[number];
 
-export const statusRanking = {
+export const statusRanking: Record<MedicationStatementStatus, number> = {
   unknown: 0,
   "entered-in-error": 1,
   intended: 2,
@@ -66,7 +66,7 @@ export function groupSameMedStatements(medStatements: MedicationStatement[]): {
   }
 
   for (const medStatement of medStatements) {
-    const date = getDateFromResource(medStatement, "date-hm");
+    const date = getDateFromResource(medStatement, "datetime");
     const medRef = medStatement.medicationReference?.reference;
     const dosage = medStatement.dosage;
     if (medRef && date && dosage) {

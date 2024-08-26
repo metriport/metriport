@@ -21,7 +21,7 @@ const diagnosticReportStatus = [
 ] as const;
 export type DiagnosticReportStatus = (typeof diagnosticReportStatus)[number];
 
-const statusRanking = {
+const statusRanking: Record<DiagnosticReportStatus, number> = {
   "entered-in-error": 0,
   unknown: 0,
   registered: 0,
@@ -85,7 +85,7 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
   }
 
   for (const diagReport of diagReports) {
-    const date = getDateFromResource(diagReport, "date-hm");
+    const date = getDateFromResource(diagReport, "datetime");
     const isPresentedFormPresent = diagReport.presentedForm?.length;
     const isResultPresent = diagReport.result?.length;
     if (date && (isPresentedFormPresent || isResultPresent)) {

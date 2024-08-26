@@ -20,7 +20,7 @@ const encounterStatus = [
 
 export type EncounterStatus = (typeof encounterStatus)[number];
 
-export const statusRanking = {
+export const statusRanking: Record<EncounterStatus, number> = {
   unknown: 0,
   "entered-in-error": 1,
   planned: 2,
@@ -68,7 +68,7 @@ export function groupSameEncounters(encounters: Encounter[]): {
   }
 
   for (const encounter of encounters) {
-    const date = getDateFromResource(encounter, "date-hm");
+    const date = getDateFromResource(encounter, "datetime");
     if (date) {
       const key = JSON.stringify({ date });
       fillMaps(

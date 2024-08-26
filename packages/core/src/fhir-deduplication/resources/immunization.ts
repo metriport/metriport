@@ -11,7 +11,7 @@ const immunizationStatus = ["entered-in-error", "completed", "not-done"] as cons
 
 export type ImmunizationStatus = (typeof immunizationStatus)[number];
 
-export const statusRanking = {
+export const statusRanking: Record<ImmunizationStatus, number> = {
   "entered-in-error": 0,
   "not-done": 1,
   completed: 2,
@@ -56,7 +56,7 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
   }
 
   for (const immunization of immunizations) {
-    const date = getDateFromResource(immunization, "date-hm");
+    const date = getDateFromResource(immunization, "datetime");
     if (date && date !== "unknown") {
       // TODO: should we keep date a mandatory field for dedup? If yes, then should we also add a default date to the FHIR encounter?
       const { cvxCode, ndcCode } = extractCodes(immunization.vaccineCode);
