@@ -76,7 +76,9 @@ export function groupSameProcedures(procedures: Procedure[]): {
         system?.includes(CPT_CODE) ||
         system?.includes(CPT_OID) ||
         system?.includes(LOINC_CODE) ||
-        system?.includes(LOINC_OID)
+        system?.includes(LOINC_OID) ||
+        system?.includes(SNOMED_CODE) ||
+        system?.includes(SNOMED_OID)
       );
     });
     if (filtered) {

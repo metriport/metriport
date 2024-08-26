@@ -57,8 +57,8 @@ export function extractCodes(concept: CodeableConcept | undefined): {
           if (
             system.includes("unknown") &&
             code.includes(unknownCoding.code) &&
-            display === unknownCoding.display &&
-            text === unknownCode.text
+            display === unknownCoding.display.toLowerCase() &&
+            (!text || text === unknownCode.text.toLowerCase())
           ) {
             // This identifies and ignores unknown codes
             continue;
