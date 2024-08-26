@@ -1,5 +1,6 @@
 import {
   CodeableConcept,
+  Coding,
   Observation,
   Period,
   Quantity,
@@ -7,6 +8,7 @@ import {
   SampledData,
 } from "@medplum/fhirtypes";
 import { LOINC_CODE, LOINC_OID, SNOMED_CODE, SNOMED_OID } from "../../util/constants";
+import _ from "lodash";
 
 export const observationStatus = [
   "entered-in-error",
@@ -52,13 +54,8 @@ export function extractCodes(concept: CodeableConcept | undefined): {
         } else if (system.includes(SNOMED_CODE) || system.includes(SNOMED_OID)) {
           snomedCode = code;
         } else {
-          const display = coding.display?.trim().toLowerCase();
           const text = concept.text?.trim().toLowerCase();
-          if (
-            system.includes("unknown") &&
-            code.includes(unknownCoding.code) &&
-            (display === unknownCoding.display || text === unknownCode.text)
-          ) {
+          if (isUnknownCoding(coding, text)) {
             // This identifies and ignores unknown codes
             continue;
           } else {
@@ -135,3 +132,18 @@ export const unknownCode = {
   coding: [unknownCoding],
   text: "unknown",
 };
+
+export function isUnknownCoding(coding: Coding, text?: string | undefined): boolean {
+  if (_.isEqual(coding, unknownCoding)) return true;
+  const system = coding.system?.toLowerCase();
+  const code = coding.code?.trim().toLowerCase();
+  const display = coding.display?.trim().toLowerCase();
+  if (
+    system?.includes("unknown") &&
+    code?.includes(unknownCoding.code.toLowerCase()) &&
+    (display === unknownCoding.display.toLowerCase() || text === unknownCode.text.toLowerCase())
+  ) {
+    return true;
+  }
+  return false;
+}
