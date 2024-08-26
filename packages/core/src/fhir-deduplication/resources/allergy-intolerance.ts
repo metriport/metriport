@@ -34,12 +34,28 @@ export function groupSameAllergies(allergies: AllergyIntolerance[]): {
   const allergiesMap = new Map<string, AllergyIntolerance>();
   const refReplacementMap = new Map<string, string[]>();
 
-  for (const allergy of allergies) {
-    const { substances, manifestations } = extractFromReactions(allergy.reaction);
+  function postProcess(master: AllergyIntolerance): AllergyIntolerance {
+    const { substances, manifestations } = extractFromReactions(master.reaction);
+    if (substances && manifestations) {
+      master.reaction = [
+        {
+          substance: {
+            coding: substances,
+          },
+          manifestation: manifestations,
+        },
+      ];
+    }
 
-    if (substances.length || manifestations.length) {
-      const key = JSON.stringify({ substances, manifestations });
-      fillMaps(allergiesMap, key, allergy, refReplacementMap);
+    return master;
+  }
+
+  for (const allergy of allergies) {
+    const { substances } = extractFromReactions(allergy.reaction);
+
+    if (substances.length) {
+      const key = JSON.stringify({ substances });
+      fillMaps(allergiesMap, key, allergy, refReplacementMap, undefined, postProcess);
     }
   }
 
@@ -53,18 +69,30 @@ export function extractFromReactions(reactions: AllergyIntoleranceReaction[] | u
   substances: Coding[];
   manifestations: CodeableConcept[];
 } {
-  const substances: Coding[] = [];
-  const manifestations: CodeableConcept[] = [];
+  const substances = new Set<Coding>();
+  const manifestations = new Set<CodeableConcept>();
 
-  reactions?.flatMap(reaction => {
-    const knownSubstances = reaction.substance?.coding?.filter(isKnownAllergy);
-    if (knownSubstances) substances?.push(...knownSubstances);
+  reactions?.forEach(reaction => {
+    reaction.substance?.coding?.forEach(sub => {
+      if (
+        isKnownAllergy(sub) &&
+        ![...substances].some(existingSub => _.isEqual(existingSub, sub))
+      ) {
+        substances.add(sub);
+      }
+    });
 
-    const knownManifestations = reaction.manifestation?.filter(isKnownManifestation);
-    if (knownManifestations) manifestations?.push(...knownManifestations);
+    reaction.manifestation?.forEach(manif => {
+      if (
+        isKnownManifestation(manif) &&
+        ![...manifestations].some(existingManif => _.isEqual(existingManif, manif))
+      ) {
+        manifestations.add(manif);
+      }
+    });
   });
 
-  return { substances, manifestations };
+  return { substances: Array.from(substances), manifestations: Array.from(manifestations) };
 }
 
 function isKnownAllergy(coding: Coding) {

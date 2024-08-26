@@ -37,9 +37,9 @@ export function extractCodes(concept: CodeableConcept | undefined): {
   snomedCode: string | undefined;
   otherCode: string | undefined;
 } {
-  let loincCode = undefined;
-  let snomedCode = undefined;
-  let otherCode = undefined;
+  let loincCode: string | undefined;
+  let snomedCode: string | undefined;
+  let otherCode: string | undefined;
   if (!concept) return { loincCode, snomedCode, otherCode };
 
   if (concept && concept.coding) {

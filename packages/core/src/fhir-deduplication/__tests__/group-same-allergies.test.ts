@@ -39,12 +39,7 @@ describe("extractFromReactions", () => {
   it("correctly removes unknown manifestations regardless of text", () => {
     allergy.reaction = [
       {
-        manifestation: [
-          {
-            coding: unknownManifestation[0]?.coding,
-            text: "some-manifestation-text",
-          },
-        ],
+        manifestation: [{ ...unknownManifestation[0], text: "some-manifestation-text" }],
       },
     ];
 
@@ -127,24 +122,7 @@ describe("extractFromReactions", () => {
 });
 
 describe("groupSameAllergies", () => {
-  it("correctly groups allergy reactions with the same manifestations", () => {
-    allergy.reaction = [
-      {
-        manifestation: manifestationAnaphylactic,
-      },
-    ];
-
-    allergy2.reaction = [
-      {
-        manifestation: manifestationAnaphylactic,
-      },
-    ];
-
-    const { allergiesMap } = groupSameAllergies([allergy, allergy2]);
-    expect(allergiesMap.size).toBe(1);
-  });
-
-  it("correctly groups allergy reactions with the same reactions", () => {
+  it("correctly groups allergies with the same reactions", () => {
     allergy.reaction = [
       {
         substance: substanceCashew,
@@ -161,81 +139,16 @@ describe("groupSameAllergies", () => {
 
     const { allergiesMap } = groupSameAllergies([allergy, allergy2]);
     expect(allergiesMap.size).toBe(1);
+    const masterAllergy = allergiesMap.values().next().value as AllergyIntolerance;
+    expect(masterAllergy.reaction?.length).toBe(1);
+    expect(masterAllergy.reaction?.[0]?.substance?.coding?.length).toBe(1);
+    expect(masterAllergy.reaction?.[0]?.manifestation?.length).toBe(1);
   });
 
-  it("removes allergies with unknown substances and manifestations ", () => {
+  it("correctly groups allergies with the same substances and combines manifestations", () => {
     allergy.reaction = [
-      {
-        substance: noKnownAllergiesSubstance,
-        manifestation: unknownManifestation,
-      },
-    ];
-
-    const { allergiesMap } = groupSameAllergies([allergy, allergy2]);
-    expect(allergiesMap.size).toBe(0);
-  });
-
-  it("does not group allergy reactions with different manifestations", () => {
-    allergy.reaction = [
-      {
-        substance: noKnownAllergiesSubstance,
-        manifestation: unknownManifestation,
-      },
-    ];
-
-    allergy2.reaction = [
-      {
-        substance: noKnownAllergiesSubstance,
-        manifestation: manifestationAnaphylactic,
-      },
-    ];
-
-    const { allergiesMap } = groupSameAllergies([allergy, allergy2]);
-    expect(allergiesMap.size).toBe(1);
-  });
-
-  it("does not group allergy reactions with different substances", () => {
-    allergy.reaction = [
-      {
-        substance: noKnownAllergiesSubstance,
-        manifestation: unknownManifestation,
-      },
-    ];
-
-    allergy2.reaction = [
       {
         substance: substanceNsaid,
-        manifestation: unknownManifestation,
-      },
-    ];
-
-    const { allergiesMap } = groupSameAllergies([allergy, allergy2]);
-    expect(allergiesMap.size).toBe(1);
-  });
-
-  it("does not group allergy reactions with different substances", () => {
-    allergy.reaction = [
-      {
-        substance: noKnownAllergiesSubstance,
-        manifestation: unknownManifestation,
-      },
-    ];
-
-    allergy2.reaction = [
-      {
-        substance: substanceNsaid,
-        manifestation: unknownManifestation,
-      },
-    ];
-
-    const { allergiesMap } = groupSameAllergies([allergy, allergy2]);
-    expect(allergiesMap.size).toBe(1);
-  });
-
-  it("does not group allergy reactions with different manifestations", () => {
-    allergy.reaction = [
-      {
-        substance: noKnownAllergiesSubstance,
         manifestation: manifestationAnaphylactic,
       },
     ];
@@ -248,10 +161,15 @@ describe("groupSameAllergies", () => {
     ];
 
     const { allergiesMap } = groupSameAllergies([allergy, allergy2]);
-    expect(allergiesMap.size).toBe(2);
+    expect(allergiesMap.size).toBe(1);
+    const masterAllergy = allergiesMap.values().next().value as AllergyIntolerance;
+
+    expect(masterAllergy.reaction?.length).toBe(1);
+    expect(masterAllergy.reaction?.[0]?.substance?.coding?.length).toBe(1);
+    expect(masterAllergy.reaction?.[0]?.manifestation?.length).toBe(2);
   });
 
-  it("does not group allergy reactions with different substances", () => {
+  it("does not group allergies with different substances", () => {
     allergy.reaction = [
       {
         substance: substanceCashew,
@@ -268,5 +186,36 @@ describe("groupSameAllergies", () => {
 
     const { allergiesMap } = groupSameAllergies([allergy, allergy2]);
     expect(allergiesMap.size).toBe(2);
+  });
+
+  it("removes allergies with unknown substances and manifestations ", () => {
+    allergy.reaction = [
+      {
+        substance: noKnownAllergiesSubstance,
+        manifestation: unknownManifestation,
+      },
+    ];
+
+    const { allergiesMap } = groupSameAllergies([allergy]);
+    expect(allergiesMap.size).toBe(0);
+  });
+
+  it("removes allergies with no known allergies for substance", () => {
+    allergy.reaction = [
+      {
+        substance: noKnownAllergiesSubstance,
+        manifestation: unknownManifestation,
+      },
+    ];
+
+    allergy2.reaction = [
+      {
+        substance: noKnownAllergiesSubstance,
+        manifestation: manifestationAnaphylactic,
+      },
+    ];
+
+    const { allergiesMap } = groupSameAllergies([allergy, allergy2]);
+    expect(allergiesMap.size).toBe(0);
   });
 });
