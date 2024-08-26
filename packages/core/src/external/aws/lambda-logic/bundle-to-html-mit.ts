@@ -538,50 +538,6 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
   const coverages: Coverage[] = [];
   const organizations: Organization[] = [];
 
-  const documentReferencesOlderThanTwoYears: Set<string> = new Set();
-  const twoYearsAgo = dayjs().subtract(2, "years");
-
-  let filteredDocumentCount = 0;
-
-  if (bundle.entry) {
-    for (const entry of bundle.entry) {
-      if (entry.resource?.resourceType === "DocumentReference") {
-        const docRef = entry.resource;
-        if (docRef.date) {
-          const docDate = dayjs(docRef.date);
-          if (docDate.isBefore(twoYearsAgo)) {
-            documentReferencesOlderThanTwoYears.add(docRef.id ?? "");
-            filteredDocumentCount++;
-          }
-        }
-        // } else {
-        //   documentReferencesOlderThanTwoYears.add(docRef.id ?? "");
-        //   filteredDocumentCount++;
-        // }
-      }
-    }
-  }
-
-  if (bundle.entry) {
-    bundle.entry = bundle.entry.filter(entry => {
-      const resource = entry.resource;
-      if (resource && "extension" in resource) {
-        const docIdExtension = resource.extension?.find(
-          ext =>
-            ext.url ===
-            "https://public.metriport.com/fhir/StructureDefinition/doc-id-extension.json"
-        );
-        if (docIdExtension && docIdExtension.valueString) {
-          const docId = docIdExtension.valueString.split("_").pop()?.split(".")[0];
-          return !documentReferencesOlderThanTwoYears.has(docId ?? "");
-        }
-      }
-      return true;
-    });
-  }
-
-  console.log(`Filtered out ${filteredDocumentCount} documents older than two years.`);
-
   if (bundle.entry) {
     for (const entry of bundle.entry) {
       const resource = entry.resource;

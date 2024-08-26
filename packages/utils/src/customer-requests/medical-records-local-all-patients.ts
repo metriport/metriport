@@ -12,12 +12,14 @@ import * as dotenv from "dotenv";
 import axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import puppeteer from "puppeteer";
+
 dotenv.config();
 dayjs.extend(duration);
 
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiLoadBalancerURL = getEnvVarOrFail("API_URL");
-//const fhirUrl = getEnvVarOrFail("FHIR_URL");
+const fhirUrl = getEnvVarOrFail("FHIR_URL");
 const cxId = getEnvVarOrFail("CX_ID");
 const metriportApi: MetriportMedicalApi = new MetriportMedicalApi(apiKey, {
   baseAddress: apiLoadBalancerURL,
@@ -38,35 +40,32 @@ async function fetchPatientIds(cxId: string): Promise<string[]> {
 }
 
 //eslint-disable-next-line
-// async function getFhirPatientData(patientId: string): Promise<any> {
-//   const url = `${fhirUrl}/fhir/${cxId}/Patient/${patientId}/`;
-//   try {
-//     const response = await axios.get(url);
-//     return response.data;
-//   } catch (error) {
-//     console.error(`Error fetching FHIR data for patient ${patientId}:`, error);
-//   }
-// }
+async function getFhirPatientData(patientId: string): Promise<any> {
+  const url = `${fhirUrl}/fhir/${cxId}/Patient/${patientId}/`;
+  try {
+    const response = await axios.get(url);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching FHIR data for patient ${patientId}:`, error);
+  }
+}
 
 export async function ensureDirectory(): Promise<void> {
   await fs.mkdir(resultsDirectory, { recursive: true });
 }
 
 async function fetchAndSavePatientData(patientId: string): Promise<void> {
-  try {
-    const data = await metriportApi.getPatientConsolidated(patientId);
-    // const fhirPatient = await getFhirPatientData(patientId);
-    // const resourceWrappedFhirPatient = { resource: fhirPatient };
-    if (!data.entry) {
-      data.entry = [];
-    }
-    // data.entry.push(resourceWrappedFhirPatient);
-    const filePath = `${resultsDirectory}/${patientId}.json`;
-    await fs.writeFile(filePath, JSON.stringify(data, null, 2));
-    console.log(`Data saved for patient ${patientId}`);
-  } catch (error) {
-    console.error(`Error fetching and saving data for patient ${patientId}:`, error);
+  const fromDate = "2022-08-26";
+  const data = await metriportApi.getPatientConsolidated(patientId, [], fromDate);
+  const fhirPatient = await getFhirPatientData(patientId);
+  const resourceWrappedFhirPatient = { resource: fhirPatient };
+  if (!data.entry) {
+    data.entry = [];
   }
+  data.entry.push(resourceWrappedFhirPatient);
+  const filePath = `${resultsDirectory}/${patientId}.json`;
+  await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+  console.log(`Data saved for patient ${patientId}`);
 }
 
 async function processPatients(): Promise<void> {
@@ -74,11 +73,24 @@ async function processPatients(): Promise<void> {
   await ensureDirectory();
   console.log("Fetching patient IDs...");
   const patientIds = await fetchPatientIds(cxId);
+
   console.log(`Found ${patientIds.length} patients`);
-  for (const patientId of patientIds) {
-    await fetchAndSavePatientData(patientId);
+  const results = [];
+  for (let i = 0; i < patientIds.length; i++) {
+    if (i > 0) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    try {
+      await fetchAndSavePatientData(patientIds[i]);
+      results.push({ status: "fulfilled" });
+    } catch (error) {
+      results.push({ status: "rejected", reason: error });
+    }
   }
-  console.log("All patient data processed.");
+
+  const fulfilled = results.filter(result => result.status === "fulfilled").length;
+  const rejected = results.filter(result => result.status === "rejected").length;
+  console.log(`All patient data processed. Successful: ${fulfilled}, Failed: ${rejected}`);
 }
 
 async function processFile(filePath: string) {
@@ -89,6 +101,24 @@ async function processFile(filePath: string) {
   const htmlOutputFilePath = filePath.replace(".json", ".html");
   await fs.writeFile(htmlOutputFilePath, html);
   console.log(`HTML file created at ${htmlOutputFilePath}`);
+
+  const pdfFilePath = filePath.replace(".json", ".pdf");
+  await convertHtmlToPdf(htmlOutputFilePath, pdfFilePath);
+}
+
+async function convertHtmlToPdf(htmlFilePath: string, pdfFilePath: string) {
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
+  const html = await fs.readFile(htmlFilePath, "utf8");
+
+  await page.setContent(html, { waitUntil: "domcontentloaded" });
+  await page.pdf({
+    path: pdfFilePath,
+    format: "A4",
+    printBackground: true,
+  });
+
+  await browser.close();
 }
 
 async function main() {
