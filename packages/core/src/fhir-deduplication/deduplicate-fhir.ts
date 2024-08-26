@@ -23,6 +23,7 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   // Conditions deduplication
   const conditionsResult = deduplicateConditions(resourceArrays.conditions);
   resourceArrays = replaceResourceReferences(resourceArrays, conditionsResult.refReplacementMap);
+  processedArrays.push("conditions");
   deduplicatedEntries.push(...conditionsResult.combinedConditions);
 
   // Medication deduplication
