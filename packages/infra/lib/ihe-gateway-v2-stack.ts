@@ -86,6 +86,9 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         storageDescriptor: {
           columns: [
             { name: "id", type: "string" },
+            { name: "cxId", type: "string" },
+            { name: "patientId", type: "string" },
+            { name: "stage", type: "string" },
             { name: "timestamp", type: "string" },
             { name: "requesttimestamp", type: "string" },
             { name: "responsetimestamp", type: "string" },
