@@ -86,10 +86,6 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         storageDescriptor: {
           columns: [
             { name: "id", type: "string" },
-            { name: "_date", type: "string" },
-            { name: "cxid", type: "string" },
-            { name: "patientid", type: "string" },
-            { name: "_stage", type: "string" },
             { name: "timestamp", type: "string" },
             { name: "requesttimestamp", type: "string" },
             { name: "responsetimestamp", type: "string" },
@@ -100,6 +96,11 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
               name: "operationoutcome",
               type: "struct<resourcetype:string,id:string,issue:array<struct<severity:string,code:string,details:struct<text:string>>>>",
             },
+            // Partition columns flat in data - duplicate columns are prepended "_"
+            { name: "_date", type: "string" },
+            { name: "cxid", type: "string" },
+            { name: "patientid", type: "string" },
+            { name: "_stage", type: "string" },
           ],
           compressed: false,
           inputFormat: "org.apache.hadoop.mapred.TextInputFormat",
