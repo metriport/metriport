@@ -1,4 +1,5 @@
-import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
+import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-mit";
+
 import fs from "fs";
 
 // get xml file from this folder and bundle to html

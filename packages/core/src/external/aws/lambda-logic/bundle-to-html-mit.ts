@@ -57,25 +57,39 @@ export function categorizeReports(bundle: Bundle<Resource>): ReportSpecialtyMap 
   for (const note of notes) {
     // extract the encounter reference from each note, and get the corresponding encounter
     const encounterRef = getEncounterRefFromDiagnosticReport(note);
+    // can get practitioner here
+    const practitionerRef = getPractionerRefFromDiagnosicReport(note);
+    const practitioner = getPractitionerFromBundle(bundle, practitionerRef);
+    const practitionerSpecialty = getPractitionerSpecialty(practitioner);
     const encounter = getEncounterFromBundle(bundle, encounterRef);
     // get the specialty from the encounter location
     const locationRefs = getLocationRefsFromEncounter(encounter);
     const locations = getLocationsFromBundle(bundle, locationRefs);
-    const specialties = getSpecialtyFromLocation(locations);
-    // note: as a fallback, you can use the encounter Practitioer, and then use the
-    // qualification property if present
+    const locationSpecialties = getSpecialtyFromLocation(locations);
+
+    const specialties = [
+      ...(practitionerSpecialty ? [practitionerSpecialty] : []),
+      ...(locationSpecialties || []),
+    ];
 
     let categorized = false;
     for (const specialty of specialties) {
-      const hasFeaturedSpecialty = featuredSpecialties.some(featuredSpecialty =>
-        specialty.toLowerCase().includes(featuredSpecialty.toLowerCase())
-      );
-      if (hasFeaturedSpecialty) {
-        if (!reportsBySpecialty[specialty]) {
-          reportsBySpecialty[specialty] = [];
+      const matchedFeaturedSpecialty = featuredSpecialties.find(featuredSpecialty => {
+        const specialtyWords = specialty.toLowerCase().split(/\s+/);
+
+        const hasMatch = specialtyWords.some(word => {
+          const includes = featuredSpecialty.toLowerCase().includes(word);
+          return includes;
+        });
+        return hasMatch;
+      });
+
+      if (matchedFeaturedSpecialty) {
+        if (!reportsBySpecialty[matchedFeaturedSpecialty]) {
+          reportsBySpecialty[matchedFeaturedSpecialty] = [];
         }
 
-        reportsBySpecialty[specialty]?.push(note);
+        reportsBySpecialty[matchedFeaturedSpecialty]?.push(note);
         categorized = true;
         break;
       }
@@ -100,11 +114,11 @@ function getAllDiagnosticReports(bundle: Bundle<Resource>): DiagnosticReport[] {
   return reports;
 }
 
-function getEncounterRefFromDiagnosticReport(report: DiagnosticReport): string {
+export function getEncounterRefFromDiagnosticReport(report: DiagnosticReport): string {
   return report.encounter?.reference?.split("/")[1] || "";
 }
 
-function getEncounterFromBundle(
+export function getEncounterFromBundle(
   bundle: Bundle<Resource>,
   encounterRef: string
 ): Encounter | undefined {
@@ -115,7 +129,43 @@ function getEncounterFromBundle(
   return encounter?.resource as Encounter;
 }
 
-function getLocationRefsFromEncounter(encounter: Encounter | undefined): string[] {
+function getPractitionerFromBundle(
+  bundle: Bundle<Resource>,
+  practitionerRef: string
+): Practitioner | undefined {
+  const practitioner = bundle.entry?.find(
+    entry =>
+      entry.resource?.resourceType === "Practitioner" && entry.resource.id === practitionerRef
+  );
+
+  return practitioner?.resource as Practitioner;
+}
+
+function getPractionerRefFromDiagnosicReport(report: DiagnosticReport): string {
+  const practitionerPerformer = report.performer?.find(performer =>
+    performer.reference?.startsWith("Practitioner/")
+  );
+  return practitionerPerformer?.reference?.split("/")[1] || "";
+}
+
+function getPractitionerSpecialty(practitioner: Practitioner | undefined): string {
+  if (!practitioner) return "";
+
+  const nuccQualification = practitioner.qualification?.find(qual =>
+    qual.code?.coding?.some(coding => coding.system === "http://nucc.org/provider-taxonomy")
+  );
+
+  if (nuccQualification) {
+    const nuccCoding = nuccQualification.code?.coding?.find(
+      coding => coding.system === "http://nucc.org/provider-taxonomy"
+    );
+    return nuccCoding?.display || "";
+  }
+
+  return "";
+}
+
+export function getLocationRefsFromEncounter(encounter: Encounter | undefined): string[] {
   if (!encounter) {
     return [];
   }
@@ -125,7 +175,10 @@ function getLocationRefsFromEncounter(encounter: Encounter | undefined): string[
   );
 }
 
-function getLocationsFromBundle(bundle: Bundle<Resource>, locationRefs: string[]): Location[] {
+export function getLocationsFromBundle(
+  bundle: Bundle<Resource>,
+  locationRefs: string[]
+): Location[] {
   const locations: Location[] = [];
 
   for (const locationRef of locationRefs) {
@@ -488,6 +541,8 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
   const documentReferencesOlderThanTwoYears: Set<string> = new Set();
   const twoYearsAgo = dayjs().subtract(2, "years");
 
+  let filteredDocumentCount = 0;
+
   if (bundle.entry) {
     for (const entry of bundle.entry) {
       if (entry.resource?.resourceType === "DocumentReference") {
@@ -496,10 +551,13 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
           const docDate = dayjs(docRef.date);
           if (docDate.isBefore(twoYearsAgo)) {
             documentReferencesOlderThanTwoYears.add(docRef.id ?? "");
+            filteredDocumentCount++;
           }
-        } else {
-          documentReferencesOlderThanTwoYears.add(docRef.id ?? "");
         }
+        // } else {
+        //   documentReferencesOlderThanTwoYears.add(docRef.id ?? "");
+        //   filteredDocumentCount++;
+        // }
       }
     }
   }
@@ -521,6 +579,8 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
       return true;
     });
   }
+
+  console.log(`Filtered out ${filteredDocumentCount} documents older than two years.`);
 
   if (bundle.entry) {
     for (const entry of bundle.entry) {
@@ -660,9 +720,6 @@ function createMRHeader(patient: Patient, counts: Record<string, number>) {
             <h4>Table of Contents</h4>
             <ul id="nav">
               <div class='half'>
-                <li>
-                  <a href="#awe">Annual Wellness Exams (${counts.awe || 0})</a>
-                </li>
                 ${specialtyLinks}
                 <li>
                   <a href="#medications">Medications (${counts.medications || 0})</a>
@@ -833,16 +890,16 @@ function createDiagnosticReportsSection(
   const hasNonAWEreports = reports.length > 0;
 
   const reportsHtml = `
-      <div id="reports" class="section">
+      <div id="${specialty.toLowerCase()}-reports" class="section">
         <div class="section-title">
-          <h3 id="reports" title="reports">&#x276F; ${specialty} Reports</h3>
+          <h3 id="${specialty}-reports" title="${specialty} Reports">&#x276F; ${specialty} Reports</h3>
           <a href="#mr-header">&#x25B2; Back to Top</a>
         </div>
         <div class="section-content">
           ${
             hasNonAWEreports
               ? reports
-              : `<table><tbody><tr><td>No ${specialty} reports found</td></tr></tbody></table>`
+              : `<table><tbody><tr><td>No ${specialty.toLowerCase()} reports found</td></tr></tbody></table>`
           }
         </div>
       </div>
