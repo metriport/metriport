@@ -2,8 +2,7 @@ import {
   BooleanFeatureFlags,
   getFeatureFlags,
   getFeatureFlagValueBoolean,
-  getFeatureFlagValueStringArray,
-  StringValueFeatureFlags,
+  getCxsWithFeatureFlagEnabled,
 } from "@metriport/core/external/aws/app-config";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { out } from "@metriport/core/util/log";
@@ -33,34 +32,6 @@ export async function initFeatureFlags() {
     throw new MetriportError(`Failed to initialize Feature Flags`, error);
   }
   log(`Feature Flags initialized.`);
-}
-
-/**
- * Returns the list of customers that are enabled for the given feature flag.
- *
- * @returns Array of string values
- */
-async function getCxsWithFeatureFlagEnabled(
-  featureFlagName: keyof StringValueFeatureFlags
-): Promise<string[]> {
-  try {
-    const featureFlag = await getFeatureFlagValueStringArray(
-      Config.getAWSRegion(),
-      Config.getAppConfigAppId(),
-      Config.getAppConfigConfigId(),
-      Config.getEnvType(),
-      featureFlagName
-    );
-    if (featureFlag && featureFlag.enabled) {
-      return featureFlag.values;
-    }
-  } catch (error) {
-    const msg = `Failed to get Feature Flag Value`;
-    const extra = { featureFlagName };
-    log(`${msg} - ${JSON.stringify(extra)} - ${errorToString(error)}`);
-    capture.error(msg, { extra: { ...extra, error } });
-  }
-  return [];
 }
 
 /**

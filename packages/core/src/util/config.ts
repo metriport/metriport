@@ -129,4 +129,10 @@ export class Config {
   static getAiBriefModelId(): string | undefined {
     return getEnvVar("AI_BRIEF_MODEL_ID");
   }
+  static getAppConfigAppId(): string {
+    return getEnvVarOrFail("APPCONFIG_APPLICATION_ID");
+  }
+  static getAppConfigConfigId(): string {
+    return getEnvVarOrFail("APPCONFIG_CONFIGURATION_ID");
+  }
 }

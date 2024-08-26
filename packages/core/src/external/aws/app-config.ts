@@ -3,6 +3,9 @@ import { z } from "zod";
 import { MetriportError } from "../../util/error/metriport-error";
 import { out } from "../../util/log";
 import { uuidv4 } from "../../util/uuid-v7";
+import { errorToString } from "@metriport/shared";
+import { capture } from "../../util/notifications";
+import { Config } from "../../util/config";
 
 const { log } = out(`Core appConfig - FF`);
 
@@ -180,4 +183,50 @@ export async function createAndDeployConfigurationContent({
   await appConfig.startDeployment(startDeploymentRequestParams).promise();
   const configString = createConfigurationRsp.Content.toString();
   return JSON.parse(configString);
+}
+
+/**
+ * Returns the list of customers that are enabled for the given feature flag.
+ *
+ * @returns Array of string values
+ */
+export async function getCxsWithFeatureFlagEnabled(
+  featureFlagName: keyof StringValueFeatureFlags
+): Promise<string[]> {
+  try {
+    const featureFlag = await getFeatureFlagValueStringArray(
+      Config.getAWSRegion(),
+      Config.getAppConfigAppId(),
+      Config.getAppConfigConfigId(),
+      Config.getEnvType(),
+      featureFlagName
+    );
+    if (featureFlag && featureFlag.enabled) {
+      return featureFlag.values;
+    }
+  } catch (error) {
+    const msg = `Failed to get Feature Flag Value`;
+    const extra = { featureFlagName };
+    log(`${msg} - ${JSON.stringify(extra)} - ${errorToString(error)}`);
+    capture.error(msg, { extra: { ...extra, error } });
+  }
+  return [];
+}
+
+export async function getCxsWithFhirDedupFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithFhirDedupFeatureFlag");
+}
+
+export async function getCxsWithAiBriefFeatureFlagValue(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithAiBriefFeatureFlag");
+}
+
+export async function isFhirDeduplicationEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithFhirDedupEnabled = await getCxsWithFhirDedupFeatureFlag();
+  return cxIdsWithFhirDedupEnabled.some(i => i === cxId);
+}
+
+export async function isAiBriefFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxsWithADHDFeatureFlagValue = await getCxsWithAiBriefFeatureFlagValue();
+  return cxsWithADHDFeatureFlagValue.includes(cxId);
 }
