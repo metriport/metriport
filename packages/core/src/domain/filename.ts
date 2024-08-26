@@ -29,7 +29,6 @@ export function createHivePartitionFilePath({
     }
     if (["minute", "second"].includes(dateGranularity)) {
       datePath.push(`minute=${date.getUTCMinutes()}`);
-      x;
     }
     if (["second"].includes(dateGranularity)) {
       datePath.push(`second=${date.getUTCSeconds()}`);
