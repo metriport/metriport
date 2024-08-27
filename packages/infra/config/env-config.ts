@@ -221,6 +221,11 @@ type EnvConfigBase = {
   cqDirectoryRebuilder?: {
     scheduleExpressions: string | string[];
   };
+  ehrIntegration?: {
+    athenaHealth: {
+      baseUrl: string;
+    };
+  };
 };
 
 export type EnvConfigNonSandbox = EnvConfigBase & {

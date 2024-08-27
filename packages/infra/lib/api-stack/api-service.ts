@@ -285,6 +285,9 @@ export function createAPIService({
           ...(props.config.iheGateway?.trustStoreBucketName && {
             CQ_TRUST_BUNDLE_BUCKET_NAME: props.config.iheGateway.trustStoreBucketName,
           }),
+          ...(props.config.ehrIntegration && {
+            EHR_ATHENA_BASE_URL: props.config.ehrIntegration.athenaHealth.baseUrl,
+          }),
         },
       },
       healthCheckGracePeriod: Duration.seconds(60),

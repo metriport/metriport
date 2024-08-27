@@ -343,6 +343,6 @@ export class Config {
   }
 
   static getAthenaHealthUrl(): string | undefined {
-    return getEnvVar("ATHENA_BASE_URL");
+    return getEnvVar("EHR_ATHENA_BASE_URL");
   }
 }
