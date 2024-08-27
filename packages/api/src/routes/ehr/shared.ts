@@ -1,7 +1,7 @@
 import z from "zod";
 import httpStatus from "http-status";
 import { Request, Response } from "express";
-import { getJwtTokenData, createJwtToken } from "../../command/jwt/jwt-token";
+import { getJwtToken, createJwtToken } from "../../command/jwt/jwt-token";
 
 const createJwtSchema = z.object({
   exp: z.number(),
@@ -10,7 +10,7 @@ const createJwtSchema = z.object({
 
 export async function checkJwtToken(source: string, req: Request, res: Response) {
   const accessToken = getAccessToken(req);
-  const authInfo = await getJwtTokenData({
+  const authInfo = await getJwtToken({
     token: accessToken,
     source,
   });

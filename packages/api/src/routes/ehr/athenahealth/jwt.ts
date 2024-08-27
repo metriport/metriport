@@ -13,7 +13,7 @@ router.get(
   "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    await checkJwtToken("athenahealth", req, res);
+    return await checkJwtToken("athenahealth", req, res);
   })
 );
 
@@ -24,7 +24,7 @@ router.post(
   "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    await saveJwtToken("athenahealth", req, res);
+    return await saveJwtToken("athenahealth", req, res);
   })
 );
 

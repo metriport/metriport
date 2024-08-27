@@ -20,7 +20,7 @@ export async function createJwtToken({ token, exp, source, data }: JwtTokenParam
 }
 
 // This function DOES NOT check expiration
-export async function getJwtTokenData({
+export async function getJwtToken({
   token,
   source,
 }: JwtTokenLookUpParam): Promise<JwtTokenModel | undefined> {

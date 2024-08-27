@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { getCxMappingId } from "../../../command/mapping/cx";
-import { getJwtTokenData } from "../../../command/jwt/jwt-token";
+import { getJwtToken } from "../../../command/jwt/jwt-token";
 import { getAccessToken } from "../shared";
 
 export function processCxId(req: Request, res: Response, next: NextFunction) {
@@ -11,11 +11,11 @@ export function processCxId(req: Request, res: Response, next: NextFunction) {
 
 async function processCxIdAsync(req: Request): Promise<void> {
   const accessToken = getAccessToken(req);
-  const authInfo = await getJwtTokenData({
+  const authInfo = await getJwtToken({
     token: accessToken,
     source: "athenahealth",
   });
-  if (!authInfo) throw new Error(`No AthenaHealth access found for token ${accessToken}`);
+  if (!authInfo) throw new Error(`No AthenaHealth token found`);
   const externalId = (authInfo.data as { ah_practice?: string }).ah_practice;
   if (!externalId)
     throw new Error(`No AthenaHealth externalId value found for token ${accessToken}`);
@@ -23,6 +23,6 @@ async function processCxIdAsync(req: Request): Promise<void> {
     externalId,
     source: "athenahealth",
   });
-  if (!cxId) throw new Error(`No AthenaHealth Access found for externalId ${externalId}`);
+  if (!cxId) throw new Error(`No AthenaHealth cxId found for externalId ${externalId}`);
   req.cxId = cxId;
 }
