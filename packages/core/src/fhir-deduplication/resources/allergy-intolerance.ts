@@ -6,8 +6,8 @@ import {
 } from "@medplum/fhirtypes";
 import _, { cloneDeep } from "lodash";
 import { noKnownAllergiesSubstance } from "../__tests__/examples/allergy-examples";
-import { combineResources, fillMaps, isKnownCoding } from "../shared";
-import { unknownCode } from "./observation-shared";
+import { combineResources, fillMaps } from "../shared";
+import { isUnknownCoding, unknownCode } from "./observation-shared";
 
 export function deduplicateAllergyIntolerances(allergies: AllergyIntolerance[]) {
   const { allergiesMap, refReplacementMap } = groupSameAllergies(allergies);
@@ -114,6 +114,7 @@ export function extractFromReactions(reactions: AllergyIntoleranceReaction[] | u
 
 function isKnownAllergy(coding: Coding) {
   if (_.isEqual(coding, noKnownAllergiesSubstance)) return false;
+  if (isUnknownCoding(coding)) return false;
 
   const code = coding.code?.trim().toLowerCase();
   const system = coding.system?.trim().toLowerCase();
@@ -125,7 +126,7 @@ function isKnownAllergy(coding: Coding) {
 function isKnownManifestation(concept: CodeableConcept) {
   if (_.isEqual(concept, unknownCode)) return false;
 
-  const knownCoding = concept.coding?.filter(isKnownCoding);
+  const knownCoding = concept.coding?.filter(e => !isUnknownCoding(e));
   if (knownCoding?.length) return true;
   return false;
 }

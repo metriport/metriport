@@ -1,6 +1,6 @@
-import { Coding, Resource } from "@medplum/fhirtypes";
-import { cloneDeep } from "lodash";
+import { Resource } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
+import { cloneDeep } from "lodash";
 
 const dateFormats = ["datetime", "date"] as const;
 export type DateFormats = (typeof dateFormats)[number];
@@ -233,14 +233,4 @@ export function pickMostDescriptiveStatus<T extends string>(
     return lowestRanking;
   }
   return status;
-}
-
-export function isKnownCoding(coding: Coding) {
-  const code = coding.code?.trim().toLowerCase();
-  const system = coding.system?.trim().toLowerCase();
-  const display = coding.display?.trim().toLowerCase();
-  if (code === "unk" || system?.includes("unknown") || display === "unknown") {
-    return false;
-  }
-  return true;
 }
