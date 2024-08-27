@@ -3,7 +3,7 @@ import { JwtTokenModel } from "../../models/jwt-token";
 
 export type JwtTokenParams = {
   token: string;
-  exp: number;
+  exp: Date;
   source: string;
   data: object;
 };

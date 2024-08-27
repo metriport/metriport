@@ -15,9 +15,7 @@ export async function checkJwtToken(source: string, req: Request, res: Response)
     source,
   });
   if (authInfo) {
-    const expiresAt = new Date(authInfo.exp).getTime();
-    const now = new Date().getTime();
-    if (expiresAt >= now) {
+    if (authInfo.exp >= new Date()) {
       return res.status(httpStatus.OK).json({ active: true });
     }
   }
@@ -29,7 +27,7 @@ export async function saveJwtToken(source: string, req: Request, res: Response) 
   const createJwtData = createJwtSchema.parse(req.body);
   await createJwtToken({
     token: accessToken,
-    exp: createJwtData.exp,
+    exp: new Date(createJwtData.exp),
     source,
     data: createJwtData.data,
   });

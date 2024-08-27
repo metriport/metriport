@@ -1,6 +1,6 @@
 export interface JwtToken {
   token: string;
-  exp: number;
+  exp: Date;
   source: string;
   data: object;
 }

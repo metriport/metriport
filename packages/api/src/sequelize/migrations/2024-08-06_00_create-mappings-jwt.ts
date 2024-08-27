@@ -63,7 +63,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
           allowNull: false,
         },
         exp: {
-          type: DataTypes.NUMBER,
+          type: DataTypes.DATE,
           field: "exp",
           allowNull: false,
         },

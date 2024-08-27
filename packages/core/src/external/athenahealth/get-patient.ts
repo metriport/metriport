@@ -1,7 +1,7 @@
 import {
   patientResourceSchema,
   PatientResource,
-} from "@metriport/shared/interface/external/athenahealth";
+} from "@metriport/shared/interface/external/athenahealth/patient";
 import { makeAthenaHealthApi } from "./api-factory";
 
 export async function getPatient({

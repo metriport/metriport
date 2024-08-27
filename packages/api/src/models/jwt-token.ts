@@ -5,7 +5,7 @@ import { BaseModelNoId, ModelSetup } from "./_default";
 export class JwtTokenModel extends BaseModelNoId<JwtTokenModel> implements JwtToken {
   static NAME = "cx_mapping";
   declare token: string;
-  declare exp: number;
+  declare exp: Date;
   declare source: string;
   declare data: object;
 
@@ -17,7 +17,7 @@ export class JwtTokenModel extends BaseModelNoId<JwtTokenModel> implements JwtTo
           type: DataTypes.UUID,
         },
         exp: {
-          type: DataTypes.NUMBER,
+          type: DataTypes.DATE,
         },
         source: {
           type: DataTypes.STRING,
