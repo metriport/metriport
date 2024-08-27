@@ -5,7 +5,6 @@ import {
   Coding,
 } from "@medplum/fhirtypes";
 import _, { cloneDeep } from "lodash";
-import { noKnownAllergiesSubstance } from "../__tests__/examples/allergy-examples";
 import { combineResources, fillMaps } from "../shared";
 import { isUnknownCoding, unknownCode } from "./observation-shared";
 
@@ -130,3 +129,13 @@ function isKnownManifestation(concept: CodeableConcept) {
   if (knownCoding?.length) return true;
   return false;
 }
+
+export const noKnownAllergiesSubstance = {
+  coding: [
+    {
+      system: "urn:oid:2.16.840.1.113883.4.296",
+      code: "900388",
+      display: "No Known Allergies",
+    },
+  ],
+};
