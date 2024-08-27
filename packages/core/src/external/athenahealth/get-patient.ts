@@ -13,7 +13,7 @@ export async function getPatient({
   baseUrl: string;
   patientId: string;
 }): Promise<PatientFhirResponse> {
-  const api = await makeAthenaHealthApi(baseUrl, accessToken);
+  const api = makeAthenaHealthApi(baseUrl, accessToken);
   const patientUrl = `/fhir/r4/Patient/${patientId}`;
   const resp = await api.get(patientUrl);
   if (!resp.data) throw new Error(`No body returned from ${patientUrl}`);
