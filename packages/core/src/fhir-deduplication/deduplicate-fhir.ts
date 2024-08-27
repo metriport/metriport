@@ -20,77 +20,70 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   // TODO: Add unit tests for the ID replacements
 
   const processedArrays: string[] = [];
-  // Conditions deduplication
   const conditionsResult = deduplicateConditions(resourceArrays.conditions);
   resourceArrays = replaceResourceReferences(resourceArrays, conditionsResult.refReplacementMap);
   processedArrays.push("conditions");
   deduplicatedEntries.push(...conditionsResult.combinedConditions);
+  // TODO dropped conditions list for Encounters
 
   // Medication deduplication
   const medicationsResult = deduplicateMedications(resourceArrays.medications);
   resourceArrays = replaceResourceReferences(resourceArrays, medicationsResult.refReplacementMap);
   processedArrays.push("medications");
   deduplicatedEntries.push(...medicationsResult.combinedMedications);
+  // NOW Meds list for MedicationAdministration, MedicatuionStatement, MedicatioNRequest
 
-  // MedicationAdministration deduplication
   const medAdminsResult = deduplicateMedAdmins(resourceArrays.medicationAdministrations);
   resourceArrays = replaceResourceReferences(resourceArrays, medAdminsResult.refReplacementMap);
   processedArrays.push("medicationAdministrations");
   deduplicatedEntries.push(...medAdminsResult.combinedMedAdmins);
 
-  // MedicationRequest deduplication
   const medRequestResult = deduplicateMedRequests(resourceArrays.medicationRequests);
   resourceArrays = replaceResourceReferences(resourceArrays, medRequestResult.refReplacementMap);
   processedArrays.push("medicationRequests");
   deduplicatedEntries.push(...medRequestResult.combinedMedRequests);
 
-  // MedicationStatement deduplication
   const medStatementResult = deduplicateMedStatements(resourceArrays.medicationStatements);
   resourceArrays = replaceResourceReferences(resourceArrays, medStatementResult.refReplacementMap);
   processedArrays.push("medicationStatements");
   deduplicatedEntries.push(...medStatementResult.combinedMedStatements);
 
-  // Encounter deduplication
   const encountersResult = deduplicateEncounters(resourceArrays.encounters);
   resourceArrays = replaceResourceReferences(resourceArrays, encountersResult.refReplacementMap);
   processedArrays.push("encounters");
   deduplicatedEntries.push(...encountersResult.combinedEncounters);
+  // TODO dropped encounters to remove in DiagnosticReports
 
-  // DiagnosticReport deduplication
-  const diagReportsResult = deduplicateDiagReports(resourceArrays.diagnosticReports);
-  resourceArrays = replaceResourceReferences(resourceArrays, diagReportsResult.refReplacementMap);
-  processedArrays.push("diagnosticReports");
-  deduplicatedEntries.push(...diagReportsResult.combinedDiagnosticReports);
-
-  // Immunization deduplication
-  const immunizationsResult = deduplicateImmunizations(resourceArrays.immunizations);
-  resourceArrays = replaceResourceReferences(resourceArrays, immunizationsResult.refReplacementMap);
-  processedArrays.push("immunizations");
-  deduplicatedEntries.push(...immunizationsResult.combinedImmunizations);
-
-  // Procedure deduplication
-  const proceduresResult = deduplicateProcedures(resourceArrays.procedures);
-  resourceArrays = replaceResourceReferences(resourceArrays, proceduresResult.refReplacementMap);
-  processedArrays.push("procedures");
-  deduplicatedEntries.push(...proceduresResult.combinedProcedures);
-
-  // Observation (social history) deduplication
   const obsSocialResult = deduplicateObservationsSocial(resourceArrays.observationSocialHistory);
   resourceArrays = replaceResourceReferences(resourceArrays, obsSocialResult.refReplacementMap);
   processedArrays.push("observationSocialHistory");
   deduplicatedEntries.push(...obsSocialResult.combinedObservations);
 
-  // Observation (labs) deduplication
   const obsLabsResult = deduplicateObservationsLabsAndVitals(resourceArrays.observationLaboratory);
   resourceArrays = replaceResourceReferences(resourceArrays, obsLabsResult.refReplacementMap);
   processedArrays.push("observationLaboratory");
   deduplicatedEntries.push(...obsLabsResult.combinedObservations);
 
-  // Observation (vitals) deduplication
   const obsVitalsResult = deduplicateObservationsLabsAndVitals(resourceArrays.observationVitals);
   resourceArrays = replaceResourceReferences(resourceArrays, obsVitalsResult.refReplacementMap);
   processedArrays.push("observationVitals");
   deduplicatedEntries.push(...obsVitalsResult.combinedObservations);
+  // TODO dropped encounters to remove in DiagnosticReports
+
+  const diagReportsResult = deduplicateDiagReports(resourceArrays.diagnosticReports);
+  resourceArrays = replaceResourceReferences(resourceArrays, diagReportsResult.refReplacementMap);
+  processedArrays.push("diagnosticReports");
+  deduplicatedEntries.push(...diagReportsResult.combinedDiagnosticReports);
+
+  const immunizationsResult = deduplicateImmunizations(resourceArrays.immunizations);
+  resourceArrays = replaceResourceReferences(resourceArrays, immunizationsResult.refReplacementMap);
+  processedArrays.push("immunizations");
+  deduplicatedEntries.push(...immunizationsResult.combinedImmunizations);
+
+  const proceduresResult = deduplicateProcedures(resourceArrays.procedures);
+  resourceArrays = replaceResourceReferences(resourceArrays, proceduresResult.refReplacementMap);
+  processedArrays.push("procedures");
+  deduplicatedEntries.push(...proceduresResult.combinedProcedures);
 
   // Rebuild the entries with deduplicated resources and add whatever is left unprocessed
   for (const [key, resources] of Object.entries(resourceArrays)) {

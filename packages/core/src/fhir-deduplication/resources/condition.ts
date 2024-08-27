@@ -2,6 +2,8 @@ import { CodeableConcept, Condition } from "@medplum/fhirtypes";
 import { ICD_10_CODE, ICD_10_OID, SNOMED_CODE, SNOMED_OID } from "../../util/constants";
 import { combineResources, createCompositeKey, fillMaps, getDateFromResource } from "../shared";
 
+const genericSnomedProblemCode = "55607006";
+
 /**
  * Approach:
  * 1. Group same Conditions based on:
@@ -20,6 +22,12 @@ export function deduplicateConditions(conditions: Condition[]) {
     }),
     refReplacementMap,
   };
+}
+
+function isBlacklistedCondition(condition: Condition): boolean {
+  const { snomedCode } = extractCodes(condition.code);
+  const blacklistCodes = [genericSnomedProblemCode];
+  return blacklistCodes.includes(snomedCode ?? "");
 }
 
 export function groupSameConditions(conditions: Condition[]): {
@@ -50,6 +58,9 @@ export function groupSameConditions(conditions: Condition[]): {
   }
 
   for (const condition of conditions) {
+    if (isBlacklistedCondition(condition)) {
+      continue;
+    }
     const date = getDateFromResource(condition);
     const { snomedCode, icd10Code } = extractCodes(condition.code);
 

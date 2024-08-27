@@ -6,6 +6,7 @@ import {
   RXNORM_OID,
   SNOMED_CODE,
   SNOMED_OID,
+  NDDF_CODE,
 } from "../../util/constants";
 import { combineResources, fillMaps } from "../shared";
 
@@ -43,7 +44,8 @@ export function groupSameMedications(medications: Medication[]): {
         system?.includes(NDC_CODE) ||
         system?.includes(NDC_OID) ||
         system?.includes(RXNORM_CODE) ||
-        system?.includes(RXNORM_OID)
+        system?.includes(RXNORM_OID) ||
+        system?.includes(NDDF_CODE)
       );
     });
     if (filtered) {
@@ -66,6 +68,7 @@ export function groupSameMedications(medications: Medication[]): {
     } else if (snomedCode) {
       fillMaps(snomedMap, snomedCode, medication, refReplacementMap, false, removeOtherCodes);
     }
+    // dead links
   }
 
   return {
