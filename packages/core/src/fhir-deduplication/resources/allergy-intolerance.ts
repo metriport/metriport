@@ -4,10 +4,10 @@ import {
   CodeableConcept,
   Coding,
 } from "@medplum/fhirtypes";
+import _, { cloneDeep } from "lodash";
 import { noKnownAllergiesSubstance } from "../__tests__/examples/allergy-examples";
-import { combineResources, fillMaps } from "../shared";
+import { combineResources, fillMaps, isKnownCoding } from "../shared";
 import { unknownCode } from "./observation-shared";
-import _ from "lodash";
 
 export function deduplicateAllergyIntolerances(allergies: AllergyIntolerance[]) {
   const { allergiesMap, refReplacementMap } = groupSameAllergies(allergies);
@@ -23,7 +23,6 @@ export function deduplicateAllergyIntolerances(allergies: AllergyIntolerance[]) 
  * Approach:
  * 1 map, where the key is made of:
  * - reaction substance
- * - reaction manifestation (optional)
  *
  * We want to remove "unknown" substances and manifestations in the process
  */
@@ -34,28 +33,11 @@ export function groupSameAllergies(allergies: AllergyIntolerance[]): {
   const allergiesMap = new Map<string, AllergyIntolerance>();
   const refReplacementMap = new Map<string, string[]>();
 
-  function postProcess(master: AllergyIntolerance): AllergyIntolerance {
-    const { substances, manifestations } = extractFromReactions(master.reaction);
-    if (substances && manifestations) {
-      master.reaction = [
-        {
-          substance: {
-            coding: substances,
-          },
-          manifestation: manifestations,
-        },
-      ];
-    }
-
-    return master;
-  }
-
   for (const allergy of allergies) {
-    const { substances } = extractFromReactions(allergy.reaction);
-
-    if (substances.length) {
-      const key = JSON.stringify({ substances });
-      fillMaps(allergiesMap, key, allergy, refReplacementMap, undefined, postProcess);
+    const { allergy: newAllergy, substance } = preProcess(allergy);
+    if (substance) {
+      const key = JSON.stringify({ substance });
+      fillMaps(allergiesMap, key, newAllergy, refReplacementMap, undefined, postProcess);
     }
   }
 
@@ -65,22 +47,54 @@ export function groupSameAllergies(allergies: AllergyIntolerance[]): {
   };
 }
 
+function preProcess(allergy: AllergyIntolerance): {
+  allergy: AllergyIntolerance;
+  substance?: CodeableConcept;
+} {
+  const newAllergy = cloneDeep(allergy);
+  const { substance, manifestations } = extractFromReactions(newAllergy.reaction);
+  if (!substance) return { allergy: newAllergy };
+  if (substance && manifestations) {
+    newAllergy.reaction = [
+      {
+        ...newAllergy.reaction?.[0],
+        substance,
+        manifestation: manifestations,
+      },
+    ];
+  }
+
+  if (_.isEmpty(substance)) delete newAllergy.reaction?.[0]?.substance;
+  if (!manifestations.length) delete newAllergy.reaction?.[0]?.manifestation;
+  return { allergy: newAllergy, substance };
+}
+
+function postProcess(allergy: AllergyIntolerance): AllergyIntolerance {
+  const { allergy: newAllergy } = preProcess(allergy);
+  return newAllergy;
+}
+
 export function extractFromReactions(reactions: AllergyIntoleranceReaction[] | undefined): {
-  substances: Coding[];
+  substance: CodeableConcept | undefined;
   manifestations: CodeableConcept[];
 } {
+  const substance: CodeableConcept = {};
   const substances = new Set<Coding>();
   const manifestations = new Set<CodeableConcept>();
 
   reactions?.forEach(reaction => {
-    reaction.substance?.coding?.forEach(sub => {
-      if (
-        isKnownAllergy(sub) &&
-        ![...substances].some(existingSub => _.isEqual(existingSub, sub))
-      ) {
-        substances.add(sub);
-      }
-    });
+    if (reaction.substance) {
+      reaction.substance.coding?.forEach(sub => {
+        if (
+          isKnownAllergy(sub) &&
+          ![...substances].some(existingSub => _.isEqual(existingSub, sub))
+        ) {
+          substances.add(sub);
+        }
+      });
+      if (reaction.substance.text) substance.text = reaction.substance.text;
+      if (substances.size > 0) substance.coding = [...substances];
+    }
 
     reaction.manifestation?.forEach(manif => {
       if (
@@ -92,7 +106,10 @@ export function extractFromReactions(reactions: AllergyIntoleranceReaction[] | u
     });
   });
 
-  return { substances: Array.from(substances), manifestations: Array.from(manifestations) };
+  return {
+    substance: _.isEmpty(substance) ? undefined : substance,
+    manifestations: Array.from(manifestations),
+  };
 }
 
 function isKnownAllergy(coding: Coding) {
@@ -111,14 +128,4 @@ function isKnownManifestation(concept: CodeableConcept) {
   const knownCoding = concept.coding?.filter(isKnownCoding);
   if (knownCoding?.length) return true;
   return false;
-}
-
-function isKnownCoding(coding: Coding) {
-  const code = coding.code?.trim().toLowerCase();
-  const system = coding.system?.trim().toLowerCase();
-  const display = coding.display?.trim().toLowerCase();
-  if (code === "unk" || system?.includes("unknown") || display === "unknown") {
-    return false;
-  }
-  return true;
 }

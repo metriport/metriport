@@ -1,4 +1,4 @@
-import { Resource } from "@medplum/fhirtypes";
+import { Coding, Resource } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
 import dayjs from "dayjs";
 
@@ -233,4 +233,14 @@ export function pickMostDescriptiveStatus<T extends string>(
     return lowestRanking;
   }
   return status;
+}
+
+export function isKnownCoding(coding: Coding) {
+  const code = coding.code?.trim().toLowerCase();
+  const system = coding.system?.trim().toLowerCase();
+  const display = coding.display?.trim().toLowerCase();
+  if (code === "unk" || system?.includes("unknown") || display === "unknown") {
+    return false;
+  }
+  return true;
 }

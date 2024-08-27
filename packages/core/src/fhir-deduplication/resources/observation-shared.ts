@@ -141,7 +141,8 @@ export function isUnknownCoding(coding: Coding, text?: string | undefined): bool
   if (
     system?.includes("unknown") &&
     code?.includes(unknownCoding.code.toLowerCase()) &&
-    (display === unknownCoding.display.toLowerCase() || text === unknownCode.text.toLowerCase())
+    display === unknownCoding.display.toLowerCase() &&
+    (!text || text === unknownCode.text.toLowerCase())
   ) {
     return true;
   }

@@ -68,43 +68,43 @@ describe("extractFromReactions", () => {
     expect(manifestations.length).toBe(1);
   });
 
-  it("removes unknown substances", () => {
+  it("removes unknown substance", () => {
     allergy.reaction = [
       {
         substance: noKnownAllergiesSubstance,
         manifestation: manifestationAnaphylactic,
       },
     ];
-    const { manifestations, substances } = extractFromReactions(allergy.reaction);
+    const { manifestations, substance } = extractFromReactions(allergy.reaction);
     expect(manifestations.length).toBe(1);
-    expect(substances.length).toBe(0);
+    expect(substance?.coding).toBe(undefined);
   });
 
-  it("keeps known substances", () => {
+  it("keeps known substance", () => {
     allergy.reaction = [
       {
         substance: substanceNsaid,
         manifestation: manifestationAnaphylactic,
       },
     ];
-    const { manifestations, substances } = extractFromReactions(allergy.reaction);
+    const { manifestations, substance } = extractFromReactions(allergy.reaction);
     expect(manifestations.length).toBe(1);
-    expect(substances.length).toBe(1);
+    expect(substance?.coding?.length).toBe(1);
   });
 
-  it("strips away unknown substances", () => {
+  it("strips away unknown substance", () => {
     allergy.reaction = [
       {
         substance: substanceNsaid,
         manifestation: manifestationAnaphylactic,
       },
     ];
-    const { manifestations, substances } = extractFromReactions(allergy.reaction);
+    const { manifestations, substance } = extractFromReactions(allergy.reaction);
     expect(manifestations.length).toBe(1);
-    expect(substances.length).toBe(1);
+    expect(substance?.coding?.length).toBe(1);
   });
 
-  it("strips away unknown substances from the reaction array", () => {
+  it("strips away unknown substance from the reaction array", () => {
     allergy.reaction = [
       {
         substance: noKnownAllergiesSubstance,
@@ -115,9 +115,9 @@ describe("extractFromReactions", () => {
         manifestation: manifestationAnaphylactic,
       },
     ];
-    const { manifestations, substances } = extractFromReactions(allergy.reaction);
+    const { manifestations, substance } = extractFromReactions(allergy.reaction);
     expect(manifestations.length).toBe(1);
-    expect(substances.length).toBe(1);
+    expect(substance?.coding?.length).toBe(1);
   });
 });
 
@@ -145,7 +145,7 @@ describe("groupSameAllergies", () => {
     expect(masterAllergy.reaction?.[0]?.manifestation?.length).toBe(1);
   });
 
-  it("correctly groups allergies with the same substances and combines manifestations", () => {
+  it("correctly groups allergies with the same substance and combines manifestations", () => {
     allergy.reaction = [
       {
         substance: substanceNsaid,
@@ -163,13 +163,12 @@ describe("groupSameAllergies", () => {
     const { allergiesMap } = groupSameAllergies([allergy, allergy2]);
     expect(allergiesMap.size).toBe(1);
     const masterAllergy = allergiesMap.values().next().value as AllergyIntolerance;
-
     expect(masterAllergy.reaction?.length).toBe(1);
     expect(masterAllergy.reaction?.[0]?.substance?.coding?.length).toBe(1);
     expect(masterAllergy.reaction?.[0]?.manifestation?.length).toBe(2);
   });
 
-  it("does not group allergies with different substances", () => {
+  it("does not group allergies with different substance", () => {
     allergy.reaction = [
       {
         substance: substanceCashew,
@@ -188,7 +187,7 @@ describe("groupSameAllergies", () => {
     expect(allergiesMap.size).toBe(2);
   });
 
-  it("removes allergies with unknown substances and manifestations ", () => {
+  it("removes allergies with unknown substance and manifestations ", () => {
     allergy.reaction = [
       {
         substance: noKnownAllergiesSubstance,
