@@ -6,14 +6,31 @@ export const MEDICAL_RECORD_KEY = "MR";
 export const createMRSummaryFileName = (
   cxId: string,
   patientId: string,
-  extension: ConsolidationConversionType
+  extension: ConsolidationConversionType,
+  dedupEnabled?: boolean
 ): string => {
   if (extension === "pdf") {
-    return createFilePath(cxId, patientId, `${MEDICAL_RECORD_KEY}.html.pdf`);
+    return createFilePath(
+      cxId,
+      patientId,
+      `${MEDICAL_RECORD_KEY}${dedupEnabled ? "_deduped" : ""}.html.pdf`
+    );
   }
-  return createFilePath(cxId, patientId, `${MEDICAL_RECORD_KEY}.${extension}`);
+  return createFilePath(
+    cxId,
+    patientId,
+    `${MEDICAL_RECORD_KEY}${dedupEnabled ? "_deduped" : ""}.${extension}`
+  );
 };
 
-export const createMRSummaryBriefFileName = (cxId: string, patientId: string): string => {
-  return createFilePath(cxId, patientId, `${MEDICAL_RECORD_KEY}_brief.txt`);
+export const createMRSummaryBriefFileName = (
+  cxId: string,
+  patientId: string,
+  dedupEnabled?: boolean
+): string => {
+  return createFilePath(
+    cxId,
+    patientId,
+    `${MEDICAL_RECORD_KEY}${dedupEnabled ? "_deduped" : ""}_brief.txt`
+  );
 };

@@ -52,6 +52,7 @@ export interface LambdaProps extends StackProps {
   readonly timeout?: Duration;
   readonly memory?: number;
   readonly reservedConcurrentExecutions?: number;
+  /** The maximum number of times to retry when the function returns an error. */
   readonly retryAttempts?: number;
   readonly maxEventAge?: Duration;
   readonly alarmSnsAction?: SnsAction;

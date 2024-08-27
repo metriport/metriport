@@ -32,6 +32,7 @@ function settings() {
     // How long messages should be invisible for other consumers, based on the lambda timeout
     // We don't care if the message gets reprocessed, so no need to have a huge visibility timeout that makes it harder to move messages to the DLQ
     visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
+    retryAttempts: 2,
   };
 }
 
@@ -69,6 +70,7 @@ export function createConnector({
     maxConcurrency,
     maxReceiveCount,
     visibilityTimeout,
+    retryAttempts,
   } = settings();
   const queue = defaultCreateQueue({
     stack,
@@ -97,6 +99,7 @@ export function createConnector({
     layers: [lambdaLayers.shared],
     memory: lambdaMemory,
     envType,
+    retryAttempts,
     envVars: {
       METRICS_NAMESPACE,
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),

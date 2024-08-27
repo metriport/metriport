@@ -306,6 +306,10 @@ export class APIStack extends Stack {
       medicalDocumentsBucket,
       sandboxSeedDataBucket,
       alarmAction: slackNotification?.alarmAction,
+      appConfigEnvVars: {
+        appId: appConfigAppId,
+        configId: appConfigConfigId,
+      },
     });
 
     //-------------------------------------------

@@ -6,6 +6,7 @@ import {
 import { getFeatureFlagValueStringArray } from "@metriport/core/external/aws/app-config";
 import { Brief, bundleToBrief } from "@metriport/core/external/aws/lambda-logic/bundle-to-brief";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
+import { bundleToHtml as bundleToHtmlNoDedup } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-no-dedup";
 import { bundleToHtmlADHD } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-adhd";
 import {
   getSignedUrl as coreGetSignedUrl,
@@ -15,7 +16,17 @@ import {
 import { getEnvType } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import {
+  isFhirDeduplicationEnabledForCx,
+  isAiBriefFeatureFlagEnabledForCx,
+} from "@metriport/core/external/aws/app-config";
+import { EventTypes, analytics } from "@metriport/core/external/analytics/posthog";
 import { errorToString, MetriportError } from "@metriport/shared";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
+import { deduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
+import { SearchSetBundle } from "@metriport/shared/medical";
+import { Resource } from "@medplum/fhirtypes";
+import { uploadConsolidatedBundleToS3 } from "@metriport/core/command/consolidated/consolidated-on-s3";
 import chromium from "@sparticuz/chromium";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -69,6 +80,58 @@ export async function handler({
     const isADHDFeatureFlagEnabled = cxsWithADHDFeatureFlagValue.includes(cxId);
     const bundle = await getBundleFromS3(fhirFileName);
     const isBriefFeatureFlagEnabled = await isAiBriefEnabled(generateAiBrief, cxId);
+
+    const dedupEnabled = await isFhirDeduplicationEnabledForCx(cxId);
+    if (dedupEnabled) {
+      const deduplicatedBundle = deduplicateSearchSetBundle(bundle);
+      await uploadConsolidatedBundleToS3({
+        patient: {
+          id: patientId,
+          cxId: cxId,
+        },
+        bundle,
+        s3BucketName: bucketName,
+        dedupEnabled,
+      });
+
+      const initialBundleLength = bundle.entry?.length;
+      const startedAt = new Date();
+
+      const finalBundleLength = deduplicatedBundle.entry?.length;
+
+      const deduplicationAnalyticsProps = {
+        distinctId: cxId,
+        event: EventTypes.fhirDeduplication,
+        properties: {
+          patientId: patientId,
+          initialBundleLength,
+          finalBundleLength,
+          duration: elapsedTimeFromNow(startedAt),
+        },
+      };
+      analytics(deduplicationAnalyticsProps);
+
+      const aiBriefContent = isBriefFeatureFlagEnabled
+        ? await bundleToBrief(bundle, cxId, patientId)
+        : undefined;
+
+      const briefFileName = createMRSummaryBriefFileName(cxId, patientId, dedupEnabled);
+      const aiBrief = prepareBriefToBundle({ aiBrief: aiBriefContent });
+
+      const html = bundleToHtmlNoDedup(bundle, aiBrief);
+      const hasContents = doesMrSummaryHaveContents(html);
+      log(`MR Summary has contents: ${hasContents}`);
+      const htmlFileName = createMRSummaryFileName(cxId, patientId, "html", dedupEnabled);
+
+      await storeMrSummaryAndBriefInS3({
+        bucketName,
+        htmlFileName,
+        briefFileName,
+        html,
+        aiBrief: aiBriefContent,
+        log,
+      });
+    }
 
     // TODO: Condense this functionality under a single function and put it on `@metriport/core`, so this can be used both here, and on the Lambda.
     const aiBriefContent = isBriefFeatureFlagEnabled
@@ -146,11 +209,6 @@ async function isAiBriefEnabled(
   // TODO checking for the FF, keep that no the OSS API
   const isAiBriefFeatureFlagEnabled = await isAiBriefFeatureFlagEnabledForCx(cxId);
   return isAiBriefFeatureFlagEnabled;
-}
-
-export async function isAiBriefFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
-  const cxsWithADHDFeatureFlagValue = await getCxsWithAiBriefFeatureFlagValue();
-  return cxsWithADHDFeatureFlagValue.includes(cxId);
 }
 
 async function getBundleFromS3(fileName: string) {
@@ -258,26 +316,6 @@ async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {
   } catch (error) {
     const msg = `Failed to get Feature Flag Value`;
     const extra = { featureFlagName: "cxsWithADHDMRFeatureFlag" };
-    capture.error(msg, { extra: { ...extra, error } });
-  }
-
-  return [];
-}
-
-async function getCxsWithAiBriefFeatureFlagValue(): Promise<string[]> {
-  try {
-    const featureFlag = await getFeatureFlagValueStringArray(
-      region,
-      appConfigAppID,
-      appConfigConfigID,
-      getEnvType(),
-      "cxsWithAiBriefFeatureFlag"
-    );
-
-    if (featureFlag?.enabled && featureFlag?.values) return featureFlag.values;
-  } catch (error) {
-    const msg = `Failed to get Feature Flag Value`;
-    const extra = { featureFlagName: "cxsWithAiBriefFeatureFlag" };
     capture.error(msg, { extra: { ...extra, error } });
   }
 
@@ -398,4 +436,14 @@ async function createFeedbackForBrief({
       },
     });
   }
+}
+
+function deduplicateSearchSetBundle(
+  fhirBundle: SearchSetBundle<Resource>
+): SearchSetBundle<Resource> {
+  const deduplicatedBundle = deduplicateFhir(fhirBundle);
+  return {
+    ...deduplicatedBundle,
+    type: "searchset",
+  };
 }
