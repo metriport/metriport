@@ -5,7 +5,7 @@ import athenaJwt from "./athenahealth/jwt";
 
 const routes = Router();
 
+routes.use("/athena/token", athenaJwt);
 routes.use("/athena", processCxIdAthena, athena);
-routes.use("/athena/jwt", athenaJwt);
 
 export default routes;

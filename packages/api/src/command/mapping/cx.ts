@@ -1,3 +1,4 @@
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import NotFoundError from "../../errors/not-found";
 import { CxMappingModel } from "../../models/cx-mapping";
 
@@ -18,7 +19,7 @@ export async function createCxMapping({
     where: { cxId, externalId, source },
   });
   if (existing) return;
-  await CxMappingModel.create({ cxId, externalId, source });
+  await CxMappingModel.create({ id: uuidv7(), cxId, externalId, source });
   return;
 }
 

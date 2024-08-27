@@ -13,6 +13,11 @@ export const up: Migration = async ({ context: queryInterface }) => {
       queryInterface,
       cxMappingTableName,
       {
+        id: {
+          type: DataTypes.STRING,
+          primaryKey: true,
+          allowNull: false,
+        },
         cxId: {
           type: DataTypes.STRING,
           field: "cx_id",
@@ -35,6 +40,11 @@ export const up: Migration = async ({ context: queryInterface }) => {
       queryInterface,
       patientMappingTableName,
       {
+        id: {
+          type: DataTypes.STRING,
+          primaryKey: true,
+          allowNull: false,
+        },
         patientId: {
           type: DataTypes.STRING,
           field: "patient_id",
@@ -57,6 +67,11 @@ export const up: Migration = async ({ context: queryInterface }) => {
       queryInterface,
       jwtTokenTableName,
       {
+        id: {
+          type: DataTypes.STRING,
+          primaryKey: true,
+          allowNull: false,
+        },
         token: {
           type: DataTypes.STRING,
           field: "token",

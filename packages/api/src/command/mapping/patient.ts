@@ -1,3 +1,4 @@
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import NotFoundError from "../../errors/not-found";
 import { PatientMappingModel } from "../../models/patient-mapping";
 
@@ -18,7 +19,7 @@ export async function createPatientMapping({
     where: { patientId, externalId, source },
   });
   if (existing) return;
-  await PatientMappingModel.create({ patientId, externalId, source });
+  await PatientMappingModel.create({ id: uuidv7(), patientId, externalId, source });
   return;
 }
 

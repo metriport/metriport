@@ -16,7 +16,6 @@ const address = z.object({
 });
 
 const telecome = z.object({
-  use: z.string(),
   value: z.string(),
   system: z.enum(["phone", "email"]),
 });

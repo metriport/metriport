@@ -6,6 +6,6 @@ import axios from "axios";
  */
 export const makeAthenaHealthApi = (baseUrl: string, accessToken: string) => {
   const api = axios.create({ baseURL: baseUrl });
-  api.defaults.headers.common["Authorization"] = accessToken;
+  api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
   return api;
 };

@@ -1,9 +1,9 @@
 import { DataTypes, Sequelize } from "sequelize";
 import { JwtToken } from "../domain/jwt-token";
-import { BaseModelNoId, ModelSetup } from "./_default";
+import { BaseModel, ModelSetup } from "./_default";
 
-export class JwtTokenModel extends BaseModelNoId<JwtTokenModel> implements JwtToken {
-  static NAME = "cx_mapping";
+export class JwtTokenModel extends BaseModel<JwtTokenModel> implements JwtToken {
+  static NAME = "jwt_token";
   declare token: string;
   declare exp: Date;
   declare source: string;
@@ -12,9 +12,9 @@ export class JwtTokenModel extends BaseModelNoId<JwtTokenModel> implements JwtTo
   static setup: ModelSetup = (sequelize: Sequelize) => {
     JwtTokenModel.init(
       {
-        ...BaseModelNoId.attributes(),
+        ...BaseModel.attributes(),
         token: {
-          type: DataTypes.UUID,
+          type: DataTypes.STRING,
         },
         exp: {
           type: DataTypes.DATE,
@@ -27,7 +27,7 @@ export class JwtTokenModel extends BaseModelNoId<JwtTokenModel> implements JwtTo
         },
       },
       {
-        ...BaseModelNoId.modelOptions(sequelize),
+        ...BaseModel.modelOptions(sequelize),
         tableName: JwtTokenModel.NAME,
       }
     );

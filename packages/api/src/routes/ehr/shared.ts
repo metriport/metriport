@@ -35,7 +35,9 @@ export async function saveJwtToken(source: string, req: Request, res: Response) 
 }
 
 export function getAccessToken(req: Request): string {
-  const accessToken = req.header("Authorization");
-  if (!accessToken) throw new Error("Missing Authorization Header");
+  const header = req.header("Authorization");
+  if (!header) throw new Error("Missing Authorization Header");
+  const accessToken = header.replace("Bearer ", "");
+  if (accessToken === "") throw new Error("Empty Authorization Header");
   return accessToken;
 }

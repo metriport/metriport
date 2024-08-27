@@ -22,6 +22,7 @@ export async function getPatient({
     return patientResourceSchema.parse(resp.data);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
+    console.log(error);
     if (error.response.status === 404) return undefined;
     throw error;
   }

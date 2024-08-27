@@ -1,12 +1,9 @@
 import { DataTypes, Sequelize } from "sequelize";
 import { PatientMapping } from "../domain/patient-mapping";
-import { BaseModelNoId, ModelSetup } from "./_default";
+import { BaseModel, ModelSetup } from "./_default";
 
-export class PatientMappingModel
-  extends BaseModelNoId<PatientMappingModel>
-  implements PatientMapping
-{
-  static NAME = "cx_mapping";
+export class PatientMappingModel extends BaseModel<PatientMappingModel> implements PatientMapping {
+  static NAME = "patient_mapping";
   declare externalId: string;
   declare patientId: string;
   declare source: string;
@@ -14,7 +11,7 @@ export class PatientMappingModel
   static setup: ModelSetup = (sequelize: Sequelize) => {
     PatientMappingModel.init(
       {
-        ...BaseModelNoId.attributes(),
+        ...BaseModel.attributes(),
         patientId: {
           type: DataTypes.UUID,
         },
@@ -26,7 +23,7 @@ export class PatientMappingModel
         },
       },
       {
-        ...BaseModelNoId.modelOptions(sequelize),
+        ...BaseModel.modelOptions(sequelize),
         tableName: PatientMappingModel.NAME,
       }
     );

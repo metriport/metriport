@@ -5,7 +5,7 @@ import {
   Coding,
 } from "@medplum/fhirtypes";
 import _, { cloneDeep } from "lodash";
-import { noKnownAllergiesSubstance } from "../__tests__/examples/allergy-examples";
+//import { noKnownAllergiesSubstance } from "../__tests__/examples/allergy-examples";
 import { combineResources, fillMaps } from "../shared";
 import { isUnknownCoding, unknownCode } from "./observation-shared";
 
@@ -113,7 +113,7 @@ export function extractFromReactions(reactions: AllergyIntoleranceReaction[] | u
 }
 
 function isKnownAllergy(coding: Coding) {
-  if (_.isEqual(coding, noKnownAllergiesSubstance)) return false;
+  //if (_.isEqual(coding, noKnownAllergiesSubstance)) return false;
   if (isUnknownCoding(coding)) return false;
 
   const code = coding.code?.trim().toLowerCase();

@@ -1,8 +1,8 @@
 import { DataTypes, Sequelize } from "sequelize";
 import { CxMapping } from "../domain/cx-mapping";
-import { BaseModelNoId, ModelSetup } from "./_default";
+import { BaseModel, ModelSetup } from "./_default";
 
-export class CxMappingModel extends BaseModelNoId<CxMappingModel> implements CxMapping {
+export class CxMappingModel extends BaseModel<CxMappingModel> implements CxMapping {
   static NAME = "cx_mapping";
   declare externalId: string;
   declare cxId: string;
@@ -11,7 +11,7 @@ export class CxMappingModel extends BaseModelNoId<CxMappingModel> implements CxM
   static setup: ModelSetup = (sequelize: Sequelize) => {
     CxMappingModel.init(
       {
-        ...BaseModelNoId.attributes(),
+        ...BaseModel.attributes(),
         cxId: {
           type: DataTypes.UUID,
         },
@@ -23,7 +23,7 @@ export class CxMappingModel extends BaseModelNoId<CxMappingModel> implements CxM
         },
       },
       {
-        ...BaseModelNoId.modelOptions(sequelize),
+        ...BaseModel.modelOptions(sequelize),
         tableName: CxMappingModel.NAME,
       }
     );
