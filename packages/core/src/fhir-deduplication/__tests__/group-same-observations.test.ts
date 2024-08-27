@@ -9,7 +9,7 @@ import {
   snomedCodeTobacco,
   valueConceptTobacco,
 } from "./examples/observation-examples";
-import { groupSameObservationsLabsAndVitals } from "../resources/observation-labs-and-vitals";
+import { groupSameObservations } from "../resources/observation";
 
 let observationId: string;
 let observationId2: string;
@@ -149,7 +149,7 @@ describe("groupSameObservationsSocial", () => {
   });
 });
 
-describe("groupSameObservationsLabsAndVitals", () => {
+describe("groupSameObservations", () => {
   it("correctly groups duplicate observations based on values, dates, and loinc codes", () => {
     observation.effectiveDateTime = dateTime.start;
     observation2.effectiveDateTime = dateTime.start;
@@ -158,7 +158,7 @@ describe("groupSameObservationsLabsAndVitals", () => {
     observation.valueCodeableConcept = valueConceptTobacco;
     observation2.valueCodeableConcept = valueConceptTobacco;
 
-    const { observationsMap } = groupSameObservationsLabsAndVitals([observation, observation2]);
+    const { observationsMap } = groupSameObservations([observation, observation2]);
     expect(observationsMap.size).toBe(1);
   });
 
@@ -168,7 +168,7 @@ describe("groupSameObservationsLabsAndVitals", () => {
     observation.valueCodeableConcept = valueConceptTobacco;
     observation2.valueCodeableConcept = valueConceptTobacco;
 
-    const { observationsMap } = groupSameObservationsLabsAndVitals([observation, observation2]);
+    const { observationsMap } = groupSameObservations([observation, observation2]);
     expect(observationsMap.size).toBe(0);
   });
 
@@ -178,7 +178,7 @@ describe("groupSameObservationsLabsAndVitals", () => {
     observation.code = loincCodeTobacco;
     observation2.code = loincCodeTobacco;
 
-    const { observationsMap } = groupSameObservationsLabsAndVitals([observation, observation2]);
+    const { observationsMap } = groupSameObservations([observation, observation2]);
     expect(observationsMap.size).toBe(0);
   });
   it("removes observations without codes", () => {
@@ -187,7 +187,7 @@ describe("groupSameObservationsLabsAndVitals", () => {
     observation.valueCodeableConcept = valueConceptTobacco;
     observation2.valueCodeableConcept = valueConceptTobacco;
 
-    const { observationsMap } = groupSameObservationsLabsAndVitals([observation, observation2]);
+    const { observationsMap } = groupSameObservations([observation, observation2]);
     expect(observationsMap.size).toBe(0);
   });
 
@@ -199,7 +199,7 @@ describe("groupSameObservationsLabsAndVitals", () => {
     observation.valueCodeableConcept = valueConceptTobacco;
     observation2.valueCodeableConcept = valueConceptTobacco;
 
-    const { observationsMap } = groupSameObservationsLabsAndVitals([observation, observation2]);
+    const { observationsMap } = groupSameObservations([observation, observation2]);
     expect(observationsMap.size).toBe(2);
   });
 
@@ -211,7 +211,7 @@ describe("groupSameObservationsLabsAndVitals", () => {
     observation.valueCodeableConcept = valueConceptTobacco;
     observation2.valueCodeableConcept = valueConceptTobacco;
 
-    const { observationsMap } = groupSameObservationsLabsAndVitals([observation, observation2]);
+    const { observationsMap } = groupSameObservations([observation, observation2]);
     expect(observationsMap.size).toBe(2);
   });
 
@@ -225,7 +225,7 @@ describe("groupSameObservationsLabsAndVitals", () => {
       coding: [{ ...valueConceptTobacco.coding[0], code: "some-other-random-code, like 111" }],
     };
 
-    const { observationsMap } = groupSameObservationsLabsAndVitals([observation, observation2]);
+    const { observationsMap } = groupSameObservations([observation, observation2]);
     expect(observationsMap.size).toBe(2);
   });
 });
