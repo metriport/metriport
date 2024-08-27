@@ -13,11 +13,11 @@ import {
   unknownCoding,
 } from "./observation-shared";
 
-export function deduplicateObservationsLabsAndVitals(observations: Observation[]): {
+export function deduplicateObservations(observations: Observation[]): {
   combinedObservations: Observation[];
   refReplacementMap: Map<string, string[]>;
 } {
-  const { observationsMap, refReplacementMap } = groupSameObservationsLabsAndVitals(observations);
+  const { observationsMap, refReplacementMap } = groupSameObservations(observations);
   return {
     combinedObservations: combineResources({
       combinedMaps: [observationsMap],
@@ -33,7 +33,7 @@ export function deduplicateObservationsLabsAndVitals(observations: Observation[]
  * - code
  * - value
  */
-export function groupSameObservationsLabsAndVitals(observations: Observation[]): {
+export function groupSameObservations(observations: Observation[]): {
   observationsMap: Map<string, Observation>;
   refReplacementMap: Map<string, string[]>;
 } {
