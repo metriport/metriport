@@ -1,9 +1,10 @@
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { Request, Response } from "express";
-import { getPatient } from "../../external/athenahealth/command/get-patient";
-import { requestLogger } from "../helpers/request-logger";
-import { asyncHandler, getCxIdOrFail, getFrom } from "../util";
+import { getPatient } from "../../../external/athenahealth/command/get-patient";
+import { requestLogger } from "../../helpers/request-logger";
+import { asyncHandler, getCxIdOrFail, getFrom } from "../../util";
+import { getAccessToken } from "../shared";
 
 const router = Router();
 
@@ -18,15 +19,13 @@ router.get(
   "/patient/:id",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
+    const accessToken = getAccessToken(req);
     const cxId = getCxIdOrFail(req);
-    const accessToken = req.headers.Authorization;
-    if (!accessToken) throw new Error("Missing Authorization Header");
-    if (Array.isArray(accessToken)) throw new Error("Malformed Authorization Header");
-    const patientId = getFrom("params").orFail("id", req);
+    const athenaPatientId = getFrom("params").orFail("id", req);
     const patient = await getPatient({
       accessToken,
       cxId,
-      patientId,
+      athenaPatientId,
     });
     return res.status(httpStatus.OK).json(patient);
   })

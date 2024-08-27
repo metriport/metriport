@@ -37,17 +37,3 @@ export const patientResourceSchema = z.object({
 });
 
 export type PatientResource = z.infer<typeof patientResourceSchema>;
-
-export const patientFhirResponseSchema = z.object({
-  type: z.string(),
-  timestamp: z.string(),
-  entry: z
-    .object({
-      resource: patientResourceSchema,
-      fullUrl: z.string(),
-    })
-    .array(),
-  resourceType: z.string(),
-});
-
-export type PatientFhirResponse = z.infer<typeof patientFhirResponseSchema>;

@@ -1,30 +1,33 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { EhrAccess, Ehr } from "../domain/ehr-access";
+import { PatientMapping } from "../domain/patient-mapping";
 import { BaseModelNoId, ModelSetup } from "./_default";
 
-export class EhrAccessModel extends BaseModelNoId<EhrAccessModel> implements EhrAccess {
-  static NAME = "ehr_access";
-  declare cxId: string;
-  declare ehrId: string;
-  declare ehrName: Ehr;
+export class PatientMappingModel
+  extends BaseModelNoId<PatientMappingModel>
+  implements PatientMapping
+{
+  static NAME = "cx_mapping";
+  declare externalId: string;
+  declare patientId: string;
+  declare source: string;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
-    EhrAccessModel.init(
+    PatientMappingModel.init(
       {
         ...BaseModelNoId.attributes(),
-        cxId: {
+        patientId: {
           type: DataTypes.UUID,
         },
-        ehrId: {
+        source: {
           type: DataTypes.STRING,
         },
-        ehrName: {
+        externalId: {
           type: DataTypes.STRING,
         },
       },
       {
         ...BaseModelNoId.modelOptions(sequelize),
-        tableName: EhrAccessModel.NAME,
+        tableName: PatientMappingModel.NAME,
       }
     );
   };
