@@ -5,6 +5,7 @@ import { deduplicateAllergyIntolerances } from "./resources/allergy-intolerance"
 import { deduplicateConditions } from "./resources/condition";
 import { deduplicateDiagReports } from "./resources/diagnostic-report";
 import { deduplicateEncounters } from "./resources/encounter";
+import { deduplicateFamilyMemberHistories } from "./resources/family-member-history";
 import { deduplicateImmunizations } from "./resources/immunization";
 import { deduplicateLocations } from "./resources/location";
 import { deduplicateMedications } from "./resources/medication";
@@ -16,6 +17,7 @@ import { deduplicateObservationsSocial } from "./resources/observation-social";
 import { deduplicateOrganizations } from "./resources/organization";
 import { deduplicatePractitioners } from "./resources/practitioner";
 import { deduplicateProcedures } from "./resources/procedure";
+import { deduplicateRelatedPersons } from "./resources/related-person";
 
 export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> {
   let resourceArrays = extractFhirTypesFromBundle(fhirBundle);
@@ -126,6 +128,26 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   resourceArrays = replaceResourceReferences(resourceArrays, organizationsResult.refReplacementMap);
   processedArrays.push("organizations");
   deduplicatedEntries.push(...organizationsResult.combinedOrganizations);
+
+  // RelatedPerson deduplication
+  const relatedPersonsResult = deduplicateRelatedPersons(resourceArrays.relatedPersons);
+  resourceArrays = replaceResourceReferences(
+    resourceArrays,
+    relatedPersonsResult.refReplacementMap
+  );
+  processedArrays.push("relatedPersons");
+  deduplicatedEntries.push(...relatedPersonsResult.combinedRelatedPersons);
+
+  // FamilyMemberHistory deduplication
+  const famMemHistoriesResult = deduplicateFamilyMemberHistories(
+    resourceArrays.familyMemberHistories
+  );
+  resourceArrays = replaceResourceReferences(
+    resourceArrays,
+    famMemHistoriesResult.refReplacementMap
+  );
+  processedArrays.push("familyMemberHistories");
+  deduplicatedEntries.push(...famMemHistoriesResult.combinedFamMemHistories);
 
   // Rebuild the entries with deduplicated resources and add whatever is left unprocessed
   for (const [key, resources] of Object.entries(resourceArrays)) {
