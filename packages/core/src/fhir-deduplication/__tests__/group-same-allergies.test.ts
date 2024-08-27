@@ -2,14 +2,11 @@ import { faker } from "@faker-js/faker";
 import { AllergyIntolerance } from "@medplum/fhirtypes";
 import { allergyFood } from "../../fhir-to-cda/cda-templates/components/__tests__/allergy-examples";
 import { makeAllergy } from "../../fhir-to-cda/cda-templates/components/__tests__/make-allergy";
-import {
-  extractFromReactions,
-  groupSameAllergies,
-  noKnownAllergiesSubstance,
-} from "../resources/allergy-intolerance";
+import { extractFromReactions, groupSameAllergies } from "../resources/allergy-intolerance";
 import {
   manifestationAnaphylactic,
   manifestationSkinEruption,
+  noKnownAllergiesSubstance,
   substanceCashew,
   substanceNsaid,
   unknownManifestation,

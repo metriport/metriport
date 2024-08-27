@@ -112,7 +112,6 @@ export function extractFromReactions(reactions: AllergyIntoleranceReaction[] | u
 }
 
 function isKnownAllergy(coding: Coding) {
-  if (_.isEqual(coding, noKnownAllergiesSubstance)) return false;
   if (isUnknownCoding(coding)) return false;
 
   const code = coding.code?.trim().toLowerCase();
@@ -129,13 +128,3 @@ function isKnownManifestation(concept: CodeableConcept) {
   if (knownCoding?.length) return true;
   return false;
 }
-
-export const noKnownAllergiesSubstance = {
-  coding: [
-    {
-      system: "urn:oid:2.16.840.1.113883.4.296",
-      code: "900388",
-      display: "No Known Allergies",
-    },
-  ],
-};
