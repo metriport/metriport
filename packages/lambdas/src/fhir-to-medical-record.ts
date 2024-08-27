@@ -112,13 +112,13 @@ export async function handler({
       analytics(deduplicationAnalyticsProps);
 
       const aiBriefContent = isBriefFeatureFlagEnabled
-        ? await bundleToBrief(bundle, cxId, patientId)
+        ? await bundleToBrief(deduplicatedBundle, cxId, patientId)
         : undefined;
 
       const briefFileName = createMRSummaryBriefFileName(cxId, patientId, dedupEnabled);
       const aiBrief = prepareBriefToBundle({ aiBrief: aiBriefContent });
 
-      const html = bundleToHtmlNoDedup(bundle, aiBrief);
+      const html = bundleToHtmlNoDedup(deduplicatedBundle, aiBrief);
       const hasContents = doesMrSummaryHaveContents(html);
       log(`MR Summary has contents: ${hasContents}`);
       const htmlFileName = createMRSummaryFileName(cxId, patientId, "html", dedupEnabled);
