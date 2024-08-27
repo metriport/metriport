@@ -56,13 +56,3 @@ export const substanceCashew = {
     },
   ],
 };
-
-export const noKnownAllergiesSubstance = {
-  coding: [
-    {
-      system: "urn:oid:2.16.840.1.113883.4.296",
-      code: "900388",
-      display: "No Known Allergies",
-    },
-  ],
-};
