@@ -89,7 +89,7 @@ export async function handler({
           id: patientId,
           cxId: cxId,
         },
-        bundle,
+        bundle: deduplicatedBundle,
         s3BucketName: bucketName,
         dedupEnabled,
       });
