@@ -6,12 +6,13 @@ import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared";
 import { Patient, PatientDemoData } from "@metriport/core/domain/patient";
 import { getPatient as getAthenaPatient } from "@metriport/core/external/athenahealth/get-patient";
+import { EhrSources } from "../../shared";
 import {
   getPatientOrFail as getMetriportPatientOrFail,
   getPatientByDemo as getMetriportPatientByDemo,
-} from "../../../command/medical/patient/get-patient";
-import { getPatientMappingId, createPatientMapping } from "../../../command/mapping/patient";
-import { Config } from "../../../shared/config";
+} from "../../../../command/medical/patient/get-patient";
+import { getPatientMappingId, createPatientMapping } from "../../../../command/mapping/patient";
+import { Config } from "../../../../shared/config";
 import { createMetriportAddresses, createMetriportContacts } from "../shared";
 
 const athenaUrl = Config.getAthenaHealthUrl();
@@ -28,7 +29,7 @@ export async function getPatient({
   const { log } = out(`AthenaHealth getPatient - cxId ${cxId} athenaPatientId ${athenaPatientId}`);
   const existingPatientId = await getPatientMappingId({
     externalId: athenaPatientId,
-    source: "athenahealth",
+    source: EhrSources.ATHENA,
   });
   if (existingPatientId) {
     return await getMetriportPatientOrFail({ cxId, id: existingPatientId });
@@ -101,7 +102,7 @@ export async function getPatient({
     await createPatientMapping({
       patientId: meteriportPatient.id,
       externalId: athenaPatientId,
-      source: "athenahealth",
+      source: EhrSources.ATHENA,
     });
   }
   return meteriportPatient;

@@ -1,10 +1,10 @@
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { Request, Response } from "express";
-import { getPatient } from "../../../external/athenahealth/command/get-patient";
+import { getPatient } from "../../../external/ehr/athenahealth/command/get-patient";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFrom } from "../../util";
-import { getAccessToken } from "../shared";
+import { getAuthorizationToken } from "../../util";
 
 const router = Router();
 
@@ -16,10 +16,10 @@ const router = Router();
  * @returns Returns the organization with the specified OID.
  */
 router.get(
-  "/patient/:id",
+  "/:id",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const accessToken = getAccessToken(req);
+    const accessToken = getAuthorizationToken(req);
     const cxId = getCxIdOrFail(req);
     const athenaPatientId = getFrom("params").orFail("id", req);
     const patient = await getPatient({

@@ -1,9 +1,12 @@
+import z from "zod";
 import { out } from "@metriport/core/util/log";
 import { errorToString, stringToBoolean } from "@metriport/shared";
 import { NextFunction, Request, Response } from "express";
 import BadRequestError from "../errors/bad-request";
 import { Config } from "../shared/config";
 import { capture } from "../shared/notifications";
+import httpStatus from "http-status";
+import { getJwtToken, createJwtToken } from "../command/jwt-token";
 
 const { log } = out("asyncHandler");
 
@@ -168,3 +171,58 @@ export const getDateOrFail = (req: Request): string => {
   if (!date) throw new BadRequestError("Missing date query param");
   return date as string;
 };
+
+const createJwtSchema = z.object({
+  exp: z.number(),
+  data: z.record(z.string(), z.string()),
+});
+
+export async function checkJwtToken({
+  source,
+  req,
+  res,
+}: {
+  source: string;
+  req: Request;
+  res: Response;
+}) {
+  const token = getAuthorizationToken(req);
+  const authInfo = await getJwtToken({
+    token,
+    source,
+  });
+  if (authInfo) {
+    if (authInfo.exp >= new Date()) {
+      return res.status(httpStatus.OK).json({ active: true });
+    }
+  }
+  return res.status(httpStatus.OK).json({ active: false });
+}
+
+export async function saveJwtToken({
+  source,
+  req,
+  res,
+}: {
+  source: string;
+  req: Request;
+  res: Response;
+}) {
+  const token = getAuthorizationToken(req);
+  const createJwtData = createJwtSchema.parse(req.body);
+  await createJwtToken({
+    token,
+    exp: new Date(createJwtData.exp),
+    source,
+    data: createJwtData.data,
+  });
+  return res.sendStatus(httpStatus.OK);
+}
+
+export function getAuthorizationToken(req: Request): string {
+  const header = req.header("Authorization");
+  if (!header) throw new Error("Missing Authorization Header");
+  const token = header.replace("Bearer ", "");
+  if (token === "") throw new Error("Empty Authorization Header");
+  return token;
+}

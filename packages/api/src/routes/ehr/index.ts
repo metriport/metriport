@@ -1,11 +1,9 @@
 import Router from "express-promise-router";
-import { processCxId as processCxIdAthena } from "./athenahealth/middleware";
-import athena from "./athenahealth/patient";
-import athenaJwt from "./athenahealth/jwt";
+import { processCxId as processCxIdAthena } from "./athenahealth/auth/middleware";
+import athena from "./athenahealth";
 
 const routes = Router();
 
-routes.use("/athena/token", athenaJwt);
-routes.use("/athena", processCxIdAthena, athena);
+routes.use("/athenahealth", processCxIdAthena, athena);
 
 export default routes;
