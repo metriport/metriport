@@ -6,7 +6,7 @@ import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
 import { getCxFFStatus } from "../command/internal/get-hie-enabled-feature-flags-status";
 import { updateCxHieEnabledFFs } from "../command/internal/update-hie-enabled-feature-flags";
-import { createCxMapping } from "../command/mapping/cx";
+import { findOrCreateCxMapping } from "../command/mapping/cx";
 import { checkApiQuota } from "../command/medical/admin/api";
 import { dbMaintenance } from "../command/medical/admin/db-maintenance";
 import {
@@ -330,7 +330,7 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const source = getFromQueryOrFail("source", req);
     const externalId = getFromQueryOrFail("externalId", req);
-    await createCxMapping({
+    await findOrCreateCxMapping({
       cxId,
       source,
       externalId,

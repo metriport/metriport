@@ -42,7 +42,7 @@ export async function createCoverageAssessments({
       const patient = await createOrUpdatePatient(patientCreateCmd);
       patients.push(patient);
     } catch (error) {
-      const msg = `Cause: ${errorToString(error)}`;
+      const msg = `Failed to create or update patient. Cause: ${errorToString(error)}`;
       log(msg);
       errors.push(msg);
     }
@@ -92,7 +92,9 @@ export async function createCoverageAssessments({
         triggerConsolidated: true,
       });
     } catch (error) {
-      const msg = `Patient: ${patient.id}. Cause: ${errorToString(error)}`;
+      const msg = `Failed to query docuemnts for patient. Patient: ${
+        patient.id
+      }. Cause: ${errorToString(error)}`;
       log(msg);
       errors.push(msg);
     }

@@ -10,15 +10,14 @@ export type CxMappingParams = {
 
 export type CxMappingLookUpParam = Omit<CxMappingParams, "cxId">;
 
-export async function createCxMapping({
+export async function findOrCreateCxMapping({
   cxId,
   externalId,
   source,
-}: CxMappingParams): Promise<void> {
+}: CxMappingParams): Promise<CxMappingModel> {
   const existing = await getCxMapping({ externalId, source });
-  if (existing) return;
-  await CxMappingModel.create({ id: uuidv7(), cxId, externalId, source });
-  return;
+  if (existing) existing;
+  return await CxMappingModel.create({ id: uuidv7(), cxId, externalId, source });
 }
 
 export async function getCxMapping({

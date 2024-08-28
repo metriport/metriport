@@ -11,14 +11,20 @@ export type JwtTokenParams = {
 
 export type JwtTokenLookUpParam = Omit<JwtTokenParams, "exp" | "data">;
 
-export async function createJwtToken({ token, exp, source, data }: JwtTokenParams): Promise<void> {
+export async function findOrCreateJwtToken({
+  token,
+  exp,
+  source,
+  data,
+}: JwtTokenParams): Promise<JwtTokenModel> {
   const existing = await getJwtToken({ token, source });
-  if (existing) return;
-  await JwtTokenModel.create({ id: uuidv7(), token, exp, source, data });
-  return;
+  if (existing) existing;
+  return await JwtTokenModel.create({ id: uuidv7(), token, exp, source, data });
 }
 
-// This function DOES NOT check expiration
+/**
+ * DOES NOT CHECK EXPIRATION
+ */
 export async function getJwtToken({
   token,
   source,

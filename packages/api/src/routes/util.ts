@@ -6,7 +6,7 @@ import BadRequestError from "../errors/bad-request";
 import { Config } from "../shared/config";
 import { capture } from "../shared/notifications";
 import httpStatus from "http-status";
-import { getJwtToken, createJwtToken } from "../command/jwt-token";
+import { getJwtToken, findOrCreateJwtToken } from "../command/jwt-token";
 
 const { log } = out("asyncHandler");
 
@@ -211,7 +211,7 @@ export async function saveJwtToken({
 }) {
   const token = getAuthorizationToken(req);
   const createJwtData = createJwtSchema.parse(req.body);
-  await createJwtToken({
+  await findOrCreateJwtToken({
     token,
     exp: new Date(createJwtData.exp),
     source,

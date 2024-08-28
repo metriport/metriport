@@ -10,15 +10,14 @@ export type PatientMappingParams = {
 
 export type PatientMappingLookUpParam = Omit<PatientMappingParams, "patientId">;
 
-export async function createPatientMapping({
+export async function findOrCreatePatientMapping({
   patientId,
   externalId,
   source,
-}: PatientMappingParams): Promise<void> {
+}: PatientMappingParams): Promise<PatientMappingModel> {
   const existing = await getPatientMapping({ externalId, source });
-  if (existing) return;
-  await PatientMappingModel.create({ id: uuidv7(), patientId, externalId, source });
-  return;
+  if (existing) existing;
+  return await PatientMappingModel.create({ id: uuidv7(), patientId, externalId, source });
 }
 
 export async function getPatientMapping({

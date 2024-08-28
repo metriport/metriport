@@ -11,7 +11,7 @@ import {
   getPatientOrFail as getMetriportPatientOrFail,
   getPatientByDemo as getMetriportPatientByDemo,
 } from "../../../../command/medical/patient/get-patient";
-import { getPatientMapping, createPatientMapping } from "../../../../command/mapping/patient";
+import { getPatientMapping, findOrCreatePatientMapping } from "../../../../command/mapping/patient";
 import { Config } from "../../../../shared/config";
 import { createMetriportAddresses, createMetriportContacts } from "../shared";
 
@@ -42,10 +42,10 @@ export async function getPatient({
   });
   if (!athenaPatient) return undefined;
   if (athenaPatient.name.length === 0) {
-    throw new Error("AthenaHealth patient missing at lesat one name");
+    throw new Error("AthenaHealth patient missing at least one name");
   }
   if (athenaPatient.address.length === 0) {
-    throw new Error("AthenaHealth patient missing at lesat one address");
+    throw new Error("AthenaHealth patient missing at least one address");
   }
 
   const patientDemos = createMetriportPatientDemos(athenaPatient);
@@ -69,7 +69,7 @@ export async function getPatient({
       const patient = await getMetriportPatientByDemo({ cxId, demo });
       if (patient) patients.push(patient);
     } catch (error) {
-      const msg = `Cause: ${errorToString(error)}`;
+      const msg = `Failed to get patient by demo. Cause: ${errorToString(error)}`;
       log(msg);
       errors.push(msg);
     }
@@ -97,15 +97,15 @@ export async function getPatient({
 
   // Check if more than one different patient returned?
 
-  const meteriportPatient = patients[0];
-  if (meteriportPatient) {
-    await createPatientMapping({
-      patientId: meteriportPatient.id,
+  const metriportPatient = patients[0];
+  if (metriportPatient) {
+    await findOrCreatePatientMapping({
+      patientId: metriportPatient.id,
       externalId: athenaPatientId,
       source: EhrSources.ATHENA,
     });
   }
-  return meteriportPatient;
+  return metriportPatient;
 }
 
 function createMetriportPatientDemos(patient: PatientResource): PatientDemoData[] {
