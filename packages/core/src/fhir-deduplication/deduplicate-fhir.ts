@@ -1,17 +1,24 @@
 import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
 import { ExtractedFhirTypes, extractFhirTypesFromBundle } from "../external/fhir/shared/bundle";
+import { deduplicateAllergyIntolerances } from "./resources/allergy-intolerance";
 import { deduplicateConditions } from "./resources/condition";
+import { deduplicateCoverages } from "./resources/coverage";
 import { deduplicateDiagReports } from "./resources/diagnostic-report";
 import { deduplicateEncounters } from "./resources/encounter";
+import { deduplicateFamilyMemberHistories } from "./resources/family-member-history";
 import { deduplicateImmunizations } from "./resources/immunization";
+import { deduplicateLocations } from "./resources/location";
 import { deduplicateMedications } from "./resources/medication";
 import { deduplicateMedAdmins } from "./resources/medication-administration";
 import { deduplicateMedRequests } from "./resources/medication-request";
 import { deduplicateMedStatements } from "./resources/medication-statement";
-import { deduplicateObservationsLabsAndVitals } from "./resources/observation-labs-and-vitals";
+import { deduplicateObservations } from "./resources/observation";
 import { deduplicateObservationsSocial } from "./resources/observation-social";
+import { deduplicateOrganizations } from "./resources/organization";
+import { deduplicatePractitioners } from "./resources/practitioner";
 import { deduplicateProcedures } from "./resources/procedure";
+import { deduplicateRelatedPersons } from "./resources/related-person";
 
 export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> {
   let resourceArrays = extractFhirTypesFromBundle(fhirBundle);
@@ -21,11 +28,24 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
 
   const processedArrays: string[] = [];
   const danglingCrucialLinks: string[] = [];
+
+  // Practitioner deduplication
+  const practitionersResult = deduplicatePractitioners(resourceArrays.practitioners);
+  resourceArrays = replaceResourceReferences(resourceArrays, practitionersResult.refReplacementMap);
+  processedArrays.push("practitioners");
+  deduplicatedEntries.push(...practitionersResult.combinedPractitioners);
+
   // Conditions deduplication
   const conditionsResult = deduplicateConditions(resourceArrays.conditions);
   resourceArrays = replaceResourceReferences(resourceArrays, conditionsResult.refReplacementMap);
   processedArrays.push("conditions");
   deduplicatedEntries.push(...conditionsResult.combinedConditions);
+
+  // Allergies deduplication
+  const allergiesResult = deduplicateAllergyIntolerances(resourceArrays.allergies);
+  resourceArrays = replaceResourceReferences(resourceArrays, allergiesResult.refReplacementMap);
+  processedArrays.push("allergies");
+  deduplicatedEntries.push(...allergiesResult.combinedAllergies);
 
   // Medication deduplication
   const medicationsResult = deduplicateMedications(resourceArrays.medications);
@@ -83,16 +103,60 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   deduplicatedEntries.push(...obsSocialResult.combinedObservations);
 
   // Observation (labs) deduplication
-  const obsLabsResult = deduplicateObservationsLabsAndVitals(resourceArrays.observationLaboratory);
+  const obsLabsResult = deduplicateObservations(resourceArrays.observationLaboratory);
   resourceArrays = replaceResourceReferences(resourceArrays, obsLabsResult.refReplacementMap);
   processedArrays.push("observationLaboratory");
   deduplicatedEntries.push(...obsLabsResult.combinedObservations);
 
   // Observation (vitals) deduplication
-  const obsVitalsResult = deduplicateObservationsLabsAndVitals(resourceArrays.observationVitals);
+  const obsVitalsResult = deduplicateObservations(resourceArrays.observationVitals);
   resourceArrays = replaceResourceReferences(resourceArrays, obsVitalsResult.refReplacementMap);
   processedArrays.push("observationVitals");
   deduplicatedEntries.push(...obsVitalsResult.combinedObservations);
+
+  // Observation (other) deduplication
+  const obsOthersResult = deduplicateObservations(resourceArrays.observationOther);
+  resourceArrays = replaceResourceReferences(resourceArrays, obsOthersResult.refReplacementMap);
+  processedArrays.push("observationOther");
+  deduplicatedEntries.push(...obsOthersResult.combinedObservations);
+
+  // Location deduplication
+  const locationsResult = deduplicateLocations(resourceArrays.locations);
+  resourceArrays = replaceResourceReferences(resourceArrays, locationsResult.refReplacementMap);
+  processedArrays.push("locations");
+  deduplicatedEntries.push(...locationsResult.combinedLocations);
+
+  // Organization deduplication
+  const organizationsResult = deduplicateOrganizations(resourceArrays.organizations);
+  resourceArrays = replaceResourceReferences(resourceArrays, organizationsResult.refReplacementMap);
+  processedArrays.push("organizations");
+  deduplicatedEntries.push(...organizationsResult.combinedOrganizations);
+
+  // RelatedPerson deduplication
+  const relatedPersonsResult = deduplicateRelatedPersons(resourceArrays.relatedPersons);
+  resourceArrays = replaceResourceReferences(
+    resourceArrays,
+    relatedPersonsResult.refReplacementMap
+  );
+  processedArrays.push("relatedPersons");
+  deduplicatedEntries.push(...relatedPersonsResult.combinedRelatedPersons);
+
+  // FamilyMemberHistory deduplication
+  const famMemHistoriesResult = deduplicateFamilyMemberHistories(
+    resourceArrays.familyMemberHistories
+  );
+  resourceArrays = replaceResourceReferences(
+    resourceArrays,
+    famMemHistoriesResult.refReplacementMap
+  );
+  processedArrays.push("familyMemberHistories");
+  deduplicatedEntries.push(...famMemHistoriesResult.combinedFamMemHistories);
+
+  // Coverage deduplication
+  const coveragesResult = deduplicateCoverages(resourceArrays.coverages);
+  resourceArrays = replaceResourceReferences(resourceArrays, coveragesResult.refReplacementMap);
+  processedArrays.push("coverages");
+  deduplicatedEntries.push(...coveragesResult.combinedCoverages);
 
   // Rebuild the entries with deduplicated resources and add whatever is left unprocessed
   for (const [key, resources] of Object.entries(resourceArrays)) {
