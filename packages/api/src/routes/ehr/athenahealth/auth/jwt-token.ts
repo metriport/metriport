@@ -1,8 +1,10 @@
 import Router from "express-promise-router";
+import httpStatus from "http-status";
 import { Request, Response } from "express";
 import { requestLogger } from "../../../helpers/request-logger";
+import { checkJwtToken, saveJwtToken, createJwtSchema } from "../../../../external/ehr/jwt-token";
 import { EhrSources } from "../../../../external/ehr/shared";
-import { asyncHandler, checkJwtToken, saveJwtToken } from "../../../util";
+import { asyncHandler, getAuthorizationToken } from "../../../util";
 
 const router = Router();
 
@@ -13,11 +15,12 @@ router.get(
   "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    return await checkJwtToken({
+    const token = getAuthorizationToken(req);
+    const tokenStatus = await checkJwtToken({
+      token,
       source: EhrSources.ATHENA,
-      req,
-      res,
     });
+    return res.status(httpStatus.OK).json(tokenStatus);
   })
 );
 
@@ -28,11 +31,14 @@ router.post(
   "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    return await saveJwtToken({
+    const token = getAuthorizationToken(req);
+    const data = createJwtSchema.parse(req.body);
+    await saveJwtToken({
+      token,
       source: EhrSources.ATHENA,
-      req,
-      res,
+      data,
     });
+    return res.sendStatus(httpStatus.OK);
   })
 );
 
