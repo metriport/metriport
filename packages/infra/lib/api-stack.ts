@@ -46,6 +46,7 @@ import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
 import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
 import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
+import * as AppConfigUtils from "./shared/app-config";
 import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
@@ -1320,20 +1321,12 @@ export class APIStack extends Stack {
       alarmSnsAction: alarmAction,
     });
 
-    fhirToMedicalRecordLambda.role?.attachInlinePolicy(
-      new iam.Policy(this, "FhirLambdaPermissionsForAppConfig", {
-        statements: [
-          new iam.PolicyStatement({
-            actions: [
-              "appconfig:StartConfigurationSession",
-              "appconfig:GetLatestConfiguration",
-              "appconfig:GetConfiguration",
-            ],
-            resources: ["*"],
-          }),
-        ],
-      })
-    );
+    AppConfigUtils.allowReadConfig({
+      scope: this,
+      resourceName: "FhirToMrLambda",
+      resourceRole: fhirToMedicalRecordLambda.role,
+      appConfigResources: ["*"],
+    });
 
     medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambda);
 
