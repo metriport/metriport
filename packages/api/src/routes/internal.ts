@@ -6,6 +6,7 @@ import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
 import { getCxFFStatus } from "../command/internal/get-hie-enabled-feature-flags-status";
 import { updateCxHieEnabledFFs } from "../command/internal/update-hie-enabled-feature-flags";
+import { createCxMapping } from "../command/mapping/cx";
 import { checkApiQuota } from "../command/medical/admin/api";
 import { dbMaintenance } from "../command/medical/admin/db-maintenance";
 import {
@@ -34,7 +35,7 @@ import mpiRoutes from "./medical/internal-mpi";
 import organizationRoutes from "./medical/internal-organization";
 import patientRoutes from "./medical/internal-patient";
 import { getUUIDFrom } from "./schemas/uuid";
-import { asyncHandler, getFrom, getFromQueryAsBoolean } from "./util";
+import { asyncHandler, getFrom, getFromQueryAsBoolean, getFromQueryOrFail } from "./util";
 
 const router = Router();
 
@@ -310,6 +311,31 @@ router.put(
       demoAugEnabled,
     });
     return res.status(httpStatus.OK).json(result);
+  })
+);
+
+/**
+ * POST /internal/cx-mapping
+ *
+ * Create cx mapping
+ *
+ * @param req.query.cxId - The cutomer's ID.
+ * @param req.query.source - Whether to enabled CommonWell.
+ * @param req.query.externalId - Whether to enabled CareQuality.
+ */
+router.post(
+  "/cx-mapping",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const source = getFromQueryOrFail("source", req);
+    const externalId = getFromQueryOrFail("externalId", req);
+    await createCxMapping({
+      cxId,
+      source,
+      externalId,
+    });
+    return res.sendStatus(httpStatus.OK);
   })
 );
 
