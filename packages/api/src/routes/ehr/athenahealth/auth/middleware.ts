@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { getCxMappingId } from "../../../../command/mapping/cx";
+import { getCxMapping } from "../../../../command/mapping/cx";
 import { getJwtToken } from "../../../../command/jwt-token";
 import { EhrSources } from "../../../../external/ehr/shared";
 import { getAuthorizationToken } from "../../../util";
@@ -21,10 +21,10 @@ async function processCxIdAsync(req: Request): Promise<void> {
   if (!externalId) {
     throw new Error(`No AthenaHealth externalId value found for token ${accessToken}`);
   }
-  const cxId = await getCxMappingId({
+  const existingCustomer = await getCxMapping({
     externalId,
     source: EhrSources.ATHENA,
   });
-  if (!cxId) throw new Error(`No AthenaHealth cxId found for externalId ${externalId}`);
-  req.cxId = cxId;
+  if (!existingCustomer) throw new Error(`No AthenaHealth cxId found for externalId ${externalId}`);
+  req.cxId = existingCustomer.cxId;
 }

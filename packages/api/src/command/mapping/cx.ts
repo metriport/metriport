@@ -15,35 +15,27 @@ export async function createCxMapping({
   externalId,
   source,
 }: CxMappingParams): Promise<void> {
-  const existing = await CxMappingModel.findOne({
-    where: { cxId, externalId, source },
-  });
+  const existing = await getCxMapping({ externalId, source });
   if (existing) return;
   await CxMappingModel.create({ id: uuidv7(), cxId, externalId, source });
   return;
 }
 
-export async function getCxMappingId({
+export async function getCxMapping({
   externalId,
   source,
-}: CxMappingLookUpParam): Promise<string | undefined> {
+}: CxMappingLookUpParam): Promise<CxMappingModel | undefined> {
   const existing = await CxMappingModel.findOne({
     where: { externalId, source },
   });
   if (!existing) return undefined;
-  return existing.cxId;
+  return existing;
 }
 
-export async function deleteCxMapping({
-  cxId,
-  externalId,
-  source,
-}: CxMappingParams): Promise<void> {
-  const existing = await CxMappingModel.findOne({
-    where: { cxId, externalId, source },
-  });
+export async function deleteCxMapping({ externalId, source }: CxMappingLookUpParam): Promise<void> {
+  const existing = await getCxMapping({ externalId, source });
   if (!existing) {
-    throw new NotFoundError("Entry not found", undefined, { cxId, externalId, source });
+    throw new NotFoundError("Entry not found", undefined, { externalId, source });
   }
   await existing.destroy();
 }

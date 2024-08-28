@@ -15,35 +15,30 @@ export async function createPatientMapping({
   externalId,
   source,
 }: PatientMappingParams): Promise<void> {
-  const existing = await PatientMappingModel.findOne({
-    where: { patientId, externalId, source },
-  });
+  const existing = await getPatientMapping({ externalId, source });
   if (existing) return;
   await PatientMappingModel.create({ id: uuidv7(), patientId, externalId, source });
   return;
 }
 
-export async function getPatientMappingId({
+export async function getPatientMapping({
   externalId,
   source,
-}: PatientMappingLookUpParam): Promise<string | undefined> {
+}: PatientMappingLookUpParam): Promise<PatientMappingModel | undefined> {
   const existing = await PatientMappingModel.findOne({
     where: { externalId, source },
   });
   if (!existing) return undefined;
-  return existing.patientId;
+  return existing;
 }
 
 export async function deletePatientMapping({
-  patientId,
   externalId,
   source,
-}: PatientMappingParams): Promise<void> {
-  const existing = await PatientMappingModel.findOne({
-    where: { patientId, externalId, source },
-  });
+}: PatientMappingLookUpParam): Promise<void> {
+  const existing = await getPatientMapping({ externalId, source });
   if (!existing) {
-    throw new NotFoundError("Entry not found", undefined, { patientId, externalId, source });
+    throw new NotFoundError("Entry not found", undefined, { externalId, source });
   }
   await existing.destroy();
 }

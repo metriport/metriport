@@ -12,9 +12,7 @@ export type JwtTokenParams = {
 export type JwtTokenLookUpParam = Omit<JwtTokenParams, "exp" | "data">;
 
 export async function createJwtToken({ token, exp, source, data }: JwtTokenParams): Promise<void> {
-  const existing = await JwtTokenModel.findOne({
-    where: { token, source },
-  });
+  const existing = await getJwtToken({ token, source });
   if (existing) return;
   await JwtTokenModel.create({ id: uuidv7(), token, exp, source, data });
   return;
@@ -33,9 +31,7 @@ export async function getJwtToken({
 }
 
 export async function deleteJwtToken({ token, source }: JwtTokenLookUpParam): Promise<void> {
-  const existing = await JwtTokenModel.findOne({
-    where: { token, source },
-  });
+  const existing = await getJwtToken({ token, source });
   if (!existing) throw new NotFoundError("Entry not found", undefined, { token, source });
   await existing.destroy();
 }

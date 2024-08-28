@@ -11,7 +11,7 @@ import {
   getPatientOrFail as getMetriportPatientOrFail,
   getPatientByDemo as getMetriportPatientByDemo,
 } from "../../../../command/medical/patient/get-patient";
-import { getPatientMappingId, createPatientMapping } from "../../../../command/mapping/patient";
+import { getPatientMapping, createPatientMapping } from "../../../../command/mapping/patient";
 import { Config } from "../../../../shared/config";
 import { createMetriportAddresses, createMetriportContacts } from "../shared";
 
@@ -27,12 +27,12 @@ export async function getPatient({
   athenaPatientId: string;
 }): Promise<Patient | undefined> {
   const { log } = out(`AthenaHealth getPatient - cxId ${cxId} athenaPatientId ${athenaPatientId}`);
-  const existingPatientId = await getPatientMappingId({
+  const existingPatient = await getPatientMapping({
     externalId: athenaPatientId,
     source: EhrSources.ATHENA,
   });
-  if (existingPatientId) {
-    return await getMetriportPatientOrFail({ cxId, id: existingPatientId });
+  if (existingPatient) {
+    return await getMetriportPatientOrFail({ cxId, id: existingPatient.patientId });
   }
   if (!athenaUrl) throw new Error("Athenahealth url not defined");
   const athenaPatient = await getAthenaPatient({
