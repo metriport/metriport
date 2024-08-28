@@ -9,6 +9,7 @@ import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { EnvType } from "./env-type";
+import * as AppConfigUtils from "./shared/app-config";
 import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { Secrets } from "./shared/secrets";
@@ -405,6 +406,7 @@ export class LambdasNestedStack extends NestedStack {
     return outboundDocumentRetrievalLambda;
   }
 
+  /** AKA, get consolidated lambda */
   private setupFhirBundleLambda({
     lambdaLayers,
     vpc,
@@ -451,6 +453,13 @@ export class LambdasNestedStack extends NestedStack {
     });
 
     bucket.grantReadWrite(fhirToBundleLambda);
+
+    AppConfigUtils.allowReadConfig({
+      scope: this,
+      resourceName: "FhirToBundleLambda",
+      resourceRole: fhirToBundleLambda.role,
+      appConfigResources: ["*"],
+    });
 
     return fhirToBundleLambda;
   }
