@@ -9,7 +9,7 @@ import { Contact } from "@metriport/core/domain/contact";
 import { Address } from "@metriport/core/domain/address";
 
 export function createMetriportContacts(patient: PatientResource): Contact[] {
-  return patient.telecom.flatMap(telecom => {
+  return (patient.telecom ?? []).flatMap(telecom => {
     if (telecom.system === "email") {
       return {
         email: normalizeEmail(telecom.value),
