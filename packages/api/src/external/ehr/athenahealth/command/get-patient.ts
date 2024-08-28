@@ -95,10 +95,20 @@ export async function getPatient({
     });
   }
 
-  // Check if more than one different patient returned?
-
   const metriportPatient = patients[0];
   if (metriportPatient) {
+    const uniquePatientIds = new Set(patients.map(patient => patient.id));
+    if (uniquePatientIds.size > 1) {
+      capture.message("AthenaHealth patient mapping to more than one Metriport patient", {
+        extra: {
+          cxId,
+          patientCreateCount: patientDemos.length,
+          patientIds: uniquePatientIds,
+          context: "athenahealth.get-patient",
+        },
+        level: "warning",
+      });
+    }
     await findOrCreatePatientMapping({
       patientId: metriportPatient.id,
       externalId: athenaPatientId,

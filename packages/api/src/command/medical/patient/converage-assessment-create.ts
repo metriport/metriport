@@ -92,9 +92,7 @@ export async function createCoverageAssessments({
         triggerConsolidated: true,
       });
     } catch (error) {
-      const msg = `Failed to query docuemnts for patient. Patient: ${
-        patient.id
-      }. Cause: ${errorToString(error)}`;
+      const msg = `Failed query docuemnts. Patient: ${patient.id}. Cause: ${errorToString(error)}`;
       log(msg);
       errors.push(msg);
     }
