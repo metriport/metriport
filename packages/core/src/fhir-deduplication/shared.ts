@@ -1,6 +1,6 @@
 import { Resource } from "@medplum/fhirtypes";
-import { cloneDeep } from "lodash";
 import dayjs from "dayjs";
+import { cloneDeep } from "lodash";
 
 const dateFormats = ["datetime", "date"] as const;
 export type DateFormats = (typeof dateFormats)[number];

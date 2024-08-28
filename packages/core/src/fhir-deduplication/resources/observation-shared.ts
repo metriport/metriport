@@ -1,5 +1,6 @@
 import {
   CodeableConcept,
+  Coding,
   Observation,
   Period,
   Quantity,
@@ -7,6 +8,7 @@ import {
   SampledData,
 } from "@medplum/fhirtypes";
 import { LOINC_CODE, LOINC_OID, SNOMED_CODE, SNOMED_OID } from "../../util/constants";
+import _ from "lodash";
 
 export const observationStatus = [
   "entered-in-error",
@@ -37,9 +39,9 @@ export function extractCodes(concept: CodeableConcept | undefined): {
   snomedCode: string | undefined;
   otherCode: string | undefined;
 } {
-  let loincCode = undefined;
-  let snomedCode = undefined;
-  let otherCode = undefined;
+  let loincCode: string | undefined;
+  let snomedCode: string | undefined;
+  let otherCode: string | undefined;
   if (!concept) return { loincCode, snomedCode, otherCode };
 
   if (concept && concept.coding) {
@@ -52,14 +54,8 @@ export function extractCodes(concept: CodeableConcept | undefined): {
         } else if (system.includes(SNOMED_CODE) || system.includes(SNOMED_OID)) {
           snomedCode = code;
         } else {
-          const display = coding.display?.trim().toLowerCase();
           const text = concept.text?.trim().toLowerCase();
-          if (
-            system.includes("unknown") &&
-            code.includes(unknownCoding.code) &&
-            display === unknownCoding.display.toLowerCase() &&
-            (!text || text === unknownCode.text.toLowerCase())
-          ) {
+          if (isUnknownCoding(coding, text)) {
             // This identifies and ignores unknown codes
             continue;
           } else {
@@ -127,8 +123,8 @@ export function extractValueFromObservation(
 }
 
 export const unknownCoding = {
-  system: "http://terminology.hl7.org/valueset/v3-unknown",
-  code: "unk",
+  system: "http://terminology.hl7.org/ValueSet/v3-Unknown",
+  code: "UNK",
   display: "unknown",
 };
 
@@ -136,3 +132,19 @@ export const unknownCode = {
   coding: [unknownCoding],
   text: "unknown",
 };
+
+export function isUnknownCoding(coding: Coding, text?: string | undefined): boolean {
+  if (_.isEqual(coding, unknownCoding)) return true;
+  const system = coding.system?.toLowerCase();
+  const code = coding.code?.trim().toLowerCase();
+  const display = coding.display?.trim().toLowerCase();
+  if (
+    system?.includes("unknown") &&
+    code?.includes(unknownCoding.code.toLowerCase()) &&
+    display === unknownCoding.display.toLowerCase() &&
+    (!text || text === unknownCode.text.toLowerCase())
+  ) {
+    return true;
+  }
+  return false;
+}

@@ -5,9 +5,9 @@ import { combineResources, fillMaps, pickMostDescriptiveStatus } from "../shared
 import {
   extractCodes,
   extractValueFromObservation,
+  isUnknownCoding,
   retrieveCode,
   statusRanking,
-  unknownCoding,
 } from "./observation-shared";
 
 dayjs.extend(utc);
@@ -46,11 +46,7 @@ export function groupSameObservationsSocial(observations: Observation[]): {
     target: Observation
   ): Observation {
     const code = master.code;
-    const filtered = code?.coding?.filter(coding => {
-      const system = coding.system?.toLowerCase();
-      const code = coding.code?.toLowerCase();
-      return !system?.includes(unknownCoding.system) && !code?.includes(unknownCoding.code);
-    });
+    const filtered = code?.coding?.filter(coding => !isUnknownCoding(coding));
     if (filtered) {
       master.code = {
         ...code,
