@@ -61,6 +61,11 @@ export function groupSameMedications(medications: Medication[]): {
   }
 
   for (const medication of medications) {
+    if (medication.id && medication.code?.text?.toLowerCase().includes("no known")) {
+      danglingReferences.add(createMedicationRef(medication.id));
+      continue;
+    }
+
     // TODO: Deal with medications that contain >1 rxnorm / ndc code
     const { rxnormCode, ndcCode, snomedCode } = extractCodes(medication.code);
 
@@ -71,7 +76,7 @@ export function groupSameMedications(medications: Medication[]): {
     } else if (snomedCode) {
       fillMaps(snomedMap, snomedCode, medication, refReplacementMap, false, removeOtherCodes);
     } else {
-      if (medication.id) danglingReferences.add(`Medication/${medication.id}`);
+      if (medication.id) danglingReferences.add(createMedicationRef(medication.id));
     }
   }
 
@@ -110,4 +115,8 @@ function extractCodes(concept: CodeableConcept | undefined): {
     }
   }
   return { rxnormCode, ndcCode, snomedCode };
+}
+
+function createMedicationRef(medId: string): string {
+  return `Medication/${medId}`;
 }

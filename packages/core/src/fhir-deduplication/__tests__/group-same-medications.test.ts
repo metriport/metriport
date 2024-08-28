@@ -54,6 +54,15 @@ describe("groupSameMedications", () => {
     expect(snomedMap.size).toBe(1);
   });
 
+  it("removes no known medication resources based on the text tag", () => {
+    medication.code = { coding: [snomedCodeAm], text: "No known medication" };
+
+    const { rxnormMap, ndcMap, snomedMap } = groupSameMedications([medication]);
+    expect(rxnormMap.size).toBe(0);
+    expect(ndcMap.size).toBe(0);
+    expect(snomedMap.size).toBe(0);
+  });
+
   it("does not group duplicate medications that don't have overlapping codes", () => {
     medication.code = { coding: [rxnormCodeAm] };
     medication2.code = { coding: [ndcCodeAm] };
