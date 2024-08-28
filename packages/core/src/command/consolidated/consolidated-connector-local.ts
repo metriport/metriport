@@ -1,6 +1,12 @@
+import { Resource } from "@medplum/fhirtypes";
 import { executeWithNetworkRetries, InternalSendConsolidated } from "@metriport/shared";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
+import { SearchSetBundle } from "@metriport/shared/medical";
 import axios from "axios";
+import { analytics, EventTypes } from "../../external/analytics/posthog";
+import { isFhirDeduplicationEnabledForCx } from "../../external/aws/app-config";
 import { getConsolidatedFhirBundle } from "../../external/fhir/consolidated/consolidated";
+import { deduplicateFhir } from "../../fhir-deduplication/deduplicate-fhir";
 import {
   ConsolidatedDataConnector,
   ConsolidatedDataRequestAsync,
@@ -17,12 +23,31 @@ export class ConsolidatedDataConnectorLocal implements ConsolidatedDataConnector
   async execute(
     params: ConsolidatedDataRequestSync | ConsolidatedDataRequestAsync
   ): Promise<ConsolidatedDataResponse> {
-    const bundle = await getConsolidatedFhirBundle(params);
-    const { bucket, key } = await uploadConsolidatedBundleToS3({
-      ...params,
-      bundle,
-      s3BucketName: this.bucketName,
-    });
+    const { cxId, id: patientId } = params.patient;
+
+    const [originalBundle, dedupEnabled] = await Promise.all([
+      getConsolidatedFhirBundle(params),
+      isFhirDeduplicationEnabledForCx(params.patient.cxId),
+    ]);
+
+    const dedupedBundle = deduplicate({ cxId, patientId, bundle: originalBundle });
+
+    const [originalS3Info, dedupedS3Info] = await Promise.all([
+      uploadConsolidatedBundleToS3({
+        ...params,
+        s3BucketName: this.bucketName,
+        bundle: originalBundle,
+      }),
+      uploadConsolidatedBundleToS3({
+        ...params,
+        s3BucketName: this.bucketName,
+        bundle: dedupedBundle,
+        isDeduped: true,
+      }),
+    ]);
+
+    const { bucket, key } = dedupEnabled ? dedupedS3Info : originalS3Info;
+
     const info = {
       bundleLocation: bucket,
       bundleFilename: key,
@@ -57,4 +82,40 @@ async function postConsolidated({
       maxAttempts: MAX_API_NOTIFICATION_ATTEMPTS,
     }
   );
+}
+
+function deduplicate({
+  cxId,
+  patientId,
+  bundle,
+}: {
+  cxId: string;
+  patientId: string;
+  bundle: SearchSetBundle<Resource>;
+}): SearchSetBundle<Resource> {
+  const startedAt = new Date();
+  const dedupedBundle = deduplicateSearchSetBundle(bundle);
+
+  const deduplicationAnalyticsProps = {
+    distinctId: cxId,
+    event: EventTypes.fhirDeduplication,
+    properties: {
+      patientId: patientId,
+      initialBundleLength: bundle.entry?.length,
+      finalBundleLength: dedupedBundle.entry?.length,
+      duration: elapsedTimeFromNow(startedAt),
+    },
+  };
+  analytics(deduplicationAnalyticsProps);
+  return dedupedBundle;
+}
+
+function deduplicateSearchSetBundle(
+  fhirBundle: SearchSetBundle<Resource>
+): SearchSetBundle<Resource> {
+  const deduplicatedBundle = deduplicateFhir(fhirBundle);
+  return {
+    ...deduplicatedBundle,
+    type: "searchset",
+  };
 }
