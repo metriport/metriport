@@ -42,10 +42,6 @@ async function getCqFacilityMatches(cqLinks: CQLink[]): Promise<PatientFacilityM
   const patientFacilityMatches: PatientFacilityMatch[] = [];
 
   for (const cqLink of cqLinks) {
-    if (!cqLink.patientResource) {
-      continue;
-    }
-
     const cqFacility = await CQDirectoryEntryModel.findOne({
       where: { id: cqLink.oid },
     });
@@ -54,7 +50,9 @@ async function getCqFacilityMatches(cqLinks: CQLink[]): Promise<PatientFacilityM
       continue;
     }
 
-    const patientMatchDemo = cqPatientResourceToNormalizedLinkDemographics(cqLink.patientResource);
+    const patientMatchDemo = cqLink.patientResource
+      ? cqPatientResourceToNormalizedLinkDemographics(cqLink.patientResource)
+      : undefined;
 
     patientFacilityMatches.push({
       name: cqFacility.name ?? undefined,
