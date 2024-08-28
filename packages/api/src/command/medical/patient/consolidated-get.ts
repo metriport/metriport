@@ -15,6 +15,7 @@ import { getConsolidatedBundleFromS3 } from "@metriport/core/command/consolidate
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
 import { EventTypes, analytics } from "@metriport/core/external/analytics/posthog";
+import { deduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { emptyFunction } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
@@ -23,6 +24,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { intersection } from "lodash";
 import { processAsyncError } from "../../../errors";
+import { isFhirDeduplicationEnabledForCx } from "../../../external/aws/app-config";
 import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
@@ -290,6 +292,26 @@ export async function getConsolidated({
 
     analytics(defaultAnalyticsProps);
 
+    const startedAt = new Date();
+    const initialBundleLength = bundle.entry?.length;
+
+    if (await isFhirDeduplicationEnabledForCx(patient.cxId)) {
+      bundle = deduplicateSearchSetBundle(bundle);
+
+      const finalBundleLength = bundle.entry?.length;
+      const deduplicationAnalyticsProps = {
+        distinctId: patient.cxId,
+        event: EventTypes.fhirDeduplication,
+        properties: {
+          patientId: patient.id,
+          initialBundleLength,
+          finalBundleLength,
+          duration: elapsedTimeFromNow(startedAt),
+        },
+      };
+      analytics(deduplicationAnalyticsProps);
+    }
+
     if (shouldCreateMedicalRecord) {
       // If we need to convert to medical record, we also have to update the resulting
       // FHIR bundle to represent that.
@@ -359,6 +381,16 @@ export function filterOutPrelimDocRefs(
 
     return true;
   });
+}
+
+function deduplicateSearchSetBundle(
+  fhirBundle: SearchSetBundle<Resource>
+): SearchSetBundle<Resource> {
+  const deduplicatedBundle = deduplicateFhir(fhirBundle);
+  return {
+    ...deduplicatedBundle,
+    type: "searchset",
+  };
 }
 
 async function uploadConsolidatedJsonAndReturnUrl({
