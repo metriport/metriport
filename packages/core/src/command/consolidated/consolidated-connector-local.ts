@@ -8,6 +8,12 @@ import {
   ConsolidatedDataResponse,
 } from "./consolidated-connector";
 import { uploadConsolidatedBundleToS3 } from "./consolidated-on-s3";
+import { isFhirDeduplicationEnabledForCx } from "../../external/aws/app-config";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
+import { SearchSetBundle } from "@metriport/shared/medical";
+import { deduplicateFhir } from "../../fhir-deduplication/deduplicate-fhir";
+import { Resource } from "@medplum/fhirtypes";
+import { EventTypes, analytics } from "../../external/analytics/posthog";
 
 const MAX_API_NOTIFICATION_ATTEMPTS = 5;
 
@@ -17,7 +23,27 @@ export class ConsolidatedDataConnectorLocal implements ConsolidatedDataConnector
   async execute(
     params: ConsolidatedDataRequestSync | ConsolidatedDataRequestAsync
   ): Promise<ConsolidatedDataResponse> {
-    const bundle = await getConsolidatedFhirBundle(params);
+    let bundle = await getConsolidatedFhirBundle(params);
+    const dedupEnabled = await isFhirDeduplicationEnabledForCx(params.patient.cxId);
+    if (dedupEnabled) {
+      const initialBundleLength = bundle.entry?.length;
+      bundle = deduplicateSearchSetBundle(bundle);
+      const startedAt = new Date();
+
+      const finalBundleLength = bundle.entry?.length;
+
+      const deduplicationAnalyticsProps = {
+        distinctId: params.patient.cxId,
+        event: EventTypes.fhirDeduplication,
+        properties: {
+          patientId: params.patient.id,
+          initialBundleLength,
+          finalBundleLength,
+          duration: elapsedTimeFromNow(startedAt),
+        },
+      };
+      analytics(deduplicationAnalyticsProps);
+    }
     const { bucket, key } = await uploadConsolidatedBundleToS3({
       ...params,
       bundle,
@@ -57,4 +83,14 @@ async function postConsolidated({
       maxAttempts: MAX_API_NOTIFICATION_ATTEMPTS,
     }
   );
+}
+
+function deduplicateSearchSetBundle(
+  fhirBundle: SearchSetBundle<Resource>
+): SearchSetBundle<Resource> {
+  const deduplicatedBundle = deduplicateFhir(fhirBundle);
+  return {
+    ...deduplicatedBundle,
+    type: "searchset",
+  };
 }
