@@ -42,6 +42,8 @@ export async function deleteCxMapping({
   const existing = await CxMappingModel.findOne({
     where: { cxId, externalId, source },
   });
-  if (!existing) throw new NotFoundError("Entry not found", undefined, { cxId });
+  if (!existing) {
+    throw new NotFoundError("Entry not found", undefined, { cxId, externalId, source });
+  }
   await existing.destroy();
 }

@@ -42,6 +42,8 @@ export async function deletePatientMapping({
   const existing = await PatientMappingModel.findOne({
     where: { patientId, externalId, source },
   });
-  if (!existing) throw new NotFoundError("Entry not found", undefined, { patientId });
+  if (!existing) {
+    throw new NotFoundError("Entry not found", undefined, { patientId, externalId, source });
+  }
   await existing.destroy();
 }

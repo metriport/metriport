@@ -36,6 +36,6 @@ export async function deleteJwtToken({ token, source }: JwtTokenLookUpParam): Pr
   const existing = await JwtTokenModel.findOne({
     where: { token, source },
   });
-  if (!existing) throw new NotFoundError("Entry not found", undefined, { token });
+  if (!existing) throw new NotFoundError("Entry not found", undefined, { token, source });
   await existing.destroy();
 }

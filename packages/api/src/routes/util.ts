@@ -195,6 +195,7 @@ export async function checkJwtToken({
     if (authInfo.exp >= new Date()) {
       return res.status(httpStatus.OK).json({ active: true });
     }
+    return res.status(httpStatus.OK).json({ active: false, expired: true });
   }
   return res.status(httpStatus.OK).json({ active: false });
 }

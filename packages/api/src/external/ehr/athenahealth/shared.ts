@@ -25,8 +25,9 @@ export function createMetriportContacts(patient: PatientResource): Contact[] {
 
 export function createMetriportAddresses(patient: PatientResource): Address[] {
   return patient.address.map(address => {
-    if (address.line.length === 0)
+    if (address.line.length === 0) {
       throw new Error("AthenaHealth patient missing at lesat one line in address");
+    }
     return {
       addressLine1: address.line[0] as string,
       addressLine2: address.line.length > 1 ? address.line.slice(1).join(" ") : undefined,
