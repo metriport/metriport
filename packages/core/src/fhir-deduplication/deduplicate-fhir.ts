@@ -27,6 +27,7 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   // TODO: Add unit tests for the ID replacements
 
   const processedArrays: string[] = [];
+  const danglingCrucialLinks: string[] = [];
 
   // Practitioner deduplication
   const practitionersResult = deduplicatePractitioners(resourceArrays.practitioners);
@@ -50,6 +51,7 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   const medicationsResult = deduplicateMedications(resourceArrays.medications);
   resourceArrays = replaceResourceReferences(resourceArrays, medicationsResult.refReplacementMap);
   processedArrays.push("medications");
+  danglingCrucialLinks.push(...medicationsResult.danglingReferences);
   deduplicatedEntries.push(...medicationsResult.combinedMedications);
 
   // MedicationAdministration deduplication
@@ -168,11 +170,15 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
     }
   }
 
+  const deduplicatedNoDangling = removeResourcesWithDanglingLinks(
+    deduplicatedEntries,
+    danglingCrucialLinks
+  );
   const deduplicatedBundle: Bundle = cloneDeep(fhirBundle);
-  deduplicatedBundle.entry = deduplicatedEntries.map(
+  deduplicatedBundle.entry = deduplicatedNoDangling.map(
     r => ({ resource: r } as BundleEntry<Resource>)
   );
-  deduplicatedBundle.total = deduplicatedEntries.length;
+  deduplicatedBundle.total = deduplicatedNoDangling.length;
 
   return deduplicatedBundle;
 }
@@ -193,4 +199,21 @@ function replaceResourceReferences(
   }
 
   return JSON.parse(updatedArrays);
+}
+
+export function removeResourcesWithDanglingLinks(
+  entries: BundleEntry<Resource>[],
+  danglingLinks: string[]
+) {
+  return entries.flatMap(entry => {
+    if (!hasDanglingLink(JSON.stringify(entry), danglingLinks)) return entry;
+    return [];
+  });
+}
+
+function hasDanglingLink(resourceString: string, refs: string[]): boolean {
+  for (const ref of refs) {
+    if (resourceString.includes(ref)) return true;
+  }
+  return false;
 }

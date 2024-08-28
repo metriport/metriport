@@ -29,6 +29,7 @@ import {
   Resource,
   ResourceType,
   ServiceRequest,
+  DocumentReference,
 } from "@medplum/fhirtypes";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
@@ -131,6 +132,7 @@ export type ExtractedFhirTypes = {
   devices: Device[];
   goals: Goal[];
   serviceRequests: ServiceRequest[];
+  documentReferences: DocumentReference[];
 };
 
 export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
@@ -162,12 +164,15 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
   const devices: Device[] = [];
   const goals: Goal[] = [];
   const serviceRequests: ServiceRequest[] = [];
+  const documentReferences: DocumentReference[] = [];
 
   if (bundle.entry) {
     for (const entry of bundle.entry) {
       const resource = entry.resource;
       if (resource?.resourceType === "Patient") {
         patient = resource as Patient;
+      } else if (resource?.resourceType === "DocumentReference") {
+        documentReferences.push(resource as DocumentReference);
       } else if (resource?.resourceType === "Composition") {
         compositions.push(resource as Composition);
       } else if (resource?.resourceType === "MedicationAdministration") {
@@ -269,5 +274,6 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
     devices,
     goals,
     serviceRequests,
+    documentReferences,
   };
 }
