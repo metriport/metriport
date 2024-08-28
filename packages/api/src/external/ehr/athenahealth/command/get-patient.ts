@@ -36,6 +36,7 @@ export async function getPatient({
   }
   if (!athenaUrl) throw new Error("Athenahealth url not defined");
   const athenaPatient = await getAthenaPatient({
+    cxId,
     accessToken,
     baseUrl: athenaUrl,
     patientId: athenaPatientId,

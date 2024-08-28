@@ -97,6 +97,7 @@ export function createAPIService({
   outboundDocumentRetrievalLambda,
   generalBucket,
   medicalDocumentsUploadBucket,
+  ehrResponsesBucket,
   fhirToBundleLambda,
   fhirToMedicalRecordLambda,
   fhirToCdaConverterLambda,
@@ -127,6 +128,7 @@ export function createAPIService({
   outboundDocumentRetrievalLambda: ILambda;
   generalBucket: s3.Bucket;
   medicalDocumentsUploadBucket: s3.Bucket;
+  ehrResponsesBucket: s3.Bucket;
   fhirToBundleLambda: ILambda;
   fhirToMedicalRecordLambda: ILambda | undefined;
   fhirToCdaConverterLambda: ILambda | undefined;
@@ -229,6 +231,9 @@ export function createAPIService({
           }),
           ...(props.config.medicalDocumentsUploadBucketName && {
             MEDICAL_DOCUMENTS_UPLOADS_BUCKET_NAME: props.config.medicalDocumentsUploadBucketName,
+          }),
+          ...(props.config.ehrResponsesBucketName && {
+            EHR_RESPONSES_BUCKET_NAME: props.config.ehrResponsesBucketName,
           }),
           ...(isSandbox(props.config) && {
             SANDBOX_SEED_DATA_BUCKET_NAME: props.config.sandboxSeedDataBucketName,
@@ -355,6 +360,7 @@ export function createAPIService({
 
   // Access grant for medical document buckets
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  ehrResponsesBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
 
   if (fhirToMedicalRecordLambda) {
     fhirToMedicalRecordLambda.grantInvoke(fargateService.taskDefinition.taskRole);
