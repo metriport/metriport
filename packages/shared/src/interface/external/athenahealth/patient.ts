@@ -32,7 +32,7 @@ export const patientResourceSchema = z.object({
   name: name.array(),
   address: address.array(),
   birthDate: z.string(),
-  telecom: telecome.array(),
+  telecom: telecome.array().optional(),
 });
 
 export type PatientResource = z.infer<typeof patientResourceSchema>;
