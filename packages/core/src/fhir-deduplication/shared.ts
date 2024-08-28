@@ -36,7 +36,7 @@ export function getDateFromString(dateString: string, dateFormat?: "date" | "dat
 function createExtensionReference(resourceType: string, id: string | undefined) {
   return {
     url: "http://hl7.org/fhir/StructureDefinition/codesystem-sourceReference",
-    sourceReference: { value: `${resourceType}/${id}` },
+    valueReference: { reference: `${resourceType}/${id}` },
   };
 }
 
