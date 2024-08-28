@@ -12,13 +12,16 @@ import { combineResources, fillMaps } from "../shared";
 export function deduplicateMedications(medications: Medication[]): {
   combinedMedications: Medication[];
   refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
-  const { rxnormMap, ndcMap, snomedMap, refReplacementMap } = groupSameMedications(medications);
+  const { rxnormMap, ndcMap, snomedMap, refReplacementMap, danglingReferences } =
+    groupSameMedications(medications);
   return {
     combinedMedications: combineResources({
       combinedMaps: [rxnormMap, ndcMap, snomedMap],
     }),
     refReplacementMap,
+    danglingReferences,
   };
 }
 
@@ -27,11 +30,13 @@ export function groupSameMedications(medications: Medication[]): {
   ndcMap: Map<string, Medication>;
   snomedMap: Map<string, Medication>;
   refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
   const rxnormMap = new Map<string, Medication>();
   const ndcMap = new Map<string, Medication>();
   const snomedMap = new Map<string, Medication>();
   const refReplacementMap = new Map<string, string[]>();
+  const danglingReferences = new Set<string>();
 
   function removeOtherCodes(master: Medication): Medication {
     const code = master.code;
@@ -65,6 +70,8 @@ export function groupSameMedications(medications: Medication[]): {
       fillMaps(ndcMap, ndcCode, medication, refReplacementMap, false, removeOtherCodes);
     } else if (snomedCode) {
       fillMaps(snomedMap, snomedCode, medication, refReplacementMap, false, removeOtherCodes);
+    } else {
+      if (medication.id) danglingReferences.add(`Medication/${medication.id}`);
     }
   }
 
@@ -73,6 +80,7 @@ export function groupSameMedications(medications: Medication[]): {
     ndcMap,
     snomedMap,
     refReplacementMap,
+    danglingReferences: [...danglingReferences],
   };
 }
 
