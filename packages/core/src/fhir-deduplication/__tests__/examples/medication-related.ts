@@ -7,10 +7,12 @@ import {
 
 const DEFAULT_MEDICATION_REF = `Medication/${faker.string.uuid()}`;
 
-export function makeMedicationAdministration(params: Partial<MedicationAdministration>) {
+export function makeMedicationAdministration(
+  params?: Partial<MedicationAdministration>
+): MedicationAdministration {
   return {
     resourceType: "MedicationAdministration",
-    ...(params.id ? { id: params.id } : { id: faker.string.uuid() }),
+    ...(params?.id ? { id: params.id } : { id: faker.string.uuid() }),
     extension: [
       {
         url: "https://public.metriport.com/fhir/StructureDefinition/doc-id-extension.json",
@@ -37,10 +39,10 @@ export function makeMedicationAdministration(params: Partial<MedicationAdministr
   };
 }
 
-export function makeMedicationRequest(params: Partial<MedicationRequest>): MedicationRequest {
+export function makeMedicationRequest(params?: Partial<MedicationRequest>): MedicationRequest {
   return {
     resourceType: "MedicationRequest",
-    ...(params.id ? { id: params.id } : { id: faker.string.uuid() }),
+    ...(params?.id ? { id: params.id } : { id: faker.string.uuid() }),
     extension: [
       {
         url: "https://public.metriport.com/fhir/StructureDefinition/doc-id-extension.json",
