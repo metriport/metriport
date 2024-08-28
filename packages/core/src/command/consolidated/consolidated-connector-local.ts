@@ -26,6 +26,12 @@ export class ConsolidatedDataConnectorLocal implements ConsolidatedDataConnector
     let bundle = await getConsolidatedFhirBundle(params);
     const dedupEnabled = await isFhirDeduplicationEnabledForCx(params.patient.cxId);
     if (dedupEnabled) {
+      // store the original not deduplicated bundle on s3
+      await uploadConsolidatedBundleToS3({
+        ...params,
+        bundle,
+        s3BucketName: this.bucketName,
+      });
       const initialBundleLength = bundle.entry?.length;
       bundle = deduplicateSearchSetBundle(bundle);
       const startedAt = new Date();
@@ -48,6 +54,7 @@ export class ConsolidatedDataConnectorLocal implements ConsolidatedDataConnector
       ...params,
       bundle,
       s3BucketName: this.bucketName,
+      dedupEnabled,
     });
     const info = {
       bundleLocation: bucket,
