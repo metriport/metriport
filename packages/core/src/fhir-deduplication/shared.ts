@@ -1,4 +1,4 @@
-import { Resource } from "@medplum/fhirtypes";
+import { CodeableConcept, Resource } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import { cloneDeep } from "lodash";
 
@@ -233,4 +233,8 @@ export function pickMostDescriptiveStatus<T extends string>(
     return lowestRanking;
   }
   return status;
+}
+
+export function isBlacklistedText(concept: CodeableConcept | undefined): boolean {
+  return concept?.text?.toLowerCase().includes("no known") ?? false;
 }

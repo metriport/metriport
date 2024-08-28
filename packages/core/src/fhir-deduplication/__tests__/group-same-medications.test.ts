@@ -55,7 +55,7 @@ describe("groupSameMedications", () => {
   });
 
   it("removes no known medication resources based on the text tag", () => {
-    medication.code = { coding: [snomedCodeAm], text: "No known medication" };
+    medication.code = { coding: [snomedCodeAm], text: "No known medications" };
 
     const { rxnormMap, ndcMap, snomedMap } = groupSameMedications([medication]);
     expect(rxnormMap.size).toBe(0);

@@ -7,7 +7,7 @@ import {
   SNOMED_CODE,
   SNOMED_OID,
 } from "../../util/constants";
-import { combineResources, fillMaps } from "../shared";
+import { combineResources, fillMaps, isBlacklistedText } from "../shared";
 
 export function deduplicateMedications(medications: Medication[]): {
   combinedMedications: Medication[];
@@ -61,7 +61,7 @@ export function groupSameMedications(medications: Medication[]): {
   }
 
   for (const medication of medications) {
-    if (medication.id && medication.code?.text?.toLowerCase().includes("no known")) {
+    if (medication.id && isBlacklistedText(medication.code)) {
       danglingReferences.add(createMedicationRef(medication.id));
       continue;
     }
