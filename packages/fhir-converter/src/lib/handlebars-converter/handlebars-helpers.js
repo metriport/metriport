@@ -159,10 +159,14 @@ var getDate = function (dateStringRaw) {
     dateStringRaw = dateStringRaw.toISOString();
   }
   if (typeof dateStringRaw === "object") {
-    console.log(
-      `[getDate] Date was an object (converted it to string): ${JSON.stringify(dateStringRaw)}`
-    );
-    dateStringRaw = dateStringRaw.value ? dateStringRaw.value.toString() : dateStringRaw.toString();
+    if (dateStringRaw.value) {
+      dateStringRaw = dateStringRaw.value.toString();
+    } else {
+      console.log(
+        `[getDate] Date was an object (converted it to string): ${JSON.stringify(dateStringRaw)}`
+      );
+      dateStringRaw = dateStringRaw.toString();
+    }
   }
   if (typeof dateStringRaw !== "string") {
     return "";
@@ -215,12 +219,16 @@ var getDateTime = function (dateTimeStringRaw) {
     dateTimeStringRaw = dateTimeStringRaw.toISOString();
   }
   if (typeof dateTimeStringRaw === "object") {
-    console.log(
-      `[getDateTime] Datetime was an object (converted it to string): ${JSON.stringify(
-        dateTimeStringRaw
-      )}`
-    );
-    dateTimeStringRaw = dateTimeStringRaw.toString();
+    if (dateTimeStringRaw.value) {
+      dateTimeStringRaw = dateTimeStringRaw.value.toString();
+    } else {
+      console.log(
+        `[getDate] Date was an object (converted it to string): ${JSON.stringify(
+          dateTimeStringRaw
+        )}`
+      );
+      dateTimeStringRaw = dateTimeStringRaw.toString();
+    }
   }
   if (typeof dateTimeStringRaw !== "string") {
     return "";

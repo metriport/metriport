@@ -283,8 +283,28 @@ describe("getDateTime", function () {
     expect(date).toEqual("2023-06-26T19:08:46.000Z");
   });
 
+  it("should render date when gets a non-Date object that has a value prop", function () {
+    var date = functions.getDateTime({ value: "20230626150846-0400" });
+    expect(date).toEqual("2023-06-26T19:08:46.000Z");
+  });
+
+  it("should render nothing when gets a non-Date object that has a value prop that's undefined", function () {
+    var date = functions.getDateTime({ value: undefined });
+    expect(date).toEqual("");
+  });
+
   it("should render nothing when gets a non-Date object", function () {
     var date = functions.getDateTime({ a: "123" });
+    expect(date).toEqual("");
+  });
+
+  it("should render nothing when gets undefined", function () {
+    var date = functions.getDateTime(undefined);
+    expect(date).toEqual("");
+  });
+
+  it("should render nothing when gets null", function () {
+    var date = functions.getDateTime(null);
     expect(date).toEqual("");
   });
 });
