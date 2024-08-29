@@ -8,7 +8,7 @@ import { Patient, PatientDemoData } from "@metriport/core/domain/patient";
 import { getPatient as getAthenaPatient } from "@metriport/core/external/athenahealth/get-patient";
 import { EhrSources } from "../../shared";
 import {
-  getPatientOrFail as getMetriportPatientOrFail,
+  getPatient as getMetriportPatient,
   getPatientByDemo as getMetriportPatientByDemoSingle,
 } from "../../../../command/medical/patient/get-patient";
 import { getPatientMapping, findOrCreatePatientMapping } from "../../../../command/mapping/patient";
@@ -33,7 +33,7 @@ export async function getPatient({
     source: EhrSources.ATHENA,
   });
   if (existingPatient) {
-    return await getMetriportPatientOrFail({ cxId, id: existingPatient.patientId });
+    return await getMetriportPatient({ cxId, id: existingPatient.patientId });
   }
   if (!athenaUrl) throw new Error("Athenahealth url not defined");
   const athenaPatient = await getAthenaPatient({
