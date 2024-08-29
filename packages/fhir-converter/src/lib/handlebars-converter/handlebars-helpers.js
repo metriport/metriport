@@ -185,6 +185,11 @@ var isValidYear = function (year) {
 
 // handling the datetime format here
 var getDateTime = function (dateTimeStringRaw) {
+  if (typeof dateTimeStringRaw !== "string") {
+    // TODO remove this once we learn what the value is and fix it
+    console.log(`[getDateTime] Invalid datetime value: ${JSON.stringify(dateTimeStringRaw)}`);
+    return "";
+  }
   var dateTimeString = dateTimeStringRaw?.trim();
 
   if (alreadyValidDateTime(dateTimeString)) {
