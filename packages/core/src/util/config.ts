@@ -135,4 +135,8 @@ export class Config {
   static getAppConfigConfigId(): string {
     return getEnvVarOrFail("APPCONFIG_CONFIGURATION_ID");
   }
+
+  static getEhrResponsesBucketName(): string | undefined {
+    return getEnvVar("EHR_RESPONSES_BUCKET_NAME");
+  }
 }

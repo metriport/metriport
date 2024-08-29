@@ -8,7 +8,7 @@ import { errorToString } from "@metriport/shared";
 import { createPatient, PatientCreateCmd } from "./create-patient";
 import { matchPatient } from "./get-patient";
 import { updatePatient } from "./update-patient";
-import { queryDocumentsAcrossHIEs } from "../document/document-query";
+import { queryDocumentsAcrossHIEs as singleQueryDocumentsAcrossHIEs } from "../document/document-query";
 
 dayjs.extend(duration);
 
@@ -27,32 +27,11 @@ export async function createCoverageAssessments({
   const patients: Patient[] = [];
   const pdWrapperErrors: string[] = [];
 
-  async function createOrUpdatePatientWrapper({
-    patientCreateCmd,
-    patients,
-    errors,
-    log,
-  }: {
-    patientCreateCmd: PatientCreateCmd;
-    patients: Patient[];
-    errors: string[];
-    log: typeof console.log;
-  }): Promise<void> {
-    try {
-      const patient = await createOrUpdatePatient(patientCreateCmd);
-      patients.push(patient);
-    } catch (error) {
-      const msg = `Cause: ${errorToString(error)}`;
-      log(msg);
-      errors.push(msg);
-    }
-  }
-
   await executeAsynchronously(
     patientCreates.map(patientCreateCmd => {
       return { patientCreateCmd, patients, errors: pdWrapperErrors, log };
     }),
-    createOrUpdatePatientWrapper,
+    createOrUpdatePatient,
     { numberOfParallelExecutions: 10, delay: delay.asMilliseconds() }
   );
 
@@ -71,38 +50,11 @@ export async function createCoverageAssessments({
 
   const dqWrapperErrors: string[] = [];
 
-  async function queryDocumentsAcrossHIEsWrapper({
-    cxId,
-    patient,
-    facilityId,
-    errors,
-    log,
-  }: {
-    cxId: string;
-    patient: Patient;
-    facilityId: string;
-    errors: string[];
-    log: typeof console.log;
-  }): Promise<void> {
-    try {
-      await queryDocumentsAcrossHIEs({
-        cxId,
-        patientId: patient.id,
-        facilityId,
-        triggerConsolidated: true,
-      });
-    } catch (error) {
-      const msg = `Patient: ${patient.id}. Cause: ${errorToString(error)}`;
-      log(msg);
-      errors.push(msg);
-    }
-  }
-
   await executeAsynchronously(
     patients.map(patient => {
       return { cxId, patient, facilityId, errors: dqWrapperErrors, log };
     }),
-    queryDocumentsAcrossHIEsWrapper,
+    queryDocumentsAcrossHIEs,
     { numberOfParallelExecutions: 10, delay: delay.asMilliseconds() }
   );
 
@@ -120,7 +72,7 @@ export async function createCoverageAssessments({
   }
 }
 
-async function createOrUpdatePatient(patient: PatientCreateCmd): Promise<Patient> {
+async function singleCreateOrUpdatePatient(patient: PatientCreateCmd): Promise<Patient> {
   const matchedPatient = await matchPatient(patient);
   let updatedPatient: Patient;
   if (matchedPatient) {
@@ -138,4 +90,52 @@ async function createOrUpdatePatient(patient: PatientCreateCmd): Promise<Patient
     });
   }
   return updatedPatient;
+}
+
+async function createOrUpdatePatient({
+  patientCreateCmd,
+  patients,
+  errors,
+  log,
+}: {
+  patientCreateCmd: PatientCreateCmd;
+  patients: Patient[];
+  errors: string[];
+  log: typeof console.log;
+}): Promise<void> {
+  try {
+    const patient = await singleCreateOrUpdatePatient(patientCreateCmd);
+    patients.push(patient);
+  } catch (error) {
+    const msg = `Failed to create or update patient. Cause: ${errorToString(error)}`;
+    log(msg);
+    errors.push(msg);
+  }
+}
+
+async function queryDocumentsAcrossHIEs({
+  cxId,
+  patient,
+  facilityId,
+  errors,
+  log,
+}: {
+  cxId: string;
+  patient: Patient;
+  facilityId: string;
+  errors: string[];
+  log: typeof console.log;
+}): Promise<void> {
+  try {
+    await singleQueryDocumentsAcrossHIEs({
+      cxId,
+      patientId: patient.id,
+      facilityId,
+      triggerConsolidated: true,
+    });
+  } catch (error) {
+    const msg = `Failed query docuemnts. Patient: ${patient.id}. Cause: ${errorToString(error)}`;
+    log(msg);
+    errors.push(msg);
+  }
 }

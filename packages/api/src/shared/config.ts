@@ -341,4 +341,8 @@ export class Config {
   static getOrgOidsWithIHEGatewayV2Enabled(): string {
     return getEnvVarOrFail("OIDS_WITH_IHE_GATEWAY_V2_ENABLED");
   }
+
+  static getAthenaHealthUrl(): string | undefined {
+    return getEnvVar("EHR_ATHENA_BASE_URL");
+  }
 }
