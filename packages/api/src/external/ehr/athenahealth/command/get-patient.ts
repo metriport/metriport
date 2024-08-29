@@ -9,7 +9,7 @@ import { getPatient as getAthenaPatient } from "@metriport/core/external/athenah
 import { EhrSources } from "../../shared";
 import {
   getPatientOrFail as getMetriportPatientOrFail,
-  getPatientByDemo as getMetriportPatientByDemo,
+  getPatientByDemo as getMetriportPatientByDemoSingle,
 } from "../../../../command/medical/patient/get-patient";
 import { getPatientMapping, findOrCreatePatientMapping } from "../../../../command/mapping/patient";
 import { Config } from "../../../../shared/config";
@@ -58,7 +58,7 @@ export async function getPatient({
     patientDemos.map(demo => {
       return { cxId, demo, patients, errors: getPatientByDemoWrapperErrors, log };
     }),
-    getPatientByDemoWrapper,
+    getPatientByDemo,
     { numberOfParallelExecutions: 5 }
   );
 
@@ -118,7 +118,7 @@ function createMetriportPatientDemos(patient: PatientResource): PatientDemoData[
   return patientPatients;
 }
 
-async function getPatientByDemoWrapper({
+async function getPatientByDemo({
   cxId,
   demo,
   patients,
@@ -132,7 +132,7 @@ async function getPatientByDemoWrapper({
   log: typeof console.log;
 }): Promise<void> {
   try {
-    const patient = await getMetriportPatientByDemo({ cxId, demo });
+    const patient = await getMetriportPatientByDemoSingle({ cxId, demo });
     if (patient) patients.push(patient);
   } catch (error) {
     const msg = `Failed to get patient by demo. Cause: ${errorToString(error)}`;

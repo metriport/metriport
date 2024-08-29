@@ -8,7 +8,7 @@ import { errorToString } from "@metriport/shared";
 import { createPatient, PatientCreateCmd } from "./create-patient";
 import { matchPatient } from "./get-patient";
 import { updatePatient } from "./update-patient";
-import { queryDocumentsAcrossHIEs } from "../document/document-query";
+import { queryDocumentsAcrossHIEs as queryDocumentsAcrossHIEsSingle } from "../document/document-query";
 
 dayjs.extend(duration);
 
@@ -31,7 +31,7 @@ export async function createCoverageAssessments({
     patientCreates.map(patientCreateCmd => {
       return { patientCreateCmd, patients, errors: pdWrapperErrors, log };
     }),
-    createOrUpdatePatientWrapper,
+    createOrUpdatePatient,
     { numberOfParallelExecutions: 10, delay: delay.asMilliseconds() }
   );
 
@@ -54,7 +54,7 @@ export async function createCoverageAssessments({
     patients.map(patient => {
       return { cxId, patient, facilityId, errors: dqWrapperErrors, log };
     }),
-    queryDocumentsAcrossHIEsWrapper,
+    queryDocumentsAcrossHIEs,
     { numberOfParallelExecutions: 10, delay: delay.asMilliseconds() }
   );
 
@@ -72,7 +72,7 @@ export async function createCoverageAssessments({
   }
 }
 
-async function createOrUpdatePatient(patient: PatientCreateCmd): Promise<Patient> {
+async function createOrUpdateSinglePatient(patient: PatientCreateCmd): Promise<Patient> {
   const matchedPatient = await matchPatient(patient);
   let updatedPatient: Patient;
   if (matchedPatient) {
@@ -92,7 +92,7 @@ async function createOrUpdatePatient(patient: PatientCreateCmd): Promise<Patient
   return updatedPatient;
 }
 
-async function createOrUpdatePatientWrapper({
+async function createOrUpdatePatient({
   patientCreateCmd,
   patients,
   errors,
@@ -104,7 +104,7 @@ async function createOrUpdatePatientWrapper({
   log: typeof console.log;
 }): Promise<void> {
   try {
-    const patient = await createOrUpdatePatient(patientCreateCmd);
+    const patient = await createOrUpdateSinglePatient(patientCreateCmd);
     patients.push(patient);
   } catch (error) {
     const msg = `Failed to create or update patient. Cause: ${errorToString(error)}`;
@@ -113,7 +113,7 @@ async function createOrUpdatePatientWrapper({
   }
 }
 
-async function queryDocumentsAcrossHIEsWrapper({
+async function queryDocumentsAcrossHIEs({
   cxId,
   patient,
   facilityId,
@@ -127,7 +127,7 @@ async function queryDocumentsAcrossHIEsWrapper({
   log: typeof console.log;
 }): Promise<void> {
   try {
-    await queryDocumentsAcrossHIEs({
+    await queryDocumentsAcrossHIEsSingle({
       cxId,
       patientId: patient.id,
       facilityId,
