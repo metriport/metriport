@@ -6,7 +6,11 @@ import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
 import { getCxFFStatus } from "../command/internal/get-hie-enabled-feature-flags-status";
 import { updateCxHieEnabledFFs } from "../command/internal/update-hie-enabled-feature-flags";
-import { findOrCreateCxMapping, getCxMappingsForCustomer } from "../command/mapping/cx";
+import {
+  findOrCreateCxMapping,
+  getCxMappingsForCustomer,
+  deleteCxMapping,
+} from "../command/mapping/cx";
 import { checkApiQuota } from "../command/medical/admin/api";
 import { dbMaintenance } from "../command/medical/admin/db-maintenance";
 import {
@@ -358,6 +362,29 @@ router.get(
       source,
     });
     return res.status(httpStatus.OK).json(result);
+  })
+);
+
+/**
+ * DELETE /internal/cx-mapping
+ *
+ * Delete cx mapping
+ *
+ * @param req.query.cxId - The cutomer's ID.
+ * @param req.query.source - Mapping source
+ * @param req.query.externalId - Mapped external ID.
+ */
+router.delete(
+  "/cx-mapping",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const source = getFromQueryOrFail("source", req);
+    const externalId = getFromQueryOrFail("externalId", req);
+    await deleteCxMapping({
+      source,
+      externalId,
+    });
+    return res.sendStatus(httpStatus.OK);
   })
 );
 
