@@ -3,14 +3,17 @@ import type { Migration } from "..";
 import * as shared from "../migrations-shared";
 
 const cxMappingTableName = "cx_mapping";
+const cxMappingTableConstraintName = "cx_mapping_source_externalId_constraint";
 const cxMappingTableIndexName = "cx_mapping_source_externalId_index";
-const cxMappingTableIndexFields = ["source", "externalId"];
+const cxMappingTableIdFields = ["source", "externalId"];
 const patientMappingTableName = "patient_mapping";
+const patientMappingTableConstraintName = "patient_mapping_source_externalId_constraint";
 const patientMappingTableIndexName = "patient_mapping_source_externalId_index";
-const patientMappingTableIndexFields = ["source", "externalId"];
+const patientMappingTableIdFields = ["source", "externalId"];
 const jwtTokenTableName = "jwt_token";
+const jwtTokenTableConstraintName = "patient_mapping_source_token_constraint";
 const jwtTokenTableIndexName = "patient_mapping_source_token_index";
-const jwtTokenTableIndexFields = ["source", "token"];
+const jwtTokenTableIdFields = ["source", "token"];
 
 // Use 'Promise.all' when changes are independent of each other
 export const up: Migration = async ({ context: queryInterface }) => {
@@ -103,24 +106,52 @@ export const up: Migration = async ({ context: queryInterface }) => {
     );
     await queryInterface.addIndex(cxMappingTableName, {
       name: cxMappingTableIndexName,
-      fields: cxMappingTableIndexFields,
+      fields: cxMappingTableIdFields,
       transaction,
     });
     await queryInterface.addIndex(patientMappingTableName, {
       name: patientMappingTableIndexName,
-      fields: patientMappingTableIndexFields,
+      fields: patientMappingTableIdFields,
       transaction,
     });
     await queryInterface.addIndex(jwtTokenTableName, {
       name: jwtTokenTableIndexName,
-      fields: jwtTokenTableIndexFields,
+      fields: jwtTokenTableIdFields,
       transaction,
+    });
+    await queryInterface.addConstraint(cxMappingTableName, {
+      name: cxMappingTableConstraintName,
+      fields: cxMappingTableIdFields,
+      type: "unique",
+    });
+    await queryInterface.addConstraint(patientMappingTableName, {
+      name: patientMappingTableConstraintName,
+      fields: patientMappingTableIdFields,
+      type: "unique",
+    });
+    await queryInterface.addConstraint(jwtTokenTableName, {
+      name: jwtTokenTableConstraintName,
+      fields: jwtTokenTableIdFields,
+      type: "unique",
     });
   });
 };
 
 export const down: Migration = ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
+    await queryInterface.removeConstraint(jwtTokenTableName, jwtTokenTableConstraintName, {
+      transaction,
+    });
+    await queryInterface.removeConstraint(
+      patientMappingTableName,
+      patientMappingTableConstraintName,
+      {
+        transaction,
+      }
+    );
+    await queryInterface.removeConstraint(cxMappingTableName, cxMappingTableConstraintName, {
+      transaction,
+    });
     await queryInterface.removeIndex(jwtTokenTableName, jwtTokenTableIndexName, { transaction });
     await queryInterface.removeIndex(patientMappingTableName, patientMappingTableIndexName, {
       transaction,
