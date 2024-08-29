@@ -27,27 +27,6 @@ export async function createCoverageAssessments({
   const patients: Patient[] = [];
   const pdWrapperErrors: string[] = [];
 
-  async function createOrUpdatePatientWrapper({
-    patientCreateCmd,
-    patients,
-    errors,
-    log,
-  }: {
-    patientCreateCmd: PatientCreateCmd;
-    patients: Patient[];
-    errors: string[];
-    log: typeof console.log;
-  }): Promise<void> {
-    try {
-      const patient = await createOrUpdatePatient(patientCreateCmd);
-      patients.push(patient);
-    } catch (error) {
-      const msg = `Failed to create or update patient. Cause: ${errorToString(error)}`;
-      log(msg);
-      errors.push(msg);
-    }
-  }
-
   await executeAsynchronously(
     patientCreates.map(patientCreateCmd => {
       return { patientCreateCmd, patients, errors: pdWrapperErrors, log };
@@ -70,33 +49,6 @@ export async function createCoverageAssessments({
   }
 
   const dqWrapperErrors: string[] = [];
-
-  async function queryDocumentsAcrossHIEsWrapper({
-    cxId,
-    patient,
-    facilityId,
-    errors,
-    log,
-  }: {
-    cxId: string;
-    patient: Patient;
-    facilityId: string;
-    errors: string[];
-    log: typeof console.log;
-  }): Promise<void> {
-    try {
-      await queryDocumentsAcrossHIEs({
-        cxId,
-        patientId: patient.id,
-        facilityId,
-        triggerConsolidated: true,
-      });
-    } catch (error) {
-      const msg = `Failed query docuemnts. Patient: ${patient.id}. Cause: ${errorToString(error)}`;
-      log(msg);
-      errors.push(msg);
-    }
-  }
 
   await executeAsynchronously(
     patients.map(patient => {
@@ -138,4 +90,52 @@ async function createOrUpdatePatient(patient: PatientCreateCmd): Promise<Patient
     });
   }
   return updatedPatient;
+}
+
+async function createOrUpdatePatientWrapper({
+  patientCreateCmd,
+  patients,
+  errors,
+  log,
+}: {
+  patientCreateCmd: PatientCreateCmd;
+  patients: Patient[];
+  errors: string[];
+  log: typeof console.log;
+}): Promise<void> {
+  try {
+    const patient = await createOrUpdatePatient(patientCreateCmd);
+    patients.push(patient);
+  } catch (error) {
+    const msg = `Failed to create or update patient. Cause: ${errorToString(error)}`;
+    log(msg);
+    errors.push(msg);
+  }
+}
+
+async function queryDocumentsAcrossHIEsWrapper({
+  cxId,
+  patient,
+  facilityId,
+  errors,
+  log,
+}: {
+  cxId: string;
+  patient: Patient;
+  facilityId: string;
+  errors: string[];
+  log: typeof console.log;
+}): Promise<void> {
+  try {
+    await queryDocumentsAcrossHIEs({
+      cxId,
+      patientId: patient.id,
+      facilityId,
+      triggerConsolidated: true,
+    });
+  } catch (error) {
+    const msg = `Failed query docuemnts. Patient: ${patient.id}. Cause: ${errorToString(error)}`;
+    log(msg);
+    errors.push(msg);
+  }
 }

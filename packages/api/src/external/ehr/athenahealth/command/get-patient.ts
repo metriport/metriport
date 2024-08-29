@@ -53,29 +53,6 @@ export async function getPatient({
   const patients: Patient[] = [];
   const getPatientByDemoWrapperErrors: string[] = [];
 
-  async function getPatientByDemoWrapper({
-    cxId,
-    demo,
-    patients,
-    errors,
-    log,
-  }: {
-    cxId: string;
-    demo: PatientDemoData;
-    patients: Patient[];
-    errors: string[];
-    log: typeof console.log;
-  }): Promise<void> {
-    try {
-      const patient = await getMetriportPatientByDemo({ cxId, demo });
-      if (patient) patients.push(patient);
-    } catch (error) {
-      const msg = `Failed to get patient by demo. Cause: ${errorToString(error)}`;
-      log(msg);
-      errors.push(msg);
-    }
-  }
-
   await executeAsynchronously(
     patientDemos.map(demo => {
       return { cxId, demo, patients, errors: getPatientByDemoWrapperErrors, log };
@@ -137,4 +114,27 @@ function createMetriportPatientDemos(patient: PatientResource): PatientDemoData[
     });
   });
   return patientPatients;
+}
+
+async function getPatientByDemoWrapper({
+  cxId,
+  demo,
+  patients,
+  errors,
+  log,
+}: {
+  cxId: string;
+  demo: PatientDemoData;
+  patients: Patient[];
+  errors: string[];
+  log: typeof console.log;
+}): Promise<void> {
+  try {
+    const patient = await getMetriportPatientByDemo({ cxId, demo });
+    if (patient) patients.push(patient);
+  } catch (error) {
+    const msg = `Failed to get patient by demo. Cause: ${errorToString(error)}`;
+    log(msg);
+    errors.push(msg);
+  }
 }
