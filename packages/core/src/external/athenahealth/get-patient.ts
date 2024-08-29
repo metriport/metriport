@@ -39,7 +39,7 @@ export async function getPatient({
         patientId,
         date: new Date(),
       });
-      const key = `${filePath}/${uuidv7()}.json`;
+      const key = `athenahealth/${filePath}/${uuidv7()}.json`;
       await s3Utils.uploadFile({
         bucket: responsesBucket,
         key,
