@@ -31,6 +31,8 @@ dayjs.extend(duration);
  */
 const patientIds: string[] = [];
 
+const dateFrom: string | undefined = undefined;
+const dateTo: string | undefined = undefined;
 const conversionType = "pdf";
 
 const apiUrl = getEnvVarOrFail("API_URL");
@@ -83,6 +85,8 @@ async function getMedicalRecordURL(patientId: string): Promise<string | undefine
     patientId,
     cxId,
     conversionType,
+    ...(dateFrom ? { dateFrom } : undefined),
+    ...(dateTo ? { dateTo } : undefined),
   });
   const resp = await axios.get(`${endpointUrl}?${params}`);
   const bundle = resp.data.bundle as Bundle<DocumentReference>;
