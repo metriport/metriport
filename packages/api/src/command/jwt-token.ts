@@ -18,7 +18,7 @@ export async function findOrCreateJwtToken({
   data,
 }: JwtTokenParams): Promise<JwtTokenModel> {
   const existing = await getJwtToken({ token, source });
-  if (existing) existing;
+  if (existing) return existing;
   return await JwtTokenModel.create({ id: uuidv7(), token, exp, source, data });
 }
 

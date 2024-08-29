@@ -16,7 +16,7 @@ export async function findOrCreatePatientMapping({
   source,
 }: PatientMappingParams): Promise<PatientMappingModel> {
   const existing = await getPatientMapping({ externalId, source });
-  if (existing) existing;
+  if (existing) return existing;
   return await PatientMappingModel.create({ id: uuidv7(), patientId, externalId, source });
 }
 

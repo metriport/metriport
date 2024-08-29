@@ -16,7 +16,7 @@ export async function findOrCreateCxMapping({
   source,
 }: CxMappingParams): Promise<CxMappingModel> {
   const existing = await getCxMapping({ externalId, source });
-  if (existing) existing;
+  if (existing) return existing;
   return await CxMappingModel.create({ id: uuidv7(), cxId, externalId, source });
 }
 
