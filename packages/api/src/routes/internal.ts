@@ -347,7 +347,7 @@ router.post(
  * @param req.query.cxId - The cutomer's ID.
  * @param req.query.source - Optional mapping source
  */
-router.post(
+router.get(
   "/cx-mapping",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
