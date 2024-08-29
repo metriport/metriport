@@ -181,15 +181,6 @@ describe("groupSameObservations", () => {
     const { observationsMap } = groupSameObservations([observation, observation2]);
     expect(observationsMap.size).toBe(0);
   });
-  it("removes observations without codes", () => {
-    observation.effectiveDateTime = dateTime.start;
-    observation2.effectiveDateTime = dateTime.start;
-    observation.valueCodeableConcept = valueConceptTobacco;
-    observation2.valueCodeableConcept = valueConceptTobacco;
-
-    const { observationsMap } = groupSameObservations([observation, observation2]);
-    expect(observationsMap.size).toBe(0);
-  });
 
   it("does not group observations with different dates", () => {
     observation.effectiveDateTime = dateTime.start;

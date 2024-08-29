@@ -5,13 +5,7 @@ import {
   getDateFromResource,
   pickMostDescriptiveStatus,
 } from "../shared";
-import {
-  extractCodes,
-  extractValueFromObservation,
-  retrieveCode,
-  statusRanking,
-  unknownCoding,
-} from "./observation-shared";
+import { extractValueFromObservation, statusRanking, unknownCoding } from "./observation-shared";
 
 export function deduplicateObservations(observations: Observation[]): {
   combinedObservations: Observation[];
@@ -62,16 +56,12 @@ export function groupSameObservations(observations: Observation[]): {
   }
 
   for (const observation of observations) {
-    const keyCodes = extractCodes(observation.code);
-    const keyCode = retrieveCode(keyCodes);
     const date = getDateFromResource(observation);
     const value = extractValueFromObservation(observation);
 
-    if (date && value && keyCode) {
-      const key = keyCode ? JSON.stringify({ date, value, keyCode }) : undefined;
-      if (key) {
-        fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
-      }
+    if (date && value) {
+      const key = JSON.stringify({ date, value });
+      fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
     }
   }
 
