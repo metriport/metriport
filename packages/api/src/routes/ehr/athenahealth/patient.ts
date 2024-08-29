@@ -1,14 +1,18 @@
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { Request, Response } from "express";
+import NotFoundError from "../../../errors/not-found";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { getConsolidatedPatientData } from "../../../command/medical/patient/consolidated-get";
+import { getPatientMapping } from "../../../command/mapping/patient";
 import { getPatient } from "../../../external/ehr/athenahealth/command/get-patient";
+import { EhrSources } from "../../../external/ehr/shared";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFrom } from "../../util";
 import { getAuthorizationToken } from "../../util";
 import { getResourcesQueryParam } from "../../medical/schemas/fhir";
 import { parseISODate } from "../../../shared/date";
+import { dtoFromModel } from "../../medical/dtos/patientDTO";
 
 const router = Router();
 
@@ -31,7 +35,7 @@ router.get(
       cxId,
       athenaPatientId,
     });
-    return res.status(httpStatus.OK).json(patient);
+    return res.status(httpStatus.OK).json(patient ? dtoFromModel(patient) : undefined);
   })
 );
 
@@ -41,7 +45,7 @@ router.get(
  * Returns a patient's consolidated data.
  *
  * @param req.cxId The customer ID.
- * @param req.param.id The  ID of the Metriport Patient whose data is to be returned.
+ * @param req.params.id The ID of AthenaHealth Patient.
  * @param req.query.resources Optional comma-separated list of resources to be returned.
  * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
@@ -52,11 +56,16 @@ router.get(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const metriportPatientId = getFrom("params").orFail("id", req);
+    const athenaPatientId = getFrom("params").orFail("id", req);
+    const patietMapping = await getPatientMapping({
+      externalId: athenaPatientId,
+      source: EhrSources.ATHENA,
+    });
+    if (!patietMapping) throw new NotFoundError(`Could not find patient`);
     const resources = getResourcesQueryParam(req);
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
-    const patient = await getPatientOrFail({ id: metriportPatientId, cxId });
+    const patient = await getPatientOrFail({ id: patietMapping.patientId, cxId });
 
     const data = await getConsolidatedPatientData({
       patient,
@@ -64,7 +73,6 @@ router.get(
       dateFrom,
       dateTo,
     });
-
     return res.json(data);
   })
 );
