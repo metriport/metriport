@@ -384,7 +384,7 @@ router.delete(
       source,
       externalId,
     });
-    return res.sendStatus(httpStatus.OK);
+    return res.sendStatus(httpStatus.NO_CONTENT);
   })
 );
 
