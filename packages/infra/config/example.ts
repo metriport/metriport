@@ -141,6 +141,7 @@ export const config: EnvConfigNonSandbox = {
   generalBucketName: "test-bucket",
   medicalDocumentsBucketName: "test-bucket",
   medicalDocumentsUploadBucketName: "test-upload-bucket",
+  ehrResponsesBucketName: "test-ehr-responses-bucket",
   iheResponsesBucketName: "test-ihe-responses-bucket",
   iheParsedResponsesBucketName: "test-ihe-parsed-responses-bucket",
   iheRequestsBucketName: "test-ihe-requests-bucket",
