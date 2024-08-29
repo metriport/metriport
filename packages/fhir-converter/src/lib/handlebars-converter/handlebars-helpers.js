@@ -149,6 +149,9 @@ var alreadyValidDateTime = function (dateTimeString) {
 
 // handling the date format here
 var getDate = function (dateStringRaw) {
+  if (dateStringRaw === null || dateStringRaw === undefined) {
+    return "";
+  }
   if (dateStringRaw instanceof Date) {
     console.log(
       `[getDateTime] Date was a Date (converted it to string): ${JSON.stringify(dateStringRaw)}`
@@ -156,10 +159,14 @@ var getDate = function (dateStringRaw) {
     dateStringRaw = dateStringRaw.toISOString();
   }
   if (typeof dateStringRaw === "object") {
-    console.log(
-      `[getDate] Date was an object (converted it to string): ${JSON.stringify(dateStringRaw)}`
-    );
-    dateStringRaw = dateStringRaw.toString();
+    if (dateStringRaw.value) {
+      dateStringRaw = dateStringRaw.value.toString();
+    } else {
+      console.log(
+        `[getDate] Date was an object (converted it to string): ${JSON.stringify(dateStringRaw)}`
+      );
+      dateStringRaw = dateStringRaw.toString();
+    }
   }
   if (typeof dateStringRaw !== "string") {
     console.log(`[getDate] Invalid date value (returning empty): ${JSON.stringify(dateStringRaw)}`);
@@ -201,6 +208,9 @@ var isValidYear = function (year) {
 
 // handling the datetime format here
 var getDateTime = function (dateTimeStringRaw) {
+  if (dateTimeStringRaw === null || dateTimeStringRaw === undefined) {
+    return "";
+  }
   if (dateTimeStringRaw instanceof Date) {
     console.log(
       `[getDateTime] Datetime was a Date (converted it to string): ${JSON.stringify(
@@ -210,12 +220,16 @@ var getDateTime = function (dateTimeStringRaw) {
     dateTimeStringRaw = dateTimeStringRaw.toISOString();
   }
   if (typeof dateTimeStringRaw === "object") {
-    console.log(
-      `[getDateTime] Datetime was an object (converted it to string): ${JSON.stringify(
-        dateTimeStringRaw
-      )}`
-    );
-    dateTimeStringRaw = dateTimeStringRaw.toString();
+    if (dateTimeStringRaw.value) {
+      dateTimeStringRaw = dateTimeStringRaw.value.toString();
+    } else {
+      console.log(
+        `[getDate] Date was an object (converted it to string): ${JSON.stringify(
+          dateTimeStringRaw
+        )}`
+      );
+      dateTimeStringRaw = dateTimeStringRaw.toString();
+    }
   }
   if (typeof dateTimeStringRaw !== "string") {
     console.log(
