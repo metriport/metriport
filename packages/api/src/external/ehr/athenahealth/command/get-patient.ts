@@ -28,6 +28,7 @@ export async function getPatient({
 }): Promise<Patient | undefined> {
   const { log } = out(`AthenaHealth getPatient - cxId ${cxId} athenaPatientId ${athenaPatientId}`);
   const existingPatient = await getPatientMapping({
+    cxId,
     externalId: athenaPatientId,
     source: EhrSources.ATHENA,
   });
@@ -88,6 +89,7 @@ export async function getPatient({
       });
     }
     await findOrCreatePatientMapping({
+      cxId,
       patientId: metriportPatient.id,
       externalId: athenaPatientId,
       source: EhrSources.ATHENA,

@@ -39,6 +39,7 @@ router.get(
   })
 );
 
+// TODO Move to async to align with dash once this is done https://github.com/metriport/metriport-internal/issues/2064
 /**
  * GET /ehr/athenahealth/patient/:id/consolidated
  *
@@ -58,6 +59,7 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const athenaPatientId = getFrom("params").orFail("id", req);
     const patietMapping = await getPatientMapping({
+      cxId,
       externalId: athenaPatientId,
       source: EhrSources.ATHENA,
     });

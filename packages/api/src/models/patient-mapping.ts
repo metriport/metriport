@@ -5,6 +5,7 @@ import { BaseModel, ModelSetup } from "./_default";
 export class PatientMappingModel extends BaseModel<PatientMappingModel> implements PatientMapping {
   static NAME = "patient_mapping";
   declare externalId: string;
+  declare cxId: string;
   declare patientId: string;
   declare source: string;
 
@@ -12,6 +13,9 @@ export class PatientMappingModel extends BaseModel<PatientMappingModel> implemen
     PatientMappingModel.init(
       {
         ...BaseModel.attributes(),
+        cxId: {
+          type: DataTypes.UUID,
+        },
         patientId: {
           type: DataTypes.UUID,
         },
