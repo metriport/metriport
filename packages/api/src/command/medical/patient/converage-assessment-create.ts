@@ -8,7 +8,7 @@ import { errorToString } from "@metriport/shared";
 import { createPatient, PatientCreateCmd } from "./create-patient";
 import { matchPatient } from "./get-patient";
 import { updatePatient } from "./update-patient";
-import { queryDocumentsAcrossHIEs as queryDocumentsAcrossHIEsSingle } from "../document/document-query";
+import { queryDocumentsAcrossHIEs as singleQueryDocumentsAcrossHIEs } from "../document/document-query";
 
 dayjs.extend(duration);
 
@@ -72,7 +72,7 @@ export async function createCoverageAssessments({
   }
 }
 
-async function createOrUpdateSinglePatient(patient: PatientCreateCmd): Promise<Patient> {
+async function singleCreateOrUpdatePatient(patient: PatientCreateCmd): Promise<Patient> {
   const matchedPatient = await matchPatient(patient);
   let updatedPatient: Patient;
   if (matchedPatient) {
@@ -104,7 +104,7 @@ async function createOrUpdatePatient({
   log: typeof console.log;
 }): Promise<void> {
   try {
-    const patient = await createOrUpdateSinglePatient(patientCreateCmd);
+    const patient = await singleCreateOrUpdatePatient(patientCreateCmd);
     patients.push(patient);
   } catch (error) {
     const msg = `Failed to create or update patient. Cause: ${errorToString(error)}`;
@@ -127,7 +127,7 @@ async function queryDocumentsAcrossHIEs({
   log: typeof console.log;
 }): Promise<void> {
   try {
-    await queryDocumentsAcrossHIEsSingle({
+    await singleQueryDocumentsAcrossHIEs({
       cxId,
       patientId: patient.id,
       facilityId,
