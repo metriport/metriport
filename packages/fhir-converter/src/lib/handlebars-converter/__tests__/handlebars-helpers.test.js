@@ -268,9 +268,24 @@ describe("getDateTime", function () {
     expect(date).toEqual("2023-06-26 19:08:46.000Z");
   });
 
-  it("should render nothing when invalid dateTimeString", function () {
+  it("should render date when valid date on invalid dateTimeString", function () {
     var date = functions.getDateTime("20240714040785-0400");
     expect(date).toEqual("2024-07-14T00:00:00.000Z");
+  });
+
+  it("should render nothing when invalid dateTimeString", function () {
+    var date = functions.getDateTime("a202407140407f");
+    expect(date).toEqual("");
+  });
+
+  it("should render date when gets a Date object", function () {
+    var date = functions.getDateTime(new Date("2023-06-26T19:08:46.000Z"));
+    expect(date).toEqual("2023-06-26T19:08:46.000Z");
+  });
+
+  it("should render nothing when gets a non-Date object", function () {
+    var date = functions.getDateTime({ a: "123" });
+    expect(date).toEqual("");
   });
 });
 
