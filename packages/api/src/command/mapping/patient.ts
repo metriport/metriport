@@ -31,6 +31,13 @@ export async function getPatientMapping({
   return existing;
 }
 
+export async function getPatientMappingsForPatient(where: {
+  patientId: string;
+  source?: string;
+}): Promise<PatientMappingModel[]> {
+  return await PatientMappingModel.findAll({ where });
+}
+
 export async function deletePatientMapping({
   externalId,
   source,

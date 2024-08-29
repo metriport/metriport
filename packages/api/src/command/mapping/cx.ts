@@ -31,6 +31,13 @@ export async function getCxMapping({
   return existing;
 }
 
+export async function getCxMappingsForCustomer(where: {
+  cxId: string;
+  source?: string;
+}): Promise<CxMappingModel[]> {
+  return await CxMappingModel.findAll({ where });
+}
+
 export async function deleteCxMapping({ externalId, source }: CxMappingLookUpParam): Promise<void> {
   const existing = await getCxMapping({ externalId, source });
   if (!existing) {
