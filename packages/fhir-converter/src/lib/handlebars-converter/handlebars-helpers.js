@@ -159,7 +159,7 @@ var getDate = function (dateStringRaw) {
     console.log(
       `[getDate] Date was an object (converted it to string): ${JSON.stringify(dateStringRaw)}`
     );
-    dateStringRaw = dateStringRaw.toString();
+    dateStringRaw = dateStringRaw.value ? dateStringRaw.value.toString() : dateStringRaw.toString();
   }
   if (typeof dateStringRaw !== "string") {
     console.log(`[getDate] Invalid date value (returning empty): ${JSON.stringify(dateStringRaw)}`);
