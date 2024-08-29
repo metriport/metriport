@@ -149,6 +149,9 @@ var alreadyValidDateTime = function (dateTimeString) {
 
 // handling the date format here
 var getDate = function (dateStringRaw) {
+  if (dateStringRaw === null || dateStringRaw === undefined) {
+    return "";
+  }
   if (dateStringRaw instanceof Date) {
     console.log(
       `[getDateTime] Date was a Date (converted it to string): ${JSON.stringify(dateStringRaw)}`
@@ -162,7 +165,6 @@ var getDate = function (dateStringRaw) {
     dateStringRaw = dateStringRaw.value ? dateStringRaw.value.toString() : dateStringRaw.toString();
   }
   if (typeof dateStringRaw !== "string") {
-    console.log(`[getDate] Invalid date value (returning empty): ${JSON.stringify(dateStringRaw)}`);
     return "";
   }
   var dateString = dateStringRaw?.trim();
@@ -201,6 +203,9 @@ var isValidYear = function (year) {
 
 // handling the datetime format here
 var getDateTime = function (dateTimeStringRaw) {
+  if (dateTimeStringRaw === null || dateTimeStringRaw === undefined) {
+    return "";
+  }
   if (dateTimeStringRaw instanceof Date) {
     console.log(
       `[getDateTime] Datetime was a Date (converted it to string): ${JSON.stringify(
@@ -208,9 +213,6 @@ var getDateTime = function (dateTimeStringRaw) {
       )}`
     );
     dateTimeStringRaw = dateTimeStringRaw.toISOString();
-  }
-  if (dateTimeStringRaw === null) {
-    return "";
   }
   if (typeof dateTimeStringRaw === "object") {
     console.log(
