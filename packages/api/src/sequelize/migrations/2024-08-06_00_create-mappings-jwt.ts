@@ -5,11 +5,11 @@ import * as shared from "../migrations-shared";
 const cxMappingTableName = "cx_mapping";
 const cxMappingTableConstraintName = "cx_mapping_source_externalId_constraint";
 const cxMappingTableIndexName = "cx_mapping_source_externalId_index";
-const cxMappingTableIdFields = ["source", "externalId"];
+const cxMappingTableIdFields = ["source", "external_id"];
 const patientMappingTableName = "patient_mapping";
 const patientMappingTableConstraintName = "patient_mapping_source_externalId_constraint";
 const patientMappingTableIndexName = "patient_mapping_source_externalId_index";
-const patientMappingTableIdFields = ["source", "externalId"];
+const patientMappingTableIdFields = ["source", "external_id"];
 const jwtTokenTableName = "jwt_token";
 const jwtTokenTableConstraintName = "patient_mapping_source_token_constraint";
 const jwtTokenTableIndexName = "patient_mapping_source_token_index";
@@ -128,16 +128,19 @@ export const up: Migration = async ({ context: queryInterface }) => {
       name: cxMappingTableConstraintName,
       fields: cxMappingTableIdFields,
       type: "unique",
+      transaction,
     });
     await queryInterface.addConstraint(patientMappingTableName, {
       name: patientMappingTableConstraintName,
       fields: patientMappingTableIdFields,
       type: "unique",
+      transaction,
     });
     await queryInterface.addConstraint(jwtTokenTableName, {
       name: jwtTokenTableConstraintName,
       fields: jwtTokenTableIdFields,
       type: "unique",
+      transaction,
     });
   });
 };
