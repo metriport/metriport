@@ -3,8 +3,14 @@ import type { Migration } from "..";
 import * as shared from "../migrations-shared";
 
 const cxMappingTableName = "cx_mapping";
+const cxMappingTableIndexName = "cx_mapping_source_externalId_index";
+const cxMappingTableIndexFields = ["source", "externalId"];
 const patientMappingTableName = "patient_mapping";
+const patientMappingTableIndexName = "patient_mapping_source_externalId_index";
+const patientMappingTableIndexFields = ["source", "externalId"];
 const jwtTokenTableName = "jwt_token";
+const jwtTokenTableIndexName = "patient_mapping_source_token_index";
+const jwtTokenTableIndexFields = ["source", "token"];
 
 // Use 'Promise.all' when changes are independent of each other
 export const up: Migration = async ({ context: queryInterface }) => {
@@ -95,11 +101,31 @@ export const up: Migration = async ({ context: queryInterface }) => {
       },
       { transaction, addVersion: true }
     );
+    await queryInterface.addIndex(cxMappingTableName, {
+      name: cxMappingTableIndexName,
+      fields: cxMappingTableIndexFields,
+      transaction,
+    });
+    await queryInterface.addIndex(patientMappingTableName, {
+      name: patientMappingTableIndexName,
+      fields: patientMappingTableIndexFields,
+      transaction,
+    });
+    await queryInterface.addIndex(jwtTokenTableName, {
+      name: jwtTokenTableIndexName,
+      fields: jwtTokenTableIndexFields,
+      transaction,
+    });
   });
 };
 
 export const down: Migration = ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
+    await queryInterface.removeIndex(jwtTokenTableName, jwtTokenTableIndexName, { transaction });
+    await queryInterface.removeIndex(patientMappingTableName, patientMappingTableIndexName, {
+      transaction,
+    });
+    await queryInterface.removeIndex(cxMappingTableName, cxMappingTableIndexName, { transaction });
     await queryInterface.dropTable(jwtTokenTableName, { transaction });
     await queryInterface.dropTable(patientMappingTableName, { transaction });
     await queryInterface.dropTable(cxMappingTableName, { transaction });
