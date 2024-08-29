@@ -209,6 +209,9 @@ var getDateTime = function (dateTimeStringRaw) {
     );
     dateTimeStringRaw = dateTimeStringRaw.toISOString();
   }
+  if (dateTimeStringRaw === null) {
+    return "";
+  }
   if (typeof dateTimeStringRaw === "object") {
     console.log(
       `[getDateTime] Datetime was an object (converted it to string): ${JSON.stringify(
@@ -218,9 +221,6 @@ var getDateTime = function (dateTimeStringRaw) {
     dateTimeStringRaw = dateTimeStringRaw.toString();
   }
   if (typeof dateTimeStringRaw !== "string") {
-    console.log(
-      `[getDateTime] Invalid datetime value (returning empty): ${JSON.stringify(dateTimeStringRaw)}`
-    );
     return "";
   }
   var dateTimeString = dateTimeStringRaw?.trim();
