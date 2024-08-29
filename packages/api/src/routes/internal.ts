@@ -359,7 +359,7 @@ router.get(
     const source = getFrom("query").optional("source", req);
     const result = await getCxMappingsForCustomer({
       cxId,
-      source,
+      ...(source && { source }),
     });
     return res.status(httpStatus.OK).json(result);
   })
