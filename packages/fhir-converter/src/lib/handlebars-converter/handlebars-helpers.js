@@ -169,6 +169,7 @@ var getDate = function (dateStringRaw) {
     }
   }
   if (typeof dateStringRaw !== "string") {
+    console.log(`[getDate] Invalid date value (returning empty): ${JSON.stringify(dateStringRaw)}`);
     return "";
   }
   var dateString = dateStringRaw?.trim();
@@ -231,6 +232,9 @@ var getDateTime = function (dateTimeStringRaw) {
     }
   }
   if (typeof dateTimeStringRaw !== "string") {
+    console.log(
+      `[getDateTime] Invalid datetime value (returning empty): ${JSON.stringify(dateTimeStringRaw)}`
+    );
     return "";
   }
   var dateTimeString = dateTimeStringRaw?.trim();
