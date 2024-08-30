@@ -12,6 +12,9 @@ export type CompositeKey = {
   date: string | undefined;
 };
 
+export const UNK_CODE = "UNK";
+export const UNKNOWN_DISPLAY = "unknown";
+
 export function createCompositeKey(code: string, date: string | undefined): CompositeKey {
   return {
     code,
