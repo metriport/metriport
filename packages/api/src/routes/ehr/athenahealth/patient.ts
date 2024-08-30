@@ -35,7 +35,7 @@ router.get(
       cxId,
       athenaPatientId,
     });
-    return res.status(httpStatus.OK).json(patient ? dtoFromModel(patient) : undefined);
+    return res.status(httpStatus.OK).json({ patient: patient ? dtoFromModel(patient) : undefined });
   })
 );
 

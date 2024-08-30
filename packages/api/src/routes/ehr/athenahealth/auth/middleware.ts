@@ -19,7 +19,9 @@ async function processCxIdAsync(req: Request): Promise<void> {
   if (!authInfo) throw new Error(`No AthenaHealth token found`);
   const externalId = (authInfo.data as { ah_practice?: string }).ah_practice;
   if (!externalId) {
-    throw new Error(`No AthenaHealth externalId value found for token ${accessToken}`);
+    throw new Error(
+      `No AthenaHealth externalId value found for token ${accessToken.slice(0, 5) + "..."}`
+    );
   }
   const existingCustomer = await getCxMapping({
     externalId,
