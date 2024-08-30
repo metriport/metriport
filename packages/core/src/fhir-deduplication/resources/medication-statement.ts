@@ -1,6 +1,7 @@
 import { MedicationStatement } from "@medplum/fhirtypes";
 import {
   combineResources,
+  createRef,
   fillMaps,
   getDateFromResource,
   pickMostDescriptiveStatus,
@@ -33,13 +34,16 @@ export const statusRanking: Record<MedicationStatementStatus, number> = {
 export function deduplicateMedStatements(medications: MedicationStatement[]): {
   combinedMedStatements: MedicationStatement[];
   refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
-  const { medStatementsMap, refReplacementMap } = groupSameMedStatements(medications);
+  const { medStatementsMap, refReplacementMap, danglingReferences } =
+    groupSameMedStatements(medications);
   return {
     combinedMedStatements: combineResources({
       combinedMaps: [medStatementsMap],
     }),
     refReplacementMap,
+    danglingReferences,
   };
 }
 
@@ -52,9 +56,11 @@ export function deduplicateMedStatements(medications: MedicationStatement[]): {
 export function groupSameMedStatements(medStatements: MedicationStatement[]): {
   medStatementsMap: Map<string, MedicationStatement>;
   refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
   const medStatementsMap = new Map<string, MedicationStatement>();
   const refReplacementMap = new Map<string, string[]>();
+  const danglingReferencesSet = new Set<string>();
 
   function assignMostDescriptiveStatus(
     master: MedicationStatement,
@@ -79,11 +85,14 @@ export function groupSameMedStatements(medStatements: MedicationStatement[]): {
         undefined,
         assignMostDescriptiveStatus
       );
+    } else {
+      danglingReferencesSet.add(createRef(medStatement));
     }
   }
 
   return {
     medStatementsMap,
     refReplacementMap: refReplacementMap,
+    danglingReferences: [...danglingReferencesSet],
   };
 }

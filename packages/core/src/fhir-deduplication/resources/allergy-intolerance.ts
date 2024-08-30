@@ -5,16 +5,17 @@ import {
   Coding,
 } from "@medplum/fhirtypes";
 import _, { cloneDeep } from "lodash";
-import { combineResources, fillMaps } from "../shared";
+import { combineResources, createRef, fillMaps, hasBlacklistedText } from "../shared";
 import { isUnknownCoding, unknownCode } from "./observation-shared";
 
 export function deduplicateAllergyIntolerances(allergies: AllergyIntolerance[]) {
-  const { allergiesMap, refReplacementMap } = groupSameAllergies(allergies);
+  const { allergiesMap, refReplacementMap, danglingReferences } = groupSameAllergies(allergies);
   return {
     combinedAllergies: combineResources({
       combinedMaps: [allergiesMap],
     }),
     refReplacementMap,
+    danglingReferences,
   };
 }
 
@@ -28,21 +29,31 @@ export function deduplicateAllergyIntolerances(allergies: AllergyIntolerance[]) 
 export function groupSameAllergies(allergies: AllergyIntolerance[]): {
   allergiesMap: Map<string, AllergyIntolerance>;
   refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
   const allergiesMap = new Map<string, AllergyIntolerance>();
   const refReplacementMap = new Map<string, string[]>();
+  const danglingReferencesSet = new Set<string>();
 
   for (const allergy of allergies) {
+    if (allergy.reaction?.some(reaction => hasBlacklistedText(reaction.substance))) {
+      danglingReferencesSet.add(createRef(allergy));
+      continue;
+    }
+
     const { allergy: newAllergy, substance } = preProcess(allergy);
     if (substance) {
       const key = JSON.stringify({ substance });
       fillMaps(allergiesMap, key, newAllergy, refReplacementMap, undefined, postProcess);
+    } else {
+      danglingReferencesSet.add(createRef(allergy));
     }
   }
 
   return {
     allergiesMap,
     refReplacementMap,
+    danglingReferences: [...danglingReferencesSet],
   };
 }
 

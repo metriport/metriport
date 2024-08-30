@@ -1,6 +1,13 @@
 import { CodeableConcept, Condition } from "@medplum/fhirtypes";
 import { ICD_10_CODE, ICD_10_OID, SNOMED_CODE, SNOMED_OID } from "../../util/constants";
-import { combineResources, createCompositeKey, fillMaps, getDateFromResource } from "../shared";
+import {
+  combineResources,
+  createCompositeKey,
+  createRef,
+  fillMaps,
+  getDateFromResource,
+  hasBlacklistedText,
+} from "../shared";
 
 /**
  * Approach:
@@ -13,12 +20,14 @@ import { combineResources, createCompositeKey, fillMaps, getDateFromResource } f
  * 2. Combine the Conditions in each group into one master condition and return the array of only unique and maximally filled out Conditions
  */
 export function deduplicateConditions(conditions: Condition[]) {
-  const { snomedMap, icd10Map, refReplacementMap } = groupSameConditions(conditions);
+  const { snomedMap, icd10Map, refReplacementMap, danglingReferences } =
+    groupSameConditions(conditions);
   return {
     combinedConditions: combineResources({
       combinedMaps: [snomedMap, icd10Map],
     }),
     refReplacementMap,
+    danglingReferences,
   };
 }
 
@@ -26,10 +35,12 @@ export function groupSameConditions(conditions: Condition[]): {
   snomedMap: Map<string, Condition>;
   icd10Map: Map<string, Condition>;
   refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
   const snomedMap = new Map<string, Condition>();
   const icd10Map = new Map<string, Condition>();
   const refReplacementMap = new Map<string, string[]>();
+  const danglingReferencesSet = new Set<string>();
 
   function removeOtherCodes(master: Condition): Condition {
     const code = master.code;
@@ -50,6 +61,11 @@ export function groupSameConditions(conditions: Condition[]): {
   }
 
   for (const condition of conditions) {
+    if (hasBlacklistedText(condition.code)) {
+      danglingReferencesSet.add(createRef(condition));
+      continue;
+    }
+
     const date = getDateFromResource(condition);
     const { snomedCode, icd10Code } = extractCodes(condition.code);
 
@@ -59,10 +75,12 @@ export function groupSameConditions(conditions: Condition[]): {
     } else if (snomedCode && date) {
       const compKey = JSON.stringify(createCompositeKey(snomedCode, date));
       fillMaps(snomedMap, compKey, condition, refReplacementMap, undefined, removeOtherCodes);
+    } else {
+      danglingReferencesSet.add(createRef(condition));
     }
   }
 
-  return { snomedMap, icd10Map, refReplacementMap };
+  return { snomedMap, icd10Map, refReplacementMap, danglingReferences: [...danglingReferencesSet] };
 }
 
 export function extractCodes(concept: CodeableConcept | undefined): {

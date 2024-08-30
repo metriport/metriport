@@ -7,7 +7,7 @@ import {
   SNOMED_CODE,
   SNOMED_OID,
 } from "../../util/constants";
-import { combineResources, fillMaps, isBlacklistedText } from "../shared";
+import { combineResources, createRef, fillMaps, hasBlacklistedText } from "../shared";
 
 export function deduplicateMedications(medications: Medication[]): {
   combinedMedications: Medication[];
@@ -61,8 +61,8 @@ export function groupSameMedications(medications: Medication[]): {
   }
 
   for (const medication of medications) {
-    if (medication.id && isBlacklistedText(medication.code)) {
-      danglingReferences.add(createMedicationRef(medication.id));
+    if (hasBlacklistedText(medication.code)) {
+      danglingReferences.add(createRef(medication));
       continue;
     }
 
@@ -76,7 +76,7 @@ export function groupSameMedications(medications: Medication[]): {
     } else if (snomedCode) {
       fillMaps(snomedMap, snomedCode, medication, refReplacementMap, false, removeOtherCodes);
     } else {
-      if (medication.id) danglingReferences.add(createMedicationRef(medication.id));
+      danglingReferences.add(createRef(medication));
     }
   }
 
@@ -115,8 +115,4 @@ function extractCodes(concept: CodeableConcept | undefined): {
     }
   }
   return { rxnormCode, ndcCode, snomedCode };
-}
-
-function createMedicationRef(medId: string): string {
-  return `Medication/${medId}`;
 }

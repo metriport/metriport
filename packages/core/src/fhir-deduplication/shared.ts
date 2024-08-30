@@ -2,6 +2,8 @@ import { CodeableConcept, Resource } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import { cloneDeep } from "lodash";
 
+const NO_KNOWN_SUBSTRING = "no known";
+
 const dateFormats = ["datetime", "date"] as const;
 export type DateFormats = (typeof dateFormats)[number];
 
@@ -235,6 +237,15 @@ export function pickMostDescriptiveStatus<T extends string>(
   return status;
 }
 
-export function isBlacklistedText(concept: CodeableConcept | undefined): boolean {
-  return concept?.text?.toLowerCase().includes("no known") ?? false;
+export function hasBlacklistedText(concept: CodeableConcept | undefined): boolean {
+  return (
+    concept?.text?.toLowerCase().includes(NO_KNOWN_SUBSTRING) ??
+    concept?.coding?.some(c => c.display?.toLowerCase().includes(NO_KNOWN_SUBSTRING)) ??
+    false
+  );
+}
+
+export function createRef<T extends Resource>(res: T): string {
+  if (!res.id) throw new Error("FHIR Resource has no ID");
+  return `${res.resourceType}/${res.id}`;
 }

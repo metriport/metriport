@@ -1,17 +1,20 @@
 import { Practitioner } from "@medplum/fhirtypes";
 import { normalizeAddress } from "../../mpi/normalize-address";
-import { combineResources, fillMaps } from "../shared";
+import { combineResources, createRef, fillMaps } from "../shared";
 
 export function deduplicatePractitioners(practitioners: Practitioner[]): {
   combinedPractitioners: Practitioner[];
   refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
-  const { practitionersMap, refReplacementMap } = groupSamePractitioners(practitioners);
+  const { practitionersMap, refReplacementMap, danglingReferences } =
+    groupSamePractitioners(practitioners);
   return {
     combinedPractitioners: combineResources({
       combinedMaps: [practitionersMap],
     }),
     refReplacementMap,
+    danglingReferences,
   };
 }
 
@@ -24,9 +27,11 @@ export function deduplicatePractitioners(practitioners: Practitioner[]): {
 export function groupSamePractitioners(practitioners: Practitioner[]): {
   practitionersMap: Map<string, Practitioner>;
   refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
   const practitionersMap = new Map<string, Practitioner>();
   const refReplacementMap = new Map<string, string[]>();
+  const danglingReferencesSet = new Set<string>();
 
   for (const practitioner of practitioners) {
     const name = practitioner.name;
@@ -36,11 +41,14 @@ export function groupSamePractitioners(practitioners: Practitioner[]): {
       const normalizedAddresses = addresseses.map(address => normalizeAddress(address));
       const key = JSON.stringify({ name, address: normalizedAddresses[0] });
       fillMaps(practitionersMap, key, practitioner, refReplacementMap);
+    } else {
+      danglingReferencesSet.add(createRef(practitioner));
     }
   }
 
   return {
     practitionersMap,
     refReplacementMap,
+    danglingReferences: [...danglingReferencesSet],
   };
 }
