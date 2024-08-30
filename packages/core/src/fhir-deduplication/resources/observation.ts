@@ -71,17 +71,11 @@ export function groupSameObservations(observations: Observation[]): {
     const observationDisplay = extractObservationDisplay(observation);
 
     if (date && value && keyCode) {
-      const key = keyCode ? JSON.stringify({ date, value, keyCode }) : undefined;
-      if (key) {
-        fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
-      }
+      const key = JSON.stringify({ date, value, keyCode });
+      fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
     } else if (date && value && observationDisplay) {
-      const key = observationDisplay
-        ? JSON.stringify({ date, value, observationDisplay })
-        : undefined;
-      if (key) {
-        fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
-      }
+      const key = JSON.stringify({ date, value, observationDisplay });
+      fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
     }
   }
 
