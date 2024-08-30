@@ -162,14 +162,40 @@ describe("groupSameObservations", () => {
     expect(observationsMap.size).toBe(1);
   });
 
-  it("correctly groups observations without codes", () => {
+  it("correctly groups observations without codes and based on text", () => {
     observation.effectiveDateTime = dateTime.start;
     observation2.effectiveDateTime = dateTime.start;
+    observation.code = { text: "Body Temperature" };
+    observation2.code = { text: "Body Temperature" };
     observation.valueCodeableConcept = valueConceptTobacco;
     observation2.valueCodeableConcept = valueConceptTobacco;
 
     const { observationsMap } = groupSameObservations([observation, observation2]);
     expect(observationsMap.size).toBe(1);
+  });
+
+  it("correctly groups observations without codes and based on coding display", () => {
+    observation.effectiveDateTime = dateTime.start;
+    observation2.effectiveDateTime = dateTime.start;
+    observation.code = { coding: [{ display: "Body Temperature" }] };
+    observation2.code = { coding: [{ display: "Body Temperature" }] };
+    observation.valueCodeableConcept = valueConceptTobacco;
+    observation2.valueCodeableConcept = valueConceptTobacco;
+
+    const { observationsMap } = groupSameObservations([observation, observation2]);
+    expect(observationsMap.size).toBe(1);
+  });
+
+  it("does not group observations without codes and with different displays", () => {
+    observation.effectiveDateTime = dateTime.start;
+    observation2.effectiveDateTime = dateTime.start;
+    observation.code = { coding: [{ display: "Body Temperature" }] };
+    observation2.code = { coding: [{ display: "Body Weight" }] };
+    observation.valueCodeableConcept = valueConceptTobacco;
+    observation2.valueCodeableConcept = valueConceptTobacco;
+
+    const { observationsMap } = groupSameObservations([observation, observation2]);
+    expect(observationsMap.size).toBe(2);
   });
 
   it("removes observations without dates", () => {

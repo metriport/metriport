@@ -1,11 +1,19 @@
 import { Observation } from "@medplum/fhirtypes";
 import {
+  UNKNOWN_DISPLAY,
+  UNK_CODE,
   combineResources,
   fillMaps,
   getDateFromResource,
   pickMostDescriptiveStatus,
 } from "../shared";
-import { extractValueFromObservation, statusRanking, unknownCoding } from "./observation-shared";
+import {
+  extractCodes,
+  extractValueFromObservation,
+  retrieveCode,
+  statusRanking,
+  unknownCoding,
+} from "./observation-shared";
 
 export function deduplicateObservations(observations: Observation[]): {
   combinedObservations: Observation[];
@@ -56,12 +64,25 @@ export function groupSameObservations(observations: Observation[]): {
   }
 
   for (const observation of observations) {
+    const keyCodes = extractCodes(observation.code);
+    const keyCode = retrieveCode(keyCodes);
     const date = getDateFromResource(observation);
     const value = extractValueFromObservation(observation);
+    const observationDisplay = extractObservationDisplay(observation);
 
-    if (date && value) {
-      const key = JSON.stringify({ date, value });
-      fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
+    if (date && value && keyCode) {
+      const key = keyCode ? JSON.stringify({ date, value, keyCode }) : undefined;
+      if (key) {
+        fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
+      }
+    } else if (date && value && observationDisplay) {
+      const key = observationDisplay
+        ? JSON.stringify({ date, value, observationDisplay })
+        : undefined;
+      if (key) {
+        console.log("KEY IS", key);
+        fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
+      }
     }
   }
 
@@ -69,4 +90,14 @@ export function groupSameObservations(observations: Observation[]): {
     observationsMap,
     refReplacementMap,
   };
+}
+
+function extractObservationDisplay(obs: Observation): string | undefined {
+  const displayCoding = obs.code?.coding?.find(coding => {
+    if (coding.code !== UNK_CODE && coding.display !== UNKNOWN_DISPLAY) {
+      return coding.display;
+    }
+    return;
+  });
+  return displayCoding?.display ?? obs.code?.text;
 }
