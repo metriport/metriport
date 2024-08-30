@@ -206,7 +206,11 @@ export function removeResourcesWithDanglingLinks(
   danglingLinks: string[]
 ) {
   return entries.flatMap(entry => {
-    if (!hasDanglingLink(JSON.stringify(entry), danglingLinks)) return entry;
+    if (
+      entry.resource?.resourceType === "Composition" ||
+      !hasDanglingLink(JSON.stringify(entry), danglingLinks)
+    )
+      return entry;
     return [];
   });
 }
