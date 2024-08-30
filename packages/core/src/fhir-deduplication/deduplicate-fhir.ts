@@ -144,12 +144,14 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   const locationsResult = deduplicateLocations(resourceArrays.locations);
   resourceArrays = replaceResourceReferences(resourceArrays, locationsResult.refReplacementMap);
   processedArrays.push("locations");
+  danglingLinks.push(...locationsResult.danglingReferences);
   deduplicatedEntries.push(...locationsResult.combinedLocations);
 
   // Organization deduplication
   const organizationsResult = deduplicateOrganizations(resourceArrays.organizations);
   resourceArrays = replaceResourceReferences(resourceArrays, organizationsResult.refReplacementMap);
   processedArrays.push("organizations");
+  danglingLinks.push(...organizationsResult.danglingReferences);
   deduplicatedEntries.push(...organizationsResult.combinedOrganizations);
 
   // RelatedPerson deduplication
@@ -159,6 +161,7 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
     relatedPersonsResult.refReplacementMap
   );
   processedArrays.push("relatedPersons");
+  danglingLinks.push(...relatedPersonsResult.danglingReferences);
   deduplicatedEntries.push(...relatedPersonsResult.combinedRelatedPersons);
 
   // FamilyMemberHistory deduplication
@@ -170,17 +173,20 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
     famMemHistoriesResult.refReplacementMap
   );
   processedArrays.push("familyMemberHistories");
+  danglingLinks.push(...famMemHistoriesResult.danglingReferences);
   deduplicatedEntries.push(...famMemHistoriesResult.combinedFamMemHistories);
 
   // Coverage deduplication
   const coveragesResult = deduplicateCoverages(resourceArrays.coverages);
   resourceArrays = replaceResourceReferences(resourceArrays, coveragesResult.refReplacementMap);
   processedArrays.push("coverages");
+  danglingLinks.push(...coveragesResult.danglingReferences);
   deduplicatedEntries.push(...coveragesResult.combinedCoverages);
 
   // Rebuild the entries with deduplicated resources and add whatever is left unprocessed
   for (const [key, resources] of Object.entries(resourceArrays)) {
-    if (processedArrays.includes(key)) {
+    // we will add compositions later
+    if (processedArrays.includes(key) || key === "compositions") {
       continue;
     } else {
       // Push all other resources unchanged
@@ -195,10 +201,18 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
     danglingLinks
   );
 
+  const compositionsNoDangling = removeResourcesWithDanglingLinks(
+    resourceArrays.compositions,
+    danglingLinks
+  );
+
   const deduplicatedBundle: Bundle = cloneDeep(fhirBundle);
-  deduplicatedBundle.entry = deduplicatedNoDangling.map(
+  deduplicatedBundle.entry = [...deduplicatedNoDangling, ...compositionsNoDangling].map(
     r => ({ resource: r } as BundleEntry<Resource>)
   );
+
+  // handle dangling references in compositions
+  // add them to the resulting bundle
   deduplicatedBundle.total = deduplicatedNoDangling.length;
 
   return deduplicatedBundle;

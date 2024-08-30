@@ -45,7 +45,7 @@ export function groupSameObservations(observations: Observation[]): {
 } {
   const observationsMap = new Map<string, Observation>();
   const refReplacementMap = new Map<string, string[]>();
-  const danglingReferences = new Set<string>();
+  const danglingReferencesSet = new Set<string>();
 
   function postProcess(
     master: Observation,
@@ -70,7 +70,7 @@ export function groupSameObservations(observations: Observation[]): {
 
   for (const observation of observations) {
     if (hasBlacklistedText(observation.code)) {
-      danglingReferences.add(createRef(observation));
+      danglingReferencesSet.add(createRef(observation));
       continue;
     }
 
@@ -78,20 +78,34 @@ export function groupSameObservations(observations: Observation[]): {
     const keyCode = retrieveCode(keyCodes);
     const date = getDateFromResource(observation);
     const value = extractValueFromObservation(observation);
+    const observationDisplay = extractObservationDisplay(observation);
 
     if (date && value && keyCode) {
-      const key = keyCode ? JSON.stringify({ date, value, keyCode }) : undefined;
-      if (key) {
-        fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
-      }
+      const key = JSON.stringify({ date, value, keyCode });
+      fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
+    } else if (date && value && observationDisplay) {
+      const key = JSON.stringify({ date, value, observationDisplay });
+      fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
     } else {
-      danglingReferences.add(createRef(observation));
+      danglingReferencesSet.add(createRef(observation));
     }
   }
 
   return {
     observationsMap,
     refReplacementMap,
-    danglingReferences: [...danglingReferences],
+    danglingReferences: [...danglingReferencesSet],
   };
+}
+
+export const UNK_CODE = "UNK";
+export const UNKNOWN_DISPLAY = "unknown";
+function extractObservationDisplay(obs: Observation): string | undefined {
+  const displayCoding = obs.code?.coding?.find(coding => {
+    if (coding.code !== UNK_CODE && coding.display !== UNKNOWN_DISPLAY) {
+      return coding.display;
+    }
+    return;
+  });
+  return displayCoding?.display ?? obs.code?.text;
 }

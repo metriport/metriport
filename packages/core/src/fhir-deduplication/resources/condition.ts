@@ -2,7 +2,6 @@ import { CodeableConcept, Condition } from "@medplum/fhirtypes";
 import { ICD_10_CODE, ICD_10_OID, SNOMED_CODE, SNOMED_OID } from "../../util/constants";
 import {
   combineResources,
-  createCompositeKey,
   createRef,
   fillMaps,
   getDateFromResource,
@@ -70,10 +69,10 @@ export function groupSameConditions(conditions: Condition[]): {
     const { snomedCode, icd10Code } = extractCodes(condition.code);
 
     if (icd10Code && date) {
-      const compKey = JSON.stringify(createCompositeKey(icd10Code, date));
+      const compKey = JSON.stringify({ icd10Code, date });
       fillMaps(icd10Map, compKey, condition, refReplacementMap, undefined, removeOtherCodes);
     } else if (snomedCode && date) {
-      const compKey = JSON.stringify(createCompositeKey(snomedCode, date));
+      const compKey = JSON.stringify({ snomedCode, date });
       fillMaps(snomedMap, compKey, condition, refReplacementMap, undefined, removeOtherCodes);
     } else {
       danglingReferencesSet.add(createRef(condition));

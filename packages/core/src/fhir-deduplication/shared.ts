@@ -14,13 +14,6 @@ export type CompositeKey = {
   date: string | undefined;
 };
 
-export function createCompositeKey(code: string, date: string | undefined): CompositeKey {
-  return {
-    code,
-    date,
-  };
-}
-
 export function getDateFromString(dateString: string, dateFormat?: "date" | "datetime"): string {
   const date = dayjs(dateString);
 

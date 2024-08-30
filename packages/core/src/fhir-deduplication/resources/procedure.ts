@@ -9,8 +9,10 @@ import {
 } from "../../util/constants";
 import {
   combineResources,
+  createRef,
   fillMaps,
   getPerformedDateFromResource,
+  hasBlacklistedText,
   pickMostDescriptiveStatus,
 } from "../shared";
 
@@ -41,13 +43,15 @@ export const statusRanking: Record<ProcedureStatus, number> = {
 export function deduplicateProcedures(procedures: Procedure[]): {
   combinedProcedures: Procedure[];
   refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
-  const { proceduresMap, refReplacementMap } = groupSameProcedures(procedures);
+  const { proceduresMap, refReplacementMap, danglingReferences } = groupSameProcedures(procedures);
   return {
     combinedProcedures: combineResources({
       combinedMaps: [proceduresMap],
     }),
     refReplacementMap,
+    danglingReferences,
   };
 }
 
@@ -60,9 +64,11 @@ export function deduplicateProcedures(procedures: Procedure[]): {
 export function groupSameProcedures(procedures: Procedure[]): {
   proceduresMap: Map<string, Procedure>;
   refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
   const proceduresMap = new Map<string, Procedure>();
   const refReplacementMap = new Map<string, string[]>();
+  const danglingReferencesSet = new Set<string>();
 
   function removeCodesAndAssignStatus(
     master: Procedure,
@@ -93,6 +99,11 @@ export function groupSameProcedures(procedures: Procedure[]): {
   }
 
   for (const procedure of procedures) {
+    if (hasBlacklistedText(procedure.code)) {
+      danglingReferencesSet.add(createRef(procedure));
+      continue;
+    }
+
     const date = getPerformedDateFromResource(procedure, "datetime");
     if (!date) continue;
 
@@ -114,12 +125,15 @@ export function groupSameProcedures(procedures: Procedure[]): {
         undefined,
         removeCodesAndAssignStatus
       );
+    } else {
+      danglingReferencesSet.add(createRef(procedure));
     }
   }
 
   return {
     proceduresMap,
     refReplacementMap,
+    danglingReferences: [...danglingReferencesSet],
   };
 }
 
