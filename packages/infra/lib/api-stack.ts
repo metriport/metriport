@@ -265,6 +265,16 @@ export class APIStack extends Stack {
       versioned: true,
     });
 
+    let ehrResponsesBucket: s3.Bucket | undefined;
+    if (!isSandbox(props.config)) {
+      ehrResponsesBucket = new s3.Bucket(this, "EhrResponsedBucket", {
+        bucketName: props.config.ehrResponsesBucketName,
+        publicReadAccess: false,
+        encryption: s3.BucketEncryption.S3_MANAGED,
+        versioned: true,
+      });
+    }
+
     const getSandboxSeedDataBucket = (sandboxConfig: EnvConfigSandbox) => {
       const seedBucketCfnName = "APISandboxSeedDataBucket";
       try {
@@ -429,6 +439,7 @@ export class APIStack extends Stack {
       outboundDocumentRetrievalLambda,
       generalBucket,
       medicalDocumentsUploadBucket,
+      ehrResponsesBucket,
       fhirToMedicalRecordLambda,
       fhirToCdaConverterLambda,
       fhirToBundleLambda,
