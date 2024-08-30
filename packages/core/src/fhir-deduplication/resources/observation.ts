@@ -80,7 +80,6 @@ export function groupSameObservations(observations: Observation[]): {
         ? JSON.stringify({ date, value, observationDisplay })
         : undefined;
       if (key) {
-        console.log("KEY IS", key);
         fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
       }
     }
