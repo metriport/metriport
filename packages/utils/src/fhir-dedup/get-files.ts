@@ -90,7 +90,18 @@ export async function getFilesToProcessFromLocal(
   dirName: string,
   localConsolidated: string
 ): Promise<DedupPair[]> {
-  const dirContents = fs.readdirSync(localConsolidated);
+  function getContents() {
+    try {
+      return fs.readdirSync(localConsolidated);
+    } catch (error) {
+      return undefined;
+    }
+  }
+  const dirContents = getContents();
+  if (!dirContents) {
+    console.log(`Could not load contents from ${localConsolidated} - does it exist?`);
+    return [];
+  }
   const dedupFileNames = dirContents.filter(name => name.includes("_deduped"));
   const res: DedupPair[] = [];
   dedupFileNames.forEach(dedupFileName => {

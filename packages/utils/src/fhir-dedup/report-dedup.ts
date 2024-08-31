@@ -16,6 +16,7 @@ import {
   getFilesToProcessFromS3,
 } from "./get-files";
 import { processMedication } from "./medication";
+import { processMedicationRequest } from "./medication-requests";
 import { processMedicationStatement } from "./medication-statement";
 
 dayjs.extend(duration);
@@ -59,6 +60,7 @@ async function main() {
     patientIds && patientIds.length
       ? await getFilesToProcessFromS3({ dirName, cxId, patientIds, bucketName, region })
       : await getFilesToProcessFromLocal(dirName, localConsolidated);
+  if (!dedupPairs || !dedupPairs.length) return;
 
   console.log(`\nGenerating reports...\n`);
   for (const pair of dedupPairs) {
@@ -83,6 +85,9 @@ async function main() {
 
     log(`Processing MedicationStatement...`);
     await processMedicationStatement(groupedOriginal, groupedDedup, patientDirName);
+
+    log(`Processing processMedicationRequest...`);
+    await processMedicationRequest(groupedOriginal, groupedDedup, patientDirName);
   }
   console.log(`>>> Done in ${ellapsedTimeAsStr(startedAt)}`);
 }
