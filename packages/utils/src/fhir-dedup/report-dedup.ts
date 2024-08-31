@@ -16,6 +16,7 @@ import {
   getFilesToProcessFromS3,
 } from "./get-files";
 import { processMedication } from "./medication";
+import { processMedicationAdministration } from "./medication-administration";
 import { processMedicationRequest } from "./medication-requests";
 import { processMedicationStatement } from "./medication-statement";
 
@@ -88,6 +89,9 @@ async function main() {
 
     log(`Processing processMedicationRequest...`);
     await processMedicationRequest(groupedOriginal, groupedDedup, patientDirName);
+
+    log(`Processing processMedicationAdministration...`);
+    await processMedicationAdministration(groupedOriginal, groupedDedup, patientDirName);
   }
   console.log(`>>> Done in ${ellapsedTimeAsStr(startedAt)}`);
 }
