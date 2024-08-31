@@ -21,8 +21,6 @@ const columns = [
   "perfRef_d",
   "encounterRef_o",
   "encounterRef_d",
-  "supInfoRef_o",
-  "supInfoRef_d",
   "recRef_o",
   "recRef_d",
   "authdOn_o",
@@ -139,7 +137,6 @@ function toCsv(resource: MedicationRequest, siblings: MedicationRequest[]): stri
   const reqRef_o = resource.requester?.reference ?? "";
   const perfRef_o = resource.performer?.reference ?? "";
   const encounterRef_o = resource.encounter?.reference ?? "";
-  const supInfoRef_o = resource.supportingInformation?.[0]?.reference ?? "";
   const recRef_o = resource.recorder?.reference ?? "";
   const authdOn_o = resource.authoredOn ?? "";
   const prio_o = resource.priority ?? "";
@@ -182,7 +179,6 @@ function toCsv(resource: MedicationRequest, siblings: MedicationRequest[]): stri
   const reqRef_d = sibling?.requester?.reference ?? "";
   const perfRef_d = sibling?.performer?.reference ?? "";
   const encounterRef_d = sibling?.encounter?.reference ?? "";
-  const supInfoRef_d = sibling?.supportingInformation?.[0]?.reference ?? "";
   const recRef_d = sibling?.recorder?.reference ?? "";
   const authdOn_d = sibling?.authoredOn ?? "";
   const prio_d = sibling?.priority ?? "";
@@ -231,8 +227,6 @@ function toCsv(resource: MedicationRequest, siblings: MedicationRequest[]): stri
     perfRef_d,
     encounterRef_o,
     encounterRef_d,
-    supInfoRef_o,
-    supInfoRef_d,
     recRef_o,
     recRef_d,
     authdOn_o,
