@@ -3,7 +3,7 @@ import fs from "fs";
 import { Dictionary } from "lodash";
 import { csvSeparator, safeCsv } from "./csv";
 
-// Lots of fields were not mapped, see https://www.hl7.org/fhir/R4/medicationrequest.html if you want to add them
+// Lots of fields were not mapped, see https://www.hl7.org/fhir/R4/medicationadministration.html if you want to add them
 const columns = [
   "id_o",
   "date",
