@@ -10,6 +10,7 @@ import fs from "fs";
 import { groupBy } from "lodash";
 import { ellapsedTimeAsStr } from "../shared/duration";
 import { initRunsFolder } from "../shared/folder";
+import { processCondition } from "./condition";
 import {
   buildGetDirPathInside,
   getFilesToProcessFromLocal,
@@ -87,11 +88,14 @@ async function main() {
     log(`Processing MedicationStatement...`);
     await processMedicationStatement(groupedOriginal, groupedDedup, patientDirName);
 
-    log(`Processing processMedicationRequest...`);
+    log(`Processing MedicationRequest...`);
     await processMedicationRequest(groupedOriginal, groupedDedup, patientDirName);
 
-    log(`Processing processMedicationAdministration...`);
+    log(`Processing MedicationAdministration...`);
     await processMedicationAdministration(groupedOriginal, groupedDedup, patientDirName);
+
+    log(`Processing Condition...`);
+    await processCondition(groupedOriginal, groupedDedup, patientDirName);
   }
   console.log(`>>> Done in ${ellapsedTimeAsStr(startedAt)}`);
 }
