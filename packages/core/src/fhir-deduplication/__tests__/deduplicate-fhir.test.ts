@@ -3,15 +3,18 @@ import { Bundle, BundleEntry, DiagnosticReport, Medication, Resource } from "@me
 import { makeBundle } from "../../external/fhir/__tests__/bundle";
 import {
   findCompositionResource,
+  findDiagnosticReportResources,
   findMedicationAdministrationResources,
   findMedicationRequestResources,
   findMedicationResources,
   findMedicationStatementResources,
 } from "../../external/fhir/shared";
+import { makeComposition } from "../../fhir-to-cda/cda-templates/components/__tests__/make-composition";
 import { makeDiagnosticReport } from "../../fhir-to-cda/cda-templates/components/__tests__/make-diagnostic-report";
 import { makeMedication } from "../../fhir-to-cda/cda-templates/components/__tests__/make-medication";
 import { makeObservation } from "../../fhir-to-cda/cda-templates/components/__tests__/make-observation";
 import { deduplicateFhir } from "../deduplicate-fhir";
+import { createRef } from "../shared";
 import { dateTime } from "./examples/condition-examples";
 import { rxnormCodeAm } from "./examples/medication-examples";
 import {
@@ -19,8 +22,7 @@ import {
   makeMedicationRequest,
   makeMedicationStatement,
 } from "./examples/medication-related";
-import { makeComposition } from "../../fhir-to-cda/cda-templates/components/__tests__/make-composition";
-import { createRef } from "../shared";
+import { loincCodeTobacco, valueConceptTobacco } from "./examples/observation-examples";
 
 let medicationId: string;
 let medicationId2: string;
@@ -235,5 +237,109 @@ describe("deduplicateFhir", () => {
     const firstCompEntry = resComposition?.section?.[0]?.entry;
     expect(firstCompEntry?.length).toBe(1);
     expect(firstCompEntry?.[0]?.reference).toBe(createRef(diagnosticReport));
+  });
+
+  it("properly handles everything in a relatively large bundle", () => {
+    medication.code = { text: "No known medications" };
+
+    const medAdmin = makeMedicationAdministration({
+      medicationReference: { reference: `Medication/${medicationId}` },
+    });
+
+    const medRequest = makeMedicationRequest({
+      medicationReference: { reference: `Medication/${medicationId}` },
+    });
+
+    const medStatement = makeMedicationStatement({
+      medicationReference: { reference: `Medication/${medicationId}` },
+    });
+
+    const observationId = faker.string.uuid();
+    const observationId2 = faker.string.uuid();
+
+    const observation = makeObservation({ id: observationId, code: {} });
+    const observation2 = makeObservation({
+      id: observationId2,
+      valueCodeableConcept: valueConceptTobacco,
+      code: loincCodeTobacco,
+      effectiveDateTime: dateTime.start,
+    });
+
+    const observationRef = createRef(observation);
+    const observation2Ref = createRef(observation2);
+
+    const diagnosticReport = makeDiagnosticReport({
+      id: faker.string.uuid(),
+      result: [{ reference: observationRef }, { reference: observation2Ref }],
+      effectivePeriod: dateTime,
+    });
+
+    const medAdminRef = createRef(medAdmin);
+    const medRequestRef = createRef(medRequest);
+    const medStatementRef = createRef(medStatement);
+    const diagReportRef = createRef(diagnosticReport);
+
+    const composition = makeComposition();
+    composition.section = [
+      {
+        ...composition.section?.[0],
+        entry: [
+          {
+            reference: observationRef,
+            display: "Observation 1",
+          },
+          {
+            reference: observation2Ref,
+            display: "Observation 2",
+          },
+          {
+            reference: medAdminRef,
+            display: "MedicationAdministration 1",
+          },
+          {
+            reference: medRequestRef,
+            display: "MedicationRequest 1",
+          },
+          {
+            reference: medStatementRef,
+            display: "MedicationStatement 1",
+          },
+          {
+            reference: diagReportRef,
+            display: "DiagnosticReport 1",
+          },
+        ],
+      },
+    ];
+
+    const entries = [
+      { resource: medication },
+      { resource: medAdmin },
+      { resource: medRequest },
+      { resource: medStatement },
+      { resource: observation },
+      { resource: observation2 },
+      { resource: diagnosticReport },
+      { resource: composition },
+    ] as BundleEntry<Resource>[];
+
+    bundle.entry = entries;
+    bundle = deduplicateFhir(bundle);
+    expect(bundle.entry?.length).toBe(3);
+    const resComposition = findCompositionResource(bundle);
+    expect(resComposition).not.toEqual(undefined);
+    const firstCompEntry = resComposition?.section?.[0]?.entry;
+    expect(firstCompEntry?.length).toBe(2);
+    expect(firstCompEntry).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ reference: observation2Ref }),
+        expect.objectContaining({ reference: diagReportRef }),
+      ])
+    );
+
+    const resDiagReport = findDiagnosticReportResources(bundle)[0];
+    expect(resDiagReport?.id).toBe(diagnosticReport.id);
+    expect(resDiagReport?.resourceType).toBe("DiagnosticReport");
+    expect(resDiagReport?.result).toEqual([{ reference: observation2Ref }]);
   });
 });
