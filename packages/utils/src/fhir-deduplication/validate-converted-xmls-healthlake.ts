@@ -145,15 +145,16 @@ async function validateFhirBundle(
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (fhirError: any) {
+    console.log(fhirError.response?.data);
     const fhirErrorIssues = fhirError.response?.data.issue;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const severIssues = fhirErrorIssues.filter((issue: any) => issue.severity === "error");
+    const severIssues = fhirErrorIssues?.filter((issue: any) => issue.severity === "error");
 
     console.log(`Found ${severIssues.length} errors`);
 
     for (const issue of fhirErrorIssues) {
       if (issue.severity === "error") {
-        const resource = issue.location[0].split("ofType")[1];
+        const resource = issue.location?.[0]?.split("ofType")[1];
 
         // IF YOU WANT TO SKIP CERTAIN ERRORS
         // const isReferenceError = issue.diagnostics.includes("Reference");
@@ -165,7 +166,7 @@ async function validateFhirBundle(
 
         errorsFromHealthLake.push({
           resource: resource,
-          location: issue.location[0],
+          location: issue.location?.[0],
           message: issue.diagnostics,
         });
       }
