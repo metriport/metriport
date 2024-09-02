@@ -1,6 +1,7 @@
 import { CodeableConcept, Identifier, Resource } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import { cloneDeep } from "lodash";
+import { isUnknownCoding } from "./resources/observation-shared";
 
 const NO_KNOWN_SUBSTRING = "no known";
 
@@ -234,9 +235,10 @@ export function pickMostDescriptiveStatus<T extends string>(
 }
 
 export function hasBlacklistedText(concept: CodeableConcept | undefined): boolean {
+  const knownCodings = concept?.coding?.filter(c => !isUnknownCoding(c));
   return (
     concept?.text?.toLowerCase().includes(NO_KNOWN_SUBSTRING) ??
-    concept?.coding?.some(c => c.display?.toLowerCase().includes(NO_KNOWN_SUBSTRING)) ??
+    Boolean(knownCodings?.length) ??
     false
   );
 }
