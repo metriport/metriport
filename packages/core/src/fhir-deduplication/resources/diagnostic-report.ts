@@ -73,7 +73,7 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
       const system = coding.system?.toLowerCase();
       return system?.includes(LOINC_CODE) || system?.includes(LOINC_OID);
     });
-    if (filtered) {
+    if (filtered && filtered.length) {
       master.code = {
         ...code,
         coding: filtered,
