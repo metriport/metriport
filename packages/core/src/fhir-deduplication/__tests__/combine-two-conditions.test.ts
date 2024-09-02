@@ -63,8 +63,9 @@ describe("groupSameConditions", () => {
     expect(combinedCondition.extension).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          valueReference: expect.objectContaining({
-            reference: expect.stringContaining(conditionId2),
+          valueRelatedArtifact: expect.objectContaining({
+            type: "derived-from",
+            display: expect.stringContaining(conditionId2),
           }),
         }),
       ])
