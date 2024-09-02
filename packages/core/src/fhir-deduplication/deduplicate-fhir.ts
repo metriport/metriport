@@ -1,12 +1,4 @@
-import {
-  Bundle,
-  BundleEntry,
-  EncounterDiagnosis,
-  Organization,
-  Practitioner,
-  Reference,
-  Resource,
-} from "@medplum/fhirtypes";
+import { Bundle, BundleEntry, EncounterDiagnosis, Resource } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
 import { ExtractedFhirTypes, extractFhirTypesFromBundle } from "../external/fhir/shared/bundle";
 import { deduplicateAllergyIntolerances } from "./resources/allergy-intolerance";
@@ -237,6 +229,10 @@ function replaceResourceReferences(
 
 type ResourceFilter = (entry: Resource, link: string) => Resource | undefined;
 
+const allergiesFiltersMap = new Map<string, ResourceFilter>([
+  ["Practitioner", removeDanglingReferences],
+]);
+
 const compositionFiltersMap = new Map<
   string,
   typeof removeResource | typeof removeDanglingReferences
@@ -248,20 +244,42 @@ const medicationRelatedFiltersMap = new Map<string, ResourceFilter>([
 
 const encounterFiltersMap = new Map<string, ResourceFilter>([
   ["Condition", removeDanglingReferences],
+  ["Location", removeDanglingReferences],
+  ["Practitioner", removeDanglingReferences],
+]);
+
+const conditionsFiltersMap = new Map<string, ResourceFilter>([
+  ["Practitioner", removeDanglingReferences],
 ]);
 
 const diagReportFiltersMap = new Map<string, ResourceFilter>([
   ["Observation", removeDanglingReferences],
   ["Encounter", removeDanglingReferences],
+  ["Practitioner", removeDanglingReferences],
+  ["Organization", removeDanglingReferences],
+]);
+
+const observationFiltersMap = new Map<string, ResourceFilter>([
+  ["Practitioner", removeDanglingReferences],
+  ["Organization", removeDanglingReferences],
+]);
+
+const procedureFiltersMap = new Map<string, ResourceFilter>([
+  ["Practitioner", removeDanglingReferences],
+  // ["Organization", removeDanglingReferences],
 ]);
 
 const resourceFiltersMap = new Map<string, Map<string, ResourceFilter>>([
+  ["AllergyIntolerance", allergiesFiltersMap],
+  ["Condition", conditionsFiltersMap],
   ["DiagnosticReport", diagReportFiltersMap],
   ["Encounter", encounterFiltersMap],
   ["MedicationStatement", medicationRelatedFiltersMap],
   ["MedicationRequest", medicationRelatedFiltersMap],
   ["MedicationAdministration", medicationRelatedFiltersMap],
   ["Composition", compositionFiltersMap],
+  ["Observation", observationFiltersMap],
+  ["Procedure", procedureFiltersMap],
 ]);
 
 export function removeResourcesWithDanglingLinks(
@@ -325,9 +343,9 @@ function removeDanglingReferences<T extends Resource>(entry: T, link: string): T
     }
   }
   if ("author" in entry) {
-    const authors = entry.author as Reference<Practitioner | Organization>[];
-    if (Array.isArray(authors)) {
-      entry.author = authors.filter(author => author.reference !== link);
+    if (entry.resourceType === "Composition") {
+      entry.author = entry.author?.filter(author => author.reference !== link);
+      if (!entry.author.length) delete entry.author;
     }
   }
   if ("custodian" in entry) {
@@ -338,6 +356,30 @@ function removeDanglingReferences<T extends Resource>(entry: T, link: string): T
       if (section.entry) section.entry = section.entry.filter(entry => entry.reference !== link);
       return section;
     });
+  }
+  if ("location" in entry) {
+    if (entry.resourceType === "Encounter") {
+      entry.location = entry.location.filter(location => location.location?.reference !== link);
+      if (!entry.location.length) delete entry.location;
+    }
+  }
+  if ("participant" in entry) {
+    if (entry.resourceType === "Encounter") {
+      entry.participant = entry.participant?.filter(part => part.individual?.reference !== link);
+      if (!entry.participant.length) delete entry.participant;
+    }
+  }
+  if ("performer" in entry) {
+    if (entry.resourceType === "DiagnosticReport") {
+      entry.performer = entry.performer?.filter(performer => performer.reference !== link);
+      if (!entry.performer.length) delete entry.performer;
+    } else if (entry.resourceType === "Procedure") {
+      entry.performer = entry.performer?.filter(performer => performer.actor !== link);
+      if (!entry.performer.length) delete entry.performer;
+    }
+  }
+  if ("recorder" in entry) {
+    if (entry.recorder.reference === link) delete entry.recorder;
   }
 
   return entry;

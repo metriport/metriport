@@ -115,8 +115,8 @@ export function groupSameProcedures(procedures: Procedure[]): {
 
     let key;
     if (cptCode) key = JSON.stringify({ datetime, cptCode });
-    else if (loincCode) JSON.stringify({ datetime, loincCode });
-    else if (snomedCode) JSON.stringify({ datetime, snomedCode });
+    else if (loincCode) key = JSON.stringify({ datetime, loincCode });
+    else if (snomedCode) key = JSON.stringify({ datetime, snomedCode });
 
     if (key) {
       fillMaps(
