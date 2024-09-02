@@ -20,6 +20,7 @@ import { processMedication } from "./medication";
 import { processMedicationAdministration } from "./medication-administration";
 import { processMedicationRequest } from "./medication-requests";
 import { processMedicationStatement } from "./medication-statement";
+import { processObservation } from "./observation";
 
 dayjs.extend(duration);
 
@@ -96,6 +97,9 @@ async function main() {
 
     log(`Processing Condition...`);
     await processCondition(groupedOriginal, groupedDedup, patientDirName);
+
+    log(`Processing Observation...`);
+    await processObservation(groupedOriginal, groupedDedup, patientDirName);
   }
   console.log(`>>> Done in ${ellapsedTimeAsStr(startedAt)}`);
 }

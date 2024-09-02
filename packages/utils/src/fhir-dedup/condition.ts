@@ -2,6 +2,7 @@ import { Condition, Resource } from "@medplum/fhirtypes";
 import fs from "fs";
 import { Dictionary } from "lodash";
 import { csvSeparator, safeCsv } from "./csv";
+import { bodySiteColumns, codeColumns, getBodySite, getCode } from "./resource-props";
 
 // Lots of fields were not mapped, see https://www.hl7.org/fhir/R4/condition.html if you want to add them
 const columns = [
@@ -27,34 +28,8 @@ const columns = [
   "cat_disp1_d",
   "cat_text_o",
   "cat_text_d",
-  "code_code0_o",
-  "code_code0_d",
-  "code_disp0_o",
-  "code_disp0_d",
-  "code_code1_o",
-  "code_code1_d",
-  "code_disp1_o",
-  "code_disp1_d",
-  "code_code2_o",
-  "code_code2_d",
-  "code_disp2_o",
-  "code_disp2_d",
-  "code_code3_o",
-  "code_code3_d",
-  "code_disp3_o",
-  "code_disp3_d",
-  "code_text_o",
-  "code_text_d",
-  "bodySite_code0_o",
-  "bodySite_code0_d",
-  "bodySite_disp0_o",
-  "bodySite_disp0_d",
-  "bodySite_code1_o",
-  "bodySite_code1_d",
-  "bodySite_disp1_o",
-  "bodySite_disp1_d",
-  "bodySite_text_o",
-  "bodySite_text_d",
+  ...codeColumns,
+  ...bodySiteColumns,
   "subjRef_o",
   "subjRef_d",
   "encounterRef_o",
@@ -122,21 +97,6 @@ function toCsv(resource: Condition, siblings: Condition[]): string {
   const cat_code1_o = resource.category?.[1]?.coding?.[0]?.code ?? "";
   const cat_disp1_o = resource.category?.[1]?.coding?.[0]?.display ?? "";
   const cat_text_o = resource.category?.[0]?.text ?? "";
-  const code_code0_o = resource.code?.coding?.[0]?.code ?? "";
-  const code_disp0_o = resource.code?.coding?.[0]?.display ?? "";
-  const code_code1_o = resource.code?.coding?.[1]?.code ?? "";
-  const code_disp1_o = resource.code?.coding?.[1]?.display ?? "";
-  const code_code2_o = resource.code?.coding?.[2]?.code ?? "";
-  const code_disp2_o = resource.code?.coding?.[2]?.display ?? "";
-  const code_code3_o = resource.code?.coding?.[3]?.code ?? "";
-  const code_disp3_o = resource.code?.coding?.[3]?.display ?? "";
-  const code_text_o = resource.code?.text ?? "";
-  const bodySite_o = resource.bodySite?.[0];
-  const bodySite_code0_o = bodySite_o?.coding?.[0]?.code ?? "";
-  const bodySite_disp0_o = bodySite_o?.coding?.[0]?.display ?? "";
-  const bodySite_code1_o = bodySite_o?.coding?.[1]?.code ?? "";
-  const bodySite_disp1_o = bodySite_o?.coding?.[1]?.display ?? "";
-  const bodySite_text_o = bodySite_o?.text ?? "";
   const subjRef_o = resource.subject?.reference ?? "";
   const encounterRef_o = resource.encounter?.reference ?? "";
   const onsetPeriod_start_o = resource.onsetPeriod?.start ?? "";
@@ -153,26 +113,17 @@ function toCsv(resource: Condition, siblings: Condition[]): string {
   const cat_disp0_d = sibling?.category?.[0]?.coding?.[0]?.display ?? "";
   const cat_disp1_d = sibling?.category?.[1]?.coding?.[0]?.display ?? "";
   const cat_text_d = sibling?.category?.[0]?.text ?? "";
-  const code_code0_d = sibling?.code?.coding?.[0]?.code ?? "";
-  const code_disp0_d = sibling?.code?.coding?.[0]?.display ?? "";
-  const code_code1_d = sibling?.code?.coding?.[1]?.code ?? "";
-  const code_disp1_d = sibling?.code?.coding?.[1]?.display ?? "";
-  const code_code2_d = sibling?.code?.coding?.[2]?.code ?? "";
-  const code_disp2_d = sibling?.code?.coding?.[2]?.display ?? "";
-  const code_code3_d = sibling?.code?.coding?.[3]?.code ?? "";
-  const code_disp3_d = sibling?.code?.coding?.[3]?.display ?? "";
-  const code_text_d = sibling?.code?.text ?? "";
-  const bodySite_d = resource.bodySite?.[0];
-  const bodySite_code0_d = bodySite_d?.coding?.[0]?.code ?? "";
-  const bodySite_disp0_d = bodySite_d?.coding?.[0]?.display ?? "";
-  const bodySite_code1_d = bodySite_d?.coding?.[1]?.code ?? "";
-  const bodySite_disp1_d = bodySite_d?.coding?.[1]?.display ?? "";
-  const bodySite_text_d = bodySite_d?.text ?? "";
   const subjRef_d = sibling?.subject?.reference ?? "";
   const encounterRef_d = sibling?.encounter?.reference ?? "";
   const onsetPeriod_start_d = sibling?.onsetPeriod?.start ?? "";
   const onsetPeriod_end_d = sibling?.onsetPeriod?.end ?? "";
   const recRef_d = sibling?.recordedDate ?? "";
+
+  const code = getCode(resource, sibling);
+  const bodySite = getBodySite(
+    { bodySite: resource.bodySite?.[0] },
+    { bodySite: sibling?.bodySite?.[0] }
+  );
 
   const res: Record<Columns, string | number | boolean> = {
     id_o: resource.id ?? "",
@@ -197,34 +148,8 @@ function toCsv(resource: Condition, siblings: Condition[]): string {
     cat_disp1_d,
     cat_text_o,
     cat_text_d,
-    code_code0_o,
-    code_code0_d,
-    code_disp0_o,
-    code_disp0_d,
-    code_code1_o,
-    code_code1_d,
-    code_disp1_o,
-    code_disp1_d,
-    code_code2_o,
-    code_code2_d,
-    code_disp2_o,
-    code_disp2_d,
-    code_code3_o,
-    code_code3_d,
-    code_disp3_o,
-    code_disp3_d,
-    code_text_o,
-    code_text_d,
-    bodySite_code0_o,
-    bodySite_code0_d,
-    bodySite_disp0_o,
-    bodySite_disp0_d,
-    bodySite_code1_o,
-    bodySite_code1_d,
-    bodySite_disp1_o,
-    bodySite_disp1_d,
-    bodySite_text_o,
-    bodySite_text_d,
+    ...code,
+    ...bodySite,
     subjRef_o,
     subjRef_d,
     encounterRef_o,
