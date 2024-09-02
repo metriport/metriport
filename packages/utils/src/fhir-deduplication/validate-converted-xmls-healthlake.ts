@@ -66,7 +66,7 @@ export async function main() {
           return;
         }
 
-        const validationErrors = await validateXml(bundle, start);
+        const validationErrors = await validateFhirBundle(bundle, start);
         await sleep(5000);
         console.log(`Error validate in ${Date.now() - start}ms`);
 
@@ -118,7 +118,7 @@ export async function main() {
   );
 }
 
-async function validateXml(
+async function validateFhirBundle(
   bundle: FHIRBundle,
   start: number
 ): Promise<ValidationErrorWithResourceType[]> {
