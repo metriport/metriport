@@ -32,10 +32,10 @@ export function getDateFromString(dateString: string, dateFormat?: "date" | "dat
   }
 }
 
-function createExtensionReference(resourceType: string, id: string | undefined) {
+function createExtensionRelatedArtifact(resourceType: string, id: string | undefined) {
   return {
-    url: "http://hl7.org/fhir/StructureDefinition/codesystem-sourceReference",
-    valueReference: { reference: `${resourceType}/${id}` },
+    url: "http://hl7.org/fhir/StructureDefinition/artifact-relatedArtifact",
+    valueRelatedArtifact: { type: "derived-from", display: `${resourceType}/${id}` },
   };
 }
 
@@ -45,7 +45,7 @@ export function combineTwoResources<T extends Resource>(
   isExtensionIncluded = true
 ): T {
   const combined = deepMerge({ ...r1 }, r2, isExtensionIncluded);
-  const extensionRef = createExtensionReference(r2.resourceType, r2.id);
+  const extensionRef = createExtensionRelatedArtifact(r2.resourceType, r2.id);
 
   // This part combines resources together and adds the ID references of the duplicates into the master resource
   // regardless of whether new information was found

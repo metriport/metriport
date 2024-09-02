@@ -1341,6 +1341,9 @@ function createObservationSocialHistorySection(observations: Observation[]) {
       const display = getValidCode(observation.code?.coding)[0]?.display ?? "";
       const value = renderSocialHistoryValue(observation) ?? "";
       const observationDate = formatDateForDisplay(observation.effectiveDateTime);
+      const firstDate = observation.effectivePeriod?.start;
+      const lastDate = observation.effectivePeriod?.end;
+
       acc.push({
         display,
         code: getSpecificCode(observation.code?.coding ?? [], [
@@ -1349,8 +1352,8 @@ function createObservationSocialHistorySection(observations: Observation[]) {
           LOINC_CODE,
         ]),
         value,
-        firstDate: observationDate,
-        lastDate: observationDate,
+        firstDate: firstDate ? formatDateForDisplay(firstDate) : observationDate,
+        lastDate: lastDate ? formatDateForDisplay(lastDate) : observationDate,
       });
 
       return acc;
