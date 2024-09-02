@@ -9,7 +9,7 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import fs from "fs";
 import { getFileNames, getFileContents, makeDir } from "../shared/fs";
 
-const samplesFolderPath = `/Users/orta21/Desktop/non-dedup`;
+const samplesFolderPath = ``;
 
 async function main() {
   const bundleFileNames = getFileNames({
