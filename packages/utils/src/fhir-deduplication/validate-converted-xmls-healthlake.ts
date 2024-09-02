@@ -11,7 +11,7 @@ const samplesFolderPath = "";
 
 const region = "";
 const datastoreId = "";
-const baseURL = `https://healthlake.${region}.amazonaws.com`;
+const baseURL = `healthlake.${region}.amazonaws.com`;
 
 const fhirApi = Axios.create({
   baseURL: `https://${baseURL}/datastore/${datastoreId}/r4/`,
@@ -22,7 +22,7 @@ const signer = new SignatureV4({
     accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? "",
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? "",
   },
-  region: "",
+  region: region,
   service: "healthlake",
   sha256: Sha256,
 });
