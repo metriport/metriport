@@ -52,7 +52,7 @@ beforeAll(() => {
   );
   practitioner = makePractitioner({ ...practitioner1, id: practitionerId });
   location = makeLocation({ ...location1, id: locationId });
-  composition = makeComposition({ enc: encounterId, pract: practitionerId });
+  composition = makeComposition({ encId: encounterId, practId: practitionerId });
 });
 
 beforeEach(() => {

@@ -70,11 +70,11 @@ export function groupSameMedAdmins(medAdmins: MedicationAdministration[]): {
 
   for (const medAdmin of medAdmins) {
     const medRef = medAdmin.medicationReference?.reference;
-    const date = getDateFromResource(medAdmin, "datetime");
+    const datetime = getDateFromResource(medAdmin, "datetime");
     const dosage = medAdmin.dosage;
 
-    if (medRef && date && dosage) {
-      const key = JSON.stringify({ medRef, date, dosage });
+    if (medRef && datetime && dosage) {
+      const key = JSON.stringify({ medRef, datetime, dosage });
       fillMaps(
         medAdminsMap,
         key,

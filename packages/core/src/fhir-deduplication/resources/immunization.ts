@@ -3,6 +3,7 @@ import { CVX_CODE, CVX_OID, NDC_CODE, NDC_OID } from "../../util/constants";
 import {
   combineResources,
   createRef,
+  extractDisplayFromConcept,
   fillMaps,
   getDateFromResource,
   hasBlacklistedText,
@@ -24,11 +25,16 @@ export function deduplicateImmunizations(immunizations: Immunization[]): {
   refReplacementMap: Map<string, string[]>;
   danglingReferences: string[];
 } {
-  const { immunizationsNdcMap, immunizationsCvxMap, refReplacementMap, danglingReferences } =
-    groupSameImmunizations(immunizations);
+  const {
+    immunizationsNdcMap,
+    immunizationsCvxMap,
+    displayMap,
+    refReplacementMap,
+    danglingReferences,
+  } = groupSameImmunizations(immunizations);
   return {
     combinedImmunizations: combineResources({
-      combinedMaps: [immunizationsNdcMap, immunizationsCvxMap],
+      combinedMaps: [immunizationsNdcMap, immunizationsCvxMap, displayMap],
     }),
     refReplacementMap,
     danglingReferences,
@@ -44,11 +50,13 @@ export function deduplicateImmunizations(immunizations: Immunization[]): {
 export function groupSameImmunizations(immunizations: Immunization[]): {
   immunizationsCvxMap: Map<string, Immunization>;
   immunizationsNdcMap: Map<string, Immunization>;
+  displayMap: Map<string, Immunization>;
   refReplacementMap: Map<string, string[]>;
   danglingReferences: string[];
 } {
   const immunizationsCvxMap = new Map<string, Immunization>();
   const immunizationsNdcMap = new Map<string, Immunization>();
+  const displayMap = new Map<string, Immunization>();
   const refReplacementMap = new Map<string, string[]>();
   const danglingReferencesSet = new Set<string>();
 
@@ -93,7 +101,20 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
           assignMostDescriptiveStatus
         );
       } else {
-        danglingReferencesSet.add(createRef(immunization));
+        const displayCode = extractDisplayFromConcept(immunization.vaccineCode);
+        if (displayCode) {
+          const key = JSON.stringify({ date, displayCode });
+          fillMaps(
+            displayMap,
+            key,
+            immunization,
+            refReplacementMap,
+            undefined,
+            assignMostDescriptiveStatus
+          );
+        } else {
+          danglingReferencesSet.add(createRef(immunization));
+        }
       }
     }
   }
@@ -101,6 +122,7 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
   return {
     immunizationsCvxMap,
     immunizationsNdcMap,
+    displayMap,
     refReplacementMap,
     danglingReferences: [...danglingReferencesSet],
   };

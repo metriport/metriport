@@ -73,10 +73,10 @@ export function groupSameEncounters(encounters: Encounter[]): {
   }
 
   for (const encounter of encounters) {
-    const date = getDateFromResource(encounter, "datetime");
+    const datetime = getDateFromResource(encounter, "datetime");
     // TODO: Improve the key. Just date is not sufficient.
-    if (date) {
-      const key = JSON.stringify({ date });
+    if (datetime) {
+      const key = JSON.stringify({ datetime });
       fillMaps(
         encountersMap,
         key,

@@ -27,6 +27,7 @@ import { deduplicateOrganizations } from "./resources/organization";
 import { deduplicatePractitioners } from "./resources/practitioner";
 import { deduplicateProcedures } from "./resources/procedure";
 import { deduplicateRelatedPersons } from "./resources/related-person";
+import { createRef } from "./shared";
 
 export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> {
   let resourceArrays = extractFhirTypesFromBundle(fhirBundle);
@@ -211,8 +212,6 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
     r => ({ resource: r } as BundleEntry<Resource>)
   );
 
-  // handle dangling references in compositions
-  // add them to the resulting bundle
   deduplicatedBundle.total = deduplicatedNoDangling.length;
 
   return deduplicatedBundle;
@@ -275,20 +274,22 @@ export function removeResourcesWithDanglingLinks(
 function handleDanglingLinks(res: Resource, danglingLinks: string[]): Resource | [] {
   if (res) {
     let entry = res;
-    const filtersMap =
-      res.resourceType === "Composition"
-        ? resourceFiltersMap.get("all")
-        : resourceFiltersMap.get(res.resourceType);
+    const filtersMap = resourceFiltersMap.get(res.resourceType);
 
     if (filtersMap) {
       for (const danglingLink of danglingLinks) {
-        const linkResourceType = danglingLink.split("/")[0];
+        const linkResourceType =
+          res.resourceType === "Composition" ? "all" : danglingLink.split("/")[0];
         if (linkResourceType) {
           const callbackFn = filtersMap.get(linkResourceType);
           if (callbackFn) {
             const result = callbackFn(entry, danglingLink);
             if (result) entry = result;
-            else return [];
+            else {
+              // removed resources become dangling links
+              danglingLinks.push(createRef(entry));
+              return [];
+            }
           }
         }
       }

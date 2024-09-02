@@ -1,6 +1,6 @@
 import { Practitioner } from "@medplum/fhirtypes";
 import { normalizeAddress } from "../../mpi/normalize-address";
-import { combineResources, createRef, fillMaps } from "../shared";
+import { combineResources, createRef, extractNpi, fillMaps } from "../shared";
 
 export function deduplicatePractitioners(practitioners: Practitioner[]): {
   combinedPractitioners: Practitioner[];
@@ -34,10 +34,14 @@ export function groupSamePractitioners(practitioners: Practitioner[]): {
   const danglingReferencesSet = new Set<string>();
 
   for (const practitioner of practitioners) {
+    const npi = extractNpi(practitioner.identifier);
     const name = practitioner.name;
     const addresseses = practitioner.address;
 
-    if (name && addresseses) {
+    if (npi) {
+      const key = JSON.stringify({ npi });
+      fillMaps(practitionersMap, key, practitioner, refReplacementMap);
+    } else if (name && addresseses) {
       const normalizedAddresses = addresseses.map(address => normalizeAddress(address));
       const key = JSON.stringify({ name, address: normalizedAddresses[0] });
       fillMaps(practitionersMap, key, practitioner, refReplacementMap);

@@ -56,7 +56,6 @@ export function extractCodes(concept: CodeableConcept | undefined): {
         } else {
           const text = concept.text?.trim().toLowerCase();
           if (isUnknownCoding(coding, text)) {
-            // This identifies and ignores unknown codes
             continue;
           } else {
             otherCode = system + code;

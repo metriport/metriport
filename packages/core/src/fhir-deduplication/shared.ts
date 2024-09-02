@@ -1,10 +1,13 @@
-import { CodeableConcept, Resource } from "@medplum/fhirtypes";
+import { CodeableConcept, Identifier, Resource } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import { cloneDeep } from "lodash";
 
 const NO_KNOWN_SUBSTRING = "no known";
 
 const dateFormats = ["datetime", "date"] as const;
+
+export const UNK_CODE = "UNK";
+export const UNKNOWN_DISPLAY = "unknown";
 export type DateFormats = (typeof dateFormats)[number];
 
 export type ApplySpecialModificationsCallback<T> = (merged: T, existing: T, target: T) => T;
@@ -241,4 +244,26 @@ export function hasBlacklistedText(concept: CodeableConcept | undefined): boolea
 export function createRef<T extends Resource>(res: T): string {
   if (!res.id) throw new Error("FHIR Resource has no ID");
   return `${res.resourceType}/${res.id}`;
+}
+
+export function extractDisplayFromConcept(
+  concept: CodeableConcept | undefined
+): string | undefined {
+  const displayCoding = concept?.coding?.find(coding => {
+    if (coding.code !== UNK_CODE && coding.display !== UNKNOWN_DISPLAY) {
+      return coding.display;
+    }
+    return;
+  });
+  if (displayCoding?.display) return displayCoding?.display;
+  const text = concept?.text;
+  if (!text?.includes(UNKNOWN_DISPLAY)) return text;
+  return undefined;
+}
+
+export function extractNpi(identifiers: Identifier[] | undefined): string | undefined {
+  if (!identifiers) return undefined;
+
+  const npiIdentifier = identifiers.find(i => i.system?.includes("us-npi") && i.value);
+  return npiIdentifier?.value;
 }

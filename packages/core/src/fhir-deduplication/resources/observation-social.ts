@@ -1,7 +1,13 @@
 import { Observation } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { combineResources, createRef, fillMaps, pickMostDescriptiveStatus } from "../shared";
+import {
+  combineResources,
+  createRef,
+  extractDisplayFromConcept,
+  fillMaps,
+  pickMostDescriptiveStatus,
+} from "../shared";
 import {
   extractCodes,
   extractValueFromObservation,
@@ -69,14 +75,21 @@ export function groupSameObservationsSocial(observations: Observation[]): {
     const keyCode = retrieveCode(keyCodes);
     const value = extractValueFromObservation(observation);
 
-    if (value && keyCode) {
-      const key = keyCode ? JSON.stringify({ value, keyCode }) : undefined;
-      if (key) {
-        fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
-      }
-    } else {
+    if (!value) {
       danglingReferencesSet.add(createRef(observation));
+      continue;
     }
+
+    let key;
+    if (keyCode) {
+      key = JSON.stringify({ value, keyCode });
+    } else {
+      const display = extractDisplayFromConcept(observation.code);
+      if (display) {
+        key = JSON.stringify({ value, display });
+      }
+    }
+    if (key) fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
   }
 
   return {

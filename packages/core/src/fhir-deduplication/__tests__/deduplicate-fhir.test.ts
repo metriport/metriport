@@ -2,6 +2,7 @@ import { faker } from "@faker-js/faker";
 import { Bundle, BundleEntry, DiagnosticReport, Medication, Resource } from "@medplum/fhirtypes";
 import { makeBundle } from "../../external/fhir/__tests__/bundle";
 import {
+  findCompositionResource,
   findMedicationAdministrationResources,
   findMedicationRequestResources,
   findMedicationResources,
@@ -18,6 +19,8 @@ import {
   makeMedicationRequest,
   makeMedicationStatement,
 } from "./examples/medication-related";
+import { makeComposition } from "../../fhir-to-cda/cda-templates/components/__tests__/make-composition";
+import { createRef } from "../shared";
 
 let medicationId: string;
 let medicationId2: string;
@@ -188,5 +191,49 @@ describe("deduplicateFhir", () => {
     expect(remainingRes.id).toBe(diagnosticReport.id);
     expect(remainingRes.resourceType).toBe("DiagnosticReport");
     expect(remainingRes.result).toBe(undefined);
+  });
+
+  it("removes dangling links from a Composition", () => {
+    const observationId = faker.string.uuid();
+    const diagnosticReport = makeDiagnosticReport({
+      id: faker.string.uuid(),
+      result: [{ reference: `Observation/${observationId}` }],
+      effectivePeriod: dateTime,
+    });
+
+    // making a useless observation
+    const observation = makeObservation({ id: observationId, code: {} });
+
+    const composition = makeComposition();
+    composition.section = [
+      {
+        ...composition.section?.[0],
+        entry: [
+          {
+            reference: `${createRef(observation)}`,
+            display: "Observation 1",
+          },
+          {
+            reference: `${createRef(diagnosticReport)}`,
+            display: "DiagnosticReport 1",
+          },
+        ],
+      },
+    ];
+    const entries = [
+      { resource: observation },
+      { resource: diagnosticReport },
+      { resource: composition },
+    ] as BundleEntry<Resource>[];
+
+    bundle.entry = entries;
+    bundle = deduplicateFhir(bundle);
+    expect(bundle.entry?.length).toBe(2);
+
+    const resComposition = findCompositionResource(bundle);
+    expect(resComposition).not.toEqual(undefined);
+    const firstCompEntry = resComposition?.section?.[0]?.entry;
+    expect(firstCompEntry?.length).toBe(1);
+    expect(firstCompEntry?.[0]?.reference).toBe(createRef(diagnosticReport));
   });
 });

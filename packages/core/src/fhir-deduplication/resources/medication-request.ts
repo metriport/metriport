@@ -1,5 +1,11 @@
 import { MedicationRequest } from "@medplum/fhirtypes";
-import { combineResources, createRef, fillMaps, pickMostDescriptiveStatus } from "../shared";
+import {
+  combineResources,
+  createRef,
+  fillMaps,
+  getDateFromString,
+  pickMostDescriptiveStatus,
+} from "../shared";
 
 const medicationRequestStatus = [
   "active",
@@ -67,11 +73,11 @@ export function groupSameMedRequests(medRequests: MedicationRequest[]): {
   for (const medRequest of medRequests) {
     const medRef = medRequest.medicationReference?.reference;
     const date = medRequest.authoredOn;
-    // TODO: Deduplicate Practitioners prior to MedicationRequests, so the reference to requester can also be used for key?
 
     if (medRef && date) {
+      const datetime = getDateFromString(date, "datetime");
       // TODO: Include medRequest.dosage into the key when we start mapping it on the FHIR converter
-      const key = JSON.stringify({ medRef, date });
+      const key = JSON.stringify({ medRef, datetime });
       fillMaps(
         medRequestsMap,
         key,

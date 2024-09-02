@@ -1,6 +1,6 @@
 import { Organization } from "@medplum/fhirtypes";
 import { normalizeAddress } from "../../mpi/normalize-address";
-import { combineResources, createRef, fillMaps } from "../shared";
+import { combineResources, createRef, extractNpi, fillMaps } from "../shared";
 
 export function deduplicateOrganizations(organizations: Organization[]): {
   combinedOrganizations: Organization[];
@@ -34,10 +34,14 @@ export function groupSameOrganizations(organizations: Organization[]): {
   const danglingReferencesSet = new Set<string>();
 
   for (const organization of organizations) {
+    const npi = extractNpi(organization.identifier);
     const name = organization.name;
     const addresses = organization.address;
 
-    if (name && addresses) {
+    if (npi) {
+      const key = JSON.stringify({ npi });
+      fillMaps(organizationsMap, key, organization, refReplacementMap);
+    } else if (name && addresses) {
       const normalizedAddresses = addresses.map(address => normalizeAddress(address));
       const key = JSON.stringify({ name, address: normalizedAddresses[0] });
       fillMaps(organizationsMap, key, organization, refReplacementMap);

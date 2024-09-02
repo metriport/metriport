@@ -72,11 +72,11 @@ export function groupSameMedStatements(medStatements: MedicationStatement[]): {
   }
 
   for (const medStatement of medStatements) {
-    const date = getDateFromResource(medStatement, "datetime");
+    const datetime = getDateFromResource(medStatement, "datetime");
     const medRef = medStatement.medicationReference?.reference;
     const dosage = medStatement.dosage;
-    if (medRef && date && dosage) {
-      const key = JSON.stringify({ medRef, date, dosage });
+    if (medRef && datetime && dosage) {
+      const key = JSON.stringify({ medRef, datetime, dosage });
       fillMaps(
         medStatementsMap,
         key,

@@ -89,11 +89,11 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
   }
 
   for (const diagReport of diagReports) {
-    const date = getDateFromResource(diagReport, "datetime");
+    const datetime = getDateFromResource(diagReport, "datetime");
     const isPresentedFormPresent = diagReport.presentedForm?.length;
     const isResultPresent = diagReport.result?.length;
-    if (date && (isPresentedFormPresent || isResultPresent)) {
-      const key = JSON.stringify({ date });
+    if (datetime && (isPresentedFormPresent || isResultPresent)) {
+      const key = JSON.stringify({ datetime });
       fillMaps(
         diagReportsMap,
         key,
