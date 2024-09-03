@@ -201,7 +201,7 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
 
   const deduplicatedBundle: Bundle = cloneDeep(fhirBundle);
   deduplicatedBundle.entry = [...deduplicatedNoDangling, ...compositionsNoDangling].map(
-    r => ({ resource: r } as BundleEntry<Resource>)
+    r => ({ fullUrl: `urn:uuid:${r.id}`, resource: r } as BundleEntry<Resource>)
   );
 
   deduplicatedBundle.total = deduplicatedNoDangling.length;
