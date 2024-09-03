@@ -11,6 +11,7 @@ import { groupBy } from "lodash";
 import { ellapsedTimeAsStr } from "../shared/duration";
 import { initRunsFolder } from "../shared/folder";
 import { processCondition } from "./condition";
+import { processDiagnosticReport } from "./diagnostic-report";
 import {
   buildGetDirPathInside,
   getFilesToProcessFromLocal,
@@ -100,6 +101,9 @@ async function main() {
 
     log(`Processing Observation...`);
     await processObservation(groupedOriginal, groupedDedup, patientDirName);
+
+    log(`Processing DiagnosticReport...`);
+    await processDiagnosticReport(groupedOriginal, groupedDedup, patientDirName);
   }
   console.log(`>>> Done in ${ellapsedTimeAsStr(startedAt)}`);
 }
