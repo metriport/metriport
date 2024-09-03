@@ -11,6 +11,7 @@ import {
   getPatient as getMetriportPatient,
   getPatientByDemo as singleGetMetriportPatientByDemo,
 } from "../../../../command/medical/patient/get-patient";
+//import { createPatient as createtMetriportPatient, PatientCreateCmd } from "../../../../command/medical/patient/create-patient";
 import { getPatientMapping, findOrCreatePatientMapping } from "../../../../command/mapping/patient";
 import { Config } from "../../../../shared/config";
 import { createMetriportAddresses, createMetriportContacts } from "../shared";
