@@ -247,7 +247,7 @@ router.get(
  * @param req.query.resources Optional comma-separated list of resources to be returned.
  * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
- * @param req.query.dashboard Optional parameter to indicate that the request is coming from the dashboard.
+ * @param req.query.fromDashboard Optional parameter to indicate that the request is coming from the dashboard.
  * @return Patient's consolidated data.
  */
 router.get(
@@ -259,7 +259,7 @@ router.get(
     const resources = getResourcesQueryParam(req);
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
-    const fromDashboard = getFromQueryAsBoolean("dashboard", req);
+    const fromDashboard = getFromQueryAsBoolean("fromDashboard", req);
     const patient = await getPatientOrFail({ id: patientId, cxId });
 
     const data = await getConsolidatedPatientData({
