@@ -1,6 +1,5 @@
 import {
   CodeableConcept,
-  Coding,
   Observation,
   Period,
   Quantity,
@@ -8,7 +7,7 @@ import {
   SampledData,
 } from "@medplum/fhirtypes";
 import { LOINC_CODE, LOINC_OID, SNOMED_CODE, SNOMED_OID } from "../../util/constants";
-import _ from "lodash";
+import { isUnknownCoding } from "../shared";
 
 export const observationStatus = [
   "entered-in-error",
@@ -119,31 +118,4 @@ export function extractValueFromObservation(
     return observation.valuePeriod;
   }
   return undefined;
-}
-
-export const unknownCoding = {
-  system: "http://terminology.hl7.org/ValueSet/v3-Unknown",
-  code: "UNK",
-  display: "unknown",
-};
-
-export const unknownCode = {
-  coding: [unknownCoding],
-  text: "unknown",
-};
-
-export function isUnknownCoding(coding: Coding, text?: string | undefined): boolean {
-  if (_.isEqual(coding, unknownCoding)) return true;
-  const system = coding.system?.toLowerCase();
-  const code = coding.code?.trim().toLowerCase();
-  const display = coding.display?.trim().toLowerCase();
-  if (
-    system?.includes("unknown") &&
-    code?.includes(unknownCoding.code.toLowerCase()) &&
-    display === unknownCoding.display.toLowerCase() &&
-    (!text || text === unknownCode.text.toLowerCase())
-  ) {
-    return true;
-  }
-  return false;
 }

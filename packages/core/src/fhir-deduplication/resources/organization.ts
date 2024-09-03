@@ -45,6 +45,9 @@ export function groupSameOrganizations(organizations: Organization[]): {
       const normalizedAddresses = addresses.map(address => normalizeAddress(address));
       const key = JSON.stringify({ name, address: normalizedAddresses[0] });
       fillMaps(organizationsMap, key, organization, refReplacementMap);
+    } else if (name) {
+      const key = JSON.stringify({ name });
+      fillMaps(organizationsMap, key, organization, refReplacementMap);
     } else {
       danglingReferencesSet.add(createRef(organization));
     }

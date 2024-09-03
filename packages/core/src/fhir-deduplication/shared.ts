@@ -1,7 +1,6 @@
-import { CodeableConcept, Identifier, Resource } from "@medplum/fhirtypes";
+import { CodeableConcept, Coding, Identifier, Resource } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
-import { cloneDeep } from "lodash";
-import { isUnknownCoding } from "./resources/observation-shared";
+import _, { cloneDeep } from "lodash";
 
 const NO_KNOWN_SUBSTRING = "no known";
 
@@ -266,4 +265,34 @@ export function extractNpi(identifiers: Identifier[] | undefined): string | unde
 
   const npiIdentifier = identifiers.find(i => i.system?.includes("us-npi") && i.value);
   return npiIdentifier?.value;
+}
+
+export const unknownCoding = {
+  system: "http://terminology.hl7.org/ValueSet/v3-Unknown",
+  code: "UNK",
+  display: "unknown",
+};
+
+export const unknownCode = {
+  coding: [unknownCoding],
+  text: "unknown",
+};
+
+export function isUnknownCoding(coding: Coding, text?: string | undefined): boolean {
+  if (_.isEqual(coding, unknownCoding)) return true;
+  const code = coding.code?.trim().toLowerCase();
+  const display = coding.display?.trim().toLowerCase();
+
+  if (code) {
+    return (
+      code?.includes(unknownCoding.code.toLowerCase()) &&
+      (!display || display === unknownCoding.display.toLowerCase()) &&
+      (!text || text === unknownCode.text.toLowerCase())
+    );
+  } else {
+    return (
+      (!display || display === unknownCoding.display.toLowerCase()) &&
+      (!text || text === unknownCode.text.toLowerCase())
+    );
+  }
 }

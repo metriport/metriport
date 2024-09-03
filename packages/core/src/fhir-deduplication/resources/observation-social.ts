@@ -6,12 +6,12 @@ import {
   createRef,
   extractDisplayFromConcept,
   fillMaps,
+  isUnknownCoding,
   pickMostDescriptiveStatus,
 } from "../shared";
 import {
   extractCodes,
   extractValueFromObservation,
-  isUnknownCoding,
   retrieveCode,
   statusRanking,
 } from "./observation-shared";

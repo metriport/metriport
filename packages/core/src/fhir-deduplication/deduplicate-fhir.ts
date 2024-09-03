@@ -252,6 +252,10 @@ const conditionsFiltersMap = new Map<string, ResourceFilter>([
   ["Practitioner", removeDanglingReferences],
 ]);
 
+const coveragesFiltersMap = new Map<string, ResourceFilter>([
+  ["Organization", removeDanglingReferences],
+]);
+
 const diagReportFiltersMap = new Map<string, ResourceFilter>([
   ["Observation", removeDanglingReferences],
   ["Encounter", removeDanglingReferences],
@@ -272,6 +276,7 @@ const procedureFiltersMap = new Map<string, ResourceFilter>([
 const resourceFiltersMap = new Map<string, Map<string, ResourceFilter>>([
   ["AllergyIntolerance", allergiesFiltersMap],
   ["Condition", conditionsFiltersMap],
+  ["Coverage", coveragesFiltersMap],
   ["DiagnosticReport", diagReportFiltersMap],
   ["Encounter", encounterFiltersMap],
   ["MedicationStatement", medicationRelatedFiltersMap],
@@ -383,6 +388,10 @@ function removeDanglingReferences<T extends Resource>(entry: T, link: string): T
   }
   if ("serviceProvider" in entry) {
     if (entry.serviceProvider.reference === link) delete entry.serviceProvider;
+  }
+  if ("payor" in entry) {
+    entry.payor = entry.payor?.filter(payor => payor.reference !== link);
+    if (!entry.payor.length) delete entry.payor;
   }
 
   return entry;
