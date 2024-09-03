@@ -10,6 +10,7 @@ import fs from "fs";
 import { groupBy } from "lodash";
 import { ellapsedTimeAsStr } from "../shared/duration";
 import { initRunsFolder } from "../shared/folder";
+import { processAllergyIntolerance } from "./allergy-intolerance";
 import { processCondition } from "./condition";
 import { processDiagnosticReport } from "./diagnostic-report";
 import { processEncounter } from "./encounter";
@@ -108,6 +109,9 @@ async function main() {
 
     log(`Processing Encounter...`);
     await processEncounter(groupedOriginal, groupedDedup, patientDirName);
+
+    log(`Processing AllergyIntolerance...`);
+    await processAllergyIntolerance(groupedOriginal, groupedDedup, patientDirName);
   }
   console.log(`>>> Done in ${ellapsedTimeAsStr(startedAt)}`);
 }
