@@ -217,4 +217,28 @@ describe("groupSameAllergies", () => {
     const { allergiesMap } = groupSameAllergies([allergy, allergy2]);
     expect(allergiesMap.size).toBe(0);
   });
+
+  it("removes allergies with NKA for substance in display", () => {
+    allergy.reaction = [
+      {
+        substance: { coding: [{ ...noKnownAllergiesSubstance.coding[0], display: "NKA" }] },
+        manifestation: unknownManifestation,
+      },
+    ];
+
+    const result = groupSameAllergies([allergy]);
+    expect(result.allergiesMap.size).toBe(0);
+  });
+
+  it("removes allergies with NKA for substance in text", () => {
+    allergy.reaction = [
+      {
+        substance: { coding: noKnownAllergiesSubstance.coding, text: "NKA" },
+        manifestation: unknownManifestation,
+      },
+    ];
+
+    const result = groupSameAllergies([allergy]);
+    expect(result.allergiesMap.size).toBe(0);
+  });
 });
