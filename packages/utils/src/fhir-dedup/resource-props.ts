@@ -1,4 +1,10 @@
-import { Annotation, CodeableConcept, ObservationReferenceRange, Period } from "@medplum/fhirtypes";
+import {
+  Annotation,
+  CodeableConcept,
+  ObservationReferenceRange,
+  Period,
+  Reference,
+} from "@medplum/fhirtypes";
 
 export const codeColumns = [
   "code_code0",
@@ -86,7 +92,7 @@ export function getCategory(
   sibling: { category?: CodeableConcept } | undefined
 ): Record<Category0Columns, string> {
   const res = Array.isArray(resource.category) ? resource.category[0] : resource.category;
-  const cat0_code0 = res?.coding?.[0].code ?? "";
+  const cat0_code0 = res?.coding?.[0]?.code ?? "";
   const cat0_disp0 = res?.coding?.[0]?.display ?? "";
   const cat0_code1 = res?.coding?.[1]?.code ?? "";
   const cat0_disp1 = res?.coding?.[1]?.display ?? "";
@@ -119,7 +125,7 @@ export function getCategories(
     { category: sibling?.category?.[0] }
   );
   const res = Array.isArray(resource.category) ? resource.category[1] : undefined;
-  const cat1_code0 = res?.coding?.[0].code ?? "";
+  const cat1_code0 = res?.coding?.[0]?.code ?? "";
   const cat1_disp0 = res?.coding?.[0]?.display ?? "";
   const cat1_code1 = res?.coding?.[1]?.code ?? "";
   const cat1_disp1 = res?.coding?.[1]?.display ?? "";
@@ -192,7 +198,7 @@ export function getValueCodeableConcept(
   sibling: { valueCodeableConcept?: CodeableConcept } | undefined
 ): Record<ValueCodeableConceptColumns, string> {
   const res = resource.valueCodeableConcept;
-  const valCdblCncpt_code0 = res?.coding?.[0].code ?? "";
+  const valCdblCncpt_code0 = res?.coding?.[0]?.code ?? "";
   const valCdblCncpt_disp0 = res?.coding?.[0]?.display ?? "";
   const valCdblCncpt_code1 = res?.coding?.[1]?.code ?? "";
   const valCdblCncpt_disp1 = res?.coding?.[1]?.display ?? "";
@@ -235,7 +241,7 @@ export function getInterpretation(
   sibling: { valueCodeableConcept?: CodeableConcept } | undefined
 ): Record<InterpretationColumns, string> {
   const interpretation = resource.valueCodeableConcept;
-  const intrpn_code0 = interpretation?.coding?.[0].code ?? "";
+  const intrpn_code0 = interpretation?.coding?.[0]?.code ?? "";
   const intrpn_disp0 = interpretation?.coding?.[0]?.display ?? "";
   const intrpn_code1 = interpretation?.coding?.[1]?.code ?? "";
   const intrpn_disp1 = interpretation?.coding?.[1]?.display ?? "";
@@ -278,7 +284,7 @@ export function getBodySite(
   sibling: { bodySite?: CodeableConcept } | undefined
 ): Record<BodySiteColumns, string> {
   const bodySite = resource.bodySite;
-  const bodySite_code0 = bodySite?.coding?.[0].code ?? "";
+  const bodySite_code0 = bodySite?.coding?.[0]?.code ?? "";
   const bodySite_disp0 = bodySite?.coding?.[0]?.display ?? "";
   const bodySite_code1 = bodySite?.coding?.[1]?.code ?? "";
   const bodySite_disp1 = bodySite?.coding?.[1]?.display ?? "";
@@ -391,5 +397,103 @@ export function getRefRange(
     refRange_type_text_s,
     refRange_text,
     refRange_text_s,
+  };
+}
+
+export const reasonCodeColumns = [
+  "reason0_code0",
+  "reason0_code0_s",
+  "reason0_disp0",
+  "reason0_disp0_s",
+  "reason0_code1",
+  "reason0_code1_s",
+  "reason0_disp1",
+  "reason0_disp1_s",
+  "reason0_text",
+  "reason0_text_s",
+  "reason1_code0",
+  "reason1_code0_s",
+  "reason1_disp0",
+  "reason1_disp0_s",
+  "reason1_code1",
+  "reason1_code1_s",
+  "reason1_disp1",
+  "reason1_disp1_s",
+  "reason1_text",
+  "reason1_text_s",
+] as const;
+export type ReasonCodeColumns = (typeof reasonCodeColumns)[number];
+export function getReasonCode(
+  resource: { reasonCode?: CodeableConcept[] },
+  sibling: { reasonCode?: CodeableConcept[] } | undefined
+): Record<ReasonCodeColumns, string | number> {
+  const res0 = resource.reasonCode?.[0];
+  const reason0_code0 = res0?.coding?.[0]?.code ?? "";
+  const reason0_disp0 = res0?.coding?.[0]?.display ?? "";
+  const reason0_code1 = res0?.coding?.[1]?.code ?? "";
+  const reason0_disp1 = res0?.coding?.[1]?.display ?? "";
+  const reason0_text = res0?.text ?? "";
+  const res1 = resource.reasonCode?.[1];
+  const reason1_code0 = res1?.coding?.[0]?.code ?? "";
+  const reason1_disp0 = res1?.coding?.[0]?.display ?? "";
+  const reason1_code1 = res1?.coding?.[1]?.code ?? "";
+  const reason1_disp1 = res1?.coding?.[1]?.display ?? "";
+  const reason1_text = res1?.text ?? "";
+  const sib0 = sibling?.reasonCode?.[0];
+  const reason0_code0_s = sib0?.coding?.[0]?.code ?? "";
+  const reason0_disp0_s = sib0?.coding?.[0]?.display ?? "";
+  const reason0_code1_s = sib0?.coding?.[1]?.code ?? "";
+  const reason0_disp1_s = sib0?.coding?.[1]?.display ?? "";
+  const reason0_text_s = sib0?.text ?? "";
+  const sib1 = sibling?.reasonCode?.[1];
+  const reason1_code0_s = sib1?.coding?.[0]?.code ?? "";
+  const reason1_disp0_s = sib1?.coding?.[0]?.display ?? "";
+  const reason1_code1_s = sib1?.coding?.[1]?.code ?? "";
+  const reason1_disp1_s = sib1?.coding?.[1]?.display ?? "";
+  const reason1_text_s = sib1?.text ?? "";
+  return {
+    reason0_code0,
+    reason0_disp0,
+    reason0_code1,
+    reason0_disp1,
+    reason0_text,
+    reason1_code0,
+    reason1_disp0,
+    reason1_code1,
+    reason1_disp1,
+    reason1_text,
+    reason0_code0_s,
+    reason0_disp0_s,
+    reason0_code1_s,
+    reason0_disp1_s,
+    reason0_text_s,
+    reason1_code0_s,
+    reason1_disp0_s,
+    reason1_code1_s,
+    reason1_disp1_s,
+    reason1_text_s,
+  };
+}
+
+export const reasonReferenceColumns = [
+  "reasonRef0",
+  "reasonRef0_s",
+  "reasonRef1",
+  "reasonRef1_s",
+] as const;
+export type ReasonReferenceColumns = (typeof reasonReferenceColumns)[number];
+export function getReasonReference(
+  resource: { reasonReference?: Reference[] },
+  sibling: { reasonReference?: Reference[] } | undefined
+): Record<ReasonReferenceColumns, string | number> {
+  const reasonRef0 = resource.reasonReference?.[0]?.reference ?? "";
+  const reasonRef1 = resource.reasonReference?.[1]?.reference ?? "";
+  const reasonRef0_s = sibling?.reasonReference?.[0]?.reference ?? "";
+  const reasonRef1_s = sibling?.reasonReference?.[1]?.reference ?? "";
+  return {
+    reasonRef0,
+    reasonRef1,
+    reasonRef0_s,
+    reasonRef1_s,
   };
 }

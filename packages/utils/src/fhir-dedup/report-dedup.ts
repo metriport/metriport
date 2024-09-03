@@ -12,6 +12,7 @@ import { ellapsedTimeAsStr } from "../shared/duration";
 import { initRunsFolder } from "../shared/folder";
 import { processCondition } from "./condition";
 import { processDiagnosticReport } from "./diagnostic-report";
+import { processEncounter } from "./encounter";
 import {
   buildGetDirPathInside,
   getFilesToProcessFromLocal,
@@ -104,6 +105,9 @@ async function main() {
 
     log(`Processing DiagnosticReport...`);
     await processDiagnosticReport(groupedOriginal, groupedDedup, patientDirName);
+
+    log(`Processing Encounter...`);
+    await processEncounter(groupedOriginal, groupedDedup, patientDirName);
   }
   console.log(`>>> Done in ${ellapsedTimeAsStr(startedAt)}`);
 }
