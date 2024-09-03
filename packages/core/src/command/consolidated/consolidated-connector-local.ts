@@ -30,7 +30,7 @@ export class ConsolidatedDataConnectorLocal implements ConsolidatedDataConnector
       isFhirDeduplicationEnabledForCx(params.patient.cxId),
     ]);
 
-    const dedupEnabled = ffDedupEnabled ?? params.fromDashboard;
+    const dedupEnabled = ffDedupEnabled || params.fromDashboard;
 
     const dedupedBundle = deduplicate({ cxId, patientId, bundle: originalBundle });
 
