@@ -1,4 +1,5 @@
 import { Observation, CodeableConcept } from "@medplum/fhirtypes";
+import { cloneDeep } from "lodash";
 import {
   combineResources,
   createRef,
@@ -77,7 +78,7 @@ export function groupSameObservations(observations: Observation[]): {
     }
 
     // pre process
-    const { observation: newObservation, code } = preProcess(observation);
+    const { observation: newObservation, code } = filterOutUnknownCodings(observation);
 
     const keyCodes = extractCodes(code);
     const keyCode = retrieveCode(keyCodes);
@@ -109,8 +110,11 @@ export function groupSameObservations(observations: Observation[]): {
   };
 }
 
-function preProcess(observation: Observation): { observation: Observation; code: CodeableConcept } {
-  const newObservation = { ...observation };
+function filterOutUnknownCodings(observation: Observation): {
+  observation: Observation;
+  code: CodeableConcept;
+} {
+  const newObservation = cloneDeep(observation);
   const code = { ...newObservation.code };
 
   if (code.coding) {
