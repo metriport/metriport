@@ -237,9 +237,7 @@ export function pickMostDescriptiveStatus<T extends string>(
 export function hasBlacklistedText(concept: CodeableConcept | undefined): boolean {
   const knownCodings = concept?.coding?.filter(c => !isUnknownCoding(c));
   return (
-    concept?.text?.toLowerCase().includes(NO_KNOWN_SUBSTRING) ??
-    Boolean(knownCodings?.length) ??
-    false
+    concept?.text?.toLowerCase().includes(NO_KNOWN_SUBSTRING) ?? !knownCodings?.length ?? false
   );
 }
 

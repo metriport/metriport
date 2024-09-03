@@ -35,13 +35,14 @@ export function groupSameMedications(medications: Medication[]): {
   rxnormMap: Map<string, Medication>;
   ndcMap: Map<string, Medication>;
   snomedMap: Map<string, Medication>;
+  displayMap: Map<string, Medication>;
   refReplacementMap: Map<string, string[]>;
   danglingReferences: string[];
 } {
   const rxnormMap = new Map<string, Medication>();
   const ndcMap = new Map<string, Medication>();
   const snomedMap = new Map<string, Medication>();
-  const dispayMap = new Map<string, Medication>();
+  const displayMap = new Map<string, Medication>();
   const refReplacementMap = new Map<string, string[]>();
   const danglingReferences = new Set<string>();
 
@@ -86,7 +87,7 @@ export function groupSameMedications(medications: Medication[]): {
       const display = extractDisplayFromConcept(medication.code);
       if (display) {
         const compKey = JSON.stringify({ display });
-        fillMaps(dispayMap, compKey, medication, refReplacementMap, undefined, removeOtherCodes);
+        fillMaps(displayMap, compKey, medication, refReplacementMap, undefined, removeOtherCodes);
       } else {
         danglingReferences.add(createRef(medication));
       }
@@ -97,6 +98,7 @@ export function groupSameMedications(medications: Medication[]): {
     rxnormMap,
     ndcMap,
     snomedMap,
+    displayMap,
     refReplacementMap,
     danglingReferences: [...danglingReferences],
   };
