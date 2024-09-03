@@ -94,8 +94,8 @@ function toCsv(resource: Condition, siblings: Condition[]): string {
   const cliStat_text_o = resource.clinicalStatus?.text ?? "";
   const cat_code0_o = resource.category?.[0]?.coding?.[0]?.code ?? "";
   const cat_disp0_o = resource.category?.[0]?.coding?.[0]?.display ?? "";
-  const cat_code1_o = resource.category?.[1]?.coding?.[0]?.code ?? "";
-  const cat_disp1_o = resource.category?.[1]?.coding?.[0]?.display ?? "";
+  const cat_code1_o = resource.category?.[0]?.coding?.[1]?.code ?? "";
+  const cat_disp1_o = resource.category?.[0]?.coding?.[1]?.display ?? "";
   const cat_text_o = resource.category?.[0]?.text ?? "";
   const subjRef_o = resource.subject?.reference ?? "";
   const encounterRef_o = resource.encounter?.reference ?? "";
@@ -109,9 +109,9 @@ function toCsv(resource: Condition, siblings: Condition[]): string {
   const cliStat_display1_d = sibling?.clinicalStatus?.coding?.[1]?.display ?? "";
   const cliStat_text_d = sibling?.clinicalStatus?.text ?? "";
   const cat_code0_d = sibling?.category?.[0]?.coding?.[0]?.code ?? "";
-  const cat_code1_d = sibling?.category?.[1]?.coding?.[0]?.code ?? "";
   const cat_disp0_d = sibling?.category?.[0]?.coding?.[0]?.display ?? "";
-  const cat_disp1_d = sibling?.category?.[1]?.coding?.[0]?.display ?? "";
+  const cat_code1_d = sibling?.category?.[0]?.coding?.[1]?.code ?? "";
+  const cat_disp1_d = sibling?.category?.[0]?.coding?.[1]?.display ?? "";
   const cat_text_d = sibling?.category?.[0]?.text ?? "";
   const subjRef_d = sibling?.subject?.reference ?? "";
   const encounterRef_d = sibling?.encounter?.reference ?? "";

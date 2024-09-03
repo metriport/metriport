@@ -153,20 +153,20 @@ function toCsv(resource: MedicationStatement, siblings: MedicationStatement[]): 
   const dosage0_route_disp1_o = dosage0?.route?.coding?.[1]?.display ?? "";
   const dosage0_route_text_o = dosage0?.route?.text ?? "";
   const dosage0_doseRate0_doseQtty_value_o = dosage0?.doseAndRate?.[0]?.doseQuantity?.value ?? "";
-  const dosage0_doseRate0_doseQtty_unit_o = dosage0?.doseAndRate?.[0]?.doseQuantity?.value ?? "";
+  const dosage0_doseRate0_doseQtty_unit_o = dosage0?.doseAndRate?.[0]?.doseQuantity?.unit ?? "";
   const dosage0_doseRate1_doseQtty_value_o = dosage0?.doseAndRate?.[1]?.doseQuantity?.value ?? "";
-  const dosage0_doseRate1_doseQtty_unit_o = dosage0?.doseAndRate?.[1]?.doseQuantity?.value ?? "";
+  const dosage0_doseRate1_doseQtty_unit_o = dosage0?.doseAndRate?.[1]?.doseQuantity?.unit ?? "";
   const dosage1 = resource.dosage?.[1];
   const dosage1_text_o = dosage1?.text ?? "";
-  const dosage1_route_code0_o = dosage1?.doseAndRate?.[0]?.doseQuantity?.value ?? "";
-  const dosage1_route_disp0_o = dosage1?.doseAndRate?.[0]?.doseQuantity?.value ?? "";
-  const dosage1_route_code1_o = dosage1?.doseAndRate?.[1]?.doseQuantity?.value ?? "";
-  const dosage1_route_disp1_o = dosage1?.doseAndRate?.[1]?.doseQuantity?.value ?? "";
+  const dosage1_route_code0_o = dosage1?.route?.coding?.[0]?.code ?? "";
+  const dosage1_route_disp0_o = dosage1?.route?.coding?.[0]?.display ?? "";
+  const dosage1_route_code1_o = dosage1?.route?.coding?.[1]?.code ?? "";
+  const dosage1_route_disp1_o = dosage1?.route?.coding?.[1]?.display ?? "";
   const dosage1_route_text_o = dosage1?.route?.text ?? "";
   const dosage1_doseRate0_doseQtty_value_o = dosage1?.doseAndRate?.[0]?.doseQuantity?.value ?? "";
-  const dosage1_doseRate0_doseQtty_unit_o = dosage1?.doseAndRate?.[0]?.doseQuantity?.value ?? "";
+  const dosage1_doseRate0_doseQtty_unit_o = dosage1?.doseAndRate?.[0]?.doseQuantity?.unit ?? "";
   const dosage1_doseRate1_doseQtty_value_o = dosage1?.doseAndRate?.[1]?.doseQuantity?.value ?? "";
-  const dosage1_doseRate1_doseQtty_unit_o = dosage1?.doseAndRate?.[1]?.doseQuantity?.value ?? "";
+  const dosage1_doseRate1_doseQtty_unit_o = dosage1?.doseAndRate?.[1]?.doseQuantity?.unit ?? "";
 
   const status_d = sibling?.status ?? "";
   const medRef_d = sibling?.medicationReference?.reference ?? "";
@@ -183,20 +183,20 @@ function toCsv(resource: MedicationStatement, siblings: MedicationStatement[]): 
   const dosage0_route_disp1_d = dosage0_d?.route?.coding?.[1]?.display ?? "";
   const dosage0_route_text_d = dosage0_d?.route?.text ?? "";
   const dosage0_doseRate0_doseQtty_value_d = dosage0_d?.doseAndRate?.[0]?.doseQuantity?.value ?? "";
-  const dosage0_doseRate0_doseQtty_unit_d = dosage0_d?.doseAndRate?.[0]?.doseQuantity?.value ?? "";
+  const dosage0_doseRate0_doseQtty_unit_d = dosage0_d?.doseAndRate?.[0]?.doseQuantity?.unit ?? "";
   const dosage0_doseRate1_doseQtty_value_d = dosage0_d?.doseAndRate?.[1]?.doseQuantity?.value ?? "";
-  const dosage0_doseRate1_doseQtty_unit_d = dosage0_d?.doseAndRate?.[1]?.doseQuantity?.value ?? "";
+  const dosage0_doseRate1_doseQtty_unit_d = dosage0_d?.doseAndRate?.[1]?.doseQuantity?.unit ?? "";
   const dosage1_d = sibling?.dosage?.[1];
   const dosage1_text_d = dosage1_d?.text ?? "";
-  const dosage1_route_code0_d = dosage1_d?.doseAndRate?.[0]?.doseQuantity?.value ?? "";
-  const dosage1_route_disp0_d = dosage1_d?.doseAndRate?.[0]?.doseQuantity?.value ?? "";
-  const dosage1_route_code1_d = dosage1_d?.doseAndRate?.[1]?.doseQuantity?.value ?? "";
-  const dosage1_route_disp1_d = dosage1_d?.doseAndRate?.[1]?.doseQuantity?.value ?? "";
+  const dosage1_route_code0_d = dosage1_d?.route?.coding?.[0]?.code ?? "";
+  const dosage1_route_disp0_d = dosage1_d?.route?.coding?.[0]?.display ?? "";
+  const dosage1_route_code1_d = dosage1_d?.route?.coding?.[1]?.code ?? "";
+  const dosage1_route_disp1_d = dosage1_d?.route?.coding?.[1]?.display ?? "";
   const dosage1_route_text_d = dosage1_d?.route?.text ?? "";
   const dosage1_doseRate0_doseQtty_value_d = dosage1_d?.doseAndRate?.[0]?.doseQuantity?.value ?? "";
-  const dosage1_doseRate0_doseQtty_unit_d = dosage1_d?.doseAndRate?.[0]?.doseQuantity?.value ?? "";
+  const dosage1_doseRate0_doseQtty_unit_d = dosage1_d?.doseAndRate?.[0]?.doseQuantity?.unit ?? "";
   const dosage1_doseRate1_doseQtty_value_d = dosage1_d?.doseAndRate?.[1]?.doseQuantity?.value ?? "";
-  const dosage1_doseRate1_doseQtty_unit_d = dosage1_d?.doseAndRate?.[1]?.doseQuantity?.value ?? "";
+  const dosage1_doseRate1_doseQtty_unit_d = dosage1_d?.doseAndRate?.[1]?.doseQuantity?.unit ?? "";
 
   const res: Record<Columns, string | number> = {
     id_o: resource.id ?? "",
