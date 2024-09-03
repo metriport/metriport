@@ -6,7 +6,7 @@ import {
 } from "@medplum/fhirtypes";
 import _, { cloneDeep } from "lodash";
 import { combineResources, createRef, fillMaps, hasBlacklistedText } from "../shared";
-import { isUnknownCoding, unknownCode } from "./observation-shared";
+import { isUnknownCoding, unknownCode } from "../shared";
 
 export function deduplicateAllergyIntolerances(allergies: AllergyIntolerance[]) {
   const { allergiesMap, refReplacementMap, danglingReferences } = groupSameAllergies(allergies);

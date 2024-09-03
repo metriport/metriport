@@ -7,13 +7,13 @@ import {
   getDateFromResource,
   hasBlacklistedText,
   pickMostDescriptiveStatus,
+  unknownCoding,
 } from "../shared";
 import {
   extractCodes,
   extractValueFromObservation,
   retrieveCode,
   statusRanking,
-  unknownCoding,
 } from "./observation-shared";
 
 export function deduplicateObservations(observations: Observation[]): {
