@@ -24,6 +24,7 @@ import { processMedicationAdministration } from "./medication-administration";
 import { processMedicationRequest } from "./medication-requests";
 import { processMedicationStatement } from "./medication-statement";
 import { processObservation } from "./observation";
+import { processImmunization } from "./immunization";
 
 dayjs.extend(duration);
 
@@ -112,6 +113,9 @@ async function main() {
 
     log(`Processing AllergyIntolerance...`);
     await processAllergyIntolerance(groupedOriginal, groupedDedup, patientDirName);
+
+    log(`Processing Immunization...`);
+    await processImmunization(groupedOriginal, groupedDedup, patientDirName);
   }
   console.log(`>>> Done in ${ellapsedTimeAsStr(startedAt)}`);
 }
