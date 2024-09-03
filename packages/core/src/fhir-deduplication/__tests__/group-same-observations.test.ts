@@ -104,7 +104,7 @@ describe("groupSameObservationsSocial", () => {
     expect(observationsMap.size).toBe(2);
   });
 
-  it("does not group observations with unknown codes and different displays/texts", () => {
+  it("does not group observations with unknown codes and different displays", () => {
     observation = makeObservation({
       id: observationId,
       effectiveDateTime: "2023-11-17T09:32:00.000Z",
@@ -120,7 +120,6 @@ describe("groupSameObservationsSocial", () => {
             display: "Leukocytes",
           },
         ],
-        text: "Leukocytes",
       },
     });
 
@@ -137,6 +136,42 @@ describe("groupSameObservationsSocial", () => {
           },
           {
             display: "Bilirubin",
+          },
+        ],
+      },
+    });
+
+    const { observationsMap } = groupSameObservations([observation, observation2]);
+    expect(observationsMap.size).toBe(2);
+  });
+
+  it("does not group observations with unknown codes and different text", () => {
+    observation = makeObservation({
+      id: observationId,
+      effectiveDateTime: "2023-11-17T09:32:00.000Z",
+      valueString: "Neg",
+      code: {
+        coding: [
+          {
+            system: "http://loinc.org",
+            code: "UNK",
+            display: "unknown",
+          },
+        ],
+        text: "Leukocytes",
+      },
+    });
+
+    observation2 = makeObservation({
+      id: observationId2,
+      effectiveDateTime: "2023-11-17T09:32:00.000Z",
+      valueString: "Neg",
+      code: {
+        coding: [
+          {
+            system: "http://loinc.org",
+            code: "UNK",
+            display: "unknown",
           },
         ],
         text: "Bilirubin",
