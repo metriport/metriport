@@ -49,17 +49,15 @@ export function extractCodes(concept: CodeableConcept | undefined): {
       const system = coding.system?.toLowerCase();
       const code = coding.code?.trim().toLowerCase();
       if (system && code) {
-        if (system.includes(LOINC_CODE) || system.includes(LOINC_OID)) {
+        const text = concept.text?.trim().toLowerCase();
+        if (isUnknownCoding(coding, text)) {
+          continue;
+        } else if (system.includes(LOINC_CODE) || system.includes(LOINC_OID)) {
           loincCode = code;
         } else if (system.includes(SNOMED_CODE) || system.includes(SNOMED_OID)) {
           snomedCode = code;
         } else {
-          const text = concept.text?.trim().toLowerCase();
-          if (isUnknownCoding(coding, text)) {
-            continue;
-          } else {
-            otherCode = system + code;
-          }
+          otherCode = system + code;
         }
       }
     }
@@ -134,11 +132,9 @@ export const unknownCode = {
 
 export function isUnknownCoding(coding: Coding, text?: string | undefined): boolean {
   if (_.isEqual(coding, unknownCoding)) return true;
-  const system = coding.system?.toLowerCase();
   const code = coding.code?.trim().toLowerCase();
   const display = coding.display?.trim().toLowerCase();
   if (
-    system?.includes("unknown") &&
     code?.includes(unknownCoding.code.toLowerCase()) &&
     display === unknownCoding.display.toLowerCase() &&
     (!text || text === unknownCode.text.toLowerCase())

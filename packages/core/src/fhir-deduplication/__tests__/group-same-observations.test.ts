@@ -23,6 +23,49 @@ beforeEach(() => {
   observation2 = makeObservation({ id: observationId2 });
 });
 
+it("does not group observations with different codes but same date and value", () => {
+  observation = makeObservation({
+    id: observationId,
+    effectiveDateTime: "2023-11-17T09:32:00.000Z",
+    valueString: "Neg",
+    code: {
+      coding: [
+        {
+          system: "http://loinc.org",
+          code: "UNK",
+          display: "unknown",
+        },
+        {
+          display: "Leukocytes",
+        },
+      ],
+      text: "Leukocytes",
+    },
+  });
+
+  observation2 = makeObservation({
+    id: observationId2,
+    effectiveDateTime: "2023-11-17T09:32:00.000Z",
+    valueString: "Neg",
+    code: {
+      coding: [
+        {
+          system: "http://loinc.org",
+          code: "UNK",
+          display: "unknown",
+        },
+        {
+          display: "Bilirubin",
+        },
+      ],
+      text: "Bilirubin",
+    },
+  });
+
+  const { observationsMap } = groupSameObservations([observation, observation2]);
+  expect(observationsMap.size).toBe(2);
+});
+
 describe("groupSameObservationsSocial", () => {
   it("correctly groups duplicate observations based on values and loinc codes", () => {
     observation.code = loincCodeTobacco;
