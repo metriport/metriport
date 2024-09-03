@@ -49,15 +49,17 @@ export function extractCodes(concept: CodeableConcept | undefined): {
       const system = coding.system?.toLowerCase();
       const code = coding.code?.trim().toLowerCase();
       if (system && code) {
-        const text = concept.text?.trim().toLowerCase();
-        if (isUnknownCoding(coding, text)) {
-          continue;
-        } else if (system.includes(LOINC_CODE) || system.includes(LOINC_OID)) {
+        if (system.includes(LOINC_CODE) || system.includes(LOINC_OID)) {
           loincCode = code;
         } else if (system.includes(SNOMED_CODE) || system.includes(SNOMED_OID)) {
           snomedCode = code;
         } else {
-          otherCode = system + code;
+          const text = concept.text?.trim().toLowerCase();
+          if (isUnknownCoding(coding, text)) {
+            continue;
+          } else {
+            otherCode = system + code;
+          }
         }
       }
     }
