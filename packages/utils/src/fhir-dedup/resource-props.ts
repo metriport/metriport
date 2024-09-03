@@ -22,7 +22,7 @@ export function getCode(
   sibling: { code?: CodeableConcept } | undefined
 ): Record<CodeColumns, string> {
   const res = resource.code;
-  const code_code0 = res?.coding?.[0].code ?? "";
+  const code_code0 = res?.coding?.[0]?.code ?? "";
   const code_disp0 = res?.coding?.[0]?.display ?? "";
   const code_code1 = res?.coding?.[1]?.code ?? "";
   const code_disp1 = res?.coding?.[1]?.display ?? "";
