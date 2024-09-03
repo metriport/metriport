@@ -9,6 +9,7 @@ import {
   hasBlacklistedText,
   pickMostDescriptiveStatus,
   unknownCoding,
+  isUnknownCoding,
 } from "../shared";
 import {
   extractCodes,
