@@ -38,9 +38,8 @@ const columns = [
   "onsetPeriod_start_d",
   "onsetPeriod_end_o",
   "onsetPeriod_end_d",
-  "recRef_o",
-  "recRef_d",
-
+  "recorderRef_o",
+  "recorderRef_d",
   "id_d",
 ] as const;
 type Columns = (typeof columns)[number];
@@ -101,7 +100,7 @@ function toCsv(resource: Condition, siblings: Condition[]): string {
   const encounterRef_o = resource.encounter?.reference ?? "";
   const onsetPeriod_start_o = resource.onsetPeriod?.start ?? "";
   const onsetPeriod_end_o = resource.onsetPeriod?.end ?? "";
-  const recRef_o = resource.recordedDate ?? "";
+  const recorderRef_o = resource.recordedDate ?? "";
 
   const cliStat_code0_d = sibling?.clinicalStatus?.coding?.[0]?.code ?? "";
   const cliStat_display0_d = sibling?.clinicalStatus?.coding?.[0]?.display ?? "";
@@ -117,7 +116,7 @@ function toCsv(resource: Condition, siblings: Condition[]): string {
   const encounterRef_d = sibling?.encounter?.reference ?? "";
   const onsetPeriod_start_d = sibling?.onsetPeriod?.start ?? "";
   const onsetPeriod_end_d = sibling?.onsetPeriod?.end ?? "";
-  const recRef_d = sibling?.recordedDate ?? "";
+  const recorderRef_d = sibling?.recordedDate ?? "";
 
   const code = getCode(resource, sibling);
   const bodySite = getBodySite(
@@ -158,8 +157,8 @@ function toCsv(resource: Condition, siblings: Condition[]): string {
     onsetPeriod_start_d,
     onsetPeriod_end_o,
     onsetPeriod_end_d,
-    recRef_o,
-    recRef_d,
+    recorderRef_o,
+    recorderRef_d,
     id_d: sibling?.id ?? "",
   };
   return Object.values(res).map(safeCsv).join(csvSeparator);
