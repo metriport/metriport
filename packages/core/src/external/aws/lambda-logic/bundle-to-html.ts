@@ -1400,29 +1400,8 @@ function createObservationSocialHistorySection(observations: Observation[]) {
       const display = getValidCode(observation.code?.coding)[0]?.display ?? "";
       const value = renderSocialHistoryValue(observation) ?? "";
       const observationDate = formatDateForDisplay(observation.effectiveDateTime);
-      const lastItemInArray = acc[acc.length - 1];
-
-      if (lastItemInArray) {
-        const lastItemInArrayFirstDate = lastItemInArray.firstDate;
-        const lastItemInArrayLastDate = lastItemInArray.lastDate;
-        const lastItemInArrayDisplay = lastItemInArray.display;
-        const lastItemInArrayValue = lastItemInArray.value;
-
-        const isSameDisplay = lastItemInArrayDisplay === display;
-        const isSameValue = lastItemInArrayValue === value;
-
-        if (isSameDisplay && isSameValue) {
-          // If the existing observation has a earlier first seen date, update the first seen date
-          // if the existing observation has an later last seen date, update the last seen date
-          if (dayjs(lastItemInArrayFirstDate).isAfter(dayjs(observationDate))) {
-            lastItemInArray.firstDate = observationDate;
-          } else if (dayjs(lastItemInArrayLastDate).isBefore(dayjs(observationDate))) {
-            lastItemInArray.lastDate = observationDate;
-          }
-
-          return acc;
-        }
-      }
+      const firstDate = observation.effectivePeriod?.start;
+      const lastDate = observation.effectivePeriod?.end;
 
       acc.push({
         display,
@@ -1432,8 +1411,8 @@ function createObservationSocialHistorySection(observations: Observation[]) {
           LOINC_CODE,
         ]),
         value,
-        firstDate: observationDate,
-        lastDate: observationDate,
+        firstDate: firstDate ? formatDateForDisplay(firstDate) : observationDate,
+        lastDate: lastDate ? formatDateForDisplay(lastDate) : observationDate,
       });
 
       return acc;

@@ -1,7 +1,6 @@
-import { CodeableConcept, Identifier, Resource } from "@medplum/fhirtypes";
+import { CodeableConcept, Coding, Identifier, Resource } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
-import { cloneDeep } from "lodash";
-import { isUnknownCoding } from "./resources/observation-shared";
+import _, { cloneDeep } from "lodash";
 
 const NO_KNOWN_SUBSTRING = "no known";
 
@@ -32,10 +31,10 @@ export function getDateFromString(dateString: string, dateFormat?: "date" | "dat
   }
 }
 
-function createExtensionReference(resourceType: string, id: string | undefined) {
+function createExtensionRelatedArtifact(resourceType: string, id: string | undefined) {
   return {
-    url: "http://hl7.org/fhir/StructureDefinition/codesystem-sourceReference",
-    valueReference: { reference: `${resourceType}/${id}` },
+    url: "http://hl7.org/fhir/StructureDefinition/artifact-relatedArtifact",
+    valueRelatedArtifact: { type: "derived-from", display: `${resourceType}/${id}` },
   };
 }
 
@@ -45,7 +44,7 @@ export function combineTwoResources<T extends Resource>(
   isExtensionIncluded = true
 ): T {
   const combined = deepMerge({ ...r1 }, r2, isExtensionIncluded);
-  const extensionRef = createExtensionReference(r2.resourceType, r2.id);
+  const extensionRef = createExtensionRelatedArtifact(r2.resourceType, r2.id);
 
   // This part combines resources together and adds the ID references of the duplicates into the master resource
   // regardless of whether new information was found
@@ -266,4 +265,34 @@ export function extractNpi(identifiers: Identifier[] | undefined): string | unde
 
   const npiIdentifier = identifiers.find(i => i.system?.includes("us-npi") && i.value);
   return npiIdentifier?.value;
+}
+
+export const unknownCoding = {
+  system: "http://terminology.hl7.org/ValueSet/v3-Unknown",
+  code: "UNK",
+  display: "unknown",
+};
+
+export const unknownCode = {
+  coding: [unknownCoding],
+  text: "unknown",
+};
+
+export function isUnknownCoding(coding: Coding, text?: string | undefined): boolean {
+  if (_.isEqual(coding, unknownCoding)) return true;
+  const code = coding.code?.trim().toLowerCase();
+  const display = coding.display?.trim().toLowerCase();
+
+  if (code) {
+    return (
+      code?.includes(unknownCoding.code.toLowerCase()) &&
+      (!display || display === unknownCoding.display.toLowerCase()) &&
+      (!text || text === unknownCode.text.toLowerCase())
+    );
+  } else {
+    return (
+      (!display || display === unknownCoding.display.toLowerCase()) &&
+      (!text || text === unknownCode.text.toLowerCase())
+    );
+  }
 }

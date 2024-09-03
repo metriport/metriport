@@ -48,9 +48,9 @@ describe("groupSameOrganizations", () => {
     expect(organizationsMap.size).toBe(1);
   });
 
-  it("removes organizations without addresses", () => {
+  it("keeps organizations without addresses", () => {
     organization.address = [exampleAddress];
     const { organizationsMap } = groupSameOrganizations([organization, organization2]);
-    expect(organizationsMap.size).toBe(1);
+    expect(organizationsMap.size).toBe(2);
   });
 });

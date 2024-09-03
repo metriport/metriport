@@ -6,12 +6,12 @@ import {
   createRef,
   extractDisplayFromConcept,
   fillMaps,
+  isUnknownCoding,
   pickMostDescriptiveStatus,
 } from "../shared";
 import {
   extractCodes,
   extractValueFromObservation,
-  isUnknownCoding,
   retrieveCode,
   statusRanking,
 } from "./observation-shared";
@@ -90,6 +90,7 @@ export function groupSameObservationsSocial(observations: Observation[]): {
       }
     }
     if (key) fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
+    else danglingReferencesSet.add(createRef(observation));
   }
 
   return {

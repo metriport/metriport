@@ -1,15 +1,15 @@
 import { faker } from "@faker-js/faker";
 import { Observation } from "@medplum/fhirtypes";
 import { makeObservation } from "../../fhir-to-cda/cda-templates/components/__tests__/make-observation";
-import { unknownCoding, unknownCode } from "../resources/observation-shared";
+import { groupSameObservations } from "../resources/observation";
 import { groupSameObservationsSocial } from "../resources/observation-social";
+import { unknownCode, unknownCoding } from "../shared";
 import { dateTime, dateTime2 } from "./examples/condition-examples";
 import {
   loincCodeTobacco,
   snomedCodeTobacco,
   valueConceptTobacco,
 } from "./examples/observation-examples";
-import { groupSameObservations } from "../resources/observation";
 
 let observationId: string;
 let observationId2: string;

@@ -6,7 +6,7 @@ import {
 } from "@medplum/fhirtypes";
 import _, { cloneDeep } from "lodash";
 import { combineResources, createRef, fillMaps, hasBlacklistedText } from "../shared";
-import { isUnknownCoding, unknownCode } from "./observation-shared";
+import { isUnknownCoding, unknownCode } from "../shared";
 
 export function deduplicateAllergyIntolerances(allergies: AllergyIntolerance[]) {
   const { allergiesMap, refReplacementMap, danglingReferences } = groupSameAllergies(allergies);
@@ -96,13 +96,15 @@ export function extractFromReactions(reactions: AllergyIntoleranceReaction[] | u
     if (reaction.substance) {
       reaction.substance.coding?.forEach(sub => {
         if (
-          isKnownAllergy(sub) &&
+          isKnownAllergy(sub, reaction.substance?.text) &&
           ![...substances].some(existingSub => _.isEqual(existingSub, sub))
         ) {
           substances.add(sub);
         }
       });
-      if (reaction.substance.text) substance.text = reaction.substance.text;
+      if (reaction.substance.text && !isUnknownAllergyText(reaction.substance.text)) {
+        substance.text = reaction.substance.text;
+      }
       if (substances.size > 0) substance.coding = [...substances];
     }
 
@@ -122,14 +124,22 @@ export function extractFromReactions(reactions: AllergyIntoleranceReaction[] | u
   };
 }
 
-function isKnownAllergy(coding: Coding) {
+const blacklistedSubstanceDisplays = ["no known allergies", "nka", "unknown"];
+function isKnownAllergy(coding: Coding, text?: string | undefined) {
   if (isUnknownCoding(coding)) return false;
 
   const code = coding.code?.trim().toLowerCase();
-  const system = coding.system?.trim().toLowerCase();
   const display = coding.display?.trim().toLowerCase();
-  if (!code || !system || display === "no known allergies") return false;
-  return true;
+
+  let isValid = false;
+  if (code) isValid = true;
+  if (display && !isUnknownAllergyText(display)) isValid = true;
+  if (text && !isUnknownAllergyText(text)) isValid = true;
+  return isValid;
+}
+
+function isUnknownAllergyText(text: string | undefined) {
+  return text && blacklistedSubstanceDisplays.includes(text.toLowerCase().trim());
 }
 
 function isKnownManifestation(concept: CodeableConcept) {

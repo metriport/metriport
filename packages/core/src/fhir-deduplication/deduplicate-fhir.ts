@@ -201,7 +201,7 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
 
   const deduplicatedBundle: Bundle = cloneDeep(fhirBundle);
   deduplicatedBundle.entry = [...deduplicatedNoDangling, ...compositionsNoDangling].map(
-    r => ({ resource: r } as BundleEntry<Resource>)
+    r => ({ fullUrl: `urn:uuid:${r.id}`, resource: r } as BundleEntry<Resource>)
   );
 
   deduplicatedBundle.total = deduplicatedNoDangling.length;
@@ -252,6 +252,10 @@ const conditionsFiltersMap = new Map<string, ResourceFilter>([
   ["Practitioner", removeDanglingReferences],
 ]);
 
+const coveragesFiltersMap = new Map<string, ResourceFilter>([
+  ["Organization", removeDanglingReferences],
+]);
+
 const diagReportFiltersMap = new Map<string, ResourceFilter>([
   ["Observation", removeDanglingReferences],
   ["Encounter", removeDanglingReferences],
@@ -266,12 +270,13 @@ const observationFiltersMap = new Map<string, ResourceFilter>([
 
 const procedureFiltersMap = new Map<string, ResourceFilter>([
   ["Practitioner", removeDanglingReferences],
-  // ["Organization", removeDanglingReferences],
+  ["Organization", removeDanglingReferences],
 ]);
 
 const resourceFiltersMap = new Map<string, Map<string, ResourceFilter>>([
   ["AllergyIntolerance", allergiesFiltersMap],
   ["Condition", conditionsFiltersMap],
+  ["Coverage", coveragesFiltersMap],
   ["DiagnosticReport", diagReportFiltersMap],
   ["Encounter", encounterFiltersMap],
   ["MedicationStatement", medicationRelatedFiltersMap],
@@ -380,6 +385,13 @@ function removeDanglingReferences<T extends Resource>(entry: T, link: string): T
   }
   if ("recorder" in entry) {
     if (entry.recorder.reference === link) delete entry.recorder;
+  }
+  if ("serviceProvider" in entry) {
+    if (entry.serviceProvider.reference === link) delete entry.serviceProvider;
+  }
+  if ("payor" in entry) {
+    entry.payor = entry.payor?.filter(payor => payor.reference !== link);
+    if (!entry.payor.length) delete entry.payor;
   }
 
   return entry;

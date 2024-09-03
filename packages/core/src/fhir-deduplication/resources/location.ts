@@ -40,6 +40,9 @@ export function groupSameLocations(locations: Location[]): {
       const normalizedAddress = normalizeAddress(address);
       const key = JSON.stringify({ name, address: normalizedAddress });
       fillMaps(locationsMap, key, location, refReplacementMap);
+    } else if (name) {
+      const key = JSON.stringify({ name });
+      fillMaps(locationsMap, key, location, refReplacementMap);
     } else {
       danglingReferencesSet.add(createRef(location));
     }
