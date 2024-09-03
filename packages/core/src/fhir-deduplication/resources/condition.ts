@@ -86,6 +86,8 @@ export function groupSameConditions(conditions: Condition[]): {
       if (display) {
         const compKey = JSON.stringify({ display, date });
         fillMaps(dispayMap, compKey, condition, refReplacementMap, undefined, removeOtherCodes);
+      } else {
+        danglingReferencesSet.add(createRef(condition));
       }
     }
   }

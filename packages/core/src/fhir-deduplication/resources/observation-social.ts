@@ -90,6 +90,7 @@ export function groupSameObservationsSocial(observations: Observation[]): {
       }
     }
     if (key) fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
+    else danglingReferencesSet.add(createRef(observation));
   }
 
   return {

@@ -266,7 +266,7 @@ const observationFiltersMap = new Map<string, ResourceFilter>([
 
 const procedureFiltersMap = new Map<string, ResourceFilter>([
   ["Practitioner", removeDanglingReferences],
-  // ["Organization", removeDanglingReferences],
+  ["Organization", removeDanglingReferences],
 ]);
 
 const resourceFiltersMap = new Map<string, Map<string, ResourceFilter>>([
@@ -380,6 +380,9 @@ function removeDanglingReferences<T extends Resource>(entry: T, link: string): T
   }
   if ("recorder" in entry) {
     if (entry.recorder.reference === link) delete entry.recorder;
+  }
+  if ("serviceProvider" in entry) {
+    if (entry.serviceProvider.reference === link) delete entry.serviceProvider;
   }
 
   return entry;
