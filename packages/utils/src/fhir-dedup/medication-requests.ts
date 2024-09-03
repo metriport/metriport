@@ -142,13 +142,13 @@ function toCsv(resource: MedicationRequest, siblings: MedicationRequest[]): stri
   const prio_o = resource.priority ?? "";
   const doNotPerf_o = resource.doNotPerform ?? "";
   const cat0 = resource.category?.[0];
-  const cat0_code0_o = cat0?.coding?.[0].code ?? "";
+  const cat0_code0_o = cat0?.coding?.[0]?.code ?? "";
   const cat0_disp0_o = cat0?.coding?.[0]?.display ?? "";
   const cat0_code1_o = cat0?.coding?.[1]?.code ?? "";
   const cat0_disp1_o = cat0?.coding?.[1]?.display ?? "";
   const cat0_text_o = cat0?.text ?? "";
   const cat1 = resource.category?.[0];
-  const cat1_code0_o = cat1?.coding?.[0].code ?? "";
+  const cat1_code0_o = cat1?.coding?.[0]?.code ?? "";
   const cat1_disp0_o = cat1?.coding?.[0]?.display ?? "";
   const cat1_code1_o = cat1?.coding?.[1]?.code ?? "";
   const cat1_disp1_o = cat1?.coding?.[1]?.display ?? "";

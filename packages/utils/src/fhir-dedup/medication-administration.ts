@@ -10,7 +10,11 @@ import {
   getEffectiveDateTime,
   getEffectivePeriod,
   getNotes,
+  getReasonCode,
+  getReasonReference,
   notesColumns,
+  reasonCodeColumns,
+  reasonReferenceColumns,
 } from "./resource-props";
 
 // Lots of fields were not mapped, see https://www.hl7.org/fhir/R4/medicationadministration.html if you want to add them
@@ -50,30 +54,8 @@ const columns = [
   "dosage_dose_unit_o",
   "dosage_dose_unit_d",
   ...category0Columns,
-  "reason0_code0_o",
-  "reason0_code0_d",
-  "reason0_disp0_o",
-  "reason0_disp0_d",
-  "reason0_code1_o",
-  "reason0_code1_d",
-  "reason0_disp1_o",
-  "reason0_disp1_d",
-  "reason0_text_o",
-  "reason0_text_d",
-  "reason1_code0_o",
-  "reason1_code0_d",
-  "reason1_disp0_o",
-  "reason1_disp0_d",
-  "reason1_code1_o",
-  "reason1_code1_d",
-  "reason1_disp1_o",
-  "reason1_disp1_d",
-  "reason1_text_o",
-  "reason1_text_d",
-  "reasonRef0_o",
-  "reasonRef0_d",
-  "reasonRef1_o",
-  "reasonRef1_d",
+  ...reasonCodeColumns,
+  ...reasonReferenceColumns,
   ...notesColumns,
   "id_d",
 ] as const;
@@ -140,20 +122,6 @@ function toCsv(resource: MedicationAdministration, siblings: MedicationAdministr
   const dosage_route_text_o = dosage?.route?.text ?? "";
   const dosage_dose_value_o = dosage?.dose?.value ?? "";
   const dosage_dose_unit_o = dosage?.dose?.unit ?? "";
-  const reason0 = resource.reasonCode?.[0];
-  const reason0_code0_o = reason0?.coding?.[0]?.code ?? "";
-  const reason0_disp0_o = reason0?.coding?.[0]?.display ?? "";
-  const reason0_code1_o = reason0?.coding?.[1]?.code ?? "";
-  const reason0_disp1_o = reason0?.coding?.[1]?.display ?? "";
-  const reason0_text_o = reason0?.text ?? "";
-  const reason1 = resource.reasonCode?.[1];
-  const reason1_code0_o = reason1?.coding?.[0]?.code ?? "";
-  const reason1_disp0_o = reason1?.coding?.[0]?.display ?? "";
-  const reason1_code1_o = reason1?.coding?.[1]?.code ?? "";
-  const reason1_disp1_o = reason1?.coding?.[1]?.display ?? "";
-  const reason1_text_o = reason1?.text ?? "";
-  const reasonRef0_o = resource.reasonReference?.[0]?.reference ?? "";
-  const reasonRef1_o = resource.reasonReference?.[1]?.reference ?? "";
 
   const status_d = sibling?.status ?? "";
   const medRef_d = sibling?.medicationReference?.reference ?? "";
@@ -171,22 +139,12 @@ function toCsv(resource: MedicationAdministration, siblings: MedicationAdministr
   const dosage_route_text_d = dosage_d?.route?.text ?? "";
   const dosage_dose_value_d = dosage_d?.dose?.value ?? "";
   const dosage_dose_unit_d = dosage_d?.dose?.unit ?? "";
-  const reason0_code0_d = sibling?.reasonCode?.[0]?.coding?.[0]?.code ?? "";
-  const reason0_disp0_d = sibling?.reasonCode?.[0]?.coding?.[0]?.display ?? "";
-  const reason0_code1_d = sibling?.reasonCode?.[0]?.coding?.[1]?.code ?? "";
-  const reason0_disp1_d = sibling?.reasonCode?.[0]?.coding?.[1]?.display ?? "";
-  const reason0_text_d = sibling?.reasonCode?.[0]?.text ?? "";
-  const reason1_code0_d = sibling?.reasonCode?.[1]?.coding?.[0]?.code ?? "";
-  const reason1_disp0_d = sibling?.reasonCode?.[1]?.coding?.[0]?.display ?? "";
-  const reason1_code1_d = sibling?.reasonCode?.[1]?.coding?.[1]?.code ?? "";
-  const reason1_disp1_d = sibling?.reasonCode?.[1]?.coding?.[1]?.display ?? "";
-  const reason1_text_d = sibling?.reasonCode?.[1]?.text ?? "";
-  const reasonRef0_d = sibling?.reasonReference?.[0]?.reference ?? "";
-  const reasonRef1_d = sibling?.reasonReference?.[1]?.reference ?? "";
 
   const category = getCategory(resource, sibling);
   const effectiveDateTime = getEffectiveDateTime(resource, sibling);
   const effectivePeriod = getEffectivePeriod(resource, sibling);
+  const reasonCodes = getReasonCode(resource, sibling);
+  const reasonReferences = getReasonReference(resource, sibling);
   const notes = getNotes(resource, sibling);
 
   const res: Record<Columns, string | number | boolean> = {
@@ -225,30 +183,8 @@ function toCsv(resource: MedicationAdministration, siblings: MedicationAdministr
     dosage_dose_unit_o,
     dosage_dose_unit_d,
     ...category,
-    reason0_code0_o,
-    reason0_code0_d,
-    reason0_disp0_o,
-    reason0_disp0_d,
-    reason0_code1_o,
-    reason0_code1_d,
-    reason0_disp1_o,
-    reason0_disp1_d,
-    reason0_text_o,
-    reason0_text_d,
-    reason1_code0_o,
-    reason1_code0_d,
-    reason1_disp0_o,
-    reason1_disp0_d,
-    reason1_code1_o,
-    reason1_code1_d,
-    reason1_disp1_o,
-    reason1_disp1_d,
-    reason1_text_o,
-    reason1_text_d,
-    reasonRef0_o,
-    reasonRef0_d,
-    reasonRef1_o,
-    reasonRef1_d,
+    ...reasonCodes,
+    ...reasonReferences,
     ...notes,
     id_d: sibling?.id ?? "",
   };
