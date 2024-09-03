@@ -1,4 +1,5 @@
-import { Observation } from "@medplum/fhirtypes";
+import { Observation, CodeableConcept } from "@medplum/fhirtypes";
+import { cloneDeep } from "lodash";
 import {
   combineResources,
   createRef,
@@ -8,6 +9,7 @@ import {
   hasBlacklistedText,
   pickMostDescriptiveStatus,
   unknownCoding,
+  isUnknownCoding,
 } from "../shared";
 import {
   extractCodes,
@@ -75,9 +77,12 @@ export function groupSameObservations(observations: Observation[]): {
       continue;
     }
 
-    const keyCodes = extractCodes(observation.code);
+    // pre process
+    const { observation: newObservation, code } = filterOutUnknownCodings(observation);
+
+    const keyCodes = extractCodes(code);
     const keyCode = retrieveCode(keyCodes);
-    const date = getDateFromResource(observation);
+    const date = getDateFromResource(newObservation);
     const value = extractValueFromObservation(observation);
 
     if (!date || !value) {
@@ -103,4 +108,20 @@ export function groupSameObservations(observations: Observation[]): {
     refReplacementMap,
     danglingReferences: [...danglingReferencesSet],
   };
+}
+
+function filterOutUnknownCodings(observation: Observation): {
+  observation: Observation;
+  code: CodeableConcept;
+} {
+  const newObservation = cloneDeep(observation);
+  const code = { ...newObservation.code };
+
+  if (code.coding) {
+    code.coding = code.coding.filter(coding => !isUnknownCoding(coding));
+  }
+
+  newObservation.code = code;
+
+  return { observation: newObservation, code };
 }
