@@ -1,6 +1,7 @@
 import { MedicationAdministration } from "@medplum/fhirtypes";
 import {
   combineResources,
+  createRef,
   fillMaps,
   getDateFromResource,
   pickMostDescriptiveStatus,
@@ -30,13 +31,15 @@ const statusRanking: Record<MedicationAdministrationStatus, number> = {
 export function deduplicateMedAdmins(medications: MedicationAdministration[]): {
   combinedMedAdmins: MedicationAdministration[];
   refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
-  const { medAdminsMap, refReplacementMap } = groupSameMedAdmins(medications);
+  const { medAdminsMap, refReplacementMap, danglingReferences } = groupSameMedAdmins(medications);
   return {
     combinedMedAdmins: combineResources({
       combinedMaps: [medAdminsMap],
     }),
     refReplacementMap,
+    danglingReferences,
   };
 }
 
@@ -50,9 +53,11 @@ export function deduplicateMedAdmins(medications: MedicationAdministration[]): {
 export function groupSameMedAdmins(medAdmins: MedicationAdministration[]): {
   medAdminsMap: Map<string, MedicationAdministration>;
   refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
   const medAdminsMap = new Map<string, MedicationAdministration>();
   const refReplacementMap = new Map<string, string[]>();
+  const danglingReferencesSet = new Set<string>();
 
   function assignMostDescriptiveStatus(
     master: MedicationAdministration,
@@ -65,11 +70,11 @@ export function groupSameMedAdmins(medAdmins: MedicationAdministration[]): {
 
   for (const medAdmin of medAdmins) {
     const medRef = medAdmin.medicationReference?.reference;
-    const date = getDateFromResource(medAdmin, "datetime");
+    const datetime = getDateFromResource(medAdmin, "datetime");
     const dosage = medAdmin.dosage;
 
-    if (medRef && date && dosage) {
-      const key = JSON.stringify({ medRef, date, dosage });
+    if (medRef && datetime && dosage) {
+      const key = JSON.stringify({ medRef, datetime, dosage });
       fillMaps(
         medAdminsMap,
         key,
@@ -78,11 +83,14 @@ export function groupSameMedAdmins(medAdmins: MedicationAdministration[]): {
         undefined,
         assignMostDescriptiveStatus
       );
+    } else {
+      danglingReferencesSet.add(createRef(medAdmin));
     }
   }
 
   return {
     medAdminsMap,
     refReplacementMap: refReplacementMap,
+    danglingReferences: [...danglingReferencesSet],
   };
 }

@@ -2,6 +2,7 @@ import { DiagnosticReport } from "@medplum/fhirtypes";
 import { LOINC_CODE, LOINC_OID } from "../../util/constants";
 import {
   combineResources,
+  createRef,
   fillMaps,
   getDateFromResource,
   pickMostDescriptiveStatus,
@@ -37,13 +38,16 @@ const statusRanking: Record<DiagnosticReportStatus, number> = {
 export function deduplicateDiagReports(medications: DiagnosticReport[]): {
   combinedDiagnosticReports: DiagnosticReport[];
   refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
-  const { diagReportsMap, refReplacementMap } = groupSameDiagnosticReports(medications);
+  const { diagReportsMap, refReplacementMap, danglingReferences } =
+    groupSameDiagnosticReports(medications);
   return {
     combinedDiagnosticReports: combineResources({
       combinedMaps: [diagReportsMap],
     }),
     refReplacementMap,
+    danglingReferences,
   };
 }
 
@@ -56,12 +60,12 @@ export function deduplicateDiagReports(medications: DiagnosticReport[]): {
  */
 export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
   diagReportsMap: Map<string, DiagnosticReport>;
-  remainingDiagReports: DiagnosticReport[];
   refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
   const diagReportsMap = new Map<string, DiagnosticReport>();
   const refReplacementMap = new Map<string, string[]>();
-  const remainingDiagReports: DiagnosticReport[] = [];
+  const danglingReferencesSet = new Set<string>();
 
   function removeCodesAndAssignStatus(
     master: DiagnosticReport,
@@ -85,11 +89,11 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
   }
 
   for (const diagReport of diagReports) {
-    const date = getDateFromResource(diagReport, "datetime");
+    const datetime = getDateFromResource(diagReport, "datetime");
     const isPresentedFormPresent = diagReport.presentedForm?.length;
     const isResultPresent = diagReport.result?.length;
-    if (date && (isPresentedFormPresent || isResultPresent)) {
-      const key = JSON.stringify({ date });
+    if (datetime && (isPresentedFormPresent || isResultPresent)) {
+      const key = JSON.stringify({ datetime });
       fillMaps(
         diagReportsMap,
         key,
@@ -99,13 +103,13 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
         removeCodesAndAssignStatus
       );
     } else {
-      remainingDiagReports.push(diagReport);
+      danglingReferencesSet.add(createRef(diagReport));
     }
   }
 
   return {
     diagReportsMap,
-    remainingDiagReports,
     refReplacementMap,
+    danglingReferences: [...danglingReferencesSet],
   };
 }

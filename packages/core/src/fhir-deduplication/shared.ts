@@ -1,8 +1,13 @@
-import { CodeableConcept, Resource } from "@medplum/fhirtypes";
+import { CodeableConcept, Coding, Identifier, Resource } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
-import { cloneDeep } from "lodash";
+import _, { cloneDeep } from "lodash";
+
+const NO_KNOWN_SUBSTRING = "no known";
 
 const dateFormats = ["datetime", "date"] as const;
+
+export const UNK_CODE = "UNK";
+export const UNKNOWN_DISPLAY = "unknown";
 export type DateFormats = (typeof dateFormats)[number];
 
 export type ApplySpecialModificationsCallback<T> = (merged: T, existing: T, target: T) => T;
@@ -11,13 +16,6 @@ export type CompositeKey = {
   code: string;
   date: string | undefined;
 };
-
-export function createCompositeKey(code: string, date: string | undefined): CompositeKey {
-  return {
-    code,
-    date,
-  };
-}
 
 export function getDateFromString(dateString: string, dateFormat?: "date" | "datetime"): string {
   const date = dayjs(dateString);
@@ -235,6 +233,66 @@ export function pickMostDescriptiveStatus<T extends string>(
   return status;
 }
 
-export function isBlacklistedText(concept: CodeableConcept | undefined): boolean {
-  return concept?.text?.toLowerCase().includes("no known") ?? false;
+export function hasBlacklistedText(concept: CodeableConcept | undefined): boolean {
+  const knownCodings = concept?.coding?.filter(c => !isUnknownCoding(c));
+  return (
+    concept?.text?.toLowerCase().includes(NO_KNOWN_SUBSTRING) ?? !knownCodings?.length ?? false
+  );
+}
+
+export function createRef<T extends Resource>(res: T): string {
+  if (!res.id) throw new Error("FHIR Resource has no ID");
+  return `${res.resourceType}/${res.id}`;
+}
+
+export function extractDisplayFromConcept(
+  concept: CodeableConcept | undefined
+): string | undefined {
+  const displayCoding = concept?.coding?.find(coding => {
+    if (coding.code !== UNK_CODE && coding.display !== UNKNOWN_DISPLAY) {
+      return coding.display;
+    }
+    return;
+  });
+  if (displayCoding?.display) return displayCoding?.display;
+  const text = concept?.text;
+  if (!text?.includes(UNKNOWN_DISPLAY)) return text;
+  return undefined;
+}
+
+export function extractNpi(identifiers: Identifier[] | undefined): string | undefined {
+  if (!identifiers) return undefined;
+
+  const npiIdentifier = identifiers.find(i => i.system?.includes("us-npi") && i.value);
+  return npiIdentifier?.value;
+}
+
+export const unknownCoding = {
+  system: "http://terminology.hl7.org/ValueSet/v3-Unknown",
+  code: "UNK",
+  display: "unknown",
+};
+
+export const unknownCode = {
+  coding: [unknownCoding],
+  text: "unknown",
+};
+
+export function isUnknownCoding(coding: Coding, text?: string | undefined): boolean {
+  if (_.isEqual(coding, unknownCoding)) return true;
+  const code = coding.code?.trim().toLowerCase();
+  const display = coding.display?.trim().toLowerCase();
+
+  if (code) {
+    return (
+      code?.includes(unknownCoding.code.toLowerCase()) &&
+      (!display || display === unknownCoding.display.toLowerCase()) &&
+      (!text || text === unknownCode.text.toLowerCase())
+    );
+  } else {
+    return (
+      (!display || display === unknownCoding.display.toLowerCase()) &&
+      (!text || text === unknownCode.text.toLowerCase())
+    );
+  }
 }
