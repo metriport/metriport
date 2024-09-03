@@ -9,8 +9,12 @@ const columns = [
   "date",
   "code0_o",
   "code0_d",
+  "display0_o",
+  "display0_d",
   "code1_o",
   "code1_d",
+  "display1_o",
+  "display1_d",
   "text_o",
   "text_d",
   "id_d",
@@ -62,18 +66,28 @@ function medicationToCsv(medication: Medication, siblings: Medication[]): string
     ? new Date(medication.meta?.lastUpdated).toISOString()
     : "";
   const code0_o = medication.code?.coding?.[0]?.code ?? "";
+  const display0_o = medication.code?.coding?.[0]?.display ?? "";
   const code1_o = medication.code?.coding?.[1]?.code ?? "";
+  const display1_o = medication.code?.coding?.[1]?.display ?? "";
   const text_o = medication.code?.text ?? "";
+
   const code0_d = sibling?.code?.coding?.[0]?.code ?? "";
+  const display0_d = sibling?.code?.coding?.[0]?.display ?? "";
   const code1_d = sibling?.code?.coding?.[1]?.code ?? "";
+  const display1_d = sibling?.code?.coding?.[1]?.display ?? "";
   const text_d = sibling?.code?.text ?? "";
+
   const res: Record<Columns, string> = {
     id_o: medication.id ?? "",
     date,
     code0_o,
     code0_d,
+    display0_o,
+    display0_d,
     code1_o,
     code1_d,
+    display1_o,
+    display1_d,
     text_o,
     text_d,
     id_d: sibling?.id ?? "",
