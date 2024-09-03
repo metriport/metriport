@@ -2,6 +2,7 @@ import { MedicationRequest, Resource } from "@medplum/fhirtypes";
 import fs from "fs";
 import { Dictionary } from "lodash";
 import { csvSeparator, safeCsv } from "./csv";
+import { isSibling } from "./shared";
 
 // Lots of fields were not mapped, see https://www.hl7.org/fhir/R4/medicationrequest.html if you want to add them
 const columns = [
@@ -127,7 +128,7 @@ function sort(a: MedicationRequest, b: MedicationRequest): number {
 }
 
 function toCsv(resource: MedicationRequest, siblings: MedicationRequest[]): string {
-  const sibling = siblings.find(isEqual(resource));
+  const sibling = siblings.find(isSibling(resource));
   const date = resource.meta?.lastUpdated ? new Date(resource.meta?.lastUpdated).toISOString() : "";
 
   const status_o = resource.status ?? "";
@@ -289,15 +290,5 @@ function toCsv(resource: MedicationRequest, siblings: MedicationRequest[]): stri
     note1_txt_d,
     id_d: sibling?.id ?? "",
   };
-  // const res: Record<string, string> = {};
   return Object.values(res).map(safeCsv).join(csvSeparator);
-}
-
-function isEqual(a: MedicationRequest) {
-  return function (b: MedicationRequest): boolean {
-    if (a.meta?.lastUpdated || b.meta?.lastUpdated) {
-      return a.meta?.lastUpdated === b.meta?.lastUpdated;
-    }
-    return a.id === b.id;
-  };
 }
