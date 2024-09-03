@@ -3,6 +3,7 @@ import fs from "fs";
 import { Dictionary } from "lodash";
 import { csvSeparator, safeCsv } from "./csv";
 import { bodySiteColumns, codeColumns, getBodySite, getCode } from "./resource-props";
+import { isSibling } from "./shared";
 
 // Lots of fields were not mapped, see https://www.hl7.org/fhir/R4/condition.html if you want to add them
 const columns = [
@@ -82,7 +83,7 @@ function sort(a: Condition, b: Condition): number {
 }
 
 function toCsv(resource: Condition, siblings: Condition[]): string {
-  const sibling = siblings.find(isEqual(resource));
+  const sibling = siblings.find(isSibling(resource));
   const date = resource.meta?.lastUpdated ? new Date(resource.meta?.lastUpdated).toISOString() : "";
 
   // set all fields necessary to populate the "res" object below, using resource and sibling, using the processMedicationStatement function as reference. Start with the properties that need "resource", then populate the ones that rely on "sibling".
@@ -162,13 +163,4 @@ function toCsv(resource: Condition, siblings: Condition[]): string {
     id_d: sibling?.id ?? "",
   };
   return Object.values(res).map(safeCsv).join(csvSeparator);
-}
-
-function isEqual(a: Condition) {
-  return function (b: Condition): boolean {
-    if (a.meta?.lastUpdated || b.meta?.lastUpdated) {
-      return a.meta?.lastUpdated === b.meta?.lastUpdated;
-    }
-    return a.id === b.id;
-  };
 }

@@ -2,6 +2,7 @@ import { MedicationStatement, Resource } from "@medplum/fhirtypes";
 import fs from "fs";
 import { Dictionary } from "lodash";
 import { csvSeparator, safeCsv } from "./csv";
+import { isSibling } from "./shared";
 
 // TODO add these when we're ready to compare/analyze them
 // dosage0_doseRate0_doseRange_low_value_o,
@@ -135,7 +136,7 @@ function sort(a: MedicationStatement, b: MedicationStatement): number {
 }
 
 function toCsv(resource: MedicationStatement, siblings: MedicationStatement[]): string {
-  const sibling = siblings.find(isEqual(resource));
+  const sibling = siblings.find(isSibling(resource));
   const date = resource.meta?.lastUpdated ? new Date(resource.meta?.lastUpdated).toISOString() : "";
   const status_o = resource.status ?? "";
   const medRef_o = resource.medicationReference?.reference ?? "";
@@ -257,13 +258,4 @@ function toCsv(resource: MedicationStatement, siblings: MedicationStatement[]): 
     id_d: sibling?.id ?? "",
   };
   return Object.values(res).map(safeCsv).join(csvSeparator);
-}
-
-function isEqual(a: MedicationStatement) {
-  return function (b: MedicationStatement): boolean {
-    if (a.meta?.lastUpdated || b.meta?.lastUpdated) {
-      return a.meta?.lastUpdated === b.meta?.lastUpdated;
-    }
-    return a.id === b.id;
-  };
 }
