@@ -9,11 +9,13 @@ export type ConsolidatedDataRequestAsync = ConsolidatedPatientDataRequest & {
   isAsync: true;
   requestId: string;
   conversionType?: ConsolidationConversionType | undefined;
+  fromDashboard?: boolean | undefined;
 };
 
 export type ConsolidatedDataRequestSync = ConsolidatedPatientDataRequest & {
   isAsync: false;
   requestId?: string | undefined;
+  fromDashboard?: boolean | undefined;
 };
 
 export type ConsolidatedDataResponse = {

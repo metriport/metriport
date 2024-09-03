@@ -369,16 +369,18 @@ export class MetriportMedicalApi {
    * @param resources Optional array of resources to be returned.
    * @param dateFrom Optional start date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
    * @param dateTo Optional end date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
+   * @param dashboard Optional parameter to indicate that the request is coming from the dashboard.
    * @return Patient's consolidated data.
    */
   async getPatientConsolidated(
     patientId: string,
     resources?: string[],
     dateFrom?: string,
-    dateTo?: string
+    dateTo?: string,
+    dashboard?: boolean
   ): Promise<Bundle<Resource>> {
     const resp = await this.api.get(`${PATIENT_URL}/${patientId}/consolidated`, {
-      params: { resources: resources && resources.join(","), dateFrom, dateTo },
+      params: { resources: resources && resources.join(","), dateFrom, dateTo, dashboard },
     });
     return resp.data;
   }
