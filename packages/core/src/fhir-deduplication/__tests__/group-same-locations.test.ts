@@ -50,9 +50,9 @@ describe("groupSameLocations", () => {
     expect(locationsMap.size).toBe(1);
   });
 
-  it("removes locations without addresses", () => {
+  it("keeps locations without addresses", () => {
     location.address = exampleAddress;
     const { locationsMap } = groupSameLocations([location, location2]);
-    expect(locationsMap.size).toBe(1);
+    expect(locationsMap.size).toBe(2);
   });
 });

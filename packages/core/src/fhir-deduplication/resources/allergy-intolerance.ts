@@ -122,13 +122,14 @@ export function extractFromReactions(reactions: AllergyIntoleranceReaction[] | u
   };
 }
 
+const blacklistedSubstanceDisplays = ["no known allergies", "nka", "unknown"];
 function isKnownAllergy(coding: Coding) {
   if (isUnknownCoding(coding)) return false;
 
   const code = coding.code?.trim().toLowerCase();
   const system = coding.system?.trim().toLowerCase();
   const display = coding.display?.trim().toLowerCase();
-  if (!code || !system || display === "no known allergies") return false;
+  if (!code || !system || (display && blacklistedSubstanceDisplays.includes(display))) return false;
   return true;
 }
 
