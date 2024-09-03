@@ -96,13 +96,15 @@ export function extractFromReactions(reactions: AllergyIntoleranceReaction[] | u
     if (reaction.substance) {
       reaction.substance.coding?.forEach(sub => {
         if (
-          isKnownAllergy(sub) &&
+          isKnownAllergy(sub, reaction.substance?.text) &&
           ![...substances].some(existingSub => _.isEqual(existingSub, sub))
         ) {
           substances.add(sub);
         }
       });
-      if (reaction.substance.text) substance.text = reaction.substance.text;
+      if (reaction.substance.text && !isUnknownAllergyText(reaction.substance.text)) {
+        substance.text = reaction.substance.text;
+      }
       if (substances.size > 0) substance.coding = [...substances];
     }
 
@@ -123,14 +125,21 @@ export function extractFromReactions(reactions: AllergyIntoleranceReaction[] | u
 }
 
 const blacklistedSubstanceDisplays = ["no known allergies", "nka", "unknown"];
-function isKnownAllergy(coding: Coding) {
+function isKnownAllergy(coding: Coding, text?: string | undefined) {
   if (isUnknownCoding(coding)) return false;
 
   const code = coding.code?.trim().toLowerCase();
-  const system = coding.system?.trim().toLowerCase();
   const display = coding.display?.trim().toLowerCase();
-  if (!code || !system || (display && blacklistedSubstanceDisplays.includes(display))) return false;
-  return true;
+
+  let isValid = false;
+  if (code) isValid = true;
+  if (display && !isUnknownAllergyText(display)) isValid = true;
+  if (text && !isUnknownAllergyText(text)) isValid = true;
+  return isValid;
+}
+
+function isUnknownAllergyText(text: string | undefined) {
+  return text && blacklistedSubstanceDisplays.includes(text.toLowerCase().trim());
 }
 
 function isKnownManifestation(concept: CodeableConcept) {
