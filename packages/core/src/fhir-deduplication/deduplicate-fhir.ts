@@ -42,14 +42,16 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   resourceArrays = replaceResourceReferences(resourceArrays, conditionsResult.refReplacementMap);
   processedArrays.push("conditions");
   danglingLinks.push(...conditionsResult.danglingReferences);
-  deduplicatedEntries.push(...conditionsResult.combinedConditions);
+  const conditions = removeDuplicateReferencesFromBundle(conditionsResult.combinedConditions);
+  deduplicatedEntries.push(...conditions);
 
   // Allergies deduplication
   const allergiesResult = deduplicateAllergyIntolerances(resourceArrays.allergies);
   resourceArrays = replaceResourceReferences(resourceArrays, allergiesResult.refReplacementMap);
   processedArrays.push("allergies");
   danglingLinks.push(...allergiesResult.danglingReferences);
-  deduplicatedEntries.push(...allergiesResult.combinedAllergies);
+  const allergies = removeDuplicateReferencesFromBundle(allergiesResult.combinedAllergies);
+  deduplicatedEntries.push(...allergies);
 
   // Medication deduplication
   const medicationsResult = deduplicateMedications(resourceArrays.medications);
@@ -63,75 +65,92 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   resourceArrays = replaceResourceReferences(resourceArrays, medAdminsResult.refReplacementMap);
   processedArrays.push("medicationAdministrations");
   danglingLinks.push(...medAdminsResult.danglingReferences);
-  deduplicatedEntries.push(...medAdminsResult.combinedMedAdmins);
+  const medAdmins = removeDuplicateReferencesFromBundle(medAdminsResult.combinedMedAdmins);
+  deduplicatedEntries.push(...medAdmins);
 
   // MedicationRequest deduplication
   const medRequestResult = deduplicateMedRequests(resourceArrays.medicationRequests);
   resourceArrays = replaceResourceReferences(resourceArrays, medRequestResult.refReplacementMap);
   processedArrays.push("medicationRequests");
   danglingLinks.push(...medRequestResult.danglingReferences);
-  deduplicatedEntries.push(...medRequestResult.combinedMedRequests);
+  const medRequests = removeDuplicateReferencesFromBundle(medRequestResult.combinedMedRequests);
+  deduplicatedEntries.push(...medRequests);
 
   // MedicationStatement deduplication
   const medStatementResult = deduplicateMedStatements(resourceArrays.medicationStatements);
   resourceArrays = replaceResourceReferences(resourceArrays, medStatementResult.refReplacementMap);
   processedArrays.push("medicationStatements");
   danglingLinks.push(...medStatementResult.danglingReferences);
-  deduplicatedEntries.push(...medStatementResult.combinedMedStatements);
+  const medStatements = removeDuplicateReferencesFromBundle(
+    medStatementResult.combinedMedStatements
+  );
+  deduplicatedEntries.push(...medStatements);
 
   // Encounter deduplication
   const encountersResult = deduplicateEncounters(resourceArrays.encounters);
   resourceArrays = replaceResourceReferences(resourceArrays, encountersResult.refReplacementMap);
   processedArrays.push("encounters");
   danglingLinks.push(...encountersResult.danglingReferences);
-  deduplicatedEntries.push(...encountersResult.combinedEncounters);
+  const encounters = removeDuplicateReferencesFromBundle(encountersResult.combinedEncounters);
+  deduplicatedEntries.push(...encounters);
 
   // DiagnosticReport deduplication
   const diagReportsResult = deduplicateDiagReports(resourceArrays.diagnosticReports);
   resourceArrays = replaceResourceReferences(resourceArrays, diagReportsResult.refReplacementMap);
   processedArrays.push("diagnosticReports");
   danglingLinks.push(...diagReportsResult.danglingReferences);
-  deduplicatedEntries.push(...diagReportsResult.combinedDiagnosticReports);
+  const diagReports = removeDuplicateReferencesFromBundle(
+    diagReportsResult.combinedDiagnosticReports
+  );
+  deduplicatedEntries.push(...diagReports);
 
   // Immunization deduplication
   const immunizationsResult = deduplicateImmunizations(resourceArrays.immunizations);
   resourceArrays = replaceResourceReferences(resourceArrays, immunizationsResult.refReplacementMap);
   processedArrays.push("immunizations");
-  deduplicatedEntries.push(...immunizationsResult.combinedImmunizations);
+  const immunizations = removeDuplicateReferencesFromBundle(
+    immunizationsResult.combinedImmunizations
+  );
+  deduplicatedEntries.push(...immunizations);
 
   // Procedure deduplication
   const proceduresResult = deduplicateProcedures(resourceArrays.procedures);
   resourceArrays = replaceResourceReferences(resourceArrays, proceduresResult.refReplacementMap);
   processedArrays.push("procedures");
-  deduplicatedEntries.push(...proceduresResult.combinedProcedures);
+  const procedures = removeDuplicateReferencesFromBundle(proceduresResult.combinedProcedures);
+  deduplicatedEntries.push(...procedures);
 
   // Observation (social history) deduplication
   const obsSocialResult = deduplicateObservationsSocial(resourceArrays.observationSocialHistory);
   resourceArrays = replaceResourceReferences(resourceArrays, obsSocialResult.refReplacementMap);
   processedArrays.push("observationSocialHistory");
   danglingLinks.push(...obsSocialResult.danglingReferences);
-  deduplicatedEntries.push(...obsSocialResult.combinedObservations);
+  const obsSocial = removeDuplicateReferencesFromBundle(obsSocialResult.combinedObservations);
+  deduplicatedEntries.push(...obsSocial);
 
   // Observation (labs) deduplication
   const obsLabsResult = deduplicateObservations(resourceArrays.observationLaboratory);
   resourceArrays = replaceResourceReferences(resourceArrays, obsLabsResult.refReplacementMap);
   processedArrays.push("observationLaboratory");
   danglingLinks.push(...obsLabsResult.danglingReferences);
-  deduplicatedEntries.push(...obsLabsResult.combinedObservations);
+  const obsLabs = removeDuplicateReferencesFromBundle(obsLabsResult.combinedObservations);
+  deduplicatedEntries.push(...obsLabs);
 
   // Observation (vitals) deduplication
   const obsVitalsResult = deduplicateObservations(resourceArrays.observationVitals);
   resourceArrays = replaceResourceReferences(resourceArrays, obsVitalsResult.refReplacementMap);
   processedArrays.push("observationVitals");
   danglingLinks.push(...obsVitalsResult.danglingReferences);
-  deduplicatedEntries.push(...obsVitalsResult.combinedObservations);
+  const obsVitals = removeDuplicateReferencesFromBundle(obsVitalsResult.combinedObservations);
+  deduplicatedEntries.push(...obsVitals);
 
   // Observation (other) deduplication
   const obsOthersResult = deduplicateObservations(resourceArrays.observationOther);
   resourceArrays = replaceResourceReferences(resourceArrays, obsOthersResult.refReplacementMap);
   processedArrays.push("observationOther");
   danglingLinks.push(...obsOthersResult.danglingReferences);
-  deduplicatedEntries.push(...obsOthersResult.combinedObservations);
+  const obsOthers = removeDuplicateReferencesFromBundle(obsOthersResult.combinedObservations);
+  deduplicatedEntries.push(...obsOthers);
 
   // Location deduplication
   const locationsResult = deduplicateLocations(resourceArrays.locations);
@@ -174,7 +193,8 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   resourceArrays = replaceResourceReferences(resourceArrays, coveragesResult.refReplacementMap);
   processedArrays.push("coverages");
   danglingLinks.push(...coveragesResult.danglingReferences);
-  deduplicatedEntries.push(...coveragesResult.combinedCoverages);
+  const coverages = removeDuplicateReferencesFromBundle(coveragesResult.combinedCoverages);
+  deduplicatedEntries.push(...coverages);
 
   // Rebuild the entries with deduplicated resources and add whatever is left unprocessed
   for (const [key, resources] of Object.entries(resourceArrays)) {
@@ -392,6 +412,116 @@ function removeDanglingReferences<T extends Resource>(entry: T, link: string): T
   if ("payor" in entry) {
     entry.payor = entry.payor?.filter(payor => payor.reference !== link);
     if (!entry.payor.length) delete entry.payor;
+  }
+
+  return entry;
+}
+
+export function removeDuplicateReferencesFromBundle<T extends Resource>(entries: T[]): T[] {
+  return entries.map(removeDuplicateReferences);
+}
+
+function removeDuplicateReferences<T extends Resource>(entry: T): T {
+  if (!entry) return entry;
+
+  if ("result" in entry) {
+    const results = entry.result;
+    if (Array.isArray(results)) {
+      const uniqueResults = new Set();
+      entry.result = results.filter(item => {
+        if (uniqueResults.has(item.reference)) return false;
+        uniqueResults.add(item.reference);
+        return true;
+      });
+    }
+  }
+
+  if ("diagnosis" in entry) {
+    if (entry.resourceType === "Encounter") {
+      const diagnoses = entry.diagnosis as EncounterDiagnosis[];
+      const uniqueDiagnoses = new Set();
+      entry.diagnosis = diagnoses.filter(diagnosis => {
+        if (uniqueDiagnoses.has(diagnosis.condition?.reference)) {
+          return false;
+        }
+        uniqueDiagnoses.add(diagnosis.condition?.reference);
+        return true;
+      });
+    }
+  }
+
+  if ("author" in entry) {
+    if (entry.resourceType === "Composition") {
+      const uniqueAuthors = new Set();
+      entry.author = entry.author?.filter(author => {
+        if (uniqueAuthors.has(author.reference)) return false;
+        uniqueAuthors.add(author.reference);
+        return true;
+      });
+    }
+  }
+
+  if ("section" in entry) {
+    entry.section = entry.section.map(section => {
+      if (section.entry) {
+        const uniqueEntries = new Set();
+        section.entry = section.entry.filter(item => {
+          if (uniqueEntries.has(item.reference)) return false;
+          uniqueEntries.add(item.reference);
+          return true;
+        });
+      }
+      return section;
+    });
+  }
+
+  if ("location" in entry) {
+    if (entry.resourceType === "Encounter") {
+      const uniqueLocations = new Set();
+      entry.location = entry.location.filter(location => {
+        if (uniqueLocations.has(location.location?.reference)) return false;
+        uniqueLocations.add(location.location?.reference);
+        return true;
+      });
+    }
+  }
+
+  if ("participant" in entry) {
+    if (entry.resourceType === "Encounter") {
+      const uniqueParticipants = new Set();
+      entry.participant = entry.participant?.filter(part => {
+        if (uniqueParticipants.has(part.individual?.reference)) return false;
+        uniqueParticipants.add(part.individual?.reference);
+        return true;
+      });
+    }
+  }
+
+  if ("performer" in entry) {
+    if (entry.resourceType === "DiagnosticReport") {
+      const uniquePerformers = new Set();
+      entry.performer = entry.performer?.filter(performer => {
+        if (uniquePerformers.has(performer.reference)) return false;
+        uniquePerformers.add(performer.reference);
+        return true;
+      });
+    } else if (entry.resourceType === "Procedure") {
+      const uniquePerformers = new Set();
+      entry.performer = entry.performer?.filter(performer => {
+        if (uniquePerformers.has(performer.actor)) return false;
+        uniquePerformers.add(performer.actor);
+        return true;
+      });
+    }
+  }
+
+  if ("payor" in entry) {
+    const uniquePayors = new Set();
+    entry.payor = entry.payor?.filter(payor => {
+      if (uniquePayors.has(payor.reference)) return false;
+      uniquePayors.add(payor.reference);
+      return true;
+    });
   }
 
   return entry;

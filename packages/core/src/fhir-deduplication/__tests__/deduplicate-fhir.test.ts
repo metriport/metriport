@@ -1,5 +1,12 @@
 import { faker } from "@faker-js/faker";
-import { Bundle, BundleEntry, DiagnosticReport, Medication, Resource } from "@medplum/fhirtypes";
+import {
+  Bundle,
+  BundleEntry,
+  DiagnosticReport,
+  Medication,
+  Resource,
+  Encounter,
+} from "@medplum/fhirtypes";
 import { makeBundle } from "../../external/fhir/__tests__/bundle";
 import {
   findCompositionResource,
@@ -8,11 +15,14 @@ import {
   findMedicationRequestResources,
   findMedicationResources,
   findMedicationStatementResources,
+  findEncounterResources,
 } from "../../external/fhir/shared";
 import { makeComposition } from "../../fhir-to-cda/cda-templates/components/__tests__/make-composition";
 import { makeDiagnosticReport } from "../../fhir-to-cda/cda-templates/components/__tests__/make-diagnostic-report";
 import { makeMedication } from "../../fhir-to-cda/cda-templates/components/__tests__/make-medication";
 import { makeObservation } from "../../fhir-to-cda/cda-templates/components/__tests__/make-observation";
+import { makeCondition } from "../../fhir-to-cda/cda-templates/components/__tests__/make-condition";
+import { makeEncounter } from "../../fhir-to-cda/cda-templates/components/__tests__/make-encounter";
 import { deduplicateFhir } from "../deduplicate-fhir";
 import { createRef } from "../shared";
 import { dateTime } from "./examples/condition-examples";
@@ -23,6 +33,7 @@ import {
   makeMedicationStatement,
 } from "./examples/medication-related";
 import { loincCodeTobacco, valueConceptTobacco } from "./examples/observation-examples";
+import { snomedCodeMd } from "./examples/condition-examples";
 
 let medicationId: string;
 let medicationId2: string;
@@ -341,5 +352,42 @@ describe("deduplicateFhir", () => {
     expect(resDiagReport?.id).toBe(diagnosticReport.id);
     expect(resDiagReport?.resourceType).toBe("DiagnosticReport");
     expect(resDiagReport?.result).toEqual([{ reference: observation2Ref }]);
+  });
+
+  it("groups identical conditions referenced by an encounter", () => {
+    const condition1 = makeCondition({
+      id: faker.string.uuid(),
+      code: { coding: [snomedCodeMd] },
+      onsetPeriod: dateTime,
+    });
+    const condition2 = makeCondition({
+      id: faker.string.uuid(),
+      code: { coding: [snomedCodeMd] },
+      onsetPeriod: dateTime,
+    });
+
+    const encounter: Encounter = makeEncounter({
+      id: faker.string.uuid(),
+      diagnosis: [
+        { condition: { reference: `Condition/${condition1.id}` } },
+        { condition: { reference: `Condition/${condition2.id}` } },
+      ],
+      period: {
+        start: "2013-08-22T17:05:00.000Z",
+        end: "2013-08-22T18:15:00.000Z",
+      },
+    });
+
+    const entries = [
+      { resource: encounter },
+      { resource: condition1 },
+      { resource: condition2 },
+    ] as BundleEntry<Resource>[];
+
+    bundle.entry = entries;
+    bundle = deduplicateFhir(bundle);
+    const deduplicatedEncounters = findEncounterResources(bundle);
+    const deduplicatedEncounter = deduplicatedEncounters[0];
+    expect(deduplicatedEncounter?.diagnosis?.length).toBe(1);
   });
 });
