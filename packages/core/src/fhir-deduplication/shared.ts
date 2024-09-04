@@ -152,12 +152,12 @@ export function getDateFromResource<T extends Resource>(
   if ("onsetPeriod" in resource) {
     const onsetPeriod = resource.onsetPeriod;
     if (onsetPeriod.start) {
-      return getDateFromString(onsetPeriod.start);
+      return getDateFromString(onsetPeriod.start, dateFormat);
     } else if (onsetPeriod.end) {
-      return getDateFromString(onsetPeriod.end);
+      return getDateFromString(onsetPeriod.end, dateFormat);
     }
   } else if ("onsetDateTime" in resource) {
-    return getDateFromString(resource.onsetDateTime);
+    return getDateFromString(resource.onsetDateTime, dateFormat);
   } else if ("onsetAge" in resource) {
     const onsetAge = resource.onsetAge;
     if (onsetAge.value) {
@@ -194,9 +194,9 @@ export function getPerformedDateFromResource<T extends Resource>(
     return getDateFromString(resource.performedDateTime, dateFormat);
   } else if ("performedPeriod" in resource) {
     if (resource.performedPeriod.start) {
-      return getDateFromString(resource.performedPeriod.start);
+      return getDateFromString(resource.performedPeriod.start, dateFormat);
     } else if (resource.performedPeriod.end) {
-      return getDateFromString(resource.performedPeriod.end);
+      return getDateFromString(resource.performedPeriod.end, dateFormat);
     }
   } else if ("performedString" in resource) {
     return getDateFromString(resource.performedString, dateFormat);
