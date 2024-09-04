@@ -14,6 +14,7 @@ import { processAllergyIntolerance } from "./allergy-intolerance";
 import { processCondition } from "./condition";
 import { processDiagnosticReport } from "./diagnostic-report";
 import { processEncounter } from "./encounter";
+import { processFamilyMemberHistory } from "./family-member-history";
 import {
   buildGetDirPathInside,
   getFilesToProcessFromLocal,
@@ -120,6 +121,9 @@ async function main() {
 
     log(`Processing Procedure...`);
     await processProcedure(groupedOriginal, groupedDedup, patientDirName);
+
+    log(`Processing FamilyMemberHistory...`);
+    await processFamilyMemberHistory(groupedOriginal, groupedDedup, patientDirName);
   }
   console.log(`>>> Done in ${ellapsedTimeAsStr(startedAt)}`);
 }
