@@ -1,5 +1,6 @@
 import { MedicationRequest } from "@medplum/fhirtypes";
 import {
+  DeduplicationResult,
   combineResources,
   createRef,
   fillMaps,
@@ -30,15 +31,13 @@ const statusRanking: Record<MedicationRequestStatus, number> = {
   completed: 7,
 };
 
-export function deduplicateMedRequests(medications: MedicationRequest[]): {
-  combinedMedRequests: MedicationRequest[];
-  refReplacementMap: Map<string, string[]>;
-  danglingReferences: string[];
-} {
+export function deduplicateMedRequests(
+  medications: MedicationRequest[]
+): DeduplicationResult<MedicationRequest> {
   const { medRequestsMap, refReplacementMap, danglingReferences } =
     groupSameMedRequests(medications);
   return {
-    combinedMedRequests: combineResources({
+    combinedResources: combineResources({
       combinedMaps: [medRequestsMap],
     }),
     refReplacementMap,

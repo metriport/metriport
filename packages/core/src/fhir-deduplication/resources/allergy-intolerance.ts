@@ -5,13 +5,22 @@ import {
   Coding,
 } from "@medplum/fhirtypes";
 import _, { cloneDeep } from "lodash";
-import { combineResources, createRef, fillMaps, hasBlacklistedText } from "../shared";
-import { isUnknownCoding, unknownCode } from "../shared";
+import {
+  DeduplicationResult,
+  combineResources,
+  createRef,
+  fillMaps,
+  hasBlacklistedText,
+  isUnknownCoding,
+  unknownCode,
+} from "../shared";
 
-export function deduplicateAllergyIntolerances(allergies: AllergyIntolerance[]) {
+export function deduplicateAllergyIntolerances(
+  allergies: AllergyIntolerance[]
+): DeduplicationResult<AllergyIntolerance> {
   const { allergiesMap, refReplacementMap, danglingReferences } = groupSameAllergies(allergies);
   return {
-    combinedAllergies: combineResources({
+    combinedResources: combineResources({
       combinedMaps: [allergiesMap],
     }),
     refReplacementMap,

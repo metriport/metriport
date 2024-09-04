@@ -1,6 +1,7 @@
 import { CodeableConcept, Condition } from "@medplum/fhirtypes";
 import { ICD_10_CODE, ICD_10_OID, SNOMED_CODE, SNOMED_OID } from "../../util/constants";
 import {
+  DeduplicationResult,
   combineResources,
   createRef,
   extractDisplayFromConcept,
@@ -19,11 +20,11 @@ import {
  *      - Date
  * 2. Combine the Conditions in each group into one master condition and return the array of only unique and maximally filled out Conditions
  */
-export function deduplicateConditions(conditions: Condition[]) {
+export function deduplicateConditions(conditions: Condition[]): DeduplicationResult<Condition> {
   const { snomedMap, icd10Map, dispayMap, refReplacementMap, danglingReferences } =
     groupSameConditions(conditions);
   return {
-    combinedConditions: combineResources({
+    combinedResources: combineResources({
       combinedMaps: [snomedMap, icd10Map, dispayMap],
     }),
     refReplacementMap,
