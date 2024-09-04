@@ -28,6 +28,7 @@ import { processMedicationStatement } from "./medication-statement";
 import { processObservation } from "./observation";
 import { processOrganization } from "./organization";
 import { processProcedure } from "./procedure";
+import { processPractitioner } from "./practitioner";
 
 dayjs.extend(duration);
 
@@ -128,6 +129,9 @@ async function main() {
 
     log(`Processing Organization...`);
     await processOrganization(groupedOriginal, groupedDedup, patientDirName);
+
+    log(`Processing Practitioner...`);
+    await processPractitioner(groupedOriginal, groupedDedup, patientDirName);
   }
   console.log(`>>> Done in ${ellapsedTimeAsStr(startedAt)}`);
 }
