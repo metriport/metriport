@@ -1,4 +1,5 @@
 import { Organization } from "@medplum/fhirtypes";
+import { validateNPI } from "@metriport/shared";
 import { normalizeAddress } from "../../mpi/normalize-address";
 import { DeduplicationResult, combineResources, createRef, extractNpi, fillMaps } from "../shared";
 
@@ -36,7 +37,7 @@ export function groupSameOrganizations(organizations: Organization[]): {
     const name = organization.name;
     const addresses = organization.address;
 
-    if (npi) {
+    if (npi && validateNPI(npi)) {
       const key = JSON.stringify({ npi });
       fillMaps(organizationsMap, key, organization, refReplacementMap);
     } else if (name && addresses) {

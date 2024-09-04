@@ -1,4 +1,5 @@
 import { Practitioner } from "@medplum/fhirtypes";
+import { validateNPI } from "@metriport/shared";
 import { normalizeAddress } from "../../mpi/normalize-address";
 import { DeduplicationResult, combineResources, createRef, extractNpi, fillMaps } from "../shared";
 
@@ -36,7 +37,7 @@ export function groupSamePractitioners(practitioners: Practitioner[]): {
     const name = practitioner.name;
     const addresseses = practitioner.address;
 
-    if (npi) {
+    if (npi && validateNPI(npi)) {
       const key = JSON.stringify({ npi });
       fillMaps(practitionersMap, key, practitioner, refReplacementMap);
     } else if (name && addresseses) {
