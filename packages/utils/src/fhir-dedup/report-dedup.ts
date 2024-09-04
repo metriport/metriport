@@ -26,6 +26,7 @@ import { processMedicationAdministration } from "./medication-administration";
 import { processMedicationRequest } from "./medication-requests";
 import { processMedicationStatement } from "./medication-statement";
 import { processObservation } from "./observation";
+import { processOrganization } from "./organization";
 import { processProcedure } from "./procedure";
 
 dayjs.extend(duration);
@@ -124,6 +125,9 @@ async function main() {
 
     log(`Processing FamilyMemberHistory...`);
     await processFamilyMemberHistory(groupedOriginal, groupedDedup, patientDirName);
+
+    log(`Processing Organization...`);
+    await processOrganization(groupedOriginal, groupedDedup, patientDirName);
   }
   console.log(`>>> Done in ${ellapsedTimeAsStr(startedAt)}`);
 }
