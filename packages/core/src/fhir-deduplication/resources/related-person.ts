@@ -1,17 +1,20 @@
 import { CodeableConcept, HumanName, RelatedPerson } from "@medplum/fhirtypes";
 import { toTitleCase } from "@metriport/shared";
-import { combineResources, fillMaps } from "../shared";
+import { combineResources, createRef, fillMaps } from "../shared";
 
 export function deduplicateRelatedPersons(relatedPersons: RelatedPerson[]): {
   combinedRelatedPersons: RelatedPerson[];
   refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
-  const { relatedPersonsMap, refReplacementMap } = groupSameRelatedPersons(relatedPersons);
+  const { relatedPersonsMap, refReplacementMap, danglingReferences } =
+    groupSameRelatedPersons(relatedPersons);
   return {
     combinedRelatedPersons: combineResources({
       combinedMaps: [relatedPersonsMap],
     }),
     refReplacementMap,
+    danglingReferences,
   };
 }
 
@@ -25,9 +28,11 @@ export function deduplicateRelatedPersons(relatedPersons: RelatedPerson[]): {
 export function groupSameRelatedPersons(relatedPersons: RelatedPerson[]): {
   relatedPersonsMap: Map<string, RelatedPerson>;
   refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
   const relatedPersonsMap = new Map<string, RelatedPerson>();
   const refReplacementMap = new Map<string, string[]>();
+  const danglingReferencesSet = new Set<string>();
 
   for (const relatedPerson of relatedPersons) {
     const relationship = extractRelationship(relatedPerson.relationship);
@@ -36,12 +41,15 @@ export function groupSameRelatedPersons(relatedPersons: RelatedPerson[]): {
     if (relationship && name) {
       const key = JSON.stringify({ relationship, name, dob });
       fillMaps(relatedPersonsMap, key, relatedPerson, refReplacementMap);
+    } else {
+      danglingReferencesSet.add(createRef(relatedPerson));
     }
   }
 
   return {
     relatedPersonsMap,
     refReplacementMap,
+    danglingReferences: [...danglingReferencesSet],
   };
 }
 

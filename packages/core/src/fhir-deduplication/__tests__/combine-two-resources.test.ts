@@ -16,7 +16,7 @@ beforeAll(() => {
   condition2 = makeCondition({ id: conditionId2, onsetPeriod: dateTime2 });
 });
 
-describe("groupSameConditions", () => {
+describe("combineTwoResources", () => {
   it("keeps the id of the first condition", () => {
     const combinedCondition = combineTwoResources(condition, condition2);
     expect(combinedCondition.id).toBe(conditionId);
@@ -63,8 +63,9 @@ describe("groupSameConditions", () => {
     expect(combinedCondition.extension).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          valueReference: expect.objectContaining({
-            reference: expect.stringContaining(conditionId2),
+          valueRelatedArtifact: expect.objectContaining({
+            type: "derived-from",
+            display: expect.stringContaining(conditionId2),
           }),
         }),
       ])

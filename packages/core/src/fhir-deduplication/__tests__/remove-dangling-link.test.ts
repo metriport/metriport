@@ -39,10 +39,13 @@ beforeEach(() => {
 });
 
 describe("removeResourcesWithDanglingLinks", () => {
-  it("correctly picks the more descriptive status", () => {
+  it("correctly removes med-related resources if the medication reference is a dangling link", () => {
     expect(entries.length).toBe(3);
-    const cleanedUpBundle = removeResourcesWithDanglingLinks(entries, [JSON.stringify(medRef)]);
-    expect(cleanedUpBundle.length).toBe(0);
+    if (medRef.reference) {
+      const danglingLinks = [medRef.reference];
+      const cleanedUpBundle = removeResourcesWithDanglingLinks(entries, danglingLinks);
+      expect(cleanedUpBundle.length).toBe(0);
+    }
   });
 
   it("does not remove a med-related resource that references another medication", () => {
@@ -50,12 +53,15 @@ describe("removeResourcesWithDanglingLinks", () => {
     entries.push(...[medication, medStatementWithoutDeadLink]);
     expect(entries.length).toBe(5);
 
-    const cleanedUpBundle = removeResourcesWithDanglingLinks(entries, [JSON.stringify(medRef)]);
-    expect(cleanedUpBundle.length).toBe(2);
-    const medStatement = cleanedUpBundle.find(r => r.id === medStatementWithoutDeadLink.id) as
-      | MedicationStatement
-      | undefined;
-    expect(medStatement?.id).toBe(medStatementWithoutDeadLink.id);
-    expect(medStatement?.medicationReference).toBe(medRef2);
+    if (medRef.reference) {
+      const danglingLinks = [medRef.reference];
+      const cleanedUpBundle = removeResourcesWithDanglingLinks(entries, danglingLinks);
+      expect(cleanedUpBundle.length).toBe(2);
+      const medStatement = cleanedUpBundle.find(r => r.id === medStatementWithoutDeadLink.id) as
+        | MedicationStatement
+        | undefined;
+      expect(medStatement?.id).toBe(medStatementWithoutDeadLink.id);
+      expect(medStatement?.medicationReference).toBe(medRef2);
+    }
   });
 });

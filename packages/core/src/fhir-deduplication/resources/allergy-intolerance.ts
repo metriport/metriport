@@ -5,16 +5,17 @@ import {
   Coding,
 } from "@medplum/fhirtypes";
 import _, { cloneDeep } from "lodash";
-import { combineResources, fillMaps } from "../shared";
-import { isUnknownCoding, unknownCode } from "./observation-shared";
+import { combineResources, createRef, fillMaps, hasBlacklistedText } from "../shared";
+import { isUnknownCoding, unknownCode } from "../shared";
 
 export function deduplicateAllergyIntolerances(allergies: AllergyIntolerance[]) {
-  const { allergiesMap, refReplacementMap } = groupSameAllergies(allergies);
+  const { allergiesMap, refReplacementMap, danglingReferences } = groupSameAllergies(allergies);
   return {
     combinedAllergies: combineResources({
       combinedMaps: [allergiesMap],
     }),
     refReplacementMap,
+    danglingReferences,
   };
 }
 
@@ -28,21 +29,31 @@ export function deduplicateAllergyIntolerances(allergies: AllergyIntolerance[]) 
 export function groupSameAllergies(allergies: AllergyIntolerance[]): {
   allergiesMap: Map<string, AllergyIntolerance>;
   refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
   const allergiesMap = new Map<string, AllergyIntolerance>();
   const refReplacementMap = new Map<string, string[]>();
+  const danglingReferencesSet = new Set<string>();
 
   for (const allergy of allergies) {
+    if (allergy.reaction?.some(reaction => hasBlacklistedText(reaction.substance))) {
+      danglingReferencesSet.add(createRef(allergy));
+      continue;
+    }
+
     const { allergy: newAllergy, substance } = preProcess(allergy);
     if (substance) {
       const key = JSON.stringify({ substance });
       fillMaps(allergiesMap, key, newAllergy, refReplacementMap, undefined, postProcess);
+    } else {
+      danglingReferencesSet.add(createRef(allergy));
     }
   }
 
   return {
     allergiesMap,
     refReplacementMap,
+    danglingReferences: [...danglingReferencesSet],
   };
 }
 
@@ -85,13 +96,15 @@ export function extractFromReactions(reactions: AllergyIntoleranceReaction[] | u
     if (reaction.substance) {
       reaction.substance.coding?.forEach(sub => {
         if (
-          isKnownAllergy(sub) &&
+          isKnownAllergy(sub, reaction.substance?.text) &&
           ![...substances].some(existingSub => _.isEqual(existingSub, sub))
         ) {
           substances.add(sub);
         }
       });
-      if (reaction.substance.text) substance.text = reaction.substance.text;
+      if (reaction.substance.text && !isUnknownAllergyText(reaction.substance.text)) {
+        substance.text = reaction.substance.text;
+      }
       if (substances.size > 0) substance.coding = [...substances];
     }
 
@@ -111,14 +124,22 @@ export function extractFromReactions(reactions: AllergyIntoleranceReaction[] | u
   };
 }
 
-function isKnownAllergy(coding: Coding) {
+const blacklistedSubstanceDisplays = ["no known allergies", "nka", "unknown"];
+function isKnownAllergy(coding: Coding, text?: string | undefined) {
   if (isUnknownCoding(coding)) return false;
 
   const code = coding.code?.trim().toLowerCase();
-  const system = coding.system?.trim().toLowerCase();
   const display = coding.display?.trim().toLowerCase();
-  if (!code || !system || display === "no known allergies") return false;
-  return true;
+
+  let isValid = false;
+  if (code) isValid = true;
+  if (display && !isUnknownAllergyText(display)) isValid = true;
+  if (text && !isUnknownAllergyText(text)) isValid = true;
+  return isValid;
+}
+
+function isUnknownAllergyText(text: string | undefined) {
+  return text && blacklistedSubstanceDisplays.includes(text.toLowerCase().trim());
 }
 
 function isKnownManifestation(concept: CodeableConcept) {
