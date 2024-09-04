@@ -19,12 +19,13 @@ import {
   getFilesToProcessFromLocal,
   getFilesToProcessFromS3,
 } from "./get-files";
+import { processImmunization } from "./immunization";
 import { processMedication } from "./medication";
 import { processMedicationAdministration } from "./medication-administration";
 import { processMedicationRequest } from "./medication-requests";
 import { processMedicationStatement } from "./medication-statement";
 import { processObservation } from "./observation";
-import { processImmunization } from "./immunization";
+import { processProcedure } from "./procedure";
 
 dayjs.extend(duration);
 
@@ -116,6 +117,9 @@ async function main() {
 
     log(`Processing Immunization...`);
     await processImmunization(groupedOriginal, groupedDedup, patientDirName);
+
+    log(`Processing Procedure...`);
+    await processProcedure(groupedOriginal, groupedDedup, patientDirName);
   }
   console.log(`>>> Done in ${ellapsedTimeAsStr(startedAt)}`);
 }
