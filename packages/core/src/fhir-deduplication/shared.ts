@@ -177,6 +177,9 @@ export function getDateFromResource<T extends Resource>(
     if (resource.effectivePeriod.start) {
       return getDateFromString(resource.effectivePeriod.start);
     }
+    if (resource.effectivePeriod.end) {
+      return getDateFromString(resource.effectivePeriod.end);
+    }
   }
   return undefined;
 }
