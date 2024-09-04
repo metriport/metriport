@@ -298,7 +298,7 @@ export function isUnknownCoding(coding: Coding, text?: string | undefined): bool
 }
 
 export type DeduplicationResult<T extends Resource> = {
-  combinedResources: T | T[] | undefined;
+  combinedResources: T[];
   refReplacementMap: Map<string, string[]>;
   danglingReferences: string[];
 };
