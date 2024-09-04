@@ -1,15 +1,13 @@
 import { CodeableConcept, FamilyMemberHistory } from "@medplum/fhirtypes";
-import { combineResources, createRef, fillMaps } from "../shared";
+import { DeduplicationResult, combineResources, createRef, fillMaps } from "../shared";
 
-export function deduplicateFamilyMemberHistories(famMemberHists: FamilyMemberHistory[]): {
-  combinedFamMemHistories: FamilyMemberHistory[];
-  refReplacementMap: Map<string, string[]>;
-  danglingReferences: string[];
-} {
+export function deduplicateFamilyMemberHistories(
+  famMemberHists: FamilyMemberHistory[]
+): DeduplicationResult<FamilyMemberHistory> {
   const { famMemberHistsMap, refReplacementMap, danglingReferences } =
     groupSameFamilyMemberHistories(famMemberHists);
   return {
-    combinedFamMemHistories: combineResources({
+    combinedResources: combineResources({
       combinedMaps: [famMemberHistsMap],
     }),
     refReplacementMap,

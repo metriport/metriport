@@ -1,6 +1,7 @@
 import { CodeableConcept, Immunization } from "@medplum/fhirtypes";
 import { CVX_CODE, CVX_OID, NDC_CODE, NDC_OID } from "../../util/constants";
 import {
+  DeduplicationResult,
   combineResources,
   createRef,
   extractDisplayFromConcept,
@@ -20,11 +21,9 @@ export const statusRanking: Record<ImmunizationStatus, number> = {
   completed: 2,
 };
 
-export function deduplicateImmunizations(immunizations: Immunization[]): {
-  combinedImmunizations: Immunization[];
-  refReplacementMap: Map<string, string[]>;
-  danglingReferences: string[];
-} {
+export function deduplicateImmunizations(
+  immunizations: Immunization[]
+): DeduplicationResult<Immunization> {
   const {
     immunizationsNdcMap,
     immunizationsCvxMap,
@@ -33,7 +32,7 @@ export function deduplicateImmunizations(immunizations: Immunization[]): {
     danglingReferences,
   } = groupSameImmunizations(immunizations);
   return {
-    combinedImmunizations: combineResources({
+    combinedResources: combineResources({
       combinedMaps: [immunizationsNdcMap, immunizationsCvxMap, displayMap],
     }),
     refReplacementMap,

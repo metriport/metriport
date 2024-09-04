@@ -10,6 +10,7 @@ import {
   pickMostDescriptiveStatus,
   unknownCoding,
   isUnknownCoding,
+  DeduplicationResult,
 } from "../shared";
 import {
   extractCodes,
@@ -18,15 +19,13 @@ import {
   statusRanking,
 } from "./observation-shared";
 
-export function deduplicateObservations(observations: Observation[]): {
-  combinedObservations: Observation[];
-  refReplacementMap: Map<string, string[]>;
-  danglingReferences: string[];
-} {
+export function deduplicateObservations(
+  observations: Observation[]
+): DeduplicationResult<Observation> {
   const { observationsMap, refReplacementMap, danglingReferences } =
     groupSameObservations(observations);
   return {
-    combinedObservations: combineResources({
+    combinedResources: combineResources({
       combinedMaps: [observationsMap],
     }),
     refReplacementMap,
