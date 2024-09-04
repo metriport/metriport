@@ -165,7 +165,8 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
       // Extract all other resources
       const entriesArray = resources && Array.isArray(resources) ? resources : [resources];
       const entriesFlat = entriesArray.flatMap(v => v || []);
-      deduplicatedEntries.push(...entriesFlat);
+      const entriesWithDeduplicatedReferences = entriesFlat.map(removeDuplicateReferences);
+      deduplicatedEntries.push(...entriesWithDeduplicatedReferences);
     }
   }
 
@@ -372,6 +373,108 @@ function removeDanglingReferences<T extends Resource>(entry: T, link: string): T
   if ("payor" in entry) {
     entry.payor = entry.payor?.filter(payor => payor.reference !== link);
     if (!entry.payor.length) delete entry.payor;
+  }
+
+  return entry;
+}
+
+export function removeDuplicateReferencesFromBundle<T extends Resource>(entries: T[]): T[] {
+  return entries.map(removeDuplicateReferences);
+}
+
+function removeDuplicateReferences<T extends Resource>(entry: T): T {
+  if (!entry) return entry;
+
+  if ("result" in entry && entry.result) {
+    const results = entry.result;
+    if (Array.isArray(results)) {
+      const uniqueResults = new Set();
+      entry.result = results.filter(item => {
+        if (uniqueResults.has(item.reference)) return false;
+        uniqueResults.add(item.reference);
+        return true;
+      });
+    }
+  }
+
+  if ("diagnosis" in entry && entry.diagnosis && entry.resourceType === "Encounter") {
+    const diagnoses = entry.diagnosis as EncounterDiagnosis[];
+    const uniqueDiagnoses = new Set();
+    entry.diagnosis = diagnoses.filter(diagnosis => {
+      if (uniqueDiagnoses.has(diagnosis.condition?.reference)) {
+        return false;
+      }
+      uniqueDiagnoses.add(diagnosis.condition?.reference);
+      return true;
+    });
+  }
+
+  if ("author" in entry && entry.author && entry.resourceType === "Composition") {
+    const uniqueAuthors = new Set();
+    entry.author = entry.author?.filter(author => {
+      if (uniqueAuthors.has(author.reference)) return false;
+      uniqueAuthors.add(author.reference);
+      return true;
+    });
+  }
+
+  if ("section" in entry && entry.section) {
+    entry.section = entry.section.map(section => {
+      if (section.entry) {
+        const uniqueEntries = new Set();
+        section.entry = section.entry.filter(item => {
+          if (uniqueEntries.has(item.reference)) return false;
+          uniqueEntries.add(item.reference);
+          return true;
+        });
+      }
+      return section;
+    });
+  }
+
+  if ("location" in entry && entry.location && entry.resourceType === "Encounter") {
+    const uniqueLocations = new Set();
+    entry.location = entry.location.filter(location => {
+      if (uniqueLocations.has(location.location?.reference)) return false;
+      uniqueLocations.add(location.location?.reference);
+      return true;
+    });
+  }
+
+  if ("participant" in entry && entry.participant && entry.resourceType === "Encounter") {
+    const uniqueParticipants = new Set();
+    entry.participant = entry.participant?.filter(part => {
+      if (uniqueParticipants.has(part.individual?.reference)) return false;
+      uniqueParticipants.add(part.individual?.reference);
+      return true;
+    });
+  }
+
+  if ("performer" in entry && entry.performer) {
+    if (entry.resourceType === "DiagnosticReport") {
+      const uniquePerformers = new Set();
+      entry.performer = entry.performer?.filter(performer => {
+        if (uniquePerformers.has(performer.reference)) return false;
+        uniquePerformers.add(performer.reference);
+        return true;
+      });
+    } else if (entry.resourceType === "Procedure") {
+      const uniquePerformers = new Set();
+      entry.performer = entry.performer?.filter(performer => {
+        if (uniquePerformers.has(performer.actor)) return false;
+        uniquePerformers.add(performer.actor);
+        return true;
+      });
+    }
+  }
+
+  if ("payor" in entry && entry.payor) {
+    const uniquePayors = new Set();
+    entry.payor = entry.payor?.filter(payor => {
+      if (uniquePayors.has(payor.reference)) return false;
+      uniquePayors.add(payor.reference);
+      return true;
+    });
   }
 
   return entry;
