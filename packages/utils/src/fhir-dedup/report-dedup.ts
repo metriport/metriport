@@ -32,6 +32,7 @@ import { processObservation } from "./observation";
 import { processOrganization } from "./organization";
 import { processPractitioner } from "./practitioner";
 import { processProcedure } from "./procedure";
+import { processRelatedPerson } from "./related-person";
 
 dayjs.extend(duration);
 
@@ -143,6 +144,9 @@ async function main() {
 
     log(`Processing Location...`);
     await processLocation(groupedOriginal, groupedDedup, patientDirName);
+
+    log(`Processing RelatedPerson...`);
+    await processRelatedPerson(groupedOriginal, groupedDedup, patientDirName);
 
     log(`Validating references on deduped bundle...`);
     if (!validateReferences(dedupResources, patientDirName)) {
