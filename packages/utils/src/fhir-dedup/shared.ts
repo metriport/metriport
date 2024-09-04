@@ -22,9 +22,6 @@ export function isSibling(a: { id?: string; meta?: Meta; extension?: Extension[]
         ?.filter(isSourceRef)
         .find(e => a.id && e.valueRelatedArtifact?.display?.includes(a.id));
     if (link) return true;
-    if (a.meta?.lastUpdated || b.meta?.lastUpdated) {
-      return a.meta?.lastUpdated === b.meta?.lastUpdated;
-    }
     return a.id === b.id;
   };
 }
