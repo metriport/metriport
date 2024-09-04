@@ -12,6 +12,7 @@ import { ellapsedTimeAsStr } from "../shared/duration";
 import { initRunsFolder } from "../shared/folder";
 import { processAllergyIntolerance } from "./allergy-intolerance";
 import { processCondition } from "./condition";
+import { processCoverage } from "./coverage";
 import { csvSeparator } from "./csv";
 import { processDiagnosticReport } from "./diagnostic-report";
 import { processEncounter } from "./encounter";
@@ -135,6 +136,9 @@ async function main() {
 
     log(`Processing Practitioner...`);
     await processPractitioner(groupedOriginal, groupedDedup, patientDirName);
+
+    log(`Processing Coverage...`);
+    await processCoverage(groupedOriginal, groupedDedup, patientDirName);
 
     log(`Validating references on deduped bundle...`);
     if (!validateReferences(dedupResources, patientDirName)) {
