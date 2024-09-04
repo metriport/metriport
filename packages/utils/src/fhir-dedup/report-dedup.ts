@@ -23,6 +23,7 @@ import {
   getFilesToProcessFromS3,
 } from "./get-files";
 import { processImmunization } from "./immunization";
+import { processLocation } from "./location";
 import { processMedication } from "./medication";
 import { processMedicationAdministration } from "./medication-administration";
 import { processMedicationRequest } from "./medication-requests";
@@ -139,6 +140,9 @@ async function main() {
 
     log(`Processing Coverage...`);
     await processCoverage(groupedOriginal, groupedDedup, patientDirName);
+
+    log(`Processing Location...`);
+    await processLocation(groupedOriginal, groupedDedup, patientDirName);
 
     log(`Validating references on deduped bundle...`);
     if (!validateReferences(dedupResources, patientDirName)) {
