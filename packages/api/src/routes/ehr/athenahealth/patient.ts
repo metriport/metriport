@@ -5,7 +5,7 @@ import NotFoundError from "../../../errors/not-found";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { getConsolidatedPatientData } from "../../../command/medical/patient/consolidated-get";
 import { getPatientMapping } from "../../../command/mapping/patient";
-import { getPatient } from "../../../external/ehr/athenahealth/command/get-patient";
+import { getPatientOrFail as getPatientFromAthenaPatientOrFail } from "../../../external/ehr/athenahealth/command/get-patient";
 import { EhrSources } from "../../../external/ehr/shared";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFrom } from "../../util";
@@ -30,12 +30,14 @@ router.get(
     const accessToken = getAuthorizationToken(req);
     const cxId = getCxIdOrFail(req);
     const athenaPatientId = getFrom("params").orFail("id", req);
-    const patient = await getPatient({
+    const patient = await getPatientFromAthenaPatientOrFail({
       accessToken,
       cxId,
       athenaPatientId,
     });
-    return res.status(httpStatus.OK).json({ patient: patient ? dtoFromModel(patient) : undefined });
+    return res
+      .status(httpStatus.OK)
+      .json({ patient: dtoFromModel(patient.patient), isNew: patient.isNew });
   })
 );
 
