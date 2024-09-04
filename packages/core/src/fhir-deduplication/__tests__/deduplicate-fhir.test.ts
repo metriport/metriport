@@ -354,7 +354,7 @@ describe("deduplicateFhir", () => {
     expect(resDiagReport?.result).toEqual([{ reference: observation2Ref }]);
   });
 
-  it("groups identical conditions referenced by an encounter", () => {
+  it("removes duplicate diagnoses references from an Encounter", () => {
     const condition1 = makeCondition({
       id: faker.string.uuid(),
       code: { coding: [snomedCodeMd] },

@@ -424,7 +424,7 @@ export function removeDuplicateReferencesFromBundle<T extends Resource>(entries:
 function removeDuplicateReferences<T extends Resource>(entry: T): T {
   if (!entry) return entry;
 
-  if ("result" in entry) {
+  if ("result" in entry && entry.result) {
     const results = entry.result;
     if (Array.isArray(results)) {
       const uniqueResults = new Set();
@@ -436,32 +436,28 @@ function removeDuplicateReferences<T extends Resource>(entry: T): T {
     }
   }
 
-  if ("diagnosis" in entry) {
-    if (entry.resourceType === "Encounter") {
-      const diagnoses = entry.diagnosis as EncounterDiagnosis[];
-      const uniqueDiagnoses = new Set();
-      entry.diagnosis = diagnoses.filter(diagnosis => {
-        if (uniqueDiagnoses.has(diagnosis.condition?.reference)) {
-          return false;
-        }
-        uniqueDiagnoses.add(diagnosis.condition?.reference);
-        return true;
-      });
-    }
+  if ("diagnosis" in entry && entry.diagnosis && entry.resourceType === "Encounter") {
+    const diagnoses = entry.diagnosis as EncounterDiagnosis[];
+    const uniqueDiagnoses = new Set();
+    entry.diagnosis = diagnoses.filter(diagnosis => {
+      if (uniqueDiagnoses.has(diagnosis.condition?.reference)) {
+        return false;
+      }
+      uniqueDiagnoses.add(diagnosis.condition?.reference);
+      return true;
+    });
   }
 
-  if ("author" in entry) {
-    if (entry.resourceType === "Composition") {
-      const uniqueAuthors = new Set();
-      entry.author = entry.author?.filter(author => {
-        if (uniqueAuthors.has(author.reference)) return false;
-        uniqueAuthors.add(author.reference);
-        return true;
-      });
-    }
+  if ("author" in entry && entry.author && entry.resourceType === "Composition") {
+    const uniqueAuthors = new Set();
+    entry.author = entry.author?.filter(author => {
+      if (uniqueAuthors.has(author.reference)) return false;
+      uniqueAuthors.add(author.reference);
+      return true;
+    });
   }
 
-  if ("section" in entry) {
+  if ("section" in entry && entry.section) {
     entry.section = entry.section.map(section => {
       if (section.entry) {
         const uniqueEntries = new Set();
@@ -475,29 +471,25 @@ function removeDuplicateReferences<T extends Resource>(entry: T): T {
     });
   }
 
-  if ("location" in entry) {
-    if (entry.resourceType === "Encounter") {
-      const uniqueLocations = new Set();
-      entry.location = entry.location.filter(location => {
-        if (uniqueLocations.has(location.location?.reference)) return false;
-        uniqueLocations.add(location.location?.reference);
-        return true;
-      });
-    }
+  if ("location" in entry && entry.location && entry.resourceType === "Encounter") {
+    const uniqueLocations = new Set();
+    entry.location = entry.location.filter(location => {
+      if (uniqueLocations.has(location.location?.reference)) return false;
+      uniqueLocations.add(location.location?.reference);
+      return true;
+    });
   }
 
-  if ("participant" in entry) {
-    if (entry.resourceType === "Encounter") {
-      const uniqueParticipants = new Set();
-      entry.participant = entry.participant?.filter(part => {
-        if (uniqueParticipants.has(part.individual?.reference)) return false;
-        uniqueParticipants.add(part.individual?.reference);
-        return true;
-      });
-    }
+  if ("participant" in entry && entry.participant && entry.resourceType === "Encounter") {
+    const uniqueParticipants = new Set();
+    entry.participant = entry.participant?.filter(part => {
+      if (uniqueParticipants.has(part.individual?.reference)) return false;
+      uniqueParticipants.add(part.individual?.reference);
+      return true;
+    });
   }
 
-  if ("performer" in entry) {
+  if ("performer" in entry && entry.performer) {
     if (entry.resourceType === "DiagnosticReport") {
       const uniquePerformers = new Set();
       entry.performer = entry.performer?.filter(performer => {
@@ -515,7 +507,7 @@ function removeDuplicateReferences<T extends Resource>(entry: T): T {
     }
   }
 
-  if ("payor" in entry) {
+  if ("payor" in entry && entry.payor) {
     const uniquePayors = new Set();
     entry.payor = entry.payor?.filter(payor => {
       if (uniquePayors.has(payor.reference)) return false;
