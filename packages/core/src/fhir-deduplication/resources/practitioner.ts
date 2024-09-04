@@ -1,16 +1,14 @@
 import { Practitioner } from "@medplum/fhirtypes";
 import { normalizeAddress } from "../../mpi/normalize-address";
-import { combineResources, createRef, extractNpi, fillMaps } from "../shared";
+import { DeduplicationResult, combineResources, createRef, extractNpi, fillMaps } from "../shared";
 
-export function deduplicatePractitioners(practitioners: Practitioner[]): {
-  combinedPractitioners: Practitioner[];
-  refReplacementMap: Map<string, string[]>;
-  danglingReferences: string[];
-} {
+export function deduplicatePractitioners(
+  practitioners: Practitioner[]
+): DeduplicationResult<Practitioner> {
   const { practitionersMap, refReplacementMap, danglingReferences } =
     groupSamePractitioners(practitioners);
   return {
-    combinedPractitioners: combineResources({
+    combinedResources: combineResources({
       combinedMaps: [practitionersMap],
     }),
     refReplacementMap,

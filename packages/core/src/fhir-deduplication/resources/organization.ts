@@ -1,16 +1,14 @@
 import { Organization } from "@medplum/fhirtypes";
 import { normalizeAddress } from "../../mpi/normalize-address";
-import { combineResources, createRef, extractNpi, fillMaps } from "../shared";
+import { DeduplicationResult, combineResources, createRef, extractNpi, fillMaps } from "../shared";
 
-export function deduplicateOrganizations(organizations: Organization[]): {
-  combinedOrganizations: Organization[];
-  refReplacementMap: Map<string, string[]>;
-  danglingReferences: string[];
-} {
+export function deduplicateOrganizations(
+  organizations: Organization[]
+): DeduplicationResult<Organization> {
   const { organizationsMap, refReplacementMap, danglingReferences } =
     groupSameOrganizations(organizations);
   return {
-    combinedOrganizations: combineResources({
+    combinedResources: combineResources({
       combinedMaps: [organizationsMap],
     }),
     refReplacementMap,
