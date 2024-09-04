@@ -94,16 +94,6 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   const encounters = removeDuplicateReferencesFromBundle(encountersResult.combinedEncounters);
   deduplicatedEntries.push(...encounters);
 
-  // DiagnosticReport deduplication
-  const diagReportsResult = deduplicateDiagReports(resourceArrays.diagnosticReports);
-  resourceArrays = replaceResourceReferences(resourceArrays, diagReportsResult.refReplacementMap);
-  processedArrays.push("diagnosticReports");
-  danglingLinks.push(...diagReportsResult.danglingReferences);
-  const diagReports = removeDuplicateReferencesFromBundle(
-    diagReportsResult.combinedDiagnosticReports
-  );
-  deduplicatedEntries.push(...diagReports);
-
   // Immunization deduplication
   const immunizationsResult = deduplicateImmunizations(resourceArrays.immunizations);
   resourceArrays = replaceResourceReferences(resourceArrays, immunizationsResult.refReplacementMap);
@@ -151,6 +141,16 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   danglingLinks.push(...obsOthersResult.danglingReferences);
   const obsOthers = removeDuplicateReferencesFromBundle(obsOthersResult.combinedObservations);
   deduplicatedEntries.push(...obsOthers);
+
+  // DiagnosticReport deduplication
+  const diagReportsResult = deduplicateDiagReports(resourceArrays.diagnosticReports);
+  resourceArrays = replaceResourceReferences(resourceArrays, diagReportsResult.refReplacementMap);
+  processedArrays.push("diagnosticReports");
+  danglingLinks.push(...diagReportsResult.danglingReferences);
+  const diagReports = removeDuplicateReferencesFromBundle(
+    diagReportsResult.combinedDiagnosticReports
+  );
+  deduplicatedEntries.push(...diagReports);
 
   // Location deduplication
   const locationsResult = deduplicateLocations(resourceArrays.locations);

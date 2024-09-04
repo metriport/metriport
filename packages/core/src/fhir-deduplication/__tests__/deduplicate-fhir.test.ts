@@ -354,7 +354,7 @@ describe("deduplicateFhir", () => {
     expect(resDiagReport?.result).toEqual([{ reference: observation2Ref }]);
   });
 
-  it("removes duplicate diagnoses references from an Encounter", () => {
+  it("removes duplicate diagnosis references from an Encounter", () => {
     const condition1 = makeCondition({
       id: faker.string.uuid(),
       code: { coding: [snomedCodeMd] },
@@ -389,5 +389,43 @@ describe("deduplicateFhir", () => {
     const deduplicatedEncounters = findEncounterResources(bundle);
     const deduplicatedEncounter = deduplicatedEncounters[0];
     expect(deduplicatedEncounter?.diagnosis?.length).toBe(1);
+  });
+  it("removes duplicate observation references from a DiagnosticReport", () => {
+    const observation1 = makeObservation({
+      id: faker.string.uuid(),
+      valueCodeableConcept: valueConceptTobacco,
+      code: loincCodeTobacco,
+      effectiveDateTime: dateTime.start,
+    });
+    const observation2 = makeObservation({
+      id: faker.string.uuid(),
+      valueCodeableConcept: valueConceptTobacco,
+      code: loincCodeTobacco,
+      effectiveDateTime: dateTime.start,
+    });
+
+    const diagnosticReport: DiagnosticReport = makeDiagnosticReport({
+      id: faker.string.uuid(),
+      result: [
+        { reference: `Observation/${observation1.id}` },
+        { reference: `Observation/${observation2.id}` },
+      ],
+      effectivePeriod: {
+        start: "2013-08-22T17:05:00.000Z",
+        end: "2013-08-22T18:15:00.000Z",
+      },
+    });
+
+    const entries = [
+      { resource: diagnosticReport },
+      { resource: observation1 },
+      { resource: observation2 },
+    ] as BundleEntry<Resource>[];
+
+    bundle.entry = entries;
+    bundle = deduplicateFhir(bundle);
+    const deduplicatedDiagnosticReports = findDiagnosticReportResources(bundle);
+    const deduplicatedDiagnosticReport = deduplicatedDiagnosticReports[0];
+    expect(deduplicatedDiagnosticReport?.result?.length).toBe(1);
   });
 });
