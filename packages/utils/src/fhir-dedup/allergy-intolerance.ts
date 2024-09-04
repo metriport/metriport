@@ -163,7 +163,7 @@ function toCsv(resource: AllergyIntolerance, others: AllergyIntolerance[]): stri
   const date = resource.meta?.lastUpdated ? new Date(resource.meta?.lastUpdated).toISOString() : "";
   const links = siblings.length;
 
-  const clinicStatus = resource.clinicalStatus?.coding?.[0].code ?? "";
+  const clinicStatus = resource.clinicalStatus?.coding?.[0]?.code ?? "";
   const type = resource.type ?? "";
   const cat0 = resource?.category?.[0] ?? "";
   const cat1 = resource?.category?.[1] ?? "";
@@ -216,7 +216,7 @@ function toCsv(resource: AllergyIntolerance, others: AllergyIntolerance[]): stri
   const react1_note0_txt = react1?.note?.[0]?.text ?? "";
   const react1_note1_txt = react1?.note?.[1]?.text ?? "";
 
-  const clinicStatus_s = firstSibling?.clinicalStatus?.coding?.[0].code ?? "";
+  const clinicStatus_s = firstSibling?.clinicalStatus?.coding?.[0]?.code ?? "";
   const type_s = firstSibling?.type ?? "";
   const cat0_s = firstSibling?.category?.[0] ?? "";
   const cat1_s = firstSibling?.category?.[1] ?? "";
