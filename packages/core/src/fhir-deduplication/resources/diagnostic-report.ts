@@ -1,6 +1,7 @@
 import { DiagnosticReport } from "@medplum/fhirtypes";
 import { LOINC_CODE, LOINC_OID } from "../../util/constants";
 import {
+  DeduplicationResult,
   combineResources,
   createRef,
   fillMaps,
@@ -35,15 +36,13 @@ const statusRanking: Record<DiagnosticReportStatus, number> = {
   cancelled: 0,
 };
 
-export function deduplicateDiagReports(medications: DiagnosticReport[]): {
-  combinedDiagnosticReports: DiagnosticReport[];
-  refReplacementMap: Map<string, string[]>;
-  danglingReferences: string[];
-} {
+export function deduplicateDiagReports(
+  medications: DiagnosticReport[]
+): DeduplicationResult<DiagnosticReport> {
   const { diagReportsMap, refReplacementMap, danglingReferences } =
     groupSameDiagnosticReports(medications);
   return {
-    combinedDiagnosticReports: combineResources({
+    combinedResources: combineResources({
       combinedMaps: [diagReportsMap],
     }),
     refReplacementMap,

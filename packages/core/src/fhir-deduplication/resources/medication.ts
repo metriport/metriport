@@ -8,22 +8,19 @@ import {
   SNOMED_OID,
 } from "../../util/constants";
 import {
+  DeduplicationResult,
   combineResources,
   createRef,
+  extractDisplayFromConcept,
   fillMaps,
   hasBlacklistedText,
-  extractDisplayFromConcept,
 } from "../shared";
 
-export function deduplicateMedications(medications: Medication[]): {
-  combinedMedications: Medication[];
-  refReplacementMap: Map<string, string[]>;
-  danglingReferences: string[];
-} {
+export function deduplicateMedications(medications: Medication[]): DeduplicationResult<Medication> {
   const { rxnormMap, ndcMap, snomedMap, refReplacementMap, danglingReferences } =
     groupSameMedications(medications);
   return {
-    combinedMedications: combineResources({
+    combinedResources: combineResources({
       combinedMaps: [rxnormMap, ndcMap, snomedMap],
     }),
     refReplacementMap,

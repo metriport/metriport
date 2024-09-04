@@ -175,7 +175,7 @@ export function getDateFromResource<T extends Resource>(
     if (period.start) return getDateFromString(period.start, dateFormat);
   } else if ("effectivePeriod" in resource) {
     if (resource.effectivePeriod.start) {
-      return getDateFromString(resource.effectivePeriod.start);
+      return getDateFromString(resource.effectivePeriod.start, dateFormat);
     }
   }
   return undefined;
@@ -296,3 +296,9 @@ export function isUnknownCoding(coding: Coding, text?: string | undefined): bool
     );
   }
 }
+
+export type DeduplicationResult<T extends Resource> = {
+  combinedResources: T[];
+  refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
+};

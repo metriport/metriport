@@ -1,16 +1,14 @@
 import { CodeableConcept, HumanName, RelatedPerson } from "@medplum/fhirtypes";
 import { toTitleCase } from "@metriport/shared";
-import { combineResources, createRef, fillMaps } from "../shared";
+import { DeduplicationResult, combineResources, createRef, fillMaps } from "../shared";
 
-export function deduplicateRelatedPersons(relatedPersons: RelatedPerson[]): {
-  combinedRelatedPersons: RelatedPerson[];
-  refReplacementMap: Map<string, string[]>;
-  danglingReferences: string[];
-} {
+export function deduplicateRelatedPersons(
+  relatedPersons: RelatedPerson[]
+): DeduplicationResult<RelatedPerson> {
   const { relatedPersonsMap, refReplacementMap, danglingReferences } =
     groupSameRelatedPersons(relatedPersons);
   return {
-    combinedRelatedPersons: combineResources({
+    combinedResources: combineResources({
       combinedMaps: [relatedPersonsMap],
     }),
     refReplacementMap,

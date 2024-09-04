@@ -1,15 +1,11 @@
 import { Location } from "@medplum/fhirtypes";
 import { normalizeAddress } from "../../mpi/normalize-address";
-import { combineResources, createRef, fillMaps } from "../shared";
+import { DeduplicationResult, combineResources, createRef, fillMaps } from "../shared";
 
-export function deduplicateLocations(locations: Location[]): {
-  combinedLocations: Location[];
-  refReplacementMap: Map<string, string[]>;
-  danglingReferences: string[];
-} {
+export function deduplicateLocations(locations: Location[]): DeduplicationResult<Location> {
   const { locationsMap, refReplacementMap, danglingReferences } = groupSameLocations(locations);
   return {
-    combinedLocations: combineResources({
+    combinedResources: combineResources({
       combinedMaps: [locationsMap],
     }),
     refReplacementMap,
