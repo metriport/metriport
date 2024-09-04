@@ -83,6 +83,16 @@ export function groupSameMedAdmins(medAdmins: MedicationAdministration[]): {
         undefined,
         assignMostDescriptiveStatus
       );
+    } else if (medRef && datetime) {
+      const key = JSON.stringify({ medRef, datetime });
+      fillMaps(
+        medAdminsMap,
+        key,
+        medAdmin,
+        refReplacementMap,
+        undefined,
+        assignMostDescriptiveStatus
+      );
     } else {
       danglingReferencesSet.add(createRef(medAdmin));
     }

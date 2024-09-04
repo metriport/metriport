@@ -153,6 +153,8 @@ export function getDateFromResource<T extends Resource>(
     const onsetPeriod = resource.onsetPeriod;
     if (onsetPeriod.start) {
       return getDateFromString(onsetPeriod.start);
+    } else if (onsetPeriod.end) {
+      return getDateFromString(onsetPeriod.end);
     }
   } else if ("onsetDateTime" in resource) {
     return getDateFromString(resource.onsetDateTime);
@@ -173,11 +175,11 @@ export function getDateFromResource<T extends Resource>(
   } else if ("period" in resource) {
     const period = resource.period;
     if (period.start) return getDateFromString(period.start, dateFormat);
+    else if (period.end) return getDateFromString(period.end, dateFormat);
   } else if ("effectivePeriod" in resource) {
     if (resource.effectivePeriod.start) {
       return getDateFromString(resource.effectivePeriod.start);
-    }
-    if (resource.effectivePeriod.end) {
+    } else if (resource.effectivePeriod.end) {
       return getDateFromString(resource.effectivePeriod.end);
     }
   }
@@ -193,6 +195,8 @@ export function getPerformedDateFromResource<T extends Resource>(
   } else if ("performedPeriod" in resource) {
     if (resource.performedPeriod.start) {
       return getDateFromString(resource.performedPeriod.start);
+    } else if (resource.performedPeriod.end) {
+      return getDateFromString(resource.performedPeriod.end);
     }
   } else if ("performedString" in resource) {
     return getDateFromString(resource.performedString, dateFormat);
