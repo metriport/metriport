@@ -1,16 +1,15 @@
 import { Organization } from "@medplum/fhirtypes";
+import { validateNPI } from "@metriport/shared";
 import { normalizeAddress } from "../../mpi/normalize-address";
-import { combineResources, createRef, extractNpi, fillMaps } from "../shared";
+import { DeduplicationResult, combineResources, createRef, extractNpi, fillMaps } from "../shared";
 
-export function deduplicateOrganizations(organizations: Organization[]): {
-  combinedOrganizations: Organization[];
-  refReplacementMap: Map<string, string[]>;
-  danglingReferences: string[];
-} {
+export function deduplicateOrganizations(
+  organizations: Organization[]
+): DeduplicationResult<Organization> {
   const { organizationsMap, refReplacementMap, danglingReferences } =
     groupSameOrganizations(organizations);
   return {
-    combinedOrganizations: combineResources({
+    combinedResources: combineResources({
       combinedMaps: [organizationsMap],
     }),
     refReplacementMap,
@@ -38,7 +37,7 @@ export function groupSameOrganizations(organizations: Organization[]): {
     const name = organization.name;
     const addresses = organization.address;
 
-    if (npi) {
+    if (npi && validateNPI(npi)) {
       const key = JSON.stringify({ npi });
       fillMaps(organizationsMap, key, organization, refReplacementMap);
     } else if (name && addresses) {

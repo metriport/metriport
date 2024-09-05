@@ -152,10 +152,12 @@ export function getDateFromResource<T extends Resource>(
   if ("onsetPeriod" in resource) {
     const onsetPeriod = resource.onsetPeriod;
     if (onsetPeriod.start) {
-      return getDateFromString(onsetPeriod.start);
+      return getDateFromString(onsetPeriod.start, dateFormat);
+    } else if (onsetPeriod.end) {
+      return getDateFromString(onsetPeriod.end, dateFormat);
     }
   } else if ("onsetDateTime" in resource) {
-    return getDateFromString(resource.onsetDateTime);
+    return getDateFromString(resource.onsetDateTime, dateFormat);
   } else if ("onsetAge" in resource) {
     const onsetAge = resource.onsetAge;
     if (onsetAge.value) {
@@ -173,9 +175,12 @@ export function getDateFromResource<T extends Resource>(
   } else if ("period" in resource) {
     const period = resource.period;
     if (period.start) return getDateFromString(period.start, dateFormat);
+    else if (period.end) return getDateFromString(period.end, dateFormat);
   } else if ("effectivePeriod" in resource) {
     if (resource.effectivePeriod.start) {
-      return getDateFromString(resource.effectivePeriod.start);
+      return getDateFromString(resource.effectivePeriod.start, dateFormat);
+    } else if (resource.effectivePeriod.end) {
+      return getDateFromString(resource.effectivePeriod.end, dateFormat);
     }
   }
   return undefined;
@@ -189,7 +194,9 @@ export function getPerformedDateFromResource<T extends Resource>(
     return getDateFromString(resource.performedDateTime, dateFormat);
   } else if ("performedPeriod" in resource) {
     if (resource.performedPeriod.start) {
-      return getDateFromString(resource.performedPeriod.start);
+      return getDateFromString(resource.performedPeriod.start, dateFormat);
+    } else if (resource.performedPeriod.end) {
+      return getDateFromString(resource.performedPeriod.end, dateFormat);
     }
   } else if ("performedString" in resource) {
     return getDateFromString(resource.performedString, dateFormat);
@@ -296,3 +303,9 @@ export function isUnknownCoding(coding: Coding, text?: string | undefined): bool
     );
   }
 }
+
+export type DeduplicationResult<T extends Resource> = {
+  combinedResources: T[];
+  refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
+};

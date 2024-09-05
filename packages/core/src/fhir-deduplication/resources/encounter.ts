@@ -1,5 +1,6 @@
 import { Encounter } from "@medplum/fhirtypes";
 import {
+  DeduplicationResult,
   combineResources,
   createRef,
   fillMaps,
@@ -33,14 +34,10 @@ export const statusRanking: Record<EncounterStatus, number> = {
   finished: 8,
 };
 
-export function deduplicateEncounters(encounters: Encounter[]): {
-  combinedEncounters: Encounter[];
-  refReplacementMap: Map<string, string[]>;
-  danglingReferences: string[];
-} {
+export function deduplicateEncounters(encounters: Encounter[]): DeduplicationResult<Encounter> {
   const { encountersMap, refReplacementMap, danglingReferences } = groupSameEncounters(encounters);
   return {
-    combinedEncounters: combineResources({
+    combinedResources: combineResources({
       combinedMaps: [encountersMap],
     }),
     refReplacementMap,

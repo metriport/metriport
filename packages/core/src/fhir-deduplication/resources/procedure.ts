@@ -8,6 +8,7 @@ import {
   SNOMED_OID,
 } from "../../util/constants";
 import {
+  DeduplicationResult,
   combineResources,
   createRef,
   extractDisplayFromConcept,
@@ -41,14 +42,10 @@ export const statusRanking: Record<ProcedureStatus, number> = {
   completed: 7,
 };
 
-export function deduplicateProcedures(procedures: Procedure[]): {
-  combinedProcedures: Procedure[];
-  refReplacementMap: Map<string, string[]>;
-  danglingReferences: string[];
-} {
+export function deduplicateProcedures(procedures: Procedure[]): DeduplicationResult<Procedure> {
   const { proceduresMap, refReplacementMap, danglingReferences } = groupSameProcedures(procedures);
   return {
-    combinedProcedures: combineResources({
+    combinedResources: combineResources({
       combinedMaps: [proceduresMap],
     }),
     refReplacementMap,
