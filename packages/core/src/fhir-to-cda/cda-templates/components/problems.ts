@@ -2,6 +2,8 @@ import { Bundle, CodeableConcept, Condition } from "@medplum/fhirtypes";
 import { isCondition } from "../../../external/fhir/shared";
 import { ProblemsSection } from "../../cda-types/sections";
 import {
+  CdaCodeCe,
+  CdaValueCd,
   ConcernActEntry,
   ObservationEntryRelationship,
   ObservationTableRow,
@@ -20,7 +22,10 @@ import {
 } from "../commons";
 import {
   NOT_SPECIFIED,
+  _xmlnsXsiAttribute,
+  _xmlnsXsiValue,
   extensionValue2015,
+  extensionValue2019,
   loincCodeSystem,
   loincSystemName,
   oids,
@@ -91,6 +96,14 @@ function createTableRowFromCondition(
   referenceId: string
 ): ObservationTableRow[] {
   const name = getTextFromCode(condition.resource.code);
+  const providerResponse = mapProviderResponseToHtmlValue(
+    condition.resource.verificationStatus?.coding?.[0]?.code
+  );
+  const clinicalStatus = mapClinicalStatus(condition.resource.clinicalStatus?.coding?.[0]?.code);
+
+  const noteParts = condition.resource.note?.[0]?.text?.split("\n\nComments:");
+  const treatmentPlan = noteParts?.[0]?.replace("Treatment plan: ", "").trim();
+  const comments = noteParts?.[1]?.trim();
   return [
     {
       tr: {
@@ -103,21 +116,69 @@ function createTableRowFromCondition(
             "#text": name,
           },
           {
-            "#text": NOT_SPECIFIED, // TODO: Find out what Provider Response stands for and map accordingly
+            "#text": providerResponse ?? NOT_SPECIFIED,
           },
           {
-            "#text": NOT_SPECIFIED, // TODO: Find out what Status stands for and map accordingly
+            "#text": clinicalStatus?._displayName ?? NOT_SPECIFIED,
           },
           {
-            "#text": condition.resource.note?.[0]?.text ?? NOT_SPECIFIED,
+            "#text": treatmentPlan ?? condition.resource.note?.[0]?.text ?? NOT_SPECIFIED,
           },
           {
-            "#text": NOT_SPECIFIED, // TODO: Figure out where to put comments in the Condition resource
+            "#text": comments ?? NOT_SPECIFIED,
           },
         ],
       },
     },
   ];
+}
+
+function mapProviderResponseToHtmlValue(providerResponse: string | undefined): string | undefined {
+  switch (providerResponse) {
+    case "confirmed":
+      return "agree";
+    case "unconfirmed":
+      return "disagree";
+    case "refuted":
+      return "resolved";
+    default:
+      return undefined;
+  }
+}
+
+function mapClinicalStatus(clinicalStatus: string | undefined): CdaCodeCe | undefined {
+  const snomedCodeCe = buildCodeCe({
+    codeSystem: snomedCodeSystem,
+    codeSystemName: snomedSystemName,
+  });
+  switch (clinicalStatus) {
+    case "active":
+      return buildCodeCe({
+        ...snomedCodeCe,
+        code: "55561003",
+        displayName: "Active",
+      });
+    case "remission":
+      return buildCodeCe({
+        ...snomedCodeCe,
+        code: "277022003",
+        displayName: "Remission phase",
+      });
+    case "relapse":
+      return buildCodeCe({
+        ...snomedCodeCe,
+        code: "263855007",
+        displayName: "Relapse phase",
+      });
+    case "resolved":
+      return buildCodeCe({
+        ...snomedCodeCe,
+        code: "413322009",
+        displayName: "Problem resolved",
+      });
+    default:
+      return undefined;
+  }
 }
 
 function createEntryFromCondition(
@@ -142,7 +203,7 @@ function createEntryFromCondition(
         displayName: "Concern",
       }),
       statusCode: {
-        _code: condition.resource.clinicalStatus?.coding?.[0]?.code ?? "active", // TODO: Check if this is the correct approach
+        _code: "completed",
       },
       effectiveTime: {
         low: withNullFlavor(formatDateToCdaTimestamp(condition.resource.onsetDateTime), "_value"),
@@ -201,6 +262,44 @@ function createEntryRelationship(
         low: withNullFlavor(formatDateToCdaTimestamp(condition.recordedDate), "_value"),
       },
       value: buildValueCd(condition.code, referenceId),
+      entryRelationship: buildProblemStatus(condition),
     },
+  };
+}
+
+function buildProblemStatus(condition: Condition): ObservationEntryRelationship {
+  return {
+    _typeCode: "REFR",
+    observation: {
+      _classCode: "OBS",
+      _moodCode: "EVN",
+      templateId: buildTemplateIds({
+        root: oids.problemStatus,
+        extension: extensionValue2019,
+      }),
+      code: buildCodeCe({
+        code: "33999-4",
+        codeSystem: loincCodeSystem,
+        codeSystemName: loincSystemName,
+      }),
+      statusCode: {
+        _code: "completed",
+      },
+      effectiveTime: {
+        low: withNullFlavor(formatDateToCdaTimestamp(condition.recordedDate), "_value"),
+      },
+      value: buildProblemStatusValue(condition.clinicalStatus?.coding?.[0]?.code),
+    },
+  };
+}
+
+function buildProblemStatusValue(code: string | undefined): CdaValueCd | undefined {
+  if (!code) return undefined;
+
+  const codeCe = mapClinicalStatus(code);
+  return {
+    ...codeCe,
+    "_xsi:type": "CD",
+    [_xmlnsXsiAttribute]: _xmlnsXsiValue,
   };
 }
