@@ -2,6 +2,7 @@ import { Observation } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import {
+  DeduplicationResult,
   combineResources,
   createRef,
   extractDisplayFromConcept,
@@ -18,15 +19,13 @@ import {
 
 dayjs.extend(utc);
 
-export function deduplicateObservationsSocial(observations: Observation[]): {
-  combinedObservations: Observation[];
-  refReplacementMap: Map<string, string[]>;
-  danglingReferences: string[];
-} {
+export function deduplicateObservationsSocial(
+  observations: Observation[]
+): DeduplicationResult<Observation> {
   const { observationsMap, refReplacementMap, danglingReferences } =
     groupSameObservationsSocial(observations);
   return {
-    combinedObservations: combineResources({
+    combinedResources: combineResources({
       combinedMaps: [observationsMap],
     }),
     refReplacementMap,

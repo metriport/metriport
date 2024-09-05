@@ -1,5 +1,6 @@
 import { MedicationStatement } from "@medplum/fhirtypes";
 import {
+  DeduplicationResult,
   combineResources,
   createRef,
   fillMaps,
@@ -31,15 +32,13 @@ export const statusRanking: Record<MedicationStatementStatus, number> = {
   completed: 7,
 };
 
-export function deduplicateMedStatements(medications: MedicationStatement[]): {
-  combinedMedStatements: MedicationStatement[];
-  refReplacementMap: Map<string, string[]>;
-  danglingReferences: string[];
-} {
+export function deduplicateMedStatements(
+  medications: MedicationStatement[]
+): DeduplicationResult<MedicationStatement> {
   const { medStatementsMap, refReplacementMap, danglingReferences } =
     groupSameMedStatements(medications);
   return {
-    combinedMedStatements: combineResources({
+    combinedResources: combineResources({
       combinedMaps: [medStatementsMap],
     }),
     refReplacementMap,
@@ -77,6 +76,16 @@ export function groupSameMedStatements(medStatements: MedicationStatement[]): {
     const dosage = medStatement.dosage;
     if (medRef && datetime && dosage) {
       const key = JSON.stringify({ medRef, datetime, dosage });
+      fillMaps(
+        medStatementsMap,
+        key,
+        medStatement,
+        refReplacementMap,
+        undefined,
+        assignMostDescriptiveStatus
+      );
+    } else if (medRef && datetime) {
+      const key = JSON.stringify({ medRef, datetime });
       fillMaps(
         medStatementsMap,
         key,

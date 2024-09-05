@@ -23,129 +23,111 @@ import { createRef } from "./shared";
 
 export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> {
   let resourceArrays = extractFhirTypesFromBundle(fhirBundle);
-  const deduplicatedEntries: BundleEntry<Resource>[] = [];
 
   // TODO: Add unit tests for the ID replacements
-
-  const processedArrays: string[] = [];
   const danglingLinks: string[] = [];
 
   // Practitioner deduplication
   const practitionersResult = deduplicatePractitioners(resourceArrays.practitioners);
   resourceArrays = replaceResourceReferences(resourceArrays, practitionersResult.refReplacementMap);
-  processedArrays.push("practitioners");
+  resourceArrays.practitioners = practitionersResult.combinedResources;
   danglingLinks.push(...practitionersResult.danglingReferences);
-  deduplicatedEntries.push(...practitionersResult.combinedPractitioners);
 
   // Conditions deduplication
   const conditionsResult = deduplicateConditions(resourceArrays.conditions);
   resourceArrays = replaceResourceReferences(resourceArrays, conditionsResult.refReplacementMap);
-  processedArrays.push("conditions");
+  resourceArrays.conditions = conditionsResult.combinedResources;
   danglingLinks.push(...conditionsResult.danglingReferences);
-  deduplicatedEntries.push(...conditionsResult.combinedConditions);
 
   // Allergies deduplication
   const allergiesResult = deduplicateAllergyIntolerances(resourceArrays.allergies);
   resourceArrays = replaceResourceReferences(resourceArrays, allergiesResult.refReplacementMap);
-  processedArrays.push("allergies");
+  resourceArrays.allergies = allergiesResult.combinedResources;
   danglingLinks.push(...allergiesResult.danglingReferences);
-  deduplicatedEntries.push(...allergiesResult.combinedAllergies);
 
   // Medication deduplication
   const medicationsResult = deduplicateMedications(resourceArrays.medications);
   resourceArrays = replaceResourceReferences(resourceArrays, medicationsResult.refReplacementMap);
-  processedArrays.push("medications");
+  resourceArrays.medications = medicationsResult.combinedResources;
   danglingLinks.push(...medicationsResult.danglingReferences);
-  deduplicatedEntries.push(...medicationsResult.combinedMedications);
 
   // MedicationAdministration deduplication
   const medAdminsResult = deduplicateMedAdmins(resourceArrays.medicationAdministrations);
   resourceArrays = replaceResourceReferences(resourceArrays, medAdminsResult.refReplacementMap);
-  processedArrays.push("medicationAdministrations");
+  resourceArrays.medicationAdministrations = medAdminsResult.combinedResources;
   danglingLinks.push(...medAdminsResult.danglingReferences);
-  deduplicatedEntries.push(...medAdminsResult.combinedMedAdmins);
 
   // MedicationRequest deduplication
   const medRequestResult = deduplicateMedRequests(resourceArrays.medicationRequests);
   resourceArrays = replaceResourceReferences(resourceArrays, medRequestResult.refReplacementMap);
-  processedArrays.push("medicationRequests");
+  resourceArrays.medicationRequests = medRequestResult.combinedResources;
   danglingLinks.push(...medRequestResult.danglingReferences);
-  deduplicatedEntries.push(...medRequestResult.combinedMedRequests);
 
   // MedicationStatement deduplication
   const medStatementResult = deduplicateMedStatements(resourceArrays.medicationStatements);
   resourceArrays = replaceResourceReferences(resourceArrays, medStatementResult.refReplacementMap);
-  processedArrays.push("medicationStatements");
+  resourceArrays.medicationStatements = medStatementResult.combinedResources;
   danglingLinks.push(...medStatementResult.danglingReferences);
-  deduplicatedEntries.push(...medStatementResult.combinedMedStatements);
 
   // Encounter deduplication
   const encountersResult = deduplicateEncounters(resourceArrays.encounters);
   resourceArrays = replaceResourceReferences(resourceArrays, encountersResult.refReplacementMap);
-  processedArrays.push("encounters");
+  resourceArrays.encounters = encountersResult.combinedResources;
   danglingLinks.push(...encountersResult.danglingReferences);
-  deduplicatedEntries.push(...encountersResult.combinedEncounters);
 
   // DiagnosticReport deduplication
   const diagReportsResult = deduplicateDiagReports(resourceArrays.diagnosticReports);
   resourceArrays = replaceResourceReferences(resourceArrays, diagReportsResult.refReplacementMap);
-  processedArrays.push("diagnosticReports");
+  resourceArrays.diagnosticReports = diagReportsResult.combinedResources;
   danglingLinks.push(...diagReportsResult.danglingReferences);
-  deduplicatedEntries.push(...diagReportsResult.combinedDiagnosticReports);
 
   // Immunization deduplication
   const immunizationsResult = deduplicateImmunizations(resourceArrays.immunizations);
   resourceArrays = replaceResourceReferences(resourceArrays, immunizationsResult.refReplacementMap);
-  processedArrays.push("immunizations");
-  deduplicatedEntries.push(...immunizationsResult.combinedImmunizations);
+  resourceArrays.immunizations = immunizationsResult.combinedResources;
+  danglingLinks.push(...immunizationsResult.danglingReferences);
 
   // Procedure deduplication
   const proceduresResult = deduplicateProcedures(resourceArrays.procedures);
   resourceArrays = replaceResourceReferences(resourceArrays, proceduresResult.refReplacementMap);
-  processedArrays.push("procedures");
-  deduplicatedEntries.push(...proceduresResult.combinedProcedures);
+  resourceArrays.procedures = proceduresResult.combinedResources;
+  danglingLinks.push(...proceduresResult.danglingReferences);
 
   // Observation (social history) deduplication
   const obsSocialResult = deduplicateObservationsSocial(resourceArrays.observationSocialHistory);
   resourceArrays = replaceResourceReferences(resourceArrays, obsSocialResult.refReplacementMap);
-  processedArrays.push("observationSocialHistory");
+  resourceArrays.observationSocialHistory = obsSocialResult.combinedResources;
   danglingLinks.push(...obsSocialResult.danglingReferences);
-  deduplicatedEntries.push(...obsSocialResult.combinedObservations);
 
   // Observation (labs) deduplication
   const obsLabsResult = deduplicateObservations(resourceArrays.observationLaboratory);
   resourceArrays = replaceResourceReferences(resourceArrays, obsLabsResult.refReplacementMap);
-  processedArrays.push("observationLaboratory");
+  resourceArrays.observationLaboratory = obsLabsResult.combinedResources;
   danglingLinks.push(...obsLabsResult.danglingReferences);
-  deduplicatedEntries.push(...obsLabsResult.combinedObservations);
 
   // Observation (vitals) deduplication
   const obsVitalsResult = deduplicateObservations(resourceArrays.observationVitals);
   resourceArrays = replaceResourceReferences(resourceArrays, obsVitalsResult.refReplacementMap);
-  processedArrays.push("observationVitals");
+  resourceArrays.observationVitals = obsVitalsResult.combinedResources;
   danglingLinks.push(...obsVitalsResult.danglingReferences);
-  deduplicatedEntries.push(...obsVitalsResult.combinedObservations);
 
   // Observation (other) deduplication
   const obsOthersResult = deduplicateObservations(resourceArrays.observationOther);
   resourceArrays = replaceResourceReferences(resourceArrays, obsOthersResult.refReplacementMap);
-  processedArrays.push("observationOther");
+  resourceArrays.observationOther = obsOthersResult.combinedResources;
   danglingLinks.push(...obsOthersResult.danglingReferences);
-  deduplicatedEntries.push(...obsOthersResult.combinedObservations);
 
   // Location deduplication
   const locationsResult = deduplicateLocations(resourceArrays.locations);
   resourceArrays = replaceResourceReferences(resourceArrays, locationsResult.refReplacementMap);
-  processedArrays.push("locations");
+  resourceArrays.locations = locationsResult.combinedResources;
   danglingLinks.push(...locationsResult.danglingReferences);
-  deduplicatedEntries.push(...locationsResult.combinedLocations);
 
   // Organization deduplication
   const organizationsResult = deduplicateOrganizations(resourceArrays.organizations);
   resourceArrays = replaceResourceReferences(resourceArrays, organizationsResult.refReplacementMap);
-  processedArrays.push("organizations");
+  resourceArrays.organizations = organizationsResult.combinedResources;
   danglingLinks.push(...organizationsResult.danglingReferences);
-  deduplicatedEntries.push(...organizationsResult.combinedOrganizations);
 
   // RelatedPerson deduplication
   const relatedPersonsResult = deduplicateRelatedPersons(resourceArrays.relatedPersons);
@@ -153,9 +135,8 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
     resourceArrays,
     relatedPersonsResult.refReplacementMap
   );
-  processedArrays.push("relatedPersons");
+  resourceArrays.relatedPersons = relatedPersonsResult.combinedResources;
   danglingLinks.push(...relatedPersonsResult.danglingReferences);
-  deduplicatedEntries.push(...relatedPersonsResult.combinedRelatedPersons);
 
   // FamilyMemberHistory deduplication
   const famMemHistoriesResult = deduplicateFamilyMemberHistories(
@@ -165,27 +146,27 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
     resourceArrays,
     famMemHistoriesResult.refReplacementMap
   );
-  processedArrays.push("familyMemberHistories");
+  resourceArrays.familyMemberHistories = famMemHistoriesResult.combinedResources;
   danglingLinks.push(...famMemHistoriesResult.danglingReferences);
-  deduplicatedEntries.push(...famMemHistoriesResult.combinedFamMemHistories);
 
   // Coverage deduplication
   const coveragesResult = deduplicateCoverages(resourceArrays.coverages);
   resourceArrays = replaceResourceReferences(resourceArrays, coveragesResult.refReplacementMap);
-  processedArrays.push("coverages");
+  resourceArrays.coverages = coveragesResult.combinedResources;
   danglingLinks.push(...coveragesResult.danglingReferences);
-  deduplicatedEntries.push(...coveragesResult.combinedCoverages);
 
+  const deduplicatedEntries: BundleEntry<Resource>[] = [];
   // Rebuild the entries with deduplicated resources and add whatever is left unprocessed
   for (const [key, resources] of Object.entries(resourceArrays)) {
     // we will add compositions later
-    if (processedArrays.includes(key) || key === "compositions") {
+    if (key === "compositions") {
       continue;
     } else {
-      // Push all other resources unchanged
+      // Extract all other resources
       const entriesArray = resources && Array.isArray(resources) ? resources : [resources];
       const entriesFlat = entriesArray.flatMap(v => v || []);
-      deduplicatedEntries.push(...entriesFlat);
+      const entriesWithDeduplicatedReferences = entriesFlat.map(removeDuplicateReferences);
+      deduplicatedEntries.push(...entriesWithDeduplicatedReferences);
     }
   }
 
@@ -392,6 +373,108 @@ function removeDanglingReferences<T extends Resource>(entry: T, link: string): T
   if ("payor" in entry) {
     entry.payor = entry.payor?.filter(payor => payor.reference !== link);
     if (!entry.payor.length) delete entry.payor;
+  }
+
+  return entry;
+}
+
+export function removeDuplicateReferencesFromBundle<T extends Resource>(entries: T[]): T[] {
+  return entries.map(removeDuplicateReferences);
+}
+
+function removeDuplicateReferences<T extends Resource>(entry: T): T {
+  if (!entry) return entry;
+
+  if ("result" in entry && entry.result) {
+    const results = entry.result;
+    if (Array.isArray(results)) {
+      const uniqueResults = new Set();
+      entry.result = results.filter(item => {
+        if (uniqueResults.has(item.reference)) return false;
+        uniqueResults.add(item.reference);
+        return true;
+      });
+    }
+  }
+
+  if ("diagnosis" in entry && entry.diagnosis && entry.resourceType === "Encounter") {
+    const diagnoses = entry.diagnosis as EncounterDiagnosis[];
+    const uniqueDiagnoses = new Set();
+    entry.diagnosis = diagnoses.filter(diagnosis => {
+      if (uniqueDiagnoses.has(diagnosis.condition?.reference)) {
+        return false;
+      }
+      uniqueDiagnoses.add(diagnosis.condition?.reference);
+      return true;
+    });
+  }
+
+  if ("author" in entry && entry.author && entry.resourceType === "Composition") {
+    const uniqueAuthors = new Set();
+    entry.author = entry.author?.filter(author => {
+      if (uniqueAuthors.has(author.reference)) return false;
+      uniqueAuthors.add(author.reference);
+      return true;
+    });
+  }
+
+  if ("section" in entry && entry.section) {
+    entry.section = entry.section.map(section => {
+      if (section.entry) {
+        const uniqueEntries = new Set();
+        section.entry = section.entry.filter(item => {
+          if (uniqueEntries.has(item.reference)) return false;
+          uniqueEntries.add(item.reference);
+          return true;
+        });
+      }
+      return section;
+    });
+  }
+
+  if ("location" in entry && entry.location && entry.resourceType === "Encounter") {
+    const uniqueLocations = new Set();
+    entry.location = entry.location.filter(location => {
+      if (uniqueLocations.has(location.location?.reference)) return false;
+      uniqueLocations.add(location.location?.reference);
+      return true;
+    });
+  }
+
+  if ("participant" in entry && entry.participant && entry.resourceType === "Encounter") {
+    const uniqueParticipants = new Set();
+    entry.participant = entry.participant?.filter(part => {
+      if (uniqueParticipants.has(part.individual?.reference)) return false;
+      uniqueParticipants.add(part.individual?.reference);
+      return true;
+    });
+  }
+
+  if ("performer" in entry && entry.performer) {
+    if (entry.resourceType === "DiagnosticReport") {
+      const uniquePerformers = new Set();
+      entry.performer = entry.performer?.filter(performer => {
+        if (uniquePerformers.has(performer.reference)) return false;
+        uniquePerformers.add(performer.reference);
+        return true;
+      });
+    } else if (entry.resourceType === "Procedure") {
+      const uniquePerformers = new Set();
+      entry.performer = entry.performer?.filter(performer => {
+        if (uniquePerformers.has(performer.actor)) return false;
+        uniquePerformers.add(performer.actor);
+        return true;
+      });
+    }
+  }
+
+  if ("payor" in entry && entry.payor) {
+    const uniquePayors = new Set();
+    entry.payor = entry.payor?.filter(payor => {
+      if (uniquePayors.has(payor.reference)) return false;
+      uniquePayors.add(payor.reference);
+      return true;
+    });
   }
 
   return entry;
