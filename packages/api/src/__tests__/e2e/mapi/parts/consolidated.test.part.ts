@@ -315,6 +315,7 @@ export function runConsolidatedTests(e2e: E2eContext) {
       undefined,
       undefined,
       "json",
+      undefined,
       e2e.expectedWebhookMeta
     );
     expect(conversionProgress).toBeTruthy();
@@ -357,6 +358,7 @@ export function runConsolidatedTests(e2e: E2eContext) {
           undefined,
           undefined,
           "json",
+          undefined,
           e2e.expectedWebhookMeta
         )
     ).rejects.toThrow(AxiosError);
@@ -382,6 +384,7 @@ export function runConsolidatedTests(e2e: E2eContext) {
       undefined,
       undefined,
       "json",
+      undefined,
       e2e.expectedWebhookMeta
     );
     expect(conversionProgress).toBeTruthy();
