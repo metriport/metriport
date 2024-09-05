@@ -254,6 +254,11 @@ const procedureFiltersMap = new Map<string, ResourceFilter>([
   ["Organization", removeDanglingReferences],
 ]);
 
+const immunizationFiltersMap = new Map<string, ResourceFilter>([
+  ["Practitioner", removeDanglingReferences],
+  ["Organization", removeDanglingReferences],
+]);
+
 const resourceFiltersMap = new Map<string, Map<string, ResourceFilter>>([
   ["AllergyIntolerance", allergiesFiltersMap],
   ["Condition", conditionsFiltersMap],
@@ -266,6 +271,7 @@ const resourceFiltersMap = new Map<string, Map<string, ResourceFilter>>([
   ["Composition", compositionFiltersMap],
   ["Observation", observationFiltersMap],
   ["Procedure", procedureFiltersMap],
+  ["Immunization", immunizationFiltersMap],
 ]);
 
 export function removeResourcesWithDanglingLinks(
@@ -355,13 +361,28 @@ function removeDanglingReferences<T extends Resource>(entry: T, link: string): T
       if (!entry.participant.length) delete entry.participant;
     }
   }
-  if ("performer" in entry) {
-    if (entry.resourceType === "DiagnosticReport") {
-      entry.performer = entry.performer?.filter(performer => performer.reference !== link);
-      if (!entry.performer.length) delete entry.performer;
-    } else if (entry.resourceType === "Procedure") {
-      entry.performer = entry.performer?.filter(performer => performer.actor !== link);
-      if (!entry.performer.length) delete entry.performer;
+  if ("performer" in entry && Array.isArray(entry.performer)) {
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    entry.performer = (entry.performer as any[]).filter((performer: any) => {
+      if (typeof performer === "object" && performer !== null) {
+        if ("reference" in performer && typeof performer.reference === "string") {
+          return performer.reference !== link;
+        }
+        if (
+          "actor" in performer &&
+          typeof performer.actor === "object" &&
+          performer.actor !== null &&
+          "reference" in performer.actor &&
+          typeof performer.actor.reference === "string"
+        ) {
+          return performer.actor.reference !== link;
+        }
+      }
+      return true;
+    });
+
+    if (entry.performer.length === 0) {
+      delete entry.performer;
     }
   }
   if ("recorder" in entry) {
