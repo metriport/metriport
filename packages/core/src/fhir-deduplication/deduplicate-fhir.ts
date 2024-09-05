@@ -361,6 +361,9 @@ function removeDanglingReferences<T extends Resource>(entry: T, link: string): T
       if (!entry.participant.length) delete entry.participant;
     }
   }
+  if ("requester" in entry) {
+    if (entry.requester.reference === link) delete entry.requester;
+  }
   if ("performer" in entry && Array.isArray(entry.performer)) {
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
     entry.performer = (entry.performer as any[]).filter((performer: any) => {
