@@ -154,15 +154,15 @@ export function fillMaps<T extends Resource>(
 }
 
 export function createKeysArray(
-  str: string,
-  objArray: (ContactPoint | Address)[],
-  bits: number[]
+  baseObject: object,
+  contactsOrAddresses: (ContactPoint | Address)[],
+  flagBits: number[]
 ): string[] {
-  return objArray.map(obj => JSON.stringify({ str, ...obj, bits }));
+  return contactsOrAddresses.map(item => JSON.stringify({ baseObject, ...item, flagBits }));
 }
 
-export function createKeys(str: string, bits: number[]): string[] {
-  return [JSON.stringify({ str, bits })];
+export function createKeys(object: object, bits: number[]): string[] {
+  return [JSON.stringify({ ...object, bits })];
 }
 
 export function fillL1L2Maps<T extends Resource>({

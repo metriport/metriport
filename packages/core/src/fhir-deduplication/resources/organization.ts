@@ -69,34 +69,34 @@ export function groupSameOrganizations(organizations: Organization[]): {
     // bit slot zero is npi
     if (hasAddress && hasName) {
       const normalizedAddresses = addresses.map(address => normalizeAddress(address));
-      setterKeys.push(...createKeysArray(name, normalizedAddresses, [npiBit]));
+      setterKeys.push(...createKeysArray({ name }, normalizedAddresses, [npiBit]));
       if (npiBit === 0) {
-        getterKeys.push(...createKeysArray(name, normalizedAddresses, [1]));
-        getterKeys.push(...createKeysArray(name, normalizedAddresses, [0]));
+        getterKeys.push(...createKeysArray({ name }, normalizedAddresses, [1]));
+        getterKeys.push(...createKeysArray({ name }, normalizedAddresses, [0]));
       } else {
-        getterKeys.push(...createKeysArray(name, normalizedAddresses, [0]));
+        getterKeys.push(...createKeysArray({ name }, normalizedAddresses, [0]));
       }
     }
 
     // two orgs with the same name are the same org, as long as their npis and addresses aren't different
     // bit slot zero is address, bit slot one is npi
     if (hasName) {
-      const setterAddressKeys = createKeys(name, [addressBit, npiBit]);
+      const setterAddressKeys = createKeys({ name }, [addressBit, npiBit]);
       setterKeys.push(...setterAddressKeys);
 
-      if (npiBit === 0 && addressBit === 0) {
-        getterKeys.push(...createKeys(name, [1, 1]));
-        getterKeys.push(...createKeys(name, [1, 0]));
-        getterKeys.push(...createKeys(name, [0, 1]));
-        getterKeys.push(...createKeys(name, [0, 0]));
-      } else if (npiBit === 0 && addressBit === 1) {
-        getterKeys.push(...createKeys(name, [0, 1]));
-        getterKeys.push(...createKeys(name, [0, 0]));
-      } else if (npiBit === 1 && addressBit === 0) {
-        getterKeys.push(...createKeys(name, [1, 0]));
-        getterKeys.push(...createKeys(name, [0, 0]));
+      if (addressBit === 0 && npiBit === 0) {
+        getterKeys.push(...createKeys({ name }, [1, 1]));
+        getterKeys.push(...createKeys({ name }, [1, 0]));
+        getterKeys.push(...createKeys({ name }, [0, 1]));
+        getterKeys.push(...createKeys({ name }, [0, 0]));
+      } else if (addressBit === 1 && npiBit === 0) {
+        getterKeys.push(...createKeys({ name }, [0, 1]));
+        getterKeys.push(...createKeys({ name }, [0, 0]));
+      } else if (addressBit === 0 && npiBit === 1) {
+        getterKeys.push(...createKeys({ name }, [1, 0]));
+        getterKeys.push(...createKeys({ name }, [0, 0]));
       } else {
-        getterKeys.push(...createKeys(name, [0, 0]));
+        getterKeys.push(...createKeys({ name }, [0, 0]));
       }
     }
 
