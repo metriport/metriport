@@ -87,6 +87,8 @@ export function createQueueAndBucket({
       bucketName: config.fhirConverterBucketName,
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
+      versioned: true,
+      metrics: [{ id: "all" }],
     });
 
   return { queue, dlq: dlq.queue, bucket: fhirConverterBucket };

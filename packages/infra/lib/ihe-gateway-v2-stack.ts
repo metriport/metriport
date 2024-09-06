@@ -39,6 +39,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
       versioned: true,
+      metrics: [{ id: "all" }],
     });
 
     const iheParsedResponsesBucket = new s3.Bucket(this, "iheParsedResponsesBucket", {
@@ -46,6 +47,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
       versioned: true,
+      metrics: [{ id: "all" }],
     });
 
     this.createParsedReponseTables(iheParsedResponsesBucket);

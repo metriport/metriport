@@ -20,7 +20,7 @@ import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
-import { LogGroup } from "aws-cdk-lib/aws-logs";
+import { LogGroup, RetentionDays } from "aws-cdk-lib/aws-logs";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
@@ -193,6 +193,7 @@ export class APIStack extends Stack {
       storageEncrypted: true,
       parameterGroup,
       cloudwatchLogsExports: ["postgresql"],
+      cloudwatchLogsRetention: RetentionDays.ONE_YEAR,
       deletionProtection: true,
       removalPolicy: RemovalPolicy.RETAIN,
     });
@@ -249,6 +250,7 @@ export class APIStack extends Stack {
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
       versioned: true,
+      metrics: [{ id: "all" }],
     });
 
     const medicalDocumentsBucket = new s3.Bucket(this, "APIMedicalDocumentsBucket", {
@@ -256,6 +258,7 @@ export class APIStack extends Stack {
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
       versioned: true,
+      metrics: [{ id: "all" }],
     });
 
     const medicalDocumentsUploadBucket = new s3.Bucket(this, "APIMedicalDocumentsUploadBucket", {
@@ -263,6 +266,7 @@ export class APIStack extends Stack {
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
       versioned: true,
+      metrics: [{ id: "all" }],
     });
 
     let ehrResponsesBucket: s3.Bucket | undefined;
@@ -288,6 +292,8 @@ export class APIStack extends Stack {
           bucketName: sandboxConfig.sandboxSeedDataBucketName,
           publicReadAccess: false,
           encryption: s3.BucketEncryption.S3_MANAGED,
+          versioned: true,
+          metrics: [{ id: "all" }],
         });
       }
     };
