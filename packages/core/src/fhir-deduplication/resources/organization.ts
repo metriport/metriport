@@ -1,7 +1,15 @@
 import { Organization } from "@medplum/fhirtypes";
 import { validateNPI } from "@metriport/shared";
 import { normalizeAddress } from "../../mpi/normalize-address";
-import { DeduplicationResult, combineResources, createRef, extractNpi, fillMaps } from "../shared";
+import {
+  DeduplicationResult,
+  combineResources,
+  createRef,
+  extractNpi,
+  fillL1L2Maps,
+  createKeysArray,
+  createKeys,
+} from "../shared";
 
 export function deduplicateOrganizations(
   organizations: Organization[]
@@ -28,7 +36,10 @@ export function groupSameOrganizations(organizations: Organization[]): {
   refReplacementMap: Map<string, string[]>;
   danglingReferences: string[];
 } {
-  const organizationsMap = new Map<string, Organization>();
+  // l1 points to l2
+  const l1OrganizationsMap = new Map<string, string>();
+  const l2OrganizationsMap = new Map<string, Organization>();
+
   const refReplacementMap = new Map<string, string[]>();
   const danglingReferencesSet = new Set<string>();
 
@@ -37,23 +48,75 @@ export function groupSameOrganizations(organizations: Organization[]): {
     const name = organization.name;
     const addresses = organization.address;
 
-    if (npi && validateNPI(npi)) {
-      const key = JSON.stringify({ npi });
-      fillMaps(organizationsMap, key, organization, refReplacementMap);
-    } else if (name && addresses) {
+    // TODO ADD TELECOMS
+    const hasNpi = npi && validateNPI(npi);
+    const hasAddress = addresses && addresses.length > 0;
+    const hasName = name && name.length > 0;
+
+    const npiBit = hasNpi ? 1 : 0;
+    const addressBit = hasAddress ? 1 : 0;
+
+    const setterKeys = [];
+    const getterKeys = [];
+
+    // two orgs with the same npi are the same org, even if they have different addresses or names
+    if (hasNpi) {
+      const npiKey = JSON.stringify({ npi });
+      setterKeys.push(npiKey);
+      getterKeys.push(npiKey);
+    }
+    // two orgs with the same name and address are the same org, as long as their npis aren't different
+    // bit slot zero is npi
+    if (hasAddress && hasName) {
       const normalizedAddresses = addresses.map(address => normalizeAddress(address));
-      const key = JSON.stringify({ name, address: normalizedAddresses[0] });
-      fillMaps(organizationsMap, key, organization, refReplacementMap);
-    } else if (name) {
-      const key = JSON.stringify({ name });
-      fillMaps(organizationsMap, key, organization, refReplacementMap);
+      setterKeys.push(...createKeysArray(name, normalizedAddresses, [npiBit]));
+      if (npiBit === 0) {
+        getterKeys.push(...createKeysArray(name, normalizedAddresses, [1]));
+        getterKeys.push(...createKeysArray(name, normalizedAddresses, [0]));
+      } else {
+        getterKeys.push(...createKeysArray(name, normalizedAddresses, [0]));
+      }
+    }
+
+    // two orgs with the same name are the same org, as long as their npis and addresses aren't different
+    // bit slot zero is address, bit slot one is npi
+    if (hasName) {
+      const setterAddressKeys = createKeys(name, [addressBit, npiBit]);
+      setterKeys.push(...setterAddressKeys);
+
+      if (npiBit === 0 && addressBit === 0) {
+        getterKeys.push(...createKeys(name, [1, 1]));
+        getterKeys.push(...createKeys(name, [1, 0]));
+        getterKeys.push(...createKeys(name, [0, 1]));
+        getterKeys.push(...createKeys(name, [0, 0]));
+      } else if (npiBit === 0 && addressBit === 1) {
+        getterKeys.push(...createKeys(name, [0, 1]));
+        getterKeys.push(...createKeys(name, [0, 0]));
+      } else if (npiBit === 1 && addressBit === 0) {
+        getterKeys.push(...createKeys(name, [1, 0]));
+        getterKeys.push(...createKeys(name, [0, 0]));
+      } else {
+        getterKeys.push(...createKeys(name, [0, 0]));
+      }
+    }
+
+    if (setterKeys.length != 0) {
+      fillL1L2Maps({
+        map1: l1OrganizationsMap,
+        map2: l2OrganizationsMap,
+        getterKeys,
+        setterKeys,
+        targetResource: organization,
+        refReplacementMap,
+      });
     } else {
+      // no name, no npi
       danglingReferencesSet.add(createRef(organization));
     }
   }
 
   return {
-    organizationsMap,
+    organizationsMap: l2OrganizationsMap,
     refReplacementMap,
     danglingReferences: [...danglingReferencesSet],
   };
