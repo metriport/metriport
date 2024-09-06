@@ -265,13 +265,13 @@ const resourceFiltersMap = new Map<string, Map<string, ResourceFilter>>([
   ["Coverage", coveragesFiltersMap],
   ["DiagnosticReport", diagReportFiltersMap],
   ["Encounter", encounterFiltersMap],
+  ["Immunization", immunizationFiltersMap],
   ["MedicationStatement", medicationRelatedFiltersMap],
   ["MedicationRequest", medicationRelatedFiltersMap],
   ["MedicationAdministration", medicationRelatedFiltersMap],
   ["Composition", compositionFiltersMap],
   ["Observation", observationFiltersMap],
   ["Procedure", procedureFiltersMap],
-  ["Immunization", immunizationFiltersMap],
 ]);
 
 export function removeResourcesWithDanglingLinks(
@@ -364,28 +364,31 @@ function removeDanglingReferences<T extends Resource>(entry: T, link: string): T
   if ("requester" in entry) {
     if (entry.requester.reference === link) delete entry.requester;
   }
-  if ("performer" in entry && Array.isArray(entry.performer)) {
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    entry.performer = (entry.performer as any[]).filter((performer: any) => {
-      if (typeof performer === "object" && performer !== null) {
-        if ("reference" in performer && typeof performer.reference === "string") {
-          return performer.reference !== link;
-        }
-        if (
-          "actor" in performer &&
-          typeof performer.actor === "object" &&
-          performer.actor !== null &&
-          "reference" in performer.actor &&
-          typeof performer.actor.reference === "string"
-        ) {
-          return performer.actor.reference !== link;
-        }
+  if ("performer" in entry) {
+    if (Array.isArray(entry.performer)) {
+      if (
+        entry.resourceType === "DiagnosticReport" ||
+        entry.resourceType === "Observation" ||
+        entry.resourceType === "ServiceRequest"
+      ) {
+        entry.performer = entry.performer.filter(p => p.reference !== link);
+      } else if (
+        entry.resourceType === "Immunization" ||
+        entry.resourceType === "MedicationAdministration" ||
+        entry.resourceType === "MedicationDispense" ||
+        entry.resourceType === "MedicationRequest" ||
+        entry.resourceType === "Procedure" ||
+        entry.resourceType === "RiskAssessment"
+      ) {
+        entry.performer = entry.performer?.filter(p => p.actor?.reference !== link);
       }
-      return true;
-    });
-
-    if (entry.performer.length === 0) {
-      delete entry.performer;
+      if (entry.performer.length === 0) {
+        delete entry.performer;
+      }
+    } else {
+      if (entry.performer.reference === link) {
+        delete entry.performer;
+      }
     }
   }
   if ("recorder" in entry) {
