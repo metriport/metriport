@@ -272,6 +272,15 @@ function findRefs<T extends Resource>(resource: T): string[] {
     refs.push(...resource.endpoint.flatMap(referenceToArray));
   }
 
+  // Check references that point to "contained" and remove them from the list
+  if ("contained" in resource && resource.contained) {
+    const containedRefs = refs.filter(ref => ref.startsWith("#"));
+    if (containedRefs.length) {
+      const containedIds = resource.contained.map(c => c.id) ?? [];
+      return refs.filter(ref => !containedIds.includes(ref.slice(1)));
+    }
+  }
+
   return refs;
 }
 
