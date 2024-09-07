@@ -398,6 +398,7 @@ export class MetriportMedicalApi {
    *      "pdf", "html", or "json" (defaults to "json"). If "html" or "pdf", the Webhook payload
    *      will contain a signed URL to download the file, which is active for 3 minutes.
    *      If not provided, will send json payload in the webhook.
+   * @param fromDashboard Optional parameter to indicate that the request is coming from the dashboard.
    * @param metadata Optional metadata to be sent along the webhook request as response of this query.
    * @return The consolidated data query status.
    */
@@ -407,11 +408,18 @@ export class MetriportMedicalApi {
     dateFrom?: string,
     dateTo?: string,
     conversionType?: string,
+    fromDashboard?: boolean,
     metadata?: Record<string, string>
   ): Promise<StartConsolidatedQueryProgressResponse> {
     const whMetadata = { metadata: metadata };
     const resp = await this.api.post(`${PATIENT_URL}/${patientId}/consolidated/query`, whMetadata, {
-      params: { resources: resources && resources.join(","), dateFrom, dateTo, conversionType },
+      params: {
+        resources: resources && resources.join(","),
+        dateFrom,
+        dateTo,
+        fromDashboard,
+        conversionType,
+      },
     });
     return resp.data;
   }

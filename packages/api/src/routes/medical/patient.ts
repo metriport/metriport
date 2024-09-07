@@ -324,6 +324,7 @@ const medicalRecordFormatSchema = z.enum(mrFormat);
  *        Accepts "pdf", "html", and "json". If provided, the Webhook payload will contain a signed URL to download
  *        the file, which is active for 3 minutes. If not provided, will send json payload in the webhook.
  * @param req.body Optional metadata to be sent through Webhook.
+ * @param req.query.fromDashboard Optional parameter to indicate that the request is coming from the dashboard.
  * @param req.generateAiBrief Optional flag to include an AI-generated medical record brief into the medical record summary. Note, that you have to request access to this feature by contacting Metriport directly.
  * @return status for querying the Patient's consolidated data.
  */
@@ -337,6 +338,7 @@ router.post(
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
     const type = getFrom("query").optional("conversionType", req);
+    const fromDashboard = getFromQueryAsBoolean("fromDashboard", req);
     const generateAiBrief = Config.isSandbox()
       ? false
       : getFromQueryAsBoolean("generateAiBrief", req);
@@ -353,6 +355,7 @@ router.post(
       conversionType,
       cxConsolidatedRequestMetadata: cxConsolidatedRequestMetadata?.metadata,
       generateAiBrief,
+      fromDashboard,
     });
 
     return res.json(respPayload);
