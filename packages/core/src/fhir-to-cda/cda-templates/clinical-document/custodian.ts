@@ -1,11 +1,14 @@
+import { Organization } from "@medplum/fhirtypes";
 import { metriportOrganization } from "@metriport/shared";
-import { buildRepresentedOrganization } from "../commons";
 import { CdaCustodian } from "../../cda-types/shared-types";
+import { buildRepresentedOrganization } from "../commons";
 
-export function buildCustodian(): CdaCustodian {
+export function buildCustodian(organization?: Organization): CdaCustodian {
   const custodian = {
     assignedCustodian: {
-      representedCustodianOrganization: buildRepresentedOrganization(metriportOrganization),
+      representedCustodianOrganization: organization
+        ? buildRepresentedOrganization(organization)
+        : buildRepresentedOrganization(metriportOrganization),
     },
   };
   return custodian;

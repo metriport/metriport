@@ -90,6 +90,10 @@ export async function getCxsWithFhirDedupFeatureFlag(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithFhirDedupFeatureFlag");
 }
 
+export async function getCxsWithCdaCustodianFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("getCxsWithCdaCustodianFeatureFlag");
+}
+
 export async function getCxsWitDemoAugEnabled(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithDemoAugEnabled");
 }
@@ -140,6 +144,11 @@ export async function isAiBriefEnabledForCx(cxId: string): Promise<boolean> {
 
 export async function isFhirDeduplicationEnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithFhirDedupEnabled = await getCxsWithFhirDedupFeatureFlag();
+  return cxIdsWithFhirDedupEnabled.some(i => i === cxId);
+}
+
+export async function isCdaCustodianEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithFhirDedupEnabled = await getCxsWithCdaCustodianFeatureFlag();
   return cxIdsWithFhirDedupEnabled.some(i => i === cxId);
 }
 
