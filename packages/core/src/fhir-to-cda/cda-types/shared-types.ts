@@ -158,6 +158,7 @@ export type CdaValueCd = {
   _codeSystem?: string | undefined;
   _codeSystemName?: string | undefined;
   originalText?: CdaOriginalText;
+  [_xmlnsXsiAttribute]?: string;
 };
 
 export type CdaValuePq = {
@@ -262,7 +263,7 @@ export type ObservationEntry = {
       | CdaValueSt[]
       | undefined;
     participant?: Participant | undefined;
-    entryRelationship?: ObservationEntryRelationship[] | undefined;
+    entryRelationship?: ObservationEntryRelationship | ObservationEntryRelationship[] | undefined;
     interpretationCode?: CdaCodeCe | CdaCodeCe[] | undefined;
   };
 };

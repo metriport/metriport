@@ -16,6 +16,7 @@ export const vaccineAdministeredCodeSet = "2.16.840.1.113883.12.292";
 export const icd10SystemCode = "2.16.840.1.113883.6.90";
 export const extensionValue2014 = "2014-06-09";
 export const extensionValue2015 = "2015-08-01";
+export const extensionValue2019 = "2019-06-20";
 export const loincCodeSystem = "2.16.840.1.113883.6.1";
 export const loincSystemName = "LOINC";
 export const snomedCodeSystem = "2.16.840.1.113883.6.96";
@@ -60,6 +61,7 @@ export const oids = {
   vitalSignsOrganizer: "2.16.840.1.113883.10.20.22.4.26",
   noteActivity: "2.16.840.1.113883.10.20.22.4.202",
   procedureActivity: "2.16.840.1.113883.10.20.22.4.14",
+  problemStatus: "2.16.840.1.113883.10.20.22.4.6",
 };
 
 export const mentalHealthSurveyCodes = ["44249-1"];

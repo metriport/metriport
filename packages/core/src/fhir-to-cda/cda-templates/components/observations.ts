@@ -159,9 +159,9 @@ export function createEntriesFromObservation(
     socHistNumber,
     date
   );
-  observationEntry.observation.entryRelationship = [];
 
   if (observation.resource.component && observation.resource.component.length > 0) {
+    observationEntry.observation.entryRelationship = [];
     observation.resource.component.map(pair => {
       pairNumber++;
       const entryRelationshipObservation = createEntryFromObservation(
@@ -171,7 +171,10 @@ export function createEntriesFromObservation(
         date
       );
       const entryRelationship = createEntryRelationship(entryRelationshipObservation);
-      if (observationEntry.observation.entryRelationship) {
+      if (
+        observationEntry.observation.entryRelationship &&
+        Array.isArray(observationEntry.observation.entryRelationship)
+      ) {
         observationEntry.observation.entryRelationship.push(entryRelationship);
       }
     });
