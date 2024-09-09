@@ -1,7 +1,7 @@
 import { Extension, Meta } from "@medplum/fhirtypes";
 
 export function isSourceRef(e: Extension): boolean {
-  return e.url === "http://hl7.org/fhir/StructureDefinition/codesystem-sourceReference";
+  return e.url === "http://hl7.org/fhir/StructureDefinition/artifact-relatedArtifact";
 }
 
 export function getLinks<T extends { extension?: Extension[] }>(r: T): Extension[] {
@@ -17,14 +17,11 @@ export function isSibling(a: { id?: string; meta?: Meta; extension?: Extension[]
     const link =
       a.extension
         ?.filter(isSourceRef)
-        .find(e => b.id && e.valueReference?.reference?.includes(b.id)) ??
+        .find(e => b.id && e.valueRelatedArtifact?.display?.includes(b.id)) ??
       b.extension
         ?.filter(isSourceRef)
-        .find(e => a.id && e.valueReference?.reference?.includes(a.id));
+        .find(e => a.id && e.valueRelatedArtifact?.display?.includes(a.id));
     if (link) return true;
-    if (a.meta?.lastUpdated || b.meta?.lastUpdated) {
-      return a.meta?.lastUpdated === b.meta?.lastUpdated;
-    }
     return a.id === b.id;
   };
 }

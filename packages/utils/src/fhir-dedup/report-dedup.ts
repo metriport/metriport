@@ -4,29 +4,33 @@ dotenv.config();
 import { BundleEntry, Resource } from "@medplum/fhirtypes";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
-import dayjs from "dayjs";
-import duration from "dayjs/plugin/duration";
 import fs from "fs";
 import { groupBy } from "lodash";
 import { ellapsedTimeAsStr } from "../shared/duration";
 import { initRunsFolder } from "../shared/folder";
 import { processAllergyIntolerance } from "./allergy-intolerance";
 import { processCondition } from "./condition";
+import { processCoverage } from "./coverage";
 import { processDiagnosticReport } from "./diagnostic-report";
 import { processEncounter } from "./encounter";
+import { processFamilyMemberHistory } from "./family-member-history";
 import {
   buildGetDirPathInside,
   getFilesToProcessFromLocal,
   getFilesToProcessFromS3,
 } from "./get-files";
+import { processImmunization } from "./immunization";
+import { processLocation } from "./location";
 import { processMedication } from "./medication";
 import { processMedicationAdministration } from "./medication-administration";
 import { processMedicationRequest } from "./medication-requests";
 import { processMedicationStatement } from "./medication-statement";
 import { processObservation } from "./observation";
-import { processImmunization } from "./immunization";
-
-dayjs.extend(duration);
+import { processOrganization } from "./organization";
+import { processPractitioner } from "./practitioner";
+import { processProcedure } from "./procedure";
+import { processRelatedPerson } from "./related-person";
+import { validateReferences } from "./validate-references";
 
 /**
  * Utility to report differences between two FHIR bundles.
@@ -70,6 +74,7 @@ async function main() {
   if (!dedupPairs || !dedupPairs.length) return;
 
   console.log(`\nGenerating reports...\n`);
+  const patientsWithMissingRefs: string[] = [];
   for (const pair of dedupPairs) {
     const { log } = out(`patient ${pair.patientId}`);
     log(`Found files:\n... O ${pair.original.localFileName}\n... D ${pair.dedup.localFileName}`);
@@ -116,7 +121,42 @@ async function main() {
 
     log(`Processing Immunization...`);
     await processImmunization(groupedOriginal, groupedDedup, patientDirName);
+
+    log(`Processing Procedure...`);
+    await processProcedure(groupedOriginal, groupedDedup, patientDirName);
+
+    log(`Processing FamilyMemberHistory...`);
+    await processFamilyMemberHistory(groupedOriginal, groupedDedup, patientDirName);
+
+    log(`Processing Organization...`);
+    await processOrganization(groupedOriginal, groupedDedup, patientDirName);
+
+    log(`Processing Practitioner...`);
+    await processPractitioner(groupedOriginal, groupedDedup, patientDirName);
+
+    log(`Processing Coverage...`);
+    await processCoverage(groupedOriginal, groupedDedup, patientDirName);
+
+    log(`Processing Location...`);
+    await processLocation(groupedOriginal, groupedDedup, patientDirName);
+
+    log(`Processing RelatedPerson...`);
+    await processRelatedPerson(groupedOriginal, groupedDedup, patientDirName);
+
+    log(`Validating references on deduped bundle...`);
+    if (!validateReferences(dedupResources, patientDirName)) {
+      patientsWithMissingRefs.push(pair.patientId);
+    }
   }
+
+  console.log(``);
+  if (patientsWithMissingRefs.length > 0) {
+    console.log(`Patients with missing references:\n- ${patientsWithMissingRefs.join("\n- ")}`);
+  } else {
+    console.log(`No patients with missing references, yay!`);
+  }
+  console.log(``);
+
   console.log(`>>> Done in ${ellapsedTimeAsStr(startedAt)}`);
 }
 
