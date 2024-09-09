@@ -254,12 +254,18 @@ const procedureFiltersMap = new Map<string, ResourceFilter>([
   ["Organization", removeDanglingReferences],
 ]);
 
+const immunizationFiltersMap = new Map<string, ResourceFilter>([
+  ["Practitioner", removeDanglingReferences],
+  ["Organization", removeDanglingReferences],
+]);
+
 const resourceFiltersMap = new Map<string, Map<string, ResourceFilter>>([
   ["AllergyIntolerance", allergiesFiltersMap],
   ["Condition", conditionsFiltersMap],
   ["Coverage", coveragesFiltersMap],
   ["DiagnosticReport", diagReportFiltersMap],
   ["Encounter", encounterFiltersMap],
+  ["Immunization", immunizationFiltersMap],
   ["MedicationStatement", medicationRelatedFiltersMap],
   ["MedicationRequest", medicationRelatedFiltersMap],
   ["MedicationAdministration", medicationRelatedFiltersMap],
@@ -355,13 +361,34 @@ function removeDanglingReferences<T extends Resource>(entry: T, link: string): T
       if (!entry.participant.length) delete entry.participant;
     }
   }
+  if ("requester" in entry) {
+    if (entry.requester.reference === link) delete entry.requester;
+  }
   if ("performer" in entry) {
-    if (entry.resourceType === "DiagnosticReport") {
-      entry.performer = entry.performer?.filter(performer => performer.reference !== link);
-      if (!entry.performer.length) delete entry.performer;
-    } else if (entry.resourceType === "Procedure") {
-      entry.performer = entry.performer?.filter(performer => performer.actor !== link);
-      if (!entry.performer.length) delete entry.performer;
+    if (Array.isArray(entry.performer)) {
+      if (
+        entry.resourceType === "DiagnosticReport" ||
+        entry.resourceType === "Observation" ||
+        entry.resourceType === "ServiceRequest"
+      ) {
+        entry.performer = entry.performer.filter(p => p.reference !== link);
+      } else if (
+        entry.resourceType === "Immunization" ||
+        entry.resourceType === "MedicationAdministration" ||
+        entry.resourceType === "MedicationDispense" ||
+        entry.resourceType === "MedicationRequest" ||
+        entry.resourceType === "Procedure" ||
+        entry.resourceType === "RiskAssessment"
+      ) {
+        entry.performer = entry.performer?.filter(p => p.actor?.reference !== link);
+      }
+      if (entry.performer.length === 0) {
+        delete entry.performer;
+      }
+    } else {
+      if (entry.performer.reference === link) {
+        delete entry.performer;
+      }
     }
   }
   if ("recorder" in entry) {
