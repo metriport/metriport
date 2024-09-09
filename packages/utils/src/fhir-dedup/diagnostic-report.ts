@@ -13,7 +13,7 @@ import {
   getEffectiveDateTime,
   getEffectivePeriod,
 } from "./resource-props";
-import { isSourceRef } from "./shared";
+import { isSibling } from "./shared";
 
 // Lots of fields were not mapped, see https://www.hl7.org/fhir/R4/observation.html if you want to add them
 const columns = [
@@ -145,7 +145,7 @@ function sort(a: DiagnosticReport, b: DiagnosticReport): number {
 }
 
 function toCsv(resource: DiagnosticReport, others: DiagnosticReport[]): string {
-  const siblings = others.filter(isEqual(resource));
+  const siblings = others.filter(isSibling(resource));
   const firstSibling = siblings[0];
   const date = resource.meta?.lastUpdated ? new Date(resource.meta?.lastUpdated).toISOString() : "";
   const links = siblings.length;
@@ -322,21 +322,4 @@ function toCsv(resource: DiagnosticReport, others: DiagnosticReport[]): string {
     ids_siblings: siblings.map(s => s.id).join(","),
   };
   return Object.values(res).map(safeCsv).join(csvSeparator);
-}
-
-function isEqual(a: DiagnosticReport) {
-  return function (b: DiagnosticReport): boolean {
-    const link =
-      a.extension
-        ?.filter(isSourceRef)
-        .find(e => b.id && e.valueReference?.reference?.includes(b.id)) ??
-      b.extension
-        ?.filter(isSourceRef)
-        .find(e => a.id && e.valueReference?.reference?.includes(a.id));
-    if (link) return true;
-    if (a.meta?.lastUpdated || b.meta?.lastUpdated) {
-      return a.meta?.lastUpdated === b.meta?.lastUpdated;
-    }
-    return a.id === b.id;
-  };
 }
