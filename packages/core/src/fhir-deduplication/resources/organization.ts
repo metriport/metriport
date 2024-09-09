@@ -3,7 +3,6 @@ import { validateNPI } from "@metriport/shared";
 import { normalizeAddress } from "../../mpi/normalize-address";
 import {
   DeduplicationResult,
-  combineResources,
   createRef,
   extractNpi,
   fillL1L2Maps,
@@ -17,9 +16,7 @@ export function deduplicateOrganizations(
   const { organizationsMap, refReplacementMap, danglingReferences } =
     groupSameOrganizations(organizations);
   return {
-    combinedResources: combineResources({
-      combinedMaps: [organizationsMap],
-    }),
+    combinedResources: Array.from(organizationsMap.values()),
     refReplacementMap,
     danglingReferences,
   };

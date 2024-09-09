@@ -2,7 +2,6 @@ import { HumanName, RelatedPerson } from "@medplum/fhirtypes";
 import { toTitleCase } from "@metriport/shared";
 import {
   DeduplicationResult,
-  combineResources,
   createRef,
   createKeysFromObjectAndFlagBits,
   createKeysFromObjectArrayAndFlagBits,
@@ -17,9 +16,7 @@ export function deduplicateRelatedPersons(
   const { relatedPersonsMap, refReplacementMap, danglingReferences } =
     groupSameRelatedPersons(relatedPersons);
   return {
-    combinedResources: combineResources({
-      combinedMaps: [relatedPersonsMap],
-    }),
+    combinedResources: Array.from(relatedPersonsMap.values()),
     refReplacementMap,
     danglingReferences,
   };

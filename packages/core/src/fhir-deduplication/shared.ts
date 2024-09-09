@@ -1,11 +1,4 @@
-import {
-  CodeableConcept,
-  Coding,
-  Identifier,
-  Resource,
-  ContactPoint,
-  Address,
-} from "@medplum/fhirtypes";
+import { CodeableConcept, Coding, Identifier, Resource } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import _, { cloneDeep } from "lodash";
 import { v4 as uuidv4 } from "uuid";
@@ -155,7 +148,7 @@ export function fillMaps<T extends Resource>(
 
 export function createKeysFromObjectArrayAndFlagBits(
   baseObject: object,
-  contactsOrAddresses: (ContactPoint | Address)[],
+  contactsOrAddresses: object[],
   flagBits: number[]
 ): string[] {
   return contactsOrAddresses.map(item => JSON.stringify({ baseObject, ...item, flagBits }));
@@ -189,13 +182,13 @@ export function fillL1L2Maps<T extends Resource>({
   isExtensionIncluded?: boolean;
   applySpecialModifications?: ApplySpecialModificationsCallback<T>;
 }): void {
-  let uuid = undefined;
+  let map2Key = undefined;
   for (const key of getterKeys) {
-    uuid = map1.get(key); // Potential improvement. We just select the first uuid that matches. What if multple matches exist?
-    if (uuid) {
+    map2Key = map1.get(key); // Potential improvement. We just select the first uuid that matches. What if multple matches exist?
+    if (map2Key) {
       fillMaps(
         map2,
-        uuid,
+        map2Key,
         targetResource,
         refReplacementMap,
         isExtensionIncluded,
@@ -204,15 +197,15 @@ export function fillL1L2Maps<T extends Resource>({
       break;
     }
   }
-  if (!uuid) {
-    uuid = uuidv4();
+  if (!map2Key) {
+    map2Key = uuidv4();
     for (const key of setterKeys) {
-      map1.set(key, uuid);
+      map1.set(key, map2Key);
     }
     // fill L2 map only once to avoid duplicate entries
     fillMaps(
       map2,
-      uuid,
+      map2Key,
       targetResource,
       refReplacementMap,
       isExtensionIncluded,

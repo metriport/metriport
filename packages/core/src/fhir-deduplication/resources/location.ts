@@ -2,7 +2,6 @@ import { Location } from "@medplum/fhirtypes";
 import { normalizeAddress } from "../../mpi/normalize-address";
 import {
   DeduplicationResult,
-  combineResources,
   createRef,
   createKeyFromObjects,
   createKeysFromObjectAndFlagBits,
@@ -12,9 +11,7 @@ import {
 export function deduplicateLocations(locations: Location[]): DeduplicationResult<Location> {
   const { locationsMap, refReplacementMap, danglingReferences } = groupSameLocations(locations);
   return {
-    combinedResources: combineResources({
-      combinedMaps: [locationsMap],
-    }),
+    combinedResources: Array.from(locationsMap.values()),
     refReplacementMap,
     danglingReferences,
   };
