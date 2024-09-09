@@ -453,24 +453,24 @@ export function getReasonCode(
   const reason1_text_s = sib1?.text ?? "";
   return {
     reason0_code0,
-    reason0_disp0,
-    reason0_code1,
-    reason0_disp1,
-    reason0_text,
-    reason1_code0,
-    reason1_disp0,
-    reason1_code1,
-    reason1_disp1,
-    reason1_text,
     reason0_code0_s,
+    reason0_disp0,
     reason0_disp0_s,
+    reason0_code1,
     reason0_code1_s,
+    reason0_disp1,
     reason0_disp1_s,
+    reason0_text,
     reason0_text_s,
+    reason1_code0,
     reason1_code0_s,
+    reason1_disp0,
     reason1_disp0_s,
+    reason1_code1,
     reason1_code1_s,
+    reason1_disp1,
     reason1_disp1_s,
+    reason1_text,
     reason1_text_s,
   };
 }
@@ -492,8 +492,8 @@ export function getReasonReference(
   const reasonRef1_s = sibling?.reasonReference?.[1]?.reference ?? "";
   return {
     reasonRef0,
-    reasonRef1,
     reasonRef0_s,
+    reasonRef1,
     reasonRef1_s,
   };
 }
