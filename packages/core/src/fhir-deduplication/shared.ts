@@ -153,7 +153,7 @@ export function fillMaps<T extends Resource>(
   }
 }
 
-export function createKeysArray(
+export function createKeysFromObjectArrayAndFlagBits(
   baseObject: object,
   contactsOrAddresses: (ContactPoint | Address)[],
   flagBits: number[]
@@ -161,8 +161,13 @@ export function createKeysArray(
   return contactsOrAddresses.map(item => JSON.stringify({ baseObject, ...item, flagBits }));
 }
 
-export function createKeys(object: object, bits: number[]): string[] {
+export function createKeysFromObjectAndFlagBits(object: object, bits: number[]): string[] {
   return [JSON.stringify({ ...object, bits })];
+}
+
+export function createKeyFromObjects(...objects: object[]): string {
+  const combinedObject = objects.reduce((acc, obj) => ({ ...acc, ...obj }), {});
+  return JSON.stringify(combinedObject);
 }
 
 export function fillL1L2Maps<T extends Resource>({
