@@ -13,7 +13,11 @@ import { buildStructuredBody } from "./cda-templates/clinical-document/structure
 import { buildEncompassingEncounter } from "./cda-templates/components/encompassing-encounter";
 import { placeholderOrgOid } from "./cda-templates/constants";
 
-export function generateCdaFromFhirBundle(fhirBundle: Bundle, oid: string): string {
+export function generateCdaFromFhirBundle(
+  fhirBundle: Bundle,
+  oid: string,
+  isCustodian = false
+): string {
   const patientResource = findPatientResource(fhirBundle);
   const organizationResource = findOrganizationResource(fhirBundle);
 
@@ -29,7 +33,7 @@ export function generateCdaFromFhirBundle(fhirBundle: Bundle, oid: string): stri
   }
   const recordTarget = buildRecordTargetFromFhirPatient(patientResource);
   const author = buildAuthor(organizationResource);
-  const custodian = buildCustodian();
+  const custodian = isCustodian ? buildCustodian(organizationResource) : buildCustodian();
   const composition = findCompositionResource(fhirBundle);
   const encompassingEncounter = buildEncompassingEncounter(fhirBundle, composition);
   const structuredBody = buildStructuredBody(fhirBundle);
