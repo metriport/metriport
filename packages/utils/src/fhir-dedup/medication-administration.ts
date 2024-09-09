@@ -2,86 +2,64 @@ import { MedicationAdministration, Resource } from "@medplum/fhirtypes";
 import fs from "fs";
 import { Dictionary } from "lodash";
 import { csvSeparator, safeCsv } from "./csv";
+import {
+  category0Columns,
+  effectiveDateTimeColumns,
+  effectivePeriodColumns,
+  getCategory,
+  getEffectiveDateTime,
+  getEffectivePeriod,
+  getNotes,
+  getReasonCode,
+  getReasonReference,
+  notesColumns,
+  reasonCodeColumns,
+  reasonReferenceColumns,
+} from "./resource-props";
+import { isSibling } from "./shared";
 
 // Lots of fields were not mapped, see https://www.hl7.org/fhir/R4/medicationadministration.html if you want to add them
 const columns = [
-  "id_o",
+  "id",
   "date",
-  "status_o",
-  "status_d",
-  "medRef_o",
-  "medRef_d",
-  "subjRef_o",
-  "subjRef_d",
-  "reqRef_o",
-  "reqRef_d",
-  "ctxtRef_o",
-  "ctxtRef_d",
-  "perfActorRef0_o",
-  "perfActorRef0_d",
-  "perfActorRef1_o",
-  "perfActorRef1_d",
-  "eDateTime_o",
-  "eDateTime_d",
-  "ePeriod_start_o",
-  "ePeriod_start_d",
-  "ePeriod_end_o",
-  "ePeriod_end_d",
-  "dosage_text_o",
-  "dosage_text_d",
-  "dosage_route_code0_o",
-  "dosage_route_code0_d",
-  "dosage_route_disp0_o",
-  "dosage_route_disp0_d",
-  "dosage_route_code1_o",
-  "dosage_route_code1_d",
-  "dosage_route_disp1_o",
-  "dosage_route_disp1_d",
-  "dosage_route_text_o",
-  "dosage_route_text_d",
-  "dosage_dose_value_o",
-  "dosage_dose_value_d",
-  "dosage_dose_unit_o",
-  "dosage_dose_unit_d",
-  "cat_code0_o",
-  "cat_code0_d",
-  "cat_disp0_o",
-  "cat_disp0_d",
-  "cat_code1_o",
-  "cat_code1_d",
-  "cat_disp1_o",
-  "cat_disp1_d",
-  "cat_text_o",
-  "cat_text_d",
-  "reason0_code0_o",
-  "reason0_code0_d",
-  "reason0_disp0_o",
-  "reason0_disp0_d",
-  "reason0_code1_o",
-  "reason0_code1_d",
-  "reason0_disp1_o",
-  "reason0_disp1_d",
-  "reason0_text_o",
-  "reason0_text_d",
-  "reason1_code0_o",
-  "reason1_code0_d",
-  "reason1_disp0_o",
-  "reason1_disp0_d",
-  "reason1_code1_o",
-  "reason1_code1_d",
-  "reason1_disp1_o",
-  "reason1_disp1_d",
-  "reason1_text_o",
-  "reason1_text_d",
-  "reasonRef0_o",
-  "reasonRef0_d",
-  "reasonRef1_o",
-  "reasonRef1_d",
-  "note0_txt_o",
-  "note0_txt_d",
-  "note1_txt_o",
-  "note1_txt_d",
-  "id_d",
+  "links",
+  "status",
+  "status_s",
+  "medRef",
+  "medRef_s",
+  "subjRef",
+  "subjRef_s",
+  "reqRef",
+  "reqRef_s",
+  "ctxtRef",
+  "ctxtRef_s",
+  "perfActorRef0",
+  "perfActorRef0_s",
+  "perfActorRef1",
+  "perfActorRef1_s",
+  ...effectiveDateTimeColumns,
+  ...effectivePeriodColumns,
+  "dosage_text",
+  "dosage_text_s",
+  "dosage_route_code0",
+  "dosage_route_code0_s",
+  "dosage_route_disp0",
+  "dosage_route_disp0_s",
+  "dosage_route_code1",
+  "dosage_route_code1_s",
+  "dosage_route_disp1",
+  "dosage_route_disp1_s",
+  "dosage_route_text",
+  "dosage_route_text_s",
+  "dosage_dose_value",
+  "dosage_dose_value_s",
+  "dosage_dose_unit",
+  "dosage_dose_unit_s",
+  ...category0Columns,
+  ...reasonCodeColumns,
+  ...reasonReferenceColumns,
+  ...notesColumns,
+  "ids_siblings",
 ] as const;
 type Columns = (typeof columns)[number];
 
@@ -126,178 +104,94 @@ function sort(a: MedicationAdministration, b: MedicationAdministration): number 
   return 0;
 }
 
-function toCsv(resource: MedicationAdministration, siblings: MedicationAdministration[]): string {
-  const sibling = siblings.find(isEqual(resource));
+function toCsv(resource: MedicationAdministration, others: MedicationAdministration[]): string {
+  const siblings = others.filter(isSibling(resource));
+  const firstSibling = siblings[0];
   const date = resource.meta?.lastUpdated ? new Date(resource.meta?.lastUpdated).toISOString() : "";
+  const links = siblings.length;
 
-  const status_o = resource.status ?? "";
-  const medRef_o = resource.medicationReference?.reference ?? "";
-  const subjRef_o = resource.subject?.reference ?? "";
-  const reqRef_o = resource.request?.reference ?? "";
-  const perfActorRef0_o = resource.performer?.[0]?.actor?.reference ?? "";
-  const perfActorRef1_o = resource.performer?.[1]?.actor?.reference ?? "";
-  const ctxtRef_o = resource.context?.reference ?? "";
-  const eDateTime_o = resource.effectiveDateTime ?? "";
-  const ePeriod_start_o = resource.effectivePeriod?.start ?? "";
-  const ePeriod_end_o = resource.effectivePeriod?.end ?? "";
+  const status = resource.status ?? "";
+  const medRef = resource.medicationReference?.reference ?? "";
+  const subjRef = resource.subject?.reference ?? "";
+  const reqRef = resource.request?.reference ?? "";
+  const perfActorRef0 = resource.performer?.[0]?.actor?.reference ?? "";
+  const perfActorRef1 = resource.performer?.[1]?.actor?.reference ?? "";
+  const ctxtRef = resource.context?.reference ?? "";
   const dosage = resource.dosage;
-  const dosage_text_o = dosage?.text ?? "";
-  const dosage_route_code0_o = dosage?.route?.coding?.[0]?.code ?? "";
-  const dosage_route_disp0_o = dosage?.route?.coding?.[0]?.display ?? "";
-  const dosage_route_code1_o = dosage?.route?.coding?.[1]?.code ?? "";
-  const dosage_route_disp1_o = dosage?.route?.coding?.[1]?.display ?? "";
-  const dosage_route_text_o = dosage?.route?.text ?? "";
-  const dosage_dose_value_o = dosage?.dose?.value ?? "";
-  const dosage_dose_unit_o = dosage?.dose?.unit ?? "";
-  const cat = resource.category;
-  const cat_code0_o = cat?.coding?.[0].code ?? "";
-  const cat_disp0_o = cat?.coding?.[0]?.display ?? "";
-  const cat_code1_o = cat?.coding?.[1]?.code ?? "";
-  const cat_disp1_o = cat?.coding?.[1]?.display ?? "";
-  const cat_text_o = cat?.text ?? "";
-  const reason0 = resource.reasonCode?.[0];
-  const reason0_code0_o = reason0?.coding?.[0]?.code ?? "";
-  const reason0_disp0_o = reason0?.coding?.[0]?.display ?? "";
-  const reason0_code1_o = reason0?.coding?.[1]?.code ?? "";
-  const reason0_disp1_o = reason0?.coding?.[1]?.display ?? "";
-  const reason0_text_o = reason0?.text ?? "";
-  const reason1 = resource.reasonCode?.[1];
-  const reason1_code0_o = reason1?.coding?.[0]?.code ?? "";
-  const reason1_disp0_o = reason1?.coding?.[0]?.display ?? "";
-  const reason1_code1_o = reason1?.coding?.[1]?.code ?? "";
-  const reason1_disp1_o = reason1?.coding?.[1]?.display ?? "";
-  const reason1_text_o = reason1?.text ?? "";
-  const reasonRef0_o = resource.reasonReference?.[0]?.reference ?? "";
-  const reasonRef1_o = resource.reasonReference?.[1]?.reference ?? "";
-  const note0_txt_o = resource.note?.[0]?.text ?? "";
-  const note1_txt_o = resource.note?.[1]?.text ?? "";
+  const dosage_text = dosage?.text ?? "";
+  const dosage_route_code0 = dosage?.route?.coding?.[0]?.code ?? "";
+  const dosage_route_disp0 = dosage?.route?.coding?.[0]?.display ?? "";
+  const dosage_route_code1 = dosage?.route?.coding?.[1]?.code ?? "";
+  const dosage_route_disp1 = dosage?.route?.coding?.[1]?.display ?? "";
+  const dosage_route_text = dosage?.route?.text ?? "";
+  const dosage_dose_value = dosage?.dose?.value ?? "";
+  const dosage_dose_unit = dosage?.dose?.unit ?? "";
 
-  const status_d = sibling?.status ?? "";
-  const medRef_d = sibling?.medicationReference?.reference ?? "";
-  const subjRef_d = sibling?.subject?.reference ?? "";
-  const reqRef_d = sibling?.request?.reference ?? "";
-  const perfActorRef0_d = sibling?.performer?.[0]?.actor?.reference ?? "";
-  const perfActorRef1_d = sibling?.performer?.[1]?.actor?.reference ?? "";
-  const ctxtRef_d = sibling?.context?.reference ?? "";
-  const eDateTime_d = sibling?.effectiveDateTime ?? "";
-  const ePeriod_start_d = sibling?.effectivePeriod?.start ?? "";
-  const ePeriod_end_d = sibling?.effectivePeriod?.end ?? "";
-  const dosage_d = sibling?.dosage;
-  const dosage_text_d = dosage_d?.text ?? "";
-  const dosage_route_code0_d = dosage_d?.route?.coding?.[0]?.code ?? "";
-  const dosage_route_disp0_d = dosage_d?.route?.coding?.[0]?.display ?? "";
-  const dosage_route_code1_d = dosage_d?.route?.coding?.[1]?.code ?? "";
-  const dosage_route_disp1_d = dosage_d?.route?.coding?.[1]?.display ?? "";
-  const dosage_route_text_d = dosage_d?.route?.text ?? "";
-  const dosage_dose_value_d = dosage_d?.dose?.value ?? "";
-  const dosage_dose_unit_d = dosage_d?.dose?.unit ?? "";
-  const cat_code0_d = sibling?.category?.coding?.[0]?.code ?? "";
-  const cat_disp0_d = sibling?.category?.coding?.[0]?.display ?? "";
-  const cat_code1_d = sibling?.category?.coding?.[1]?.code ?? "";
-  const cat_disp1_d = sibling?.category?.coding?.[1]?.display ?? "";
-  const cat_text_d = sibling?.category?.text ?? "";
-  const reason0_code0_d = sibling?.reasonCode?.[0]?.coding?.[0]?.code ?? "";
-  const reason0_disp0_d = sibling?.reasonCode?.[0]?.coding?.[0]?.display ?? "";
-  const reason0_code1_d = sibling?.reasonCode?.[0]?.coding?.[1]?.code ?? "";
-  const reason0_disp1_d = sibling?.reasonCode?.[0]?.coding?.[1]?.display ?? "";
-  const reason0_text_d = sibling?.reasonCode?.[0]?.text ?? "";
-  const reason1_code0_d = sibling?.reasonCode?.[1]?.coding?.[0]?.code ?? "";
-  const reason1_disp0_d = sibling?.reasonCode?.[1]?.coding?.[0]?.display ?? "";
-  const reason1_code1_d = sibling?.reasonCode?.[1]?.coding?.[1]?.code ?? "";
-  const reason1_disp1_d = sibling?.reasonCode?.[1]?.coding?.[1]?.display ?? "";
-  const reason1_text_d = sibling?.reasonCode?.[1]?.text ?? "";
-  const reasonRef0_d = sibling?.reasonReference?.[0]?.reference ?? "";
-  const reasonRef1_d = sibling?.reasonReference?.[1]?.reference ?? "";
-  const note0_txt_d = sibling?.note?.[0]?.text ?? "";
-  const note1_txt_d = sibling?.note?.[1]?.text ?? "";
+  const status_s = firstSibling?.status ?? "";
+  const medRef_s = firstSibling?.medicationReference?.reference ?? "";
+  const subjRef_s = firstSibling?.subject?.reference ?? "";
+  const reqRef_s = firstSibling?.request?.reference ?? "";
+  const perfActorRef0_s = firstSibling?.performer?.[0]?.actor?.reference ?? "";
+  const perfActorRef1_s = firstSibling?.performer?.[1]?.actor?.reference ?? "";
+  const ctxtRef_s = firstSibling?.context?.reference ?? "";
+  const dosage_s = firstSibling?.dosage;
+  const dosage_text_s = dosage_s?.text ?? "";
+  const dosage_route_code0_s = dosage_s?.route?.coding?.[0]?.code ?? "";
+  const dosage_route_disp0_s = dosage_s?.route?.coding?.[0]?.display ?? "";
+  const dosage_route_code1_s = dosage_s?.route?.coding?.[1]?.code ?? "";
+  const dosage_route_disp1_s = dosage_s?.route?.coding?.[1]?.display ?? "";
+  const dosage_route_text_s = dosage_s?.route?.text ?? "";
+  const dosage_dose_value_s = dosage_s?.dose?.value ?? "";
+  const dosage_dose_unit_s = dosage_s?.dose?.unit ?? "";
+
+  const category = getCategory(resource, firstSibling);
+  const effectiveDateTime = getEffectiveDateTime(resource, firstSibling);
+  const effectivePeriod = getEffectivePeriod(resource, firstSibling);
+  const reasonCodes = getReasonCode(resource, firstSibling);
+  const reasonReferences = getReasonReference(resource, firstSibling);
+  const notes = getNotes(resource, firstSibling);
 
   const res: Record<Columns, string | number | boolean> = {
-    id_o: resource.id ?? "",
+    id: resource.id ?? "",
     date,
-    status_o,
-    status_d,
-    medRef_o,
-    medRef_d,
-    subjRef_o,
-    subjRef_d,
-    reqRef_o,
-    reqRef_d,
-    ctxtRef_o,
-    ctxtRef_d,
-    perfActorRef0_o,
-    perfActorRef0_d,
-    perfActorRef1_o,
-    perfActorRef1_d,
-    eDateTime_o,
-    eDateTime_d,
-    ePeriod_start_o,
-    ePeriod_start_d,
-    ePeriod_end_o,
-    ePeriod_end_d,
-    dosage_text_o,
-    dosage_text_d,
-    dosage_route_code0_o,
-    dosage_route_code0_d,
-    dosage_route_disp0_o,
-    dosage_route_disp0_d,
-    dosage_route_code1_o,
-    dosage_route_code1_d,
-    dosage_route_disp1_o,
-    dosage_route_disp1_d,
-    dosage_route_text_o,
-    dosage_route_text_d,
-    dosage_dose_value_o,
-    dosage_dose_value_d,
-    dosage_dose_unit_o,
-    dosage_dose_unit_d,
-    cat_code0_o,
-    cat_code0_d,
-    cat_disp0_o,
-    cat_disp0_d,
-    cat_code1_o,
-    cat_code1_d,
-    cat_disp1_o,
-    cat_disp1_d,
-    cat_text_o,
-    cat_text_d,
-    reason0_code0_o,
-    reason0_code0_d,
-    reason0_disp0_o,
-    reason0_disp0_d,
-    reason0_code1_o,
-    reason0_code1_d,
-    reason0_disp1_o,
-    reason0_disp1_d,
-    reason0_text_o,
-    reason0_text_d,
-    reason1_code0_o,
-    reason1_code0_d,
-    reason1_disp0_o,
-    reason1_disp0_d,
-    reason1_code1_o,
-    reason1_code1_d,
-    reason1_disp1_o,
-    reason1_disp1_d,
-    reason1_text_o,
-    reason1_text_d,
-    reasonRef0_o,
-    reasonRef0_d,
-    reasonRef1_o,
-    reasonRef1_d,
-    note0_txt_o,
-    note0_txt_d,
-    note1_txt_o,
-    note1_txt_d,
-    id_d: sibling?.id ?? "",
+    links,
+    status,
+    status_s,
+    medRef,
+    medRef_s,
+    subjRef,
+    subjRef_s,
+    reqRef,
+    reqRef_s,
+    ctxtRef,
+    ctxtRef_s,
+    perfActorRef0,
+    perfActorRef0_s,
+    perfActorRef1,
+    perfActorRef1_s,
+    ...effectiveDateTime,
+    ...effectivePeriod,
+    dosage_text,
+    dosage_text_s,
+    dosage_route_code0,
+    dosage_route_code0_s,
+    dosage_route_disp0,
+    dosage_route_disp0_s,
+    dosage_route_code1,
+    dosage_route_code1_s,
+    dosage_route_disp1,
+    dosage_route_disp1_s,
+    dosage_route_text,
+    dosage_route_text_s,
+    dosage_dose_value,
+    dosage_dose_value_s,
+    dosage_dose_unit,
+    dosage_dose_unit_s,
+    ...category,
+    ...reasonCodes,
+    ...reasonReferences,
+    ...notes,
+    ids_siblings: siblings.map(s => s.id).join(","),
   };
   return Object.values(res).map(safeCsv).join(csvSeparator);
-}
-
-function isEqual(a: MedicationAdministration) {
-  return function (b: MedicationAdministration): boolean {
-    if (a.meta?.lastUpdated || b.meta?.lastUpdated) {
-      return a.meta?.lastUpdated === b.meta?.lastUpdated;
-    }
-    return a.id === b.id;
-  };
 }
