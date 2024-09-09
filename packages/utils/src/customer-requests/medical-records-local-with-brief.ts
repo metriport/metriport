@@ -9,29 +9,40 @@ import {
 import { bundleToBrief } from "@metriport/core/external/aws/lambda-logic/bundle-to-brief";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { MetriportError } from "@metriport/shared";
+import { getEnvVarOrFail, MetriportError } from "@metriport/shared";
 import fs from "fs";
 import { uuidv7 } from "../shared/uuid-v7";
 
 /**
  * Script to trigger MR Summary generation on a FHIR payload locally, with the AI Brief included in it.
  *
- * Set the cxId and patientId to save the MR Summary and Brief in S3. If that's not needed, comment it out.
+ * The summary is created in HTML format.
  *
- * Set the env vars:
- * - BEDROCK_REGION
- * - BEDROCK_VERSION
- * - MR_BRIEF_MODEL_ID
+ * The result is a file called `output.html` on the root of `packages/utils` - and optionally on S3
+ * as well, if `storeMrSummaryAndBriefInS3` is not commented out.
+ *
+ * To run this script:
+ * - Set the `patientId` const.
+ * - If you don't want to store the output on S3, comment out the call to `storeMrSummaryAndBriefInS3()`.
+ * - Populate a file named `input.json` on the root of `packages/utils` with the FHIR bundle/payload
+ *   - the output of `GET /consolidated`).
+ * - Make sure to set the env vars in addition the ones below this comment block:
+ *   - BEDROCK_REGION
+ *   - BEDROCK_VERSION
+ *   - MR_BRIEF_MODEL_ID
  */
 
-const s3Client = new S3Utils("us-east-2");
-const bucketName = "medical-documents-staging";
-const cxId = "";
+const s3Client = new S3Utils(getEnvVarOrFail("AWS_REGION"));
+const bucketName = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
+const cxId = getEnvVarOrFail("CX_ID");
+
 const patientId = "";
+// Update this to staging or local URL if you want to test the brief link
+const dashUrl = "http://dash.metriport.com";
 
 async function main() {
   // TODO: Condense this functionality under a single function and put it on `@metriport/core`, so this can be used both here, and on the Lambda.
-  const bundle = fs.readFileSync("test-fhir-fry.json", "utf8");
+  const bundle = fs.readFileSync("input.json", "utf8");
   const bundleParsed = JSON.parse(bundle);
 
   const brief = await bundleToBrief(bundleParsed as Bundle<Resource>, cxId, patientId);
@@ -44,9 +55,7 @@ async function main() {
   // Response from FHIR Converter
   const html = bundleToHtml(
     bundleParsed,
-    brief
-      ? { content: brief, id: briefId, link: `http://localhost:3000/feedback/${briefId}` }
-      : undefined
+    brief ? { content: brief, id: briefId, link: `${dashUrl}/feedback/${briefId}` } : undefined
   );
   await storeMrSummaryAndBriefInS3({
     bucketName,
@@ -56,7 +65,7 @@ async function main() {
     brief,
   });
 
-  fs.writeFileSync("test.html", html);
+  fs.writeFileSync("output.html", html);
 }
 
 main();
