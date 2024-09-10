@@ -79,7 +79,11 @@ export function deepMerge(target: any, source: any, isExtensionIncluded: boolean
     } else {
       // Directly assign values
       if (key === "__proto__" || key === "constructor") continue;
-      if (unknownValues.some(unk => source[key].toLowerCase().includes(unk))) continue;
+      if (
+        typeof source[key] === "string" &&
+        unknownValues.some(unk => source[key].toLowerCase().includes(unk))
+      )
+        continue;
       combined[key] = source[key];
     }
   }
