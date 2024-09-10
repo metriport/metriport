@@ -30,11 +30,12 @@ export async function processSingleOutput({
   warnings: Map<string, number>;
   infos: Map<string, number>;
   log?: typeof console.log;
-}) {
+}): Promise<string> {
   log(`Downloading ${key}...`);
   const objBuffer = await s3.downloadFile({ bucket: bucketName, key });
 
-  const lines = objBuffer.toString().split("\n");
+  const contents = objBuffer.toString();
+  const lines = contents.split("\n");
   for (const line of lines) {
     const output: OutputLine = JSON.parse(line);
     if (!("UpdateResourceResponse" in output) || !output.UpdateResourceResponse) continue;
@@ -66,6 +67,7 @@ export async function processSingleOutput({
       }
     }
   }
+  return contents;
 }
 
 function getErrors(issue: OperationOutcomeIssue): string | string[] {

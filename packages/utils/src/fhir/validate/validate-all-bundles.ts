@@ -25,9 +25,12 @@ dayjs.extend(duration);
 
 /**
  * Script to upload bundles from a local folder to S3 and then import them into Healthlake.
+ *
  * The script will wait for the import job to complete and then process the output.
+ *
  * The output is a list of unique errors, warnings and infos found in the import, and it's
- * saved in the "runs/fhir-validation" folder.
+ * saved in the "runs/fhir-validation" folder. The actual output from Healthlake is also stored
+ * in the same folder.
  *
  * To run this script, set the following environment variables:
  * - AWS_REGION: the AWS region
@@ -38,7 +41,7 @@ dayjs.extend(duration);
  *
  * ...and the samplesFolderPath to the folder containing the FHIR bundles.
  */
-const samplesFolderPath = "/Users/rafael/Downloads/consolidated-updated3";
+const samplesFolderPath = "";
 
 const datastoreId = getEnvVarOrFail("HEATHLAKE_DATASTORE_ID");
 const region = getEnvVarOrFail("AWS_REGION");
@@ -202,7 +205,7 @@ async function processImportJobOutput(jobId: string, failureOnly = true): Promis
       log(`No object name, skipping...`);
       return;
     }
-    await processSingleOutput({
+    const contents = await processSingleOutput({
       key,
       bucketName: destinationBucketName,
       errors: uniqueErrors,
@@ -210,6 +213,8 @@ async function processImportJobOutput(jobId: string, failureOnly = true): Promis
       infos: uniqueInfos,
       log,
     });
+    const fileName = key.slice(key.lastIndexOf("/") + 1);
+    fs.writeFileSync(`./${outputFolderName}/${fileName}`, contents);
   }
 
   await executeAsynchronously(objects, processSingleObject, {
@@ -220,9 +225,9 @@ async function processImportJobOutput(jobId: string, failureOnly = true): Promis
   console.log(`Warnings found:\n`, uniqueWarnings);
   console.log(`Infos found:\n`, uniqueInfos);
 
-  fs.writeFileSync(`./${outputFolderName}/errors.txt`, mapToString(uniqueErrors));
-  fs.writeFileSync(`./${outputFolderName}/warnings.txt`, mapToString(uniqueWarnings));
-  fs.writeFileSync(`./${outputFolderName}/infos.txt`, mapToString(uniqueInfos));
+  fs.writeFileSync(`./${outputFolderName}/_errors.txt`, mapToString(uniqueErrors));
+  fs.writeFileSync(`./${outputFolderName}/_warnings.txt`, mapToString(uniqueWarnings));
+  fs.writeFileSync(`./${outputFolderName}/_infos.txt`, mapToString(uniqueInfos));
 }
 
 function mapToString(map: Map<string, number>): string {
