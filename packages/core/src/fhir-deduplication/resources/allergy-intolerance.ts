@@ -84,7 +84,6 @@ function preProcess(allergy: AllergyIntolerance): {
   }
 
   if (_.isEmpty(substance)) delete newAllergy.reaction?.[0]?.substance;
-  if (!manifestations.length) delete newAllergy.reaction?.[0]?.manifestation;
   return { allergy: newAllergy, substance };
 }
 
@@ -118,10 +117,7 @@ export function extractFromReactions(reactions: AllergyIntoleranceReaction[] | u
     }
 
     reaction.manifestation?.forEach(manif => {
-      if (
-        isKnownManifestation(manif) &&
-        ![...manifestations].some(existingManif => _.isEqual(existingManif, manif))
-      ) {
+      if (![...manifestations].some(existingManif => _.isEqual(existingManif, manif))) {
         manifestations.add(manif);
       }
     });
@@ -129,7 +125,10 @@ export function extractFromReactions(reactions: AllergyIntoleranceReaction[] | u
 
   return {
     substance: _.isEmpty(substance) ? undefined : substance,
-    manifestations: Array.from(manifestations),
+    manifestations: (() => {
+      const knownManifestations = Array.from(manifestations).filter(isKnownManifestation);
+      return knownManifestations.length > 0 ? knownManifestations : Array.from(manifestations);
+    })(),
   };
 }
 
