@@ -1,7 +1,7 @@
 import { Procedure, Resource } from "@medplum/fhirtypes";
 import fs from "fs";
 import { Dictionary } from "lodash";
-import { csvSeparator, safeCsv } from "./csv";
+import { csvSeparator, normalizeForCsv } from "./csv";
 import {
   bodySiteColumns,
   codeColumns,
@@ -271,5 +271,5 @@ function toCsv(resource: Procedure, others: Procedure[]): string {
     ...notes,
     ids_siblings: siblings.map(s => s.id).join(","),
   };
-  return Object.values(res).map(safeCsv).join(csvSeparator);
+  return Object.values(res).map(normalizeForCsv).join(csvSeparator);
 }

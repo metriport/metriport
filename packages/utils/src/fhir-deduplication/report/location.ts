@@ -1,7 +1,7 @@
 import { Location, Resource } from "@medplum/fhirtypes";
 import fs from "fs";
 import { Dictionary } from "lodash";
-import { csvSeparator, safeCsv } from "./csv";
+import { csvSeparator, normalizeForCsv } from "./csv";
 import { isSibling } from "./shared";
 
 // Lots of fields were not mapped, see https://www.hl7.org/fhir/R4/organization.html if you want to add them
@@ -246,5 +246,5 @@ function toCsv(resource: Location, others: Location[]): string {
     addr_per_end_s,
     ids_siblings: siblings.map(s => s.id).join(","),
   };
-  return Object.values(res).map(safeCsv).join(csvSeparator);
+  return Object.values(res).map(normalizeForCsv).join(csvSeparator);
 }

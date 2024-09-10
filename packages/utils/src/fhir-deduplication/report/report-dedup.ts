@@ -6,7 +6,7 @@ import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
 import fs from "fs";
 import { groupBy } from "lodash";
-import { ellapsedTimeAsStr } from "../../shared/duration";
+import { elapsedTimeAsStr } from "../../shared/duration";
 import { initRunsFolder } from "../../shared/folder";
 import { processAllergyIntolerance } from "./allergy-intolerance";
 import { processCondition } from "./condition";
@@ -157,7 +157,7 @@ async function main() {
   }
   console.log(``);
 
-  console.log(`>>> Done in ${ellapsedTimeAsStr(startedAt)}`);
+  console.log(`>>> Done in ${elapsedTimeAsStr(startedAt)}`);
 }
 
 main();

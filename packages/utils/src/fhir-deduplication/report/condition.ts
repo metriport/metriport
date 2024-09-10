@@ -1,7 +1,7 @@
 import { Condition, Resource } from "@medplum/fhirtypes";
 import fs from "fs";
 import { Dictionary } from "lodash";
-import { csvSeparator, safeCsv } from "./csv";
+import { csvSeparator, normalizeForCsv } from "./csv";
 import { bodySiteColumns, codeColumns, getBodySite, getCode } from "./resource-props";
 import { isSibling } from "./shared";
 
@@ -166,5 +166,5 @@ function toCsv(resource: Condition, others: Condition[]): string {
     recorderRef_s,
     ids_siblings: siblings.map(s => s.id).join(","),
   };
-  return Object.values(res).map(safeCsv).join(csvSeparator);
+  return Object.values(res).map(normalizeForCsv).join(csvSeparator);
 }

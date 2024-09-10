@@ -1,7 +1,7 @@
 import { DiagnosticReport, Resource } from "@medplum/fhirtypes";
 import fs from "fs";
 import { Dictionary } from "lodash";
-import { csvSeparator, safeCsv } from "./csv";
+import { csvSeparator, normalizeForCsv } from "./csv";
 import {
   category0Columns,
   category1Columns,
@@ -321,5 +321,5 @@ function toCsv(resource: DiagnosticReport, others: DiagnosticReport[]): string {
     presForm2_creat_s,
     ids_siblings: siblings.map(s => s.id).join(","),
   };
-  return Object.values(res).map(safeCsv).join(csvSeparator);
+  return Object.values(res).map(normalizeForCsv).join(csvSeparator);
 }
