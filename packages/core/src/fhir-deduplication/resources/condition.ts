@@ -54,11 +54,14 @@ export function groupSameConditions(conditions: Condition[]): {
         coding.system?.includes(ICD_10_CODE) ||
         coding.system?.includes(ICD_10_OID)
     );
-    if (filtered) {
+    if (filtered && filtered.length > 0) {
       master.code = {
         ...code,
         coding: filtered,
       };
+    } else {
+      master.code = { ...code };
+      delete master.code.coding;
     }
     return master;
   }

@@ -25,7 +25,7 @@ beforeEach(() => {
 });
 
 describe("extractFromReactions", () => {
-  it("correctly removes unknown manifestations", () => {
+  it("doesn't remove unknown manifestations if there is only one manifestation", () => {
     allergy.reaction = [
       {
         manifestation: unknownManifestation,
@@ -33,20 +33,8 @@ describe("extractFromReactions", () => {
     ];
 
     const { manifestations } = extractFromReactions(allergy.reaction);
-    expect(manifestations.length).toBe(0);
+    expect(manifestations.length).toBe(1);
   });
-
-  it("correctly removes unknown manifestations regardless of text", () => {
-    allergy.reaction = [
-      {
-        manifestation: [{ ...unknownManifestation[0], text: "some-manifestation-text" }],
-      },
-    ];
-
-    const { manifestations } = extractFromReactions(allergy.reaction);
-    expect(manifestations.length).toBe(0);
-  });
-
   it("correctly keeps known manifestations", () => {
     allergy = { ...allergy, ...allergyFood };
     const { manifestations } = extractFromReactions(allergy.reaction);
@@ -108,7 +96,7 @@ describe("extractFromReactions", () => {
     allergy.reaction = [
       {
         substance: noKnownAllergiesSubstance,
-        manifestation: unknownManifestation,
+        manifestation: manifestationAnaphylactic,
       },
       {
         substance: substanceNsaid,
