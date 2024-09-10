@@ -2,19 +2,25 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { OperationOutcome, OperationOutcomeIssue } from "@medplum/fhirtypes";
-import { limitStringLength } from "@metriport/shared";
+import { S3Utils } from "@metriport/core/external/aws/s3";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { out } from "@metriport/core/util/log";
+import { getEnvVarOrFail, limitStringLength } from "@metriport/shared";
 import AWS from "aws-sdk";
-import dayjs from "dayjs";
 import { elapsedTimeAsStr } from "../shared/duration";
-import { getFileContents, getFileNames, makeDir } from "../shared/fs";
 
 /**
  * Script used to parse the output of AWS Healthlake and list the issues found there.
  *
- * To use this script, set the folderPath to the folder containing the ".ndjson" files
- * received from Healthlake.
+ * To use this script, set the environment vars:
+ * - HEATHLAKE_BUCKET_NAME: the S3 bucket name
+ * - HEATHLAKE_FAILURE_PREFIX: the S3 prefix where the output files are stored
+ * - AWS_REGION: the AWS region
  */
-const folderPath = ``;
+
+const prefix = getEnvVarOrFail("HEATHLAKE_FAILURE_PREFIX");
+const bucketName = getEnvVarOrFail("HEATHLAKE_BUCKET_NAME");
+const region = getEnvVarOrFail("AWS_REGION");
 
 const suffixToInclude = ".ndjson";
 const maxCharsOnError = 100;
@@ -36,26 +42,29 @@ async function main() {
   const healthlake = new AWS.HealthLake();
   healthlake.startFHIRImportJob();
 
-  const bundleFileNames = getFileNames({
-    folder: folderPath,
-    recursive: true,
-    extension: suffixToInclude,
-  });
-  console.log(`Got ${bundleFileNames.length} files to process.`);
+  const s3 = new S3Utils(region);
+  const objects = await s3.listObjects(bucketName, prefix);
+  const filteredObjects = objects?.filter(obj => obj.Key?.includes(suffixToInclude)) ?? [];
 
-  const timestamp = dayjs().toISOString();
-  const logsFolderName = `runs/ndjson-output/${timestamp}`;
-  makeDir(logsFolderName);
+  console.log(`Got ${filteredObjects.length} files to process.`);
 
   const uniqueErrors: Map<string, number> = new Map();
   const uniqueWarnings: Map<string, number> = new Map();
   const uniqueInfos: Map<string, number> = new Map();
 
-  bundleFileNames.forEach((filePath, index) => {
-    console.log(`Processing ${index + 1}/${bundleFileNames.length}. Filepath: ${filePath}`);
+  let index = 0;
 
-    const stringBundle = getFileContents(filePath);
-    const lines = stringBundle.split("\n");
+  async function processSingleObject(object: AWS.S3.Object) {
+    const { log } = out(`${++index}`);
+    const key = object.Key;
+    if (!key) {
+      log(`No object name, skipping...`);
+      return;
+    }
+    log(`Downloading ${key}...`);
+    const objBuffer = await s3.downloadFile({ bucket: bucketName, key });
+
+    const lines = objBuffer.toString().split("\n");
     for (const line of lines) {
       const output: OutputLine = JSON.parse(line);
       if (!("UpdateResourceResponse" in output) || !output.UpdateResourceResponse) continue;
@@ -87,6 +96,10 @@ async function main() {
         }
       }
     }
+  }
+
+  await executeAsynchronously(filteredObjects, processSingleObject, {
+    numberOfParallelExecutions: 10,
   });
 
   console.log(`Errors found:\n`, uniqueErrors);
