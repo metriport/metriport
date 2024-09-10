@@ -61,6 +61,7 @@ export function combineTwoResources<T extends Resource>(
 
 // TODO: Might be a good idea to include a check to see if all resources refer to the same patient
 const conditionKeysToIgnore = ["id", "resourceType", "subject"];
+const unknownValues = ["unknown", "unk", "no known"];
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function deepMerge(target: any, source: any, isExtensionIncluded: boolean): any {
@@ -78,7 +79,7 @@ export function deepMerge(target: any, source: any, isExtensionIncluded: boolean
     } else {
       // Directly assign values
       if (key === "__proto__" || key === "constructor") continue;
-      if (source[key] === "unknown" && combined[key] !== "unknown") continue;
+      if (unknownValues.some(unk => source[key].toLowerCase().includes(unk))) continue;
       combined[key] = source[key];
     }
   }
