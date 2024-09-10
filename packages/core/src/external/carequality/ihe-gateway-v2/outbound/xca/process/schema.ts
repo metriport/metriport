@@ -20,19 +20,12 @@ const classification = z.object({
   Slot: schemaOrArray(slot).optional(),
   Name: name.optional(),
   _classificationScheme: z.string(),
-  _objectType: z
-    .literal("urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification")
-    .optional(),
 });
 export type Classification = z.infer<typeof classification>;
 
 const externalIdentifier = z.object({
   Name: name.optional(),
-  _id: z.string(),
   _identificationScheme: z.string(),
-  _objectType: z
-    .literal("urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier")
-    .optional(),
   _registryObject: z.string().optional(),
   _value: z.string().optional(),
 });
