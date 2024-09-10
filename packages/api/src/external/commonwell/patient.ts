@@ -101,6 +101,7 @@ export async function create({
   requestId: inputRequestId,
   forceCWCreate = false,
   rerunPdOnNewDemographics = false,
+  useCxDemoAug = true,
   initiator,
 }: {
   patient: Patient;
@@ -109,6 +110,7 @@ export async function create({
   requestId?: string;
   forceCWCreate?: boolean;
   rerunPdOnNewDemographics?: boolean;
+  useCxDemoAug?: boolean;
   initiator?: HieInitiator;
 }): Promise<{ commonwellPatientId: string; personId: string } | void> {
   const { log, debug } = out(`CW create - M patientId ${patient.id}`);
@@ -121,7 +123,8 @@ export async function create({
   });
 
   const demoAugEnabled = await isDemoAugEnabledForCx(patient.cxId);
-  const cxRerunPdOnNewDemographics = demoAugEnabled || rerunPdOnNewDemographics;
+  const cxRerunPdOnNewDemographics =
+    (useCxDemoAug ? demoAugEnabled : false) || rerunPdOnNewDemographics;
 
   if (cwCreateEnabled) {
     const requestId = inputRequestId ?? uuidv7();
@@ -274,6 +277,7 @@ export async function update({
   requestId: inputRequestId,
   forceCWUpdate = false,
   rerunPdOnNewDemographics = false,
+  useCxDemoAug = true,
 }: {
   patient: Patient;
   facilityId: string;
@@ -281,6 +285,7 @@ export async function update({
   requestId?: string;
   forceCWUpdate?: boolean;
   rerunPdOnNewDemographics?: boolean;
+  useCxDemoAug?: boolean;
 }): Promise<void> {
   const { log, debug } = out(`CW update - M patientId ${patient.id}`);
 
@@ -292,7 +297,8 @@ export async function update({
   });
 
   const demoAugEnabled = await isDemoAugEnabledForCx(patient.cxId);
-  const cxRerunPdOnNewDemographics = demoAugEnabled || rerunPdOnNewDemographics;
+  const cxRerunPdOnNewDemographics =
+    (useCxDemoAug ? demoAugEnabled : false) || rerunPdOnNewDemographics;
 
   if (cwUpdateEnabled) {
     const requestId = inputRequestId ?? uuidv7();
@@ -567,6 +573,7 @@ export async function runNextPdOnNewDemographics({
     facilityId,
     getOrgIdExcludeList,
     rerunPdOnNewDemographics: false,
+    useCxDemoAug: false,
   }).catch(processAsyncError("CW update"));
   analytics({
     distinctId: updatedPatient.cxId,
