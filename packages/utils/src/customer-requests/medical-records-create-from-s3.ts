@@ -13,7 +13,7 @@ import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
-import { ellapsedTimeAsStr } from "../shared/duration";
+import { elapsedTimeAsStr } from "../shared/duration";
 import { buildGetDirPathInside, initRunsFolder } from "../shared/folder";
 import { getCxData } from "../shared/get-cx-data";
 
@@ -75,12 +75,12 @@ async function main() {
     try {
       log(`>>> Generating MR for patient ${patientId}...`);
       await getMedicalRecordURL(patientId, dirName, log);
-      log(`... Patient ${patientId} is done in ${ellapsedTimeAsStr(patientStartedAt)}`);
+      log(`... Patient ${patientId} is done in ${elapsedTimeAsStr(patientStartedAt)}`);
     } catch (error) {
       log(`Error downloading MR: ${errorToString(error)}`);
     }
   }
-  console.log(`>>> Done all patients in ${ellapsedTimeAsStr(startedAt)}`);
+  console.log(`>>> Done all patients in ${elapsedTimeAsStr(startedAt)}`);
 }
 
 async function getMedicalRecordURL(
