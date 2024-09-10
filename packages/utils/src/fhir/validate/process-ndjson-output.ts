@@ -6,8 +6,8 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { getEnvVarOrFail } from "@metriport/shared";
 import AWS from "aws-sdk";
-import { elapsedTimeAsStr } from "../shared/duration";
-import { processSingleOutput } from "./validate/process-single-output";
+import { elapsedTimeAsStr } from "../../shared/duration";
+import { processSingleOutput } from "./process-single-output";
 
 /**
  * Script used to parse the output of AWS Healthlake and list the issues found there.
