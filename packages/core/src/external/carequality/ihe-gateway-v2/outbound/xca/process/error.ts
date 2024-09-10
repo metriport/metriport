@@ -28,6 +28,7 @@ export function processRegistryErrorList(
   };
 
   try {
+    if (typeof registryErrorList !== "object") return undefined;
     const registryErrors = toArray(registryErrorList?.RegistryError);
     registryErrors.forEach((entry: RegistryError) => {
       const issue = {
