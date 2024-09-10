@@ -113,7 +113,6 @@ function isKnownCondition(concept: CodeableConcept | undefined) {
       (coding.code !== "55607006" || coding.display?.toLowerCase().trim() !== "problem")
   );
 
-  console.log(knownCodings);
   return knownCodings?.length && knownCodings?.length > 0;
 }
 
