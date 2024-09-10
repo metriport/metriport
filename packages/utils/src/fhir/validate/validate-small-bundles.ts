@@ -3,8 +3,8 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { SignatureV4 } from "@smithy/signature-v4";
 import Axios from "axios";
 import fs from "fs";
-import { FHIRBundle } from "../fhir-converter/convert";
-import { getFileContents, getFileNames } from "../shared/fs";
+import { FHIRBundle } from "../../fhir-converter/convert";
+import { getFileContents, getFileNames } from "../../shared/fs";
 
 const samplesFolderPath = "";
 
