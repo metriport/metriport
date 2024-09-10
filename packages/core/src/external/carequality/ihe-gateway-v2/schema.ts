@@ -8,6 +8,9 @@ export const schemaOrArray = <T extends z.ZodTypeAny>(schema: T) =>
   z.union([schema, z.array(schema)]);
 export const schemaOrArrayOrEmpty = <T extends z.ZodTypeAny>(schema: T) =>
   z.union([schema, z.array(schema), z.literal("")]);
+
+export const schemaOrString = <T extends z.ZodTypeAny>(schema: T) => z.union([schema, z.string()]);
+
 export const textSchema = z.union([
   stringOrNumberSchema,
   z.object({

@@ -5,6 +5,7 @@ import {
   schemaOrArrayOrEmpty,
   slot,
   stringOrNumberSchema,
+  schemaOrString,
 } from "../../../schema";
 
 const name = z.object({
@@ -19,9 +20,6 @@ const classification = z.object({
   Slot: schemaOrArray(slot).optional(),
   Name: name.optional(),
   _classificationScheme: z.string(),
-  _classifiedObject: z.string(),
-  _id: z.string(),
-  _nodeRepresentation: z.string(),
   _objectType: z
     .literal("urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification")
     .optional(),
@@ -57,10 +55,12 @@ export const registryError = z.object({
 });
 export type RegistryError = z.infer<typeof registryError>;
 
-const registryErrorList = z.object({
-  RegistryError: schemaOrArray(registryError),
-  _highestSeverity: z.string().optional(),
-});
+const registryErrorList = schemaOrString(
+  z.object({
+    RegistryError: schemaOrArray(registryError),
+    _highestSeverity: z.string().optional(),
+  })
+);
 export type RegistryErrorList = z.infer<typeof registryErrorList>;
 
 export const iti38Body = z.object({
