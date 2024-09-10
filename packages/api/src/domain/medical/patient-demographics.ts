@@ -395,12 +395,6 @@ export function linkHasNewDemographics({
 }):
   | { hasNewDemographics: true; comparison: LinkDemographicsComparison }
   | { hasNewDemographics: false; comparison: undefined } {
-  const hasNewDob =
-    coreDemographics.dob && linkDemographics.dob && linkDemographics.dob !== coreDemographics.dob;
-  const hasNewGender =
-    coreDemographics.gender &&
-    linkDemographics.gender &&
-    linkDemographics.gender !== coreDemographics.gender;
   const newNames = linkDemographics.names.filter(
     name =>
       !coreDemographics.names.includes(name) &&
@@ -438,8 +432,6 @@ export function linkHasNewDemographics({
   );
   const hasNewSsn = newSsn.length > 0;
   const hasNewDemographics =
-    hasNewDob ||
-    hasNewGender ||
     hasNewNames ||
     hasNewAddresses ||
     hasNewTelephoneNumbers ||
@@ -450,8 +442,6 @@ export function linkHasNewDemographics({
     return {
       hasNewDemographics,
       comparison: {
-        ...(hasNewDob ? { dob: linkDemographics.dob } : undefined),
-        ...(hasNewGender ? { gender: linkDemographics.gender } : undefined),
         ...(hasNewNames ? { names: newNames } : undefined),
         ...(hasNewAddresses ? { addresses: newAddresses } : undefined),
         ...(hasNewTelephoneNumbers ? { telephoneNumbers: newTelephoneNumbers } : undefined),
