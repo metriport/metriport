@@ -78,6 +78,7 @@ export function deepMerge(target: any, source: any, isExtensionIncluded: boolean
     } else {
       // Directly assign values
       if (key === "__proto__" || key === "constructor") continue;
+      if (source[key] === "unknown" && combined[key] !== "unknown") continue;
       combined[key] = source[key];
     }
   }
