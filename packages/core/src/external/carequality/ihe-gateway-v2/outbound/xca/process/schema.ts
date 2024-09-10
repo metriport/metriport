@@ -20,12 +20,18 @@ const classification = z.object({
   Slot: schemaOrArray(slot).optional(),
   Name: name.optional(),
   _classificationScheme: z.string(),
+  _classifiedObject: z.string().optional(),
+  _id: z.string().optional(),
+  _nodeRepresentation: z.string().optional(),
+  _objectType: z.string().optional(),
 });
 export type Classification = z.infer<typeof classification>;
 
 const externalIdentifier = z.object({
   Name: name.optional(),
+  _id: z.string().optional(),
   _identificationScheme: z.string(),
+  _objectType: z.string().optional(),
   _registryObject: z.string().optional(),
   _value: z.string().optional(),
 });
