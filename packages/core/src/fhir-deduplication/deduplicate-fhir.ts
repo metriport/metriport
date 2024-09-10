@@ -401,7 +401,10 @@ function removeDanglingReferences<T extends Resource>(entry: T, link: string): T
     entry.payor = entry.payor?.filter(payor => payor.reference !== link);
     if (!entry.payor.length) delete entry.payor;
   }
-
+  if ("attester" in entry) {
+    entry.attester = entry.attester?.filter(attester => attester.party?.reference !== link);
+    if (!entry.attester.length) delete entry.attester;
+  }
   return entry;
 }
 
