@@ -25,6 +25,16 @@ beforeEach(() => {
 });
 
 describe("extractFromReactions", () => {
+  it("doesn't remove unknown manifestations if there is only one manifestation", () => {
+    allergy.reaction = [
+      {
+        manifestation: unknownManifestation,
+      },
+    ];
+
+    const { manifestations } = extractFromReactions(allergy.reaction);
+    expect(manifestations.length).toBe(1);
+  });
   it("correctly keeps known manifestations", () => {
     allergy = { ...allergy, ...allergyFood };
     const { manifestations } = extractFromReactions(allergy.reaction);
