@@ -4,7 +4,7 @@ import duration from "dayjs/plugin/duration";
 
 dayjs.extend(duration);
 
-export function ellapsedTimeAsStr(startedAt: number) {
+export function elapsedTimeAsStr(startedAt: number) {
   const ellapsedTime = dayjs.duration(Date.now() - startedAt);
   const timeInMin = formatNumber(ellapsedTime.asMinutes());
   const timeInMillis = formatNumber(ellapsedTime.asMilliseconds());

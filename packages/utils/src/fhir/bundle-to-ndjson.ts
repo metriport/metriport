@@ -5,7 +5,7 @@ import { Bundle } from "@medplum/fhirtypes";
 import { bundleToNdjson } from "@metriport/core/external/fhir/export/fhir-to-ndjson";
 import dayjs from "dayjs";
 import fs from "fs";
-import { ellapsedTimeAsStr } from "../shared/duration";
+import { elapsedTimeAsStr } from "../shared/duration";
 import { getFileContents, getFileNames, makeDir } from "../shared/fs";
 
 /**
@@ -50,7 +50,7 @@ async function main() {
     fs.writeFileSync(`./${logsFolderName}/${fileName}`, bundleAsNdjson);
   });
 
-  console.log(`>>> Done in ${ellapsedTimeAsStr(startedAt)}`);
+  console.log(`>>> Done in ${elapsedTimeAsStr(startedAt)}`);
 }
 
 main();
