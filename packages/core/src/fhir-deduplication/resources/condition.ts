@@ -8,6 +8,7 @@ import {
   fillMaps,
   getDateFromResource,
   hasBlacklistedText,
+  isUnknownCoding,
 } from "../shared";
 
 /**
@@ -67,7 +68,7 @@ export function groupSameConditions(conditions: Condition[]): {
   }
 
   for (const condition of conditions) {
-    if (hasBlacklistedText(condition.code)) {
+    if (hasBlacklistedText(condition.code) || !isKnownCondition(condition.code)) {
       danglingReferencesSet.add(createRef(condition));
       continue;
     }
@@ -103,6 +104,16 @@ export function groupSameConditions(conditions: Condition[]): {
     refReplacementMap,
     danglingReferences: [...danglingReferencesSet],
   };
+}
+
+function isKnownCondition(concept: CodeableConcept | undefined) {
+  const knownCodings = concept?.coding?.filter(
+    coding =>
+      !isUnknownCoding(coding) &&
+      (coding.code !== "55607006" || coding.display?.toLowerCase().trim() !== "problem")
+  );
+
+  return knownCodings?.length && knownCodings?.length > 0;
 }
 
 export function extractCodes(concept: CodeableConcept | undefined): {

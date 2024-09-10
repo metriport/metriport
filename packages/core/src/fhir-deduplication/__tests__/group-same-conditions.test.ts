@@ -95,6 +95,39 @@ describe("groupSameConditions", () => {
     expect(snomedMap.size).toBe(2);
   });
 
+  it("removes conditions that only have one coding that just says 'Problem'", () => {
+    condition.code = {
+      coding: [
+        {
+          system: "http://snomed.info/sct",
+          code: "55607006",
+          display: "Problem",
+        },
+      ],
+    };
+    condition.onsetPeriod = dateTime;
+
+    const { snomedMap } = groupSameConditions([condition]);
+    expect(snomedMap.size).toBe(0);
+  });
+
+  it("keeps the conditions that only have more than one coding, where one just says 'Problem'", () => {
+    condition.code = {
+      coding: [
+        {
+          system: "http://snomed.info/sct",
+          code: "55607006",
+          display: "Problem",
+        },
+        snomedCodeMd,
+      ],
+    };
+    condition.onsetPeriod = dateTime;
+
+    const { snomedMap } = groupSameConditions([condition]);
+    expect(snomedMap.size).toBe(1);
+  });
+
   it("strips away codes that aren't SNOMED or ICD-10", () => {
     condition.code = { coding: [icd10CodeMd] };
     condition2.code = { coding: [icd10CodeMd, snomedCodeMd, otherCodeSystemMd] };
