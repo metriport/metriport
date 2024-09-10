@@ -32,14 +32,12 @@ export async function discover({
   requestId: inputRequestId,
   forceEnabled = false,
   rerunPdOnNewDemographics = false,
-  useCxDemoAug = true,
 }: {
   patient: Patient;
   facilityId: string;
   requestId?: string;
   forceEnabled?: boolean;
   rerunPdOnNewDemographics?: boolean;
-  useCxDemoAug?: boolean;
 }): Promise<void> {
   const baseLogMessage = `CQ PD - patientId ${patient.id}`;
   const { log: outerLog } = out(baseLogMessage);
@@ -47,8 +45,7 @@ export async function discover({
   const enabledIHEGW = await isCqEnabled(patient, facilityId, forceEnabled, outerLog);
 
   const demoAugEnabled = await isDemoAugEnabledForCx(patient.cxId);
-  const cxRerunPdOnNewDemographics =
-    (useCxDemoAug ? demoAugEnabled : false) || rerunPdOnNewDemographics;
+  const cxRerunPdOnNewDemographics = demoAugEnabled || rerunPdOnNewDemographics;
 
   if (enabledIHEGW) {
     const requestId = inputRequestId ?? uuidv7();

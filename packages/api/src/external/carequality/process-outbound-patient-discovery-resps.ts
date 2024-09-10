@@ -205,7 +205,6 @@ export async function runNextPdOnNewDemographics({
     patient: updatedPatient,
     facilityId,
     rerunPdOnNewDemographics: false,
-    useCxDemoAug: false,
   }).catch(processAsyncError("CQ discover"));
   analytics({
     distinctId: updatedPatient.cxId,
