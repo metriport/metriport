@@ -4,7 +4,6 @@ import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import axios from "axios";
 import { analytics, EventTypes } from "../../external/analytics/posthog";
-import { isFhirDeduplicationEnabledForCx } from "../../external/aws/app-config";
 import { getConsolidatedFhirBundle } from "../../external/fhir/consolidated/consolidated";
 import { deduplicateFhir } from "../../fhir-deduplication/deduplicate-fhir";
 import {
@@ -25,13 +24,9 @@ export class ConsolidatedDataConnectorLocal implements ConsolidatedDataConnector
   ): Promise<ConsolidatedDataResponse> {
     const { cxId, id: patientId } = params.patient;
 
-    const [originalBundle, ffDedupEnabled] = await Promise.all([
-      getConsolidatedFhirBundle(params),
-      isFhirDeduplicationEnabledForCx(params.patient.cxId),
-    ]);
+    const originalBundle = await getConsolidatedFhirBundle(params);
 
-    const dedupEnabled = ffDedupEnabled || params.fromDashboard;
-
+    const dedupEnabled = true;
     const dedupedBundle = deduplicate({ cxId, patientId, bundle: originalBundle });
 
     const [originalS3Info, dedupedS3Info] = await Promise.all([
