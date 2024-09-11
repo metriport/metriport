@@ -373,8 +373,10 @@ export function isUnknownCoding(coding: Coding, text?: string | undefined): bool
     );
   } else {
     return (
-      (!display || display === unknownCoding.display.toLowerCase()) &&
-      (!text || text === unknownCode.text.toLowerCase())
+      (!display ||
+        display === unknownCoding.display.toLowerCase() ||
+        display.includes("no data available")) &&
+      (!text || text === unknownCode.text.toLowerCase() || text.includes("no data"))
     );
   }
 }
