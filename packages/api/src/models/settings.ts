@@ -1,5 +1,6 @@
 import { DataTypes, Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "./_default";
+import { MrFilters } from "../domain/settings";
 
 export const DATE_FORMAT = "YYYY-MM";
 export const WEBHOOK_STATUS_OK = "OK";
@@ -11,6 +12,7 @@ export class Settings extends BaseModel<Settings> {
   declare webhookKey: string | null;
   declare webhookEnabled: boolean;
   declare webhookStatusDetail: string | null;
+  declare mrFilters: MrFilters[] | null;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     Settings.init(
@@ -27,6 +29,9 @@ export class Settings extends BaseModel<Settings> {
         },
         webhookStatusDetail: {
           type: DataTypes.STRING,
+        },
+        mrFilters: {
+          type: DataTypes.JSONB,
         },
       },
       {

@@ -7,11 +7,12 @@ import { getSettings, getSettingsOrFail } from "../command/settings/getSettings"
 import { updateSettings } from "../command/settings/updateSettings";
 import { countFailedAndProcessingRequests } from "../command/webhook/count-failed";
 import { retryFailedRequests } from "../command/webhook/retry-failed";
-import { maxWebhookUrlLength } from "../domain/settings";
+import { maxWebhookUrlLength, MrFilters } from "../domain/settings";
 import BadRequestError from "../errors/bad-request";
 import { Settings } from "../models/settings";
 import { requestLogger } from "./helpers/request-logger";
 import { asyncHandler, getCxIdOrFail } from "./util";
+import { parseISODate } from "../shared/date";
 
 const router = Router();
 const webhookURLIncludeBlacklist = [
@@ -59,11 +60,12 @@ class SettingsDTO {
   public constructor(
     public id: string,
     public webhookUrl: string | null,
-    public webhookKey: string | null
+    public webhookKey: string | null,
+    public mrFilters: MrFilters[] | null
   ) {}
 
   static fromEntity(s: Settings): SettingsDTO {
-    return new SettingsDTO(s.id, s.webhookUrl, s.webhookKey);
+    return new SettingsDTO(s.id, s.webhookUrl, s.webhookKey, s.mrFilters);
   }
 }
 
@@ -114,6 +116,21 @@ router.get(
 const updateSettingsSchema = z
   .object({
     webhookUrl: z.string().url().max(maxWebhookUrlLength).or(z.literal("").nullable().optional()),
+    mrFilters: z
+      .array(
+        z.object({
+          key: z.string(),
+          resourceType: z.string(),
+          dateFilter: z
+            .object({
+              from: z.string().optional(),
+              to: z.string().optional(),
+            })
+            .optional(),
+          stringFilter: z.string().optional(),
+        })
+      )
+      .optional(),
   })
   .strict();
 
@@ -123,6 +140,7 @@ const updateSettingsSchema = z
  * Updates the settings for the API customer.
  *
  * @param {string}  req.body.webhookUrl The webhook URL to set.
+ * @param {json}  req.body.filters The mr filters to set.
  *
  * @return {SettingsDTO} The updated settings data as defined by SettingsDTO.
  */
@@ -131,7 +149,8 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const { webhookUrl } = updateSettingsSchema.parse(req.body);
+    const { webhookUrl, mrFilters } = updateSettingsSchema.parse(req.body);
+
     if (webhookUrl) {
       for (const blacklistedStr of webhookURLIncludeBlacklist) {
         if (webhookUrl.includes(blacklistedStr)) {
@@ -140,9 +159,20 @@ router.post(
       }
       if (webhookURLExactBlacklist.includes(webhookUrl)) throw new BadRequestError(`Invalid URL`);
     }
+
+    for (const filter of mrFilters ?? []) {
+      if (filter.dateFilter?.from) {
+        filter.dateFilter.from = parseISODate(filter.dateFilter.from);
+      }
+      if (filter.dateFilter?.to) {
+        filter.dateFilter.to = parseISODate(filter.dateFilter.to);
+      }
+    }
+
     const settings = await updateSettings({
       cxId,
       webhookUrl: webhookUrl ?? undefined,
+      filters: mrFilters,
     });
     res.status(status.OK).json(SettingsDTO.fromEntity(settings));
   })
