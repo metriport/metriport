@@ -79,8 +79,11 @@ export function mapPatientDataToResource(patient: PatientIdAndData) {
     birthDate: patient.data.dob,
     address:
       patient.data.address.map((addr: Address) => {
+        const lines = [addr.addressLine1];
+        if (addr.addressLine2) lines.push(addr.addressLine2);
+
         return {
-          line: addr.addressLine1 ? [addr.addressLine1] : [],
+          line: lines,
           city: addr.city,
           state: addr.state,
           postalCode: addr.zip,
