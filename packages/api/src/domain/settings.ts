@@ -5,7 +5,6 @@ export const maxWebhookStatusLength = 2048;
 
 export interface MrFilters {
   key: string;
-  resourceType: string;
   dateFilter?: {
     from?: string;
     to?: string;

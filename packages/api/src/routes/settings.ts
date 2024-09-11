@@ -34,25 +34,6 @@ const mrSectionsKeys = [
   "documents",
 ] as const;
 
-const mrSectionsResourceTypes = [
-  "Encounter/Notes",
-  "Conditions",
-  "Medications",
-  "Allergies",
-  "Procedures",
-  "Social History",
-  "Vitals",
-  "Labs",
-  "Observations",
-  "Immunizations",
-  "Family Member History",
-  "Related Persons",
-  "Tasks",
-  "Coverage",
-  "Encounters",
-  "Documents",
-] as const;
-
 const router = Router();
 const webhookURLIncludeBlacklist = [
   "127.0.0.1",
@@ -159,7 +140,6 @@ const updateSettingsSchema = z
       .array(
         z.object({
           key: z.enum(mrSectionsKeys),
-          resourceType: z.enum(mrSectionsResourceTypes),
           dateFilter: z
             .object({
               from: z
