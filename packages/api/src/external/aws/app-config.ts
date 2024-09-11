@@ -86,10 +86,6 @@ export async function getCxsWithAiBriefFeatureFlag(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithAiBriefFeatureFlag");
 }
 
-export async function getCxsWithFhirDedupFeatureFlag(): Promise<string[]> {
-  return getCxsWithFeatureFlagEnabled("cxsWithFhirDedupFeatureFlag");
-}
-
 export async function getCxsWithCdaCustodianFeatureFlag(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("getCxsWithCdaCustodianFeatureFlag");
 }
@@ -140,11 +136,6 @@ export async function isWebhookPongDisabledForCx(cxId: string): Promise<boolean>
 export async function isAiBriefEnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithAiBriefEnabled = await getCxsWithAiBriefFeatureFlag();
   return cxIdsWithAiBriefEnabled.some(i => i === cxId);
-}
-
-export async function isFhirDeduplicationEnabledForCx(cxId: string): Promise<boolean> {
-  const cxIdsWithFhirDedupEnabled = await getCxsWithFhirDedupFeatureFlag();
-  return cxIdsWithFhirDedupEnabled.some(i => i === cxId);
 }
 
 export async function isCdaCustodianEnabledForCx(cxId: string): Promise<boolean> {
