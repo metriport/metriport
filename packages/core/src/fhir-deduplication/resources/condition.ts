@@ -48,14 +48,16 @@ export function groupSameConditions(conditions: Condition[]): {
 
   function removeOtherCodes(master: Condition): Condition {
     const code = master.code;
-    const filtered = code?.coding?.filter(
-      coding =>
-        coding.system?.includes(SNOMED_CODE) ||
-        coding.system?.includes(SNOMED_OID) ||
-        coding.system?.includes(ICD_10_CODE) ||
-        coding.system?.includes(ICD_10_OID) ||
-        coding.system?.includes(ICD_9_CODE)
-    );
+    const filtered = code?.coding?.filter(coding => {
+      const system = coding.system?.toLowerCase();
+      return (
+        system?.includes(SNOMED_CODE) ||
+        system?.includes(SNOMED_OID) ||
+        system?.includes(ICD_10_CODE) ||
+        system?.includes(ICD_10_OID) ||
+        system?.includes(ICD_9_CODE)
+      );
+    });
     if (filtered && filtered.length > 0) {
       master.code = {
         ...code,
