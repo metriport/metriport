@@ -337,7 +337,9 @@ function removeDanglingReferences<T extends Resource>(entry: T, link: string): T
   if ("author" in entry) {
     if (entry.resourceType === "Composition") {
       entry.author = entry.author?.filter(author => author.reference !== link);
-      if (!entry.author.length) delete entry.author;
+      if (!entry.author.length) {
+        entry.author = [{ display: "No Known Author" }];
+      }
     }
   }
   if ("custodian" in entry) {

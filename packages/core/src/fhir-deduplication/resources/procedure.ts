@@ -99,6 +99,15 @@ export function groupSameProcedures(procedures: Procedure[]): {
     return master;
   }
 
+  function postProcessOnlyStatus(
+    master: Procedure,
+    existing: Procedure,
+    target: Procedure
+  ): Procedure {
+    master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
+    return master;
+  }
+
   for (const procedure of procedures) {
     if (hasBlacklistedText(procedure.code)) {
       danglingReferencesSet.add(createRef(procedure));
@@ -137,7 +146,7 @@ export function groupSameProcedures(procedures: Procedure[]): {
           procedure,
           refReplacementMap,
           undefined,
-          removeCodesAndAssignStatus
+          postProcessOnlyStatus
         );
       } else {
         danglingReferencesSet.add(createRef(procedure));
