@@ -158,4 +158,13 @@ describe("groupSameConditions", () => {
       ])
     );
   });
+  it("proper behavior when only one code of unrecognized system", () => {
+    condition.code = { coding: [otherCodeSystemMd] };
+    condition2.code = { coding: [otherCodeSystemMd] };
+    condition.onsetPeriod = dateTime;
+    condition2.onsetPeriod = dateTime;
+
+    const { displayMap } = groupSameConditions([condition, condition2]);
+    expect(displayMap.size).toBe(1);
+  });
 });

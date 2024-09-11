@@ -37,13 +37,16 @@ export function groupSamePractitioners(practitioners: Practitioner[]): {
     const npi = extractNpi(practitioner.identifier);
     const name = practitioner.name?.[0]; // Assuming we use the first name in the array
     const addresses = practitioner.address;
+    const telecom = practitioner.telecom;
 
     const hasNpi = npi && validateNPI(npi);
     const hasAddress = addresses && addresses.length > 0;
     const hasName = name && Object.keys(name).length > 0;
+    const hasTelecom = practitioner.telecom && practitioner.telecom.length > 0;
 
     const npiBit = hasNpi ? 1 : 0;
     const addressBit = hasAddress ? 1 : 0;
+    const nameBit = hasName ? 1 : 0;
 
     const setterKeys = [];
     const getterKeys = [];
@@ -67,6 +70,44 @@ export function groupSamePractitioners(practitioners: Practitioner[]): {
       }
     }
 
+    if (hasAddress && hasTelecom) {
+      const normalizedAddresses = addresses.map(address => normalizeAddress(address));
+      setterKeys.push(
+        ...createKeysFromObjectArrayAndFlagBits({ telecom }, normalizedAddresses, [npiBit, nameBit])
+      );
+      if (npiBit === 0 && nameBit === 0) {
+        getterKeys.push(
+          ...createKeysFromObjectArrayAndFlagBits({ telecom }, normalizedAddresses, [1, 1])
+        );
+        getterKeys.push(
+          ...createKeysFromObjectArrayAndFlagBits({ telecom }, normalizedAddresses, [1, 0])
+        );
+        getterKeys.push(
+          ...createKeysFromObjectArrayAndFlagBits({ telecom }, normalizedAddresses, [0, 1])
+        );
+        getterKeys.push(
+          ...createKeysFromObjectArrayAndFlagBits({ telecom }, normalizedAddresses, [0, 0])
+        );
+      } else if (npiBit === 1 && nameBit === 0) {
+        getterKeys.push(
+          ...createKeysFromObjectArrayAndFlagBits({ telecom }, normalizedAddresses, [0, 1])
+        );
+        getterKeys.push(
+          ...createKeysFromObjectArrayAndFlagBits({ telecom }, normalizedAddresses, [0, 0])
+        );
+      } else if (npiBit === 0 && nameBit === 1) {
+        getterKeys.push(
+          ...createKeysFromObjectArrayAndFlagBits({ telecom }, normalizedAddresses, [1, 0])
+        );
+        getterKeys.push(
+          ...createKeysFromObjectArrayAndFlagBits({ telecom }, normalizedAddresses, [0, 0])
+        );
+      } else {
+        getterKeys.push(
+          ...createKeysFromObjectArrayAndFlagBits({ telecom }, normalizedAddresses, [0, 0])
+        );
+      }
+    }
     // Two practitioners with the same name are the same, as long as their NPIs and addresses aren't different
     if (hasName) {
       const setterNameKeys = createKeysFromObjectAndFlagBits(name, [addressBit, npiBit]);
