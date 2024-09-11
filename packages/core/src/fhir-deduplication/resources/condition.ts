@@ -91,7 +91,7 @@ export function groupSameConditions(conditions: Condition[]): {
       const display = extractDisplayFromConcept(condition.code);
       if (display) {
         const compKey = JSON.stringify({ display, date });
-        fillMaps(displayMap, compKey, condition, refReplacementMap, undefined, c => c);
+        fillMaps(displayMap, compKey, condition, refReplacementMap, undefined);
       } else {
         danglingReferencesSet.add(createRef(condition));
       }
