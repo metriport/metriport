@@ -158,7 +158,7 @@ describe("groupSameConditions", () => {
       ])
     );
   });
-  it("proper behavior when only one code of unrecognized system", () => {
+  it("do not remove code and preserve original coding when there is only one code of unrecognized system", () => {
     condition.code = { coding: [otherCodeSystemMd] };
     condition2.code = { coding: [otherCodeSystemMd] };
     condition.onsetPeriod = dateTime;
@@ -166,5 +166,7 @@ describe("groupSameConditions", () => {
 
     const { displayMap } = groupSameConditions([condition, condition2]);
     expect(displayMap.size).toBe(1);
+    const groupedCondition = displayMap.values().next().value;
+    expect(groupedCondition.code?.coding).toEqual([otherCodeSystemMd]);
   });
 });

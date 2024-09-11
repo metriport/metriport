@@ -306,4 +306,20 @@ describe("groupSameObservations", () => {
     const { observationsMap } = groupSameObservations([observation, observation2]);
     expect(observationsMap.size).toBe(2);
   });
+
+  it("does not remove code and preserve original coding when there is only one code of unrecognized system", () => {
+    observation.effectiveDateTime = dateTime.start;
+    observation2.effectiveDateTime = dateTime.start;
+    const originalCoding = [{ system: "some other system", code: "123", display: "some display" }];
+
+    observation.code = { coding: originalCoding };
+    observation2.code = { coding: originalCoding };
+    observation.valueCodeableConcept = valueConceptTobacco;
+    observation2.valueCodeableConcept = valueConceptTobacco;
+
+    const { observationsMap } = groupSameObservations([observation, observation2]);
+    expect(observationsMap.size).toBe(1);
+    const groupedObservation = observationsMap.values().next().value;
+    expect(groupedObservation.code?.coding).toEqual(originalCoding);
+  });
 });

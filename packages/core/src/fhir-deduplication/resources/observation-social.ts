@@ -69,6 +69,15 @@ export function groupSameObservationsSocial(observations: Observation[]): {
     return master;
   }
 
+  function postProcessOnlyStatus(
+    master: Observation,
+    existing: Observation,
+    target: Observation
+  ): Observation {
+    master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
+    return master;
+  }
+
   for (const observation of observations) {
     const keyCodes = extractCodes(observation.code);
     const keyCode = retrieveCode(keyCodes);
@@ -79,17 +88,25 @@ export function groupSameObservationsSocial(observations: Observation[]): {
       continue;
     }
 
-    let key;
     if (keyCode) {
-      key = JSON.stringify({ value, keyCode });
+      const key = JSON.stringify({ value, keyCode });
+      fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
     } else {
       const display = extractDisplayFromConcept(observation.code);
       if (display) {
-        key = JSON.stringify({ value, display });
+        const key = JSON.stringify({ value, display });
+        fillMaps(
+          observationsMap,
+          key,
+          observation,
+          refReplacementMap,
+          undefined,
+          postProcessOnlyStatus
+        );
+      } else {
+        danglingReferencesSet.add(createRef(observation));
       }
     }
-    if (key) fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
-    else danglingReferencesSet.add(createRef(observation));
   }
 
   return {
