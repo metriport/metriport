@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { z } from "zod";
+import dayjs from "dayjs";
+import { ISO_DATE } from "../shared/date";
 import { createSettings } from "../command/settings/createSettings";
 import { getSettings, getSettingsOrFail } from "../command/settings/getSettings";
 import { updateSettings } from "../command/settings/updateSettings";
@@ -13,6 +15,44 @@ import { Settings } from "../models/settings";
 import { requestLogger } from "./helpers/request-logger";
 import { asyncHandler, getCxIdOrFail } from "./util";
 import { parseISODate } from "../shared/date";
+
+const mrSectionsKeys = [
+  "reports",
+  "conditions",
+  "medications",
+  "allergies",
+  "procedures",
+  "social-history",
+  "vitals",
+  "labs",
+  "observations",
+  "immunizations",
+  "family-member-history",
+  "related-persons",
+  "tasks",
+  "coverages",
+  "encounters",
+  "documents",
+] as const;
+
+const mrSectionsResourceTypes = [
+  "Encounter/Notes",
+  "Conditions",
+  "Medications",
+  "Allergies",
+  "Procedures",
+  "Social History",
+  "Vitals",
+  "Labs",
+  "Observations",
+  "Immunizations",
+  "Family Member History",
+  "Related Persons",
+  "Tasks",
+  "Coverage",
+  "Encounters",
+  "Documents",
+] as const;
 
 const router = Router();
 const webhookURLIncludeBlacklist = [
@@ -58,7 +98,7 @@ const webhookURLExactBlacklist = ["0"];
 
 class SettingsDTO {
   public constructor(
-    public id: string,
+    public key: string,
     public webhookUrl: string | null,
     public webhookKey: string | null,
     public mrFilters: MrFilters[] | null
@@ -119,17 +159,24 @@ const updateSettingsSchema = z
     mrFilters: z
       .array(
         z.object({
-          key: z.string(),
-          resourceType: z.string(),
+          key: z.enum(mrSectionsKeys),
+          resourceType: z.enum(mrSectionsResourceTypes),
           dateFilter: z
             .object({
-              from: z.string().optional(),
-              to: z.string().optional(),
+              from: z
+                .string()
+                .refine(v => dayjs(v, ISO_DATE, true).isValid())
+                .optional(),
+              to: z
+                .string()
+                .refine(v => dayjs(v, ISO_DATE, true).isValid())
+                .optional(),
             })
             .optional(),
           stringFilter: z.string().optional(),
         })
       )
+      .min(mrSectionsKeys.length)
       .optional(),
   })
   .strict();
@@ -140,7 +187,7 @@ const updateSettingsSchema = z
  * Updates the settings for the API customer.
  *
  * @param {string}  req.body.webhookUrl The webhook URL to set.
- * @param {json}  req.body.filters The mr filters to set.
+ * @param {MrFilters[]}  req.body.filters The mr filters to set.
  *
  * @return {SettingsDTO} The updated settings data as defined by SettingsDTO.
  */
