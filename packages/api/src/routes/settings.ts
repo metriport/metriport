@@ -14,7 +14,6 @@ import BadRequestError from "../errors/bad-request";
 import { Settings } from "../models/settings";
 import { requestLogger } from "./helpers/request-logger";
 import { asyncHandler, getCxIdOrFail } from "./util";
-import { parseISODate } from "../shared/date";
 
 const mrSectionsKeys = [
   "reports",
@@ -205,15 +204,6 @@ router.post(
         }
       }
       if (webhookURLExactBlacklist.includes(webhookUrl)) throw new BadRequestError(`Invalid URL`);
-    }
-
-    for (const filter of mrFilters ?? []) {
-      if (filter.dateFilter?.from) {
-        filter.dateFilter.from = parseISODate(filter.dateFilter.from);
-      }
-      if (filter.dateFilter?.to) {
-        filter.dateFilter.to = parseISODate(filter.dateFilter.to);
-      }
     }
 
     const settings = await updateSettings({
