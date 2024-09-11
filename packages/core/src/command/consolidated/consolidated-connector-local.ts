@@ -24,7 +24,7 @@ export class ConsolidatedDataConnectorLocal implements ConsolidatedDataConnector
   ): Promise<ConsolidatedDataResponse> {
     const { cxId, id: patientId } = params.patient;
 
-    const [originalBundle] = await Promise.all([getConsolidatedFhirBundle(params)]);
+    const originalBundle = await getConsolidatedFhirBundle(params);
 
     const dedupEnabled = true;
     const dedupedBundle = deduplicate({ cxId, patientId, bundle: originalBundle });
