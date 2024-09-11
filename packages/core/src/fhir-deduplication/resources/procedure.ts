@@ -85,13 +85,25 @@ export function groupSameProcedures(procedures: Procedure[]): {
         system?.includes(SNOMED_OID)
       );
     });
-    if (filtered) {
+    if (filtered && filtered.length > 0) {
       master.code = {
         ...code,
         coding: filtered,
       };
+    } else {
+      master.code = { ...code };
+      delete master.code.coding;
     }
 
+    master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
+    return master;
+  }
+
+  function postProcessOnlyStatus(
+    master: Procedure,
+    existing: Procedure,
+    target: Procedure
+  ): Procedure {
     master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
     return master;
   }
@@ -134,7 +146,7 @@ export function groupSameProcedures(procedures: Procedure[]): {
           procedure,
           refReplacementMap,
           undefined,
-          removeCodesAndAssignStatus
+          postProcessOnlyStatus
         );
       } else {
         danglingReferencesSet.add(createRef(procedure));

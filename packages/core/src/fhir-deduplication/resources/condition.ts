@@ -1,5 +1,5 @@
 import { CodeableConcept, Condition } from "@medplum/fhirtypes";
-import { ICD_10_CODE, ICD_10_OID, SNOMED_CODE, SNOMED_OID } from "../../util/constants";
+import { ICD_10_CODE, ICD_10_OID, SNOMED_CODE, SNOMED_OID, ICD_9_CODE } from "../../util/constants";
 import {
   DeduplicationResult,
   combineResources,
@@ -8,6 +8,7 @@ import {
   fillMaps,
   getDateFromResource,
   hasBlacklistedText,
+  isUnknownCoding,
 } from "../shared";
 
 /**
@@ -21,11 +22,11 @@ import {
  * 2. Combine the Conditions in each group into one master condition and return the array of only unique and maximally filled out Conditions
  */
 export function deduplicateConditions(conditions: Condition[]): DeduplicationResult<Condition> {
-  const { snomedMap, icd10Map, dispayMap, refReplacementMap, danglingReferences } =
+  const { snomedMap, icd10Map, displayMap, refReplacementMap, danglingReferences } =
     groupSameConditions(conditions);
   return {
     combinedResources: combineResources({
-      combinedMaps: [snomedMap, icd10Map, dispayMap],
+      combinedMaps: [snomedMap, icd10Map, displayMap],
     }),
     refReplacementMap,
     danglingReferences,
@@ -35,36 +36,42 @@ export function deduplicateConditions(conditions: Condition[]): DeduplicationRes
 export function groupSameConditions(conditions: Condition[]): {
   snomedMap: Map<string, Condition>;
   icd10Map: Map<string, Condition>;
-  dispayMap: Map<string, Condition>;
+  displayMap: Map<string, Condition>;
   refReplacementMap: Map<string, string[]>;
   danglingReferences: string[];
 } {
   const snomedMap = new Map<string, Condition>();
   const icd10Map = new Map<string, Condition>();
-  const dispayMap = new Map<string, Condition>();
+  const displayMap = new Map<string, Condition>();
   const refReplacementMap = new Map<string, string[]>();
   const danglingReferencesSet = new Set<string>();
 
   function removeOtherCodes(master: Condition): Condition {
     const code = master.code;
-    const filtered = code?.coding?.filter(
-      coding =>
-        coding.system?.includes(SNOMED_CODE) ||
-        coding.system?.includes(SNOMED_OID) ||
-        coding.system?.includes(ICD_10_CODE) ||
-        coding.system?.includes(ICD_10_OID)
-    );
-    if (filtered) {
+    const filtered = code?.coding?.filter(coding => {
+      const system = coding.system?.toLowerCase();
+      return (
+        system?.includes(SNOMED_CODE) ||
+        system?.includes(SNOMED_OID) ||
+        system?.includes(ICD_10_CODE) ||
+        system?.includes(ICD_10_OID) ||
+        system?.includes(ICD_9_CODE)
+      );
+    });
+    if (filtered && filtered.length > 0) {
       master.code = {
         ...code,
         coding: filtered,
       };
+    } else {
+      master.code = { ...code };
+      delete master.code.coding;
     }
     return master;
   }
 
   for (const condition of conditions) {
-    if (hasBlacklistedText(condition.code)) {
+    if (hasBlacklistedText(condition.code) || !isKnownCondition(condition.code)) {
       danglingReferencesSet.add(createRef(condition));
       continue;
     }
@@ -86,7 +93,7 @@ export function groupSameConditions(conditions: Condition[]): {
       const display = extractDisplayFromConcept(condition.code);
       if (display) {
         const compKey = JSON.stringify({ display, date });
-        fillMaps(dispayMap, compKey, condition, refReplacementMap, undefined, removeOtherCodes);
+        fillMaps(displayMap, compKey, condition, refReplacementMap, undefined);
       } else {
         danglingReferencesSet.add(createRef(condition));
       }
@@ -96,10 +103,20 @@ export function groupSameConditions(conditions: Condition[]): {
   return {
     snomedMap,
     icd10Map,
-    dispayMap,
+    displayMap,
     refReplacementMap,
     danglingReferences: [...danglingReferencesSet],
   };
+}
+
+function isKnownCondition(concept: CodeableConcept | undefined) {
+  const knownCodings = concept?.coding?.filter(
+    coding =>
+      !isUnknownCoding(coding) &&
+      (coding.code !== "55607006" || coding.display?.toLowerCase().trim() !== "problem")
+  );
+
+  return knownCodings?.length && knownCodings?.length > 0;
 }
 
 export function extractCodes(concept: CodeableConcept | undefined): {

@@ -84,7 +84,7 @@ export function groupSameMedications(medications: Medication[]): {
       const display = extractDisplayFromConcept(medication.code);
       if (display) {
         const compKey = JSON.stringify({ display });
-        fillMaps(displayMap, compKey, medication, refReplacementMap, undefined, removeOtherCodes);
+        fillMaps(displayMap, compKey, medication, refReplacementMap, undefined);
       } else {
         danglingReferences.add(createRef(medication));
       }

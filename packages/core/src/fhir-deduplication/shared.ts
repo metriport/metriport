@@ -1,6 +1,7 @@
 import { CodeableConcept, Coding, Identifier, Resource } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import _, { cloneDeep } from "lodash";
+import { v4 as uuidv4 } from "uuid";
 
 const NO_KNOWN_SUBSTRING = "no known";
 
@@ -61,6 +62,7 @@ export function combineTwoResources<T extends Resource>(
 
 // TODO: Might be a good idea to include a check to see if all resources refer to the same patient
 const conditionKeysToIgnore = ["id", "resourceType", "subject"];
+const unknownValues = ["unknown", "unk", "no known"];
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function deepMerge(target: any, source: any, isExtensionIncluded: boolean): any {
@@ -78,6 +80,11 @@ export function deepMerge(target: any, source: any, isExtensionIncluded: boolean
     } else {
       // Directly assign values
       if (key === "__proto__" || key === "constructor") continue;
+      if (
+        typeof source[key] === "string" &&
+        unknownValues.some(unk => source[key].toLowerCase().includes(unk))
+      )
+        continue;
       combined[key] = source[key];
     }
   }
@@ -142,6 +149,74 @@ export function fillMaps<T extends Resource>(
     }
   } else {
     map.set(key, targetResource);
+  }
+}
+
+export function createKeysFromObjectArrayAndFlagBits(
+  baseObject: object,
+  contactsOrAddresses: object[],
+  flagBits: number[]
+): string[] {
+  return contactsOrAddresses.map(item => JSON.stringify({ baseObject, ...item, flagBits }));
+}
+
+export function createKeysFromObjectAndFlagBits(object: object, bits: number[]): string[] {
+  return [JSON.stringify({ ...object, bits })];
+}
+
+export function createKeyFromObjects(...objects: object[]): string {
+  const combinedObject = objects.reduce((acc, obj) => ({ ...acc, ...obj }), {});
+  return JSON.stringify(combinedObject);
+}
+
+export function fillL1L2Maps<T extends Resource>({
+  map1,
+  map2,
+  getterKeys,
+  setterKeys,
+  targetResource,
+  refReplacementMap,
+  isExtensionIncluded = true,
+  applySpecialModifications,
+}: {
+  map1: Map<string, string>;
+  map2: Map<string, T>;
+  getterKeys: string[];
+  setterKeys: string[];
+  targetResource: T;
+  refReplacementMap: Map<string, string[]>;
+  isExtensionIncluded?: boolean;
+  applySpecialModifications?: ApplySpecialModificationsCallback<T>;
+}): void {
+  let map2Key = undefined;
+  for (const key of getterKeys) {
+    map2Key = map1.get(key); // Potential improvement. We just select the first uuid that matches. What if multple matches exist?
+    if (map2Key) {
+      fillMaps(
+        map2,
+        map2Key,
+        targetResource,
+        refReplacementMap,
+        isExtensionIncluded,
+        applySpecialModifications
+      );
+      break;
+    }
+  }
+  if (!map2Key) {
+    map2Key = uuidv4();
+    for (const key of setterKeys) {
+      map1.set(key, map2Key);
+    }
+    // fill L2 map only once to avoid duplicate entries
+    fillMaps(
+      map2,
+      map2Key,
+      targetResource,
+      refReplacementMap,
+      isExtensionIncluded,
+      applySpecialModifications
+    );
   }
 }
 
@@ -298,8 +373,10 @@ export function isUnknownCoding(coding: Coding, text?: string | undefined): bool
     );
   } else {
     return (
-      (!display || display === unknownCoding.display.toLowerCase()) &&
-      (!text || text === unknownCode.text.toLowerCase())
+      (!display ||
+        display === unknownCoding.display.toLowerCase() ||
+        display.includes("no data available")) &&
+      (!text || text === unknownCode.text.toLowerCase() || text.includes("no data"))
     );
   }
 }

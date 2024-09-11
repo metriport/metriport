@@ -9,6 +9,8 @@ export const LOINC_OID = "2.16.840.1.113883.6.1";
 export const ICD_10_CODE = "icd-10";
 export const ICD_10_OID = "2.16.840.1.113883.6.90";
 
+export const ICD_9_CODE = "icd-9";
+
 export const RXNORM_CODE = "rxnorm";
 export const RXNORM_OID = "2.16.840.1.113883.6.88";
 

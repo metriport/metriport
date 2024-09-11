@@ -27,4 +27,14 @@ describe("groupSameMedStatements", () => {
     const result = groupSameMedStatements([medStatement, medStatement2]);
     expect(result.medStatementsMap.values().next().value.status).toBe("intended");
   });
+  it("correctly groups medStatements with no dates based on medRef", () => {
+    const medStatementNoDate1 = makeMedicationStatement({ id: faker.string.uuid() });
+    const medStatementNoDate2 = makeMedicationStatement({ id: faker.string.uuid() });
+
+    delete medStatementNoDate1.effectiveDateTime;
+    delete medStatementNoDate2.effectiveDateTime;
+
+    const { medStatementsMap } = groupSameMedStatements([medStatementNoDate1, medStatementNoDate2]);
+    expect(medStatementsMap.size).toBe(1);
+  });
 });

@@ -148,3 +148,19 @@ describe("groupSameMedications", () => {
     expect(combinedMedication?.extension).toBe(undefined);
   });
 });
+it("doesnt remove code and preserves original coding when there is only one unknown code", () => {
+  const originalCoding = [{ system: "some other system", code: "123", display: "some display" }];
+  medication.code = { coding: originalCoding };
+  medication2.code = { coding: originalCoding };
+
+  const { rxnormMap, ndcMap, snomedMap, displayMap } = groupSameMedications([
+    medication,
+    medication2,
+  ]);
+  expect(rxnormMap.size).toBe(0);
+  expect(ndcMap.size).toBe(0);
+  expect(snomedMap.size).toBe(0);
+  expect(displayMap.size).toBe(1);
+  const groupedMedication = displayMap.values().next().value;
+  expect(groupedMedication.code?.coding).toEqual(originalCoding);
+});

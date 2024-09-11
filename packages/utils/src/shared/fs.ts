@@ -6,7 +6,16 @@ export function isDirectory(path: string): boolean {
 }
 
 export function fileExists(path: string): boolean {
-  return fs.openSync(path, "r") !== undefined;
+  try {
+    return fs.openSync(path, "r") !== undefined;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    if (error.code === "ENOENT") {
+      return false;
+    } else {
+      throw error;
+    }
+  }
 }
 
 export function getFileNames({
