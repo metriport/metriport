@@ -1,13 +1,10 @@
 import { Bundle } from "@medplum/fhirtypes";
-import {
-  createConsolidatedDataBackupFilePath,
-  createConsolidatedDataFilePath,
-} from "../../domain/consolidated/filename";
+import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { executeWithRetriesS3, returnUndefinedOn404, S3Utils } from "../../external/aws/s3";
 import { parseRawBundleForFhirServer } from "../../external/fhir/parse-bundle";
 import { out } from "../../util";
 
-export type NewConsolidatedDataRequest = {
+export type ConsolidatePatientDataCommand = {
   cxId: string;
   patientId: string;
   newBundleBucket: string;
@@ -37,11 +34,10 @@ export class PatientDataConsolidator {
     newBundleBucket,
     newBundleS3Key,
     logMemUsage,
-  }: NewConsolidatedDataRequest): Promise<void> {
+  }: ConsolidatePatientDataCommand): Promise<void> {
     const { log } = out(`data consolidator - pat ${patientId}`);
 
     const consolidatedS3Key = createConsolidatedDataFilePath(cxId, patientId);
-    const consolidatedS3KeyBackup = createConsolidatedDataBackupFilePath(consolidatedS3Key);
 
     log(
       `Getting consolidated data from bucket ${this.consolidatedBucket}, key ${consolidatedS3Key}`
@@ -54,16 +50,6 @@ export class PatientDataConsolidator {
       { ...defaultS3RetriesConfig, log }
     );
 
-    log(`Making a copy of consolidated data to key ${consolidatedS3KeyBackup}`);
-    const copyConsolidatedPromise = returnUndefinedOn404(() =>
-      this.s3Utils.copyFile({
-        fromBucket: this.consolidatedBucket,
-        fromKey: consolidatedS3Key,
-        toBucket: this.consolidatedBucket,
-        toKey: consolidatedS3KeyBackup,
-      })
-    );
-
     log(`Getting new bundle from bucket ${newBundleBucket}, key ${newBundleS3Key}`);
     const getNewBundlePromise = executeWithRetriesS3(
       () => this.s3Utils.getFileContentsAsString(newBundleBucket, newBundleS3Key),
@@ -73,7 +59,6 @@ export class PatientDataConsolidator {
     const [consolidatedDataRaw, newBundleRaw] = await Promise.all([
       getConsolidatedPromise,
       getNewBundlePromise,
-      copyConsolidatedPromise,
     ]);
 
     const consolidatedData = parseConsolidatedRaw(consolidatedDataRaw, patientId, log);
