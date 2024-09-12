@@ -194,7 +194,6 @@ export function epicMatchingAlgorithm(
     ssn: 0,
   };
 
-  // DOB comparison
   if (patient1.dob && patient2.dob) {
     if (patient1.dob === patient2.dob) {
       scores.dob = 8;
@@ -208,14 +207,12 @@ export function epicMatchingAlgorithm(
     }
   }
 
-  // Gender comparison
   if (patient1.genderAtBirth && patient2.genderAtBirth) {
     if (patient1.genderAtBirth === patient2.genderAtBirth) {
       scores.gender = 1;
     }
   }
 
-  // Names comparison
   const names1 = [patient1.firstName, patient1.lastName].filter(Boolean);
   const names2 = [patient2.firstName, patient2.lastName].filter(Boolean);
   const overlapNames = names2.filter(name => names1.includes(name));
@@ -225,7 +222,6 @@ export function epicMatchingAlgorithm(
     scores.names = 5;
   }
 
-  // Address comparison
   const addressMatch = patient1.address.some(addr1 =>
     patient2.address.some(addr2 => JSON.stringify(addr1) === JSON.stringify(addr2))
   );
@@ -242,7 +238,6 @@ export function epicMatchingAlgorithm(
     if (zipMatch) scores.address += 0.5;
   }
 
-  // Telephone comparison
   const phoneMatch = patient1.contact?.some(c1 =>
     patient2.contact?.some(c2 => c1.phone && c2.phone && c1.phone === c2.phone)
   );
@@ -250,7 +245,6 @@ export function epicMatchingAlgorithm(
     scores.phone = 2;
   }
 
-  // Email comparison
   const emailMatch = patient1.contact?.some(c1 =>
     patient2.contact?.some(c2 => c1.email && c2.email && c1.email === c2.email)
   );
@@ -258,7 +252,6 @@ export function epicMatchingAlgorithm(
     scores.email = 2;
   }
 
-  // SSN comparison
   const ssn1 = patient1.personalIdentifiers?.filter(id => id.type === "ssn").map(id => id.value);
   const ssn2 = patient2.personalIdentifiers?.filter(id => id.type === "ssn").map(id => id.value);
   if (ssn1?.length || ssn2?.length) {
@@ -294,7 +287,6 @@ export function epicMatchingAlgorithm(
   return match;
 }
 
-// Helper function to split DOB string into parts
 function splitDob(dob: string): string[] {
   return dob.split(/[-/]/);
 }
