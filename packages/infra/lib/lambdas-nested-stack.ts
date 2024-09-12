@@ -9,6 +9,10 @@ import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { EnvType } from "./env-type";
+import {
+  createConnector,
+  PatientDataConsolidatorConnector,
+} from "./lambdas-nested-stack/consolidate-patient-data-connector";
 import * as AppConfigUtils from "./shared/app-config";
 import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
@@ -42,6 +46,7 @@ export class LambdasNestedStack extends NestedStack {
   readonly outboundDocumentQueryLambda: lambda.Function;
   readonly outboundDocumentRetrievalLambda: lambda.Function;
   readonly fhirToBundleLambda: lambda.Function;
+  readonly consolidatePatientData: PatientDataConsolidatorConnector;
 
   constructor(scope: Construct, id: string, props: LambdasNestedStackProps) {
     super(scope, id, props);
@@ -126,6 +131,15 @@ export class LambdasNestedStack extends NestedStack {
       alarmAction: props.alarmAction,
       appId: props.appConfigEnvVars.appId,
       configId: props.appConfigEnvVars.configId,
+    });
+
+    this.consolidatePatientData = createConnector({
+      stack: this,
+      lambdaLayers: this.lambdaLayers,
+      vpc: props.vpc,
+      patientConsolidatedDataBucket: props.medicalDocumentsBucket,
+      envType: props.config.environmentType,
+      alarmSnsAction: props.alarmAction,
     });
   }
 

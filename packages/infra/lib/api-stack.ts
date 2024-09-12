@@ -320,6 +320,7 @@ export class APIStack extends Stack {
       outboundDocumentQueryLambda,
       outboundDocumentRetrievalLambda,
       fhirToBundleLambda,
+      consolidatePatientData,
     } = new LambdasNestedStack(this, "LambdasNestedStack", {
       config: props.config,
       vpc: this.vpc,
@@ -537,10 +538,10 @@ export class APIStack extends Stack {
           lambdaLayers,
           vpc: this.vpc,
           sourceQueue: fhirConverterQueue,
-          destinationQueue: fhirServerQueue,
+          fhirServerQueue,
+          patientDataConsolidatorQueue: consolidatePatientData.queue,
           dlq: fhirConverterDLQ,
           fhirConverterBucket,
-          conversionResultQueueUrl: fhirServerQueue.queueUrl,
           apiServiceDnsAddress: apiDirectUrl,
           alarmSnsAction: slackNotification?.alarmAction,
         })

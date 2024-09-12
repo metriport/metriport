@@ -1,12 +1,7 @@
-import { S3Utils } from "@metriport/core/external/aws/s3";
+import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE, XML_APP_MIME_TYPE } from "@metriport/core/util/mime";
-import {
-  errorToString,
-  executeWithNetworkRetries,
-  executeWithRetries,
-  MetriportError,
-} from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import { SQSEvent, SQSRecord } from "aws-lambda";
 import AWS from "aws-sdk";
 import axios from "axios";
@@ -29,7 +24,8 @@ const region = getEnvOrFail("AWS_REGION");
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const apiURL = getEnvOrFail("API_URL");
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
-const conversionResultQueueURL = getEnvOrFail("CONVERSION_RESULT_QUEUE_URL");
+const fhirServerQueueURL = getEnvOrFail("FHIR_SERVER_QUEUE_URL");
+const patientDataConsolidatorQueueURL = getEnvOrFail("PATIENT_DATA_CONSOLIDATOR_QUEUE_URL");
 const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME");
 
 const sourceUrl = "https://api.metriport.com/cda/to/fhir";
@@ -160,11 +156,11 @@ export async function handler(event: SQSEvent) {
       const patientId = attrib.patientId?.stringValue;
       const jobId = attrib.jobId?.stringValue;
       const jobStartedAt = attrib.startedAt?.stringValue;
-      const source = attrib.source?.stringValue;
+      const medicalDataSource = attrib.source?.stringValue;
       if (!cxId) throw new Error(`Missing cxId`);
       if (!patientId) throw new Error(`Missing patientId`);
       const log = prefixedLog(`${i}, patient ${patientId}, job ${jobId}`);
-      const lambdaParams = { cxId, patientId, jobId, source };
+      const lambdaParams = { cxId, patientId, jobId, source: medicalDataSource };
 
       log(`Body: ${message.body}`);
       const { s3BucketName, s3FileName, documentExtension } = parseBody(message.body);
@@ -273,7 +269,7 @@ export async function handler(event: SQSEvent) {
 
       await cloudWatchUtils.reportMemoryUsage();
 
-      // Store the conversion result in S3 and send it to the FHIR server
+      // Store the conversion result in S3 and send it to the destination(s)
       await sendConversionResult(
         cxId,
         patientId,
@@ -281,7 +277,7 @@ export async function handler(event: SQSEvent) {
         updatedConversionResult,
         jobStartedAt,
         jobId,
-        source,
+        medicalDataSource,
         log
       );
 
@@ -358,12 +354,12 @@ async function sendConversionResult(
   conversionPayload: FHIRBundle,
   jobStartedAt: string | undefined,
   jobId: string | undefined,
-  source: string | undefined,
+  medicalDataSource: string | undefined,
   log: Log
 ) {
   const fileName = `${sourceFileName}.json`;
   log(`Uploading result to S3, bucket ${conversionResultBucketName}, key ${fileName}`);
-  await executeWithRetries(
+  await executeWithRetriesS3(
     () =>
       s3Utils.s3
         .upload({
@@ -379,24 +375,39 @@ async function sendConversionResult(
     }
   );
 
-  log(`Sending result info to queue`);
+  log(`Sending result info to queues`);
   const queuePayload = JSON.stringify({
     s3BucketName: conversionResultBucketName,
     s3FileName: fileName,
   });
 
-  const sendParams = {
-    MessageBody: queuePayload,
-    QueueUrl: conversionResultQueueURL,
-    MessageAttributes: {
-      ...SQSUtils.singleAttributeToSend("cxId", cxId),
-      ...SQSUtils.singleAttributeToSend("patientId", patientId),
-      ...(jobStartedAt ? SQSUtils.singleAttributeToSend("jobStartedAt", jobStartedAt) : {}),
-      ...(jobId ? SQSUtils.singleAttributeToSend("jobId", jobId) : {}),
-      ...(source ? SQSUtils.singleAttributeToSend("source", source) : {}),
-    },
+  const messageAtribs = {
+    ...SQSUtils.singleAttributeToSend("cxId", cxId),
+    ...SQSUtils.singleAttributeToSend("patientId", patientId),
+    ...(jobStartedAt ? SQSUtils.singleAttributeToSend("jobStartedAt", jobStartedAt) : {}),
+    ...(jobId ? SQSUtils.singleAttributeToSend("jobId", jobId) : {}),
+    ...(medicalDataSource ? SQSUtils.singleAttributeToSend("source", medicalDataSource) : {}),
   };
-  await sqs.sendMessage(sendParams).promise();
+  await Promise.all([
+    sqs
+      .sendMessage({
+        MessageBody: queuePayload,
+        QueueUrl: fhirServerQueueURL,
+        MessageAttributes: messageAtribs,
+      })
+      .promise(),
+    sqs
+      .sendMessage({
+        MessageBody: queuePayload,
+        QueueUrl: patientDataConsolidatorQueueURL,
+        MessageAttributes: messageAtribs,
+        // This is critical to make sure we only process one message per patient at a time
+        MessageGroupId: patientId,
+        // This is just to identify this message uniquely
+        MessageDeduplicationId: fileName,
+      })
+      .promise(),
+  ]);
 }
 
 async function storePreProcessedConversionResult({
@@ -413,7 +424,7 @@ async function storePreProcessedConversionResult({
   log: typeof console.log;
 }) {
   try {
-    await executeWithRetries(
+    await executeWithRetriesS3(
       () =>
         s3Utils.s3
           .upload({
@@ -457,7 +468,7 @@ async function storePreConversionPayloadInS3({
   log: typeof console.log;
 }) {
   try {
-    await executeWithRetries(
+    await executeWithRetriesS3(
       () =>
         s3Utils.s3
           .upload({
