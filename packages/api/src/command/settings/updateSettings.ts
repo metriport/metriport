@@ -3,28 +3,37 @@ import { nanoid } from "nanoid";
 import { maxWebhookStatusLength } from "../../domain/settings";
 import { processAsyncError } from "../../errors";
 import WebhookError from "../../errors/webhook";
-import { Settings, WEBHOOK_STATUS_BAD_RESPONSE, WEBHOOK_STATUS_OK } from "../../models/settings";
+import {
+  Settings as SettingsModel,
+  WEBHOOK_STATUS_BAD_RESPONSE,
+  WEBHOOK_STATUS_OK,
+} from "../../models/settings";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { errorToWhStatusDetails, sendTestPayload } from "../webhook/webhook";
 import { getSettingsOrFail } from "./getSettings";
+import { MrFilters } from "../../domain/settings";
 
 const log = Util.log(`updateSettings`);
 
 export type UpdateSettingsCommand = {
   cxId: string;
   webhookUrl?: string;
+  filters?: MrFilters[];
 };
 
 export const updateSettings = async ({
   cxId,
   webhookUrl,
-}: UpdateSettingsCommand): Promise<Settings> => {
+  filters,
+}: UpdateSettingsCommand): Promise<SettingsModel> => {
   const originalSettings = await getSettingsOrFail({ id: cxId });
   const updateWebhook = getWebhookDataForUpdate(originalSettings, webhookUrl);
-  await Settings.update(
+  await SettingsModel.update(
     {
-      ...updateWebhook,
+      ...originalSettings.dataValues,
+      ...(webhookUrl ? updateWebhook : undefined),
+      ...(filters ? { mrFilters: filters } : undefined),
     },
     { where: { id: cxId } }
   );
@@ -48,7 +57,7 @@ export const updateWebhookStatus = async ({
   webhookStatusDetail,
 }: UpdateWebhookStatusCommand): Promise<void> => {
   const statusDetail = limitStringLength(webhookStatusDetail, maxWebhookStatusLength);
-  await Settings.update(
+  await SettingsModel.update(
     {
       webhookEnabled,
       ...(statusDetail ? { webhookStatusDetail: statusDetail } : undefined),
@@ -58,9 +67,9 @@ export const updateWebhookStatus = async ({
 };
 
 const getWebhookDataForUpdate = (
-  settings: Settings,
+  settings: SettingsModel,
   newUrl?: string
-): Pick<Settings, "webhookUrl" | "webhookKey"> => {
+): Pick<SettingsModel, "webhookUrl" | "webhookKey"> => {
   const webhookData = {
     ...(newUrl
       ? {
@@ -76,7 +85,7 @@ const getWebhookDataForUpdate = (
   return webhookData;
 };
 
-type TestWebhookCommand = Pick<Settings, "webhookUrl" | "webhookKey"> & { cxId: string };
+type TestWebhookCommand = Pick<SettingsModel, "webhookUrl" | "webhookKey"> & { cxId: string };
 
 const testWebhook = async ({ cxId, webhookUrl, webhookKey }: TestWebhookCommand): Promise<void> => {
   if (!webhookUrl || !webhookKey) return;
