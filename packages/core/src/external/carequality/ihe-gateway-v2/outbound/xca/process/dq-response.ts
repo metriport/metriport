@@ -116,8 +116,8 @@ export function parseDocumentReference({
   const repositoryUniqueId = findSlotValue("repositoryUniqueId");
   const docUniqueId = findExternalIdentifierValue(XDSDocumentEntryUniqueId);
 
-  if (!repositoryUniqueId || !docUniqueId) {
-    const msg = "Document Reference is missing repositoryUniqueId or docUniqueId";
+  if (!docUniqueId) {
+    const msg = "Document Reference is missing docUniqueId";
     capture.error(msg, {
       extra: {
         extrinsicObject,
@@ -131,9 +131,11 @@ export function parseDocumentReference({
   const serviceStartTimeValue = findSlotValue("serviceStartTime");
   const serviceStopTimeValue = findSlotValue("serviceStopTime");
 
+  const homeCommunityId = getHomeCommunityIdForDr(extrinsicObject);
+
   const documentReference: DocumentReference = {
-    homeCommunityId: getHomeCommunityIdForDr(extrinsicObject),
-    repositoryUniqueId,
+    homeCommunityId,
+    repositoryUniqueId: repositoryUniqueId ?? homeCommunityId,
     docUniqueId: stripUrnPrefix(docUniqueId),
     contentType: extrinsicObject?._mimeType,
     language: findSlotValue("languageCode"),
