@@ -852,10 +852,16 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getFrom("query").orFail("facilityId", req);
+    const createCsv = getFromQueryAsBoolean("createCsv", req);
     const patients = await getPatients({ cxId, facilityId });
-    const patientsWithAssessments = await getCoverageAssessments({ cxId, patients });
+    const patientsWithAssessments = await getCoverageAssessments({
+      cxId,
+      facilityId,
+      patients,
+      createCsv,
+    });
 
-    const response = { patientsWithAssessments };
+    const response = { patientsWithAssessments: patientsWithAssessments ?? null };
     return res.status(status.OK).json(response);
   })
 );

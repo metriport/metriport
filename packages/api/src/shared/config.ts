@@ -259,6 +259,10 @@ export class Config {
     return getEnvVar("SANDBOX_SEED_DATA_BUCKET_NAME");
   }
 
+  static getGeneralBucketName(): string | undefined {
+    return getEnvVar("GENERAL_BUCKET_NAME");
+  }
+
   static getFHIRConverterQueueURL(): string | undefined {
     return getEnvVar("FHIR_CONVERTER_QUEUE_URL");
   }

@@ -12,11 +12,12 @@ import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared";
 
 const region = Config.getAWSRegion();
-const bucket = Config.getMedicalDocumentsBucketName();
+const medicalBucket = Config.getMedicalDocumentsBucketName();
+const generalBucket = Config.getGeneralBucketName();
 
 dayjs.extend(duration);
 
-const signedUrlDuration = dayjs.duration(1, "hour");
+const signedUrlDuration = dayjs.duration(1, "day");
 
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
@@ -35,66 +36,61 @@ export type PatientWithCoverageAssessment = InternalPatientDTO & Partial<Coverag
 
 export async function getCoverageAssessments({
   cxId,
+  facilityId,
   patients,
+  createCsv = false,
 }: {
   cxId: string;
+  facilityId: string;
   patients: PatientModel[];
-}): Promise<PatientWithCoverageAssessment[]> {
+  createCsv?: boolean;
+}): Promise<PatientWithCoverageAssessment[] | void> {
   const { log } = out(`getCoverageAssessments - cxId ${cxId}`);
-  const patientsWithAssessment: PatientWithCoverageAssessment[] = [];
-  const wrapperErrors: string[] = [];
+  if (!generalBucket) throw new Error("General bucket must be defined");
 
-  async function getCoverageAssessmentWrapper({
-    cxId,
-    patient,
-    patientsWithAssessment,
-    errors,
-    log,
-  }: {
-    cxId: string;
-    patient: PatientModel;
-    patientsWithAssessment: PatientWithCoverageAssessment[];
-    errors: string[];
-    log: typeof console.log;
-  }): Promise<void> {
-    try {
-      const coverageAssessment = await getCoverageAssessment({ cxId, patient, log });
-      patientsWithAssessment.push({
-        ...internalDtoFromModel(patient),
-        ...coverageAssessment,
+  const s3Utils = getS3UtilsInstance();
+  const filePath = `cxId=${cxId}/facilityId=${facilityId}`;
+  const fileName = `coverage-assessment/${filePath}/assessment.csv`;
+
+  if (createCsv) {
+    const patientsWithAssessment: PatientWithCoverageAssessment[] = [];
+    const getErrors: string[] = [];
+    await executeAsynchronously(
+      patients.map(patient => {
+        return { cxId, patient, patientsWithAssessment, errors: getErrors, log };
+      }),
+      getCoverageAssessment,
+      { numberOfParallelExecutions: 20 }
+    );
+
+    if (getErrors.length > 0) {
+      capture.error("Failed to get coverage assessments.", {
+        extra: {
+          cxId,
+          patientCount: patients.length,
+          errorCount: getErrors.length,
+          errors: getErrors.join(","),
+          context: "coverage-assessment.get",
+        },
       });
-    } catch (error) {
-      const msg = `Patient: ${patient.id}. Cause: ${errorToString(error)}`;
-      log(msg);
-      errors.push(msg);
-      patientsWithAssessment.push(internalDtoFromModel(patient));
     }
-  }
 
-  await executeAsynchronously(
-    patients.map(patient => {
-      return { cxId, patient, patientsWithAssessment, errors: wrapperErrors, log };
-    }),
-    getCoverageAssessmentWrapper,
-    { numberOfParallelExecutions: 20 }
-  );
-
-  if (wrapperErrors.length > 0) {
-    capture.error("Failed to get coverage assessments.", {
-      extra: {
-        cxId,
-        patientCount: patients.length,
-        errorCount: wrapperErrors.length,
-        errors: wrapperErrors.join(","),
-        context: "coverage-assessment.get",
-      },
+    await s3Utils.uploadFile({
+      bucket: generalBucket,
+      key: fileName,
+      file: Buffer.from(JSON.stringify(patientsWithAssessment), "utf8"),
+      contentType: "application/json",
     });
+  } else {
+    const object = await s3Utils.getFileInfoFromS3(fileName, generalBucket);
+    if (!object.exists)
+      throw new Error("You must run getCoverageAssessments with createCsv = true at least once.");
+    const data = await s3Utils.getFileContentsAsString(generalBucket, fileName);
+    return JSON.parse(data) as PatientWithCoverageAssessment[];
   }
-
-  return patientsWithAssessment;
 }
 
-async function getCoverageAssessment({
+async function singleGetCoverageAssessment({
   cxId,
   patient,
   log,
@@ -127,16 +123,43 @@ async function getCoverageAssessment({
   };
 }
 
+async function getCoverageAssessment({
+  cxId,
+  patient,
+  patientsWithAssessment,
+  errors,
+  log,
+}: {
+  cxId: string;
+  patient: PatientModel;
+  patientsWithAssessment: PatientWithCoverageAssessment[];
+  errors: string[];
+  log: typeof console.log;
+}): Promise<void> {
+  try {
+    const coverageAssessment = await singleGetCoverageAssessment({ cxId, patient, log });
+    patientsWithAssessment.push({
+      ...internalDtoFromModel(patient),
+      ...coverageAssessment,
+    });
+  } catch (error) {
+    const msg = `Patient: ${patient.id}. Cause: ${errorToString(error)}`;
+    log(msg);
+    errors.push(msg);
+    patientsWithAssessment.push(internalDtoFromModel(patient));
+  }
+}
+
 async function getMrSummaryUrl(
   fileName: string,
   log: typeof console.log
 ): Promise<string | undefined> {
   const s3Utils = getS3UtilsInstance();
   try {
-    const object = await s3Utils.getFileInfoFromS3(fileName, bucket);
+    const object = await s3Utils.getFileInfoFromS3(fileName, medicalBucket);
     if (object.exists) {
       return await s3Utils.getSignedUrl({
-        bucketName: bucket,
+        bucketName: medicalBucket,
         fileName,
         durationSeconds: signedUrlDuration.asSeconds(),
       });

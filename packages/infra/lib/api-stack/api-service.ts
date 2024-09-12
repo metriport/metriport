@@ -293,6 +293,9 @@ export function createAPIService({
           ...(props.config.ehrIntegration && {
             EHR_ATHENA_BASE_URL: props.config.ehrIntegration.athenaHealth.baseUrl,
           }),
+          ...(props.config.generalBucketName && {
+            GENERAL_BUCKET_NAME: props.config.generalBucketName,
+          }),
         },
       },
       healthCheckGracePeriod: Duration.seconds(60),
