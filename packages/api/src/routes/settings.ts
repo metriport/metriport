@@ -78,7 +78,7 @@ const webhookURLExactBlacklist = ["0"];
 
 class SettingsDTO {
   public constructor(
-    public key: string,
+    public id: string,
     public webhookUrl: string | null,
     public webhookKey: string | null,
     public mrFilters: MrFilters[] | null
