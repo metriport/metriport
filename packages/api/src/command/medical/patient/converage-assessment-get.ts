@@ -44,13 +44,13 @@ export async function getCoverageAssessments({
   facilityId: string;
   patients: PatientModel[];
   createCsv?: boolean;
-}): Promise<PatientWithCoverageAssessment[] | void> {
+}): Promise<{ patients: PatientWithCoverageAssessment[]; createdAt: Date | undefined } | void> {
   const { log } = out(`getCoverageAssessments - cxId ${cxId}`);
   if (!generalBucket) throw new Error("General bucket must be defined");
 
   const s3Utils = getS3UtilsInstance();
-  const filePath = `cxId=${cxId}/facilityId=${facilityId}`;
-  const fileName = `coverage-assessment/${filePath}/assessment.csv`;
+  const filePath = `coverage-assessment/cxId=${cxId}/facilityId=${facilityId}`;
+  const fileName = `${filePath}/assessment.json`;
 
   if (createCsv) {
     const patientsWithAssessment: PatientWithCoverageAssessment[] = [];
@@ -83,10 +83,14 @@ export async function getCoverageAssessments({
     });
   } else {
     const object = await s3Utils.getFileInfoFromS3(fileName, generalBucket);
-    if (!object.exists)
+    if (!object.exists) {
       throw new Error("You must run getCoverageAssessments with createCsv = true at least once.");
+    }
     const data = await s3Utils.getFileContentsAsString(generalBucket, fileName);
-    return JSON.parse(data) as PatientWithCoverageAssessment[];
+    return {
+      patients: JSON.parse(data) as PatientWithCoverageAssessment[],
+      createdAt: object.createdAt,
+    };
   }
 }
 
