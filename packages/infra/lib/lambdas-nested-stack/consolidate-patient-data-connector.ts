@@ -45,6 +45,7 @@ export function createConnector({
   stack,
   vpc,
   patientConsolidatedDataBucket,
+  sourceBucket,
   lambdaLayers,
   alarmSnsAction,
 }: {
@@ -52,6 +53,7 @@ export function createConnector({
   stack: Construct;
   vpc: IVpc;
   patientConsolidatedDataBucket: s3.IBucket;
+  sourceBucket: s3.IBucket;
   lambdaLayers: LambdaLayers;
   alarmSnsAction?: SnsAction;
 }): PatientDataConsolidatorConnector {

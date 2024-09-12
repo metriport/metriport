@@ -1,4 +1,4 @@
-import { PatientDataConsolidator } from "@metriport/core/command/consolidated/patient-data-consolidator";
+import { PatientDataConsolidator } from "@metriport/core/command/consolidated/create-consolidated";
 import { errorToString, MetriportError } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";

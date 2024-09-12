@@ -38,3 +38,17 @@ export class SQSUtils {
     };
   }
 }
+
+/**
+ * Normalizes a string to be used as a message group ID in SQS.
+ *
+ * From AWS:
+ * MessageDeduplicationId can only include alphanumeric and punctuation characters. 1 to 128 in length.
+ */
+export function toMessageGroupId(
+  value: string,
+  order: "left-to-right" | "right-to-left" = "left-to-right"
+): string {
+  const limitChars = order === "left-to-right" ? 128 : -128;
+  return value.replace(/[^a-zA-Z0-9.]/g, "").slice(0, limitChars);
+}

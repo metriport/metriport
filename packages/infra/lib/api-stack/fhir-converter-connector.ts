@@ -13,7 +13,7 @@ import { LambdaLayers } from "../shared/lambda-layers";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
 import { settings as settingsFhirConverter } from "./fhir-converter-service";
 
-export type FHIRConnector = {
+export type FHIRConverterConnector = {
   queue: IQueue;
   dlq: IQueue;
   bucket: s3.IBucket;
@@ -27,7 +27,7 @@ function settings() {
   } = settingsFhirConverter();
   const lambdaTimeout = maxExecutionTimeout.minus(Duration.seconds(5));
   return {
-    connectorName: "FHIRConverter",
+    connectorName: "FHIRConverter2",
     lambdaMemory: 1024,
     // Number of messages the lambda pull from SQS at once
     lambdaBatchSize: 1,
@@ -50,17 +50,20 @@ export function createQueueAndBucket({
   lambdaLayers,
   envType,
   alarmSnsAction,
+  altConnectorName,
 }: {
   stack: Construct;
   lambdaLayers: LambdaLayers;
   envType: EnvType;
   alarmSnsAction?: SnsAction;
-}): FHIRConnector {
+  // TODO 2215 Remove this when we remove the old FHIRConverter lambda/queues
+  altConnectorName?: string;
+}): FHIRConverterConnector {
   const config = getConfig();
   const { connectorName, visibilityTimeout, maxReceiveCount } = settings();
   const queue = defaultCreateQueue({
     stack,
-    name: connectorName,
+    name: altConnectorName ?? connectorName,
     // To use FIFO we'd need to change the lambda code to set visibilityTimeout=0 on messages to be
     // reprocessed, instead of re-enqueueing them (bc of messageDeduplicationId visibility of 5min)
     fifo: false,

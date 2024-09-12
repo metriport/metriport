@@ -8,7 +8,7 @@ import {
   ConsolidatedDataRequestSync,
   ConsolidatedDataResponse,
   ConsolidatedPatientDataRequest,
-} from "./consolidated-connector";
+} from "./get-consolidated";
 
 dayjs.extend(duration);
 

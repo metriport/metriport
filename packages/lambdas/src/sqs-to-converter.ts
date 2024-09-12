@@ -11,7 +11,7 @@ import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnvOrFail } from "./shared/env";
 import { Log, prefixedLog } from "./shared/log";
 import { apiClient } from "./shared/oss-api";
-import { SQSUtils } from "./shared/sqs";
+import { SQSUtils, toMessageGroupId } from "./shared/sqs";
 import { cleanUpPayload } from "./sqs-to-converter/cleanup";
 
 // Keep this as early on the file as possible
@@ -402,9 +402,9 @@ async function sendConversionResult(
         QueueUrl: patientDataConsolidatorQueueURL,
         MessageAttributes: messageAtribs,
         // This is critical to make sure we only process one message per patient at a time
-        MessageGroupId: patientId,
+        MessageGroupId: toMessageGroupId(patientId),
         // This is just to identify this message uniquely
-        MessageDeduplicationId: fileName,
+        MessageDeduplicationId: toMessageGroupId(fileName, "right-to-left"),
       })
       .promise(),
   ]);

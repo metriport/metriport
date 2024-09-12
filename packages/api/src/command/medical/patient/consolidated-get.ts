@@ -3,18 +3,18 @@ import {
   ConsolidatedQuery,
   ConsolidationConversionType,
   GetConsolidatedFilters,
-  ResourceTypeForConsolidation,
   resourcesSearchableByPatient,
+  ResourceTypeForConsolidation,
 } from "@metriport/api-sdk";
+import { getConsolidatedBundleFromS3 } from "@metriport/core/command/consolidated/consolidated-on-s3";
 import {
   ConsolidatedDataRequestAsync,
   ConsolidatedDataRequestSync,
-} from "@metriport/core/command/consolidated/consolidated-connector";
-import { buildConsolidatedDataConnector } from "@metriport/core/command/consolidated/consolidated-connector-factory";
-import { getConsolidatedBundleFromS3 } from "@metriport/core/command/consolidated/consolidated-on-s3";
+} from "@metriport/core/command/consolidated/get-consolidated";
+import { buildConsolidatedDataConnector } from "@metriport/core/command/consolidated/get-consolidated-factory";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
-import { EventTypes, analytics } from "@metriport/core/external/analytics/posthog";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { emptyFunction } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";

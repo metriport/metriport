@@ -1,5 +1,5 @@
 import { Bundle } from "@medplum/fhirtypes";
-import { PatientDataConsolidator } from "../patient-data-consolidator";
+import { PatientDataConsolidator } from "../create-consolidated";
 
 class PatientDataConsolidatorLocalImpl extends PatientDataConsolidator {
   override merge(newBundle: Bundle) {

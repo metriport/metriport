@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { PatientDataConsolidator } from "@metriport/core/command/consolidated/patient-data-consolidator";
+import { PatientDataConsolidator } from "@metriport/core/command/consolidated/create-consolidated";
 import { getEnvVarOrFail, sleep } from "@metriport/shared";
 import { elapsedTimeAsStr } from "../shared/duration";
 
