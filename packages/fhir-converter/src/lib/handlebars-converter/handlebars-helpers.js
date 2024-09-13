@@ -147,6 +147,30 @@ var alreadyValidDateTime = function (dateTimeString) {
   );
 };
 
+const incompeteIso8601Regex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+const Iso8601RegexWithMissingT = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{3}Z)$/;
+
+var incompleteIso8601 = function (dateTimeString) {
+  if (incompeteIso8601Regex.test(dateTimeString) || Iso8601RegexWithMissingT.test(dateTimeString)) {
+    return true;
+  }
+  return false;
+};
+
+var correctIsoFormat = function (dateTimeString) {
+  if (Iso8601RegexWithMissingT.test(dateTimeString)) {
+    const newDate = dateTimeString.replace(" ", "T");
+    if (alreadyValidDateTime(newDate)) return newDate;
+    console.log(`Poorly reformatted the dateTime.000Z string: ${JSON.stringify(dateTimeString)}`);
+  }
+  if (incompeteIso8601Regex.test(dateTimeString)) {
+    const newDate = dateTimeString.replace(" ", "T") + ".000Z";
+    if (alreadyValidDateTime(newDate)) return newDate;
+    console.log(`Poorly reformatted the dateTime string: ${JSON.stringify(dateTimeString)}`);
+  }
+  return dateTimeString;
+};
+
 // handling the date format here
 var getDate = function (dateStringRaw) {
   if (dateStringRaw === null || dateStringRaw === undefined) {
@@ -239,11 +263,17 @@ var getDateTime = function (dateTimeStringRaw) {
   }
   var dateTimeString = dateTimeStringRaw?.trim();
 
+  if (incompleteIso8601(dateTimeString)) {
+    return correctIsoFormat(dateTimeString);
+  }
+
   if (alreadyValidDateTime(dateTimeString)) {
     return dateTimeString;
   }
 
-  if (!validDatetimeString(dateTimeString)) return "";
+  if (!validDatetimeString(dateTimeString)) {
+    return "";
+  }
 
   // handle the datetime format with time zone
   var ds = dateTimeString.toString();

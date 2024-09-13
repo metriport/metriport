@@ -263,9 +263,14 @@ describe("getDateTime", function () {
     expect(date).toEqual("2023-06-26T19:08:46.000-0300");
   });
 
+  it("should render date when incomplete ISO YYYY-MM-DD HH:MM:SS", function () {
+    var date = functions.getDateTime("2023-06-26 19:08:46");
+    expect(date).toEqual("2023-06-26T19:08:46.000Z");
+  });
+
   it("should render date when ISO YYYY-MM-DD HH:MM:SS.MMMZ", function () {
     var date = functions.getDateTime("2023-06-26 19:08:46.000Z");
-    expect(date).toEqual("2023-06-26 19:08:46.000Z");
+    expect(date).toEqual("2023-06-26T19:08:46.000Z");
   });
 
   it("should render date when valid date on invalid dateTimeString", function () {
