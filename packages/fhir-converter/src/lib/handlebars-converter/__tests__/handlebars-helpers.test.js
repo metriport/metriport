@@ -274,6 +274,40 @@ describe("getDateTime", function () {
   });
 });
 
+// ... existing code ...
+
+describe("extractDecimal", function () {
+  const extractDecimal = helpers.find(h => h.name === "extractDecimal").func;
+
+  it("should return isValid: false for null or undefined input", function () {
+    expect(extractDecimal(null)).toEqual({ isValid: false });
+    expect(extractDecimal(undefined)).toEqual({ isValid: false });
+  });
+
+  it("should return isValid: false for non-decimal strings", function () {
+    expect(extractDecimal("abc")).toEqual({ isValid: false });
+    expect(extractDecimal("123a")).toEqual({ isValid: false });
+    expect(extractDecimal("12.34.56")).toEqual({ isValid: false });
+  });
+
+  it("should return isValid: true and correct value for valid decimal strings", function () {
+    expect(extractDecimal("123")).toEqual({ isValid: true, value: 123 });
+    expect(extractDecimal("123.45")).toEqual({ isValid: true, value: 123.45 });
+    expect(extractDecimal("-123.45")).toEqual({ isValid: true, value: -123.45 });
+    expect(extractDecimal("123.45")).toEqual({ isValid: true, value: 123.45 });
+  });
+
+  it("should handle leading decimal point", function () {
+    expect(extractDecimal(".45")).toEqual({ isValid: true, value: 0.45 });
+    expect(extractDecimal("-.45")).toEqual({ isValid: true, value: -0.45 });
+  });
+
+  it("should handle edge cases", function () {
+    expect(extractDecimal("0")).toEqual({ isValid: true, value: 0 });
+    expect(extractDecimal("0.0")).toEqual({ isValid: true, value: 0.0 });
+  });
+});
+
 function getHelper(helperName) {
   for (var i = 0; i < helpers.length; i++) {
     if (helpers[i].name === helperName) {
