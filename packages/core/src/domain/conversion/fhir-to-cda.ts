@@ -5,4 +5,5 @@ export type Input = {
   splitCompositions: boolean;
   bundle: Bundle;
   orgOid: string;
+  isCustodian?: boolean;
 };

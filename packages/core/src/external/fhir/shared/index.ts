@@ -276,6 +276,10 @@ export function findDiagnosticReportResources(fhirBundle: Bundle): DiagnosticRep
   return fhirBundle.entry?.map(e => e.resource).filter(isDiagnosticReport) || [];
 }
 
+export function findEncounterResources(fhirBundle: Bundle): Encounter[] {
+  return fhirBundle.entry?.map(e => e.resource).filter(isEncounter) || [];
+}
+
 export function findResourceInBundle(bundle: Bundle, reference: string): Resource | undefined {
   if (!bundle.entry) {
     return undefined;

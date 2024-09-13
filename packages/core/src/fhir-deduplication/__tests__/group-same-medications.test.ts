@@ -54,6 +54,20 @@ describe("groupSameMedications", () => {
     expect(snomedMap.size).toBe(1);
   });
 
+  it("correctly groups duplicate medications based on display text", () => {
+    medication.code = { text: "acetaminophen (TYLENOL) 500 mg tablet" };
+    medication2.code = { text: "acetaminophen (TYLENOL) 500 mg tablet" };
+
+    const { rxnormMap, ndcMap, snomedMap, displayMap } = groupSameMedications([
+      medication,
+      medication2,
+    ]);
+    expect(rxnormMap.size).toBe(0);
+    expect(ndcMap.size).toBe(0);
+    expect(snomedMap.size).toBe(0);
+    expect(displayMap.size).toBe(1);
+  });
+
   it("removes no known medication resources based on the text tag", () => {
     medication.code = { coding: [snomedCodeAm], text: "No known medications" };
 
@@ -133,4 +147,20 @@ describe("groupSameMedications", () => {
     expect(combinedMedication).toBeTruthy();
     expect(combinedMedication?.extension).toBe(undefined);
   });
+});
+it("doesnt remove code and preserves original coding when there is only one unknown code", () => {
+  const originalCoding = [{ system: "some other system", code: "123", display: "some display" }];
+  medication.code = { coding: originalCoding };
+  medication2.code = { coding: originalCoding };
+
+  const { rxnormMap, ndcMap, snomedMap, displayMap } = groupSameMedications([
+    medication,
+    medication2,
+  ]);
+  expect(rxnormMap.size).toBe(0);
+  expect(ndcMap.size).toBe(0);
+  expect(snomedMap.size).toBe(0);
+  expect(displayMap.size).toBe(1);
+  const groupedMedication = displayMap.values().next().value;
+  expect(groupedMedication.code?.coding).toEqual(originalCoding);
 });

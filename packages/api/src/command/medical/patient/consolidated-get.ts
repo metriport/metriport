@@ -54,6 +54,7 @@ type GetConsolidatedPatientData = {
   dateFrom?: string;
   dateTo?: string;
   generateAiBrief?: boolean;
+  fromDashboard?: boolean;
 };
 
 export type GetConsolidatedSendToCxParams = GetConsolidatedParams & {
@@ -80,6 +81,7 @@ export async function startConsolidatedQuery({
   conversionType,
   cxConsolidatedRequestMetadata,
   generateAiBrief,
+  fromDashboard,
 }: ConsolidatedQueryParams): Promise<ConsolidatedQuery> {
   const isGenerateAiBrief = await checkAiBriefEnabled({ cxId, generateAiBrief });
 
@@ -143,6 +145,7 @@ export async function startConsolidatedQuery({
     requestId,
     conversionType,
     generateAiBrief: isGenerateAiBrief,
+    fromDashboard,
   }).catch(emptyFunction);
 
   return progress;
@@ -417,6 +420,7 @@ export async function getConsolidatedPatientData({
   dateFrom,
   dateTo,
   generateAiBrief,
+  fromDashboard = false,
 }: GetConsolidatedPatientData): Promise<SearchSetBundle<Resource>> {
   const payload: ConsolidatedDataRequestSync = {
     patient,
@@ -426,6 +430,7 @@ export async function getConsolidatedPatientData({
     dateTo,
     generateAiBrief,
     isAsync: false,
+    fromDashboard,
   };
   const connector = buildConsolidatedDataConnector();
   const { bundleLocation, bundleFilename } = await connector.execute(payload);
@@ -442,6 +447,7 @@ export async function getConsolidatedPatientDataAsync({
   requestId,
   conversionType,
   generateAiBrief,
+  fromDashboard,
 }: GetConsolidatedPatientData & {
   requestId: string;
   conversionType?: ConsolidationConversionType;
@@ -456,6 +462,7 @@ export async function getConsolidatedPatientDataAsync({
     dateTo,
     generateAiBrief,
     isAsync: true,
+    fromDashboard,
   };
   const connector = buildConsolidatedDataConnector();
   connector

@@ -10,7 +10,8 @@ import { AugmentedResource } from "./components/augmented-resources";
 export function createTableRowsAndEntries<R extends Resource, T extends AugmentedResource<R>, X>(
   augObs: T[],
   tableRowsCallback: CreateTableRowsCallback<T>,
-  entriesCallback: CreateEntriesCallback<T, X>
+  entriesCallback: CreateEntriesCallback<T, X>,
+  tableIndex?: number
 ): TableRowsAndEntriesResult<X> {
   const result: TableRowsAndEntriesResult<X> = {
     trs: [],
@@ -18,7 +19,7 @@ export function createTableRowsAndEntries<R extends Resource, T extends Augmente
   };
 
   augObs.map((aug, index) => {
-    const sectionPrefix = `${aug.sectionName}${index + 1}`;
+    const sectionPrefix = `${aug.sectionName}${(tableIndex ?? index) + 1}`;
     const trs = tableRowsCallback(aug, sectionPrefix);
     const trsEntries = toArray(trs);
     const entries = entriesCallback(aug, sectionPrefix);

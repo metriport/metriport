@@ -7,17 +7,20 @@ import {
   SNOMED_CODE,
   SNOMED_OID,
 } from "../../util/constants";
-import { combineResources, fillMaps, isBlacklistedText } from "../shared";
+import {
+  DeduplicationResult,
+  combineResources,
+  createRef,
+  extractDisplayFromConcept,
+  fillMaps,
+  hasBlacklistedText,
+} from "../shared";
 
-export function deduplicateMedications(medications: Medication[]): {
-  combinedMedications: Medication[];
-  refReplacementMap: Map<string, string[]>;
-  danglingReferences: string[];
-} {
+export function deduplicateMedications(medications: Medication[]): DeduplicationResult<Medication> {
   const { rxnormMap, ndcMap, snomedMap, refReplacementMap, danglingReferences } =
     groupSameMedications(medications);
   return {
-    combinedMedications: combineResources({
+    combinedResources: combineResources({
       combinedMaps: [rxnormMap, ndcMap, snomedMap],
     }),
     refReplacementMap,
@@ -29,12 +32,14 @@ export function groupSameMedications(medications: Medication[]): {
   rxnormMap: Map<string, Medication>;
   ndcMap: Map<string, Medication>;
   snomedMap: Map<string, Medication>;
+  displayMap: Map<string, Medication>;
   refReplacementMap: Map<string, string[]>;
   danglingReferences: string[];
 } {
   const rxnormMap = new Map<string, Medication>();
   const ndcMap = new Map<string, Medication>();
   const snomedMap = new Map<string, Medication>();
+  const displayMap = new Map<string, Medication>();
   const refReplacementMap = new Map<string, string[]>();
   const danglingReferences = new Set<string>();
 
@@ -61,8 +66,8 @@ export function groupSameMedications(medications: Medication[]): {
   }
 
   for (const medication of medications) {
-    if (medication.id && isBlacklistedText(medication.code)) {
-      danglingReferences.add(createMedicationRef(medication.id));
+    if (hasBlacklistedText(medication.code)) {
+      danglingReferences.add(createRef(medication));
       continue;
     }
 
@@ -76,7 +81,13 @@ export function groupSameMedications(medications: Medication[]): {
     } else if (snomedCode) {
       fillMaps(snomedMap, snomedCode, medication, refReplacementMap, false, removeOtherCodes);
     } else {
-      if (medication.id) danglingReferences.add(createMedicationRef(medication.id));
+      const display = extractDisplayFromConcept(medication.code);
+      if (display) {
+        const compKey = JSON.stringify({ display });
+        fillMaps(displayMap, compKey, medication, refReplacementMap, undefined);
+      } else {
+        danglingReferences.add(createRef(medication));
+      }
     }
   }
 
@@ -84,6 +95,7 @@ export function groupSameMedications(medications: Medication[]): {
     rxnormMap,
     ndcMap,
     snomedMap,
+    displayMap,
     refReplacementMap,
     danglingReferences: [...danglingReferences],
   };
@@ -115,8 +127,4 @@ function extractCodes(concept: CodeableConcept | undefined): {
     }
   }
   return { rxnormCode, ndcCode, snomedCode };
-}
-
-function createMedicationRef(medId: string): string {
-  return `Medication/${medId}`;
 }

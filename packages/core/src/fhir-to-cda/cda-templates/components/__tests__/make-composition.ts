@@ -1,7 +1,13 @@
+import { faker } from "@faker-js/faker";
 import { Composition } from "@medplum/fhirtypes";
 import { makeBaseDomain, makeSubjectReference } from "./shared";
 
-export function makeComposition(ids: { enc: string; pract: string }): Composition {
+export function makeComposition(
+  ids?: { encId: string; practId: string },
+  params: Partial<Composition> = {}
+): Composition {
+  const encounterId = ids?.encId ?? faker.string.uuid();
+
   return {
     ...makeBaseDomain(),
     ...makeSubjectReference(),
@@ -28,13 +34,14 @@ export function makeComposition(ids: { enc: string; pract: string }): Compositio
         mode: "snapshot",
         entry: [
           {
-            reference: `Encounter/${ids.enc}`,
+            reference: `Encounter/${encounterId}`,
             display: "Encounter 1",
           },
         ],
       },
     ],
-    encounter: { reference: `Encounter/${ids.enc}` },
-    author: [{ reference: `Practitioner/${ids.pract}` }],
+    encounter: { reference: `Encounter/${encounterId}` },
+    author: [{ reference: `Practitioner/${ids?.practId ?? faker.string.uuid()}` }],
+    ...params,
   };
 }

@@ -1,6 +1,8 @@
 import { Encounter } from "@medplum/fhirtypes";
 import {
+  DeduplicationResult,
   combineResources,
+  createRef,
   fillMaps,
   getDateFromResource,
   pickMostDescriptiveStatus,
@@ -32,16 +34,14 @@ export const statusRanking: Record<EncounterStatus, number> = {
   finished: 8,
 };
 
-export function deduplicateEncounters(encounters: Encounter[]): {
-  combinedEncounters: Encounter[];
-  refReplacementMap: Map<string, string[]>;
-} {
-  const { encountersMap, refReplacementMap } = groupSameEncounters(encounters);
+export function deduplicateEncounters(encounters: Encounter[]): DeduplicationResult<Encounter> {
+  const { encountersMap, refReplacementMap, danglingReferences } = groupSameEncounters(encounters);
   return {
-    combinedEncounters: combineResources({
+    combinedResources: combineResources({
       combinedMaps: [encountersMap],
     }),
     refReplacementMap,
+    danglingReferences,
   };
 }
 
@@ -54,9 +54,11 @@ export function deduplicateEncounters(encounters: Encounter[]): {
 export function groupSameEncounters(encounters: Encounter[]): {
   encountersMap: Map<string, Encounter>;
   refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
   const encountersMap = new Map<string, Encounter>();
   const refReplacementMap = new Map<string, string[]>();
+  const danglingReferencesSet = new Set<string>();
 
   function assignMostDescriptiveStatus(
     master: Encounter,
@@ -68,9 +70,10 @@ export function groupSameEncounters(encounters: Encounter[]): {
   }
 
   for (const encounter of encounters) {
-    const date = getDateFromResource(encounter, "datetime");
-    if (date) {
-      const key = JSON.stringify({ date });
+    const datetime = getDateFromResource(encounter, "datetime");
+    // TODO: Improve the key. Just date is not sufficient.
+    if (datetime) {
+      const key = JSON.stringify({ datetime });
       fillMaps(
         encountersMap,
         key,
@@ -79,11 +82,14 @@ export function groupSameEncounters(encounters: Encounter[]): {
         undefined,
         assignMostDescriptiveStatus
       );
+    } else {
+      danglingReferencesSet.add(createRef(encounter));
     }
   }
 
   return {
     encountersMap,
     refReplacementMap,
+    danglingReferences: [...danglingReferencesSet],
   };
 }

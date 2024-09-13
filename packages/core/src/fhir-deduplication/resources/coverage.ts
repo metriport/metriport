@@ -1,16 +1,14 @@
 import { Coverage } from "@medplum/fhirtypes";
-import { combineResources, fillMaps } from "../shared";
+import { DeduplicationResult, combineResources, createRef, fillMaps } from "../shared";
 
-export function deduplicateCoverages(medications: Coverage[]): {
-  combinedCoverages: Coverage[];
-  refReplacementMap: Map<string, string[]>;
-} {
-  const { coveragesMap, refReplacementMap } = groupSameCoverages(medications);
+export function deduplicateCoverages(medications: Coverage[]): DeduplicationResult<Coverage> {
+  const { coveragesMap, refReplacementMap, danglingReferences } = groupSameCoverages(medications);
   return {
-    combinedCoverages: combineResources({
+    combinedResources: combineResources({
       combinedMaps: [coveragesMap],
     }),
     refReplacementMap,
+    danglingReferences,
   };
 }
 
@@ -24,9 +22,11 @@ export function deduplicateCoverages(medications: Coverage[]): {
 export function groupSameCoverages(coverages: Coverage[]): {
   coveragesMap: Map<string, Coverage>;
   refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
   const coveragesMap = new Map<string, Coverage>();
   const refReplacementMap = new Map<string, string[]>();
+  const danglingReferencesSet = new Set<string>();
 
   for (const coverage of coverages) {
     const payor = coverage.payor?.find(ref => ref.reference?.startsWith("Organization"));
@@ -36,11 +36,14 @@ export function groupSameCoverages(coverages: Coverage[]): {
     if (payor) {
       const key = JSON.stringify({ payor, status, period });
       fillMaps(coveragesMap, key, coverage, refReplacementMap);
+    } else {
+      danglingReferencesSet.add(createRef(coverage));
     }
   }
 
   return {
     coveragesMap,
     refReplacementMap: refReplacementMap,
+    danglingReferences: [...danglingReferencesSet],
   };
 }

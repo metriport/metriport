@@ -1,16 +1,17 @@
 import { CodeableConcept, FamilyMemberHistory } from "@medplum/fhirtypes";
-import { combineResources, fillMaps } from "../shared";
+import { DeduplicationResult, combineResources, createRef, fillMaps } from "../shared";
 
-export function deduplicateFamilyMemberHistories(famMemberHists: FamilyMemberHistory[]): {
-  combinedFamMemHistories: FamilyMemberHistory[];
-  refReplacementMap: Map<string, string[]>;
-} {
-  const { famMemberHistsMap, refReplacementMap } = groupSameFamilyMemberHistories(famMemberHists);
+export function deduplicateFamilyMemberHistories(
+  famMemberHists: FamilyMemberHistory[]
+): DeduplicationResult<FamilyMemberHistory> {
+  const { famMemberHistsMap, refReplacementMap, danglingReferences } =
+    groupSameFamilyMemberHistories(famMemberHists);
   return {
-    combinedFamMemHistories: combineResources({
+    combinedResources: combineResources({
       combinedMaps: [famMemberHistsMap],
     }),
     refReplacementMap,
+    danglingReferences,
   };
 }
 
@@ -23,9 +24,11 @@ export function deduplicateFamilyMemberHistories(famMemberHists: FamilyMemberHis
 export function groupSameFamilyMemberHistories(famMemberHists: FamilyMemberHistory[]): {
   famMemberHistsMap: Map<string, FamilyMemberHistory>;
   refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
   const famMemberHistsMap = new Map<string, FamilyMemberHistory>();
   const refReplacementMap = new Map<string, string[]>();
+  const danglingReferencesSet = new Set<string>();
 
   for (const famMemberHist of famMemberHists) {
     const relationship = extractCode(famMemberHist.relationship);
@@ -34,12 +37,15 @@ export function groupSameFamilyMemberHistories(famMemberHists: FamilyMemberHisto
     if (relationship) {
       const key = JSON.stringify({ relationship, dob });
       fillMaps(famMemberHistsMap, key, famMemberHist, refReplacementMap, undefined);
+    } else {
+      danglingReferencesSet.add(createRef(famMemberHist));
     }
   }
 
   return {
     famMemberHistsMap,
     refReplacementMap,
+    danglingReferences: [...danglingReferencesSet],
   };
 }
 

@@ -1,8 +1,14 @@
-import { CodeableConcept, Resource } from "@medplum/fhirtypes";
+import { CodeableConcept, Coding, Identifier, Resource } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
-import { cloneDeep } from "lodash";
+import _, { cloneDeep } from "lodash";
+import { v4 as uuidv4 } from "uuid";
+
+const NO_KNOWN_SUBSTRING = "no known";
 
 const dateFormats = ["datetime", "date"] as const;
+
+export const UNK_CODE = "UNK";
+export const UNKNOWN_DISPLAY = "unknown";
 export type DateFormats = (typeof dateFormats)[number];
 
 export type ApplySpecialModificationsCallback<T> = (merged: T, existing: T, target: T) => T;
@@ -11,13 +17,6 @@ export type CompositeKey = {
   code: string;
   date: string | undefined;
 };
-
-export function createCompositeKey(code: string, date: string | undefined): CompositeKey {
-  return {
-    code,
-    date,
-  };
-}
 
 export function getDateFromString(dateString: string, dateFormat?: "date" | "datetime"): string {
   const date = dayjs(dateString);
@@ -33,10 +32,10 @@ export function getDateFromString(dateString: string, dateFormat?: "date" | "dat
   }
 }
 
-function createExtensionReference(resourceType: string, id: string | undefined) {
+function createExtensionRelatedArtifact(resourceType: string, id: string | undefined) {
   return {
-    url: "http://hl7.org/fhir/StructureDefinition/codesystem-sourceReference",
-    valueReference: { reference: `${resourceType}/${id}` },
+    url: "http://hl7.org/fhir/StructureDefinition/artifact-relatedArtifact",
+    valueRelatedArtifact: { type: "derived-from", display: `${resourceType}/${id}` },
   };
 }
 
@@ -46,7 +45,7 @@ export function combineTwoResources<T extends Resource>(
   isExtensionIncluded = true
 ): T {
   const combined = deepMerge({ ...r1 }, r2, isExtensionIncluded);
-  const extensionRef = createExtensionReference(r2.resourceType, r2.id);
+  const extensionRef = createExtensionRelatedArtifact(r2.resourceType, r2.id);
 
   // This part combines resources together and adds the ID references of the duplicates into the master resource
   // regardless of whether new information was found
@@ -63,6 +62,7 @@ export function combineTwoResources<T extends Resource>(
 
 // TODO: Might be a good idea to include a check to see if all resources refer to the same patient
 const conditionKeysToIgnore = ["id", "resourceType", "subject"];
+const unknownValues = ["unknown", "unk", "no known"];
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function deepMerge(target: any, source: any, isExtensionIncluded: boolean): any {
@@ -80,6 +80,11 @@ export function deepMerge(target: any, source: any, isExtensionIncluded: boolean
     } else {
       // Directly assign values
       if (key === "__proto__" || key === "constructor") continue;
+      if (
+        typeof source[key] === "string" &&
+        unknownValues.some(unk => source[key].toLowerCase().includes(unk))
+      )
+        continue;
       combined[key] = source[key];
     }
   }
@@ -147,6 +152,74 @@ export function fillMaps<T extends Resource>(
   }
 }
 
+export function createKeysFromObjectArrayAndFlagBits(
+  baseObject: object,
+  contactsOrAddresses: object[],
+  flagBits: number[]
+): string[] {
+  return contactsOrAddresses.map(item => JSON.stringify({ baseObject, ...item, flagBits }));
+}
+
+export function createKeysFromObjectAndFlagBits(object: object, bits: number[]): string[] {
+  return [JSON.stringify({ ...object, bits })];
+}
+
+export function createKeyFromObjects(...objects: object[]): string {
+  const combinedObject = objects.reduce((acc, obj) => ({ ...acc, ...obj }), {});
+  return JSON.stringify(combinedObject);
+}
+
+export function fillL1L2Maps<T extends Resource>({
+  map1,
+  map2,
+  getterKeys,
+  setterKeys,
+  targetResource,
+  refReplacementMap,
+  isExtensionIncluded = true,
+  applySpecialModifications,
+}: {
+  map1: Map<string, string>;
+  map2: Map<string, T>;
+  getterKeys: string[];
+  setterKeys: string[];
+  targetResource: T;
+  refReplacementMap: Map<string, string[]>;
+  isExtensionIncluded?: boolean;
+  applySpecialModifications?: ApplySpecialModificationsCallback<T>;
+}): void {
+  let map2Key = undefined;
+  for (const key of getterKeys) {
+    map2Key = map1.get(key); // Potential improvement. We just select the first uuid that matches. What if multple matches exist?
+    if (map2Key) {
+      fillMaps(
+        map2,
+        map2Key,
+        targetResource,
+        refReplacementMap,
+        isExtensionIncluded,
+        applySpecialModifications
+      );
+      break;
+    }
+  }
+  if (!map2Key) {
+    map2Key = uuidv4();
+    for (const key of setterKeys) {
+      map1.set(key, map2Key);
+    }
+    // fill L2 map only once to avoid duplicate entries
+    fillMaps(
+      map2,
+      map2Key,
+      targetResource,
+      refReplacementMap,
+      isExtensionIncluded,
+      applySpecialModifications
+    );
+  }
+}
+
 export function getDateFromResource<T extends Resource>(
   resource: T,
   dateFormat?: DateFormats
@@ -154,10 +227,12 @@ export function getDateFromResource<T extends Resource>(
   if ("onsetPeriod" in resource) {
     const onsetPeriod = resource.onsetPeriod;
     if (onsetPeriod.start) {
-      return getDateFromString(onsetPeriod.start);
+      return getDateFromString(onsetPeriod.start, dateFormat);
+    } else if (onsetPeriod.end) {
+      return getDateFromString(onsetPeriod.end, dateFormat);
     }
   } else if ("onsetDateTime" in resource) {
-    return getDateFromString(resource.onsetDateTime);
+    return getDateFromString(resource.onsetDateTime, dateFormat);
   } else if ("onsetAge" in resource) {
     const onsetAge = resource.onsetAge;
     if (onsetAge.value) {
@@ -175,9 +250,12 @@ export function getDateFromResource<T extends Resource>(
   } else if ("period" in resource) {
     const period = resource.period;
     if (period.start) return getDateFromString(period.start, dateFormat);
+    else if (period.end) return getDateFromString(period.end, dateFormat);
   } else if ("effectivePeriod" in resource) {
     if (resource.effectivePeriod.start) {
-      return getDateFromString(resource.effectivePeriod.start);
+      return getDateFromString(resource.effectivePeriod.start, dateFormat);
+    } else if (resource.effectivePeriod.end) {
+      return getDateFromString(resource.effectivePeriod.end, dateFormat);
     }
   }
   return undefined;
@@ -191,7 +269,9 @@ export function getPerformedDateFromResource<T extends Resource>(
     return getDateFromString(resource.performedDateTime, dateFormat);
   } else if ("performedPeriod" in resource) {
     if (resource.performedPeriod.start) {
-      return getDateFromString(resource.performedPeriod.start);
+      return getDateFromString(resource.performedPeriod.start, dateFormat);
+    } else if (resource.performedPeriod.end) {
+      return getDateFromString(resource.performedPeriod.end, dateFormat);
     }
   } else if ("performedString" in resource) {
     return getDateFromString(resource.performedString, dateFormat);
@@ -235,6 +315,74 @@ export function pickMostDescriptiveStatus<T extends string>(
   return status;
 }
 
-export function isBlacklistedText(concept: CodeableConcept | undefined): boolean {
-  return concept?.text?.toLowerCase().includes("no known") ?? false;
+export function hasBlacklistedText(concept: CodeableConcept | undefined): boolean {
+  const knownCodings = concept?.coding?.filter(c => !isUnknownCoding(c));
+  return (
+    concept?.text?.toLowerCase().includes(NO_KNOWN_SUBSTRING) ?? !knownCodings?.length ?? false
+  );
 }
+
+export function createRef<T extends Resource>(res: T): string {
+  if (!res.id) throw new Error("FHIR Resource has no ID");
+  return `${res.resourceType}/${res.id}`;
+}
+
+export function extractDisplayFromConcept(
+  concept: CodeableConcept | undefined
+): string | undefined {
+  const displayCoding = concept?.coding?.find(coding => {
+    if (coding.code !== UNK_CODE && coding.display !== UNKNOWN_DISPLAY) {
+      return coding.display;
+    }
+    return;
+  });
+  if (displayCoding?.display) return displayCoding?.display;
+  const text = concept?.text;
+  if (!text?.includes(UNKNOWN_DISPLAY)) return text;
+  return undefined;
+}
+
+export function extractNpi(identifiers: Identifier[] | undefined): string | undefined {
+  if (!identifiers) return undefined;
+
+  const npiIdentifier = identifiers.find(i => i.system?.includes("us-npi") && i.value);
+  return npiIdentifier?.value;
+}
+
+export const unknownCoding = {
+  system: "http://terminology.hl7.org/ValueSet/v3-Unknown",
+  code: "UNK",
+  display: "unknown",
+};
+
+export const unknownCode = {
+  coding: [unknownCoding],
+  text: "unknown",
+};
+
+export function isUnknownCoding(coding: Coding, text?: string | undefined): boolean {
+  if (_.isEqual(coding, unknownCoding)) return true;
+  const code = coding.code?.trim().toLowerCase();
+  const display = coding.display?.trim().toLowerCase();
+
+  if (code) {
+    return (
+      code?.includes(unknownCoding.code.toLowerCase()) &&
+      (!display || display === unknownCoding.display.toLowerCase()) &&
+      (!text || text === unknownCode.text.toLowerCase())
+    );
+  } else {
+    return (
+      (!display ||
+        display === unknownCoding.display.toLowerCase() ||
+        display.includes("no data available")) &&
+      (!text || text === unknownCode.text.toLowerCase() || text.includes("no data"))
+    );
+  }
+}
+
+export type DeduplicationResult<T extends Resource> = {
+  combinedResources: T[];
+  refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
+};

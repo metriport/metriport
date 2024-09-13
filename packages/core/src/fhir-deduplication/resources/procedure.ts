@@ -8,9 +8,13 @@ import {
   SNOMED_OID,
 } from "../../util/constants";
 import {
+  DeduplicationResult,
   combineResources,
+  createRef,
+  extractDisplayFromConcept,
   fillMaps,
   getPerformedDateFromResource,
+  hasBlacklistedText,
   pickMostDescriptiveStatus,
 } from "../shared";
 
@@ -38,16 +42,14 @@ export const statusRanking: Record<ProcedureStatus, number> = {
   completed: 7,
 };
 
-export function deduplicateProcedures(procedures: Procedure[]): {
-  combinedProcedures: Procedure[];
-  refReplacementMap: Map<string, string[]>;
-} {
-  const { proceduresMap, refReplacementMap } = groupSameProcedures(procedures);
+export function deduplicateProcedures(procedures: Procedure[]): DeduplicationResult<Procedure> {
+  const { proceduresMap, refReplacementMap, danglingReferences } = groupSameProcedures(procedures);
   return {
-    combinedProcedures: combineResources({
+    combinedResources: combineResources({
       combinedMaps: [proceduresMap],
     }),
     refReplacementMap,
+    danglingReferences,
   };
 }
 
@@ -60,9 +62,11 @@ export function deduplicateProcedures(procedures: Procedure[]): {
 export function groupSameProcedures(procedures: Procedure[]): {
   proceduresMap: Map<string, Procedure>;
   refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
   const proceduresMap = new Map<string, Procedure>();
   const refReplacementMap = new Map<string, string[]>();
+  const danglingReferencesSet = new Set<string>();
 
   function removeCodesAndAssignStatus(
     master: Procedure,
@@ -81,30 +85,48 @@ export function groupSameProcedures(procedures: Procedure[]): {
         system?.includes(SNOMED_OID)
       );
     });
-    if (filtered) {
+    if (filtered && filtered.length > 0) {
       master.code = {
         ...code,
         coding: filtered,
       };
+    } else {
+      master.code = { ...code };
+      delete master.code.coding;
     }
 
     master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
     return master;
   }
 
+  function postProcessOnlyStatus(
+    master: Procedure,
+    existing: Procedure,
+    target: Procedure
+  ): Procedure {
+    master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
+    return master;
+  }
+
   for (const procedure of procedures) {
-    const date = getPerformedDateFromResource(procedure, "datetime");
-    if (!date) continue;
+    if (hasBlacklistedText(procedure.code)) {
+      danglingReferencesSet.add(createRef(procedure));
+      continue;
+    }
+
+    const datetime = getPerformedDateFromResource(procedure, "datetime");
+    if (!datetime) {
+      danglingReferencesSet.add(createRef(procedure));
+      continue;
+    }
 
     const { cptCode, loincCode, snomedCode } = extractCodes(procedure.code);
 
-    const key = cptCode
-      ? JSON.stringify({ date, cptCode })
-      : loincCode
-      ? JSON.stringify({ date, loincCode })
-      : snomedCode
-      ? JSON.stringify({ date, snomedCode })
-      : undefined;
+    let key;
+    if (cptCode) key = JSON.stringify({ datetime, cptCode });
+    else if (loincCode) key = JSON.stringify({ datetime, loincCode });
+    else if (snomedCode) key = JSON.stringify({ datetime, snomedCode });
+
     if (key) {
       fillMaps(
         proceduresMap,
@@ -114,12 +136,28 @@ export function groupSameProcedures(procedures: Procedure[]): {
         undefined,
         removeCodesAndAssignStatus
       );
+    } else {
+      const display = extractDisplayFromConcept(procedure.code);
+      if (display) {
+        const key = JSON.stringify({ datetime, display });
+        fillMaps(
+          proceduresMap,
+          key,
+          procedure,
+          refReplacementMap,
+          undefined,
+          postProcessOnlyStatus
+        );
+      } else {
+        danglingReferencesSet.add(createRef(procedure));
+      }
     }
   }
 
   return {
     proceduresMap,
     refReplacementMap,
+    danglingReferences: [...danglingReferencesSet],
   };
 }
 

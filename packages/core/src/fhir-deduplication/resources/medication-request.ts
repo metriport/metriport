@@ -1,5 +1,12 @@
 import { MedicationRequest } from "@medplum/fhirtypes";
-import { combineResources, fillMaps, pickMostDescriptiveStatus } from "../shared";
+import {
+  DeduplicationResult,
+  combineResources,
+  createRef,
+  fillMaps,
+  getDateFromString,
+  pickMostDescriptiveStatus,
+} from "../shared";
 
 const medicationRequestStatus = [
   "active",
@@ -24,16 +31,17 @@ const statusRanking: Record<MedicationRequestStatus, number> = {
   completed: 7,
 };
 
-export function deduplicateMedRequests(medications: MedicationRequest[]): {
-  combinedMedRequests: MedicationRequest[];
-  refReplacementMap: Map<string, string[]>;
-} {
-  const { medRequestsMap, refReplacementMap } = groupSameMedRequests(medications);
+export function deduplicateMedRequests(
+  medications: MedicationRequest[]
+): DeduplicationResult<MedicationRequest> {
+  const { medRequestsMap, refReplacementMap, danglingReferences } =
+    groupSameMedRequests(medications);
   return {
-    combinedMedRequests: combineResources({
+    combinedResources: combineResources({
       combinedMaps: [medRequestsMap],
     }),
     refReplacementMap,
+    danglingReferences,
   };
 }
 
@@ -46,9 +54,11 @@ export function deduplicateMedRequests(medications: MedicationRequest[]): {
 export function groupSameMedRequests(medRequests: MedicationRequest[]): {
   medRequestsMap: Map<string, MedicationRequest>;
   refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
   const medRequestsMap = new Map<string, MedicationRequest>();
   const refReplacementMap = new Map<string, string[]>();
+  const danglingReferencesSet = new Set<string>();
 
   function assignMostDescriptiveStatus(
     master: MedicationRequest,
@@ -62,11 +72,11 @@ export function groupSameMedRequests(medRequests: MedicationRequest[]): {
   for (const medRequest of medRequests) {
     const medRef = medRequest.medicationReference?.reference;
     const date = medRequest.authoredOn;
-    // TODO: Deduplicate Practitioners prior to MedicationRequests, so the reference to requester can also be used for key?
 
     if (medRef && date) {
+      const datetime = getDateFromString(date, "datetime");
       // TODO: Include medRequest.dosage into the key when we start mapping it on the FHIR converter
-      const key = JSON.stringify({ medRef, date });
+      const key = JSON.stringify({ medRef, datetime });
       fillMaps(
         medRequestsMap,
         key,
@@ -75,11 +85,14 @@ export function groupSameMedRequests(medRequests: MedicationRequest[]): {
         undefined,
         assignMostDescriptiveStatus
       );
+    } else {
+      danglingReferencesSet.add(createRef(medRequest));
     }
   }
 
   return {
     medRequestsMap,
     refReplacementMap: refReplacementMap,
+    danglingReferences: [...danglingReferencesSet],
   };
 }

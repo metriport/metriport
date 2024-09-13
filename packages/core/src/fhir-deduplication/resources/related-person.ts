@@ -1,67 +1,128 @@
-import { CodeableConcept, HumanName, RelatedPerson } from "@medplum/fhirtypes";
+import { HumanName, RelatedPerson } from "@medplum/fhirtypes";
 import { toTitleCase } from "@metriport/shared";
-import { combineResources, fillMaps } from "../shared";
+import {
+  DeduplicationResult,
+  createRef,
+  createKeysFromObjectAndFlagBits,
+  createKeysFromObjectArrayAndFlagBits,
+  fillL1L2Maps,
+  createKeyFromObjects,
+} from "../shared";
+import { normalizeAddress } from "../../mpi/normalize-address";
 
-export function deduplicateRelatedPersons(relatedPersons: RelatedPerson[]): {
-  combinedRelatedPersons: RelatedPerson[];
-  refReplacementMap: Map<string, string[]>;
-} {
-  const { relatedPersonsMap, refReplacementMap } = groupSameRelatedPersons(relatedPersons);
+export function deduplicateRelatedPersons(
+  relatedPersons: RelatedPerson[]
+): DeduplicationResult<RelatedPerson> {
+  const { relatedPersonsMap, refReplacementMap, danglingReferences } =
+    groupSameRelatedPersons(relatedPersons);
   return {
-    combinedRelatedPersons: combineResources({
-      combinedMaps: [relatedPersonsMap],
-    }),
+    combinedResources: Array.from(relatedPersonsMap.values()),
     refReplacementMap,
+    danglingReferences,
   };
 }
 
-/**
- * Approach:
- * 1 map, where the key is made of:
- * - relationship
- * - full name
- * - dob (optional)
- */
 export function groupSameRelatedPersons(relatedPersons: RelatedPerson[]): {
   relatedPersonsMap: Map<string, RelatedPerson>;
   refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
-  const relatedPersonsMap = new Map<string, RelatedPerson>();
+  const l1RelatedPersonsMap = new Map<string, string>();
+  const l2RelatedPersonsMap = new Map<string, RelatedPerson>();
+
   const refReplacementMap = new Map<string, string[]>();
+  const danglingReferencesSet = new Set<string>();
 
   for (const relatedPerson of relatedPersons) {
-    const relationship = extractRelationship(relatedPerson.relationship);
     const name = extractName(relatedPerson.name);
     const dob = relatedPerson.birthDate;
-    if (relationship && name) {
-      const key = JSON.stringify({ relationship, name, dob });
-      fillMaps(relatedPersonsMap, key, relatedPerson, refReplacementMap);
+    const addresses = relatedPerson.address;
+    const relationship = relatedPerson.relationship;
+
+    const hasAddress = addresses && addresses.length > 0;
+    const hasRelationship = relationship && relationship.length > 0;
+
+    const nameBit = name ? 1 : 0;
+    const addressBit = hasAddress ? 1 : 0;
+
+    const setterKeys = [];
+    const getterKeys = [];
+
+    if (hasRelationship) {
+      // name + rel
+      if (name) {
+        const nameRelKey = createKeyFromObjects([name, relationship]);
+        setterKeys.push(nameRelKey);
+        getterKeys.push(nameRelKey);
+      }
+
+      // addr + rel and no name
+      if (hasAddress) {
+        const normalizedAddresses = addresses.map(address => normalizeAddress(address));
+        const addrRelKeys = createKeysFromObjectArrayAndFlagBits(
+          relationship,
+          normalizedAddresses,
+          [nameBit]
+        );
+        setterKeys.push(...addrRelKeys);
+        if (nameBit === 0) {
+          getterKeys.push(
+            ...createKeysFromObjectArrayAndFlagBits(relationship, normalizedAddresses, [1])
+          );
+          getterKeys.push(
+            ...createKeysFromObjectArrayAndFlagBits(relationship, normalizedAddresses, [0])
+          );
+        } else {
+          getterKeys.push(
+            ...createKeysFromObjectArrayAndFlagBits(relationship, normalizedAddresses, [0])
+          );
+        }
+      }
+
+      // dob + rel and no name or addr
+      if (dob) {
+        const dobRelKeys = createKeysFromObjectAndFlagBits({ dob, relationship }, [
+          nameBit,
+          addressBit,
+        ]);
+        setterKeys.push(...dobRelKeys);
+        if (nameBit === 0 && addressBit === 0) {
+          getterKeys.push(...createKeysFromObjectAndFlagBits({ dob, relationship }, [1, 1]));
+          getterKeys.push(...createKeysFromObjectAndFlagBits({ dob, relationship }, [1, 0]));
+          getterKeys.push(...createKeysFromObjectAndFlagBits({ dob, relationship }, [0, 1]));
+          getterKeys.push(...createKeysFromObjectAndFlagBits({ dob, relationship }, [0, 0]));
+        } else if (nameBit === 1 && addressBit === 0) {
+          getterKeys.push(...createKeysFromObjectAndFlagBits({ dob, relationship }, [0, 1]));
+          getterKeys.push(...createKeysFromObjectAndFlagBits({ dob, relationship }, [0, 0]));
+        } else if (nameBit === 0 && addressBit === 1) {
+          getterKeys.push(...createKeysFromObjectAndFlagBits({ dob, relationship }, [1, 0]));
+          getterKeys.push(...createKeysFromObjectAndFlagBits({ dob, relationship }, [0, 0]));
+        } else {
+          getterKeys.push(...createKeysFromObjectAndFlagBits({ dob, relationship }, [0, 0]));
+        }
+      }
+    }
+
+    if (setterKeys.length !== 0) {
+      fillL1L2Maps({
+        map1: l1RelatedPersonsMap,
+        map2: l2RelatedPersonsMap,
+        getterKeys,
+        setterKeys,
+        targetResource: relatedPerson,
+        refReplacementMap,
+      });
+    } else {
+      // No relationship or no other identifying information
+      danglingReferencesSet.add(createRef(relatedPerson));
     }
   }
 
   return {
-    relatedPersonsMap,
+    relatedPersonsMap: l2RelatedPersonsMap,
     refReplacementMap,
+    danglingReferences: [...danglingReferencesSet],
   };
-}
-
-function extractRelationship(concepts: CodeableConcept[] | undefined): string | undefined {
-  if (!concepts) return undefined;
-
-  for (const concept of concepts) {
-    if (concept.coding) {
-      for (const coding of concept.coding) {
-        const system = coding.system?.toLowerCase();
-        const code = coding.code?.trim().toLowerCase();
-        const display = coding.display?.trim().toLowerCase();
-        if (system && display) {
-          if (display !== "unknown") return display;
-          if (code !== "unk") return code;
-        }
-      }
-    }
-  }
-  return undefined;
 }
 
 function extractName(names: HumanName[] | undefined): string | undefined {

@@ -72,4 +72,23 @@ describe("groupSameProcedures", () => {
     expect(coding?.length).toEqual(2);
     expect(coding).toEqual(expect.arrayContaining([...cptCodeAb.coding, ...loincCodeAb.coding]));
   });
+  it("doesnt remove code and preserves original coding when there is only one unknown code", () => {
+    procedure.performedDateTime = dateTime.start;
+    procedure2.performedDateTime = dateTime.start;
+    const originalCoding = [
+      {
+        system: "some system",
+        code: "some code",
+        display: "some display",
+      },
+    ];
+    procedure.code = { coding: originalCoding };
+    procedure2.code = { coding: originalCoding };
+
+    const { proceduresMap } = groupSameProcedures([procedure, procedure2]);
+    expect(proceduresMap.size).toBe(1);
+
+    const masterProcedure = proceduresMap.values().next().value as Procedure;
+    expect(masterProcedure.code?.coding).toEqual(originalCoding);
+  });
 });

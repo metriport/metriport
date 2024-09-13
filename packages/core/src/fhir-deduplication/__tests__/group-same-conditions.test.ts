@@ -95,6 +95,39 @@ describe("groupSameConditions", () => {
     expect(snomedMap.size).toBe(2);
   });
 
+  it("removes conditions that only have one coding that just says 'Problem'", () => {
+    condition.code = {
+      coding: [
+        {
+          system: "http://snomed.info/sct",
+          code: "55607006",
+          display: "Problem",
+        },
+      ],
+    };
+    condition.onsetPeriod = dateTime;
+
+    const { snomedMap } = groupSameConditions([condition]);
+    expect(snomedMap.size).toBe(0);
+  });
+
+  it("keeps the conditions that only have more than one coding, where one just says 'Problem'", () => {
+    condition.code = {
+      coding: [
+        {
+          system: "http://snomed.info/sct",
+          code: "55607006",
+          display: "Problem",
+        },
+        snomedCodeMd,
+      ],
+    };
+    condition.onsetPeriod = dateTime;
+
+    const { snomedMap } = groupSameConditions([condition]);
+    expect(snomedMap.size).toBe(1);
+  });
+
   it("strips away codes that aren't SNOMED or ICD-10", () => {
     condition.code = { coding: [icd10CodeMd] };
     condition2.code = { coding: [icd10CodeMd, snomedCodeMd, otherCodeSystemMd] };
@@ -124,5 +157,16 @@ describe("groupSameConditions", () => {
         }),
       ])
     );
+  });
+  it("do not remove code and preserve original coding when there is only one code of unrecognized system", () => {
+    condition.code = { coding: [otherCodeSystemMd] };
+    condition2.code = { coding: [otherCodeSystemMd] };
+    condition.onsetPeriod = dateTime;
+    condition2.onsetPeriod = dateTime;
+
+    const { displayMap } = groupSameConditions([condition, condition2]);
+    expect(displayMap.size).toBe(1);
+    const groupedCondition = displayMap.values().next().value;
+    expect(groupedCondition.code?.coding).toEqual([otherCodeSystemMd]);
   });
 });

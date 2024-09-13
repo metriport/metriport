@@ -1,27 +1,35 @@
 import { Observation } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { combineResources, fillMaps, pickMostDescriptiveStatus } from "../shared";
+import {
+  DeduplicationResult,
+  combineResources,
+  createRef,
+  extractDisplayFromConcept,
+  fillMaps,
+  isUnknownCoding,
+  pickMostDescriptiveStatus,
+} from "../shared";
 import {
   extractCodes,
   extractValueFromObservation,
-  isUnknownCoding,
   retrieveCode,
   statusRanking,
 } from "./observation-shared";
 
 dayjs.extend(utc);
 
-export function deduplicateObservationsSocial(observations: Observation[]): {
-  combinedObservations: Observation[];
-  refReplacementMap: Map<string, string[]>;
-} {
-  const { observationsMap, refReplacementMap } = groupSameObservationsSocial(observations);
+export function deduplicateObservationsSocial(
+  observations: Observation[]
+): DeduplicationResult<Observation> {
+  const { observationsMap, refReplacementMap, danglingReferences } =
+    groupSameObservationsSocial(observations);
   return {
-    combinedObservations: combineResources({
+    combinedResources: combineResources({
       combinedMaps: [observationsMap],
     }),
     refReplacementMap,
+    danglingReferences,
   };
 }
 
@@ -36,9 +44,11 @@ export function deduplicateObservationsSocial(observations: Observation[]): {
 export function groupSameObservationsSocial(observations: Observation[]): {
   observationsMap: Map<string, Observation>;
   refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
   const observationsMap = new Map<string, Observation>();
   const refReplacementMap = new Map<string, string[]>();
+  const danglingReferencesSet = new Set<string>();
 
   function postProcess(
     master: Observation,
@@ -59,15 +69,42 @@ export function groupSameObservationsSocial(observations: Observation[]): {
     return master;
   }
 
+  function postProcessOnlyStatus(
+    master: Observation,
+    existing: Observation,
+    target: Observation
+  ): Observation {
+    master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
+    return master;
+  }
+
   for (const observation of observations) {
     const keyCodes = extractCodes(observation.code);
     const keyCode = retrieveCode(keyCodes);
     const value = extractValueFromObservation(observation);
 
-    if (value && keyCode) {
-      const key = keyCode ? JSON.stringify({ value, keyCode }) : undefined;
-      if (key) {
-        fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
+    if (!value) {
+      danglingReferencesSet.add(createRef(observation));
+      continue;
+    }
+
+    if (keyCode) {
+      const key = JSON.stringify({ value, keyCode });
+      fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
+    } else {
+      const display = extractDisplayFromConcept(observation.code);
+      if (display) {
+        const key = JSON.stringify({ value, display });
+        fillMaps(
+          observationsMap,
+          key,
+          observation,
+          refReplacementMap,
+          undefined,
+          postProcessOnlyStatus
+        );
+      } else {
+        danglingReferencesSet.add(createRef(observation));
       }
     }
   }
@@ -75,6 +112,7 @@ export function groupSameObservationsSocial(observations: Observation[]): {
   return {
     observationsMap,
     refReplacementMap,
+    danglingReferences: [...danglingReferencesSet],
   };
 }
 

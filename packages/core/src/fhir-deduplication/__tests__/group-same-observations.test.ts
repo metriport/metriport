@@ -1,15 +1,15 @@
 import { faker } from "@faker-js/faker";
 import { Observation } from "@medplum/fhirtypes";
 import { makeObservation } from "../../fhir-to-cda/cda-templates/components/__tests__/make-observation";
-import { unknownCoding, unknownCode } from "../resources/observation-shared";
+import { groupSameObservations } from "../resources/observation";
 import { groupSameObservationsSocial } from "../resources/observation-social";
+import { unknownCode, unknownCoding } from "../shared";
 import { dateTime, dateTime2 } from "./examples/condition-examples";
 import {
   loincCodeTobacco,
   snomedCodeTobacco,
   valueConceptTobacco,
 } from "./examples/observation-examples";
-import { groupSameObservations } from "../resources/observation";
 
 let observationId: string;
 let observationId2: string;
@@ -101,6 +101,84 @@ describe("groupSameObservationsSocial", () => {
     };
 
     const { observationsMap } = groupSameObservationsSocial([observation, observation2]);
+    expect(observationsMap.size).toBe(2);
+  });
+
+  it("does not group observations with unknown codes and different displays", () => {
+    observation = makeObservation({
+      id: observationId,
+      effectiveDateTime: "2023-11-17T09:32:00.000Z",
+      valueString: "Neg",
+      code: {
+        coding: [
+          {
+            system: "http://loinc.org",
+            code: "UNK",
+            display: "unknown",
+          },
+          {
+            display: "Leukocytes",
+          },
+        ],
+      },
+    });
+
+    observation2 = makeObservation({
+      id: observationId2,
+      effectiveDateTime: "2023-11-17T09:32:00.000Z",
+      valueString: "Neg",
+      code: {
+        coding: [
+          {
+            system: "http://loinc.org",
+            code: "UNK",
+            display: "unknown",
+          },
+          {
+            display: "Bilirubin",
+          },
+        ],
+      },
+    });
+
+    const { observationsMap } = groupSameObservations([observation, observation2]);
+    expect(observationsMap.size).toBe(2);
+  });
+
+  it("does not group observations with unknown codes and different text", () => {
+    observation = makeObservation({
+      id: observationId,
+      effectiveDateTime: "2023-11-17T09:32:00.000Z",
+      valueString: "Neg",
+      code: {
+        coding: [
+          {
+            system: "http://loinc.org",
+            code: "UNK",
+            display: "unknown",
+          },
+        ],
+        text: "Leukocytes",
+      },
+    });
+
+    observation2 = makeObservation({
+      id: observationId2,
+      effectiveDateTime: "2023-11-17T09:32:00.000Z",
+      valueString: "Neg",
+      code: {
+        coding: [
+          {
+            system: "http://loinc.org",
+            code: "UNK",
+            display: "unknown",
+          },
+        ],
+        text: "Bilirubin",
+      },
+    });
+
+    const { observationsMap } = groupSameObservations([observation, observation2]);
     expect(observationsMap.size).toBe(2);
   });
 
@@ -227,5 +305,21 @@ describe("groupSameObservations", () => {
 
     const { observationsMap } = groupSameObservations([observation, observation2]);
     expect(observationsMap.size).toBe(2);
+  });
+
+  it("does not remove code and preserve original coding when there is only one code of unrecognized system", () => {
+    observation.effectiveDateTime = dateTime.start;
+    observation2.effectiveDateTime = dateTime.start;
+    const originalCoding = [{ system: "some other system", code: "123", display: "some display" }];
+
+    observation.code = { coding: originalCoding };
+    observation2.code = { coding: originalCoding };
+    observation.valueCodeableConcept = valueConceptTobacco;
+    observation2.valueCodeableConcept = valueConceptTobacco;
+
+    const { observationsMap } = groupSameObservations([observation, observation2]);
+    expect(observationsMap.size).toBe(1);
+    const groupedObservation = observationsMap.values().next().value;
+    expect(groupedObservation.code?.coding).toEqual(originalCoding);
   });
 });

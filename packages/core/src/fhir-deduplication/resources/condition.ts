@@ -1,6 +1,15 @@
 import { CodeableConcept, Condition } from "@medplum/fhirtypes";
-import { ICD_10_CODE, ICD_10_OID, SNOMED_CODE, SNOMED_OID } from "../../util/constants";
-import { combineResources, createCompositeKey, fillMaps, getDateFromResource } from "../shared";
+import { ICD_10_CODE, ICD_10_OID, SNOMED_CODE, SNOMED_OID, ICD_9_CODE } from "../../util/constants";
+import {
+  DeduplicationResult,
+  combineResources,
+  createRef,
+  extractDisplayFromConcept,
+  fillMaps,
+  getDateFromResource,
+  hasBlacklistedText,
+  isUnknownCoding,
+} from "../shared";
 
 /**
  * Approach:
@@ -12,57 +21,102 @@ import { combineResources, createCompositeKey, fillMaps, getDateFromResource } f
  *      - Date
  * 2. Combine the Conditions in each group into one master condition and return the array of only unique and maximally filled out Conditions
  */
-export function deduplicateConditions(conditions: Condition[]) {
-  const { snomedMap, icd10Map, refReplacementMap } = groupSameConditions(conditions);
+export function deduplicateConditions(conditions: Condition[]): DeduplicationResult<Condition> {
+  const { snomedMap, icd10Map, displayMap, refReplacementMap, danglingReferences } =
+    groupSameConditions(conditions);
   return {
-    combinedConditions: combineResources({
-      combinedMaps: [snomedMap, icd10Map],
+    combinedResources: combineResources({
+      combinedMaps: [snomedMap, icd10Map, displayMap],
     }),
     refReplacementMap,
+    danglingReferences,
   };
 }
 
 export function groupSameConditions(conditions: Condition[]): {
   snomedMap: Map<string, Condition>;
   icd10Map: Map<string, Condition>;
+  displayMap: Map<string, Condition>;
   refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
   const snomedMap = new Map<string, Condition>();
   const icd10Map = new Map<string, Condition>();
+  const displayMap = new Map<string, Condition>();
   const refReplacementMap = new Map<string, string[]>();
+  const danglingReferencesSet = new Set<string>();
 
   function removeOtherCodes(master: Condition): Condition {
     const code = master.code;
-    const filtered = code?.coding?.filter(
-      coding =>
-        coding.system?.includes(SNOMED_CODE) ||
-        coding.system?.includes(SNOMED_OID) ||
-        coding.system?.includes(ICD_10_CODE) ||
-        coding.system?.includes(ICD_10_OID)
-    );
-    if (filtered) {
+    const filtered = code?.coding?.filter(coding => {
+      const system = coding.system?.toLowerCase();
+      return (
+        system?.includes(SNOMED_CODE) ||
+        system?.includes(SNOMED_OID) ||
+        system?.includes(ICD_10_CODE) ||
+        system?.includes(ICD_10_OID) ||
+        system?.includes(ICD_9_CODE)
+      );
+    });
+    if (filtered && filtered.length > 0) {
       master.code = {
         ...code,
         coding: filtered,
       };
+    } else {
+      master.code = { ...code };
+      delete master.code.coding;
     }
     return master;
   }
 
   for (const condition of conditions) {
-    const date = getDateFromResource(condition);
-    const { snomedCode, icd10Code } = extractCodes(condition.code);
+    if (hasBlacklistedText(condition.code) || !isKnownCondition(condition.code)) {
+      danglingReferencesSet.add(createRef(condition));
+      continue;
+    }
 
-    if (icd10Code && date) {
-      const compKey = JSON.stringify(createCompositeKey(icd10Code, date));
+    const date = getDateFromResource(condition);
+    if (!date) {
+      danglingReferencesSet.add(createRef(condition));
+      continue;
+    }
+
+    const { snomedCode, icd10Code } = extractCodes(condition.code);
+    if (icd10Code) {
+      const compKey = JSON.stringify({ icd10Code, date });
       fillMaps(icd10Map, compKey, condition, refReplacementMap, undefined, removeOtherCodes);
-    } else if (snomedCode && date) {
-      const compKey = JSON.stringify(createCompositeKey(snomedCode, date));
+    } else if (snomedCode) {
+      const compKey = JSON.stringify({ snomedCode, date });
       fillMaps(snomedMap, compKey, condition, refReplacementMap, undefined, removeOtherCodes);
+    } else {
+      const display = extractDisplayFromConcept(condition.code);
+      if (display) {
+        const compKey = JSON.stringify({ display, date });
+        fillMaps(displayMap, compKey, condition, refReplacementMap, undefined);
+      } else {
+        danglingReferencesSet.add(createRef(condition));
+      }
     }
   }
 
-  return { snomedMap, icd10Map, refReplacementMap };
+  return {
+    snomedMap,
+    icd10Map,
+    displayMap,
+    refReplacementMap,
+    danglingReferences: [...danglingReferencesSet],
+  };
+}
+
+function isKnownCondition(concept: CodeableConcept | undefined) {
+  const knownCodings = concept?.coding?.filter(
+    coding =>
+      !isUnknownCoding(coding) &&
+      (coding.code !== "55607006" || coding.display?.toLowerCase().trim() !== "problem")
+  );
+
+  return knownCodings?.length && knownCodings?.length > 0;
 }
 
 export function extractCodes(concept: CodeableConcept | undefined): {

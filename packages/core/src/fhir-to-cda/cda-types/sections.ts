@@ -18,7 +18,7 @@ type CdaSection<T> =
       templateId?: CdaInstanceIdentifier | CdaInstanceIdentifier[];
       code: CdaCodeCe;
       title: string;
-      text: CdaTable | TextParagraph | TextUnstructured | string;
+      text: CdaTable | CdaTable[] | TextParagraph | TextUnstructured | string;
       entry?: T | T[];
     }
   | undefined;

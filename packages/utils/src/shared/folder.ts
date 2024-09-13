@@ -1,7 +1,7 @@
 import fs from "fs";
 import os from "os";
 
-const runsFolderName = "runs";
+export const runsFolderName = "runs";
 
 /**
  * Creates a symlink to the runs folder in the user's home directory

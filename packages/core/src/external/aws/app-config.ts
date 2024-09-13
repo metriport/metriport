@@ -38,7 +38,7 @@ export const cxBasedFFsSchema = z.object({
   cxsWithCWFeatureFlag: ffStringValuesSchema,
   cxsWithADHDMRFeatureFlag: ffStringValuesSchema,
   cxsWithAiBriefFeatureFlag: ffStringValuesSchema,
-  cxsWithFhirDedupFeatureFlag: ffStringValuesSchema,
+  getCxsWithCdaCustodianFeatureFlag: ffStringValuesSchema,
   cxsWithNoWebhookPongFeatureFlag: ffStringValuesSchema,
   cxsWithIncreasedSandboxLimitFeatureFlag: ffStringValuesSchema,
   cxsWithEpicEnabled: ffStringValuesSchema,
@@ -213,17 +213,8 @@ export async function getCxsWithFeatureFlagEnabled(
   return [];
 }
 
-export async function getCxsWithFhirDedupFeatureFlag(): Promise<string[]> {
-  return getCxsWithFeatureFlagEnabled("cxsWithFhirDedupFeatureFlag");
-}
-
 export async function getCxsWithAiBriefFeatureFlagValue(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithAiBriefFeatureFlag");
-}
-
-export async function isFhirDeduplicationEnabledForCx(cxId: string): Promise<boolean> {
-  const cxIdsWithFhirDedupEnabled = await getCxsWithFhirDedupFeatureFlag();
-  return cxIdsWithFhirDedupEnabled.some(i => i === cxId);
 }
 
 export async function isAiBriefFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {

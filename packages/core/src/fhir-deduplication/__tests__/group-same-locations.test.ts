@@ -18,41 +18,108 @@ beforeEach(() => {
   location2 = makeLocation({ id: locationId2, name: "Planet Express" });
 });
 
-describe("groupSameLocations", () => {
-  it("correctly groups duplicate locations based on names and addresses", () => {
-    location.address = exampleAddress;
-    location2.address = exampleAddress;
-    const { locationsMap } = groupSameLocations([location, location2]);
-    expect(locationsMap.size).toBe(1);
+describe("Location Deduplication", () => {
+  describe("removes locations", () => {
+    it("no name and no address", () => {
+      delete location2.name;
+      const { locationsMap, danglingReferences } = groupSameLocations([location, location2]);
+      expect(locationsMap.size).toBe(1);
+      expect(danglingReferences.length).toBe(1);
+    });
   });
 
-  it("does not group locations with different addresses", () => {
-    location.address = exampleAddress;
-    location2.address = { ...exampleAddress, city: "New York 3000" };
-    const { locationsMap } = groupSameLocations([location, location2]);
-    expect(locationsMap.size).toBe(2);
+  describe("keeps locations", () => {
+    it("no name but has address", () => {
+      delete location2.name;
+      location2.address = exampleAddress;
+      const { locationsMap } = groupSameLocations([location, location2]);
+      expect(locationsMap.size).toBe(2);
+    });
   });
 
-  it("does not group locations with different names", () => {
-    location.address = exampleAddress;
-    location2.address = exampleAddress;
-    location2.name = "Zapp Brannigan's Nimbus";
-    const { locationsMap } = groupSameLocations([location, location2]);
-    expect(locationsMap.size).toBe(2);
+  describe("Both locations have or don't have address", () => {
+    describe("Groups locations when", () => {
+      it("same name, no address", () => {
+        const { locationsMap } = groupSameLocations([location, location2]);
+        expect(locationsMap.size).toBe(1);
+      });
+
+      it("same name, same address", () => {
+        location.address = exampleAddress;
+        location2.address = exampleAddress;
+        const { locationsMap } = groupSameLocations([location, location2]);
+        expect(locationsMap.size).toBe(1);
+      });
+    });
+
+    describe("Does not group locations when", () => {
+      it("different names, no address", () => {
+        location2.name = "Springfield Community Clinic";
+        const { locationsMap } = groupSameLocations([location, location2]);
+        expect(locationsMap.size).toBe(2);
+      });
+
+      it("different names, same address", () => {
+        location.address = exampleAddress;
+        location2.address = exampleAddress;
+        location2.name = "Springfield Community Clinic";
+        const { locationsMap } = groupSameLocations([location, location2]);
+        expect(locationsMap.size).toBe(2);
+      });
+
+      it("same name, different addresses", () => {
+        location.address = exampleAddress;
+        location2.address = { ...exampleAddress, city: "Shelbyville" };
+        const { locationsMap } = groupSameLocations([location, location2]);
+        expect(locationsMap.size).toBe(2);
+      });
+    });
   });
 
-  it("removes locations without names", () => {
-    location.address = exampleAddress;
-    location2.address = exampleAddress;
-    delete location2.name;
+  describe("One location has address and the other doesn't", () => {
+    describe("Groups locations when", () => {
+      it("same name, one with address, one without", () => {
+        location.address = exampleAddress;
+        const { locationsMap } = groupSameLocations([location, location2]);
+        expect(locationsMap.size).toBe(1);
+      });
+    });
 
-    const { locationsMap } = groupSameLocations([location, location2]);
-    expect(locationsMap.size).toBe(1);
+    describe("Does not group locations when", () => {
+      it("different names, one with address, one without", () => {
+        location.address = exampleAddress;
+        location2.name = "Springfield Community Clinic";
+        const { locationsMap } = groupSameLocations([location, location2]);
+        expect(locationsMap.size).toBe(2);
+      });
+    });
   });
 
-  it("removes locations without addresses", () => {
-    location.address = exampleAddress;
-    const { locationsMap } = groupSameLocations([location, location2]);
-    expect(locationsMap.size).toBe(1);
+  describe("Edge cases", () => {
+    it("handles locations with only address, no name", () => {
+      delete location.name;
+      delete location2.name;
+      location.address = exampleAddress;
+      location2.address = exampleAddress;
+      const { locationsMap, danglingReferences } = groupSameLocations([location, location2]);
+      expect(locationsMap.size).toBe(1);
+      expect(danglingReferences.length).toBe(0);
+    });
+
+    it("handles locations with partial addresses", () => {
+      location.name = "Springfield Clinic";
+      location2.name = "Springfield Clinic";
+      location.address = { city: "Springfield", state: "IL" };
+      location2.address = { city: "Springfield", state: "IL" };
+      const { locationsMap } = groupSameLocations([location, location2]);
+      expect(locationsMap.size).toBe(1);
+    });
+
+    it("doesn't group locations with same name but significantly different addresses", () => {
+      location.address = exampleAddress;
+      location2.address = { ...exampleAddress, line: ["456 Elm St"], postalCode: "62702" };
+      const { locationsMap } = groupSameLocations([location, location2]);
+      expect(locationsMap.size).toBe(2);
+    });
   });
 });

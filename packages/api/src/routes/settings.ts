@@ -2,16 +2,37 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { z } from "zod";
+import dayjs from "dayjs";
+import { ISO_DATE } from "../shared/date";
 import { createSettings } from "../command/settings/createSettings";
 import { getSettings, getSettingsOrFail } from "../command/settings/getSettings";
 import { updateSettings } from "../command/settings/updateSettings";
 import { countFailedAndProcessingRequests } from "../command/webhook/count-failed";
 import { retryFailedRequests } from "../command/webhook/retry-failed";
-import { maxWebhookUrlLength } from "../domain/settings";
+import { maxWebhookUrlLength, MrFilters } from "../domain/settings";
 import BadRequestError from "../errors/bad-request";
 import { Settings } from "../models/settings";
 import { requestLogger } from "./helpers/request-logger";
 import { asyncHandler, getCxIdOrFail } from "./util";
+
+const mrSectionsKeys = [
+  "reports",
+  "conditions",
+  "medications",
+  "allergies",
+  "procedures",
+  "social-history",
+  "vitals",
+  "labs",
+  "observations",
+  "immunizations",
+  "family-member-history",
+  "related-persons",
+  "tasks",
+  "coverages",
+  "encounters",
+  "documents",
+] as const;
 
 const router = Router();
 const webhookURLIncludeBlacklist = [
@@ -59,11 +80,12 @@ class SettingsDTO {
   public constructor(
     public id: string,
     public webhookUrl: string | null,
-    public webhookKey: string | null
+    public webhookKey: string | null,
+    public mrFilters: MrFilters[] | null
   ) {}
 
   static fromEntity(s: Settings): SettingsDTO {
-    return new SettingsDTO(s.id, s.webhookUrl, s.webhookKey);
+    return new SettingsDTO(s.id, s.webhookUrl, s.webhookKey, s.mrFilters);
   }
 }
 
@@ -114,6 +136,27 @@ router.get(
 const updateSettingsSchema = z
   .object({
     webhookUrl: z.string().url().max(maxWebhookUrlLength).or(z.literal("").nullable().optional()),
+    mrFilters: z
+      .array(
+        z.object({
+          key: z.enum(mrSectionsKeys),
+          dateFilter: z
+            .object({
+              from: z
+                .string()
+                .refine(v => dayjs(v, ISO_DATE, true).isValid())
+                .optional(),
+              to: z
+                .string()
+                .refine(v => dayjs(v, ISO_DATE, true).isValid())
+                .optional(),
+            })
+            .optional(),
+          stringFilter: z.string().optional(),
+        })
+      )
+      .min(mrSectionsKeys.length)
+      .optional(),
   })
   .strict();
 
@@ -123,6 +166,7 @@ const updateSettingsSchema = z
  * Updates the settings for the API customer.
  *
  * @param {string}  req.body.webhookUrl The webhook URL to set.
+ * @param {MrFilters[]}  req.body.filters The mr filters to set.
  *
  * @return {SettingsDTO} The updated settings data as defined by SettingsDTO.
  */
@@ -131,7 +175,8 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const { webhookUrl } = updateSettingsSchema.parse(req.body);
+    const { webhookUrl, mrFilters } = updateSettingsSchema.parse(req.body);
+
     if (webhookUrl) {
       for (const blacklistedStr of webhookURLIncludeBlacklist) {
         if (webhookUrl.includes(blacklistedStr)) {
@@ -140,9 +185,11 @@ router.post(
       }
       if (webhookURLExactBlacklist.includes(webhookUrl)) throw new BadRequestError(`Invalid URL`);
     }
+
     const settings = await updateSettings({
       cxId,
       webhookUrl: webhookUrl ?? undefined,
+      filters: mrFilters,
     });
     res.status(status.OK).json(SettingsDTO.fromEntity(settings));
   })
