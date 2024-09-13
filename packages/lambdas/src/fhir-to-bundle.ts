@@ -1,9 +1,9 @@
-import {
-  ConsolidatedDataRequestAsync,
-  ConsolidatedDataRequestSync,
-  ConsolidatedDataResponse,
-} from "@metriport/core/command/consolidated/get-consolidated";
 import { ConsolidatedDataConnectorLocal } from "@metriport/core/command/consolidated/get-consolidated-local";
+import {
+  ConsolidatedSnapshotRequestAsync,
+  ConsolidatedSnapshotRequestSync,
+  ConsolidatedSnapshotResponse,
+} from "@metriport/core/command/consolidated/get-snapshot";
 import { out } from "@metriport/core/util/log";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
@@ -16,8 +16,8 @@ const apiURL = getEnvOrFail("API_URL");
 const bucketName = getEnvOrFail("BUCKET_NAME");
 
 export async function handler(
-  params: ConsolidatedDataRequestSync | ConsolidatedDataRequestAsync
-): Promise<ConsolidatedDataResponse | void> {
+  params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
+): Promise<ConsolidatedSnapshotResponse | void> {
   const { patient, requestId, documentIds, resources, dateFrom, dateTo } = params;
   const conversionType = params.isAsync ? params.conversionType : undefined;
   const { log } = out(`cx ${patient.cxId}, patient ${patient.id}, req ${requestId}`);

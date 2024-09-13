@@ -3,23 +3,23 @@ import duration from "dayjs/plugin/duration";
 import { getLambdaResultPayload, makeLambdaClient } from "../../external/aws/lambda";
 import { Config } from "../../util/config";
 import {
-  ConsolidatedDataConnector,
-  ConsolidatedDataRequestAsync,
-  ConsolidatedDataRequestSync,
-  ConsolidatedDataResponse,
-  ConsolidatedPatientDataRequest,
-} from "./get-consolidated";
+  ConsolidatedSnapshotConnector,
+  ConsolidatedSnapshotRequestAsync,
+  ConsolidatedSnapshotRequestSync,
+  ConsolidatedSnapshotResponse,
+  ConsolidatedSnapshotRequest,
+} from "./get-snapshot";
 
 dayjs.extend(duration);
 
-export type ConsolidatedRequestLambda = ConsolidatedPatientDataRequest & {
+export type ConsolidatedRequestLambda = ConsolidatedSnapshotRequest & {
   bucketName: string;
   apiURL: string;
 };
 
 export const TIMEOUT_CALLING_CONVERTER_LAMBDA = dayjs.duration(15, "minutes").add(2, "seconds");
 
-export class ConsolidatedDataConnectorLambda implements ConsolidatedDataConnector {
+export class ConsolidatedDataConnectorLambda implements ConsolidatedSnapshotConnector {
   readonly lambdaName: string;
   readonly lambdaClient: AWS.Lambda;
   constructor() {
@@ -29,8 +29,8 @@ export class ConsolidatedDataConnectorLambda implements ConsolidatedDataConnecto
   }
 
   async execute(
-    params: ConsolidatedDataRequestSync | ConsolidatedDataRequestAsync
-  ): Promise<ConsolidatedDataResponse> {
+    params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
+  ): Promise<ConsolidatedSnapshotResponse> {
     const result = await this.lambdaClient
       .invoke({
         FunctionName: this.lambdaName,
@@ -39,7 +39,7 @@ export class ConsolidatedDataConnectorLambda implements ConsolidatedDataConnecto
       })
       .promise();
     const resultPayload = getLambdaResultPayload({ result, lambdaName: this.lambdaName });
-    const response = JSON.parse(resultPayload) as ConsolidatedDataResponse;
+    const response = JSON.parse(resultPayload) as ConsolidatedSnapshotResponse;
     return response;
   }
 }
