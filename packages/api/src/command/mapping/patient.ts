@@ -55,3 +55,15 @@ export async function deletePatientMapping({
   }
   await existing.destroy();
 }
+
+export async function deleteAllPatientMappings({
+  cxId,
+  patientId,
+}: {
+  cxId: string;
+  patientId: string;
+}): Promise<void> {
+  await PatientMappingModel.destroy({
+    where: { cxId, patientId },
+  });
+}

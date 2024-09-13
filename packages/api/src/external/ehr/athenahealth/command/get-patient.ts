@@ -30,7 +30,7 @@ export async function getPatientOrFail({
   accessToken: string;
   cxId: string;
   athenaPatientId: string;
-}): Promise<{ patient: Patient; isNew: boolean }> {
+}): Promise<{ patientId: string; isNew: boolean }> {
   const { log } = out(`AthenaHealth getPatient - cxId ${cxId} athenaPatientId ${athenaPatientId}`);
   const existingPatient = await getPatientMapping({
     cxId,
@@ -42,7 +42,7 @@ export async function getPatientOrFail({
       cxId,
       id: existingPatient.patientId,
     });
-    return { patient: metriportPatient, isNew: false };
+    return { patientId: metriportPatient.id, isNew: false };
   }
   if (!athenaUrl) throw new Error("AthenaHealth url not defined");
   const athenaPatient = await getAthenaPatient({
@@ -122,7 +122,7 @@ export async function getPatientOrFail({
     externalId: athenaPatientId,
     source: EhrSources.ATHENA,
   });
-  return { patient: metriportPatient, isNew };
+  return { patientId: metriportPatient.id, isNew };
 }
 
 function createMetriportPatientDemoFilters(patient: PatientResource): PatientDemoData[] {

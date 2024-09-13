@@ -33,7 +33,7 @@ export async function createFacility({
   };
   validateObo(input);
   await validateNPI(cxId, input.data.npi);
-  return FacilityModel.create(input);
+  return await FacilityModel.create(input);
 }
 
 export async function validateNPI(cxId: string, newNpi: string, existingNpi?: string) {
