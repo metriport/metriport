@@ -50,20 +50,17 @@ export function createQueueAndBucket({
   lambdaLayers,
   envType,
   alarmSnsAction,
-  altConnectorName,
 }: {
   stack: Construct;
   lambdaLayers: LambdaLayers;
   envType: EnvType;
   alarmSnsAction?: SnsAction;
-  // TODO 2215 Remove this when we remove the old FHIRConverter lambda/queues
-  altConnectorName?: string;
 }): FHIRConverterConnector {
   const config = getConfig();
   const { connectorName, visibilityTimeout, maxReceiveCount } = settings();
   const queue = defaultCreateQueue({
     stack,
-    name: altConnectorName ?? connectorName,
+    name: connectorName,
     // To use FIFO we'd need to change the lambda code to set visibilityTimeout=0 on messages to be
     // reprocessed, instead of re-enqueueing them (bc of messageDeduplicationId visibility of 5min)
     fifo: false,
