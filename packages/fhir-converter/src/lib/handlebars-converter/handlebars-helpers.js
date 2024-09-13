@@ -150,16 +150,16 @@ var alreadyValidDateTime = function (dateTimeString) {
 const incompeteIso8601Regex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
 const iso8601RegexWithMissingT = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{3}Z)$/;
 
-var incompleteIso8601 = function (dateTimeString) {
-  if (!dateTimeString || dateTimeString.toString() === "") return false;
+function incompleteIso8601(dateTimeString) {
+  if (isEmptyString(dateTimeString)) return false;
   if (incompeteIso8601Regex.test(dateTimeString) || iso8601RegexWithMissingT.test(dateTimeString)) {
     return true;
   }
   return false;
-};
+}
 
-var correctIsoFormat = function (dateTimeString) {
-  if (!dateTimeString || dateTimeString.toString() === "") "";
+function correctIsoFormat(dateTimeString) {
+  if (isEmptyString(dateTimeString)) return "";
   if (iso8601RegexWithMissingT.test(dateTimeString)) {
     const newDate = dateTimeString.trim().replace(" ", "T");
     if (alreadyValidDateTime(newDate)) return newDate;
@@ -171,7 +171,11 @@ var correctIsoFormat = function (dateTimeString) {
     console.log(`Poorly reformatted the dateTime string: ${JSON.stringify(dateTimeString)}`);
   }
   return dateTimeString;
-};
+}
+
+function isEmptyString(str) {
+  return !str || str.trim().length < 1;
+}
 
 // handling the date format here
 var getDate = function (dateStringRaw) {
