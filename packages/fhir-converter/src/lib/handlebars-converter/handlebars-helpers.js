@@ -148,23 +148,25 @@ var alreadyValidDateTime = function (dateTimeString) {
 };
 
 const incompeteIso8601Regex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
-const Iso8601RegexWithMissingT = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{3}Z)$/;
+const iso8601RegexWithMissingT = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{3}Z)$/;
 
 var incompleteIso8601 = function (dateTimeString) {
-  if (incompeteIso8601Regex.test(dateTimeString) || Iso8601RegexWithMissingT.test(dateTimeString)) {
+  if (!dateTimeString || dateTimeString.toString() === "") return false;
+  if (incompeteIso8601Regex.test(dateTimeString) || iso8601RegexWithMissingT.test(dateTimeString)) {
     return true;
   }
   return false;
 };
 
 var correctIsoFormat = function (dateTimeString) {
-  if (Iso8601RegexWithMissingT.test(dateTimeString)) {
-    const newDate = dateTimeString.replace(" ", "T");
+  if (!dateTimeString || dateTimeString.toString() === "") "";
+  if (iso8601RegexWithMissingT.test(dateTimeString)) {
+    const newDate = dateTimeString.trim().replace(" ", "T");
     if (alreadyValidDateTime(newDate)) return newDate;
     console.log(`Poorly reformatted the dateTime.000Z string: ${JSON.stringify(dateTimeString)}`);
   }
   if (incompeteIso8601Regex.test(dateTimeString)) {
-    const newDate = dateTimeString.replace(" ", "T") + ".000Z";
+    const newDate = dateTimeString.trim().replace(" ", "T") + ".000Z";
     if (alreadyValidDateTime(newDate)) return newDate;
     console.log(`Poorly reformatted the dateTime string: ${JSON.stringify(dateTimeString)}`);
   }
