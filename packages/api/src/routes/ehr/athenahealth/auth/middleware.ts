@@ -9,7 +9,7 @@ import BadRequestError from "../../../../errors/bad-request";
 
 function parseAthenaHealthPracticeId(tokenData: { ah_practice?: string }): string {
   const practiceId = tokenData.ah_practice;
-  if (!practiceId) throw new BadRequestError("Missing ah_practice on token data");
+  if (!practiceId) throw new BadRequestError("Missing exteranl mapping on token data");
   return practiceId;
 }
 

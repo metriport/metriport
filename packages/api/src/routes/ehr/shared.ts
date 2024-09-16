@@ -1,4 +1,5 @@
 import { Request } from "express";
+import { capture } from "@metriport/core/util/notifications";
 import { getAuthorizationToken } from "../util";
 import { getJwtTokenOrFail } from "../../command/jwt-token";
 import { getCxMappingOrFail } from "../../command/mapping/cx";
@@ -11,6 +12,7 @@ import {
   replaceIdInUrlAndQuery,
 } from "./util";
 import { EhrSources } from "../../external/ehr/shared";
+import BadRequestError from "../../errors/bad-request";
 
 export async function processCxIdAsync(
   req: Request,
@@ -73,14 +75,20 @@ export const validedDocumentPaths: PathDetails[] = [
 
 export async function processPatientRouteAsync(req: Request, source: EhrSources): Promise<void> {
   const path = validatePath(req, validPatientPaths);
-  if (!path.paramRegexIndex) throw new Error("Must define regex index for patient paths.");
+  if (!path.paramRegexIndex) {
+    capture.error("Must include paramRegexIndex on patient paths", { extra: { path } });
+    throw new BadRequestError("Trouble processisng request");
+  }
   const externalId = parseIdFromPathParams(req, path.regex, path.paramRegexIndex);
   await replaceIdInUrlAndQuery(req, source, externalId);
 }
 
 export async function processDocumentRouteAsync(req: Request, source: EhrSources): Promise<void> {
   const path = validatePath(req, validedDocumentPaths);
-  if (!path.queryParamKey) throw new Error("Must define query param for Document paths.");
+  if (!path.queryParamKey) {
+    capture.error("Must include queryParamKey on document paths", { extra: { path } });
+    throw new BadRequestError("Trouble processisng request");
+  }
   const externalId = parseIdFromQueryParams(req, path.queryParamKey);
   await replaceIdInUrlAndQuery(req, source, externalId);
 }

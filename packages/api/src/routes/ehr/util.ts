@@ -48,7 +48,7 @@ export async function replaceIdInUrlAndQuery(
   source: EhrSources,
   externalId: string
 ): Promise<void> {
-  if (!req.cxId) throw new Error("Trouble processisng request");
+  if (!req.cxId) throw new BadRequestError("Trouble processisng request");
   const patient = await getPatientMappingOrFail({
     cxId: req.cxId,
     externalId,

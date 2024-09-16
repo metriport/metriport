@@ -18,7 +18,7 @@ import {
 import { getPatientMapping, findOrCreatePatientMapping } from "../../../../command/mapping/patient";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { Config } from "../../../../shared/config";
-import { createMetriportAddresses, createMetriportContacts } from "../shared";
+import { createMetriportAddresses, createMetriportContacts, createNmaes } from "../shared";
 import NotFoundError from "../../../../errors/not-found";
 
 const athenaUrl = Config.getAthenaHealthUrl();
@@ -175,18 +175,4 @@ async function getPatientByDemo({
     log(msg);
     errors.push(msg);
   }
-}
-
-function createNmaes(patient: PatientResource): { firstName: string; lastName: string }[] {
-  const names: { firstName: string; lastName: string }[] = [];
-  patient.name.map(name => {
-    const lastName = name.family.trim();
-    if (lastName === "") return;
-    name.given.map(gName => {
-      const firstName = gName.trim();
-      if (firstName === "") return;
-      names.push({ firstName, lastName });
-    });
-  });
-  return names;
 }
