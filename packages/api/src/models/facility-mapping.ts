@@ -1,5 +1,5 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { FacilityMapping } from "../domain/facility-mapping";
+import { FacilityMapping, FacilitySources } from "../domain/facility-mapping";
 import { BaseModel, ModelSetup } from "./_default";
 
 export class FacilityMappingModel
@@ -10,7 +10,7 @@ export class FacilityMappingModel
   declare externalId: string;
   declare cxId: string;
   declare facilityId: string;
-  declare source: string;
+  declare source: FacilitySources;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     FacilityMappingModel.init(

@@ -1,13 +1,13 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import NotFoundError from "../../errors/not-found";
 import { FacilityMappingModel } from "../../models/facility-mapping";
-import { FacilityMapping } from "../../domain/facility-mapping";
+import { FacilityMapping, FacilitySources } from "../../domain/facility-mapping";
 
 export type FacilityMappingParams = {
   cxId: string;
   facilityId: string;
   externalId: string;
-  source: string;
+  source: FacilitySources;
 };
 
 export type FacilityMappingLookUpParam = Omit<FacilityMappingParams, "facilityId">;
@@ -56,6 +56,14 @@ export async function getFacilityMappingOrFail({
     throw new NotFoundError("FacilityMapping not found", undefined, { cxId, externalId, source });
   }
   return mapping;
+}
+
+export async function getFacilityMappingsForCustomer(where: {
+  cxId: string;
+  source?: string;
+}): Promise<FacilityMapping[]> {
+  const rows = await FacilityMappingModel.findAll({ where });
+  return rows.map(r => r.dataValues);
 }
 
 export async function deleteFacilityMapping({

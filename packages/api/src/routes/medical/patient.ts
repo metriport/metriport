@@ -24,7 +24,6 @@ import {
 } from "../../command/medical/patient/create-medical-record";
 import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
-import { deleteAllPatientMappings } from "../../command/mapping/patient";
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 import {
   getPatientOrFail,
@@ -208,7 +207,6 @@ router.delete(
       facilityId,
     };
     await deletePatient(patientDeleteCmd);
-    await deleteAllPatientMappings({ cxId, patientId: id });
 
     return res.sendStatus(status.NO_CONTENT);
   })

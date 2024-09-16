@@ -3,12 +3,13 @@ import { EhrSources } from "../../../../external/ehr/shared";
 import {
   processCxIdAsync,
   processPatientRouteAsync,
-  processDocuemntRouteAsync,
+  processDocumentRouteAsync,
 } from "../../shared";
+import BadRequestError from "../../../../errors/bad-request";
 
 function parseAthenaHealthPracticeId(tokenData: { ah_practice?: string }): string {
   const practiceId = tokenData.ah_practice;
-  if (!practiceId) throw new Error("Missing ah_practice on token data");
+  if (!practiceId) throw new BadRequestError("Missing ah_practice on token data");
   return practiceId;
 }
 
@@ -24,8 +25,8 @@ export function processPatientRoute(req: Request, res: Response, next: NextFunct
     .catch(next);
 }
 
-export function processDocuemntRoute(req: Request, res: Response, next: NextFunction) {
-  processDocuemntRouteAsync(req, EhrSources.ATHENA)
+export function processDocumentRoute(req: Request, res: Response, next: NextFunction) {
+  processDocumentRouteAsync(req, EhrSources.ATHENA)
     .then(() => next())
     .catch(next);
 }

@@ -31,7 +31,7 @@ export async function processCxIdAsync(
 }
 
 export const patientBasePath = "/medical/v1/patient";
-export const documentBasePath = "/medical/v1/document";
+export const DocumentBasePath = "/medical/v1/Document";
 
 export const validPatientPaths: PathDetails[] = [
   {
@@ -78,9 +78,9 @@ export async function processPatientRouteAsync(req: Request, source: EhrSources)
   await replaceIdInUrlAndQuery(req, source, externalId);
 }
 
-export async function processDocuemntRouteAsync(req: Request, source: EhrSources): Promise<void> {
+export async function processDocumentRouteAsync(req: Request, source: EhrSources): Promise<void> {
   const path = validatePath(req, validedDocumentPaths);
-  if (!path.queryParamKey) throw new Error("Must define query param for document paths.");
+  if (!path.queryParamKey) throw new Error("Must define query param for Document paths.");
   const externalId = parseIdFromQueryParams(req, path.queryParamKey);
   await replaceIdInUrlAndQuery(req, source, externalId);
 }

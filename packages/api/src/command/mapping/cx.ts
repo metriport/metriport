@@ -1,12 +1,12 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import NotFoundError from "../../errors/not-found";
 import { CxMappingModel } from "../../models/cx-mapping";
-import { CxMapping } from "../../domain/cx-mapping";
+import { CxMapping, CxSources } from "../../domain/cx-mapping";
 
 export type CxMappingParams = {
   cxId: string;
   externalId: string;
-  source: string;
+  source: CxSources;
 };
 
 export type CxMappingLookUpParam = Omit<CxMappingParams, "cxId">;

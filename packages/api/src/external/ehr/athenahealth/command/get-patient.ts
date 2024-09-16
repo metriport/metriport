@@ -22,6 +22,7 @@ import { createMetriportAddresses, createMetriportContacts } from "../shared";
 import NotFoundError from "../../../../errors/not-found";
 
 const athenaUrl = Config.getAthenaHealthUrl();
+const defaultFacilityMappingExternalId = "default";
 
 export async function getPatientIdOrFail({
   accessToken,
@@ -101,7 +102,7 @@ export async function getPatientIdOrFail({
   } else {
     const defaultFacility = await getFacilityMappingOrFail({
       cxId,
-      externalId: "default",
+      externalId: defaultFacilityMappingExternalId,
       source: EhrSources.ATHENA,
     });
     metriportPatient = await createtMetriportPatient({
@@ -122,46 +123,30 @@ export async function getPatientIdOrFail({
 }
 
 function createMetriportPatientDemoFilters(patient: PatientResource): PatientDemoData[] {
-  const patientDemoFilters: PatientDemoData[] = [];
   const addressArray = createMetriportAddresses(patient);
   const contactArray = createMetriportContacts(patient);
-  patient.name.map(name => {
-    const lastName = name.family;
-    if (lastName === "") return;
-    name.given.map(firstName => {
-      if (firstName === "") return;
-      patientDemoFilters.push({
-        firstName,
-        lastName,
-        dob: normalizeDate(patient.birthDate),
-        genderAtBirth: normalizeGender(patient.gender),
-        address: addressArray,
-        contact: contactArray,
-      });
-    });
+  const names = createNmaes(patient);
+  return names.map(n => {
+    return {
+      firstName: n.firstName,
+      lastName: n.lastName,
+      dob: normalizeDate(patient.birthDate),
+      genderAtBirth: normalizeGender(patient.gender),
+      address: addressArray,
+      contact: contactArray,
+    };
   });
-  return patientDemoFilters;
 }
 
 function createMetriportPatientDemo(
   patient: PatientResource
 ): Omit<PatientCreateCmd, "cxId" | "facilityId"> {
-  const firstNames: string[] = [];
-  const lastNames: string[] = [];
   const addressArray = createMetriportAddresses(patient);
   const contactArray = createMetriportContacts(patient);
-  patient.name.map(name => {
-    const lastName = name.family;
-    if (lastName === "") return;
-    lastNames.push(toTitleCase(lastName));
-    name.given.map(firstName => {
-      if (firstName === "") return;
-      firstNames.push(toTitleCase(firstName));
-    });
-  });
+  const names = createNmaes(patient);
   return {
-    firstName: firstNames.join(" "),
-    lastName: lastNames.join(" "),
+    firstName: names.map(n => toTitleCase(n.firstName)).join(" "),
+    lastName: names.map(n => toTitleCase(n.lastName)).join(" "),
     dob: normalizeDate(patient.birthDate),
     genderAtBirth: normalizeGender(patient.gender),
     address: addressArray,
@@ -190,4 +175,18 @@ async function getPatientByDemo({
     log(msg);
     errors.push(msg);
   }
+}
+
+function createNmaes(patient: PatientResource): { firstName: string; lastName: string }[] {
+  const names: { firstName: string; lastName: string }[] = [];
+  patient.name.map(name => {
+    const lastName = name.family.trim();
+    if (lastName === "") return;
+    name.given.map(gName => {
+      const firstName = gName.trim();
+      if (firstName === "") return;
+      names.push({ firstName, lastName });
+    });
+  });
+  return names;
 }
