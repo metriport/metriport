@@ -54,7 +54,6 @@ export async function replaceIdInUrlAndQuery(
     externalId,
     source,
   });
-  const re = new RegExp(externalId, "g");
-  req.url = req.url.replace(re, patient.patientId);
+  req.url = req.url.replaceAll(externalId, patient.patientId);
   if (req.query["patientId"]) req.query["patientId"] = patient.patientId;
 }

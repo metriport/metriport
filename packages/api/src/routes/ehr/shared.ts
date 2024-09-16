@@ -32,9 +32,6 @@ export async function processCxIdAsync(
   req.cxId = customer.cxId;
 }
 
-export const patientBasePath = "/medical/v1/patient";
-export const DocumentBasePath = "/medical/v1/Document";
-
 export const validPatientPaths: PathDetails[] = [
   {
     regex: new RegExp(`^/(${idRegex})$`),
