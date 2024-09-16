@@ -145,8 +145,8 @@ function createMetriportPatientDemo(
   const contactArray = createMetriportContacts(patient);
   const names = createNames(patient);
   return {
-    firstName: names.map(n => toTitleCase(n.firstName)).join(" "),
-    lastName: names.map(n => toTitleCase(n.lastName)).join(" "),
+    firstName: [...new Set(names.map(n => toTitleCase(n.firstName)))].join(" "),
+    lastName: [...new Set(names.map(n => toTitleCase(n.lastName)))].join(" "),
     dob: normalizeDate(patient.birthDate),
     genderAtBirth: normalizeGender(patient.gender),
     address: addressArray,
