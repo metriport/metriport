@@ -4,7 +4,13 @@ import { getPatientMapping } from "../../../../command/mapping/patient";
 import { getJwtToken } from "../../../../command/jwt-token";
 import { EhrSources } from "../../../../external/ehr/shared";
 import { getAuthorizationToken } from "../../../util";
-import { patientParamRoutes } from "../../shared";
+import {
+  patientBasePath,
+  documentBasePath,
+  validPatientRoutes,
+  validedDocumentRoutes,
+  RouteDetails,
+} from "../../shared";
 import NotFoundError from "../../../../errors/not-found";
 
 export function processCxId(req: Request, res: Response, next: NextFunction) {
@@ -29,20 +35,64 @@ async function processCxIdAsync(req: Request): Promise<void> {
   if (!existingCustomer) throw new NotFoundError(`No AthenaHealth customer found for externalId`);
   const cxId = existingCustomer.cxId;
   req.cxId = cxId;
-  let patientExternalId: string | undefined = undefined;
-  if (req.path.startsWith(patientParamRoutes.basePath)) {
-    patientParamRoutes.paramPaths.map(path => {
-      const matches = req.path.match(path.regex);
-      if (matches) patientExternalId = matches[path.matchIndex];
-    });
-    if (patientExternalId) {
-      const patietMapping = await getPatientMapping({
-        cxId,
-        externalId: patientExternalId,
-        source: EhrSources.ATHENA,
-      });
-      if (!patietMapping) throw new NotFoundError(`No AthenaHealth patient found for customer`);
-      req.params.id = patietMapping.patientId;
-    }
+  let pathValidation: PathValidation | undefined = undefined;
+  if (req.path.startsWith(patientBasePath)) {
+    pathValidation = validateAndParseRequest(req, validPatientRoutes);
+  } else if (req.path.startsWith(documentBasePath)) {
+    pathValidation = validateAndParseRequest(req, validedDocumentRoutes);
   }
+  if (pathValidation?.paramReplace) {
+    const externalId = pathValidation.paramReplace;
+    const patietMapping = await getPatientMapping({
+      cxId,
+      externalId,
+      source: EhrSources.ATHENA,
+    });
+    if (!patietMapping) throw new NotFoundError(`No AthenaHealth patient found for customer`);
+    req.url = req.url.replace(externalId, patietMapping.patientId);
+  } else if (pathValidation?.queryReplace) {
+    const externalId = pathValidation.queryReplace.externalId;
+    const patietMapping = await getPatientMapping({
+      cxId,
+      externalId,
+      source: EhrSources.ATHENA,
+    });
+    if (!patietMapping) throw new NotFoundError(`No AthenaHealth patient found for customer`);
+    req.query[pathValidation.queryReplace.queryParam] = patietMapping.patientId;
+  }
+}
+
+type PathValidation = {
+  paramReplace?: string;
+  queryReplace?: QueryReplace;
+};
+type QueryReplace = { externalId: string; queryParam: string };
+
+function validateAndParseRequest(req: Request, validPaths: RouteDetails): PathValidation {
+  let found = false;
+  let paramReplace: string | undefined = undefined;
+  let queryReplace: QueryReplace | undefined = undefined;
+  validPaths.map(path => {
+    const matches = req.path.match(path.regex);
+    if (matches) {
+      if (found) throw new Error("Request path matches more than one valide path.");
+      found = true;
+      if (path.paramMatchIndex) {
+        const paramValue = matches[path.paramMatchIndex];
+        paramReplace = paramValue;
+      } else if (path.queryParam) {
+        if (!req.query) throw new Error("Request missing query params when required.");
+        const queryParamValue = req.query[path.queryParam];
+        if (!queryParamValue) throw new Error("Request missing query param value when required.");
+        if (typeof queryParamValue !== "string")
+          throw new Error("Request query param value is wrong type.");
+        queryReplace = { externalId: queryParamValue, queryParam: path.queryParam };
+      }
+    }
+  });
+  if (!found) throw new Error("Invalid path");
+  return {
+    paramReplace,
+    queryReplace,
+  };
 }

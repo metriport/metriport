@@ -101,7 +101,7 @@ export async function getPatientOrFail({
   } else {
     const existingFacility = await getFacilityMapping({
       cxId,
-      externalId: athenaPatientId,
+      externalId: "default",
       source: EhrSources.ATHENA,
     });
     if (!existingFacility) {

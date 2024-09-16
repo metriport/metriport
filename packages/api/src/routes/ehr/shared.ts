@@ -1,28 +1,48 @@
-type ParamRoutes = { basePath: string; paramPaths: { regex: RegExp; matchIndex: number }[] };
+export type RouteDetails = {
+  regex: RegExp;
+  paramMatchIndex?: number;
+  queryParam?: string;
+}[];
 
-export const patientParamRoutes: ParamRoutes = {
-  basePath: "/medical/v1/patient",
-  paramPaths: [
-    { regex: new RegExp("^(/medical/v1/patient/)(([a-z]|[A-Z]|[0-9])+)$"), matchIndex: 2 },
-    {
-      regex: new RegExp("^(/medical/v1/patient/)(([a-z]|[A-Z]|[0-9])+)(/consolidated/count)$"),
-      matchIndex: 2,
-    },
-    {
-      regex: new RegExp("^(/medical/v1/patient/)(([a-z]|[A-Z]|[0-9])+)(/consolidated/query)$"),
-      matchIndex: 2,
-    },
-    {
-      regex: new RegExp("^(/medical/v1/patient/)(([a-z]|[A-Z]|[0-9])+)(/consolidated/webhook)$"),
-      matchIndex: 2,
-    },
-    {
-      regex: new RegExp("^(/medical/v1/patient/)(([a-z]|[A-Z]|[0-9])+)(/medical-record)$"),
-      matchIndex: 2,
-    },
-    {
-      regex: new RegExp("^(/medical/v1/patient/)(([a-z]|[A-Z]|[0-9])+)(/medical-record-status)$"),
-      matchIndex: 1,
-    },
-  ],
-};
+const idRegex = "([a-zA-Z0-9\\_\\-\\.])+";
+
+export const patientBasePath = "/medical/v1/patient";
+export const documentBasePath = "/medical/v1/document";
+
+export const validPatientRoutes: RouteDetails = [
+  {
+    regex: new RegExp(`^(${patientBasePath}/)(${idRegex})$`),
+    paramMatchIndex: 2,
+  },
+  {
+    regex: new RegExp(`^(${patientBasePath}/)(${idRegex})(/consolidated/count)$`),
+    paramMatchIndex: 2,
+  },
+  {
+    regex: new RegExp(`^(${patientBasePath}/)(${idRegex})(/consolidated/query)$`),
+    paramMatchIndex: 2,
+  },
+  {
+    regex: new RegExp(`^(${patientBasePath}/)(${idRegex})(/consolidated/webhook)$`),
+    paramMatchIndex: 2,
+  },
+  {
+    regex: new RegExp(`^(${patientBasePath}/)(${idRegex})(/medical-record)$`),
+    paramMatchIndex: 2,
+  },
+  {
+    regex: new RegExp(`^(${patientBasePath}/)(${idRegex})(/medical-record-status)$`),
+    paramMatchIndex: 2,
+  },
+];
+
+export const validedDocumentRoutes: RouteDetails = [
+  {
+    regex: new RegExp(`^(${documentBasePath})$`),
+    queryParam: "patientId",
+  },
+  {
+    regex: new RegExp(`^(${documentBasePath}/query)$`),
+    queryParam: "patientId",
+  },
+];

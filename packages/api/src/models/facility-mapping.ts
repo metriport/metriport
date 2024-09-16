@@ -6,7 +6,7 @@ export class FacilityMappingModel
   extends BaseModel<FacilityMappingModel>
   implements FacilityMapping
 {
-  static NAME = "patient_mapping";
+  static NAME = "facility_mapping";
   declare externalId: string;
   declare cxId: string;
   declare facilityId: string;
