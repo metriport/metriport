@@ -26,16 +26,20 @@ export function parseIdFromPathParams(req: Request, regex: RegExp, regexIndex: n
 }
 
 export function parseIdFromQueryParams(req: Request, queryParamKey: string): string {
-  if (!req.query) throw new Error(`Request missing query param ${queryParamKey} when required`);
+  if (!req.query) throw new Error(`Request missing query param ${queryParamKey}`);
   const queryParamValue = req.query[queryParamKey];
-  if (!queryParamValue)
-    throw new Error(`Request missing query param ${queryParamKey} when required`);
-  if (typeof queryParamValue !== "string")
-    throw new Error(`Request type for query param ${queryParamKey} is not string`);
+  if (!queryParamValue) throw new Error(`Request missing query param ${queryParamKey}`);
+  if (typeof queryParamValue !== "string") {
+    throw new Error(`Query param type for query param ${queryParamKey} is not string`);
+  }
+  const re = new RegExp(idRegex);
+  if (!re.test(queryParamValue)) {
+    throw new Error(`Query param value for query param ${queryParamKey} is incorrectly formmated`);
+  }
   return queryParamValue;
 }
 
-export async function replaceIdInUrl(
+export async function replaceIdInUrlAndQuery(
   req: Request,
   source: EhrSources,
   externalId: string
@@ -46,9 +50,7 @@ export async function replaceIdInUrl(
     externalId,
     source,
   });
-  console.log("req.url");
-  console.log(req.url);
-  const re = `/${externalId}/gi`;
+  const re = new RegExp(externalId, "g");
   req.url = req.url.replace(re, patient.patientId);
-  console.log(req.url);
+  if (req.query["patientId"]) req.query["patientId"] = patient.patientId;
 }
