@@ -98,18 +98,18 @@ export async function getPatientIdOrFail({
       });
     }
   } else {
-    const existingFacility = await getFacilityMapping({
+    const defaultFacility = await getFacilityMapping({
       cxId,
       externalId: "default",
       source: EhrSources.ATHENA,
     });
-    if (!existingFacility) {
-      throw new Error("Facility mapping missing for creating new patient");
+    if (!defaultFacility) {
+      throw new Error("Default facility mapping missing for creating new patient");
     }
     metriportPatient = await createtMetriportPatient({
       patient: {
         cxId,
-        facilityId: existingFacility.facilityId,
+        facilityId: defaultFacility.facilityId,
         ...createMetriportPatientDemo(athenaPatient),
       },
     });
