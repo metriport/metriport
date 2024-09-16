@@ -19,6 +19,7 @@ import { deduplicateOrganizations } from "./resources/organization";
 import { deduplicatePractitioners } from "./resources/practitioner";
 import { deduplicateProcedures } from "./resources/procedure";
 import { deduplicateRelatedPersons } from "./resources/related-person";
+import { processDocumentReferences } from "./resources/document-reference";
 import { createRef } from "./shared";
 
 export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> {
@@ -26,6 +27,9 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
 
   // TODO: Add unit tests for the ID replacements
   const danglingLinks: string[] = [];
+
+  // DocumentReference cleaning
+  resourceArrays.documentReferences = processDocumentReferences(resourceArrays.documentReferences);
 
   // Practitioner deduplication
   const practitionersResult = deduplicatePractitioners(resourceArrays.practitioners);
