@@ -34,7 +34,11 @@ export function groupSameFamilyMemberHistories(famMemberHists: FamilyMemberHisto
     famMemberHist: FamilyMemberHistory
   ): FamilyMemberHistory {
     famMemberHist.condition?.forEach(condition => {
-      if (condition.onsetAge?.unit === "a" && condition.onsetAge.value === 0) {
+      if (
+        condition.onsetAge?.unit === "a" &&
+        condition.onsetAge.value === 0 &&
+        condition.onsetAge.system === "http://unitsofmeasure.org"
+      ) {
         condition.onsetAge.value = 1;
         condition.onsetAge.unit = "Day";
       }
