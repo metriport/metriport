@@ -18,7 +18,7 @@ import {
 import { getPatientMapping, findOrCreatePatientMapping } from "../../../../command/mapping/patient";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { Config } from "../../../../shared/config";
-import { createMetriportAddresses, createMetriportContacts, createNmaes } from "../shared";
+import { createMetriportAddresses, createMetriportContacts, createNames } from "../shared";
 import NotFoundError from "../../../../errors/not-found";
 
 const athenaUrl = Config.getAthenaHealthUrl();
@@ -125,7 +125,7 @@ export async function getPatientIdOrFail({
 function createMetriportPatientDemoFilters(patient: PatientResource): PatientDemoData[] {
   const addressArray = createMetriportAddresses(patient);
   const contactArray = createMetriportContacts(patient);
-  const names = createNmaes(patient);
+  const names = createNames(patient);
   return names.map(n => {
     return {
       firstName: n.firstName,
@@ -143,7 +143,7 @@ function createMetriportPatientDemo(
 ): Omit<PatientCreateCmd, "cxId" | "facilityId"> {
   const addressArray = createMetriportAddresses(patient);
   const contactArray = createMetriportContacts(patient);
-  const names = createNmaes(patient);
+  const names = createNames(patient);
   return {
     firstName: names.map(n => toTitleCase(n.firstName)).join(" "),
     lastName: names.map(n => toTitleCase(n.lastName)).join(" "),

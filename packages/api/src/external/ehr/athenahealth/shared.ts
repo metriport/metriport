@@ -39,7 +39,7 @@ export function createMetriportAddresses(patient: PatientResource): Address[] {
   });
 }
 
-export function createNmaes(patient: PatientResource): { firstName: string; lastName: string }[] {
+export function createNames(patient: PatientResource): { firstName: string; lastName: string }[] {
   const names: { firstName: string; lastName: string }[] = [];
   patient.name.map(name => {
     const lastName = name.family.trim();
