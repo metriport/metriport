@@ -52,8 +52,9 @@ export async function getFacilityMappingOrFail({
     externalId,
     source,
   });
-  if (!mapping)
-    throw new NotFoundError("Mapping not found", undefined, { cxId, externalId, source });
+  if (!mapping) {
+    throw new NotFoundError("FacilityMapping not found", undefined, { cxId, externalId, source });
+  }
   return mapping;
 }
 

@@ -52,8 +52,9 @@ export async function getPatientMappingOrFail({
     externalId,
     source,
   });
-  if (!mapping)
-    throw new NotFoundError("Mapping not found", undefined, { cxId, externalId, source });
+  if (!mapping) {
+    throw new NotFoundError("PatientMapping not found", undefined, { cxId, externalId, source });
+  }
   return mapping;
 }
 

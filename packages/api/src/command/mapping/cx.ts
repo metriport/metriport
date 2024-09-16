@@ -41,7 +41,9 @@ export async function getCxMappingOrFail({
     externalId,
     source,
   });
-  if (!mapping) throw new NotFoundError("Mapping not found", undefined, { externalId, source });
+  if (!mapping) {
+    throw new NotFoundError("CxMapping not found", undefined, { externalId, source });
+  }
   return mapping;
 }
 
