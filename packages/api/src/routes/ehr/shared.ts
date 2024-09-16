@@ -73,7 +73,9 @@ export const validedDocumentPaths: PathDetails[] = [
 export async function processPatientRouteAsync(req: Request, source: EhrSources): Promise<void> {
   const path = validatePath(req, validPatientPaths);
   if (!path.paramRegexIndex) {
-    capture.error("Must include paramRegexIndex on patient paths", { extra: { path } });
+    capture.error("Must include paramRegexIndex on patient paths", {
+      extra: { path, context: "ehr.patient-paths" },
+    });
     throw new BadRequestError("Trouble processisng request");
   }
   const externalId = parseIdFromPathParams(req, path.regex, path.paramRegexIndex);
@@ -83,7 +85,9 @@ export async function processPatientRouteAsync(req: Request, source: EhrSources)
 export async function processDocumentRouteAsync(req: Request, source: EhrSources): Promise<void> {
   const path = validatePath(req, validedDocumentPaths);
   if (!path.queryParamKey) {
-    capture.error("Must include queryParamKey on document paths", { extra: { path } });
+    capture.error("Must include queryParamKey on document paths", {
+      extra: { path, context: "ehr.documet-paths" },
+    });
     throw new BadRequestError("Trouble processisng request");
   }
   const externalId = parseIdFromQueryParams(req, path.queryParamKey);
