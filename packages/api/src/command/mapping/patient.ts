@@ -42,6 +42,21 @@ export async function getPatientMapping({
   return existing.dataValues;
 }
 
+export async function getPatientMappingOrFail({
+  cxId,
+  externalId,
+  source,
+}: PatientMappingLookUpParam): Promise<PatientMapping> {
+  const mapping = await getPatientMapping({
+    cxId,
+    externalId,
+    source,
+  });
+  if (!mapping)
+    throw new NotFoundError("Mapping not found", undefined, { cxId, externalId, source });
+  return mapping;
+}
+
 export async function deletePatientMapping({
   cxId,
   externalId,

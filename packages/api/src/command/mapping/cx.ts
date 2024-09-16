@@ -33,6 +33,18 @@ export async function getCxMapping({
   return existing.dataValues;
 }
 
+export async function getCxMappingOrFail({
+  externalId,
+  source,
+}: CxMappingLookUpParam): Promise<CxMapping> {
+  const mapping = await getCxMapping({
+    externalId,
+    source,
+  });
+  if (!mapping) throw new NotFoundError("Mapping not found", undefined, { externalId, source });
+  return mapping;
+}
+
 export async function getCxMappingsForCustomer(where: {
   cxId: string;
   source?: string;

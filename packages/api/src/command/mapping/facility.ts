@@ -42,6 +42,21 @@ export async function getFacilityMapping({
   return existing.dataValues;
 }
 
+export async function getFacilityMappingOrFail({
+  cxId,
+  externalId,
+  source,
+}: FacilityMappingLookUpParam): Promise<FacilityMapping> {
+  const mapping = await getFacilityMapping({
+    cxId,
+    externalId,
+    source,
+  });
+  if (!mapping)
+    throw new NotFoundError("Mapping not found", undefined, { cxId, externalId, source });
+  return mapping;
+}
+
 export async function deleteFacilityMapping({
   cxId,
   externalId,

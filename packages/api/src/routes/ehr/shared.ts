@@ -1,48 +1,86 @@
-export type RouteDetails = {
-  regex: RegExp;
-  paramMatchIndex?: number;
-  queryParam?: string;
-}[];
+import { Request } from "express";
+import { getAuthorizationToken } from "../util";
+import { getJwtTokenOrFail } from "../../command/jwt-token";
+import { getCxMappingOrFail } from "../../command/mapping/cx";
+import {
+  PathDetails,
+  idRegex,
+  validatePath,
+  parseIdFromPathParams,
+  parseIdFromQueryParams,
+  replaceIdInUrl,
+} from "./util";
+import { EhrSources } from "../../external/ehr/shared";
 
-const idRegex = "([a-zA-Z0-9\\_\\-\\.])+";
+export async function processCxIdAsync(
+  req: Request,
+  source: EhrSources,
+  parseExternalId: (tokenData: object) => string
+): Promise<void> {
+  const accessToken = getAuthorizationToken(req);
+  const authInfo = await getJwtTokenOrFail({
+    token: accessToken,
+    source,
+  });
+  const externalId = parseExternalId(authInfo.data);
+  const customer = await getCxMappingOrFail({
+    externalId,
+    source,
+  });
+  req.cxId = customer.cxId;
+}
 
 export const patientBasePath = "/medical/v1/patient";
 export const documentBasePath = "/medical/v1/document";
 
-export const validPatientRoutes: RouteDetails = [
+export const validPatientPaths: PathDetails[] = [
   {
     regex: new RegExp(`^(${patientBasePath}/)(${idRegex})$`),
-    paramMatchIndex: 2,
+    paramRegexIndex: 2,
   },
   {
     regex: new RegExp(`^(${patientBasePath}/)(${idRegex})(/consolidated/count)$`),
-    paramMatchIndex: 2,
+    paramRegexIndex: 2,
   },
   {
     regex: new RegExp(`^(${patientBasePath}/)(${idRegex})(/consolidated/query)$`),
-    paramMatchIndex: 2,
+    paramRegexIndex: 2,
   },
   {
     regex: new RegExp(`^(${patientBasePath}/)(${idRegex})(/consolidated/webhook)$`),
-    paramMatchIndex: 2,
+    paramRegexIndex: 2,
   },
   {
     regex: new RegExp(`^(${patientBasePath}/)(${idRegex})(/medical-record)$`),
-    paramMatchIndex: 2,
+    paramRegexIndex: 2,
   },
   {
     regex: new RegExp(`^(${patientBasePath}/)(${idRegex})(/medical-record-status)$`),
-    paramMatchIndex: 2,
+    paramRegexIndex: 2,
   },
 ];
 
-export const validedDocumentRoutes: RouteDetails = [
+export const validedDocumentPaths: PathDetails[] = [
   {
     regex: new RegExp(`^(${documentBasePath})$`),
-    queryParam: "patientId",
+    queryParamKey: "patientId",
   },
   {
     regex: new RegExp(`^(${documentBasePath}/query)$`),
-    queryParam: "patientId",
+    queryParamKey: "patientId",
   },
 ];
+
+export async function processPatientRouteAsync(req: Request, source: EhrSources): Promise<void> {
+  const path = validatePath(req, validPatientPaths);
+  if (!path.paramRegexIndex) throw new Error("Must define regex index for patient paths.");
+  const externalId = parseIdFromPathParams(req, path.regex, path.paramRegexIndex);
+  await replaceIdInUrl(req, source, externalId);
+}
+
+export async function processDocuemntRouteAsync(req: Request, source: EhrSources): Promise<void> {
+  const path = validatePath(req, validedDocumentPaths);
+  if (!path.queryParamKey) throw new Error("Must define query param for document paths.");
+  const externalId = parseIdFromQueryParams(req, path.queryParamKey);
+  await replaceIdInUrl(req, source, externalId);
+}

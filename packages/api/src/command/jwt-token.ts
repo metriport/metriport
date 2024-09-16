@@ -38,6 +38,18 @@ export async function getJwtToken({
   return existing.dataValues;
 }
 
+/**
+ * DOES NOT CHECK EXPIRATION
+ */
+export async function getJwtTokenOrFail({ token, source }: JwtTokenLookUpParam): Promise<JwtToken> {
+  const jwtToken = await getJwtToken({
+    token,
+    source,
+  });
+  if (!jwtToken) throw new NotFoundError("JwtToken not found", undefined, { token, source });
+  return jwtToken;
+}
+
 export async function deleteJwtToken({ token, source }: JwtTokenLookUpParam): Promise<void> {
   const existing = await JwtTokenModel.findOne({
     where: { token, source },

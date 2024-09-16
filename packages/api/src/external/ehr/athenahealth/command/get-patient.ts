@@ -16,9 +16,10 @@ import {
   PatientCreateCmd,
 } from "../../../../command/medical/patient/create-patient";
 import { getPatientMapping, findOrCreatePatientMapping } from "../../../../command/mapping/patient";
-import { getFacilityMapping } from "../../../../command/mapping/facility";
+import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { Config } from "../../../../shared/config";
 import { createMetriportAddresses, createMetriportContacts } from "../shared";
+import NotFoundError from "../../../../errors/not-found";
 
 const athenaUrl = Config.getAthenaHealthUrl();
 
@@ -51,7 +52,7 @@ export async function getPatientIdOrFail({
     baseUrl: athenaUrl,
     patientId: athenaPatientId,
   });
-  if (!athenaPatient) throw new Error("AthenaHealth patient not found");
+  if (!athenaPatient) throw new NotFoundError("AthenaHealth patient not found");
   if (athenaPatient.name.length === 0) {
     throw new Error("AthenaHealth patient missing at least one name");
   }
@@ -98,14 +99,11 @@ export async function getPatientIdOrFail({
       });
     }
   } else {
-    const defaultFacility = await getFacilityMapping({
+    const defaultFacility = await getFacilityMappingOrFail({
       cxId,
       externalId: "default",
       source: EhrSources.ATHENA,
     });
-    if (!defaultFacility) {
-      throw new Error("Default facility mapping missing for creating new patient");
-    }
     metriportPatient = await createtMetriportPatient({
       patient: {
         cxId,
