@@ -84,8 +84,9 @@ function validateAndParseRequest(req: Request, validPaths: RouteDetails): PathVa
         if (!req.query) throw new Error("Request missing query params when required.");
         const queryParamValue = req.query[path.queryParam];
         if (!queryParamValue) throw new Error("Request missing query param value when required.");
-        if (typeof queryParamValue !== "string")
+        if (typeof queryParamValue !== "string") {
           throw new Error("Request query param value is wrong type.");
+        }
         queryReplace = { externalId: queryParamValue, queryParam: path.queryParam };
       }
     }
