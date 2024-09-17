@@ -71,7 +71,7 @@ export const validedDocumentPaths: PathDetails[] = [
     queryParamKey: "patientId",
   },
   {
-    regex: new RegExp(`^/document/download-url$`),
+    regex: new RegExp(`^/download-url$`),
   },
 ];
 
