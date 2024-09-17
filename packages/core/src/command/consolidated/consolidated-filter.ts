@@ -40,6 +40,7 @@ export async function getConsolidatedFromS3({
     log(`No consolidated found, returning undefined`);
     return undefined;
   }
+  consolidated.type = "searchset";
 
   log(`Consolidated found with ${consolidated.entry.length} entries`);
   const filtered = await filterConsolidated(consolidated, params);
