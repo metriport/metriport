@@ -399,7 +399,7 @@ router.delete(
 /**
  * POST /internal/facility-mapping
  *
- * Create cx mapping
+ * Create facility mapping
  *
  * @param req.query.cxId - The cutomer's ID.
  * @param req.query.facilityId - The facility ID.
@@ -428,7 +428,7 @@ router.post(
 /**
  * GET /internal/facility-mapping
  *
- * Get cx mappings for customer
+ * Get facility mappings for customer
  *
  * @param req.query.cxId - The cutomer's ID.
  * @param req.query.source - Optional mapping source
