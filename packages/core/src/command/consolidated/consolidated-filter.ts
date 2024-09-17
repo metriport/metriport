@@ -4,6 +4,7 @@ import { createFolderName } from "../../domain/filename";
 import { S3Utils } from "../../external/aws/s3";
 import { out } from "../../util";
 import { Config } from "../../util/config";
+import { PatientDataConsolidator } from "./consolidated-create";
 import { filterBundleByDate } from "./consolidated-filter-by-date";
 import { filterBundleByResource } from "./consolidated-filter-by-resource";
 import { getConsolidated } from "./consolidated-get";
@@ -39,9 +40,6 @@ export async function getConsolidatedFromS3({
   return filtered;
 }
 
-// TODO 2215 Implement this
-// TODO 2215 Implement this
-// TODO 2215 Implement this
 async function generateConsolidatedFromSnapshots({
   cxId,
   patientId,
@@ -61,11 +59,16 @@ async function generateConsolidatedFromSnapshots({
   const snapshotObjects = objects.filter(o => o.Key?.includes(".xml.json"));
   log(`Found ${objects.length} objects, ${snapshotObjects.length} snapshots`);
   if (!snapshotObjects || snapshotObjects.length < 1) return undefined;
-  // Create a destination bundle
-  // Merge the snapshot objects into the bundle
-  // return it
-  log(`Returning undefined while this is not fully implemented`);
-  return undefined;
+
+  const consolidator = new PatientDataConsolidator(conversionBucketName, Config.getAWSRegion());
+  const consolidated = await consolidator.execute({
+    cxId,
+    patientId,
+    inputBundles: snapshotObjects.flatMap(o =>
+      o.Key ? { bucket: conversionBucketName, key: o.Key } : []
+    ),
+  });
+  return consolidated;
 }
 
 async function filterConsolidated(

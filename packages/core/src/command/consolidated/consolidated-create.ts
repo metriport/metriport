@@ -1,6 +1,5 @@
 import { Bundle } from "@medplum/fhirtypes";
 import { executeWithRetriesS3, S3Utils } from "../../external/aws/s3";
-import { parseRawBundleForFhirServer } from "../../external/fhir/parse-bundle";
 import { out } from "../../util";
 import { NonNullableFields } from "../../util/typescript";
 import { Consolidated, getConsolidated } from "./consolidated-get";
@@ -8,8 +7,7 @@ import { Consolidated, getConsolidated } from "./consolidated-get";
 export type ConsolidatePatientDataCommand = {
   cxId: string;
   patientId: string;
-  inputBundleBucket: string;
-  inputBundleS3Key: string;
+  inputBundles: { bucket: string; key: string }[];
   logMemUsage?: () => void;
 };
 
@@ -33,14 +31,13 @@ export class PatientDataConsolidator {
   async execute({
     cxId,
     patientId,
-    inputBundleBucket,
-    inputBundleS3Key,
+    inputBundles,
     logMemUsage,
-  }: ConsolidatePatientDataCommand): Promise<void> {
+  }: ConsolidatePatientDataCommand): Promise<Bundle> {
     const { log } = out(`data consolidator - pat ${patientId}`);
 
-    log(`Getting existing consolidated data from bucket ${this.consolidatedBucket}`);
     const getConsolidatedPromise = async (): Promise<NonNullableFields<Consolidated>> => {
+      log(`Getting existing consolidated data from bucket ${this.consolidatedBucket}`);
       const consolidated = await getConsolidated({
         cxId,
         patientId,
@@ -56,31 +53,35 @@ export class PatientDataConsolidator {
       return { ...consolidated, bundle: returnBundle };
     };
 
-    log(`Getting input bundle from bucket ${inputBundleBucket}, key ${inputBundleS3Key}`);
-    const getInputBundlePromise = executeWithRetriesS3(
-      () => this.s3Utils.getFileContentsAsString(inputBundleBucket, inputBundleS3Key),
-      { ...defaultS3RetriesConfig, log }
+    const {
+      bundle: consolidated,
+      fileLocation: destFileLocation,
+      fileName: destFileName,
+    } = await getConsolidatedPromise();
+    logMemUsage && logMemUsage();
+
+    for (const inputBundle of inputBundles) {
+      const { bucket, key } = inputBundle;
+      log(`Getting input bundle from bucket ${bucket}, key ${key}`);
+      const contents = await executeWithRetriesS3(
+        () => this.s3Utils.getFileContentsAsString(bucket, key),
+        { ...defaultS3RetriesConfig, log }
+      );
+      const bundle = JSON.parse(contents) as Bundle;
+      this.merge(bundle).into(consolidated);
+      logMemUsage && logMemUsage();
+    }
+    log(
+      `Consolidated bundle generated/updated, storing it on ${destFileLocation}, key ${destFileName}`
     );
-
-    const [consolidatedData, inputBundleRaw] = await Promise.all([
-      getConsolidatedPromise(),
-      getInputBundlePromise,
-    ]);
-    logMemUsage && logMemUsage();
-
-    log(`Converting input bundle to JSON, length ${inputBundleRaw.length}`);
-    const inputBundle: Bundle = parseRawBundleForFhirServer(inputBundleRaw, patientId, log);
-    logMemUsage && logMemUsage();
-
-    this.merge(inputBundle).into(consolidatedData.bundle);
-
-    // update the original bundle file with the contents of the merged bundle
     await this.s3Utils.uploadFile({
-      bucket: consolidatedData.fileLocation,
-      key: consolidatedData.fileName,
-      file: Buffer.from(JSON.stringify(consolidatedData)),
+      bucket: destFileLocation,
+      key: destFileName,
+      file: Buffer.from(JSON.stringify(consolidated)),
       contentType: "application/json",
     });
+
+    return consolidated;
   }
 
   protected merge(inputBundle: Bundle) {

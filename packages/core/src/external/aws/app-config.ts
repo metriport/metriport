@@ -210,7 +210,7 @@ export async function isFeatureFlagEnabled(
     log(`${msg} - ${JSON.stringify(extra)} - ${errorToString(error)}`);
     capture.error(msg, { extra: { ...extra, error } });
   }
-  return false;
+  return defaultValue;
 }
 
 /**

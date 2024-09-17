@@ -34,8 +34,7 @@ async function main() {
   await consolidator.execute({
     cxId,
     patientId,
-    inputBundleBucket,
-    inputBundleS3Key,
+    inputBundles: [{ bucket: inputBundleBucket, key: inputBundleS3Key }],
   });
 
   console.log(`>>> Done in ${elapsedTimeAsStr(startedAt)}`);

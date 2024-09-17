@@ -68,8 +68,7 @@ export async function handler(event: SQSEvent) {
       await dataConsolidator.execute({
         cxId,
         patientId,
-        inputBundleBucket,
-        inputBundleS3Key,
+        inputBundles: [{ bucket: inputBundleBucket, key: inputBundleS3Key }],
         logMemUsage: () => logMemoryUsage(),
       });
     }
