@@ -5,8 +5,20 @@ import { PatientDataConsolidator } from "@metriport/core/command/consolidated/cr
 import { getEnvVarOrFail, sleep } from "@metriport/shared";
 import { elapsedTimeAsStr } from "../shared/duration";
 
+/**
+ * Utility to run the Patient Data Consolidator manually from the terminal.
+ *
+ * Usage:
+ * - Set the environment variables in the .env file
+ * - Set the values of `cxId`, `patientId`, `newBundleBucket`, `newBundleS3Key`
+ * - Run `ts-node src/fhir/consolidate-patient-data.ts`
+ */
+
 const cxId = "";
 const patientId = "";
+/**
+ * The bucket and key of the input bundle to be merged into the consolidated bundle.
+ */
 const newBundleBucket = "";
 const newBundleS3Key = "";
 
