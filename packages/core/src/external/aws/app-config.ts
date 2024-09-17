@@ -203,7 +203,7 @@ export async function isFeatureFlagEnabled(
       Config.getEnvType(),
       featureFlagName
     );
-    return featureFlag?.enabled ?? defaultValue;
+    return featureFlag ? featureFlag.enabled : defaultValue;
   } catch (error) {
     const msg = `Failed to get Feature Flag Value`;
     const extra = { featureFlagName };

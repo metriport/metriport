@@ -78,7 +78,7 @@ async function getBundle(
     const originalBundle = await getConsolidatedFromFhirServer(params);
     return originalBundle;
   } finally {
-    out(`getBundle - fromS3: ${isGetFromS3}`).log(`Took ${elapsedTimeFromNow(startedAt)}`);
+    out(`getBundle - fromS3: ${isGetFromS3}`).log(`Took ${elapsedTimeFromNow(startedAt)}ms`);
   }
 }
 
