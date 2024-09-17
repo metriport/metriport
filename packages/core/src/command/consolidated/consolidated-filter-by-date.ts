@@ -94,6 +94,7 @@ export function filterBundleByDate(bundle: Bundle, dateFrom?: string, dateTo?: s
   });
   return {
     ...bundle,
+    total: filteredEntries?.length ?? 0,
     entry: filteredEntries ?? [],
   };
 }

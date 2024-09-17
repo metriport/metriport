@@ -76,7 +76,7 @@ async function generateConsolidatedFromSnapshots({
   return consolidated;
 }
 
-async function filterConsolidated(
+export async function filterConsolidated(
   bundle: Bundle<Resource>,
   {
     resources = [],
@@ -87,14 +87,16 @@ async function filterConsolidated(
     dateFrom?: string | undefined;
     dateTo?: string | undefined;
   }
-): Promise<Bundle | undefined> {
+): Promise<Bundle> {
   const { log } = out(`filterConsolidated`);
   log(`Got ${bundle.entry?.length} entries to filter...`);
 
   const filteredByResources = filterBundleByResource(bundle, resources);
-  log(`Filtered by resources to ${bundle.entry?.length} entries...`);
+  log(`Filtered by resources to ${filteredByResources.entry?.length} entries...`);
 
   const filtered = filterBundleByDate(filteredByResources, dateFrom, dateTo);
-  log(`Filtered by date to ${filtered?.entry?.length} entries, returning.`);
+  log(
+    `Filtered by date (${dateFrom} - ${dateTo}) to ${filtered?.entry?.length} entries, returning.`
+  );
   return filtered;
 }
