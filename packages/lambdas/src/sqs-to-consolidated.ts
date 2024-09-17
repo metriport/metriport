@@ -1,4 +1,4 @@
-import { PatientDataConsolidator } from "@metriport/core/command/consolidated/create-consolidated";
+import { PatientDataConsolidator } from "@metriport/core/command/consolidated/consolidated-create";
 import { errorToString, MetriportError } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
@@ -61,13 +61,15 @@ export async function handler(event: SQSEvent) {
       const log = prefixedLog(`${i}, patient ${patientId}, job ${jobId}`);
 
       log(`Body: ${message.body}`);
-      const { s3BucketName: newBundleBucket, s3FileName: newBundleS3Key } = parseBody(message.body);
+      const { s3BucketName: inputBundleBucket, s3FileName: inputBundleS3Key } = parseBody(
+        message.body
+      );
 
       await dataConsolidator.execute({
         cxId,
         patientId,
-        newBundleBucket,
-        newBundleS3Key,
+        inputBundleBucket,
+        inputBundleS3Key,
         logMemUsage: () => logMemoryUsage(),
       });
     }
