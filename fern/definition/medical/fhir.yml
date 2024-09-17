@@ -167,7 +167,7 @@ types:
       message: optional<string>
     examples:
       - name: Example0
-        value: PatientConsolidatedDataStatus.Example0
+        value: $PatientConsolidatedDataStatus.Example0
 
   PatientConsolidatedDataStatus:
     properties:
@@ -180,15 +180,9 @@ types:
       dateTo:
         type: optional<string>
       conversionType:
-        enum:
-          - html
-          - pdf
-          - json
+        type: ConversionType
       status:
-        enum:
-          - processing
-          - completed
-          - failed
+        type: DocumentQueryStatus
     examples:
       - name: Example0
         value:
@@ -198,6 +192,18 @@ types:
           dateTo: "2024-07-27"
           conversionType: "html"
           status: "processing"
+
+  DocumentQueryStatus:
+    enum:
+      - processing
+      - completed
+      - failed
+
+  ConversionType:
+    enum:
+      - html
+      - pdf
+      - json
 
   GetConsolidatedQueryStatusResponse:
     properties:
