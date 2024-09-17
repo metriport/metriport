@@ -1,7 +1,7 @@
 import { Request } from "express";
 import { capture } from "@metriport/core/util/notifications";
 import { getAuthorizationToken } from "../util";
-import { getJwtTokenOrFail } from "../../command/jwt-token";
+import { getJwtToken } from "../../command/jwt-token";
 import { getCxMappingOrFail } from "../../command/mapping/cx";
 import {
   PathDetails,
@@ -13,6 +13,7 @@ import {
 } from "./util";
 import { EhrSources } from "../../external/ehr/shared";
 import BadRequestError from "../../errors/bad-request";
+import ForbiddenError from "../../errors/forbidden";
 
 export async function processCxIdAsync(
   req: Request,
@@ -20,10 +21,11 @@ export async function processCxIdAsync(
   parseExternalId: (tokenData: object) => string
 ): Promise<void> {
   const accessToken = getAuthorizationToken(req);
-  const authInfo = await getJwtTokenOrFail({
+  const authInfo = await getJwtToken({
     token: accessToken,
     source,
   });
+  if (!authInfo) throw new ForbiddenError();
   const externalId = parseExternalId(authInfo.data);
   const customer = await getCxMappingOrFail({
     externalId,
