@@ -1,4 +1,4 @@
-import { ConsolidatedDataConnectorLocal } from "@metriport/core/command/consolidated/get-consolidated-local";
+import { ConsolidatedSnapshotConnectorLocal } from "@metriport/core/command/consolidated/get-snapshot-local";
 import {
   ConsolidatedSnapshotRequestAsync,
   ConsolidatedSnapshotRequestSync,
@@ -26,7 +26,7 @@ export async function handler(
       `Running with dateFrom: ${dateFrom}, dateTo: ${dateTo}, conversionType: ${conversionType}` +
         `, documentIds: ${documentIds}, resources: ${resources}}`
     );
-    const conn = new ConsolidatedDataConnectorLocal(bucketName, apiURL);
+    const conn = new ConsolidatedSnapshotConnectorLocal(bucketName, apiURL);
     const result = await conn.execute(params);
     return result;
   } catch (error) {

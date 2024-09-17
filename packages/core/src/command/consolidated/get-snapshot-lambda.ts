@@ -4,10 +4,10 @@ import { getLambdaResultPayload, makeLambdaClient } from "../../external/aws/lam
 import { Config } from "../../util/config";
 import {
   ConsolidatedSnapshotConnector,
+  ConsolidatedSnapshotRequest,
   ConsolidatedSnapshotRequestAsync,
   ConsolidatedSnapshotRequestSync,
   ConsolidatedSnapshotResponse,
-  ConsolidatedSnapshotRequest,
 } from "./get-snapshot";
 
 dayjs.extend(duration);
@@ -19,7 +19,7 @@ export type ConsolidatedRequestLambda = ConsolidatedSnapshotRequest & {
 
 export const TIMEOUT_CALLING_CONVERTER_LAMBDA = dayjs.duration(15, "minutes").add(2, "seconds");
 
-export class ConsolidatedDataConnectorLambda implements ConsolidatedSnapshotConnector {
+export class ConsolidatedSnapshotConnectorLambda implements ConsolidatedSnapshotConnector {
   readonly lambdaName: string;
   readonly lambdaClient: AWS.Lambda;
   constructor() {

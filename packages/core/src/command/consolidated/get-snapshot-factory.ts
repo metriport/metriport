@@ -1,6 +1,6 @@
 import { Config } from "../../util/config";
 import { ConsolidatedSnapshotConnector } from "./get-snapshot";
-import { ConsolidatedDataConnectorLambda } from "./get-snapshot-lambda";
+import { ConsolidatedSnapshotConnectorLambda } from "./get-snapshot-lambda";
 import { ConsolidatedSnapshotConnectorLocal } from "./get-snapshot-local";
 
 export function buildConsolidatedSnapshotConnector(): ConsolidatedSnapshotConnector {
@@ -9,5 +9,5 @@ export function buildConsolidatedSnapshotConnector(): ConsolidatedSnapshotConnec
     const apiURL = Config.getApiUrl();
     return new ConsolidatedSnapshotConnectorLocal(bucketName, apiURL);
   }
-  return new ConsolidatedDataConnectorLambda();
+  return new ConsolidatedSnapshotConnectorLambda();
 }
