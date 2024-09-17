@@ -127,6 +127,9 @@ types:
         docs: | 
           The ID assigned to this Facility. This ID will be used 
           to uniquely identify this Facility in medical documents.
+      oid: 
+        type: string
+        docs: The OID of your facility.
     examples:
       - name: Example1
         value:

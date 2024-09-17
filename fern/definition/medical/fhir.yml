@@ -180,9 +180,9 @@ types:
       dateTo:
         type: optional<string>
       conversionType:
-        type: ConversionType
+        type: ConversionTypeFHIR
       status:
-        type: DocumentQueryStatus
+        type: DocumentQueryStatusFHIR
     examples:
       - name: Example0
         value:
@@ -193,13 +193,13 @@ types:
           conversionType: "html"
           status: "processing"
 
-  DocumentQueryStatus:
+  DocumentQueryStatusFHIR:
     enum:
       - processing
       - completed
       - failed
 
-  ConversionType:
+  ConversionTypeFHIR:
     enum:
       - html
       - pdf
