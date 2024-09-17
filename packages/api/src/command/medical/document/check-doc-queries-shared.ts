@@ -7,5 +7,6 @@ export type GroupedValidationResult = {
   cxId: string; // needed downstream
   convert?: SingleValidationResult;
   download?: SingleValidationResult;
+  carequalityPatientDiscoveryStatus?: boolean;
 };
 export type PatientsWithValidationResult = Record<string, GroupedValidationResult>;
