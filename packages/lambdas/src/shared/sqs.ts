@@ -2,6 +2,8 @@ import { SQSMessageAttributes } from "aws-lambda";
 import * as AWS from "aws-sdk";
 import { SQS } from "aws-sdk";
 import { MessageBodyAttributeMap } from "aws-sdk/clients/sqs";
+import { SQSRecord } from "aws-lambda";
+import { ChangeMessageVisibilityCommand, SQSClient } from "@aws-sdk/client-sqs";
 
 export class SQSUtils {
   public readonly _sqs: SQS;
@@ -36,5 +38,23 @@ export class SQSUtils {
         StringValue: value,
       },
     };
+  }
+}
+
+export async function changeMessageVisibility(
+  record: SQSRecord,
+  sqsClient: SQSClient,
+  timeout: number
+) {
+  const command = new ChangeMessageVisibilityCommand({
+    QueueUrl: record.eventSourceARN,
+    ReceiptHandle: record.receiptHandle,
+    VisibilityTimeout: timeout,
+  });
+
+  try {
+    await sqsClient.send(command);
+  } catch (error) {
+    console.error("Error changing message visibility:", error);
   }
 }

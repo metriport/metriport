@@ -8,8 +8,8 @@ import {
   MetriportError,
 } from "@metriport/shared";
 import { uuid4 } from "@sentry/utils";
-import { SQSEvent, SQSRecord } from "aws-lambda";
-import { SQSClient, ChangeMessageVisibilityCommand } from "@aws-sdk/client-sqs";
+import { SQSEvent } from "aws-lambda";
+import { SQSClient } from "@aws-sdk/client-sqs";
 
 import fetch from "node-fetch";
 import { capture } from "./shared/capture";
@@ -17,11 +17,9 @@ import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnvOrFail, isSandbox } from "./shared/env";
 import { Log, prefixedLog } from "./shared/log";
 import { apiClient } from "./shared/oss-api";
-
+import { changeMessageVisibility } from "./shared/sqs";
 // Keep this as early on the file as possible
 capture.init();
-
-const sqsClient = new SQSClient({});
 
 // Automatically set by AWS
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
@@ -30,6 +28,8 @@ const region = getEnvOrFail("AWS_REGION");
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const apiURL = getEnvOrFail("API_URL");
 const fhirServerUrl = getEnvOrFail("FHIR_SERVER_URL");
+
+const sqsClient = new SQSClient({ region });
 
 const sourceUrl = "https://api.metriport.com/cda/to/fhir";
 const maxRetries = 10;
@@ -214,7 +214,7 @@ export async function handler(event: SQSEvent) {
     });
 
     for (const record of event.Records) {
-      await changeMessageVisibility(record, 0);
+      await changeMessageVisibility(record, sqsClient, 0);
     }
 
     throw new MetriportError(msg, error);
@@ -299,20 +299,5 @@ function processFHIRResponse(
       },
       level: "error",
     });
-  }
-}
-
-async function changeMessageVisibility(record: SQSRecord, timeout: number) {
-  const command = new ChangeMessageVisibilityCommand({
-    QueueUrl: record.eventSourceARN,
-    ReceiptHandle: record.receiptHandle,
-    VisibilityTimeout: timeout,
-  });
-
-  try {
-    await sqsClient.send(command);
-  } catch (error) {
-    console.error("Error changing message visibility:", error);
-    // You might want to handle this error or rethrow it depending on your requirements
   }
 }
