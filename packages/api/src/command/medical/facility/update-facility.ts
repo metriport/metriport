@@ -32,7 +32,7 @@ export async function updateFacility({
   });
   if (data) await validateNPI(cxId, data.npi, facility.data.npi);
 
-  return facility.update({
+  return await facility.update({
     data,
     cqActive,
     cwActive,

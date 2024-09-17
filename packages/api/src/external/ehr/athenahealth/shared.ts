@@ -38,3 +38,17 @@ export function createMetriportAddresses(patient: PatientResource): Address[] {
     };
   });
 }
+
+export function createNames(patient: PatientResource): { firstName: string; lastName: string }[] {
+  const names: { firstName: string; lastName: string }[] = [];
+  patient.name.map(name => {
+    const lastName = name.family.trim();
+    if (lastName === "") return;
+    name.given.map(gName => {
+      const firstName = gName.trim();
+      if (firstName === "") return;
+      names.push({ firstName, lastName });
+    });
+  });
+  return names;
+}
