@@ -7,6 +7,15 @@ import { sortBy } from "lodash";
 import { elapsedTimeAsStr } from "../shared/duration";
 import { getFileContents, writeFileContents } from "../shared/fs";
 
+/**
+ * Utility to sort resources in a FHIR Bundle.
+ *
+ * Usage:
+ * 1. Update the `fileNames` array with the path to the files containing FHIR bundles you want to sort.
+ * 2. Run this script:
+ *    > ts-node src/fhir/sort-bundle-resources.ts
+ */
+
 const fileNames: string[] = [];
 
 async function main() {
