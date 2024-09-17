@@ -65,11 +65,10 @@ service:
         docs: Returns the filters used for this query, in addition to the identifier used by the system to uniquely identify this query (property `requestId`).
       examples:
         - name: Example1
-          value:
-            path-parameters:
-              id: "12345678"
-            response:
-              body: $StartConsolidatedQueryResponse.Example0
+          path-parameters:
+            id: "12345678"
+          response:
+            body: $StartConsolidatedQueryResponse.Example0
 
     getConsolidatedQueryStatus:
       display-name: Get Consolidated Data Query status
@@ -84,11 +83,10 @@ service:
         type: GetConsolidatedQueryStatusResponse
       examples:
         - name: Example1
-          value:
-            path-parameters:
-              id: "12345678"
-            response:
-              body: $GetConsolidatedQueryStatusResponse.Example0
+          path-parameters:
+            id: "12345678"
+          response:
+            body: $GetConsolidatedQueryStatusResponse.Example0
 
     createPatientConsolidated:
       display-name: Create Patient's Consolidated Data
@@ -105,33 +103,32 @@ service:
         type: fhir.Bundle
       examples:
         - name: Example1
-          value:
-            path-parameters:
-              id: "12345678"
-            request: $ConsolidatedBundleUpload.Example1
-            response:
-              body:
-                resourceType: "Bundle"
-                id: "12345"
-                type: "transaction-response"
-                entry:
-                  - resource: ""
-                    response:
-                      status: 201 Created
-                      location: Observation/3/_history/1
-                      etag: "1"
-                      lastModified: "2023-07-27T21:29:31.491+00:00"
-                      outcome:
-                        resourceType: OperationOutcome
-                        issue:
-                          - severity: information
-                            code: informational
-                            details:
-                              coding:
-                                - system: https://public.metriport.com/fhir/StructureDefinition/operation-outcome
-                                  code: SUCCESSFUL_CREATE
-                                  display: Create succeeded.
-                            diagnostics: Successfully created resource "Observation/3/_history/1". Took 7ms.
+          path-parameters:
+            id: "12345678"
+          request: $ConsolidatedBundleUpload.Example1
+          response:
+            body:
+              resourceType: "Bundle"
+              id: "12345"
+              type: "transaction-response"
+              entry:
+                - resource: ""
+                  response:
+                    status: 201 Created
+                    location: Observation/3/_history/1
+                    etag: "1"
+                    lastModified: "2023-07-27T21:29:31.491+00:00"
+                    outcome:
+                      resourceType: OperationOutcome
+                      issue:
+                        - severity: information
+                          code: informational
+                          details:
+                            coding:
+                              - system: https://public.metriport.com/fhir/StructureDefinition/operation-outcome
+                                code: SUCCESSFUL_CREATE
+                                display: Create succeeded.
+                          diagnostics: Successfully created resource "Observation/3/_history/1". Took 7ms.
 
     countPatientData:
       display-name: Count Patient Data
@@ -218,7 +215,6 @@ types:
       - name: Example0
         value:
           queries:
-            - $PatientConsolidatedDataStatus.Example0
             - $PatientConsolidatedDataStatus.Example0
           message: Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook
 
