@@ -120,7 +120,14 @@ export function timestampToDate(timestamp: string[] | number[] | undefined): str
 
 export function safeDate(date: string | number | undefined): string | undefined {
   if (!date) return undefined;
-  if (!dayjs(date, "YYYY-MM-DD", true).isValid()) return undefined;
+  const dateAsDayjs = dayjs(date);
+  if (
+    !dateAsDayjs.isValid() ||
+    dateAsDayjs.isBefore("1900-01-01") ||
+    dateAsDayjs.isAfter("2100-01-01")
+  ) {
+    return undefined;
+  }
   if (typeof date === "number") return new Date(date).toISOString();
   return date;
 }
