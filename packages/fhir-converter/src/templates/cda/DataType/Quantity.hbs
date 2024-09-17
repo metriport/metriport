@@ -52,9 +52,9 @@
               }
             {{else}}
               {{#with (extractDecimal decodedValue) as |decimal|}}
-                {{#if decimal.isValid}}
+                {{#if (not (eq decimal undefined))}}
                   {
-                    "value": {{decimal.value}},
+                    "value": {{decimal}},
                     "unit": "{{../../../../../quantity.unit}}",
                     "system": "http://unitsofmeasure.org"
                   }

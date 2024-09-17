@@ -1363,6 +1363,11 @@ module.exports.external = [
             const ret = cleanUpReturn(low, high, "low", "high");
             if (ret) return ret;
           }
+        } else if (range.low || range.high) {
+          const low = getRangeLimit(range.low);
+          const high = getRangeLimit(range.high);
+          const ret = cleanUpReturn(low, high, "low", "high");
+          if (ret) return ret;
         }
         if (range.text?._) {
           return buildRange(range.text._);
@@ -1405,7 +1410,7 @@ module.exports.external = [
       "Returns true if following the FHIR decimal specification: https://www.hl7.org/fhir/R4/datatypes.html#decimal ",
     func: function (str) {
       if (!str) {
-        return { isValid: false };
+        return undefined;
       }
       const match = str.match(new RegExp(`^(${DECIMAL_REGEX_STR})$`));
 
@@ -1414,13 +1419,13 @@ module.exports.external = [
         const leadsWithDecimal = decimal.startsWith(".");
 
         if (leadsWithDecimal) {
-          return { isValid: true, value: parseFloat(`0${decimal}`)};
+          return parseFloat(`0${decimal}`);
         }
 
-        return { isValid: true, value: parseFloat(decimal) };
+        return parseFloat(decimal);
       }
 
-      return { isValid: false };
+      return undefined;
     },
   },
   {

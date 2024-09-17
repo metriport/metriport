@@ -274,37 +274,72 @@ describe("getDateTime", function () {
   });
 });
 
-// ... existing code ...
+describe("extractReferenceRange", function () {
+  const extractReferenceRange = helpers.find(h => h.name === "extractReferenceRange").func;
+
+  it("should process range with low and high values", function () {
+    const input = {
+      unit: 'mg',
+      low: { value: "325", unit: "mg" },
+      high: { value: "650", unit: "mg" },
+    };    
+    const expectedOutput = {
+      low: { value: "325", unit: "mg" },
+      high: { value: "650", unit: "mg" },
+    };
+    expect(extractReferenceRange(input)).toEqual(expectedOutput);
+  });
+  it("should process range with just low", function () {
+    const input = {
+      unit: 'mg',
+      low: { value: "325", unit: "mg" },
+    };    
+    const expectedOutput = {
+      low: { value: "325", unit: "mg" },
+    };
+    expect(extractReferenceRange(input)).toEqual(expectedOutput);
+  });
+  it("should process range with just high", function () {
+    const input = {
+      unit: 'mg',
+      high: { value: "650", unit: "mg" },
+    };    
+    const expectedOutput = {
+      high: { value: "650", unit: "mg" },
+    };
+    expect(extractReferenceRange(input)).toEqual(expectedOutput);
+  });
+});
 
 describe("extractDecimal", function () {
   const extractDecimal = helpers.find(h => h.name === "extractDecimal").func;
 
-  it("should return isValid: false for null or undefined input", function () {
-    expect(extractDecimal(null)).toEqual({ isValid: false });
-    expect(extractDecimal(undefined)).toEqual({ isValid: false });
+  it("should return undefined for null or undefined input", function () {
+    expect(extractDecimal(null)).toBeUndefined();
+    expect(extractDecimal(undefined)).toBeUndefined();
   });
 
-  it("should return isValid: false for non-decimal strings", function () {
-    expect(extractDecimal("abc")).toEqual({ isValid: false });
-    expect(extractDecimal("123a")).toEqual({ isValid: false });
-    expect(extractDecimal("12.34.56")).toEqual({ isValid: false });
+  it("should return undefined for non-decimal strings", function () {
+    expect(extractDecimal("abc")).toBeUndefined();
+    expect(extractDecimal("123a")).toBeUndefined();
+    expect(extractDecimal("12.34.56")).toBeUndefined();
   });
 
-  it("should return isValid: true and correct value for valid decimal strings", function () {
-    expect(extractDecimal("123")).toEqual({ isValid: true, value: 123 });
-    expect(extractDecimal("123.45")).toEqual({ isValid: true, value: 123.45 });
-    expect(extractDecimal("-123.45")).toEqual({ isValid: true, value: -123.45 });
-    expect(extractDecimal("123.45")).toEqual({ isValid: true, value: 123.45 });
+  it("should return correct value for valid decimal strings", function () {
+    expect(extractDecimal("123")).toBe(123);
+    expect(extractDecimal("123.45")).toBe(123.45);
+    expect(extractDecimal("-123.45")).toBe(-123.45);
+    expect(extractDecimal("123.45")).toBe(123.45);
   });
 
-  it("should handle leading decimal point", function () {
-    expect(extractDecimal(".45")).toEqual({ isValid: true, value: 0.45 });
-    expect(extractDecimal("-.45")).toEqual({ isValid: true, value: -0.45 });
+  it("should correctly handle leading decimal point", function () {
+    expect(extractDecimal(".45")).toBe(0.45);
+    expect(extractDecimal("-.45")).toBe(-0.45);
   });
 
-  it("should handle edge cases", function () {
-    expect(extractDecimal("0")).toEqual({ isValid: true, value: 0 });
-    expect(extractDecimal("0.0")).toEqual({ isValid: true, value: 0.0 });
+  it("should correctly handle zero values", function () {
+    expect(extractDecimal("0")).toBe(0);
+    expect(extractDecimal("0.0")).toBe(0.0);
   });
 });
 
