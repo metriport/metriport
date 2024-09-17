@@ -1,5 +1,4 @@
 import { Request } from "express";
-import { capture } from "@metriport/core/util/notifications";
 import { getAuthorizationToken } from "../util";
 import { getJwtToken } from "../../command/jwt-token";
 import { getCxMappingOrFail } from "../../command/mapping/cx";
@@ -12,7 +11,6 @@ import {
   replaceIdInUrlAndQuery,
 } from "./util";
 import { EhrSources } from "../../external/ehr/shared";
-import BadRequestError from "../../errors/bad-request";
 import ForbiddenError from "../../errors/forbidden";
 
 export async function processCxIdAsync(
@@ -77,14 +75,10 @@ export const validedDocumentPaths: PathDetails[] = [
 
 export async function processPatientRouteAsync(req: Request, source: EhrSources): Promise<void> {
   const path = validatePath(req, validPatientPaths);
-  if (!path.paramRegexIndex) {
-    capture.error("Must include paramRegexIndex on patient paths", {
-      extra: { path, context: "ehr.patient-paths" },
-    });
-    throw new BadRequestError("Trouble processisng request");
+  if (path.paramRegexIndex) {
+    const externalId = parseIdFromPathParams(req, path.regex, path.paramRegexIndex);
+    await replaceIdInUrlAndQuery(req, source, externalId);
   }
-  const externalId = parseIdFromPathParams(req, path.regex, path.paramRegexIndex);
-  await replaceIdInUrlAndQuery(req, source, externalId);
 }
 
 export async function processDocumentRouteAsync(req: Request, source: EhrSources): Promise<void> {
