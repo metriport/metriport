@@ -167,13 +167,8 @@ types:
       message: optional<string>
     examples:
       - name: Example0
-        value:
-          requestId: "12345678"
-          startedAt: "2023-07-27T21:29:31.491+00:00"
-          dateFrom: "2023-07-27"
-          dateTo: "2024-07-27"
-          conversionType: "html"
-          status: "processing"
+        value: 
+          query: $PatientConsolidatedDataStatus.Example0
 
   PatientConsolidatedDataStatus:
     properties:
