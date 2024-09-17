@@ -30,7 +30,25 @@ export function groupSameFamilyMemberHistories(famMemberHists: FamilyMemberHisto
   const refReplacementMap = new Map<string, string[]>();
   const danglingReferencesSet = new Set<string>();
 
-  for (const famMemberHist of famMemberHists) {
+  function ensureFhirValidFamilyMemberHistory(
+    famMemberHist: FamilyMemberHistory
+  ): FamilyMemberHistory {
+    famMemberHist.condition?.forEach(condition => {
+      if (
+        condition.onsetAge?.unit === "a" &&
+        condition.onsetAge.value === 0 &&
+        condition.onsetAge.system === "http://unitsofmeasure.org"
+      ) {
+        condition.onsetAge.value = 1;
+        condition.onsetAge.unit = "Day";
+      }
+    });
+    return famMemberHist;
+  }
+
+  const updatedFamMemberHists = famMemberHists.map(ensureFhirValidFamilyMemberHistory);
+
+  for (const famMemberHist of updatedFamMemberHists) {
     const relationship = extractCode(famMemberHist.relationship);
     const dob = famMemberHist.bornDate;
     // const date = getDateFromResource(famMemberHist, "date"); // We're currently not mapping the date for FamilyMemberHistory.hbs

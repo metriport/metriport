@@ -44,4 +44,22 @@ describe("groupSameFamilyMemberHistories", () => {
     const { famMemberHistsMap } = groupSameFamilyMemberHistories([famMemHistory, famMemHistory2]);
     expect(famMemberHistsMap.size).toBe(2);
   });
+
+  it("transforms onsetAge correctly when unit is 'a' and value is 0", () => {
+    famMemHistory.condition = [
+      {
+        code: {
+          coding: [{ system: "http://snomed.info/sct", code: "5294002" }],
+          text: "Developmental Disorder",
+        },
+        onsetAge: { value: 0, unit: "a", system: "http://unitsofmeasure.org", code: "unknown" },
+      },
+    ];
+
+    const { famMemberHistsMap } = groupSameFamilyMemberHistories([famMemHistory]);
+    const updatedFamMemHistory = famMemberHistsMap.values().next().value;
+
+    expect(updatedFamMemHistory.condition[0].onsetAge.value).toBe(1);
+    expect(updatedFamMemHistory.condition[0].onsetAge.unit).toBe("Day");
+  });
 });
