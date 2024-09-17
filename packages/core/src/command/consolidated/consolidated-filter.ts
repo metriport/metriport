@@ -9,6 +9,13 @@ import { filterBundleByDate } from "./consolidated-filter-by-date";
 import { filterBundleByResource } from "./consolidated-filter-by-resource";
 import { getConsolidated } from "./consolidated-get";
 
+const consolidator = new PatientDataConsolidator(
+  Config.getMedicalDocumentsBucketName(),
+  Config.getAWSRegion()
+);
+const conversionBucketName = Config.getCdaToFhirConversionBucketName();
+const s3Utils = new S3Utils(Config.getAWSRegion());
+
 export async function getConsolidatedFromS3({
   cxId,
   patientId,
@@ -48,19 +55,16 @@ async function generateConsolidatedFromSnapshots({
   patientId: string;
 }): Promise<Bundle | undefined> {
   const { log } = out(`generateConsolidatedFromSnapshots - cx ${cxId}, pat ${patientId}`);
-  const conversionBucketName = Config.getCdaToFhirConversionBucketName();
   if (!conversionBucketName) {
     log(`Tried to build consolidated from snapshots, but conversion bucket name is not set.`);
     return undefined;
   }
-  const s3Utils = new S3Utils(Config.getAWSRegion());
   const patientFolderPath = createFolderName(cxId, patientId);
   const objects = (await s3Utils.listObjects(conversionBucketName, patientFolderPath)) ?? [];
   const snapshotObjects = objects.filter(o => o.Key?.includes(".xml.json"));
   log(`Found ${objects.length} objects, ${snapshotObjects.length} snapshots`);
   if (!snapshotObjects || snapshotObjects.length < 1) return undefined;
 
-  const consolidator = new PatientDataConsolidator(conversionBucketName, Config.getAWSRegion());
   const consolidated = await consolidator.execute({
     cxId,
     patientId,
