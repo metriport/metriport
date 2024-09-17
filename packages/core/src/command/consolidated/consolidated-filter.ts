@@ -4,7 +4,8 @@ import { createFolderName } from "../../domain/filename";
 import { S3Utils } from "../../external/aws/s3";
 import { out } from "../../util";
 import { Config } from "../../util/config";
-import { filterBundleByDate } from "./consolidated-filter-resources";
+import { filterBundleByDate } from "./consolidated-filter-by-date";
+import { filterBundleByResource } from "./consolidated-filter-by-resource";
 import { getConsolidated } from "./consolidated-get";
 
 export async function getConsolidatedFromS3({
@@ -72,11 +73,10 @@ async function filterConsolidated(
   bundle: Bundle<Resource>,
   {
     // documentIds = [],
-    // resources = [],
+    resources = [],
     dateFrom,
     dateTo,
   }: {
-    documentIds?: string[] | undefined;
     resources?: ResourceTypeForConsolidation[] | undefined;
     dateFrom?: string | undefined;
     dateTo?: string | undefined;
@@ -84,10 +84,13 @@ async function filterConsolidated(
 ): Promise<Bundle | undefined> {
   const { log } = out(`filterConsolidated`);
   log(`Got ${bundle.entry?.length} entries to filter...`);
-  // TODO 2215 Filter by resources
-  // log(`Filtered by resources to ${bundle.entry?.length} entries...`);
+
+  const filteredByResources = filterBundleByResource(bundle, resources);
+  log(`Filtered by resources to ${bundle.entry?.length} entries...`);
+
   // TODO 2215 Decide what to do with documentIds, might need to force consolidated from FHIR server if those are set
-  const filtered = filterBundleByDate(bundle, dateFrom, dateTo);
+
+  const filtered = filterBundleByDate(filteredByResources, dateFrom, dateTo);
   log(`Filtered by date to ${filtered?.entry?.length} entries, returning.`);
   return filtered;
 }
