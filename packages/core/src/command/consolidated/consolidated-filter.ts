@@ -15,7 +15,6 @@ export async function getConsolidatedFromS3({
 }: {
   cxId: string;
   patientId: string;
-  documentIds?: string[] | undefined;
   resources?: ResourceTypeForConsolidation[] | undefined;
   dateFrom?: string | undefined;
   dateTo?: string | undefined;
@@ -72,7 +71,6 @@ async function generateConsolidatedFromSnapshots({
 async function filterConsolidated(
   bundle: Bundle<Resource>,
   {
-    // documentIds = [],
     resources = [],
     dateFrom,
     dateTo,
@@ -87,8 +85,6 @@ async function filterConsolidated(
 
   const filteredByResources = filterBundleByResource(bundle, resources);
   log(`Filtered by resources to ${bundle.entry?.length} entries...`);
-
-  // TODO 2215 Decide what to do with documentIds, might need to force consolidated from FHIR server if those are set
 
   const filtered = filterBundleByDate(filteredByResources, dateFrom, dateTo);
   log(`Filtered by date to ${filtered?.entry?.length} entries, returning.`);

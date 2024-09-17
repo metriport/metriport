@@ -6,15 +6,16 @@ import {
   resourcesSearchableByPatient,
   ResourceTypeForConsolidation,
 } from "@metriport/api-sdk";
-import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
 import {
   ConsolidatedSnapshotRequestAsync,
   ConsolidatedSnapshotRequestSync,
 } from "@metriport/core/command/consolidated/get-snapshot";
 import { buildConsolidatedSnapshotConnector } from "@metriport/core/command/consolidated/get-snapshot-factory";
+import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { out } from "@metriport/core/util";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { emptyFunction } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
@@ -49,7 +50,6 @@ export type GetConsolidatedParams = {
 
 type GetConsolidatedPatientData = {
   patient: Pick<Patient, "id" | "cxId">;
-  documentIds?: string[];
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
@@ -246,7 +246,6 @@ export async function getConsolidatedAndSendToCx(
 
 export async function getConsolidated({
   patient,
-  documentIds,
   resources,
   dateFrom,
   dateTo,
@@ -255,7 +254,7 @@ export async function getConsolidated({
   conversionType,
   bundle,
 }: GetConsolidatedParams): Promise<ConsolidatedData> {
-  const { log } = Util.out(`getConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
+  const { log } = out(`getConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
   const filters = {
     resources: resources ? resources.join(", ") : undefined,
     dateFrom,
@@ -266,7 +265,6 @@ export async function getConsolidated({
     if (!bundle) {
       bundle = await getConsolidatedPatientData({
         patient,
-        documentIds,
         resources,
         dateFrom,
         dateTo,
@@ -415,7 +413,6 @@ async function uploadConsolidatedJsonAndReturnUrl({
  */
 export async function getConsolidatedPatientData({
   patient,
-  documentIds,
   resources,
   dateFrom,
   dateTo,
@@ -424,7 +421,6 @@ export async function getConsolidatedPatientData({
 }: GetConsolidatedPatientData): Promise<SearchSetBundle<Resource>> {
   const payload: ConsolidatedSnapshotRequestSync = {
     patient,
-    documentIds,
     resources,
     dateFrom,
     dateTo,
@@ -440,7 +436,6 @@ export async function getConsolidatedPatientData({
 
 export async function getConsolidatedPatientDataAsync({
   patient,
-  documentIds,
   resources,
   dateFrom,
   dateTo,
@@ -456,7 +451,6 @@ export async function getConsolidatedPatientDataAsync({
     patient,
     requestId,
     conversionType,
-    documentIds,
     resources,
     dateFrom,
     dateTo,

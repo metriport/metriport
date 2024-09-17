@@ -1,9 +1,9 @@
-import { ConsolidatedSnapshotConnectorLocal } from "@metriport/core/command/consolidated/get-snapshot-local";
 import {
   ConsolidatedSnapshotRequestAsync,
   ConsolidatedSnapshotRequestSync,
   ConsolidatedSnapshotResponse,
 } from "@metriport/core/command/consolidated/get-snapshot";
+import { ConsolidatedSnapshotConnectorLocal } from "@metriport/core/command/consolidated/get-snapshot-local";
 import { out } from "@metriport/core/util/log";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
@@ -18,13 +18,13 @@ const bucketName = getEnvOrFail("BUCKET_NAME");
 export async function handler(
   params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
 ): Promise<ConsolidatedSnapshotResponse | void> {
-  const { patient, requestId, documentIds, resources, dateFrom, dateTo } = params;
+  const { patient, requestId, resources, dateFrom, dateTo } = params;
   const conversionType = params.isAsync ? params.conversionType : undefined;
   const { log } = out(`cx ${patient.cxId}, patient ${patient.id}, req ${requestId}`);
   try {
     log(
       `Running with dateFrom: ${dateFrom}, dateTo: ${dateTo}, conversionType: ${conversionType}` +
-        `, documentIds: ${documentIds}, resources: ${resources}}`
+        `, resources: ${resources}}`
     );
     const conn = new ConsolidatedSnapshotConnectorLocal(bucketName, apiURL);
     const result = await conn.execute(params);
@@ -32,7 +32,6 @@ export async function handler(
   } catch (error) {
     const msg = "Failed to get FHIR resources";
     const filters = {
-      documentIds,
       conversionType,
       resources,
       dateFrom,

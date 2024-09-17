@@ -23,7 +23,6 @@ export async function getConsolidatedSnapshotFromS3({
 export async function uploadConsolidatedSnapshotToS3({
   patient,
   requestId,
-  documentIds,
   resources,
   dateFrom,
   dateTo,
@@ -55,7 +54,6 @@ export async function uploadConsolidatedSnapshotToS3({
         from: dateFrom ?? NULL,
         to: dateTo ?? NULL,
         resources: (resources ?? []).join(","),
-        docs: (documentIds ?? []).join(","),
       },
     });
   } catch (error) {
@@ -65,7 +63,6 @@ export async function uploadConsolidatedSnapshotToS3({
         from: dateFrom ?? NULL,
         to: dateTo ?? NULL,
         resources: (resources ?? []).length.toString(),
-        docs: (documentIds ?? []).length.toString(),
       },
     });
   }
