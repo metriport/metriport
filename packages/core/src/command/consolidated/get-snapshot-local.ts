@@ -6,6 +6,7 @@ import { analytics, EventTypes } from "../../external/analytics/posthog";
 import { isConsolidatedFromS3Enabled } from "../../external/aws/app-config";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
 import { deduplicateFhir } from "../../fhir-deduplication/deduplicate-fhir";
+import { out } from "../../util";
 import { getConsolidatedFromS3 } from "./consolidated-filter";
 import {
   ConsolidatedSnapshotConnector,
@@ -67,14 +68,18 @@ async function getBundle(
   params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
 ): Promise<Bundle<Resource>> {
   const { cxId, id: patientId } = params.patient;
-
-  if (await isConsolidatedFromS3Enabled()) {
-    const consolidatedBundle = await getConsolidatedFromS3({ cxId, patientId, ...params });
-    if (consolidatedBundle) return consolidatedBundle;
+  const isGetFromS3 = await isConsolidatedFromS3Enabled();
+  const startedAt = new Date();
+  try {
+    if (isGetFromS3) {
+      const consolidatedBundle = await getConsolidatedFromS3({ cxId, patientId, ...params });
+      if (consolidatedBundle) return consolidatedBundle;
+    }
+    const originalBundle = await getConsolidatedFromFhirServer(params);
+    return originalBundle;
+  } finally {
+    out(`getBundle - fromS3: ${isGetFromS3}`).log(`Took ${elapsedTimeFromNow(startedAt)}`);
   }
-
-  const originalBundle = await getConsolidatedFromFhirServer(params);
-  return originalBundle;
 }
 
 async function postSnapshotToApi({
