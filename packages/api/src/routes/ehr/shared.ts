@@ -70,6 +70,9 @@ export const validedDocumentPaths: PathDetails[] = [
     regex: new RegExp(`^/query$`),
     queryParamKey: "patientId",
   },
+  {
+    regex: new RegExp(`^/document/download-url$`),
+  },
 ];
 
 export async function processPatientRouteAsync(req: Request, source: EhrSources): Promise<void> {
@@ -86,12 +89,8 @@ export async function processPatientRouteAsync(req: Request, source: EhrSources)
 
 export async function processDocumentRouteAsync(req: Request, source: EhrSources): Promise<void> {
   const path = validatePath(req, validedDocumentPaths);
-  if (!path.queryParamKey) {
-    capture.error("Must include queryParamKey on document paths", {
-      extra: { path, context: "ehr.documet-paths" },
-    });
-    throw new BadRequestError("Trouble processisng request");
+  if (path.queryParamKey) {
+    const externalId = parseIdFromQueryParams(req, path.queryParamKey);
+    await replaceIdInUrlAndQuery(req, source, externalId);
   }
-  const externalId = parseIdFromQueryParams(req, path.queryParamKey);
-  await replaceIdInUrlAndQuery(req, source, externalId);
 }
