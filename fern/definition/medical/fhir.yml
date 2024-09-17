@@ -216,13 +216,14 @@ types:
         value:
           queries:
             - $PatientConsolidatedDataStatus.Example0
+            - $PatientConsolidatedDataStatus.Example0
           message: Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook
 
   ConsolidatedCountResponse:
     properties:
       total:
-        type: integer
         docs: The sum of all resource type count.
+        type: integer
       resources:
         docs: |
           Object containing resource types as properties and the amount of entries for
