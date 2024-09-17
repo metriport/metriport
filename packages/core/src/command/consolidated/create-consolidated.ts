@@ -18,7 +18,8 @@ const defaultS3RetriesConfig = {
 };
 const emptyBundle: Bundle = {
   resourceType: "Bundle",
-  type: "batch",
+  type: "collection",
+  total: 0,
   entry: [],
 };
 
@@ -82,9 +83,11 @@ export class PatientDataConsolidator {
   protected merge(newBundle: Bundle) {
     return {
       into: function (destination: Bundle): Bundle {
+        if (!destination.entry) destination.entry = [];
         for (const entry of newBundle.entry ?? []) {
-          destination.entry?.push(entry);
+          destination.entry.push(entry);
         }
+        destination.total = destination.entry.length;
         return destination;
       },
     };
