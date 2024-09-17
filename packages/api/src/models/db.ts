@@ -22,6 +22,7 @@ import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
 import { CxMappingModel } from "./cx-mapping";
 import { PatientMappingModel } from "./patient-mapping";
+import { FacilityMappingModel } from "./facility-mapping";
 import { JwtTokenModel } from "./jwt-token";
 import { ModelSetup } from "./_default";
 
@@ -46,6 +47,7 @@ const models: ModelSetup[] = [
   FeedbackEntryModel.setup,
   CxMappingModel.setup,
   PatientMappingModel.setup,
+  FacilityMappingModel.setup,
   JwtTokenModel.setup,
 ];
 

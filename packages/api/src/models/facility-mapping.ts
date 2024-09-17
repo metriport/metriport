@@ -1,18 +1,25 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { CxMapping, CxSources } from "../domain/cx-mapping";
+import { FacilityMapping, FacilitySources } from "../domain/facility-mapping";
 import { BaseModel, ModelSetup } from "./_default";
 
-export class CxMappingModel extends BaseModel<CxMappingModel> implements CxMapping {
-  static NAME = "cx_mapping";
+export class FacilityMappingModel
+  extends BaseModel<FacilityMappingModel>
+  implements FacilityMapping
+{
+  static NAME = "facility_mapping";
   declare externalId: string;
   declare cxId: string;
-  declare source: CxSources;
+  declare facilityId: string;
+  declare source: FacilitySources;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
-    CxMappingModel.init(
+    FacilityMappingModel.init(
       {
         ...BaseModel.attributes(),
         cxId: {
+          type: DataTypes.UUID,
+        },
+        facilityId: {
           type: DataTypes.UUID,
         },
         source: {
@@ -24,7 +31,7 @@ export class CxMappingModel extends BaseModel<CxMappingModel> implements CxMappi
       },
       {
         ...BaseModel.modelOptions(sequelize),
-        tableName: CxMappingModel.NAME,
+        tableName: FacilityMappingModel.NAME,
       }
     );
   };

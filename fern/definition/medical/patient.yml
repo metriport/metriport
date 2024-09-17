@@ -69,8 +69,6 @@ service:
           docs: The ID of the Patient to update.
       request:
         name: PatientUpdate
-        path-parameters:
-            id: "018a80c4-292a-7486-a1234-76yuhe23yu14"
         query-parameters:
           facilityId:
             type: string
@@ -102,8 +100,6 @@ service:
           docs: The ID of the Patient to delete.
       request:
         name: PatientDelete
-        path-parameters:
-            id: "018a80c4-292a-7486-a1234-76yuhe23yu14"
         query-parameters:
           facilityId:
             type: optional<string>
@@ -121,8 +117,6 @@ service:
           docs: The ID of the Patient.
       request:
         name: MedicalRecordSummaryRequest
-        path-parameters:
-            id: "018a80c4-292a-7486-a1234-76yuhe23yu14"
         query-parameters:
           conversionType:
             type: string

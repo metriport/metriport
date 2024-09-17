@@ -1,32 +1,32 @@
 import { NextFunction, Request, Response } from "express";
-import { getCxMapping } from "../../../../command/mapping/cx";
-import { getJwtToken } from "../../../../command/jwt-token";
 import { EhrSources } from "../../../../external/ehr/shared";
-import { getAuthorizationToken } from "../../../util";
+import {
+  processCxIdAsync,
+  processPatientRouteAsync,
+  processDocumentRouteAsync,
+} from "../../shared";
+import BadRequestError from "../../../../errors/bad-request";
+
+function parseAthenaHealthPracticeId(tokenData: { ah_practice?: string }): string {
+  const practiceId = tokenData.ah_practice;
+  if (!practiceId) throw new BadRequestError("Missing exteranl mapping on token data");
+  return practiceId;
+}
 
 export function processCxId(req: Request, res: Response, next: NextFunction) {
-  processCxIdAsync(req)
+  processCxIdAsync(req, EhrSources.ATHENA, parseAthenaHealthPracticeId)
     .then(() => next())
     .catch(next);
 }
 
-async function processCxIdAsync(req: Request): Promise<void> {
-  const accessToken = getAuthorizationToken(req);
-  const authInfo = await getJwtToken({
-    token: accessToken,
-    source: EhrSources.ATHENA,
-  });
-  if (!authInfo) throw new Error(`No AthenaHealth token found`);
-  const externalId = (authInfo.data as { ah_practice?: string }).ah_practice;
-  if (!externalId) {
-    throw new Error(
-      `No AthenaHealth externalId value found for token ${accessToken.slice(0, 5) + "..."}`
-    );
-  }
-  const existingCustomer = await getCxMapping({
-    externalId,
-    source: EhrSources.ATHENA,
-  });
-  if (!existingCustomer) throw new Error(`No AthenaHealth cxId found for externalId ${externalId}`);
-  req.cxId = existingCustomer.cxId;
+export function processPatientRoute(req: Request, res: Response, next: NextFunction) {
+  processPatientRouteAsync(req, EhrSources.ATHENA)
+    .then(() => next())
+    .catch(next);
+}
+
+export function processDocumentRoute(req: Request, res: Response, next: NextFunction) {
+  processDocumentRouteAsync(req, EhrSources.ATHENA)
+    .then(() => next())
+    .catch(next);
 }

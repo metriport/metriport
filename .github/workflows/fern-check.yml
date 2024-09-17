@@ -13,6 +13,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install fern
-        run: npm install -g fern-api
+        run: npm install -g fern-api@0.26.8
       - name: fern check
         run: fern check

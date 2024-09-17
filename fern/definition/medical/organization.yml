@@ -90,6 +90,9 @@ types:
         docs: |
           The ID assigned to your organization. 
           This ID will be used to uniquely identify your organization in medical documents.
+      oid: 
+        type: string
+        docs: The OID of your organization.
     examples:
       - name: Example1
         value:

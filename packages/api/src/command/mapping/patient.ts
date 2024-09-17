@@ -1,13 +1,13 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import NotFoundError from "../../errors/not-found";
 import { PatientMappingModel } from "../../models/patient-mapping";
-import { PatientMapping } from "../../domain/patient-mapping";
+import { PatientMapping, PatientSources } from "../../domain/patient-mapping";
 
 export type PatientMappingParams = {
   cxId: string;
   patientId: string;
   externalId: string;
-  source: string;
+  source: PatientSources;
 };
 
 export type PatientMappingLookUpParam = Omit<PatientMappingParams, "patientId">;
@@ -42,6 +42,22 @@ export async function getPatientMapping({
   return existing.dataValues;
 }
 
+export async function getPatientMappingOrFail({
+  cxId,
+  externalId,
+  source,
+}: PatientMappingLookUpParam): Promise<PatientMapping> {
+  const mapping = await getPatientMapping({
+    cxId,
+    externalId,
+    source,
+  });
+  if (!mapping) {
+    throw new NotFoundError("PatientMapping not found", undefined, { cxId, externalId, source });
+  }
+  return mapping;
+}
+
 export async function deletePatientMapping({
   cxId,
   externalId,
@@ -54,4 +70,16 @@ export async function deletePatientMapping({
     throw new NotFoundError("Entry not found", undefined, { cxId, externalId, source });
   }
   await existing.destroy();
+}
+
+export async function deleteAllPatientMappings({
+  cxId,
+  patientId,
+}: {
+  cxId: string;
+  patientId: string;
+}): Promise<void> {
+  await PatientMappingModel.destroy({
+    where: { cxId, patientId },
+  });
 }

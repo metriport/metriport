@@ -62,8 +62,8 @@ export async function calculateDocumentConversionStatus({
 
     const externalData =
       source === MedicalDataSource.COMMONWELL
-        ? await getCWData(updatedPatient.data.externalData)
-        : await getCQData(updatedPatient.data.externalData);
+        ? getCWData(updatedPatient.data.externalData)
+        : getCQData(updatedPatient.data.externalData);
 
     const globalTriggerConsolidated =
       updatedPatient.data.documentQueryProgress?.triggerConsolidated;

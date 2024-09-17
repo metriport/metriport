@@ -2,6 +2,9 @@ import {
   patientResourceSchema,
   PatientResource,
 } from "@metriport/shared/interface/external/athenahealth/patient";
+import { errorToString } from "@metriport/shared";
+import { out } from "../../util/log";
+import { capture } from "../../util/notifications";
 import { makeAthenaHealthApi } from "./api-factory";
 import { S3Utils } from "../aws/s3";
 import { Config } from "../../util/config";
@@ -26,13 +29,14 @@ export async function getPatient({
   baseUrl: string;
   patientId: string;
 }): Promise<PatientResource | undefined> {
+  const { log, debug } = out(`AthenaHealth get - AH patientId ${patientId}`);
   const s3Utils = getS3UtilsInstance();
   const api = makeAthenaHealthApi(baseUrl, accessToken);
   const patientUrl = `/fhir/r4/Patient/${patientId}`;
   try {
     const resp = await api.get(patientUrl);
     if (!resp.data) throw new Error(`No body returned from ${patientUrl}`);
-    console.log(`${patientUrl} resp: ${JSON.stringify(resp.data)}`);
+    debug(`${patientUrl} resp: ${JSON.stringify(resp.data)}`);
     if (responsesBucket) {
       const filePath = createHivePartitionFilePath({
         cxId,
@@ -50,8 +54,17 @@ export async function getPatient({
     return patientResourceSchema.parse(resp.data);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    console.log(error);
     if (error.response.status === 404) return undefined;
+    const msg = `Failure while getting patient @ AthenHealth`;
+    log(`${msg}. Patient ID: ${patientId}. Cause: ${errorToString(error)}`);
+    capture.error(msg, {
+      extra: {
+        baseUrl,
+        patientId,
+        context: "athenahealth.get-patient",
+        error,
+      },
+    });
     throw error;
   }
 }

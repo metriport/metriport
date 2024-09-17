@@ -1,12 +1,12 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import NotFoundError from "../../errors/not-found";
 import { CxMappingModel } from "../../models/cx-mapping";
-import { CxMapping } from "../../domain/cx-mapping";
+import { CxMapping, CxSources } from "../../domain/cx-mapping";
 
 export type CxMappingParams = {
   cxId: string;
   externalId: string;
-  source: string;
+  source: CxSources;
 };
 
 export type CxMappingLookUpParam = Omit<CxMappingParams, "cxId">;
@@ -31,6 +31,20 @@ export async function getCxMapping({
   });
   if (!existing) return undefined;
   return existing.dataValues;
+}
+
+export async function getCxMappingOrFail({
+  externalId,
+  source,
+}: CxMappingLookUpParam): Promise<CxMapping> {
+  const mapping = await getCxMapping({
+    externalId,
+    source,
+  });
+  if (!mapping) {
+    throw new NotFoundError("CxMapping not found", undefined, { externalId, source });
+  }
+  return mapping;
 }
 
 export async function getCxMappingsForCustomer(where: {
