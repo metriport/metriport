@@ -9,6 +9,10 @@ import { prefixedLog } from "./shared/log";
 // Keep this as early on the file as possible
 capture.init();
 
+/**
+ * Lambda to consolidate patient data on S3.
+ */
+
 // Automatically set by AWS
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");

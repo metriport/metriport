@@ -96,7 +96,7 @@ export function createConnector({
     name: connectorName,
     vpc,
     subnets: vpc.privateSubnets,
-    entry: "consolidate-patient-data",
+    entry: "sqs-to-consolidated",
     layers: [lambdaLayers.shared],
     memory: lambdaMemory,
     envType,
