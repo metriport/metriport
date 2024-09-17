@@ -69,17 +69,19 @@ async function getBundle(
 ): Promise<Bundle<Resource>> {
   const { cxId, id: patientId } = params.patient;
   const isGetFromS3 = await isConsolidatedFromS3Enabled();
-  const startedAt = new Date();
-  try {
-    if (isGetFromS3) {
-      const consolidatedBundle = await getConsolidatedFromS3({ cxId, patientId, ...params });
-      if (consolidatedBundle) return consolidatedBundle;
+  const { log } = out(`getBundle - fromS3: ${isGetFromS3}`);
+  if (isGetFromS3) {
+    const startedAt = new Date();
+    const consolidatedBundle = await getConsolidatedFromS3({ cxId, patientId, ...params });
+    if (consolidatedBundle) {
+      log(`(from S3) Took ${elapsedTimeFromNow(startedAt)}ms`);
+      return consolidatedBundle;
     }
-    const originalBundle = await getConsolidatedFromFhirServer(params);
-    return originalBundle;
-  } finally {
-    out(`getBundle - fromS3: ${isGetFromS3}`).log(`Took ${elapsedTimeFromNow(startedAt)}ms`);
   }
+  const startedAt = new Date();
+  const originalBundle = await getConsolidatedFromFhirServer(params);
+  log(`(from FHIR) Took ${elapsedTimeFromNow(startedAt)}ms`);
+  return originalBundle;
 }
 
 async function postSnapshotToApi({
