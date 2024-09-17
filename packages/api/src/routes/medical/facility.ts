@@ -1,3 +1,4 @@
+import { OrgType } from "@metriport/core/domain/organization";
 import NotFoundError from "@metriport/core/util/error/not-found";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
@@ -6,6 +7,9 @@ import { createFacility } from "../../command/medical/facility/create-facility";
 import { deleteFacility } from "../../command/medical/facility/delete-facility";
 import { getFacilities } from "../../command/medical/facility/get-facility";
 import { updateFacility } from "../../command/medical/facility/update-facility";
+import { createOrganization } from "../../command/medical/organization/create-organization";
+import { getOrganization } from "../../command/medical/organization/get-organization";
+import { Config } from "../../shared/config";
 import { getETag } from "../../shared/http";
 import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
@@ -28,6 +32,20 @@ router.post(
     const cxId = getCxIdOrFail(req);
 
     const facilityData = facilityCreateSchema.parse(req.body);
+
+    if (Config.isSandbox()) {
+      const existingOrg = await getOrganization({ cxId });
+      if (!existingOrg) {
+        await createOrganization({
+          cxId,
+          data: {
+            name: facilityData.name,
+            type: OrgType.ambulatory,
+            location: facilityData.address,
+          },
+        });
+      }
+    }
 
     const facility = await createFacility({
       cxId,
