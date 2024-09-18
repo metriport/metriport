@@ -21,7 +21,6 @@ export function arePeriodsWithinRange(
   // we need to check if the periods are valid before we call `.some`, b/c that will always return
   // boolean and we need to return undefined if there are no valid periods to check - so upstream
   // functions can check other fields
-  if (!periods) return undefined;
   const periodsWithSomeDate = periods?.flatMap(p => (p?.start || p?.end ? p : [])) ?? [];
   if (periodsWithSomeDate.length < 1) return undefined;
   return periodsWithSomeDate.some(period => isPeriodWithinRange(period, range));
@@ -40,7 +39,7 @@ export function areRangesWithinRange(
 ): boolean | undefined {
   const periodsWithSomeDate = ranges?.flatMap(p => (p?.low || p?.high ? p : [])) ?? [];
   if (periodsWithSomeDate.length < 1) return undefined;
-  const areRangesWithinRange = periodsWithSomeDate?.some(currRange => {
+  const areRangesWithinRange = periodsWithSomeDate.some(currRange => {
     const dates = getDateFromRange(currRange);
     return areDatesWithinRange(dates, range);
   });
