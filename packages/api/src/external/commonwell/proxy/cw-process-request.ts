@@ -58,6 +58,7 @@ export async function processRequest(req: Request): Promise<Bundle<Resource>> {
       `/ count : ${count}, params: ${params.toString()}`
   );
 
+  // TODO: Remove when done comparing
   const rawResources = await queryFHIRServer({
     resource,
     cxId,
@@ -70,6 +71,11 @@ export async function processRequest(req: Request): Promise<Bundle<Resource>> {
   const organization = await getOrganizationOrFail({ cxId });
   const patientRes = patientToFHIR(patient);
   const orgRes = orgToFHIR(organization);
+  orgRes.identifier = [
+    {
+      value: organization.oid,
+    },
+  ];
 
   const metadataFiles = await getDocumentContents(cxId, patientId);
   const docRefs: DocumentReference[] = [];
@@ -86,8 +92,8 @@ export async function processRequest(req: Request): Promise<Bundle<Resource>> {
     `Responding to CW (cx ${cxId} / patient ${patientId}): ${
       bundle.entry?.length
     } resources - ${JSON.stringify(bundle)} - vs old bundle - ${JSON.stringify(oldBundle)}`
-  );
-  return oldBundle;
+  ); // TODO: Fix when done comparing
+  return bundle;
 }
 
 async function getPatientAndCxFromRequest(

@@ -17,6 +17,7 @@ interface ExtrinsicObjectXMLData {
     Classification: {
       $: { classificationScheme: string; nodeRepresentation: string };
       Name?: { LocalizedString: { $: { value: string } }[] };
+      Slot?: { ValueList?: { Value?: string } };
     }[];
     ExternalIdentifier: {
       $: { identificationScheme: string; value: string };
@@ -41,12 +42,16 @@ export async function parseExtrinsicObjectXmlToDocumentReference(
   const documentReference: DocumentReference = {
     resourceType: "DocumentReference",
     id: extrinsicObject.$.id,
+    extension: [metriportDataSourceExtension],
+    masterIdentifier: {
+      system: "urn:ietf:rfc:3986",
+      value: extrinsicObject.$.id,
+    },
     status: "current",
     docStatus: "final",
     subject: {
       reference: `Patient/${patientId}`,
     },
-    extension: [metriportDataSourceExtension],
   };
 
   extrinsicObject.Slot.forEach(slot => {
@@ -69,7 +74,7 @@ export async function parseExtrinsicObjectXmlToDocumentReference(
   });
 
   extrinsicObject.Classification.forEach(classification => {
-    const code = classification.$.nodeRepresentation;
+    const code = classification?.Slot?.ValueList?.Value ?? classification.$.nodeRepresentation;
     const display = classification.Name?.LocalizedString?.[0]?.$.value;
     const primaryCoding: Coding = { code };
     if (display) primaryCoding.display = display;
@@ -100,10 +105,6 @@ export async function parseExtrinsicObjectXmlToDocumentReference(
 
     switch (identifier.$.identificationScheme) {
       case XDSDocumentEntryUniqueId:
-        documentReference.masterIdentifier = {
-          system: "urn:ietf:rfc:3986",
-          value: extrinsicObject.$.id,
-        };
         docRefContent.attachment = {
           ...docRefContent.attachment,
           url: `https://${Config.getMedicalDocumentsBucketName()}.s3.${Config.getAWSRegion()}.amazonaws.com/${base64ToString(
