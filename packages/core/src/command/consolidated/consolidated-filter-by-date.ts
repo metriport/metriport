@@ -9,7 +9,6 @@ import {
   DiagnosticReport,
   DocumentReference,
   Encounter,
-  FamilyMemberHistory,
   Goal,
   Immunization,
   MedicationAdministration,
@@ -29,7 +28,6 @@ import {
   getDatesFromEffectiveDateTimeOrPeriod,
   isDateWithinDateRange,
   isPeriodWithinRange,
-  safeDate,
 } from "./consolidated-filter-shared";
 
 const includeIfNoDate = true;
@@ -46,16 +44,21 @@ export function filterBundleByDate(bundle: Bundle, dateFrom?: string, dateTo?: s
   if (!dateFrom && !dateTo) return bundle;
   const range = { dateFrom, dateTo };
 
+  // const patient = bundle.entry?.find(entry => entry.resource?.resourceType === "Patient")
+  //   ?.resource as Patient | undefined;
+
   const filteredEntries = bundle.entry?.filter(entry => {
     if (!entry.resource) return false;
     switch (entry.resource.resourceType) {
       case "AllergyIntolerance":
+        // return isAllergyIntoleranceWithinDateRange(entry.resource, range, patient);
         return isAllergyIntoleranceWithinDateRange(entry.resource, range);
       case "Communication":
         return isCommunicationWithinDateRange(entry.resource, range);
       case "Composition":
         return isCompositionWithinDateRange(entry.resource, range);
       case "Condition":
+        // return isConditionWithinDateRange(entry.resource, range, patient);
         return isConditionWithinDateRange(entry.resource, range);
       case "Consent":
         return isConsentWithinDateRange(entry.resource, range);
@@ -67,8 +70,6 @@ export function filterBundleByDate(bundle: Bundle, dateFrom?: string, dateTo?: s
         return isDocumentReferenceWithinDateRange(entry.resource, range);
       case "Encounter":
         return isEncounterWithinDateRange(entry.resource, range);
-      case "FamilyMemberHistory":
-        return isFamilyMemberHistoryWithinDateRange(entry.resource, range);
       case "Goal":
         return isGoalWithinDateRange(entry.resource, range);
       case "Immunization":
@@ -119,6 +120,9 @@ function isAllergyIntoleranceWithinDateRange(
     const res = isDateWithinDateRange(resource.onsetDateTime, range);
     if (res !== undefined) return res;
   }
+  // TODO 2215 finish implementing this
+  // if (resource.onsetAge) {
+  // }
   if (resource.lastOccurrence) {
     const res = isDateWithinDateRange(resource.lastOccurrence, range);
     if (res !== undefined) return res;
@@ -139,7 +143,11 @@ function isCompositionWithinDateRange(resource: Composition, range: DateRange): 
   return includeIfNoDate;
 }
 
-function isConditionWithinDateRange(resource: Condition, range: DateRange): boolean {
+function isConditionWithinDateRange(
+  resource: Condition,
+  range: DateRange
+  // patient: Patient | undefined
+): boolean {
   if (resource.onsetPeriod) {
     const res = arePeriodsWithinRange([resource.onsetPeriod], range);
     if (res !== undefined) return res;
@@ -156,6 +164,12 @@ function isConditionWithinDateRange(resource: Condition, range: DateRange): bool
     const res = isDateWithinDateRange(resource.onsetDateTime, range);
     if (res !== undefined) return res;
   }
+  // TODO 2215 finish implementing this
+  // if (resource.onsetAge && patient?.birthDate) {
+  //   const date = addAgeToDob(patient.birthDate, resource.onsetAge);
+  //   const res = isDateWithinDateRange(date, range);
+  //   if (res !== undefined) return res;
+  // }
   if (resource.abatementPeriod) {
     const res = arePeriodsWithinRange([resource.abatementPeriod], range);
     if (res !== undefined) return res;
@@ -183,30 +197,6 @@ function isEncounterWithinDateRange(resource: Encounter, range: DateRange): bool
   if (resource.location) {
     const periods = resource.location.map(l => l.period);
     const res = arePeriodsWithinRange(periods, range);
-    if (res !== undefined) return res;
-  }
-  return includeIfNoDate;
-}
-
-function isFamilyMemberHistoryWithinDateRange(
-  resource: FamilyMemberHistory,
-  range: DateRange
-): boolean {
-  if (resource.condition) {
-    const periods = resource.condition.map(c => c.onsetPeriod);
-    const arePeriods = arePeriodsWithinRange(periods, range);
-    if (arePeriods !== undefined) return arePeriods;
-
-    const ranges = resource.condition.map(c => c.onsetRange);
-    const areRanges = areRangesWithinRange(ranges, range);
-    if (areRanges !== undefined) return areRanges;
-
-    const dates = resource.condition.flatMap(c => safeDate(c.onsetString) ?? []);
-    const areDates = areDatesWithinRange(dates, range);
-    if (areDates !== undefined) return areDates;
-  }
-  if (resource.date) {
-    const res = areDatesWithinRange([resource.date], range);
     if (res !== undefined) return res;
   }
   return includeIfNoDate;
@@ -241,14 +231,32 @@ function isCoverageWithinDateRange(resource: Coverage, range: DateRange): boolea
 }
 
 function isGoalWithinDateRange(resource: Goal, range: DateRange): boolean {
-  const res = isDateWithinDateRange(resource.startDate, range);
-  if (res !== undefined) return res;
+  if (resource.startDate) {
+    const res = isDateWithinDateRange(resource.startDate, range);
+    if (res !== undefined) return res;
+  }
+  if (resource.target && resource.target.length > 0) {
+    const dates = resource.target.flatMap(t => t?.dueDate ?? []);
+    const res = areDatesWithinRange(dates, range);
+    if (res !== undefined) return res;
+  }
   return includeIfNoDate;
 }
 
 function isImmunizationWithinDateRange(resource: Immunization, range: DateRange): boolean {
-  const res = isDateWithinDateRange(resource.occurrenceDateTime, range);
-  if (res !== undefined) return res;
+  if (resource.occurrenceDateTime) {
+    const res = isDateWithinDateRange(resource.occurrenceDateTime, range);
+    if (res !== undefined) return res;
+  }
+  if (resource.occurrenceString) {
+    const res = isDateWithinDateRange(resource.occurrenceString, range);
+    if (res !== undefined) return res;
+  }
+  if (resource.reaction && resource.reaction.length > 0) {
+    const dates = resource.reaction.flatMap(r => r.date ?? []);
+    const res = areDatesWithinRange(dates, range);
+    if (res !== undefined) return res;
+  }
   return includeIfNoDate;
 }
 
@@ -256,8 +264,14 @@ function isMedicationDispenseWithinDateRange(
   resource: MedicationDispense,
   range: DateRange
 ): boolean {
-  const res = isDateWithinDateRange(resource.whenHandedOver, range);
-  if (res !== undefined) return res;
+  if (resource.whenHandedOver) {
+    const res = isDateWithinDateRange(resource.whenHandedOver, range);
+    if (res !== undefined) return res;
+  }
+  if (resource.whenPrepared) {
+    const res = isDateWithinDateRange(resource.whenPrepared, range);
+    if (res !== undefined) return res;
+  }
   return includeIfNoDate;
 }
 
@@ -274,8 +288,14 @@ function isMedicationAdministrationWithinDateRange(
   resource: MedicationAdministration,
   range: DateRange
 ): boolean {
-  const res = isDateWithinDateRange(resource.effectiveDateTime, range);
-  if (res !== undefined) return res;
+  if (resource.effectivePeriod) {
+    const res = isPeriodWithinRange(resource.effectivePeriod, range);
+    if (res !== undefined) return res;
+  }
+  if (resource.effectiveDateTime) {
+    const res = isDateWithinDateRange(resource.effectiveDateTime, range);
+    if (res !== undefined) return res;
+  }
   return includeIfNoDate;
 }
 
@@ -283,14 +303,28 @@ function isMedicationStatementWithinDateRange(
   resource: MedicationStatement,
   range: DateRange
 ): boolean {
-  const res = isDateWithinDateRange(resource.effectiveDateTime, range);
-  if (res !== undefined) return res;
+  if (resource.effectivePeriod) {
+    const res = isPeriodWithinRange(resource.effectivePeriod, range);
+    if (res !== undefined) return res;
+  }
+  if (resource.effectiveDateTime) {
+    const res = isDateWithinDateRange(resource.effectiveDateTime, range);
+    if (res !== undefined) return res;
+  }
   return includeIfNoDate;
 }
 
 function isObservationWithinDateRange(resource: Observation, range: DateRange): boolean {
+  if (resource.effectivePeriod) {
+    const res = isPeriodWithinRange(resource.effectivePeriod, range);
+    if (res !== undefined) return res;
+  }
   if (resource.effectiveDateTime) {
     const res = isDateWithinDateRange(resource.effectiveDateTime, range);
+    if (res !== undefined) return res;
+  }
+  if (resource.effectiveInstant) {
+    const res = isDateWithinDateRange(resource.effectiveInstant, range);
     if (res !== undefined) return res;
   }
   if (resource.issued) {
@@ -300,9 +334,10 @@ function isObservationWithinDateRange(resource: Observation, range: DateRange): 
   return includeIfNoDate;
 }
 
+// function isProcedureWithinDateRange(resource: Procedure, range: DateRange, patient: Patient | undefined): boolean {
 function isProcedureWithinDateRange(resource: Procedure, range: DateRange): boolean {
   if (resource.performedPeriod) {
-    const res = arePeriodsWithinRange([resource.performedPeriod], range);
+    const res = isPeriodWithinRange(resource.performedPeriod, range);
     if (res !== undefined) return res;
   }
   if (resource.performedRange) {
@@ -317,13 +352,25 @@ function isProcedureWithinDateRange(resource: Procedure, range: DateRange): bool
     const res = isDateWithinDateRange(resource.performedString, range);
     if (res !== undefined) return res;
   }
-  // not using performedAge b/c it requires a Patient resource do determine DOB
+  // TODO 2215 finish implementing this
+  // if (resource.performedAge) {
+  // }
   return includeIfNoDate;
 }
 
 function isProvenanceWithinDateRange(resource: Provenance, range: DateRange): boolean {
-  const res = isDateWithinDateRange(resource.recorded, range);
-  if (res !== undefined) return res;
+  if (resource.occurredPeriod) {
+    const res = isPeriodWithinRange(resource.occurredPeriod, range);
+    if (res !== undefined) return res;
+  }
+  if (resource.occurredDateTime) {
+    const res = isDateWithinDateRange(resource.occurredDateTime, range);
+    if (res !== undefined) return res;
+  }
+  if (resource.recorded) {
+    const res = isDateWithinDateRange(resource.recorded, range);
+    if (res !== undefined) return res;
+  }
   return includeIfNoDate;
 }
 

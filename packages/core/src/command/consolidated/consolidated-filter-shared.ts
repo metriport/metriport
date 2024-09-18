@@ -1,4 +1,5 @@
 import { Period, Range } from "@medplum/fhirtypes";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { filterTruthy } from "@metriport/shared/common/filter-map";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
@@ -37,9 +38,9 @@ export function areRangesWithinRange(
   ranges: (Range | undefined)[] | undefined,
   range: DateRange
 ): boolean | undefined {
-  const periodsWithSomeDate = ranges?.flatMap(p => (p?.low || p?.high ? p : [])) ?? [];
-  if (periodsWithSomeDate.length < 1) return undefined;
-  const areRangesWithinRange = periodsWithSomeDate.some(currRange => {
+  const rangesWithSomeDate = ranges?.flatMap(r => (r?.low || r?.high ? r : [])) ?? [];
+  if (rangesWithSomeDate.length < 1) return undefined;
+  const areRangesWithinRange = rangesWithSomeDate.some(currRange => {
     const dates = getDateFromRange(currRange);
     return areDatesWithinRange(dates, range);
   });
@@ -75,13 +76,16 @@ export function isDateWithinDateRange(
 ): boolean | undefined {
   if (!date || !safeDate(date)) return undefined;
   if (range.dateFrom && range.dateTo) {
-    return dayjs(date).isSameOrAfter(range.dateFrom) && dayjs(date).isSameOrBefore(range.dateTo);
+    return (
+      buildDayjs(date).isSameOrAfter(range.dateFrom) &&
+      buildDayjs(date).isSameOrBefore(range.dateTo)
+    );
   }
   if (range.dateFrom) {
-    return dayjs(date).isSameOrAfter(range.dateFrom);
+    return buildDayjs(date).isSameOrAfter(range.dateFrom);
   }
   if (range.dateTo) {
-    return dayjs(date).isSameOrBefore(range.dateTo);
+    return buildDayjs(date).isSameOrBefore(range.dateTo);
   }
   return undefined;
 }
@@ -109,17 +113,25 @@ export function getDatesFromEffectiveDateTimeOrPeriod(resource: {
   ];
 }
 
+// export function addAgeToDob(dob: string | undefined, age: Age): string | undefined {
+//   if (!dob) return undefined;
+//   if (!age.value) return undefined;
+//   const dayjsUnit = ageUnitToDayjsUnit(age.unit);
+//   if (!dayjsUnit) return undefined; // could try to infer based on the DOB + current date
+//   return buildDayjs(dob).add(age.value, dayjsUnit).toISOString();
+// }
+
 export function timestampToDate(timestamp: string[] | number[] | undefined): string[] {
   if (!timestamp) return [];
   return timestamp.map(date => {
     if (typeof date === "string") return date;
-    return new Date(date).toISOString();
+    return buildDayjs(date).toISOString();
   });
 }
 
 export function safeDate(date: string | number | undefined): string | undefined {
   if (!date) return undefined;
-  const dateAsDayjs = dayjs(date);
+  const dateAsDayjs = buildDayjs(date);
   if (
     !dateAsDayjs.isValid() ||
     dateAsDayjs.isBefore("1900-01-01") ||
@@ -127,6 +139,6 @@ export function safeDate(date: string | number | undefined): string | undefined 
   ) {
     return undefined;
   }
-  if (typeof date === "number") return new Date(date).toISOString();
+  if (typeof date === "number") return buildDayjs(date).toISOString();
   return date;
 }
