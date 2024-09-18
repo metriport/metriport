@@ -47,8 +47,12 @@ export class SQSUtils {
  */
 export function toMessageGroupId(
   value: string,
-  order: "left-to-right" | "right-to-left" = "left-to-right"
+  order: "left-to-right" | "right-to-left" = "left-to-right",
+  maxChars = 128
 ): string {
-  const limitChars = order === "left-to-right" ? 128 : -128;
-  return value.replace(/[^a-zA-Z0-9.]/g, "").slice(0, limitChars);
+  const replaced = value.replace(/[^a-zA-Z0-9.]/g, "");
+  if (order === "left-to-right") {
+    return replaced.slice(0, maxChars);
+  }
+  return replaced.slice(-maxChars);
 }
