@@ -4,6 +4,7 @@ import {
   docContributionFileParam,
   getDocContributionURL,
 } from "@metriport/core/external/commonwell/document/document-contribution";
+import { toFHIR as orgToFHIR } from "../../../external/fhir/organization";
 import { isDocumentReference } from "@metriport/core/external/fhir/document/document-reference";
 import { toFHIR as patientToFHIR } from "@metriport/core/external/fhir/patient/index";
 import { buildBundle } from "@metriport/core/external/fhir/shared/bundle";
@@ -21,6 +22,7 @@ import { Config } from "../../../shared/config";
 import { makeFhirApi } from "../../fhir/api/api-factory";
 import { getOrgOrFail } from "./get-org-or-fail";
 import { proxyPrefix } from "./shared";
+import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
 
 const { log } = out(`${proxyPrefix} proxyRequest`);
 
@@ -64,22 +66,26 @@ export async function processRequest(req: Request): Promise<Bundle<Resource>> {
     additionalParams: params,
   });
 
-  console.log("rawResources", JSON.stringify(rawResources));
   const patient = await getPatientOrFail({ id: patientId, cxId });
+  const organization = await getOrganizationOrFail({ cxId });
   const patientRes = patientToFHIR(patient);
+  const orgRes = orgToFHIR(organization);
 
   const metadataFiles = await getDocumentContents(cxId, patientId);
   const docRefs: DocumentReference[] = [];
   for (const file of metadataFiles) {
     const additionalDocRef = await parseExtrinsicObjectXmlToDocumentReference(file, patientId);
+    additionalDocRef.contained = [orgRes];
     docRefs.push(additionalDocRef);
   }
+
+  const oldBundle = prepareBundle(rawResources);
 
   const bundle = prepareBundle([patientRes, ...docRefs]);
   log(
     `Responding to CW (cx ${cxId} / patient ${patientId}): ${
       bundle.entry?.length
-    } resources - ${JSON.stringify(bundle)}`
+    } resources - ${JSON.stringify(bundle)} - vs old bundle - ${JSON.stringify(oldBundle)}`
   );
   return bundle;
 }

@@ -8,6 +8,7 @@ import {
   XDSDocumentEntryPracticeSettingCode,
   XDSDocumentEntryUniqueId,
 } from "./constants";
+import { Config } from "../../util/config";
 
 interface ExtrinsicObjectXMLData {
   ExtrinsicObject: {
@@ -32,10 +33,10 @@ export async function parseExtrinsicObjectXmlToDocumentReference(
   const extrinsicObject = parsedXml.ExtrinsicObject;
 
   const docRefContent: DocumentReferenceContent = {
+    extension: [metriportDataSourceExtension],
     attachment: {
       contentType: extrinsicObject.$.mimeType,
     },
-    extension: [metriportDataSourceExtension],
   };
   const documentReference: DocumentReference = {
     resourceType: "DocumentReference",
@@ -104,15 +105,14 @@ export async function parseExtrinsicObjectXmlToDocumentReference(
         };
         docRefContent.attachment = {
           ...docRefContent.attachment,
-          url: `https://placeholder/${encodeURIComponent(base64ToString(value))}`,
+          url: `https://${
+            Config.getMedicalDocumentsBucketName
+          }.s3.${Config.getAWSRegion()}.amazonaws.com/${encodeURIComponent(base64ToString(value))}`,
           title: base64ToString(value),
         };
         break;
     }
   });
-
-  console.log("docRefContent.attachment", docRefContent.attachment);
-
   documentReference.content = [docRefContent];
   return documentReference;
 }
