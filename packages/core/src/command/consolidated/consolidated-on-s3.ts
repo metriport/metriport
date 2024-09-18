@@ -3,7 +3,7 @@ import { SearchSetBundle } from "@metriport/shared/medical";
 import { createFilePath } from "../../domain/filename";
 import { S3Utils } from "../../external/aws/s3";
 import { Config } from "../../util/config";
-import { ConsolidatedPatientDataRequest } from "./consolidated-connector";
+import { ConsolidatedPatientDataRequest } from "./get-consolidated";
 
 const NULL = "null";
 

@@ -52,8 +52,8 @@ export async function executeWithRetriesS3<T>(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     shouldRetry: (_, error: any) => {
       if (!error) return false;
-      if ("statusCode" in error && error.statusCode === 404) return false;
-      if ("message" in error && error.message?.includes("NotFound")) return false;
+      if (isNotFoundError(error)) return false;
+      if (!isRetriableError(error)) return false;
       return true;
     },
   });
@@ -306,6 +306,7 @@ export class S3Utils {
     }
     // If the new key is different from the old key, copy the file with the new metadata and delete the original file
 
+    // TODO move to `copyFile()`
     const copyObjectCommand = new CopyObjectCommand({
       Bucket: bucket,
       Key: newKey,
@@ -334,8 +335,27 @@ export class S3Utils {
         },
       });
     }
-
     return newKey;
+  }
+
+  async copyFile({
+    fromBucket,
+    fromKey,
+    toBucket,
+    toKey,
+  }: {
+    fromBucket: string;
+    fromKey: string;
+    toBucket: string;
+    toKey: string;
+  }): Promise<void> {
+    const copySource = encodeURIComponent(`${fromBucket}/${fromKey}`);
+    const copyObjectCommand = new CopyObjectCommand({
+      Bucket: toBucket,
+      Key: toKey,
+      CopySource: copySource,
+    });
+    await executeWithRetriesS3(() => this.s3Client.send(copyObjectCommand));
   }
 
   async uploadFile({
@@ -417,4 +437,24 @@ export function splitS3Location(location: string): { bucketName: string; key: st
   if (!bucketName) return undefined;
   const key = path.join("/");
   return { bucketName, key };
+}
+
+export async function returnUndefinedOn404<T>(fn: () => Promise<T>): Promise<T | undefined> {
+  try {
+    return await fn();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    if (isNotFoundError(error)) return undefined;
+    throw error;
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isNotFoundError(error: any): boolean {
+  return error.Code === "NoSuchKey" || error.code === "NoSuchKey" || error.statusCode === 404;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isRetriableError(error: any): boolean {
+  return error.retryable === false || error.Retryable === false;
 }

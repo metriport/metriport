@@ -11,7 +11,7 @@ import {
   ConsolidatedDataRequestAsync,
   ConsolidatedDataRequestSync,
   ConsolidatedDataResponse,
-} from "./consolidated-connector";
+} from "./get-consolidated";
 import { uploadConsolidatedBundleToS3 } from "./consolidated-on-s3";
 
 const MAX_API_NOTIFICATION_ATTEMPTS = 5;

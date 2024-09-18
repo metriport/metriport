@@ -13,7 +13,7 @@ import { LambdaLayers } from "../shared/lambda-layers";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
 import { settings as settingsFhirConverter } from "./fhir-converter-service";
 
-export type FHIRConnector = {
+export type FHIRConverterConnector = {
   queue: IQueue;
   dlq: IQueue;
   bucket: s3.IBucket;
@@ -27,7 +27,7 @@ function settings() {
   } = settingsFhirConverter();
   const lambdaTimeout = maxExecutionTimeout.minus(Duration.seconds(5));
   return {
-    connectorName: "FHIRConverter",
+    connectorName: "FHIRConverter2",
     lambdaMemory: 1024,
     // Number of messages the lambda pull from SQS at once
     lambdaBatchSize: 1,
@@ -50,17 +50,20 @@ export function createQueueAndBucket({
   lambdaLayers,
   envType,
   alarmSnsAction,
+  altConnectorName,
 }: {
   stack: Construct;
   lambdaLayers: LambdaLayers;
   envType: EnvType;
   alarmSnsAction?: SnsAction;
-}): FHIRConnector {
+  // TODO 2215 Remove this when we remove the old FHIRConverter lambda/queues
+  altConnectorName?: string;
+}): FHIRConverterConnector {
   const config = getConfig();
   const { connectorName, visibilityTimeout, maxReceiveCount } = settings();
   const queue = defaultCreateQueue({
     stack,
-    name: connectorName,
+    name: altConnectorName ?? connectorName,
     // To use FIFO we'd need to change the lambda code to set visibilityTimeout=0 on messages to be
     // reprocessed, instead of re-enqueueing them (bc of messageDeduplicationId visibility of 5min)
     fifo: false,
@@ -98,11 +101,11 @@ export function createLambda({
   stack,
   vpc,
   sourceQueue,
-  destinationQueue,
+  fhirServerQueue,
+  patientDataConsolidatorQueue,
   dlq,
   fhirConverterBucket,
   apiServiceDnsAddress,
-  conversionResultQueueUrl,
   alarmSnsAction,
 }: {
   lambdaLayers: LambdaLayers;
@@ -110,11 +113,11 @@ export function createLambda({
   stack: Construct;
   vpc: IVpc;
   sourceQueue: IQueue;
-  destinationQueue: IQueue;
+  fhirServerQueue: IQueue;
+  patientDataConsolidatorQueue: IQueue;
   dlq: IQueue;
   fhirConverterBucket: s3.IBucket;
   apiServiceDnsAddress: string;
-  conversionResultQueueUrl: string;
   alarmSnsAction?: SnsAction;
 }): Lambda {
   const config = getConfig();
@@ -142,7 +145,8 @@ export function createLambda({
       API_URL: `http://${apiServiceDnsAddress}`,
       QUEUE_URL: sourceQueue.queueUrl,
       DLQ_URL: dlq.queueUrl,
-      CONVERSION_RESULT_QUEUE_URL: conversionResultQueueUrl,
+      FHIR_SERVER_QUEUE_URL: fhirServerQueue.queueUrl,
+      PATIENT_DATA_CONSOLIDATOR_QUEUE_URL: patientDataConsolidatorQueue.queueUrl,
       CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,
     },
     timeout: lambdaTimeout,
@@ -161,7 +165,12 @@ export function createLambda({
   );
   provideAccessToQueue({ accessType: "both", queue: sourceQueue, resource: conversionLambda });
   provideAccessToQueue({ accessType: "send", queue: dlq, resource: conversionLambda });
-  provideAccessToQueue({ accessType: "send", queue: destinationQueue, resource: conversionLambda });
+  provideAccessToQueue({ accessType: "send", queue: fhirServerQueue, resource: conversionLambda });
+  provideAccessToQueue({
+    accessType: "send",
+    queue: patientDataConsolidatorQueue,
+    resource: conversionLambda,
+  });
 
   return conversionLambda;
 }
