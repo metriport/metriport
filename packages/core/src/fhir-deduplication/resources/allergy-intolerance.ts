@@ -76,7 +76,7 @@ export function groupSameAllergies(allergies: AllergyIntolerance[]): {
 
     if (allergy) {
       const key = JSON.stringify({ allergy });
-      // no post processing so we dont remvoe the unknown allergy
+      // no post processing so we dont remove the unknown allergy
       fillMaps(allergiesMap, key, allergy, refReplacementMap, undefined);
 
       const index = blacklistedAllergies.indexOf(allergy);
@@ -85,7 +85,7 @@ export function groupSameAllergies(allergies: AllergyIntolerance[]): {
       }
 
       for (const remainingAllergy of blacklistedAllergies) {
-        if (remainingAllergy) danglingReferencesSet.add(createRef(remainingAllergy));
+        danglingReferencesSet.add(createRef(remainingAllergy));
       }
     }
   }
@@ -185,7 +185,7 @@ function isUnknownAllergy(substance: CodeableConcept | undefined): boolean {
     return true;
   }
 
-  if (coding?.some(coding => isUnknownAllergyDisplay(coding.display))) {
+  if (coding?.some(coding => isUnknownAllergyText(coding.display))) {
     return true;
   }
 
@@ -194,10 +194,6 @@ function isUnknownAllergy(substance: CodeableConcept | undefined): boolean {
 
 function isUnknownAllergyText(text: string | undefined) {
   return text && blacklistedSubstanceDisplays.includes(text.toLowerCase().trim());
-}
-
-function isUnknownAllergyDisplay(display: string | undefined): boolean {
-  return display ? blacklistedSubstanceDisplays.includes(display.toLowerCase().trim()) : false;
 }
 
 function isKnownManifestation(concept: CodeableConcept) {
