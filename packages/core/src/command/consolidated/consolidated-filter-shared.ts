@@ -40,11 +40,10 @@ export function areRangesWithinRange(
 ): boolean | undefined {
   const rangesWithSomeDate = ranges?.flatMap(r => (r?.low || r?.high ? r : [])) ?? [];
   if (rangesWithSomeDate.length < 1) return undefined;
-  const areRangesWithinRange = rangesWithSomeDate.some(currRange => {
+  return rangesWithSomeDate.some(currRange => {
     const dates = getDateFromRange(currRange);
     return areDatesWithinRange(dates, range);
   });
-  return areRangesWithinRange;
 }
 
 /**
