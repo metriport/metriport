@@ -1,5 +1,5 @@
 import { genderAtBirthSchema } from "@metriport/api-sdk";
-import { getConsolidatedBundleFromS3 } from "@metriport/core/command/consolidated/consolidated-on-s3";
+import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -888,7 +888,7 @@ router.post(
       bundleFilename,
     } = internalSendConsolidatedSchema.parse(req.body);
 
-    const bundle = await getConsolidatedBundleFromS3({
+    const bundle = await getConsolidatedSnapshotFromS3({
       bundleLocation,
       bundleFilename,
     });

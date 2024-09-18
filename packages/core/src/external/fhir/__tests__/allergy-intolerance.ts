@@ -1,12 +1,9 @@
 import { AllergyIntolerance } from "@medplum/fhirtypes";
 import { uuidv7 } from "../../../util/uuid-v7";
-import { PatientWithId } from "./patient";
+import { makePatient, PatientWithId } from "./patient";
 
-export function makeAllergyIntollerance({
-  patient,
-}: {
-  patient: PatientWithId;
-}): AllergyIntolerance {
+export function makeAllergyIntollerance(param?: { patient?: PatientWithId }): AllergyIntolerance {
+  const patient = param?.patient ?? makePatient();
   return {
     resourceType: "AllergyIntolerance",
     id: uuidv7(),

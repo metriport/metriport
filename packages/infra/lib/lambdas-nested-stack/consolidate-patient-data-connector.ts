@@ -30,7 +30,7 @@ function settings() {
     visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
     retryAttempts: 2,
     maxMessageCountAlarmThreshold: 1_000,
-    maxAgeOfOldestMessage: lambdaTimeout,
+    maxAgeOfOldestMessage: Duration.minutes(lambdaTimeout.toMinutes() * 2),
     maxAgeOfOldestMessageDlq: Duration.minutes(30),
   };
 }
@@ -105,6 +105,8 @@ export function createConnector({
       METRICS_NAMESPACE,
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       CONSOLIDATED_PATIENT_DATA_BUCKET_NAME: patientConsolidatedDataBucket.bucketName,
+      MEDICAL_DOCUMENTS_BUCKET_NAME: patientConsolidatedDataBucket.bucketName,
+      CONVERSION_RESULT_BUCKET_NAME: sourceBucket.bucketName,
     },
     timeout: lambdaTimeout,
     alarmSnsAction,
