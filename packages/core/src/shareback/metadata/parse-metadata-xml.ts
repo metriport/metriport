@@ -112,6 +112,9 @@ export async function parseExtrinsicObjectXmlToDocumentReference(
     }
   });
 
+  console.log("docContributionURL", docContributionURL);
+  console.log("docRefContent.attachment", docRefContent.attachment);
+
   documentReference.content = [docRefContent];
   return documentReference;
 }
