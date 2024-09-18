@@ -68,7 +68,7 @@ async function getBundle(
   params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
 ): Promise<Bundle<Resource>> {
   const { cxId, id: patientId } = params.patient;
-  const isGetFromS3 = await isConsolidatedFromS3Enabled();
+  const isGetFromS3 = await isConsolidatedFromS3Enabled(cxId);
   const { log } = out(`getBundle - fromS3: ${isGetFromS3}`);
   if (isGetFromS3) {
     const startedAt = new Date();
