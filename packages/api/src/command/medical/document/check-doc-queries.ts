@@ -21,7 +21,7 @@ import { getCQData } from "../../../external/carequality/patient";
 
 dayjs.extend(duration);
 
-const MAX_TIME_TO_PROCESS = dayjs.duration({ minutes: 30 });
+const MAX_TIME_TO_PROCESS = dayjs.duration({ minutes: 5 });
 const MAX_CONCURRENT_UDPATES = 10;
 
 /**
@@ -45,6 +45,8 @@ export async function checkDocumentQueries(patientIds: string[]): Promise<void> 
         log(`Patient without doc query progress @ query, skipping it: ${patient.id} `);
         continue;
       }
+
+      console.log("patientWithInvalidStatusOrCount", JSON.stringify(patient, null, 2));
 
       const checkInvalid = (prop: Progress): SingleValidationResult => {
         const { status, total = 0 } = prop;
@@ -76,6 +78,7 @@ export async function checkDocumentQueries(patientIds: string[]): Promise<void> 
 
       const cqData = getCQData(patient.data.externalData);
       if (cqData && cqData.discoveryStatus === "processing") {
+        console.log("HIT TEST CONDITION");
         patientsToUpdate[patient.id] = {
           ...patientsToUpdate[patient.id],
           carequalityPatientDiscoveryStatus: true,
@@ -83,6 +86,8 @@ export async function checkDocumentQueries(patientIds: string[]): Promise<void> 
         };
       }
     }
+
+    console.log("patientsToUpdate", JSON.stringify(patientsToUpdate, null, 2));
 
     await updateDocQueryStatus(patientsToUpdate);
 
@@ -146,6 +151,7 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
     let externalData = patient.data.externalData;
 
     if (whatToUpdate.carequalityPatientDiscoveryStatus) {
+      console.log("UPDATING PD DISCOVERY STATUSCONDITION");
       const cqData = getCQData(externalData);
       if (cqData && cqData.discoveryStatus === "processing") {
         const updatedCQData = {
@@ -160,6 +166,7 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
     }
 
     if (whatToUpdate.convert) {
+      console.log("UPDATING CONVERT CONDITION");
       const convert = docProgress.convert;
       docProgress.convert = convert
         ? {
@@ -170,6 +177,7 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
         : undefined;
     }
     if (whatToUpdate.download) {
+      console.log("UPDATING DOWNLOAD CONDITION");
       const download = docProgress.download;
       docProgress.download = download
         ? {
