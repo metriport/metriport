@@ -175,7 +175,7 @@ describe("groupSameAllergies", () => {
     expect(allergiesMap.size).toBe(2);
   });
 
-  it("removes allergies with unknown substance and manifestations ", () => {
+  it("keeps allergies with unknown substance and manifestations if there is only one allergy", () => {
     allergy.reaction = [
       {
         substance: noKnownAllergiesSubstance,
@@ -184,10 +184,10 @@ describe("groupSameAllergies", () => {
     ];
 
     const { allergiesMap } = groupSameAllergies([allergy]);
-    expect(allergiesMap.size).toBe(0);
+    expect(allergiesMap.size).toBe(1);
   });
 
-  it("removes allergies with no known allergies for substance", () => {
+  it("keeps 1 allergy with no known allergies for substance if there are two allergy", () => {
     allergy.reaction = [
       {
         substance: noKnownAllergiesSubstance,
@@ -203,10 +203,10 @@ describe("groupSameAllergies", () => {
     ];
 
     const { allergiesMap } = groupSameAllergies([allergy, allergy2]);
-    expect(allergiesMap.size).toBe(0);
+    expect(allergiesMap.size).toBe(1);
   });
 
-  it("removes allergies with NKA for substance in display", () => {
+  it("keeps allergies with NKA for substance in display if there is only one allergy", () => {
     allergy.reaction = [
       {
         substance: { coding: [{ ...noKnownAllergiesSubstance.coding[0], display: "NKA" }] },
@@ -215,18 +215,29 @@ describe("groupSameAllergies", () => {
     ];
 
     const result = groupSameAllergies([allergy]);
-    expect(result.allergiesMap.size).toBe(0);
+    expect(result.allergiesMap.size).toBe(1);
   });
 
-  it("removes allergies with NKA for substance in text", () => {
+  it("removes 'No Known Allergies' allergy and keeps other allergies", () => {
     allergy.reaction = [
       {
-        substance: { coding: noKnownAllergiesSubstance.coding, text: "NKA" },
-        manifestation: unknownManifestation,
+        substance: { text: "Peanuts" },
       },
     ];
 
-    const result = groupSameAllergies([allergy]);
-    expect(result.allergiesMap.size).toBe(0);
+    allergy2.reaction = [
+      {
+        substance: { text: "No Known Allergies" },
+      },
+    ];
+
+    const { allergiesMap, danglingReferences } = groupSameAllergies([allergy, allergy2]);
+    expect(allergiesMap.size).toBe(1);
+    expect(danglingReferences.length).toBe(1);
+    expect(danglingReferences[0]).toBe(`AllergyIntolerance/${allergyId2}`);
+
+    const remainingAllergy = allergiesMap.values().next().value;
+    expect(remainingAllergy).toBeDefined();
+    expect(remainingAllergy.reaction[0].substance.text).toBe("Peanuts");
   });
 });
