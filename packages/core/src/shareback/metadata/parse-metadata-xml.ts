@@ -42,6 +42,7 @@ export async function parseExtrinsicObjectXmlToDocumentReference(
     resourceType: "DocumentReference",
     id: extrinsicObject.$.id,
     status: "current",
+    docStatus: "final",
     subject: {
       reference: `Patient/${patientId}`,
     },
@@ -105,8 +106,8 @@ export async function parseExtrinsicObjectXmlToDocumentReference(
         };
         docRefContent.attachment = {
           ...docRefContent.attachment,
-          url: `https://${Config.getMedicalDocumentsBucketName()}.s3.${Config.getAWSRegion()}.amazonaws.com/${encodeURIComponent(
-            base64ToString(value)
+          url: `https://${Config.getMedicalDocumentsBucketName()}.s3.${Config.getAWSRegion()}.amazonaws.com/${base64ToString(
+            value
           )}`,
           title: base64ToString(value),
         };
