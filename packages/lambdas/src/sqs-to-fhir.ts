@@ -9,13 +9,15 @@ import {
 } from "@metriport/shared";
 import { uuid4 } from "@sentry/utils";
 import { SQSEvent } from "aws-lambda";
+import { SQSClient } from "@aws-sdk/client-sqs";
+
 import fetch from "node-fetch";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnvOrFail, isSandbox } from "./shared/env";
 import { Log, prefixedLog } from "./shared/log";
 import { apiClient } from "./shared/oss-api";
-
+import { changeMessageVisibility } from "./shared/sqs";
 // Keep this as early on the file as possible
 capture.init();
 
@@ -26,6 +28,8 @@ const region = getEnvOrFail("AWS_REGION");
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const apiURL = getEnvOrFail("API_URL");
 const fhirServerUrl = getEnvOrFail("FHIR_SERVER_URL");
+
+const sqsClient = new SQSClient({ region });
 
 const sourceUrl = "https://api.metriport.com/cda/to/fhir";
 const maxRetries = 10;
@@ -208,6 +212,11 @@ export async function handler(event: SQSEvent) {
           "likely not to get completed - it might need manual intervention",
       },
     });
+
+    for (const record of event.Records) {
+      await changeMessageVisibility(record, sqsClient, 0);
+    }
+
     throw new MetriportError(msg, error);
   }
 }
