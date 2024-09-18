@@ -87,7 +87,7 @@ export async function processRequest(req: Request): Promise<Bundle<Resource>> {
       bundle.entry?.length
     } resources - ${JSON.stringify(bundle)} - vs old bundle - ${JSON.stringify(oldBundle)}`
   );
-  return bundle;
+  return oldBundle;
 }
 
 async function getPatientAndCxFromRequest(
