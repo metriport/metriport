@@ -68,12 +68,7 @@ export class CloudWatchUtils {
     const namespaceToUse = metricsNamespace ?? this.metricsNamespace;
     if (!namespaceToUse) throw new Error(`Missing metricsNamespace`);
     const mem = process.memoryUsage();
-    console.log(
-      `[MEM] rss:  ${kbToMbString(mem.rss)}, ` +
-        `heap: ${kbToMbString(mem.heapUsed)}/${kbToMbString(mem.heapTotal)}, ` +
-        `external: ${kbToMbString(mem.external)}, ` +
-        `arrayBuffers: ${kbToMbString(mem.arrayBuffers)}, `
-    );
+    logMemoryUsage(mem);
     try {
       await this._cloudWatch
         .putMetricData({
@@ -95,4 +90,13 @@ export class CloudWatchUtils {
       // intentionally not rethrowing, don't want to fail the lambda
     }
   }
+}
+
+export function logMemoryUsage(mem = process.memoryUsage()) {
+  console.log(
+    `[MEM] rss:  ${kbToMbString(mem.rss)}, ` +
+      `heap: ${kbToMbString(mem.heapUsed)}/${kbToMbString(mem.heapTotal)}, ` +
+      `external: ${kbToMbString(mem.external)}, ` +
+      `arrayBuffers: ${kbToMbString(mem.arrayBuffers)}, `
+  );
 }

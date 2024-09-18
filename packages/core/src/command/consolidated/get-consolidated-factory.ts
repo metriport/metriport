@@ -1,7 +1,7 @@
 import { Config } from "../../util/config";
-import { ConsolidatedDataConnector } from "./consolidated-connector";
-import { ConsolidatedDataConnectorLambda } from "./consolidated-connector-lambda";
-import { ConsolidatedDataConnectorLocal } from "./consolidated-connector-local";
+import { ConsolidatedDataConnector } from "./get-consolidated";
+import { ConsolidatedDataConnectorLambda } from "./get-consolidated-lambda";
+import { ConsolidatedDataConnectorLocal } from "./get-consolidated-local";
 
 export function buildConsolidatedDataConnector(): ConsolidatedDataConnector {
   if (Config.isDev()) {

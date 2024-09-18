@@ -2,8 +2,8 @@ import {
   ConsolidatedDataRequestAsync,
   ConsolidatedDataRequestSync,
   ConsolidatedDataResponse,
-} from "@metriport/core/command/consolidated/consolidated-connector";
-import { ConsolidatedDataConnectorLocal } from "@metriport/core/command/consolidated/consolidated-connector-local";
+} from "@metriport/core/command/consolidated/get-consolidated";
+import { ConsolidatedDataConnectorLocal } from "@metriport/core/command/consolidated/get-consolidated-local";
 import { out } from "@metriport/core/util/log";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
