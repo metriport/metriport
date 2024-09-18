@@ -26,7 +26,8 @@ interface ExtrinsicObjectXMLData {
 
 export async function parseExtrinsicObjectXmlToDocumentReference(
   xml: string,
-  patientId: string
+  patientId: string,
+  docContributionURL: string
 ): Promise<DocumentReference> {
   const parsedXml: ExtrinsicObjectXMLData = await parseStringPromise(xml);
   const extrinsicObject = parsedXml.ExtrinsicObject;
@@ -104,7 +105,7 @@ export async function parseExtrinsicObjectXmlToDocumentReference(
         };
         docRefContent.attachment = {
           ...docRefContent.attachment,
-          url: `${encodeURIComponent(base64ToString(value))}`,
+          url: `${docContributionURL}${encodeURIComponent(base64ToString(value))}`,
           title: base64ToString(value),
         };
         break;

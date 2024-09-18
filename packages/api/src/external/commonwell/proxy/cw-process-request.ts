@@ -71,7 +71,11 @@ export async function processRequest(req: Request): Promise<Bundle<Resource>> {
   const metadataFiles = await getDocumentContents(cxId, patientId);
   const docRefs: DocumentReference[] = [];
   for (const file of metadataFiles) {
-    const additionalDocRef = await parseExtrinsicObjectXmlToDocumentReference(file, patientId);
+    const additionalDocRef = await parseExtrinsicObjectXmlToDocumentReference(
+      file,
+      patientId,
+      docContributionURL
+    );
     docRefs.push(additionalDocRef);
   }
 
