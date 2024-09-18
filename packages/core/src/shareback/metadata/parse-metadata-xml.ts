@@ -57,14 +57,6 @@ export async function parseExtrinsicObjectXmlToDocumentReference(
         case "creationTime":
           documentReference.date = slotValue;
           break;
-        case "repositoryUniqueId":
-          documentReference.identifier = [
-            {
-              system: "urn:ietf:rfc:3986",
-              value: slotValue,
-            },
-          ];
-          break;
         case "size":
           docRefContent.attachment = {
             ...docRefContent.attachment,
@@ -109,11 +101,12 @@ export async function parseExtrinsicObjectXmlToDocumentReference(
       case XDSDocumentEntryUniqueId:
         documentReference.masterIdentifier = {
           system: "urn:ietf:rfc:3986",
-          value,
+          value: extrinsicObject.$.id,
         };
         docRefContent.attachment = {
           ...docRefContent.attachment,
           url: `${docContributionURL}${encodeURIComponent(base64ToString(value))}`,
+          title: base64ToString(value),
         };
         break;
     }
