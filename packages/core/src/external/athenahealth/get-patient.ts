@@ -54,7 +54,7 @@ export async function getPatient({
     return patientResourceSchema.parse(resp.data);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    if (error.response.status === 404) return undefined;
+    if (error.response?.status === 404) return undefined;
     const msg = `Failure while getting patient @ AthenHealth`;
     log(`${msg}. Patient ID: ${patientId}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
