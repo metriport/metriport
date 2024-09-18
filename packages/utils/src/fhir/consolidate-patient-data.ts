@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { PatientDataConsolidator } from "@metriport/core/command/consolidated/create-consolidated";
+import { PatientDataConsolidator } from "@metriport/core/command/consolidated/consolidated-create";
 import { getEnvVarOrFail, sleep } from "@metriport/shared";
 import { elapsedTimeAsStr } from "../shared/duration";
 
@@ -19,8 +19,8 @@ const patientId = "";
 /**
  * The bucket and key of the input bundle to be merged into the consolidated bundle.
  */
-const newBundleBucket = "";
-const newBundleS3Key = "";
+const inputBundleBucket = "";
+const inputBundleS3Key = "";
 
 const consolidatedBucket = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const region = getEnvVarOrFail("AWS_REGION");
@@ -34,8 +34,7 @@ async function main() {
   await consolidator.execute({
     cxId,
     patientId,
-    newBundleBucket,
-    newBundleS3Key,
+    inputBundles: [{ bucket: inputBundleBucket, key: inputBundleS3Key }],
   });
 
   console.log(`>>> Done in ${elapsedTimeAsStr(startedAt)}`);

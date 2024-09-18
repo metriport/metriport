@@ -105,6 +105,8 @@ export function createConnector({
       METRICS_NAMESPACE,
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       CONSOLIDATED_PATIENT_DATA_BUCKET_NAME: patientConsolidatedDataBucket.bucketName,
+      MEDICAL_DOCUMENTS_BUCKET_NAME: patientConsolidatedDataBucket.bucketName,
+      CONVERSION_RESULT_BUCKET_NAME: sourceBucket.bucketName,
     },
     timeout: lambdaTimeout,
     alarmSnsAction,

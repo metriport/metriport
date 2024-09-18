@@ -1,10 +1,14 @@
-import dayjs from "dayjs";
+import dayjs, { ConfigType } from "dayjs";
+import utc from "dayjs/plugin/utc";
+
 import { CustomErrorParams, z } from "zod";
+
+dayjs.extend(utc);
 
 export const ISO_DATE = "YYYY-MM-DD";
 
 export function isValidISODate(date: string): boolean {
-  return dayjs(date, ISO_DATE, true).isValid();
+  return buildDayjs(date, ISO_DATE, true).isValid();
 }
 
 const isValidISODateOptional = (date: string | undefined | null): boolean =>
@@ -20,9 +24,13 @@ export const optionalDateSchema = z
 
 export const dateSchema = z.string().trim().refine(isValidISODate, invalidIsoMsg);
 
-export const elapsedTimeFromNow = (
+export function elapsedTimeFromNow(
   date?: Date,
   format: dayjs.UnitTypeLong = "millisecond"
-): number => {
-  return dayjs().diff(dayjs(date), format);
-};
+): number {
+  return buildDayjs().diff(buildDayjs(date), format);
+}
+
+export function buildDayjs(date?: ConfigType, format?: string, strict?: boolean): dayjs.Dayjs {
+  return dayjs.utc(date, format, strict);
+}

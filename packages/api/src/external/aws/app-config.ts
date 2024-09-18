@@ -1,13 +1,12 @@
 import {
-  BooleanFeatureFlags,
-  getFeatureFlags,
-  getFeatureFlagValueBoolean,
   getCxsWithFeatureFlagEnabled,
+  getFeatureFlags,
+  isFeatureFlagEnabled,
 } from "@metriport/core/external/aws/app-config";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { errorToString, getEnvVar } from "@metriport/shared";
+import { getEnvVar } from "@metriport/shared";
 import { getCxIdFromApiKey } from "../../routes/middlewares/auth";
 import { Config } from "../../shared/config";
 
@@ -32,30 +31,6 @@ export async function initFeatureFlags() {
     throw new MetriportError(`Failed to initialize Feature Flags`, error);
   }
   log(`Feature Flags initialized.`);
-}
-
-/**
- * Checks whether the specified feature flag is enabled.
- *
- * @returns true if enabled; false otherwise
- */
-async function isFeatureFlagEnabled(featureFlagName: keyof BooleanFeatureFlags): Promise<boolean> {
-  try {
-    const featureFlag = await getFeatureFlagValueBoolean(
-      Config.getAWSRegion(),
-      Config.getAppConfigAppId(),
-      Config.getAppConfigConfigId(),
-      Config.getEnvType(),
-      featureFlagName
-    );
-    return featureFlag.enabled;
-  } catch (error) {
-    const msg = `Failed to get Feature Flag Value`;
-    const extra = { featureFlagName };
-    log(`${msg} - ${JSON.stringify(extra)} - ${errorToString(error)}`);
-    capture.error(msg, { extra: { ...extra, error } });
-  }
-  return false;
 }
 
 export async function getCxsWithEnhancedCoverageFeatureFlagValue(): Promise<string[]> {
