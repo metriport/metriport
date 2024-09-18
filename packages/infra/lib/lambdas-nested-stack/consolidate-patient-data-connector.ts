@@ -30,7 +30,7 @@ function settings() {
     visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
     retryAttempts: 2,
     maxMessageCountAlarmThreshold: 1_000,
-    maxAgeOfOldestMessage: lambdaTimeout,
+    maxAgeOfOldestMessage: Duration.minutes(lambdaTimeout.toMinutes() * 2),
     maxAgeOfOldestMessageDlq: Duration.minutes(30),
   };
 }
