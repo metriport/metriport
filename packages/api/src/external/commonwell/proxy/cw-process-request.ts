@@ -4,25 +4,22 @@ import {
   docContributionFileParam,
   getDocContributionURL,
 } from "@metriport/core/external/commonwell/document/document-contribution";
-import { toFHIR as orgToFHIR } from "../../../external/fhir/organization";
 import { isDocumentReference } from "@metriport/core/external/fhir/document/document-reference";
 import { toFHIR as patientToFHIR } from "@metriport/core/external/fhir/patient/index";
 import { buildBundle } from "@metriport/core/external/fhir/shared/bundle";
 import { isUploadedByCustomer } from "@metriport/core/external/fhir/shared/index";
 import { parseExtrinsicObjectXmlToDocumentReference } from "@metriport/core/shareback/metadata/parse-metadata-xml";
 import BadRequestError from "@metriport/core/util/error/bad-request";
-import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
-import { capture } from "@metriport/core/util/notifications";
 import { Request } from "express";
 import { partition, uniqBy } from "lodash";
+import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { toFHIR as orgToFHIR } from "../../../external/fhir/organization";
 import { queryToSearchParams } from "../../../routes/helpers/query";
 import { Config } from "../../../shared/config";
-import { makeFhirApi } from "../../fhir/api/api-factory";
 import { getOrgOrFail } from "./get-org-or-fail";
 import { proxyPrefix } from "./shared";
-import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
 
 const { log } = out(`${proxyPrefix} proxyRequest`);
 
@@ -44,8 +41,9 @@ const allowedQueryParams = ["status", "date", "_include", "_summary"];
  * The main function, it will:
  * - get the Patient ID and the Customer ID (based on the Org OID) from the request;
  * - remove invalid parameters;
- * - query the FHIR server (paginated);
- * - return a bundle with the consolidated FHIR Resources.
+ * - query s3 for metadata files;
+ * - parse them and create FHIR DocumentReferences for them
+ * - return a bundle with the DocumentReferences
  */
 export async function processRequest(req: Request): Promise<Bundle<Resource>> {
   log(`ORIGINAL URL: ${req.url}`);
@@ -53,25 +51,17 @@ export async function processRequest(req: Request): Promise<Bundle<Resource>> {
   const { cxId, patientId } = await getPatientAndCxFromRequest(req);
   const { resource, count, params } = fromHttpRequestToFHIR(req);
 
+  // TODO: We might need to introduce filtering based on the provided query params.
   log(
     `UPDATED resource: ${resource} / cx ${cxId} / patient ${patientId} ` +
       `/ count : ${count}, params: ${params.toString()}`
   );
 
-  // TODO: Remove when done comparing
-  const rawResources = await queryFHIRServer({
-    resource,
-    cxId,
-    patientId,
-    count,
-    additionalParams: params,
-  });
-
   const patient = await getPatientOrFail({ id: patientId, cxId });
   const organization = await getOrganizationOrFail({ cxId });
-  const patientRes = patientToFHIR(patient);
-  const orgRes = orgToFHIR(organization);
-  orgRes.identifier = [
+  const patientResource = patientToFHIR(patient);
+  const orgResource = orgToFHIR(organization);
+  orgResource.identifier = [
     {
       value: organization.oid,
     },
@@ -81,18 +71,16 @@ export async function processRequest(req: Request): Promise<Bundle<Resource>> {
   const docRefs: DocumentReference[] = [];
   for (const file of metadataFiles) {
     const additionalDocRef = await parseExtrinsicObjectXmlToDocumentReference(file, patientId);
-    additionalDocRef.contained = [orgRes];
+    additionalDocRef.contained = [orgResource];
     docRefs.push(additionalDocRef);
   }
 
-  const oldBundle = prepareBundle(rawResources);
-
-  const bundle = prepareBundle([patientRes, ...docRefs]);
+  const bundle = prepareBundle([patientResource, ...docRefs]);
   log(
     `Responding to CW (cx ${cxId} / patient ${patientId}): ${
       bundle.entry?.length
-    } resources - ${JSON.stringify(bundle)} - vs old bundle - ${JSON.stringify(oldBundle)}`
-  ); // TODO: Fix when done comparing
+    } resources - ${JSON.stringify(bundle)}`
+  );
   return bundle;
 }
 
@@ -148,56 +136,6 @@ function getAllowedSearchParams(searchParams: URLSearchParams): URLSearchParams 
   }
   if (paramsToUse.size <= 0) throw new BadRequestError(`Missing query parameters`);
   return paramsToUse;
-}
-
-async function queryFHIRServer({
-  resource,
-  cxId,
-  patientId,
-  count,
-  additionalParams,
-}: {
-  resource: ResourceType;
-  cxId: string;
-  patientId: string;
-  count: number | undefined;
-  additionalParams: URLSearchParams;
-}): Promise<Resource[]> {
-  const fhir = makeFhirApi(cxId);
-
-  const params = new URLSearchParams(additionalParams);
-  params.append("patient", patientId);
-  const paramsStr = params.toString();
-
-  const searchFunction = () => fhir.searchResourcePages(resource, paramsStr);
-  const resources = await getPaginatedResources(searchFunction, count, {
-    cxId,
-    patientId,
-    params: paramsStr,
-  });
-  return resources;
-}
-
-async function getPaginatedResources(
-  searchFunction: () => AsyncGenerator<Resource[]>,
-  count: number | undefined,
-  context?: object
-): Promise<Resource[]> {
-  const resources: Resource[] = [];
-  try {
-    for await (const page of searchFunction()) {
-      resources.push(...page);
-      if (count && resources.length >= count) break;
-    }
-    const maxElements = count ? Math.min(count, resources.length) : resources.length;
-    return resources.slice(0, maxElements);
-  } catch (error) {
-    const msg = "Error getting paginated resources";
-    const extra = { returnedResourceCount: resources.length, ...context };
-    log(`${msg}: ${errorToString(error)} / ${JSON.stringify(extra)}`);
-    capture.message(`[${proxyPrefix}] ${msg}`, { extra: { ...extra, error } });
-    return resources;
-  }
 }
 
 function prepareBundle(resources: Resource[]): Bundle<Resource> {
