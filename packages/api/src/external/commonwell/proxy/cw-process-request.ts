@@ -10,12 +10,15 @@ import { buildBundle } from "@metriport/core/external/fhir/shared/bundle";
 import { isUploadedByCustomer } from "@metriport/core/external/fhir/shared/index";
 import { parseExtrinsicObjectXmlToDocumentReference } from "@metriport/core/shareback/metadata/parse-metadata-xml";
 import BadRequestError from "@metriport/core/util/error/bad-request";
+import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
 import { Request } from "express";
 import { partition, uniqBy } from "lodash";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { queryToSearchParams } from "../../../routes/helpers/query";
 import { Config } from "../../../shared/config";
+import { makeFhirApi } from "../../fhir/api/api-factory";
 import { getOrgOrFail } from "./get-org-or-fail";
 import { proxyPrefix } from "./shared";
 
@@ -53,24 +56,22 @@ export async function processRequest(req: Request): Promise<Bundle<Resource>> {
       `/ count : ${count}, params: ${params.toString()}`
   );
 
-  // const rawResources = await queryFHIRServer({
-  //   resource,
-  //   cxId,
-  //   patientId,
-  //   count,
-  //   additionalParams: params,
-  // });
+  const rawResources = await queryFHIRServer({
+    resource,
+    cxId,
+    patientId,
+    count,
+    additionalParams: params,
+  });
+
+  console.log("rawResources", JSON.stringify(rawResources));
   const patient = await getPatientOrFail({ id: patientId, cxId });
   const patientRes = patientToFHIR(patient);
 
   const metadataFiles = await getDocumentContents(cxId, patientId);
   const docRefs: DocumentReference[] = [];
   for (const file of metadataFiles) {
-    const additionalDocRef = await parseExtrinsicObjectXmlToDocumentReference(
-      file,
-      patientId,
-      docContributionURL
-    );
+    const additionalDocRef = await parseExtrinsicObjectXmlToDocumentReference(file, patientId);
     docRefs.push(additionalDocRef);
   }
 
@@ -137,55 +138,55 @@ function getAllowedSearchParams(searchParams: URLSearchParams): URLSearchParams 
   return paramsToUse;
 }
 
-// async function queryFHIRServer({
-//   resource,
-//   cxId,
-//   patientId,
-//   count,
-//   additionalParams,
-// }: {
-//   resource: ResourceType;
-//   cxId: string;
-//   patientId: string;
-//   count: number | undefined;
-//   additionalParams: URLSearchParams;
-// }): Promise<Resource[]> {
-//   const fhir = makeFhirApi(cxId);
+async function queryFHIRServer({
+  resource,
+  cxId,
+  patientId,
+  count,
+  additionalParams,
+}: {
+  resource: ResourceType;
+  cxId: string;
+  patientId: string;
+  count: number | undefined;
+  additionalParams: URLSearchParams;
+}): Promise<Resource[]> {
+  const fhir = makeFhirApi(cxId);
 
-//   const params = new URLSearchParams(additionalParams);
-//   params.append("patient", patientId);
-//   const paramsStr = params.toString();
+  const params = new URLSearchParams(additionalParams);
+  params.append("patient", patientId);
+  const paramsStr = params.toString();
 
-//   const searchFunction = () => fhir.searchResourcePages(resource, paramsStr);
-//   const resources = await getPaginatedResources(searchFunction, count, {
-//     cxId,
-//     patientId,
-//     params: paramsStr,
-//   });
-//   return resources;
-// }
+  const searchFunction = () => fhir.searchResourcePages(resource, paramsStr);
+  const resources = await getPaginatedResources(searchFunction, count, {
+    cxId,
+    patientId,
+    params: paramsStr,
+  });
+  return resources;
+}
 
-// async function getPaginatedResources(
-//   searchFunction: () => AsyncGenerator<Resource[]>,
-//   count: number | undefined,
-//   context?: object
-// ): Promise<Resource[]> {
-//   const resources: Resource[] = [];
-//   try {
-//     for await (const page of searchFunction()) {
-//       resources.push(...page);
-//       if (count && resources.length >= count) break;
-//     }
-//     const maxElements = count ? Math.min(count, resources.length) : resources.length;
-//     return resources.slice(0, maxElements);
-//   } catch (error) {
-//     const msg = "Error getting paginated resources";
-//     const extra = { returnedResourceCount: resources.length, ...context };
-//     log(`${msg}: ${errorToString(error)} / ${JSON.stringify(extra)}`);
-//     capture.message(`[${proxyPrefix}] ${msg}`, { extra: { ...extra, error } });
-//     return resources;
-//   }
-// }
+async function getPaginatedResources(
+  searchFunction: () => AsyncGenerator<Resource[]>,
+  count: number | undefined,
+  context?: object
+): Promise<Resource[]> {
+  const resources: Resource[] = [];
+  try {
+    for await (const page of searchFunction()) {
+      resources.push(...page);
+      if (count && resources.length >= count) break;
+    }
+    const maxElements = count ? Math.min(count, resources.length) : resources.length;
+    return resources.slice(0, maxElements);
+  } catch (error) {
+    const msg = "Error getting paginated resources";
+    const extra = { returnedResourceCount: resources.length, ...context };
+    log(`${msg}: ${errorToString(error)} / ${JSON.stringify(extra)}`);
+    capture.message(`[${proxyPrefix}] ${msg}`, { extra: { ...extra, error } });
+    return resources;
+  }
+}
 
 function prepareBundle(resources: Resource[]): Bundle<Resource> {
   const { documentReferences, otherResources } = splitResources(resources);
