@@ -1,33 +1,35 @@
 import { CodeableConcept, Organization } from "@medplum/fhirtypes";
 import {
-  DEFAULT_CLASS_CODE_NODE,
-  DEFAULT_CLASS_CODE_DISPLAY,
-  DEFAULT_CONFIDENTIALITY_CODE,
-  CONFIDENTIALITY_CODE_SYSTEM,
-  LOINC_CODE,
-  SNOMED_CODE,
-  DEFAULT_FORMAT_CODE_SYSTEM,
-  DEFAULT_FORMAT_CODE_NODE,
-  DEFAULT_PRACTICE_SETTING_CODE_NODE,
-  DEFAULT_PRACTICE_SETTING_CODE_DISPLAY,
-  DEFAULT_HEALTHCARE_FACILITY_TYPE_CODE_NODE,
-  DEFAULT_HEALTHCARE_FACILITY_TYPE_CODE_DISPLAY,
+  DEFAULT_TITLE,
   METRIPORT_HOME_COMMUNITY_ID,
   METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
   ORGANIZATION_NAME_DEFAULT,
-  DEFAULT_TITLE,
   createDocumentUniqueId,
+} from "../../external/carequality/shared";
+import { uuidv7 } from "../../util/uuid-v7";
+import {
+  CONFIDENTIALITY_CODE_SYSTEM,
+  DEFAULT_CLASS_CODE_DISPLAY,
+  DEFAULT_CLASS_CODE_NODE,
+  DEFAULT_CONFIDENTIALITY_CODE,
+  DEFAULT_FORMAT_CODE_NODE,
+  DEFAULT_FORMAT_CODE_SYSTEM,
+  DEFAULT_HEALTHCARE_FACILITY_TYPE_CODE_DISPLAY,
+  DEFAULT_HEALTHCARE_FACILITY_TYPE_CODE_NODE,
+  DEFAULT_PRACTICE_SETTING_CODE_DISPLAY,
+  DEFAULT_PRACTICE_SETTING_CODE_NODE,
+  LOINC_CODE,
+  SNOMED_CODE,
   XDSDocumentEntryAuthor,
   XDSDocumentEntryClassCode,
-  XDSDocumentEntryUniqueId,
   XDSDocumentEntryConfidentialityCode,
   XDSDocumentEntryFormatCode,
-  XDSDocumentEntryPracticeSettingCode,
   XDSDocumentEntryHealthcareFacilityTypeCode,
-  XDSDocumentEntryTypeCode,
   XDSDocumentEntryPatientId,
-} from "../shared";
-import { uuidv7 } from "../../../util/uuid-v7";
+  XDSDocumentEntryPracticeSettingCode,
+  XDSDocumentEntryTypeCode,
+  XDSDocumentEntryUniqueId,
+} from "./constants";
 
 export function createExtrinsicObjectXml({
   createdTime,

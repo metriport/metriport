@@ -1,4 +1,5 @@
 import { Bundle, BundleEntry, DocumentReference, Resource, ResourceType } from "@medplum/fhirtypes";
+import { getDocumentContents } from "@metriport/core/external/carequality/dq/process-inbound-dq";
 import {
   docContributionFileParam,
   getDocContributionURL,
@@ -6,6 +7,7 @@ import {
 import { isDocumentReference } from "@metriport/core/external/fhir/document/document-reference";
 import { buildBundle } from "@metriport/core/external/fhir/shared/bundle";
 import { isUploadedByCustomer } from "@metriport/core/external/fhir/shared/index";
+import { parseExtrinsicObjectXmlToDocumentReference } from "@metriport/core/shareback/metadata/parse-metadata-xml";
 import BadRequestError from "@metriport/core/util/error/bad-request";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
@@ -45,13 +47,13 @@ export async function processRequest(req: Request): Promise<Bundle<Resource>> {
   log(`ORIGINAL URL: ${req.url}`);
 
   const { cxId, patientId } = await getPatientAndCxFromRequest(req);
-
   const { resource, count, params } = fromHttpRequestToFHIR(req);
 
   log(
     `UPDATED resource: ${resource} / cx ${cxId} / patient ${patientId} ` +
       `/ count : ${count}, params: ${params.toString()}`
   );
+
   const rawResources = await queryFHIRServer({
     resource,
     cxId,
@@ -60,8 +62,19 @@ export async function processRequest(req: Request): Promise<Bundle<Resource>> {
     additionalParams: params,
   });
 
-  const bundle = prepareBundle(rawResources);
+  const metadataFiles = await getDocumentContents(cxId, patientId);
+  const additionalDocRefs: DocumentReference[] = [];
+  for (const file of metadataFiles) {
+    const additionalDocRef = await parseExtrinsicObjectXmlToDocumentReference(
+      file,
+      patientId,
+      docContributionURL
+    );
+    additionalDocRefs.push(additionalDocRef);
+  }
+  rawResources.push(...additionalDocRefs);
 
+  const bundle = prepareBundle(rawResources);
   log(
     `Responding to CW (cx ${cxId} / patient ${patientId}): ${
       bundle.entry?.length
