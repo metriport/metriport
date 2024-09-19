@@ -18,17 +18,20 @@ interface SDKConfig {
   environment: string;
   clientId: string;
   clientSecret: string;
+  OAuthToken?: string;
 }
 
 class CanvasSDK {
   private axiosInstanceFhirApi: AxiosInstance;
-  private axiosInstanceCustomApi: AxiosInstance;
+  private axiosInstanceApi: AxiosInstance;
+  private axiosInstanceCoreApi: AxiosInstance;
   private OAuthToken: string;
 
   private constructor(private config: SDKConfig) {
-    this.OAuthToken = "";
+    this.OAuthToken = config.OAuthToken ?? "";
     this.axiosInstanceFhirApi = axios.create({});
-    this.axiosInstanceCustomApi = axios.create({});
+    this.axiosInstanceApi = axios.create({});
+    this.axiosInstanceCoreApi = axios.create({});
   }
 
   public static async create(config: SDKConfig): Promise<CanvasSDK> {
@@ -38,7 +41,7 @@ class CanvasSDK {
   }
 
   private async fetchOAuthToken(): Promise<void> {
-    const url = `https://${this.config.environment}.canvasmedical.com/auth/token/`;
+    const url = `http://home-app-web:8000/auth/token/`;
     const payload = `grant_type=client_credentials&client_id=${this.config.clientId}&client_secret=${this.config.clientSecret}`;
 
     try {
@@ -48,27 +51,39 @@ class CanvasSDK {
 
       this.OAuthToken = response.data.access_token;
     } catch (error) {
+      console.log(error);
       throw new Error("Failed to fetch OAuth token");
     }
   }
 
   async initialize(): Promise<void> {
-    await this.fetchOAuthToken();
+    if (!this.OAuthToken) {
+      await this.fetchOAuthToken();
+    }
 
     this.axiosInstanceFhirApi = axios.create({
-      baseURL: `https://fumage-${this.config.environment}.canvasmedical.com/`,
+      baseURL: `https://home-app-web:8000/`,
       headers: {
-        accept: "application/json",
+        Accept: "application/json",
         Authorization: `Bearer ${this.OAuthToken}`,
-        "content-type": "application/json",
+        "Content-Type": "application/json",
       },
     });
 
-    this.axiosInstanceCustomApi = axios.create({
-      baseURL: `https://${this.config.environment}.canvasmedical.com/core/api`,
+    this.axiosInstanceApi = axios.create({
+      baseURL: `http://home-app-web:8000/api/`,
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${this.OAuthToken}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    this.axiosInstanceCoreApi = axios.create({
+      baseURL: `http://home-app-web:8000/core/api/`,
       headers: {
         Authorization: `Bearer ${this.OAuthToken}`,
-        "content-type": "application/json",
+        "Content-Type": "application/json",
       },
     });
   }
@@ -123,12 +138,14 @@ class CanvasSDK {
     providerKey,
     practiceLocationKey,
     noteTypeName,
+    returnKey,
   }: {
     patientKey: string;
     providerKey: string;
     practiceLocationKey: string;
     noteTypeName: string;
-  }) {
+    returnKey: "id" | "noteKey";
+  }): Promise<string> {
     const payload = {
       title: "Metriport Chart Import",
       noteTypeName,
@@ -139,9 +156,55 @@ class CanvasSDK {
     };
 
     const response = await this.handleAxiosRequest(() =>
-      this.axiosInstanceCustomApi.post("notes/v1/Note", payload)
+      this.axiosInstanceCoreApi.post("notes/v1/Note", payload)
     );
-    return response.data.noteKey;
+    return response.data[returnKey];
+  }
+
+  async getNote({ noteId }: { noteId: string }): Promise<object> {
+    const response = await this.handleAxiosRequest(() =>
+      this.axiosInstanceApi.get(`Note/${noteId}`)
+    );
+    return response.data;
+  }
+
+  async updateNote({ noteId, note }: { noteId: string; note: object }): Promise<object> {
+    const response = await this.handleAxiosRequest(() =>
+      this.axiosInstanceApi.patch(`Note/${noteId}`, note)
+    );
+    return response.data;
+  }
+
+  async createNoteMedicationStatement({
+    patientId,
+    noteId,
+  }: {
+    patientId: string;
+    noteId: string;
+  }): Promise<object> {
+    const response = await this.handleAxiosRequest(() =>
+      this.axiosInstanceApi.post("MedicationStatement/", {
+        patient: patientId,
+        note: noteId,
+      })
+    );
+    return response.data;
+  }
+
+  async updateNoteMedicationStatement({
+    medicationStatementId,
+    medicationStatement,
+  }: {
+    medicationStatementId: string;
+    medicationStatement: object;
+  }): Promise<object> {
+    const response = await this.handleAxiosRequest(() =>
+      this.axiosInstanceApi.patch(
+        `MedicationStatement/${medicationStatementId}`,
+        medicationStatement
+      )
+    );
+    return response.data;
   }
 
   async updateNoteTitle({ noteKey, title }: { noteKey: string; title: string }): Promise<void> {
@@ -150,7 +213,7 @@ class CanvasSDK {
     };
 
     await this.handleAxiosRequest(() =>
-      this.axiosInstanceCustomApi.patch(`notes/v1/Note/${noteKey}`, payload)
+      this.axiosInstanceCoreApi.patch(`notes/v1/Note/${noteKey}`, payload)
     );
   }
 
@@ -174,7 +237,7 @@ class CanvasSDK {
       },
     ];
     const response = await this.handleAxiosRequest(() =>
-      this.axiosInstanceFhirApi.post("Condition", condition)
+      this.axiosInstanceFhirApi.post(`Condition/`, condition)
     );
     return response.headers["location"]?.split("/").pop() ?? "";
   }

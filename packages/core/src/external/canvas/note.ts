@@ -37,6 +37,7 @@ export async function createFullNote({
       providerKey: canvasPractitionerId,
       practiceLocationKey: canvasLocationId,
       noteTypeName: "Office visit",
+      returnKey: "noteKey",
     });
 
     log(`Creating canvas resources for patient ${canvasPatientId}`);
