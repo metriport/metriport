@@ -2,29 +2,46 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { Bundle } from "@medplum/fhirtypes";
-import dayjs from "dayjs";
-import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { deduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
+import dayjs from "dayjs";
 import fs from "fs";
-import { getFileNames, getFileContents, makeDir } from "../shared/fs";
+import { getFileContents, getFileNames, makeDir } from "../shared/fs";
 
+/**
+ * Folder with consolidated files/bundles.
+ *
+ * WARNING: this will overwrite the *_deduped.json files!!!
+ */
 const samplesFolderPath = ``;
 
+const suffix = "_deduped";
+
+/**
+ * Read FHIR bundles from 'samplesFolderPath' and deduplicates the resources inside those bundles.
+ *
+ * Stores the output in:
+ * - the source folder, with the same name and the suffix '_deduped.json'
+ * - a the './runs/' folder, with the same name and the suffix '_deduped.json'
+ *
+ * WARNING: it will override the *_deduped.json files from the source folder!!!
+ */
 async function main() {
   const bundleFileNames = getFileNames({
     folder: samplesFolderPath,
     recursive: true,
     extension: "json",
   });
+  const filteredBundleFileNames = bundleFileNames.filter(f => !f.includes(suffix));
 
   const timestamp = dayjs().toISOString();
   const logsFolderName = `runs/dedup/${timestamp}`;
 
   makeDir(logsFolderName);
 
-  await executeAsynchronously(bundleFileNames, async (filePath, index) => {
-    console.log(`Processing ${index + 1}/${bundleFileNames.length}. Filepath: ${filePath}`);
+  await executeAsynchronously(filteredBundleFileNames, async (filePath, index) => {
+    console.log(`Processing ${index + 1}/${filteredBundleFileNames.length}. Filepath: ${filePath}`);
 
     const stringBundle = getFileContents(filePath);
     const initialBundle: Bundle = JSON.parse(stringBundle);
@@ -40,9 +57,12 @@ async function main() {
     );
 
     const lastSlash = filePath.lastIndexOf("/");
-    const fileName = filePath.slice(lastSlash + 1);
+    const fileName = filePath.slice(lastSlash + 1).split(".json")[0];
+    const fileNameWithExtension = `${fileName}${suffix}.json`;
 
-    fs.writeFileSync(`./${logsFolderName}/${fileName}`, JSON.stringify(resultingBundle));
+    const output = JSON.stringify(resultingBundle);
+    fs.writeFileSync(`./${logsFolderName}/${fileNameWithExtension}`, output);
+    fs.writeFileSync(`${samplesFolderPath}/${fileNameWithExtension}`, output);
   });
 }
 
