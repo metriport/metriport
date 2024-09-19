@@ -228,7 +228,7 @@ module.exports = function (app) {
         console.log(
           `[patient ${patientId}] Took ${duration}ms / status ${status} to process file ${fileName}`
         );
-        res.status(status ?? 400);
+        res.status(status);
         res.json(resultMessage);
         return;
       });
