@@ -1,7 +1,10 @@
-import { CodeableConcept, Coding, Identifier, Resource } from "@medplum/fhirtypes";
+import { CodeableConcept, Coding, Identifier, Resource, Period } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
 import _, { cloneDeep } from "lodash";
 import { v4 as uuidv4 } from "uuid";
+
+dayjs.extend(utc);
 
 const NO_KNOWN_SUBSTRING = "no known";
 
@@ -386,3 +389,18 @@ export type DeduplicationResult<T extends Resource> = {
   refReplacementMap: Map<string, string[]>;
   danglingReferences: string[];
 };
+
+export function ensureValidPeriod(period: Period | undefined): Period | undefined {
+  if (!period) return undefined;
+
+  const startDate = period.start ? dayjs.utc(period.start) : null;
+  const endDate = period.end ? dayjs.utc(period.end) : null;
+
+  if (startDate && endDate) {
+    if (startDate.isAfter(endDate)) {
+      const result = { start: endDate.toISOString(), end: startDate.toISOString() };
+      return result;
+    }
+  }
+  return period;
+}

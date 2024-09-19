@@ -142,10 +142,40 @@ var convertDate = function (dateString) {
 var alreadyValidDateTime = function (dateTimeString) {
   if (!dateTimeString || dateTimeString.toString() === "") return false;
   var ds = dateTimeString.toString();
-  return /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,7}))?(Z|[-+]\d{2}:?\d{2})?)?$/.test(
+  return /^(\d{4})-(\d{2})-(\d{2})(?:[T](\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,7}))?(Z|[-+]\d{2}:?\d{2})?)?$/.test(
     ds
   );
 };
+
+const incompeteIso8601Regex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+const iso8601RegexWithMissingT = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{3}Z)$/;
+
+function incompleteIso8601(dateTimeString) {
+  if (isEmptyString(dateTimeString)) return false;
+  if (incompeteIso8601Regex.test(dateTimeString) || iso8601RegexWithMissingT.test(dateTimeString)) {
+    return true;
+  }
+  return false;
+}
+
+function correctIsoFormat(dateTimeString) {
+  if (isEmptyString(dateTimeString)) return "";
+  if (iso8601RegexWithMissingT.test(dateTimeString)) {
+    const newDate = dateTimeString.trim().replace(" ", "T");
+    if (alreadyValidDateTime(newDate)) return newDate;
+    console.log(`Poorly reformatted the dateTime.000Z string: ${JSON.stringify(dateTimeString)}`);
+  }
+  if (incompeteIso8601Regex.test(dateTimeString)) {
+    const newDate = dateTimeString.trim().replace(" ", "T") + ".000Z";
+    if (alreadyValidDateTime(newDate)) return newDate;
+    console.log(`Poorly reformatted the dateTime string: ${JSON.stringify(dateTimeString)}`);
+  }
+  return dateTimeString;
+}
+
+function isEmptyString(str) {
+  return !str || str.trim().length < 1;
+}
 
 // handling the date format here
 var getDate = function (dateStringRaw) {
@@ -239,11 +269,17 @@ var getDateTime = function (dateTimeStringRaw) {
   }
   var dateTimeString = dateTimeStringRaw?.trim();
 
+  if (incompleteIso8601(dateTimeString)) {
+    return correctIsoFormat(dateTimeString);
+  }
+
   if (alreadyValidDateTime(dateTimeString)) {
     return dateTimeString;
   }
 
-  if (!validDatetimeString(dateTimeString)) return "";
+  if (!validDatetimeString(dateTimeString)) {
+    return "";
+  }
 
   // handle the datetime format with time zone
   var ds = dateTimeString.toString();

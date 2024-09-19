@@ -8,7 +8,13 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
+import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
+import { FHIRConverterConnector } from "./api-stack/fhir-converter-connector";
 import { EnvType } from "./env-type";
+import {
+  createConnector as createConsolidatorConnector,
+  PatientDataConsolidatorConnector,
+} from "./lambdas-nested-stack/consolidate-patient-data-connector";
 import * as AppConfigUtils from "./shared/app-config";
 import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
@@ -42,6 +48,8 @@ export class LambdasNestedStack extends NestedStack {
   readonly outboundDocumentQueryLambda: lambda.Function;
   readonly outboundDocumentRetrievalLambda: lambda.Function;
   readonly fhirToBundleLambda: lambda.Function;
+  readonly patientDataConsolidator: PatientDataConsolidatorConnector;
+  readonly fhirConverterConnector: FHIRConverterConnector;
 
   constructor(scope: Construct, id: string, props: LambdasNestedStackProps) {
     super(scope, id, props);
@@ -116,16 +124,34 @@ export class LambdasNestedStack extends NestedStack {
       maxPollingDuration: Duration.minutes(15),
     });
 
+    this.fhirConverterConnector = fhirConverterConnector.createQueueAndBucket({
+      stack: this,
+      lambdaLayers: this.lambdaLayers,
+      envType: props.config.environmentType,
+      alarmSnsAction: props.alarmAction,
+    });
+
     this.fhirToBundleLambda = this.setupFhirBundleLambda({
       lambdaLayers: this.lambdaLayers,
       vpc: props.vpc,
       fhirServerUrl: props.config.fhirServerUrl,
-      bucket: props.medicalDocumentsBucket,
+      bundleBucket: props.medicalDocumentsBucket,
+      conversionsBucket: this.fhirConverterConnector.bucket,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: props.alarmAction,
       appId: props.appConfigEnvVars.appId,
       configId: props.appConfigEnvVars.configId,
+    });
+
+    this.patientDataConsolidator = createConsolidatorConnector({
+      stack: this,
+      lambdaLayers: this.lambdaLayers,
+      vpc: props.vpc,
+      patientConsolidatedDataBucket: props.medicalDocumentsBucket,
+      sourceBucket: this.fhirConverterConnector.bucket,
+      envType: props.config.environmentType,
+      alarmSnsAction: props.alarmAction,
     });
   }
 
@@ -411,7 +437,8 @@ export class LambdasNestedStack extends NestedStack {
     lambdaLayers,
     vpc,
     fhirServerUrl,
-    bucket,
+    bundleBucket,
+    conversionsBucket,
     sentryDsn,
     envType,
     alarmAction,
@@ -421,7 +448,8 @@ export class LambdasNestedStack extends NestedStack {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     fhirServerUrl: string;
-    bucket: s3.Bucket;
+    bundleBucket: s3.IBucket;
+    conversionsBucket: s3.IBucket;
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
@@ -439,7 +467,9 @@ export class LambdasNestedStack extends NestedStack {
       envVars: {
         // API_URL set on the api-stack after the OSS API is created
         FHIR_SERVER_URL: fhirServerUrl,
-        BUCKET_NAME: bucket.bucketName,
+        BUCKET_NAME: bundleBucket.bucketName,
+        MEDICAL_DOCUMENTS_BUCKET_NAME: bundleBucket.bucketName,
+        CONVERSION_RESULT_BUCKET_NAME: conversionsBucket.bucketName,
         APPCONFIG_APPLICATION_ID: appId,
         APPCONFIG_CONFIGURATION_ID: configId,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
@@ -452,7 +482,8 @@ export class LambdasNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
     });
 
-    bucket.grantReadWrite(fhirToBundleLambda);
+    bundleBucket.grantReadWrite(fhirToBundleLambda);
+    conversionsBucket.grantRead(fhirToBundleLambda);
 
     AppConfigUtils.allowReadConfig({
       scope: this,

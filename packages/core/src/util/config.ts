@@ -72,6 +72,9 @@ export class Config {
   static getMedicalDocumentsBucketName(): string {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
   }
+  static getCdaToFhirConversionBucketName(): string | undefined {
+    return getEnvVar("CONVERSION_RESULT_BUCKET_NAME");
+  }
 
   static getCQOrgPrivateKey(): string {
     return getEnvVarOrFail("CQ_ORG_PRIVATE_KEY");

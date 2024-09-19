@@ -1,13 +1,13 @@
 import { Resource } from "@medplum/fhirtypes";
 import { SearchSetBundle } from "@metriport/shared/medical";
-import { createFilePath } from "../../domain/filename";
+import { createConsolidatedSnapshotFileName } from "../../domain/consolidated/filename";
 import { S3Utils } from "../../external/aws/s3";
 import { Config } from "../../util/config";
-import { ConsolidatedPatientDataRequest } from "./consolidated-connector";
+import { ConsolidatedSnapshotRequest } from "./get-snapshot";
 
 const NULL = "null";
 
-export async function getConsolidatedBundleFromS3({
+export async function getConsolidatedSnapshotFromS3({
   bundleLocation,
   bundleFilename,
 }: {
@@ -20,17 +20,16 @@ export async function getConsolidatedBundleFromS3({
   return bundle;
 }
 
-export async function uploadConsolidatedBundleToS3({
+export async function uploadConsolidatedSnapshotToS3({
   patient,
   requestId,
-  documentIds,
   resources,
   dateFrom,
   dateTo,
   bundle,
   s3BucketName,
   isDeduped,
-}: Omit<ConsolidatedPatientDataRequest, "requestId" | "isAsync" | "conversionType"> & {
+}: Omit<ConsolidatedSnapshotRequest, "requestId" | "isAsync" | "conversionType"> & {
   requestId?: string;
   bundle: unknown;
   s3BucketName: string;
@@ -39,7 +38,7 @@ export async function uploadConsolidatedBundleToS3({
   bucket: string;
   key: string;
 }> {
-  const key = createConsolidatedFileName(patient.cxId, patient.id, requestId, isDeduped);
+  const key = createConsolidatedSnapshotFileName(patient.cxId, patient.id, requestId, isDeduped);
   const s3Utils = new S3Utils(Config.getAWSRegion());
   const uploadPayloadWithoutMeta = {
     bucket: s3BucketName,
@@ -55,7 +54,6 @@ export async function uploadConsolidatedBundleToS3({
         from: dateFrom ?? NULL,
         to: dateTo ?? NULL,
         resources: (resources ?? []).join(","),
-        docs: (documentIds ?? []).join(","),
       },
     });
   } catch (error) {
@@ -65,23 +63,8 @@ export async function uploadConsolidatedBundleToS3({
         from: dateFrom ?? NULL,
         to: dateTo ?? NULL,
         resources: (resources ?? []).length.toString(),
-        docs: (documentIds ?? []).length.toString(),
       },
     });
   }
   return { bucket: s3BucketName, key };
-}
-
-function createConsolidatedFileName(
-  cxId: string,
-  patientId: string,
-  requestId?: string,
-  isDeduped?: boolean
-): string {
-  const date = new Date().toISOString();
-  return createFilePath(
-    cxId,
-    patientId,
-    `consolidated_${date}_${requestId}${isDeduped ? "_deduped" : ""}.json`
-  );
 }

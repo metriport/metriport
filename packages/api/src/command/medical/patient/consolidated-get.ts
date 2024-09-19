@@ -3,18 +3,19 @@ import {
   ConsolidatedQuery,
   ConsolidationConversionType,
   GetConsolidatedFilters,
-  ResourceTypeForConsolidation,
   resourcesSearchableByPatient,
+  ResourceTypeForConsolidation,
 } from "@metriport/api-sdk";
 import {
-  ConsolidatedDataRequestAsync,
-  ConsolidatedDataRequestSync,
-} from "@metriport/core/command/consolidated/consolidated-connector";
-import { buildConsolidatedDataConnector } from "@metriport/core/command/consolidated/consolidated-connector-factory";
-import { getConsolidatedBundleFromS3 } from "@metriport/core/command/consolidated/consolidated-on-s3";
+  ConsolidatedSnapshotRequestAsync,
+  ConsolidatedSnapshotRequestSync,
+} from "@metriport/core/command/consolidated/get-snapshot";
+import { buildConsolidatedSnapshotConnector } from "@metriport/core/command/consolidated/get-snapshot-factory";
+import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
-import { EventTypes, analytics } from "@metriport/core/external/analytics/posthog";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { out } from "@metriport/core/util";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { emptyFunction } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
@@ -49,7 +50,6 @@ export type GetConsolidatedParams = {
 
 type GetConsolidatedPatientData = {
   patient: Pick<Patient, "id" | "cxId">;
-  documentIds?: string[];
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
@@ -246,7 +246,6 @@ export async function getConsolidatedAndSendToCx(
 
 export async function getConsolidated({
   patient,
-  documentIds,
   resources,
   dateFrom,
   dateTo,
@@ -255,7 +254,7 @@ export async function getConsolidated({
   conversionType,
   bundle,
 }: GetConsolidatedParams): Promise<ConsolidatedData> {
-  const { log } = Util.out(`getConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
+  const { log } = out(`getConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
   const filters = {
     resources: resources ? resources.join(", ") : undefined,
     dateFrom,
@@ -266,7 +265,6 @@ export async function getConsolidated({
     if (!bundle) {
       bundle = await getConsolidatedPatientData({
         patient,
-        documentIds,
         resources,
         dateFrom,
         dateTo,
@@ -415,16 +413,14 @@ async function uploadConsolidatedJsonAndReturnUrl({
  */
 export async function getConsolidatedPatientData({
   patient,
-  documentIds,
   resources,
   dateFrom,
   dateTo,
   generateAiBrief,
   fromDashboard = false,
 }: GetConsolidatedPatientData): Promise<SearchSetBundle<Resource>> {
-  const payload: ConsolidatedDataRequestSync = {
+  const payload: ConsolidatedSnapshotRequestSync = {
     patient,
-    documentIds,
     resources,
     dateFrom,
     dateTo,
@@ -432,15 +428,14 @@ export async function getConsolidatedPatientData({
     isAsync: false,
     fromDashboard,
   };
-  const connector = buildConsolidatedDataConnector();
+  const connector = buildConsolidatedSnapshotConnector();
   const { bundleLocation, bundleFilename } = await connector.execute(payload);
-  const bundle = await getConsolidatedBundleFromS3({ bundleLocation, bundleFilename });
+  const bundle = await getConsolidatedSnapshotFromS3({ bundleLocation, bundleFilename });
   return bundle;
 }
 
 export async function getConsolidatedPatientDataAsync({
   patient,
-  documentIds,
   resources,
   dateFrom,
   dateTo,
@@ -452,11 +447,10 @@ export async function getConsolidatedPatientDataAsync({
   requestId: string;
   conversionType?: ConsolidationConversionType;
 }): Promise<void> {
-  const payload: ConsolidatedDataRequestAsync = {
+  const payload: ConsolidatedSnapshotRequestAsync = {
     patient,
     requestId,
     conversionType,
-    documentIds,
     resources,
     dateFrom,
     dateTo,
@@ -464,7 +458,7 @@ export async function getConsolidatedPatientDataAsync({
     isAsync: true,
     fromDashboard,
   };
-  const connector = buildConsolidatedDataConnector();
+  const connector = buildConsolidatedSnapshotConnector();
   connector
     .execute(payload)
     .catch(processAsyncError("Failed to get consolidated patient data async", true));

@@ -320,6 +320,12 @@ export class APIStack extends Stack {
       outboundDocumentQueryLambda,
       outboundDocumentRetrievalLambda,
       fhirToBundleLambda,
+      fhirConverterConnector: {
+        queue: fhirConverterQueue,
+        dlq: fhirConverterDLQ,
+        bucket: fhirConverterBucket,
+      },
+      patientDataConsolidator,
     } = new LambdasNestedStack(this, "LambdasNestedStack", {
       config: props.config,
       vpc: this.vpc,
@@ -366,20 +372,6 @@ export class APIStack extends Stack {
         slackNotification?.alarmAction
       );
     }
-
-    //-------------------------------------------
-    // FHIR CONNECTORS, initalize
-    //-------------------------------------------
-    const {
-      queue: fhirConverterQueue,
-      dlq: fhirConverterDLQ,
-      bucket: fhirConverterBucket,
-    } = fhirConverterConnector.createQueueAndBucket({
-      stack: this,
-      lambdaLayers,
-      envType: props.config.environmentType,
-      alarmSnsAction: slackNotification?.alarmAction,
-    });
 
     const fhirServerQueue = fhirServerConnector.createConnector({
       envType: props.config.environmentType,
@@ -537,10 +529,10 @@ export class APIStack extends Stack {
           lambdaLayers,
           vpc: this.vpc,
           sourceQueue: fhirConverterQueue,
-          destinationQueue: fhirServerQueue,
+          fhirServerQueue,
+          patientDataConsolidatorQueue: patientDataConsolidator.queue,
           dlq: fhirConverterDLQ,
           fhirConverterBucket,
-          conversionResultQueueUrl: fhirServerQueue.queueUrl,
           apiServiceDnsAddress: apiDirectUrl,
           alarmSnsAction: slackNotification?.alarmAction,
         })
