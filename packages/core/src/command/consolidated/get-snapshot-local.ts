@@ -6,7 +6,7 @@ import { analytics, EventTypes } from "../../external/analytics/posthog";
 import { isConsolidatedFromS3Enabled } from "../../external/aws/app-config";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
 import { toFHIR as organizationToFhir } from "../../external/fhir/organization/index";
-import { toFHIR as patientToFhir } from "../../external/fhir/patient";
+import { toFHIR as patientToFhir } from "../../external/fhir/patient/index";
 import { buildBundleEntry } from "../../external/fhir/shared/bundle";
 import { deduplicateFhir } from "../../fhir-deduplication/deduplicate-fhir";
 import { out } from "../../util";
