@@ -1,10 +1,10 @@
 import { Bundle, Dosage, DosageDoseAndRate, MedicationStatement } from "@medplum/fhirtypes";
+import { BadRequestError } from "@metriport/shared";
 import {
   findResourceInBundle,
   isMedication,
   isMedicationStatement,
 } from "../../../external/fhir/shared";
-import BadRequestError from "../../../util/error/bad-request";
 import { MedicationSection } from "../../cda-types/sections";
 import {
   CdaValuePq,
