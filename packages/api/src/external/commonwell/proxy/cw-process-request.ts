@@ -7,10 +7,10 @@ import {
 import { isDocumentReference } from "@metriport/core/external/fhir/document/document-reference";
 import { toFHIR as patientToFHIR } from "@metriport/core/external/fhir/patient/index";
 import { buildBundle } from "@metriport/core/external/fhir/shared/bundle";
-import { isUploadedByCustomer } from "@metriport/core/external/fhir/shared/index";
 import { parseExtrinsicObjectXmlToDocumentReference } from "@metriport/core/shareback/metadata/parse-metadata-xml";
 import BadRequestError from "@metriport/core/util/error/bad-request";
 import { out } from "@metriport/core/util/log";
+import dayjs from "dayjs";
 import { Request } from "express";
 import { partition, uniqBy } from "lodash";
 import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
@@ -20,8 +20,6 @@ import { queryToSearchParams } from "../../../routes/helpers/query";
 import { Config } from "../../../shared/config";
 import { getOrgOrFail } from "./get-org-or-fail";
 import { proxyPrefix } from "./shared";
-
-const { log } = out(`${proxyPrefix} proxyRequest`);
 
 const apiURL = Config.getApiUrl();
 const docContributionURL = getDocContributionURL(apiURL);
@@ -34,8 +32,9 @@ const countParam = "_count";
 /**
  * CW might send `category` but we've seen it as `('34133-9%5E%5E2.16.840.1.113883.6.1')` which is not valid
  * for the FHIR server, and there's nothing on CW's spec about it, so we're not going to support it for now.
+ * CW might also send `_include`, but since we're not using the FHIR server, we will always return DocumentReferences with the subject (Patient) and the contained Organization
  */
-const allowedQueryParams = ["status", "date", "_include", "_summary"];
+const allowedQueryParams = ["status", "date", "_summary"];
 
 /**
  * The main function, it will:
@@ -46,16 +45,12 @@ const allowedQueryParams = ["status", "date", "_include", "_summary"];
  * - return a bundle with the DocumentReferences
  */
 export async function processRequest(req: Request): Promise<Bundle<Resource>> {
-  log(`ORIGINAL URL: ${req.url}`);
-
   const { cxId, patientId } = await getPatientAndCxFromRequest(req);
+  const { log } = out(`${proxyPrefix} request - cxId ${cxId}, patient ${patientId}`);
+  log(`ORIGINAL URL: ${req.url}`);
   const { resource, count, params } = fromHttpRequestToFHIR(req);
 
-  // TODO: We might need to introduce filtering based on the provided query params.
-  log(
-    `UPDATED resource: ${resource} / cx ${cxId} / patient ${patientId} ` +
-      `/ count : ${count}, params: ${params.toString()}`
-  );
+  log(`UPDATED resource: ${resource} / count : ${count} / params: ${params.toString()}`);
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
   const organization = await getOrganizationOrFail({ cxId });
@@ -75,7 +70,7 @@ export async function processRequest(req: Request): Promise<Bundle<Resource>> {
     docRefs.push(additionalDocRef);
   }
 
-  const bundle = prepareBundle([patientResource, ...docRefs]);
+  const bundle = prepareBundle([patientResource, ...docRefs], params);
   log(
     `Responding to CW (cx ${cxId} / patient ${patientId}): ${
       bundle.entry?.length
@@ -138,9 +133,11 @@ function getAllowedSearchParams(searchParams: URLSearchParams): URLSearchParams 
   return paramsToUse;
 }
 
-function prepareBundle(resources: Resource[]): Bundle<Resource> {
+export function prepareBundle(resources: Resource[], params: URLSearchParams): Bundle<Resource> {
   const { documentReferences, otherResources } = splitResources(resources);
-  const filteredDocRefs = filterDocRefs(documentReferences);
+  const filteredDocRefs = applyFilterParams(documentReferences, params);
+  if (filteredDocRefs.length < 1) return buildBundle([]);
+
   const updatedDocRefs = adjustAttachmentURLs(filteredDocRefs);
   const consolidatedResources = [...updatedDocRefs, ...otherResources];
   const uniqueResources = uniqBy(consolidatedResources, r => r.id);
@@ -158,10 +155,6 @@ function splitResources(entries: Resource[]): {
     (r: Resource): r is DocumentReference => isDocumentReference(r)
   );
   return { documentReferences, otherResources };
-}
-
-function filterDocRefs(resources: DocumentReference[]): DocumentReference[] {
-  return resources.filter(resource => isUploadedByCustomer(resource));
 }
 
 function adjustAttachmentURLs(docRefs: DocumentReference[]): DocumentReference[] {
@@ -186,4 +179,61 @@ function replaceAttachmentURL(url: string): string {
   const params = new URLSearchParams();
   params.append(docContributionFileParam, theURL.pathname);
   return `${docContributionURL}?${params.toString()}`;
+}
+
+export function applyFilterParams(
+  docRefs: DocumentReference[],
+  params: URLSearchParams
+): DocumentReference[] {
+  const date = params.get("date");
+  const countParam = params.get("count");
+  const status = params.get("status");
+
+  let filteredDocRefs = docRefs;
+
+  if (date) {
+    const match = date.match(/(eq|ne|lt|gt|ge|le|sa|eb|ap)?(.*)/);
+    if (match) {
+      const [, prefix, dateString] = match;
+      const filterDate = dayjs(dateString);
+
+      filteredDocRefs = filteredDocRefs.filter(docRef => {
+        const docDate = dayjs(docRef.date);
+
+        switch (prefix) {
+          case "eq":
+            return docDate.isSame(filterDate);
+          case "ne":
+            return !docDate.isSame(filterDate);
+          case "lt":
+            return docDate.isBefore(filterDate);
+          case "gt":
+            return docDate.isAfter(filterDate);
+          case "ge":
+            return docDate.isSame(filterDate) || docDate.isAfter(filterDate);
+          case "le":
+            return docDate.isSame(filterDate) || docDate.isBefore(filterDate);
+          case "sa":
+            return docDate.isAfter(filterDate);
+          case "eb":
+            return docDate.isBefore(filterDate);
+          default:
+            return docDate.isSame(filterDate, "day");
+        }
+      });
+    }
+  }
+
+  if (status) {
+    filteredDocRefs = filteredDocRefs.filter(doc => doc.status === status);
+  }
+
+  if (countParam) {
+    const count = parseInt(countParam);
+    if (!isNaN(count)) {
+      filteredDocRefs = filteredDocRefs.slice(0, count);
+    }
+  }
+
+  return filteredDocRefs;
 }
