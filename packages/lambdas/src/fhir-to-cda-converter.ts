@@ -1,4 +1,5 @@
 import { Input } from "@metriport/core/domain/conversion/fhir-to-cda";
+import { BadRequestError } from "@metriport/shared";
 import { splitBundleByCompositions } from "@metriport/core/fhir-to-cda/composition-splitter";
 import { convertFhirBundleToCda } from "@metriport/core/fhir-to-cda/fhir-to-cda";
 import { out } from "@metriport/core/util/log";
@@ -26,14 +27,16 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     } catch (error: any) {
       const msg = `Error converting FHIR bundle to CDA`;
       log(`${msg} - error: ${error.message}`);
-      capture.error(msg, {
-        extra: {
-          error,
-          cxId,
-          context: lambdaName,
-          orgOid,
-        },
-      });
+      if (!(error instanceof BadRequestError)) {
+        capture.error(msg, {
+          extra: {
+            error,
+            cxId,
+            context: lambdaName,
+            orgOid,
+          },
+        });
+      }
       throw error;
     }
   }

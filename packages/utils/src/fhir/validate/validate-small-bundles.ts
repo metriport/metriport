@@ -1,11 +1,10 @@
-import fs from "fs";
-import Axios from "axios";
-import { SignatureV4 } from "@smithy/signature-v4";
 import { Sha256 } from "@aws-crypto/sha256-js";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
-import { getFileNames, getFileContents } from "../shared/fs";
-import { FHIRBundle } from "../fhir-converter/convert";
-import { sleep } from "@metriport/core/util/sleep";
+import { SignatureV4 } from "@smithy/signature-v4";
+import Axios from "axios";
+import fs from "fs";
+import { FHIRBundle } from "../../fhir-converter/convert";
+import { getFileContents, getFileNames } from "../../shared/fs";
 
 const samplesFolderPath = "";
 
@@ -39,8 +38,8 @@ export async function main() {
     recursive: true,
     extension: "json",
   });
-
-  console.log(`Found ${bundleFileNames.length} files`);
+  const filteredBundleNames = bundleFileNames.filter(fileName => fileName.includes("_deduped"));
+  console.log(`Found ${filteredBundleNames.length} files`);
 
   const output: {
     [key: string]: {
@@ -52,9 +51,9 @@ export async function main() {
   } = {};
 
   await executeAsynchronously(
-    bundleFileNames,
+    filteredBundleNames,
     async (fileName, index) => {
-      console.log(`Processing ${index + 1}/${bundleFileNames.length}. Filename: ${fileName}`);
+      console.log(`Processing ${index + 1}/${filteredBundleNames.length}. Filename: ${fileName}`);
       try {
         const stringBundle = getFileContents(fileName);
         const bundle = JSON.parse(stringBundle) as FHIRBundle;
@@ -66,8 +65,7 @@ export async function main() {
           return;
         }
 
-        const validationErrors = await validateFhirBundle(bundle, start);
-        await sleep(5000);
+        const validationErrors = await validateFhirBundle(bundle, start, fileName);
         console.log(`Error validate in ${Date.now() - start}ms`);
 
         if (validationErrors && validationErrors.length > 0) {
@@ -120,7 +118,8 @@ export async function main() {
 
 async function validateFhirBundle(
   bundle: FHIRBundle,
-  start: number
+  start: number,
+  fileName: string
 ): Promise<ValidationErrorWithResourceType[]> {
   console.log(`Validated in ${Date.now() - start}ms`);
 
@@ -142,18 +141,21 @@ async function validateFhirBundle(
     await fhirApi.post(`Bundle`, signed.body, {
       headers: signed.headers,
     });
+    console.log(`>>> VALID! ${fileName}`);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (fhirError: any) {
-    console.log(fhirError.response?.data);
-    const fhirErrorIssues = fhirError.response?.data.issue;
+  } catch (error: any) {
+    console.log(error.response?.data);
+    const errorIssues = error.response?.data.issue ?? [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const severIssues = fhirErrorIssues?.filter((issue: any) => issue.severity === "error");
+    const serverIssues = errorIssues?.filter((issue: any) => issue.severity === "error") ?? [];
 
-    console.log(`Found ${severIssues.length} errors`);
+    console.log(`Found ${serverIssues.length} errors`);
 
-    for (const issue of fhirErrorIssues) {
+    let foundFhirError = false;
+    for (const issue of errorIssues) {
       if (issue.severity === "error") {
+        foundFhirError = true;
         const resource = issue.location?.[0]?.split("ofType")[1];
 
         // IF YOU WANT TO SKIP CERTAIN ERRORS
@@ -170,6 +172,16 @@ async function validateFhirBundle(
           message: issue.diagnostics,
         });
       }
+    }
+    if (!foundFhirError) {
+      const errorStatus = error.response?.status;
+      const errorStatusText = error.response?.statusText;
+      console.log(`Status code: ${errorStatus}, text: ${errorStatusText}`);
+      errorsFromHealthLake.push({
+        resource: "n/a",
+        location: errorStatus,
+        message: errorStatusText,
+      });
     }
   }
 
