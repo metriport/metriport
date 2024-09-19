@@ -9,13 +9,14 @@ import { getAuthorizationToken } from "../../util";
 const router = Router();
 
 /**
- * PUT /ehr/athenahealth/chart/:id/medication
+ * POST /ehr/athenahealth/chart/:id/medication
  *
  * Tries to retrieve the matching Metriport patient
+ * @param req.params.id The ID of AthenaHealth Patient.
  * @param req.body The FHIR Resource payload
  * @returns Metriport Patient if found.
  */
-router.put(
+router.post(
   "/:id/medication",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
@@ -25,7 +26,7 @@ router.put(
     const athenaPracticeId = getFromQueryOrFail("practiceId", req);
     const athenaDepartmentId = getFromQueryOrFail("departmentId", req);
     const payload = req.body;
-    const patientId = await writeMedicationToChart({
+    const medicationDetails = await writeMedicationToChart({
       accessToken,
       cxId,
       athenaPatientId,
@@ -33,7 +34,7 @@ router.put(
       athenaDepartmentId,
       medication: payload,
     });
-    return res.status(httpStatus.OK).json(patientId);
+    return res.status(httpStatus.OK).json(medicationDetails);
   })
 );
 
