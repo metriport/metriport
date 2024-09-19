@@ -1,5 +1,5 @@
 import { Narrative, Organization as FHIROrganization } from "@medplum/fhirtypes";
-import { Organization } from "@metriport/core/domain/organization";
+import { Organization } from "../../../domain/organization";
 
 export const toFHIR = (org: Organization): FHIROrganization => {
   const text = getTextFromOrganization(org);

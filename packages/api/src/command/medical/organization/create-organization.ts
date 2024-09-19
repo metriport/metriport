@@ -1,15 +1,15 @@
-import { OrganizationCreate, OrganizationBizType } from "@metriport/core/domain/organization";
+import { OrganizationBizType, OrganizationCreate } from "@metriport/core/domain/organization";
+import { toFHIR } from "@metriport/core/external/fhir/organization/index";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { UniqueConstraintError } from "sequelize";
 import BadRequestError from "../../../errors/bad-request";
 import { createTenantIfNotExists } from "../../../external/fhir/admin";
+import { upsertOrgToFHIRServer } from "../../../external/fhir/organization/upsert-organization";
 import { OrganizationModel } from "../../../models/medical/organization";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { createOrganizationId } from "../customer-sequence/create-id";
 import { getOrganization } from "./get-organization";
-import { toFHIR } from "../../../external/fhir/organization";
-import { upsertOrgToFHIRServer } from "../../../external/fhir/organization/upsert-organization";
 
 const MAX_ATTEMPTS = 5;
 

@@ -5,6 +5,9 @@ import axios from "axios";
 import { analytics, EventTypes } from "../../external/analytics/posthog";
 import { isConsolidatedFromS3Enabled } from "../../external/aws/app-config";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
+import { toFHIR as organizationToFhir } from "../../external/fhir/organization/index";
+import { toFHIR as patientToFhir } from "../../external/fhir/patient";
+import { buildBundleEntry } from "../../external/fhir/shared/bundle";
 import { deduplicateFhir } from "../../fhir-deduplication/deduplicate-fhir";
 import { out } from "../../util";
 import { getConsolidatedFromS3 } from "./consolidated-filter";
@@ -27,6 +30,15 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
     const { cxId, id: patientId } = params.patient;
 
     const originalBundle = await getBundle(params);
+
+    const fhirOrg = organizationToFhir(params.organization);
+    const fhirPatient = patientToFhir(params.patient);
+    originalBundle.entry = [
+      buildBundleEntry(fhirPatient),
+      buildBundleEntry(fhirOrg),
+      ...(originalBundle.entry ?? []),
+    ];
+
     const dedupedBundle = deduplicate({ cxId, patientId, bundle: originalBundle });
 
     const [, dedupedS3Info] = await Promise.all([

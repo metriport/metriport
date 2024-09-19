@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { v4 as uuidv4 } from "uuid";
-import { calculateConversionProgress } from "../../../../domain/medical/conversion-progress";
 import {
   ConvertResult,
   DocumentQueryProgress,
   DocumentQueryStatus,
 } from "@metriport/core/domain/document-query";
+import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/patient";
+import { v4 as uuidv4 } from "uuid";
+import { calculateConversionProgress } from "../../../../domain/medical/conversion-progress";
 import { makeDocumentQueryProgress } from "../../../../domain/medical/__tests__/document-query";
-import { makePatient, makePatientData } from "../../../../domain/medical/__tests__/patient";
 import { PatientModel } from "../../../../models/medical/patient";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";
 import { updateConversionProgress } from "../document-query";

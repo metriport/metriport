@@ -1,13 +1,13 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { FHIR_BUNDLE_SUFFIX, createUploadFilePath } from "@metriport/core/domain/document/upload";
+import { createUploadFilePath, FHIR_BUNDLE_SUFFIX } from "@metriport/core/domain/document/upload";
 import { Patient } from "@metriport/core/domain/patient";
+import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/index";
 import { toFHIR as toFhirPatient } from "@metriport/core/external/fhir/patient/index";
 import { uploadCdaDocuments, uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import BadRequestError from "../../../errors/bad-request";
 import { processCcdRequest } from "../../../external/cda/process-ccd-request";
-import { toFHIR as toFhirOrganization } from "../../../external/fhir/organization";
 import { countResources } from "../../../external/fhir/patient/count-resources";
 import { hydrateBundle } from "../../../external/fhir/shared/hydrate-bundle";
 import { validateFhirEntries } from "../../../external/fhir/shared/json-validator";
@@ -87,7 +87,7 @@ export async function handleDataContribution({
 
   if (!Config.isSandbox()) {
     // intentionally async
-    processCcdRequest(patient, fhirOrganization, requestId);
+    processCcdRequest({ patient, organization, requestId });
   }
 
   return consolidatedDataUploadResults;

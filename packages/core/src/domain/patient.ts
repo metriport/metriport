@@ -63,11 +63,11 @@ export type PatientData = {
   address: Address[];
   contact?: Contact[];
   requestId?: string;
-  consolidatedLinkDemographics?: ConsolidatedLinkDemographics;
-  documentQueryProgress?: DocumentQueryProgress;
-  consolidatedQueries?: ConsolidatedQuery[];
+  consolidatedLinkDemographics?: ConsolidatedLinkDemographics | undefined;
+  documentQueryProgress?: DocumentQueryProgress | undefined;
+  consolidatedQueries?: ConsolidatedQuery[] | undefined;
   bulkGetDocumentsUrlProgress?: BulkGetDocumentsUrlProgress;
-  externalData?: PatientExternalData;
+  externalData?: PatientExternalData | undefined;
   cxDocumentRequestMetadata?: unknown;
   cxConsolidatedRequestMetadata?: unknown;
   cxDownloadRequestMetadata?: unknown;

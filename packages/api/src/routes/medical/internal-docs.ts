@@ -3,6 +3,7 @@ import { convertResult } from "@metriport/core/domain/document-query";
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
 import { documentBulkSignerLambdaResponseArraySchema } from "@metriport/core/external/aws/document-signing/document-bulk-signer-response";
 import { S3Utils } from "@metriport/core/external/aws/s3";
+import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/index";
 import { isMedicalDataSource } from "@metriport/core/external/index";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";
@@ -29,7 +30,6 @@ import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import BadRequestError from "../../errors/bad-request";
 import { processCcdRequest, processEmptyCcdRequest } from "../../external/cda/process-ccd-request";
 import { parseJobId } from "../../external/fhir/connector/connector";
-import { toFHIR as toFhirOrganization } from "../../external/fhir/organization";
 import { setDocQueryProgress } from "../../external/hie/set-doc-query-progress";
 import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
@@ -428,13 +428,8 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
-    const [patient, organization] = await Promise.all([
-      getPatientOrFail({ cxId, id: patientId }),
-      getOrganizationOrFail({ cxId }),
-    ]);
-
-    const fhirOrganization = toFhirOrganization(organization);
-    const ccd = await processCcdRequest(patient, fhirOrganization);
+    const patient = await getPatientOrFail({ cxId, id: patientId });
+    const ccd = await processCcdRequest({ patient });
     return res.type("application/xml").status(httpStatus.OK).send(ccd);
   })
 );

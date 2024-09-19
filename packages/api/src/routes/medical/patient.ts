@@ -15,6 +15,7 @@ import status from "http-status";
 import { orderBy } from "lodash";
 import { z } from "zod";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
+import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import {
   getConsolidatedPatientData,
   startConsolidatedQuery,
@@ -264,10 +265,14 @@ router.get(
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
     const fromDashboard = getFromQueryAsBoolean("fromDashboard", req);
-    const patient = await getPatientOrFail({ id: patientId, cxId });
+    const [patient, organization] = await Promise.all([
+      getPatientOrFail({ cxId, id: patientId }),
+      getOrganizationOrFail({ cxId }),
+    ]);
 
     const data = await getConsolidatedPatientData({
       patient,
+      organization,
       resources,
       dateFrom,
       dateTo,

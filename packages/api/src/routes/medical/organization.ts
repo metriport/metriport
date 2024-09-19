@@ -1,10 +1,10 @@
+import { toFHIR } from "@metriport/core/external/fhir/organization/index";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { createOrganization } from "../../command/medical/organization/create-organization";
 import { getOrganization } from "../../command/medical/organization/get-organization";
 import { updateOrganization } from "../../command/medical/organization/update-organization";
-import { toFHIR } from "../../external/fhir/organization";
 import { getETag } from "../../shared/http";
 import { getOutputFormatFromRequest } from "../helpers/output-format";
 import { requestLogger } from "../helpers/request-logger";

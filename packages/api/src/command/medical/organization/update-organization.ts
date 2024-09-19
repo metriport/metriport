@@ -1,10 +1,10 @@
 import { OrganizationCreate } from "@metriport/core/domain/organization";
+import { toFHIR } from "@metriport/core/external/fhir/organization/index";
+import { upsertOrgToFHIRServer } from "../../../external/fhir/organization/upsert-organization";
 import { OrganizationModel } from "../../../models/medical/organization";
 import { validateVersionForUpdate } from "../../../models/_default";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getOrganizationOrFail } from "./get-organization";
-import { toFHIR } from "../../../external/fhir/organization";
-import { upsertOrgToFHIRServer } from "../../../external/fhir/organization/upsert-organization";
 
 export type OrganizationUpdateCmd = BaseUpdateCmdWithCustomer &
   Partial<Omit<OrganizationCreate, "type">>;

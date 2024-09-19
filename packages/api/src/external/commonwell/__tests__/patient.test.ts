@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { faker } from "@faker-js/faker";
-import { makePatient } from "../../../domain/medical/__tests__/patient";
+import { makePatient } from "@metriport/core/domain/__tests__/patient";
 import { Config } from "../../../shared/config";
 import * as appConfig from "../../aws/app-config";
 import { validateCWEnabled } from "../patient";
