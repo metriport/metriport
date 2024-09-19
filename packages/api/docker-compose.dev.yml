@@ -3,9 +3,8 @@ version: "3.8"
 name: app
 
 networks:
-  metriportNetwork:
-    name: metriportNetwork
-    driver: bridge
+  home:
+    external: true
 
 services:
   # These are the configurations for our Node app
@@ -28,14 +27,14 @@ services:
       - NODE_ENV=development
       - ENV_TYPE=dev
       - TOKEN_TABLE_NAME=token
-      - DYNAMODB_ENDPOINT=http://dynamodb:8000
+      - DYNAMODB_ENDPOINT=http://dynamodb:8005
       - FHIR_SERVER_URL=http://host.docker.internal:8888
       - FHIR_CONVERTER_SERVER_URL=http://host.docker.internal:8777
       - MEDICAL_DOCUMENTS_BUCKET_NAME=medical-documents-staging
       - MEDICAL_DOCUMENTS_UPLOADS_BUCKET_NAME=metriport-medical-document-uploads-staging
       - LOCAL_ACCOUNT_CXID=cdb678ab-07e3-42c5-93f5-5541cf1f15a8
     networks:
-      - metriportNetwork
+      - home
     ports:
       - "8080:8080"
       - "9229:9229"
@@ -59,9 +58,9 @@ services:
     hostname: dynamodb
     restart: always
     ports:
-      - 8000:8000
+      - 8005:8000
     networks:
-      - metriportNetwork
+      - home
     command: "-jar DynamoDBLocal.jar -sharedDb"
   # This is the configuration for our PostgreSQL database container
   # Note the `postgres` name is important, in out Node app when we refer
@@ -83,7 +82,7 @@ services:
       # Standard port for PostgreSQL databases
       - "5432:5432"
     networks:
-      - metriportNetwork
+      - home
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
       interval: 2s
