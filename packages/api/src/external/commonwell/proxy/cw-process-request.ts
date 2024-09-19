@@ -129,7 +129,6 @@ function getAllowedSearchParams(searchParams: URLSearchParams): URLSearchParams 
   for (const [param, value] of searchParams.entries()) {
     if (allowedQueryParams.includes(param)) paramsToUse.append(param, value);
   }
-  if (paramsToUse.size <= 0) throw new BadRequestError(`Missing query parameters`);
   return paramsToUse;
 }
 

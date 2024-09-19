@@ -1,11 +1,10 @@
 /*
 CONFIDENTIALITY_CODE is always N, or normal, indicating its normal PHI
-FORMAT_CODE is always urn:ihe:iti:xds:2017:mimeTypeSufficient, which is sufficient for all document types.
 */
+export const DEFAULT_CONFIDENTIALITY_CODE = "N";
 
 export const DEFAULT_CLASS_CODE_NODE = "34133-9";
 export const DEFAULT_CLASS_CODE_DISPLAY = "Continuity of Care Document";
-export const DEFAULT_CONFIDENTIALITY_CODE = "N";
 export const CONFIDENTIALITY_CODE_SYSTEM = "2.16.840.1.113883.5.25";
 export const LOINC_CODE = "2.16.840.1.113883.6.1";
 export const SNOMED_CODE = "2.16.840.1.113883.6.96";
