@@ -13,10 +13,15 @@ import {
 import { EhrSources } from "../../external/ehr/shared";
 import ForbiddenError from "../../errors/forbidden";
 
+export type parseResponse = {
+  externalId: string;
+  queryParams: { [k: string]: string };
+};
+
 export async function processCxIdAsync(
   req: Request,
   source: EhrSources,
-  parseExternalId: (tokenData: object) => string
+  parseExternalId: (tokenData: object) => parseResponse
 ): Promise<void> {
   const accessToken = getAuthorizationToken(req);
   const authInfo = await getJwtToken({
@@ -24,12 +29,18 @@ export async function processCxIdAsync(
     source,
   });
   if (!authInfo) throw new ForbiddenError();
-  const externalId = parseExternalId(authInfo.data);
+  const { externalId, queryParams } = parseExternalId(authInfo.data);
   const customer = await getCxMappingOrFail({
     externalId,
     source,
   });
   req.cxId = customer.cxId;
+  if (queryParams) {
+    req.query = {
+      ...req.query,
+      ...queryParams,
+    };
+  }
 }
 
 export const validPatientPaths: PathDetails[] = [

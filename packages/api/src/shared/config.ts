@@ -342,7 +342,15 @@ export class Config {
     return getEnvVarOrFail("OIDS_WITH_IHE_GATEWAY_V2_ENABLED");
   }
 
-  static getAthenaHealthUrl(): string | undefined {
-    return getEnvVar("EHR_ATHENA_BASE_URL");
+  static getAthenaHealthEnv(): string | undefined {
+    return getEnvVar("EHR_ATHENA_ENVIRONMENT");
+  }
+
+  static getAthenaTwoLeggedClientId(): string | undefined {
+    return getEnvVar("EHR_ATHENA_TWO_LEGGED_CLIENT_ID");
+  }
+
+  static getAthenaTwoLeggedClientSecret(): string | undefined {
+    return getEnvVar("EHR_ATHENA_TWO_LEGGED_CLIENT_SECRET");
   }
 }

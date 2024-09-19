@@ -1,9 +1,11 @@
-import { Resource } from "@medplum/fhirtypes";
+import { Medication, MedicationStatement } from "@medplum/fhirtypes";
 //import { out } from "@metriport/core/util/log";
-import { writeMedicationToChart as writeMedicationToAthenaChart } from "@metriport/core/external/athenahealth/write-fhir-resource";
+import AthenaHealthApi from "@metriport/core/external/athenahealth/index";
 import { Config } from "../../../../shared/config";
 
-const athenaUrl = Config.getAthenaHealthUrl();
+const athenaEnvironment = Config.getAthenaHealthEnv();
+const athenaClientId = Config.getAthenaTwoLeggedClientSecret();
+const athenaClientSecret = Config.getAthenaTwoLeggedClientId();
 
 export async function writeMedicationToChart({
   accessToken,
@@ -12,24 +14,32 @@ export async function writeMedicationToChart({
   athenaPracticeId,
   athenaDepartmentId,
   medication,
+  medicationStatement,
 }: {
   accessToken: string;
   cxId: string;
   athenaPatientId: string;
   athenaPracticeId: string;
   athenaDepartmentId: string;
-  medication: Resource;
+  medication: Medication;
+  medicationStatement?: MedicationStatement;
 }) {
   //const { log } = out(`AthenaHealth writeMedicationToChart - cxId ${cxId} athenaPatientId ${athenaPatientId}`);
-  if (!athenaUrl) throw new Error("AthenaHealth url not defined");
-  if (medication.resourceType !== "Medication") throw new Error("Resource type not Medication");
-  await writeMedicationToAthenaChart({
-    cxId,
-    accessToken: accessToken,
-    baseUrl: "https://api.preview.platform.athenahealth.com",
-    patientId: athenaPatientId,
+  if (!athenaEnvironment || !athenaClientId || !athenaClientSecret) {
+    throw new Error("AthenaHealth not setup");
+  }
+  const api = await AthenaHealthApi.create({
+    threeLeggedAuthToken: accessToken,
     practiceId: athenaPracticeId,
+    environment: athenaEnvironment as "api" | "api.preview",
+    clientId: athenaClientId,
+    clientSecret: athenaClientSecret,
+  });
+  await api.createMedication({
+    cxId,
+    patientId: athenaPatientId,
     departmentId: athenaDepartmentId,
     medication,
+    medicationStatement,
   });
 }

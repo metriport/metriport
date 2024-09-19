@@ -1,11 +1,10 @@
 import { PatientResource } from "@metriport/shared/interface/external/athenahealth/patient";
-import { normalizeDate, normalizeGender, toTitleCase } from "@metriport/shared";
+import { errorToString, normalizeDate, normalizeGender, toTitleCase } from "@metriport/shared";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { errorToString } from "@metriport/shared";
 import { Patient, PatientDemoData } from "@metriport/core/domain/patient";
-import { getPatient as getAthenaPatient } from "@metriport/core/external/athenahealth/get-patient";
+import AthenaHealthApi from "@metriport/core/external/athenahealth/index";
 import { EhrSources } from "../../shared";
 import {
   getPatientOrFail as getMetriportPatientOrFail,
@@ -21,16 +20,20 @@ import { Config } from "../../../../shared/config";
 import { createMetriportAddresses, createMetriportContacts, createNames } from "../shared";
 import NotFoundError from "../../../../errors/not-found";
 
-const athenaUrl = Config.getAthenaHealthUrl();
+const athenaEnvironment = Config.getAthenaHealthEnv();
+const athenaClientId = Config.getAthenaTwoLeggedClientSecret();
+const athenaClientSecret = Config.getAthenaTwoLeggedClientId();
 const defaultFacilityMappingExternalId = "default";
 
 export async function getPatientIdOrFail({
   accessToken,
   cxId,
+  athenaPracticeId,
   athenaPatientId,
 }: {
   accessToken: string;
   cxId: string;
+  athenaPracticeId: string;
   athenaPatientId: string;
 }): Promise<string> {
   const { log } = out(`AthenaHealth getPatient - cxId ${cxId} athenaPatientId ${athenaPatientId}`);
@@ -46,11 +49,18 @@ export async function getPatientIdOrFail({
     });
     return metriportPatient.id;
   }
-  if (!athenaUrl) throw new Error("AthenaHealth url not defined");
-  const athenaPatient = await getAthenaPatient({
+  if (!athenaEnvironment || !athenaClientId || !athenaClientSecret) {
+    throw new Error("AthenaHealth not setup");
+  }
+  const api = await AthenaHealthApi.create({
+    threeLeggedAuthToken: accessToken,
+    practiceId: athenaPracticeId,
+    environment: athenaEnvironment as "api" | "api.preview",
+    clientId: athenaClientId,
+    clientSecret: athenaClientSecret,
+  });
+  const athenaPatient = await api.getPatient({
     cxId,
-    accessToken,
-    baseUrl: athenaUrl,
     patientId: athenaPatientId,
   });
   if (!athenaPatient) throw new NotFoundError("AthenaHealth patient not found");
