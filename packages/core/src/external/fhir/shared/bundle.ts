@@ -9,6 +9,7 @@ import {
   Coverage,
   Device,
   DiagnosticReport,
+  DocumentReference,
   Encounter,
   FamilyMemberHistory,
   Goal,
@@ -29,12 +30,13 @@ import {
   Resource,
   ResourceType,
   ServiceRequest,
-  DocumentReference,
 } from "@medplum/fhirtypes";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { uniq } from "lodash";
+import { wrapIdInUrnId, wrapIdInUrnUuid } from "../../../util/urn";
+import { isValidUuid } from "../../../util/uuid-v7";
 
 dayjs.extend(duration);
 
@@ -102,6 +104,19 @@ function getReferencesFromRaw(
 export function buildBundle(entries: BundleEntry[]): SearchSetBundle<Resource> {
   return { resourceType: "Bundle", total: entries.length, type: "searchset", entry: entries };
 }
+
+export const buildBundleEntry = <T extends Resource>(resource: T): BundleEntry<T> => {
+  const fullUrl = buildFullUrl(resource);
+  return {
+    ...(fullUrl ? { fullUrl } : {}),
+    resource,
+  };
+};
+export const buildFullUrl = <T extends Resource>(resource: T): string | undefined => {
+  if (!resource || !resource.id) return undefined;
+  if (isValidUuid(resource.id)) return wrapIdInUrnUuid(resource.id);
+  return wrapIdInUrnId(resource.id);
+};
 
 export type ExtractedFhirTypes = {
   diagnosticReports: DiagnosticReport[];

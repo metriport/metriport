@@ -4,12 +4,12 @@ import {
   makeDocument,
   makeDocumentContent,
 } from "@metriport/commonwell-sdk/models/__tests__/document";
+import { makePatient } from "@metriport/core/domain/__tests__/patient";
 import dayjs from "dayjs";
 import { v4 as uuidv4 } from "uuid";
-import { makePatient } from "../../../../domain/medical/__tests__/patient";
 import { CWDocumentWithMetriportData } from "../../../commonwell/document/shared";
 import { makePeriod } from "../../shared/__tests__/date";
-import { getBestDateFromCWDocRef, cwToFHIR } from "../index";
+import { cwToFHIR, getBestDateFromCWDocRef } from "../index";
 
 beforeEach(() => {
   jest.restoreAllMocks();

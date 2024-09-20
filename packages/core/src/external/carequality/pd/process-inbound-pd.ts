@@ -8,7 +8,7 @@ import { getStateEnum } from "../../../domain/geographic-locations";
 import { Patient, PatientData } from "../../../domain/patient";
 import { MPI } from "../../../mpi/mpi";
 import { normalizePatient } from "../../../mpi/normalize-patient";
-import { mapFhirToMetriportGender } from "../../fhir/patient";
+import { mapFhirToMetriportGender } from "../../fhir/patient/conversion";
 import { patientMPIToPartialPatient } from "../../../mpi/shared";
 import {
   constructPDErrorResponse,

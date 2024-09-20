@@ -1,10 +1,13 @@
-import { DocumentReference, Organization } from "@medplum/fhirtypes";
+import { DocumentReference, Organization as FhirOrganization } from "@medplum/fhirtypes";
 import { CCD_SUFFIX } from "@metriport/core/domain/document/upload";
+import { Organization } from "@metriport/core/domain/organization";
 import { Patient } from "@metriport/core/domain/patient";
+import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/conversion";
 import { cdaDocumentUploaderHandler } from "@metriport/core/shareback/cda-uploader";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { Config } from "../../shared/config";
 import { generateCcd } from "./generate-ccd";
 import { generateEmptyCcd } from "./generate-empty-ccd";
@@ -30,14 +33,21 @@ function createDocRef(patientId: string) {
   return { ...ccdDocRefTemplate, subject: { reference: `Patient/${patientId}` } };
 }
 
-export async function processCcdRequest(
-  patient: Patient,
-  organization: Organization,
-  requestId = uuidv7()
-): Promise<void> {
-  const { log } = out(`Generate CCD cxId: ${patient.cxId}, patientId: ${patient.id}`);
+export async function processCcdRequest({
+  patient,
+  organization: orgParam,
+  requestId = uuidv7(),
+}: {
+  patient: Patient;
+  organization?: Organization;
+  requestId?: string;
+}): Promise<void> {
+  const { log } = out(`Generate CCD cx ${patient.cxId} pat ${patient.id}`);
   try {
-    const ccd = await generateCcd(patient, requestId);
+    const organization = orgParam ?? (await getOrganizationOrFail({ cxId: patient.cxId }));
+    const fhirOrg = toFhirOrganization(organization);
+
+    const ccd = await generateCcd(patient, organization, requestId);
     const docRef = createDocRef(patient.id);
     log(`CCD generated. Starting the upload...`);
     await cdaDocumentUploaderHandler({
@@ -46,7 +56,7 @@ export async function processCcdRequest(
       bundle: ccd,
       medicalDocumentsBucket: medicalBucket,
       region: awsRegion,
-      organization,
+      organization: fhirOrg,
       docId: CCD_SUFFIX,
       docRef,
     });
@@ -59,8 +69,8 @@ export async function processCcdRequest(
   }
 }
 
-export async function processEmptyCcdRequest(patient: Patient, organization: Organization) {
-  const { log } = out(`Generate empty CCD cxId: ${patient.cxId}, patientId: ${patient.id}`);
+export async function processEmptyCcdRequest(patient: Patient, organization: FhirOrganization) {
+  const { log } = out(`Generate empty CCD cx ${patient.cxId} pat ${patient.id}`);
   try {
     const ccd = await generateEmptyCcd(patient);
     const docRef = createDocRef(patient.id);

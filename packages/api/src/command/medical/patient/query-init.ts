@@ -38,14 +38,16 @@ export const storeQueryInit = async ({ id, cxId, cmd }: StoreQueryParams): Promi
       transaction,
     });
 
-    return patient.update(
-      {
-        data: {
-          ...patient.data,
-          ...cmd,
+    return (
+      await patient.update(
+        {
+          data: {
+            ...patient.data,
+            ...cmd,
+          },
         },
-      },
-      { transaction }
-    );
+        { transaction }
+      )
+    ).dataValues;
   });
 };

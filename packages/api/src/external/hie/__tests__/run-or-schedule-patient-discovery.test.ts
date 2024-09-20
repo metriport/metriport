@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { makePatient } from "../../../domain/medical/__tests__/patient";
+import { makePatient } from "@metriport/core/domain/__tests__/patient";
+import * as cqRunSchedule from "../../../external/carequality/command/run-or-schedule-patient-discovery";
+import * as cqPatient from "../../../external/carequality/patient";
+import * as cwRunOrSchedule from "../../../external/commonwell/command/run-or-schedule-patient-discovery";
+import * as cwPatient from "../../../external/commonwell/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
-import * as cqPatient from "../../../external/carequality/patient";
-import * as cwPatient from "../../../external/commonwell/patient";
-import * as cqRunSchedule from "../../../external/carequality/command/run-or-schedule-patient-discovery";
-import * as cwRunOrSchedule from "../../../external/commonwell/command/run-or-schedule-patient-discovery";
 import { runInitialPatientDiscoveryAcrossHies } from "../run-initial-patient-discovery";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../run-or-schedule-patient-discovery";
 

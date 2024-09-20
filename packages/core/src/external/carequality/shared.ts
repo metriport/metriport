@@ -1,7 +1,7 @@
 import { InboundDocumentQueryReq, InboundDocumentRetrievalReq } from "@metriport/ihe-gateway-sdk";
 import { USState } from "@metriport/shared";
 import { base64ToString, stringToBase64 } from "../../util/base64";
-import { FhirGender } from "../fhir/patient/index";
+import { FhirGender } from "../fhir/patient/conversion";
 import { XDSMissingHomeCommunityId, XDSRegistryError } from "./error";
 import { IheGender } from "./ihe-gateway-v2/schema";
 

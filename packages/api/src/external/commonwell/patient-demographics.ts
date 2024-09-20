@@ -1,5 +1,5 @@
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
-import { mapStringMetriportGenderToFhir } from "@metriport/core/external/fhir/patient/index";
+import { mapStringMetriportGenderToFhir } from "@metriport/core/external/fhir/patient/conversion";
 import { PatientNetworkLink } from "@metriport/commonwell-sdk";
 import {
   removeInvalidArrayValues,

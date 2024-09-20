@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
+import { makePatient } from "@metriport/core/domain/__tests__/patient";
 import convert from "convert-units";
 import { makeAddressWithCoordinates } from "../../../../../domain/medical/__tests__/location-address";
-import { makePatient } from "../../../../../domain/medical/__tests__/patient";
 import { CQDirectoryEntry } from "../../../cq-directory";
 import { makeCQDirectoryEntry } from "../../../__tests__/cq-directory";
 import {

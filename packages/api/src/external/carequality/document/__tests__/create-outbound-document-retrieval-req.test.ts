@@ -2,26 +2,24 @@
 import { faker } from "@faker-js/faker";
 import { Organization } from "@metriport/core/domain/organization";
 import { Patient } from "@metriport/core/domain/patient";
+import { makePatient } from "@metriport/core/domain/__tests__/patient";
+import {
+  defaultDocRefsPerRequest,
+  epicOidPrefix,
+  redoxOidPrefix,
+  surescriptsOid,
+} from "@metriport/core/external/carequality/ihe-gateway-v2/gateways";
 import {
   OutboundDocumentQueryResp,
   OutboundDocumentRetrievalReq,
 } from "@metriport/ihe-gateway-sdk";
+import { Facility, FacilityType } from "../../../../domain/medical/facility";
 import { makeFacility } from "../../../../domain/medical/__tests__/facility";
 import { makeOrganization } from "../../../../domain/medical/__tests__/organization";
-import { makePatient } from "../../../../domain/medical/__tests__/patient";
-import { Facility, FacilityType } from "../../../../domain/medical/facility";
 import { HieInitiator } from "../../../hie/get-hie-initiator";
 import { createOutboundDocumentRetrievalReqs } from "../create-outbound-document-retrieval-req";
-import {
-  defaultDocRefsPerRequest,
-  redoxOidPrefix,
-} from "@metriport/core/external/carequality/ihe-gateway-v2/gateways";
 import { makeDocumentReferenceWithMetriportId } from "./make-document-reference-with-metriport-id";
 import { makeOutboundDocumentQueryResp, makeXcaGateway } from "./shared";
-import {
-  epicOidPrefix,
-  surescriptsOid,
-} from "@metriport/core/external/carequality/ihe-gateway-v2/gateways";
 
 let requestId: string;
 let facilityId: string;

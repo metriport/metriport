@@ -1,15 +1,15 @@
 import {
   ContactPoint,
-  DocumentReference,
   Identifier,
+  Narrative,
   Patient as FHIRPatient,
   Reference,
 } from "@medplum/fhirtypes";
 import { Address } from "../../../domain/address";
-import { Contact, ContactTypes } from "../../../domain/contact";
+import { Contact } from "../../../domain/contact";
 import { driversLicenseURIs, identifierSytemByType } from "../../../domain/oid";
 import { GenderAtBirth as MetriportGender, Patient, splitName } from "../../../domain/patient";
-import { getIdFromSubjectId, getIdFromSubjectRef } from "../shared";
+import { isContactType } from "./shared";
 
 export type FhirGender = NonNullable<FHIRPatient["gender"]>;
 
@@ -46,50 +46,54 @@ export function mapStringMetriportGenderToFhir(k: string): FhirGender {
 }
 
 export function mapPatientDataToResource(patient: PatientIdAndData) {
+  const identifier = getFhirIdentifersFromPatient(patient);
+  const telecom =
+    patient.data.contact
+      ?.map((contact: Contact) => {
+        const telecoms: ContactPoint[] = [];
+        for (const type in contact) {
+          if (isContactType(type) && contact[type]) {
+            const contactValue = contact[type];
+            if (contactValue) {
+              const contactPoint: ContactPoint = {
+                system: type,
+                value: contactValue,
+              };
+              telecoms.push(contactPoint);
+            }
+          }
+        }
+        return telecoms;
+      })
+      .reduce((prev, curr) => prev.concat(curr), []) ?? [];
+  const address =
+    patient.data.address.map((addr: Address) => {
+      const lines = [addr.addressLine1];
+      if (addr.addressLine2) lines.push(addr.addressLine2);
+      return {
+        line: lines,
+        city: addr.city,
+        state: addr.state,
+        postalCode: addr.zip,
+        country: addr.country || "USA",
+      };
+    }) || [];
+  const text = getTextFromPatient(patient);
   return {
     resourceType: "Patient" as const,
     id: patient.id,
-    identifier: getFhirIdentifersFromPatient(patient),
+    ...(identifier.length > 0 ? { identifier } : {}),
+    text,
     name: [
       {
         family: patient.data.lastName,
         given: splitName(patient.data.firstName),
       },
     ],
-    telecom:
-      patient.data.contact
-        ?.map((contact: Contact) => {
-          const telecoms: ContactPoint[] = [];
-          for (const type in contact) {
-            if (isContactType(type) && contact[type]) {
-              const contactValue = contact[type];
-              if (contactValue) {
-                const contactPoint: ContactPoint = {
-                  system: type,
-                  value: contactValue,
-                };
-                telecoms.push(contactPoint);
-              }
-            }
-          }
-          return telecoms;
-        })
-        .reduce((prev, curr) => prev.concat(curr), []) || [],
+    ...(telecom.length > 0 ? { telecom } : {}),
     gender: mapMetriportGenderToFhirGender(patient.data.genderAtBirth),
     birthDate: patient.data.dob,
-    address:
-      patient.data.address.map((addr: Address) => {
-        const lines = [addr.addressLine1];
-        if (addr.addressLine2) lines.push(addr.addressLine2);
-
-        return {
-          line: lines,
-          city: addr.city,
-          state: addr.state,
-          postalCode: addr.zip,
-          country: addr.country || "USA",
-        };
-      }) || [],
+    ...(address.length > 0 ? { address } : {}),
   };
 }
 
@@ -106,18 +110,22 @@ export function getFhirIdentifersFromPatient(patient: PatientIdAndData): Identif
   });
 }
 
+/**
+ * 'A resource should have narrative for robust management' (defined in
+ * http://hl7.org/fhir/StructureDefinition/DomainResource) (Best Practice Recommendation)
+ * @returns Narrative with human readable content
+ */
+export function getTextFromPatient(patient: PatientIdAndData): Narrative {
+  return {
+    status: "generated",
+    div: `<div xmlns="http://www.w3.org/1999/xhtml">${patient.data.firstName} ${patient.data.lastName}</div>`,
+  };
+}
+
 export function toFHIRSubject(patientId: string): Reference<FHIRPatient> {
   const subject: Reference<FHIRPatient> = {
     reference: `Patient/${patientId}`,
     type: "Patient",
   };
   return subject;
-}
-
-export function getPatientId(doc: DocumentReference): string | undefined {
-  return getIdFromSubjectId(doc.subject) ?? getIdFromSubjectRef(doc.subject);
-}
-
-export function isContactType(type: string): type is ContactTypes {
-  return ["phone", "fax", "email", "pager", "url", "sms", "other"].includes(type);
 }

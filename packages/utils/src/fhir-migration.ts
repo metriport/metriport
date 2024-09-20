@@ -4,7 +4,7 @@ dotenv.config();
 import { MedplumClient } from "@medplum/core";
 import { Organization as FHIROrganization, Patient as FHIRPatient } from "@medplum/fhirtypes";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { getFhirIdentifersFromPatient } from "@metriport/core/external/fhir/patient/index";
+import { getFhirIdentifersFromPatient } from "@metriport/core/external/fhir/patient/conversion";
 import { Sequelize } from "sequelize";
 
 /**
