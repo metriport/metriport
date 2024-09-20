@@ -149,6 +149,73 @@ describe("dr-response", () => {
       );
     });
 
+    it("should process the partial success DR response correctly", async () => {
+      const xmlString = fs.readFileSync(
+        path.join(__dirname, "xmls/dr-partial-success.xml"),
+        "utf8"
+      );
+      const mtomResponse = await createMtomMessageWithoutAttachments(xmlString);
+
+      const missingMetriportId1 = uuidv4();
+      const missingMetriportId2 = uuidv4();
+      const missingDocUniqueId1 = uuidv4();
+      const missingDocUniqueId2 = uuidv4();
+      const modifiedOutboundRequest = {
+        ...outboundDrRequest,
+        documentReference: [
+          ...outboundDrRequest.documentReference,
+          {
+            metriportId: missingMetriportId1,
+            docUniqueId: missingDocUniqueId1,
+            homeCommunityId: "2.16.840.1.113883.3.8391",
+            repositoryUniqueId: "2.16.840.1.113883.3.8391.1000.1",
+          },
+          {
+            docUniqueId: missingDocUniqueId2,
+            metriportId: missingMetriportId2,
+            homeCommunityId: "2.16.840.1.113883.3.8391",
+            repositoryUniqueId: "2.16.840.1.113883.3.8391.1000.1",
+          },
+        ],
+      };
+      const response = await processDrResponse({
+        response: {
+          mtomResponse: mtomResponse,
+          gateway: outboundDrRequest.gateway,
+          outboundRequest: modifiedOutboundRequest,
+        },
+      });
+      expect(response.documentReference?.length).toBe(2);
+      expect(response?.documentReference?.[0]?.contentType).toEqual("application/octet-stream");
+      expect(response?.documentReference?.[0]?.docUniqueId).toEqual("123456789");
+      expect(response?.documentReference?.[0]?.homeCommunityId).toEqual("2.16.840.1.113883.3.9621");
+      expect(response?.documentReference?.[0]?.repositoryUniqueId).toEqual(
+        "2.16.840.1.113883.3.9621"
+      );
+
+      expect(response?.documentReference?.[1]?.contentType).toEqual("application/octet-stream");
+      expect(response?.documentReference?.[1]?.docUniqueId).toEqual("987654321");
+      expect(response?.documentReference?.[1]?.homeCommunityId).toEqual("2.16.840.1.113883.3.9621");
+      expect(response?.documentReference?.[1]?.repositoryUniqueId).toEqual(
+        "2.16.840.1.113883.3.9621"
+      );
+
+      expect(response.operationOutcome?.issue).toBeDefined();
+      expect(response.operationOutcome?.issue).toHaveLength(2);
+
+      const issueIds = response.operationOutcome?.issue.map(issue => issue.id);
+      const detailIds = response.operationOutcome?.issue.map(issue => issue.details?.id);
+      expect(issueIds).toContain(missingMetriportId1);
+      expect(issueIds).toContain(missingMetriportId2);
+      expect(detailIds).toContain(missingDocUniqueId1);
+      expect(detailIds).toContain(missingDocUniqueId2);
+
+      // Additional check to ensure each issue has the correct code
+      response.operationOutcome?.issue.forEach(issue => {
+        expect(issue.code).toBe("document-not-found");
+      });
+    });
+
     it("should process the soap fault DR response correctly", async () => {
       const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dr_soap_error.xml"), "utf8");
       const mtomResponse = await createMtomMessageWithoutAttachments(xmlString);
@@ -159,8 +226,15 @@ describe("dr-response", () => {
           outboundRequest: outboundDrRequest,
         },
       });
+      const issueIds = response.operationOutcome?.issue.map(issue => issue.id);
+      const detailIds = response.operationOutcome?.issue.map(issue => issue.details?.id);
 
       expect(response?.operationOutcome?.issue[0]?.code).toEqual(schemaErrorCode);
+
+      expect(issueIds).toContain(outboundDrRequest?.documentReference?.[0]?.metriportId);
+      expect(detailIds).toContain(outboundDrRequest?.documentReference?.[0]?.docUniqueId);
+      expect(issueIds).toContain(outboundDrRequest?.documentReference?.[1]?.metriportId);
+      expect(detailIds).toContain(outboundDrRequest?.documentReference?.[1]?.docUniqueId);
     });
 
     it("should process the registry error DR response correctly", async () => {
@@ -174,6 +248,13 @@ describe("dr-response", () => {
         },
       });
       expect(response.operationOutcome?.issue[0]?.code).toEqual("XDSRegistryError");
+
+      const issueIds = response.operationOutcome?.issue.map(issue => issue.id);
+      const detailIds = response.operationOutcome?.issue.map(issue => issue.details?.id);
+      expect(issueIds).toContain(outboundDrRequest?.documentReference?.[0]?.metriportId);
+      expect(detailIds).toContain(outboundDrRequest?.documentReference?.[0]?.docUniqueId);
+      expect(issueIds).toContain(outboundDrRequest?.documentReference?.[1]?.metriportId);
+      expect(detailIds).toContain(outboundDrRequest?.documentReference?.[1]?.docUniqueId);
     });
 
     it("should process the empty DR response correctly", async () => {
@@ -186,7 +267,14 @@ describe("dr-response", () => {
           outboundRequest: outboundDrRequest,
         },
       });
-      expect(response.operationOutcome?.issue[0]?.code).toEqual("no-documents-found");
+      const issueIds = response.operationOutcome?.issue.map(issue => issue.id);
+      const detailIds = response.operationOutcome?.issue.map(issue => issue.details?.id);
+
+      expect(response.operationOutcome?.issue[0]?.code).toEqual("document-not-found");
+      expect(issueIds).toContain(outboundDrRequest?.documentReference?.[0]?.metriportId);
+      expect(detailIds).toContain(outboundDrRequest?.documentReference?.[0]?.docUniqueId);
+      expect(issueIds).toContain(outboundDrRequest?.documentReference?.[1]?.metriportId);
+      expect(detailIds).toContain(outboundDrRequest?.documentReference?.[1]?.docUniqueId);
     });
     it("should process response that is not a string correctly", async () => {
       const randomResponse = "This is a bad response and is not xml";
@@ -198,7 +286,14 @@ describe("dr-response", () => {
           outboundRequest: outboundDrRequest,
         },
       });
+      const issueIds = response.operationOutcome?.issue.map(issue => issue.id);
+      const detailIds = response.operationOutcome?.issue.map(issue => issue.details?.id);
+
       expect(response.operationOutcome?.issue[0]?.code).toEqual(schemaErrorCode);
+      expect(issueIds).toContain(outboundDrRequest?.documentReference?.[0]?.metriportId);
+      expect(detailIds).toContain(outboundDrRequest?.documentReference?.[0]?.docUniqueId);
+      expect(issueIds).toContain(outboundDrRequest?.documentReference?.[1]?.metriportId);
+      expect(detailIds).toContain(outboundDrRequest?.documentReference?.[1]?.docUniqueId);
     });
   });
 });

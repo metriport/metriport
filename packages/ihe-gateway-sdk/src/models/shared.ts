@@ -49,6 +49,7 @@ export const codeSchema = z.object({
 export type Code = z.infer<typeof codeSchema>;
 
 export const detailsSchema = z.object({
+  id: z.string().optional(),
   coding: z.array(codeSchema).optional(),
   text: z.string().optional(),
 });
@@ -56,6 +57,7 @@ export const detailsSchema = z.object({
 export type Details = z.infer<typeof detailsSchema>;
 
 export const issueSchema = z.object({
+  id: z.string().nullish(),
   severity: z.string(),
   code: z.string(),
   details: detailsSchema,

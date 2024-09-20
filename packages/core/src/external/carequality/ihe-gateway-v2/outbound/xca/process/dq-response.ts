@@ -13,7 +13,6 @@ import {
   XDSDocumentEntryClassCode,
   XDSDocumentEntryUniqueId,
 } from "../../../../../../shareback/metadata/constants";
-import { errorToString } from "../../../../../../util/error/shared";
 import { out } from "../../../../../../util/log";
 import { capture } from "../../../../../../util/notifications";
 import { stripUrnPrefix } from "../../../../../../util/urn";
@@ -21,10 +20,10 @@ import { Slot } from "../../../schema";
 import { DQSamlClientResponse } from "../send/dq-requests";
 import { partialSuccessStatus, successStatus } from "./constants";
 import {
-  handleEmptyResponse,
-  handleHttpErrorResponse,
-  handleRegistryErrorResponse,
-  handleSchemaErrorResponse,
+  handleEmptyResponseDq,
+  handleHttpErrorResponseDq,
+  handleRegistryErrorResponseDq,
+  handleSchemaErrorResponseDq,
 } from "./error";
 import { Classification, ExternalIdentifier, ExtrinsicObject, iti38Schema } from "./schema";
 
@@ -180,7 +179,7 @@ export function processDqResponse({
   response: DQSamlClientResponse;
 }): OutboundDocumentQueryResp {
   if (success === false) {
-    return handleHttpErrorResponse({
+    return handleHttpErrorResponseDq({
       httpError: response,
       outboundRequest,
       gateway: gateway,
@@ -210,23 +209,22 @@ export function processDqResponse({
         gateway,
       });
     } else if (registryErrorList) {
-      return handleRegistryErrorResponse({
+      return handleRegistryErrorResponseDq({
         registryErrorList,
         outboundRequest,
         gateway,
       });
     } else {
-      return handleEmptyResponse({
+      return handleEmptyResponseDq({
         outboundRequest,
         gateway,
       });
     }
   } catch (error) {
     log(`Error processing DQ response ${JSON.stringify(jsonObj)}`);
-    return handleSchemaErrorResponse({
+    return handleSchemaErrorResponseDq({
       outboundRequest,
       gateway,
-      text: errorToString(error),
     });
   }
 }

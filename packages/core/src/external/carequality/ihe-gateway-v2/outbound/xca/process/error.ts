@@ -62,15 +62,15 @@ export function processRegistryErrorList(
   return operationOutcome.issue.length > 0 ? operationOutcome : undefined;
 }
 
-export function handleRegistryErrorResponse({
+export function handleRegistryErrorResponseDq({
   registryErrorList,
   outboundRequest,
   gateway,
 }: {
   registryErrorList: RegistryErrorList;
-  outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
+  outboundRequest: OutboundDocumentQueryReq;
   gateway: XCAGateway;
-}): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
+}): OutboundDocumentQueryResp {
   const operationOutcome = processRegistryErrorList(registryErrorList, outboundRequest);
   return {
     id: outboundRequest.id,
@@ -85,17 +85,57 @@ export function handleRegistryErrorResponse({
   };
 }
 
-export function handleHttpErrorResponse({
+export function handleRegistryErrorResponseDr({
+  registryErrorList,
+  outboundRequest,
+  gateway,
+}: {
+  registryErrorList: RegistryErrorList;
+  outboundRequest: OutboundDocumentRetrievalReq;
+  gateway: XCAGateway;
+}): OutboundDocumentRetrievalResp {
+  const baseOperationOutcome = processRegistryErrorList(registryErrorList, outboundRequest);
+  const operationOutcome: OperationOutcome = {
+    ...baseOperationOutcome,
+    id: outboundRequest.id,
+    resourceType: "OperationOutcome",
+    issue: [
+      ...(baseOperationOutcome?.issue ?? []),
+      ...outboundRequest.documentReference.map(doc => ({
+        id: doc.metriportId,
+        severity: "error",
+        code: "registry-error",
+        details: {
+          id: doc.docUniqueId,
+          text: `Registry error for document with metriportId ${doc.metriportId} and docUniqueId ${doc.docUniqueId}`,
+        },
+      })),
+    ],
+  };
+  return {
+    id: outboundRequest.id,
+    requestChunkId: outboundRequest.requestChunkId,
+    patientId: outboundRequest.patientId,
+    timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
+    responseTimestamp: dayjs().toISOString(),
+    gateway,
+    operationOutcome,
+    iheGatewayV2: true,
+  };
+}
+
+export function handleHttpErrorResponseDq({
   httpError,
   outboundRequest,
   gateway,
   attempt,
 }: {
   httpError: string;
-  outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
+  outboundRequest: OutboundDocumentQueryReq;
   gateway: XCAGateway;
   attempt?: number | undefined;
-}): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
+}): OutboundDocumentQueryResp {
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
     id: outboundRequest.id,
@@ -115,23 +155,63 @@ export function handleHttpErrorResponse({
     timestamp: outboundRequest.timestamp,
     requestTimestamp: outboundRequest.timestamp,
     responseTimestamp: dayjs().toISOString(),
-    gateway: gateway,
+    gateway,
     patientId: outboundRequest.patientId,
-    operationOutcome: operationOutcome,
+    operationOutcome,
     retried: attempt,
     iheGatewayV2: true,
   };
 }
 
-export function handleEmptyResponse({
+export function handleHttpErrorResponseDr({
+  httpError,
+  outboundRequest,
+  gateway,
+  attempt,
+}: {
+  httpError: string;
+  outboundRequest: OutboundDocumentRetrievalReq;
+  gateway: XCAGateway;
+  attempt?: number | undefined;
+}): OutboundDocumentRetrievalResp {
+  const operationOutcome: OperationOutcome = {
+    resourceType: "OperationOutcome",
+    id: outboundRequest.id,
+    issue: [
+      ...outboundRequest.documentReference.map(doc => ({
+        id: doc.metriportId,
+        severity: "error",
+        code: httpErrorCode,
+        details: {
+          id: doc.docUniqueId,
+          text: `${httpError} for document with metriportId ${doc.metriportId} and docUniqueId ${doc.docUniqueId}`,
+        },
+      })),
+    ],
+  };
+  return {
+    id: outboundRequest.id,
+    requestChunkId: outboundRequest.requestChunkId,
+    timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
+    responseTimestamp: dayjs().toISOString(),
+    gateway,
+    patientId: outboundRequest.patientId,
+    operationOutcome,
+    retried: attempt,
+    iheGatewayV2: true,
+  };
+}
+
+export function handleEmptyResponseDq({
   outboundRequest,
   gateway,
   text = "No documents found",
 }: {
-  outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
+  outboundRequest: OutboundDocumentQueryReq;
   gateway: XCAGateway;
   text?: string;
-}): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
+}): OutboundDocumentQueryResp {
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
     id: outboundRequest.id,
@@ -158,15 +238,52 @@ export function handleEmptyResponse({
   };
 }
 
-export function handleSchemaErrorResponse({
+export function handleEmptyResponseDr({
+  outboundRequest,
+  gateway,
+}: {
+  outboundRequest: OutboundDocumentRetrievalReq;
+  gateway: XCAGateway;
+  text?: string;
+}): OutboundDocumentRetrievalResp {
+  const operationOutcome: OperationOutcome = {
+    resourceType: "OperationOutcome",
+    id: outboundRequest.id,
+    issue: [
+      ...outboundRequest.documentReference.map(doc => ({
+        id: doc.metriportId,
+        severity: "information",
+        code: "document-not-found",
+        details: {
+          id: doc.docUniqueId,
+          text: `Document with metriportId ${doc.metriportId} and docUniqueId ${doc.docUniqueId} not found`,
+        },
+      })),
+    ],
+  };
+
+  return {
+    id: outboundRequest.id,
+    requestChunkId: outboundRequest.requestChunkId,
+    patientId: outboundRequest.patientId,
+    timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
+    responseTimestamp: dayjs().toISOString(),
+    gateway,
+    operationOutcome,
+    iheGatewayV2: true,
+  };
+}
+
+export function handleSchemaErrorResponseDq({
   outboundRequest,
   gateway,
   text = "Schema Error",
 }: {
-  outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
+  outboundRequest: OutboundDocumentQueryReq;
   gateway: XCAGateway;
   text?: string;
-}): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
+}): OutboundDocumentQueryResp {
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
     id: outboundRequest.id,
@@ -191,6 +308,66 @@ export function handleSchemaErrorResponse({
     operationOutcome,
     iheGatewayV2: true,
   };
+}
+
+export function handleSchemaErrorResponseDr({
+  outboundRequest,
+  gateway,
+  text = "Schema Error",
+}: {
+  outboundRequest: OutboundDocumentRetrievalReq;
+  gateway: XCAGateway;
+  text?: string;
+}): OutboundDocumentRetrievalResp {
+  const operationOutcome: OperationOutcome = {
+    resourceType: "OperationOutcome",
+    id: outboundRequest.id,
+    issue: [
+      ...outboundRequest.documentReference.map(doc => ({
+        id: doc.metriportId,
+        severity: "error",
+        code: schemaErrorCode,
+        details: {
+          id: doc.docUniqueId,
+          text,
+        },
+      })),
+    ],
+  };
+  return {
+    id: outboundRequest.id,
+    requestChunkId: outboundRequest.requestChunkId,
+    patientId: outboundRequest.patientId,
+    timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
+    responseTimestamp: dayjs().toISOString(),
+    gateway,
+    operationOutcome,
+    iheGatewayV2: true,
+  };
+}
+
+export function generateOperationOutcomesForMissingDocuments(
+  idMapping: Record<string, string>,
+  processedIds: Set<string>,
+  requestId: string
+): OperationOutcome {
+  const operationOutcome: OperationOutcome = {
+    resourceType: "OperationOutcome",
+    id: requestId,
+    issue: Object.entries(idMapping)
+      .filter(([, metriportId]) => !processedIds.has(metriportId))
+      .map(([docUniqueId, metriportId]) => ({
+        id: metriportId,
+        severity: "information",
+        code: "document-not-found",
+        details: {
+          id: docUniqueId,
+          text: `Document with metriportId ${metriportId} and id ${docUniqueId} not found`,
+        },
+      })),
+  };
+  return operationOutcome;
 }
 
 /**

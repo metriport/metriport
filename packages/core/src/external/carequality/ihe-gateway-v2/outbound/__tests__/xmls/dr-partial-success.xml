@@ -35,23 +35,20 @@
                 </rim:RegistryErrorList>
 
             </rs:RegistryResponse>
-
-            <!-- Documents available now -->
             <DocumentResponse>
-                <homeCommunityId>urn:oid:1.2.3.4</homeCommunityId>
-                <RepositoryUniqueId>1.3.6.1.4...1000</RepositoryUniqueId>
-                <DocumentUniqueId>1.3.6.1.4...2300</DocumentUniqueId>
-                <mimeType>text/xml</mimeType>
-
-                <Document>UjBsR09EbGhjZ0dTQUxNQUFBUUNBRU1tQ1p0dU1GUXhEUzhi</Document>
+                <HomeCommunityId>urn:oid:2.16.840.1.113883.3.9621</HomeCommunityId>
+                <RepositoryUniqueId>urn:oid:2.16.840.1.113883.3.9621</RepositoryUniqueId>
+                <DocumentUniqueId>123456789</DocumentUniqueId>
+                <mimeType>application/pdf</mimeType>
+                <Document>Metriport Rocks!</Document>
             </DocumentResponse>
             <DocumentResponse>
-                <homeCommunityId>urn:oid:1.2.3.4</homeCommunityId>
-                <RepositoryUniqueId>1.3.6.1.4...1000</RepositoryUniqueId>
-                <DocumentUniqueId>1.3.6.1.4...2300</DocumentUniqueId>
-                <mimeType>text/xml</mimeType>
-
-                <Document>UjBsR09EbGhjZ0dTQUxNQUFBUUNBRU1tQ1p0dU1GUXhEUzhi</Document>
+                <HomeCommunityId>urn:oid:2.16.840.1.113883.3.9621</HomeCommunityId>
+                <RepositoryUniqueId>urn:oid:2.16.840.1.113883.3.9621</RepositoryUniqueId>
+                <DocumentUniqueId>987654321</DocumentUniqueId>
+                <mimeType>application/xml</mimeType>
+                <Document>Metriport is the best!</Document>
+                <CreationTime>2024-04-04T22:15:35.094Z</CreationTime>
             </DocumentResponse>
         </RetrieveDocumentSetResponse>
     </S:Body>

@@ -43,7 +43,15 @@ export async function processOutboundDocumentRetrievalResps({
     const cqData = getCQData(patient.data.externalData);
     const docRetrievalStartedAt = cqData?.documentRetrievalStartTime;
     const duration = elapsedTimeFromNow(docRetrievalStartedAt);
-    const { successCount, failureCount } = getOutboundDocRetrievalSuccessFailureCount(results);
+    const {
+      totalCount,
+      successCount,
+      failureCount,
+      noDocumentFoundCount,
+      schemaErrorCount,
+      httpErrorCount,
+      registryErrorCount,
+    } = getOutboundDocRetrievalSuccessFailureCount(results);
 
     let successDocsRetrievedCount = 0;
     let issuesWithExternalGateway = 0;
@@ -55,8 +63,13 @@ export async function processOutboundDocumentRetrievalResps({
         requestId,
         patientId,
         hie: MedicalDataSource.CAREQUALITY,
+        totalCount,
         successCount,
         failureCount,
+        noDocumentFoundCount,
+        schemaErrorCount,
+        httpErrorCount,
+        registryErrorCount,
         duration,
       },
     });
@@ -90,10 +103,13 @@ export async function processOutboundDocumentRetrievalResps({
     for (const docRetrievalResp of results) {
       if (docRetrievalResp.documentReference) {
         successDocsRetrievedCount += docRetrievalResp.documentReference.length;
-      } else if (docRetrievalResp.operationOutcome?.issue) {
+      }
+      if (docRetrievalResp.operationOutcome?.issue) {
         issuesWithExternalGateway += docRetrievalResp.operationOutcome.issue.length;
       }
     }
+
+    // we might want to filter out duplicates here since we set the total convert progress based on this
 
     await setDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
@@ -234,6 +250,8 @@ async function handleDocReferences(
     try {
       const isDocConvertible = isConvertible(docRef.contentType || undefined);
       const shouldConvert = isDocConvertible && docRef.isNew;
+
+      // add is duplicate in CW
 
       const docLocation = docRef.fileLocation;
       const docPath = docRef.fileName;
