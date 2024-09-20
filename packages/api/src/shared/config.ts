@@ -346,11 +346,11 @@ export class Config {
     return getEnvVar("EHR_ATHENA_ENVIRONMENT");
   }
 
-  static getAthenaTwoLeggedClientId(): string | undefined {
-    return getEnvVar("EHR_ATHENA_TWO_LEGGED_CLIENT_ID");
+  static getAthenaHealthClientKeyArm(): string | undefined {
+    return getEnvVar("EHR_ATHENA_CLIENT_KEY_ARN");
   }
 
-  static getAthenaTwoLeggedClientSecret(): string | undefined {
-    return getEnvVar("EHR_ATHENA_TWO_LEGGED_CLIENT_SECRET");
+  static getAthenaHealthClientSecretArn(): string | undefined {
+    return getEnvVar("EHR_ATHENA_CLIENT_SECRET_ARN");
   }
 }

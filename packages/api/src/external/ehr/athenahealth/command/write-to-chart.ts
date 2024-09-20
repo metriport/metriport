@@ -1,11 +1,12 @@
-import { Medication, MedicationStatement } from "@medplum/fhirtypes";
 //import { out } from "@metriport/core/util/log";
-import AthenaHealthApi from "@metriport/core/external/athenahealth/index";
+import AthenaHealthApi, { MedicationWithRefs } from "@metriport/core/external/athenahealth/index";
+import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { Config } from "../../../../shared/config";
 
+const region = Config.getAWSRegion();
 const athenaEnvironment = Config.getAthenaHealthEnv();
-const athenaClientId = Config.getAthenaTwoLeggedClientId();
-const athenaClientSecret = Config.getAthenaTwoLeggedClientSecret();
+const athenaClientKeySecretArn = Config.getAthenaHealthClientKeyArm();
+const athenaClientSecretSecretArn = Config.getAthenaHealthClientSecretArn();
 
 export async function writeMedicationToChart({
   accessToken,
@@ -14,25 +15,25 @@ export async function writeMedicationToChart({
   athenaPracticeId,
   athenaDepartmentId,
   medication,
-  medicationStatement,
 }: {
   accessToken: string;
   cxId: string;
   athenaPatientId: string;
   athenaPracticeId: string;
   athenaDepartmentId: string;
-  medication: Medication;
-  medicationStatement?: MedicationStatement;
+  medication: MedicationWithRefs;
 }) {
   //const { log } = out(`AthenaHealth writeMedicationToChart - cxId ${cxId} athenaPatientId ${athenaPatientId}`);
-  if (!athenaEnvironment || !athenaClientId || !athenaClientSecret) {
+  if (!athenaEnvironment || !athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
     throw new Error("AthenaHealth not setup");
   }
+  const athenaClientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
+  const athenaClientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
   const api = await AthenaHealthApi.create({
     threeLeggedAuthToken: accessToken,
     practiceId: athenaPracticeId,
     environment: athenaEnvironment as "api" | "api.preview",
-    clientId: athenaClientId,
+    clientKey: athenaClientKey,
     clientSecret: athenaClientSecret,
   });
   await api.createMedication({
@@ -40,6 +41,5 @@ export async function writeMedicationToChart({
     patientId: athenaPatientId,
     departmentId: athenaDepartmentId,
     medication,
-    medicationStatement,
   });
 }

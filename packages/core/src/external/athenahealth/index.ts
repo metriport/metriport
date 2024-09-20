@@ -1,5 +1,10 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from "axios";
-import { Medication, MedicationStatement } from "@medplum/fhirtypes";
+import {
+  Medication,
+  MedicationAdministration,
+  MedicationDispense,
+  MedicationStatement,
+} from "@medplum/fhirtypes";
 import {
   patientResourceSchema,
   PatientResource,
@@ -16,7 +21,7 @@ interface ApiConfig {
   threeLeggedAuthToken: string;
   practiceId: string;
   environment: "api" | "api.preview";
-  clientId: string;
+  clientKey: string;
   clientSecret: string;
 }
 
@@ -28,6 +33,13 @@ function getS3UtilsInstance(): S3Utils {
 }
 
 export type AthenaMedication = { medication: string; medicationid: number };
+
+export type MedicationWithRefs = {
+  medication: Medication;
+  administration?: MedicationAdministration;
+  dispense?: MedicationDispense;
+  statement?: MedicationStatement;
+};
 
 class AthenaHealthApi {
   private axiosInstanceFhirApi: AxiosInstance;
@@ -60,7 +72,7 @@ class AthenaHealthApi {
       const response = await axios.post(url, payload, {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         auth: {
-          username: this.config.clientId,
+          username: this.config.clientKey,
           password: this.config.clientSecret,
         },
       });
@@ -165,20 +177,22 @@ class AthenaHealthApi {
     patientId,
     departmentId,
     medication,
-    medicationStatement,
   }: {
     cxId: string;
     patientId: string;
     departmentId: string;
-    medication: Medication;
-    medicationStatement?: MedicationStatement;
+    medication: MedicationWithRefs;
   }): Promise<{
     success: string;
     errormessage: string;
     medicationentryid: string;
   }> {
     const { log, debug } = out(`AthenaHealth create medication - AH patientId ${patientId}`);
-    const medicationOptions = await this.searchForMedication({ cxId, patientId, medication });
+    const medicationOptions = await this.searchForMedication({
+      cxId,
+      patientId,
+      medication: medication.medication,
+    });
     if (medicationOptions.length === 0) throw new Error("No medication options found");
     if (medicationOptions.length > 1) {
       capture.message("Found multiple matching medications in AthenaHealth", {
@@ -197,8 +211,8 @@ class AthenaHealthApi {
       unstructuredsig: "Metriport",
       medicationid: `${medicationOptions[0]?.medicationid}`,
       hidden: "false",
-      startdate: medicationStatement?.effectivePeriod?.start ?? undefined,
-      stopdate: medicationStatement?.effectivePeriod?.end ?? undefined,
+      startdate: medication.statement?.effectivePeriod?.start ?? undefined,
+      stopdate: medication.statement?.effectivePeriod?.end ?? undefined,
       stopreason: undefined,
       patientnote: undefined,
       THIRDPARTYUSERNAME: undefined,

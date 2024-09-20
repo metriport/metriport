@@ -25,7 +25,7 @@ router.post(
     const athenaPatientId = getFrom("params").orFail("id", req);
     const athenaPracticeId = getFromQueryOrFail("practiceId", req);
     const athenaDepartmentId = getFromQueryOrFail("departmentId", req);
-    const payload = req.body;
+    const payload = req.body; // TODO Parse body
     const medicationDetails = await writeMedicationToChart({
       accessToken,
       cxId,
