@@ -20,17 +20,22 @@ import { createHivePartitionFilePath } from "../../domain/filename";
 interface ApiConfig {
   threeLeggedAuthToken: string;
   practiceId: string;
-  environment: "api" | "api.preview";
+  environment: AthenaEnv;
   clientKey: string;
   clientSecret: string;
 }
 
 const region = Config.getAWSRegion();
 const responsesBucket = Config.getEhrResponsesBucketName();
+const athenaPracticePrefix = "Practice";
+const athenaPatientPrefix = "E";
+const athenaDepartmentPrefix = "Department";
 
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
+
+export type AthenaEnv = "api" | "api.preview";
 
 export type AthenaMedication = { medication: string; medicationid: number };
 
@@ -44,6 +49,7 @@ export type MedicationWithRefs = {
 class AthenaHealthApi {
   private axiosInstanceFhirApi: AxiosInstance;
   private axiosInstanceProprietary: AxiosInstance;
+  private baseUrl: string;
   private twoLeggedAuthToken: string;
   private threeLeggedAuthToken: string;
   private practiceId: string;
@@ -52,10 +58,11 @@ class AthenaHealthApi {
   private constructor(private config: ApiConfig) {
     this.twoLeggedAuthToken = "";
     this.threeLeggedAuthToken = config.threeLeggedAuthToken;
-    this.practiceId = config.practiceId.replace("a-1.Practice-", "");
+    this.practiceId = this.stripPracticeId(config.practiceId);
     this.s3Utils = getS3UtilsInstance();
     this.axiosInstanceFhirApi = axios.create({});
     this.axiosInstanceProprietary = axios.create({});
+    this.baseUrl = `https://${config.environment}.platform.athenahealth.com/`;
   }
 
   public static async create(config: ApiConfig): Promise<AthenaHealthApi> {
@@ -65,7 +72,7 @@ class AthenaHealthApi {
   }
 
   private async fetchtwoLeggedAuthToken(): Promise<void> {
-    const url = `https://${this.config.environment}.platform.athenahealth.com/oauth2/v1/token`;
+    const url = `${this.baseUrl}/oauth2/v1/token`;
     const payload = `grant_type=client_credentials&scope=athena/service/Athenanet.MDP.*`;
 
     try {
@@ -87,7 +94,7 @@ class AthenaHealthApi {
     await this.fetchtwoLeggedAuthToken();
 
     this.axiosInstanceFhirApi = axios.create({
-      baseURL: `https://${this.config.environment}.platform.athenahealth.com/fhir/r4`,
+      baseURL: `${this.baseUrl}/fhir/r4`,
       headers: {
         accept: "application/json",
         Authorization: `Bearer ${this.threeLeggedAuthToken}`,
@@ -96,7 +103,7 @@ class AthenaHealthApi {
     });
 
     this.axiosInstanceProprietary = axios.create({
-      baseURL: `https://${this.config.environment}.platform.athenahealth.com/v1/${this.practiceId}`,
+      baseURL: `${this.baseUrl}/v1/${this.practiceId}`,
       headers: {
         Authorization: `Bearer ${this.twoLeggedAuthToken}`,
         "content-type": "application/x-www-form-urlencoded",
@@ -319,12 +326,16 @@ class AthenaHealthApi {
       .join("&");
   }
 
+  private stripPracticeId(id: string) {
+    return id.replace(`a-1.${athenaPracticePrefix}-`, "");
+  }
+
   private stripPatientId(id: string) {
-    return id.replace(`a-${this.practiceId}.E-`, "");
+    return id.replace(`a-${this.practiceId}.${athenaPatientPrefix}-`, "");
   }
 
   private stripDepartmentId(id: string) {
-    return id.replace(`a-${this.practiceId}.Department-`, "");
+    return id.replace(`a-${this.practiceId}.${athenaDepartmentPrefix}-`, "");
   }
 }
 

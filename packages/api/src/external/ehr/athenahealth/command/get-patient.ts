@@ -11,7 +11,7 @@ import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manage
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { Patient, PatientDemoData } from "@metriport/core/domain/patient";
-import AthenaHealthApi from "@metriport/core/external/athenahealth/index";
+import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/athenahealth/index";
 import { EhrSources } from "../../shared";
 import {
   getPatientOrFail as getMetriportPatientOrFail,
@@ -64,7 +64,7 @@ export async function getPatientIdOrFail({
   const api = await AthenaHealthApi.create({
     threeLeggedAuthToken: accessToken,
     practiceId: athenaPracticeId,
-    environment: athenaEnvironment as "api" | "api.preview",
+    environment: athenaEnvironment as AthenaEnv,
     clientKey: athenaClientKey,
     clientSecret: athenaClientSecret,
   });

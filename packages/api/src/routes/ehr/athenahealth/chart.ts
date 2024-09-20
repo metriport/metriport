@@ -25,7 +25,7 @@ router.post(
     const athenaPatientId = getFrom("params").orFail("id", req);
     const athenaPracticeId = getFromQueryOrFail("practiceId", req);
     const athenaDepartmentId = getFromQueryOrFail("departmentId", req);
-    const payload = req.body; // TODO Parse body
+    const payload = req.body; // TODO Parse body https://github.com/metriport/metriport-internal/issues/2170
     const medicationDetails = await writeMedicationToChart({
       accessToken,
       cxId,
