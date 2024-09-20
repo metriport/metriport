@@ -30,13 +30,14 @@ export async function ensureCcdExists({
   };
   const params = new URLSearchParams(queryParams).toString();
 
-  executeWithNetworkRetries(async () => api.post(`${apiUrl}/internal/docs/ccd?${params}`), {
-    log,
-  });
   await executeWithNetworkRetries(
     async () => await api.post(`${apiUrl}/internal/docs/empty-ccd?${params}`),
     { log }
   );
+
+  executeWithNetworkRetries(async () => api.post(`${apiUrl}/internal/docs/ccd?${params}`), {
+    log,
+  });
 
   log("CCD generated. Fetching the document contents");
   return;
