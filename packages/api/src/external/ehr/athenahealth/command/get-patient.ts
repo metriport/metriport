@@ -1,5 +1,11 @@
 import { PatientResource } from "@metriport/shared/interface/external/athenahealth/patient";
-import { errorToString, normalizeDate, normalizeGender, toTitleCase } from "@metriport/shared";
+import {
+  errorToString,
+  normalizeDate,
+  normalizeGender,
+  toTitleCase,
+  NotFoundError,
+} from "@metriport/shared";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { out } from "@metriport/core/util/log";
@@ -19,7 +25,6 @@ import { getPatientMapping, findOrCreatePatientMapping } from "../../../../comma
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { Config } from "../../../../shared/config";
 import { createMetriportAddresses, createMetriportContacts, createNames } from "../shared";
-import NotFoundError from "../../../../errors/not-found";
 
 const region = Config.getAWSRegion();
 const athenaEnvironment = Config.getAthenaHealthEnv();
