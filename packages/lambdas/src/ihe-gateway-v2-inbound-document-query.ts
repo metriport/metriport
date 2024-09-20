@@ -10,7 +10,6 @@ import { getEnvVarOrFail, getEnvVar } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
 import { getEnvOrFail } from "./shared/env";
 
-const apiUrl = getEnvVarOrFail("API_URL");
 const region = getEnvVarOrFail("AWS_REGION");
 const engineeringCxId = getEnvVar("ENGINEERING_CX_ID");
 const postHogSecretName = getEnvVar("POST_HOG_API_KEY_SECRET");
@@ -25,7 +24,7 @@ export async function handler(event: APIGatewayProxyEventV2) {
         ? Buffer.from(event.body, "base64").toString()
         : event.body;
       const dqRequest: InboundDocumentQueryReq = await processInboundDqRequest(body);
-      const result: InboundDocumentQueryResp = await processInboundDq(dqRequest, apiUrl);
+      const result: InboundDocumentQueryResp = await processInboundDq(dqRequest);
       const xmlResponse = createInboundDqResponse(result);
 
       if (
