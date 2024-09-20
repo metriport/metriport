@@ -13,15 +13,15 @@ import {
 import { EhrSources } from "../../external/ehr/shared";
 import ForbiddenError from "../../errors/forbidden";
 
-export type parseResponse = {
+export type ParseResponse = {
   externalId: string;
-  queryParams: { [k: string]: string };
+  queryParams?: { [k: string]: string };
 };
 
 export async function processCxIdAsync(
   req: Request,
   source: EhrSources,
-  parseExternalId: (tokenData: object) => parseResponse
+  parseExternalId: (tokenData: object) => ParseResponse
 ): Promise<void> {
   const accessToken = getAuthorizationToken(req);
   const authInfo = await getJwtToken({
