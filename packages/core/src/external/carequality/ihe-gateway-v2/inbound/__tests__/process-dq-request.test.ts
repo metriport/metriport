@@ -1,19 +1,19 @@
-import { metriportOrganization } from "@metriport/shared";
 import { InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
-import { createITI38SoapEnvelope } from "../../outbound/xca/create/iti38-envelope";
-import { processInboundDqRequest } from "../xca/process/dq-request";
-import { processDqResponse } from "../../outbound/xca/process/dq-response";
-import { createInboundDqResponse } from "../xca/create/dq-response";
+import { metriportOrganization } from "@metriport/shared";
+import { createExtrinsicObjectXml } from "../../../../../shareback/metadata/create-metadata-xml";
+import { S3Utils } from "../../../../aws/s3";
+import { extractDocumentUniqueId } from "../../../shared";
 import {
   TEST_CERT,
   TEST_KEY,
-  xcaGateway,
   outboundDqRequest,
+  xcaGateway,
 } from "../../outbound/__tests__/constants";
+import { createITI38SoapEnvelope } from "../../outbound/xca/create/iti38-envelope";
+import { processDqResponse } from "../../outbound/xca/process/dq-response";
 import { signTimestamp } from "../../saml/security/sign";
-import { createExtrinsicObjectXml } from "../../../dq/create-metadata-xml";
-import { extractDocumentUniqueId } from "../../../shared";
-import { S3Utils } from "../../../../aws/s3";
+import { createInboundDqResponse } from "../xca/create/dq-response";
+import { processInboundDqRequest } from "../xca/process/dq-request";
 
 describe("Process Inbound Dq Request", () => {
   beforeEach(() => {

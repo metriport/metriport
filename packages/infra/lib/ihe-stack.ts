@@ -260,7 +260,6 @@ export class IHEStack extends Stack {
       envVars: {
         MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
         IHE_REQUESTS_BUCKET_NAME: iheRequestsBucket.bucketName,
-        API_URL: props.config.loadBalancerDnsName,
         ...(props.config.engineeringCxId
           ? { ENGINEERING_CX_ID: props.config.engineeringCxId }
           : {}),
