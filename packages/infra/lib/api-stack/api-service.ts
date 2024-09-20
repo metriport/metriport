@@ -351,6 +351,21 @@ export function createAPIService({
 
   // Access grant for Aurora DB's secret
   dbCredsSecret.grantRead(fargateService.taskDefinition.taskRole);
+  // Access to EHR secrets
+  if (props.config.ehrIntegration) {
+    const athenaClientKey = secret.Secret.fromSecretCompleteArn(
+      stack,
+      "EhrAthenaClientKeySecret",
+      props.config.ehrIntegration.athenaHealth.athenaClientKeyArn
+    );
+    athenaClientKey.grantRead(fargateService.taskDefinition.taskRole);
+    const athenaClientSecret = secret.Secret.fromSecretCompleteArn(
+      stack,
+      "EhrAthenaClientSecretSecret",
+      props.config.ehrIntegration.athenaHealth.athenaClientSecretArn
+    );
+    athenaClientSecret.grantRead(fargateService.taskDefinition.taskRole);
+  }
   // RW grant for Dynamo DB
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
