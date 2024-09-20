@@ -11,12 +11,11 @@ const bucket = Config.getMedicalDocumentsBucketName();
 
 export async function getMetadataDocumentContents(
   cxId: string,
-  patientId: string,
-  failGracefully = true
+  patientId: string
 ): Promise<string[]> {
   const documentContents = await retrieveXmlContentsFromMetadataFilesOnS3(cxId, patientId, bucket);
 
-  if (!documentContents.length && !failGracefully) {
+  if (!documentContents.length) {
     const msg = `Error getting document contents`;
     capture.error(msg, { extra: { cxId, patientId } });
     throw new XDSRegistryError("Internal Server Error");

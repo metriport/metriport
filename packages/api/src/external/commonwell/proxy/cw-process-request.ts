@@ -6,6 +6,7 @@ import {
 import { isDocumentReference } from "@metriport/core/external/fhir/document/document-reference";
 import { toFHIR as patientToFHIR } from "@metriport/core/external/fhir/patient/index";
 import { buildBundle } from "@metriport/core/external/fhir/shared/bundle";
+import { ensureCcdExists } from "@metriport/core/shareback/ensure-ccd-exists";
 import { getMetadataDocumentContents } from "@metriport/core/shareback/metadata/get-metadata-xml";
 import { parseExtrinsicObjectXmlToDocumentReference } from "@metriport/core/shareback/metadata/parse-metadata-xml";
 import BadRequestError from "@metriport/core/util/error/bad-request";
@@ -62,6 +63,7 @@ export async function processRequest(req: Request): Promise<Bundle<Resource>> {
     },
   ];
 
+  await ensureCcdExists({ cxId, patientId, log });
   const metadataFiles = await getMetadataDocumentContents(cxId, patientId);
   const docRefs: DocumentReference[] = [];
   for (const file of metadataFiles) {
