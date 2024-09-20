@@ -291,7 +291,10 @@ export function createAPIService({
             CQ_TRUST_BUNDLE_BUCKET_NAME: props.config.iheGateway.trustStoreBucketName,
           }),
           ...(props.config.ehrIntegration && {
-            EHR_ATHENA_BASE_URL: props.config.ehrIntegration.athenaHealth.baseUrl,
+            EHR_ATHENA_ENVIRONMENT: props.config.ehrIntegration.athenaHealth.env,
+            EHR_ATHENA_CLIENT_KEY_ARN: props.config.ehrIntegration.athenaHealth.athenaClientKeyArn,
+            EHR_ATHENA_CLIENT_SECRET_ARN:
+              props.config.ehrIntegration.athenaHealth.athenaClientSecretArn,
           }),
         },
       },
