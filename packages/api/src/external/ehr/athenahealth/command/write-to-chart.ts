@@ -4,8 +4,8 @@ import AthenaHealthApi from "@metriport/core/external/athenahealth/index";
 import { Config } from "../../../../shared/config";
 
 const athenaEnvironment = Config.getAthenaHealthEnv();
-const athenaClientId = Config.getAthenaTwoLeggedClientSecret();
-const athenaClientSecret = Config.getAthenaTwoLeggedClientId();
+const athenaClientId = Config.getAthenaTwoLeggedClientId();
+const athenaClientSecret = Config.getAthenaTwoLeggedClientSecret();
 
 export async function writeMedicationToChart({
   accessToken,

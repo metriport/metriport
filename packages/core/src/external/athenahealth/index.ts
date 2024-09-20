@@ -27,6 +27,8 @@ function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
+export type AthenaMedication = { medication: string; medicationid: number };
+
 class AthenaHealthApi {
   private axiosInstanceFhirApi: AxiosInstance;
   private axiosInstanceProprietary: AxiosInstance;
@@ -38,7 +40,7 @@ class AthenaHealthApi {
   private constructor(private config: ApiConfig) {
     this.twoLeggedAuthToken = "";
     this.threeLeggedAuthToken = config.threeLeggedAuthToken;
-    this.practiceId = config.practiceId;
+    this.practiceId = config.practiceId.replace("a-1.Practice-", "");
     this.s3Utils = getS3UtilsInstance();
     this.axiosInstanceFhirApi = axios.create({});
     this.axiosInstanceProprietary = axios.create({});
@@ -52,16 +54,20 @@ class AthenaHealthApi {
 
   private async fetchtwoLeggedAuthToken(): Promise<void> {
     const url = `https://${this.config.environment}.platform.athenahealth.com/oauth2/v1/token`;
-    const payload = `grant_type=client_credentials&client_id=${this.config.clientId}&client_secret=${this.config.clientSecret}&scope=athena/service/Athenanet.MDP.*`;
+    const payload = `grant_type=client_credentials&scope=athena/service/Athenanet.MDP.*`;
 
     try {
       const response = await axios.post(url, payload, {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        auth: {
+          username: this.config.clientId,
+          password: this.config.clientSecret,
+        },
       });
 
       this.twoLeggedAuthToken = response.data.access_token;
     } catch (error) {
-      throw new Error("Failed to fetch Two Legged OAuth token");
+      throw new Error("Failed to fetch Two Legged Auth token");
     }
   }
 
@@ -128,7 +134,7 @@ class AthenaHealthApi {
           patientId,
           date: new Date(),
         });
-        const key = `athenahealth/${filePath}/${uuidv7()}.json`;
+        const key = `athenahealth/patient/${filePath}/${uuidv7()}.json`;
         await this.s3Utils.uploadFile({
           bucket: responsesBucket,
           key,
@@ -186,32 +192,32 @@ class AthenaHealthApi {
       });
     }
     const data = {
-      departmentid: departmentId,
+      departmentid: this.stripDepartmentId(departmentId),
       providernote: "Added via Metriport App",
       unstructuredsig: "Metriport",
       medicationid: `${medicationOptions[0]?.medicationid}`,
       hidden: "false",
-      startdate: medicationStatement?.effectivePeriod?.start ?? "",
-      stopdate: medicationStatement?.effectivePeriod?.end ?? "",
-      stopreason: "",
-      patientnote: "",
-      THIRDPARTYUSERNAME: "",
-      PATIENTFACINGCALL: "",
+      startdate: medicationStatement?.effectivePeriod?.start ?? undefined,
+      stopdate: medicationStatement?.effectivePeriod?.end ?? undefined,
+      stopreason: undefined,
+      patientnote: undefined,
+      THIRDPARTYUSERNAME: undefined,
+      PATIENTFACINGCALL: undefined,
     };
     try {
-      const patientUrl = `/Patient/${patientId}`;
+      const chartMedicationUrl = `/chart/${this.stripPatientId(patientId)}/medications`;
       const response = await this.handleAxiosRequest(() =>
-        this.axiosInstanceFhirApi.post(patientUrl, this.createDataParams(data))
+        this.axiosInstanceProprietary.post(chartMedicationUrl, this.createDataParams(data))
       );
-      if (!response.data) throw new Error(`No body returned from ${patientUrl}`);
-      debug(`${patientUrl} resp: ${JSON.stringify(response.data)}`);
+      if (!response.data) throw new Error(`No body returned from ${chartMedicationUrl}`);
+      debug(`${chartMedicationUrl} resp: ${JSON.stringify(response.data)}`);
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
           cxId,
           patientId,
           date: new Date(),
         });
-        const key = `athenahealth/${filePath}/${uuidv7()}.json`;
+        const key = `athenahealth/chart/medication/${filePath}/${uuidv7()}.json`;
         await this.s3Utils.uploadFile({
           bucket: responsesBucket,
           key,
@@ -243,51 +249,68 @@ class AthenaHealthApi {
     cxId: string;
     patientId: string;
     medication: Medication;
-  }): Promise<{ medication: string; medicationid: number }[]> {
+  }): Promise<AthenaMedication[]> {
     const { log, debug } = out(`AthenaHealth search for medication - AH patientId ${patientId}`);
-    const searchValue = medication.code?.coding?.[0]?.display;
-    if (!searchValue || searchValue.length < 2) throw Error("Need sufficient code to proceed.");
-    try {
-      const referenceUrl = `/reference/medications?searchvalue=${searchValue}`;
-      const response = await this.handleAxiosRequest(() =>
-        this.axiosInstanceProprietary.get(referenceUrl)
-      );
-      if (!response.data) throw new Error(`No body returned from ${referenceUrl}`);
-      debug(`${referenceUrl} resp: ${JSON.stringify(response.data)}`);
-      if (responsesBucket) {
-        const filePath = createHivePartitionFilePath({
-          cxId,
-          patientId,
-          date: new Date(),
-        });
-        const key = `athenahealth/${referenceUrl}/${filePath}/${uuidv7()}.json`;
-        await this.s3Utils.uploadFile({
-          bucket: responsesBucket,
-          key,
-          file: Buffer.from(JSON.stringify(response.data), "utf8"),
-          contentType: "application/json",
-        });
-      }
-      return response.data;
-    } catch (error) {
-      const msg = `Failure while searching for medications @ AthenHealth`;
-      log(`${msg}. Patient ID: ${patientId}. Cause: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          baseUrl: this.axiosInstanceProprietary.getUri(),
-          patientId,
-          context: "athenahealth.search for medication",
-          error,
-        },
+    const searchValues = medication.code?.coding?.flatMap(c => c.display?.split("/") ?? []);
+    if (!searchValues) throw Error("No code displays values for searching medications.");
+    const medicationOptions: AthenaMedication[] = [];
+    await Promise.all(
+      searchValues.map(async searchValue => {
+        if (searchValue.length < 2) return;
+        console.log(searchValue);
+        try {
+          const referenceUrl = `/reference/medications?searchvalue=${searchValue}`;
+          const response = await this.handleAxiosRequest(() =>
+            this.axiosInstanceProprietary.get(referenceUrl)
+          );
+          if (!response.data) throw new Error(`No body returned from ${referenceUrl}`);
+          debug(`${referenceUrl} resp: ${JSON.stringify(response.data)}`);
+          const medications = response.data as AthenaMedication[];
+          medicationOptions.push(...medications);
+        } catch (error) {
+          const msg = `Failure while searching for medications @ AthenHealth`;
+          log(`${msg}. Patient ID: ${patientId}. Cause: ${errorToString(error)}`);
+          capture.error(msg, {
+            extra: {
+              baseUrl: this.axiosInstanceProprietary.getUri(),
+              patientId,
+              context: "athenahealth.search-for-medication",
+              error,
+            },
+          });
+          throw error;
+        }
+      })
+    );
+    if (responsesBucket) {
+      const filePath = createHivePartitionFilePath({
+        cxId,
+        patientId,
+        date: new Date(),
       });
-      throw error;
+      const key = `athenahealth/reference/medications/${filePath}/${uuidv7()}.json`;
+      await this.s3Utils.uploadFile({
+        bucket: responsesBucket,
+        key,
+        file: Buffer.from(JSON.stringify(medicationOptions), "utf8"),
+        contentType: "application/json",
+      });
     }
+    return medicationOptions;
   }
 
-  private createDataParams(data: { [key: string]: string }): string {
+  private createDataParams(data: { [key: string]: string | undefined }): string {
     return Object.entries(data)
-      .map(([k, v]) => `${k}=${v}`)
+      .flatMap(([k, v]) => (v ? [`${k}=${v}`] : []))
       .join("&");
+  }
+
+  private stripPatientId(id: string) {
+    return id.replace(`a-${this.practiceId}.E-`, "");
+  }
+
+  private stripDepartmentId(id: string) {
+    return id.replace(`a-${this.practiceId}.Department-`, "");
   }
 }
 

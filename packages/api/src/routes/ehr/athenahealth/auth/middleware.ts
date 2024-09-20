@@ -10,16 +10,16 @@ import BadRequestError from "../../../../errors/bad-request";
 
 function parseAthenaHealthPracticeId(tokenData: {
   ah_practice?: string;
-  ah_deparment?: string;
+  ah_department?: string;
 }): parseResponse {
   const practiceId = tokenData.ah_practice;
   if (!practiceId) throw new BadRequestError("Missing exteranl mapping on token data");
-  const deparmentId = tokenData.ah_deparment;
+  const departmentId = tokenData.ah_department;
   return {
     externalId: practiceId,
     queryParams: {
-      practiceId: practiceId.replace("a-1.Practice-", ""),
-      ...(deparmentId && { deparmentId: deparmentId.replace("a-1.Deparment-", "") }),
+      practiceId,
+      ...(departmentId && { departmentId: departmentId }),
     },
   };
 }
