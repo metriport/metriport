@@ -6,7 +6,6 @@ import * as cwRunOrSchedule from "../../../external/commonwell/command/run-or-sc
 import * as cwPatient from "../../../external/commonwell/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
-import { getCqOrgIdsToDenyOnCw } from "../cross-hie-ids";
 import { runInitialPatientDiscoveryAcrossHies } from "../run-initial-patient-discovery";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../run-or-schedule-patient-discovery";
 
