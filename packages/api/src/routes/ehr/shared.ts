@@ -1,4 +1,4 @@
-import { Request } from "express";
+import { NextFunction, Request, Response } from "express";
 import { getAuthorizationToken } from "../util";
 import { getJwtToken } from "../../command/jwt-token";
 import { getCxMappingOrFail } from "../../command/mapping/cx";
@@ -17,6 +17,16 @@ export type ParseResponse = {
   externalId: string;
   queryParams?: { [k: string]: string };
 };
+
+export function processCxIdCanvas(req: Request, res: Response, next: NextFunction) {
+  processCxIdCanvasAsync(req)
+    .then(() => next())
+    .catch(next);
+}
+
+export async function processCxIdCanvasAsync(req: Request): Promise<void> {
+  req.cxId = "cdb678ab-07e3-42c5-93f5-5541cf1f15a8";
+}
 
 export async function processCxIdAsync(
   req: Request,

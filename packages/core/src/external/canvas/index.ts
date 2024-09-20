@@ -18,17 +18,17 @@ interface SDKConfig {
   environment: string;
   clientId: string;
   clientSecret: string;
-  OAuthToken?: string;
+  authToken?: string;
 }
 
 class CanvasSDK {
   private axiosInstanceFhirApi: AxiosInstance;
   private axiosInstanceApi: AxiosInstance;
   private axiosInstanceCoreApi: AxiosInstance;
-  private OAuthToken: string;
+  private authToken: string | undefined;
 
   private constructor(private config: SDKConfig) {
-    this.OAuthToken = config.OAuthToken ?? "";
+    this.authToken = config.authToken;
     this.axiosInstanceFhirApi = axios.create({});
     this.axiosInstanceApi = axios.create({});
     this.axiosInstanceCoreApi = axios.create({});
@@ -49,7 +49,7 @@ class CanvasSDK {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
       });
 
-      this.OAuthToken = response.data.access_token;
+      this.authToken = response.data.access_token;
     } catch (error) {
       console.log(error);
       throw new Error("Failed to fetch OAuth token");
@@ -57,7 +57,7 @@ class CanvasSDK {
   }
 
   async initialize(): Promise<void> {
-    if (!this.OAuthToken) {
+    if (!this.authToken) {
       await this.fetchOAuthToken();
     }
 
@@ -65,7 +65,7 @@ class CanvasSDK {
       baseURL: `https://home-app-web:8000/`,
       headers: {
         Accept: "application/json",
-        Authorization: `Bearer ${this.OAuthToken}`,
+        Authorization: `Bearer ${this.authToken}`,
         "Content-Type": "application/json",
       },
     });
@@ -74,7 +74,7 @@ class CanvasSDK {
       baseURL: `http://home-app-web:8000/api/`,
       headers: {
         Accept: "application/json",
-        Authorization: `Bearer ${this.OAuthToken}`,
+        Authorization: `Bearer ${this.authToken}`,
         "Content-Type": "application/json",
       },
     });
@@ -82,7 +82,7 @@ class CanvasSDK {
     this.axiosInstanceCoreApi = axios.create({
       baseURL: `http://home-app-web:8000/core/api/`,
       headers: {
-        Authorization: `Bearer ${this.OAuthToken}`,
+        Authorization: `Bearer ${this.authToken}`,
         "Content-Type": "application/json",
       },
     });

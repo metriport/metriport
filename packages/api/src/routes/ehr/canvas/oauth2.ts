@@ -31,8 +31,8 @@ router.get(
       grant_type: "authorization_code",
       code,
       redirect_uri: "http://localhost:8080/ehr/canvas/oauth2",
-      client_id: "TODO",
-      client_secret: "TODO",
+      client_id: "FILL", // ID from `select client_id from Oauth_canvasoauthapplication;`
+      client_secret: "FILL", // SECRET from `select client_secret from Oauth_canvasoauthapplication;`
     };
     const dataParams = createDataParams(data);
     const resp = await canvasApi.post("/auth/token/", dataParams, {
@@ -40,10 +40,9 @@ router.get(
         "Content-Type": "application/x-www-form-urlencoded",
       },
     });
-    console.log(resp);
     return res
       .header({
-        Location: `http://localhost:3020/canvas/app#access_token=${resp.data["access_token"]}&patient=TODO`,
+        Location: `http://localhost:3020/canvas/app#access_token=${resp.data["access_token"]}&patient=FILL`, // ID from `select key from api_patient;`
       })
       .sendStatus(httpStatus.FOUND);
   })

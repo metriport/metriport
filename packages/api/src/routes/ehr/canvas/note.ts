@@ -1,53 +1,33 @@
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { Request, Response } from "express";
-import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import CanvasSDK from "@metriport/core/external/canvas/index";
 import { requestLogger } from "../../helpers/request-logger";
-import { asyncHandler, getCxIdOrFail } from "../../util";
+import { asyncHandler, getAuthorizationToken, getFrom } from "../../util";
 
 const router = Router();
 
-/**
- * GET /ehr/athenahealth/patient/:id
- *
- * Tries to retrieve the matching Metriport patient
- * @param req.params.id The ID of AthenaHealth Patient.
- * @returns Metriport Patient if found.
- */
-router.get(
-  "/:id",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const metriportPatient = await getPatientOrFail({
-      cxId,
-      id: "0191f0a0-d153-7403-aeb4-dd428089deb6", // Metriport Patient ID
-    });
-    return res.status(httpStatus.OK).json(metriportPatient.id);
-  })
-);
-
-/*
 router.post(
-  "/:id/note",
+  "/:id/medication",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const accessToken = getAuthorizationToken(req);
+    const patientKey = getFrom("params").orFail("id", req);
     const canvas = await CanvasSDK.create({
       environment: "develop",
-      clientId: "TODO",
-      clientSecret:"TODO",
-      OAuthToken: accessToken,
+      clientId: "ignore",
+      clientSecret: "ignore",
+      authToken: accessToken,
     });
     const noteId = await canvas.createNote({
-      patientKey: "TODO",
-      providerKey: "TODO",
-      practiceLocationKey: "TODO",
+      patientKey,
+      providerKey: "FILL", // ID form `select key from api_staff WHERE first_name = 'Larry';`
+      practiceLocationKey: "FILL", // ID from `select externally_exposable_id from api_practicelocation;`
       noteTypeName: "Chart Review",
       returnKey: "id",
     });
     const medicationStatement = await canvas.createNoteMedicationStatement({
-      patientId: "10",
+      patientId: "FILL", // ID from `select id from api_patient;`
       noteId,
     });
     const medicationStatementId = (medicationStatement as { id: string }).id;
@@ -82,9 +62,7 @@ router.post(
         },
       },
     });
-    console.log(medicationStatement);
     const note = await canvas.getNote({ noteId });
-    console.log(note);
 
     await canvas.updateNote({
       noteId,
@@ -133,6 +111,5 @@ router.post(
     return res.sendStatus(httpStatus.NO_CONTENT);
   })
 );
-*/
 
 export default router;
