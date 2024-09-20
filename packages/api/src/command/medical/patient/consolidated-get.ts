@@ -29,7 +29,6 @@ import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getSignedURL } from "../document/document-download";
-import { getOrganizationOrFail } from "../organization/get-organization";
 import { checkAiBriefEnabled } from "./check-ai-brief-enabled";
 import { processConsolidatedDataWebhook } from "./consolidated-webhook";
 import {
@@ -53,7 +52,6 @@ export type GetConsolidatedParams = {
 
 type GetConsolidatedPatientData = {
   patient: Patient;
-  organization: Organization;
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
@@ -90,10 +88,8 @@ export async function startConsolidatedQuery({
   const isGenerateAiBrief = await checkAiBriefEnabled({ cxId, generateAiBrief });
 
   const { log } = Util.out(`startConsolidatedQuery - M patient ${patientId}`);
-  const [organization, patient] = await Promise.all([
-    getOrganizationOrFail({ cxId }),
-    getPatientOrFail({ id: patientId, cxId }),
-  ]);
+  const patient = await getPatientOrFail({ id: patientId, cxId });
+
   const currentConsolidatedProgress = getCurrentConsolidatedProgress(
     patient.data.consolidatedQueries,
     {
@@ -146,7 +142,6 @@ export async function startConsolidatedQuery({
 
   getConsolidatedPatientDataAsync({
     patient: updatedPatient,
-    organization,
     resources,
     dateFrom,
     dateTo,
@@ -254,7 +249,6 @@ export async function getConsolidatedAndSendToCx(
 
 export async function getConsolidated({
   patient,
-  organization,
   resources,
   dateFrom,
   dateTo,
@@ -274,7 +268,6 @@ export async function getConsolidated({
     if (!bundle) {
       bundle = await getConsolidatedPatientData({
         patient,
-        organization,
         resources,
         dateFrom,
         dateTo,
@@ -423,7 +416,6 @@ async function uploadConsolidatedJsonAndReturnUrl({
  */
 export async function getConsolidatedPatientData({
   patient,
-  organization,
   resources,
   dateFrom,
   dateTo,
@@ -432,7 +424,6 @@ export async function getConsolidatedPatientData({
 }: GetConsolidatedPatientData): Promise<SearchSetBundle<Resource>> {
   const payload: ConsolidatedSnapshotRequestSync = {
     patient,
-    organization,
     resources,
     dateFrom,
     dateTo,
@@ -448,7 +439,6 @@ export async function getConsolidatedPatientData({
 
 export async function getConsolidatedPatientDataAsync({
   patient,
-  organization,
   resources,
   dateFrom,
   dateTo,
@@ -462,7 +452,6 @@ export async function getConsolidatedPatientDataAsync({
 }): Promise<void> {
   const payload: ConsolidatedSnapshotRequestAsync = {
     patient,
-    organization,
     requestId,
     conversionType,
     resources,

@@ -47,3 +47,10 @@ function getFilters({ ids }: { ids: string[] }) {
   const filtersAsStr = filters.toString();
   return filtersAsStr;
 }
+
+export function toReference<T extends Resource>(resource: T): Reference<T> | undefined {
+  const id = resource.id;
+  const type = resource.resourceType;
+  if (!id || !type) return undefined;
+  return { id, type, reference: `${type}/${id}` };
+}

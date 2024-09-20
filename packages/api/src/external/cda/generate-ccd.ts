@@ -36,7 +36,7 @@ export async function generateCcd(
   if (!uploadsExist) {
     return generateEmptyCcd(patient);
   }
-  const metriportGenerated = await getFhirResourcesForCcd(patient, organization);
+  const metriportGenerated = await getFhirResourcesForCcd(patient);
   if (!metriportGenerated || !metriportGenerated.length) {
     return generateEmptyCcd(patient);
   }
@@ -62,10 +62,9 @@ export async function generateCcd(
 }
 
 async function getFhirResourcesForCcd(
-  patient: Patient,
-  organization: Organization
+  patient: Patient
 ): Promise<BundleEntry<Resource>[] | undefined> {
-  const allResources = await getConsolidatedPatientData({ patient, organization });
+  const allResources = await getConsolidatedPatientData({ patient });
   return allResources.entry?.filter(entry => {
     const resource = entry.resource;
     if (resource?.resourceType === "Composition") return false;

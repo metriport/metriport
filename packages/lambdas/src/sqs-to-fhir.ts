@@ -167,7 +167,9 @@ export async function handler(event: SQSEvent) {
       processFHIRResponse(response, event, log);
 
       await cloudWatchUtils.reportMetrics(metrics);
-      await ossApi.notifyApi({ ...lambdaParams, status: "success" }, log);
+
+      // TODO 2215 Remove this when we're ready to move the notification from the FHIR server here
+      await ossApi.internal.notifyApi({ ...lambdaParams, status: "success" }, log);
     }
     console.log(`Done`);
   } catch (error) {

@@ -42,6 +42,10 @@ dayjs.extend(duration);
 
 const referenceRegex = new RegExp(/"reference":\s*"(.+?)"/g);
 
+export type ReferenceWithIdAndType<T extends Resource = Resource> = Required<
+  Pick<Reference<T>, "id" | "type">
+>;
+
 /**
  * Returns the references found in the given resources, including the missing ones.
  *
@@ -58,7 +62,7 @@ export function getReferencesFromResources({
   resources: Resource[];
   referencesToInclude?: ResourceType[];
   referencesToExclude?: ResourceType[];
-}): { references: Reference[]; missingReferences: Reference[] } {
+}): { references: Reference[]; missingReferences: ReferenceWithIdAndType[] } {
   if (resources.length <= 0) return { references: [], missingReferences: [] };
   const resourceIds = resources.flatMap(r => r.id ?? []);
   const references = getReferencesFromRaw(
@@ -66,7 +70,7 @@ export function getReferencesFromResources({
     referencesToInclude,
     referencesToExclude
   );
-  const missingReferences: Reference[] = [];
+  const missingReferences: ReferenceWithIdAndType[] = [];
   for (const ref of references) {
     if (!ref.id) continue;
     if (!resourceIds.includes(ref.id)) missingReferences.push(ref);
@@ -78,7 +82,7 @@ function getReferencesFromRaw(
   rawContents: string,
   referencesToInclude: ResourceType[],
   referencesToExclude: ResourceType[]
-): Reference[] {
+): ReferenceWithIdAndType[] {
   const matches = rawContents.matchAll(referenceRegex);
   const references = [];
   for (const match of matches) {
@@ -86,7 +90,7 @@ function getReferencesFromRaw(
     if (ref) references.push(ref);
   }
   const uniqueRefs = uniq(references);
-  const preResult: Reference[] = uniqueRefs.flatMap(r => {
+  const preResult: ReferenceWithIdAndType[] = uniqueRefs.flatMap(r => {
     const parts = r.split("/");
     const type = parts[0] as ResourceType | undefined;
     const id = parts[1];

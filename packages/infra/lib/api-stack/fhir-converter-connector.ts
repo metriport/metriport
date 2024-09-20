@@ -99,7 +99,6 @@ export function createLambda({
   vpc,
   sourceQueue,
   fhirServerQueue,
-  patientDataConsolidatorQueue,
   dlq,
   fhirConverterBucket,
   apiServiceDnsAddress,
@@ -111,7 +110,6 @@ export function createLambda({
   vpc: IVpc;
   sourceQueue: IQueue;
   fhirServerQueue: IQueue;
-  patientDataConsolidatorQueue: IQueue;
   dlq: IQueue;
   fhirConverterBucket: s3.IBucket;
   apiServiceDnsAddress: string;
@@ -143,7 +141,6 @@ export function createLambda({
       QUEUE_URL: sourceQueue.queueUrl,
       DLQ_URL: dlq.queueUrl,
       FHIR_SERVER_QUEUE_URL: fhirServerQueue.queueUrl,
-      PATIENT_DATA_CONSOLIDATOR_QUEUE_URL: patientDataConsolidatorQueue.queueUrl,
       CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,
     },
     timeout: lambdaTimeout,
@@ -163,11 +160,6 @@ export function createLambda({
   provideAccessToQueue({ accessType: "both", queue: sourceQueue, resource: conversionLambda });
   provideAccessToQueue({ accessType: "send", queue: dlq, resource: conversionLambda });
   provideAccessToQueue({ accessType: "send", queue: fhirServerQueue, resource: conversionLambda });
-  provideAccessToQueue({
-    accessType: "send",
-    queue: patientDataConsolidatorQueue,
-    resource: conversionLambda,
-  });
 
   return conversionLambda;
 }

@@ -114,6 +114,10 @@ export async function calculateDocumentConversionStatus({
       getConsolidated({ patient: updatedPatient, organization, conversionType: "pdf" }).catch(
         processAsyncError(`Post-DQ getConsolidated ${source}`)
       );
+    } else if (isGloablConversionCompleted) {
+      getConsolidated({ patient: updatedPatient, organization }).catch(
+        processAsyncError(`Post-DQ getConsolidated GLOBAL`)
+      );
     }
   } else {
     const expectedPatient = await updateConversionProgress({
