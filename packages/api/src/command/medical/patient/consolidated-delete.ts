@@ -14,7 +14,6 @@ import duration from "dayjs/plugin/duration";
 import { chunk, flatten } from "lodash";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { capture } from "../../../shared/notifications";
-import { getOrganizationOrFail } from "../organization/get-organization";
 import { getConsolidatedPatientData } from "./consolidated-get";
 
 dayjs.extend(duration);
@@ -53,10 +52,8 @@ async function getResourcesToDelete(
   resources: ResourceTypeForConsolidation[] | undefined,
   log: typeof console.log
 ): Promise<BundleEntry<Resource>[]> {
-  const organization = await getOrganizationOrFail({ cxId: patient.cxId });
   const bundle = await getConsolidatedPatientData({
     patient,
-    organization,
     resources,
   });
   const entries = bundle.entry ?? [];
