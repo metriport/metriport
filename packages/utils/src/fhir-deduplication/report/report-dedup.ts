@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { BundleEntry, Resource } from "@medplum/fhirtypes";
-import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { getEnvVarOrFail } from "@metriport/shared";
 import { out } from "@metriport/core/util/log";
 import fs from "fs";
 import { groupBy } from "lodash";

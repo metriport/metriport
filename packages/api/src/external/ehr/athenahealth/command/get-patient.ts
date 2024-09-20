@@ -1,11 +1,17 @@
 import { PatientResource } from "@metriport/shared/interface/external/athenahealth/patient";
-import { normalizeDate, normalizeGender, toTitleCase } from "@metriport/shared";
+import {
+  errorToString,
+  normalizeDate,
+  normalizeGender,
+  toTitleCase,
+  NotFoundError,
+} from "@metriport/shared";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { errorToString } from "@metriport/shared";
 import { Patient, PatientDemoData } from "@metriport/core/domain/patient";
-import { getPatient as getAthenaPatient } from "@metriport/core/external/athenahealth/get-patient";
+import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/athenahealth/index";
 import { EhrSources } from "../../shared";
 import {
   getPatientOrFail as getMetriportPatientOrFail,
@@ -19,18 +25,22 @@ import { getPatientMapping, findOrCreatePatientMapping } from "../../../../comma
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { Config } from "../../../../shared/config";
 import { createMetriportAddresses, createMetriportContacts, createNames } from "../shared";
-import NotFoundError from "../../../../errors/not-found";
 
-const athenaUrl = Config.getAthenaHealthUrl();
+const region = Config.getAWSRegion();
+const athenaEnvironment = Config.getAthenaHealthEnv();
+const athenaClientKeySecretArn = Config.getAthenaHealthClientKeyArm();
+const athenaClientSecretSecretArn = Config.getAthenaHealthClientSecretArn();
 const defaultFacilityMappingExternalId = "default";
 
 export async function getPatientIdOrFail({
   accessToken,
   cxId,
+  athenaPracticeId,
   athenaPatientId,
 }: {
   accessToken: string;
   cxId: string;
+  athenaPracticeId: string;
   athenaPatientId: string;
 }): Promise<string> {
   const { log } = out(`AthenaHealth getPatient - cxId ${cxId} athenaPatientId ${athenaPatientId}`);
@@ -46,11 +56,20 @@ export async function getPatientIdOrFail({
     });
     return metriportPatient.id;
   }
-  if (!athenaUrl) throw new Error("AthenaHealth url not defined");
-  const athenaPatient = await getAthenaPatient({
+  if (!athenaEnvironment || !athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
+    throw new Error("AthenaHealth not setup");
+  }
+  const athenaClientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
+  const athenaClientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
+  const api = await AthenaHealthApi.create({
+    threeLeggedAuthToken: accessToken,
+    practiceId: athenaPracticeId,
+    environment: athenaEnvironment as AthenaEnv,
+    clientKey: athenaClientKey,
+    clientSecret: athenaClientSecret,
+  });
+  const athenaPatient = await api.getPatient({
     cxId,
-    accessToken,
-    baseUrl: athenaUrl,
     patientId: athenaPatientId,
   });
   if (!athenaPatient) throw new NotFoundError("AthenaHealth patient not found");

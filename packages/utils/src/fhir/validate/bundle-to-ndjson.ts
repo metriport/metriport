@@ -5,8 +5,8 @@ import { Bundle } from "@medplum/fhirtypes";
 import { bundleToNdjson } from "@metriport/core/external/fhir/export/fhir-to-ndjson";
 import dayjs from "dayjs";
 import fs from "fs";
-import { elapsedTimeAsStr } from "../shared/duration";
-import { getFileContents, getFileNames, makeDir } from "../shared/fs";
+import { elapsedTimeAsStr } from "../../shared/duration";
+import { getFileContents, getFileNames, makeDir } from "../../shared/fs";
 
 /**
  * Script used to convert "_deduped.json" files (containing FHIR Bundles) into NDJSON files.

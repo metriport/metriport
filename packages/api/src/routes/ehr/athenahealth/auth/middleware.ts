@@ -1,16 +1,29 @@
 import { NextFunction, Request, Response } from "express";
+import { BadRequestError } from "@metriport/shared";
 import { EhrSources } from "../../../../external/ehr/shared";
 import {
+  ParseResponse,
   processCxIdAsync,
   processPatientRouteAsync,
   processDocumentRouteAsync,
 } from "../../shared";
-import BadRequestError from "../../../../errors/bad-request";
 
-function parseAthenaHealthPracticeId(tokenData: { ah_practice?: string }): string {
+function parseAthenaHealthPracticeId(tokenData: {
+  ah_practice?: string;
+  ah_department?: string;
+}): ParseResponse {
   const practiceId = tokenData.ah_practice;
-  if (!practiceId) throw new BadRequestError("Missing exteranl mapping on token data");
-  return practiceId;
+  if (!practiceId) {
+    throw new BadRequestError("Missing required external mapping value on token data");
+  }
+  const departmentId = tokenData.ah_department;
+  return {
+    externalId: practiceId,
+    queryParams: {
+      practiceId,
+      ...(departmentId && { departmentId: departmentId }),
+    },
+  };
 }
 
 export function processCxId(req: Request, res: Response, next: NextFunction) {
