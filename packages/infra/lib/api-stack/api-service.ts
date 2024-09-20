@@ -353,18 +353,18 @@ export function createAPIService({
   dbCredsSecret.grantRead(fargateService.taskDefinition.taskRole);
   // Access to EHR secrets
   if (props.config.ehrIntegration) {
-    const athenaClientKeySecret = secret.Secret.fromSecretCompleteArn(
+    const athenaClientKey = secret.Secret.fromSecretCompleteArn(
       stack,
       "EhrAthenaClientKeySecret",
       props.config.ehrIntegration.athenaHealth.athenaClientKeyArn
     );
-    athenaClientKeySecret.grantRead(fargateService.taskDefinition.taskRole);
-    const athenaClientSecretSecret = secret.Secret.fromSecretCompleteArn(
+    athenaClientKey.grantRead(fargateService.taskDefinition.taskRole);
+    const athenaClientSecret = secret.Secret.fromSecretCompleteArn(
       stack,
       "EhrAthenaClientSecretSecret",
       props.config.ehrIntegration.athenaHealth.athenaClientSecretArn
     );
-    athenaClientSecretSecret.grantRead(fargateService.taskDefinition.taskRole);
+    athenaClientSecret.grantRead(fargateService.taskDefinition.taskRole);
   }
   // RW grant for Dynamo DB
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
