@@ -1,16 +1,15 @@
 import {
   ContactPoint,
-  DocumentReference,
   Identifier,
   Narrative,
   Patient as FHIRPatient,
   Reference,
 } from "@medplum/fhirtypes";
 import { Address } from "../../../domain/address";
-import { Contact, ContactTypes } from "../../../domain/contact";
+import { Contact } from "../../../domain/contact";
 import { driversLicenseURIs, identifierSytemByType } from "../../../domain/oid";
 import { GenderAtBirth as MetriportGender, Patient, splitName } from "../../../domain/patient";
-import { getIdFromSubjectId, getIdFromSubjectRef } from "../shared";
+import { isContactType } from "./shared";
 
 export type FhirGender = NonNullable<FHIRPatient["gender"]>;
 
@@ -129,12 +128,4 @@ export function toFHIRSubject(patientId: string): Reference<FHIRPatient> {
     type: "Patient",
   };
   return subject;
-}
-
-export function getPatientId(doc: DocumentReference): string | undefined {
-  return getIdFromSubjectId(doc.subject) ?? getIdFromSubjectRef(doc.subject);
-}
-
-export function isContactType(type: string): type is ContactTypes {
-  return ["phone", "fax", "email", "pager", "url", "sms", "other"].includes(type);
 }

@@ -1,4 +1,4 @@
-import { toFHIR } from "@metriport/core/external/fhir/organization/index";
+import { toFHIR } from "@metriport/core/external/fhir/organization/conversion";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";

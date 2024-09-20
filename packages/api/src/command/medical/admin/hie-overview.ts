@@ -1,5 +1,5 @@
 import { GenderAtBirth, Patient, PatientData } from "@metriport/core/domain/patient";
-import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/index";
+import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/conversion";
 import NotFoundError from "@metriport/core/util/error/not-found";
 import { initReadonlyDbPool } from "@metriport/core/util/sequelize";
 import {

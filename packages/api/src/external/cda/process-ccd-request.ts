@@ -2,7 +2,7 @@ import { DocumentReference, Organization as FhirOrganization } from "@medplum/fh
 import { CCD_SUFFIX } from "@metriport/core/domain/document/upload";
 import { Organization } from "@metriport/core/domain/organization";
 import { Patient } from "@metriport/core/domain/patient";
-import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/index";
+import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/conversion";
 import { cdaDocumentUploaderHandler } from "@metriport/core/shareback/cda-uploader";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";

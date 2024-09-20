@@ -1,5 +1,5 @@
 import { OrganizationBizType, OrganizationCreate } from "@metriport/core/domain/organization";
-import { toFHIR } from "@metriport/core/external/fhir/organization/index";
+import { toFHIR } from "@metriport/core/external/fhir/organization/conversion";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { UniqueConstraintError } from "sequelize";
 import BadRequestError from "../../../errors/bad-request";

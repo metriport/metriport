@@ -15,7 +15,7 @@ import {
   LinkGenericDriversLicense,
   LinkGenericName,
 } from "@metriport/core/domain/patient-demographics";
-import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/index";
+import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/conversion";
 import { emailSchema } from "@metriport/api-sdk/medical/models/demographics";
 import dayjs from "dayjs";
 import { ISO_DATE } from "../../shared/date";

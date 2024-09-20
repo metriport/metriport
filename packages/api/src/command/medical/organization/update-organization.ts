@@ -1,5 +1,5 @@
 import { OrganizationCreate } from "@metriport/core/domain/organization";
-import { toFHIR } from "@metriport/core/external/fhir/organization/index";
+import { toFHIR } from "@metriport/core/external/fhir/organization/conversion";
 import { upsertOrgToFHIRServer } from "../../../external/fhir/organization/upsert-organization";
 import { OrganizationModel } from "../../../models/medical/organization";
 import { validateVersionForUpdate } from "../../../models/_default";

@@ -1,5 +1,5 @@
-import { toFHIR as orgToFHIR } from "@metriport/core/external/fhir/organization/index";
-import { toFHIR as patientToFHIR } from "@metriport/core/external/fhir/patient/index";
+import { toFHIR as orgToFHIR } from "@metriport/core/external/fhir/organization/conversion";
+import { toFHIR as patientToFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { chunk } from "lodash";
 import BadRequestError from "../../../errors/bad-request";
 import { tenantExists } from "../../../external/fhir/admin";

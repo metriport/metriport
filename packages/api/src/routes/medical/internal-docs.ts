@@ -3,7 +3,7 @@ import { convertResult } from "@metriport/core/domain/document-query";
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
 import { documentBulkSignerLambdaResponseArraySchema } from "@metriport/core/external/aws/document-signing/document-bulk-signer-response";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/index";
+import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/conversion";
 import { isMedicalDataSource } from "@metriport/core/external/index";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";

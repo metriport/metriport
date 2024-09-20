@@ -6,7 +6,7 @@ import {
 import { GetConsolidatedQueryProgressResponse } from "@metriport/api-sdk/medical/models/patient";
 import { mrFormat } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
-import { toFHIR } from "@metriport/core/external/fhir/patient/index";
+import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { getRequestId } from "@metriport/core/util/request";
 import { stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
