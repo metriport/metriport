@@ -76,15 +76,15 @@ export function isDateWithinDateRange(
   if (!date || !safeDate(date)) return undefined;
   if (range.dateFrom && range.dateTo) {
     return (
-      buildDayjs(date).isSameOrAfter(range.dateFrom) &&
-      buildDayjs(date).isSameOrBefore(range.dateTo)
+      buildDayjs(date).isSameOrAfter(buildDayjs(range.dateFrom).startOf("day")) &&
+      buildDayjs(date).isSameOrBefore(buildDayjs(range.dateTo).endOf("day"))
     );
   }
   if (range.dateFrom) {
-    return buildDayjs(date).isSameOrAfter(range.dateFrom);
+    return buildDayjs(date).isSameOrAfter(buildDayjs(range.dateFrom).startOf("day"));
   }
   if (range.dateTo) {
-    return buildDayjs(date).isSameOrBefore(range.dateTo);
+    return buildDayjs(date).isSameOrBefore(buildDayjs(range.dateTo).endOf("day"));
   }
   return undefined;
 }
