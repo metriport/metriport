@@ -1,6 +1,7 @@
 import { PatientResource } from "@metriport/shared/interface/external/athenahealth/patient";
 import { errorToString, normalizeDate, normalizeGender, toTitleCase } from "@metriport/shared";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { Patient, PatientDemoData } from "@metriport/core/domain/patient";
@@ -20,9 +21,10 @@ import { Config } from "../../../../shared/config";
 import { createMetriportAddresses, createMetriportContacts, createNames } from "../shared";
 import NotFoundError from "../../../../errors/not-found";
 
+const region = Config.getAWSRegion();
 const athenaEnvironment = Config.getAthenaHealthEnv();
-const athenaClientId = Config.getAthenaTwoLeggedClientSecret();
-const athenaClientSecret = Config.getAthenaTwoLeggedClientId();
+const athenaClientKeySecretArn = Config.getAthenaHealthClientKeyArm();
+const athenaClientSecretSecretArn = Config.getAthenaHealthClientSecretArn();
 const defaultFacilityMappingExternalId = "default";
 
 export async function getPatientIdOrFail({
@@ -49,14 +51,16 @@ export async function getPatientIdOrFail({
     });
     return metriportPatient.id;
   }
-  if (!athenaEnvironment || !athenaClientId || !athenaClientSecret) {
+  if (!athenaEnvironment || !athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
     throw new Error("AthenaHealth not setup");
   }
+  const athenaClientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
+  const athenaClientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
   const api = await AthenaHealthApi.create({
     threeLeggedAuthToken: accessToken,
     practiceId: athenaPracticeId,
     environment: athenaEnvironment as "api" | "api.preview",
-    clientId: athenaClientId,
+    clientKey: athenaClientKey,
     clientSecret: athenaClientSecret,
   });
   const athenaPatient = await api.getPatient({
