@@ -2,7 +2,7 @@ import { InboundDocumentQueryReq, InboundDocumentQueryResp } from "@metriport/ih
 import { executeWithNetworkRetries } from "@metriport/shared";
 import axios from "axios";
 import { CCD_SUFFIX, createUploadFilePath } from "../../../domain/document/upload";
-import { getMetadataDocumentContents } from "../../../shareback/metadata/retrieve-metadata-xml";
+import { getMetadataDocumentContents } from "../../../shareback/metadata/get-metadata-xml";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { S3Utils } from "../../aws/s3";
