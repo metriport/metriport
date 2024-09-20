@@ -1,5 +1,6 @@
 import { Bundle, Composition } from "@medplum/fhirtypes";
 import { findResourceInBundle, isComposition } from "../external/fhir/shared";
+import { capture } from "../util";
 import BadRequestError from "../util/error/bad-request";
 
 /**
@@ -26,13 +27,22 @@ export function splitBundleByCompositions(fhirBundle: Bundle): Bundle[] {
       ? findResourceInBundle(fhirBundle, patientReference)
       : undefined;
     if (!patientResource) {
-      throw new BadRequestError("Patient resource not found");
+      const msg = `Invalid Patient reference in the subject field`;
+      capture.error(msg, {
+        extra: {
+          patientReference,
+          organizationReference,
+          context:
+            "splitBundleByCompositions - creating CDAs from FHIR bundles containing compositions",
+        },
+      });
+      throw new BadRequestError("Invalid Patient reference in the subject field");
     }
     const organizationResource = organizationReference
       ? findResourceInBundle(fhirBundle, organizationReference)
       : undefined;
     if (!organizationResource) {
-      throw new BadRequestError("Organization resource not found");
+      throw new BadRequestError("Invalid Organization reference in the author field");
     }
 
     const bundle: Bundle = {

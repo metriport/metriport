@@ -20,6 +20,7 @@ export function settings(): OpenSearchConnectorConfig & {
   connectorName: string;
   sqs: {
     maxReceiveCount: number;
+    retryAttempts: number;
     visibilityTimeout: Duration;
   };
 } {
@@ -29,7 +30,9 @@ export function settings(): OpenSearchConnectorConfig & {
     connectorName: "CCDAOpenSearch",
     sqs: {
       // Number of times we want to retry a message, this includes throttles!
-      maxReceiveCount: 2,
+      maxReceiveCount: 4,
+      // The maximum number of times to retry when the function returns an error.
+      retryAttempts: 2,
       // How long messages should be invisible for other consumers, based on the lambda timeout
       // We don't care if the message gets reprocessed, so no need to have a huge visibility timeout that makes it harder to move messages to the DLQ
       visibilityTimeout: Duration.seconds(config.openSearch.lambda.timeout.toSeconds() * 2 + 1),
@@ -66,7 +69,7 @@ export function setup({
     connectorName,
     openSearch: openSearchConfig,
     lambda: { memory, timeout, batchSize, maxConcurrency },
-    sqs: { maxReceiveCount, visibilityTimeout },
+    sqs: { maxReceiveCount, visibilityTimeout, retryAttempts },
   } = settings();
 
   const openSearch = new OpenSearchConstruct(stack, connectorName, {
@@ -89,8 +92,7 @@ export function setup({
     lambdaLayers: [lambdaLayers.shared],
     envType,
     alarmSnsAction,
-    alarmMaxAgeOfOldestMessage: Duration.minutes(1),
-    alarmMaxAgeOfOldestMessageDlq: Duration.minutes(5),
+    alarmMaxAgeOfOldestMessage: Duration.minutes(2),
   });
 
   const dlq = queue.deadLetterQueue;
@@ -113,6 +115,7 @@ export function setup({
       SEARCH_SECRET_NAME: openSearch.creds.secret.secretName,
       SEARCH_INDEX_NAME: openSearchConfig.indexName,
     },
+    retryAttempts,
     timeout,
     alarmSnsAction,
   });

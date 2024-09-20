@@ -97,6 +97,8 @@ export function createAPIService({
   outboundDocumentRetrievalLambda,
   generalBucket,
   medicalDocumentsUploadBucket,
+  ehrResponsesBucket,
+  fhirToBundleLambda,
   fhirToMedicalRecordLambda,
   fhirToCdaConverterLambda,
   searchIngestionQueue,
@@ -126,6 +128,8 @@ export function createAPIService({
   outboundDocumentRetrievalLambda: ILambda;
   generalBucket: s3.Bucket;
   medicalDocumentsUploadBucket: s3.Bucket;
+  ehrResponsesBucket: s3.Bucket | undefined;
+  fhirToBundleLambda: ILambda;
   fhirToMedicalRecordLambda: ILambda | undefined;
   fhirToCdaConverterLambda: ILambda | undefined;
   searchIngestionQueue: IQueue;
@@ -152,6 +156,7 @@ export function createAPIService({
   // Create an ECR repo where we'll deploy our Docker images to, and where ECS will pull from
   const ecrRepo = new Repository(stack, "APIRepo", {
     repositoryName: "metriport/api",
+    lifecycleRules: [{ maxImageCount: 5000 }],
   });
   new CfnOutput(stack, "APIECRRepoURI", {
     description: "API ECR repository URI",
@@ -208,6 +213,7 @@ export function createAPIService({
           DB_POOL_SETTINGS: dbPoolSettings,
           TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
           API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
+          API_LB_ADDRESS: props.config.loadBalancerDnsName,
           ...(props.config.apiGatewayUsagePlanId
             ? { API_GW_USAGE_PLAN_ID: props.config.apiGatewayUsagePlanId }
             : {}),
@@ -226,6 +232,9 @@ export function createAPIService({
           ...(props.config.medicalDocumentsUploadBucketName && {
             MEDICAL_DOCUMENTS_UPLOADS_BUCKET_NAME: props.config.medicalDocumentsUploadBucketName,
           }),
+          ...(props.config.ehrResponsesBucketName && {
+            EHR_RESPONSES_BUCKET_NAME: props.config.ehrResponsesBucketName,
+          }),
           ...(isSandbox(props.config) && {
             SANDBOX_SEED_DATA_BUCKET_NAME: props.config.sandboxSeedDataBucketName,
           }),
@@ -236,6 +245,7 @@ export function createAPIService({
           OUTBOUND_PATIENT_DISCOVERY_LAMBDA_NAME: outboundPatientDiscoveryLambda.functionName,
           OUTBOUND_DOC_QUERY_LAMBDA_NAME: outboundDocumentQueryLambda.functionName,
           OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,
+          FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
           ...(fhirToMedicalRecordLambda && {
             FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
           }),
@@ -279,6 +289,9 @@ export function createAPIService({
           }),
           ...(props.config.iheGateway?.trustStoreBucketName && {
             CQ_TRUST_BUNDLE_BUCKET_NAME: props.config.iheGateway.trustStoreBucketName,
+          }),
+          ...(props.config.ehrIntegration && {
+            EHR_ATHENA_BASE_URL: props.config.ehrIntegration.athenaHealth.baseUrl,
           }),
         },
       },
@@ -343,9 +356,13 @@ export function createAPIService({
   outboundDocumentQueryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   outboundDocumentRetrievalLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToCdaConverterLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
+  fhirToBundleLambda.grantInvoke(fargateService.taskDefinition.taskRole);
 
   // Access grant for medical document buckets
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  if (ehrResponsesBucket) {
+    ehrResponsesBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  }
 
   if (fhirToMedicalRecordLambda) {
     fhirToMedicalRecordLambda.grantInvoke(fargateService.taskDefinition.taskRole);

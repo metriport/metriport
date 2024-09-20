@@ -1,14 +1,12 @@
 import {
-  BooleanFeatureFlags,
+  getCxsWithFeatureFlagEnabled,
   getFeatureFlags,
-  getFeatureFlagValueBoolean,
-  getFeatureFlagValueStringArray,
-  StringValueFeatureFlags,
+  isFeatureFlagEnabled,
 } from "@metriport/core/external/aws/app-config";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { errorToString, getEnvVar } from "@metriport/shared";
+import { getEnvVar } from "@metriport/shared";
 import { getCxIdFromApiKey } from "../../routes/middlewares/auth";
 import { Config } from "../../shared/config";
 
@@ -35,58 +33,6 @@ export async function initFeatureFlags() {
   log(`Feature Flags initialized.`);
 }
 
-/**
- * Returns the list of customers that are enabled for the given feature flag.
- *
- * @returns Array of string values
- */
-async function getCxsWithFeatureFlagEnabled(
-  featureFlagName: keyof StringValueFeatureFlags
-): Promise<string[]> {
-  try {
-    const featureFlag = await getFeatureFlagValueStringArray(
-      Config.getAWSRegion(),
-      Config.getAppConfigAppId(),
-      Config.getAppConfigConfigId(),
-      Config.getEnvType(),
-      featureFlagName
-    );
-    if (featureFlag && featureFlag.enabled && featureFlag.values) {
-      return featureFlag.values;
-    }
-  } catch (error) {
-    const msg = `Failed to get Feature Flag Value`;
-    const extra = { featureFlagName };
-    log(`${msg} - ${JSON.stringify(extra)} - ${errorToString(error)}`);
-    capture.error(msg, { extra: { ...extra, error } });
-  }
-  return [];
-}
-
-/**
- * Checks whether the specified feature flag is enabled.
- *
- * @returns true if enabled; false otherwise
- */
-async function isFeatureFlagEnabled(featureFlagName: keyof BooleanFeatureFlags): Promise<boolean> {
-  try {
-    const featureFlag = await getFeatureFlagValueBoolean(
-      Config.getAWSRegion(),
-      Config.getAppConfigAppId(),
-      Config.getAppConfigConfigId(),
-      Config.getEnvType(),
-      featureFlagName
-    );
-    return featureFlag.enabled;
-  } catch (error) {
-    const msg = `Failed to get Feature Flag Value`;
-    const extra = { featureFlagName };
-    log(`${msg} - ${JSON.stringify(extra)} - ${errorToString(error)}`);
-    capture.error(msg, { extra: { ...extra, error } });
-  }
-  return false;
-}
-
 export async function getCxsWithEnhancedCoverageFeatureFlagValue(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithEnhancedCoverageFeatureFlag");
 }
@@ -109,6 +55,18 @@ export async function getCxsWithNoWebhookPongFeatureFlagValue(): Promise<string[
 
 export async function getCxsWithEpicEnabled(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithEpicEnabled");
+}
+
+export async function getCxsWithAiBriefFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithAiBriefFeatureFlag");
+}
+
+export async function getCxsWithCdaCustodianFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("getCxsWithCdaCustodianFeatureFlag");
+}
+
+export async function getCxsWitDemoAugEnabled(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithDemoAugEnabled");
 }
 
 export async function getE2eCxIds(): Promise<string | undefined> {
@@ -146,14 +104,28 @@ export async function isCWEnabledForCx(cxId: string): Promise<boolean> {
 }
 
 export async function isWebhookPongDisabledForCx(cxId: string): Promise<boolean> {
-  const cxIdsWithECEnabled = await getCxsWithNoWebhookPongFeatureFlagValue();
-  return cxIdsWithECEnabled.some(i => i === cxId);
+  const cxIdsWithNoWebhookPong = await getCxsWithNoWebhookPongFeatureFlagValue();
+  return cxIdsWithNoWebhookPong.some(i => i === cxId);
+}
+
+export async function isAiBriefEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithAiBriefEnabled = await getCxsWithAiBriefFeatureFlag();
+  return cxIdsWithAiBriefEnabled.some(i => i === cxId);
+}
+
+export async function isCdaCustodianEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithFhirDedupEnabled = await getCxsWithCdaCustodianFeatureFlag();
+  return cxIdsWithFhirDedupEnabled.some(i => i === cxId);
 }
 
 export async function isEpicEnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithEpicEnabled = await getCxsWithEpicEnabled();
+  return cxIdsWithEpicEnabled.some(i => i === cxId);
+}
 
-  return cxIdsWithEpicEnabled.length === 0 ? true : cxIdsWithEpicEnabled.some(i => i === cxId);
+export async function isDemoAugEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithDemoAugEnabled = await getCxsWitDemoAugEnabled();
+  return cxIdsWithDemoAugEnabled.some(i => i === cxId);
 }
 
 export async function isCommonwellEnabled(): Promise<boolean> {

@@ -4,11 +4,15 @@ NPM_PUBLISH_MSG="chore(release): publish"
 grep -qs "${NPM_PUBLISH_MSG}" $1 # returns 0 if found, 1 if not found
 containsNpmPublishMessage=$?
 
+MERGE_MSG="Merge branch 'develop' into"
+grep -qs "${MERGE_MSG}" $1 # returns 0 if found, 1 if not found
+containsMergeMessage=$?
+
 SOB=$(git var GIT_AUTHOR_IDENT | sed -n -E 's/^(.+>).*$/Signed-off-by: \1/p')
 grep -qs "${SOB}" $1 # returns 0 if found, 1 if not found
 containsSignOffBy=$?
 
-if [ $containsNpmPublishMessage -ne 0 ] && [ $containsSignOffBy -ne 0 ]; then
+if [ $containsNpmPublishMessage -ne 0 ] && [ $containsMergeMessage -ne 0 ] && [ $containsSignOffBy -ne 0 ]; then
   commitMessage="$(cat $1)"
   echo ""
   echo "🚨 Missing commit sign-off!"

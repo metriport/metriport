@@ -7,7 +7,11 @@ import { toArray } from "@metriport/shared";
  * @param fhirBundle A FHIR Bundle containing Compositions and correlated resources
  * @returns Array of CDA documents in string format
  */
-export function convertFhirBundleToCda(fhirBundle: Bundle | Bundle[], orgOid: string): string[] {
+export function convertFhirBundleToCda(
+  fhirBundle: Bundle | Bundle[],
+  orgOid: string,
+  isCustodian?: boolean
+): string[] {
   const bundles = toArray(fhirBundle);
-  return bundles.map(bundle => generateCdaFromFhirBundle(bundle, orgOid));
+  return bundles.map(bundle => generateCdaFromFhirBundle(bundle, orgOid, isCustodian));
 }

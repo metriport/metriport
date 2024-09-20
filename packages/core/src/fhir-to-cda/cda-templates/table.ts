@@ -2,7 +2,10 @@ import { ObservationTableRow } from "../cda-types/shared-types";
 
 type TableHeader = {
   tr: {
-    th: string[];
+    th: {
+      "#text": string;
+      _colspan?: number;
+    }[];
   }[];
 };
 
@@ -15,11 +18,28 @@ type TableRowWithId = {
   td: TableCell[];
 };
 
-export function createTableHeader(tableHeaders: string[]): TableHeader {
+export function createTableHeader(
+  tableHeaders: string[],
+  specialHeader?: string | undefined
+): TableHeader {
   return {
     tr: [
+      ...(specialHeader
+        ? [
+            {
+              th: [
+                {
+                  "#text": specialHeader,
+                  _colspan: tableHeaders.length,
+                },
+              ],
+            },
+          ]
+        : []),
       {
-        th: tableHeaders,
+        th: tableHeaders.map(header => ({
+          "#text": header,
+        })),
       },
     ],
   };
@@ -45,12 +65,13 @@ function mapTableRows(tableRows: ObservationTableRow[]): TableRowWithId[] {
 export function initiateSectionTable(
   sectionName: string,
   tableHeaders: string[],
-  tableRows: ObservationTableRow[]
+  tableRows: ObservationTableRow[],
+  specialHeader?: string
 ): CdaTable {
   return {
     table: {
       _ID: sectionName,
-      thead: createTableHeader(tableHeaders),
+      thead: createTableHeader(tableHeaders, specialHeader),
       tbody: {
         tr: mapTableRows(tableRows),
       },

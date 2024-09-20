@@ -41,6 +41,7 @@ export const config: EnvConfigNonSandbox = {
       PROPELAUTH_API_KEY: "key-name",
     },
   },
+  dashUrl: "https://url-of-your-dashboard.com",
   fhirToMedicalLambda: {
     nodeRuntimeArn: "arn:aws:lambda:<region>::runtime:<id>",
   },
@@ -140,6 +141,7 @@ export const config: EnvConfigNonSandbox = {
   generalBucketName: "test-bucket",
   medicalDocumentsBucketName: "test-bucket",
   medicalDocumentsUploadBucketName: "test-upload-bucket",
+  ehrResponsesBucketName: "test-ehr-responses-bucket",
   iheResponsesBucketName: "test-ihe-responses-bucket",
   iheParsedResponsesBucketName: "test-ihe-parsed-responses-bucket",
   iheRequestsBucketName: "test-ihe-requests-bucket",

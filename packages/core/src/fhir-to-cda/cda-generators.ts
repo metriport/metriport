@@ -13,26 +13,30 @@ import { buildStructuredBody } from "./cda-templates/clinical-document/structure
 import { buildEncompassingEncounter } from "./cda-templates/components/encompassing-encounter";
 import { placeholderOrgOid } from "./cda-templates/constants";
 
-export function generateCdaFromFhirBundle(fhirBundle: Bundle, oid: string): string {
+export function generateCdaFromFhirBundle(
+  fhirBundle: Bundle,
+  oid: string,
+  isCustodian = false
+): string {
   const patientResource = findPatientResource(fhirBundle);
-  const organizationResources = findOrganizationResource(fhirBundle);
+  const organizationResource = findOrganizationResource(fhirBundle);
 
-  if (!patientResource || !organizationResources) {
+  if (!patientResource || !organizationResource) {
     const missing = [];
     if (!patientResource) {
       missing.push("Patient");
     }
-    if (!organizationResources) {
+    if (!organizationResource) {
       missing.push("Organization");
     }
     throw new BadRequestError(`${missing.join(", ")} resource(s) not found`);
   }
   const recordTarget = buildRecordTargetFromFhirPatient(patientResource);
-  const author = buildAuthor(organizationResources);
-  const custodian = buildCustodian();
-  const encompassingEncounter = buildEncompassingEncounter(fhirBundle);
-  const structuredBody = buildStructuredBody(fhirBundle);
+  const author = buildAuthor(organizationResource);
+  const custodian = isCustodian ? buildCustodian(organizationResource) : buildCustodian();
   const composition = findCompositionResource(fhirBundle);
+  const encompassingEncounter = buildEncompassingEncounter(fhirBundle, composition);
+  const structuredBody = buildStructuredBody(fhirBundle);
 
   if (!structuredBody) {
     throw new BadRequestError(
@@ -55,7 +59,14 @@ export function generateCdaFromFhirBundle(fhirBundle: Bundle, oid: string): stri
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function postProcessXml(xml: any, oid: string): string {
   xml = prependStyling(xml);
-  return xml.replaceAll("<br>", "<br/>").replaceAll("</br>", "").replaceAll(placeholderOrgOid, oid);
+  return xml
+    .replaceAll("<br>", "<br/>")
+    .replaceAll("</br>", "")
+    .replaceAll(placeholderOrgOid, oid)
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&quot;", '"')
+    .replaceAll("</text><text>", "");
 }
 
 function prependStyling(xml: string): string {

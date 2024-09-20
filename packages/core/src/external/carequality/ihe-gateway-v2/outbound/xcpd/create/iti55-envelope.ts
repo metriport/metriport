@@ -190,7 +190,9 @@ function createSoapBodyContent({
               ? {
                   [`${prefix}patientAddress`]: {
                     [`${prefix}value`]: patientAddresses.map(address => ({
-                      [`${prefix}streetAddressLine`]: address.line?.join(", "),
+                      ...address.line?.map(line => ({
+                        [`${prefix}streetAddressLine`]: line,
+                      })),
                       [`${prefix}city`]: address.city,
                       [`${prefix}state`]: address.state,
                       [`${prefix}postalCode`]: address.postalCode,

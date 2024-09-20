@@ -1,14 +1,11 @@
-import { demographicsSchema, patientCreateSchema } from "@metriport/api-sdk";
-import {
-  GetConsolidatedQueryProgressResponse,
-  StartConsolidatedQueryProgressResponse,
-} from "@metriport/api-sdk/medical/models/patient";
 import {
   consolidationConversionType,
-  mrFormat,
-} from "@metriport/core/domain/conversion/fhir-to-medical-record";
+  demographicsSchema,
+  patientCreateSchema,
+} from "@metriport/api-sdk";
+import { GetConsolidatedQueryProgressResponse } from "@metriport/api-sdk/medical/models/patient";
+import { mrFormat } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
-import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { getRequestId } from "@metriport/core/util/request";
 import { stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
@@ -27,11 +24,13 @@ import {
 } from "../../command/medical/patient/create-medical-record";
 import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
+import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 import {
   getPatientOrFail,
   getPatients,
   matchPatient,
 } from "../../command/medical/patient/get-patient";
+import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
 import { handleDataContribution } from "../../command/medical/patient/handle-data-contributions";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
@@ -39,7 +38,6 @@ import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import BadRequestError from "../../errors/bad-request";
 import NotFoundError from "../../errors/not-found";
 import { countResources } from "../../external/fhir/patient/count-resources";
-import { upsertPatientToFHIRServer } from "../../external/fhir/patient/upsert-patient";
 import { PatientModel as Patient } from "../../models/medical/patient";
 import { REQUEST_ID_HEADER_NAME } from "../../routes/header";
 import { Config } from "../../shared/config";
@@ -51,6 +49,7 @@ import {
   getCxIdOrFail,
   getFrom,
   getFromParamsOrFail,
+  getFromQueryAsBoolean,
   getFromQueryOrFail,
 } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
@@ -62,7 +61,6 @@ import {
   schemaUpdateToPatientData,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 
 const router = Router();
 
@@ -112,9 +110,6 @@ router.post(
       forceCarequality,
     });
 
-    // temp solution until we migrate to FHIR
-    const fhirPatient = toFHIR(patient);
-    await upsertPatientToFHIRServer(patient.cxId, fhirPatient);
     return res.status(status.CREATED).json(dtoFromModel(patient));
   })
 );
@@ -252,6 +247,7 @@ router.get(
  * @param req.query.resources Optional comma-separated list of resources to be returned.
  * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
+ * @param req.query.fromDashboard Optional parameter to indicate that the request is coming from the dashboard.
  * @return Patient's consolidated data.
  */
 router.get(
@@ -263,6 +259,7 @@ router.get(
     const resources = getResourcesQueryParam(req);
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
+    const fromDashboard = getFromQueryAsBoolean("fromDashboard", req);
     const patient = await getPatientOrFail({ id: patientId, cxId });
 
     const data = await getConsolidatedPatientData({
@@ -270,6 +267,7 @@ router.get(
       resources,
       dateFrom,
       dateTo,
+      fromDashboard,
     });
 
     return res.json(data);
@@ -326,6 +324,8 @@ const medicalRecordFormatSchema = z.enum(mrFormat);
  *        Accepts "pdf", "html", and "json". If provided, the Webhook payload will contain a signed URL to download
  *        the file, which is active for 3 minutes. If not provided, will send json payload in the webhook.
  * @param req.body Optional metadata to be sent through Webhook.
+ * @param req.query.fromDashboard Optional parameter to indicate that the request is coming from the dashboard.
+ * @param req.generateAiBrief Optional flag to include an AI-generated medical record brief into the medical record summary. Note, that you have to request access to this feature by contacting Metriport directly.
  * @return status for querying the Patient's consolidated data.
  */
 router.post(
@@ -338,10 +338,15 @@ router.post(
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
     const type = getFrom("query").optional("conversionType", req);
+    const fromDashboard = getFromQueryAsBoolean("fromDashboard", req);
+    const generateAiBrief = Config.isSandbox()
+      ? false
+      : getFromQueryAsBoolean("generateAiBrief", req);
+
     const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
     const cxConsolidatedRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
-    const queryResponse = await startConsolidatedQuery({
+    const respPayload = await startConsolidatedQuery({
       cxId,
       patientId,
       resources,
@@ -349,9 +354,9 @@ router.post(
       dateTo,
       conversionType,
       cxConsolidatedRequestMetadata: cxConsolidatedRequestMetadata?.metadata,
+      generateAiBrief,
+      fromDashboard,
     });
-
-    const respPayload: StartConsolidatedQueryProgressResponse = queryResponse;
 
     return res.json(respPayload);
   })
@@ -499,6 +504,27 @@ router.post(
     throw new NotFoundError("Cannot find patient");
   })
 );
+
+/** ---------------------------------------------------------------------------
+ * GET /patient/:id/facility-matches
+ *
+ * returns the all the facilities the patient is matched to.
+ *
+ * @param req.param.id The ID of the patient whose facility matches are to be returned.
+ * @return The patient's facility matches.
+ */
+router.get(
+  "/:id/facility-matches",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const patientId = getFrom("params").orFail("id", req);
+
+    const facilityMatches = await getPatientFacilityMatches({ patientId });
+
+    return res.json(facilityMatches);
+  })
+);
+
 /** ---------------------------------------------------------------------------
  * GET /patient/:id/consolidated/webhook
  *

@@ -12,12 +12,18 @@ import updateDB from "../sequelize";
 import { Config } from "../shared/config";
 import { ConnectedUser } from "./connected-user";
 import { initDDBDev, initLocalCxAccount } from "./db-dev";
+import { FeedbackEntryModel } from "./feedback-entry";
 import { CoverageEnhancementModel } from "./medical/coverage-enhancement";
 import { DocRefMappingModel } from "./medical/docref-mapping";
 import { MAPIAccess } from "./medical/mapi-access";
+import { FeedbackModel } from "./feedback";
 import { PatientModel } from "./medical/patient";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
+import { CxMappingModel } from "./cx-mapping";
+import { PatientMappingModel } from "./patient-mapping";
+import { FacilityMappingModel } from "./facility-mapping";
+import { JwtTokenModel } from "./jwt-token";
 import { ModelSetup } from "./_default";
 
 // models to setup with sequelize
@@ -37,6 +43,12 @@ const models: ModelSetup[] = [
   OutboundDocumentQueryRespModel.setup,
   OutboundDocumentRetrievalRespModel.setup,
   CoverageEnhancementModel.setup,
+  FeedbackModel.setup,
+  FeedbackEntryModel.setup,
+  CxMappingModel.setup,
+  PatientMappingModel.setup,
+  FacilityMappingModel.setup,
+  JwtTokenModel.setup,
 ];
 
 export type DbPoolProps = {

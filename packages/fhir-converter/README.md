@@ -20,7 +20,7 @@ Once this completes, you can access the service at http://localhost:8777/
 
 Send a `POST` request to this route to be able to hot reload template changes without needing to restart the server.
 
-### POST /api/convert/ccda/ccd.hbs
+### POST /api/convert/cda/ccd.hbs
 
 Send a `POST` request to this route to convert a C-CDA document specified in the body to a a FHIR R4 Bundle of type batch with the entry containing an array of FHIR R4 Resources being the outcome of the conversion.
 

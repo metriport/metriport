@@ -82,7 +82,7 @@
                             {{#if entryRelationship.supply.performer.assignedEntity}}
                                 {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=entryRelationship.supply.performer.assignedEntity) as |practitionerId|}}
                                     {{>Resources/Practitioner.hbs practitioner=entryRelationship.supply.performer.assignedEntity ID=practitionerId.Id}},
-                                    {{>References/MedicationDispense/performer.actor.hbs ID=(generateUUID (toJsonString entryRelationship.supply)) REF=(concat 'Practioner/' practitionerId.Id)}},
+                                    {{>References/MedicationDispense/performer.actor.hbs ID=(generateUUID (toJsonString entryRelationship.supply)) REF=(concat 'Practitioner/' practitionerId.Id)}},
                                 {{/with}}
                             {{/if}}
 

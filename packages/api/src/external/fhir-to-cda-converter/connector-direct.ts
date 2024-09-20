@@ -2,6 +2,7 @@ import { splitBundleByCompositions } from "@metriport/core/fhir-to-cda/compositi
 import { convertFhirBundleToCda } from "@metriport/core/fhir-to-cda/fhir-to-cda";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { FhirToCdaConverter, FhirToCdaConverterRequest } from "./connector";
+import { isCdaCustodianEnabledForCx } from "../aws/app-config";
 
 export class FhirToCdaConverterDirect implements FhirToCdaConverter {
   async requestConvert({
@@ -10,7 +11,8 @@ export class FhirToCdaConverterDirect implements FhirToCdaConverter {
     splitCompositions,
   }: FhirToCdaConverterRequest): Promise<string[]> {
     const organization = await getOrganizationOrFail({ cxId });
+    const isCustodian = await isCdaCustodianEnabledForCx(cxId);
     const bundles = splitCompositions ? splitBundleByCompositions(bundle) : bundle;
-    return convertFhirBundleToCda(bundles, organization.oid);
+    return convertFhirBundleToCda(bundles, organization.oid, isCustodian);
   }
 }

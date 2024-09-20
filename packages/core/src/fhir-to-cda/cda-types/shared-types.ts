@@ -141,6 +141,15 @@ export type CdaValueSt = {
   "#text"?: string;
 };
 
+// Ed (ED) stands for EncapsulatedData
+export type CdaValueEd = {
+  [_xsiTypeAttribute]?: "ED";
+  [_xmlnsXsiAttribute]?: string;
+  reference?: {
+    _value: string;
+  };
+};
+
 // Cd (CD) stands for Concept Descriptor
 export type CdaValueCd = {
   [_xsiTypeAttribute]: "CD";
@@ -149,6 +158,7 @@ export type CdaValueCd = {
   _codeSystem?: string | undefined;
   _codeSystemName?: string | undefined;
   originalText?: CdaOriginalText;
+  [_xmlnsXsiAttribute]?: string;
 };
 
 export type CdaValuePq = {
@@ -247,12 +257,14 @@ export type ObservationEntry = {
       | CdaValuePq[]
       | CdaValueCd
       | CdaValueCd[]
+      | CdaValueEd
+      | CdaValueEd[]
       | CdaValueSt
       | CdaValueSt[]
       | undefined;
     participant?: Participant | undefined;
-    entryRelationship?: ObservationEntryRelationship[] | undefined;
-    interpretationCode?: CdaCodeCe;
+    entryRelationship?: ObservationEntryRelationship | ObservationEntryRelationship[] | undefined;
+    interpretationCode?: CdaCodeCe | CdaCodeCe[] | undefined;
   };
 };
 
@@ -343,7 +355,25 @@ export type ConcernActEntry = {
       _code: string;
     };
     effectiveTime?: EffectiveTimeLowHigh;
-    entryRelationship: ObservationEntryRelationship;
+    author?: CdaAuthor | undefined;
+    informant?: ResponsibleParty | undefined;
+    entryRelationship?: ObservationEntryRelationship;
+  };
+};
+
+export type ProcedureActivityEntry = {
+  _typeCode?: string;
+  procedure: {
+    _classCode: string;
+    _moodCode: string;
+    templateId: CdaInstanceIdentifier[];
+    id?: CdaInstanceIdentifier;
+    code?: CdaCodeCv | undefined;
+    text?: CdaOriginalText | undefined;
+    statusCode?: {
+      _code: string;
+    };
+    effectiveTime?: EffectiveTimeLowHigh;
   };
 };
 
@@ -467,9 +497,11 @@ export type TextParagraph = {
   };
 };
 
-export type TextUnstructured = {
+type TextContent = {
   content: {
     _ID: string;
     br: string[];
   };
-}[];
+};
+
+export type TextUnstructured = TextContent | TextContent[];

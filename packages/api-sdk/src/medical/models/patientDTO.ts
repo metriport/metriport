@@ -1,4 +1,4 @@
-import { USState } from "../..";
+import { USState } from "@metriport/shared";
 import { GeneralPersonalIdentifiers, DriversLicensePersonalIdentifier } from "./demographics";
 
 export type PatientDTO = {

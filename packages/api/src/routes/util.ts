@@ -168,3 +168,11 @@ export const getDateOrFail = (req: Request): string => {
   if (!date) throw new BadRequestError("Missing date query param");
   return date as string;
 };
+
+export function getAuthorizationToken(req: Request): string {
+  const header = req.header("Authorization");
+  if (!header) throw new Error("Missing Authorization Header");
+  const token = header.replace("Bearer ", "");
+  if (token === "") throw new Error("Empty Authorization Header");
+  return token;
+}

@@ -6,7 +6,12 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl as getPresignedUrl } from "@aws-sdk/s3-request-presigner";
-import { ExecuteWithRetriesOptions, emptyFunction, executeWithRetries } from "@metriport/shared";
+import {
+  emptyFunction,
+  errorToString,
+  executeWithRetries,
+  ExecuteWithRetriesOptions,
+} from "@metriport/shared";
 import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -20,8 +25,19 @@ dayjs.extend(duration);
 const pipeline = util.promisify(stream.pipeline);
 const DEFAULT_SIGNED_URL_DURATION = dayjs.duration({ minutes: 3 }).asSeconds();
 const defaultS3RetriesConfig = {
-  maxAttempts: 3,
+  maxAttempts: 5,
   initialDelay: 500,
+};
+const protocolRegex = /^https?:\/\//;
+
+export type GetSignedUrlWithBucketAndKey = {
+  bucketName: string;
+  fileName: string;
+  durationSeconds?: number;
+};
+export type GetSignedUrlWithLocation = {
+  location: string;
+  durationSeconds?: number;
 };
 
 export async function executeWithRetriesS3<T>(
@@ -36,8 +52,8 @@ export async function executeWithRetriesS3<T>(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     shouldRetry: (_, error: any) => {
       if (!error) return false;
-      if ("statusCode" in error && error.statusCode === 404) return false;
-      if ("message" in error && error.message?.includes("NotFound")) return false;
+      if (isNotFoundError(error)) return false;
+      if (!isRetriableError(error)) return false;
       return true;
     },
   });
@@ -199,7 +215,26 @@ export class S3Utils {
     return false;
   }
 
-  async getSignedUrl({
+  async getSignedUrl(params: GetSignedUrlWithBucketAndKey): Promise<string>;
+  async getSignedUrl(params: GetSignedUrlWithLocation): Promise<string>;
+  async getSignedUrl(
+    params: GetSignedUrlWithBucketAndKey | GetSignedUrlWithLocation
+  ): Promise<string> {
+    if ("location" in params) {
+      const tmp = splitS3Location(params.location);
+      if (!tmp) throw new Error("Could not parse S3 location");
+      const { bucketName, key } = tmp;
+      return this.getSignedUrlInternal({
+        bucketName,
+        fileName: key,
+        ...(params.durationSeconds ? { durationSeconds: params.durationSeconds } : undefined),
+      });
+    } else {
+      return this.getSignedUrlInternal(params);
+    }
+  }
+
+  private async getSignedUrlInternal({
     bucketName,
     fileName,
     durationSeconds,
@@ -271,6 +306,7 @@ export class S3Utils {
     }
     // If the new key is different from the old key, copy the file with the new metadata and delete the original file
 
+    // TODO move to `copyFile()`
     const copyObjectCommand = new CopyObjectCommand({
       Bucket: bucket,
       Key: newKey,
@@ -287,17 +323,39 @@ export class S3Utils {
       });
       await executeWithRetriesS3(() => this.s3Client.send(deleteObjectCommand));
     } catch (error) {
-      capture.error(error, {
+      const msg = "Failed to delete the original file from S3";
+      const { log } = out("updateContentTypeInS3");
+      log(`${msg}: ${errorToString(error)}`);
+      capture.error(msg, {
         extra: {
           bucket,
           key,
-          context: `document-downloader-local.updateContentTypeInS3.delete`,
+          context: `updateContentTypeInS3.delete`,
           error,
         },
       });
     }
-
     return newKey;
+  }
+
+  async copyFile({
+    fromBucket,
+    fromKey,
+    toBucket,
+    toKey,
+  }: {
+    fromBucket: string;
+    fromKey: string;
+    toBucket: string;
+    toKey: string;
+  }): Promise<void> {
+    const copySource = encodeURIComponent(`${fromBucket}/${fromKey}`);
+    const copyObjectCommand = new CopyObjectCommand({
+      Bucket: toBucket,
+      Key: toKey,
+      CopySource: copySource,
+    });
+    await executeWithRetriesS3(() => this.s3Client.send(copyObjectCommand));
   }
 
   async uploadFile({
@@ -305,27 +363,29 @@ export class S3Utils {
     key,
     file,
     contentType,
+    metadata,
   }: {
     bucket: string;
     key: string;
     file: Buffer;
     contentType?: string;
+    metadata?: Record<string, string>;
   }): Promise<AWS.S3.ManagedUpload.SendData> {
-    const { log } = out("uploadFile");
     const uploadParams: AWS.S3.PutObjectRequest = {
       Bucket: bucket,
       Key: key,
       Body: file,
+      ...(metadata ? { Metadata: metadata } : undefined),
     };
     if (contentType) {
       uploadParams.ContentType = contentType;
     }
     try {
       const resp = await executeWithRetriesS3(() => this._s3.upload(uploadParams).promise());
-      log("Upload successful");
       return resp;
     } catch (error) {
-      log(`Error during upload: ${JSON.stringify(error)}`);
+      const { log } = out("uploadFile");
+      log(`Error during upload: ${errorToString(error)}`);
       throw error;
     }
   }
@@ -340,7 +400,7 @@ export class S3Utils {
       return resp.Body as Buffer;
     } catch (error) {
       const { log } = out("downloadFile");
-      log(`Error during download: ${JSON.stringify(error)}`);
+      log(`Error during download: ${errorToString(error)}`);
       throw error;
     }
   }
@@ -354,7 +414,7 @@ export class S3Utils {
       await executeWithRetriesS3(() => this._s3.deleteObject(deleteParams).promise());
     } catch (error) {
       const { log } = out("deleteFile");
-      log(`Error during file deletion: ${JSON.stringify(error)}`);
+      log(`Error during file deletion: ${errorToString(error)}`);
       throw error;
     }
   }
@@ -365,4 +425,36 @@ export class S3Utils {
     );
     return res.Contents;
   }
+}
+
+export function splitS3Location(location: string): { bucketName: string; key: string } | undefined {
+  // convert S3 location to bucket and key based on this format: "https://metriport-medical-documents.s3.us-west-1.amazonaws.com/6faef82d-dae0-48b7-9929-8dc5aeb984a6/01900d1a-7323-732b-90b2-936f3835bf74/6faef82d-dae0-48b7-9929-8dc5aeb984a6_01900d1a-7323-732b-90b2-936f3835bf74_MR.html"
+  if (!location.match(protocolRegex)) return undefined;
+  const [domain, ...path] = location.replace(protocolRegex, "").split("/");
+  if (!domain) return undefined;
+  if (!path || path.length < 1) return undefined;
+  const bucketName = domain.split(".")[0];
+  if (!bucketName) return undefined;
+  const key = path.join("/");
+  return { bucketName, key };
+}
+
+export async function returnUndefinedOn404<T>(fn: () => Promise<T>): Promise<T | undefined> {
+  try {
+    return await fn();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    if (isNotFoundError(error)) return undefined;
+    throw error;
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isNotFoundError(error: any): boolean {
+  return error.Code === "NoSuchKey" || error.code === "NoSuchKey" || error.statusCode === 404;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isRetriableError(error: any): boolean {
+  return error.retryable === false || error.Retryable === false;
 }

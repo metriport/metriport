@@ -17,9 +17,6 @@ export function makeFamilyMemberHistory(
         },
       ],
     },
-    bornDate: "1930-01-01",
-    name: "Sven",
-    deceasedBoolean: true,
     sex: {
       coding: [
         {
@@ -53,4 +50,14 @@ export const motherFamilyMemberHistory: Partial<FamilyMemberHistory> = {
       },
     ],
   },
+};
+
+export const naturalBrotherCode = {
+  coding: [
+    {
+      system: "http://terminology.hl7.org/CodeSystem/v3-RoleCode",
+      code: "NBRO",
+      display: "natural brother",
+    },
+  ],
 };

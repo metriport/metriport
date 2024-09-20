@@ -1,4 +1,4 @@
-import { USState } from "@metriport/core/domain/geographic-locations";
+import { USState } from "@metriport/shared";
 import { Patient, PatientDemoData, splitDob } from "@metriport/core/domain/patient";
 import { LinkDemographics, LinkGender } from "@metriport/core/domain/patient-demographics";
 import {
@@ -228,7 +228,8 @@ describe("link has new demographics", () => {
         dob: newDob,
       },
     });
-    expect(newData.hasNewDemographics).toBe(true);
+    // new dob does NOT trigger new demopgraphics
+    expect(newData.hasNewDemographics).toBe(false);
   });
   it("new gender", async () => {
     const newGender = "female";
@@ -240,7 +241,8 @@ describe("link has new demographics", () => {
         gender: newGender,
       },
     });
-    expect(newData.hasNewDemographics).toBe(true);
+    // new gender does NOT trigger new demopgraphics
+    expect(newData.hasNewDemographics).toBe(false);
   });
   it("new name", async () => {
     const newNames = [

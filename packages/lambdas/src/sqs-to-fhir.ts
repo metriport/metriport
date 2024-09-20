@@ -1,23 +1,15 @@
 import { MedplumClient } from "@medplum/core";
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { S3Utils } from "@metriport/core/external/aws/s3";
-import {
-  errorToString,
-  executeWithNetworkRetries,
-  executeWithRetries,
-  MetriportError,
-} from "@metriport/shared";
-import { uuid4 } from "@sentry/utils";
+import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
+import { parseRawBundleForFhirServer } from "@metriport/core/external/fhir/parse-bundle";
+import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import fetch from "node-fetch";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
-import { getEnvOrFail, isSandbox } from "./shared/env";
+import { getEnvOrFail } from "./shared/env";
 import { Log, prefixedLog } from "./shared/log";
 import { apiClient } from "./shared/oss-api";
-
-// Keep this as early on the file as possible
-capture.init();
 
 // Automatically set by AWS
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
@@ -27,7 +19,6 @@ const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const apiURL = getEnvOrFail("API_URL");
 const fhirServerUrl = getEnvOrFail("FHIR_SERVER_URL");
 
-const sourceUrl = "https://api.metriport.com/cda/to/fhir";
 const maxRetries = 10;
 const defaultS3RetriesConfig = {
   maxAttempts: 3,
@@ -36,8 +27,6 @@ const defaultS3RetriesConfig = {
 
 const s3Utils = new S3Utils(region);
 const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace);
-const placeholderReplaceRegex = new RegExp("66666666-6666-6666-6666-666666666666", "g");
-const metriportPrefixRegex = new RegExp("Metriport/identifiers/Metriport/", "g");
 const ossApi = apiClient(apiURL);
 
 /* Example of a single message/record in event's `Records` array:
@@ -115,7 +104,7 @@ export async function handler(event: SQSEvent) {
 
       log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
       const downloadStart = Date.now();
-      const payloadRaw = await executeWithRetries(
+      const payloadRaw = await executeWithRetriesS3(
         () => s3Utils.getFileContentsAsString(s3BucketName, s3FileName),
         {
           ...defaultS3RetriesConfig,
@@ -128,21 +117,7 @@ export async function handler(event: SQSEvent) {
       };
 
       log(`Converting payload to JSON, length ${payloadRaw.length}`);
-      let payload: any; // eslint-disable-line @typescript-eslint/no-explicit-any
-      if (isSandbox()) {
-        const idsReplaced = replaceIds(payloadRaw);
-        log(`IDs replaced, length: ${idsReplaced.length}`);
-        const placeholderUpdated = idsReplaced.replace(placeholderReplaceRegex, patientId);
-        payload = JSON.parse(placeholderUpdated);
-        log(`Payload to FHIR (length ${placeholderUpdated.length}): ${JSON.stringify(payload)}`);
-      } else {
-        payload = JSON.parse(payloadRaw);
-      }
-
-      // light validation to make sure it's a bundle
-      if (payload.resourceType !== "Bundle") {
-        throw new Error(`Not a FHIR Bundle`);
-      }
+      const payload: Bundle = parseRawBundleForFhirServer(payloadRaw, patientId, log);
 
       log(`Sending payload to FHIRServer...`);
       let response: Bundle<Resource> | undefined;
@@ -230,33 +205,6 @@ function parseBody(body: unknown): EventBody {
   const s3FileName = s3FileNameRaw as string;
 
   return { s3BucketName, s3FileName };
-}
-
-function replaceIds(payload: string) {
-  const fhirBundle = JSON.parse(payload);
-  const stringsToReplace: { old: string; new: string }[] = [];
-  for (const bundleEntry of fhirBundle.entry) {
-    // validate resource id
-    const idToUse = bundleEntry.resource.id;
-    const newId = uuid4();
-    bundleEntry.resource.id = newId;
-    stringsToReplace.push({ old: idToUse, new: newId });
-    // replace meta's source and profile
-    bundleEntry.resource.meta = {
-      lastUpdated: bundleEntry.resource.meta?.lastUpdated ?? new Date().toISOString(),
-      source: sourceUrl,
-    };
-  }
-  let fhirBundleStr = JSON.stringify(fhirBundle);
-  for (const stringToReplace of stringsToReplace) {
-    // doing this is apparently more efficient than just using replace
-    const regex = new RegExp(stringToReplace.old, "g");
-    fhirBundleStr = fhirBundleStr.replace(regex, stringToReplace.new);
-  }
-
-  fhirBundleStr = fhirBundleStr.replace(metriportPrefixRegex, "");
-
-  return fhirBundleStr;
 }
 
 function getErrorsFromReponse(response?: Bundle<Resource>) {

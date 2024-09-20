@@ -56,9 +56,9 @@ export async function updateCwPatientDataWithinDBTx(
   transaction: Transaction
 ): Promise<CwPatientDataModel> {
   const { data: newData } = update;
-  const updatedLinks = [...existing.data.links, ...(newData.links ?? [])];
+  const updatedLinks = [...(newData.links ?? []), ...existing.data.links];
   const uniqueUpdatedLinks = uniqBy(updatedLinks, function (nl) {
-    return nl._links?.self?.href;
+    return nl.patient?.provider?.reference;
   });
   const updatedLinkDemographicsHistory = {
     ...existing.data.linkDemographicsHistory,

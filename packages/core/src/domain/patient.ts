@@ -1,5 +1,5 @@
 import { ConsolidatedQuery } from "@metriport/api-sdk";
-import { USState } from "./geographic-locations";
+import { USState } from "@metriport/shared";
 import { BaseDomain, BaseDomainCreate } from "./base-domain";
 import { DocumentQueryProgress } from "./document-query";
 import { DiscoveryParams, ScheduledPatientDiscovery } from "./patient-discovery";

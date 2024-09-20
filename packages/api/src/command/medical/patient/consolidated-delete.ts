@@ -1,16 +1,19 @@
 import { OperationOutcomeError } from "@medplum/core";
 import { BundleEntry, Resource } from "@medplum/fhirtypes";
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
+import { Patient } from "@metriport/core/domain/patient";
 import { FhirClient } from "@metriport/core/external/fhir/api/api";
+import {
+  getDetailFromOutcomeError,
+  isResourceDerivedFromDocRef,
+} from "@metriport/core/external/fhir/shared/index";
+import { out } from "@metriport/core/util";
 import { logDuration } from "@metriport/shared/common/duration";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { chunk, flatten } from "lodash";
-import { Patient } from "@metriport/core/domain/patient";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
-import { getDetailFromOutcomeError } from "@metriport/core/external/fhir/shared/index";
 import { capture } from "../../../shared/notifications";
-import { Util } from "../../../shared/util";
 import { getConsolidatedPatientData } from "./consolidated-get";
 
 dayjs.extend(duration);
@@ -34,7 +37,7 @@ export type DeleteConsolidatedParams = {
  */
 export async function deleteConsolidated(params: DeleteConsolidatedParams): Promise<void> {
   const { patient, resources, docIds, dryRun = false } = params;
-  const { log } = Util.out(`deleteConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
+  const { log } = out(`deleteConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
   const fhir = makeFhirApi(patient.cxId);
 
   const resourcesToDelete = await getResourcesToDelete(patient, docIds, resources, log);
@@ -51,10 +54,11 @@ async function getResourcesToDelete(
 ): Promise<BundleEntry<Resource>[]> {
   const bundle = await getConsolidatedPatientData({
     patient,
-    documentIds,
     resources,
   });
-  const resourcesFromFHIRServer = bundle.entry;
+  const entries = bundle.entry ?? [];
+  const entriesFromDocRefs = filterByDocumentIds(entries, documentIds, log);
+  const resourcesFromFHIRServer = entriesFromDocRefs;
   if (!resourcesFromFHIRServer || resourcesFromFHIRServer.length <= 0) {
     log(`No resources to delete`);
     return [];
@@ -67,6 +71,26 @@ async function getResourcesToDelete(
     return resource.resourceType !== "DocumentReference" && resource.resourceType !== "Patient";
   });
   return resourcesToDelete;
+}
+
+export function filterByDocumentIds(
+  entries: BundleEntry[],
+  documentIds: string[],
+  log = out(`filterByDocumentIds`).log
+): BundleEntry[] {
+  const defaultMsg = `Got ${entries.length} resources from FHIR server`;
+  if (documentIds.length <= 0) {
+    log(`${defaultMsg}, not filtering by documentIds`);
+    return entries;
+  }
+  const isDerivedFromDocRefs = (r: Resource) =>
+    documentIds.some(id => isResourceDerivedFromDocRef(r, id));
+  const filtered =
+    documentIds.length > 0
+      ? entries.filter(b => b.resource && isDerivedFromDocRefs(b.resource))
+      : entries;
+  log(`${defaultMsg}, filtered by documentIds to ${filtered.length} resources`);
+  return filtered;
 }
 
 async function deleteResources(

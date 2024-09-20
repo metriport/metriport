@@ -1,6 +1,6 @@
 {
   "name": "@metriport/core",
-  "version": "1.16.2",
+  "version": "1.17.3",
   "private": true,
   "description": "Metriport helps you access and manage health and medical data, through a single open source API. Common code shared across packages.",
   "author": "Metriport Inc. <contact@metriport.com>",
@@ -22,6 +22,7 @@
     "./util": "./dist/util/index.js",
     "./util/*": "./dist/util/*.js",
     "./mpi/*": "./dist/mpi/*.js",
+    "./fhir-deduplication/*": "./dist/fhir-deduplication/*.js",
     "./fhir-to-cda/*": "./dist/fhir-to-cda/*.js",
     "./shareback/*": "./dist/shareback/*.js"
   },
@@ -60,6 +61,12 @@
       "mpi/*": [
         "dist/mpi/*"
       ],
+      "fhir-deduplication": [
+        "dist/fhir-deduplication/index.d.ts"
+      ],
+      "fhir-deduplication/*": [
+        "dist/fhir-deduplication/*"
+      ],
       "fhir-to-cda": [
         "dist/fhir-to-cda/index.d.ts"
       ],
@@ -88,6 +95,7 @@
     "test:e2e": "E2E=true jest --runInBand --detectOpenHandles --passWithNoTests"
   },
   "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.616.0",
     "@aws-sdk/client-s3": "^3.435.0",
     "@aws-sdk/s3-request-presigner": "^3.435.0",
     "@faker-js/faker": "^8.0.2",
@@ -115,7 +123,7 @@
     "xmldom": "^0.6.0"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "^2.0.32",
+    "@medplum/fhirtypes": "^2.2.10",
     "@tsconfig/recommended": "^1.0.2",
     "@types/formidable": "^3.4.5",
     "@types/jest": "29.5.3",

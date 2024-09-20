@@ -1,6 +1,6 @@
+import { normalizePhoneNumber, stripNonNumericChars, USState } from "@metriport/shared";
 import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
-import { USState } from "@metriport/core/domain/geographic-locations";
 import {
   ConsolidatedLinkDemographics,
   Patient,
@@ -17,7 +17,6 @@ import {
 } from "@metriport/core/domain/patient-demographics";
 import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/index";
 import { emailSchema } from "@metriport/api-sdk/medical/models/demographics";
-import { normalizePhoneNumber, stripNonNumericChars } from "@metriport/shared";
 import dayjs from "dayjs";
 import { ISO_DATE } from "../../shared/date";
 
@@ -396,12 +395,6 @@ export function linkHasNewDemographics({
 }):
   | { hasNewDemographics: true; comparison: LinkDemographicsComparison }
   | { hasNewDemographics: false; comparison: undefined } {
-  const hasNewDob =
-    coreDemographics.dob && linkDemographics.dob && linkDemographics.dob !== coreDemographics.dob;
-  const hasNewGender =
-    coreDemographics.gender &&
-    linkDemographics.gender &&
-    linkDemographics.gender !== coreDemographics.gender;
   const newNames = linkDemographics.names.filter(
     name =>
       !coreDemographics.names.includes(name) &&
@@ -439,8 +432,6 @@ export function linkHasNewDemographics({
   );
   const hasNewSsn = newSsn.length > 0;
   const hasNewDemographics =
-    hasNewDob ||
-    hasNewGender ||
     hasNewNames ||
     hasNewAddresses ||
     hasNewTelephoneNumbers ||
@@ -451,8 +442,6 @@ export function linkHasNewDemographics({
     return {
       hasNewDemographics,
       comparison: {
-        ...(hasNewDob ? { dob: linkDemographics.dob } : undefined),
-        ...(hasNewGender ? { gender: linkDemographics.gender } : undefined),
         ...(hasNewNames ? { names: newNames } : undefined),
         ...(hasNewAddresses ? { addresses: newAddresses } : undefined),
         ...(hasNewTelephoneNumbers ? { telephoneNumbers: newTelephoneNumbers } : undefined),

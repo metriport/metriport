@@ -19,6 +19,7 @@ import { getCqInitiator, isCqEnabled } from "./shared";
 import { queryDocsIfScheduled } from "./process-outbound-patient-discovery-resps";
 import { createAugmentedPatient } from "../../domain/medical/patient-demographics";
 import { resetScheduledPatientDiscovery } from "../hie/reset-scheduled-patient-discovery-request";
+import { isDemoAugEnabledForCx } from "../aws/app-config";
 
 dayjs.extend(duration);
 
@@ -43,6 +44,9 @@ export async function discover({
 
   const enabledIHEGW = await isCqEnabled(patient, facilityId, forceEnabled, outerLog);
 
+  const demoAugEnabled = await isDemoAugEnabledForCx(patient.cxId);
+  const cxRerunPdOnNewDemographics = demoAugEnabled || rerunPdOnNewDemographics;
+
   if (enabledIHEGW) {
     const requestId = inputRequestId ?? uuidv7();
     const startedAt = new Date();
@@ -53,7 +57,7 @@ export async function discover({
         requestId,
         facilityId,
         startedAt,
-        rerunPdOnNewDemographics,
+        rerunPdOnNewDemographics: cxRerunPdOnNewDemographics,
       },
     });
 

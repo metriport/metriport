@@ -112,7 +112,7 @@ router.post(
 );
 
 /***
- * GET /internal/carequality/directory/organization/legacy/:oid
+ * GET /internal/carequality/directory/organization/:oid
  *
  * Retrieves the organization with the specified OID from the Carequality Directory.
  * @param req.params.oid The OID of the organization to retrieve.

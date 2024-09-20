@@ -3,6 +3,7 @@ import activity from "./activity";
 import biometrics from "./biometrics";
 import body from "./body";
 import connect from "./connect";
+import feedback from "./feedback";
 import { reportClientErrors } from "./helpers/report-client-errors";
 import internal from "./internal";
 import medical from "./medical";
@@ -15,6 +16,8 @@ import settings from "./settings";
 import sleep from "./sleep";
 import user from "./user";
 import webhook from "./webhook";
+import ehr from "./ehr";
+import jwtToken from "./jwt-token";
 
 // Supports requests from the Dashboard through the dedicated JWT-based auth on API GW
 const dash = "/dash-oss";
@@ -22,6 +25,7 @@ const dash = "/dash-oss";
 export default (app: Application) => {
   // internal only routes, should be disabled at API Gateway
   app.use("/webhook", reportClientErrors, webhook);
+  app.use("/internal/token", jwtToken);
   app.use("/internal", internal);
 
   // routes with API key auth
@@ -39,9 +43,15 @@ export default (app: Application) => {
   app.use(`${dash}/medical/v1`, processCxId, checkMAPIAccess, medical);
   app.use("/fhir/R4", processCxId, checkMAPIAccess, fhirRouter);
 
+  // routes with API key auth - validated on the API Gateway
+  app.use(`/feedback`, feedback);
+
   // routes with session token auth
   app.use("/connect", connect);
 
   // routes with OAuth based authentication
   app.use("/oauth", reportClientErrors, oauthRoutes);
+
+  // routes with JWT based authentication
+  app.use("/ehr", ehr);
 };

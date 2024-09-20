@@ -118,6 +118,7 @@ type EnvConfigBase = {
   generalBucketName: string;
   medicalDocumentsBucketName: string;
   medicalDocumentsUploadBucketName: string;
+  ehrResponsesBucketName?: string;
   iheResponsesBucketName: string;
   iheParsedResponsesBucketName: string;
   iheRequestsBucketName: string;
@@ -129,6 +130,11 @@ type EnvConfigBase = {
     stackName: string;
     placeIndexName: string;
     placeIndexRegion: string;
+  };
+  bedrock?: {
+    modelId: string;
+    region: string;
+    anthropicVersion: string;
   };
   openSearch: OpenSearchConnectorConfig;
   carequality?: {
@@ -189,11 +195,19 @@ type EnvConfigBase = {
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: string;
   };
   iheGateway?: IHEGatewayProps;
+  canvas?: {
+    secretNames: {
+      CANVAS_CLIENT_ID: string;
+      CANVAS_CLIENT_SECRET: string;
+      CANVAS_ENVIRONMENT: string;
+    };
+  };
   sentryDSN?: string; // API's Sentry DSN
   lambdasSentryDSN?: string;
   slack?: {
     SLACK_ALERT_URL?: string;
     SLACK_NOTIFICATION_URL?: string;
+    SLACK_SENSITIVE_DATA_URL?: string;
     workspaceId: string;
     alertsChannelId: string;
   };
@@ -208,10 +222,16 @@ type EnvConfigBase = {
   cqDirectoryRebuilder?: {
     scheduleExpressions: string | string[];
   };
+  ehrIntegration?: {
+    athenaHealth: {
+      baseUrl: string;
+    };
+  };
 };
 
 export type EnvConfigNonSandbox = EnvConfigBase & {
   environmentType: EnvType.staging | EnvType.production;
+  dashUrl: string;
   fhirToMedicalLambda: {
     nodeRuntimeArn: string;
   };

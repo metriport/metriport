@@ -1,7 +1,10 @@
+import { errorToString } from "@metriport/shared";
 import { AppConfig } from "aws-sdk";
 import { z } from "zod";
+import { Config } from "../../util/config";
 import { MetriportError } from "../../util/error/metriport-error";
 import { out } from "../../util/log";
+import { capture } from "../../util/notifications";
 import { uuidv4 } from "../../util/uuid-v7";
 
 const { log } = out(`Core appConfig - FF`);
@@ -34,9 +37,13 @@ export const cxBasedFFsSchema = z.object({
   cxsWithCQDirectFeatureFlag: ffStringValuesSchema,
   cxsWithCWFeatureFlag: ffStringValuesSchema,
   cxsWithADHDMRFeatureFlag: ffStringValuesSchema,
+  cxsWithAiBriefFeatureFlag: ffStringValuesSchema,
+  getCxsWithCdaCustodianFeatureFlag: ffStringValuesSchema,
   cxsWithNoWebhookPongFeatureFlag: ffStringValuesSchema,
   cxsWithIncreasedSandboxLimitFeatureFlag: ffStringValuesSchema,
   cxsWithEpicEnabled: ffStringValuesSchema,
+  cxsWithDemoAugEnabled: ffStringValuesSchema,
+  cxsWithConsolidatedFromS3: ffStringValuesSchema.optional(),
 });
 export type CxBasedFFsSchema = z.infer<typeof cxBasedFFsSchema>;
 
@@ -177,4 +184,73 @@ export async function createAndDeployConfigurationContent({
   await appConfig.startDeployment(startDeploymentRequestParams).promise();
   const configString = createConfigurationRsp.Content.toString();
   return JSON.parse(configString);
+}
+
+/**
+ * Checks whether the specified feature flag is enabled.
+ *
+ * @returns true if enabled; false otherwise
+ */
+export async function isFeatureFlagEnabled(
+  featureFlagName: keyof BooleanFeatureFlags,
+  defaultValue = false
+): Promise<boolean> {
+  try {
+    const featureFlag = await getFeatureFlagValueBoolean(
+      Config.getAWSRegion(),
+      Config.getAppConfigAppId(),
+      Config.getAppConfigConfigId(),
+      Config.getEnvType(),
+      featureFlagName
+    );
+    return featureFlag ? featureFlag.enabled : defaultValue;
+  } catch (error) {
+    const msg = `Failed to get Feature Flag Value`;
+    const extra = { featureFlagName };
+    log(`${msg} - ${JSON.stringify(extra)} - ${errorToString(error)}`);
+    capture.error(msg, { extra: { ...extra, error } });
+  }
+  return defaultValue;
+}
+
+/**
+ * Returns the list of customers that are enabled for the given feature flag.
+ *
+ * @returns Array of string values
+ */
+export async function getCxsWithFeatureFlagEnabled(
+  featureFlagName: keyof StringValueFeatureFlags
+): Promise<string[]> {
+  try {
+    const featureFlag = await getFeatureFlagValueStringArray(
+      Config.getAWSRegion(),
+      Config.getAppConfigAppId(),
+      Config.getAppConfigConfigId(),
+      Config.getEnvType(),
+      featureFlagName
+    );
+    if (featureFlag && featureFlag.enabled) {
+      return featureFlag.values;
+    }
+  } catch (error) {
+    const msg = `Failed to get Feature Flag Value`;
+    const extra = { featureFlagName };
+    log(`${msg} - ${JSON.stringify(extra)} - ${errorToString(error)}`);
+    capture.error(msg, { extra: { ...extra, error } });
+  }
+  return [];
+}
+
+export async function getCxsWithAiBriefFeatureFlagValue(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithAiBriefFeatureFlag");
+}
+
+export async function isAiBriefFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxsWithADHDFeatureFlagValue = await getCxsWithAiBriefFeatureFlagValue();
+  return cxsWithADHDFeatureFlagValue.includes(cxId);
+}
+
+export async function isConsolidatedFromS3Enabled(cxId: string): Promise<boolean> {
+  const customerIds = await getCxsWithFeatureFlagEnabled("cxsWithConsolidatedFromS3");
+  return customerIds.includes(cxId);
 }

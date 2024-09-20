@@ -1,8 +1,22 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { getReferencesFromResources } from "@metriport/core/external/fhir/shared/bundle";
+import { getReferencesFromFHIR } from "@metriport/core/external/fhir/shared/references";
 import BadRequestError from "@metriport/core/util/error/bad-request";
 import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
+import { getCxFFStatus } from "../command/internal/get-hie-enabled-feature-flags-status";
+import { updateCxHieEnabledFFs } from "../command/internal/update-hie-enabled-feature-flags";
+import {
+  findOrCreateCxMapping,
+  getCxMappingsForCustomer,
+  deleteCxMapping,
+} from "../command/mapping/cx";
+import {
+  findOrCreateFacilityMapping,
+  getFacilityMappingsForCustomer,
+  deleteFacilityMapping,
+} from "../command/mapping/facility";
+import { getFacilityOrFail } from "../command/medical/facility/get-facility";
 import { checkApiQuota } from "../command/medical/admin/api";
 import { dbMaintenance } from "../command/medical/admin/db-maintenance";
 import {
@@ -12,28 +26,28 @@ import {
 import { getFacilities } from "../command/medical/facility/get-facility";
 import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
-import { getCxFFStatus } from "../command/internal/get-hie-enabled-feature-flags-status";
-import { updateCxHieEnabledFFs } from "../command/internal/update-hie-enabled-feature-flags";
 import { isEnhancedCoverageEnabledForCx } from "../external/aws/app-config";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
 import { makeFhirApi } from "../external/fhir/api/api-factory";
 import { countResources } from "../external/fhir/patient/count-resources";
-import { getReferencesFromFHIR } from "../external/fhir/references/get-references";
 import { OrganizationModel } from "../models/medical/organization";
+import userRoutes from "./devices/internal-user";
+import { requestLogger } from "./helpers/request-logger";
 import { internalDtoFromModel as facilityInternalDto } from "./medical/dtos/facilityDTO";
 import { internalDtoFromModel as orgInternalDto } from "./medical/dtos/organizationDTO";
-import userRoutes from "./devices/internal-user";
-import commonwellRoutes from "./medical/internal-cw";
 import carequalityRoutes from "./medical/internal-cq";
+import commonwellRoutes from "./medical/internal-cw";
 import docsRoutes from "./medical/internal-docs";
+import facilityRoutes from "./medical/internal-facility";
+import feedbackRoutes from "./medical/internal-feedback";
 import hieRoutes from "./medical/internal-hie";
 import mpiRoutes from "./medical/internal-mpi";
-import patientRoutes from "./medical/internal-patient";
-import facilityRoutes from "./medical/internal-facility";
 import organizationRoutes from "./medical/internal-organization";
+import patientRoutes from "./medical/internal-patient";
+import { CxSources } from "../domain/cx-mapping";
+import { FacilitySources } from "../domain/facility-mapping";
 import { getUUIDFrom } from "./schemas/uuid";
-import { asyncHandler, getFrom, getFromQueryAsBoolean } from "./util";
-import { requestLogger } from "./helpers/request-logger";
+import { asyncHandler, getFrom, getFromQueryAsBoolean, getFromQueryOrFail } from "./util";
 
 const router = Router();
 
@@ -46,6 +60,7 @@ router.use("/commonwell", commonwellRoutes);
 router.use("/carequality", carequalityRoutes);
 router.use("/mpi", mpiRoutes);
 router.use("/hie", hieRoutes);
+router.use("/feedback", feedbackRoutes);
 
 /** ---------------------------------------------------------------------------
  * POST /internal/mapi-access
@@ -204,7 +219,7 @@ router.get(
 
     const response = {
       cxId,
-      org: org ? orgInternalDto(org) : undefined,
+      org: orgInternalDto(org),
       facilities: facilities.map(f => facilityInternalDto(f)),
     };
     return res.status(httpStatus.OK).json(response);
@@ -289,6 +304,7 @@ router.get(
  * @param req.query.cwEnabled - Whether to enabled CommonWell.
  * @param req.query.cqEnabled - Whether to enabled CareQuality.
  * @param req.query.epicEnabled - Whether to enabled Epic.
+ * @param req.query.demoAugEnabled - Whether to enabled Demo Aug.
  */
 router.put(
   "/cx-ff-status",
@@ -298,13 +314,161 @@ router.put(
     const cwEnabled = getFromQueryAsBoolean("cwEnabled", req);
     const cqEnabled = getFromQueryAsBoolean("cqEnabled", req);
     const epicEnabled = getFromQueryAsBoolean("epicEnabled", req);
+    const demoAugEnabled = getFromQueryAsBoolean("demoAugEnabled", req);
     const result = await updateCxHieEnabledFFs({
       cxId,
       cwEnabled,
       cqEnabled,
       epicEnabled,
+      demoAugEnabled,
     });
     return res.status(httpStatus.OK).json(result);
+  })
+);
+
+/**
+ * POST /internal/cx-mapping
+ *
+ * Create cx mapping
+ *
+ * @param req.query.cxId - The cutomer's ID.
+ * @param req.query.source - Mapping source
+ * @param req.query.externalId - Mapped external ID.
+ */
+router.post(
+  "/cx-mapping",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const source = getFromQueryOrFail("source", req);
+    const externalId = getFromQueryOrFail("externalId", req);
+    await findOrCreateCxMapping({
+      cxId,
+      source: source as CxSources,
+      externalId,
+    });
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * GET /internal/cx-mapping
+ *
+ * Get cx mappings for customer
+ *
+ * @param req.query.cxId - The cutomer's ID.
+ * @param req.query.source - Optional mapping source
+ */
+router.get(
+  "/cx-mapping",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const source = getFrom("query").optional("source", req);
+    const result = await getCxMappingsForCustomer({
+      cxId,
+      ...(source && { source }),
+    });
+    return res.status(httpStatus.OK).json(result);
+  })
+);
+
+/**
+ * DELETE /internal/cx-mapping
+ *
+ * Delete cx mapping
+ *
+ * @param req.query.cxId - The cutomer's ID.
+ * @param req.query.source - Mapping source
+ * @param req.query.externalId - Mapped external ID.
+ */
+router.delete(
+  "/cx-mapping",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const source = getFromQueryOrFail("source", req);
+    const externalId = getFromQueryOrFail("externalId", req);
+    await deleteCxMapping({
+      source: source as CxSources,
+      externalId,
+    });
+    return res.sendStatus(httpStatus.NO_CONTENT);
+  })
+);
+
+/**
+ * POST /internal/facility-mapping
+ *
+ * Create facility mapping
+ *
+ * @param req.query.cxId - The cutomer's ID.
+ * @param req.query.facilityId - The facility ID.
+ * @param req.query.source - Mapping source
+ * @param req.query.externalId - Mapped external ID.
+ */
+router.post(
+  "/facility-mapping",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const facilityId = getFromQueryOrFail("facilityId", req);
+    await getFacilityOrFail({ cxId, id: facilityId });
+    const source = getFromQueryOrFail("source", req);
+    const externalId = getFromQueryOrFail("externalId", req);
+    await findOrCreateFacilityMapping({
+      cxId,
+      facilityId,
+      source: source as FacilitySources,
+      externalId,
+    });
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * GET /internal/facility-mapping
+ *
+ * Get facility mappings for customer
+ *
+ * @param req.query.cxId - The cutomer's ID.
+ * @param req.query.source - Optional mapping source
+ */
+router.get(
+  "/facility-mapping",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const source = getFrom("query").optional("source", req);
+    const result = await getFacilityMappingsForCustomer({
+      cxId,
+      ...(source && { source }),
+    });
+    return res.status(httpStatus.OK).json(result);
+  })
+);
+
+/**
+ * DELETE /internal/facility-mapping
+ *
+ * Delete facility mapping
+ *
+ * @param req.query.cxId - The cutomer's ID.
+ * @param req.query.source - Mapping source
+ * @param req.query.externalId - Mapped external ID.
+ */
+router.delete(
+  "/facility-mapping",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const source = getFromQueryOrFail("source", req);
+    const externalId = getFromQueryOrFail("externalId", req);
+    await deleteFacilityMapping({
+      cxId,
+      source: source as FacilitySources,
+      externalId,
+    });
+    return res.sendStatus(httpStatus.NO_CONTENT);
   })
 );
 

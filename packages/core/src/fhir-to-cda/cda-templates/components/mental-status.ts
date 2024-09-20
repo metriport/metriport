@@ -1,10 +1,11 @@
 import { Bundle, Observation } from "@medplum/fhirtypes";
 import { MentalStatusSection } from "../../cda-types/sections";
+import { ObservationEntry } from "../../cda-types/shared-types";
 import { isMentalSurveyObservation } from "../../fhir";
 import { buildCodeCe, buildInstanceIdentifier, notOnFilePlaceholder } from "../commons";
 import { loincCodeSystem, loincSystemName, oids } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
-import { initiateSectionTable } from "../table";
+import { CdaTable, initiateSectionTable } from "../table";
 import { AugmentedObservation } from "./augmented-resources";
 import { createEntriesFromObservation, createTableRowsFromObservation } from "./observations";
 
@@ -39,15 +40,28 @@ export function buildMentalStatus(fhirBundle: Bundle): MentalStatusSection {
     obs => new AugmentedObservation(mentalStatusSectionName, obs, oids.mentalStatusObs)
   );
 
-  const { trs, entries } = createTableRowsAndEntries(
-    augmentedObservations,
-    createTableRowsFromObservation,
-    createEntriesFromObservation
-  );
+  const tables: CdaTable[] = [];
+  const entries: ObservationEntry[] = [];
 
-  const table = initiateSectionTable(mentalStatusSectionName, tableHeaders, trs);
+  augmentedObservations.forEach((augObs, index) => {
+    const { trs, entries: entry } = createTableRowsAndEntries(
+      [augObs],
+      createTableRowsFromObservation,
+      createEntriesFromObservation,
+      index
+    );
 
-  mentalStatusSection.text = table;
+    const table = initiateSectionTable(
+      `${mentalStatusSectionName}${index + 1}`,
+      tableHeaders,
+      trs,
+      augObs.resource.code?.text
+    );
+    tables.push(table);
+    entries.push(...entry);
+  });
+
+  mentalStatusSection.text = tables;
   mentalStatusSection.entry = entries;
 
   return mentalStatusSection;

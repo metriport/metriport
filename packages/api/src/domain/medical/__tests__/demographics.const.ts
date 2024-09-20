@@ -1,5 +1,5 @@
+import { USState } from "@metriport/shared";
 import { Patient, PatientDemoData } from "@metriport/core/domain/patient";
-import { USState } from "@metriport/core/domain/geographic-locations";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 
 export const coreDemographics: LinkDemographics = {

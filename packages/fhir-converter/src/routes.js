@@ -217,6 +217,7 @@ module.exports = function (app) {
       })
       .then(result => {
         const duration = new Date().getTime() - startTime;
+        const status = result.status ?? 400;
         const resultMessage = result.resultMsg;
         if (!retUnusedSegments) {
           delete resultMessage["unusedSegments"];
@@ -225,9 +226,9 @@ module.exports = function (app) {
           delete resultMessage["invalidAccess"];
         }
         console.log(
-          `[patient ${patientId}] Took ${duration}ms / status ${result.status} to process file ${fileName}`
+          `[patient ${patientId}] Took ${duration}ms / status ${status} to process file ${fileName}`
         );
-        res.status(result.status);
+        res.status(status);
         res.json(resultMessage);
         return;
       });

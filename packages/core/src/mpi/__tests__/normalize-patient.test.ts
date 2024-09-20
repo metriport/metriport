@@ -1,6 +1,6 @@
+import { USState } from "@metriport/shared";
 import { Address } from "../../domain/address";
 import { Contact } from "../../domain/contact";
-import { USState } from "../../domain/geographic-locations";
 import { GenderAtBirth } from "../../domain/patient";
 import { normalizePatient } from "../normalize-patient";
 import { PatientMPI } from "../shared";

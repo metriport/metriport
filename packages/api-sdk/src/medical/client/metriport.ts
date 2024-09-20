@@ -287,11 +287,16 @@ export class MetriportMedicalApi {
    *
    * @param data The data to be used to create a new patient.
    * @param facilityId The facility providing the NPI to support this operation.
+   * @param additionalQueryParams Optional, additional query parameters to be sent with the request.
    * @return The newly created patient.
    */
-  async createPatient(data: PatientCreate, facilityId: string): Promise<PatientDTO> {
+  async createPatient(
+    data: PatientCreate,
+    facilityId: string,
+    additionalQueryParams: Record<string, string | number | boolean> = {}
+  ): Promise<PatientDTO> {
     const resp = await this.api.post(`${PATIENT_URL}`, data, {
-      params: { facilityId },
+      params: { facilityId, ...additionalQueryParams },
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return resp.data as PatientDTO;
@@ -331,16 +336,21 @@ export class MetriportMedicalApi {
    *
    * @param patient The patient data to be updated.
    * @param facilityId Optional. The facility providing the NPI to support this operation. If not provided and the patient has only one facility, that one will be used. If not provided and the patient has multiple facilities, an error will be thrown.
+   * @param additionalQueryParams Optional, additional query parameters to be sent with the request.
    * @return The updated patient.
    */
-  async updatePatient(patient: PatientUpdate, facilityId?: string): Promise<PatientDTO> {
+  async updatePatient(
+    patient: PatientUpdate,
+    facilityId?: string,
+    additionalQueryParams: Record<string, string | number | boolean> = {}
+  ): Promise<PatientDTO> {
     type FieldsToOmit = "id";
     const payload: Omit<PatientUpdate, FieldsToOmit> & Record<FieldsToOmit, undefined> = {
       ...patient,
       id: undefined,
     };
     const resp = await this.api.put(`${PATIENT_URL}/${patient.id}`, payload, {
-      params: { facilityId },
+      params: { facilityId, ...additionalQueryParams },
       headers: { ...getETagHeader(patient) },
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
@@ -359,16 +369,18 @@ export class MetriportMedicalApi {
    * @param resources Optional array of resources to be returned.
    * @param dateFrom Optional start date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
    * @param dateTo Optional end date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
+   * @param fromDashboard Optional parameter to indicate that the request is coming from the dashboard.
    * @return Patient's consolidated data.
    */
   async getPatientConsolidated(
     patientId: string,
     resources?: string[],
     dateFrom?: string,
-    dateTo?: string
+    dateTo?: string,
+    fromDashboard?: boolean
   ): Promise<Bundle<Resource>> {
     const resp = await this.api.get(`${PATIENT_URL}/${patientId}/consolidated`, {
-      params: { resources: resources && resources.join(","), dateFrom, dateTo },
+      params: { resources: resources && resources.join(","), dateFrom, dateTo, fromDashboard },
     });
     return resp.data;
   }
@@ -386,6 +398,7 @@ export class MetriportMedicalApi {
    *      "pdf", "html", or "json" (defaults to "json"). If "html" or "pdf", the Webhook payload
    *      will contain a signed URL to download the file, which is active for 3 minutes.
    *      If not provided, will send json payload in the webhook.
+   * @param fromDashboard Optional parameter to indicate that the request is coming from the dashboard.
    * @param metadata Optional metadata to be sent along the webhook request as response of this query.
    * @return The consolidated data query status.
    */
@@ -395,11 +408,18 @@ export class MetriportMedicalApi {
     dateFrom?: string,
     dateTo?: string,
     conversionType?: string,
+    fromDashboard?: boolean,
     metadata?: Record<string, string>
   ): Promise<StartConsolidatedQueryProgressResponse> {
     const whMetadata = { metadata: metadata };
     const resp = await this.api.post(`${PATIENT_URL}/${patientId}/consolidated/query`, whMetadata, {
-      params: { resources: resources && resources.join(","), dateFrom, dateTo, conversionType },
+      params: {
+        resources: resources && resources.join(","),
+        dateFrom,
+        dateTo,
+        fromDashboard,
+        conversionType,
+      },
     });
     return resp.data;
   }
@@ -423,8 +443,8 @@ export class MetriportMedicalApi {
    * Add patient data as FHIR resources. Those can later be queried with startConsolidatedQuery(),
    * and will be made available to HIEs.
    *
-   * Note: each call to this function is limited to 50 resources and 1Mb of data. You can make multiple
-   * calls to this function to add more data.
+   * Note: each call to this function is limited to 1Mb of data (and 50 resources when in sandbox).
+   * You can make multiple calls to this function to add more data.
    *
    * @param patientId The ID of the patient to associate resources to.
    * @param payload The FHIR Bundle to create resources.

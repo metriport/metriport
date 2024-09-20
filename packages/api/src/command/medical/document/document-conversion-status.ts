@@ -16,6 +16,8 @@ import { analytics, EventTypes } from "@metriport/core/external/analytics/postho
 import { updateConversionProgress } from "./document-query";
 import { processPatientDocumentRequest } from "./document-webhook";
 import { MAPIWebhookStatus } from "./document-webhook";
+import { getConsolidated } from "../patient/consolidated-get";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 
 export async function calculateDocumentConversionStatus({
   patientId,
@@ -60,16 +62,25 @@ export async function calculateDocumentConversionStatus({
 
     const externalData =
       source === MedicalDataSource.COMMONWELL
-        ? await getCWData(updatedPatient.data.externalData)
-        : await getCQData(updatedPatient.data.externalData);
+        ? getCWData(updatedPatient.data.externalData)
+        : getCQData(updatedPatient.data.externalData);
 
-    const isConversionCompleted = isProgressStatusValid({
+    const globalTriggerConsolidated =
+      updatedPatient.data.documentQueryProgress?.triggerConsolidated;
+    const hieTriggerConsolidated = externalData?.documentQueryProgress?.triggerConsolidated;
+
+    const isGloablConversionCompleted = isProgressStatusValid({
+      documentQueryProgress: updatedPatient.data.documentQueryProgress,
+      progressType: "convert",
+      status: "completed",
+    });
+    const isHieConversionCompleted = isProgressStatusValid({
       documentQueryProgress: externalData?.documentQueryProgress,
       progressType: "convert",
       status: "completed",
     });
 
-    if (isConversionCompleted) {
+    if (isHieConversionCompleted) {
       const startedAt = updatedPatient.data.documentQueryProgress?.startedAt;
       const convert = updatedPatient.data.documentQueryProgress?.convert;
       const totalDocsConverted = convert?.total;
@@ -90,14 +101,31 @@ export async function calculateDocumentConversionStatus({
         },
       });
     }
+
+    if (
+      (hieTriggerConsolidated && isHieConversionCompleted) ||
+      (globalTriggerConsolidated && isGloablConversionCompleted)
+    ) {
+      log(
+        `Kicking off getConsolidated for patient ${updatedPatient.id} - hie: ${hieTriggerConsolidated} global: ${globalTriggerConsolidated}`
+      );
+      getConsolidated({ patient: updatedPatient, conversionType: "pdf" }).catch(
+        processAsyncError(`Post-DQ getConsolidated ${source}`)
+      );
+    }
   } else {
     const expectedPatient = await updateConversionProgress({
       patient: { id: patientId, cxId },
       convertResult,
     });
 
-    const conversionStatus = expectedPatient.data.documentQueryProgress?.convert?.status;
-    if (conversionStatus === "completed") {
+    const isConversionCompleted = isProgressStatusValid({
+      documentQueryProgress: expectedPatient.data.documentQueryProgress,
+      progressType: "convert",
+      status: "completed",
+    });
+
+    if (isConversionCompleted) {
       processPatientDocumentRequest(
         cxId,
         patientId,
