@@ -109,7 +109,8 @@ export async function processOutboundDocumentRetrievalResps({
       }
     }
 
-    // we might want to filter out duplicates here since we set the total convert progress based on this
+    // we might want to filter duplicates here since we set the total convert progress based on this
+    // set status to be superceded, remove from list that gets passed to convert
 
     await setDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
@@ -139,8 +140,10 @@ export async function processOutboundDocumentRetrievalResps({
 
         if (docRefs) {
           const validDocRefs = docRefs.filter(containsMetriportId);
+          // need to update status of any docRefs missing metriportId to entered in error
           const deduplicatedDocRefs = validDocRefs.filter(docRef => {
             const isDuplicate = containsDuplicateMetriportId(docRef, seenMetriportIds);
+            // NEED to UPDATE status of this docRef to entered in errors
             if (isDuplicate) {
               capture.message(`Duplicate docRef found in DR Resp`, {
                 extra: {
@@ -183,6 +186,8 @@ export async function processOutboundDocumentRetrievalResps({
         level: "error",
       });
     }
+
+    // HERE we should accumulate all the failed docRefs here + the operationOutcome issues and then deal with the errors all at once here
 
     await tallyDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
