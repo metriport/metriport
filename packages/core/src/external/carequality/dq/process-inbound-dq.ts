@@ -56,7 +56,7 @@ export async function processInboundDq(
       log("CCD generated. Fetching the document contents");
     }
 
-    const documentContents = await getDocumentContents(cxId, patientId);
+    const documentContents = await getDocumentContents(cxId, patientId, false);
     const response: InboundDocumentQueryResp = {
       id: payload.id,
       patientId: payload.patientId,
@@ -78,10 +78,14 @@ export async function processInboundDq(
   }
 }
 
-export async function getDocumentContents(cxId: string, patientId: string): Promise<string[]> {
+export async function getDocumentContents(
+  cxId: string,
+  patientId: string,
+  failGracefully = true
+): Promise<string[]> {
   const documentContents = await retrieveXmlContentsFromMetadataFilesOnS3(cxId, patientId, bucket);
 
-  if (!documentContents.length) {
+  if (!documentContents.length && !failGracefully) {
     const msg = `Error getting document contents`;
     capture.error(msg, { extra: { cxId, patientId } });
     throw new XDSRegistryError("Internal Server Error");
