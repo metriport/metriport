@@ -398,10 +398,11 @@ async function sendConversionResult(
     })
     .promise();
 
-  await ossApi.internal.notifyApi(
-    { cxId, patientId, status: "success", source: medicalDataSource },
-    log
-  );
+  // TODO 2215 Reenable this when we're ready to move the notification from the FHIR server here
+  // await ossApi.internal.notifyApi(
+  //   { cxId, patientId, status: "success", source: medicalDataSource },
+  //   log
+  // );
 }
 
 async function storePreProcessedConversionResult({
