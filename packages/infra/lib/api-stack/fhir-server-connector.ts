@@ -57,11 +57,6 @@ export function createConnector({
     console.log("No FHIR Server URL provided, skipping connector creation");
     return undefined;
   }
-  const apiURL = config.loadBalancerDnsName;
-  if (!apiURL) {
-    console.log("No API URL provided, skipping connector creation");
-    return undefined;
-  }
   const {
     connectorName,
     lambdaMemory,
@@ -104,7 +99,6 @@ export function createConnector({
       METRICS_NAMESPACE,
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       FHIR_SERVER_URL: fhirServerUrl,
-      API_URL: apiURL,
     },
     timeout: lambdaTimeout,
     alarmSnsAction,
