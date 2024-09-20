@@ -1,7 +1,7 @@
 import { Request } from "express";
+import { BadRequestError } from "@metriport/shared";
 import { getPatientMappingOrFail } from "../../command/mapping/patient";
 import { EhrSources } from "../../external/ehr/shared";
-import BadRequestError from "../../errors/bad-request";
 
 export const idRegex = "([a-zA-Z0-9\\_\\-\\.])+";
 
