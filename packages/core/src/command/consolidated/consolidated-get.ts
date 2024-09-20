@@ -2,6 +2,9 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { executeWithRetriesS3, returnUndefinedOn404, S3Utils } from "../../external/aws/s3";
 import { Config } from "../../util/config";
+import { getConsolidatedLocation } from "./consolidated-shared";
+
+const s3Utils = new S3Utils(Config.getAWSRegion());
 
 const defaultS3RetriesConfig = {
   maxAttempts: 3,
@@ -17,18 +20,16 @@ export type Consolidated = {
 export async function getConsolidated({
   cxId,
   patientId,
-  fileLocation = Config.getMedicalDocumentsBucketName(),
-  region = Config.getAWSRegion(),
+  fileLocation = getConsolidatedLocation(),
   log = console.log,
 }: {
   cxId: string;
   patientId: string;
   fileLocation?: string;
-  region?: string;
   log?: typeof console.log;
 }): Promise<Consolidated> {
-  const s3Utils = new S3Utils(region);
   const fileName = createConsolidatedDataFilePath(cxId, patientId);
+
   const consolidatedDataRaw = await executeWithRetriesS3<string | undefined>(
     async () => returnUndefinedOn404(() => s3Utils.getFileContentsAsString(fileLocation, fileName)),
     { ...defaultS3RetriesConfig, log }

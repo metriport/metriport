@@ -1,21 +1,16 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { ResourceTypeForConsolidation } from "@metriport/shared/medical";
-import { createFolderName } from "../../domain/filename";
-import { S3Utils } from "../../external/aws/s3";
 import { out } from "../../util";
-import { Config } from "../../util/config";
-import { PatientDataConsolidator } from "./consolidated-create";
+import { createConsolidatedFromConversions } from "./consolidated-create";
 import { filterBundleByDate } from "./consolidated-filter-by-date";
 import { filterBundleByResource } from "./consolidated-filter-by-resource";
 import { getConsolidated } from "./consolidated-get";
 
-const consolidator = new PatientDataConsolidator(
-  Config.getMedicalDocumentsBucketName(),
-  Config.getAWSRegion()
-);
-const conversionBucketName = Config.getCdaToFhirConversionBucketName();
-const s3Utils = new S3Utils(Config.getAWSRegion());
-
+/**
+ * Get the patient's consolidated from S3 and filters the resources based on the given parameters.
+ * If the consolidated bundle doesn't exist it will be created from the existing conversion
+ * (CDA>FHIR) bundles.
+ */
 export async function getConsolidatedFromS3({
   cxId,
   patientId,
@@ -30,14 +25,9 @@ export async function getConsolidatedFromS3({
   const { log } = out(`getConsolidatedFromS3 - cx ${cxId}, pat ${patientId}`);
   log(`Running with params: ${JSON.stringify(params)}`);
 
-  const preGenerated = await getConsolidated({
-    cxId,
-    patientId,
-  });
-  const consolidated =
-    preGenerated.bundle ?? (await generateConsolidatedFromSnapshots({ cxId, patientId }));
-  if (!consolidated || !consolidated.entry || consolidated.entry.length < 1) {
-    log(`No consolidated found, returning undefined`);
+  const consolidated = await getOrCreateConsolidatedOnS3({ cxId, patientId });
+  if (!consolidated || !consolidated.entry) {
+    log(`No consolidated bundle found/created!`);
     return undefined;
   }
   consolidated.type = "searchset";
@@ -48,32 +38,21 @@ export async function getConsolidatedFromS3({
   return filtered;
 }
 
-async function generateConsolidatedFromSnapshots({
+async function getOrCreateConsolidatedOnS3({
   cxId,
   patientId,
 }: {
   cxId: string;
   patientId: string;
-}): Promise<Bundle | undefined> {
-  const { log } = out(`generateConsolidatedFromSnapshots - cx ${cxId}, pat ${patientId}`);
-  if (!conversionBucketName) {
-    log(`Tried to build consolidated from snapshots, but conversion bucket name is not set.`);
-    return undefined;
-  }
-  const patientFolderPath = createFolderName(cxId, patientId);
-  const objects = (await s3Utils.listObjects(conversionBucketName, patientFolderPath)) ?? [];
-  const snapshotObjects = objects.filter(o => o.Key?.includes(".xml.json"));
-  log(`Found ${objects.length} objects, ${snapshotObjects.length} snapshots`);
-  if (!snapshotObjects || snapshotObjects.length < 1) return undefined;
-
-  const consolidated = await consolidator.execute({
+}): Promise<Bundle<Resource> | undefined> {
+  const preGenerated = await getConsolidated({
     cxId,
     patientId,
-    inputBundles: snapshotObjects.flatMap(o =>
-      o.Key ? { bucket: conversionBucketName, key: o.Key } : []
-    ),
   });
-  return consolidated;
+  if (preGenerated.bundle) return preGenerated.bundle;
+
+  const newConsolidated = await createConsolidatedFromConversions({ cxId, patientId });
+  return newConsolidated;
 }
 
 export async function filterConsolidated(

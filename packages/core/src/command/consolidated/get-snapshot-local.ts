@@ -2,13 +2,12 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import { executeWithNetworkRetries, InternalSendConsolidated } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import axios from "axios";
-import { analytics, EventTypes } from "../../external/analytics/posthog";
 import { isConsolidatedFromS3Enabled } from "../../external/aws/app-config";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
+import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { toFHIR as organizationToFhir } from "../../external/fhir/organization/conversion";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { buildBundleEntry } from "../../external/fhir/shared/bundle";
-import { deduplicateFhir } from "../../fhir-deduplication/deduplicate-fhir";
 import { out } from "../../util";
 import { getConsolidatedFromS3 } from "./consolidated-filter";
 import {
@@ -89,6 +88,7 @@ async function getBundle(
       log(`(from S3) Took ${elapsedTimeFromNow(startedAt)}ms`);
       return consolidatedBundle;
     }
+    log(`(from S3) Not found/created`);
   }
   const startedAt = new Date();
   const originalBundle = await getConsolidatedFromFhirServer(params);
@@ -111,30 +111,4 @@ async function postSnapshotToApi({
       maxAttempts: MAX_API_NOTIFICATION_ATTEMPTS,
     }
   );
-}
-
-function deduplicate({
-  cxId,
-  patientId,
-  bundle,
-}: {
-  cxId: string;
-  patientId: string;
-  bundle: Bundle<Resource>;
-}): Bundle<Resource> {
-  const startedAt = new Date();
-  const dedupedBundle = deduplicateFhir(bundle);
-
-  const deduplicationAnalyticsProps = {
-    distinctId: cxId,
-    event: EventTypes.fhirDeduplication,
-    properties: {
-      patientId: patientId,
-      initialBundleLength: bundle.entry?.length,
-      finalBundleLength: dedupedBundle.entry?.length,
-      duration: elapsedTimeFromNow(startedAt),
-    },
-  };
-  analytics(deduplicationAnalyticsProps);
-  return dedupedBundle;
 }
