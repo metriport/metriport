@@ -4,7 +4,7 @@ import { S3Utils } from "../external/aws/s3";
 import { Config } from "../util/config";
 import { CCD_SUFFIX, createUploadFilePath } from "../domain/document/upload";
 
-const apiUrl = Config.getApiUrl();
+const apiUrl = Config.getApiLoadBalancerAddress();
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
 const api = axios.create();
