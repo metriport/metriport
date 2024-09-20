@@ -1,9 +1,9 @@
-import * as pkijs from "pkijs";
 import * as asn1js from "asn1js";
+import * as pkijs from "pkijs";
 import { arrayBufferToString, toBase64 } from "pvutils";
-import { SNOMED_CODE, NHIN_PURPOSE_CODE_SYSTEM } from "../../../shared";
-import { namespaces } from "../../constants";
+import { NHIN_PURPOSE_CODE_SYSTEM, SNOMED_CODE } from "../../../../../shareback/metadata/constants";
 import { wrapIdInUrnOid } from "../../../../../util/urn";
+import { namespaces } from "../../constants";
 
 const BEGIN_CERTIFICATE_REGEX = /-----BEGIN CERTIFICATE-----\r?\n/;
 const END_CERTIFICATE_REGEX = /-----END CERTIFICATE-----\r?\n?$/;

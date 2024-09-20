@@ -78,7 +78,7 @@ export async function processInboundDq(
   }
 }
 
-async function getDocumentContents(cxId: string, patientId: string): Promise<string[]> {
+export async function getDocumentContents(cxId: string, patientId: string): Promise<string[]> {
   const documentContents = await retrieveXmlContentsFromMetadataFilesOnS3(cxId, patientId, bucket);
 
   if (!documentContents.length) {
