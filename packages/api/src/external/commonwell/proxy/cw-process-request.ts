@@ -1,5 +1,4 @@
 import { Bundle, BundleEntry, DocumentReference, Resource, ResourceType } from "@medplum/fhirtypes";
-import { getDocumentContents } from "@metriport/core/external/carequality/dq/process-inbound-dq";
 import {
   docContributionFileParam,
   getDocContributionURL,
@@ -7,6 +6,7 @@ import {
 import { isDocumentReference } from "@metriport/core/external/fhir/document/document-reference";
 import { toFHIR as patientToFHIR } from "@metriport/core/external/fhir/patient/index";
 import { buildBundle } from "@metriport/core/external/fhir/shared/bundle";
+import { getMetadataDocumentContents } from "@metriport/core/shareback/metadata/get-metadata-xml";
 import { parseExtrinsicObjectXmlToDocumentReference } from "@metriport/core/shareback/metadata/parse-metadata-xml";
 import BadRequestError from "@metriport/core/util/error/bad-request";
 import { out } from "@metriport/core/util/log";
@@ -62,7 +62,7 @@ export async function processRequest(req: Request): Promise<Bundle<Resource>> {
     },
   ];
 
-  const metadataFiles = await getDocumentContents(cxId, patientId);
+  const metadataFiles = await getMetadataDocumentContents(cxId, patientId);
   const docRefs: DocumentReference[] = [];
   for (const file of metadataFiles) {
     const additionalDocRef = await parseExtrinsicObjectXmlToDocumentReference(file, patientId);

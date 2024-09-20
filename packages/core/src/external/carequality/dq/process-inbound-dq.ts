@@ -1,11 +1,11 @@
 import { InboundDocumentQueryReq, InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
 import { executeWithNetworkRetries } from "@metriport/shared";
 import axios from "axios";
-import { CCD_SUFFIX, UPLOADS_FOLDER, createUploadFilePath } from "../../../domain/document/upload";
+import { CCD_SUFFIX, createUploadFilePath } from "../../../domain/document/upload";
+import { getMetadataDocumentContents } from "../../../shareback/metadata/retrieve-metadata-xml";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
-import { capture } from "../../../util/notifications";
-import { S3Utils, executeWithRetriesS3 } from "../../aws/s3";
+import { S3Utils } from "../../aws/s3";
 import {
   IHEGatewayError,
   XDSRegistryError,
@@ -14,7 +14,6 @@ import {
 } from "../error";
 import { validateBasePayload } from "../shared";
 import { decodePatientId } from "./utils";
-import { createFolderName } from "../../../domain/filename";
 
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
@@ -56,13 +55,13 @@ export async function processInboundDq(
       log("CCD generated. Fetching the document contents");
     }
 
-    const documentContents = await getDocumentContents(cxId, patientId, false);
+    const metadataDocumentContents = await getMetadataDocumentContents(cxId, patientId, false);
     const response: InboundDocumentQueryResp = {
       id: payload.id,
       patientId: payload.patientId,
       timestamp: payload.timestamp,
       responseTimestamp: new Date().toISOString(),
-      extrinsicObjectXmls: documentContents,
+      extrinsicObjectXmls: metadataDocumentContents,
       signatureConfirmation: payload.signatureConfirmation,
     };
     return response;
@@ -76,55 +75,4 @@ export async function processInboundDq(
       );
     }
   }
-}
-
-export async function getDocumentContents(
-  cxId: string,
-  patientId: string,
-  failGracefully = true
-): Promise<string[]> {
-  const documentContents = await retrieveXmlContentsFromMetadataFilesOnS3(cxId, patientId, bucket);
-
-  if (!documentContents.length && !failGracefully) {
-    const msg = `Error getting document contents`;
-    capture.error(msg, { extra: { cxId, patientId } });
-    throw new XDSRegistryError("Internal Server Error");
-  }
-  return documentContents;
-}
-
-async function retrieveXmlContentsFromMetadataFilesOnS3(
-  cxId: string,
-  patientId: string,
-  bucketName: string
-): Promise<string[]> {
-  const folderName = createFolderName(cxId, patientId);
-  const Prefix = `${folderName}/${UPLOADS_FOLDER}/`;
-
-  const params = {
-    Bucket: bucketName,
-    Prefix,
-  };
-
-  const data = await executeWithRetriesS3(() => s3Utils._s3.listObjectsV2(params).promise());
-  const documentContents = (
-    await Promise.all(
-      data.Contents?.filter(item => item.Key && item.Key.endsWith("_metadata.xml")).map(
-        async item => {
-          if (item.Key) {
-            const params = {
-              Bucket: bucketName,
-              Key: item.Key,
-            };
-
-            const data = await executeWithRetriesS3(() => s3Utils._s3.getObject(params).promise());
-            return data.Body?.toString();
-          }
-          return undefined;
-        }
-      ) || []
-    )
-  ).filter((item): item is string => Boolean(item));
-
-  return documentContents;
 }
