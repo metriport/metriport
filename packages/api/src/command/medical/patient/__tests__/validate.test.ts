@@ -1,6 +1,7 @@
 import { makeAddressStrict } from "../../../../domain/medical/__tests__/location-address";
 import { makePatientCreate } from "../../../../domain/medical/__tests__/patient";
 import { validate } from "../shared";
+import dayjs from "dayjs";
 
 describe("validate", () => {
   it("returns true when patient is valid", async () => {
@@ -37,4 +38,26 @@ describe("validate", () => {
       expect(resp).toBeTruthy();
     });
   });
+
+  describe("dob", () => {
+    it("throws an error if dob is in the future", async () => {
+      const futureDate = dayjs().add(1, 'day').format('YYYY-MM-DD');
+      const patient = makePatientCreate({ dob: futureDate });
+      expect(() => validate(patient)).toThrow(`Date must be in the past: ${futureDate}`);
+    });
+
+    it("returns true when dob is the current date", async () => {
+      const currentDate = dayjs().format('YYYY-MM-DD');
+      const patient = makePatientCreate({ dob: currentDate });
+      const resp = validate(patient);
+      expect(resp).toBeTruthy();
+    })
+
+    it("returns true when dob is in the past", async () => {
+      const pastDate = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
+      const patient = makePatientCreate({ dob: pastDate });
+      const resp = validate(patient);
+      expect(resp).toBeTruthy();
+    })
+  })
 });
