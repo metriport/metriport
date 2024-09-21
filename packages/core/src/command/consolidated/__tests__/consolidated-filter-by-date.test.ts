@@ -1,5 +1,6 @@
 import { makeAllergyIntollerance } from "../../../external/fhir/__tests__/allergy-intolerance";
 import { makeBundle } from "../../../external/fhir/__tests__/bundle";
+import { makePatient } from "../../../external/fhir/__tests__/patient";
 import { filterBundleByDate } from "../consolidated-filter-by-date";
 
 describe("filterBundleByDate", () => {
@@ -54,6 +55,22 @@ describe("filterBundleByDate", () => {
       const res_res1 = res.entry?.[0]?.resource;
       expect(res_res1).toBeTruthy();
       expect(res_res1).toEqual(r2);
+    });
+
+    it(`filters out by onsetAge`, async () => {
+      const r1 = makeAllergyIntollerance();
+      r1.onsetAge = { value: 10, unit: "a" };
+      const r2 = makeAllergyIntollerance();
+      r2.onsetAge = { value: 20, unit: "a" };
+      const birthDate = "2000-01-01";
+      const patient = makePatient({ birthDate });
+      const bundle = makeBundle({ entries: [r1, r2, patient] });
+      const res = filterBundleByDate(bundle, "2018-01-01");
+      expect(res).toBeTruthy();
+      expect(res.entry).toBeTruthy();
+      expect(res.entry?.length).toEqual(2);
+      const resResources = res.entry?.map(e => e.resource);
+      expect(resResources).toEqual(expect.arrayContaining([patient, r2]));
     });
   });
 });

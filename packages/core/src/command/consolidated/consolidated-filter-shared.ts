@@ -133,8 +133,8 @@ export function safeDate(date: string | number | undefined): string | undefined 
   const dateAsDayjs = buildDayjs(date);
   if (
     !dateAsDayjs.isValid() ||
-    dateAsDayjs.isBefore("1900-01-01") ||
-    dateAsDayjs.isAfter("2100-01-01")
+    dateAsDayjs.isBefore(buildDayjs("1900-01-01")) ||
+    dateAsDayjs.isAfter(buildDayjs("2100-01-01"))
   ) {
     return undefined;
   }

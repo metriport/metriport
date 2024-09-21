@@ -10,11 +10,13 @@ export const makePatient = ({
   firstName = faker.person.firstName(),
   lastName = faker.person.lastName(),
   phoneNumber = faker.phone.number("#########"),
+  birthDate = "1975-05-05",
 }: {
   id?: string;
   firstName?: string;
   lastName?: string;
   phoneNumber?: string;
+  birthDate?: string;
 } = {}): PatientWithId => ({
   resourceType: "Patient",
   id,
@@ -114,7 +116,7 @@ export const makePatient = ({
     },
   ],
   gender: "male",
-  birthDate: "1975-05-05",
+  birthDate,
   address: [
     {
       line: ["Brasil St"],
