@@ -16,6 +16,7 @@ import { capture } from "../../util/notifications";
 import { Config } from "../../util/config";
 import { uuidv7 } from "../../util/uuid-v7";
 import { createHivePartitionFilePath } from "../../domain/filename";
+import dayjs from "dayjs";
 
 interface ApiConfig {
   threeLeggedAuthToken: string;
@@ -30,6 +31,7 @@ const responsesBucket = Config.getEhrResponsesBucketName();
 const athenaPracticePrefix = "Practice";
 const athenaPatientPrefix = "E";
 const athenaDepartmentPrefix = "Department";
+const athenaDateFormat = "MM/DD/YYYY";
 
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
@@ -218,8 +220,8 @@ class AthenaHealthApi {
       unstructuredsig: "Metriport",
       medicationid: `${medicationOptions[0]?.medicationid}`,
       hidden: "false",
-      startdate: medication.statement?.effectivePeriod?.start?.slice(0, 10) ?? undefined,
-      stopdate: medication.statement?.effectivePeriod?.end?.slice(0, 10) ?? undefined,
+      startdate: this.formatDate(medication.statement?.effectivePeriod?.start) ?? undefined,
+      stopdate: this.formatDate(medication.statement?.effectivePeriod?.end) ?? undefined,
       stopreason: undefined,
       patientnote: undefined,
       THIRDPARTYUSERNAME: undefined,
@@ -336,6 +338,14 @@ class AthenaHealthApi {
 
   private stripDepartmentId(id: string) {
     return id.replace(`a-${this.practiceId}.${athenaDepartmentPrefix}-`, "");
+  }
+
+  private formatDate(date: string | undefined): string | undefined {
+    if (!date) return undefined;
+    const trimmedDate = date.trim();
+    const parsedDate = dayjs(trimmedDate);
+    if (!parsedDate.isValid()) return undefined;
+    return parsedDate.format(athenaDateFormat);
   }
 }
 
