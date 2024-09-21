@@ -10,13 +10,13 @@ import {
   PatientResource,
 } from "@metriport/shared/interface/external/athenahealth/patient";
 import { errorToString } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { S3Utils } from "../aws/s3";
 import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
 import { Config } from "../../util/config";
 import { uuidv7 } from "../../util/uuid-v7";
 import { createHivePartitionFilePath } from "../../domain/filename";
-import dayjs from "dayjs";
 
 interface ApiConfig {
   threeLeggedAuthToken: string;
@@ -343,7 +343,7 @@ class AthenaHealthApi {
   private formatDate(date: string | undefined): string | undefined {
     if (!date) return undefined;
     const trimmedDate = date.trim();
-    const parsedDate = dayjs(trimmedDate);
+    const parsedDate = buildDayjs(trimmedDate);
     if (!parsedDate.isValid()) return undefined;
     return parsedDate.format(athenaDateFormat);
   }
