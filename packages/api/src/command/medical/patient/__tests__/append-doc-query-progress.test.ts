@@ -2,14 +2,14 @@
 import { faker } from "@faker-js/faker";
 import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
 import { Patient } from "@metriport/core/domain/patient";
+import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/patient";
 import * as uuidv7_file from "@metriport/core/util/uuid-v7";
 import { makeProgress } from "../../../../domain/medical/__tests__/document-query";
-import { makePatient, makePatientData } from "../../../../domain/medical/__tests__/patient";
 import { PatientModel } from "../../../../models/medical/patient";
 import { makePatientModel } from "../../../../models/medical/__tests__/patient";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";
-import { appendDocQueryProgress } from "../append-doc-query-progress";
 import * as webhooks from "../../document/process-doc-query-webhook";
+import { appendDocQueryProgress } from "../append-doc-query-progress";
 
 let documentQueryProgress: DocumentQueryProgress;
 let patient: Patient;

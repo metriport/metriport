@@ -27,7 +27,7 @@ export type DeleteConsolidatedFilters = {
 };
 
 export type DeleteConsolidatedParams = {
-  patient: Pick<Patient, "id" | "cxId" | "data">;
+  patient: Patient;
   dryRun?: boolean;
 } & DeleteConsolidatedFilters;
 
@@ -47,7 +47,7 @@ export async function deleteConsolidated(params: DeleteConsolidatedParams): Prom
 }
 
 async function getResourcesToDelete(
-  patient: Pick<Patient, "id" | "cxId">,
+  patient: Patient,
   documentIds: string[],
   resources: ResourceTypeForConsolidation[] | undefined,
   log: typeof console.log

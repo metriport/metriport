@@ -325,7 +325,6 @@ export class APIStack extends Stack {
         dlq: fhirConverterDLQ,
         bucket: fhirConverterBucket,
       },
-      patientDataConsolidator,
     } = new LambdasNestedStack(this, "LambdasNestedStack", {
       config: props.config,
       vpc: this.vpc,
@@ -530,7 +529,6 @@ export class APIStack extends Stack {
           vpc: this.vpc,
           sourceQueue: fhirConverterQueue,
           fhirServerQueue,
-          patientDataConsolidatorQueue: patientDataConsolidator.queue,
           dlq: fhirConverterDLQ,
           fhirConverterBucket,
           apiServiceDnsAddress: apiDirectUrl,

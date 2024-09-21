@@ -1,16 +1,16 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { PatientDataConsolidator } from "@metriport/core/command/consolidated/consolidated-create";
+import { createConsolidatedFromConversions } from "@metriport/core/command/consolidated/consolidated-create";
 import { getEnvVarOrFail, sleep } from "@metriport/shared";
 import { elapsedTimeAsStr } from "../shared/duration";
 
 /**
- * Utility to run the Patient Data Consolidator manually from the terminal.
+ * Utility to run the function that recreates the patient consolidated bundle from the terminal.
  *
  * Usage:
  * - Set the environment variables in the .env file
- * - Set the values of `cxId`, `patientId`, `newBundleBucket`, `newBundleS3Key`
+ * - Set the values of `cxId`, `patientId`, `inputBundleBucket`
  * - Run `ts-node src/fhir/consolidate-patient-data.ts`
  */
 
@@ -20,21 +20,18 @@ const patientId = "";
  * The bucket and key of the input bundle to be merged into the consolidated bundle.
  */
 const inputBundleBucket = "";
-const inputBundleS3Key = "";
-
 const consolidatedBucket = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
-const region = getEnvVarOrFail("AWS_REGION");
 
 async function main() {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
   const startedAt = Date.now();
   console.log(`########################## Started at ${new Date(startedAt).toISOString()}`);
 
-  const consolidator = new PatientDataConsolidator(consolidatedBucket, region);
-  await consolidator.execute({
+  await createConsolidatedFromConversions({
     cxId,
     patientId,
-    inputBundles: [{ bucket: inputBundleBucket, key: inputBundleS3Key }],
+    sourceBucketName: inputBundleBucket,
+    destinationBucketName: consolidatedBucket,
   });
 
   console.log(`>>> Done in ${elapsedTimeAsStr(startedAt)}`);

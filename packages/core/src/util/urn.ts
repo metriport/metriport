@@ -4,6 +4,10 @@ export function wrapIdInUrnUuid(id: string): string {
   return `urn:uuid:${id}`;
 }
 
+export function wrapIdInUrnId(id: string): string {
+  return `urn:id:${id}`;
+}
+
 export function wrapIdInUrnOid(id: string): string {
   return `urn:oid:${id}`;
 }

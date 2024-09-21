@@ -4,7 +4,8 @@ import {
   getDocContributionURL,
 } from "@metriport/core/external/commonwell/document/document-contribution";
 import { isDocumentReference } from "@metriport/core/external/fhir/document/document-reference";
-import { toFHIR as patientToFHIR } from "@metriport/core/external/fhir/patient/index";
+import { toFHIR as orgToFHIR } from "@metriport/core/external/fhir/organization/conversion";
+import { toFHIR as patientToFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { buildBundle } from "@metriport/core/external/fhir/shared/bundle";
 import { ensureCcdExists } from "@metriport/core/shareback/ensure-ccd-exists";
 import { getMetadataDocumentContents } from "@metriport/core/shareback/metadata/get-metadata-xml";
@@ -16,7 +17,6 @@ import { Request } from "express";
 import { partition, uniqBy } from "lodash";
 import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
-import { toFHIR as orgToFHIR } from "../../../external/fhir/organization";
 import { queryToSearchParams } from "../../../routes/helpers/query";
 import { Config } from "../../../shared/config";
 import { getOrgOrFail } from "./get-org-or-fail";

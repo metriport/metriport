@@ -1,23 +1,22 @@
-import { ConvertResult } from "@metriport/core/domain/document-query";
-import { isMedicalDataSource } from "@metriport/core/external/index";
-import { elapsedTimeFromNow } from "@metriport/shared/common/date";
-import { MedicalDataSource } from "@metriport/core/external/index";
 import {
-  ProgressType,
-  DocumentQueryStatus,
+  ConvertResult,
   DocumentQueryProgress,
+  DocumentQueryStatus,
+  ProgressType,
 } from "@metriport/core/domain/document-query";
-import { out } from "@metriport/core/util/log";
-import { getPatientOrFail } from "../patient/get-patient";
-import { tallyDocQueryProgress } from "../../../external/hie/tally-doc-query-progress";
-import { getCWData } from "../../../external/commonwell/patient";
-import { getCQData } from "../../../external/carequality/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
-import { updateConversionProgress } from "./document-query";
-import { processPatientDocumentRequest } from "./document-webhook";
-import { MAPIWebhookStatus } from "./document-webhook";
-import { getConsolidated } from "../patient/consolidated-get";
+import { isMedicalDataSource, MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
+import { out } from "@metriport/core/util/log";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
+import { getCQData } from "../../../external/carequality/patient";
+import { getCWData } from "../../../external/commonwell/patient";
+import { tallyDocQueryProgress } from "../../../external/hie/tally-doc-query-progress";
+import { getOrganizationOrFail } from "../organization/get-organization";
+import { getConsolidated } from "../patient/consolidated-get";
+import { getPatientOrFail } from "../patient/get-patient";
+import { updateConversionProgress } from "./document-query";
+import { MAPIWebhookStatus, processPatientDocumentRequest } from "./document-webhook";
 
 export async function calculateDocumentConversionStatus({
   patientId,
@@ -45,7 +44,10 @@ export async function calculateDocumentConversionStatus({
       `details: ${details}, result: ${JSON.stringify(convertResult)}`
   );
 
-  const patient = await getPatientOrFail({ id: patientId, cxId });
+  const [organization, patient] = await Promise.all([
+    getOrganizationOrFail({ cxId }),
+    getPatientOrFail({ id: patientId, cxId }),
+  ]);
   const docQueryProgress = patient.data.documentQueryProgress;
   log(`Status pre-update: ${JSON.stringify(docQueryProgress)}`);
 
@@ -109,8 +111,12 @@ export async function calculateDocumentConversionStatus({
       log(
         `Kicking off getConsolidated for patient ${updatedPatient.id} - hie: ${hieTriggerConsolidated} global: ${globalTriggerConsolidated}`
       );
-      getConsolidated({ patient: updatedPatient, conversionType: "pdf" }).catch(
+      getConsolidated({ patient: updatedPatient, organization, conversionType: "pdf" }).catch(
         processAsyncError(`Post-DQ getConsolidated ${source}`)
+      );
+    } else if (isGloablConversionCompleted) {
+      getConsolidated({ patient: updatedPatient, organization }).catch(
+        processAsyncError(`Post-DQ getConsolidated GLOBAL`)
       );
     }
   } else {

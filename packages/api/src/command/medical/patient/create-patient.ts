@@ -4,7 +4,7 @@ import {
   PatientData,
   PatientDemoData,
 } from "@metriport/core/domain/patient";
-import { toFHIR } from "@metriport/core/external/fhir/patient/index";
+import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { upsertPatientToFHIRServer } from "../../../external/fhir/patient/upsert-patient";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { processAsyncError } from "@metriport/core/util/error/shared";

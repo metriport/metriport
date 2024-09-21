@@ -16,26 +16,27 @@
   ],
   "exports": {
     ".": "./dist/index.js",
-    "./domain/*": "./dist/domain/*.js",
+    "./command": "./dist/command/index.js",
     "./command/*": "./dist/command/*.js",
+    "./domain": "./dist/domain/index.js",
+    "./domain/*": "./dist/domain/*.js",
+    "./external": "./dist/external/index.js",
     "./external/*": "./dist/external/*.js",
-    "./util": "./dist/util/index.js",
-    "./util/*": "./dist/util/*.js",
+    "./mpi": "./dist/mpi/index.js",
     "./mpi/*": "./dist/mpi/*.js",
+    "./fhir-deduplication": "./dist/fhir-deduplication/index.js",
     "./fhir-deduplication/*": "./dist/fhir-deduplication/*.js",
+    "./fhir-to-cda": "./dist/fhir-to-cda/index.js",
     "./fhir-to-cda/*": "./dist/fhir-to-cda/*.js",
-    "./shareback/*": "./dist/shareback/*.js"
+    "./shareback": "./dist/shareback/index.js",
+    "./shareback/*": "./dist/shareback/*.js",
+    "./util": "./dist/util/index.js",
+    "./util/*": "./dist/util/*.js"
   },
   "typesVersions": {
     "*": {
       "/": [
         "dist/index.d.ts"
-      ],
-      "domain": [
-        "dist/domain/index.d.ts"
-      ],
-      "domain/*": [
-        "dist/domain/*"
       ],
       "command": [
         "dist/command/index.d.ts"
@@ -43,17 +44,17 @@
       "command/*": [
         "dist/command/*"
       ],
+      "domain": [
+        "dist/domain/index.d.ts"
+      ],
+      "domain/*": [
+        "dist/domain/*"
+      ],
       "external": [
         "dist/external/index.d.ts"
       ],
       "external/*": [
         "dist/external/*"
-      ],
-      "util": [
-        "dist/util/index.d.ts"
-      ],
-      "util/*": [
-        "dist/util/*"
       ],
       "mpi": [
         "dist/mpi/index.d.ts"
@@ -78,6 +79,12 @@
       ],
       "shareback/*": [
         "dist/shareback/*"
+      ],
+      "util": [
+        "dist/util/index.d.ts"
+      ],
+      "util/*": [
+        "dist/util/*"
       ]
     }
   },

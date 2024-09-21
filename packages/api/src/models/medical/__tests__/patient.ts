@@ -1,4 +1,4 @@
-import { makePatient } from "../../../domain/medical/__tests__/patient";
+import { makePatient } from "@metriport/core/domain/__tests__/patient";
 import { PatientModel } from "../patient";
 
 export function makePatientModel(params?: Partial<PatientModel>): PatientModel {
@@ -6,6 +6,7 @@ export function makePatientModel(params?: Partial<PatientModel>): PatientModel {
   const model = new PatientModel(patient);
 
   model.data = patient.data;
+  model.dataValues = patient;
 
   return model;
 }

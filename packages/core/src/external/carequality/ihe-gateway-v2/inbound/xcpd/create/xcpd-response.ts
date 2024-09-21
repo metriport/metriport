@@ -10,7 +10,7 @@ import { queryResponseCodes, ackCodes, xmlBuilderAttributes } from "../../../sha
 import { namespaces } from "../../../constants";
 import { timestampToSoapBody } from "../../../utils";
 import { METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX } from "../../../../shared";
-import { mapFhirToMetriportGender } from "../../../../../fhir/patient/index";
+import { mapFhirToMetriportGender } from "../../../../../fhir/patient/conversion";
 
 function createQueryByParameter(request: InboundPatientDiscoveryReq): object {
   const { id, samlAttributes, patientResource } = request;

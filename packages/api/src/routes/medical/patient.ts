@@ -6,6 +6,7 @@ import {
 import { GetConsolidatedQueryProgressResponse } from "@metriport/api-sdk/medical/models/patient";
 import { mrFormat } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
+import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { getRequestId } from "@metriport/core/util/request";
 import { stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
@@ -43,6 +44,7 @@ import { REQUEST_ID_HEADER_NAME } from "../../routes/header";
 import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
+import { getOutputFormatFromRequest } from "../helpers/output-format";
 import { requestLogger } from "../helpers/request-logger";
 import {
   asyncHandler,
@@ -177,9 +179,11 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFromParamsOrFail("id", req);
+    const output = getOutputFormatFromRequest(req);
 
     const patient = await getPatientOrFail({ id: patientId, cxId });
 
+    if (output === "fhir") return res.status(status.OK).json(toFHIR(patient));
     return res.status(status.OK).json(dtoFromModel(patient));
   })
 );
@@ -260,7 +264,7 @@ router.get(
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
     const fromDashboard = getFromQueryAsBoolean("fromDashboard", req);
-    const patient = await getPatientOrFail({ id: patientId, cxId });
+    const patient = await getPatientOrFail({ cxId, id: patientId });
 
     const data = await getConsolidatedPatientData({
       patient,

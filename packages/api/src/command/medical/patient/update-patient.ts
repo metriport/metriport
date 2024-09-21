@@ -1,5 +1,5 @@
 import { Patient, PatientData } from "@metriport/core/domain/patient";
-import { toFHIR } from "@metriport/core/external/fhir/patient/index";
+import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { patientEvents } from "../../../event/medical/patient-event";
 import { upsertPatientToFHIRServer } from "../../../external/fhir/patient/upsert-patient";

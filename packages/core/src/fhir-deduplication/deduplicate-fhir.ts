@@ -1,10 +1,15 @@
 import { Bundle, BundleEntry, EncounterDiagnosis, Resource } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
-import { ExtractedFhirTypes, extractFhirTypesFromBundle } from "../external/fhir/shared/bundle";
+import {
+  buildBundleEntry,
+  ExtractedFhirTypes,
+  extractFhirTypesFromBundle,
+} from "../external/fhir/shared/bundle";
 import { deduplicateAllergyIntolerances } from "./resources/allergy-intolerance";
 import { deduplicateConditions } from "./resources/condition";
 import { deduplicateCoverages } from "./resources/coverage";
 import { deduplicateDiagReports } from "./resources/diagnostic-report";
+import { processDocumentReferences } from "./resources/document-reference";
 import { deduplicateEncounters } from "./resources/encounter";
 import { deduplicateFamilyMemberHistories } from "./resources/family-member-history";
 import { deduplicateImmunizations } from "./resources/immunization";
@@ -19,7 +24,6 @@ import { deduplicateOrganizations } from "./resources/organization";
 import { deduplicatePractitioners } from "./resources/practitioner";
 import { deduplicateProcedures } from "./resources/procedure";
 import { deduplicateRelatedPersons } from "./resources/related-person";
-import { processDocumentReferences } from "./resources/document-reference";
 import { createRef } from "./shared";
 
 export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> {
@@ -186,7 +190,7 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
 
   const deduplicatedBundle: Bundle = cloneDeep(fhirBundle);
   deduplicatedBundle.entry = [...deduplicatedNoDangling, ...compositionsNoDangling].map(
-    r => ({ fullUrl: `urn:uuid:${r.id}`, resource: r } as BundleEntry<Resource>)
+    buildBundleEntry
   );
 
   deduplicatedBundle.total = deduplicatedNoDangling.length;
