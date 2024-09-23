@@ -8,6 +8,7 @@ import { out } from "@metriport/core/util/log";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { capture } from "@metriport/core/util/notifications";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { Issue } from "@metriport/ihe-gateway-sdk/models/shared";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { DocumentReferenceWithId } from "../../fhir/document";
@@ -16,6 +17,9 @@ import { upsertDocumentsToFHIRServer } from "../../fhir/document/save-document-r
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { getCQDirectoryEntryOrFail } from "../command/cq-directory/get-cq-directory-entry";
+import { Patient } from "@metriport/core/domain/patient";
+import { getCwPatientDataOrFail } from "../../commonwell/command/cw-patient-data/get-cw-data";
+
 import { formatDate } from "../shared";
 import {
   DocumentReferenceWithMetriportId,
@@ -109,9 +113,6 @@ export async function processOutboundDocumentRetrievalResps({
       }
     }
 
-    // we might want to filter duplicates here since we set the total convert progress based on this
-    // set status to be superceded, remove from list that gets passed to convert
-
     await setDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
       downloadProgress: {
@@ -134,17 +135,24 @@ export async function processOutboundDocumentRetrievalResps({
 
     const seenMetriportIds = new Set<string>();
 
+    let totalErrorCountConvertible = 0;
+    let totalAdjustCountConvertible = 0;
+    let totalFilteredOutCount = 0;
+    let totalDuplicateCount = 0;
+    const cwIdentifierSystems = await getCwIdentifierSystems(patient);
+
     const resultPromises = await Promise.allSettled(
       results.map(async docRetrievalResp => {
         const docRefs = docRetrievalResp.documentReference;
-
         if (docRefs) {
           const validDocRefs = docRefs.filter(containsMetriportId);
-          // need to update status of any docRefs missing metriportId to entered in error
+          totalFilteredOutCount += docRefs.length - validDocRefs.length;
+
           const deduplicatedDocRefs = validDocRefs.filter(docRef => {
             const isDuplicate = containsDuplicateMetriportId(docRef, seenMetriportIds);
-            // NEED to UPDATE status of this docRef to entered in errors
+
             if (isDuplicate) {
+              totalDuplicateCount++;
               capture.message(`Duplicate docRef found in DR Resp`, {
                 extra: {
                   context: `cq.processOutboundDocumentRetrievalResps`,
@@ -159,16 +167,45 @@ export async function processOutboundDocumentRetrievalResps({
             return !isDuplicate;
           });
 
-          await handleDocReferences(
-            deduplicatedDocRefs,
+          const nonDuplicatedInCwDocRefs = deduplicatedDocRefs.filter(
+            docRef => !isDocRefDuplicatedInCw(docRef, cwIdentifierSystems)
+          );
+          const duplicatedInCwCount = deduplicatedDocRefs.length - nonDuplicatedInCwDocRefs.length;
+
+          totalAdjustCountConvertible -= duplicatedInCwCount;
+
+          const { errorCountConvertible, adjustCountConvertible } = await handleDocReferences(
+            nonDuplicatedInCwDocRefs,
             requestId,
             patientId,
             cxId,
             docRetrievalResp.gateway.homeCommunityId
           );
+
+          totalErrorCountConvertible += errorCountConvertible;
+          totalAdjustCountConvertible += adjustCountConvertible;
+        }
+
+        if (docRetrievalResp.operationOutcome) {
+          await handleOperationOutcomeIssues({
+            issues: docRetrievalResp.operationOutcome.issue,
+            requestId,
+            patientId,
+            cxId,
+          });
         }
       })
     );
+
+    totalErrorCountConvertible += totalFilteredOutCount + totalDuplicateCount;
+
+    await setDocQueryProgress({
+      patient: { id: patientId, cxId: cxId },
+      convertibleDownloadErrors: totalErrorCountConvertible,
+      increaseCountConvertible: totalAdjustCountConvertible,
+      requestId,
+      source: MedicalDataSource.CAREQUALITY,
+    });
 
     const failed = resultPromises.flatMap(p => (p.status === "rejected" ? p.reason : []));
 
@@ -186,8 +223,6 @@ export async function processOutboundDocumentRetrievalResps({
         level: "error",
       });
     }
-
-    // HERE we should accumulate all the failed docRefs here + the operationOutcome issues and then deal with the errors all at once here
 
     await tallyDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
@@ -225,13 +260,64 @@ export async function processOutboundDocumentRetrievalResps({
   }
 }
 
+async function handleOperationOutcomeIssues({
+  issues,
+  requestId,
+  patientId,
+  cxId,
+}: {
+  issues: Issue[];
+  requestId: string;
+  patientId: string;
+  cxId: string;
+}) {
+  const { log } = out(
+    `CQ handleOperationOutcomeIssues - requestId ${requestId}, patient ${patientId}`
+  );
+  const existingFHIRDocRefs: DocumentReference[] = await getDocumentsFromFHIR({
+    cxId,
+    patientId,
+    documentIds: issues.map(issue => issue?.id ?? ""),
+  });
+
+  const transactionBundle: Bundle = {
+    resourceType: "Bundle",
+    type: "transaction",
+    entry: [],
+  };
+
+  for (const docRef of existingFHIRDocRefs) {
+    if (!docRef.id) continue;
+
+    const updatedFHIRDocRef: DocumentReferenceWithId = {
+      ...docRef,
+      id: docRef.id,
+      status: "entered-in-error",
+    };
+
+    const transactionEntry: BundleEntry = {
+      resource: updatedFHIRDocRef,
+      request: {
+        method: "PUT",
+        url: updatedFHIRDocRef.resourceType + "/" + updatedFHIRDocRef.id,
+      },
+    };
+    transactionBundle.entry?.push(transactionEntry);
+  }
+
+  await upsertDocumentsToFHIRServer(cxId, transactionBundle, log);
+}
+
 async function handleDocReferences(
   docRefs: DocumentReferenceWithMetriportId[],
   requestId: string,
   patientId: string,
   cxId: string,
   cqOrganizationId: string
-) {
+): Promise<{
+  errorCountConvertible: number;
+  adjustCountConvertible: number;
+}> {
   let errorCountConvertible = 0;
   let adjustCountConvertible = 0;
 
@@ -346,13 +432,7 @@ async function handleDocReferences(
 
   await upsertDocumentsToFHIRServer(cxId, transactionBundle, log);
 
-  await setDocQueryProgress({
-    patient: { id: patientId, cxId: cxId },
-    convertibleDownloadErrors: errorCountConvertible,
-    increaseCountConvertible: adjustCountConvertible,
-    requestId,
-    source: MedicalDataSource.CAREQUALITY,
-  });
+  return { errorCountConvertible, adjustCountConvertible };
 }
 
 function combineAndDedupeContainedResources(
@@ -364,4 +444,34 @@ function combineAndDedupeContainedResources(
   const combined = [...draftContained, ...fhirContained];
 
   return dedupeContainedResources(combined);
+}
+
+async function getCwIdentifierSystems(patient: Patient): Promise<Set<string>> {
+  const existingPatient = await getCwPatientDataOrFail({
+    id: patient.id,
+    cxId: patient.cxId,
+  });
+
+  const cwLinks = existingPatient.data.links ?? [];
+  const cwIdentifierSystems = new Set<string>();
+  cwLinks.forEach(link => {
+    link.patient?.identifier?.forEach(identifier => {
+      if (identifier.system) {
+        const system = identifier.system.replace(/^urn:oid:/, "");
+        cwIdentifierSystems.add(system);
+      }
+    });
+  });
+
+  return cwIdentifierSystems;
+}
+
+function isDocRefDuplicatedInCw(
+  docRef: DocumentReferenceWithMetriportId,
+  cwIdentifierSystems: Set<string>
+): boolean {
+  const homeCommunityId = docRef.homeCommunityId;
+  const repositoryUniqueId = docRef.repositoryUniqueId;
+
+  return cwIdentifierSystems.has(homeCommunityId) || cwIdentifierSystems.has(repositoryUniqueId);
 }
