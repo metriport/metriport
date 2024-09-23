@@ -8,6 +8,7 @@ import { out } from "@metriport/core/util/log";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { capture } from "@metriport/core/util/notifications";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { stripUrnPrefix } from "@metriport/core/util/urn";
 import { Issue } from "@metriport/ihe-gateway-sdk/models/shared";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
@@ -59,24 +60,6 @@ export async function processOutboundDocumentRetrievalResps({
 
     let successDocsRetrievedCount = 0;
     let issuesWithExternalGateway = 0;
-
-    analytics({
-      distinctId: cxId,
-      event: EventTypes.documentRetrieval,
-      properties: {
-        requestId,
-        patientId,
-        hie: MedicalDataSource.CAREQUALITY,
-        totalCount,
-        successCount,
-        failureCount,
-        noDocumentFoundCount,
-        schemaErrorCount,
-        httpErrorCount,
-        registryErrorCount,
-        duration,
-      },
-    });
 
     if (results.length === 0) {
       const msg = `Received DR result without entries.`;
@@ -139,6 +122,7 @@ export async function processOutboundDocumentRetrievalResps({
     let totalAdjustCountConvertible = 0;
     let totalFilteredOutCount = 0;
     let totalDuplicateCount = 0;
+    let docRefsDuplicatedInCwCount = 0;
     const cwIdentifierSystems = await getCwIdentifierSystems(patient);
 
     const resultPromises = await Promise.allSettled(
@@ -167,15 +151,28 @@ export async function processOutboundDocumentRetrievalResps({
             return !isDuplicate;
           });
 
-          const nonDuplicatedInCwDocRefs = deduplicatedDocRefs.filter(
-            docRef => !isDocRefDuplicatedInCw(docRef, cwIdentifierSystems)
-          );
-          const duplicatedInCwCount = deduplicatedDocRefs.length - nonDuplicatedInCwDocRefs.length;
+          const docRefsNotDuplicatedInCw: DocumentReferenceWithMetriportId[] = [];
+          const docRefsDuplicatedInCw: DocumentReferenceWithMetriportId[] = [];
 
-          totalAdjustCountConvertible -= duplicatedInCwCount;
+          deduplicatedDocRefs.forEach(docRef => {
+            if (isDocRefDuplicatedInCw(docRef, cwIdentifierSystems)) {
+              docRefsDuplicatedInCw.push(docRef);
+            } else {
+              docRefsNotDuplicatedInCw.push(docRef);
+            }
+          });
+
+          docRefsDuplicatedInCwCount += docRefsDuplicatedInCw.length;
+
+          await handleDocReferencesDuplicatedInCw({
+            docRefs: docRefsDuplicatedInCw,
+            requestId,
+            patientId,
+            cxId,
+          });
 
           const { errorCountConvertible, adjustCountConvertible } = await handleDocReferences(
-            nonDuplicatedInCwDocRefs,
+            docRefsNotDuplicatedInCw,
             requestId,
             patientId,
             cxId,
@@ -198,6 +195,26 @@ export async function processOutboundDocumentRetrievalResps({
     );
 
     totalErrorCountConvertible += totalFilteredOutCount + totalDuplicateCount;
+    totalAdjustCountConvertible -= docRefsDuplicatedInCwCount;
+
+    analytics({
+      distinctId: cxId,
+      event: EventTypes.documentRetrieval,
+      properties: {
+        requestId,
+        patientId,
+        hie: MedicalDataSource.CAREQUALITY,
+        totalCount,
+        successCount,
+        failureCount,
+        noDocumentFoundCount,
+        schemaErrorCount,
+        httpErrorCount,
+        registryErrorCount,
+        docRefsDuplicatedInCwCount,
+        duration,
+      },
+    });
 
     await setDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
@@ -308,6 +325,55 @@ async function handleOperationOutcomeIssues({
   await upsertDocumentsToFHIRServer(cxId, transactionBundle, log);
 }
 
+async function handleDocReferencesDuplicatedInCw({
+  docRefs,
+  requestId,
+  patientId,
+  cxId,
+}: {
+  docRefs: DocumentReferenceWithMetriportId[];
+  requestId: string;
+  patientId: string;
+  cxId: string;
+}) {
+  const { log } = out(
+    `CQ handleDocReferencesDuplicatedInCw - requestId ${requestId}, patient ${patientId}`
+  );
+  const existingFHIRDocRefs: DocumentReference[] = await getDocumentsFromFHIR({
+    cxId,
+    patientId,
+    documentIds: docRefs.map(doc => doc.metriportId ?? ""),
+  });
+
+  const transactionBundle: Bundle = {
+    resourceType: "Bundle",
+    type: "transaction",
+    entry: [],
+  };
+
+  for (const docRef of existingFHIRDocRefs) {
+    if (!docRef.id) continue;
+
+    const updatedFHIRDocRef: DocumentReferenceWithId = {
+      ...docRef,
+      id: docRef.id,
+      docStatus: "final",
+      status: "superseded",
+    };
+
+    const transactionEntry: BundleEntry = {
+      resource: updatedFHIRDocRef,
+      request: {
+        method: "PUT",
+        url: updatedFHIRDocRef.resourceType + "/" + updatedFHIRDocRef.id,
+      },
+    };
+    transactionBundle.entry?.push(transactionEntry);
+  }
+
+  await upsertDocumentsToFHIRServer(cxId, transactionBundle, log);
+}
+
 async function handleDocReferences(
   docRefs: DocumentReferenceWithMetriportId[],
   requestId: string,
@@ -341,8 +407,6 @@ async function handleDocReferences(
     try {
       const isDocConvertible = isConvertible(docRef.contentType || undefined);
       const shouldConvert = isDocConvertible && docRef.isNew;
-
-      // add is duplicate in CW
 
       const docLocation = docRef.fileLocation;
       const docPath = docRef.fileName;
@@ -457,7 +521,7 @@ async function getCwIdentifierSystems(patient: Patient): Promise<Set<string>> {
   cwLinks.forEach(link => {
     link.patient?.identifier?.forEach(identifier => {
       if (identifier.system) {
-        const system = identifier.system.replace(/^urn:oid:/, "");
+        const system = stripUrnPrefix(identifier.system);
         cwIdentifierSystems.add(system);
       }
     });
@@ -472,6 +536,5 @@ function isDocRefDuplicatedInCw(
 ): boolean {
   const homeCommunityId = docRef.homeCommunityId;
   const repositoryUniqueId = docRef.repositoryUniqueId;
-
   return cwIdentifierSystems.has(homeCommunityId) || cwIdentifierSystems.has(repositoryUniqueId);
 }

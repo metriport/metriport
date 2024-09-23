@@ -36,7 +36,7 @@ export function containsDuplicateMetriportId(
 export const cqToFHIR = (
   docId: string,
   docRef: IHEGWDocumentReference,
-  docStatus: "preliminary" | "final" | "entered-in-error",
+  docStatus: "preliminary" | "final",
   patientId: string,
   contentExtension: MetriportDataSourceExtension,
   orgName?: string
