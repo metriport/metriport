@@ -204,7 +204,9 @@ export function getOutboundDocRetrievalSuccessFailureCount(
       successCount += result.documentReference.length;
     }
     if (result.operationOutcome?.issue) {
-      totalCount += result.operationOutcome.issue.length;
+      totalCount += result.operationOutcome.issue.filter(
+        issue => issue.id != undefined && issue.id.length > 0
+      ).length;
       failureCount += result.operationOutcome.issue.filter(
         issue => issue.severity === "error"
       ).length;
