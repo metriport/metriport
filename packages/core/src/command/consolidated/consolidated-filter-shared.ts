@@ -54,7 +54,7 @@ export function areRangesWithinRange(
  */
 export function areDatesWithinRange(
   dates: (string | undefined)[],
-  range: DateRange
+  range: DateRange | undefined
 ): boolean | undefined {
   // we need to check if the dates are valid before we call `.some`, b/c that will always return boolean
   // and we need to return undefined if there are no valid dates to check - so upstream functions can
@@ -71,9 +71,10 @@ export function areDatesWithinRange(
  */
 export function isDateWithinDateRange(
   date: string | undefined,
-  range: DateRange
+  range: DateRange | undefined
 ): boolean | undefined {
   if (!date || !safeDate(date)) return undefined;
+  if (!range) return undefined;
   if (range.dateFrom && range.dateTo) {
     return (
       buildDayjs(date).isSameOrAfter(buildDayjs(range.dateFrom).startOf("day")) &&
@@ -140,4 +141,14 @@ export function safeDate(date: string | number | undefined): string | undefined 
   }
   if (typeof date === "number") return buildDayjs(date).toISOString();
   return date;
+}
+
+/**
+ * Some resources are ongoing conditions, so when their property is a single point in time, we want
+ * to only consider the start of the date range.
+ */
+export function dateRangeToOngoing(range?: DateRange): DateRange | undefined {
+  if (!range || !range.dateFrom) return undefined;
+  const ongoing = { dateFrom: range.dateFrom };
+  return ongoing;
 }

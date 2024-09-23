@@ -27,6 +27,7 @@ import {
   arePeriodsWithinRange,
   areRangesWithinRange,
   DateRange,
+  dateRangeToOngoing,
   getDatesFromEffectiveDateTimeOrPeriod,
   isDateWithinDateRange,
   isPeriodWithinRange,
@@ -113,21 +114,26 @@ function isAllergyIntoleranceWithinDateRange(
     const res = areRangesWithinRange([resource.onsetRange], range);
     if (res !== undefined) return res;
   }
+  if (resource.lastOccurrence) {
+    const res = isDateWithinDateRange(resource.lastOccurrence, range);
+    if (res !== undefined) return res;
+  }
   if (resource.onsetString) {
-    const res = isDateWithinDateRange(resource.onsetString, range);
+    const res = isDateWithinDateRange(resource.onsetString, dateRangeToOngoing(range));
     if (res !== undefined) return res;
   }
   if (resource.onsetDateTime) {
-    const res = isDateWithinDateRange(resource.onsetDateTime, range);
+    const res = isDateWithinDateRange(resource.onsetDateTime, dateRangeToOngoing(range));
     if (res !== undefined) return res;
   }
   if (resource.onsetAge && patient?.birthDate) {
     const date = addAgeToDob(resource.onsetAge, patient.birthDate);
-    const res = isDateWithinDateRange(date, range);
+    const res = isDateWithinDateRange(date, dateRangeToOngoing(range));
     if (res !== undefined) return res;
   }
-  if (resource.lastOccurrence) {
-    const res = isDateWithinDateRange(resource.lastOccurrence, range);
+  if (resource.reaction && resource.reaction.length > 0) {
+    const dates = resource.reaction.flatMap(r => r.onset ?? []);
+    const res = areDatesWithinRange(dates, dateRangeToOngoing(range));
     if (res !== undefined) return res;
   }
   return includeIfNoDate;
@@ -160,16 +166,16 @@ function isConditionWithinDateRange(
     if (res !== undefined) return res;
   }
   if (resource.onsetString) {
-    const res = isDateWithinDateRange(resource.onsetString, range);
+    const res = isDateWithinDateRange(resource.onsetString, dateRangeToOngoing(range));
     if (res !== undefined) return res;
   }
   if (resource.onsetDateTime) {
-    const res = isDateWithinDateRange(resource.onsetDateTime, range);
+    const res = isDateWithinDateRange(resource.onsetDateTime, dateRangeToOngoing(range));
     if (res !== undefined) return res;
   }
   if (resource.onsetAge && patient?.birthDate) {
     const date = addAgeToDob(resource.onsetAge, patient.birthDate);
-    const res = isDateWithinDateRange(date, range);
+    const res = isDateWithinDateRange(date, dateRangeToOngoing(range));
     if (res !== undefined) return res;
   }
   if (resource.abatementPeriod) {
@@ -186,6 +192,11 @@ function isConditionWithinDateRange(
   }
   if (resource.abatementDateTime) {
     const res = isDateWithinDateRange(resource.abatementDateTime, range);
+    if (res !== undefined) return res;
+  }
+  if (resource.abatementAge && patient?.birthDate) {
+    const date = addAgeToDob(resource.abatementAge, patient.birthDate);
+    const res = isDateWithinDateRange(date, range);
     if (res !== undefined) return res;
   }
   return includeIfNoDate;
