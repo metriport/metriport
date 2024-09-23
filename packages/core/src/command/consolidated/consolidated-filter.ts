@@ -1,5 +1,10 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { ResourceTypeForConsolidation, SearchSetBundle } from "@metriport/shared/medical";
+import {
+  ResourceTypeForConsolidation,
+  SearchSetBundle,
+  toSearchSet,
+} from "@metriport/shared/medical";
+import { Patient } from "../../domain/patient";
 import {
   buildBundleEntry,
   getReferencesFromResources,
@@ -10,7 +15,6 @@ import { createConsolidatedFromConversions } from "./consolidated-create";
 import { filterBundleByDate } from "./consolidated-filter-by-date";
 import { filterBundleByResource } from "./consolidated-filter-by-resource";
 import { getConsolidated } from "./consolidated-get";
-import { Patient } from "../../domain/patient";
 const maxHydrationIterations = 5;
 
 /**
@@ -34,11 +38,12 @@ export async function getConsolidatedFromS3({
   log(`Running with params: ${JSON.stringify(params)}`);
 
   const consolidated = await getOrCreateConsolidatedOnS3({ cxId, patient });
-  log(`Consolidated with ${consolidated.entry?.length} entries`);
+  const consolidatedSearchset = toSearchSet(consolidated);
 
-  const filtered = await filterConsolidated(consolidated, params);
-
-  return { ...filtered, type: "searchset", entry: filtered.entry ?? [] };
+  log(`Consolidated found with ${consolidatedSearchset.entry?.length} entries`);
+  const filtered = await filterConsolidated(consolidatedSearchset, params);
+  log(`Filtered to ${filtered?.entry?.length} entries`);
+  return filtered as SearchSetBundle;
 }
 
 async function getOrCreateConsolidatedOnS3({
@@ -64,7 +69,7 @@ async function getOrCreateConsolidatedOnS3({
 }
 
 export async function filterConsolidated(
-  bundle: Bundle<Resource>,
+  bundle: Bundle,
   {
     resources = [],
     dateFrom,
@@ -94,11 +99,11 @@ export async function filterConsolidated(
 }
 
 export function addMissingReferences(
-  filteredBundle: Bundle<Resource>,
-  originalBundle: Bundle<Resource>,
+  filteredBundle: Bundle,
+  originalBundle: Bundle,
   addMissingReferencesFn = addMissingReferences,
   iteration = 1
-): Bundle<Resource> {
+): Bundle {
   const filteredResources = (filteredBundle.entry ?? []).flatMap(e => e.resource ?? []);
 
   const { missingReferences } = getReferencesFromResources({ resources: filteredResources });

@@ -11,3 +11,15 @@ export function parseFhirBundle(value: string): Bundle | undefined {
   }
   return undefined;
 }
+
+export function parseSearchsetFhirBundle(value: string): SearchSetBundle | undefined {
+  const parsed = parseFhirBundle(value);
+  if (parsed && parsed.type === "searchset") {
+    return parsed as SearchSetBundle;
+  }
+  return undefined;
+}
+
+export function toSearchSet(bundle: Bundle): SearchSetBundle {
+  return { ...bundle, type: "searchset", ...(bundle.entry ? { entry: bundle.entry } : {}) };
+}

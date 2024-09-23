@@ -1,6 +1,5 @@
-import { Bundle, Resource } from "@medplum/fhirtypes";
-import { parseFhirBundle } from "@metriport/shared/medical";
 import { MetriportError } from "@metriport/shared";
+import { parseSearchsetFhirBundle, SearchSetBundle } from "@metriport/shared/medical";
 import { createConsolidatedSnapshotFileName } from "../../domain/consolidated/filename";
 import { S3Utils } from "../../external/aws/s3";
 import { Config } from "../../util/config";
@@ -14,10 +13,10 @@ export async function getConsolidatedSnapshotFromS3({
 }: {
   bundleLocation: string;
   bundleFilename: string;
-}): Promise<Bundle<Resource>> {
+}): Promise<SearchSetBundle> {
   const s3Utils = new S3Utils(Config.getAWSRegion());
   const bundleAsStr = await s3Utils.getFileContentsAsString(bundleLocation, bundleFilename);
-  const bundle = parseFhirBundle(bundleAsStr);
+  const bundle = parseSearchsetFhirBundle(bundleAsStr);
   if (!bundle) throw new MetriportError("Consolidated snapshot is not a valid FHIR bundle");
   return bundle;
 }
