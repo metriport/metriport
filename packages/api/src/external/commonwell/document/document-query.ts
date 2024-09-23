@@ -209,6 +209,7 @@ export async function queryAndProcessDocuments({
     const cwDocuments = await internalGetDocuments({
       patient,
       initiator,
+      requestId,
     });
     log(`Got ${cwDocuments.length} documents from CW`);
 
@@ -279,9 +280,11 @@ export async function queryAndProcessDocuments({
 export async function internalGetDocuments({
   patient,
   initiator,
+  requestId,
 }: {
   patient: PatientWithCWData;
   initiator: HieInitiator;
+  requestId: string;
 }): Promise<Document[]> {
   const context = "cw.queryDocument";
   const { log } = Util.out(`CW internalGetDocuments - M patient ${patient.id}`);
@@ -326,6 +329,16 @@ export async function internalGetDocuments({
           patientId: patient.id,
         },
         log,
+      });
+
+      await tallyDocQueryProgress({
+        patient: { id: patient.id, cxId: patient.cxId },
+        progress: {
+          errors: cwErrs.length,
+        },
+        type: "download",
+        requestId,
+        source: MedicalDataSource.COMMONWELL,
       });
     }
 
