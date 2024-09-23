@@ -14,6 +14,7 @@ import { capture } from "../../../util/notifications";
 import { makeFhirApi } from "../api/api-factory";
 import { fullDateQueryForResource, getPatientFilter } from "../patient/resource-filter";
 import { buildBundle, getReferencesFromResources } from "../shared/bundle";
+import { findDocIdExtension } from "../shared/extensions/doc-id-extension";
 import { getReferencesFromFHIR } from "../shared/references";
 
 const MAX_HYDRATION_ROUNDS = 3;
@@ -115,7 +116,18 @@ export async function getConsolidatedFhirBundle({
     filtered = [...filtered, ...missingRefsOnFHIR];
   }
 
-  const entry: BundleEntry[] = filtered.map(r => ({ resource: r }));
+  const entry: BundleEntry[] = filtered.map(entry => {
+    if ("extension" in entry) {
+      const docIdExtension = findDocIdExtension(entry.extension);
+      if (docIdExtension) {
+        entry.meta = {
+          ...entry.meta,
+          source: docIdExtension.valueString ?? entry.meta?.source ?? "",
+        };
+      }
+    }
+    return { resource: entry };
+  });
   return buildBundle(entry);
 }
 
