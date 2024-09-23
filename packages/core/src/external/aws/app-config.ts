@@ -29,6 +29,7 @@ export type BooleanFF = z.infer<typeof ffBooleanSchema>;
 export const booleanFFsSchema = z.object({
   commonwellFeatureFlag: ffBooleanSchema,
   carequalityFeatureFlag: ffBooleanSchema,
+  cxsWithConsolidatedFromS3: ffBooleanSchema.optional(),
 });
 export type BooleanFeatureFlags = z.infer<typeof booleanFFsSchema>;
 
@@ -43,7 +44,6 @@ export const cxBasedFFsSchema = z.object({
   cxsWithIncreasedSandboxLimitFeatureFlag: ffStringValuesSchema,
   cxsWithEpicEnabled: ffStringValuesSchema,
   cxsWithDemoAugEnabled: ffStringValuesSchema,
-  cxsWithConsolidatedFromS3: ffStringValuesSchema.optional(),
 });
 export type CxBasedFFsSchema = z.infer<typeof cxBasedFFsSchema>;
 
@@ -250,7 +250,6 @@ export async function isAiBriefFeatureFlagEnabledForCx(cxId: string): Promise<bo
   return cxsWithADHDFeatureFlagValue.includes(cxId);
 }
 
-export async function isConsolidatedFromS3Enabled(cxId: string): Promise<boolean> {
-  const customerIds = await getCxsWithFeatureFlagEnabled("cxsWithConsolidatedFromS3");
-  return customerIds.includes(cxId);
+export async function isConsolidatedFromS3Enabled(): Promise<boolean> {
+  return await isFeatureFlagEnabled("cxsWithConsolidatedFromS3");
 }
