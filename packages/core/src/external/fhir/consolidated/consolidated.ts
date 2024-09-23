@@ -126,6 +126,15 @@ export async function getConsolidatedFhirBundle({
         };
       }
     }
+    if (entry.resourceType === "DocumentReference") {
+      const attachment = entry.content?.[0]?.attachment;
+      if (attachment) {
+        entry.meta = {
+          ...entry.meta,
+          source: attachment.title ?? entry.meta?.source ?? "",
+        };
+      }
+    }
     return { resource: entry };
   });
   return buildBundle(entry);
