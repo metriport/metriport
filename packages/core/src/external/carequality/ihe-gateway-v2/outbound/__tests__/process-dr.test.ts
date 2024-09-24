@@ -247,7 +247,9 @@ describe("dr-response", () => {
           outboundRequest: outboundDrRequest,
         },
       });
-      expect(response.operationOutcome?.issue[0]?.code).toEqual("XDSRegistryError");
+      expect(response.operationOutcome?.issue[0]?.details.coding?.[0]?.code).toEqual(
+        "XDSRegistryError"
+      );
 
       const issueIds = response.operationOutcome?.issue.map(issue => issue.id);
       const detailIds = response.operationOutcome?.issue.map(issue => issue.details?.id);

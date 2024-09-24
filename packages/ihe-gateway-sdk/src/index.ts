@@ -65,6 +65,8 @@ export {
   XCAGateway,
   XCPDGateway,
   XCPDPatientId,
+  Details,
+  Code,
 } from "./models/shared";
 export {
   Name,

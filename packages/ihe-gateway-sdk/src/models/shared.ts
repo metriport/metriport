@@ -44,6 +44,7 @@ export type BaseRequest = z.infer<typeof baseRequestSchema>;
 export const codeSchema = z.object({
   system: z.string(),
   code: z.string(),
+  text: z.string().optional(),
 });
 
 export type Code = z.infer<typeof codeSchema>;

@@ -156,8 +156,13 @@ describe("Process Inbound Dr Response", () => {
             severity: "error",
             code: "XDSRegistryError",
             details: {
-              coding: [{ system: "1.3.6.1.4.1.19376.1.2.27.1", code: "XDSRegistryError" }],
-              text: "Internal Server Error",
+              coding: [
+                {
+                  system: "1.3.6.1.4.1.19376.1.2.27.1",
+                  code: "XDSRegistryError",
+                  text: "Internal Server Error",
+                },
+              ],
             },
           },
         ],
@@ -179,7 +184,10 @@ describe("Process Inbound Dr Response", () => {
         gateway: xcaGateway,
       },
     });
-    expect(iti39Response.operationOutcome?.issue[0]).toEqual(response.operationOutcome?.issue[0]);
-    expect(iti39Response.operationOutcome?.issue.length).toEqual(3);
+    expect(iti39Response.operationOutcome?.issue[0]?.details?.coding?.[0]?.code).toEqual(
+      response.operationOutcome?.issue[0]?.details?.coding?.[0]?.code
+    );
+    expect(iti39Response.operationOutcome?.issue?.length).toEqual(2);
+    expect(iti39Response.operationOutcome?.issue[0]?.details?.coding?.length).toEqual(1);
   });
 });

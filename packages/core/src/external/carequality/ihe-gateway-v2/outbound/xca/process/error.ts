@@ -5,6 +5,8 @@ import {
   OutboundDocumentRetrievalReq,
   OutboundDocumentRetrievalResp,
   XCAGateway,
+  Details,
+  Code,
 } from "@metriport/ihe-gateway-sdk";
 import { toArray } from "@metriport/shared";
 import dayjs from "dayjs";
@@ -20,32 +22,19 @@ const knownNonRetryableErrors = ["No active consent for patient id"];
 export function processRegistryErrorList(
   registryErrorList: RegistryErrorList,
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq
-): OperationOutcome | undefined {
-  const operationOutcome: OperationOutcome = {
-    resourceType: "OperationOutcome",
-    id: outboundRequest.id,
-    issue: [],
-  };
+): Details | undefined {
+  const coding: Code[] = [];
 
   try {
     if (typeof registryErrorList !== "object") return undefined;
     const registryErrors = toArray(registryErrorList?.RegistryError);
     registryErrors.forEach((entry: RegistryError) => {
-      const issue = {
-        severity: "error",
-        code: entry?._errorCode?.toString() ?? "unknown-error",
-        details: {
-          text: entry?._codeContext?.toString() ?? "No details",
-          coding: [
-            {
-              code: entry?._errorCode?.toString() ?? "",
-              system: CODE_SYSTEM_ERROR,
-            },
-          ],
-        },
+      const code = {
+        code: entry?._errorCode?.toString() ?? "",
+        system: CODE_SYSTEM_ERROR,
+        text: entry?._codeContext?.toString(),
       };
-
-      operationOutcome.issue.push(issue);
+      coding.push(code);
     });
   } catch (error) {
     const msg = "Error processing RegistryErrorList";
@@ -58,8 +47,8 @@ export function processRegistryErrorList(
       },
     });
   }
-
-  return operationOutcome.issue.length > 0 ? operationOutcome : undefined;
+  const details: Details = { coding };
+  return coding.length > 0 ? details : undefined;
 }
 
 export function handleRegistryErrorResponseDq({
@@ -71,7 +60,18 @@ export function handleRegistryErrorResponseDq({
   outboundRequest: OutboundDocumentQueryReq;
   gateway: XCAGateway;
 }): OutboundDocumentQueryResp {
-  const operationOutcome = processRegistryErrorList(registryErrorList, outboundRequest);
+  const details = processRegistryErrorList(registryErrorList, outboundRequest);
+  const operationOutcome: OperationOutcome = {
+    id: outboundRequest.id,
+    resourceType: "OperationOutcome",
+    issue: [
+      {
+        severity: "error",
+        code: "registry-error",
+        details: details ?? {},
+      },
+    ],
+  };
   return {
     id: outboundRequest.id,
     requestChunkId: outboundRequest.requestChunkId,
@@ -94,13 +94,11 @@ export function handleRegistryErrorResponseDr({
   outboundRequest: OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
 }): OutboundDocumentRetrievalResp {
-  const baseOperationOutcome = processRegistryErrorList(registryErrorList, outboundRequest);
+  const details = processRegistryErrorList(registryErrorList, outboundRequest);
   const operationOutcome: OperationOutcome = {
-    ...baseOperationOutcome,
     id: outboundRequest.id,
     resourceType: "OperationOutcome",
     issue: [
-      ...(baseOperationOutcome?.issue ?? []),
       ...outboundRequest.documentReference.map(doc => ({
         id: doc.metriportId,
         severity: "error",
@@ -108,6 +106,7 @@ export function handleRegistryErrorResponseDr({
         details: {
           id: doc.docUniqueId,
           text: `Registry error for document with metriportId ${doc.metriportId} and docUniqueId ${doc.docUniqueId}`,
+          ...details,
         },
       })),
     ],
