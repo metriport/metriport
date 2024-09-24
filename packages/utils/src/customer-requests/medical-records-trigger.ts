@@ -24,8 +24,8 @@ dayjs.extend(duration);
 const patientIds: string[] = [];
 
 // The date range is inclusive on both ends
-const fromDate = undefined;
-const toDate = undefined;
+const dateFrom = undefined;
+const dateTo = undefined;
 
 const resources: string[] | undefined = undefined;
 const conversionType = "pdf";
@@ -56,7 +56,7 @@ async function main() {
   for (const patientId of patientIds) {
     console.log(`Calling for patient ${index + 1}/${total}. ID: ${patientId}...`);
     await api.post(`/medical/v1/patient/${patientId}/consolidated/query`, undefined, {
-      params: { resources: resources && resources.join(","), fromDate, toDate, conversionType },
+      params: { resources: resources && resources.join(","), dateFrom, dateTo, conversionType },
     });
     index++;
     await sleep(timeBetweenPatients);
