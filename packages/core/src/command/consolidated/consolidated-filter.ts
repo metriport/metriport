@@ -1,6 +1,5 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { ResourceTypeForConsolidation, SearchSetBundle } from "@metriport/shared/medical";
-import { getDocuments } from "../../external/fhir/document/get-documents";
 import {
   buildBundleEntry,
   getReferencesFromResources,
@@ -49,26 +48,17 @@ async function getOrCreateConsolidatedOnS3({
   patientId: string;
 }): Promise<Bundle> {
   const { log } = out(`getOrCreateConsolidatedOnS3 - cx ${cxId}, pat ${patientId}`);
-
   const preGenerated = await getConsolidated({
     cxId,
     patientId,
   });
-  if (preGenerated.bundle) return preGenerated.bundle;
-
-  const [consolidated, docRefs] = await Promise.all([
-    createConsolidatedFromConversions({ cxId, patientId }),
-    getDocuments({
-      cxId,
-      patientId,
-    }),
-  ]);
-  consolidated.entry = consolidated.entry ?? [];
-  log(`Consolidated created with ${consolidated.entry.length} entries`);
-  consolidated.entry.push(...docRefs.map(buildBundleEntry));
-  consolidated.total = consolidated.entry.length;
-  log(`Added ${docRefs.length} docRefs, to a total of ${consolidated.entry.length} entries`);
-  return consolidated;
+  if (preGenerated.bundle) {
+    log(`Found pre-generated consolidated, returning...`);
+    return preGenerated.bundle;
+  }
+  log(`Did not found pre-generated consolidated, creating a new one...`);
+  const newConsolidated = await createConsolidatedFromConversions({ cxId, patientId });
+  return newConsolidated;
 }
 
 export async function filterConsolidated(

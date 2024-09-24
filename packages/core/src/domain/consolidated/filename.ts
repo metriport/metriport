@@ -1,10 +1,14 @@
 import { createFilePath } from "../filename";
 
 const extension = ".json";
-const consolidatedDataFilenameSuffix = `CONSOLIDATED_DATA${extension}`;
 
-export function createConsolidatedDataFilePath(cxId: string, patientId: string): string {
-  return createFilePath(cxId, patientId, consolidatedDataFilenameSuffix);
+export function createConsolidatedDataFilePath(
+  cxId: string,
+  patientId: string,
+  deduped = true
+): string {
+  const additionalSuffix = deduped ? "" : "_with-duplicates";
+  return createFilePath(cxId, patientId, `CONSOLIDATED_DATA${additionalSuffix}${extension}`);
 }
 
 export function createConsolidatedSnapshotFileName(
@@ -17,6 +21,6 @@ export function createConsolidatedSnapshotFileName(
   return createFilePath(
     cxId,
     patientId,
-    `consolidated_${date}_${requestId}${isDeduped ? "_deduped" : ""}.json`
+    `consolidated_${date}_${requestId}${isDeduped ? "_deduped" : ""}${extension}`
   );
 }
