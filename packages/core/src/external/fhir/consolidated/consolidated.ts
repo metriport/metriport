@@ -1,11 +1,5 @@
 import { OperationOutcomeError } from "@medplum/core";
-import {
-  BundleEntry,
-  ExtractResource,
-  OperationOutcomeIssue,
-  Resource,
-  ResourceType,
-} from "@medplum/fhirtypes";
+import { ExtractResource, OperationOutcomeIssue, Resource, ResourceType } from "@medplum/fhirtypes";
 import { ResourceTypeForConsolidation, SearchSetBundle } from "@metriport/shared/medical";
 import { Patient } from "../../../domain/patient";
 import { Config } from "../../../util/config";
@@ -13,7 +7,7 @@ import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import { makeFhirApi } from "../api/api-factory";
 import { fullDateQueryForResource, getPatientFilter } from "../patient/resource-filter";
-import { buildBundle, getReferencesFromResources } from "../shared/bundle";
+import { buildSearchSetBundle, getReferencesFromResources } from "../shared/bundle";
 import { getReferencesFromFHIR } from "../shared/references";
 
 const MAX_HYDRATION_ROUNDS = 3;
@@ -115,8 +109,8 @@ export async function getConsolidatedFhirBundle({
     filtered = [...filtered, ...missingRefsOnFHIR];
   }
 
-  const entry: BundleEntry[] = filtered.map(r => ({ resource: r }));
-  return buildBundle(entry);
+  const entries = filtered.map(r => ({ resource: r }));
+  return buildSearchSetBundle({ entries });
 }
 
 const searchResources = async <K extends ResourceType>(

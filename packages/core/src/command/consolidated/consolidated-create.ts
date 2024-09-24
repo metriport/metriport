@@ -3,6 +3,7 @@ import { createConsolidatedDataFilePath } from "../../domain/consolidated/filena
 import { createFolderName } from "../../domain/filename";
 import { executeWithRetriesS3, S3Utils } from "../../external/aws/s3";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
+import { buildBundle } from "../../external/fhir/shared/bundle";
 import { executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
@@ -14,12 +15,6 @@ const numberOfParallelExecutions = 10;
 const defaultS3RetriesConfig = {
   maxAttempts: 3,
   initialDelay: 500,
-};
-const emptyBundle: Bundle = {
-  resourceType: "Bundle",
-  type: "collection",
-  total: 0,
-  entry: [],
 };
 
 export type ConsolidatePatientDataCommand = {
@@ -50,7 +45,7 @@ export async function createConsolidatedFromConversions({
     return undefined;
   }
 
-  const consolidated = emptyBundle;
+  const consolidated = buildBundle({ type: "collection" });
 
   await executeAsynchronously(
     inputBundles,

@@ -3,6 +3,7 @@ import { executeWithNetworkRetries, InternalSendConsolidated } from "@metriport/
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import axios from "axios";
 import { isConsolidatedFromS3Enabled } from "../../external/aws/app-config";
+import { checkBundleForPatient } from "../../external/fhir/bundle/qa";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
@@ -34,6 +35,8 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
     originalBundle.entry = [patientEntry, ...(originalBundle.entry ?? [])];
 
     const dedupedBundle = deduplicate({ cxId, patientId, bundle: originalBundle });
+
+    checkBundleForPatient(dedupedBundle, cxId, patientId);
 
     const [, dedupedS3Info] = await Promise.all([
       uploadConsolidatedSnapshotToS3({
@@ -78,7 +81,7 @@ async function getBundle(
   const { log } = out(`getBundle - fromS3: ${isGetFromS3}`);
   if (isGetFromS3) {
     const startedAt = new Date();
-    const consolidatedBundle = await getConsolidatedFromS3({ cxId, patientId, ...params });
+    const consolidatedBundle = await getConsolidatedFromS3({ ...params, cxId, patientId });
     if (consolidatedBundle) {
       log(`(from S3) Took ${elapsedTimeFromNow(startedAt)}ms`);
       return consolidatedBundle;

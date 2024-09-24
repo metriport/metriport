@@ -50,7 +50,7 @@ async function main() {
     const file = await s3.getFileInfoFromS3(fileName, bucketName);
     if (!file || !file.exists) {
       console.log(`File ${fileName} not found.`);
-      return;
+      continue;
     }
     console.log(`File ${fileName} found. Size: ${file.size}`);
     if (dryRun) {
@@ -60,7 +60,7 @@ async function main() {
         await s3.deleteFile({ bucket: bucketName, key: fileName });
       } catch (error) {
         console.error(`Error removing file ${fileName}: ${error}`);
-        return;
+        continue;
       }
       console.log(`...File ${fileName} removed`);
     }
