@@ -3,7 +3,7 @@ import { createConsolidatedDataFilePath } from "../../domain/consolidated/filena
 import { createFolderName } from "../../domain/filename";
 import { executeWithRetriesS3, S3Utils } from "../../external/aws/s3";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
-import { makeBundle } from "../../external/fhir/shared/bundle";
+import { buildBundle } from "../../external/fhir/shared/bundle";
 import { executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
@@ -45,7 +45,7 @@ export async function createConsolidatedFromConversions({
     return undefined;
   }
 
-  const consolidated = makeBundle("collection");
+  const consolidated = buildBundle({ type: "collection" });
 
   await executeAsynchronously(
     inputBundles,
