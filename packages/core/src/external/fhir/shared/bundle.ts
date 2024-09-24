@@ -105,6 +105,15 @@ function getReferencesFromRaw(
   );
 }
 
+export function makeBundle(
+  type: Bundle["type"] = "searchset",
+  entries: BundleEntry[] = []
+): Bundle {
+  return { resourceType: "Bundle", total: entries.length, type, entry: entries };
+}
+/**
+ * @deprecated Use `makeBundle` instead.
+ */
 export function buildBundle(entries: BundleEntry[]): SearchSetBundle<Resource> {
   return { resourceType: "Bundle", total: entries.length, type: "searchset", entry: entries };
 }
