@@ -64,7 +64,7 @@ class AthenaHealthApi {
     this.s3Utils = getS3UtilsInstance();
     this.axiosInstanceFhirApi = axios.create({});
     this.axiosInstanceProprietary = axios.create({});
-    this.baseUrl = `https://${config.environment}.platform.athenahealth.com/`;
+    this.baseUrl = `https://${config.environment}.platform.athenahealth.com`;
   }
 
   public static async create(config: ApiConfig): Promise<AthenaHealthApi> {
