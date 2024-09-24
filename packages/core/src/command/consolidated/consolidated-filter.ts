@@ -33,25 +33,10 @@ export async function getConsolidatedFromS3({
   const { log } = out(`getConsolidatedFromS3 - cx ${cxId}, pat ${patientId}`);
   log(`Running with params: ${JSON.stringify(params)}`);
 
-  const [docRefs, consolidated] = await Promise.all([
-    getDocuments({
-      cxId,
-      patientId,
-      from: params.dateFrom,
-      to: params.dateTo,
-    }),
-    getOrCreateConsolidatedOnS3({ cxId, patientId }),
-  ]);
-  consolidated.entry = consolidated.entry ?? [];
-  log(`Consolidated with ${consolidated.entry.length} entries`);
-
-  // including doc refs before the filtering b/c the original one was not very robust
-  consolidated.entry.push(...docRefs.map(buildBundleEntry));
-  consolidated.total = consolidated.entry.length;
-  log(`Added ${docRefs.length} docRefs, to a total of ${consolidated.entry.length} entries`);
+  const consolidated = await getOrCreateConsolidatedOnS3({ cxId, patientId });
+  log(`Consolidated with ${consolidated.entry?.length} entries`);
 
   const filtered = await filterConsolidated(consolidated, params);
-  log(`Filtered to ${filtered?.entry?.length} entries`);
 
   return { ...filtered, type: "searchset", entry: filtered.entry ?? [] };
 }
@@ -63,14 +48,27 @@ async function getOrCreateConsolidatedOnS3({
   cxId: string;
   patientId: string;
 }): Promise<Bundle> {
+  const { log } = out(`getOrCreateConsolidatedOnS3 - cx ${cxId}, pat ${patientId}`);
+
   const preGenerated = await getConsolidated({
     cxId,
     patientId,
   });
   if (preGenerated.bundle) return preGenerated.bundle;
 
-  const newConsolidated = await createConsolidatedFromConversions({ cxId, patientId });
-  return newConsolidated;
+  const [consolidated, docRefs] = await Promise.all([
+    createConsolidatedFromConversions({ cxId, patientId }),
+    getDocuments({
+      cxId,
+      patientId,
+    }),
+  ]);
+  consolidated.entry = consolidated.entry ?? [];
+  log(`Consolidated created with ${consolidated.entry.length} entries`);
+  consolidated.entry.push(...docRefs.map(buildBundleEntry));
+  consolidated.total = consolidated.entry.length;
+  log(`Added ${docRefs.length} docRefs, to a total of ${consolidated.entry.length} entries`);
+  return consolidated;
 }
 
 export async function filterConsolidated(
