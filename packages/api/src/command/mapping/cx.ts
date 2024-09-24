@@ -33,6 +33,13 @@ export async function getCxMapping({
   return existing.dataValues;
 }
 
+export async function getCxMappings({ source }: { source: CxSources }): Promise<CxMapping[]> {
+  const mappings = await CxMappingModel.findAll({
+    where: { source },
+  });
+  return mappings.map(m => m.dataValues);
+}
+
 export async function getCxMappingOrFail({
   externalId,
   source,

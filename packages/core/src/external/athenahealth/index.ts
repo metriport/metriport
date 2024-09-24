@@ -322,6 +322,57 @@ class AthenaHealthApi {
     return medicationOptions;
   }
 
+  async getAppoitments({
+    cxId,
+    start,
+    end,
+  }: {
+    cxId: string;
+    start: Date;
+    end: Date;
+  }): Promise<object[]> {
+    const { log, debug } = out(`AthenaHealth get appointments`);
+    const params = {
+      startdate: this.formatDate(start.toISOString()) ?? "",
+      enddate: this.formatDate(end.toISOString()) ?? "",
+    };
+    const urlParams = new URLSearchParams(params);
+    try {
+      const appointmentUrl = `/appointments/booked?${urlParams.toString()}`;
+      const response = await this.handleAxiosRequest(() =>
+        this.axiosInstanceProprietary.get(appointmentUrl)
+      );
+      if (!response.data) throw new Error(`No body returned from ${appointmentUrl}`);
+      debug(`${appointmentUrl} resp: ${JSON.stringify(response.data)}`);
+      if (responsesBucket) {
+        const filePath = createHivePartitionFilePath({
+          cxId,
+          patientId: "global",
+          date: new Date(),
+        });
+        const key = `athenahealth/appoitments/${filePath}/${uuidv7()}.json`;
+        await this.s3Utils.uploadFile({
+          bucket: responsesBucket,
+          key,
+          file: Buffer.from(JSON.stringify(response.data), "utf8"),
+          contentType: "application/json",
+        });
+      }
+      return response.data;
+    } catch (error) {
+      const msg = `Failure while getting appointments @ AthenHealth`;
+      log(`${msg}. Cause: ${errorToString(error)}`);
+      capture.error(msg, {
+        extra: {
+          baseUrl: this.axiosInstanceFhirApi.getUri(),
+          context: "athenahealth.get-appointments",
+          error,
+        },
+      });
+      throw error;
+    }
+  }
+
   private createDataParams(data: { [key: string]: string | undefined }): string {
     return Object.entries(data)
       .flatMap(([k, v]) => (v ? [`${k}=${v}`] : []))
