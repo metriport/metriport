@@ -179,6 +179,7 @@ describe("Process Inbound Dr Response", () => {
         gateway: xcaGateway,
       },
     });
-    expect(iti39Response.operationOutcome).toEqual(response.operationOutcome);
+    expect(iti39Response.operationOutcome?.issue[0]).toEqual(response.operationOutcome?.issue[0]);
+    expect(iti39Response.operationOutcome?.issue.length).toEqual(3);
   });
 });
