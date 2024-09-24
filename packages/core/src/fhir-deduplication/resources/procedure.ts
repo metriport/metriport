@@ -61,11 +61,11 @@ export function deduplicateProcedures(procedures: Procedure[]): DeduplicationRes
  */
 export function groupSameProcedures(procedures: Procedure[]): {
   proceduresMap: Map<string, Procedure>;
-  refReplacementMap: Map<string, string[]>;
+  refReplacementMap: Map<string, string>;
   danglingReferences: string[];
 } {
   const proceduresMap = new Map<string, Procedure>();
-  const refReplacementMap = new Map<string, string[]>();
+  const refReplacementMap = new Map<string, string>();
   const danglingReferencesSet = new Set<string>();
 
   function removeCodesAndAssignStatus(

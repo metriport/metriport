@@ -50,13 +50,13 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
   immunizationsCvxMap: Map<string, Immunization>;
   immunizationsNdcMap: Map<string, Immunization>;
   displayMap: Map<string, Immunization>;
-  refReplacementMap: Map<string, string[]>;
+  refReplacementMap: Map<string, string>;
   danglingReferences: string[];
 } {
   const immunizationsCvxMap = new Map<string, Immunization>();
   const immunizationsNdcMap = new Map<string, Immunization>();
   const displayMap = new Map<string, Immunization>();
-  const refReplacementMap = new Map<string, string[]>();
+  const refReplacementMap = new Map<string, string>();
   const danglingReferencesSet = new Set<string>();
 
   function assignMostDescriptiveStatus(

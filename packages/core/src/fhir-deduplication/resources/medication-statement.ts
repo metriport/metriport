@@ -54,11 +54,11 @@ export function deduplicateMedStatements(
  */
 export function groupSameMedStatements(medStatements: MedicationStatement[]): {
   medStatementsMap: Map<string, MedicationStatement>;
-  refReplacementMap: Map<string, string[]>;
+  refReplacementMap: Map<string, string>;
   danglingReferences: string[];
 } {
   const medStatementsMap = new Map<string, MedicationStatement>();
-  const refReplacementMap = new Map<string, string[]>();
+  const refReplacementMap = new Map<string, string>();
   const danglingReferencesSet = new Set<string>();
 
   function assignMostDescriptiveStatus(

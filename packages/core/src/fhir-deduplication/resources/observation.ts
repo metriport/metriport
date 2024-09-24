@@ -42,11 +42,11 @@ export function deduplicateObservations(
  */
 export function groupSameObservations(observations: Observation[]): {
   observationsMap: Map<string, Observation>;
-  refReplacementMap: Map<string, string[]>;
+  refReplacementMap: Map<string, string>;
   danglingReferences: string[];
 } {
   const observationsMap = new Map<string, Observation>();
-  const refReplacementMap = new Map<string, string[]>();
+  const refReplacementMap = new Map<string, string>();
   const danglingReferencesSet = new Set<string>();
 
   function postProcess(

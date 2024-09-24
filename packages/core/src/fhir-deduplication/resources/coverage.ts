@@ -21,11 +21,11 @@ export function deduplicateCoverages(medications: Coverage[]): DeduplicationResu
  */
 export function groupSameCoverages(coverages: Coverage[]): {
   coveragesMap: Map<string, Coverage>;
-  refReplacementMap: Map<string, string[]>;
+  refReplacementMap: Map<string, string>;
   danglingReferences: string[];
 } {
   const coveragesMap = new Map<string, Coverage>();
-  const refReplacementMap = new Map<string, string[]>();
+  const refReplacementMap = new Map<string, string>();
   const danglingReferencesSet = new Set<string>();
 
   for (const coverage of coverages) {

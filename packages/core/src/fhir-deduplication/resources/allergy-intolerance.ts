@@ -37,11 +37,11 @@ export function deduplicateAllergyIntolerances(
  */
 export function groupSameAllergies(allergies: AllergyIntolerance[]): {
   allergiesMap: Map<string, AllergyIntolerance>;
-  refReplacementMap: Map<string, string[]>;
+  refReplacementMap: Map<string, string>;
   danglingReferences: string[];
 } {
   const allergiesMap = new Map<string, AllergyIntolerance>();
-  const refReplacementMap = new Map<string, string[]>();
+  const refReplacementMap = new Map<string, string>();
   const danglingReferencesSet = new Set<string>();
 
   for (const allergy of allergies) {

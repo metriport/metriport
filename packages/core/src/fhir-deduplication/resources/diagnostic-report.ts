@@ -59,11 +59,11 @@ export function deduplicateDiagReports(
  */
 export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
   diagReportsMap: Map<string, DiagnosticReport>;
-  refReplacementMap: Map<string, string[]>;
+  refReplacementMap: Map<string, string>;
   danglingReferences: string[];
 } {
   const diagReportsMap = new Map<string, DiagnosticReport>();
-  const refReplacementMap = new Map<string, string[]>();
+  const refReplacementMap = new Map<string, string>();
   const danglingReferencesSet = new Set<string>();
 
   function removeCodesAndAssignStatus(

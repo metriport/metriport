@@ -24,13 +24,13 @@ export function deduplicatePractitioners(
 
 export function groupSamePractitioners(practitioners: Practitioner[]): {
   practitionersMap: Map<string, Practitioner>;
-  refReplacementMap: Map<string, string[]>;
+  refReplacementMap: Map<string, string>;
   danglingReferences: string[];
 } {
   const l1PractitionersMap = new Map<string, string>();
   const l2PractitionersMap = new Map<string, Practitioner>();
 
-  const refReplacementMap = new Map<string, string[]>();
+  const refReplacementMap = new Map<string, string>();
   const danglingReferencesSet = new Set<string>();
 
   for (const practitioner of practitioners) {

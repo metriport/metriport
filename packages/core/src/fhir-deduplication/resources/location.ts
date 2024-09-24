@@ -25,13 +25,13 @@ export function deduplicateLocations(locations: Location[]): DeduplicationResult
  */
 export function groupSameLocations(locations: Location[]): {
   locationsMap: Map<string, Location>;
-  refReplacementMap: Map<string, string[]>;
+  refReplacementMap: Map<string, string>;
   danglingReferences: string[];
 } {
   const l1LocationsMap = new Map<string, string>();
   const l2LocationsMap = new Map<string, Location>();
 
-  const refReplacementMap = new Map<string, string[]>();
+  const refReplacementMap = new Map<string, string>();
   const danglingReferencesSet = new Set<string>();
 
   for (const location of locations) {

@@ -23,11 +23,11 @@ export function deduplicateFamilyMemberHistories(
  */
 export function groupSameFamilyMemberHistories(famMemberHists: FamilyMemberHistory[]): {
   famMemberHistsMap: Map<string, FamilyMemberHistory>;
-  refReplacementMap: Map<string, string[]>;
+  refReplacementMap: Map<string, string>;
   danglingReferences: string[];
 } {
   const famMemberHistsMap = new Map<string, FamilyMemberHistory>();
-  const refReplacementMap = new Map<string, string[]>();
+  const refReplacementMap = new Map<string, string>();
   const danglingReferencesSet = new Set<string>();
 
   function ensureFhirValidFamilyMemberHistory(

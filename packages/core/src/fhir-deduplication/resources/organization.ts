@@ -30,14 +30,14 @@ export function deduplicateOrganizations(
  */
 export function groupSameOrganizations(organizations: Organization[]): {
   organizationsMap: Map<string, Organization>;
-  refReplacementMap: Map<string, string[]>;
+  refReplacementMap: Map<string, string>;
   danglingReferences: string[];
 } {
   // l1 points to l2
   const l1OrganizationsMap = new Map<string, string>();
   const l2OrganizationsMap = new Map<string, Organization>();
 
-  const refReplacementMap = new Map<string, string[]>();
+  const refReplacementMap = new Map<string, string>();
   const danglingReferencesSet = new Set<string>();
 
   for (const organization of organizations) {

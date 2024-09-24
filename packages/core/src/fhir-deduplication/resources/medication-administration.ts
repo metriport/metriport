@@ -51,11 +51,11 @@ export function deduplicateMedAdmins(
  */
 export function groupSameMedAdmins(medAdmins: MedicationAdministration[]): {
   medAdminsMap: Map<string, MedicationAdministration>;
-  refReplacementMap: Map<string, string[]>;
+  refReplacementMap: Map<string, string>;
   danglingReferences: string[];
 } {
   const medAdminsMap = new Map<string, MedicationAdministration>();
-  const refReplacementMap = new Map<string, string[]>();
+  const refReplacementMap = new Map<string, string>();
   const danglingReferencesSet = new Set<string>();
 
   function assignMostDescriptiveStatus(

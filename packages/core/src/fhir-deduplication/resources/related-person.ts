@@ -24,13 +24,13 @@ export function deduplicateRelatedPersons(
 
 export function groupSameRelatedPersons(relatedPersons: RelatedPerson[]): {
   relatedPersonsMap: Map<string, RelatedPerson>;
-  refReplacementMap: Map<string, string[]>;
+  refReplacementMap: Map<string, string>;
   danglingReferences: string[];
 } {
   const l1RelatedPersonsMap = new Map<string, string>();
   const l2RelatedPersonsMap = new Map<string, RelatedPerson>();
 
-  const refReplacementMap = new Map<string, string[]>();
+  const refReplacementMap = new Map<string, string>();
   const danglingReferencesSet = new Set<string>();
 
   for (const relatedPerson of relatedPersons) {

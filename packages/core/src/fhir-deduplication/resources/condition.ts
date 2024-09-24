@@ -37,13 +37,13 @@ export function groupSameConditions(conditions: Condition[]): {
   snomedMap: Map<string, Condition>;
   icd10Map: Map<string, Condition>;
   displayMap: Map<string, Condition>;
-  refReplacementMap: Map<string, string[]>;
+  refReplacementMap: Map<string, string>;
   danglingReferences: string[];
 } {
   const snomedMap = new Map<string, Condition>();
   const icd10Map = new Map<string, Condition>();
   const displayMap = new Map<string, Condition>();
-  const refReplacementMap = new Map<string, string[]>();
+  const refReplacementMap = new Map<string, string>();
   const danglingReferencesSet = new Set<string>();
 
   function removeOtherCodes(master: Condition): Condition {
