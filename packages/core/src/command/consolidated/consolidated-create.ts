@@ -36,16 +36,16 @@ export async function createConsolidatedFromConversions({
   destinationBucketName = getConsolidatedLocation(),
   sourceBucketName = getConsolidatedSourceLocation(),
   logMemUsage,
-}: ConsolidatePatientDataCommand): Promise<Bundle | undefined> {
+}: ConsolidatePatientDataCommand): Promise<Bundle> {
   const { log } = out(`createConsolidatedFromConversions - cx ${cxId}, pat ${patientId}`);
+
+  const consolidated = buildConsolidatedBundle();
 
   const inputBundles = await listConversionBundles({ cxId, patientId, sourceBucketName, log });
   if (!inputBundles || inputBundles.length < 1) {
     log(`No conversion bundles found.`);
-    return undefined;
+    return consolidated;
   }
-
-  const consolidated = buildBundle({ type: "collection" });
 
   await executeAsynchronously(
     inputBundles,
@@ -79,6 +79,10 @@ export async function createConsolidatedFromConversions({
 
   log(`Done`);
   return deduped;
+}
+
+function buildConsolidatedBundle(): Bundle {
+  return buildBundle({ type: "collection" });
 }
 
 async function listConversionBundles({

@@ -1,5 +1,6 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { ResourceTypeForConsolidation } from "@metriport/shared/medical";
+import { ResourceTypeForConsolidation, SearchSetBundle } from "@metriport/shared/medical";
+import { getDocuments } from "../../external/fhir/document/get-documents";
 import {
   buildBundleEntry,
   getReferencesFromResources,
@@ -28,21 +29,31 @@ export async function getConsolidatedFromS3({
   resources?: ResourceTypeForConsolidation[] | undefined;
   dateFrom?: string | undefined;
   dateTo?: string | undefined;
-}): Promise<Bundle | undefined> {
+}): Promise<SearchSetBundle> {
   const { log } = out(`getConsolidatedFromS3 - cx ${cxId}, pat ${patientId}`);
   log(`Running with params: ${JSON.stringify(params)}`);
 
-  const consolidated = await getOrCreateConsolidatedOnS3({ cxId, patientId });
-  if (!consolidated || !consolidated.entry) {
-    log(`No consolidated bundle found/created!`);
-    return undefined;
-  }
-  consolidated.type = "searchset";
+  const [docRefs, consolidated] = await Promise.all([
+    getDocuments({
+      cxId,
+      patientId,
+      from: params.dateFrom,
+      to: params.dateTo,
+    }),
+    getOrCreateConsolidatedOnS3({ cxId, patientId }),
+  ]);
+  consolidated.entry = consolidated.entry ?? [];
+  log(`Consolidated with ${consolidated.entry.length} entries`);
 
-  log(`Consolidated found with ${consolidated.entry.length} entries`);
+  // including doc refs before the filtering b/c the original one was not very robust
+  consolidated.entry.push(...docRefs.map(buildBundleEntry));
+  consolidated.total = consolidated.entry.length;
+  log(`Added ${docRefs.length} docRefs, to a total of ${consolidated.entry.length} entries`);
+
   const filtered = await filterConsolidated(consolidated, params);
   log(`Filtered to ${filtered?.entry?.length} entries`);
-  return filtered;
+
+  return { ...filtered, type: "searchset", entry: filtered.entry ?? [] };
 }
 
 async function getOrCreateConsolidatedOnS3({
@@ -51,7 +62,7 @@ async function getOrCreateConsolidatedOnS3({
 }: {
   cxId: string;
   patientId: string;
-}): Promise<Bundle<Resource> | undefined> {
+}): Promise<Bundle> {
   const preGenerated = await getConsolidated({
     cxId,
     patientId,
