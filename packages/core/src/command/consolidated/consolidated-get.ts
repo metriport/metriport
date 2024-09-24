@@ -1,6 +1,7 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { executeWithRetriesS3, returnUndefinedOn404, S3Utils } from "../../external/aws/s3";
+import { out } from "../../util";
 import { Config } from "../../util/config";
 import { getConsolidatedLocation } from "./consolidated-shared";
 
@@ -21,13 +22,12 @@ export async function getConsolidated({
   cxId,
   patientId,
   fileLocation = getConsolidatedLocation(),
-  log = console.log,
 }: {
   cxId: string;
   patientId: string;
   fileLocation?: string;
-  log?: typeof console.log;
 }): Promise<Consolidated> {
+  const { log } = out(`getConsolidated - cx ${cxId}, pat ${patientId}`);
   const fileName = createConsolidatedDataFilePath(cxId, patientId);
 
   const consolidatedDataRaw = await executeWithRetriesS3<string | undefined>(
