@@ -1,6 +1,6 @@
-import { Bundle, Resource } from "@medplum/fhirtypes";
 import { executeWithNetworkRetries, InternalSendConsolidated } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
+import { SearchSetBundle } from "@metriport/shared/medical";
 import axios from "axios";
 import { isConsolidatedFromS3Enabled } from "../../external/aws/app-config";
 import { checkBundleForPatient } from "../../external/fhir/bundle/qa";
@@ -33,6 +33,7 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
     const fhirPatient = patientToFhir(params.patient);
     const patientEntry = buildBundleEntry(fhirPatient);
     originalBundle.entry = [patientEntry, ...(originalBundle.entry ?? [])];
+    originalBundle.total = originalBundle.entry.length;
 
     const dedupedBundle = deduplicate({ cxId, patientId, bundle: originalBundle });
 
@@ -75,7 +76,7 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
 
 async function getBundle(
   params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
-): Promise<Bundle<Resource>> {
+): Promise<SearchSetBundle> {
   const { cxId, id: patientId } = params.patient;
   const isGetFromS3 = await isConsolidatedFromS3Enabled();
   const { log } = out(`getBundle - fromS3: ${isGetFromS3}`);
