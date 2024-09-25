@@ -14,6 +14,7 @@ import { getPatientIdOrFail } from "./get-patient";
 dayjs.extend(duration);
 
 const delay = dayjs.duration(30, "seconds");
+const appointmentHoursLookback = 48;
 
 const region = Config.getAWSRegion();
 const athenaEnvironment = Config.getAthenaHealthEnv();
@@ -119,8 +120,8 @@ async function getAppointmentsAndCreateOrUpdatePatient({
     });
     const now = new Date(new Date().setMinutes(0, 0, 0));
     const end = new Date(now);
-    const start = new Date(now.setHours(now.getHours() - 48));
-    const appointments = await api.getAppoitments({ cxId, departmentId, start, end });
+    const start = new Date(now.setHours(now.getHours() - appointmentHoursLookback));
+    const appointments = await api.getAppointments({ cxId, departmentId, start, end });
     patientAppointments.push(
       ...appointments.appointments.map(appointment => {
         return { cxId, athenaPracticeId: practiceId, athenaPatientId: appointment.patientid };

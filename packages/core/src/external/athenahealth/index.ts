@@ -375,7 +375,7 @@ class AthenaHealthApi {
     return medicationOptions;
   }
 
-  async getAppoitments({
+  async getAppointments({
     cxId,
     departmentId,
     start,
