@@ -1,7 +1,7 @@
 import Router from "express-promise-router";
-import appointment from "./appointment";
+import patient from "./patient";
 const routes = Router();
 
-routes.use("/appointment", appointment);
+routes.use("/patient", patient);
 
 export default routes;

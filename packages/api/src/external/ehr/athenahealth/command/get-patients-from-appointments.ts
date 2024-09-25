@@ -27,8 +27,8 @@ type PatientAppointment = {
   athenaPatientId: string;
 };
 
-export async function getAthenaAppointments(): Promise<void> {
-  const { log } = out(`AthenaHealth getAppointments`);
+export async function getPatientIdsOrFailFromAppointments(): Promise<void> {
+  const { log } = out(`AthenaHealth getPatientIdsOrFailFromAppointments`);
   if (!athenaEnvironment || !athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
     throw new Error("AthenaHealth not setup");
   }

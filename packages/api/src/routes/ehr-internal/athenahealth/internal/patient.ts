@@ -1,24 +1,21 @@
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { Request, Response } from "express";
-import { getAthenaAppointments } from "../../../../external/ehr/athenahealth/command/get-appointments";
+import { getPatientIdsOrFailFromAppointments } from "../../../../external/ehr/athenahealth/command/get-patients-from-appointments";
 import { requestLogger } from "../../../helpers/request-logger";
 import { asyncHandler } from "../../../util";
 const router = Router();
 
 /**
- * POST /internal/ehr/athenahealth/appointment/list
+ * POST /internal/ehr/athenahealth/patient/from-appointments
  *
- * Tries to retrieve the matching Metriport patient
- * @param req.params.id The ID of AthenaHealth Patient.
- * @param req.body The FHIR Resource payload
- * @returns Metriport Patient if found.
+ * Fetches appointments in a predfined window and creates all patients not already existing
  */
-router.get(
-  "/list",
+router.post(
+  "/from-appointments",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    getAthenaAppointments();
+    getPatientIdsOrFailFromAppointments();
     return res.sendStatus(httpStatus.OK);
   })
 );
