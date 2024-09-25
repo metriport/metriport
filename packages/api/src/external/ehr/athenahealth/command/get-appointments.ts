@@ -9,6 +9,7 @@ import { EhrSources } from "../../shared";
 import { getCxMappings } from "../../../../command/mapping/cx";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { Config } from "../../../../shared/config";
+import { getPatientIdOrFail } from "./get-patient";
 
 dayjs.extend(duration);
 
@@ -19,6 +20,12 @@ const athenaEnvironment = Config.getAthenaHealthEnv();
 const athenaClientKeySecretArn = Config.getAthenaHealthClientKeyArm();
 const athenaClientSecretSecretArn = Config.getAthenaHealthClientSecretArn();
 
+type PatientAppointment = {
+  cxId: string;
+  athenaPatientId: string;
+  athenaPracticeId: string;
+};
+
 export async function getAthenaAppointments(): Promise<void> {
   const { log } = out(`AthenaHealth getAppointments`);
   if (!athenaEnvironment || !athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
@@ -26,20 +33,32 @@ export async function getAthenaAppointments(): Promise<void> {
   }
   const cxMappings = await getCxMappings({ source: EhrSources.ATHENA });
 
+  const patientAppointments: PatientAppointment[] = [];
   const getAppointmentsWrapperErrors: string[] = [];
   const athenaClientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
   const athenaClientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
 
   await executeAsynchronously(
-    cxMappings.map(mapping => {
-      return {
-        cxId: mapping.cxId,
-        practiceId: mapping.externalId,
-        clientKey: athenaClientKey,
-        clientSecret: athenaClientSecret,
-        errors: getAppointmentsWrapperErrors,
-        log,
-      };
+    cxMappings.flatMap(mapping => {
+      const cxId = mapping.cxId;
+      const practiceId = mapping.externalId;
+      const departmentIds = mapping.secondaryMappings.departmentIds;
+      if (!departmentIds || !Array.isArray(departmentIds) || departmentIds.length === 0) {
+        log(`Skipping for cxId ${cxId} -- departmentIds malformed or missing`);
+        return [];
+      }
+      return departmentIds.map(departmentId => {
+        return {
+          cxId,
+          practiceId,
+          departmentId,
+          clientKey: athenaClientKey,
+          clientSecret: athenaClientSecret,
+          patientAppointments,
+          errors: getAppointmentsWrapperErrors,
+          log,
+        };
+      });
     }),
     getAppointmentsAndCreateOrUpdatePatient,
     { numberOfParallelExecutions: 10, delay: delay.asMilliseconds() }
@@ -55,20 +74,38 @@ export async function getAthenaAppointments(): Promise<void> {
       },
     });
   }
+
+  await executeAsynchronously(
+    patientAppointments.map(appointment => {
+      return {
+        cxId: appointment.cxId,
+        athenaPracticeId: appointment.athenaPracticeId,
+        athenaPatientId: appointment.athenaPatientId,
+        useSearch: true,
+        triggerDq: true,
+      };
+    }),
+    getPatientIdOrFailVoid,
+    { numberOfParallelExecutions: 10, delay: delay.asMilliseconds() }
+  );
 }
 
 async function getAppointmentsAndCreateOrUpdatePatient({
   cxId,
   practiceId,
+  departmentId,
   clientKey,
   clientSecret,
+  patientAppointments,
   errors,
   log,
 }: {
   cxId: string;
   practiceId: string;
+  departmentId: string;
   clientKey: string;
   clientSecret: string;
+  patientAppointments: PatientAppointment[];
   errors: string[];
   log: typeof console.log;
 }): Promise<void> {
@@ -80,13 +117,45 @@ async function getAppointmentsAndCreateOrUpdatePatient({
       clientKey,
       clientSecret,
     });
-    const end = new Date(new Date().setMinutes(0, 0, 0));
-    const start = new Date(end.setHours(end.getHours() - 24));
-    const appointments = await api.getAppoitments({ cxId, start, end });
-    console.log(appointments);
+    const now = new Date(new Date().setMinutes(0, 0, 0));
+    const end = new Date(now);
+    const start = new Date(now.setHours(now.getHours() - 48));
+    const appointments = await api.getAppoitments({ cxId, departmentId, start, end });
+    patientAppointments.push(
+      ...appointments.appointments.map(appointment => {
+        return { cxId, athenaPracticeId: practiceId, athenaPatientId: appointment.patientid };
+      })
+    );
   } catch (error) {
-    const msg = `Failed to get appointments. Cause: ${errorToString(error)}`;
+    const msg = `Failed to get appointments and find or create patients. Cause: ${errorToString(
+      error
+    )}`;
     log(msg);
     errors.push(msg);
   }
+}
+
+async function getPatientIdOrFailVoid({
+  cxId,
+  athenaPracticeId,
+  athenaPatientId,
+  accessToken,
+  useSearch = false,
+  triggerDq = false,
+}: {
+  cxId: string;
+  athenaPracticeId: string;
+  athenaPatientId: string;
+  accessToken?: string;
+  useSearch?: boolean;
+  triggerDq?: boolean;
+}): Promise<void> {
+  await getPatientIdOrFail({
+    cxId,
+    athenaPracticeId,
+    athenaPatientId,
+    accessToken,
+    useSearch,
+    triggerDq,
+  });
 }

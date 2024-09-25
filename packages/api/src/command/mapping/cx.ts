@@ -6,19 +6,27 @@ import { CxMapping, CxSources } from "../../domain/cx-mapping";
 export type CxMappingParams = {
   cxId: string;
   externalId: string;
+  secondaryMappings: { [k: string]: object };
   source: CxSources;
 };
 
-export type CxMappingLookUpParam = Omit<CxMappingParams, "cxId">;
+export type CxMappingLookUpParam = Omit<CxMappingParams, "cxId" | "secondaryMappings">;
 
 export async function findOrCreateCxMapping({
   cxId,
   externalId,
+  secondaryMappings,
   source,
 }: CxMappingParams): Promise<CxMapping> {
   const existing = await getCxMapping({ externalId, source });
   if (existing) return existing;
-  const created = await CxMappingModel.create({ id: uuidv7(), cxId, externalId, source });
+  const created = await CxMappingModel.create({
+    id: uuidv7(),
+    cxId,
+    externalId,
+    source,
+    secondaryMappings,
+  });
   return created.dataValues;
 }
 

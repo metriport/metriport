@@ -21,6 +21,7 @@ import {
   createPatient as createtMetriportPatient,
   PatientCreateCmd,
 } from "../../../../command/medical/patient/create-patient";
+import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 import { getPatientMapping, findOrCreatePatientMapping } from "../../../../command/mapping/patient";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { Config } from "../../../../shared/config";
@@ -33,15 +34,19 @@ const athenaClientSecretSecretArn = Config.getAthenaHealthClientSecretArn();
 const defaultFacilityMappingExternalId = "default";
 
 export async function getPatientIdOrFail({
-  accessToken,
   cxId,
   athenaPracticeId,
   athenaPatientId,
+  accessToken,
+  useSearch = false,
+  triggerDq = false,
 }: {
-  accessToken: string;
   cxId: string;
   athenaPracticeId: string;
   athenaPatientId: string;
+  accessToken?: string;
+  useSearch?: boolean;
+  triggerDq?: boolean;
 }): Promise<string> {
   const { log } = out(`AthenaHealth getPatient - cxId ${cxId} athenaPatientId ${athenaPatientId}`);
   const existingPatient = await getPatientMapping({
@@ -68,10 +73,18 @@ export async function getPatientIdOrFail({
     clientKey: athenaClientKey,
     clientSecret: athenaClientSecret,
   });
-  const athenaPatient = await api.getPatient({
-    cxId,
-    patientId: athenaPatientId,
-  });
+  let athenaPatient;
+  if (useSearch) {
+    athenaPatient = await api.getPatientViaSearch({
+      cxId,
+      patientId: athenaPatientId,
+    });
+  } else {
+    athenaPatient = await api.getPatient({
+      cxId,
+      patientId: athenaPatientId,
+    });
+  }
   if (!athenaPatient) throw new NotFoundError("AthenaHealth patient not found");
   if (athenaPatient.name.length === 0) {
     throw new Error("AthenaHealth patient missing at least one name");
@@ -131,6 +144,12 @@ export async function getPatientIdOrFail({
         ...createMetriportPatientDemo(athenaPatient),
       },
     });
+    if (triggerDq) {
+      queryDocumentsAcrossHIEs({
+        cxId,
+        patientId: metriportPatient.id,
+      });
+    }
   }
   await findOrCreatePatientMapping({
     cxId,

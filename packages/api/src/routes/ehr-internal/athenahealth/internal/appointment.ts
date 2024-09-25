@@ -19,7 +19,7 @@ router.get(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     getAthenaAppointments();
-    return res.status(httpStatus.OK);
+    return res.sendStatus(httpStatus.OK);
   })
 );
 

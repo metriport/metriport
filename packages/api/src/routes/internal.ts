@@ -318,6 +318,7 @@ router.post(
       cxId,
       source: source as CxSources,
       externalId,
+      secondaryMappings: req.body,
     });
     return res.sendStatus(httpStatus.OK);
   })

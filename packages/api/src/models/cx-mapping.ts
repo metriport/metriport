@@ -5,6 +5,7 @@ import { BaseModel, ModelSetup } from "./_default";
 export class CxMappingModel extends BaseModel<CxMappingModel> implements CxMapping {
   static NAME = "cx_mapping";
   declare externalId: string;
+  declare secondaryMappings: { [k: string]: object };
   declare cxId: string;
   declare source: CxSources;
 
@@ -20,6 +21,9 @@ export class CxMappingModel extends BaseModel<CxMappingModel> implements CxMappi
         },
         externalId: {
           type: DataTypes.STRING,
+        },
+        secondaryMappings: {
+          type: DataTypes.JSONB,
         },
       },
       {

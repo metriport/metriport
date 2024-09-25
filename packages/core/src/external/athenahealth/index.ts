@@ -7,9 +7,10 @@ import {
 } from "@medplum/fhirtypes";
 import {
   patientResourceSchema,
+  patientSearchResourceSchema,
   PatientResource,
 } from "@metriport/shared/interface/external/athenahealth/patient";
-import { errorToString } from "@metriport/shared";
+import { errorToString, NotFoundError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { S3Utils } from "../aws/s3";
 import { out } from "../../util/log";
@@ -19,7 +20,7 @@ import { uuidv7 } from "../../util/uuid-v7";
 import { createHivePartitionFilePath } from "../../domain/filename";
 
 interface ApiConfig {
-  threeLeggedAuthToken: string;
+  threeLeggedAuthToken: string | undefined;
   practiceId: string;
   environment: AthenaEnv;
   clientKey: string;
@@ -41,6 +42,8 @@ export type AthenaEnv = "api" | "api.preview";
 
 export type AthenaMedication = { medication: string; medicationid: number };
 
+export type AthenaAppointment = { patientid: string };
+
 export type MedicationWithRefs = {
   medication: Medication;
   administration?: MedicationAdministration;
@@ -53,7 +56,7 @@ class AthenaHealthApi {
   private axiosInstanceProprietary: AxiosInstance;
   private baseUrl: string;
   private twoLeggedAuthToken: string;
-  private threeLeggedAuthToken: string;
+  private threeLeggedAuthToken: string | undefined;
   private practiceId: string;
   private s3Utils: S3Utils;
 
@@ -75,7 +78,7 @@ class AthenaHealthApi {
 
   private async fetchtwoLeggedAuthToken(): Promise<void> {
     const url = `${this.baseUrl}/oauth2/v1/token`;
-    const payload = `grant_type=client_credentials&scope=athena/service/Athenanet.MDP.*`;
+    const payload = `grant_type=client_credentials&scope=athena/service/Athenanet.MDP.* system/Patient.read`;
 
     try {
       const response = await axios.post(url, payload, {
@@ -99,7 +102,7 @@ class AthenaHealthApi {
       baseURL: `${this.baseUrl}/fhir/r4`,
       headers: {
         accept: "application/json",
-        Authorization: `Bearer ${this.threeLeggedAuthToken}`,
+        Authorization: `Bearer ${this.threeLeggedAuthToken ?? this.twoLeggedAuthToken}`,
         "content-type": "application/x-www-form-urlencoded",
       },
     });
@@ -143,7 +146,7 @@ class AthenaHealthApi {
   }): Promise<PatientResource | undefined> {
     const { log, debug } = out(`AthenaHealth get - AH patientId ${patientId}`);
     try {
-      const patientUrl = `/Patient/${patientId}`;
+      const patientUrl = `/Patient/${this.createPatientId(patientId)}`;
       const response = await this.handleAxiosRequest(() =>
         this.axiosInstanceFhirApi.get(patientUrl)
       );
@@ -174,6 +177,57 @@ class AthenaHealthApi {
           baseUrl: this.axiosInstanceFhirApi.getUri(),
           patientId,
           context: "athenahealth.get-patient",
+          error,
+        },
+      });
+      throw error;
+    }
+  }
+
+  async getPatientViaSearch({
+    cxId,
+    patientId,
+  }: {
+    cxId: string;
+    patientId: string;
+  }): Promise<PatientResource | undefined> {
+    const { log, debug } = out(`AthenaHealth search - AH patientId ${patientId}`);
+    try {
+      const data = {
+        _id: this.createPatientId(patientId),
+        "ah-practice": this.createPracticetId(this.practiceId),
+      };
+      const patienSearchtUrl = "/Patient/_search";
+      const response = await this.handleAxiosRequest(() =>
+        this.axiosInstanceFhirApi.post(patienSearchtUrl, this.createDataParams(data))
+      );
+      if (!response.data) throw new Error(`No body returned from ${patienSearchtUrl}`);
+      debug(`${patienSearchtUrl} resp: ${JSON.stringify(response.data)}`);
+      if (responsesBucket) {
+        const filePath = createHivePartitionFilePath({
+          cxId,
+          patientId,
+          date: new Date(),
+        });
+        const key = `athenahealth/patient-search/${filePath}/${uuidv7()}.json`;
+        await this.s3Utils.uploadFile({
+          bucket: responsesBucket,
+          key,
+          file: Buffer.from(JSON.stringify(response.data), "utf8"),
+          contentType: "application/json",
+        });
+      }
+      const searchSet = patientSearchResourceSchema.parse(response.data);
+      if (searchSet.entry.length > 1) throw new NotFoundError("More than one athena patient found");
+      return searchSet.entry[0]?.resource;
+    } catch (error) {
+      const msg = `Failure while searching patient @ AthenHealth`;
+      log(`${msg}. Patient ID: ${patientId}. Cause: ${errorToString(error)}`);
+      capture.error(msg, {
+        extra: {
+          baseUrl: this.axiosInstanceFhirApi.getUri(),
+          patientId,
+          context: "athenahealth.search-patient",
           error,
         },
       });
@@ -254,7 +308,7 @@ class AthenaHealthApi {
       log(`${msg}. Patient ID: ${patientId}. Cause: ${errorToString(error)}`);
       capture.error(msg, {
         extra: {
-          baseUrl: this.axiosInstanceFhirApi.getUri(),
+          baseUrl: this.axiosInstanceProprietary.getUri(),
           patientId,
           context: "athenahealth.create-medication",
           error,
@@ -280,7 +334,6 @@ class AthenaHealthApi {
     await Promise.all(
       searchValues.map(async searchValue => {
         if (searchValue.length < 2) return;
-        console.log(searchValue);
         try {
           const referenceUrl = `/reference/medications?searchvalue=${searchValue}`;
           const response = await this.handleAxiosRequest(() =>
@@ -324,15 +377,18 @@ class AthenaHealthApi {
 
   async getAppoitments({
     cxId,
+    departmentId,
     start,
     end,
   }: {
     cxId: string;
+    departmentId: string;
     start: Date;
     end: Date;
-  }): Promise<object[]> {
+  }): Promise<{ appointments: AthenaAppointment[] }> {
     const { log, debug } = out(`AthenaHealth get appointments`);
     const params = {
+      departmentid: this.stripDepartmentId(departmentId),
       startdate: this.formatDate(start.toISOString()) ?? "",
       enddate: this.formatDate(end.toISOString()) ?? "",
     };
@@ -350,7 +406,7 @@ class AthenaHealthApi {
           patientId: "global",
           date: new Date(),
         });
-        const key = `athenahealth/appoitments/${filePath}/${uuidv7()}.json`;
+        const key = `athenahealth/appointments/${filePath}/${uuidv7()}.json`;
         await this.s3Utils.uploadFile({
           bucket: responsesBucket,
           key,
@@ -364,7 +420,7 @@ class AthenaHealthApi {
       log(`${msg}. Cause: ${errorToString(error)}`);
       capture.error(msg, {
         extra: {
-          baseUrl: this.axiosInstanceFhirApi.getUri(),
+          baseUrl: this.axiosInstanceProprietary.getUri(),
           context: "athenahealth.get-appointments",
           error,
         },
@@ -383,8 +439,20 @@ class AthenaHealthApi {
     return id.replace(`a-1.${athenaPracticePrefix}-`, "");
   }
 
+  private createPracticetId(id: string) {
+    const prefix = `a-1.${athenaPracticePrefix}-`;
+    if (id.startsWith(prefix)) return id;
+    return `${prefix}${id}`;
+  }
+
   private stripPatientId(id: string) {
     return id.replace(`a-${this.practiceId}.${athenaPatientPrefix}-`, "");
+  }
+
+  private createPatientId(id: string) {
+    const prefix = `a-${this.practiceId}.${athenaPatientPrefix}-`;
+    if (id.startsWith(prefix)) return id;
+    return `${prefix}${id}`;
   }
 
   private stripDepartmentId(id: string) {

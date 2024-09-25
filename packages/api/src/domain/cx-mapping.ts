@@ -5,6 +5,7 @@ export type CxSources = EhrSources;
 
 export interface CxMapping extends BaseDomain {
   externalId: string;
+  secondaryMappings: { [k: string]: object };
   cxId: string;
   source: CxSources;
 }
