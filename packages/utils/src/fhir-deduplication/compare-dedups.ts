@@ -45,7 +45,7 @@ function compareResourceIds(dir1: string, dir2: string): void {
 }
 
 if (process.argv.length !== 4) {
-  console.log("Usage: node compare-dedups.js <directory1> <directory2>");
+  console.log("Usage: node compare-dedups.ts <directory1> <directory2>");
   process.exit(1);
 }
 
