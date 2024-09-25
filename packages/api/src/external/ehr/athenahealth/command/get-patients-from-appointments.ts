@@ -14,7 +14,7 @@ import { getPatientIdOrFail } from "./get-patient";
 dayjs.extend(duration);
 
 const delay = dayjs.duration(30, "seconds");
-const appointmentHoursLookback = 48;
+const appointmenDaysLookback = 2;
 
 const region = Config.getAWSRegion();
 const athenaEnvironment = Config.getAthenaHealthEnv();
@@ -39,6 +39,13 @@ export async function getPatientIdsOrFailFromAppointments(): Promise<void> {
   const athenaClientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
   const athenaClientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
 
+  const now = new Date();
+  const dayUTCSeconds = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const dayUTCDate = new Date(dayUTCSeconds);
+  const end = new Date(dayUTCDate);
+  const start = new Date(dayUTCDate.setHours(dayUTCDate.getHours() - appointmenDaysLookback * 24));
+  log(`Getting appointments from ${start} to ${end}`);
+
   await executeAsynchronously(
     cxMappings.flatMap(mapping => {
       const cxId = mapping.cxId;
@@ -56,6 +63,8 @@ export async function getPatientIdsOrFailFromAppointments(): Promise<void> {
           clientKey: athenaClientKey,
           clientSecret: athenaClientSecret,
           patientAppointments,
+          start,
+          end,
           errors: getAppointmentsErrors,
           log,
         };
@@ -98,6 +107,8 @@ async function getAppointmentsAndCreateOrUpdatePatient({
   clientKey,
   clientSecret,
   patientAppointments,
+  start,
+  end,
   errors,
   log,
 }: {
@@ -107,6 +118,8 @@ async function getAppointmentsAndCreateOrUpdatePatient({
   clientKey: string;
   clientSecret: string;
   patientAppointments: PatientAppointment[];
+  start: Date;
+  end: Date;
   errors: string[];
   log: typeof console.log;
 }): Promise<void> {
@@ -118,9 +131,6 @@ async function getAppointmentsAndCreateOrUpdatePatient({
       clientKey,
       clientSecret,
     });
-    const now = new Date(new Date().setMinutes(0, 0, 0));
-    const end = new Date(now);
-    const start = new Date(now.setHours(now.getHours() - appointmentHoursLookback));
     const appointments = await api.getAppointments({ cxId, departmentId, start, end });
     patientAppointments.push(
       ...appointments.appointments.map(appointment => {
