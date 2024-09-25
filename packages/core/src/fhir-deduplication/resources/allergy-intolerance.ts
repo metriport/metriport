@@ -38,15 +38,15 @@ export function deduplicateAllergyIntolerances(
 export function groupSameAllergies(allergies: AllergyIntolerance[]): {
   allergiesMap: Map<string, AllergyIntolerance>;
   refReplacementMap: Map<string, string>;
-  danglingReferences: string[];
+  danglingReferences: Set<string>;
 } {
   const allergiesMap = new Map<string, AllergyIntolerance>();
   const refReplacementMap = new Map<string, string>();
-  const danglingReferencesSet = new Set<string>();
+  const danglingReferences = new Set<string>();
 
   for (const allergy of allergies) {
     if (allergy.reaction?.some(reaction => hasBlacklistedText(reaction.substance))) {
-      danglingReferencesSet.add(createRef(allergy));
+      danglingReferences.add(createRef(allergy));
       continue;
     }
 
@@ -55,14 +55,14 @@ export function groupSameAllergies(allergies: AllergyIntolerance[]): {
       const key = JSON.stringify({ substance });
       fillMaps(allergiesMap, key, newAllergy, refReplacementMap, undefined, postProcess);
     } else {
-      danglingReferencesSet.add(createRef(allergy));
+      danglingReferences.add(createRef(allergy));
     }
   }
 
   return {
     allergiesMap,
     refReplacementMap,
-    danglingReferences: [...danglingReferencesSet],
+    danglingReferences,
   };
 }
 

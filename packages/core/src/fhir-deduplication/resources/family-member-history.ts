@@ -24,11 +24,11 @@ export function deduplicateFamilyMemberHistories(
 export function groupSameFamilyMemberHistories(famMemberHists: FamilyMemberHistory[]): {
   famMemberHistsMap: Map<string, FamilyMemberHistory>;
   refReplacementMap: Map<string, string>;
-  danglingReferences: string[];
+  danglingReferences: Set<string>;
 } {
   const famMemberHistsMap = new Map<string, FamilyMemberHistory>();
   const refReplacementMap = new Map<string, string>();
-  const danglingReferencesSet = new Set<string>();
+  const danglingReferences = new Set<string>();
 
   function ensureFhirValidFamilyMemberHistory(
     famMemberHist: FamilyMemberHistory
@@ -56,14 +56,14 @@ export function groupSameFamilyMemberHistories(famMemberHists: FamilyMemberHisto
       const key = JSON.stringify({ relationship, dob });
       fillMaps(famMemberHistsMap, key, famMemberHist, refReplacementMap, undefined);
     } else {
-      danglingReferencesSet.add(createRef(famMemberHist));
+      danglingReferences.add(createRef(famMemberHist));
     }
   }
 
   return {
     famMemberHistsMap,
     refReplacementMap,
-    danglingReferences: [...danglingReferencesSet],
+    danglingReferences,
   };
 }
 

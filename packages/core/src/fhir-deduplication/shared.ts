@@ -383,7 +383,7 @@ export function isUnknownCoding(coding: Coding, text?: string | undefined): bool
 export type DeduplicationResult<T extends Resource> = {
   combinedResources: T[];
   refReplacementMap: Map<string, string>;
-  danglingReferences: string[];
+  danglingReferences: Set<string>;
 };
 
 export function ensureValidPeriod(period: Period | undefined): Period | undefined {

@@ -25,13 +25,13 @@ export function deduplicatePractitioners(
 export function groupSamePractitioners(practitioners: Practitioner[]): {
   practitionersMap: Map<string, Practitioner>;
   refReplacementMap: Map<string, string>;
-  danglingReferences: string[];
+  danglingReferences: Set<string>;
 } {
   const l1PractitionersMap = new Map<string, string>();
   const l2PractitionersMap = new Map<string, Practitioner>();
 
   const refReplacementMap = new Map<string, string>();
-  const danglingReferencesSet = new Set<string>();
+  const danglingReferences = new Set<string>();
 
   for (const practitioner of practitioners) {
     const npi = extractNpi(practitioner.identifier);
@@ -140,13 +140,13 @@ export function groupSamePractitioners(practitioners: Practitioner[]): {
       });
     } else {
       // No name, no NPI
-      danglingReferencesSet.add(createRef(practitioner));
+      danglingReferences.add(createRef(practitioner));
     }
   }
 
   return {
     practitionersMap: l2PractitionersMap,
     refReplacementMap,
-    danglingReferences: [...danglingReferencesSet],
+    danglingReferences,
   };
 }

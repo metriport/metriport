@@ -38,13 +38,13 @@ export function groupSameConditions(conditions: Condition[]): {
   icd10Map: Map<string, Condition>;
   displayMap: Map<string, Condition>;
   refReplacementMap: Map<string, string>;
-  danglingReferences: string[];
+  danglingReferences: Set<string>;
 } {
   const snomedMap = new Map<string, Condition>();
   const icd10Map = new Map<string, Condition>();
   const displayMap = new Map<string, Condition>();
   const refReplacementMap = new Map<string, string>();
-  const danglingReferencesSet = new Set<string>();
+  const danglingReferences = new Set<string>();
 
   function removeOtherCodes(master: Condition): Condition {
     const code = master.code;
@@ -72,13 +72,13 @@ export function groupSameConditions(conditions: Condition[]): {
 
   for (const condition of conditions) {
     if (hasBlacklistedText(condition.code) || !isKnownCondition(condition.code)) {
-      danglingReferencesSet.add(createRef(condition));
+      danglingReferences.add(createRef(condition));
       continue;
     }
 
     const date = getDateFromResource(condition);
     if (!date) {
-      danglingReferencesSet.add(createRef(condition));
+      danglingReferences.add(createRef(condition));
       continue;
     }
 
@@ -95,7 +95,7 @@ export function groupSameConditions(conditions: Condition[]): {
         const compKey = JSON.stringify({ display, date });
         fillMaps(displayMap, compKey, condition, refReplacementMap, undefined);
       } else {
-        danglingReferencesSet.add(createRef(condition));
+        danglingReferences.add(createRef(condition));
       }
     }
   }
@@ -105,7 +105,7 @@ export function groupSameConditions(conditions: Condition[]): {
     icd10Map,
     displayMap,
     refReplacementMap,
-    danglingReferences: [...danglingReferencesSet],
+    danglingReferences,
   };
 }
 

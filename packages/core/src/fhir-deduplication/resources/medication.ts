@@ -34,7 +34,7 @@ export function groupSameMedications(medications: Medication[]): {
   snomedMap: Map<string, Medication>;
   displayMap: Map<string, Medication>;
   refReplacementMap: Map<string, string>;
-  danglingReferences: string[];
+  danglingReferences: Set<string>;
 } {
   const rxnormMap = new Map<string, Medication>();
   const ndcMap = new Map<string, Medication>();
@@ -97,7 +97,7 @@ export function groupSameMedications(medications: Medication[]): {
     snomedMap,
     displayMap,
     refReplacementMap,
-    danglingReferences: [...danglingReferences],
+    danglingReferences,
   };
 }
 

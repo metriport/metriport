@@ -51,13 +51,13 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
   immunizationsNdcMap: Map<string, Immunization>;
   displayMap: Map<string, Immunization>;
   refReplacementMap: Map<string, string>;
-  danglingReferences: string[];
+  danglingReferences: Set<string>;
 } {
   const immunizationsCvxMap = new Map<string, Immunization>();
   const immunizationsNdcMap = new Map<string, Immunization>();
   const displayMap = new Map<string, Immunization>();
   const refReplacementMap = new Map<string, string>();
-  const danglingReferencesSet = new Set<string>();
+  const danglingReferences = new Set<string>();
 
   function assignMostDescriptiveStatus(
     master: Immunization,
@@ -70,7 +70,7 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
 
   for (const immunization of immunizations) {
     if (hasBlacklistedText(immunization.vaccineCode)) {
-      danglingReferencesSet.add(createRef(immunization));
+      danglingReferences.add(createRef(immunization));
       continue;
     }
 
@@ -112,7 +112,7 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
             assignMostDescriptiveStatus
           );
         } else {
-          danglingReferencesSet.add(createRef(immunization));
+          danglingReferences.add(createRef(immunization));
         }
       }
     }
@@ -123,7 +123,7 @@ export function groupSameImmunizations(immunizations: Immunization[]): {
     immunizationsNdcMap,
     displayMap,
     refReplacementMap,
-    danglingReferences: [...danglingReferencesSet],
+    danglingReferences,
   };
 }
 

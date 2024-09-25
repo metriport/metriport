@@ -31,14 +31,14 @@ export function deduplicateOrganizations(
 export function groupSameOrganizations(organizations: Organization[]): {
   organizationsMap: Map<string, Organization>;
   refReplacementMap: Map<string, string>;
-  danglingReferences: string[];
+  danglingReferences: Set<string>;
 } {
   // l1 points to l2
   const l1OrganizationsMap = new Map<string, string>();
   const l2OrganizationsMap = new Map<string, Organization>();
 
   const refReplacementMap = new Map<string, string>();
-  const danglingReferencesSet = new Set<string>();
+  const danglingReferences = new Set<string>();
 
   for (const organization of organizations) {
     const npi = extractNpi(organization.identifier);
@@ -116,13 +116,13 @@ export function groupSameOrganizations(organizations: Organization[]): {
       });
     } else {
       // no name, no npi
-      danglingReferencesSet.add(createRef(organization));
+      danglingReferences.add(createRef(organization));
     }
   }
 
   return {
     organizationsMap: l2OrganizationsMap,
     refReplacementMap,
-    danglingReferences: [...danglingReferencesSet],
+    danglingReferences,
   };
 }
