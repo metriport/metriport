@@ -9,7 +9,7 @@ import { EhrSources } from "../../shared";
 import { getCxMappings } from "../../../../command/mapping/cx";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { Config } from "../../../../shared/config";
-import { getPatientIdOrFail } from "./get-patient";
+import { getPatientIdOrFail as singleGetPatientIdOrFail } from "./get-patient";
 
 dayjs.extend(duration);
 
@@ -80,10 +80,12 @@ export async function getPatientIdsOrFailFromAppointments(): Promise<void> {
         patientCreateCount: getAppointmentsErrors.length,
         errorCount: getAppointmentsErrors.length,
         errors: getAppointmentsErrors.join(","),
-        context: "athenahealth.get-appointments",
+        context: "athenahealth.get-patients-from-appointments",
       },
     });
   }
+
+  const getPatientOrFailErrors: string[] = [];
 
   await executeAsynchronously(
     patientAppointments.map(appointment => {
@@ -93,11 +95,24 @@ export async function getPatientIdsOrFailFromAppointments(): Promise<void> {
         athenaPatientId: appointment.athenaPatientId,
         useSearch: true,
         triggerDq: true,
+        errors: getPatientOrFailErrors,
+        log,
       };
     }),
-    getPatientIdOrFailVoid,
+    getPatientIdOrFail,
     { numberOfParallelExecutions: 10, delay: delay.asMilliseconds() }
   );
+
+  if (getPatientOrFailErrors.length > 0) {
+    capture.error("Failed to find or create patients", {
+      extra: {
+        patientCreateCount: getPatientOrFailErrors.length,
+        errorCount: getPatientOrFailErrors.length,
+        errors: getPatientOrFailErrors.join(","),
+        context: "athenahealth.get-patients-from-appointments",
+      },
+    });
+  }
 }
 
 async function getAppointmentsAndCreateOrUpdatePatient({
@@ -138,21 +153,21 @@ async function getAppointmentsAndCreateOrUpdatePatient({
       })
     );
   } catch (error) {
-    const msg = `Failed to get appointments and find or create patients. Cause: ${errorToString(
-      error
-    )}`;
+    const msg = `Failed to get appointments. Cause: ${errorToString(error)}`;
     log(msg);
     errors.push(msg);
   }
 }
 
-async function getPatientIdOrFailVoid({
+async function getPatientIdOrFail({
   cxId,
   athenaPracticeId,
   athenaPatientId,
   accessToken,
   useSearch = false,
   triggerDq = false,
+  errors,
+  log,
 }: {
   cxId: string;
   athenaPracticeId: string;
@@ -160,13 +175,21 @@ async function getPatientIdOrFailVoid({
   accessToken?: string;
   useSearch?: boolean;
   triggerDq?: boolean;
+  errors: string[];
+  log: typeof console.log;
 }): Promise<void> {
-  await getPatientIdOrFail({
-    cxId,
-    athenaPracticeId,
-    athenaPatientId,
-    accessToken,
-    useSearch,
-    triggerDq,
-  });
+  try {
+    await singleGetPatientIdOrFail({
+      cxId,
+      athenaPracticeId,
+      athenaPatientId,
+      accessToken,
+      useSearch,
+      triggerDq,
+    });
+  } catch (error) {
+    const msg = `Failed to find or create patients. Cause: ${errorToString(error)}`;
+    log(msg);
+    errors.push(msg);
+  }
 }
