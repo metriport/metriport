@@ -336,6 +336,7 @@ describe("deduplicateFhir", () => {
 
     bundle.entry = entries;
     bundle = deduplicateFhir(bundle);
+    console.log(JSON.stringify(bundle, null, 2));
     expect(bundle.entry?.length).toBe(3);
     const resComposition = findCompositionResource(bundle);
     expect(resComposition).not.toEqual(undefined);

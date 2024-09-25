@@ -168,6 +168,40 @@ export type ExtractedFhirTypes = {
   documentReferences: DocumentReference[];
 };
 
+export function initExtractedFhirTypes(): ExtractedFhirTypes {
+  return {
+    diagnosticReports: [],
+    patient: undefined,
+    practitioners: [],
+    compositions: [],
+    medications: [],
+    medicationAdministrations: [],
+    medicationRequests: [],
+    medicationDispenses: [],
+    medicationStatements: [],
+    conditions: [],
+    allergies: [],
+    locations: [],
+    procedures: [],
+    observationSocialHistory: [],
+    observationVitals: [],
+    observationLaboratory: [],
+    observationOther: [],
+    encounters: [],
+    immunizations: [],
+    familyMemberHistories: [],
+    relatedPersons: [],
+    coverages: [],
+    organizations: [],
+    communications: [],
+    consents: [],
+    devices: [],
+    goals: [],
+    serviceRequests: [],
+    documentReferences: [],
+  };
+}
+
 export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
   let patient: Patient | undefined;
   const practitioners: Practitioner[] = [];

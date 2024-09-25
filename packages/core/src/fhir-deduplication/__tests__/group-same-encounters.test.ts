@@ -37,8 +37,8 @@ describe("groupSameEncounters", () => {
     // Making sure ref to encounter2.id is present in the array of refs being replaced
     expect(refReplacementMap.entries().next().value).toEqual(
       expect.arrayContaining([
-        expect.stringContaining(encounterId),
-        expect.arrayContaining([expect.stringContaining(`Encounter/${encounterId2}`)]),
+        expect.stringContaining(`Encounter/${encounterId}`),
+        expect.stringContaining(`Encounter/${encounterId2}`),
       ])
     );
   });

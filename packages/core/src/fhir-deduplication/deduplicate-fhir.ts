@@ -4,6 +4,7 @@ import {
   buildBundleEntry,
   ExtractedFhirTypes,
   extractFhirTypesFromBundle,
+  initExtractedFhirTypes,
 } from "../external/fhir/shared/bundle";
 import { deduplicateAllergyIntolerances } from "./resources/allergy-intolerance";
 import { deduplicateConditions } from "./resources/condition";
@@ -24,6 +25,7 @@ import { deduplicateOrganizations } from "./resources/organization";
 import { deduplicatePractitioners } from "./resources/practitioner";
 import { deduplicateProcedures } from "./resources/procedure";
 import { deduplicateRelatedPersons } from "./resources/related-person";
+import { createRef } from "./shared";
 
 export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> {
   let resourceArrays = extractFhirTypesFromBundle(fhirBundle);
@@ -168,21 +170,25 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   resourceArrays = replaceResourceReferences(resourceArrays, combinedReplacementMap);
 
   // Remove resources with dangling links
-  resourceArrays = removeResourcesWithDanglingLinks(resourceArrays, danglingLinks);
+  const { updatedResourceArrays, deletedRefs } = removeResourcesWithDanglingLinks(
+    resourceArrays,
+    danglingLinks
+  );
+  resourceArrays = updatedResourceArrays;
+
+  const { updatedResourceArrays: updatedResourceArrays2 } = removeResourcesWithDanglingLinks(
+    resourceArrays,
+    deletedRefs
+  );
+  resourceArrays = updatedResourceArrays2;
 
   const deduplicatedEntries: BundleEntry<Resource>[] = [];
   // Rebuild the entries with deduplicated resources and add whatever is left unprocessed
-  for (const [key, resources] of Object.entries(resourceArrays)) {
-    // we will add compositions later
-    if (key === "compositions") {
-      continue;
-    } else {
-      // Extract all other resources
-      const entriesArray = resources && Array.isArray(resources) ? resources : [resources];
-      const entriesFlat = entriesArray.flatMap(v => v || []);
-      const entriesWithDeduplicatedReferences = entriesFlat.map(removeDuplicateReferences);
-      deduplicatedEntries.push(...entriesWithDeduplicatedReferences);
-    }
+  for (const [, resources] of Object.entries(resourceArrays)) {
+    const entriesArray = resources && Array.isArray(resources) ? resources : [resources];
+    const entriesFlat = entriesArray.flatMap(v => v || []);
+    const entriesWithDeduplicatedReferences = entriesFlat.map(removeDuplicateReferences);
+    deduplicatedEntries.push(...entriesWithDeduplicatedReferences);
   }
 
   // Rebuild the final bundle
@@ -196,20 +202,28 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
 export function removeResourcesWithDanglingLinks(
   resourceArrays: ExtractedFhirTypes,
   danglingLinks: Set<string>
-): ExtractedFhirTypes {
-  return Object.fromEntries(
-    Object.entries(resourceArrays).map(([key, resources]) => {
-      if (Array.isArray(resources)) {
-        return [key, resources.map(resource => removeDanglingReferences(resource, danglingLinks))];
-      } else if (resources) {
-        // Handle single resource case
-        return [key, removeDanglingReferences(resources, danglingLinks)];
-      } else {
-        // Handle null or undefined case
-        return [key, resources];
+): { updatedResourceArrays: ExtractedFhirTypes; deletedRefs: Set<string> } {
+  const deletedRefs = new Set<string>();
+  const updatedResourceArrays = initExtractedFhirTypes();
+
+  for (const [key, resources] of Object.entries(resourceArrays)) {
+    if (Array.isArray(resources)) {
+      const updatedResources: Resource[] = [];
+      for (const resource of resources) {
+        const result = removeDanglingReferences(resource, danglingLinks);
+        if (!result) {
+          const ref = createRef(resource);
+          if (ref) deletedRefs.add(ref);
+        } else {
+          updatedResources.push(result);
+        }
       }
-    })
-  );
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      updatedResourceArrays[key as keyof ExtractedFhirTypes] = updatedResources as any;
+    }
+  }
+
+  return { updatedResourceArrays, deletedRefs };
 }
 
 function removeDanglingReferences<T extends Resource>(
