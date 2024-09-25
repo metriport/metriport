@@ -6,6 +6,7 @@ import {
   toTitleCase,
   NotFoundError,
 } from "@metriport/shared";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { out } from "@metriport/core/util/log";
@@ -148,7 +149,7 @@ export async function getPatientIdOrFail({
       queryDocumentsAcrossHIEs({
         cxId,
         patientId: metriportPatient.id,
-      });
+      }).catch(processAsyncError("AthenaHealth queryDocumentsAcrossHIEs"));
     }
   }
   await findOrCreatePatientMapping({

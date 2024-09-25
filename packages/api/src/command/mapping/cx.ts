@@ -10,7 +10,7 @@ export type CxMappingParams = {
   source: CxSources;
 };
 
-export type CxMappingLookUpParam = Omit<CxMappingParams, "cxId" | "secondaryMappings">;
+export type CxMappingLookUpParams = Omit<CxMappingParams, "cxId" | "secondaryMappings">;
 
 export async function findOrCreateCxMapping({
   cxId,
@@ -33,7 +33,7 @@ export async function findOrCreateCxMapping({
 export async function getCxMapping({
   externalId,
   source,
-}: CxMappingLookUpParam): Promise<CxMapping | undefined> {
+}: CxMappingLookUpParams): Promise<CxMapping | undefined> {
   const existing = await CxMappingModel.findOne({
     where: { externalId, source },
   });
@@ -51,7 +51,7 @@ export async function getCxMappings({ source }: { source: CxSources }): Promise<
 export async function getCxMappingOrFail({
   externalId,
   source,
-}: CxMappingLookUpParam): Promise<CxMapping> {
+}: CxMappingLookUpParams): Promise<CxMapping> {
   const mapping = await getCxMapping({
     externalId,
     source,
@@ -70,7 +70,10 @@ export async function getCxMappingsForCustomer(where: {
   return rows.map(r => r.dataValues);
 }
 
-export async function deleteCxMapping({ externalId, source }: CxMappingLookUpParam): Promise<void> {
+export async function deleteCxMapping({
+  externalId,
+  source,
+}: CxMappingLookUpParams): Promise<void> {
   const existing = await CxMappingModel.findOne({
     where: { externalId, source },
   });

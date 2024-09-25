@@ -10,7 +10,7 @@ export type JwtTokenParams = {
   data: object;
 };
 
-export type JwtTokenLookUpParam = Omit<JwtTokenParams, "exp" | "data">;
+export type JwtTokenLookUpParams = Omit<JwtTokenParams, "exp" | "data">;
 
 export async function findOrCreateJwtToken({
   token,
@@ -30,7 +30,7 @@ export async function findOrCreateJwtToken({
 export async function getJwtToken({
   token,
   source,
-}: JwtTokenLookUpParam): Promise<JwtToken | undefined> {
+}: JwtTokenLookUpParams): Promise<JwtToken | undefined> {
   const existing = await JwtTokenModel.findOne({
     where: { token, source },
   });
@@ -41,7 +41,10 @@ export async function getJwtToken({
 /**
  * DOES NOT CHECK EXPIRATION
  */
-export async function getJwtTokenOrFail({ token, source }: JwtTokenLookUpParam): Promise<JwtToken> {
+export async function getJwtTokenOrFail({
+  token,
+  source,
+}: JwtTokenLookUpParams): Promise<JwtToken> {
   const jwtToken = await getJwtToken({
     token,
     source,
@@ -50,7 +53,7 @@ export async function getJwtTokenOrFail({ token, source }: JwtTokenLookUpParam):
   return jwtToken;
 }
 
-export async function deleteJwtToken({ token, source }: JwtTokenLookUpParam): Promise<void> {
+export async function deleteJwtToken({ token, source }: JwtTokenLookUpParams): Promise<void> {
   const existing = await JwtTokenModel.findOne({
     where: { token, source },
   });

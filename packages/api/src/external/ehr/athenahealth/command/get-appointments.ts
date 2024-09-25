@@ -22,8 +22,8 @@ const athenaClientSecretSecretArn = Config.getAthenaHealthClientSecretArn();
 
 type PatientAppointment = {
   cxId: string;
-  athenaPatientId: string;
   athenaPracticeId: string;
+  athenaPatientId: string;
 };
 
 export async function getAthenaAppointments(): Promise<void> {
@@ -34,7 +34,7 @@ export async function getAthenaAppointments(): Promise<void> {
   const cxMappings = await getCxMappings({ source: EhrSources.ATHENA });
 
   const patientAppointments: PatientAppointment[] = [];
-  const getAppointmentsWrapperErrors: string[] = [];
+  const getAppointmentsErrors: string[] = [];
   const athenaClientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
   const athenaClientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
 
@@ -44,7 +44,7 @@ export async function getAthenaAppointments(): Promise<void> {
       const practiceId = mapping.externalId;
       const departmentIds = mapping.secondaryMappings.departmentIds;
       if (!departmentIds || !Array.isArray(departmentIds) || departmentIds.length === 0) {
-        log(`Skipping for cxId ${cxId} -- departmentIds malformed or missing`);
+        log(`Skipping for cxId ${cxId} -- departmentIds missing, malformed or empty`);
         return [];
       }
       return departmentIds.map(departmentId => {
@@ -55,7 +55,7 @@ export async function getAthenaAppointments(): Promise<void> {
           clientKey: athenaClientKey,
           clientSecret: athenaClientSecret,
           patientAppointments,
-          errors: getAppointmentsWrapperErrors,
+          errors: getAppointmentsErrors,
           log,
         };
       });
@@ -64,12 +64,12 @@ export async function getAthenaAppointments(): Promise<void> {
     { numberOfParallelExecutions: 10, delay: delay.asMilliseconds() }
   );
 
-  if (getAppointmentsWrapperErrors.length > 0) {
+  if (getAppointmentsErrors.length > 0) {
     capture.error("Failed to get appointments", {
       extra: {
-        patientCreateCount: getAppointmentsWrapperErrors.length,
-        errorCount: getAppointmentsWrapperErrors.length,
-        errors: getAppointmentsWrapperErrors.join(","),
+        patientCreateCount: getAppointmentsErrors.length,
+        errorCount: getAppointmentsErrors.length,
+        errors: getAppointmentsErrors.join(","),
         context: "athenahealth.get-appointments",
       },
     });
