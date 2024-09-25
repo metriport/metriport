@@ -112,7 +112,7 @@ async function getAppointmentsAndCreateOrUpdatePatient({
 }): Promise<void> {
   try {
     const api = await AthenaHealthApi.create({
-      threeLeggedAuthToken: "",
+      threeLeggedAuthToken: undefined,
       practiceId,
       environment: athenaEnvironment as AthenaEnv,
       clientKey,
