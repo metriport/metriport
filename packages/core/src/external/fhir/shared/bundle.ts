@@ -169,37 +169,8 @@ export type ExtractedFhirTypes = {
 };
 
 export function initExtractedFhirTypes(): ExtractedFhirTypes {
-  return {
-    diagnosticReports: [],
-    patient: undefined,
-    practitioners: [],
-    compositions: [],
-    medications: [],
-    medicationAdministrations: [],
-    medicationRequests: [],
-    medicationDispenses: [],
-    medicationStatements: [],
-    conditions: [],
-    allergies: [],
-    locations: [],
-    procedures: [],
-    observationSocialHistory: [],
-    observationVitals: [],
-    observationLaboratory: [],
-    observationOther: [],
-    encounters: [],
-    immunizations: [],
-    familyMemberHistories: [],
-    relatedPersons: [],
-    coverages: [],
-    organizations: [],
-    communications: [],
-    consents: [],
-    devices: [],
-    goals: [],
-    serviceRequests: [],
-    documentReferences: [],
-  };
+  const emptyBundle: Bundle = { resourceType: "Bundle", type: "collection" };
+  return extractFhirTypesFromBundle(emptyBundle);
 }
 
 export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
