@@ -15,7 +15,7 @@ import { validateReferences } from "./report/validate-references";
  *
  * WARNING: this will overwrite the *_deduped.json files!!!
  */
-const samplesFolderPath = `/Users/jonahkaye/Desktop/MetriportUnicorn/metriport/tmp`;
+const samplesFolderPath = ``;
 
 const suffix = "_deduped";
 
