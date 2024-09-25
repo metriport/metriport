@@ -1,5 +1,5 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { ResourceTypeForConsolidation } from "@metriport/shared/medical";
+import { ResourceTypeForConsolidation, SearchSetBundle } from "@metriport/shared/medical";
 import {
   buildBundleEntry,
   getReferencesFromResources,
@@ -28,21 +28,16 @@ export async function getConsolidatedFromS3({
   resources?: ResourceTypeForConsolidation[] | undefined;
   dateFrom?: string | undefined;
   dateTo?: string | undefined;
-}): Promise<Bundle | undefined> {
+}): Promise<SearchSetBundle> {
   const { log } = out(`getConsolidatedFromS3 - cx ${cxId}, pat ${patientId}`);
   log(`Running with params: ${JSON.stringify(params)}`);
 
   const consolidated = await getOrCreateConsolidatedOnS3({ cxId, patientId });
-  if (!consolidated || !consolidated.entry) {
-    log(`No consolidated bundle found/created!`);
-    return undefined;
-  }
-  consolidated.type = "searchset";
+  log(`Consolidated with ${consolidated.entry?.length} entries`);
 
-  log(`Consolidated found with ${consolidated.entry.length} entries`);
   const filtered = await filterConsolidated(consolidated, params);
-  log(`Filtered to ${filtered?.entry?.length} entries`);
-  return filtered;
+
+  return { ...filtered, type: "searchset", entry: filtered.entry ?? [] };
 }
 
 async function getOrCreateConsolidatedOnS3({
@@ -51,13 +46,17 @@ async function getOrCreateConsolidatedOnS3({
 }: {
   cxId: string;
   patientId: string;
-}): Promise<Bundle<Resource> | undefined> {
+}): Promise<Bundle> {
+  const { log } = out(`getOrCreateConsolidatedOnS3 - cx ${cxId}, pat ${patientId}`);
   const preGenerated = await getConsolidated({
     cxId,
     patientId,
   });
-  if (preGenerated.bundle) return preGenerated.bundle;
-
+  if (preGenerated.bundle) {
+    log(`Found pre-generated consolidated, returning...`);
+    return preGenerated.bundle;
+  }
+  log(`Did not found pre-generated consolidated, creating a new one...`);
   const newConsolidated = await createConsolidatedFromConversions({ cxId, patientId });
   return newConsolidated;
 }

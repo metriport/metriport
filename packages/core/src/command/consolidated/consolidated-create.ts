@@ -1,8 +1,10 @@
-import { Bundle } from "@medplum/fhirtypes";
+import { Bundle, BundleEntry } from "@medplum/fhirtypes";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { createFolderName } from "../../domain/filename";
 import { executeWithRetriesS3, S3Utils } from "../../external/aws/s3";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
+import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
+import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle";
 import { executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
@@ -15,19 +17,12 @@ const defaultS3RetriesConfig = {
   maxAttempts: 3,
   initialDelay: 500,
 };
-const emptyBundle: Bundle = {
-  resourceType: "Bundle",
-  type: "collection",
-  total: 0,
-  entry: [],
-};
 
 export type ConsolidatePatientDataCommand = {
   cxId: string;
   patientId: string;
-  destinationBucketName?: string;
-  sourceBucketName?: string;
-  logMemUsage?: () => void;
+  destinationBucketName?: string | undefined;
+  sourceBucketName?: string | undefined;
 };
 
 type BundleLocation = { bucket: string; key: string };
@@ -40,20 +35,72 @@ export async function createConsolidatedFromConversions({
   patientId,
   destinationBucketName = getConsolidatedLocation(),
   sourceBucketName = getConsolidatedSourceLocation(),
-  logMemUsage,
-}: ConsolidatePatientDataCommand): Promise<Bundle | undefined> {
+}: ConsolidatePatientDataCommand): Promise<Bundle> {
   const { log } = out(`createConsolidatedFromConversions - cx ${cxId}, pat ${patientId}`);
 
-  const inputBundles = await listConversionBundles({ cxId, patientId, sourceBucketName, log });
-  if (!inputBundles || inputBundles.length < 1) {
+  const [conversions, docRefs] = await Promise.all([
+    getConversions({ cxId, patientId, sourceBucketName }),
+    getDocumentReferences({ cxId, patientId }),
+  ]);
+  log(`Got ${conversions} resources from conversions`);
+
+  const withDups = buildConsolidatedBundle();
+  withDups.entry = [...conversions, ...docRefs.map(buildBundleEntry)];
+  withDups.total = withDups.entry.length;
+  log(`Added ${docRefs.length} docRefs, to a total of ${withDups.entry.length} entries`);
+
+  log(`Deduplicating consolidated bundle...`);
+  const deduped = deduplicate({ cxId, patientId, bundle: withDups });
+  log(`...done, from ${withDups.entry?.length} to ${deduped.entry?.length} resources`);
+
+  const dedupDestFileName = createConsolidatedDataFilePath(cxId, patientId, true);
+  const withDupsDestFileName = createConsolidatedDataFilePath(cxId, patientId, false);
+  log(`Storing consolidated bundle on ${destinationBucketName}, key ${dedupDestFileName}`);
+  log(`Storing consolidated bundle w/ dups on ${destinationBucketName}, key ${dedupDestFileName}`);
+  await Promise.all([
+    s3Utils.uploadFile({
+      bucket: destinationBucketName,
+      key: dedupDestFileName,
+      file: Buffer.from(JSON.stringify(deduped)),
+      contentType: "application/json",
+    }),
+    s3Utils.uploadFile({
+      bucket: destinationBucketName,
+      key: withDupsDestFileName,
+      file: Buffer.from(JSON.stringify(withDups)),
+      contentType: "application/json",
+    }),
+  ]);
+
+  log(`Done`);
+  return deduped;
+}
+
+function buildConsolidatedBundle(): Bundle {
+  return buildBundle({ type: "collection" });
+}
+
+async function getConversions({
+  cxId,
+  patientId,
+  sourceBucketName,
+}: ConsolidatePatientDataCommand): Promise<BundleEntry[]> {
+  const { log } = out(`mergeConversionBundles - cx ${cxId}, pat ${patientId}`);
+
+  const conversionBundles = await listConversionBundlesFromS3({
+    cxId,
+    patientId,
+    sourceBucketName,
+    log,
+  });
+  if (!conversionBundles || conversionBundles.length < 1) {
     log(`No conversion bundles found.`);
-    return undefined;
+    return [];
   }
 
-  const consolidated = emptyBundle;
-
+  const mergedBundle = buildConsolidatedBundle();
   await executeAsynchronously(
-    inputBundles,
+    conversionBundles,
     async inputBundle => {
       const { bucket, key } = inputBundle;
       log(`Getting conversion bundle from bucket ${bucket}, key ${key}`);
@@ -62,31 +109,17 @@ export async function createConsolidatedFromConversions({
         { ...defaultS3RetriesConfig, log }
       );
       log(`Merging bundle ${key} into the consolidated one`);
-      const bundle = JSON.parse(contents) as Bundle;
-      merge(bundle).into(consolidated);
-      logMemUsage && logMemUsage();
+      const singleConversion = JSON.parse(contents) as Bundle;
+
+      merge(singleConversion).into(mergedBundle);
     },
     { numberOfParallelExecutions }
   );
 
-  log(`Deduplicating consolidated bundle...`);
-  const deduped = deduplicate({ cxId, patientId, bundle: consolidated });
-  log(`...done, from ${consolidated.entry?.length} to ${deduped.entry?.length} resources`);
-
-  const destinationFileName = createConsolidatedDataFilePath(cxId, patientId);
-  log(`Storing consolidated bundle on ${destinationBucketName}, key ${destinationFileName}`);
-  await s3Utils.uploadFile({
-    bucket: destinationBucketName,
-    key: destinationFileName,
-    file: Buffer.from(JSON.stringify(deduped)),
-    contentType: "application/json",
-  });
-
-  log(`Done`);
-  return deduped;
+  return mergedBundle.entry ?? [];
 }
 
-async function listConversionBundles({
+async function listConversionBundlesFromS3({
   cxId,
   patientId,
   sourceBucketName,

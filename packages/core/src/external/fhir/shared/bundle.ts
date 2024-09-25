@@ -105,8 +105,22 @@ function getReferencesFromRaw(
   );
 }
 
-export function buildBundle(entries: BundleEntry[]): SearchSetBundle<Resource> {
-  return { resourceType: "Bundle", total: entries.length, type: "searchset", entry: entries };
+export function buildBundle({
+  type = "searchset",
+  entries = [],
+}: {
+  type?: Bundle["type"];
+  entries?: BundleEntry[];
+} = {}): Bundle {
+  return { resourceType: "Bundle", total: entries.length, type, entry: entries };
+}
+
+export function buildSearchSetBundle<T extends Resource = Resource>({
+  entries = [],
+}: {
+  entries?: BundleEntry<T>[];
+} = {}): SearchSetBundle<T> {
+  return buildBundle({ type: "searchset", entries }) as SearchSetBundle<T>;
 }
 
 export const buildBundleEntry = <T extends Resource>(resource: T): BundleEntry<T> => {
@@ -153,6 +167,11 @@ export type ExtractedFhirTypes = {
   serviceRequests: ServiceRequest[];
   documentReferences: DocumentReference[];
 };
+
+export function initExtractedFhirTypes(): ExtractedFhirTypes {
+  const emptyBundle: Bundle = { resourceType: "Bundle", type: "collection" };
+  return extractFhirTypesFromBundle(emptyBundle);
+}
 
 export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
   let patient: Patient | undefined;

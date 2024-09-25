@@ -1,8 +1,9 @@
-import { Bundle, Resource } from "@medplum/fhirtypes";
 import { executeWithNetworkRetries, InternalSendConsolidated } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
+import { SearchSetBundle } from "@metriport/shared/medical";
 import axios from "axios";
 import { isConsolidatedFromS3Enabled } from "../../external/aws/app-config";
+import { checkBundleForPatient } from "../../external/fhir/bundle/qa";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
@@ -32,8 +33,11 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
     const fhirPatient = patientToFhir(params.patient);
     const patientEntry = buildBundleEntry(fhirPatient);
     originalBundle.entry = [patientEntry, ...(originalBundle.entry ?? [])];
+    originalBundle.total = originalBundle.entry.length;
 
     const dedupedBundle = deduplicate({ cxId, patientId, bundle: originalBundle });
+
+    checkBundleForPatient(dedupedBundle, cxId, patientId);
 
     const [, dedupedS3Info] = await Promise.all([
       uploadConsolidatedSnapshotToS3({
@@ -72,13 +76,13 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
 
 async function getBundle(
   params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
-): Promise<Bundle<Resource>> {
+): Promise<SearchSetBundle> {
   const { cxId, id: patientId } = params.patient;
-  const isGetFromS3 = await isConsolidatedFromS3Enabled(cxId);
+  const isGetFromS3 = await isConsolidatedFromS3Enabled();
   const { log } = out(`getBundle - fromS3: ${isGetFromS3}`);
   if (isGetFromS3) {
     const startedAt = new Date();
-    const consolidatedBundle = await getConsolidatedFromS3({ cxId, patientId, ...params });
+    const consolidatedBundle = await getConsolidatedFromS3({ ...params, cxId, patientId });
     if (consolidatedBundle) {
       log(`(from S3) Took ${elapsedTimeFromNow(startedAt)}ms`);
       return consolidatedBundle;
