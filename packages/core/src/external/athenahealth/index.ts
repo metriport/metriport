@@ -146,8 +146,8 @@ class AthenaHealthApi {
     patientId: string;
   }): Promise<PatientResource | undefined> {
     const { log, debug } = out(`AthenaHealth get - AH patientId ${patientId}`);
+    const patientUrl = `/Patient/${this.createPatientId(patientId)}`;
     try {
-      const patientUrl = `/Patient/${this.createPatientId(patientId)}`;
       const response = await this.handleAxiosRequest(() =>
         this.axiosInstanceFhirApi.get(patientUrl)
       );
@@ -175,7 +175,7 @@ class AthenaHealthApi {
       log(`${msg}. Patient ID: ${patientId}. Cause: ${errorToString(error)}`);
       capture.error(msg, {
         extra: {
-          baseUrl: this.axiosInstanceFhirApi.getUri(),
+          url: patientUrl,
           patientId,
           context: "athenahealth.get-patient",
           error,
@@ -193,17 +193,17 @@ class AthenaHealthApi {
     patientId: string;
   }): Promise<PatientResource | undefined> {
     const { log, debug } = out(`AthenaHealth search - AH patientId ${patientId}`);
+    const patientSearchUrl = "/Patient/_search";
     try {
       const data = {
         _id: this.createPatientId(patientId),
         "ah-practice": this.createPracticetId(this.practiceId),
       };
-      const patienSearchtUrl = "/Patient/_search";
       const response = await this.handleAxiosRequest(() =>
-        this.axiosInstanceFhirApi.post(patienSearchtUrl, this.createDataParams(data))
+        this.axiosInstanceFhirApi.post(patientSearchUrl, this.createDataParams(data))
       );
-      if (!response.data) throw new Error(`No body returned from ${patienSearchtUrl}`);
-      debug(`${patienSearchtUrl} resp: ${JSON.stringify(response.data)}`);
+      if (!response.data) throw new Error(`No body returned from ${patientSearchUrl}`);
+      debug(`${patientSearchUrl} resp: ${JSON.stringify(response.data)}`);
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
           cxId,
@@ -226,7 +226,7 @@ class AthenaHealthApi {
       log(`${msg}. Patient ID: ${patientId}. Cause: ${errorToString(error)}`);
       capture.error(msg, {
         extra: {
-          baseUrl: this.axiosInstanceFhirApi.getUri(),
+          url: patientSearchUrl,
           patientId,
           context: "athenahealth.search-patient",
           error,
@@ -282,8 +282,8 @@ class AthenaHealthApi {
       THIRDPARTYUSERNAME: undefined,
       PATIENTFACINGCALL: undefined,
     };
+    const chartMedicationUrl = `/chart/${this.stripPatientId(patientId)}/medications`;
     try {
-      const chartMedicationUrl = `/chart/${this.stripPatientId(patientId)}/medications`;
       const response = await this.handleAxiosRequest(() =>
         this.axiosInstanceProprietary.post(chartMedicationUrl, this.createDataParams(data))
       );
@@ -309,7 +309,7 @@ class AthenaHealthApi {
       log(`${msg}. Patient ID: ${patientId}. Cause: ${errorToString(error)}`);
       capture.error(msg, {
         extra: {
-          baseUrl: this.axiosInstanceProprietary.getUri(),
+          url: chartMedicationUrl,
           patientId,
           context: "athenahealth.create-medication",
           error,
@@ -335,8 +335,8 @@ class AthenaHealthApi {
     await Promise.all(
       searchValues.map(async searchValue => {
         if (searchValue.length < 2) return;
+        const referenceUrl = `/reference/medications?searchvalue=${searchValue}`;
         try {
-          const referenceUrl = `/reference/medications?searchvalue=${searchValue}`;
           const response = await this.handleAxiosRequest(() =>
             this.axiosInstanceProprietary.get(referenceUrl)
           );
@@ -349,7 +349,7 @@ class AthenaHealthApi {
           log(`${msg}. Patient ID: ${patientId}. Cause: ${errorToString(error)}`);
           capture.error(msg, {
             extra: {
-              baseUrl: this.axiosInstanceProprietary.getUri(),
+              url: referenceUrl,
               patientId,
               context: "athenahealth.search-for-medication",
               error,

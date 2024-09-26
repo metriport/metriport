@@ -9,7 +9,7 @@ const router = Router();
 /**
  * POST /internal/ehr/athenahealth/patient/from-appointments
  *
- * Fetches appointments in a predfined window and creates all patients not already existing
+ * Fetches appointments in a predefined window and creates all patients not already existing
  */
 router.post(
   "/from-appointments",

@@ -19,7 +19,7 @@ import {
   getPatientByDemo as singleGetMetriportPatientByDemo,
 } from "../../../../command/medical/patient/get-patient";
 import {
-  createPatient as createtMetriportPatient,
+  createPatient as createMetriportPatient,
   PatientCreateCmd,
 } from "../../../../command/medical/patient/create-patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
@@ -132,7 +132,7 @@ export async function getPatientIdOrFail({
       externalId: defaultFacilityMappingExternalId,
       source: EhrSources.ATHENA,
     });
-    metriportPatient = await createtMetriportPatient({
+    metriportPatient = await createMetriportPatient({
       patient: {
         cxId,
         facilityId: defaultFacility.facilityId,
