@@ -3,14 +3,14 @@ import { EhrSources } from "../external/ehr/shared";
 
 export type FacilitySources = FacilityMappingPerSource["source"];
 
-export const facilitysMappingsSourceList: string[] = [EhrSources.ATHENA];
+export const facilitysMappingsSourceList: string[] = [EhrSources.athena];
 
 export type FacilityMappingPerSource = {
   externalId: string;
   cxId: string;
   facilityId: string;
 } & {
-  source: EhrSources.ATHENA;
+  source: EhrSources.athena;
 };
 
 export interface FacilityMapping extends BaseDomain, FacilityMappingPerSource {}

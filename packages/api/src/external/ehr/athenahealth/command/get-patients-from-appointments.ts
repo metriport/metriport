@@ -33,7 +33,7 @@ export async function getPatientIdsOrFailFromAppointments(): Promise<void> {
   if (!athenaEnvironment || !athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
     throw new Error("AthenaHealth not setup");
   }
-  const cxMappings = await getCxMappings({ source: EhrSources.ATHENA });
+  const cxMappings = await getCxMappings({ source: EhrSources.athena });
 
   const patientAppointments: PatientAppointment[] = [];
   const getAppointmentsErrors: string[] = [];

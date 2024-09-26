@@ -7,14 +7,14 @@ export type CxSources = CxMappingPerSource["source"];
 export type CxSecondaryMappings = CxMappingPerSource["secondaryMappings"];
 
 export const cxMappingsSourceMap: Map<CxSources, { bodyParser: z.Schema }> = new Map([
-  [EhrSources.ATHENA, { bodyParser: athenaSecondaryMappingsSchema }],
+  [EhrSources.athena, { bodyParser: athenaSecondaryMappingsSchema }],
 ]);
 
 export type CxMappingPerSource = {
   externalId: string;
   cxId: string;
 } & {
-  source: EhrSources.ATHENA;
+  source: EhrSources.athena;
   secondaryMappings: AthenaSecondaryMappings | null;
 };
 

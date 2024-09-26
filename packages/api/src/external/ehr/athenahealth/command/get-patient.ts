@@ -53,7 +53,7 @@ export async function getPatientIdOrFail({
   const existingPatient = await getPatientMapping({
     cxId,
     externalId: athenaPatientId,
-    source: EhrSources.ATHENA,
+    source: EhrSources.athena,
   });
   if (existingPatient) {
     const metriportPatient = await getMetriportPatientOrFail({
@@ -130,7 +130,7 @@ export async function getPatientIdOrFail({
     const defaultFacility = await getFacilityMappingOrFail({
       cxId,
       externalId: defaultFacilityMappingExternalId,
-      source: EhrSources.ATHENA,
+      source: EhrSources.athena,
     });
     metriportPatient = await createMetriportPatient({
       patient: {
@@ -150,7 +150,7 @@ export async function getPatientIdOrFail({
     cxId,
     patientId: metriportPatient.id,
     externalId: athenaPatientId,
-    source: EhrSources.ATHENA,
+    source: EhrSources.athena,
   });
   return metriportPatient.id;
 }

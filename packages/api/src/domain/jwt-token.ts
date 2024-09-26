@@ -9,7 +9,7 @@ export type JwtTokenPerSource = {
   token: string;
   exp: Date;
 } & {
-  source: EhrSources.ATHENA;
+  source: EhrSources.athena;
   data: AthenaJwtTokenData;
 };
 
