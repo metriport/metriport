@@ -33,6 +33,7 @@ const athenaPracticePrefix = "Practice";
 const athenaPatientPrefix = "E";
 const athenaDepartmentPrefix = "Department";
 const athenaDateFormat = "MM/DD/YYYY";
+const athenaDateTimeFormat = "MM/DD/YYYY HH:mm:ss";
 
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
@@ -378,19 +379,25 @@ class AthenaHealthApi {
   async getAppointments({
     cxId,
     departmentId,
-    start,
-    end,
+    startAppointmentDate,
+    endAppointmentDate,
+    startLastModifiedDate,
+    endLastModifiedDate,
   }: {
     cxId: string;
     departmentId: string;
-    start: Date;
-    end: Date;
+    startAppointmentDate: Date;
+    endAppointmentDate: Date;
+    startLastModifiedDate: Date;
+    endLastModifiedDate: Date;
   }): Promise<{ appointments: AthenaAppointment[] }> {
     const { log, debug } = out(`AthenaHealth get appointments`);
     const params = {
       departmentid: this.stripDepartmentId(departmentId),
-      startdate: this.formatDate(start.toISOString()) ?? "",
-      enddate: this.formatDate(end.toISOString()) ?? "",
+      startdate: this.formatDate(startAppointmentDate.toISOString()) ?? "",
+      enddate: this.formatDate(endAppointmentDate.toISOString()) ?? "",
+      startlastmodified: this.formatDateTime(startLastModifiedDate.toISOString()) ?? "",
+      endlastmodified: this.formatDateTime(endLastModifiedDate.toISOString()) ?? "",
     };
     const urlParams = new URLSearchParams(params);
     try {
@@ -465,6 +472,14 @@ class AthenaHealthApi {
     const parsedDate = buildDayjs(trimmedDate);
     if (!parsedDate.isValid()) return undefined;
     return parsedDate.format(athenaDateFormat);
+  }
+
+  private formatDateTime(date: string | undefined): string | undefined {
+    if (!date) return undefined;
+    const trimmedDate = date.trim();
+    const parsedDate = buildDayjs(trimmedDate);
+    if (!parsedDate.isValid()) return undefined;
+    return parsedDate.format(athenaDateTimeFormat);
   }
 }
 

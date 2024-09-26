@@ -14,7 +14,7 @@ import { getPatientIdOrFail as singleGetPatientIdOrFail } from "./get-patient";
 dayjs.extend(duration);
 
 const delay = dayjs.duration(30, "seconds");
-const appointmenDaysLookback = 2;
+const lastModifiedHoursLookback = 24;
 
 const region = Config.getAWSRegion();
 const athenaEnvironment = Config.getAthenaHealthEnv();
@@ -40,11 +40,25 @@ export async function getPatientIdsOrFailFromAppointments(): Promise<void> {
   const athenaClientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
 
   const now = new Date();
-  const dayUTCSeconds = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-  const dayUTCDate = new Date(dayUTCSeconds);
-  const end = new Date(dayUTCDate);
-  const start = new Date(dayUTCDate.setHours(dayUTCDate.getHours() - appointmenDaysLookback * 24));
-  log(`Getting appointments from ${start} to ${end}`);
+  const currentDatetime = new Date(
+    Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate(),
+      now.getUTCHours(),
+      now.getUTCMinutes(),
+      now.getUTCSeconds()
+    )
+  );
+  const startAppointmentDate = new Date(currentDatetime);
+  const endAppointmentDate = new Date(
+    new Date(currentDatetime).setUTCFullYear(currentDatetime.getUTCFullYear() + 10)
+  );
+  const startLastModifiedDate = new Date(
+    new Date(currentDatetime).setUTCHours(currentDatetime.getUTCHours() - lastModifiedHoursLookback)
+  );
+  const endLastModifiedDate = new Date(currentDatetime);
+  log(`Getting appointments from ${startLastModifiedDate} to ${endLastModifiedDate}`);
 
   await executeAsynchronously(
     cxMappings.flatMap(mapping => {
@@ -63,8 +77,10 @@ export async function getPatientIdsOrFailFromAppointments(): Promise<void> {
           clientKey: athenaClientKey,
           clientSecret: athenaClientSecret,
           patientAppointments,
-          start,
-          end,
+          startAppointmentDate,
+          endAppointmentDate,
+          startLastModifiedDate,
+          endLastModifiedDate,
           errors: getAppointmentsErrors,
           log,
         };
@@ -122,8 +138,10 @@ async function getAppointmentsAndCreateOrUpdatePatient({
   clientKey,
   clientSecret,
   patientAppointments,
-  start,
-  end,
+  startAppointmentDate,
+  endAppointmentDate,
+  startLastModifiedDate,
+  endLastModifiedDate,
   errors,
   log,
 }: {
@@ -133,8 +151,10 @@ async function getAppointmentsAndCreateOrUpdatePatient({
   clientKey: string;
   clientSecret: string;
   patientAppointments: PatientAppointment[];
-  start: Date;
-  end: Date;
+  startAppointmentDate: Date;
+  endAppointmentDate: Date;
+  startLastModifiedDate: Date;
+  endLastModifiedDate: Date;
   errors: string[];
   log: typeof console.log;
 }): Promise<void> {
@@ -146,7 +166,14 @@ async function getAppointmentsAndCreateOrUpdatePatient({
       clientKey,
       clientSecret,
     });
-    const appointments = await api.getAppointments({ cxId, departmentId, start, end });
+    const appointments = await api.getAppointments({
+      cxId,
+      departmentId,
+      startAppointmentDate,
+      endAppointmentDate,
+      startLastModifiedDate,
+      endLastModifiedDate,
+    });
     patientAppointments.push(
       ...appointments.appointments.map(appointment => {
         return {
