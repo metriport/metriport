@@ -187,7 +187,9 @@ async function getAppointmentsAndCreateOrUpdatePatient({
       })
     );
   } catch (error) {
-    const msg = `Failed to get appointments. Cause: ${errorToString(error)}`;
+    const msg = `Failed to get appointments. cxId ${cxId} practiceId: ${practiceId} departmentId: ${departmentId}. Cause: ${errorToString(
+      error
+    )}`;
     log(msg);
     errors.push(msg);
   }
@@ -222,7 +224,9 @@ async function getPatientIdOrFail({
       triggerDq,
     });
   } catch (error) {
-    const msg = `Failed to find or create patients. Cause: ${errorToString(error)}`;
+    const msg = `Failed to find or create patients. cxId ${cxId} athenaPracticeId: ${athenaPracticeId}. athenaPatientId: ${athenaPatientId}. Cause: ${errorToString(
+      error
+    )}`;
     log(msg);
     errors.push(msg);
   }
