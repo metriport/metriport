@@ -24,7 +24,7 @@ describe("Location Deduplication", () => {
       delete location2.name;
       const { locationsMap, danglingReferences } = groupSameLocations([location, location2]);
       expect(locationsMap.size).toBe(1);
-      expect(danglingReferences.size).toBe(1);
+      expect(danglingReferences.length).toBe(1);
     });
   });
 
@@ -103,7 +103,7 @@ describe("Location Deduplication", () => {
       location2.address = exampleAddress;
       const { locationsMap, danglingReferences } = groupSameLocations([location, location2]);
       expect(locationsMap.size).toBe(1);
-      expect(danglingReferences.size).toBe(0);
+      expect(danglingReferences.length).toBe(0);
     });
 
     it("handles locations with partial addresses", () => {

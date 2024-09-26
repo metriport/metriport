@@ -19,17 +19,11 @@ export function validateReferences(resources: Resource[], dirName: string): bool
 
   if (missingRefs.length) {
     const outputFileName = dirName + "/" + missingRefsFileName;
-
-    // Check if the file exists, if not, create it with the header
-    if (!fs.existsSync(outputFileName)) {
-      const header = ["resource", "missing-refs..."].join(csvSeparator);
-      fs.writeFileSync(outputFileName, header + "\n");
-    }
-
+    const header = ["resource", "missing-refs..."].join(csvSeparator);
+    fs.writeFileSync(outputFileName, header + "\n");
     console.log(
-      `>>> Found ${missingRefs.length} missing references! Appending to the file ${outputFileName}.`
+      `>>> Found ${missingRefs.length} missing references! Check the file ${outputFileName} for details.`
     );
-
     const lines = missingRefs
       .map(entry => {
         const resource = `${entry.resource.resourceType}/${entry.resource.id}`;
@@ -37,8 +31,7 @@ export function validateReferences(resources: Resource[], dirName: string): bool
         return resource + csvSeparator + missingRefs;
       })
       .join("\n");
-
-    fs.appendFileSync(outputFileName, lines + "\n");
+    fs.writeFileSync(outputFileName, lines, { flag: "a+" });
     return false;
   }
   return true;
@@ -48,8 +41,7 @@ function findMissingRefs(resource: Resource, resourceMap: Map<string, Resource>)
   const missingRefs: string[] = [];
   const refs = findRefs(resource);
   refs.forEach(ref => {
-    const [resourceType, id] = ref.split("/");
-    if (resourceType !== "Patient" && !resourceMap.has(id ?? "")) {
+    if (!resourceMap.has(ref.split("/")[1] ?? "")) {
       missingRefs.push(ref);
     }
   });
