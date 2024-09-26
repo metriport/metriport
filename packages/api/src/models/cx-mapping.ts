@@ -1,11 +1,11 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { CxMapping, CxSources, SecondaryMappings } from "../domain/cx-mapping";
+import { CxMapping, CxSources, CxSecondaryMappings } from "../domain/cx-mapping";
 import { BaseModel, ModelSetup } from "./_default";
 
 export class CxMappingModel extends BaseModel<CxMappingModel> implements CxMapping {
   static NAME = "cx_mapping";
   declare externalId: string;
-  declare secondaryMappings: SecondaryMappings;
+  declare secondaryMappings: CxSecondaryMappings;
   declare cxId: string;
   declare source: CxSources;
 

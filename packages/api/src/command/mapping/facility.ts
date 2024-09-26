@@ -1,14 +1,9 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import NotFoundError from "../../errors/not-found";
 import { FacilityMappingModel } from "../../models/facility-mapping";
-import { FacilityMapping, FacilitySources } from "../../domain/facility-mapping";
+import { FacilityMapping, FacilityMappingPerSource } from "../../domain/facility-mapping";
 
-export type FacilityMappingParams = {
-  cxId: string;
-  facilityId: string;
-  externalId: string;
-  source: FacilitySources;
-};
+export type FacilityMappingParams = FacilityMappingPerSource;
 
 export type FacilityMappingLookUpParams = Omit<FacilityMappingParams, "facilityId">;
 

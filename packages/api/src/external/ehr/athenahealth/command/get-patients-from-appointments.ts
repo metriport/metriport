@@ -15,6 +15,7 @@ dayjs.extend(duration);
 
 const delay = dayjs.duration(30, "seconds");
 const lastModifiedHoursLookback = 24;
+const appointmentYearsLookForward = 10;
 
 const region = Config.getAWSRegion();
 const athenaEnvironment = Config.getAthenaHealthEnv();
@@ -52,7 +53,9 @@ export async function getPatientIdsOrFailFromAppointments(): Promise<void> {
   );
   const startAppointmentDate = new Date(currentDatetime);
   const endAppointmentDate = new Date(
-    new Date(currentDatetime).setUTCFullYear(currentDatetime.getUTCFullYear() + 10)
+    new Date(currentDatetime).setUTCFullYear(
+      currentDatetime.getUTCFullYear() + appointmentYearsLookForward
+    )
   );
   const startLastModifiedDate = new Date(
     new Date(currentDatetime).setUTCHours(currentDatetime.getUTCHours() - lastModifiedHoursLookback)

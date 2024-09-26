@@ -1,14 +1,9 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import NotFoundError from "../errors/not-found";
 import { JwtTokenModel } from "../models/jwt-token";
-import { JwtToken } from "../domain/jwt-token";
+import { JwtToken, JwtTokenData } from "../domain/jwt-token";
 
-export type JwtTokenParams = {
-  token: string;
-  exp: Date;
-  source: string;
-  data: object;
-};
+export type JwtTokenParams = JwtTokenData;
 
 export type JwtTokenLookUpParams = Omit<JwtTokenParams, "exp" | "data">;
 

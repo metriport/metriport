@@ -1,14 +1,9 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import NotFoundError from "../../errors/not-found";
 import { PatientMappingModel } from "../../models/patient-mapping";
-import { PatientMapping, PatientSources } from "../../domain/patient-mapping";
+import { PatientMapping, PatientMappingPerSource } from "../../domain/patient-mapping";
 
-export type PatientMappingParams = {
-  cxId: string;
-  patientId: string;
-  externalId: string;
-  source: PatientSources;
-};
+export type PatientMappingParams = PatientMappingPerSource;
 
 export type PatientMappingLookUpParams = Omit<PatientMappingParams, "patientId">;
 
