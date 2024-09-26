@@ -59,12 +59,12 @@ export function deduplicateDiagReports(
  */
 export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
   diagReportsMap: Map<string, DiagnosticReport>;
-  refReplacementMap: Map<string, string>;
-  danglingReferences: Set<string>;
+  refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
   const diagReportsMap = new Map<string, DiagnosticReport>();
-  const refReplacementMap = new Map<string, string>();
-  const danglingReferences = new Set<string>();
+  const refReplacementMap = new Map<string, string[]>();
+  const danglingReferencesSet = new Set<string>();
 
   function removeCodesAndAssignStatus(
     master: DiagnosticReport,
@@ -102,13 +102,13 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
         removeCodesAndAssignStatus
       );
     } else {
-      danglingReferences.add(createRef(diagReport));
+      danglingReferencesSet.add(createRef(diagReport));
     }
   }
 
   return {
     diagReportsMap,
     refReplacementMap,
-    danglingReferences,
+    danglingReferences: [...danglingReferencesSet],
   };
 }

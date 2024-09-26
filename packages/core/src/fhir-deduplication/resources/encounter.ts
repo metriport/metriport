@@ -53,12 +53,12 @@ export function deduplicateEncounters(encounters: Encounter[]): DeduplicationRes
  */
 export function groupSameEncounters(encounters: Encounter[]): {
   encountersMap: Map<string, Encounter>;
-  refReplacementMap: Map<string, string>;
-  danglingReferences: Set<string>;
+  refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
   const encountersMap = new Map<string, Encounter>();
-  const refReplacementMap = new Map<string, string>();
-  const danglingReferences = new Set<string>();
+  const refReplacementMap = new Map<string, string[]>();
+  const danglingReferencesSet = new Set<string>();
 
   function assignMostDescriptiveStatus(
     master: Encounter,
@@ -83,13 +83,13 @@ export function groupSameEncounters(encounters: Encounter[]): {
         assignMostDescriptiveStatus
       );
     } else {
-      danglingReferences.add(createRef(encounter));
+      danglingReferencesSet.add(createRef(encounter));
     }
   }
 
   return {
     encountersMap,
     refReplacementMap,
-    danglingReferences,
+    danglingReferences: [...danglingReferencesSet],
   };
 }

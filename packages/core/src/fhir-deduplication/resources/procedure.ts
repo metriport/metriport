@@ -61,12 +61,12 @@ export function deduplicateProcedures(procedures: Procedure[]): DeduplicationRes
  */
 export function groupSameProcedures(procedures: Procedure[]): {
   proceduresMap: Map<string, Procedure>;
-  refReplacementMap: Map<string, string>;
-  danglingReferences: Set<string>;
+  refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
   const proceduresMap = new Map<string, Procedure>();
-  const refReplacementMap = new Map<string, string>();
-  const danglingReferences = new Set<string>();
+  const refReplacementMap = new Map<string, string[]>();
+  const danglingReferencesSet = new Set<string>();
 
   function removeCodesAndAssignStatus(
     master: Procedure,
@@ -110,13 +110,13 @@ export function groupSameProcedures(procedures: Procedure[]): {
 
   for (const procedure of procedures) {
     if (hasBlacklistedText(procedure.code)) {
-      danglingReferences.add(createRef(procedure));
+      danglingReferencesSet.add(createRef(procedure));
       continue;
     }
 
     const datetime = getPerformedDateFromResource(procedure, "datetime");
     if (!datetime) {
-      danglingReferences.add(createRef(procedure));
+      danglingReferencesSet.add(createRef(procedure));
       continue;
     }
 
@@ -149,7 +149,7 @@ export function groupSameProcedures(procedures: Procedure[]): {
           postProcessOnlyStatus
         );
       } else {
-        danglingReferences.add(createRef(procedure));
+        danglingReferencesSet.add(createRef(procedure));
       }
     }
   }
@@ -157,7 +157,7 @@ export function groupSameProcedures(procedures: Procedure[]): {
   return {
     proceduresMap,
     refReplacementMap,
-    danglingReferences,
+    danglingReferences: [...danglingReferencesSet],
   };
 }
 
