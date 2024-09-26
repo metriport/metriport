@@ -14,7 +14,7 @@ import { getPatientIdOrFail as singleGetPatientIdOrFail } from "./get-patient";
 dayjs.extend(duration);
 
 const delay = dayjs.duration(30, "seconds");
-const lastModifiedHoursLookback = 24;
+const lastModifiedHoursLookback = 72;
 const appointmentYearsLookForward = 10;
 
 const region = Config.getAWSRegion();
