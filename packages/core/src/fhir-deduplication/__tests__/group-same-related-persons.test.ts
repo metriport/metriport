@@ -60,7 +60,7 @@ describe("groupSameRelatedPersons", () => {
     const relatedPerson = makeRelatedPerson({ relationship: [] });
     const { relatedPersonsMap, danglingReferences } = groupSameRelatedPersons([relatedPerson]);
     expect(relatedPersonsMap.size).toBe(0);
-    expect(danglingReferences.size).toBe(1);
+    expect(danglingReferences.length).toBe(1);
   });
 
   describe("relationship + name", () => {
