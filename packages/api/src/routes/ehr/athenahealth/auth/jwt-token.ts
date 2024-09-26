@@ -18,7 +18,7 @@ router.get(
     const token = getAuthorizationToken(req);
     const tokenStatus = await checkJwtToken({
       token,
-      source: EhrSources.ATHENA,
+      source: EhrSources.athena,
     });
     return res.status(httpStatus.OK).json(tokenStatus);
   })
@@ -35,7 +35,7 @@ router.post(
     const data = createJwtSchema.parse(req.body);
     await saveJwtToken({
       token,
-      source: EhrSources.ATHENA,
+      source: EhrSources.athena,
       data,
     });
     return res.sendStatus(httpStatus.OK);

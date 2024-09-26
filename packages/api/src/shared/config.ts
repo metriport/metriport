@@ -346,7 +346,7 @@ export class Config {
     return getEnvVar("EHR_ATHENA_ENVIRONMENT");
   }
 
-  static getAthenaHealthClientKeyArm(): string | undefined {
+  static getAthenaHealthClientKeyArn(): string | undefined {
     return getEnvVar("EHR_ATHENA_CLIENT_KEY_ARN");
   }
 

@@ -1,16 +1,11 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import NotFoundError from "../../errors/not-found";
 import { FacilityMappingModel } from "../../models/facility-mapping";
-import { FacilityMapping, FacilitySources } from "../../domain/facility-mapping";
+import { FacilityMapping, FacilityMappingPerSource } from "../../domain/facility-mapping";
 
-export type FacilityMappingParams = {
-  cxId: string;
-  facilityId: string;
-  externalId: string;
-  source: FacilitySources;
-};
+export type FacilityMappingParams = FacilityMappingPerSource;
 
-export type FacilityMappingLookUpParam = Omit<FacilityMappingParams, "facilityId">;
+export type FacilityMappingLookUpParams = Omit<FacilityMappingParams, "facilityId">;
 
 export async function findOrCreateFacilityMapping({
   cxId,
@@ -34,7 +29,7 @@ export async function getFacilityMapping({
   cxId,
   externalId,
   source,
-}: FacilityMappingLookUpParam): Promise<FacilityMapping | undefined> {
+}: FacilityMappingLookUpParams): Promise<FacilityMapping | undefined> {
   const existing = await FacilityMappingModel.findOne({
     where: { cxId, externalId, source },
   });
@@ -46,7 +41,7 @@ export async function getFacilityMappingOrFail({
   cxId,
   externalId,
   source,
-}: FacilityMappingLookUpParam): Promise<FacilityMapping> {
+}: FacilityMappingLookUpParams): Promise<FacilityMapping> {
   const mapping = await getFacilityMapping({
     cxId,
     externalId,
@@ -70,7 +65,7 @@ export async function deleteFacilityMapping({
   cxId,
   externalId,
   source,
-}: FacilityMappingLookUpParam): Promise<void> {
+}: FacilityMappingLookUpParams): Promise<void> {
   const existing = await FacilityMappingModel.findOne({
     where: { cxId, externalId, source },
   });

@@ -10,6 +10,7 @@ import {
   parseIdFromQueryParams,
   replaceIdInUrlAndQuery,
 } from "./util";
+import { JwtTokenData } from "../../domain/jwt-token";
 import { EhrSources } from "../../external/ehr/shared";
 import ForbiddenError from "../../errors/forbidden";
 
@@ -21,7 +22,7 @@ export type ParseResponse = {
 export async function processCxIdAsync(
   req: Request,
   source: EhrSources,
-  parseExternalId: (tokenData: object) => ParseResponse
+  parseExternalId: (tokenData: JwtTokenData) => ParseResponse
 ): Promise<void> {
   const accessToken = getAuthorizationToken(req);
   const authInfo = await getJwtToken({

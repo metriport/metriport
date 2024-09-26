@@ -21,12 +21,12 @@ export function deduplicateCoverages(medications: Coverage[]): DeduplicationResu
  */
 export function groupSameCoverages(coverages: Coverage[]): {
   coveragesMap: Map<string, Coverage>;
-  refReplacementMap: Map<string, string[]>;
-  danglingReferences: string[];
+  refReplacementMap: Map<string, string>;
+  danglingReferences: Set<string>;
 } {
   const coveragesMap = new Map<string, Coverage>();
-  const refReplacementMap = new Map<string, string[]>();
-  const danglingReferencesSet = new Set<string>();
+  const refReplacementMap = new Map<string, string>();
+  const danglingReferences = new Set<string>();
 
   for (const coverage of coverages) {
     const payor = coverage.payor?.find(ref => ref.reference?.startsWith("Organization"));
@@ -37,13 +37,13 @@ export function groupSameCoverages(coverages: Coverage[]): {
       const key = JSON.stringify({ payor, status, period });
       fillMaps(coveragesMap, key, coverage, refReplacementMap);
     } else {
-      danglingReferencesSet.add(createRef(coverage));
+      danglingReferences.add(createRef(coverage));
     }
   }
 
   return {
     coveragesMap,
     refReplacementMap: refReplacementMap,
-    danglingReferences: [...danglingReferencesSet],
+    danglingReferences,
   };
 }

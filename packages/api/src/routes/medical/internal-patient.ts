@@ -33,8 +33,8 @@ import {
   getConsolidated,
   getConsolidatedAndSendToCx,
 } from "../../command/medical/patient/consolidated-get";
-import { createCoverageAssessments } from "../../command/medical/patient/converage-assessment-create";
-import { getCoverageAssessments } from "../../command/medical/patient/converage-assessment-get";
+import { createCoverageAssessments } from "../../command/medical/patient/coverage-assessment-create";
+import { getCoverageAssessments } from "../../command/medical/patient/coverage-assessment-get";
 import { PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {

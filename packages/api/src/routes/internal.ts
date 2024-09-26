@@ -22,8 +22,8 @@ import {
 import { getFacilities, getFacilityOrFail } from "../command/medical/facility/get-facility";
 import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
-import { CxSources } from "../domain/cx-mapping";
-import { FacilitySources } from "../domain/facility-mapping";
+import { CxSources, cxMappingsSourceMap } from "../domain/cx-mapping";
+import { FacilitySources, facilitysMappingsSourceList } from "../domain/facility-mapping";
 import { isEnhancedCoverageEnabledForCx } from "../external/aws/app-config";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
 import { countResources } from "../external/fhir/patient/count-resources";
@@ -314,10 +314,14 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const source = getFromQueryOrFail("source", req);
     const externalId = getFromQueryOrFail("externalId", req);
+    const mappedSource = cxMappingsSourceMap.get(source as CxSources);
+    if (!mappedSource) throw new BadRequestError(`Source ${source} is not mapped.`);
+    const secondaryMappings = mappedSource.bodyParser.parse(req.body);
     await findOrCreateCxMapping({
       cxId,
       source: source as CxSources,
       externalId,
+      secondaryMappings,
     });
     return res.sendStatus(httpStatus.OK);
   })
@@ -387,6 +391,9 @@ router.post(
     await getFacilityOrFail({ cxId, id: facilityId });
     const source = getFromQueryOrFail("source", req);
     const externalId = getFromQueryOrFail("externalId", req);
+    if (!facilitysMappingsSourceList.includes(source)) {
+      throw new BadRequestError(`Source ${source} is not mapped.`);
+    }
     await findOrCreateFacilityMapping({
       cxId,
       facilityId,

@@ -24,10 +24,10 @@ router.get(
     const athenaPatientId = getFrom("params").orFail("id", req);
     const athenaPracticeId = getFromQueryOrFail("practiceId", req);
     const patientId = await getPatientIdFromAthenaPatientOrFail({
-      accessToken,
       cxId,
       athenaPracticeId,
       athenaPatientId,
+      accessToken,
     });
     return res.status(httpStatus.OK).json(patientId);
   })

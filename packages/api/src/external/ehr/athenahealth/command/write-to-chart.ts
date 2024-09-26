@@ -7,23 +7,23 @@ import { Config } from "../../../../shared/config";
 
 const region = Config.getAWSRegion();
 const athenaEnvironment = Config.getAthenaHealthEnv();
-const athenaClientKeySecretArn = Config.getAthenaHealthClientKeyArm();
+const athenaClientKeySecretArn = Config.getAthenaHealthClientKeyArn();
 const athenaClientSecretSecretArn = Config.getAthenaHealthClientSecretArn();
 
 export async function writeMedicationToChart({
-  accessToken,
   cxId,
   athenaPatientId,
   athenaPracticeId,
   athenaDepartmentId,
   medication,
+  accessToken,
 }: {
-  accessToken: string;
   cxId: string;
   athenaPatientId: string;
   athenaPracticeId: string;
   athenaDepartmentId: string;
   medication: MedicationWithRefs;
+  accessToken?: string;
 }) {
   if (!athenaEnvironment || !athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
     throw new Error("AthenaHealth not setup");
