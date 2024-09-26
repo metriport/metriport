@@ -19,7 +19,7 @@ const appointmentYearsLookForward = 10;
 
 const region = Config.getAWSRegion();
 const athenaEnvironment = Config.getAthenaHealthEnv();
-const athenaClientKeySecretArn = Config.getAthenaHealthClientKeyArm();
+const athenaClientKeySecretArn = Config.getAthenaHealthClientKeyArn();
 const athenaClientSecretSecretArn = Config.getAthenaHealthClientSecretArn();
 
 type PatientAppointment = {
