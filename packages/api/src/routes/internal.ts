@@ -23,7 +23,7 @@ import { getFacilities, getFacilityOrFail } from "../command/medical/facility/ge
 import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
 import { CxSources, cxMappingsSourceMap } from "../domain/cx-mapping";
-import { FacilitySources } from "../domain/facility-mapping";
+import { FacilitySources, facilitysMappingsSourceList } from "../domain/facility-mapping";
 import { isEnhancedCoverageEnabledForCx } from "../external/aws/app-config";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
 import { countResources } from "../external/fhir/patient/count-resources";
@@ -391,6 +391,9 @@ router.post(
     await getFacilityOrFail({ cxId, id: facilityId });
     const source = getFromQueryOrFail("source", req);
     const externalId = getFromQueryOrFail("externalId", req);
+    if (!facilitysMappingsSourceList.includes(source)) {
+      throw new BadRequestError(`Source ${source} is not mapped.`);
+    }
     await findOrCreateFacilityMapping({
       cxId,
       facilityId,
