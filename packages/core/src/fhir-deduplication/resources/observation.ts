@@ -42,12 +42,12 @@ export function deduplicateObservations(
  */
 export function groupSameObservations(observations: Observation[]): {
   observationsMap: Map<string, Observation>;
-  refReplacementMap: Map<string, string>;
-  danglingReferences: Set<string>;
+  refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
   const observationsMap = new Map<string, Observation>();
-  const refReplacementMap = new Map<string, string>();
-  const danglingReferences = new Set<string>();
+  const refReplacementMap = new Map<string, string[]>();
+  const danglingReferencesSet = new Set<string>();
 
   function postProcess(
     master: Observation,
@@ -72,7 +72,7 @@ export function groupSameObservations(observations: Observation[]): {
 
   for (const observation of observations) {
     if (hasBlacklistedText(observation.code)) {
-      danglingReferences.add(createRef(observation));
+      danglingReferencesSet.add(createRef(observation));
       continue;
     }
 
@@ -85,7 +85,7 @@ export function groupSameObservations(observations: Observation[]): {
     const value = extractValueFromObservation(observation);
 
     if (!date || !value) {
-      danglingReferences.add(createRef(observation));
+      danglingReferencesSet.add(createRef(observation));
     } else {
       if (keyCode) {
         const key = JSON.stringify({ date, value, keyCode });
@@ -96,7 +96,7 @@ export function groupSameObservations(observations: Observation[]): {
           const key = JSON.stringify({ date, value, observationDisplay });
           fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
         } else {
-          danglingReferences.add(createRef(observation));
+          danglingReferencesSet.add(createRef(observation));
         }
       }
     }
@@ -105,7 +105,7 @@ export function groupSameObservations(observations: Observation[]): {
   return {
     observationsMap,
     refReplacementMap,
-    danglingReferences,
+    danglingReferences: [...danglingReferencesSet],
   };
 }
 
