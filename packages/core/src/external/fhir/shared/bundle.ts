@@ -168,8 +168,16 @@ export type ExtractedFhirTypes = {
   documentReferences: DocumentReference[];
 };
 
-export function initExtractedFhirTypes(): ExtractedFhirTypes {
-  const emptyBundle: Bundle = { resourceType: "Bundle", type: "collection" };
+export function initExtractedFhirTypes(patient: Patient): ExtractedFhirTypes {
+  const emptyBundle: Bundle = {
+    resourceType: "Bundle",
+    type: "collection",
+    entry: [
+      {
+        resource: patient,
+      },
+    ],
+  };
   return extractFhirTypesFromBundle(emptyBundle);
 }
 

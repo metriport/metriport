@@ -196,7 +196,7 @@ export function removeResourcesWithDanglingLinks(
   danglingLinks: Set<string>
 ): { updatedResourceArrays: ExtractedFhirTypes; deletedRefs: Set<string> } {
   const deletedRefs = new Set<string>();
-  const updatedResourceArrays = initExtractedFhirTypes();
+  const updatedResourceArrays = initExtractedFhirTypes(resourceArrays.patient);
 
   for (const [key, resources] of Object.entries(resourceArrays)) {
     if (Array.isArray(resources)) {
