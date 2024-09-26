@@ -128,12 +128,11 @@ export function fillMaps<T extends Resource>(
   map: Map<string, T>,
   key: string,
   targetResource: T,
-  refReplacementMap: Map<string, string>,
+  refReplacementMap: Map<string, string[]>,
   isExtensionIncluded = true,
   applySpecialModifications?: ApplySpecialModificationsCallback<T>
 ): void {
   const existingResource = map.get(key);
-  // if its a duplicate, combine the resources
   if (existingResource?.id) {
     const masterRef = `${existingResource.resourceType}/${existingResource.id}`;
     let merged = combineTwoResources(existingResource, targetResource, isExtensionIncluded);
@@ -142,9 +141,14 @@ export function fillMaps<T extends Resource>(
     }
     map.set(key, merged);
 
+    const existingReplacementIds = refReplacementMap.get(masterRef);
     if (targetResource.id) {
       const consumedRef = `${targetResource.resourceType}/${targetResource.id}`;
-      refReplacementMap.set(consumedRef, masterRef);
+      if (existingReplacementIds) {
+        refReplacementMap.set(masterRef, [...existingReplacementIds, consumedRef]);
+      } else {
+        refReplacementMap.set(masterRef, [consumedRef]);
+      }
     }
   } else {
     map.set(key, targetResource);
@@ -183,7 +187,7 @@ export function fillL1L2Maps<T extends Resource>({
   getterKeys: string[];
   setterKeys: string[];
   targetResource: T;
-  refReplacementMap: Map<string, string>;
+  refReplacementMap: Map<string, string[]>;
   isExtensionIncluded?: boolean;
   applySpecialModifications?: ApplySpecialModificationsCallback<T>;
 }): void {
@@ -382,8 +386,8 @@ export function isUnknownCoding(coding: Coding, text?: string | undefined): bool
 
 export type DeduplicationResult<T extends Resource> = {
   combinedResources: T[];
-  refReplacementMap: Map<string, string>;
-  danglingReferences: Set<string>;
+  refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 };
 
 export function ensureValidPeriod(period: Period | undefined): Period | undefined {

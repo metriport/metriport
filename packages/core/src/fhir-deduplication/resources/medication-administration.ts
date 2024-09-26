@@ -51,12 +51,12 @@ export function deduplicateMedAdmins(
  */
 export function groupSameMedAdmins(medAdmins: MedicationAdministration[]): {
   medAdminsMap: Map<string, MedicationAdministration>;
-  refReplacementMap: Map<string, string>;
-  danglingReferences: Set<string>;
+  refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
   const medAdminsMap = new Map<string, MedicationAdministration>();
-  const refReplacementMap = new Map<string, string>();
-  const danglingReferences = new Set<string>();
+  const refReplacementMap = new Map<string, string[]>();
+  const danglingReferencesSet = new Set<string>();
 
   function assignMostDescriptiveStatus(
     master: MedicationAdministration,
@@ -93,13 +93,13 @@ export function groupSameMedAdmins(medAdmins: MedicationAdministration[]): {
         assignMostDescriptiveStatus
       );
     } else {
-      danglingReferences.add(createRef(medAdmin));
+      danglingReferencesSet.add(createRef(medAdmin));
     }
   }
 
   return {
     medAdminsMap,
     refReplacementMap: refReplacementMap,
-    danglingReferences,
+    danglingReferences: [...danglingReferencesSet],
   };
 }

@@ -43,12 +43,12 @@ export function deduplicateObservationsSocial(
  */
 export function groupSameObservationsSocial(observations: Observation[]): {
   observationsMap: Map<string, Observation>;
-  refReplacementMap: Map<string, string>;
-  danglingReferences: Set<string>;
+  refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
   const observationsMap = new Map<string, Observation>();
-  const refReplacementMap = new Map<string, string>();
-  const danglingReferences = new Set<string>();
+  const refReplacementMap = new Map<string, string[]>();
+  const danglingReferencesSet = new Set<string>();
 
   function postProcess(
     master: Observation,
@@ -84,7 +84,7 @@ export function groupSameObservationsSocial(observations: Observation[]): {
     const value = extractValueFromObservation(observation);
 
     if (!value) {
-      danglingReferences.add(createRef(observation));
+      danglingReferencesSet.add(createRef(observation));
       continue;
     }
 
@@ -104,7 +104,7 @@ export function groupSameObservationsSocial(observations: Observation[]): {
           postProcessOnlyStatus
         );
       } else {
-        danglingReferences.add(createRef(observation));
+        danglingReferencesSet.add(createRef(observation));
       }
     }
   }
@@ -112,7 +112,7 @@ export function groupSameObservationsSocial(observations: Observation[]): {
   return {
     observationsMap,
     refReplacementMap,
-    danglingReferences,
+    danglingReferences: [...danglingReferencesSet],
   };
 }
 
