@@ -17,11 +17,11 @@ import {
 } from "../shared";
 
 export function deduplicateMedications(medications: Medication[]): DeduplicationResult<Medication> {
-  const { rxnormMap, ndcMap, snomedMap, displayMap, refReplacementMap, danglingReferences } =
+  const { rxnormMap, ndcMap, snomedMap, refReplacementMap, danglingReferences } =
     groupSameMedications(medications);
   return {
     combinedResources: combineResources({
-      combinedMaps: [rxnormMap, ndcMap, snomedMap, displayMap],
+      combinedMaps: [rxnormMap, ndcMap, snomedMap],
     }),
     refReplacementMap,
     danglingReferences,
@@ -33,14 +33,14 @@ export function groupSameMedications(medications: Medication[]): {
   ndcMap: Map<string, Medication>;
   snomedMap: Map<string, Medication>;
   displayMap: Map<string, Medication>;
-  refReplacementMap: Map<string, string>;
-  danglingReferences: Set<string>;
+  refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
   const rxnormMap = new Map<string, Medication>();
   const ndcMap = new Map<string, Medication>();
   const snomedMap = new Map<string, Medication>();
   const displayMap = new Map<string, Medication>();
-  const refReplacementMap = new Map<string, string>();
+  const refReplacementMap = new Map<string, string[]>();
   const danglingReferences = new Set<string>();
 
   function removeOtherCodes(master: Medication): Medication {
@@ -97,7 +97,7 @@ export function groupSameMedications(medications: Medication[]): {
     snomedMap,
     displayMap,
     refReplacementMap,
-    danglingReferences,
+    danglingReferences: [...danglingReferences],
   };
 }
 

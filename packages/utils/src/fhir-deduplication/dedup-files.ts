@@ -1,14 +1,13 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { Bundle, Resource } from "@medplum/fhirtypes";
+import { Bundle } from "@medplum/fhirtypes";
 import { deduplicateFhir } from "@metriport/core/fhir-deduplication/deduplicate-fhir";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import dayjs from "dayjs";
 import fs from "fs";
 import { getFileContents, getFileNames, makeDir } from "../shared/fs";
-import { validateReferences } from "./report/validate-references";
 
 /**
  * Folder with consolidated files/bundles.
@@ -56,11 +55,6 @@ async function main() {
         resultingBundle.entry?.length
       } resources in ${elapsedTimeFromNow(startedAt)} ms.`
     );
-
-    const resources =
-      resultingBundle.entry?.map(entry => entry.resource).filter((r): r is Resource => !!r) ?? [];
-    const isValid = validateReferences(resources, logsFolderName);
-    console.log(`Reference validation result: ${isValid ? "Valid" : "Invalid"}`);
 
     const lastSlash = filePath.lastIndexOf("/");
     const fileName = filePath.slice(lastSlash + 1).split(".json")[0];

@@ -53,12 +53,12 @@ export function deduplicateMedRequests(
  */
 export function groupSameMedRequests(medRequests: MedicationRequest[]): {
   medRequestsMap: Map<string, MedicationRequest>;
-  refReplacementMap: Map<string, string>;
-  danglingReferences: Set<string>;
+  refReplacementMap: Map<string, string[]>;
+  danglingReferences: string[];
 } {
   const medRequestsMap = new Map<string, MedicationRequest>();
-  const refReplacementMap = new Map<string, string>();
-  const danglingReferences = new Set<string>();
+  const refReplacementMap = new Map<string, string[]>();
+  const danglingReferencesSet = new Set<string>();
 
   function assignMostDescriptiveStatus(
     master: MedicationRequest,
@@ -86,13 +86,13 @@ export function groupSameMedRequests(medRequests: MedicationRequest[]): {
         assignMostDescriptiveStatus
       );
     } else {
-      danglingReferences.add(createRef(medRequest));
+      danglingReferencesSet.add(createRef(medRequest));
     }
   }
 
   return {
     medRequestsMap,
     refReplacementMap: refReplacementMap,
-    danglingReferences,
+    danglingReferences: [...danglingReferencesSet],
   };
 }
