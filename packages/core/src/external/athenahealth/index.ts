@@ -171,7 +171,7 @@ class AthenaHealthApi {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       if (error.response?.status === 404) return undefined;
-      const msg = `Failure while getting patient @ AthenHealth`;
+      const msg = `Failure while getting patient @ AthenaHealth`;
       log(`${msg}. Patient ID: ${patientId}. Cause: ${errorToString(error)}`);
       capture.error(msg, {
         extra: {
@@ -222,7 +222,7 @@ class AthenaHealthApi {
       if (searchSet.entry.length > 1) throw new NotFoundError("More than one athena patient found");
       return searchSet.entry[0]?.resource;
     } catch (error) {
-      const msg = `Failure while searching patient @ AthenHealth`;
+      const msg = `Failure while searching patient @ AthenaHealth`;
       log(`${msg}. Patient ID: ${patientId}. Cause: ${errorToString(error)}`);
       capture.error(msg, {
         extra: {
@@ -305,7 +305,7 @@ class AthenaHealthApi {
       }
       return response.data;
     } catch (error) {
-      const msg = `Failure while creating medication @ AthenHealth`;
+      const msg = `Failure while creating medication @ AthenaHealth`;
       log(`${msg}. Patient ID: ${patientId}. Cause: ${errorToString(error)}`);
       capture.error(msg, {
         extra: {
@@ -345,7 +345,7 @@ class AthenaHealthApi {
           const medications = response.data as AthenaMedication[];
           medicationOptions.push(...medications);
         } catch (error) {
-          const msg = `Failure while searching for medications @ AthenHealth`;
+          const msg = `Failure while searching for medications @ AthenaHealth`;
           log(`${msg}. Patient ID: ${patientId}. Cause: ${errorToString(error)}`);
           capture.error(msg, {
             extra: {
@@ -391,7 +391,9 @@ class AthenaHealthApi {
     startLastModifiedDate: Date;
     endLastModifiedDate: Date;
   }): Promise<{ appointments: AthenaAppointment[] }> {
-    const { log, debug } = out(`AthenaHealth get appointments`);
+    const { log, debug } = out(
+      `AthenaHealth get appointments - cxId ${cxId} departmentId ${departmentId}`
+    );
     const params = {
       departmentid: this.stripDepartmentId(departmentId),
       startdate: this.formatDate(startAppointmentDate.toISOString()) ?? "",
@@ -423,7 +425,7 @@ class AthenaHealthApi {
       }
       return response.data;
     } catch (error) {
-      const msg = `Failure while getting appointments @ AthenHealth`;
+      const msg = `Failure while getting appointments @ AthenaHealth`;
       log(`${msg}. Cause: ${errorToString(error)}`);
       capture.error(msg, {
         extra: {
