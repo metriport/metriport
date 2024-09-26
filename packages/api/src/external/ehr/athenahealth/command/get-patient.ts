@@ -74,18 +74,12 @@ export async function getPatientIdOrFail({
     clientKey: athenaClientKey,
     clientSecret: athenaClientSecret,
   });
-  let athenaPatient;
-  if (useSearch) {
-    athenaPatient = await api.getPatientViaSearch({
-      cxId,
-      patientId: athenaPatientId,
-    });
-  } else {
-    athenaPatient = await api.getPatient({
-      cxId,
-      patientId: athenaPatientId,
-    });
-  }
+  const athenaPatient = await getPatientFromAthena({
+    api,
+    cxId,
+    patientId: athenaPatientId,
+    useSearch,
+  });
   if (!athenaPatient) throw new NotFoundError("AthenaHealth patient not found");
   if (athenaPatient.name.length === 0) {
     throw new Error("AthenaHealth patient missing at least one name");
@@ -214,4 +208,27 @@ async function getPatientByDemo({
     log(msg);
     errors.push(msg);
   }
+}
+
+async function getPatientFromAthena({
+  api,
+  cxId,
+  patientId,
+  useSearch,
+}: {
+  api: AthenaHealthApi;
+  cxId: string;
+  patientId: string;
+  useSearch: boolean;
+}) {
+  if (useSearch) {
+    return await api.getPatientViaSearch({
+      cxId,
+      patientId,
+    });
+  }
+  return await api.getPatient({
+    cxId,
+    patientId,
+  });
 }
