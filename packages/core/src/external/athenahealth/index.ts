@@ -435,27 +435,27 @@ class AthenaHealthApi {
       .join("&");
   }
 
-  private stripPracticeId(id: string) {
+  stripPracticeId(id: string) {
     return id.replace(`a-1.${athenaPracticePrefix}-`, "");
   }
 
-  private createPracticetId(id: string) {
+  createPracticetId(id: string) {
     const prefix = `a-1.${athenaPracticePrefix}-`;
     if (id.startsWith(prefix)) return id;
     return `${prefix}${id}`;
   }
 
-  private stripPatientId(id: string) {
+  stripPatientId(id: string) {
     return id.replace(`a-${this.practiceId}.${athenaPatientPrefix}-`, "");
   }
 
-  private createPatientId(id: string) {
+  createPatientId(id: string) {
     const prefix = `a-${this.practiceId}.${athenaPatientPrefix}-`;
     if (id.startsWith(prefix)) return id;
     return `${prefix}${id}`;
   }
 
-  private stripDepartmentId(id: string) {
+  stripDepartmentId(id: string) {
     return id.replace(`a-${this.practiceId}.${athenaDepartmentPrefix}-`, "");
   }
 

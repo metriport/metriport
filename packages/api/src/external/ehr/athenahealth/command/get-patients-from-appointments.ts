@@ -50,7 +50,7 @@ export async function getPatientIdsOrFailFromAppointments(): Promise<void> {
     cxMappings.flatMap(mapping => {
       const cxId = mapping.cxId;
       const practiceId = mapping.externalId;
-      const departmentIds = mapping.secondaryMappings.departmentIds;
+      const departmentIds = mapping.secondaryMappings?.departmentIds;
       if (!departmentIds || !Array.isArray(departmentIds) || departmentIds.length === 0) {
         log(`Skipping for cxId ${cxId} -- departmentIds missing, malformed or empty`);
         return [];
@@ -149,7 +149,11 @@ async function getAppointmentsAndCreateOrUpdatePatient({
     const appointments = await api.getAppointments({ cxId, departmentId, start, end });
     patientAppointments.push(
       ...appointments.appointments.map(appointment => {
-        return { cxId, athenaPracticeId: practiceId, athenaPatientId: appointment.patientid };
+        return {
+          cxId,
+          athenaPracticeId: practiceId,
+          athenaPatientId: api.createPatientId(appointment.patientid),
+        };
       })
     );
   } catch (error) {
