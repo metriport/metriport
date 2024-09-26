@@ -1,16 +1,13 @@
-import { AthenaJwtTokenData } from "@metriport/shared";
 import { BaseDomain } from "@metriport/core/domain/base-domain";
-import { EhrSources } from "../external/ehr/shared";
 
-export type JwtTokenSources = JwtTokenPerSource["source"];
-export type JwtTokenData = JwtTokenPerSource["data"];
+export type JwtTokenSource = JwtTokenParams["source"];
+export type JwtTokenData = JwtTokenParams["data"];
 
-export type JwtTokenPerSource = {
+export type JwtTokenParams = {
   token: string;
   exp: Date;
-} & {
-  source: EhrSources.athena;
-  data: AthenaJwtTokenData;
+  source: string;
+  data: unknown | null;
 };
 
-export interface JwtToken extends BaseDomain, JwtTokenPerSource {}
+export interface JwtToken extends BaseDomain, JwtTokenParams {}

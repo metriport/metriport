@@ -6,6 +6,7 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/athenahealth/index";
 import { EhrSources } from "../../shared";
+import { AthenaCxMappingParams } from "../../athenahealth/shared";
 import { getCxMappings } from "../../../../command/mapping/cx";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { Config } from "../../../../shared/config";
@@ -67,7 +68,7 @@ export async function getPatientIdsOrFailFromAppointments(): Promise<void> {
     cxMappings.flatMap(mapping => {
       const cxId = mapping.cxId;
       const practiceId = mapping.externalId;
-      const departmentIds = mapping.secondaryMappings?.departmentIds;
+      const departmentIds = (mapping as AthenaCxMappingParams).secondaryMappings?.departmentIds;
       if (!departmentIds || !Array.isArray(departmentIds) || departmentIds.length === 0) {
         log(`Skipping for cxId ${cxId} -- departmentIds missing, malformed or empty`);
         return [];

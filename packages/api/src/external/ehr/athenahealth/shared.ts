@@ -1,4 +1,9 @@
-import { PatientResource } from "@metriport/shared/interface/external/athenahealth/patient";
+import {
+  PatientResource,
+  athenaSecondaryMappingsSchema,
+  AthenaSecondaryMappings,
+  AthenaJwtTokenData,
+} from "@metriport/shared";
 import {
   normalizeEmail,
   normalizePhoneNumber,
@@ -7,6 +12,25 @@ import {
 } from "@metriport/shared";
 import { Contact } from "@metriport/core/domain/contact";
 import { Address } from "@metriport/core/domain/address";
+import { EhrSources } from "../shared";
+import { CxMappingParams, cxMappingSourceMap } from "../../../domain/cx-mapping";
+import { facilityMappingSourceList } from "../../../domain/facility-mapping";
+import { JwtTokenParams } from "../../../domain/jwt-token";
+
+cxMappingSourceMap.set(EhrSources.athena, { bodyParser: athenaSecondaryMappingsSchema });
+facilityMappingSourceList.push(EhrSources.athena);
+
+export type AthenaSource = `${EhrSources.athena}`;
+
+export type AthenaCxMappingParams = Pick<CxMappingParams, "cxId" | "externalId"> & {
+  source: AthenaSource;
+  secondaryMappings: AthenaSecondaryMappings | null;
+};
+
+export type AthenaJwtTokenParams = Pick<JwtTokenParams, "token" | "exp"> & {
+  source: AthenaSource;
+  data: AthenaJwtTokenData;
+};
 
 export function createMetriportContacts(patient: PatientResource): Contact[] {
   return (patient.telecom ?? []).flatMap(telecom => {

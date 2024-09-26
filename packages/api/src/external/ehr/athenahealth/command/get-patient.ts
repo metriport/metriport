@@ -1,4 +1,4 @@
-import { PatientResource } from "@metriport/shared/interface/external/athenahealth/patient";
+import { PatientResource } from "@metriport/shared";
 import {
   errorToString,
   normalizeDate,
@@ -81,6 +81,7 @@ export async function getPatientIdOrFail({
     useSearch,
   });
   if (!athenaPatient) throw new NotFoundError("AthenaHealth patient not found");
+
   if (athenaPatient.name.length === 0) {
     throw new Error("AthenaHealth patient missing at least one name");
   }
@@ -112,8 +113,7 @@ export async function getPatientIdOrFail({
     });
   }
 
-  let metriportPatient = patients[0];
-  if (metriportPatient) {
+  if (patients.length > 0) {
     const uniquePatientIds = new Set(patients.map(patient => patient.id));
     if (uniquePatientIds.size > 1) {
       capture.message("AthenaHealth patient mapping to more than one Metriport patient", {
@@ -126,26 +126,15 @@ export async function getPatientIdOrFail({
         level: "warning",
       });
     }
-  } else {
-    const defaultFacility = await getFacilityMappingOrFail({
-      cxId,
-      externalId: defaultFacilityMappingExternalId,
-      source: EhrSources.athena,
-    });
-    metriportPatient = await createMetriportPatient({
-      patient: {
-        cxId,
-        facilityId: defaultFacility.facilityId,
-        ...createMetriportPatientDemo(athenaPatient),
-      },
-    });
-    if (triggerDq) {
-      queryDocumentsAcrossHIEs({
-        cxId,
-        patientId: metriportPatient.id,
-      }).catch(processAsyncError("AthenaHealth queryDocumentsAcrossHIEs"));
-    }
   }
+
+  const metriportPatient = await getMetriportPatient({
+    cxId,
+    patients,
+    athenaPatient,
+    triggerDq,
+  });
+
   await findOrCreatePatientMapping({
     cxId,
     patientId: metriportPatient.id,
@@ -220,7 +209,7 @@ async function getPatientFromAthena({
   cxId: string;
   patientId: string;
   useSearch: boolean;
-}) {
+}): Promise<PatientResource | undefined> {
   if (useSearch) {
     return await api.getPatientViaSearch({
       cxId,
@@ -231,4 +220,38 @@ async function getPatientFromAthena({
     cxId,
     patientId,
   });
+}
+
+async function getMetriportPatient({
+  patients,
+  athenaPatient,
+  cxId,
+  triggerDq,
+}: {
+  patients: Patient[];
+  athenaPatient: PatientResource;
+  cxId: string;
+  triggerDq: boolean;
+}): Promise<Patient> {
+  const foundPatient = patients[0];
+  if (foundPatient) return foundPatient;
+  const defaultFacility = await getFacilityMappingOrFail({
+    cxId,
+    externalId: defaultFacilityMappingExternalId,
+    source: EhrSources.athena,
+  });
+  const patient = await createMetriportPatient({
+    patient: {
+      cxId,
+      facilityId: defaultFacility.facilityId,
+      ...createMetriportPatientDemo(athenaPatient),
+    },
+  });
+  if (triggerDq) {
+    queryDocumentsAcrossHIEs({
+      cxId,
+      patientId: patient.id,
+    }).catch(processAsyncError("AthenaHealth queryDocumentsAcrossHIEs"));
+  }
+  return patient;
 }

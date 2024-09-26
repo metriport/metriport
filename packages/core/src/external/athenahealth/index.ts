@@ -9,7 +9,7 @@ import {
   patientResourceSchema,
   patientSearchResourceSchema,
   PatientResource,
-} from "@metriport/shared/interface/external/athenahealth/patient";
+} from "@metriport/shared";
 import { errorToString, NotFoundError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { S3Utils } from "../aws/s3";

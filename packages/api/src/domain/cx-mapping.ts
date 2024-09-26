@@ -1,21 +1,16 @@
 import { z } from "zod";
-import { athenaSecondaryMappingsSchema, AthenaSecondaryMappings } from "@metriport/shared";
 import { BaseDomain } from "@metriport/core/domain/base-domain";
-import { EhrSources } from "../external/ehr/shared";
 
-export type CxSources = CxMappingPerSource["source"];
-export type CxSecondaryMappings = CxMappingPerSource["secondaryMappings"];
+export type CxMappingSource = CxMappingParams["source"];
+export type CxMappingSecondaryMappings = CxMappingParams["secondaryMappings"];
+export type CxMappingBodyParser = { bodyParser: z.Schema };
+export const cxMappingSourceMap: Map<CxMappingSource, CxMappingBodyParser> = new Map([]);
 
-export const cxMappingsSourceMap: Map<CxSources, { bodyParser: z.Schema }> = new Map([
-  [EhrSources.athena, { bodyParser: athenaSecondaryMappingsSchema }],
-]);
-
-export type CxMappingPerSource = {
+export interface CxMappingParams {
   externalId: string;
   cxId: string;
-} & {
-  source: EhrSources.athena;
-  secondaryMappings: AthenaSecondaryMappings | null;
-};
+  source: string;
+  secondaryMappings: unknown | null;
+}
 
-export interface CxMapping extends BaseDomain, CxMappingPerSource {}
+export interface CxMapping extends BaseDomain, CxMappingParams {}
