@@ -25,47 +25,47 @@ export async function createCoverageAssessments({
 }): Promise<void> {
   const { log } = out(`createCoverageAssessments - cxId ${cxId}`);
   const patients: Patient[] = [];
-  const pdWrapperErrors: string[] = [];
+  const pdErrors: string[] = [];
 
   await executeAsynchronously(
     patientCreates.map(patientCreateCmd => {
-      return { patientCreateCmd, patients, errors: pdWrapperErrors, log };
+      return { patientCreateCmd, patients, errors: pdErrors, log };
     }),
     createOrUpdatePatient,
     { numberOfParallelExecutions: 10, delay: delay.asMilliseconds() }
   );
 
-  if (pdWrapperErrors.length > 0) {
+  if (pdErrors.length > 0) {
     capture.error("Failed to create or update patient", {
       extra: {
         cxId,
         facilityId,
         patientCreateCount: patientCreates.length,
-        errorCount: pdWrapperErrors.length,
-        errors: pdWrapperErrors.join(","),
+        errorCount: pdErrors.length,
+        errors: pdErrors.join(","),
         context: "coverage-assessment.create",
       },
     });
   }
 
-  const dqWrapperErrors: string[] = [];
+  const dqErrors: string[] = [];
 
   await executeAsynchronously(
     patients.map(patient => {
-      return { cxId, patient, facilityId, errors: dqWrapperErrors, log };
+      return { cxId, patient, facilityId, errors: dqErrors, log };
     }),
     queryDocumentsAcrossHIEs,
     { numberOfParallelExecutions: 10, delay: delay.asMilliseconds() }
   );
 
-  if (dqWrapperErrors.length > 0) {
+  if (dqErrors.length > 0) {
     capture.error("Failed query docuemnts.", {
       extra: {
         cxId,
         facilityId,
         patientCount: patients.length,
-        errorCount: dqWrapperErrors.length,
-        errors: dqWrapperErrors.join(", "),
+        errorCount: dqErrors.length,
+        errors: dqErrors.join(", "),
         context: "coverage-assessment.create",
       },
     });
