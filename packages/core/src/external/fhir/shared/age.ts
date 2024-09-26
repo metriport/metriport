@@ -10,6 +10,10 @@ export function addAgeToDob(age: Age | undefined, dob: string | undefined): stri
   return buildDayjs(dob).add(age.value, dayjsUnit).toISOString();
 }
 
+/**
+ * Converts a FHIR/UCUM age unit to a dayjs unit.
+ * @see https://download.hl7.de/documents/ucum/ucumdata.html
+ */
 function ageUnitToDayjsUnit(unit: string | undefined): dayjs.ManipulateType | undefined {
   if (!unit) return undefined;
   switch (unit) {
