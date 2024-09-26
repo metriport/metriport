@@ -138,7 +138,7 @@ export const buildFullUrl = <T extends Resource>(resource: T): string | undefine
 
 export type ExtractedFhirTypes = {
   diagnosticReports: DiagnosticReport[];
-  patient?: Patient | undefined;
+  patient: Patient;
   practitioners: Practitioner[];
   compositions: Composition[];
   medications: Medication[];
@@ -281,6 +281,10 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
         serviceRequests.push(resource as ServiceRequest);
       }
     }
+  }
+
+  if (!patient) {
+    throw new Error("Patient not found in bundle");
   }
 
   return {
