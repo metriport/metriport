@@ -56,7 +56,7 @@
 
                 {{#each (toArray drEntry.organizer.component) as |obsEntry|}}
                     {{#if obsEntry.observation}}
-                        {{#if (not obsEntry.observation.value._b64)}}
+                        {{#if (and (not obsEntry.observation.value._b64) (not obsEntry.observation.text._b64))}}
                             {{>Resources/Observation.hbs observationCategory="laboratory" observationEntry=obsEntry.observation ID=(generateUUID (toJsonString obsEntry.observation))}},                   
                             {{>References/DiagnosticReport/result.hbs ID=(generateUUID (toJsonString drEntry.organizer)) REF=(concat 'Observation/' (generateUUID (toJsonString obsEntry.observation)))}},
                             {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
