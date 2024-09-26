@@ -36,6 +36,7 @@ const medicationRelatedTypes = [
 export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> {
   const deduplicatedBundle: Bundle = cloneDeep(fhirBundle);
   let resourceArrays = extractFhirTypesFromBundle(fhirBundle);
+  const patientResource = cloneDeep(resourceArrays.patient);
 
   const medicationsResult = deduplicateMedications(resourceArrays.medications);
   /* WARNING we need to replace references in the following resource arrays before deduplicating them because their deduplication keys 
@@ -177,6 +178,7 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
     deletedRefs
   );
   resourceArrays = updatedResourceArrays2;
+  resourceArrays.patient = patientResource;
 
   deduplicatedBundle.entry = Object.entries(resourceArrays)
     .filter(([resourceType]) => resourceType !== "devices")
