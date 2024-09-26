@@ -8,10 +8,8 @@ import {
   Reference,
   Resource,
   Bundle,
-  Patient,
 } from "@medplum/fhirtypes";
 import { makeMedication } from "../../fhir-to-cda/cda-templates/components/__tests__/make-medication";
-import { makePatient } from "../../fhir-to-cda/cda-templates/components/__tests__/make-patient";
 import { removeResourcesWithDanglingLinks } from "../deduplicate-fhir";
 import {
   makeMedicationAdministration,
@@ -26,7 +24,6 @@ let medication: Medication;
 let medStatement: MedicationStatement;
 let medRequest: MedicationRequest;
 let medAdmin: MedicationAdministration;
-let patient: Patient;
 let entries: BundleEntry<Resource>[];
 let medRef: Reference<Medication>;
 let medRef2: Reference<Medication>;
@@ -40,34 +37,12 @@ beforeEach(() => {
   medStatement = makeMedicationStatement({ medicationReference: medRef });
   medRequest = makeMedicationRequest({ medicationReference: medRef });
   medAdmin = makeMedicationAdministration({ medicationReference: medRef });
-  patient = makePatient({
-    gender: "male",
-    name: [
-      {
-        family: "Doe",
-        given: ["John"],
-      },
-    ],
-    address: [
-      {
-        line: ["123 Main St"],
-        city: "Anytown",
-        state: "CA",
-        postalCode: "12345",
-      },
-    ],
-  });
-  entries = [
-    { resource: medStatement },
-    { resource: medRequest },
-    { resource: medAdmin },
-    { resource: patient },
-  ];
+  entries = [{ resource: medStatement }, { resource: medRequest }, { resource: medAdmin }];
 });
 
 describe("removeResourcesWithDanglingLinks", () => {
   it("correctly removes med-related resources if the medication reference is a dangling link", () => {
-    expect(entries.length).toBe(4);
+    expect(entries.length).toBe(3);
     if (medRef.reference) {
       const danglingLinks = new Set([medRef.reference]);
 
@@ -87,7 +62,7 @@ describe("removeResourcesWithDanglingLinks", () => {
   it("does not remove a med-related resource that references another medication", () => {
     const medStatementWithoutDeadLink = makeMedicationStatement({ medicationReference: medRef2 });
     entries.push(...[{ resource: medication }, { resource: medStatementWithoutDeadLink }]);
-    expect(entries.length).toBe(6);
+    expect(entries.length).toBe(5);
 
     const bundle: Bundle = {
       type: "searchset",
