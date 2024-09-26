@@ -6,8 +6,6 @@ import { EhrSources } from "../external/ehr/shared";
 export type CxSources = CxMappingPerSource["source"];
 export type CxSecondaryMappings = CxMappingPerSource["secondaryMappings"];
 
-export type AthenaSecondaryMappingsOrNull = AthenaSecondaryMappings | null;
-
 export const cxMappingsSourceMap: { [k: string]: { bodyParser: z.Schema } | undefined } = {
   [EhrSources.ATHENA]: { bodyParser: athenaSecondaryMappingsSchema },
 };
@@ -17,7 +15,7 @@ export type CxMappingPerSource = {
   cxId: string;
 } & {
   source: EhrSources.ATHENA;
-  secondaryMappings: AthenaSecondaryMappingsOrNull;
+  secondaryMappings: AthenaSecondaryMappings | null;
 };
 
 export interface CxMapping extends BaseDomain, CxMappingPerSource {}
