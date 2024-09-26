@@ -3,6 +3,7 @@ import { MetriportError } from "@metriport/shared";
 import { filterTruthy } from "@metriport/shared/common/filter-map";
 import { uniq } from "lodash";
 import { out } from "../../../util";
+import { getPatientsFromBundle } from "./patient";
 
 /**
  * Check the FHIR bundle only contains references for the given patient.
@@ -17,7 +18,30 @@ export function checkBundleForPatient(
   patientId: string
 ): true {
   const { log } = out(`checkBundleForPatient - cx ${cxId}, pat ${patientId}`);
+  const additionalInfo = { cxId, patientId };
 
+  // check there's one and only one patient
+  const patientsInBundle = getPatientsFromBundle(bundle);
+  if (patientsInBundle.length < 1) {
+    throw new MetriportError(`Bundle contains no patients`, undefined, additionalInfo);
+  }
+  if (patientsInBundle.length > 1) {
+    const ids = patientsInBundle.map(p => p.id);
+    throw new MetriportError(`Bundle contains more than one patient`, undefined, {
+      ...additionalInfo,
+      patientsIds: ids.join(", "),
+    });
+  }
+  // check the patient's id is the expected one
+  const patientInBundle = patientsInBundle[0]!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+  if (patientInBundle.id !== patientId) {
+    throw new MetriportError(`Patient in bundle is diff than expected`, undefined, {
+      ...additionalInfo,
+      patientIdInBundle: patientInBundle.id,
+    });
+  }
+
+  // check all references are for the expected patient
   const patientsIdInBundle = getPatientIdsFromBundle(bundle);
   const mismatchingPatientsIds = patientsIdInBundle.filter(id => id !== patientId);
 
