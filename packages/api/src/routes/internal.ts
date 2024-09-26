@@ -314,7 +314,7 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const source = getFromQueryOrFail("source", req);
     const externalId = getFromQueryOrFail("externalId", req);
-    const mappedSource = cxMappingsSourceMap[source];
+    const mappedSource = cxMappingsSourceMap.get(source as CxSources);
     if (!mappedSource) throw new BadRequestError(`Source ${source} is not mapped.`);
     const secondaryMappings = mappedSource.bodyParser.parse(req.body);
     await findOrCreateCxMapping({
