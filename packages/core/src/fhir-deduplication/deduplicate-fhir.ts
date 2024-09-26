@@ -113,7 +113,6 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
   // This must come after organization deduplication, since it depends on it. Just like medication deduplication
   const coveragesResult = deduplicateCoverages(resourceArrays.coverages);
   resourceArrays.coverages = coveragesResult.combinedResources;
-
   // Combine all dangling references
   const danglingLinks = new Set([
     ...medicationsResult.danglingReferences,
@@ -213,6 +212,8 @@ export function removeResourcesWithDanglingLinks(
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       updatedResourceArrays[key as keyof ExtractedFhirTypes] = updatedResources as any;
+    } else {
+      updatedResourceArrays.patient = resources;
     }
   }
 
