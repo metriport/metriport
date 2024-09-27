@@ -32,7 +32,7 @@ export function analytics(params: AnalyticsParams, postApiKey?: string): PostHog
   const updatedParams: EventMessageV1 = {
     ...params,
     distinctId: POSTHOG_GROUP_ID,
-    groups: { company: params.cxId },
+    groups: { customer: params.cxId },
     properties: {
       ...(params.properties ? { ...params.properties } : undefined),
       environment: Config.getEnvType(),
