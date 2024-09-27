@@ -105,7 +105,7 @@ export async function queryDocumentsAcrossHIEs({
 
   analytics({
     event: EventTypes.documentQuery,
-    cxId,
+    distinctId: cxId,
     properties: {
       requestId,
       patientId,
