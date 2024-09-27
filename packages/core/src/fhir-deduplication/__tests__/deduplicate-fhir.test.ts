@@ -6,6 +6,7 @@ import {
   Medication,
   Resource,
   Encounter,
+  Patient,
 } from "@medplum/fhirtypes";
 import { makeBundle } from "../../external/fhir/__tests__/bundle";
 import {
@@ -23,6 +24,7 @@ import { makeMedication } from "../../fhir-to-cda/cda-templates/components/__tes
 import { makeObservation } from "../../fhir-to-cda/cda-templates/components/__tests__/make-observation";
 import { makeCondition } from "../../fhir-to-cda/cda-templates/components/__tests__/make-condition";
 import { makeEncounter } from "../../fhir-to-cda/cda-templates/components/__tests__/make-encounter";
+import { makePatient } from "../../fhir-to-cda/cda-templates/components/__tests__/make-patient";
 import { deduplicateFhir } from "../deduplicate-fhir";
 import { createRef } from "../shared";
 import { dateTime } from "./examples/condition-examples";
@@ -40,12 +42,33 @@ let medicationId2: string;
 let medication: Medication;
 let medication2: Medication;
 let bundle: Bundle;
-
+let patient: Patient;
+let patientId: string;
+let cxId: string;
 beforeAll(() => {
   medicationId = faker.string.uuid();
   medicationId2 = faker.string.uuid();
   medication = makeMedication({ id: medicationId });
   medication2 = makeMedication({ id: medicationId2 });
+  patient = makePatient({
+    gender: "male",
+    name: [
+      {
+        family: "Doe",
+        given: ["John"],
+      },
+    ],
+    address: [
+      {
+        line: ["123 Main St"],
+        city: "Anytown",
+        state: "CA",
+        postalCode: "12345",
+      },
+    ],
+  });
+  patientId = faker.string.uuid();
+  cxId = faker.string.uuid();
 });
 
 beforeEach(() => {
@@ -87,12 +110,13 @@ describe("deduplicateFhir", () => {
       { resource: medRequest2 },
       { resource: medStatement },
       { resource: medStatement2 },
+      { resource: patient },
     ] as BundleEntry<Resource>[];
     bundle.entry = entries;
     bundle.type = "searchset";
 
-    bundle = deduplicateFhir(bundle);
-    expect(bundle.entry?.length).toBe(4);
+    bundle = deduplicateFhir(bundle, cxId, patientId);
+    expect(bundle.entry?.length).toBe(5);
     const resMedications = findMedicationResources(bundle);
     const resMedAdmins = findMedicationAdministrationResources(bundle);
     const resMedRequests = findMedicationRequestResources(bundle);
@@ -132,10 +156,11 @@ describe("deduplicateFhir", () => {
       { resource: medAdmin },
       { resource: medRequest },
       { resource: medStatement },
+      { resource: patient },
     ] as BundleEntry<Resource>[];
     bundle.entry = entries;
-    bundle = deduplicateFhir(bundle);
-    expect(bundle.entry?.length).toBe(0);
+    bundle = deduplicateFhir(bundle, cxId, patientId);
+    expect(bundle.entry?.length).toBe(1);
   });
 
   it("removes useless medication and other resources referencing it, but keeps good medication resource and other resources referencing it", () => {
@@ -172,10 +197,11 @@ describe("deduplicateFhir", () => {
       { resource: medRequest2 },
       { resource: medStatement },
       { resource: medStatement2 },
+      { resource: patient },
     ] as BundleEntry<Resource>[];
     bundle.entry = entries;
-    bundle = deduplicateFhir(bundle);
-    expect(bundle.entry?.length).toBe(4);
+    bundle = deduplicateFhir(bundle, cxId, patientId);
+    expect(bundle.entry?.length).toBe(5);
     expect(JSON.stringify(bundle)).not.toContain(medicationId);
     expect(JSON.stringify(bundle)).toContain(medicationId2);
   });
@@ -194,16 +220,19 @@ describe("deduplicateFhir", () => {
     const entries = [
       { resource: observation },
       { resource: diagnosticReport },
+      { resource: patient },
     ] as BundleEntry<Resource>[];
 
     bundle.entry = entries;
-    bundle = deduplicateFhir(bundle);
-    expect(bundle.entry?.length).toBe(1);
+    bundle = deduplicateFhir(bundle, cxId, patientId);
+    expect(bundle.entry?.length).toBe(2);
 
-    const remainingRes = bundle.entry?.[0]?.resource as DiagnosticReport;
-    expect(remainingRes.id).toBe(diagnosticReport.id);
-    expect(remainingRes.resourceType).toBe("DiagnosticReport");
-    expect(remainingRes.result).toBe(undefined);
+    const diagnosticReports = findDiagnosticReportResources(bundle);
+    expect(diagnosticReports.length).toBe(1);
+    const remainingRes = diagnosticReports[0];
+    expect(remainingRes?.id).toBe(diagnosticReport.id);
+    expect(remainingRes?.resourceType).toBe("DiagnosticReport");
+    expect(remainingRes?.result).toBe(undefined);
   });
 
   it("removes dangling links from a Composition", () => {
@@ -237,11 +266,12 @@ describe("deduplicateFhir", () => {
       { resource: observation },
       { resource: diagnosticReport },
       { resource: composition },
+      { resource: patient },
     ] as BundleEntry<Resource>[];
 
     bundle.entry = entries;
-    bundle = deduplicateFhir(bundle);
-    expect(bundle.entry?.length).toBe(2);
+    bundle = deduplicateFhir(bundle, cxId, patientId);
+    expect(bundle.entry?.length).toBe(3);
 
     const resComposition = findCompositionResource(bundle);
     expect(resComposition).not.toEqual(undefined);
@@ -332,11 +362,12 @@ describe("deduplicateFhir", () => {
       { resource: observation2 },
       { resource: diagnosticReport },
       { resource: composition },
+      { resource: patient },
     ] as BundleEntry<Resource>[];
 
     bundle.entry = entries;
-    bundle = deduplicateFhir(bundle);
-    expect(bundle.entry?.length).toBe(3);
+    bundle = deduplicateFhir(bundle, cxId, patientId);
+    expect(bundle.entry?.length).toBe(4);
     const resComposition = findCompositionResource(bundle);
     expect(resComposition).not.toEqual(undefined);
     const firstCompEntry = resComposition?.section?.[0]?.entry;
@@ -382,10 +413,11 @@ describe("deduplicateFhir", () => {
       { resource: encounter },
       { resource: condition1 },
       { resource: condition2 },
+      { resource: patient },
     ] as BundleEntry<Resource>[];
 
     bundle.entry = entries;
-    bundle = deduplicateFhir(bundle);
+    bundle = deduplicateFhir(bundle, cxId, patientId);
     const deduplicatedEncounters = findEncounterResources(bundle);
     const deduplicatedEncounter = deduplicatedEncounters[0];
     expect(deduplicatedEncounter?.diagnosis?.length).toBe(1);
@@ -420,10 +452,11 @@ describe("deduplicateFhir", () => {
       { resource: diagnosticReport },
       { resource: observation1 },
       { resource: observation2 },
+      { resource: patient },
     ] as BundleEntry<Resource>[];
 
     bundle.entry = entries;
-    bundle = deduplicateFhir(bundle);
+    bundle = deduplicateFhir(bundle, cxId, patientId);
     const deduplicatedDiagnosticReports = findDiagnosticReportResources(bundle);
     const deduplicatedDiagnosticReport = deduplicatedDiagnosticReports[0];
     expect(deduplicatedDiagnosticReport?.result?.length).toBe(1);

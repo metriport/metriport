@@ -13,7 +13,7 @@ export function deduplicate({
   bundle: Bundle<Resource>;
 }): Bundle<Resource> {
   const startedAt = new Date();
-  const dedupedBundle = deduplicateFhir(bundle);
+  const dedupedBundle = deduplicateFhir(bundle, cxId, patientId);
 
   const deduplicationAnalyticsProps = {
     distinctId: cxId,

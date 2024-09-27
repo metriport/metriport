@@ -10,7 +10,7 @@ import { createConsolidatedFromConversions } from "./consolidated-create";
 import { filterBundleByDate } from "./consolidated-filter-by-date";
 import { filterBundleByResource } from "./consolidated-filter-by-resource";
 import { getConsolidated } from "./consolidated-get";
-
+import { Patient } from "../../domain/patient";
 const maxHydrationIterations = 5;
 
 /**
@@ -20,19 +20,20 @@ const maxHydrationIterations = 5;
  */
 export async function getConsolidatedFromS3({
   cxId,
-  patientId,
+  patient,
   ...params
 }: {
   cxId: string;
-  patientId: string;
+  patient: Patient;
   resources?: ResourceTypeForConsolidation[] | undefined;
   dateFrom?: string | undefined;
   dateTo?: string | undefined;
 }): Promise<SearchSetBundle> {
+  const patientId = patient.id;
   const { log } = out(`getConsolidatedFromS3 - cx ${cxId}, pat ${patientId}`);
   log(`Running with params: ${JSON.stringify(params)}`);
 
-  const consolidated = await getOrCreateConsolidatedOnS3({ cxId, patientId });
+  const consolidated = await getOrCreateConsolidatedOnS3({ cxId, patient });
   log(`Consolidated with ${consolidated.entry?.length} entries`);
 
   const filtered = await filterConsolidated(consolidated, params);
@@ -42,11 +43,12 @@ export async function getConsolidatedFromS3({
 
 async function getOrCreateConsolidatedOnS3({
   cxId,
-  patientId,
+  patient,
 }: {
   cxId: string;
-  patientId: string;
+  patient: Patient;
 }): Promise<Bundle> {
+  const patientId = patient.id;
   const { log } = out(`getOrCreateConsolidatedOnS3 - cx ${cxId}, pat ${patientId}`);
   const preGenerated = await getConsolidated({
     cxId,
@@ -57,7 +59,7 @@ async function getOrCreateConsolidatedOnS3({
     return preGenerated.bundle;
   }
   log(`Did not found pre-generated consolidated, creating a new one...`);
-  const newConsolidated = await createConsolidatedFromConversions({ cxId, patientId });
+  const newConsolidated = await createConsolidatedFromConversions({ cxId, patient });
   return newConsolidated;
 }
 
