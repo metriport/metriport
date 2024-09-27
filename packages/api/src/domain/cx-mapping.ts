@@ -4,7 +4,6 @@ import { BaseDomain } from "@metriport/core/domain/base-domain";
 export type CxMappingSource = CxMappingParams["source"];
 export type CxMappingSecondaryMappings = CxMappingParams["secondaryMappings"];
 export type CxMappingBodyParser = { bodyParser: z.Schema };
-export const cxMappingSourceMap: Map<CxMappingSource, CxMappingBodyParser> = new Map([]);
 
 export interface CxMappingParams {
   externalId: string;

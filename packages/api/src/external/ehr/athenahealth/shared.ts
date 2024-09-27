@@ -1,9 +1,4 @@
-import {
-  PatientResource,
-  athenaSecondaryMappingsSchema,
-  AthenaSecondaryMappings,
-  AthenaJwtTokenData,
-} from "@metriport/shared";
+import { PatientResource, AthenaSecondaryMappings, AthenaJwtTokenData } from "@metriport/shared";
 import {
   normalizeEmail,
   normalizePhoneNumber,
@@ -13,12 +8,8 @@ import {
 import { Contact } from "@metriport/core/domain/contact";
 import { Address } from "@metriport/core/domain/address";
 import { EhrSources } from "../shared";
-import { CxMappingParams, cxMappingSourceMap } from "../../../domain/cx-mapping";
-import { facilityMappingSourceList } from "../../../domain/facility-mapping";
+import { CxMappingParams } from "../../../domain/cx-mapping";
 import { JwtTokenParams } from "../../../domain/jwt-token";
-
-cxMappingSourceMap.set(EhrSources.athena, { bodyParser: athenaSecondaryMappingsSchema });
-facilityMappingSourceList.push(EhrSources.athena);
 
 export type AthenaSource = `${EhrSources.athena}`;
 
