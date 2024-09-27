@@ -6,7 +6,7 @@ import { MPI } from "./mpi";
 import { normalizePatient } from "./normalize-patient";
 import { PatientMPI, patientToPatientMPI } from "./shared";
 
-export class InboundMPIMetriportAPI implements MPI {
+export class InboundMpiMetriportApi implements MPI {
   protected readonly SIMILARITY_THRESHOLD = 20;
   protected readonly patientLoader = new PatientLoaderMetriportAPI(this.apiUrl);
 

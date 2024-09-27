@@ -178,6 +178,11 @@ function isSameIdentifierById(a?: PersonalIdentifier, b?: PersonalIdentifier): b
     (a.type === "driversLicense" && b.type === "driversLicense" ? a.state === b.state : true)
   );
 }
+/**
+ * Implements the EPIC matching algorithm for patient data comparison.
+ * For detailed algorithm description and scoring logic, refer to:
+ * https://docs.google.com/document/d/1XgY-4AbBDpnQdiEcOuBe9It_i7oNuPYgIJM44FUSI3E/edit
+ */
 
 export function epicMatchingAlgorithm(
   patient1: PatientData,
@@ -194,16 +199,14 @@ export function epicMatchingAlgorithm(
     ssn: 0,
   };
 
-  if (patient1.dob && patient2.dob) {
-    if (patient1.dob === patient2.dob) {
-      scores.dob = 8;
-    } else {
-      const dob1Split = splitDob(patient1.dob);
-      const dob2Split = splitDob(patient2.dob);
-      const overlappingDateParts = dob2Split.filter(dp => dob1Split.includes(dp));
-      if (overlappingDateParts.length >= 2) {
-        scores.dob = 2;
-      }
+  if (patient1.dob && patient2.dob && patient1.dob === patient2.dob) {
+    scores.dob = 8;
+  } else if (patient1.dob && patient2.dob) {
+    const dob1Split = splitDob(patient1.dob);
+    const dob2Split = splitDob(patient2.dob);
+    const overlappingDateParts = dob2Split.filter(dp => dob1Split.includes(dp));
+    if (overlappingDateParts.length >= 2) {
+      scores.dob = 2;
     }
   }
 
@@ -254,8 +257,8 @@ export function epicMatchingAlgorithm(
 
   const ssn1 = patient1.personalIdentifiers?.filter(id => id.type === "ssn").map(id => id.value);
   const ssn2 = patient2.personalIdentifiers?.filter(id => id.type === "ssn").map(id => id.value);
-  if (ssn1?.length || ssn2?.length) {
-    const ssnMatch = ssn1?.some(s1 => ssn2?.includes(s1));
+  if (ssn1?.length && ssn2?.length) {
+    const ssnMatch = ssn1.some(s1 => ssn2.includes(s1));
     if (ssnMatch) {
       scores.ssn = 5;
     }
