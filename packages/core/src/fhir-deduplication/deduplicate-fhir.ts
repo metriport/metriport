@@ -35,7 +35,7 @@ const medicationRelatedTypes = [
 
 export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> {
   const deduplicatedBundle: Bundle = cloneDeep(fhirBundle);
-  let resourceArrays = extractFhirTypesFromBundle(fhirBundle);
+  let resourceArrays = extractFhirTypesFromBundle(deduplicatedBundle);
 
   const medicationsResult = deduplicateMedications(resourceArrays.medications);
   /* WARNING we need to replace references in the following resource arrays before deduplicating them because their deduplication keys 
