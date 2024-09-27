@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { errorToString } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -13,7 +14,7 @@ import { getPatientIdOrFail as singleGetPatientIdOrFail } from "./get-patient";
 
 dayjs.extend(duration);
 
-const delay = dayjs.duration(30, "seconds");
+const delayBetweenBatches = dayjs.duration(30, "seconds");
 const lastModifiedHoursLookback = 72;
 const appointmentYearsLookForward = 10;
 
@@ -40,27 +41,15 @@ export async function getPatientIdsOrFailFromAppointments(): Promise<void> {
   const athenaClientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
   const athenaClientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
 
-  const now = new Date();
-  const currentDatetime = new Date(
-    Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate(),
-      now.getUTCHours(),
-      now.getUTCMinutes(),
-      now.getUTCSeconds()
-    )
-  );
-  const startAppointmentDate = new Date(currentDatetime);
-  const endAppointmentDate = new Date(
-    new Date(currentDatetime).setUTCFullYear(
-      currentDatetime.getUTCFullYear() + appointmentYearsLookForward
-    )
-  );
-  const startLastModifiedDate = new Date(
-    new Date(currentDatetime).setUTCHours(currentDatetime.getUTCHours() - lastModifiedHoursLookback)
-  );
-  const endLastModifiedDate = new Date(currentDatetime);
+  const currentDatetime = buildDayjs(new Date());
+  const startAppointmentDate = buildDayjs(currentDatetime).toDate();
+  const endAppointmentDate = buildDayjs(currentDatetime)
+    .year(currentDatetime.year() + appointmentYearsLookForward)
+    .toDate();
+  const startLastModifiedDate = buildDayjs(currentDatetime)
+    .hour(currentDatetime.hour() - lastModifiedHoursLookback)
+    .toDate();
+  const endLastModifiedDate = buildDayjs(currentDatetime).toDate();
   log(`Getting appointments from ${startLastModifiedDate} to ${endLastModifiedDate}`);
 
   await executeAsynchronously(
@@ -90,7 +79,7 @@ export async function getPatientIdsOrFailFromAppointments(): Promise<void> {
       });
     }),
     getAppointmentsAndCreateOrUpdatePatient,
-    { numberOfParallelExecutions: 10, delay: delay.asMilliseconds() }
+    { numberOfParallelExecutions: 10, delay: delayBetweenBatches.asMilliseconds() }
   );
 
   if (getAppointmentsErrors.length > 0) {
@@ -119,7 +108,7 @@ export async function getPatientIdsOrFailFromAppointments(): Promise<void> {
       };
     }),
     getPatientIdOrFail,
-    { numberOfParallelExecutions: 10, delay: delay.asMilliseconds() }
+    { numberOfParallelExecutions: 10, delay: delayBetweenBatches.asMilliseconds() }
   );
 
   if (getPatientOrFailErrors.length > 0) {
@@ -224,7 +213,7 @@ async function getPatientIdOrFail({
       triggerDq,
     });
   } catch (error) {
-    const msg = `Failed to find or create patients. cxId ${cxId} athenaPracticeId: ${athenaPracticeId}. athenaPatientId: ${athenaPatientId}. Cause: ${errorToString(
+    const msg = `Failed to find or create patients. cxId ${cxId} athenaPracticeId: ${athenaPracticeId} athenaPatientId: ${athenaPatientId}. Cause: ${errorToString(
       error
     )}`;
     log(msg);
