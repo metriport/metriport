@@ -49,7 +49,7 @@ export async function createConsolidatedFromConversions({
     getConversions({ cxId, patientId, patient, sourceBucketName }),
     getDocumentReferences({ cxId, patientId }),
   ]);
-  log(`Got ${conversions} resources from conversions`);
+  log(`Got ${conversions.length} resources from conversions`);
 
   const withDups = buildConsolidatedBundle();
   withDups.entry = [...conversions, ...docRefs.map(buildBundleEntry), patientEntry];
