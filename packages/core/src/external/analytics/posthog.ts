@@ -24,6 +24,7 @@ const POSTHOG_GROUP_ID = "customer";
 
 export function analytics(params: AnalyticsParams, postApiKey?: string): PostHog | void {
   const apiKey = postApiKey ?? defaultPostHogApiKey;
+
   if (!apiKey) return;
 
   const posthog = new PostHog(apiKey);
