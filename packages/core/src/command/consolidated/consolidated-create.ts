@@ -22,7 +22,6 @@ const defaultS3RetriesConfig = {
 
 export type ConsolidatePatientDataCommand = {
   cxId: string;
-  patientId: string;
   patient: Patient;
   destinationBucketName?: string | undefined;
   sourceBucketName?: string | undefined;
@@ -35,18 +34,18 @@ type BundleLocation = { bucket: string; key: string };
  */
 export async function createConsolidatedFromConversions({
   cxId,
-  patientId,
   patient,
   destinationBucketName = getConsolidatedLocation(),
   sourceBucketName = getConsolidatedSourceLocation(),
 }: ConsolidatePatientDataCommand): Promise<Bundle> {
+  const patientId = patient.id;
   const { log } = out(`createConsolidatedFromConversions - cx ${cxId}, pat ${patientId}`);
 
   const fhirPatient = patientToFhir(patient);
   const patientEntry = buildBundleEntry(fhirPatient);
 
   const [conversions, docRefs] = await Promise.all([
-    getConversions({ cxId, patientId, patient, sourceBucketName }),
+    getConversions({ cxId, patient, sourceBucketName }),
     getDocumentReferences({ cxId, patientId }),
   ]);
   log(`Got ${conversions.length} resources from conversions`);
@@ -89,9 +88,10 @@ function buildConsolidatedBundle(): Bundle {
 
 async function getConversions({
   cxId,
-  patientId,
+  patient,
   sourceBucketName,
 }: ConsolidatePatientDataCommand): Promise<BundleEntry[]> {
+  const patientId = patient.id;
   const { log } = out(`mergeConversionBundles - cx ${cxId}, pat ${patientId}`);
 
   const conversionBundles = await listConversionBundlesFromS3({

@@ -9,6 +9,7 @@ import dayjs from "dayjs";
 import fs from "fs";
 import { getFileContents, getFileNames, makeDir } from "../shared/fs";
 import { validateReferences } from "./report/validate-references";
+import { v4 as uuidv4 } from "uuid";
 
 /**
  * Folder with consolidated files/bundles.
@@ -49,7 +50,9 @@ async function main() {
 
     const startedAt = new Date();
 
-    const resultingBundle = deduplicateFhir(initialBundle);
+    const cxId = uuidv4();
+    const patientId = uuidv4();
+    const resultingBundle = deduplicateFhir(initialBundle, cxId, patientId);
 
     console.log(
       `Went from ${initialBundle.entry?.length} to ${

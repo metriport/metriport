@@ -39,7 +39,6 @@ async function main() {
 
   await createConsolidatedFromConversions({
     cxId,
-    patientId,
     patient: getDomainFromDTO(patient),
     sourceBucketName: inputBundleBucket,
     destinationBucketName: consolidatedBucket,

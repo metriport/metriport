@@ -34,7 +34,7 @@ export async function getConsolidatedFromS3({
   const { log } = out(`getConsolidatedFromS3 - cx ${cxId}, pat ${patientId}`);
   log(`Running with params: ${JSON.stringify(params)}`);
 
-  const consolidated = await getOrCreateConsolidatedOnS3({ cxId, patientId, patient });
+  const consolidated = await getOrCreateConsolidatedOnS3({ cxId, patient });
   log(`Consolidated with ${consolidated.entry?.length} entries`);
 
   const filtered = await filterConsolidated(consolidated, params);
@@ -44,13 +44,12 @@ export async function getConsolidatedFromS3({
 
 async function getOrCreateConsolidatedOnS3({
   cxId,
-  patientId,
   patient,
 }: {
   cxId: string;
-  patientId: string;
   patient: Patient;
 }): Promise<Bundle> {
+  const patientId = patient.id;
   const { log } = out(`getOrCreateConsolidatedOnS3 - cx ${cxId}, pat ${patientId}`);
   const preGenerated = await getConsolidated({
     cxId,
@@ -61,7 +60,7 @@ async function getOrCreateConsolidatedOnS3({
     return preGenerated.bundle;
   }
   log(`Did not found pre-generated consolidated, creating a new one...`);
-  const newConsolidated = await createConsolidatedFromConversions({ cxId, patientId, patient });
+  const newConsolidated = await createConsolidatedFromConversions({ cxId, patient });
   return newConsolidated;
 }
 

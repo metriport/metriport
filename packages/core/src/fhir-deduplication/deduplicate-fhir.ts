@@ -26,6 +26,7 @@ import { deduplicatePractitioners } from "./resources/practitioner";
 import { deduplicateProcedures } from "./resources/procedure";
 import { deduplicateRelatedPersons } from "./resources/related-person";
 import { createRef } from "./shared";
+import { capture } from "../util";
 
 const medicationRelatedTypes = [
   "MedicationStatement",
@@ -33,7 +34,11 @@ const medicationRelatedTypes = [
   "MedicationRequest",
 ];
 
-export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> {
+export function deduplicateFhir(
+  fhirBundle: Bundle<Resource>,
+  cxId: string,
+  patientId: string
+): Bundle<Resource> {
   const deduplicatedBundle: Bundle = cloneDeep(fhirBundle);
   let resourceArrays = extractFhirTypesFromBundle(deduplicatedBundle);
 
@@ -176,6 +181,17 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
     deletedRefs
   );
   resourceArrays = updatedResourceArrays2;
+
+  if (!resourceArrays.patient) {
+    capture.message("Critical Missing Patient", {
+      extra: {
+        cxId,
+        patientId,
+        patient: resourceArrays.patient,
+      },
+      level: "fatal",
+    });
+  }
 
   deduplicatedBundle.entry = Object.entries(resourceArrays)
     .filter(([resourceType]) => resourceType !== "devices")
