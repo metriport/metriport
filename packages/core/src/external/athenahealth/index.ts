@@ -9,6 +9,12 @@ import {
   patientResourceSchema,
   patientSearchResourceSchema,
   PatientResource,
+  MedicationReference,
+  medicationReferenceResponseSchema,
+  MedicationCreateResponse,
+  medicationCreateResponseSchema,
+  BookedAppointment,
+  bookedAppointmentResponseSchema,
 } from "@metriport/shared";
 import { errorToString, NotFoundError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
@@ -40,10 +46,6 @@ function getS3UtilsInstance(): S3Utils {
 }
 
 export type AthenaEnv = "api" | "api.preview";
-
-export type AthenaMedication = { medication: string; medicationid: number };
-
-export type AthenaAppointment = { patientid: string };
 
 export type MedicationWithRefs = {
   medication: Medication;
@@ -246,11 +248,7 @@ class AthenaHealthApi {
     patientId: string;
     departmentId: string;
     medication: MedicationWithRefs;
-  }): Promise<{
-    success: string;
-    errormessage: string;
-    medicationentryid: string;
-  }> {
+  }): Promise<MedicationCreateResponse> {
     const { log, debug } = out(`AthenaHealth create medication - AH patientId ${patientId}`);
     const medicationOptions = await this.searchForMedication({
       cxId,
@@ -303,7 +301,7 @@ class AthenaHealthApi {
           contentType: "application/json",
         });
       }
-      return response.data;
+      return medicationCreateResponseSchema.parse(response.data);
     } catch (error) {
       const msg = `Failure while creating medication @ AthenaHealth`;
       log(`${msg}. Patient ID: ${patientId}. Cause: ${errorToString(error)}`);
@@ -327,11 +325,11 @@ class AthenaHealthApi {
     cxId: string;
     patientId: string;
     medication: Medication;
-  }): Promise<AthenaMedication[]> {
+  }): Promise<MedicationReference[]> {
     const { log, debug } = out(`AthenaHealth search for medication - AH patientId ${patientId}`);
     const searchValues = medication.code?.coding?.flatMap(c => c.display?.split("/") ?? []);
     if (!searchValues) throw Error("No code displays values for searching medications.");
-    const medicationOptions: AthenaMedication[] = [];
+    const medicationOptions: MedicationReference[] = [];
     await Promise.all(
       searchValues.map(async searchValue => {
         if (searchValue.length < 2) return;
@@ -342,7 +340,7 @@ class AthenaHealthApi {
           );
           if (!response.data) throw new Error(`No body returned from ${referenceUrl}`);
           debug(`${referenceUrl} resp: ${JSON.stringify(response.data)}`);
-          const medications = response.data as AthenaMedication[];
+          const medications = medicationReferenceResponseSchema.parse(response.data);
           medicationOptions.push(...medications);
         } catch (error) {
           const msg = `Failure while searching for medications @ AthenaHealth`;
@@ -390,7 +388,7 @@ class AthenaHealthApi {
     endAppointmentDate: Date;
     startLastModifiedDate: Date;
     endLastModifiedDate: Date;
-  }): Promise<{ appointments: AthenaAppointment[] }> {
+  }): Promise<BookedAppointment[]> {
     const { log, debug } = out(
       `AthenaHealth get appointments - cxId ${cxId} departmentId ${departmentId}`
     );
@@ -423,7 +421,7 @@ class AthenaHealthApi {
           contentType: "application/json",
         });
       }
-      return response.data;
+      return bookedAppointmentResponseSchema.parse(response.data).appointments;
     } catch (error) {
       const msg = `Failure while getting appointments @ AthenaHealth`;
       log(`${msg}. Cause: ${errorToString(error)}`);
