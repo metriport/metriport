@@ -16,12 +16,12 @@ import { getDomainFromDTO } from "@metriport/core/command/patient-loader-metripo
  * - Run `ts-node src/fhir/consolidate-patient-data.ts`
  */
 
-const cxId = "e2829f11-875e-4c4b-bf46-b4f890281d03";
-const patientId = "018df170-26aa-75df-9b65-f2df02bf84c9";
+const cxId = "";
+const patientId = "";
 /**
  * The bucket and key of the input bundle to be merged into the consolidated bundle.
  */
-const inputBundleBucket = "metriport-ccda-to-fhir-conversions-staging";
+const inputBundleBucket = "";
 const consolidatedBucket = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
