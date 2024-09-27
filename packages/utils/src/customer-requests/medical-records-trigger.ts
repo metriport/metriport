@@ -24,16 +24,16 @@ dayjs.extend(duration);
 const patientIds: string[] = [];
 
 // The date range is inclusive on both ends
-const dateFrom = undefined;
+const dateFrom = "";
 const dateTo = undefined;
 
-const resources: string[] | undefined = undefined;
-const conversionType = "pdf";
+const resources: string[] | undefined = [];
+const conversionTypes = ["json", "pdf"];
 
 const cxId = getEnvVarOrFail("CX_ID");
 const apiUrl = getEnvVarOrFail("API_URL");
 
-const timeBetweenPatients = 2_000;
+const timeBetweenPatients = 2000;
 const axiosConfig: CreateAxiosDefaults = {
   timeout: 120_000,
   baseURL: apiUrl,
@@ -54,10 +54,21 @@ async function main() {
   let index = 0;
   const total = patientIds.length;
   for (const patientId of patientIds) {
-    console.log(`Calling for patient ${index + 1}/${total}. ID: ${patientId}...`);
-    await api.post(`/medical/v1/patient/${patientId}/consolidated/query`, undefined, {
-      params: { resources: resources && resources.join(","), dateFrom, dateTo, conversionType },
-    });
+    for (const conversionType of conversionTypes) {
+      console.log(
+        `Calling for patient ${
+          index + 1
+        }/${total}. ID: ${patientId}. Conversion type: ${conversionType}...`
+      );
+      await api.post(`/medical/v1/patient/${patientId}/consolidated/query`, undefined, {
+        params: { resources: resources && resources.join(","), dateFrom, dateTo, conversionType },
+      });
+
+      if (conversionType !== conversionTypes[conversionTypes.length - 1]) {
+        await sleep(timeBetweenPatients);
+      }
+    }
+
     index++;
     await sleep(timeBetweenPatients);
   }
