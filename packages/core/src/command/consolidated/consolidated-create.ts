@@ -8,6 +8,8 @@ import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle
 import { executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
+import { Patient } from "../../domain/patient";
+import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
 
@@ -20,7 +22,7 @@ const defaultS3RetriesConfig = {
 
 export type ConsolidatePatientDataCommand = {
   cxId: string;
-  patientId: string;
+  patient: Patient;
   destinationBucketName?: string | undefined;
   sourceBucketName?: string | undefined;
 };
@@ -32,20 +34,24 @@ type BundleLocation = { bucket: string; key: string };
  */
 export async function createConsolidatedFromConversions({
   cxId,
-  patientId,
+  patient,
   destinationBucketName = getConsolidatedLocation(),
   sourceBucketName = getConsolidatedSourceLocation(),
 }: ConsolidatePatientDataCommand): Promise<Bundle> {
+  const patientId = patient.id;
   const { log } = out(`createConsolidatedFromConversions - cx ${cxId}, pat ${patientId}`);
 
+  const fhirPatient = patientToFhir(patient);
+  const patientEntry = buildBundleEntry(fhirPatient);
+
   const [conversions, docRefs] = await Promise.all([
-    getConversions({ cxId, patientId, sourceBucketName }),
+    getConversions({ cxId, patient, sourceBucketName }),
     getDocumentReferences({ cxId, patientId }),
   ]);
-  log(`Got ${conversions} resources from conversions`);
+  log(`Got ${conversions.length} resources from conversions`);
 
   const withDups = buildConsolidatedBundle();
-  withDups.entry = [...conversions, ...docRefs.map(buildBundleEntry)];
+  withDups.entry = [...conversions, ...docRefs.map(buildBundleEntry), patientEntry];
   withDups.total = withDups.entry.length;
   log(`Added ${docRefs.length} docRefs, to a total of ${withDups.entry.length} entries`);
 
@@ -82,9 +88,10 @@ function buildConsolidatedBundle(): Bundle {
 
 async function getConversions({
   cxId,
-  patientId,
+  patient,
   sourceBucketName,
 }: ConsolidatePatientDataCommand): Promise<BundleEntry[]> {
+  const patientId = patient.id;
   const { log } = out(`mergeConversionBundles - cx ${cxId}, pat ${patientId}`);
 
   const conversionBundles = await listConversionBundlesFromS3({
