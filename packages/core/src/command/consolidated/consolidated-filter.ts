@@ -20,17 +20,16 @@ const maxHydrationIterations = 5;
  */
 export async function getConsolidatedFromS3({
   cxId,
-  patientId,
   patient,
   ...params
 }: {
   cxId: string;
-  patientId: string;
   patient: Patient;
   resources?: ResourceTypeForConsolidation[] | undefined;
   dateFrom?: string | undefined;
   dateTo?: string | undefined;
 }): Promise<SearchSetBundle> {
+  const patientId = patient.id;
   const { log } = out(`getConsolidatedFromS3 - cx ${cxId}, pat ${patientId}`);
   log(`Running with params: ${JSON.stringify(params)}`);
 

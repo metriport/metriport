@@ -183,13 +183,13 @@ export function deduplicateFhir(
   resourceArrays = updatedResourceArrays2;
 
   if (!resourceArrays.patient) {
-    capture.message("Critical Missing Patient", {
+    capture.message("Critical Missing Patient in Deduplicate FHIR", {
       extra: {
         cxId,
         patientId,
         patient: resourceArrays.patient,
       },
-      level: "fatal",
+      level: "error",
     });
   }
 
