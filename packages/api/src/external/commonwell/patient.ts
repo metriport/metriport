@@ -221,7 +221,7 @@ async function registerAndLinkPatientInCW({
     }
 
     analytics({
-      cxId: patient.cxId,
+      distinctId: patient.cxId,
       event: EventTypes.patientDiscovery,
       properties: {
         hie: MedicalDataSource.COMMONWELL,
@@ -399,7 +399,7 @@ async function updatePatientAndLinksInCw({
     }
 
     analytics({
-      cxId: patient.cxId,
+      distinctId: patient.cxId,
       event: EventTypes.patientDiscovery,
       properties: {
         hie: MedicalDataSource.COMMONWELL,
@@ -569,7 +569,7 @@ export async function runNextPdOnNewDemographics({
     rerunPdOnNewDemographics: false,
   }).catch(processAsyncError("CW update"));
   analytics({
-    cxId: updatedPatient.cxId,
+    distinctId: updatedPatient.cxId,
     event: EventTypes.rerunOnNewDemographics,
     properties: {
       hie: MedicalDataSource.COMMONWELL,
@@ -612,7 +612,7 @@ export async function runNexPdIfScheduled({
     rerunPdOnNewDemographics: scheduledPdRequest.rerunPdOnNewDemographics,
   }).catch(processAsyncError("CW update"));
   analytics({
-    cxId: updatedPatient.cxId,
+    distinctId: updatedPatient.cxId,
     event: EventTypes.runScheduledPatientDiscovery,
     properties: {
       hie: MedicalDataSource.COMMONWELL,

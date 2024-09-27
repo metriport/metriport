@@ -44,7 +44,7 @@ export const analyzeRoute = ({
   if (!isDevices && cxId) {
     analytics({
       event: EventTypes.query,
-      cxId,
+      distinctId: cxId,
       properties: {
         method,
         url,

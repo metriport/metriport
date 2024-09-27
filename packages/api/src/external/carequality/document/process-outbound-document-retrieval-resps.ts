@@ -49,7 +49,7 @@ export async function processOutboundDocumentRetrievalResps({
     let issuesWithExternalGateway = 0;
 
     analytics({
-      cxId,
+      distinctId: cxId,
       event: EventTypes.documentRetrieval,
       properties: {
         requestId,

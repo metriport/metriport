@@ -69,7 +69,7 @@ export async function processRequest(
 ): Promise<boolean> {
   const sendAnalytics = (status: string, properties?: Record<string, string>) => {
     analytics({
-      cxId: webhookRequest.cxId,
+      distinctId: webhookRequest.cxId,
       event: EventTypes.webhook,
       properties: {
         whType: webhookRequest.type,

@@ -217,7 +217,7 @@ export async function queryAndProcessDocuments({
     const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
 
     analytics({
-      cxId,
+      distinctId: cxId,
       event: EventTypes.documentQuery,
       properties: {
         requestId,

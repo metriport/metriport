@@ -16,36 +16,30 @@ export interface EventMessageV1 extends IdentifyMessageV1 {
   timestamp?: Date;
 }
 
-export type AnalyticsParams = Omit<EventMessageV1, "distinctId"> & { cxId: string };
-
 const defaultPostHogApiKey = Config.getPostHogApiKey();
 
-const POSTHOG_GROUP_ID = "customer";
-
-export function analytics(params: AnalyticsParams, postApiKey?: string): PostHog | void {
+export function analytics(params: EventMessageV1, postApiKey?: string): PostHog | void {
   const apiKey = postApiKey ?? defaultPostHogApiKey;
 
   if (!apiKey) return;
 
   const posthog = new PostHog(apiKey);
 
-  const updatedParams: EventMessageV1 = {
-    ...params,
-    distinctId: POSTHOG_GROUP_ID,
-    groups: { customer: params.cxId },
-    properties: {
-      ...(params.properties ? { ...params.properties } : undefined),
-      environment: Config.getEnvType(),
-      platform: "oss-api",
+  params.properties = {
+    ...(params.properties ? { ...params.properties } : undefined),
+    environment: Config.getEnvType(),
+    platform: "oss-api",
+    $set_once: {
+      cxId: params.distinctId,
     },
   };
 
-  posthog.capture(updatedParams);
+  posthog.capture(params);
 
   return posthog;
 }
 
-export async function analyticsAsync(params: AnalyticsParams, postApiKey?: string) {
+export async function analyticsAsync(params: EventMessageV1, postApiKey?: string) {
   const posthog = analytics(params, postApiKey);
 
   if (!posthog) return;

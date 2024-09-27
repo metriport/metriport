@@ -16,7 +16,7 @@ export function deduplicate({
   const dedupedBundle = deduplicateFhir(bundle);
 
   const deduplicationAnalyticsProps = {
-    cxId,
+    distinctId: cxId,
     event: EventTypes.fhirDeduplication,
     properties: {
       patientId: patientId,

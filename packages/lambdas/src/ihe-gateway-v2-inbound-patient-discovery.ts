@@ -45,7 +45,7 @@ export async function handler(event: APIGatewayProxyEventV2) {
         if (postHogApiKey && engineeringCxId) {
           await analyticsAsync(
             {
-              cxId: engineeringCxId,
+              distinctId: engineeringCxId,
               event: EventTypes.inboundPatientDiscovery,
               properties: {
                 patientId: result.patientId,

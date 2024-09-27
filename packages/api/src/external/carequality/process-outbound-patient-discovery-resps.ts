@@ -87,7 +87,7 @@ export async function processOutboundPatientDiscoveryResps({
     }
 
     analytics({
-      cxId: patient.cxId,
+      distinctId: patient.cxId,
       event: EventTypes.patientDiscovery,
       properties: {
         hie: MedicalDataSource.CAREQUALITY,
@@ -207,7 +207,7 @@ export async function runNextPdOnNewDemographics({
     rerunPdOnNewDemographics: false,
   }).catch(processAsyncError("CQ discover"));
   analytics({
-    cxId: updatedPatient.cxId,
+    distinctId: updatedPatient.cxId,
     event: EventTypes.rerunOnNewDemographics,
     properties: {
       hie: MedicalDataSource.CAREQUALITY,
@@ -246,7 +246,7 @@ export async function runNexPdIfScheduled({
     rerunPdOnNewDemographics: scheduledPdRequest.rerunPdOnNewDemographics,
   }).catch(processAsyncError("CQ discover"));
   analytics({
-    cxId: updatedPatient.cxId,
+    distinctId: updatedPatient.cxId,
     event: EventTypes.runScheduledPatientDiscovery,
     properties: {
       hie: MedicalDataSource.CAREQUALITY,

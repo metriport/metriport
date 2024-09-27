@@ -90,7 +90,7 @@ export async function calculateDocumentConversionStatus({
       const failedConversions = convert?.errors;
 
       analytics({
-        cxId,
+        distinctId: cxId,
         event: EventTypes.documentConversion,
         properties: {
           requestId,
