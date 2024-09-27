@@ -20,6 +20,8 @@ export type AnalyticsParams = Omit<EventMessageV1, "distinctId"> & { cxId: strin
 
 const defaultPostHogApiKey = Config.getPostHogApiKey();
 
+const POSTHOG_GROUP_ID = "customer";
+
 export function analytics(params: AnalyticsParams, postApiKey?: string): PostHog | void {
   const apiKey = postApiKey ?? defaultPostHogApiKey;
   if (!apiKey) return;
@@ -28,7 +30,7 @@ export function analytics(params: AnalyticsParams, postApiKey?: string): PostHog
 
   const updatedParams: EventMessageV1 = {
     ...params,
-    distinctId: "group_event",
+    distinctId: POSTHOG_GROUP_ID,
     groups: { company: params.cxId },
     properties: {
       ...(params.properties ? { ...params.properties } : undefined),
