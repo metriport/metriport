@@ -1,5 +1,5 @@
 /**
- * Script to query CloudWatch logs for FHIR to medical record lambda executions.
+ * Script to query CloudWatch logs for FHIR to bundle lambda executions.
  *
  * This script performs the following actions:
  * - Queries CloudWatch logs for a specified log group and time range
@@ -16,25 +16,30 @@
 import { queryLogs } from "./query";
 
 const LOG_GROUP_NAME = "";
-const FILTER_PATTERN = "";
-const startDate = new Date("2024-09-25T00:00:00Z").getTime();
-const endDate = new Date("2024-09-26T23:59:59Z").getTime();
+const FILTER_PATTERN = "Failed to get FHIR resources";
+const startDate = new Date("2024-09-26T00:00:00Z").getTime();
+const endDate = new Date("2024-09-27T23:59:59Z").getTime();
 
 function parseLogEvents(logEvents: string[]): Record<string, string[]> {
-  const result: Record<string, string[]> = {};
+  const result: Record<string, Set<string>> = {};
 
   logEvents.forEach(event => {
-    const match = event.match(/\[cx ([^,]+), patient ([^\]]+)\]/);
+    const match = event.match(/\[cx ([^,]+), patient ([^\s,]+)/);
     if (match) {
       const [, cxId, patientId] = match;
       if (!result[cxId]) {
-        result[cxId] = [];
+        result[cxId] = new Set();
       }
-      result[cxId].push(patientId);
+      result[cxId].add(patientId);
     }
   });
 
-  return result;
+  const finalResult: Record<string, string[]> = {};
+  for (const cxId in result) {
+    finalResult[cxId] = Array.from(result[cxId]);
+  }
+
+  return finalResult;
 }
 
 async function main() {
@@ -45,6 +50,14 @@ async function main() {
     const parsedResults = parseLogEvents(events);
     console.log("Parsed results:");
     console.log(JSON.stringify(parsedResults, null, 2));
+
+    // Count unique patient IDs per customer ID
+    const counts: Record<string, number> = {};
+    for (const cxId in parsedResults) {
+      counts[cxId] = parsedResults[cxId].length; // Count unique patient IDs
+    }
+    console.log("Counts of unique patient IDs per customer ID:");
+    console.log(JSON.stringify(counts, null, 2));
   } catch (error) {
     console.error("An error occurred during the query:", error);
   }
