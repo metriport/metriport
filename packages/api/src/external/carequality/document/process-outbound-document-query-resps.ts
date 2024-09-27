@@ -60,7 +60,7 @@ export async function processOutboundDocumentQueryResps({
     const { successCount, failureCount } = getOutboundDocQuerySuccessFailureCount(response);
 
     analytics({
-      distinctId: cxId,
+      cxId,
       event: EventTypes.documentQuery,
       properties: {
         requestId,
