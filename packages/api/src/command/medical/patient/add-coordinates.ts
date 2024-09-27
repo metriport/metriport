@@ -71,7 +71,7 @@ async function addGeographicCoordinates(
         const aboveThreshold = result.relevance > ADDRESS_MATCH_RELEVANCE_THRESHOLD;
 
         analytics({
-          distinctId: cxId,
+          cxId,
           event: EventTypes.addressRelevance,
           properties: {
             relevance: result.relevance,

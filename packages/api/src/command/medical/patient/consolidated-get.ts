@@ -120,7 +120,7 @@ export async function startConsolidatedQuery({
   };
 
   analytics({
-    distinctId: patient.cxId,
+    cxId: patient.cxId,
     event: EventTypes.consolidatedQuery,
     properties: {
       patientId: patient.id,
@@ -282,7 +282,7 @@ export async function getConsolidated({
     );
 
     const defaultAnalyticsProps = {
-      distinctId: patient.cxId,
+      cxId: patient.cxId,
       event: EventTypes.consolidatedQuery,
       properties: {
         patientId: patient.id,
