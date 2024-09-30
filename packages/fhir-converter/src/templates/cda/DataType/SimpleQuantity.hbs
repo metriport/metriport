@@ -42,11 +42,13 @@
           }
         {{else}}
           {{#with (extractDecimal decodedValue) as |decimal|}}
-            {
-              "value": {{decimal}},
-              "unit": "{{../../../../quantity.unit}}",
-              "system": "http://unitsofmeasure.org"
-            }
+            {{#if (not (eq decimal undefined))}}
+              {
+                "value": {{decimal}},
+                "unit": "{{../../../../quantity.unit}}",
+                "system": "http://unitsofmeasure.org"
+              }
+            {{/if}}
           {{/with}}
         {{/if}}
       {{/with}}
