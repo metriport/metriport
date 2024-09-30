@@ -1,31 +1,34 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import NotFoundError from "../../errors/not-found";
 import { CxMappingModel } from "../../models/cx-mapping";
-import { CxMapping, CxSources } from "../../domain/cx-mapping";
+import { CxMapping, CxMappingPerSource, CxSources } from "../../domain/cx-mapping";
 
-export type CxMappingParams = {
-  cxId: string;
-  externalId: string;
-  source: CxSources;
-};
+export type CxMappingParams = CxMappingPerSource;
 
-export type CxMappingLookUpParam = Omit<CxMappingParams, "cxId">;
+export type CxMappingLookUpParams = Omit<CxMappingParams, "cxId" | "secondaryMappings">;
 
 export async function findOrCreateCxMapping({
   cxId,
   externalId,
+  secondaryMappings,
   source,
 }: CxMappingParams): Promise<CxMapping> {
   const existing = await getCxMapping({ externalId, source });
   if (existing) return existing;
-  const created = await CxMappingModel.create({ id: uuidv7(), cxId, externalId, source });
+  const created = await CxMappingModel.create({
+    id: uuidv7(),
+    cxId,
+    externalId,
+    source,
+    secondaryMappings,
+  });
   return created.dataValues;
 }
 
 export async function getCxMapping({
   externalId,
   source,
-}: CxMappingLookUpParam): Promise<CxMapping | undefined> {
+}: CxMappingLookUpParams): Promise<CxMapping | undefined> {
   const existing = await CxMappingModel.findOne({
     where: { externalId, source },
   });
@@ -33,10 +36,17 @@ export async function getCxMapping({
   return existing.dataValues;
 }
 
+export async function getCxMappings({ source }: { source: CxSources }): Promise<CxMapping[]> {
+  const mappings = await CxMappingModel.findAll({
+    where: { source },
+  });
+  return mappings.map(m => m.dataValues);
+}
+
 export async function getCxMappingOrFail({
   externalId,
   source,
-}: CxMappingLookUpParam): Promise<CxMapping> {
+}: CxMappingLookUpParams): Promise<CxMapping> {
   const mapping = await getCxMapping({
     externalId,
     source,
@@ -55,7 +65,10 @@ export async function getCxMappingsForCustomer(where: {
   return rows.map(r => r.dataValues);
 }
 
-export async function deleteCxMapping({ externalId, source }: CxMappingLookUpParam): Promise<void> {
+export async function deleteCxMapping({
+  externalId,
+  source,
+}: CxMappingLookUpParams): Promise<void> {
   const existing = await CxMappingModel.findOne({
     where: { externalId, source },
   });

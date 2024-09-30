@@ -50,20 +50,17 @@ export function createQueueAndBucket({
   lambdaLayers,
   envType,
   alarmSnsAction,
-  altConnectorName,
 }: {
   stack: Construct;
   lambdaLayers: LambdaLayers;
   envType: EnvType;
   alarmSnsAction?: SnsAction;
-  // TODO 2215 Remove this when we remove the old FHIRConverter lambda/queues
-  altConnectorName?: string;
 }): FHIRConverterConnector {
   const config = getConfig();
   const { connectorName, visibilityTimeout, maxReceiveCount } = settings();
   const queue = defaultCreateQueue({
     stack,
-    name: altConnectorName ?? connectorName,
+    name: connectorName,
     // To use FIFO we'd need to change the lambda code to set visibilityTimeout=0 on messages to be
     // reprocessed, instead of re-enqueueing them (bc of messageDeduplicationId visibility of 5min)
     fifo: false,
@@ -102,7 +99,6 @@ export function createLambda({
   vpc,
   sourceQueue,
   fhirServerQueue,
-  patientDataConsolidatorQueue,
   dlq,
   fhirConverterBucket,
   apiServiceDnsAddress,
@@ -114,7 +110,6 @@ export function createLambda({
   vpc: IVpc;
   sourceQueue: IQueue;
   fhirServerQueue: IQueue;
-  patientDataConsolidatorQueue: IQueue;
   dlq: IQueue;
   fhirConverterBucket: s3.IBucket;
   apiServiceDnsAddress: string;
@@ -146,7 +141,6 @@ export function createLambda({
       QUEUE_URL: sourceQueue.queueUrl,
       DLQ_URL: dlq.queueUrl,
       FHIR_SERVER_QUEUE_URL: fhirServerQueue.queueUrl,
-      PATIENT_DATA_CONSOLIDATOR_QUEUE_URL: patientDataConsolidatorQueue.queueUrl,
       CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,
     },
     timeout: lambdaTimeout,
@@ -166,11 +160,6 @@ export function createLambda({
   provideAccessToQueue({ accessType: "both", queue: sourceQueue, resource: conversionLambda });
   provideAccessToQueue({ accessType: "send", queue: dlq, resource: conversionLambda });
   provideAccessToQueue({ accessType: "send", queue: fhirServerQueue, resource: conversionLambda });
-  provideAccessToQueue({
-    accessType: "send",
-    queue: patientDataConsolidatorQueue,
-    resource: conversionLambda,
-  });
 
   return conversionLambda;
 }

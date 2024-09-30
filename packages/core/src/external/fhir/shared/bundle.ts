@@ -9,6 +9,7 @@ import {
   Coverage,
   Device,
   DiagnosticReport,
+  DocumentReference,
   Encounter,
   FamilyMemberHistory,
   Goal,
@@ -29,16 +30,21 @@ import {
   Resource,
   ResourceType,
   ServiceRequest,
-  DocumentReference,
 } from "@medplum/fhirtypes";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { uniq } from "lodash";
+import { wrapIdInUrnId, wrapIdInUrnUuid } from "../../../util/urn";
+import { isValidUuid } from "../../../util/uuid-v7";
 
 dayjs.extend(duration);
 
 const referenceRegex = new RegExp(/"reference":\s*"(.+?)"/g);
+
+export type ReferenceWithIdAndType<T extends Resource = Resource> = Required<
+  Pick<Reference<T>, "id" | "type">
+>;
 
 /**
  * Returns the references found in the given resources, including the missing ones.
@@ -56,7 +62,7 @@ export function getReferencesFromResources({
   resources: Resource[];
   referencesToInclude?: ResourceType[];
   referencesToExclude?: ResourceType[];
-}): { references: Reference[]; missingReferences: Reference[] } {
+}): { references: Reference[]; missingReferences: ReferenceWithIdAndType[] } {
   if (resources.length <= 0) return { references: [], missingReferences: [] };
   const resourceIds = resources.flatMap(r => r.id ?? []);
   const references = getReferencesFromRaw(
@@ -64,7 +70,7 @@ export function getReferencesFromResources({
     referencesToInclude,
     referencesToExclude
   );
-  const missingReferences: Reference[] = [];
+  const missingReferences: ReferenceWithIdAndType[] = [];
   for (const ref of references) {
     if (!ref.id) continue;
     if (!resourceIds.includes(ref.id)) missingReferences.push(ref);
@@ -76,7 +82,7 @@ function getReferencesFromRaw(
   rawContents: string,
   referencesToInclude: ResourceType[],
   referencesToExclude: ResourceType[]
-): Reference[] {
+): ReferenceWithIdAndType[] {
   const matches = rawContents.matchAll(referenceRegex);
   const references = [];
   for (const match of matches) {
@@ -84,7 +90,7 @@ function getReferencesFromRaw(
     if (ref) references.push(ref);
   }
   const uniqueRefs = uniq(references);
-  const preResult: Reference[] = uniqueRefs.flatMap(r => {
+  const preResult: ReferenceWithIdAndType[] = uniqueRefs.flatMap(r => {
     const parts = r.split("/");
     const type = parts[0] as ResourceType | undefined;
     const id = parts[1];
@@ -99,13 +105,40 @@ function getReferencesFromRaw(
   );
 }
 
-export function buildBundle(entries: BundleEntry[]): SearchSetBundle<Resource> {
-  return { resourceType: "Bundle", total: entries.length, type: "searchset", entry: entries };
+export function buildBundle({
+  type = "searchset",
+  entries = [],
+}: {
+  type?: Bundle["type"];
+  entries?: BundleEntry[];
+} = {}): Bundle {
+  return { resourceType: "Bundle", total: entries.length, type, entry: entries };
 }
+
+export function buildSearchSetBundle<T extends Resource = Resource>({
+  entries = [],
+}: {
+  entries?: BundleEntry<T>[];
+} = {}): SearchSetBundle<T> {
+  return buildBundle({ type: "searchset", entries }) as SearchSetBundle<T>;
+}
+
+export const buildBundleEntry = <T extends Resource>(resource: T): BundleEntry<T> => {
+  const fullUrl = buildFullUrl(resource);
+  return {
+    ...(fullUrl ? { fullUrl } : {}),
+    resource,
+  };
+};
+export const buildFullUrl = <T extends Resource>(resource: T): string | undefined => {
+  if (!resource || !resource.id) return undefined;
+  if (isValidUuid(resource.id)) return wrapIdInUrnUuid(resource.id);
+  return wrapIdInUrnId(resource.id);
+};
 
 export type ExtractedFhirTypes = {
   diagnosticReports: DiagnosticReport[];
-  patient?: Patient | undefined;
+  patient: Patient;
   practitioners: Practitioner[];
   compositions: Composition[];
   medications: Medication[];
@@ -134,6 +167,19 @@ export type ExtractedFhirTypes = {
   serviceRequests: ServiceRequest[];
   documentReferences: DocumentReference[];
 };
+
+export function initExtractedFhirTypes(patient: Patient): ExtractedFhirTypes {
+  const emptyBundle: Bundle = {
+    resourceType: "Bundle",
+    type: "collection",
+    entry: [
+      {
+        resource: patient,
+      },
+    ],
+  };
+  return extractFhirTypesFromBundle(emptyBundle);
+}
 
 export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
   let patient: Patient | undefined;
@@ -243,6 +289,10 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
         serviceRequests.push(resource as ServiceRequest);
       }
     }
+  }
+
+  if (!patient) {
+    throw new Error("Patient not found in bundle");
   }
 
   return {

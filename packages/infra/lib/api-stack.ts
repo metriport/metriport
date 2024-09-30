@@ -325,7 +325,6 @@ export class APIStack extends Stack {
         dlq: fhirConverterDLQ,
         bucket: fhirConverterBucket,
       },
-      patientDataConsolidator,
     } = new LambdasNestedStack(this, "LambdasNestedStack", {
       config: props.config,
       vpc: this.vpc,
@@ -372,15 +371,6 @@ export class APIStack extends Stack {
         slackNotification?.alarmAction
       );
     }
-
-    // TODO 2215 Remove this after the first release (move messages on the queue to the new queue)
-    fhirConverterConnector.createQueueAndBucket({
-      stack: this,
-      lambdaLayers,
-      envType: props.config.environmentType,
-      alarmSnsAction: slackNotification?.alarmAction,
-      altConnectorName: "FHIRConverter",
-    });
 
     const fhirServerQueue = fhirServerConnector.createConnector({
       envType: props.config.environmentType,
@@ -539,7 +529,6 @@ export class APIStack extends Stack {
           vpc: this.vpc,
           sourceQueue: fhirConverterQueue,
           fhirServerQueue,
-          patientDataConsolidatorQueue: patientDataConsolidator.queue,
           dlq: fhirConverterDLQ,
           fhirConverterBucket,
           apiServiceDnsAddress: apiDirectUrl,

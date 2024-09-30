@@ -1,20 +1,20 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import * as uuidv7_file from "@metriport/core/util/uuid-v7";
 import { Patient } from "@metriport/core/domain/patient";
-import { DocumentReferenceDTO } from "../../../../routes/medical/dtos/documentDTO";
-import { mockStartTransaction } from "../../../../models/__tests__/transaction";
-import { makeSettingModel } from "../../../../models/__tests__/settings";
+import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/patient";
+import * as uuidv7_file from "@metriport/core/util/uuid-v7";
+import { makePatientModel } from "../../../../models/medical/__tests__/patient";
 import { Settings } from "../../../../models/settings";
 import { WebhookRequest } from "../../../../models/webhook-request";
-import { makePatientModel } from "../../../../models/medical/__tests__/patient";
-import { makePatient, makePatientData } from "../../../../domain/medical/__tests__/patient";
+import { makeSettingModel } from "../../../../models/__tests__/settings";
+import { mockStartTransaction } from "../../../../models/__tests__/transaction";
+import { DocumentReferenceDTO } from "../../../../routes/medical/dtos/documentDTO";
+import * as getSettings from "../../../settings/getSettings";
+import * as reportUsageCmd from "../../../usage/report-usage";
+import * as webhook from "../../../webhook/webhook";
+import * as webhookRequest from "../../../webhook/webhook-request";
+import * as getPatient from "../../patient/get-patient";
 import * as documentWebhook from "../document-webhook";
 import * as processDocQueryWebhook from "../process-doc-query-webhook";
-import * as webhookRequest from "../../../webhook/webhook-request";
-import * as reportUsageCmd from "../../../usage/report-usage";
-import * as getSettings from "../../../settings/getSettings";
-import * as getPatient from "../../patient/get-patient";
-import * as webhook from "../../../webhook/webhook";
 
 let processPatientDocumentRequest: jest.SpyInstance;
 let composeDocRefPayload: jest.SpyInstance;

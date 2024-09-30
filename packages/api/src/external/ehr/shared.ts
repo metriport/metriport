@@ -1,3 +1,3 @@
 export enum EhrSources {
-  ATHENA = "athenahealth",
+  athena = "athenahealth",
 }

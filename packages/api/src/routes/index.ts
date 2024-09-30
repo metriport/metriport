@@ -18,6 +18,7 @@ import user from "./user";
 import webhook from "./webhook";
 import ehr from "./ehr";
 import jwtToken from "./jwt-token";
+import ehrInternal from "./ehr-internal";
 
 // Supports requests from the Dashboard through the dedicated JWT-based auth on API GW
 const dash = "/dash-oss";
@@ -26,6 +27,7 @@ export default (app: Application) => {
   // internal only routes, should be disabled at API Gateway
   app.use("/webhook", reportClientErrors, webhook);
   app.use("/internal/token", jwtToken);
+  app.use("/internal/ehr", ehrInternal);
   app.use("/internal", internal);
 
   // routes with API key auth

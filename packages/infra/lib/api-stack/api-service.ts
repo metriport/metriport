@@ -291,7 +291,10 @@ export function createAPIService({
             CQ_TRUST_BUNDLE_BUCKET_NAME: props.config.iheGateway.trustStoreBucketName,
           }),
           ...(props.config.ehrIntegration && {
-            EHR_ATHENA_BASE_URL: props.config.ehrIntegration.athenaHealth.baseUrl,
+            EHR_ATHENA_ENVIRONMENT: props.config.ehrIntegration.athenaHealth.env,
+            EHR_ATHENA_CLIENT_KEY_ARN: props.config.ehrIntegration.athenaHealth.athenaClientKeyArn,
+            EHR_ATHENA_CLIENT_SECRET_ARN:
+              props.config.ehrIntegration.athenaHealth.athenaClientSecretArn,
           }),
         },
       },
@@ -348,6 +351,21 @@ export function createAPIService({
 
   // Access grant for Aurora DB's secret
   dbCredsSecret.grantRead(fargateService.taskDefinition.taskRole);
+  // Access to EHR secrets
+  if (props.config.ehrIntegration) {
+    const athenaClientKey = secret.Secret.fromSecretCompleteArn(
+      stack,
+      "EhrAthenaClientKeySecret",
+      props.config.ehrIntegration.athenaHealth.athenaClientKeyArn
+    );
+    athenaClientKey.grantRead(fargateService.taskDefinition.taskRole);
+    const athenaClientSecret = secret.Secret.fromSecretCompleteArn(
+      stack,
+      "EhrAthenaClientSecretSecret",
+      props.config.ehrIntegration.athenaHealth.athenaClientSecretArn
+    );
+    athenaClientSecret.grantRead(fargateService.taskDefinition.taskRole);
+  }
   // RW grant for Dynamo DB
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);

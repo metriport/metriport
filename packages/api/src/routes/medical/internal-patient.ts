@@ -1,5 +1,5 @@
 import { genderAtBirthSchema } from "@metriport/api-sdk";
-import { getConsolidatedBundleFromS3 } from "@metriport/core/command/consolidated/consolidated-on-s3";
+import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -28,12 +28,13 @@ import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
+import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import {
   getConsolidated,
   getConsolidatedAndSendToCx,
 } from "../../command/medical/patient/consolidated-get";
-import { createCoverageAssessments } from "../../command/medical/patient/converage-assessment-create";
-import { getCoverageAssessments } from "../../command/medical/patient/converage-assessment-get";
+import { createCoverageAssessments } from "../../command/medical/patient/coverage-assessment-create";
+import { getCoverageAssessments } from "../../command/medical/patient/coverage-assessment-get";
 import { PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
@@ -625,9 +626,13 @@ router.get(
       ? consolidationConversionTypeSchema.parse(typeRaw.toLowerCase())
       : undefined;
 
-    const patient = await getPatientOrFail({ cxId, id: patientId });
+    const [organization, patient] = await Promise.all([
+      getOrganizationOrFail({ cxId }),
+      getPatientOrFail({ id: patientId, cxId }),
+    ]);
     const data = await getConsolidated({
       patient,
+      organization,
       documentIds,
       resources,
       dateFrom,
@@ -876,7 +881,10 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFromParamsOrFail("id", req);
-    const patient = await getPatientOrFail({ cxId, id });
+    const [organization, patient] = await Promise.all([
+      getOrganizationOrFail({ cxId }),
+      getPatientOrFail({ id, cxId }),
+    ]);
     const {
       requestId,
       conversionType,
@@ -888,13 +896,14 @@ router.post(
       bundleFilename,
     } = internalSendConsolidatedSchema.parse(req.body);
 
-    const bundle = await getConsolidatedBundleFromS3({
+    const bundle = await getConsolidatedSnapshotFromS3({
       bundleLocation,
       bundleFilename,
     });
 
     getConsolidatedAndSendToCx({
       patient,
+      organization,
       bundle,
       requestId,
       conversionType,

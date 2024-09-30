@@ -224,7 +224,9 @@ type EnvConfigBase = {
   };
   ehrIntegration?: {
     athenaHealth: {
-      baseUrl: string;
+      env: string;
+      athenaClientKeyArn: string;
+      athenaClientSecretArn: string;
     };
   };
 };

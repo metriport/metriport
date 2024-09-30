@@ -1,11 +1,11 @@
+import { errorToString } from "@metriport/shared";
 import { AppConfig } from "aws-sdk";
 import { z } from "zod";
+import { Config } from "../../util/config";
 import { MetriportError } from "../../util/error/metriport-error";
 import { out } from "../../util/log";
-import { uuidv4 } from "../../util/uuid-v7";
-import { errorToString } from "@metriport/shared";
 import { capture } from "../../util/notifications";
-import { Config } from "../../util/config";
+import { uuidv4 } from "../../util/uuid-v7";
 
 const { log } = out(`Core appConfig - FF`);
 
@@ -29,6 +29,7 @@ export type BooleanFF = z.infer<typeof ffBooleanSchema>;
 export const booleanFFsSchema = z.object({
   commonwellFeatureFlag: ffBooleanSchema,
   carequalityFeatureFlag: ffBooleanSchema,
+  cxsWithConsolidatedFromS3: ffBooleanSchema.optional(),
 });
 export type BooleanFeatureFlags = z.infer<typeof booleanFFsSchema>;
 
@@ -186,6 +187,33 @@ export async function createAndDeployConfigurationContent({
 }
 
 /**
+ * Checks whether the specified feature flag is enabled.
+ *
+ * @returns true if enabled; false otherwise
+ */
+export async function isFeatureFlagEnabled(
+  featureFlagName: keyof BooleanFeatureFlags,
+  defaultValue = false
+): Promise<boolean> {
+  try {
+    const featureFlag = await getFeatureFlagValueBoolean(
+      Config.getAWSRegion(),
+      Config.getAppConfigAppId(),
+      Config.getAppConfigConfigId(),
+      Config.getEnvType(),
+      featureFlagName
+    );
+    return featureFlag ? featureFlag.enabled : defaultValue;
+  } catch (error) {
+    const msg = `Failed to get Feature Flag Value`;
+    const extra = { featureFlagName };
+    log(`${msg} - ${JSON.stringify(extra)} - ${errorToString(error)}`);
+    capture.error(msg, { extra: { ...extra, error } });
+  }
+  return defaultValue;
+}
+
+/**
  * Returns the list of customers that are enabled for the given feature flag.
  *
  * @returns Array of string values
@@ -220,4 +248,8 @@ export async function getCxsWithAiBriefFeatureFlagValue(): Promise<string[]> {
 export async function isAiBriefFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
   const cxsWithADHDFeatureFlagValue = await getCxsWithAiBriefFeatureFlagValue();
   return cxsWithADHDFeatureFlagValue.includes(cxId);
+}
+
+export async function isConsolidatedFromS3Enabled(): Promise<boolean> {
+  return await isFeatureFlagEnabled("cxsWithConsolidatedFromS3");
 }

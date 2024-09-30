@@ -2,15 +2,15 @@
 import { faker } from "@faker-js/faker";
 import { Organization } from "@metriport/core/domain/organization";
 import { Patient } from "@metriport/core/domain/patient";
+import { makePatient } from "@metriport/core/domain/__tests__/patient";
+import { eHexUrlPrefix } from "@metriport/core/external/carequality/ihe-gateway-v2/gateways";
+import { Facility } from "../../../../domain/medical/facility";
 import { makeFacility } from "../../../../domain/medical/__tests__/facility";
 import { makeOrganization } from "../../../../domain/medical/__tests__/organization";
-import { makePatient } from "../../../../domain/medical/__tests__/patient";
-import { Facility } from "../../../../domain/medical/facility";
 import { HieInitiator } from "../../../hie/get-hie-initiator";
-import { createOutboundDocumentQueryRequests } from "../create-outbound-document-query-req";
 import { CQLink } from "../../cq-patient-data";
 import { makeCqDataLink } from "../../__tests__/cq-patient-data";
-import { eHexUrlPrefix } from "@metriport/core/external/carequality/ihe-gateway-v2/gateways";
+import { createOutboundDocumentQueryRequests } from "../create-outbound-document-query-req";
 
 let requestId: string;
 let facilityId: string;

@@ -10,6 +10,7 @@ const DEFAULT_MEDICATION_REF = `Medication/${faker.string.uuid()}`;
 export function makeMedicationAdministration(
   params?: Partial<MedicationAdministration>
 ): MedicationAdministration {
+  const medicationReference = params?.medicationReference ?? { reference: DEFAULT_MEDICATION_REF };
   return {
     resourceType: "MedicationAdministration",
     ...(params?.id ? { id: params.id } : { id: faker.string.uuid() }),
@@ -21,7 +22,7 @@ export function makeMedicationAdministration(
     ],
     status: "completed",
     effectiveDateTime: "2020-01-20T11:15:00.000Z",
-    medicationReference: { reference: DEFAULT_MEDICATION_REF },
+    medicationReference,
     dosage: {
       route: {
         coding: [
@@ -40,6 +41,7 @@ export function makeMedicationAdministration(
 }
 
 export function makeMedicationRequest(params?: Partial<MedicationRequest>): MedicationRequest {
+  const medicationReference = params?.medicationReference ?? { reference: DEFAULT_MEDICATION_REF };
   return {
     resourceType: "MedicationRequest",
     ...(params?.id ? { id: params.id } : { id: faker.string.uuid() }),
@@ -51,7 +53,7 @@ export function makeMedicationRequest(params?: Partial<MedicationRequest>): Medi
     ],
     status: "completed",
     authoredOn: "2020-01-20T11:15:00.000Z",
-    medicationReference: { reference: DEFAULT_MEDICATION_REF },
+    medicationReference,
     ...params,
   };
 }
@@ -59,6 +61,7 @@ export function makeMedicationRequest(params?: Partial<MedicationRequest>): Medi
 export function makeMedicationStatement(
   params: Partial<MedicationStatement> = {}
 ): MedicationStatement {
+  const medicationReference = params?.medicationReference ?? { reference: DEFAULT_MEDICATION_REF };
   return {
     resourceType: "MedicationStatement",
     ...(params.id ? { id: params.id } : { id: faker.string.uuid() }),
@@ -70,7 +73,7 @@ export function makeMedicationStatement(
     ],
     status: "completed",
     effectiveDateTime: "2020-01-20T11:15:00.000Z",
-    medicationReference: { reference: DEFAULT_MEDICATION_REF },
+    medicationReference,
     dosage: [
       {
         text: "3 tablet, Oral, Once, On Sat 1/20/20 at 1600",

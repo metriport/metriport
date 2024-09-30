@@ -1,43 +1,59 @@
 import { PatientResource } from "@metriport/shared/interface/external/athenahealth/patient";
-import { normalizeDate, normalizeGender, toTitleCase } from "@metriport/shared";
+import {
+  errorToString,
+  normalizeDate,
+  normalizeGender,
+  toTitleCase,
+  NotFoundError,
+} from "@metriport/shared";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { errorToString } from "@metriport/shared";
 import { Patient, PatientDemoData } from "@metriport/core/domain/patient";
-import { getPatient as getAthenaPatient } from "@metriport/core/external/athenahealth/get-patient";
+import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/athenahealth/index";
 import { EhrSources } from "../../shared";
 import {
   getPatientOrFail as getMetriportPatientOrFail,
   getPatientByDemo as singleGetMetriportPatientByDemo,
 } from "../../../../command/medical/patient/get-patient";
 import {
-  createPatient as createtMetriportPatient,
+  createPatient as createMetriportPatient,
   PatientCreateCmd,
 } from "../../../../command/medical/patient/create-patient";
+import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 import { getPatientMapping, findOrCreatePatientMapping } from "../../../../command/mapping/patient";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { Config } from "../../../../shared/config";
 import { createMetriportAddresses, createMetriportContacts, createNames } from "../shared";
-import NotFoundError from "../../../../errors/not-found";
 
-const athenaUrl = Config.getAthenaHealthUrl();
+const region = Config.getAWSRegion();
+const athenaEnvironment = Config.getAthenaHealthEnv();
+const athenaClientKeySecretArn = Config.getAthenaHealthClientKeyArn();
+const athenaClientSecretSecretArn = Config.getAthenaHealthClientSecretArn();
 const defaultFacilityMappingExternalId = "default";
 
 export async function getPatientIdOrFail({
-  accessToken,
   cxId,
+  athenaPracticeId,
   athenaPatientId,
+  accessToken,
+  useSearch = false,
+  triggerDq = false,
 }: {
-  accessToken: string;
   cxId: string;
+  athenaPracticeId: string;
   athenaPatientId: string;
+  accessToken?: string;
+  useSearch?: boolean;
+  triggerDq?: boolean;
 }): Promise<string> {
   const { log } = out(`AthenaHealth getPatient - cxId ${cxId} athenaPatientId ${athenaPatientId}`);
   const existingPatient = await getPatientMapping({
     cxId,
     externalId: athenaPatientId,
-    source: EhrSources.ATHENA,
+    source: EhrSources.athena,
   });
   if (existingPatient) {
     const metriportPatient = await getMetriportPatientOrFail({
@@ -46,12 +62,23 @@ export async function getPatientIdOrFail({
     });
     return metriportPatient.id;
   }
-  if (!athenaUrl) throw new Error("AthenaHealth url not defined");
-  const athenaPatient = await getAthenaPatient({
+  if (!athenaEnvironment || !athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
+    throw new Error("AthenaHealth not setup");
+  }
+  const athenaClientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
+  const athenaClientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
+  const api = await AthenaHealthApi.create({
+    threeLeggedAuthToken: accessToken,
+    practiceId: athenaPracticeId,
+    environment: athenaEnvironment as AthenaEnv,
+    clientKey: athenaClientKey,
+    clientSecret: athenaClientSecret,
+  });
+  const athenaPatient = await getPatientFromAthena({
+    api,
     cxId,
-    accessToken,
-    baseUrl: athenaUrl,
     patientId: athenaPatientId,
+    useSearch,
   });
   if (!athenaPatient) throw new NotFoundError("AthenaHealth patient not found");
   if (athenaPatient.name.length === 0) {
@@ -103,21 +130,27 @@ export async function getPatientIdOrFail({
     const defaultFacility = await getFacilityMappingOrFail({
       cxId,
       externalId: defaultFacilityMappingExternalId,
-      source: EhrSources.ATHENA,
+      source: EhrSources.athena,
     });
-    metriportPatient = await createtMetriportPatient({
+    metriportPatient = await createMetriportPatient({
       patient: {
         cxId,
         facilityId: defaultFacility.facilityId,
         ...createMetriportPatientDemo(athenaPatient),
       },
     });
+    if (triggerDq) {
+      queryDocumentsAcrossHIEs({
+        cxId,
+        patientId: metriportPatient.id,
+      }).catch(processAsyncError("AthenaHealth queryDocumentsAcrossHIEs"));
+    }
   }
   await findOrCreatePatientMapping({
     cxId,
     patientId: metriportPatient.id,
     externalId: athenaPatientId,
-    source: EhrSources.ATHENA,
+    source: EhrSources.athena,
   });
   return metriportPatient.id;
 }
@@ -175,4 +208,27 @@ async function getPatientByDemo({
     log(msg);
     errors.push(msg);
   }
+}
+
+async function getPatientFromAthena({
+  api,
+  cxId,
+  patientId,
+  useSearch,
+}: {
+  api: AthenaHealthApi;
+  cxId: string;
+  patientId: string;
+  useSearch: boolean;
+}) {
+  if (useSearch) {
+    return await api.getPatientViaSearch({
+      cxId,
+      patientId,
+    });
+  }
+  return await api.getPatient({
+    cxId,
+    patientId,
+  });
 }

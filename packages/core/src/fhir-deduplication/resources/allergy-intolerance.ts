@@ -38,12 +38,12 @@ export function deduplicateAllergyIntolerances(
  */
 export function groupSameAllergies(allergies: AllergyIntolerance[]): {
   allergiesMap: Map<string, AllergyIntolerance>;
-  refReplacementMap: Map<string, string[]>;
-  danglingReferences: string[];
+  refReplacementMap: Map<string, string>;
+  danglingReferences: Set<string>;
 } {
   const allergiesMap = new Map<string, AllergyIntolerance>();
-  const refReplacementMap = new Map<string, string[]>();
-  const danglingReferencesSet = new Set<string>();
+  const refReplacementMap = new Map<string, string>();
+  const danglingReferences = new Set<string>();
 
   const blacklistedAllergies: AllergyIntolerance[] = [];
   const validAllergies: AllergyIntolerance[] = [];
@@ -65,11 +65,11 @@ export function groupSameAllergies(allergies: AllergyIntolerance[]): {
         const key = JSON.stringify({ substance });
         fillMaps(allergiesMap, key, newAllergy, refReplacementMap, undefined, postProcess);
       } else {
-        danglingReferencesSet.add(createRef(allergy));
+        danglingReferences.add(createRef(allergy));
       }
     }
     for (const allergy of blacklistedAllergies) {
-      danglingReferencesSet.add(createRef(allergy));
+      danglingReferences.add(createRef(allergy));
     }
   } else if (blacklistedAllergies.length > 0) {
     const allergy = findAllergyWithLongestSubstanceText(blacklistedAllergies);
@@ -85,7 +85,7 @@ export function groupSameAllergies(allergies: AllergyIntolerance[]): {
       }
 
       for (const remainingAllergy of blacklistedAllergies) {
-        danglingReferencesSet.add(createRef(remainingAllergy));
+        danglingReferences.add(createRef(remainingAllergy));
       }
     }
   }
@@ -93,7 +93,7 @@ export function groupSameAllergies(allergies: AllergyIntolerance[]): {
   return {
     allergiesMap,
     refReplacementMap,
-    danglingReferences: [...danglingReferencesSet],
+    danglingReferences,
   };
 }
 

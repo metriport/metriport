@@ -46,7 +46,13 @@ describe("sqs", () => {
     it("prioritizes right part of value when asked to", async () => {
       const value = faker.string.alpha({ length: { min: 130, max: 130 } });
       const res = toMessageGroupId(value, "right-to-left");
-      expect(res).toEqual(value.slice(0, -128));
+      expect(res).toEqual(value.slice(-128));
+    });
+
+    it("prioritizes right part of value with fixed input", async () => {
+      const value = "1234567890";
+      const res = toMessageGroupId(value, "right-to-left", 4);
+      expect(res).toEqual("7890");
     });
   });
 });

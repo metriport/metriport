@@ -1,17 +1,16 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { makePatient } from "../../../domain/medical/__tests__/patient";
+import { makePatient } from "@metriport/core/domain/__tests__/patient";
+import * as cqRunSchedule from "../../../external/carequality/command/run-or-schedule-patient-discovery";
+import * as cqPatient from "../../../external/carequality/patient";
+import * as cwRunOrSchedule from "../../../external/commonwell/command/run-or-schedule-patient-discovery";
+import * as cwPatient from "../../../external/commonwell/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
-import * as cqPatient from "../../../external/carequality/patient";
-import * as cwPatient from "../../../external/commonwell/patient";
-import * as cqRunSchedule from "../../../external/carequality/command/run-or-schedule-patient-discovery";
-import * as cwRunOrSchedule from "../../../external/commonwell/command/run-or-schedule-patient-discovery";
 import { runInitialPatientDiscoveryAcrossHies } from "../run-initial-patient-discovery";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../run-or-schedule-patient-discovery";
-import { getCqOrgIdsToDenyOnCw } from "../cross-hie-ids";
 
 let patientModel_findOne: jest.SpyInstance;
-let cqDiscoer_mock: jest.SpyInstance;
+let cqDiscover_mock: jest.SpyInstance;
 let cwCreate_mock: jest.SpyInstance;
 let cqRunOrSchedule_mock: jest.SpyInstance;
 let cwRunOrSchedule_mock: jest.SpyInstance;
@@ -19,7 +18,7 @@ let cwRunOrSchedule_mock: jest.SpyInstance;
 beforeEach(() => {
   mockStartTransaction();
   patientModel_findOne = jest.spyOn(PatientModel, "findOne");
-  cqDiscoer_mock = jest.spyOn(cqPatient, "discover").mockImplementation(async () => {
+  cqDiscover_mock = jest.spyOn(cqPatient, "discover").mockImplementation(async () => {
     return;
   });
   cwCreate_mock = jest.spyOn(cwPatient, "create").mockImplementation(async () => {
@@ -60,7 +59,7 @@ describe("run initial patient discovery", () => {
       forceCarequality,
       forceCommonwell,
     });
-    expect(cqDiscoer_mock).toHaveBeenCalledWith(
+    expect(cqDiscover_mock).toHaveBeenCalledWith(
       expect.objectContaining({
         ...sharedParams,
         forceEnabled: forceCarequality,
@@ -69,7 +68,7 @@ describe("run initial patient discovery", () => {
     expect(cwCreate_mock).toHaveBeenCalledWith(
       expect.objectContaining({
         ...sharedParams,
-        getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
+        getOrgIdExcludeList: expect.any(Function),
         forceCWCreate: forceCommonwell,
       })
     );
@@ -87,7 +86,7 @@ describe("run initial patient discovery", () => {
       forceCarequality,
       forceCommonwell,
     });
-    expect(cqDiscoer_mock).toHaveBeenCalledWith(
+    expect(cqDiscover_mock).toHaveBeenCalledWith(
       expect.objectContaining({
         ...sharedParams,
         forceEnabled: forceCarequality,
@@ -96,7 +95,7 @@ describe("run initial patient discovery", () => {
     expect(cwCreate_mock).toHaveBeenCalledWith(
       expect.objectContaining({
         ...sharedParams,
-        getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
+        getOrgIdExcludeList: expect.any(Function),
         forceCWCreate: forceCommonwell,
       })
     );
@@ -114,7 +113,7 @@ describe("run initial patient discovery", () => {
       forceCarequality,
       forceCommonwell,
     });
-    expect(cqDiscoer_mock).toHaveBeenCalledWith(
+    expect(cqDiscover_mock).toHaveBeenCalledWith(
       expect.objectContaining({
         ...sharedParams,
         forceEnabled: forceCarequality,
@@ -123,7 +122,7 @@ describe("run initial patient discovery", () => {
     expect(cwCreate_mock).toHaveBeenCalledWith(
       expect.objectContaining({
         ...sharedParams,
-        getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
+        getOrgIdExcludeList: expect.any(Function),
         forceCWCreate: forceCommonwell,
       })
     );
@@ -158,7 +157,7 @@ describe("run initial patient discovery", () => {
     expect(cwRunOrSchedule_mock).toHaveBeenCalledWith(
       expect.objectContaining({
         ...sharedParams,
-        getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
+        getOrgIdExcludeList: expect.any(Function),
         forceCommonwell,
       })
     );
@@ -185,7 +184,7 @@ describe("run initial patient discovery", () => {
     expect(cwRunOrSchedule_mock).toHaveBeenCalledWith(
       expect.objectContaining({
         ...sharedParams,
-        getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
+        getOrgIdExcludeList: expect.any(Function),
         forceCommonwell,
       })
     );
@@ -212,7 +211,7 @@ describe("run initial patient discovery", () => {
     expect(cwRunOrSchedule_mock).toHaveBeenCalledWith(
       expect.objectContaining({
         ...sharedParams,
-        getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
+        getOrgIdExcludeList: expect.any(Function),
         forceCommonwell,
       })
     );

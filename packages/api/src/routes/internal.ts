@@ -1,34 +1,31 @@
-import { Bundle, Resource } from "@medplum/fhirtypes";
-import { getReferencesFromResources } from "@metriport/core/external/fhir/shared/bundle";
-import { getReferencesFromFHIR } from "@metriport/core/external/fhir/shared/references";
 import BadRequestError from "@metriport/core/util/error/bad-request";
 import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
 import { getCxFFStatus } from "../command/internal/get-hie-enabled-feature-flags-status";
 import { updateCxHieEnabledFFs } from "../command/internal/update-hie-enabled-feature-flags";
 import {
+  deleteCxMapping,
   findOrCreateCxMapping,
   getCxMappingsForCustomer,
-  deleteCxMapping,
 } from "../command/mapping/cx";
 import {
+  deleteFacilityMapping,
   findOrCreateFacilityMapping,
   getFacilityMappingsForCustomer,
-  deleteFacilityMapping,
 } from "../command/mapping/facility";
-import { getFacilityOrFail } from "../command/medical/facility/get-facility";
 import { checkApiQuota } from "../command/medical/admin/api";
 import { dbMaintenance } from "../command/medical/admin/db-maintenance";
 import {
   populateFhirServer,
   PopulateFhirServerResponse,
 } from "../command/medical/admin/populate-fhir";
-import { getFacilities } from "../command/medical/facility/get-facility";
+import { getFacilities, getFacilityOrFail } from "../command/medical/facility/get-facility";
 import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
+import { CxSources, cxMappingsSourceMap } from "../domain/cx-mapping";
+import { FacilitySources, facilitysMappingsSourceList } from "../domain/facility-mapping";
 import { isEnhancedCoverageEnabledForCx } from "../external/aws/app-config";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
-import { makeFhirApi } from "../external/fhir/api/api-factory";
 import { countResources } from "../external/fhir/patient/count-resources";
 import { OrganizationModel } from "../models/medical/organization";
 import userRoutes from "./devices/internal-user";
@@ -44,8 +41,6 @@ import hieRoutes from "./medical/internal-hie";
 import mpiRoutes from "./medical/internal-mpi";
 import organizationRoutes from "./medical/internal-organization";
 import patientRoutes from "./medical/internal-patient";
-import { CxSources } from "../domain/cx-mapping";
-import { FacilitySources } from "../domain/facility-mapping";
 import { getUUIDFrom } from "./schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsBoolean, getFromQueryOrFail } from "./util";
 
@@ -256,29 +251,6 @@ router.post(
 );
 
 /**
- * TODO Remove or repurpose this after tests are done.
- *
- * Built for testing purposes
- */
-router.post(
-  "/references-from-fhir",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-
-    const bundle = req.body as Bundle<Resource>;
-    const resources = (bundle.entry ?? []).flatMap(e => e.resource ?? []);
-
-    const fhir = makeFhirApi(cxId);
-    const { missingReferences } = getReferencesFromResources({ resources });
-
-    const result = await getReferencesFromFHIR(missingReferences, fhir, console.log);
-
-    return res.status(httpStatus.OK).json(result);
-  })
-);
-
-/**
  * GET /internal/cx-ff-status
  *
  * Retrieves the customer status of enabled HIEs via the Feature Flags.
@@ -342,10 +314,14 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const source = getFromQueryOrFail("source", req);
     const externalId = getFromQueryOrFail("externalId", req);
+    const mappedSource = cxMappingsSourceMap.get(source as CxSources);
+    if (!mappedSource) throw new BadRequestError(`Source ${source} is not mapped.`);
+    const secondaryMappings = mappedSource.bodyParser.parse(req.body);
     await findOrCreateCxMapping({
       cxId,
       source: source as CxSources,
       externalId,
+      secondaryMappings,
     });
     return res.sendStatus(httpStatus.OK);
   })
@@ -415,6 +391,9 @@ router.post(
     await getFacilityOrFail({ cxId, id: facilityId });
     const source = getFromQueryOrFail("source", req);
     const externalId = getFromQueryOrFail("externalId", req);
+    if (!facilitysMappingsSourceList.includes(source)) {
+      throw new BadRequestError(`Source ${source} is not mapped.`);
+    }
     await findOrCreateFacilityMapping({
       cxId,
       facilityId,

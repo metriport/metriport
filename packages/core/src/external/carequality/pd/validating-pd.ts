@@ -12,7 +12,8 @@ import {
   PersonalIdentifier,
   createDriversLicensePersonalIdentifier,
 } from "../../../domain/patient";
-import { isContactType, mapFhirToMetriportGender } from "../../fhir/patient/index";
+import { mapFhirToMetriportGender } from "../../fhir/patient/conversion";
+import { isContactType } from "../../fhir/patient/shared";
 import {
   XDSRegistryError,
   LivingSubjectAdministrativeGenderRequestedError,

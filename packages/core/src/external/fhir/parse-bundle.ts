@@ -1,8 +1,8 @@
-import { Bundle } from "@medplum/fhirtypes";
+import { Bundle, Extension } from "@medplum/fhirtypes";
 import { Config } from "../../util/config";
 import { uuidv4 } from "../../util/uuid-v7";
+import { DOC_ID_EXTENSION_URL } from "./shared/extensions/doc-id-extension";
 
-const sourceUrl = "https://api.metriport.com/cda/to/fhir";
 const placeholderReplaceRegex = new RegExp("66666666-6666-6666-6666-666666666666", "g");
 const metriportPrefixRegex = new RegExp("Metriport/identifiers/Metriport/", "g");
 
@@ -37,12 +37,15 @@ function replaceIds(payload: string) {
     // validate resource id
     const idToUse = bundleEntry.resource.id;
     const newId = uuidv4();
+    const docIdExtension = bundleEntry.resource.extension?.find(
+      (ext: { url: string }) => ext.url === DOC_ID_EXTENSION_URL
+    ) as Extension | undefined;
     bundleEntry.resource.id = newId;
     stringsToReplace.push({ old: idToUse, new: newId });
     // replace meta's source and profile
     bundleEntry.resource.meta = {
       lastUpdated: bundleEntry.resource.meta?.lastUpdated ?? new Date().toISOString(),
-      source: sourceUrl,
+      source: docIdExtension?.valueString ?? "",
     };
   }
   let fhirBundleStr = JSON.stringify(fhirBundle);

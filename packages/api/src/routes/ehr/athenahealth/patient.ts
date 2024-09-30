@@ -3,7 +3,7 @@ import httpStatus from "http-status";
 import { Request, Response } from "express";
 import { getPatientIdOrFail as getPatientIdFromAthenaPatientOrFail } from "../../../external/ehr/athenahealth/command/get-patient";
 import { requestLogger } from "../../helpers/request-logger";
-import { asyncHandler, getCxIdOrFail, getFrom } from "../../util";
+import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../util";
 import { getAuthorizationToken } from "../../util";
 
 const router = Router();
@@ -22,10 +22,12 @@ router.get(
     const accessToken = getAuthorizationToken(req);
     const cxId = getCxIdOrFail(req);
     const athenaPatientId = getFrom("params").orFail("id", req);
+    const athenaPracticeId = getFromQueryOrFail("practiceId", req);
     const patientId = await getPatientIdFromAthenaPatientOrFail({
-      accessToken,
       cxId,
+      athenaPracticeId,
       athenaPatientId,
+      accessToken,
     });
     return res.status(httpStatus.OK).json(patientId);
   })

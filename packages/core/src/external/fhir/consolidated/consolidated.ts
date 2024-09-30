@@ -1,11 +1,5 @@
 import { OperationOutcomeError } from "@medplum/core";
-import {
-  BundleEntry,
-  ExtractResource,
-  OperationOutcomeIssue,
-  Resource,
-  ResourceType,
-} from "@medplum/fhirtypes";
+import { ExtractResource, OperationOutcomeIssue, Resource, ResourceType } from "@medplum/fhirtypes";
 import { ResourceTypeForConsolidation, SearchSetBundle } from "@metriport/shared/medical";
 import { Patient } from "../../../domain/patient";
 import { Config } from "../../../util/config";
@@ -13,8 +7,8 @@ import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import { makeFhirApi } from "../api/api-factory";
 import { fullDateQueryForResource, getPatientFilter } from "../patient/resource-filter";
-import { buildBundle, getReferencesFromResources } from "../shared/bundle";
-import { isResourceDerivedFromDocRef } from "../shared/index";
+import { buildSearchSetBundle, getReferencesFromResources } from "../shared/bundle";
+import { findDocIdExtension } from "../shared/extensions/doc-id-extension";
 import { getReferencesFromFHIR } from "../shared/references";
 
 const MAX_HYDRATION_ROUNDS = 3;
@@ -22,7 +16,6 @@ const MAX_HYDRATION_ROUNDS = 3;
 export type ConsolidatedFhirToBundlePayload = {
   patient: Pick<Patient, "id" | "cxId">;
   requestId?: string;
-  documentIds?: string[] | undefined;
   resources?: ResourceTypeForConsolidation[] | undefined;
   dateFrom?: string | undefined;
   dateTo?: string | undefined;
@@ -37,7 +30,6 @@ export type ConsolidatedFhirToBundlePayload = {
  */
 export async function getConsolidatedFhirBundle({
   patient,
-  documentIds = [],
   resources = [],
   dateFrom,
   dateTo,
@@ -56,7 +48,6 @@ export async function getConsolidatedFhirBundle({
   });
   log(`Getting consolidated data with resources by patient: ${resourcesByPatient.join(", ")}...`);
   log(`...and by subject: ${resourcesBySubject.join(", ")}`);
-  documentIds.length > 0 && log(`...and document IDs: ${documentIds.join(", ")}`);
   log(`...and general resources with no specific filter: ${generalResourcesNoFilter.join(", ")}`);
 
   const fhirUrl = Config.getFHIRServerUrl();
@@ -106,7 +97,7 @@ export async function getConsolidatedFhirBundle({
     });
   }
 
-  let filtered = filterByDocumentIds(success, documentIds, log);
+  let filtered = success;
 
   for (let i = 0; i < MAX_HYDRATION_ROUNDS; i++) {
     const { missingReferences } = getReferencesFromResources({
@@ -119,25 +110,28 @@ export async function getConsolidatedFhirBundle({
     filtered = [...filtered, ...missingRefsOnFHIR];
   }
 
-  const entry: BundleEntry[] = filtered.map(r => ({ resource: r }));
-  return buildBundle(entry);
-}
-
-export function filterByDocumentIds(
-  resources: Resource[],
-  documentIds: string[],
-  log = console.log
-): Resource[] {
-  const defaultMsg = `Got ${resources.length} resources from FHIR server`;
-  if (documentIds.length <= 0) {
-    log(`${defaultMsg}, not filtering by documentIds`);
-    return resources;
-  }
-  const isDerivedFromDocRefs = (r: Resource) =>
-    documentIds.some(id => isResourceDerivedFromDocRef(r, id));
-  const filtered = documentIds.length > 0 ? resources.filter(isDerivedFromDocRefs) : resources;
-  log(`${defaultMsg}, filtered by documentIds to ${filtered.length} resources`);
-  return filtered;
+  const entries = filtered.map(entry => {
+    if ("extension" in entry) {
+      const docIdExtension = findDocIdExtension(entry.extension);
+      if (docIdExtension) {
+        entry.meta = {
+          ...entry.meta,
+          source: docIdExtension.valueString ?? entry.meta?.source ?? "",
+        };
+      }
+    }
+    if (entry.resourceType === "DocumentReference") {
+      const attachment = entry.content?.[0]?.attachment;
+      if (attachment) {
+        entry.meta = {
+          ...entry.meta,
+          source: attachment.title ?? entry.meta?.source ?? "",
+        };
+      }
+    }
+    return { resource: entry };
+  });
+  return buildSearchSetBundle({ entries });
 }
 
 const searchResources = async <K extends ResourceType>(
