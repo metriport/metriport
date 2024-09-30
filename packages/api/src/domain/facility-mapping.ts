@@ -1,16 +1,13 @@
 import { BaseDomain } from "@metriport/core/domain/base-domain";
-import { EhrSources } from "../external/ehr/shared";
 
-export type FacilitySources = FacilityMappingPerSource["source"];
+export type FacilityMappingSource = FacilityMappingParams["source"];
+export const facilityMappingSourceList: FacilityMappingSource[] = [];
 
-export const facilitysMappingsSourceList: string[] = [EhrSources.athena];
-
-export type FacilityMappingPerSource = {
+export interface FacilityMappingParams {
   externalId: string;
   cxId: string;
   facilityId: string;
-} & {
-  source: EhrSources.athena;
-};
+  source: string;
+}
 
-export interface FacilityMapping extends BaseDomain, FacilityMappingPerSource {}
+export interface FacilityMapping extends BaseDomain, FacilityMappingParams {}

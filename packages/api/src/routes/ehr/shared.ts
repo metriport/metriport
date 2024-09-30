@@ -10,8 +10,7 @@ import {
   parseIdFromQueryParams,
   replaceIdInUrlAndQuery,
 } from "./util";
-import { JwtTokenData } from "../../domain/jwt-token";
-import { EhrSources } from "../../external/ehr/shared";
+import { EhrSource, EhrJwtTokenParams } from "../../external/ehr/shared";
 import ForbiddenError from "../../errors/forbidden";
 
 export type ParseResponse = {
@@ -21,8 +20,8 @@ export type ParseResponse = {
 
 export async function processCxIdAsync(
   req: Request,
-  source: EhrSources,
-  parseExternalId: (tokenData: JwtTokenData) => ParseResponse
+  source: EhrSource,
+  parseExternalId: (tokenData: EhrJwtTokenParams["data"]) => ParseResponse
 ): Promise<void> {
   const accessToken = getAuthorizationToken(req);
   const authInfo = await getJwtToken({
@@ -30,7 +29,7 @@ export async function processCxIdAsync(
     source,
   });
   if (!authInfo) throw new ForbiddenError();
-  const { externalId, queryParams } = parseExternalId(authInfo.data);
+  const { externalId, queryParams } = parseExternalId(authInfo.data as EhrJwtTokenParams["data"]);
   const customer = await getCxMappingOrFail({
     externalId,
     source,
@@ -85,7 +84,7 @@ export const validedDocumentPaths: PathDetails[] = [
   },
 ];
 
-export async function processPatientRouteAsync(req: Request, source: EhrSources): Promise<void> {
+export async function processPatientRouteAsync(req: Request, source: EhrSource): Promise<void> {
   const path = validatePath(req, validPatientPaths);
   if (path.paramRegexIndex) {
     const externalId = parseIdFromPathParams(req, path.regex, path.paramRegexIndex);
@@ -93,7 +92,7 @@ export async function processPatientRouteAsync(req: Request, source: EhrSources)
   }
 }
 
-export async function processDocumentRouteAsync(req: Request, source: EhrSources): Promise<void> {
+export async function processDocumentRouteAsync(req: Request, source: EhrSource): Promise<void> {
   const path = validatePath(req, validedDocumentPaths);
   if (path.queryParamKey) {
     const externalId = parseIdFromQueryParams(req, path.queryParamKey);

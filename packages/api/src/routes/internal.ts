@@ -22,8 +22,11 @@ import {
 import { getFacilities, getFacilityOrFail } from "../command/medical/facility/get-facility";
 import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
-import { CxSources, cxMappingsSourceMap } from "../domain/cx-mapping";
-import { FacilitySources, facilitysMappingsSourceList } from "../domain/facility-mapping";
+import {
+  EhrSource,
+  ehrCxMappingSourceMap,
+  ehrFacilityMappingSourceList,
+} from "../external/ehr/shared";
 import { isEnhancedCoverageEnabledForCx } from "../external/aws/app-config";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
 import { countResources } from "../external/fhir/patient/count-resources";
@@ -314,12 +317,12 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const source = getFromQueryOrFail("source", req);
     const externalId = getFromQueryOrFail("externalId", req);
-    const mappedSource = cxMappingsSourceMap.get(source as CxSources);
+    const mappedSource = ehrCxMappingSourceMap.get(source as EhrSource);
     if (!mappedSource) throw new BadRequestError(`Source ${source} is not mapped.`);
     const secondaryMappings = mappedSource.bodyParser.parse(req.body);
     await findOrCreateCxMapping({
       cxId,
-      source: source as CxSources,
+      source,
       externalId,
       secondaryMappings,
     });
@@ -365,7 +368,7 @@ router.delete(
     const source = getFromQueryOrFail("source", req);
     const externalId = getFromQueryOrFail("externalId", req);
     await deleteCxMapping({
-      source: source as CxSources,
+      source,
       externalId,
     });
     return res.sendStatus(httpStatus.NO_CONTENT);
@@ -391,13 +394,13 @@ router.post(
     await getFacilityOrFail({ cxId, id: facilityId });
     const source = getFromQueryOrFail("source", req);
     const externalId = getFromQueryOrFail("externalId", req);
-    if (!facilitysMappingsSourceList.includes(source)) {
+    if (!ehrFacilityMappingSourceList.includes(source as EhrSource)) {
       throw new BadRequestError(`Source ${source} is not mapped.`);
     }
     await findOrCreateFacilityMapping({
       cxId,
       facilityId,
-      source: source as FacilitySources,
+      source,
       externalId,
     });
     return res.sendStatus(httpStatus.OK);
@@ -444,7 +447,7 @@ router.delete(
     const externalId = getFromQueryOrFail("externalId", req);
     await deleteFacilityMapping({
       cxId,
-      source: source as FacilitySources,
+      source,
       externalId,
     });
     return res.sendStatus(httpStatus.NO_CONTENT);

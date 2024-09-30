@@ -1,14 +1,12 @@
 import { BaseDomain } from "@metriport/core/domain/base-domain";
-import { EhrSources } from "../external/ehr/shared";
 
-export type PatientSources = PatientMappingPerSource["source"];
+export type PatientMappingSource = PatientMappingParams["source"];
 
-export type PatientMappingPerSource = {
+export type PatientMappingParams = {
   externalId: string;
   cxId: string;
   patientId: string;
-} & {
-  source: EhrSources.athena;
+  source: string;
 };
 
-export interface PatientMapping extends BaseDomain, PatientMappingPerSource {}
+export interface PatientMapping extends BaseDomain, PatientMappingParams {}

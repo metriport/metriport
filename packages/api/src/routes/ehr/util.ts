@@ -1,7 +1,7 @@
 import { Request } from "express";
 import { BadRequestError } from "@metriport/shared";
 import { getPatientMappingOrFail } from "../../command/mapping/patient";
-import { EhrSources } from "../../external/ehr/shared";
+import { EhrSource } from "../../external/ehr/shared";
 
 export const idRegex = "([a-zA-Z0-9\\_\\-\\.])+";
 
@@ -45,7 +45,7 @@ export function parseIdFromQueryParams(req: Request, queryParamKey: string): str
 
 export async function replaceIdInUrlAndQuery(
   req: Request,
-  source: EhrSources,
+  source: EhrSource,
   externalId: string
 ): Promise<void> {
   if (!req.cxId) throw new BadRequestError("Trouble processisng request");

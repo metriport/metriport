@@ -1,10 +1,10 @@
 import z from "zod";
-import { JwtTokenSources, JwtTokenData } from "../../domain/jwt-token";
+import { EhrJwtTokenParams, EhrSource } from "./shared";
 import { getJwtToken, findOrCreateJwtToken } from "../../command/jwt-token";
 
 export const createJwtSchema = z.object({
   exp: z.number(),
-  data: z.custom<JwtTokenData>(),
+  data: z.custom<Pick<EhrJwtTokenParams, "data">>(),
 });
 export type CreateJwt = z.infer<typeof createJwtSchema>;
 
@@ -13,7 +13,7 @@ export async function checkJwtToken({
   source,
 }: {
   token: string;
-  source: JwtTokenSources;
+  source: EhrSource;
 }): Promise<{ active: boolean; expired?: boolean }> {
   const authInfo = await getJwtToken({
     token,
@@ -34,7 +34,7 @@ export async function saveJwtToken({
   data,
 }: {
   token: string;
-  source: JwtTokenSources;
+  source: EhrSource;
   data: CreateJwt;
 }): Promise<void> {
   await findOrCreateJwtToken({

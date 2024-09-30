@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { EhrSources } from "../../../../external/ehr/shared";
-import { JwtTokenData } from "../../../../domain/jwt-token";
+import { AthenaJwtTokenParams } from "../../../../external/ehr/athenahealth/shared";
 import {
   ParseResponse,
   processCxIdAsync,
@@ -8,7 +8,7 @@ import {
   processDocumentRouteAsync,
 } from "../../shared";
 
-function parseAthenaHealthPracticeId(tokenData: JwtTokenData): ParseResponse {
+function parseAthenaHealthPracticeId(tokenData: AthenaJwtTokenParams["data"]): ParseResponse {
   const practiceId = tokenData.ah_practice;
   const departmentId = tokenData.ah_department;
   return {
