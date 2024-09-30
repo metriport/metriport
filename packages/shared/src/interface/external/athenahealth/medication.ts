@@ -12,4 +12,4 @@ const medicationReferenceSchema = z.object({
   medicationid: z.number(),
 });
 export type MedicationReference = z.infer<typeof medicationReferenceSchema>;
-export const medicationReferenceResponseSchema = medicationReferenceSchema.array();
+export const medicationReferencesGetResponseSchema = medicationReferenceSchema.array();

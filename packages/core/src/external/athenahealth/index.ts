@@ -10,12 +10,13 @@ import {
   patientSearchResourceSchema,
   PatientResource,
   MedicationReference,
-  medicationReferenceResponseSchema,
+  medicationReferencesGetResponseSchema,
   MedicationCreateResponse,
   medicationCreateResponseSchema,
   BookedAppointment,
-  bookedAppointmentResponseSchema,
+  bookedAppointmentsGetResponseSchema,
   subscriptionCreateResponseSchema,
+  departmentsGetResponseSchema,
 } from "@metriport/shared";
 import { errorToString, NotFoundError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
@@ -121,6 +122,46 @@ class AthenaHealthApi {
     });
   }
 
+  async getDepartments({ cxId }: { cxId: string }): Promise<string[]> {
+    const { log, debug } = out(`AthenaHealth get departments - cxId`);
+    const departmentUrl = `/departments`;
+    try {
+      const response = await this.axiosInstanceProprietary.get(departmentUrl);
+      if (!response.data) throw new Error(`No body returned from ${departmentUrl}`);
+      debug(`${departmentUrl} resp: ${JSON.stringify(response.data)}`);
+      if (responsesBucket) {
+        const filePath = createHivePartitionFilePath({
+          cxId,
+          patientId: "global",
+          date: new Date(),
+        });
+        const key = `athenahealth/department/${filePath}/${uuidv7()}.json`;
+        this.s3Utils
+          .uploadFile({
+            bucket: responsesBucket,
+            key,
+            file: Buffer.from(JSON.stringify(response.data), "utf8"),
+            contentType: "application/json",
+          })
+          .catch(processAsyncError("Error saving to s3 @ AthenaHealth - getDepartments"));
+      }
+      const deparments = departmentsGetResponseSchema.parse(response.data);
+      return deparments.departments.map(d => d.departmentid);
+    } catch (error) {
+      const msg = `Failure while subscribing to events @ AthenaHealth`;
+      log(`${msg}. cxId ${cxId}. Cause: ${errorToString(error)}`);
+      capture.error(msg, {
+        extra: {
+          url: departmentUrl,
+          cxId,
+          context: "athenahealth.get-departments",
+          error,
+        },
+      });
+      throw error;
+    }
+  }
+
   async getPatient({
     cxId,
     patientId,
@@ -128,7 +169,7 @@ class AthenaHealthApi {
     cxId: string;
     patientId: string;
   }): Promise<PatientResource | undefined> {
-    const { log, debug } = out(`AthenaHealth get - AH cxId ${cxId} patientId ${patientId}`);
+    const { log, debug } = out(`AthenaHealth get patient - AH cxId ${cxId} patientId ${patientId}`);
     const patientUrl = `/Patient/${this.createPatientId(patientId)}`;
     try {
       const response = await this.axiosInstanceFhirApi.get(patientUrl);
@@ -176,7 +217,9 @@ class AthenaHealthApi {
     cxId: string;
     patientId: string;
   }): Promise<PatientResource | undefined> {
-    const { log, debug } = out(`AthenaHealth search - AH cxId ${cxId} patientId ${patientId}`);
+    const { log, debug } = out(
+      `AthenaHealth search patient - AH cxId ${cxId} patientId ${patientId}`
+    );
     const patientSearchUrl = "/Patient/_search";
     try {
       const data = {
@@ -338,7 +381,7 @@ class AthenaHealthApi {
               })
               .catch(processAsyncError("Error saving to s3 @ AthenaHealth - searchForMedication"));
           }
-          const medications = medicationReferenceResponseSchema.parse(response.data);
+          const medications = medicationReferencesGetResponseSchema.parse(response.data);
           medicationOptions.push(...medications);
         } catch (error) {
           const msg = `Failure while searching for medications @ AthenaHealth`;
@@ -379,7 +422,7 @@ class AthenaHealthApi {
     const { log, debug } = out(
       `AthenaHealth subscribe to events - cxId ${cxId} feedtype ${feedtype}`
     );
-    const subscribeUrl = `${feedtype}/changed/subscription`;
+    const subscribeUrl = `/${feedtype}/changed/subscription`;
     try {
       const response = await this.axiosInstanceProprietary.post(subscribeUrl, {});
       if (!response.data) throw new Error(`No body returned from ${subscribeUrl}`);
@@ -440,7 +483,10 @@ class AthenaHealthApi {
     if (departmentIds.length > 0) {
       departmentIds.map(dpId => urlParams.append("departmentid", this.stripDepartmentId(dpId)));
     } else {
-      urlParams.append("departmentid", "");
+      const fetchedDepartmentIds = await this.getDepartments({ cxId });
+      fetchedDepartmentIds.map(dpId =>
+        urlParams.append("departmentid", this.stripDepartmentId(dpId))
+      );
     }
     const appointmentUrl = `/appointments/booked/multipledepartment?${urlParams.toString()}`;
     try {
@@ -463,7 +509,7 @@ class AthenaHealthApi {
           })
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - getAppointments"));
       }
-      return bookedAppointmentResponseSchema.parse(response.data).appointments;
+      return bookedAppointmentsGetResponseSchema.parse(response.data).appointments;
     } catch (error) {
       const msg = `Failure while getting appointments @ AthenaHealth`;
       log(`${msg}. Cause: ${errorToString(error)}`);
@@ -527,7 +573,7 @@ class AthenaHealthApi {
             processAsyncError("Error saving to s3 @ AthenaHealth - getAppointmentsFromSubscription")
           );
       }
-      return bookedAppointmentResponseSchema.parse(response.data).appointments;
+      return bookedAppointmentsGetResponseSchema.parse(response.data).appointments;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       if (error.response?.status === 403) {

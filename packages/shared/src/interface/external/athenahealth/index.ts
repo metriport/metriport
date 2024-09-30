@@ -4,3 +4,4 @@ export * from "./jwt-token";
 export * from "./appointment";
 export * from "./medication";
 export * from "./subscription";
+export * from "./department";

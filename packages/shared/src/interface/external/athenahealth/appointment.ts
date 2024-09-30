@@ -4,6 +4,6 @@ const bookedAppointmentSchema = z.object({
   patientid: z.string(),
 });
 export type BookedAppointment = z.infer<typeof bookedAppointmentSchema>;
-export const bookedAppointmentResponseSchema = z.object({
+export const bookedAppointmentsGetResponseSchema = z.object({
   appointments: bookedAppointmentSchema.array(),
 });
