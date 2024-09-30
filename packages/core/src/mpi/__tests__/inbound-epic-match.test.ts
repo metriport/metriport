@@ -138,6 +138,34 @@ describe("epicMatchingAlgorithm", () => {
     expect(epicMatchingAlgorithm(patient1, patient2, 20)).toBe(true);
   });
 
+  it("pass w/ dob (8), partial name (5), exact address (2), exact phone (2), exact email (2) and gender (1))", () => {
+    const patient1 = { ...basePatient };
+    const patient2 = {
+      ...differentPatient,
+      dob: basePatient.dob,
+      firstName: "Johnathan",
+      lastName: basePatient.lastName,
+      address: basePatient.address,
+      contact: basePatient.contact ?? [],
+      genderAtBirth: basePatient.genderAtBirth,
+    };
+    expect(epicMatchingAlgorithm(patient1, patient2, 20)).toBe(true);
+  });
+
+  it("pass w/ dob (8), partial name (5), exact phone (2), exact email (2), gender (1), exact ssn (5)", () => {
+    const patient1 = { ...basePatient };
+    const patient2 = {
+      ...differentPatient,
+      dob: basePatient.dob,
+      firstName: "Johnathan",
+      lastName: basePatient.lastName,
+      contact: basePatient.contact ?? [],
+      genderAtBirth: basePatient.genderAtBirth,
+      personalIdentifiers: basePatient.personalIdentifiers,
+    };
+    expect(epicMatchingAlgorithm(patient1, patient2, 20)).toBe(true);
+  });
+
   it("pass w/ name (10), exact address (2), exact phone (2), exact email (2), exact ssn (5)", () => {
     const patient1 = { ...basePatient };
     const patient2 = {
