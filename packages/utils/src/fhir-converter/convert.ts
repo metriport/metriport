@@ -1,12 +1,11 @@
-import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
+import { DOC_ID_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { AxiosInstance } from "axios";
 import * as uuid from "uuid";
 import { getFileContents, makeDirIfNeeded, writeFileContents } from "../shared/fs";
 import { getPatientIdFromFileName } from "./shared";
 import path = require("node:path");
-
-const sourceUrl = "https://api.metriport.com/cda/to/fhir";
 
 export async function convertCDAsToFHIR(
   baseFolderName: string,
@@ -141,6 +140,11 @@ function replaceIDs(fhirBundle: FHIRBundle, patientId: string): FHIRBundle {
     if (!bundleEntry.resource) throw new Error(`Missing resource`);
     if (!bundleEntry.resource.id) throw new Error(`Missing resource id`);
     if (bundleEntry.resource.id === patientId) continue;
+
+    const docIdExtension = bundleEntry.resource.extension?.find(
+      ext => ext.url === DOC_ID_EXTENSION_URL
+    );
+
     const idToUse = bundleEntry.resource.id;
     const newId = uuid.v4();
     bundleEntry.resource.id = newId;
@@ -148,7 +152,7 @@ function replaceIDs(fhirBundle: FHIRBundle, patientId: string): FHIRBundle {
     // replace meta's source and profile
     bundleEntry.resource.meta = {
       lastUpdated: bundleEntry.resource.meta?.lastUpdated ?? new Date().toISOString(),
-      source: sourceUrl,
+      source: docIdExtension?.valueString ?? "",
     };
   }
   let fhirBundleStr = JSON.stringify(fhirBundle);

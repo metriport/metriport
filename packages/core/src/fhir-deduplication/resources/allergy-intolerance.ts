@@ -10,10 +10,11 @@ import {
   combineResources,
   createRef,
   fillMaps,
-  hasBlacklistedText,
   isUnknownCoding,
   unknownCode,
 } from "../shared";
+
+const blacklistedSubstanceDisplays = ["no known allergies", "nka", "unknown"];
 
 export function deduplicateAllergyIntolerances(
   allergies: AllergyIntolerance[]
@@ -44,18 +45,48 @@ export function groupSameAllergies(allergies: AllergyIntolerance[]): {
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
 
-  for (const allergy of allergies) {
-    if (allergy.reaction?.some(reaction => hasBlacklistedText(reaction.substance))) {
-      danglingReferences.add(createRef(allergy));
-      continue;
-    }
+  const blacklistedAllergies: AllergyIntolerance[] = [];
+  const validAllergies: AllergyIntolerance[] = [];
 
-    const { allergy: newAllergy, substance } = preProcess(allergy);
-    if (substance) {
-      const key = JSON.stringify({ substance });
-      fillMaps(allergiesMap, key, newAllergy, refReplacementMap, undefined, postProcess);
+  for (const allergy of allergies) {
+    if (allergy.reaction?.every(reaction => isUnknownAllergy(reaction.substance))) {
+      blacklistedAllergies.push(allergy);
     } else {
+      validAllergies.push(allergy);
+    }
+  }
+
+  const hasValidAllergies = validAllergies.length > 0;
+
+  if (hasValidAllergies) {
+    for (const allergy of validAllergies) {
+      const { allergy: newAllergy, substance } = preProcess(allergy);
+      if (substance) {
+        const key = JSON.stringify({ substance });
+        fillMaps(allergiesMap, key, newAllergy, refReplacementMap, undefined, postProcess);
+      } else {
+        danglingReferences.add(createRef(allergy));
+      }
+    }
+    for (const allergy of blacklistedAllergies) {
       danglingReferences.add(createRef(allergy));
+    }
+  } else if (blacklistedAllergies.length > 0) {
+    const allergy = findAllergyWithLongestSubstanceText(blacklistedAllergies);
+
+    if (allergy) {
+      const key = JSON.stringify({ allergy });
+      // no post processing so we dont remove the unknown allergy
+      fillMaps(allergiesMap, key, allergy, refReplacementMap, undefined);
+
+      const index = blacklistedAllergies.indexOf(allergy);
+      if (index !== -1) {
+        blacklistedAllergies.splice(index, 1);
+      }
+
+      for (const remainingAllergy of blacklistedAllergies) {
+        danglingReferences.add(createRef(remainingAllergy));
+      }
     }
   }
 
@@ -132,8 +163,7 @@ export function extractFromReactions(reactions: AllergyIntoleranceReaction[] | u
   };
 }
 
-const blacklistedSubstanceDisplays = ["no known allergies", "nka", "unknown"];
-function isKnownAllergy(coding: Coding, text?: string | undefined) {
+function isKnownAllergy(coding: Coding, text?: string | undefined): boolean {
   if (isUnknownCoding(coding)) return false;
 
   const code = coding.code?.trim().toLowerCase();
@@ -146,6 +176,22 @@ function isKnownAllergy(coding: Coding, text?: string | undefined) {
   return isValid;
 }
 
+function isUnknownAllergy(substance: CodeableConcept | undefined): boolean {
+  if (!substance) return false;
+
+  const { text, coding } = substance;
+
+  if (text && isUnknownAllergyText(text)) {
+    return true;
+  }
+
+  if (coding?.some(coding => isUnknownAllergyText(coding.display))) {
+    return true;
+  }
+
+  return false;
+}
+
 function isUnknownAllergyText(text: string | undefined) {
   return text && blacklistedSubstanceDisplays.includes(text.toLowerCase().trim());
 }
@@ -156,4 +202,14 @@ function isKnownManifestation(concept: CodeableConcept) {
   const knownCoding = concept.coding?.filter(e => !isUnknownCoding(e));
   if (knownCoding?.length) return true;
   return false;
+}
+
+function findAllergyWithLongestSubstanceText(
+  allergies: AllergyIntolerance[]
+): AllergyIntolerance | undefined {
+  return allergies.reduce((longest, current) => {
+    const longestText = longest.reaction?.[0]?.substance?.text;
+    const currentText = current.reaction?.[0]?.substance?.text;
+    return (currentText?.length || 0) > (longestText?.length || 0) ? current : longest;
+  });
 }
