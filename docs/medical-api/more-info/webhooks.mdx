@@ -21,16 +21,83 @@ You should expect to get more than one Webhook message per patient per request (
 To enable this integration approach with Metriport, and for some prerequesite reading to understand
 how the Webhook flow works, see [our Webhooks guide](/home/api-info/webhooks).
 
+<Warning>
+  When you receive a webhook message, you should respond with a `200` status code within 4 seconds.
+  We recommend processing the webhook request asynchronously.
+</Warning>
+
 ### Types of Messages
 
 - `medical.document-download`: result of Document Query, containing the newly downloaded documents
-   for the patient - see [details](#patient-document-data) below;
+  for the patient - see [details](#patient-document-data) below;
 - `medical.document-conversion`: result of converting the newly downloaded C-CDA documents into FHIR -
-   see [details](#patient-document-data) below;
-- `medical.document-bulk-download-urls`: list of download urls for a patient's documents, see 
-   [details](#bulk-document-download-urls) below;
+  see [details](#patient-document-data) below;
+- `medical.document-bulk-download-urls`: list of download urls for a patient's documents, see
+  [details](#bulk-document-download-urls) below;
 - `medical.consolidated-data`: result of a Consolidated Data Query, containing the patient's data in FHIR
-   format - see [details](#patient-consolidated-data) below.
+  format - see [details](#patient-consolidated-data) below.
+
+### Workflow
+
+#### Download URLs
+
+Below is a flowchart of the process to download all the raw documents we've received from the networks for a patient:
+
+```mermaid
+flowchart TB
+ subgraph s3["Metriport"]
+        m1["Download Documents"]
+        m2["Generate Document Download Urls"]
+  end
+ subgraph s2["Webhooks Sent"]
+        w1["medical.document-download"]
+        w2["medical.document-bulk-download-urls"]
+  end
+ subgraph s1["Your Backend"]
+        c1["Trigger Document Query"]
+        c2["Handle Download Webhook"]
+        c3["Trigger Bulk Download Docs"]
+        c4["Handle Bulk Download Urls"]
+  end
+    c1 --> m1
+    m1 --> w1
+    w1 --> c2
+    c2 --> c3
+    c3 --> m2
+    m2 --> w2
+    w2 --> c4
+```
+
+#### Consolidated Data
+
+Below is a flowchart of the process to get a patient's consolidated FHIR data:
+
+```mermaid
+flowchart TB
+ subgraph s3["Metriport"]
+        m1["Download Documents"]
+        m3["Convert Documents to FHIR"]
+        m4["Generate Patient Consolidated Data"]
+  end
+ subgraph s2["Webhooks Sent"]
+        w3["medical.document-conversion"]
+        w4["medical.consolidated-data"]
+  end
+ subgraph s1["Your Backend"]
+        c1["Trigger Document Query"]
+        c5["Handle Convert Webhook"]
+        c6["Trigger Patient Consolidated"]
+        c7["Handle Patient Consolidated"]
+  end
+    c1 --> m1
+    m1 --> m3
+    m3 --> w3
+    w3 --> c5
+    c5 --> c6
+    c6 --> m4
+    m4 --> w4
+    w4 --> c7
+```
 
 ### Passing Metadata
 
@@ -48,9 +115,9 @@ Below is an example payload you could send in the request body of one of those e
 These are messages you can expect to receive in the following scenarios:
 
 1. When [queried documents](/medical-api/api-reference/document/start-document-query) have completed
-   downloading, the message `type` will be `medical.document-download`, and at this point 
+   downloading, the message `type` will be `medical.document-download`, and at this point
    you'll be able to [download the raw files](/medical-api/api-reference/document/get-document);
-2. Then, if the downloaded documents contained C-CDA/XML files, when the conversion to FHIR has 
+2. Then, if the downloaded documents contained C-CDA/XML files, when the conversion to FHIR has
    completed, the message `type` will be `medical.document-conversion`, and at this point
    you'll be able to query for [patient consolidated data](/medical-api/api-reference/fhir/consolidated-data-query-post)
    in FHIR-compliant format.
