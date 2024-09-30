@@ -22,8 +22,8 @@ To enable this integration approach with Metriport, and for some prerequesite re
 how the Webhook flow works, see [our Webhooks guide](/home/api-info/webhooks).
 
 <Warning>
-  When you receive a webhook message, you should respond with a 200 status code within 4 seconds. We
-  recommend processing the webhook request asynchronously.
+  When you receive a webhook message, you should respond with a `200` status code within 4 seconds.
+  We recommend processing the webhook request asynchronously.
 </Warning>
 
 ### Types of Messages
@@ -53,7 +53,7 @@ flowchart TB
         w1["medical.document-download"]
         w2["medical.document-bulk-download-urls"]
   end
- subgraph s1["Customer"]
+ subgraph s1["Your Backend"]
         c1["Trigger Document Query"]
         c2["Handle Download Webhook"]
         c3["Trigger Bulk Download Docs"]
@@ -83,7 +83,7 @@ flowchart TB
         w3["medical.document-conversion"]
         w4["medical.consolidated-data"]
   end
- subgraph s1["Customer"]
+ subgraph s1["Your Backend"]
         c1["Trigger Document Query"]
         c5["Handle Convert Webhook"]
         c6["Trigger Patient Consolidated"]
