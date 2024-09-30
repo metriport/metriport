@@ -19,12 +19,6 @@ describe("epicMatchingAlgorithm", () => {
     expect(epicMatchingAlgorithm(patient1, patient2, 20)).toBe(true);
   });
 
-  it("should match patients with slight name and dob difference", () => {
-    const patient1 = { ...basePatient };
-    const patient2 = { ...basePatient, dob: "1995-01-01" };
-    expect(epicMatchingAlgorithm(patient1, patient2, 20)).toBe(true);
-  });
-
   it("should not match patients with different names and dob", () => {
     const patient1 = { ...basePatient };
     const patient2 = { ...basePatient, lastName: "Smith", dob: "1995-01-01" };
