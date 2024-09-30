@@ -4,6 +4,9 @@ import { Contact } from "../domain/contact";
 import { PatientData, PersonalIdentifier } from "../domain/patient";
 import { normalizePatient } from "./normalize-patient";
 import { PatientMPI } from "./shared";
+import { out } from "../util/log";
+
+const { log } = out(`Patient Matching`);
 
 // Define a type for the similarity function
 type SimilarityFunction = (
@@ -174,4 +177,119 @@ function isSameIdentifierById(a?: PersonalIdentifier, b?: PersonalIdentifier): b
     a.type === b.type &&
     (a.type === "driversLicense" && b.type === "driversLicense" ? a.state === b.state : true)
   );
+}
+/**
+ * Implements the EPIC matching algorithm for patient data comparison.
+ * For detailed algorithm description and scoring logic, refer to:
+ * https://docs.google.com/document/d/1XgY-4AbBDpnQdiEcOuBe9It_i7oNuPYgIJM44FUSI3E/edit
+ */
+
+export function epicMatchingAlgorithm(
+  patient1: PatientData,
+  patient2: PatientData,
+  threshold: number
+): boolean {
+  const scores = {
+    dob: 0,
+    gender: 0,
+    names: 0,
+    address: 0,
+    phone: 0,
+    email: 0,
+    ssn: 0,
+  };
+
+  if (patient1.dob && patient2.dob && patient1.dob === patient2.dob) {
+    scores.dob = 8;
+  } else if (patient1.dob && patient2.dob) {
+    const dob1Split = splitDob(patient1.dob);
+    const dob2Split = splitDob(patient2.dob);
+    const overlappingDateParts = dob2Split.filter(dp => dob1Split.includes(dp));
+    if (overlappingDateParts.length >= 2) {
+      scores.dob = 2;
+    }
+  }
+
+  if (patient1.genderAtBirth && patient2.genderAtBirth) {
+    if (patient1.genderAtBirth === patient2.genderAtBirth) {
+      scores.gender = 1;
+    }
+  }
+
+  const names1 = [patient1.firstName, patient1.lastName].filter(Boolean);
+  const names2 = [patient2.firstName, patient2.lastName].filter(Boolean);
+  const overlapNames = names2.filter(name => names1.includes(name));
+  if (overlapNames.length === 2) {
+    scores.names = 10;
+  } else if (overlapNames.length === 1) {
+    scores.names = 5;
+  }
+
+  const addressMatch = patient1.address.some(addr1 =>
+    patient2.address.some(addr2 => JSON.stringify(addr1) === JSON.stringify(addr2))
+  );
+  if (addressMatch) {
+    scores.address = 2;
+  } else {
+    const cityMatch = patient1.address.some(addr1 =>
+      patient2.address.some(addr2 => addr1.city === addr2.city)
+    );
+    const zipMatch = patient1.address.some(addr1 =>
+      patient2.address.some(addr2 => addr1.zip === addr2.zip)
+    );
+    if (cityMatch) scores.address += 0.5;
+    if (zipMatch) scores.address += 0.5;
+  }
+
+  const phoneMatch = patient1.contact?.some(c1 =>
+    patient2.contact?.some(c2 => c1.phone && c2.phone && c1.phone === c2.phone)
+  );
+  if (phoneMatch) {
+    scores.phone = 2;
+  }
+
+  const emailMatch = patient1.contact?.some(c1 =>
+    patient2.contact?.some(c2 => c1.email && c2.email && c1.email === c2.email)
+  );
+  if (emailMatch) {
+    scores.email = 2;
+  }
+
+  const ssn1 = patient1.personalIdentifiers?.filter(id => id.type === "ssn").map(id => id.value);
+  const ssn2 = patient2.personalIdentifiers?.filter(id => id.type === "ssn").map(id => id.value);
+  if (ssn1?.length && ssn2?.length) {
+    const ssnMatch = ssn1.some(s1 => ssn2.includes(s1));
+    if (ssnMatch) {
+      scores.ssn = 5;
+    }
+  }
+
+  const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
+
+  if (ssn1?.length || ssn2?.length) {
+    const newThreshold = threshold + 1;
+    const match = totalScore >= newThreshold;
+    if (match) {
+      log(
+        `Match: ${match}, Score: ${totalScore}, Threshold: ${newThreshold}, Patient1: ${JSON.stringify(
+          patient1
+        )}, Patient2: ${JSON.stringify(patient2)}`
+      );
+    }
+    return match;
+  }
+
+  const match = totalScore >= threshold;
+  if (match) {
+    log(
+      `Match: ${match}, Score: ${totalScore}, Threshold: ${threshold}, Patient1: ${JSON.stringify(
+        patient1
+      )}, Patient2: ${JSON.stringify(patient2)}`
+    );
+  }
+  return match;
+}
+
+function splitDob(dob: string): string[] {
+  return dob.split(/[-/]/);
 }
