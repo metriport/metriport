@@ -37,6 +37,7 @@
   "dependencies": {
     "@aws-sdk/client-bedrock-agent-runtime": "^3.616.0",
     "@aws-sdk/client-bedrock-runtime": "^3.616.0",
+    "@aws-sdk/client-cloudwatch-logs": "^3.658.1",
     "@aws-sdk/client-cognito-identity-provider": "^3.301.0",
     "@aws-sdk/client-healthlake": "^3.645.0",
     "@medplum/core": "^2.2.10",
