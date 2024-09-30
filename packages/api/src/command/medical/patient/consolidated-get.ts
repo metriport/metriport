@@ -57,6 +57,8 @@ type GetConsolidatedPatientData = {
   dateTo?: string;
   generateAiBrief?: boolean;
   fromDashboard?: boolean;
+  // TODO 2215 Remove this when we have contributed data as part of get consolidated (from S3)
+  forceDataFromFhir?: boolean;
 };
 
 export type GetConsolidatedSendToCxParams = GetConsolidatedParams & {
@@ -421,6 +423,7 @@ export async function getConsolidatedPatientData({
   dateTo,
   generateAiBrief,
   fromDashboard = false,
+  forceDataFromFhir = false,
 }: GetConsolidatedPatientData): Promise<SearchSetBundle<Resource>> {
   const payload: ConsolidatedSnapshotRequestSync = {
     patient,
@@ -430,6 +433,7 @@ export async function getConsolidatedPatientData({
     generateAiBrief,
     isAsync: false,
     fromDashboard,
+    forceDataFromFhir,
   };
   const connector = buildConsolidatedSnapshotConnector();
   const { bundleLocation, bundleFilename } = await connector.execute(payload);

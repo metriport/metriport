@@ -77,9 +77,11 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
 async function getBundle(
   params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
 ): Promise<SearchSetBundle> {
+  const { forceDataFromFhir } = !params.isAsync ? params : { forceDataFromFhir: false };
   const { cxId } = params.patient;
-  const isGetFromS3 = await isConsolidatedFromS3Enabled();
+  const isGetFromS3 = !forceDataFromFhir && (await isConsolidatedFromS3Enabled());
   const { log } = out(`getBundle - fromS3: ${isGetFromS3}`);
+  log(`forceDataFromFhir: ${forceDataFromFhir}`);
   if (isGetFromS3) {
     const startedAt = new Date();
     const consolidatedBundle = await getConsolidatedFromS3({ ...params, cxId });
