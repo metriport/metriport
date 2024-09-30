@@ -266,7 +266,7 @@ export function epicMatchingAlgorithm(
 
   const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
 
-  if (ssn1?.length || ssn2?.length) {
+  if (ssn1?.length && ssn2?.length) {
     const newThreshold = threshold + 1;
     const match = totalScore >= newThreshold;
     if (match) {
