@@ -34,6 +34,7 @@ const cxId = getEnvVarOrFail("CX_ID");
 const apiUrl = getEnvVarOrFail("API_URL");
 
 const timeBetweenPatients = 2000;
+const timeBetweenConversions = 1000;
 const axiosConfig: CreateAxiosDefaults = {
   timeout: 120_000,
   baseURL: apiUrl,
@@ -65,7 +66,7 @@ async function main() {
       });
 
       if (conversionType !== conversionTypes[conversionTypes.length - 1]) {
-        await sleep(timeBetweenPatients);
+        await sleep(timeBetweenConversions);
       }
     }
 
