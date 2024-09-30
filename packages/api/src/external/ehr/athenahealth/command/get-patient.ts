@@ -57,7 +57,7 @@ export async function getPatientIdOrFail({
   triggerDq?: boolean;
 }): Promise<string> {
   const { log } = out(
-    `AthenaHealth getPatient - cxId ${cxId} athenaPracticeId athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}`
+    `AthenaHealth getPatient - cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}`
   );
   const existingPatient = await getPatientMapping({
     cxId,

@@ -37,14 +37,15 @@ export async function getPatientIdsOrFailFromAppointmentsSub(): Promise<void> {
   const athenaClientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
   const athenaClientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
 
-  const patientAppointments: PatientAppointment[] = [];
-  const getAppointmentsErrors: string[] = [];
   const currentDatetime = buildDayjs(new Date());
   const startLastModifiedDate = buildDayjs(currentDatetime)
     .hour(currentDatetime.hour() - lastModifiedHoursLookback)
     .toDate();
   const endLastModifiedDate = buildDayjs(currentDatetime).toDate();
   log(`Getting appointments from ${startLastModifiedDate} to ${endLastModifiedDate}`);
+
+  const patientAppointments: PatientAppointment[] = [];
+  const getAppointmentsErrors: string[] = [];
   const getAppointmentsArgs = cxMappings.flatMap(mapping => {
     const practiceId = mapping.externalId;
     const departmentIds = mapping.secondaryMappings?.departmentIds;

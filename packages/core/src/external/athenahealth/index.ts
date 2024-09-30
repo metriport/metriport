@@ -255,8 +255,9 @@ class AthenaHealthApi {
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - getPatientViaSearch"));
       }
       const searchSet = patientSearchResourceSchema.parse(response.data);
-      if (searchSet.entry.length > 1)
+      if (searchSet.entry.length > 1) {
         throw new NotFoundError("More than one AthenaHealth patient found");
+      }
       return searchSet.entry[0]?.resource;
     } catch (error) {
       const msg = `Failure while searching patient @ AthenaHealth`;
@@ -438,7 +439,7 @@ class AthenaHealthApi {
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - subscribeToEvent"));
       }
       const outcome = subscriptionCreateResponseSchema.parse(response.data);
-      if (!outcome.success) throw new Error("Subscription not successful");
+      if (!outcome.success) throw new Error(`Subscription for ${feedtype} not successful`);
     } catch (error) {
       const msg = `Failure while subscribing to events @ AthenaHealth`;
       log(`${msg}. Cause: ${errorToString(error)}`);
@@ -573,7 +574,7 @@ class AthenaHealthApi {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       if (error.response?.status === 403) {
-        log(`Subscribging to appointment events for cxId ${cxId}`);
+        log(`Subscribing to appointment events for cxId ${cxId}`);
         await this.subscribeToEvent({
           cxId,
           feedtype: "appointments",
