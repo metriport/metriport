@@ -123,7 +123,9 @@ class AthenaHealthApi {
   }
 
   async getDepartments({ cxId }: { cxId: string }): Promise<string[]> {
-    const { log, debug } = out(`AthenaHealth get departments - cxId`);
+    const { log, debug } = out(
+      `AthenaHealth get departments - cxId ${cxId} practiceId ${this.practiceId}`
+    );
     const departmentUrl = `/departments`;
     try {
       const response = await this.axiosInstanceProprietary.get(departmentUrl);
@@ -135,7 +137,7 @@ class AthenaHealthApi {
           patientId: "global",
           date: new Date(),
         });
-        const key = `athenahealth/department/${filePath}/${uuidv7()}.json`;
+        const key = `athenahealth/departments/${filePath}/${uuidv7()}.json`;
         this.s3Utils
           .uploadFile({
             bucket: responsesBucket,
@@ -148,12 +150,13 @@ class AthenaHealthApi {
       const deparments = departmentsGetResponseSchema.parse(response.data);
       return deparments.departments.map(d => d.departmentid);
     } catch (error) {
-      const msg = `Failure while subscribing to events @ AthenaHealth`;
-      log(`${msg}. cxId ${cxId}. Cause: ${errorToString(error)}`);
+      const msg = `Failure while getting departments @ AthenaHealth`;
+      log(`${msg}. Cause: ${errorToString(error)}`);
       capture.error(msg, {
         extra: {
           url: departmentUrl,
           cxId,
+          practiceId: this.practiceId,
           context: "athenahealth.get-departments",
           error,
         },
@@ -169,7 +172,9 @@ class AthenaHealthApi {
     cxId: string;
     patientId: string;
   }): Promise<PatientResource | undefined> {
-    const { log, debug } = out(`AthenaHealth get patient - AH cxId ${cxId} patientId ${patientId}`);
+    const { log, debug } = out(
+      `AthenaHealth get patient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
     const patientUrl = `/Patient/${this.createPatientId(patientId)}`;
     try {
       const response = await this.axiosInstanceFhirApi.get(patientUrl);
@@ -196,11 +201,12 @@ class AthenaHealthApi {
     } catch (error: any) {
       if (error.response?.status === 404) return undefined;
       const msg = `Failure while getting patient @ AthenaHealth`;
-      log(`${msg}. Patient ID: ${patientId}. Cause: ${errorToString(error)}`);
+      log(`${msg}. Cause: ${errorToString(error)}`);
       capture.error(msg, {
         extra: {
           url: patientUrl,
           cxId,
+          practiceId: this.practiceId,
           patientId,
           context: "athenahealth.get-patient",
           error,
@@ -218,7 +224,7 @@ class AthenaHealthApi {
     patientId: string;
   }): Promise<PatientResource | undefined> {
     const { log, debug } = out(
-      `AthenaHealth search patient - AH cxId ${cxId} patientId ${patientId}`
+      `AthenaHealth search patient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
     const patientSearchUrl = "/Patient/_search";
     try {
@@ -249,15 +255,17 @@ class AthenaHealthApi {
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - getPatientViaSearch"));
       }
       const searchSet = patientSearchResourceSchema.parse(response.data);
-      if (searchSet.entry.length > 1) throw new NotFoundError("More than one athena patient found");
+      if (searchSet.entry.length > 1)
+        throw new NotFoundError("More than one AthenaHealth patient found");
       return searchSet.entry[0]?.resource;
     } catch (error) {
       const msg = `Failure while searching patient @ AthenaHealth`;
-      log(`${msg}. Patient ID: ${patientId}. Cause: ${errorToString(error)}`);
+      log(`${msg}. Cause: ${errorToString(error)}`);
       capture.error(msg, {
         extra: {
           url: patientSearchUrl,
           cxId,
+          practiceId: this.practiceId,
           patientId,
           context: "athenahealth.get-patient",
           error,
@@ -279,7 +287,7 @@ class AthenaHealthApi {
     medication: MedicationWithRefs;
   }): Promise<MedicationCreateResponse> {
     const { log, debug } = out(
-      `AthenaHealth create medication - AH cxId ${cxId} patientId ${patientId} departmentId ${departmentId}`
+      `AthenaHealth create medication - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} departmentId ${departmentId}`
     );
     const medicationOptions = await this.searchForMedication({
       cxId,
@@ -327,11 +335,12 @@ class AthenaHealthApi {
       return medicationCreateResponseSchema.parse(response.data);
     } catch (error) {
       const msg = `Failure while creating medication @ AthenaHealth`;
-      log(`${msg}. Patient ID: ${patientId}. Cause: ${errorToString(error)}`);
+      log(`${msg}. Cause: ${errorToString(error)}`);
       capture.error(msg, {
         extra: {
           url: chartMedicationUrl,
           cxId,
+          practiceId: this.practiceId,
           patientId,
           departmentId,
           context: "athenahealth.create-medication",
@@ -352,7 +361,7 @@ class AthenaHealthApi {
     medication: Medication;
   }): Promise<MedicationReference[]> {
     const { log, debug } = out(
-      `AthenaHealth search for medication - AH cxId ${cxId} patientId ${patientId}`
+      `AthenaHealth search for medication - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
     const searchValues = medication.code?.coding?.flatMap(c => c.display?.split("/") ?? []);
     if (!searchValues) throw Error("No code displays values for searching medications.");
@@ -365,31 +374,16 @@ class AthenaHealthApi {
           const response = await this.axiosInstanceProprietary.get(referenceUrl);
           if (!response.data) throw new Error(`No body returned from ${referenceUrl}`);
           debug(`${referenceUrl} resp: ${JSON.stringify(response.data)}`);
-          if (responsesBucket) {
-            const filePath = createHivePartitionFilePath({
-              cxId,
-              patientId,
-              date: new Date(),
-            });
-            const key = `athenahealth/medication-search/${filePath}/${uuidv7()}.json`;
-            this.s3Utils
-              .uploadFile({
-                bucket: responsesBucket,
-                key,
-                file: Buffer.from(JSON.stringify(response.data), "utf8"),
-                contentType: "application/json",
-              })
-              .catch(processAsyncError("Error saving to s3 @ AthenaHealth - searchForMedication"));
-          }
           const medications = medicationReferencesGetResponseSchema.parse(response.data);
           medicationOptions.push(...medications);
         } catch (error) {
           const msg = `Failure while searching for medications @ AthenaHealth`;
-          log(`${msg}. Patient ID: ${patientId}. Cause: ${errorToString(error)}`);
+          log(`${msg}. Cause: ${errorToString(error)}`);
           capture.error(msg, {
             extra: {
               url: referenceUrl,
               cxId,
+              practiceId: this.practiceId,
               patientId,
               context: "athenahealth.search-for-medication",
               error,
@@ -413,14 +407,14 @@ class AthenaHealthApi {
           file: Buffer.from(JSON.stringify(medicationOptions), "utf8"),
           contentType: "application/json",
         })
-        .catch(processAsyncError("Error saving to s3 @ AthenaHealth - getPatientViaSearch"));
+        .catch(processAsyncError("Error saving to s3 @ AthenaHealth - searchForMedication"));
     }
     return medicationOptions;
   }
 
   async subscribeToEvent({ cxId, feedtype }: { cxId: string; feedtype: string }): Promise<void> {
     const { log, debug } = out(
-      `AthenaHealth subscribe to events - cxId ${cxId} feedtype ${feedtype}`
+      `AthenaHealth subscribe to events - cxId ${cxId} practiceId ${this.practiceId} feedtype ${feedtype}`
     );
     const subscribeUrl = `/${feedtype}/changed/subscription`;
     try {
@@ -447,11 +441,12 @@ class AthenaHealthApi {
       if (!outcome.success) throw new Error("Subscription not successful");
     } catch (error) {
       const msg = `Failure while subscribing to events @ AthenaHealth`;
-      log(`${msg}. cxId ${cxId} feedtype ${feedtype}. Cause: ${errorToString(error)}`);
+      log(`${msg}. Cause: ${errorToString(error)}`);
       capture.error(msg, {
         extra: {
           url: subscribeUrl,
           cxId,
+          practiceId: this.practiceId,
           feedtype,
           context: "athenahealth.subscribe-to-event",
           error,
@@ -473,7 +468,7 @@ class AthenaHealthApi {
     endAppointmentDate: Date;
   }): Promise<BookedAppointment[]> {
     const { log, debug } = out(
-      `AthenaHealth get appointments - cxId ${cxId} departmentIds ${departmentIds}`
+      `AthenaHealth get appointments - cxId ${cxId} practiceId ${this.practiceId} departmentIds ${departmentIds}`
     );
     const params = {
       startdate: this.formatDate(startAppointmentDate.toISOString()) ?? "",
@@ -517,6 +512,7 @@ class AthenaHealthApi {
         extra: {
           url: appointmentUrl,
           cxId,
+          practiceId: this.practiceId,
           departmentIds,
           context: "athenahealth.get-appointments",
           error,
@@ -538,7 +534,7 @@ class AthenaHealthApi {
     endLastModifiedDate: Date;
   }): Promise<BookedAppointment[]> {
     const { log, debug } = out(
-      `AthenaHealth get appointments - cxId ${cxId} departmentIds ${departmentIds}`
+      `AthenaHealth get appointments from sub - cxId ${cxId} practiceId ${this.practiceId} departmentIds ${departmentIds}`
     );
     const params = {
       showprocessedstartdatetime: this.formatDateTime(startLastModifiedDate.toISOString()) ?? "",
@@ -561,7 +557,7 @@ class AthenaHealthApi {
           patientId: "global",
           date: new Date(),
         });
-        const key = `athenahealth/appointments-subscription/${filePath}/${uuidv7()}.json`;
+        const key = `athenahealth/appointments-changed/${filePath}/${uuidv7()}.json`;
         this.s3Utils
           .uploadFile({
             bucket: responsesBucket,
@@ -590,6 +586,7 @@ class AthenaHealthApi {
         extra: {
           url: appointmentUrl,
           cxId,
+          practiceId: this.practiceId,
           departmentIds,
           context: "athenahealth.get-appointments",
           error,

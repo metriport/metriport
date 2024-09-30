@@ -67,7 +67,7 @@ export async function getPatientIdsOrFailFromAppointmentsSub(): Promise<void> {
     };
   });
 
-  await executeAsynchronously(getAppointmentsArgs, getAppointmentsAndCreateOrUpdatePatient, {
+  await executeAsynchronously(getAppointmentsArgs, getAppointmentsFromSubAndCreateOrUpdatePatient, {
     numberOfParallelExecutions: 10,
     delay: delayBetweenBatches.asMilliseconds(),
   });
@@ -78,42 +78,42 @@ export async function getPatientIdsOrFailFromAppointmentsSub(): Promise<void> {
         patientCreateCount: getAppointmentsErrors.length,
         errorCount: getAppointmentsErrors.length,
         errors: getAppointmentsErrors.join(","),
-        context: "athenahealth.get-patients-from-appointments",
+        context: "athenahealth.get-patients-from-appointments-sub",
       },
     });
   }
 
-  const getPatientOrFailErrors: string[] = [];
-  const getPatientIdOrFaiLArg = patientAppointments.map(appointment => {
+  const getPatientIdOrFailErrors: string[] = [];
+  const getPatientIdOrFaiLArgs = patientAppointments.map(appointment => {
     return {
       cxId: appointment.cxId,
       athenaPracticeId: appointment.athenaPracticeId,
       athenaPatientId: appointment.athenaPatientId,
       useSearch: true,
       triggerDq: true,
-      errors: getPatientOrFailErrors,
+      errors: getPatientIdOrFailErrors,
       log,
     };
   });
 
-  await executeAsynchronously(getPatientIdOrFaiLArg, getPatientIdOrFail, {
+  await executeAsynchronously(getPatientIdOrFaiLArgs, getPatientIdOrFail, {
     numberOfParallelExecutions: 10,
     delay: delayBetweenBatches.asMilliseconds(),
   });
 
-  if (getPatientOrFailErrors.length > 0) {
+  if (getPatientIdOrFailErrors.length > 0) {
     capture.error("Failed to find or create patients", {
       extra: {
-        patientCreateCount: getPatientOrFailErrors.length,
-        errorCount: getPatientOrFailErrors.length,
-        errors: getPatientOrFailErrors.join(","),
+        patientCreateCount: getPatientIdOrFailErrors.length,
+        errorCount: getPatientIdOrFailErrors.length,
+        errors: getPatientIdOrFailErrors.join(","),
         context: "athenahealth.get-patients-from-appointments",
       },
     });
   }
 }
 
-async function getAppointmentsAndCreateOrUpdatePatient({
+async function getAppointmentsFromSubAndCreateOrUpdatePatient({
   cxId,
   practiceId,
   departmentIds,
