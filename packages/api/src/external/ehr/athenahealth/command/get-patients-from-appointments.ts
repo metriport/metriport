@@ -29,7 +29,7 @@ type PatientAppointment = {
 };
 
 export async function getPatientIdsOrFailFromAppointmentsSub(): Promise<void> {
-  const { log } = out(`AthenaHealth getPatientIdsOrFailFromAppointments`);
+  const { log } = out(`AthenaHealth getPatientIdsOrFailFromAppointmentsSub`);
   if (!athenaEnvironment || !athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
     throw new Error("AthenaHealth not setup");
   }
@@ -160,7 +160,7 @@ async function getAppointmentsFromSubAndCreateOrUpdatePatient({
       })
     );
   } catch (error) {
-    const msg = `Failed to get appointments. cxId ${cxId} practiceId: ${practiceId} departmentIds: ${departmentIds}. Cause: ${errorToString(
+    const msg = `Failed to get appointments. cxId ${cxId} practiceId ${practiceId} departmentIds ${departmentIds}. Cause: ${errorToString(
       error
     )}`;
     log(msg);
@@ -197,7 +197,7 @@ async function getPatientIdOrFail({
       triggerDq,
     });
   } catch (error) {
-    const msg = `Failed to find or create patients. cxId ${cxId} athenaPracticeId: ${athenaPracticeId} athenaPatientId: ${athenaPatientId}. Cause: ${errorToString(
+    const msg = `Failed to find or create patients. cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}. Cause: ${errorToString(
       error
     )}`;
     log(msg);

@@ -56,7 +56,9 @@ export async function getPatientIdOrFail({
   useSearch?: boolean;
   triggerDq?: boolean;
 }): Promise<string> {
-  const { log } = out(`AthenaHealth getPatient - cxId ${cxId} athenaPatientId ${athenaPatientId}`);
+  const { log } = out(
+    `AthenaHealth getPatient - cxId ${cxId} athenaPracticeId athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}`
+  );
   const existingPatient = await getPatientMapping({
     cxId,
     externalId: athenaPatientId,
@@ -101,8 +103,6 @@ export async function getPatientIdOrFail({
   const getPatientByDemoArgs = patientDemoFilters.map(demo => {
     return {
       cxId,
-      athenaPracticeId,
-      athenaPatientId,
       demo,
       patients,
       errors: getPatientByDemoErrors,
@@ -204,16 +204,12 @@ function createMetriportPatientDemo(
 
 async function getPatientByDemo({
   cxId,
-  athenaPracticeId,
-  athenaPatientId,
   demo,
   patients,
   errors,
   log,
 }: {
   cxId: string;
-  athenaPracticeId: string;
-  athenaPatientId: string;
   demo: PatientDemoData;
   patients: Patient[];
   errors: string[];
@@ -223,9 +219,7 @@ async function getPatientByDemo({
     const patient = await singleGetMetriportPatientByDemo({ cxId, demo });
     if (patient) patients.push(patient);
   } catch (error) {
-    const msg = `Failed to get patient by demo. cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}. Cause: ${errorToString(
-      error
-    )}`;
+    const msg = `Failed to get patient by demo. Cause: ${errorToString(error)}`;
     log(msg);
     errors.push(msg);
   }
