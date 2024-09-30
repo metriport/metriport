@@ -468,7 +468,7 @@ class AthenaHealthApi {
     endAppointmentDate,
   }: {
     cxId: string;
-    departmentIds: string[];
+    departmentIds?: string[];
     startAppointmentDate: Date;
     endAppointmentDate: Date;
   }): Promise<BookedAppointment[]> {
@@ -480,7 +480,7 @@ class AthenaHealthApi {
       enddate: this.formatDate(endAppointmentDate.toISOString()) ?? "",
     };
     const urlParams = new URLSearchParams(params);
-    if (departmentIds.length > 0) {
+    if (departmentIds && departmentIds.length > 0) {
       departmentIds.map(dpId => urlParams.append("departmentid", this.stripDepartmentId(dpId)));
     } else {
       const fetchedDepartmentIds = await this.getDepartments({ cxId });
@@ -533,7 +533,7 @@ class AthenaHealthApi {
     endLastModifiedDate,
   }: {
     cxId: string;
-    departmentIds: string[];
+    departmentIds?: string[];
     startLastModifiedDate: Date;
     endLastModifiedDate: Date;
   }): Promise<BookedAppointment[]> {
@@ -545,7 +545,7 @@ class AthenaHealthApi {
       showprocessedenddatetime: this.formatDateTime(endLastModifiedDate.toISOString()) ?? "",
     };
     const urlParams = new URLSearchParams(params);
-    if (departmentIds.length > 0) {
+    if (departmentIds && departmentIds.length > 0) {
       departmentIds.map(dpId => urlParams.append("departmentid", this.stripDepartmentId(dpId)));
     } else {
       urlParams.append("departmentid", "");

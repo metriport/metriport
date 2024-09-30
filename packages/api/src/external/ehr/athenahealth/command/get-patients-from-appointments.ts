@@ -34,42 +34,43 @@ export async function getPatientIdsOrFailFromAppointmentsSub(): Promise<void> {
     throw new Error("AthenaHealth not setup");
   }
   const cxMappings = await getCxMappings({ source: EhrSources.athena });
-
-  const patientAppointments: PatientAppointment[] = [];
-  const getAppointmentsErrors: string[] = [];
   const athenaClientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
   const athenaClientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
 
+  const patientAppointments: PatientAppointment[] = [];
+  const getAppointmentsErrors: string[] = [];
   const currentDatetime = buildDayjs(new Date());
   const startLastModifiedDate = buildDayjs(currentDatetime)
     .hour(currentDatetime.hour() - lastModifiedHoursLookback)
     .toDate();
   const endLastModifiedDate = buildDayjs(currentDatetime).toDate();
   log(`Getting appointments from ${startLastModifiedDate} to ${endLastModifiedDate}`);
+  const getAppointmentsArgs = cxMappings.flatMap(mapping => {
+    const practiceId = mapping.externalId;
+    const departmentIds = mapping.secondaryMappings?.departmentIds;
+    if (departmentIds && !Array.isArray(departmentIds)) {
+      throw new Error(
+        `departmentIds exists but is malformed for cxId ${cxId} practiceId ${practiceId}`
+      );
+    }
+    return {
+      cxId: mapping.cxId,
+      practiceId,
+      departmentIds,
+      clientKey: athenaClientKey,
+      clientSecret: athenaClientSecret,
+      patientAppointments,
+      startLastModifiedDate,
+      endLastModifiedDate,
+      errors: getAppointmentsErrors,
+      log,
+    };
+  });
 
-  await executeAsynchronously(
-    cxMappings.flatMap(mapping => {
-      const cxId = mapping.cxId;
-      const practiceId = mapping.externalId;
-      const departmentIds = mapping.secondaryMappings?.departmentIds;
-      if (departmentIds && !Array.isArray(departmentIds))
-        throw new Error("departmentIds exists but is malformed");
-      return {
-        cxId,
-        practiceId,
-        departmentIds: departmentIds ?? [],
-        clientKey: athenaClientKey,
-        clientSecret: athenaClientSecret,
-        patientAppointments,
-        startLastModifiedDate,
-        endLastModifiedDate,
-        errors: getAppointmentsErrors,
-        log,
-      };
-    }),
-    getAppointmentsAndCreateOrUpdatePatient,
-    { numberOfParallelExecutions: 10, delay: delayBetweenBatches.asMilliseconds() }
-  );
+  await executeAsynchronously(getAppointmentsArgs, getAppointmentsAndCreateOrUpdatePatient, {
+    numberOfParallelExecutions: 10,
+    delay: delayBetweenBatches.asMilliseconds(),
+  });
 
   if (getAppointmentsErrors.length > 0) {
     capture.error("Failed to get appointments", {
@@ -83,22 +84,22 @@ export async function getPatientIdsOrFailFromAppointmentsSub(): Promise<void> {
   }
 
   const getPatientOrFailErrors: string[] = [];
+  const getPatientIdOrFaiLArg = patientAppointments.map(appointment => {
+    return {
+      cxId: appointment.cxId,
+      athenaPracticeId: appointment.athenaPracticeId,
+      athenaPatientId: appointment.athenaPatientId,
+      useSearch: true,
+      triggerDq: true,
+      errors: getPatientOrFailErrors,
+      log,
+    };
+  });
 
-  await executeAsynchronously(
-    patientAppointments.map(appointment => {
-      return {
-        cxId: appointment.cxId,
-        athenaPracticeId: appointment.athenaPracticeId,
-        athenaPatientId: appointment.athenaPatientId,
-        useSearch: true,
-        triggerDq: true,
-        errors: getPatientOrFailErrors,
-        log,
-      };
-    }),
-    getPatientIdOrFail,
-    { numberOfParallelExecutions: 10, delay: delayBetweenBatches.asMilliseconds() }
-  );
+  await executeAsynchronously(getPatientIdOrFaiLArg, getPatientIdOrFail, {
+    numberOfParallelExecutions: 10,
+    delay: delayBetweenBatches.asMilliseconds(),
+  });
 
   if (getPatientOrFailErrors.length > 0) {
     capture.error("Failed to find or create patients", {
@@ -126,7 +127,7 @@ async function getAppointmentsAndCreateOrUpdatePatient({
 }: {
   cxId: string;
   practiceId: string;
-  departmentIds: string[];
+  departmentIds?: string[];
   clientKey: string;
   clientSecret: string;
   patientAppointments: PatientAppointment[];
