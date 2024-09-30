@@ -28,7 +28,7 @@ export type ExecuteInChunksOptions = {
   /**
    * Where to log. Defaults to no logging.
    */
-  log?: typeof console.log;
+  log?: typeof console.log | undefined;
 };
 
 /**
@@ -49,6 +49,8 @@ export type FunctionType<T> = (
   promiseIndex: number,
   promiseCount: number
 ) => Promise<void>;
+
+export type FunctionTypeOutput<T> = (item: T) => Promise<unknown>;
 
 const emptyString = "";
 
@@ -162,4 +164,42 @@ async function executeSynchronously<T>(
       }
     }
   }
+}
+
+export async function executeAsynchronouslyStoreOutput<T>(
+  collection: T[],
+  outputs: unknown[],
+  errors: unknown[],
+  errMsg: string,
+  fn: FunctionTypeOutput<T>,
+  {
+    numberOfParallelExecutions = collection.length,
+    delay = 0,
+    maxJitterMillis = 0,
+    minJitterMillis = 0,
+    keepExecutingOnError = false,
+    log,
+  }: ExecuteInChunksOptions = {}
+): Promise<unknown[]> {
+  const fnWrap = async function (args: T): Promise<void> {
+    try {
+      const output = await fn(args);
+      outputs.push(output);
+    } catch (error) {
+      const msg = `${errMsg}. Cause: ${errorToString(error)}`;
+      if (log) log(msg);
+      errors.push(msg);
+    }
+  };
+
+  await executeAsynchronously(collection, fnWrap, {
+    numberOfParallelExecutions,
+    delay,
+    maxJitterMillis,
+    minJitterMillis,
+    keepExecutingOnError,
+    log,
+  });
+
+  return outputs;
 }

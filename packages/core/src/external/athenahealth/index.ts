@@ -160,7 +160,7 @@ class AthenaHealthApi {
           date: new Date(),
         });
         const key = `athenahealth/patient/${filePath}/${uuidv7()}.json`;
-        await this.s3Utils.uploadFile({
+        this.s3Utils.uploadFile({
           bucket: responsesBucket,
           key,
           file: Buffer.from(JSON.stringify(response.data), "utf8"),
@@ -211,7 +211,7 @@ class AthenaHealthApi {
           date: new Date(),
         });
         const key = `athenahealth/patient-search/${filePath}/${uuidv7()}.json`;
-        await this.s3Utils.uploadFile({
+        this.s3Utils.uploadFile({
           bucket: responsesBucket,
           key,
           file: Buffer.from(JSON.stringify(response.data), "utf8"),
@@ -296,7 +296,7 @@ class AthenaHealthApi {
           date: new Date(),
         });
         const key = `athenahealth/chart/medication/${filePath}/${uuidv7()}.json`;
-        await this.s3Utils.uploadFile({
+        this.s3Utils.uploadFile({
           bucket: responsesBucket,
           key,
           file: Buffer.from(JSON.stringify(response.data), "utf8"),
@@ -366,7 +366,7 @@ class AthenaHealthApi {
         date: new Date(),
       });
       const key = `athenahealth/reference/medications/${filePath}/${uuidv7()}.json`;
-      await this.s3Utils.uploadFile({
+      this.s3Utils.uploadFile({
         bucket: responsesBucket,
         key,
         file: Buffer.from(JSON.stringify(medicationOptions), "utf8"),
@@ -416,7 +416,7 @@ class AthenaHealthApi {
           date: new Date(),
         });
         const key = `athenahealth/appointments/${filePath}/${uuidv7()}.json`;
-        await this.s3Utils.uploadFile({
+        this.s3Utils.uploadFile({
           bucket: responsesBucket,
           key,
           file: Buffer.from(JSON.stringify(response.data), "utf8"),
