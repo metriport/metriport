@@ -233,8 +233,8 @@ describe("groupSameAllergies", () => {
 
     const { allergiesMap, danglingReferences } = groupSameAllergies([allergy, allergy2]);
     expect(allergiesMap.size).toBe(1);
-    expect(danglingReferences.length).toBe(1);
-    expect(danglingReferences[0]).toBe(`AllergyIntolerance/${allergyId2}`);
+    expect(danglingReferences.size).toBe(1);
+    expect(danglingReferences.values().next().value).toBe(`AllergyIntolerance/${allergyId2}`);
 
     const remainingAllergy = allergiesMap.values().next().value;
     expect(remainingAllergy).toBeDefined();
