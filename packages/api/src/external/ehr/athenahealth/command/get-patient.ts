@@ -98,14 +98,21 @@ export async function getPatientIdOrFail({
   const patientDemoFilters = createMetriportPatientDemoFilters(athenaPatient);
   const patients: Patient[] = [];
   const getPatientByDemoErrors: string[] = [];
+  const getPatientByDemoArgs = patientDemoFilters.map(demo => {
+    return {
+      cxId,
+      athenaPracticeId,
+      athenaPatientId,
+      demo,
+      patients,
+      errors: getPatientByDemoErrors,
+      log,
+    };
+  });
 
-  await executeAsynchronously(
-    patientDemoFilters.map(demo => {
-      return { cxId, athenaPatientId, demo, patients, errors: getPatientByDemoErrors, log };
-    }),
-    getPatientByDemo,
-    { numberOfParallelExecutions: 5 }
-  );
+  await executeAsynchronously(getPatientByDemoArgs, getPatientByDemo, {
+    numberOfParallelExecutions: 5,
+  });
 
   if (getPatientByDemoErrors.length > 0) {
     capture.error("Failed to get patient by demo", {
@@ -197,6 +204,7 @@ function createMetriportPatientDemo(
 
 async function getPatientByDemo({
   cxId,
+  athenaPracticeId,
   athenaPatientId,
   demo,
   patients,
@@ -204,6 +212,7 @@ async function getPatientByDemo({
   log,
 }: {
   cxId: string;
+  athenaPracticeId: string;
   athenaPatientId: string;
   demo: PatientDemoData;
   patients: Patient[];
@@ -214,7 +223,7 @@ async function getPatientByDemo({
     const patient = await singleGetMetriportPatientByDemo({ cxId, demo });
     if (patient) patients.push(patient);
   } catch (error) {
-    const msg = `Failed to get patient by demo. cxId ${cxId} athenaPatientId ${athenaPatientId}. Cause: ${errorToString(
+    const msg = `Failed to get patient by demo. cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}. Cause: ${errorToString(
       error
     )}`;
     log(msg);

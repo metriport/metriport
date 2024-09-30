@@ -50,7 +50,7 @@ export async function getPatientIdsOrFailFromAppointmentsSub(): Promise<void> {
     const departmentIds = mapping.secondaryMappings?.departmentIds;
     if (departmentIds && !Array.isArray(departmentIds)) {
       throw new Error(
-        `departmentIds exists but is malformed for cxId ${cxId} practiceId ${practiceId}`
+        `departmentIds exists but is malformed for cxId ${mapping.cxId} practiceId ${practiceId}`
       );
     }
     return {
