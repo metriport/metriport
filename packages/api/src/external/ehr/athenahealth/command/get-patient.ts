@@ -1,3 +1,5 @@
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { PatientResource } from "@metriport/shared/interface/external/athenahealth/patient";
 import {
   errorToString,
@@ -5,6 +7,7 @@ import {
   normalizeGender,
   toTitleCase,
   NotFoundError,
+  sleep,
 } from "@metriport/shared";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
@@ -27,6 +30,10 @@ import { getPatientMapping, findOrCreatePatientMapping } from "../../../../comma
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { Config } from "../../../../shared/config";
 import { createMetriportAddresses, createMetriportContacts, createNames } from "../shared";
+
+dayjs.extend(duration);
+
+const delayBeforeDq = dayjs.duration(5, "seconds");
 
 const region = Config.getAWSRegion();
 const athenaEnvironment = Config.getAthenaHealthEnv();
@@ -94,7 +101,7 @@ export async function getPatientIdOrFail({
 
   await executeAsynchronously(
     patientDemoFilters.map(demo => {
-      return { cxId, demo, patients, errors: getPatientByDemoErrors, log };
+      return { cxId, athenaPatientId, demo, patients, errors: getPatientByDemoErrors, log };
     }),
     getPatientByDemo,
     { numberOfParallelExecutions: 5 }
@@ -140,6 +147,7 @@ export async function getPatientIdOrFail({
       },
     });
     if (triggerDq) {
+      await sleep(delayBeforeDq.asMilliseconds());
       queryDocumentsAcrossHIEs({
         cxId,
         patientId: metriportPatient.id,
@@ -189,12 +197,14 @@ function createMetriportPatientDemo(
 
 async function getPatientByDemo({
   cxId,
+  athenaPatientId,
   demo,
   patients,
   errors,
   log,
 }: {
   cxId: string;
+  athenaPatientId: string;
   demo: PatientDemoData;
   patients: Patient[];
   errors: string[];
@@ -204,7 +214,9 @@ async function getPatientByDemo({
     const patient = await singleGetMetriportPatientByDemo({ cxId, demo });
     if (patient) patients.push(patient);
   } catch (error) {
-    const msg = `Failed to get patient by demo. Cause: ${errorToString(error)}`;
+    const msg = `Failed to get patient by demo. cxId ${cxId} athenaPatientId ${athenaPatientId}. Cause: ${errorToString(
+      error
+    )}`;
     log(msg);
     errors.push(msg);
   }

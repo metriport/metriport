@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { errorToString } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -13,9 +14,8 @@ import { getPatientIdOrFail as singleGetPatientIdOrFail } from "./get-patient";
 
 dayjs.extend(duration);
 
-const delay = dayjs.duration(30, "seconds");
-const lastModifiedHoursLookback = 72;
-const appointmentYearsLookForward = 10;
+const delayBetweenBatches = dayjs.duration(30, "seconds");
+const lastModifiedHoursLookback = 4;
 
 const region = Config.getAWSRegion();
 const athenaEnvironment = Config.getAthenaHealthEnv();
@@ -28,7 +28,7 @@ type PatientAppointment = {
   athenaPatientId: string;
 };
 
-export async function getPatientIdsOrFailFromAppointments(): Promise<void> {
+export async function getPatientIdsOrFailFromAppointmentsSub(): Promise<void> {
   const { log } = out(`AthenaHealth getPatientIdsOrFailFromAppointments`);
   if (!athenaEnvironment || !athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
     throw new Error("AthenaHealth not setup");
@@ -40,27 +40,11 @@ export async function getPatientIdsOrFailFromAppointments(): Promise<void> {
   const athenaClientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
   const athenaClientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
 
-  const now = new Date();
-  const currentDatetime = new Date(
-    Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate(),
-      now.getUTCHours(),
-      now.getUTCMinutes(),
-      now.getUTCSeconds()
-    )
-  );
-  const startAppointmentDate = new Date(currentDatetime);
-  const endAppointmentDate = new Date(
-    new Date(currentDatetime).setUTCFullYear(
-      currentDatetime.getUTCFullYear() + appointmentYearsLookForward
-    )
-  );
-  const startLastModifiedDate = new Date(
-    new Date(currentDatetime).setUTCHours(currentDatetime.getUTCHours() - lastModifiedHoursLookback)
-  );
-  const endLastModifiedDate = new Date(currentDatetime);
+  const currentDatetime = buildDayjs(new Date());
+  const startLastModifiedDate = buildDayjs(currentDatetime)
+    .hour(currentDatetime.hour() - lastModifiedHoursLookback)
+    .toDate();
+  const endLastModifiedDate = buildDayjs(currentDatetime).toDate();
   log(`Getting appointments from ${startLastModifiedDate} to ${endLastModifiedDate}`);
 
   await executeAsynchronously(
@@ -68,29 +52,23 @@ export async function getPatientIdsOrFailFromAppointments(): Promise<void> {
       const cxId = mapping.cxId;
       const practiceId = mapping.externalId;
       const departmentIds = mapping.secondaryMappings?.departmentIds;
-      if (!departmentIds || !Array.isArray(departmentIds) || departmentIds.length === 0) {
-        log(`Skipping for cxId ${cxId} -- departmentIds missing, malformed or empty`);
-        return [];
-      }
-      return departmentIds.map(departmentId => {
-        return {
-          cxId,
-          practiceId,
-          departmentId,
-          clientKey: athenaClientKey,
-          clientSecret: athenaClientSecret,
-          patientAppointments,
-          startAppointmentDate,
-          endAppointmentDate,
-          startLastModifiedDate,
-          endLastModifiedDate,
-          errors: getAppointmentsErrors,
-          log,
-        };
-      });
+      if (departmentIds && !Array.isArray(departmentIds))
+        throw new Error("departmentIds exists but is malformed");
+      return {
+        cxId,
+        practiceId,
+        departmentIds: departmentIds ?? [],
+        clientKey: athenaClientKey,
+        clientSecret: athenaClientSecret,
+        patientAppointments,
+        startLastModifiedDate,
+        endLastModifiedDate,
+        errors: getAppointmentsErrors,
+        log,
+      };
     }),
     getAppointmentsAndCreateOrUpdatePatient,
-    { numberOfParallelExecutions: 10, delay: delay.asMilliseconds() }
+    { numberOfParallelExecutions: 10, delay: delayBetweenBatches.asMilliseconds() }
   );
 
   if (getAppointmentsErrors.length > 0) {
@@ -119,7 +97,7 @@ export async function getPatientIdsOrFailFromAppointments(): Promise<void> {
       };
     }),
     getPatientIdOrFail,
-    { numberOfParallelExecutions: 10, delay: delay.asMilliseconds() }
+    { numberOfParallelExecutions: 10, delay: delayBetweenBatches.asMilliseconds() }
   );
 
   if (getPatientOrFailErrors.length > 0) {
@@ -137,12 +115,10 @@ export async function getPatientIdsOrFailFromAppointments(): Promise<void> {
 async function getAppointmentsAndCreateOrUpdatePatient({
   cxId,
   practiceId,
-  departmentId,
+  departmentIds,
   clientKey,
   clientSecret,
   patientAppointments,
-  startAppointmentDate,
-  endAppointmentDate,
   startLastModifiedDate,
   endLastModifiedDate,
   errors,
@@ -150,12 +126,10 @@ async function getAppointmentsAndCreateOrUpdatePatient({
 }: {
   cxId: string;
   practiceId: string;
-  departmentId: string;
+  departmentIds: string[];
   clientKey: string;
   clientSecret: string;
   patientAppointments: PatientAppointment[];
-  startAppointmentDate: Date;
-  endAppointmentDate: Date;
   startLastModifiedDate: Date;
   endLastModifiedDate: Date;
   errors: string[];
@@ -169,16 +143,14 @@ async function getAppointmentsAndCreateOrUpdatePatient({
       clientKey,
       clientSecret,
     });
-    const appointments = await api.getAppointments({
+    const appointments = await api.getAppointmentsFromSubscription({
       cxId,
-      departmentId,
-      startAppointmentDate,
-      endAppointmentDate,
+      departmentIds,
       startLastModifiedDate,
       endLastModifiedDate,
     });
     patientAppointments.push(
-      ...appointments.appointments.map(appointment => {
+      ...appointments.map(appointment => {
         return {
           cxId,
           athenaPracticeId: practiceId,
@@ -187,7 +159,7 @@ async function getAppointmentsAndCreateOrUpdatePatient({
       })
     );
   } catch (error) {
-    const msg = `Failed to get appointments. cxId ${cxId} practiceId: ${practiceId} departmentId: ${departmentId}. Cause: ${errorToString(
+    const msg = `Failed to get appointments. cxId ${cxId} practiceId: ${practiceId} departmentIds: ${departmentIds}. Cause: ${errorToString(
       error
     )}`;
     log(msg);
@@ -224,7 +196,7 @@ async function getPatientIdOrFail({
       triggerDq,
     });
   } catch (error) {
-    const msg = `Failed to find or create patients. cxId ${cxId} athenaPracticeId: ${athenaPracticeId}. athenaPatientId: ${athenaPatientId}. Cause: ${errorToString(
+    const msg = `Failed to find or create patients. cxId ${cxId} athenaPracticeId: ${athenaPracticeId} athenaPatientId: ${athenaPatientId}. Cause: ${errorToString(
       error
     )}`;
     log(msg);

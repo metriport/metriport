@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosResponse, AxiosError } from "axios";
+import axios, { AxiosInstance } from "axios";
 import {
   Medication,
   MedicationAdministration,
@@ -9,7 +9,14 @@ import {
   patientResourceSchema,
   patientSearchResourceSchema,
   PatientResource,
-} from "@metriport/shared/interface/external/athenahealth/patient";
+  MedicationReference,
+  medicationReferenceResponseSchema,
+  MedicationCreateResponse,
+  medicationCreateResponseSchema,
+  BookedAppointment,
+  bookedAppointmentResponseSchema,
+  subscriptionCreateResponseSchema,
+} from "@metriport/shared";
 import { errorToString, NotFoundError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { S3Utils } from "../aws/s3";
@@ -41,10 +48,6 @@ function getS3UtilsInstance(): S3Utils {
 }
 
 export type AthenaEnv = "api" | "api.preview";
-
-export type AthenaMedication = { medication: string; medicationid: number };
-
-export type AthenaAppointment = { patientid: string };
 
 export type MedicationWithRefs = {
   medication: Medication;
@@ -118,27 +121,6 @@ class AthenaHealthApi {
     });
   }
 
-  private async handleAxiosRequest<T>(
-    requestFunction: () => Promise<AxiosResponse<T>>
-  ): Promise<AxiosResponse<T>> {
-    try {
-      const response = await requestFunction();
-      return response;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        const axiosError = error as AxiosError;
-        const statusCode = axiosError.response?.status;
-        const errorMessage = axiosError.response?.data;
-        const msg = `Request failed. Status: ${statusCode}. Message: ${JSON.stringify(
-          errorMessage
-        )}`;
-        console.log("error", JSON.stringify(error, null, 2));
-        throw new Error(msg);
-      }
-      throw new Error("An unexpected error occurred during the request");
-    }
-  }
-
   async getPatient({
     cxId,
     patientId,
@@ -149,9 +131,7 @@ class AthenaHealthApi {
     const { log, debug } = out(`AthenaHealth get - AH cxId ${cxId} patientId ${patientId}`);
     const patientUrl = `/Patient/${this.createPatientId(patientId)}`;
     try {
-      const response = await this.handleAxiosRequest(() =>
-        this.axiosInstanceFhirApi.get(patientUrl)
-      );
+      const response = await this.axiosInstanceFhirApi.get(patientUrl);
       if (!response.data) throw new Error(`No body returned from ${patientUrl}`);
       debug(`${patientUrl} resp: ${JSON.stringify(response.data)}`);
       if (responsesBucket) {
@@ -203,8 +183,9 @@ class AthenaHealthApi {
         _id: this.createPatientId(patientId),
         "ah-practice": this.createPracticetId(this.practiceId),
       };
-      const response = await this.handleAxiosRequest(() =>
-        this.axiosInstanceFhirApi.post(patientSearchUrl, this.createDataParams(data))
+      const response = await this.axiosInstanceFhirApi.post(
+        patientSearchUrl,
+        this.createDataParams(data)
       );
       if (!response.data) throw new Error(`No body returned from ${patientSearchUrl}`);
       debug(`${patientSearchUrl} resp: ${JSON.stringify(response.data)}`);
@@ -235,7 +216,7 @@ class AthenaHealthApi {
           url: patientSearchUrl,
           cxId,
           patientId,
-          context: "athenahealth.search-patient",
+          context: "athenahealth.get-patient",
           error,
         },
       });
@@ -253,11 +234,7 @@ class AthenaHealthApi {
     patientId: string;
     departmentId: string;
     medication: MedicationWithRefs;
-  }): Promise<{
-    success: string;
-    errormessage: string;
-    medicationentryid: string;
-  }> {
+  }): Promise<MedicationCreateResponse> {
     const { log, debug } = out(
       `AthenaHealth create medication - AH cxId ${cxId} patientId ${patientId} departmentId ${departmentId}`
     );
@@ -282,8 +259,9 @@ class AthenaHealthApi {
     };
     const chartMedicationUrl = `/chart/${this.stripPatientId(patientId)}/medications`;
     try {
-      const response = await this.handleAxiosRequest(() =>
-        this.axiosInstanceProprietary.post(chartMedicationUrl, this.createDataParams(data))
+      const response = await this.axiosInstanceProprietary.post(
+        chartMedicationUrl,
+        this.createDataParams(data)
       );
       if (!response.data) throw new Error(`No body returned from ${chartMedicationUrl}`);
       debug(`${chartMedicationUrl} resp: ${JSON.stringify(response.data)}`);
@@ -303,7 +281,7 @@ class AthenaHealthApi {
           })
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - createMedication"));
       }
-      return response.data;
+      return medicationCreateResponseSchema.parse(response.data);
     } catch (error) {
       const msg = `Failure while creating medication @ AthenaHealth`;
       log(`${msg}. Patient ID: ${patientId}. Cause: ${errorToString(error)}`);
@@ -329,21 +307,19 @@ class AthenaHealthApi {
     cxId: string;
     patientId: string;
     medication: Medication;
-  }): Promise<AthenaMedication[]> {
+  }): Promise<MedicationReference[]> {
     const { log, debug } = out(
       `AthenaHealth search for medication - AH cxId ${cxId} patientId ${patientId}`
     );
     const searchValues = medication.code?.coding?.flatMap(c => c.display?.split("/") ?? []);
     if (!searchValues) throw Error("No code displays values for searching medications.");
-    const medicationOptions: AthenaMedication[] = [];
+    const medicationOptions: MedicationReference[] = [];
     await Promise.all(
       searchValues.map(async searchValue => {
         if (searchValue.length < 2) return;
         const referenceUrl = `/reference/medications?searchvalue=${searchValue}`;
         try {
-          const response = await this.handleAxiosRequest(() =>
-            this.axiosInstanceProprietary.get(referenceUrl)
-          );
+          const response = await this.axiosInstanceProprietary.get(referenceUrl);
           if (!response.data) throw new Error(`No body returned from ${referenceUrl}`);
           debug(`${referenceUrl} resp: ${JSON.stringify(response.data)}`);
           if (responsesBucket) {
@@ -362,7 +338,7 @@ class AthenaHealthApi {
               })
               .catch(processAsyncError("Error saving to s3 @ AthenaHealth - searchForMedication"));
           }
-          const medications = response.data as AthenaMedication[];
+          const medications = medicationReferenceResponseSchema.parse(response.data);
           medicationOptions.push(...medications);
         } catch (error) {
           const msg = `Failure while searching for medications @ AthenaHealth`;
@@ -399,15 +375,13 @@ class AthenaHealthApi {
     return medicationOptions;
   }
 
-  async subscribeToEvent({ cxId, feedtype }: { cxId: string; feedtype: string }) {
+  async subscribeToEvent({ cxId, feedtype }: { cxId: string; feedtype: string }): Promise<void> {
     const { log, debug } = out(
       `AthenaHealth subscribe to events - cxId ${cxId} feedtype ${feedtype}`
     );
     const subscribeUrl = `${feedtype}/changed/subscription`;
     try {
-      const response = await this.handleAxiosRequest(() =>
-        this.axiosInstanceProprietary.post(subscribeUrl, {})
-      );
+      const response = await this.axiosInstanceProprietary.post(subscribeUrl, {});
       if (!response.data) throw new Error(`No body returned from ${subscribeUrl}`);
       debug(`${subscribeUrl} resp: ${JSON.stringify(response.data)}`);
       if (responsesBucket) {
@@ -426,7 +400,8 @@ class AthenaHealthApi {
           })
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - subscribeToEvent"));
       }
-      return response.data;
+      const outcome = subscriptionCreateResponseSchema.parse(response.data);
+      if (!outcome.success) throw new Error("Subscription not successful");
     } catch (error) {
       const msg = `Failure while subscribing to events @ AthenaHealth`;
       log(`${msg}. cxId ${cxId} feedtype ${feedtype}. Cause: ${errorToString(error)}`);
@@ -445,35 +420,31 @@ class AthenaHealthApi {
 
   async getAppointments({
     cxId,
-    departmentId,
+    departmentIds,
     startAppointmentDate,
     endAppointmentDate,
-    startLastModifiedDate,
-    endLastModifiedDate,
   }: {
     cxId: string;
-    departmentId: string;
+    departmentIds: string[];
     startAppointmentDate: Date;
     endAppointmentDate: Date;
-    startLastModifiedDate: Date;
-    endLastModifiedDate: Date;
-  }): Promise<{ appointments: AthenaAppointment[] }> {
+  }): Promise<BookedAppointment[]> {
     const { log, debug } = out(
-      `AthenaHealth get appointments - cxId ${cxId} departmentId ${departmentId}`
+      `AthenaHealth get appointments - cxId ${cxId} departmentIds ${departmentIds}`
     );
     const params = {
-      departmentid: this.stripDepartmentId(departmentId),
       startdate: this.formatDate(startAppointmentDate.toISOString()) ?? "",
       enddate: this.formatDate(endAppointmentDate.toISOString()) ?? "",
-      startlastmodified: this.formatDateTime(startLastModifiedDate.toISOString()) ?? "",
-      endlastmodified: this.formatDateTime(endLastModifiedDate.toISOString()) ?? "",
     };
     const urlParams = new URLSearchParams(params);
-    const appointmentUrl = `/appointments/booked?${urlParams.toString()}`;
+    if (departmentIds.length > 0) {
+      departmentIds.map(dpId => urlParams.append("departmentid", this.stripDepartmentId(dpId)));
+    } else {
+      urlParams.append("departmentid", "");
+    }
+    const appointmentUrl = `/appointments/booked/multipledepartment?${urlParams.toString()}`;
     try {
-      const response = await this.handleAxiosRequest(() =>
-        this.axiosInstanceProprietary.get(appointmentUrl)
-      );
+      const response = await this.axiosInstanceProprietary.get(appointmentUrl);
       if (!response.data) throw new Error(`No body returned from ${appointmentUrl}`);
       debug(`${appointmentUrl} resp: ${JSON.stringify(response.data)}`);
       if (responsesBucket) {
@@ -492,7 +463,7 @@ class AthenaHealthApi {
           })
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - getAppointments"));
       }
-      return response.data;
+      return bookedAppointmentResponseSchema.parse(response.data).appointments;
     } catch (error) {
       const msg = `Failure while getting appointments @ AthenaHealth`;
       log(`${msg}. Cause: ${errorToString(error)}`);
@@ -500,7 +471,7 @@ class AthenaHealthApi {
         extra: {
           url: appointmentUrl,
           cxId,
-          departmentId,
+          departmentIds,
           context: "athenahealth.get-appointments",
           error,
         },
@@ -511,29 +482,31 @@ class AthenaHealthApi {
 
   async getAppointmentsFromSubscription({
     cxId,
-    departmentId,
+    departmentIds,
     startLastModifiedDate,
     endLastModifiedDate,
   }: {
     cxId: string;
-    departmentId?: string;
+    departmentIds: string[];
     startLastModifiedDate: Date;
     endLastModifiedDate: Date;
-  }): Promise<{ appointments: AthenaAppointment[] }> {
+  }): Promise<BookedAppointment[]> {
     const { log, debug } = out(
-      `AthenaHealth get appointments - cxId ${cxId} departmentId ${departmentId}`
+      `AthenaHealth get appointments - cxId ${cxId} departmentIds ${departmentIds}`
     );
     const params = {
-      departmentid: departmentId ? this.stripDepartmentId(departmentId) : "",
       showprocessedstartdatetime: this.formatDateTime(startLastModifiedDate.toISOString()) ?? "",
       showprocessedenddatetime: this.formatDateTime(endLastModifiedDate.toISOString()) ?? "",
     };
     const urlParams = new URLSearchParams(params);
+    if (departmentIds.length > 0) {
+      departmentIds.map(dpId => urlParams.append("departmentid", this.stripDepartmentId(dpId)));
+    } else {
+      urlParams.append("departmentid", "");
+    }
     const appointmentUrl = `/appointments/changed?${urlParams.toString()}`;
     try {
-      const response = await this.handleAxiosRequest(() =>
-        this.axiosInstanceProprietary.get(appointmentUrl)
-      );
+      const response = await this.axiosInstanceProprietary.get(appointmentUrl);
       if (!response.data) throw new Error(`No body returned from ${appointmentUrl}`);
       debug(`${appointmentUrl} resp: ${JSON.stringify(response.data)}`);
       if (responsesBucket) {
@@ -554,13 +527,24 @@ class AthenaHealthApi {
             processAsyncError("Error saving to s3 @ AthenaHealth - getAppointmentsFromSubscription")
           );
       }
-      return response.data;
-    } catch (error) {
-      const msg = `Failure while getting appointments @ AthenaHealth`;
+      return bookedAppointmentResponseSchema.parse(response.data).appointments;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      if (error.response?.status === 403) {
+        log(`Subscribging to appointment events for cxId ${cxId}`);
+        await this.subscribeToEvent({
+          cxId,
+          feedtype: "appointments",
+        });
+        return [];
+      }
+      const msg = `Failure while getting appointments from subscription @ AthenaHealth`;
       log(`${msg}. Cause: ${errorToString(error)}`);
       capture.error(msg, {
         extra: {
           url: appointmentUrl,
+          cxId,
+          departmentIds,
           context: "athenahealth.get-appointments",
           error,
         },
