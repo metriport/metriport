@@ -46,6 +46,7 @@ export async function getPatientIdOrFail({
   athenaPracticeId,
   athenaPatientId,
   accessToken,
+  api,
   useSearch = false,
   triggerDq = false,
 }: {
@@ -53,6 +54,7 @@ export async function getPatientIdOrFail({
   athenaPracticeId: string;
   athenaPatientId: string;
   accessToken?: string;
+  api?: AthenaHealthApi;
   useSearch?: boolean;
   triggerDq?: boolean;
 }): Promise<string> {
@@ -76,15 +78,18 @@ export async function getPatientIdOrFail({
   }
   const athenaClientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
   const athenaClientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
-  const api = await AthenaHealthApi.create({
-    threeLeggedAuthToken: accessToken,
-    practiceId: athenaPracticeId,
-    environment: athenaEnvironment as AthenaEnv,
-    clientKey: athenaClientKey,
-    clientSecret: athenaClientSecret,
-  });
+  let athenaApi = api;
+  if (!athenaApi) {
+    athenaApi = await AthenaHealthApi.create({
+      threeLeggedAuthToken: accessToken,
+      practiceId: athenaPracticeId,
+      environment: athenaEnvironment as AthenaEnv,
+      clientKey: athenaClientKey,
+      clientSecret: athenaClientSecret,
+    });
+  }
   const athenaPatient = await getPatientFromAthena({
-    api,
+    api: athenaApi,
     cxId,
     patientId: athenaPatientId,
     useSearch,

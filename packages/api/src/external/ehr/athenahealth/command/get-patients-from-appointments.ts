@@ -77,7 +77,7 @@ export async function getPatientIdsOrFailFromAppointmentsSub({
   });
 
   await executeAsynchronously(getAppointmentsArgs, getAppointmentsFromSubAndCreateOrUpdatePatient, {
-    numberOfParallelExecutions: 10,
+    numberOfParallelExecutions: 2,
     delay: delayBetweenBatches.asMilliseconds(),
   });
 
@@ -93,32 +93,40 @@ export async function getPatientIdsOrFailFromAppointmentsSub({
   }
 
   const patientAppointmentsUnique = [
-    ...new Map(
-      patientAppointments.map(app => [`${app.athenaPracticeId} ${app.athenaPatientId}`, app])
-    ).values(),
+    ...new Map(patientAppointments.map(app => [app.athenaPatientId, app])).values(),
   ];
-  const getPatientIdOrFailErrors: string[] = [];
-  const getPatientIdOrFaiLArgs = patientAppointmentsUnique.map(appointment => {
-    return {
-      cxId: appointment.cxId,
-      athenaPracticeId: appointment.athenaPracticeId,
-      athenaPatientId: appointment.athenaPatientId,
-      useSearch: true,
-      triggerDq: true,
-      errors: getPatientIdOrFailErrors,
-      log,
-    };
+  const patientAppointmentsUniqueByPractice: { [k: string]: PatientAppointment[] } = {};
+  patientAppointmentsUnique.map(appointment => {
+    const practiceId = appointment.athenaPracticeId;
+    if (patientAppointmentsUniqueByPractice[practiceId]) {
+      patientAppointmentsUniqueByPractice[practiceId].push(appointment);
+    } else {
+      patientAppointmentsUniqueByPractice[practiceId] = [appointment];
+    }
   });
+  const getPatientIdOrFailErrors: string[] = [];
+  const getPatientIdOrFaiLByPracticeArgs = Object.keys(patientAppointmentsUniqueByPractice).map(
+    practiceId => {
+      return {
+        practiceId,
+        patientAppointmentsUnique: patientAppointmentsUniqueByPractice[practiceId] ?? [],
+        clientKey: athenaClientKey,
+        clientSecret: athenaClientSecret,
+        errors: getPatientIdOrFailErrors,
+        log,
+      };
+    }
+  );
 
-  await executeAsynchronously(getPatientIdOrFaiLArgs, getPatientIdOrFail, {
-    numberOfParallelExecutions: 10,
+  await executeAsynchronously(getPatientIdOrFaiLByPracticeArgs, getPatientIdOrFailByPractice, {
+    numberOfParallelExecutions: 2,
     delay: delayBetweenBatches.asMilliseconds(),
   });
 
   if (getPatientIdOrFailErrors.length > 0) {
     capture.error("Failed to find or create patients", {
       extra: {
-        getPatientIdOrFaiLArgsCount: getPatientIdOrFaiLArgs.length,
+        getPatientIdOrFailArgsCount: patientAppointmentsUnique.length,
         errorCount: getPatientIdOrFailErrors.length,
         errors: getPatientIdOrFailErrors.join(","),
         context: "athenahealth.get-patients-from-appointments",
@@ -183,6 +191,7 @@ async function getAppointmentsFromSubAndCreateOrUpdatePatient({
 }
 
 async function getPatientIdOrFail({
+  api,
   cxId,
   athenaPracticeId,
   athenaPatientId,
@@ -192,6 +201,7 @@ async function getPatientIdOrFail({
   errors,
   log,
 }: {
+  api: AthenaHealthApi;
   cxId: string;
   athenaPracticeId: string;
   athenaPatientId: string;
@@ -203,6 +213,7 @@ async function getPatientIdOrFail({
 }): Promise<void> {
   try {
     await singleGetPatientIdOrFail({
+      api,
       cxId,
       athenaPracticeId,
       athenaPatientId,
@@ -217,4 +228,45 @@ async function getPatientIdOrFail({
     log(msg);
     errors.push(msg);
   }
+}
+
+async function getPatientIdOrFailByPractice({
+  practiceId,
+  patientAppointmentsUnique,
+  clientKey,
+  clientSecret,
+  errors,
+  log,
+}: {
+  practiceId: string;
+  patientAppointmentsUnique: PatientAppointment[];
+  clientKey: string;
+  clientSecret: string;
+  errors: string[];
+  log: typeof console.log;
+}) {
+  const api = await AthenaHealthApi.create({
+    threeLeggedAuthToken: undefined,
+    practiceId,
+    environment: athenaEnvironment as AthenaEnv,
+    clientKey,
+    clientSecret,
+  });
+  const getPatientIdOrFaiLArgs = patientAppointmentsUnique.map(appointment => {
+    return {
+      api,
+      cxId: appointment.cxId,
+      athenaPracticeId: appointment.athenaPracticeId,
+      athenaPatientId: appointment.athenaPatientId,
+      useSearch: true,
+      triggerDq: true,
+      errors,
+      log,
+    };
+  });
+
+  await executeAsynchronously(getPatientIdOrFaiLArgs, getPatientIdOrFail, {
+    numberOfParallelExecutions: 5,
+    delay: delayBetweenBatches.asMilliseconds(),
+  });
 }
