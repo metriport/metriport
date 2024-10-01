@@ -54,7 +54,7 @@ export async function getPatientIdsOrFailFromAppointmentsSub({
 
   const patientAppointments: PatientAppointment[] = [];
   const getAppointmentsErrors: string[] = [];
-  const getAppointmentsArgs = cxMappings.flatMap(mapping => {
+  const getAppointmentsArgs = cxMappings.map(mapping => {
     const practiceId = mapping.externalId;
     const departmentIds = mapping.secondaryMappings?.departmentIds;
     if (departmentIds && !Array.isArray(departmentIds)) {

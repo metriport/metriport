@@ -7,12 +7,12 @@ import { asyncHandler, getFromQueryAsBoolean } from "../../../util";
 const router = Router();
 
 /**
- * POST /internal/ehr/athenahealth/patient/from-appointments
+ * POST /internal/ehr/athenahealth/patient/from-appointments-subscription
  *
  * Fetches appointments since last call creates all patients not already existing
  */
 router.post(
-  "/from-appointments-sub",
+  "/from-appointments-subscription",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const catchUp = getFromQueryAsBoolean("catchUp", req) ?? false;
