@@ -93,7 +93,9 @@ export async function getPatientIdsOrFailFromAppointmentsSub({
   }
 
   const patientAppointmentsUnique = [
-    ...new Map(patientAppointments.map(app => [app.athenaPatientId, app])).values(),
+    ...new Map(
+      patientAppointments.map(app => [`${app.athenaPracticeId} ${app.athenaPatientId}`, app])
+    ).values(),
   ];
   const getPatientIdOrFailErrors: string[] = [];
   const getPatientIdOrFaiLArgs = patientAppointmentsUnique.map(appointment => {
