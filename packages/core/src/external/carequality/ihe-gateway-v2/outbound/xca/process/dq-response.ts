@@ -27,6 +27,8 @@ import {
   handleSchemaErrorResponse,
 } from "./error";
 import { Classification, ExternalIdentifier, ExtrinsicObject, iti38Schema } from "./schema";
+import { getSlotValue } from "../../../utils";
+import fs from "fs";
 
 dayjs.extend(utc);
 
@@ -77,7 +79,7 @@ export function parseDocumentReference({
 
   const findSlotValue = (name: string): string | undefined => {
     const slot = slots.find((slot: Slot) => slot._name === name);
-    return slot ? String(slot.ValueList.Value) : undefined;
+    return getSlotValue(slot);
   };
 
   const findExternalIdentifierValue = (scheme: string): string | undefined => {
@@ -100,7 +102,7 @@ export function parseDocumentReference({
     const classificationSlots = slotArray.flatMap((slot: Slot) => slot ?? []);
 
     const slot = classificationSlots.find((s: Slot) => s._name === slotName);
-    return slot ? String(slot.ValueList.Value) : undefined;
+    return getSlotValue(slot);
   };
 
   const findClassificationName = (scheme: string): string | undefined => {
@@ -194,6 +196,7 @@ export function processDqResponse({
     removeNSPrefix: true,
   });
   const jsonObj = parser.parse(response);
+  fs.writeFileSync("response.json", JSON.stringify(jsonObj, null, 2));
 
   try {
     const iti38Response = iti38Schema.parse(jsonObj);
@@ -222,7 +225,9 @@ export function processDqResponse({
       });
     }
   } catch (error) {
-    log(`Error processing DQ response ${JSON.stringify(jsonObj)}`);
+    //log(`Error processing DQ response ${JSON.stringify(jsonObj)}`);
+    log(`Error processing DQ response`);
+    fs.writeFileSync("error.json", JSON.stringify(error, null, 2));
     return handleSchemaErrorResponse({
       outboundRequest,
       gateway,

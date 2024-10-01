@@ -8,6 +8,7 @@ import { extractText } from "../../../utils";
 import { convertSamlHeaderToAttributes, extractTimestamp } from "../../shared";
 import { iti38RequestSchema } from "./schema";
 import { out } from "../../../../../../util/log";
+import { getSlotValue } from "../../../utils";
 
 const externalGatewayPatientRegex = /(.+)\^\^\^(.+)/i;
 const externalGatewayIdRegex = /'/g;
@@ -15,8 +16,8 @@ const externalGatewaySystemRegex = /&|ISO'/g;
 
 function extractExternalGatewayPatient(slots: Slot[]): XCPDPatientId {
   const slot = slots.find((slot: Slot) => slot._name === "$XDSDocumentEntryPatientId");
-  const value = String(slot?.ValueList.Value);
-  const match = value.match(externalGatewayPatientRegex);
+  const value = getSlotValue(slot);
+  const match = value?.match(externalGatewayPatientRegex);
   const externalGatewayPatient = match && match[1]?.replace(externalGatewayIdRegex, "");
   const system = match && match[2]?.replace(externalGatewaySystemRegex, "");
   if (!externalGatewayPatient) {
