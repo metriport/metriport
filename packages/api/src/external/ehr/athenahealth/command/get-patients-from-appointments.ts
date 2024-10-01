@@ -76,7 +76,7 @@ export async function getPatientIdsOrFailFromAppointmentsSub(): Promise<void> {
   if (getAppointmentsErrors.length > 0) {
     capture.error("Failed to get appointments", {
       extra: {
-        patientCreateCount: getAppointmentsErrors.length,
+        getAppointmentsArgsCount: getAppointmentsArgs.length,
         errorCount: getAppointmentsErrors.length,
         errors: getAppointmentsErrors.join(","),
         context: "athenahealth.get-patients-from-appointments-sub",
@@ -84,8 +84,11 @@ export async function getPatientIdsOrFailFromAppointmentsSub(): Promise<void> {
     });
   }
 
+  const patientAppointmentsUnique = [
+    ...new Map(patientAppointments.map(app => [app.athenaPatientId, app])).values(),
+  ];
   const getPatientIdOrFailErrors: string[] = [];
-  const getPatientIdOrFaiLArgs = patientAppointments.map(appointment => {
+  const getPatientIdOrFaiLArgs = patientAppointmentsUnique.map(appointment => {
     return {
       cxId: appointment.cxId,
       athenaPracticeId: appointment.athenaPracticeId,
@@ -105,7 +108,7 @@ export async function getPatientIdsOrFailFromAppointmentsSub(): Promise<void> {
   if (getPatientIdOrFailErrors.length > 0) {
     capture.error("Failed to find or create patients", {
       extra: {
-        patientCreateCount: getPatientIdOrFailErrors.length,
+        getPatientIdOrFaiLArgsCount: getPatientIdOrFaiLArgs.length,
         errorCount: getPatientIdOrFailErrors.length,
         errors: getPatientIdOrFailErrors.join(","),
         context: "athenahealth.get-patients-from-appointments",

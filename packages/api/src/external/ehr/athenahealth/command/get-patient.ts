@@ -57,7 +57,7 @@ export async function getPatientIdOrFail({
   triggerDq?: boolean;
 }): Promise<string> {
   const { log } = out(
-    `AthenaHealth getPatient - cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}`
+    `AthenaHealth getPatientIdOrFail - cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}`
   );
   const existingPatient = await getPatientMapping({
     cxId,
@@ -118,7 +118,7 @@ export async function getPatientIdOrFail({
     capture.error("Failed to get patient by demo", {
       extra: {
         cxId,
-        patientDemoFiltersCount: patientDemoFilters.length,
+        getPatientByDemoArgsCount: getPatientByDemoArgs.length,
         errorCount: getPatientByDemoErrors.length,
         errors: getPatientByDemoErrors.join(","),
         context: "athenahealth.get-patient",
