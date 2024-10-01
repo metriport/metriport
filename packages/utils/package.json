@@ -36,6 +36,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-athena": "^3.658.1",
     "@aws-sdk/client-cognito-identity-provider": "^3.301.0",
     "@medplum/core": "^2.0.32",
     "@medplum/fhirtypes": "^2.0.32",
