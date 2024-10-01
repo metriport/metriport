@@ -57,6 +57,8 @@ async function main() {
     const params = { cqDirectory, endOfPreviousMonth, dayIndex: i };
 
     console.log(`${baseDirDay}/xcpd.json`);
+
+    console.log(fs.existsSync(`${baseDirDay}/xcpd.json`));
     if (fs.existsSync(`${baseDirDay}/xcpd.json`)) {
       console.log("Using stored XCPD results");
       xcpdByDate[day] = JSON.parse(fs.readFileSync(`${baseDirDay}/xcpd.json`, "utf8"));

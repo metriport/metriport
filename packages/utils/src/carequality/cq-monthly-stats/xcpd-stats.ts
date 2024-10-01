@@ -1,21 +1,24 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { OutboundPatientDiscoveryResp } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
+import fs from "fs";
 import { merge } from "lodash";
 import duration from "dayjs/plugin/duration";
 import {
-  queryResultsTable,
   associateGWToImplementer,
   GWWithStats,
   ImplementerWithGwStats,
-  getDurationsPerGW,
   CountPerGW,
   RequestParams,
   ImplementerStatsByDay,
   MonthlyImplementerStats,
 } from "./shared";
+import {
+  queryResultsTableAthena,
+  getDurationsPerGW as getAthenaDurationsPerGw,
+  TableResults,
+} from "./athena-shared";
 
 dayjs.extend(duration);
 
@@ -34,6 +37,11 @@ export async function xcpdStats({
     cqDirectory
   );
 
+  fs.writeFileSync(
+    `./non-errored-responses-per-gw-${dayjs().format("YYYY-MM-DD")}-impplementer.json`,
+    JSON.stringify(xcpdStats, null, 2)
+  );
+
   return xcpdStats;
 }
 
@@ -41,25 +49,26 @@ async function aggregateXCPDGWStats(
   endOfPreviousMonth: string,
   dayIndex: number
 ): Promise<GWWithStats[]> {
-  const tableResults = await queryResultsTable<OutboundPatientDiscoveryResp>(
+  const tableResults = await queryResultsTableAthena(
     patientDiscoveryResultTableName,
     endOfPreviousMonth,
     dayIndex
   );
 
-  const durationsPerGW: GWWithStats[] = getDurationsPerGW(tableResults);
+  const durationsPerGW: GWWithStats[] = getAthenaDurationsPerGw(tableResults);
   const nonErroredResponsesPerGW: GWWithStats[] = getNonErroredResponsesPerGW(tableResults);
 
   return merge(durationsPerGW, nonErroredResponsesPerGW);
 }
 
-function getNonErroredResponsesPerGW(results: OutboundPatientDiscoveryResp[]): GWWithStats[] {
+function getNonErroredResponsesPerGW(results: TableResults[]): GWWithStats[] {
   const nonErroredResponsesPerGW: CountPerGW = {};
   const xcpdGWStats: GWWithStats[] = [];
 
   results.forEach(result => {
-    const gwId = result.gateway.oid;
-    const nonErroredResponses = result.patientMatch ? 1 : 0;
+    const oidMatch = result.gateway.match(/oid=([^,]+)/);
+    const gwId = oidMatch ? oidMatch[1].trim() : "";
+    const nonErroredResponses = result.patientmatch ? 1 : 0;
 
     if (!nonErroredResponsesPerGW[gwId]) {
       nonErroredResponsesPerGW[gwId] = [nonErroredResponses];
@@ -107,7 +116,7 @@ export function aggregateNonXcpdErrRespByMonth(
           month,
           implementerId,
           implementerName,
-          nonErroredResponses: nonErroredResponses * 30,
+          nonErroredResponses: nonErroredResponses * 10,
         });
       }
     });

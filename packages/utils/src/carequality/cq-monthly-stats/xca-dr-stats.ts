@@ -106,7 +106,7 @@ export function aggregateDocRetrievedByMonth(
           month,
           implementerId,
           implementerName,
-          totalDocRetrieved: totalDocRetrieved * 30,
+          totalDocRetrieved: totalDocRetrieved * 10,
         });
       }
     });

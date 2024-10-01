@@ -160,6 +160,10 @@ function findGWImplementer(
 ): { name: string; oid: string } | undefined {
   const cqDirectoryGW = cqDirectory.find(entry => entry.id === gateway);
 
+  if (!cqDirectoryGW) {
+    console.log(`Could not find gateway ${gateway} in CQ directory`);
+  }
+
   if (cqDirectoryGW) {
     const managingOrganizationId = cqDirectoryGW.managing_organization_id;
     const isItself = managingOrganizationId === cqDirectoryGW.id;
