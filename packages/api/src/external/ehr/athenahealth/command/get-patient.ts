@@ -225,11 +225,11 @@ async function getPatientByDemo({
     const patient = await singleGetMetriportPatientByDemo({ cxId, demo });
     if (patient) patients.push(patient);
   } catch (error) {
-    const msg = `Failed to get patient by demo. cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}. Cause: ${errorToString(
-      error
-    )}`;
-    log(msg);
-    errors.push(msg);
+    const cause = `Cause: ${errorToString(error)}`;
+    const details = `cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}.`;
+    const msg = "Failed to get patient by demo.";
+    log(`${msg} ${cause}`);
+    errors.push(`${msg} ${details} ${cause}`);
   }
 }
 

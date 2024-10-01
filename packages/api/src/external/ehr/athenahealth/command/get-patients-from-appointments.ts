@@ -186,11 +186,11 @@ async function getAppointmentsFromSubscriptionByPractice({
       })
     );
   } catch (error) {
-    const msg = `Failed to get appointments. cxId ${cxId} practiceId ${practiceId} departmentIds ${departmentIds}. Cause: ${errorToString(
-      error
-    )}`;
-    log(msg);
-    errors.push(msg);
+    const cause = `Cause: ${errorToString(error)}`;
+    const details = `cxId ${cxId} practiceId ${practiceId} departmentIds ${departmentIds}.`;
+    const msg = "Failed to get appointments.";
+    log(`${details} ${msg} ${cause}`);
+    errors.push(`${msg} ${details} ${cause}`);
   }
 }
 
@@ -268,10 +268,10 @@ async function getPatientIdOrFail({
       triggerDq,
     });
   } catch (error) {
-    const msg = `Failed to find or create patients. cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}. Cause: ${errorToString(
-      error
-    )}`;
-    log(msg);
-    errors.push(msg);
+    const cause = `Cause: ${errorToString(error)}`;
+    const details = `cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}.`;
+    const msg = "Failed to find or create patients";
+    log(`${details} ${msg} ${cause}`);
+    errors.push(`${msg} ${details} ${cause}`);
   }
 }
