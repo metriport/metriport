@@ -17,7 +17,7 @@ dayjs.extend(duration);
 const delayBetweenPracticeBatches = dayjs.duration(30, "seconds");
 const lastModifiedHoursLookback = 12;
 const parallelPractices = 10;
-const parallelPratients = 2;
+const parallelPatients = 2;
 
 const region = Config.getAWSRegion();
 const athenaEnvironment = Config.getAthenaHealthEnv();
@@ -40,6 +40,7 @@ export async function getPatientIdsOrFailFromAppointmentsSub({
     throw new Error("AthenaHealth not setup");
   }
   const cxMappings = await getCxMappings({ source: EhrSources.athena });
+
   const athenaClientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
   const athenaClientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
 
@@ -62,7 +63,7 @@ export async function getPatientIdsOrFailFromAppointmentsSub({
     const departmentIds = mapping.secondaryMappings?.departmentIds;
     if (departmentIds && !Array.isArray(departmentIds)) {
       throw new Error(
-        `Athena departmentIds exists but is malformed for cxId ${cxId} practiceId ${practiceId}`
+        `cxMapping ${EhrSources.athena} departmentIds exists but is malformed for cxId ${cxId} externalId ${practiceId}`
       );
     }
     return {
@@ -79,7 +80,7 @@ export async function getPatientIdsOrFailFromAppointmentsSub({
     };
   });
 
-  await executeAsynchronously(getAppointmentsArgs, getAppointmentsFromSubscription, {
+  await executeAsynchronously(getAppointmentsArgs, getAppointmentsFromSubscriptionByPractice, {
     numberOfParallelExecutions: parallelPractices,
     delay: delayBetweenPracticeBatches.asMilliseconds(),
   });
@@ -138,7 +139,7 @@ export async function getPatientIdsOrFailFromAppointmentsSub({
   }
 }
 
-async function getAppointmentsFromSubscription({
+async function getAppointmentsFromSubscriptionByPractice({
   cxId,
   practiceId,
   departmentIds,
@@ -193,46 +194,6 @@ async function getAppointmentsFromSubscription({
   }
 }
 
-async function getPatientIdOrFail({
-  api,
-  cxId,
-  athenaPracticeId,
-  athenaPatientId,
-  accessToken,
-  useSearch = false,
-  triggerDq = false,
-  errors,
-  log,
-}: {
-  api: AthenaHealthApi;
-  cxId: string;
-  athenaPracticeId: string;
-  athenaPatientId: string;
-  accessToken?: string;
-  useSearch?: boolean;
-  triggerDq?: boolean;
-  errors: string[];
-  log: typeof console.log;
-}): Promise<void> {
-  try {
-    await singleGetPatientIdOrFail({
-      api,
-      cxId,
-      athenaPracticeId,
-      athenaPatientId,
-      accessToken,
-      useSearch,
-      triggerDq,
-    });
-  } catch (error) {
-    const msg = `Failed to find or create patients. cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}. Cause: ${errorToString(
-      error
-    )}`;
-    log(msg);
-    errors.push(msg);
-  }
-}
-
 async function getPatientIdOrFailByPractice({
   practiceId,
   patientAppointmentsUnique,
@@ -255,6 +216,7 @@ async function getPatientIdOrFailByPractice({
     clientKey,
     clientSecret,
   });
+
   const getPatientIdOrFaiLArgs = patientAppointmentsUnique.map(appointment => {
     return {
       api,
@@ -269,7 +231,47 @@ async function getPatientIdOrFailByPractice({
   });
 
   await executeAsynchronously(getPatientIdOrFaiLArgs, getPatientIdOrFail, {
-    numberOfParallelExecutions: parallelPratients,
+    numberOfParallelExecutions: parallelPatients,
     delay: delayBetweenPracticeBatches.asMilliseconds(),
   });
+}
+
+async function getPatientIdOrFail({
+  api,
+  cxId,
+  athenaPracticeId,
+  athenaPatientId,
+  accessToken,
+  useSearch = false,
+  triggerDq = false,
+  errors,
+  log,
+}: {
+  api: AthenaHealthApi;
+  cxId: string;
+  athenaPracticeId: string;
+  athenaPatientId: string;
+  accessToken?: string;
+  useSearch: boolean;
+  triggerDq: boolean;
+  errors: string[];
+  log: typeof console.log;
+}): Promise<void> {
+  try {
+    await singleGetPatientIdOrFail({
+      api,
+      cxId,
+      athenaPracticeId,
+      athenaPatientId,
+      accessToken,
+      useSearch,
+      triggerDq,
+    });
+  } catch (error) {
+    const msg = `Failed to find or create patients. cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}. Cause: ${errorToString(
+      error
+    )}`;
+    log(msg);
+    errors.push(msg);
+  }
 }

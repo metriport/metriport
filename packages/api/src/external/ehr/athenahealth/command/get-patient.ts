@@ -34,6 +34,8 @@ const athenaClientKeySecretArn = Config.getAthenaHealthClientKeyArn();
 const athenaClientSecretSecretArn = Config.getAthenaHealthClientSecretArn();
 const defaultFacilityMappingExternalId = "default";
 
+const parallelPatientMatches = 5;
+
 export async function getPatientIdOrFail({
   cxId,
   athenaPracticeId,
@@ -112,7 +114,7 @@ export async function getPatientIdOrFail({
   });
 
   await executeAsynchronously(getPatientByDemoArgs, getPatientByDemo, {
-    numberOfParallelExecutions: 5,
+    numberOfParallelExecutions: parallelPatientMatches,
   });
 
   if (getPatientByDemoErrors.length > 0) {

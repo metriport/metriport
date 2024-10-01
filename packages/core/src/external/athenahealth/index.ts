@@ -17,6 +17,7 @@ import {
   bookedAppointmentsGetResponseSchema,
   subscriptionCreateResponseSchema,
   departmentsGetResponseSchema,
+  FeedType,
 } from "@metriport/shared";
 import { errorToString, NotFoundError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
@@ -56,8 +57,6 @@ export type MedicationWithRefs = {
   dispense?: MedicationDispense;
   statement?: MedicationStatement;
 };
-
-export type FeedType = "appointments";
 
 class AthenaHealthApi {
   private axiosInstanceFhirApi: AxiosInstance;
@@ -417,7 +416,7 @@ class AthenaHealthApi {
 
   async subscribeToEvent({ cxId, feedtype }: { cxId: string; feedtype: FeedType }): Promise<void> {
     const { log, debug } = out(
-      `AthenaHealth subscribe to events - cxId ${cxId} practiceId ${this.practiceId} feedtype ${feedtype}`
+      `AthenaHealth subscribe to event - cxId ${cxId} practiceId ${this.practiceId} feedtype ${feedtype}`
     );
     const subscribeUrl = `/${feedtype}/changed/subscription`;
     try {
@@ -443,7 +442,7 @@ class AthenaHealthApi {
       const outcome = subscriptionCreateResponseSchema.parse(response.data);
       if (!outcome.success) throw new Error(`Subscription for ${feedtype} not successful`);
     } catch (error) {
-      const msg = `Failure while subscribing to events @ AthenaHealth`;
+      const msg = `Failure while subscribing to event @ AthenaHealth`;
       log(`${msg}. Cause: ${errorToString(error)}`);
       capture.error(msg, {
         extra: {
@@ -578,7 +577,7 @@ class AthenaHealthApi {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       if (error.response?.status === 403) {
-        log(`Subscribing to appointment events for cxId ${cxId}`);
+        log(`Subscribing to appointment event for cxId ${cxId}`);
         await this.subscribeToEvent({
           cxId,
           feedtype: "appointments",
