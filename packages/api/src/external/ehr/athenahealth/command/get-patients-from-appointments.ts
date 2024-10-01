@@ -15,7 +15,7 @@ import { getPatientIdOrFail as singleGetPatientIdOrFail } from "./get-patient";
 dayjs.extend(duration);
 
 const delayBetweenBatches = dayjs.duration(30, "seconds");
-const lastModifiedHoursLookback = 36;
+const lastModifiedHoursLookback = 12;
 
 const region = Config.getAWSRegion();
 const athenaEnvironment = Config.getAthenaHealthEnv();
@@ -46,7 +46,11 @@ export async function getPatientIdsOrFailFromAppointmentsSub({
     .hour(currentDatetime.hour() - lastModifiedHoursLookback)
     .toDate();
   const endLastModifiedDate = buildDayjs(currentDatetime).toDate();
-  log(`Getting appointments from ${startLastModifiedDate} to ${endLastModifiedDate}`);
+  if (catchUp) {
+    log(`Getting appointments from ${startLastModifiedDate} to ${endLastModifiedDate}`);
+  } else {
+    log(`Getting appointments since last run`);
+  }
 
   const patientAppointments: PatientAppointment[] = [];
   const getAppointmentsErrors: string[] = [];
