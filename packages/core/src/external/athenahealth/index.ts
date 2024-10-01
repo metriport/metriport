@@ -302,8 +302,8 @@ class AthenaHealthApi {
       unstructuredsig: "Metriport",
       medicationid: `${medicationOptions[0]?.medicationid}`,
       hidden: "false",
-      startdate: this.formatDate(medication.statement?.effectivePeriod?.start) ?? undefined,
-      stopdate: this.formatDate(medication.statement?.effectivePeriod?.end) ?? undefined,
+      startdate: this.formatDate(medication.statement?.effectivePeriod?.start),
+      stopdate: this.formatDate(medication.statement?.effectivePeriod?.end),
       stopreason: undefined,
       patientnote: undefined,
       THIRDPARTYUSERNAME: undefined,
@@ -531,15 +531,19 @@ class AthenaHealthApi {
   }: {
     cxId: string;
     departmentIds?: string[];
-    startLastModifiedDate: Date;
-    endLastModifiedDate: Date;
+    startLastModifiedDate?: Date;
+    endLastModifiedDate?: Date;
   }): Promise<BookedAppointment[]> {
     const { log, debug } = out(
       `AthenaHealth get appointments from sub - cxId ${cxId} practiceId ${this.practiceId} departmentIds ${departmentIds}`
     );
     const params = {
-      showprocessedstartdatetime: this.formatDateTime(startLastModifiedDate.toISOString()) ?? "",
-      showprocessedenddatetime: this.formatDateTime(endLastModifiedDate.toISOString()) ?? "",
+      showprocessedstartdatetime: startLastModifiedDate
+        ? this.formatDateTime(startLastModifiedDate.toISOString()) ?? ""
+        : "",
+      showprocessedenddatetime: endLastModifiedDate
+        ? this.formatDateTime(endLastModifiedDate.toISOString()) ?? ""
+        : "",
     };
     const urlParams = new URLSearchParams(params);
     if (departmentIds && departmentIds.length > 0) {

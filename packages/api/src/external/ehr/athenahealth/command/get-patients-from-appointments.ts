@@ -28,7 +28,11 @@ type PatientAppointment = {
   athenaPatientId: string;
 };
 
-export async function getPatientIdsOrFailFromAppointmentsSub(): Promise<void> {
+export async function getPatientIdsOrFailFromAppointmentsSub({
+  catchUp,
+}: {
+  catchUp: boolean;
+}): Promise<void> {
   const { log } = out(`AthenaHealth getPatientIdsOrFailFromAppointmentsSub`);
   if (!athenaEnvironment || !athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
     throw new Error("AthenaHealth not setup");
@@ -61,8 +65,8 @@ export async function getPatientIdsOrFailFromAppointmentsSub(): Promise<void> {
       clientKey: athenaClientKey,
       clientSecret: athenaClientSecret,
       patientAppointments,
-      startLastModifiedDate,
-      endLastModifiedDate,
+      startLastModifiedDate: catchUp ? startLastModifiedDate : undefined,
+      endLastModifiedDate: catchUp ? endLastModifiedDate : undefined,
       errors: getAppointmentsErrors,
       log,
     };
@@ -135,8 +139,8 @@ async function getAppointmentsFromSubAndCreateOrUpdatePatient({
   clientKey: string;
   clientSecret: string;
   patientAppointments: PatientAppointment[];
-  startLastModifiedDate: Date;
-  endLastModifiedDate: Date;
+  startLastModifiedDate?: Date;
+  endLastModifiedDate?: Date;
   errors: string[];
   log: typeof console.log;
 }): Promise<void> {
