@@ -15,7 +15,7 @@ import { getPatientIdOrFail as singleGetPatientIdOrFail } from "./get-patient";
 dayjs.extend(duration);
 
 const delayBetweenBatches = dayjs.duration(30, "seconds");
-const lastModifiedHoursLookback = 4;
+const lastModifiedHoursLookback = 36;
 
 const region = Config.getAWSRegion();
 const athenaEnvironment = Config.getAthenaHealthEnv();
