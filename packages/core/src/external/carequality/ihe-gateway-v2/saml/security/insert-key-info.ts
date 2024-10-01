@@ -22,6 +22,10 @@ export function insertKeyInfo({
     ignoreAttributes: false,
     attributeNamePrefix: "@_",
     parseAttributeValue: false,
+    numberParseOptions: {
+      hex: false,
+      leadingZeros: false,
+    },
   });
   const builder = new XMLBuilder({
     ignoreAttributes: false,
