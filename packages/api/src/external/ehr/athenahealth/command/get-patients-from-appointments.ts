@@ -14,8 +14,10 @@ import { getPatientIdOrFail as singleGetPatientIdOrFail } from "./get-patient";
 
 dayjs.extend(duration);
 
-const delayBetweenBatches = dayjs.duration(30, "seconds");
+const delayBetweenPracticeBatches = dayjs.duration(30, "seconds");
 const lastModifiedHoursLookback = 12;
+const parallelPractices = 10;
+const parallelPratients = 2;
 
 const region = Config.getAWSRegion();
 const athenaEnvironment = Config.getAthenaHealthEnv();
@@ -55,15 +57,16 @@ export async function getPatientIdsOrFailFromAppointmentsSub({
   const patientAppointments: PatientAppointment[] = [];
   const getAppointmentsErrors: string[] = [];
   const getAppointmentsArgs = cxMappings.map(mapping => {
+    const cxId = mapping.cxId;
     const practiceId = mapping.externalId;
     const departmentIds = mapping.secondaryMappings?.departmentIds;
     if (departmentIds && !Array.isArray(departmentIds)) {
       throw new Error(
-        `departmentIds exists but is malformed for cxId ${mapping.cxId} practiceId ${practiceId}`
+        `Athena departmentIds exists but is malformed for cxId ${cxId} practiceId ${practiceId}`
       );
     }
     return {
-      cxId: mapping.cxId,
+      cxId,
       practiceId,
       departmentIds,
       clientKey: athenaClientKey,
@@ -76,9 +79,9 @@ export async function getPatientIdsOrFailFromAppointmentsSub({
     };
   });
 
-  await executeAsynchronously(getAppointmentsArgs, getAppointmentsFromSubAndCreateOrUpdatePatient, {
-    numberOfParallelExecutions: 2,
-    delay: delayBetweenBatches.asMilliseconds(),
+  await executeAsynchronously(getAppointmentsArgs, getAppointmentsFromSubscription, {
+    numberOfParallelExecutions: parallelPractices,
+    delay: delayBetweenPracticeBatches.asMilliseconds(),
   });
 
   if (getAppointmentsErrors.length > 0) {
@@ -119,8 +122,8 @@ export async function getPatientIdsOrFailFromAppointmentsSub({
   );
 
   await executeAsynchronously(getPatientIdOrFaiLByPracticeArgs, getPatientIdOrFailByPractice, {
-    numberOfParallelExecutions: 2,
-    delay: delayBetweenBatches.asMilliseconds(),
+    numberOfParallelExecutions: parallelPractices,
+    delay: delayBetweenPracticeBatches.asMilliseconds(),
   });
 
   if (getPatientIdOrFailErrors.length > 0) {
@@ -135,7 +138,7 @@ export async function getPatientIdsOrFailFromAppointmentsSub({
   }
 }
 
-async function getAppointmentsFromSubAndCreateOrUpdatePatient({
+async function getAppointmentsFromSubscription({
   cxId,
   practiceId,
   departmentIds,
@@ -266,7 +269,7 @@ async function getPatientIdOrFailByPractice({
   });
 
   await executeAsynchronously(getPatientIdOrFaiLArgs, getPatientIdOrFail, {
-    numberOfParallelExecutions: 5,
-    delay: delayBetweenBatches.asMilliseconds(),
+    numberOfParallelExecutions: parallelPratients,
+    delay: delayBetweenPracticeBatches.asMilliseconds(),
   });
 }

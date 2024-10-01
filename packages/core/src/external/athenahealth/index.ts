@@ -57,6 +57,8 @@ export type MedicationWithRefs = {
   statement?: MedicationStatement;
 };
 
+export type FeedType = "appointments";
+
 class AthenaHealthApi {
   private axiosInstanceFhirApi: AxiosInstance;
   private axiosInstanceProprietary: AxiosInstance;
@@ -413,7 +415,7 @@ class AthenaHealthApi {
     return medicationOptions;
   }
 
-  async subscribeToEvent({ cxId, feedtype }: { cxId: string; feedtype: string }): Promise<void> {
+  async subscribeToEvent({ cxId, feedtype }: { cxId: string; feedtype: FeedType }): Promise<void> {
     const { log, debug } = out(
       `AthenaHealth subscribe to events - cxId ${cxId} practiceId ${this.practiceId} feedtype ${feedtype}`
     );
@@ -548,8 +550,6 @@ class AthenaHealthApi {
     const urlParams = new URLSearchParams(params);
     if (departmentIds && departmentIds.length > 0) {
       departmentIds.map(dpId => urlParams.append("departmentid", this.stripDepartmentId(dpId)));
-    } else {
-      urlParams.append("departmentid", "");
     }
     const appointmentUrl = `/appointments/changed?${urlParams.toString()}`;
     try {

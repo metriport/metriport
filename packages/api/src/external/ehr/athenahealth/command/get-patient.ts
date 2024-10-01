@@ -1,5 +1,3 @@
-import dayjs from "dayjs";
-import duration from "dayjs/plugin/duration";
 import { PatientResource } from "@metriport/shared/interface/external/athenahealth/patient";
 import {
   errorToString,
@@ -7,7 +5,6 @@ import {
   normalizeGender,
   toTitleCase,
   NotFoundError,
-  sleep,
 } from "@metriport/shared";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
@@ -30,10 +27,6 @@ import { getPatientMapping, findOrCreatePatientMapping } from "../../../../comma
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { Config } from "../../../../shared/config";
 import { createMetriportAddresses, createMetriportContacts, createNames } from "../shared";
-
-dayjs.extend(duration);
-
-const delayBeforeDq = dayjs.duration(5, "seconds");
 
 const region = Config.getAWSRegion();
 const athenaEnvironment = Config.getAthenaHealthEnv();
@@ -76,10 +69,11 @@ export async function getPatientIdOrFail({
   if (!athenaEnvironment || !athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
     throw new Error("AthenaHealth not setup");
   }
-  const athenaClientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
-  const athenaClientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
+
   let athenaApi = api;
   if (!athenaApi) {
+    const athenaClientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
+    const athenaClientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
     athenaApi = await AthenaHealthApi.create({
       threeLeggedAuthToken: accessToken,
       practiceId: athenaPracticeId,
@@ -161,7 +155,6 @@ export async function getPatientIdOrFail({
       },
     });
     if (triggerDq) {
-      await sleep(delayBeforeDq.asMilliseconds());
       queryDocumentsAcrossHIEs({
         cxId,
         patientId: metriportPatient.id,
