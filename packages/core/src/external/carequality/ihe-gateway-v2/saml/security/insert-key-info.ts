@@ -29,6 +29,7 @@ export function insertKeyInfo({
   });
 
   const obj = parser.parse(xmlContent);
+
   const security = obj["soap:Envelope"]["soap:Header"]["wsse:Security"];
 
   const certPemStripped = stripPemCertificate(publicCert);
@@ -83,5 +84,19 @@ export function insertKeyInfo({
       ...keyInfoStructure,
     };
   }
-  return builder.build(obj);
+  const build = builder.build(obj);
+
+  return updatePostalCode(build);
+}
+
+// TODO: #2323 - Remove this function once the issue is above
+function updatePostalCode(xml: string): string {
+  // Regex to find both <urn:postalCode> and <postalCode> with exactly 4 digits
+  return xml.replace(
+    /(<(urn:)?postalCode>)(\d{4})(<\/(urn:)?postalCode>)/g,
+    (match, p1, p2, p3, p4) => {
+      // Prepend '0' to the captured postal code value
+      return `${p1}0${p3}${p4}`;
+    }
+  );
 }
