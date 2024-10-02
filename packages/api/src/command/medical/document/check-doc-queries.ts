@@ -6,6 +6,7 @@ import stringify from "json-stringify-safe";
 import { QueryTypes } from "sequelize";
 import { ProgressType, DocumentQueryStatus, Progress } from "@metriport/core/domain/document-query";
 import { Patient, PatientCreate, PatientData } from "@metriport/core/domain/patient";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { capture } from "../../../shared/notifications";
@@ -16,10 +17,11 @@ import {
   PatientsWithValidationResult,
   SingleValidationResult,
 } from "./check-doc-queries-shared";
+import { getCQData } from "../../../external/carequality/patient";
 
 dayjs.extend(duration);
 
-const MAX_TIME_TO_PROCESS = dayjs.duration({ minutes: 30 });
+const MAX_TIME_TO_PROCESS = dayjs.duration({ minutes: 5 });
 const MAX_CONCURRENT_UDPATES = 10;
 
 /**
@@ -43,6 +45,8 @@ export async function checkDocumentQueries(patientIds: string[]): Promise<void> 
         log(`Patient without doc query progress @ query, skipping it: ${patient.id} `);
         continue;
       }
+
+      console.log("patientWithInvalidStatusOrCount", JSON.stringify(patient, null, 2));
 
       const checkInvalid = (prop: Progress): SingleValidationResult => {
         const { status, total = 0 } = prop;
@@ -71,7 +75,19 @@ export async function checkDocumentQueries(patientIds: string[]): Promise<void> 
           };
         }
       }
+
+      const cqData = getCQData(patient.data.externalData);
+      if (cqData && cqData.discoveryStatus === "processing") {
+        console.log("HIT TEST CONDITION");
+        patientsToUpdate[patient.id] = {
+          ...patientsToUpdate[patient.id],
+          carequalityPatientDiscoveryStatus: true,
+          cxId: patient.cxId,
+        };
+      }
     }
+
+    console.log("patientsToUpdate", JSON.stringify(patientsToUpdate, null, 2));
 
     await updateDocQueryStatus(patientsToUpdate);
 
@@ -131,7 +147,26 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
       console.log(`Patient without doc query progress @ update, skipping it: ${patient.id} `);
       return;
     }
+
+    let externalData = patient.data.externalData;
+
+    if (whatToUpdate.carequalityPatientDiscoveryStatus) {
+      console.log("UPDATING PD DISCOVERY STATUSCONDITION");
+      const cqData = getCQData(externalData);
+      if (cqData && cqData.discoveryStatus === "processing") {
+        const updatedCQData = {
+          ...cqData,
+          discoveryStatus: "completed",
+        };
+        externalData = {
+          ...externalData,
+          [MedicalDataSource.CAREQUALITY]: updatedCQData,
+        };
+      }
+    }
+
     if (whatToUpdate.convert) {
+      console.log("UPDATING CONVERT CONDITION");
       const convert = docProgress.convert;
       docProgress.convert = convert
         ? {
@@ -142,6 +177,7 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
         : undefined;
     }
     if (whatToUpdate.download) {
+      console.log("UPDATING DOWNLOAD CONDITION");
       const download = docProgress.download;
       docProgress.download = download
         ? {
@@ -151,13 +187,16 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
           }
         : undefined;
     }
+
     const updatedPatient = {
       ...patient.dataValues,
       data: {
         ...patient.data,
         documentQueryProgress: docProgress,
+        externalData,
       },
     };
+
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
   });
 }
@@ -206,23 +245,32 @@ function getQuery(patientIds: string[] = []): string {
   const successful: keyof Pick<Progress, "successful"> = "successful";
   const errors: keyof Pick<Progress, "errors"> = "errors";
   const processing: DocumentQueryStatus = "processing";
-  // END
+  const externalDataKey = "externalData";
+  const discoveryStatusKey = "discoveryStatus";
+  const carequalityKey = "CAREQUALITY";
 
   const property = (propertyName: ProgressType) =>
     `${data}->'${documentQueryProgress}'->'${propertyName}'`;
   const convert = property("convert");
   const download = property("download");
 
+  const carequalityDiscoveryStatus = `${data}->'${externalDataKey}'->'${carequalityKey}'->>'${discoveryStatusKey}'`;
+
   const baseQuery =
     `select * from patient ` +
     `where updated_at < now() - interval '${MAX_TIME_TO_PROCESS.asMinutes()}' minute ` +
-    `  and ((${convert}->'${total}')::int <> (${convert}->'${successful}')::int + (${convert}->'${errors}')::int ` +
+    `  and ( (` +
+    `(${convert}->'${total}')::int <> (${convert}->'${successful}')::int + (${convert}->'${errors}')::int ` +
     `        or ` +
-    `        ${convert}->>'${status}' = '${processing}' ` +
+    `${convert}->>'${status}' = '${processing}' ` +
     `        or ` +
-    `        (${download}->'${total}')::int <> (${download}->'${successful}')::int + (${download}->'${errors}')::int ` +
+    `(${download}->'${total}')::int <> (${download}->'${successful}')::int + (${download}->'${errors}')::int ` +
     `        or ` +
-    `        ${download}->>'${status}' = '${processing}') `;
+    `${download}->>'${status}' = '${processing}' ` +
+    `      ) ` +
+    `        or ` +
+    `${carequalityDiscoveryStatus} = '${processing}' ` +
+    `   )`;
 
   const patientFilter = patientIds.length > 0 ? ` and id in ('${patientIds.join("','")}')` : "";
   return baseQuery + patientFilter;
