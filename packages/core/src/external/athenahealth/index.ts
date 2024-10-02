@@ -15,6 +15,7 @@ import {
   medicationCreateResponseSchema,
   BookedAppointment,
   bookedAppointmentsGetResponseSchema,
+  appointmentEventGetResponseSchema,
   subscriptionCreateResponseSchema,
   departmentsGetResponseSchema,
   FeedType,
@@ -573,7 +574,8 @@ class AthenaHealthApi {
             processAsyncError("Error saving to s3 @ AthenaHealth - getAppointmentsFromSubscription")
           );
       }
-      return bookedAppointmentsGetResponseSchema.parse(response.data).appointments;
+      const appointments = appointmentEventGetResponseSchema.parse(response.data).appointments;
+      return appointments.filter(app => app.appointmentstatus === "f") as BookedAppointment[];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       if (error.response?.status === 403) {
