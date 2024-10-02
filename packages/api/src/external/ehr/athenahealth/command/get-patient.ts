@@ -34,11 +34,14 @@ const athenaClientKeySecretArn = Config.getAthenaHealthClientKeyArn();
 const athenaClientSecretSecretArn = Config.getAthenaHealthClientSecretArn();
 const defaultFacilityMappingExternalId = "default";
 
+const parallelPatientMatches = 5;
+
 export async function getPatientIdOrFail({
   cxId,
   athenaPracticeId,
   athenaPatientId,
   accessToken,
+  api,
   useSearch = false,
   triggerDq = false,
 }: {
@@ -46,10 +49,13 @@ export async function getPatientIdOrFail({
   athenaPracticeId: string;
   athenaPatientId: string;
   accessToken?: string;
+  api?: AthenaHealthApi;
   useSearch?: boolean;
   triggerDq?: boolean;
 }): Promise<string> {
-  const { log } = out(`AthenaHealth getPatient - cxId ${cxId} athenaPatientId ${athenaPatientId}`);
+  const { log } = out(
+    `AthenaHealth getPatientIdOrFail - cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}`
+  );
   const existingPatient = await getPatientMapping({
     cxId,
     externalId: athenaPatientId,
@@ -65,17 +71,21 @@ export async function getPatientIdOrFail({
   if (!athenaEnvironment || !athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
     throw new Error("AthenaHealth not setup");
   }
-  const athenaClientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
-  const athenaClientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
-  const api = await AthenaHealthApi.create({
-    threeLeggedAuthToken: accessToken,
-    practiceId: athenaPracticeId,
-    environment: athenaEnvironment as AthenaEnv,
-    clientKey: athenaClientKey,
-    clientSecret: athenaClientSecret,
-  });
+
+  let athenaApi = api;
+  if (!athenaApi) {
+    const athenaClientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
+    const athenaClientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
+    athenaApi = await AthenaHealthApi.create({
+      threeLeggedAuthToken: accessToken,
+      practiceId: athenaPracticeId,
+      environment: athenaEnvironment as AthenaEnv,
+      clientKey: athenaClientKey,
+      clientSecret: athenaClientSecret,
+    });
+  }
   const athenaPatient = await getPatientFromAthena({
-    api,
+    api: athenaApi,
     cxId,
     patientId: athenaPatientId,
     useSearch,
@@ -91,20 +101,27 @@ export async function getPatientIdOrFail({
   const patientDemoFilters = createMetriportPatientDemoFilters(athenaPatient);
   const patients: Patient[] = [];
   const getPatientByDemoErrors: string[] = [];
+  const getPatientByDemoArgs = patientDemoFilters.map(demo => {
+    return {
+      cxId,
+      athenaPracticeId,
+      athenaPatientId,
+      demo,
+      patients,
+      errors: getPatientByDemoErrors,
+      log,
+    };
+  });
 
-  await executeAsynchronously(
-    patientDemoFilters.map(demo => {
-      return { cxId, demo, patients, errors: getPatientByDemoErrors, log };
-    }),
-    getPatientByDemo,
-    { numberOfParallelExecutions: 5 }
-  );
+  await executeAsynchronously(getPatientByDemoArgs, getPatientByDemo, {
+    numberOfParallelExecutions: parallelPatientMatches,
+  });
 
   if (getPatientByDemoErrors.length > 0) {
     capture.error("Failed to get patient by demo", {
       extra: {
         cxId,
-        patientDemoFiltersCount: patientDemoFilters.length,
+        getPatientByDemoArgsCount: getPatientByDemoArgs.length,
         errorCount: getPatientByDemoErrors.length,
         errors: getPatientByDemoErrors.join(","),
         context: "athenahealth.get-patient",
@@ -189,12 +206,16 @@ function createMetriportPatientDemo(
 
 async function getPatientByDemo({
   cxId,
+  athenaPracticeId,
+  athenaPatientId,
   demo,
   patients,
   errors,
   log,
 }: {
   cxId: string;
+  athenaPracticeId: string;
+  athenaPatientId: string;
   demo: PatientDemoData;
   patients: Patient[];
   errors: string[];
@@ -204,9 +225,11 @@ async function getPatientByDemo({
     const patient = await singleGetMetriportPatientByDemo({ cxId, demo });
     if (patient) patients.push(patient);
   } catch (error) {
-    const msg = `Failed to get patient by demo. Cause: ${errorToString(error)}`;
-    log(msg);
-    errors.push(msg);
+    const cause = `Cause: ${errorToString(error)}`;
+    const details = `cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}.`;
+    const msg = "Failed to get patient by demo.";
+    log(`${msg} ${cause}`);
+    errors.push(`${msg} ${details} ${cause}`);
   }
 }
 
