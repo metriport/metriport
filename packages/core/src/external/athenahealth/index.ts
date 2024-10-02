@@ -507,9 +507,7 @@ class AthenaHealthApi {
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - getAppointments"));
       }
       const appointments = bookedAppointmentsGetResponseSchema.parse(response.data).appointments;
-      return appointments.filter(
-        app => !["o", "x"].includes(app.appointmentstatus) && app.patientid !== undefined
-      );
+      return appointments.filter(app => app.patientid !== undefined);
     } catch (error) {
       const msg = `Failure while getting appointments @ AthenaHealth`;
       log(`${msg}. Cause: ${errorToString(error)}`);
@@ -578,7 +576,7 @@ class AthenaHealthApi {
       }
       const appointments = bookedAppointmentsGetResponseSchema.parse(response.data).appointments;
       return appointments.filter(
-        app => !["o", "x"].includes(app.appointmentstatus) && app.patientid !== undefined
+        app => app.appointmentstatus === "f" && app.patientid !== undefined
       );
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
