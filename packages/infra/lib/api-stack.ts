@@ -46,6 +46,7 @@ import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
 import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
 import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
+import { PatientImportNestedStack } from "./patient-import-nested-stack";
 import * as AppConfigUtils from "./shared/app-config";
 import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
@@ -340,6 +341,17 @@ export class APIStack extends Stack {
       },
     });
 
+    const { patientCreateLambda, patientQueryLambda } = new PatientImportNestedStack(
+      this,
+      "PatientImportNestedStack",
+      {
+        config: props.config,
+        lambdaLayers,
+        vpc: this.vpc,
+        alarmAction: slackNotification?.alarmAction,
+      }
+    );
+
     //-------------------------------------------
     // OPEN SEARCH Domains
     //-------------------------------------------
@@ -542,6 +554,8 @@ export class APIStack extends Stack {
     outboundDocumentQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentRetrievalLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     fhirToBundleLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    patientCreateLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    patientQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
 
     // Access grant for medical documents bucket
     sandboxSeedDataBucket &&
