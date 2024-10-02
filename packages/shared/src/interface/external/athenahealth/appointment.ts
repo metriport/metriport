@@ -10,7 +10,7 @@ export const bookedAppointmentsGetResponseSchema = z.object({
 
 const appointmentEventSchema = z.object({
   patientid: z.string().optional(),
-  appointmentstatus: z.enum(["o", "f", "x", "2", "3", "4"]),
+  appointmentstatus: z.string(),
 });
 export const appointmentEventGetResponseSchema = z.object({
   appointments: appointmentEventSchema.array(),
