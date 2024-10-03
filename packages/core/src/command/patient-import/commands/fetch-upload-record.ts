@@ -3,7 +3,8 @@ import { S3Utils } from "../../../external/aws/s3";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import { Config } from "../../../util/config";
-import { createFilePathBulkUpload } from "../shared";
+import { UploadRecord } from "../patient-import";
+import { createFileKey } from "../shared";
 
 const region = Config.getAWSRegion();
 
@@ -11,33 +12,32 @@ function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
-export async function checkUploadRecord({
-  requestId,
+export async function fetchUploadRecord({
   cxId,
+  jobId,
   patientId,
-  bucket,
+  s3BucketName,
 }: {
-  requestId: string;
   cxId: string;
+  jobId: string;
   patientId: string;
-  bucket: string;
-}): Promise<object> {
-  const { log } = out(`BulkUpload check or upload record - cxId ${cxId} patientId ${patientId}`);
+  s3BucketName: string;
+}): Promise<UploadRecord> {
+  const { log } = out(`PatientImport check or upload record - cxId ${cxId} patientId ${patientId}`);
   const s3Utils = getS3UtilsInstance();
-  const fileName = createFilePathBulkUpload(cxId, requestId, patientId);
-  const key = `bulk-uploads/${fileName}`;
+  const key = createFileKey(cxId, jobId, patientId);
   try {
-    const file = await s3Utils.getFileContentsAsString(bucket, key);
+    const file = await s3Utils.getFileContentsAsString(s3BucketName, key);
     return JSON.parse(file);
   } catch (error) {
-    const msg = `Failure while fetching upload record @ BulkUpload`;
+    const msg = `Failure while fetching upload record @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         cxId,
-        requestId,
+        jobId,
         patientId,
-        context: "bulk-upload.fetch-upload-record",
+        context: "patient-import.fetch-upload-record",
         error,
       },
     });

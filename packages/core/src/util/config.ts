@@ -147,6 +147,10 @@ export class Config {
     return getEnvVar("PROCESS_BULK_UPLOAD_LAMBDA_NAME");
   }
 
+  static getStartPatientImportLamda(): string | undefined {
+    return getEnvVar("START_PATIENT_IMPORT_LAMBDA_NAME");
+  }
+
   static getProcessPatientCreateLamda(): string | undefined {
     return getEnvVar("PROCESS_PATIENT_CREATE_LAMBDA_NAME");
   }

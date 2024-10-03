@@ -1,36 +1,33 @@
 import axios from "axios";
-import { errorToString, patientSchema } from "@metriport/shared";
+import { errorToString, patientCreateResponseSchema } from "@metriport/shared";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import { Config } from "../../../util/config";
-import { PatientPayload } from "../bulk-upload";
+import { PatientPayload } from "../patient-import";
 
 export async function createPatient({
   cxId,
-  facilityId,
-  patient,
+  patientPayload,
 }: {
   cxId: string;
-  facilityId: string;
-  patient: PatientPayload;
+  patientPayload: PatientPayload;
 }): Promise<string> {
-  const { log, debug } = out(`BulkUpload create patient - cxId ${cxId} facilityId ${facilityId}`);
+  const { log, debug } = out(`PatientImport create patient - cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
-  const patientUrl = `/internal/patient?cxId=${cxId}&facilityId=${facilityId}`;
+  const patientUrl = `/internal/patient?cxId=${cxId}`;
   try {
-    const response = await api.post(patientUrl, patient);
+    const response = await api.post(patientUrl, patientPayload);
     if (!response.data) throw new Error(`No body returned from ${patientUrl}`);
     debug(`${patientUrl} resp: ${JSON.stringify(response.data)}`);
-    return patientSchema.parse(patientSchema).id;
+    return patientCreateResponseSchema.parse(response).id;
   } catch (error) {
-    const msg = `Failure while creating patient @ BulkUpload`;
+    const msg = `Failure while creating patient @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         url: patientUrl,
         cxId,
-        facilityId,
-        context: "bulk-upload.create-patient",
+        context: "patient-import.create-patient",
         error,
       },
     });

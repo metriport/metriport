@@ -1,4 +1,4 @@
-import { PatientDemoData } from "../patient";
+import { PatientDemoData } from "../../domain/patient";
 
 export type PhaseStatus = "processing" | "completed" | "failed";
 
@@ -13,31 +13,39 @@ export type UploadRecord = {
 
 export type UploadRecordUpdate = Omit<UploadRecord, "patientId">;
 
-export type ProcessFileRequest = {
-  requestId: string;
+export type StartImportRequest = {
   cxId: string;
-  fileName: string;
-  bucket: string;
+  jobId: string;
+  s3BucketName: string;
+  s3FileName: string;
+};
+
+export type ProcessFileRequest = {
+  cxId: string;
+  jobId: string;
+  s3BucketName: string;
+  s3FileName: string;
   fileType: "csv";
 };
 
 export type PatientPayload = PatientDemoData & { externalId: string | undefined };
 
 export type ProcessPatientCreateRequest = {
-  requestId: string;
   cxId: string;
+  jobId: string;
   patientPayload: PatientPayload;
-  bucket: string;
+  s3BucketName: string;
 };
 
 export type ProcessPatientDiscoveryRequest = {
-  requestId: string;
   cxId: string;
+  jobId: string;
   patientId: string;
-  bucket: string;
+  s3BucketName: string;
 };
 
-export interface BulkUplaodHandler {
+export interface PatientImportHandler {
+  startImport(request: StartImportRequest): Promise<void>;
   processFile(request: ProcessFileRequest): Promise<void>;
   processPatientCreate(request: ProcessPatientCreateRequest): Promise<void>;
   processPatientDiscovery(request: ProcessPatientDiscoveryRequest): Promise<void>;

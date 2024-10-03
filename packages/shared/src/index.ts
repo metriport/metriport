@@ -15,7 +15,7 @@ export * from "./domain/dob";
 export * from "./domain/externalId";
 export * from "./domain/gender";
 export * from "./domain/patient/patient";
-export * from "./domain/patient/bulk-uploead";
+export * from "./domain/patient/patient-import";
 export { PurposeOfUse } from "./common/purpose-of-use";
 export * from "./common/retry";
 export { sleep } from "./common/sleep";

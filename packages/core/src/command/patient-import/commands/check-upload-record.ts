@@ -3,7 +3,7 @@ import { S3Utils } from "../../../external/aws/s3";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import { Config } from "../../../util/config";
-import { createFilePathBulkUpload } from "../shared";
+import { createFileKey } from "../shared";
 
 const region = Config.getAWSRegion();
 
@@ -12,32 +12,31 @@ function getS3UtilsInstance(): S3Utils {
 }
 
 export async function checkUploadRecord({
-  requestId,
+  jobId,
   cxId,
   patientId,
-  bucket,
+  s3BucketName,
 }: {
-  requestId: string;
+  jobId: string;
   cxId: string;
   patientId: string;
-  bucket: string;
+  s3BucketName: string;
 }): Promise<boolean> {
-  const { log } = out(`BulkUpload check or upload record - cxId ${cxId} patientId ${patientId}`);
+  const { log } = out(`PatientImport check or upload record - cxId ${cxId} patientId ${patientId}`);
   const s3Utils = getS3UtilsInstance();
-  const fileName = createFilePathBulkUpload(cxId, requestId, patientId);
-  const key = `bulk-uploads/${fileName}`;
+  const key = createFileKey(cxId, jobId, patientId);
   try {
-    const fileExists = await s3Utils.fileExists(bucket, key);
+    const fileExists = await s3Utils.fileExists(s3BucketName, key);
     return fileExists;
   } catch (error) {
-    const msg = `Failure while checking upload record @ BulkUpload`;
+    const msg = `Failure while checking upload record @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         cxId,
-        requestId,
+        jobId,
         patientId,
-        context: "bulk-upload.check-upload-record",
+        context: "patient-import.check-upload-record",
         error,
       },
     });

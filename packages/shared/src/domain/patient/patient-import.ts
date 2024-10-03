@@ -6,7 +6,7 @@ import { normalizeStateSafe } from "../address/state";
 import { isPhoneValid } from "../contact/phone";
 import { isEmailValid } from "../contact/email";
 
-export const bulkUploadPatientSchema = z.object({
+export const patientImportPatientSchema = z.object({
   dob: z.string().refine(normalizeDateSafe, { message: "Invalid dob" }),
   gender: z.string().refine(normalizeGenderSafe, { message: "Invalid gender" }),
   firstname: z.string().min(1, { message: "First name must be defined" }),
@@ -22,8 +22,8 @@ export const bulkUploadPatientSchema = z.object({
   email2: z.string().refine(isEmailValid, { message: "Invalid email" }).optional(),
   externalid: z.string().optional(),
 });
-export type BulkUploadPatient = z.infer<typeof bulkUploadPatientSchema>;
+export type PatientImportPatient = z.infer<typeof patientImportPatientSchema>;
 
-export const bulkUploadSchema = z.object({
-  patients: bulkUploadPatientSchema.array(),
+export const patientImportSchema = z.object({
+  patients: patientImportPatientSchema.array(),
 });

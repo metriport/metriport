@@ -1,5 +1,5 @@
 import {
-  BulkUploadPatient,
+  PatientImportPatient,
   normalizeDate,
   normalizeGender,
   normalizeState,
@@ -9,17 +9,23 @@ import {
   normalizeExternalId,
   toTitleCase,
 } from "@metriport/shared";
-import { PatientPayload } from "./bulk-upload";
+import { PatientPayload } from "./patient-import";
 
-export function createFilePathBulkUpload(
+export function createFilePathPatientImport(
   cxId: string,
-  requestId: string,
+  jobId: string,
   patientId: string
 ): string {
-  return `${cxId}/${requestId}/${patientId}}.json`;
+  return `${cxId}/${jobId}/${patientId}}.json`;
 }
 
-export const BulkUploadCsvHeaders = [
+export function createFileKey(cxId: string, jobId: string, patientId: string): string {
+  const fileName = createFilePathPatientImport(cxId, jobId, patientId);
+  const key = `patient-import/${fileName}`;
+  return key;
+}
+
+export const PatientImportCsvHeaders = [
   "externalid",
   "firstname",
   "lastname",
@@ -77,7 +83,7 @@ export function createObjectsFromCsv({
   });
 }
 
-export function createPatienPayload(patient: BulkUploadPatient): PatientPayload {
+export function createPatientPayload(patient: PatientImportPatient): PatientPayload {
   const phone1 = patient.phone1 ? normalizePhoneNumberStrict(patient.phone1) : undefined;
   const email1 = patient.email1 ? normalizeEmailStrict(patient.email1) : undefined;
   const phone2 = patient.phone2 ? normalizePhoneNumberStrict(patient.phone2) : undefined;
