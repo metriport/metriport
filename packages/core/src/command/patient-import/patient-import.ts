@@ -15,33 +15,43 @@ export type UploadRecordUpdate = Omit<UploadRecord, "patientId">;
 
 export type StartImportRequest = {
   cxId: string;
-  jobId: string;
+  facilityId: string;
   s3BucketName: string;
   s3FileName: string;
+  rerunPdOnNewDemographics?: boolean;
+  dryrun?: boolean;
 };
 
 export type ProcessFileRequest = {
   cxId: string;
+  facilityId: string;
   jobId: string;
   s3BucketName: string;
   s3FileName: string;
   fileType: "csv";
+  rerunPdOnNewDemographics: boolean;
+  dryrun: boolean;
 };
 
 export type PatientPayload = PatientDemoData & { externalId: string | undefined };
 
 export type ProcessPatientCreateRequest = {
   cxId: string;
+  facilityId: string;
   jobId: string;
   patientPayload: PatientPayload;
-  s3BucketName: string;
+  patientImportBucket: string;
+  rerunPdOnNewDemographics: boolean;
 };
 
 export type ProcessPatientDiscoveryRequest = {
   cxId: string;
+  facilityId: string;
   jobId: string;
   patientId: string;
-  s3BucketName: string;
+  patientImportBucket: string;
+  rerunPdOnNewDemographics: boolean;
+  timeout?: number;
 };
 
 export interface PatientImportHandler {

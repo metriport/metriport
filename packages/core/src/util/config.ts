@@ -147,6 +147,10 @@ export class Config {
     return getEnvVar("PROCESS_BULK_UPLOAD_LAMBDA_NAME");
   }
 
+  static getPatientImportBucket(): string | undefined {
+    return getEnvVar("PATIENT_IMPORT_BUCKET_NAME");
+  }
+
   static getStartPatientImportLamda(): string | undefined {
     return getEnvVar("START_PATIENT_IMPORT_LAMBDA_NAME");
   }

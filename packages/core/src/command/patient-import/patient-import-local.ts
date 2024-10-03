@@ -1,5 +1,6 @@
 import { uuidv4 } from "../../util/uuid-v7";
 import { executeAsynchronously } from "../../util/concurrency";
+import { creatUploadHistory } from "./commands/create-upload-history";
 import { getValidPatientsFromImport } from "./commands/validate-and-parse-import";
 import { checkUploadRecord } from "./commands/check-upload-record";
 import { creatOrUpdateUploadRecord } from "./commands/create-or-update-upload-record";
@@ -13,82 +14,118 @@ import {
   ProcessPatientCreateRequest,
   ProcessPatientDiscoveryRequest,
 } from "./patient-import";
-import { createPatientPayload } from "./shared";
+import { createPatientPayload } from "./patient-import-shared";
+import { Config } from "../../util/config";
 
-export class PatientImportHandlerDirect implements PatientImportHandler {
-  async startImport({ cxId, s3BucketName, s3FileName }: StartImportRequest): Promise<void> {
+const patientImportBucket = Config.getPatientImportBucket();
+
+export class PatientImportHandlerLocal implements PatientImportHandler {
+  async startImport({
+    cxId,
+    facilityId,
+    s3BucketName,
+    s3FileName,
+    dryrun = false,
+    rerunPdOnNewDemographics = true,
+  }: StartImportRequest): Promise<void> {
+    if (!patientImportBucket) throw new Error("Patient import bucket not setup.");
     const jobId = uuidv4();
+    await creatUploadHistory({
+      cxId,
+      jobId,
+      patientImportBucket,
+      s3FileName,
+    });
     await this.processFile({
       cxId,
+      facilityId,
       jobId,
       s3BucketName,
       s3FileName,
       fileType: "csv", // TODO Parse extension
+      dryrun,
+      rerunPdOnNewDemographics,
     });
   }
 
   async processFile({
     cxId,
+    facilityId,
     jobId,
     s3BucketName,
     s3FileName,
     fileType,
+    dryrun,
+    rerunPdOnNewDemographics,
   }: ProcessFileRequest): Promise<void> {
+    if (!patientImportBucket) throw new Error("Patient import bucket not setup.");
     const patients = await getValidPatientsFromImport({ s3BucketName, s3FileName, fileType });
-    const processPatientRequests: ProcessPatientCreateRequest[] = patients.map(patient => {
+    if (dryrun) return;
+    const processPatientCreateRequests: ProcessPatientCreateRequest[] = patients.map(patient => {
       const patientPayload = createPatientPayload(patient);
       return {
         cxId,
+        facilityId,
         jobId,
         patientPayload,
-        s3BucketName,
+        patientImportBucket,
+        rerunPdOnNewDemographics,
       };
     });
-    await executeAsynchronously(processPatientRequests, this.processPatientCreate, {
+    await executeAsynchronously(processPatientCreateRequests, this.processPatientCreate, {
       numberOfParallelExecutions: 10,
     });
   }
 
   async processPatientCreate({
     cxId,
+    facilityId,
     jobId,
     patientPayload,
-    s3BucketName,
+    patientImportBucket,
+    rerunPdOnNewDemographics,
   }: ProcessPatientCreateRequest): Promise<void> {
     const patientId = await createPatient({
       cxId,
+      facilityId,
       patientPayload,
     });
     const patientAlreadyProcessed = await checkUploadRecord({
       cxId,
       jobId,
       patientId,
-      s3BucketName,
+      patientImportBucket,
     });
     if (patientAlreadyProcessed) return;
     await creatOrUpdateUploadRecord({
       cxId,
       jobId,
       patientId,
-      s3BucketName,
+      patientImportBucket,
     });
     await this.processPatientDiscovery({
       cxId,
+      facilityId,
       jobId,
       patientId,
-      s3BucketName,
+      patientImportBucket,
+      rerunPdOnNewDemographics,
     });
   }
 
   async processPatientDiscovery({
     cxId,
+    facilityId,
     jobId,
     patientId,
-    s3BucketName,
+    patientImportBucket,
+    rerunPdOnNewDemographics,
   }: ProcessPatientDiscoveryRequest) {
     await startPatientDiscovery({
       cxId,
+      facilityId,
       patientId,
+      rerunPdOnNewDemographics,
     });
     await startDocumentQuery({
       cxId,
@@ -99,7 +136,7 @@ export class PatientImportHandlerDirect implements PatientImportHandler {
       jobId,
       patientId,
       data: { patientDiscoveryStatus: "processing" },
-      s3BucketName,
+      patientImportBucket,
     });
   }
 }

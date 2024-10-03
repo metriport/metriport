@@ -16,11 +16,25 @@ export function createFilePathPatientImport(
   jobId: string,
   patientId: string
 ): string {
-  return `${cxId}/${jobId}/${patientId}}.json`;
+  return `${cxId}/${jobId}/${patientId}.json`;
 }
 
 export function createFileKey(cxId: string, jobId: string, patientId: string): string {
   const fileName = createFilePathPatientImport(cxId, jobId, patientId);
+  const key = `patient-import/${fileName}`;
+  return key;
+}
+
+export function createFilePathPatientImportHistory(
+  cxId: string,
+  inputFileName: string,
+  jobId: string
+): string {
+  return `${cxId}/${inputFileName}/${jobId}.json`;
+}
+
+export function createHistoryFileKey(cxId: string, inputFileName: string, jobId: string): string {
+  const fileName = createFilePathPatientImportHistory(cxId, inputFileName, jobId);
   const key = `patient-import/${fileName}`;
   return key;
 }

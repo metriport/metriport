@@ -4,7 +4,7 @@ import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import { Config } from "../../../util/config";
 import { UploadRecord } from "../patient-import";
-import { createFileKey } from "../shared";
+import { createFileKey } from "../patient-import-shared";
 
 const region = Config.getAWSRegion();
 
@@ -16,18 +16,20 @@ export async function fetchUploadRecord({
   cxId,
   jobId,
   patientId,
-  s3BucketName,
+  patientImportBucket,
 }: {
   cxId: string;
   jobId: string;
   patientId: string;
-  s3BucketName: string;
+  patientImportBucket: string;
 }): Promise<UploadRecord> {
-  const { log } = out(`PatientImport check or upload record - cxId ${cxId} patientId ${patientId}`);
+  const { log } = out(
+    `PatientImport check or upload record - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
+  );
   const s3Utils = getS3UtilsInstance();
   const key = createFileKey(cxId, jobId, patientId);
   try {
-    const file = await s3Utils.getFileContentsAsString(s3BucketName, key);
+    const file = await s3Utils.getFileContentsAsString(patientImportBucket, key);
     return JSON.parse(file);
   } catch (error) {
     const msg = `Failure while fetching upload record @ PatientImport`;

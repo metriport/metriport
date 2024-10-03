@@ -7,7 +7,7 @@ import {
   compareCsvHeaders,
   normalizeHeaders,
   createObjectsFromCsv,
-} from "../shared";
+} from "../patient-import-shared";
 
 const region = Config.getAWSRegion();
 

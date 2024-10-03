@@ -3,7 +3,7 @@ import { S3Utils } from "../../../external/aws/s3";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import { Config } from "../../../util/config";
-import { createFileKey } from "../shared";
+import { createFileKey } from "../patient-import-shared";
 
 const region = Config.getAWSRegion();
 
@@ -12,21 +12,23 @@ function getS3UtilsInstance(): S3Utils {
 }
 
 export async function checkUploadRecord({
-  jobId,
   cxId,
+  jobId,
   patientId,
-  s3BucketName,
+  patientImportBucket,
 }: {
-  jobId: string;
   cxId: string;
+  jobId: string;
   patientId: string;
-  s3BucketName: string;
+  patientImportBucket: string;
 }): Promise<boolean> {
-  const { log } = out(`PatientImport check or upload record - cxId ${cxId} patientId ${patientId}`);
+  const { log } = out(
+    `PatientImport check or upload record - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
+  );
   const s3Utils = getS3UtilsInstance();
   const key = createFileKey(cxId, jobId, patientId);
   try {
-    const fileExists = await s3Utils.fileExists(s3BucketName, key);
+    const fileExists = await s3Utils.fileExists(patientImportBucket, key);
     return fileExists;
   } catch (error) {
     const msg = `Failure while checking upload record @ PatientImport`;

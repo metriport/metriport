@@ -3,8 +3,7 @@ import { S3Utils } from "../../../external/aws/s3";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import { Config } from "../../../util/config";
-import { UploadRecordUpdate } from "../patient-import";
-import { createFileKey } from "../patient-import-shared";
+import { createHistoryFileKey } from "../patient-import-shared";
 
 const region = Config.getAWSRegion();
 
@@ -12,40 +11,40 @@ function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
-export async function creatOrUpdateUploadRecord({
+export async function creatUploadHistory({
   cxId,
   jobId,
-  patientId,
-  data = {},
   patientImportBucket,
+  s3FileName,
 }: {
   cxId: string;
   jobId: string;
-  patientId: string;
-  data?: UploadRecordUpdate;
   patientImportBucket: string;
+  s3FileName: string;
 }): Promise<void> {
   const { log } = out(
-    `PatientImport check or upload record - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
+    `PatientImport create upload history - cxId ${cxId} jobId ${jobId} s3FileName ${s3FileName}`
   );
   const s3Utils = getS3UtilsInstance();
-  const key = createFileKey(cxId, jobId, patientId);
+  const key = createHistoryFileKey(cxId, s3FileName, jobId);
   try {
+    const fileExists = await s3Utils.fileExists(patientImportBucket, key);
+    if (fileExists) throw new Error(`Duplicate job ids for ${s3FileName}`);
     await s3Utils.uploadFile({
       bucket: patientImportBucket,
       key,
-      file: Buffer.from(JSON.stringify({ patientId, ...data }), "utf8"),
+      file: Buffer.from(JSON.stringify({}), "utf8"),
       contentType: "application/json",
     });
   } catch (error) {
-    const msg = `Failure while creating upload record @ PatientImport`;
+    const msg = `Failure while creating upload history @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         cxId,
         jobId,
-        patientId,
-        context: "patient-import.create-upload-record",
+        s3FileName,
+        context: "patient-import.create-upload-history",
         error,
       },
     });

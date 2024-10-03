@@ -7,14 +7,16 @@ import { PatientPayload } from "../patient-import";
 
 export async function createPatient({
   cxId,
+  facilityId,
   patientPayload,
 }: {
   cxId: string;
+  facilityId: string;
   patientPayload: PatientPayload;
 }): Promise<string> {
   const { log, debug } = out(`PatientImport create patient - cxId ${cxId}`);
   const api = axios.create({ baseURL: Config.getApiUrl() });
-  const patientUrl = `/internal/patient?cxId=${cxId}`;
+  const patientUrl = `/internal/patient?cxId=${cxId}&facilityId=${facilityId}`;
   try {
     const response = await api.post(patientUrl, patientPayload);
     if (!response.data) throw new Error(`No body returned from ${patientUrl}`);
