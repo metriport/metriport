@@ -1,14 +1,16 @@
+import { DocumentQueryStatus, Progress, ProgressType } from "@metriport/core/domain/document-query";
+import { Patient, PatientCreate, PatientData } from "@metriport/core/domain/patient";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import stringify from "json-stringify-safe";
 import { QueryTypes } from "sequelize";
-import { ProgressType, DocumentQueryStatus, Progress } from "@metriport/core/domain/document-query";
-import { Patient, PatientCreate, PatientData } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { capture } from "../../../shared/notifications";
+import { getOrganizationOrFail } from "../organization/get-organization";
+import { recreateConsolidated } from "../patient/consolidated-recreate";
 import { getPatientOrFail } from "../patient/get-patient";
 import { sendWHNotifications } from "./check-doc-queries-notification";
 import {
@@ -117,49 +119,62 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
   string,
   GroupedValidationResult
 ]) {
-  await executeOnDBTx(PatientModel.prototype, async transaction => {
-    const patientFilter = {
-      id: patientId,
-      cxId: cxId,
-    };
-    const patient = await getPatientOrFail({
-      ...patientFilter,
-      transaction,
+  async function updatePatient() {
+    return executeOnDBTx(PatientModel.prototype, async transaction => {
+      const patientFilter = {
+        id: patientId,
+        cxId: cxId,
+      };
+      const patient = await getPatientOrFail({
+        ...patientFilter,
+        transaction,
+      });
+      const docProgress = patient.data.documentQueryProgress;
+      if (!docProgress) {
+        console.log(`Patient without doc query progress @ update, skipping it: ${patient.id} `);
+        return;
+      }
+      if (whatToUpdate.convert) {
+        const convert = docProgress.convert;
+        docProgress.convert = convert
+          ? {
+              ...convert,
+              status: getStatus(convert),
+              total: calculateTotal(convert),
+            }
+          : undefined;
+      }
+      if (whatToUpdate.download) {
+        const download = docProgress.download;
+        docProgress.download = download
+          ? {
+              ...download,
+              status: getStatus(download),
+              total: calculateTotal(download),
+            }
+          : undefined;
+      }
+      const updatedPatient = {
+        ...patient.dataValues,
+        data: {
+          ...patient.data,
+          documentQueryProgress: docProgress,
+        },
+      };
+      await PatientModel.update(updatedPatient, {
+        where: patientFilter,
+        transaction,
+      });
+      return updatedPatient;
     });
-    const docProgress = patient.data.documentQueryProgress;
-    if (!docProgress) {
-      console.log(`Patient without doc query progress @ update, skipping it: ${patient.id} `);
-      return;
-    }
-    if (whatToUpdate.convert) {
-      const convert = docProgress.convert;
-      docProgress.convert = convert
-        ? {
-            ...convert,
-            status: getStatus(convert),
-            total: calculateTotal(convert),
-          }
-        : undefined;
-    }
-    if (whatToUpdate.download) {
-      const download = docProgress.download;
-      docProgress.download = download
-        ? {
-            ...download,
-            status: getStatus(download),
-            total: calculateTotal(download),
-          }
-        : undefined;
-    }
-    const updatedPatient = {
-      ...patient.dataValues,
-      data: {
-        ...patient.data,
-        documentQueryProgress: docProgress,
-      },
-    };
-    await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
-  });
+  }
+  const [patient, organization] = await Promise.all([
+    updatePatient(),
+    getOrganizationOrFail({ cxId }),
+  ]);
+  if (!patient) return;
+  // we want to await here to ensure the consolidated bundle is created before we send the webhook
+  await recreateConsolidated({ patient, organization, context: "check-queries" });
 }
 
 export async function getPatientsToUpdate(patientIds?: string[]): Promise<Patient[]> {
