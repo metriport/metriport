@@ -1,3 +1,4 @@
+import { sleep } from "@metriport/shared";
 import { executeAsynchronously } from "../../util/concurrency";
 import { createJobRecord } from "./commands/create-job-record";
 import { validateAndParsePatientImportCsv } from "./commands/validate-and-parse-import";
@@ -18,13 +19,6 @@ import { Config } from "../../util/config";
 
 const patientImportBucket = Config.getPatientImportBucket();
 
-type ProcessFileRequestLocal = Omit<ProcessFileRequest, "processPatientCreateQueue">;
-type ProcessPatientCreateRequestLocal = Omit<
-  ProcessPatientCreateRequest,
-  "processPatientQueryQueue"
->;
-type ProcessPatientQueryRequestLocal = Omit<ProcessPatientQueryRequest, "waitTimeInMillis">;
-
 export class PatientImportHandlerLocal implements PatientImportHandler {
   async startImport({
     cxId,
@@ -35,12 +29,13 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
   }: StartImportRequest): Promise<void> {
     if (!patientImportBucket) throw new Error("patientImportBucket not setup");
     const jobStartedAt = new Date().toISOString();
-    const processFileRequest: ProcessFileRequestLocal = {
+    const processFileRequest: ProcessFileRequest = {
       cxId,
       facilityId,
       jobId,
       jobStartedAt,
       s3BucketName: patientImportBucket,
+      processPatientCreateQueue: "local",
       rerunPdOnNewDemographics,
       dryrun,
     };
@@ -56,7 +51,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     s3BucketName,
     rerunPdOnNewDemographics,
     dryrun,
-  }: ProcessFileRequestLocal): Promise<void> {
+  }: ProcessFileRequest): Promise<void> {
     if (!patientImportBucket) throw new Error("patientImportBucket not setup");
     await createJobRecord({
       cxId,
@@ -70,19 +65,18 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
       s3BucketName,
     });
     if (dryrun) return;
-    const processPatientCreateRequests: ProcessPatientCreateRequestLocal[] = patients.map(
-      patient => {
-        const patientPayload = createPatientPayload(patient);
-        return {
-          cxId,
-          facilityId,
-          jobId,
-          patientPayload,
-          s3BucketName: patientImportBucket,
-          rerunPdOnNewDemographics,
-        };
-      }
-    );
+    const processPatientCreateRequests: ProcessPatientCreateRequest[] = patients.map(patient => {
+      const patientPayload = createPatientPayload(patient);
+      return {
+        cxId,
+        facilityId,
+        jobId,
+        patientPayload,
+        s3BucketName: patientImportBucket,
+        processPatientQueryQueue: "local",
+        rerunPdOnNewDemographics,
+      };
+    });
     const boundProcessPatientCreate = this.processPatientCreate.bind(this);
     await executeAsynchronously(processPatientCreateRequests, boundProcessPatientCreate, {
       numberOfParallelExecutions: 10,
@@ -96,7 +90,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     patientPayload,
     s3BucketName,
     rerunPdOnNewDemographics,
-  }: ProcessPatientCreateRequestLocal): Promise<void> {
+  }: ProcessPatientCreateRequest): Promise<void> {
     if (!patientImportBucket) throw new Error("patientImportBucket not setup");
     const patientId = await createPatient({
       cxId,
@@ -122,6 +116,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
       patientId,
       s3BucketName: patientImportBucket,
       rerunPdOnNewDemographics,
+      waitTimeInMillis: 0,
     });
   }
 
@@ -131,7 +126,8 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     patientId,
     s3BucketName,
     rerunPdOnNewDemographics,
-  }: ProcessPatientQueryRequestLocal) {
+    waitTimeInMillis,
+  }: ProcessPatientQueryRequest) {
     await startPatientQuery({
       cxId,
       patientId,
@@ -148,5 +144,6 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
       data: { patientQueryStatus: "processing" },
       s3BucketName,
     });
+    if (waitTimeInMillis > 0) sleep(waitTimeInMillis);
   }
 }

@@ -32,7 +32,10 @@ type ProcessPatientCreateRequestCloud = Omit<
   ProcessPatientCreateRequest,
   "s3BucketName" | "processPatientQueryQueue"
 >;
-type ProcessPatientQueryRequestCloud = Omit<ProcessPatientQueryRequest, "waitTimeInMillis">;
+type ProcessPatientQueryRequestCloud = Omit<
+  ProcessPatientQueryRequest,
+  "s3BucketName" | "waitTimeInMillis"
+>;
 
 export class PatientImportHandlerCloud implements PatientImportHandler {
   async startImport({
@@ -131,7 +134,6 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
       cxId,
       jobId,
       patientId,
-      s3BucketName,
       rerunPdOnNewDemographics,
     };
     sqsClient.sendMessageToQueue(

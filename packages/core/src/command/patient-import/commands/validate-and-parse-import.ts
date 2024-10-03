@@ -29,7 +29,7 @@ export async function validateAndParsePatientImportCsv({
   jobId: string;
   s3BucketName: string;
 }): Promise<PatientImportPatient[]> {
-  const { log } = out(`PatientImport validate and parse file - cxId ${cxId} jobId ${jobId}`);
+  const { log } = out(`PatientImport validate and parse import - cxId ${cxId} jobId ${jobId}`);
   const s3Utils = getS3UtilsInstance();
   const rawKey = createFileKeyFiles(cxId, jobId, "raw");
   try {
@@ -50,14 +50,14 @@ export async function validateAndParsePatientImportCsv({
     if (!parsingOutcome.success) throw new Error("Invalid file");
     return parsingOutcome.data.patients;
   } catch (error) {
-    const msg = `Failure validating and parsing @ PatientImport`;
+    const msg = `Failure validating and parsing import @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         cxId,
         jobId,
         rawKey,
-        context: "patient-import.validate-and-parse",
+        context: "patient-import.validate-and-parse-import",
         error,
       },
     });

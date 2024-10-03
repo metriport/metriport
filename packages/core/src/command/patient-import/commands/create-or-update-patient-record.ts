@@ -38,7 +38,7 @@ export async function creatOrUpdatePatientRecord({
       contentType: "application/json",
     });
   } catch (error) {
-    const msg = `Failure while creating patient record @ PatientImport`;
+    const msg = `Failure while creating or updating patient record @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
@@ -46,7 +46,7 @@ export async function creatOrUpdatePatientRecord({
         jobId,
         patientId,
         key,
-        context: "patient-import.create-patient-record",
+        context: "patient-import.create-or-update-patient-record",
         error,
       },
     });
