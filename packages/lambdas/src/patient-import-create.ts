@@ -20,7 +20,7 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const patientImportBucket = getEnvOrFail("PATIENT_IMPORT_BUCKET_NAME");
 const processPatientQueryQueue = getEnvOrFail("PATIENT_QUERY_QUEUE_URL");
 //const waitTimeInMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
-c; //onst waitTimeInMillis = parseInt(waitTimeInMillisRaw);
+//const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
 
 // Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
 export async function handler(event: SQSEvent) {
