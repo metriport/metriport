@@ -335,7 +335,8 @@ class AthenaHealthApi {
           })
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - createMedication"));
       }
-      return medicationCreateResponseSchema.parse(response.data);
+      const outcome = medicationCreateResponseSchema.parse(response.data);
+      if (!outcome.success) throw new Error(`Medication create not successful`);
     } catch (error) {
       const msg = `Failure while creating medication @ AthenaHealth`;
       log(`${msg}. Cause: ${errorToString(error)}`);
