@@ -13,6 +13,8 @@ import { PatientPayload } from "./patient-import";
 
 const globalPrefix = "patient-import";
 
+export type FileStages = "raw" | "valid" | "invalid";
+
 function createCxJobPrefix(cxId: string, jobId: string): string {
   return `cxid=${cxId}/jobid=${jobId}`;
 }
@@ -34,8 +36,6 @@ export function createFileKeyPatient(cxId: string, jobId: string, patientId: str
   const key = `${globalPrefix}/${fileName}`;
   return key;
 }
-
-export type FileStages = "raw" | "valid" | "invalid";
 
 export function createFileKeyFiles(cxId: string, jobId: string, stage: FileStages): string {
   const fileName = createFilePathFiles(cxId, jobId, stage);
@@ -80,24 +80,20 @@ export function compareCsvHeaders(headers: string[], input: string[], exact = fa
 
 export type GenericObject = { [key: string]: string | undefined };
 
-export function createObjectsFromCsv({
-  rows,
+export function createObjectFromCsv({
+  rowColumns,
   headers,
 }: {
-  rows: string[];
+  rowColumns: string[];
   headers: string[];
-}): GenericObject[] {
-  return rows.map((row: string, rowIndex: number) => {
-    const object: GenericObject = {};
-    const rowColumns = row.split(",");
-    headers.forEach((header, columnIndex) => {
-      const value = rowColumns[columnIndex];
-      if (value === undefined)
-        throw new Error(`Row ${rowIndex + 2} column ${columnIndex + 1} is undefined`);
-      object[header] = value.trim() === "" ? undefined : value;
-    });
-    return object;
+}): GenericObject {
+  const object: GenericObject = {};
+  headers.forEach((header, columnIndex) => {
+    const value = rowColumns[columnIndex];
+    if (value === undefined) throw Error("rowColumns and headers have different sizes");
+    object[header] = value.trim() === "" ? undefined : value;
   });
+  return object;
 }
 
 export function createPatientPayload(patient: PatientImportPatient): PatientPayload {
