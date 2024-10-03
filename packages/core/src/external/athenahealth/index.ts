@@ -337,6 +337,7 @@ class AthenaHealthApi {
       }
       const outcome = medicationCreateResponseSchema.parse(response.data);
       if (!outcome.success) throw new Error(`Medication create not successful`);
+      return outcome;
     } catch (error) {
       const msg = `Failure while creating medication @ AthenaHealth`;
       log(`${msg}. Cause: ${errorToString(error)}`);
