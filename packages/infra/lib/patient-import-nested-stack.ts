@@ -40,6 +40,7 @@ function settings() {
       maxMessageCountAlarmThreshold: 5_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(patientCreateLambdaTimeout.toSeconds() * 2 + 1),
+      createRetryLambda: false,
     },
     waitTime,
   };
@@ -57,6 +58,7 @@ function settings() {
       alarmMaxAgeOfOldestMessage: patientQueryLambdaTimeout.minus(Duration.seconds(10)),
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(patientQueryLambdaTimeout.toSeconds() * 2 + 1),
+      createRetryLambda: false,
     },
     waitTime,
   };
@@ -87,6 +89,7 @@ type QueueAndLambdaSettings = {
     /** How long messages should be invisible for other consumers, based on the lambda timeout */
     /** We don't care if the message gets reprocessed, so no need to have a huge visibility timeout that makes it harder to move messages to the DLQ */
     visibilityTimeout: Duration;
+    createRetryLambda: boolean;
   };
   waitTime: Duration;
 };
@@ -216,6 +219,7 @@ export class PatientImportNestedStack extends NestedStack {
         maxReceiveCount,
         alarmMaxAgeOfOldestMessage,
         maxMessageCountAlarmThreshold,
+        createRetryLambda,
       },
       waitTime,
     } = settings().patientCreate;
@@ -232,6 +236,7 @@ export class PatientImportNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
       alarmMaxAgeOfOldestMessage,
       maxMessageCountAlarmThreshold,
+      createRetryLambda,
     });
 
     const lambda = createLambda({
@@ -279,6 +284,7 @@ export class PatientImportNestedStack extends NestedStack {
         maxReceiveCount,
         alarmMaxAgeOfOldestMessage,
         maxMessageCountAlarmThreshold,
+        createRetryLambda,
       },
       waitTime,
     } = settings().patientQuery;
@@ -295,6 +301,7 @@ export class PatientImportNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
       alarmMaxAgeOfOldestMessage,
       maxMessageCountAlarmThreshold,
+      createRetryLambda,
     });
 
     const lambda = createLambda({

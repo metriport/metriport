@@ -1,12 +1,10 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { errorToString, MetriportError } from "@metriport/shared";
-import { SQSEvent } from "aws-lambda";
 import AWS from "aws-sdk";
 import { PatientImportCreateBody } from "./patient-import-create";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
-import { getSingleMessageOrFail } from "./shared/sqs";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -32,16 +30,13 @@ type EventBody = {
 const sqs = new AWS.SQS({ region });
 
 // Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
-export async function handler(event: SQSEvent) {
+export async function handler(event: EventBody) {
   let errorHandled = false;
   const errorMsg = "Error processing event on " + lambdaName;
   const startedAt = new Date().getTime();
   try {
-    const message = getSingleMessageOrFail(event.Records, lambdaName);
-    if (!message) return;
-
-    console.log(`Body: ${message.body}`);
-    const parsedBody = parseBody(message.body);
+    console.log(`Running with unparsed body: ${event}`);
+    const parsedBody = parseBody(event);
     const { cxId, jobId = uuidv7(), s3BucketName, s3FileName, amountOfPatients } = parsedBody;
 
     const jobStartedAt = new Date().toISOString();
@@ -63,7 +58,7 @@ export async function handler(event: SQSEvent) {
       log(`(MOCKED) Creating ${amountOfPatients} patients`);
       for (const i of Array(amountOfPatients).keys()) {
         // TODO 2230 replace this w/ the data from the CSV
-        const patientId = uuidv7();
+        const patientId = `${cxId}_`.padEnd(cxId.length + 5, i + "");
         // TODO 2330 Move this to Core, we should have diff implementations for this, so we can run it
         // local and on the cloud
         const body: PatientImportCreateBody = {
@@ -105,10 +100,7 @@ export async function handler(event: SQSEvent) {
 function parseBody(body?: unknown): EventBody {
   if (!body) throw new Error(`Missing message body`);
 
-  const bodyString = typeof body === "string" ? (body as string) : undefined;
-  if (!bodyString) throw new Error(`Invalid body`);
-
-  const bodyAsJson = JSON.parse(bodyString);
+  const bodyAsJson = typeof body === "string" ? JSON.parse(body) : body;
 
   const cxIdRaw = bodyAsJson.cxId;
   if (!cxIdRaw) throw new Error(`Missing cxId`);

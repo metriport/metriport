@@ -64,7 +64,7 @@ export function getSingleMessageOrFail(
   lambdaName: string
 ): SQSRecord | undefined {
   if (!records || records.length < 1) {
-    console.log(`No records, discarding this event: ${JSON.stringify(event)}`);
+    console.log(`No records, discarding this event: ${JSON.stringify(records)}`);
     return undefined;
   }
   if (records.length > 1) {
