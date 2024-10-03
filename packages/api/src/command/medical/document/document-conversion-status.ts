@@ -1,9 +1,13 @@
+import { ConsolidationConversionType } from "@metriport/api-sdk";
+import { deleteConsolidated } from "@metriport/core/command/consolidated/consolidated-delete";
 import {
   ConvertResult,
   DocumentQueryProgress,
   DocumentQueryStatus,
   ProgressType,
 } from "@metriport/core/domain/document-query";
+import { Organization } from "@metriport/core/domain/organization";
+import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { isMedicalDataSource, MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -71,7 +75,7 @@ export async function calculateDocumentConversionStatus({
       updatedPatient.data.documentQueryProgress?.triggerConsolidated;
     const hieTriggerConsolidated = externalData?.documentQueryProgress?.triggerConsolidated;
 
-    const isGloablConversionCompleted = isProgressStatusValid({
+    const isGlobalConversionCompleted = isProgressStatusValid({
       documentQueryProgress: updatedPatient.data.documentQueryProgress,
       progressType: "convert",
       status: "completed",
@@ -106,18 +110,16 @@ export async function calculateDocumentConversionStatus({
 
     if (
       (hieTriggerConsolidated && isHieConversionCompleted) ||
-      (globalTriggerConsolidated && isGloablConversionCompleted)
+      (globalTriggerConsolidated && isGlobalConversionCompleted)
     ) {
       log(
         `Kicking off getConsolidated for patient ${updatedPatient.id} - hie: ${hieTriggerConsolidated} global: ${globalTriggerConsolidated}`
       );
-      getConsolidated({ patient: updatedPatient, organization, conversionType: "pdf" }).catch(
-        processAsyncError(`Post-DQ getConsolidated ${source}`)
-      );
-    } else if (isGloablConversionCompleted) {
-      getConsolidated({ patient: updatedPatient, organization }).catch(
-        processAsyncError(`Post-DQ getConsolidated GLOBAL`)
-      );
+      // intentionally async
+      recreateConsolidated({ patient: updatedPatient, organization, conversionType: "pdf" });
+    } else if (isGlobalConversionCompleted) {
+      // intentionally async
+      recreateConsolidated({ patient: updatedPatient, organization });
     }
   } else {
     const expectedPatient = await updateConversionProgress({
@@ -132,6 +134,9 @@ export async function calculateDocumentConversionStatus({
     });
 
     if (isConversionCompleted) {
+      // we want to await here to ensure the consolidated bundle is created before we send the webhook
+      await recreateConsolidated({ patient, organization });
+
       processPatientDocumentRequest(
         cxId,
         patientId,
@@ -140,6 +145,31 @@ export async function calculateDocumentConversionStatus({
         ""
       );
     }
+  }
+}
+
+async function recreateConsolidated({
+  patient,
+  organization,
+  conversionType,
+}: {
+  patient: Patient;
+  organization: Organization;
+  conversionType?: ConsolidationConversionType;
+}): Promise<void> {
+  const { log } = out(`recreateConsolidated] - pt ${patient.id}`);
+  try {
+    await deleteConsolidated({
+      cxId: patient.cxId,
+      patientId: patient.id,
+    });
+  } catch (err) {
+    processAsyncError(`Failed to delete consolidated bundle`, log)(err);
+  }
+  try {
+    await getConsolidated({ patient, organization, conversionType });
+  } catch (err) {
+    processAsyncError(`Post-DQ getConsolidated`, log)(err);
   }
 }
 
