@@ -45,14 +45,15 @@ async function main() {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
   program.parse();
   const { dryrun: dryRun } = program.opts<Params>();
+  const prefix = dryRun ? "[DRY-RUN] " : "";
   const s3 = new S3Utils(region);
   let countRemovedTotal = 0;
   const cxsAndPatients = groupBy(cxAndPatient, v => v[0]);
   const cxIds = Object.keys(cxsAndPatients);
-  console.log(`${cxIds.length} CX IDs found.`);
+  console.log(`${prefix}${cxIds.length} CX IDs found.`);
 
   for (const [cxId, entries] of Object.entries(cxsAndPatients)) {
-    const { log } = out(`cx ${cxId}`);
+    const { log } = out(`${prefix}cx ${cxId}`);
     const patientIds = entries.map(v => v[1]);
     log(`Processing ${patientIds.length} patients...`);
 
@@ -68,6 +69,7 @@ async function main() {
         if (!file || !file.exists) return;
         if (dryRun) {
           log(`...Would remove the file now: ${fileName}`);
+          countRemovedPerCx++;
           return;
         }
         try {
@@ -83,7 +85,9 @@ async function main() {
     log(`Total files removed: ${countRemovedPerCx}`);
     countRemovedTotal += countRemovedPerCx;
   }
-  console.log(`${cxIds.length} CX IDs found, ${countRemovedTotal} files removed in total.`);
+  console.log(
+    `${prefix}${cxIds.length} CX IDs found, ${countRemovedTotal} files removed in total.`
+  );
 }
 
 main();
