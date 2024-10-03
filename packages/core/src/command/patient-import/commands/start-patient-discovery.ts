@@ -6,12 +6,10 @@ import { Config } from "../../../util/config";
 
 export async function startPatientDiscovery({
   cxId,
-  facilityId,
   patientId,
   rerunPdOnNewDemographics,
 }: {
   cxId: string;
-  facilityId: string;
   patientId: string;
   rerunPdOnNewDemographics: boolean;
 }): Promise<void> {
@@ -19,8 +17,7 @@ export async function startPatientDiscovery({
     `PatientImport start patient discovery - cxId ${cxId} patientId ${patientId}`
   );
   const api = axios.create({ baseURL: Config.getApiUrl() });
-  const queryParams = `cxId=${cxId}&facilityId=${facilityId}&rerunPdOnNewDemographics=${rerunPdOnNewDemographics}`;
-  const patientUrl = `/internal/patient/${patientId}/patient-discovery?${queryParams}`;
+  const patientUrl = `/internal/patient/${patientId}/patient-discovery?cxId=${cxId}&rerunPdOnNewDemographics=${rerunPdOnNewDemographics}`;
   try {
     const response = await api.post(patientUrl, {});
     if (!response.data) throw new Error(`No body returned from ${patientUrl}`);

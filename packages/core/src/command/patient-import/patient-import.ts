@@ -46,7 +46,6 @@ export type ProcessPatientCreateRequest = {
 
 export type ProcessPatientDiscoveryRequest = {
   cxId: string;
-  facilityId: string;
   jobId: string;
   patientId: string;
   patientImportBucket: string;

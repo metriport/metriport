@@ -105,7 +105,6 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     });
     await this.processPatientDiscovery({
       cxId,
-      facilityId,
       jobId,
       patientId,
       patientImportBucket,
@@ -115,7 +114,6 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
 
   async processPatientDiscovery({
     cxId,
-    facilityId,
     jobId,
     patientId,
     patientImportBucket,
@@ -123,7 +121,6 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
   }: ProcessPatientDiscoveryRequest) {
     await startPatientDiscovery({
       cxId,
-      facilityId,
       patientId,
       rerunPdOnNewDemographics,
     });

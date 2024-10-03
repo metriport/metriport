@@ -124,7 +124,6 @@ export class PatientImportHandlerLambda implements PatientImportHandler {
     });
     const processPatientDiscoveryRequest: ProcessPatientDiscoveryRequest = {
       cxId,
-      facilityId,
       jobId,
       patientId,
       patientImportBucket,
@@ -143,7 +142,6 @@ export class PatientImportHandlerLambda implements PatientImportHandler {
 
   async processPatientDiscovery({
     cxId,
-    facilityId,
     jobId,
     patientId,
     patientImportBucket,
@@ -152,7 +150,6 @@ export class PatientImportHandlerLambda implements PatientImportHandler {
   }: ProcessPatientDiscoveryRequest) {
     await startPatientDiscovery({
       cxId,
-      facilityId,
       patientId,
       rerunPdOnNewDemographics,
     });
