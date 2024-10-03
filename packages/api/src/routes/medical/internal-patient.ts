@@ -1,6 +1,7 @@
 import { genderAtBirthSchema } from "@metriport/api-sdk";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
@@ -67,6 +68,7 @@ import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-upda
 import { getCqOrgIdsToDenyOnCw } from "../../external/hie/cross-hie-ids";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../../external/hie/run-or-schedule-patient-discovery";
 import { PatientLoaderLocal } from "../../models/helpers/patient-loader-local";
+import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
 import { requestLogger } from "../helpers/request-logger";
@@ -917,6 +919,37 @@ router.post(
       )
     );
     return res.sendStatus(status.OK);
+  })
+);
+
+// TODO 2330 Remove this endpoint when we introduce the real `/import` one
+router.post(
+  "/mocked-import",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const amountOfPatients = getFrom("query").optional("amountOfPatients", req);
+    const patientImportLambda = Config.getPatientImportLambdaName();
+    const region = Config.getAWSRegion();
+    const lambdaClient = makeLambdaClient(region);
+
+    const payload = {
+      cxId,
+      jobId: uuidv7(),
+      s3BucketName: "bucket-name",
+      s3FileName: "file-name",
+      amountOfPatients: amountOfPatients ?? 1,
+    };
+    const result = await lambdaClient
+      .invoke({
+        FunctionName: patientImportLambda,
+        InvocationType: "RequestResponse",
+        Payload: JSON.stringify(payload),
+      })
+      .promise();
+
+    const resultPayload = getLambdaResultPayload({ result, lambdaName: patientImportLambda });
+    return res.status(status.OK).json(resultPayload);
   })
 );
 
