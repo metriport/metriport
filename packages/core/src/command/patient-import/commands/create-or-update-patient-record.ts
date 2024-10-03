@@ -45,6 +45,7 @@ export async function creatOrUpdatePatientRecord({
         cxId,
         jobId,
         patientId,
+        key,
         context: "patient-import.create-patient-record",
         error,
       },

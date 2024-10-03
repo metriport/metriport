@@ -13,16 +13,20 @@ import { PatientPayload } from "./patient-import";
 
 const globalPrefix = "patient-import";
 
-export function createCxJobPrefix(cxId: string, jobId: string): string {
+function createCxJobPrefix(cxId: string, jobId: string): string {
   return `cxid=${cxId}/jobid=${jobId}`;
 }
 
-export function createFileKeyJob(cxId: string, jobId: string): string {
-  return `${createCxJobPrefix(cxId, jobId)}/status.json}`;
+function createFilePathPatients(cxId: string, jobId: string, patientId: string): string {
+  return `${createCxJobPrefix(cxId, jobId)}/patients/patientid=${patientId}/status.json`;
 }
 
-export function createFilePathPatients(cxId: string, jobId: string, patientId: string): string {
-  return `${createCxJobPrefix(cxId, jobId)}/patients/patientid=${patientId}/status.json`;
+function createFilePathFiles(cxId: string, jobId: string, stage: FileStages): string {
+  return `${createCxJobPrefix(cxId, jobId)}/files/${stage}.csv`;
+}
+
+export function createFileKeyJob(cxId: string, jobId: string): string {
+  return `${globalPrefix}/${createCxJobPrefix(cxId, jobId)}/status.json`;
 }
 
 export function createFileKeyPatient(cxId: string, jobId: string, patientId: string): string {
@@ -32,10 +36,6 @@ export function createFileKeyPatient(cxId: string, jobId: string, patientId: str
 }
 
 export type FileStages = "raw" | "valid" | "invalid";
-
-export function createFilePathFiles(cxId: string, jobId: string, stage: FileStages): string {
-  return `${createCxJobPrefix(cxId, jobId)}/files/${stage}.csv`;
-}
 
 export function createFileKeyFiles(cxId: string, jobId: string, stage: FileStages): string {
   const fileName = createFilePathFiles(cxId, jobId, stage);
@@ -81,20 +81,19 @@ export function compareCsvHeaders(headers: string[], input: string[], exact = fa
 export type GenericObject = { [key: string]: string | undefined };
 
 export function createObjectsFromCsv({
-  fileName,
   rows,
   headers,
 }: {
-  fileName: string;
   rows: string[];
   headers: string[];
 }): GenericObject[] {
-  return rows.slice(1).map((row: string) => {
+  return rows.map((row: string, rowIndex: number) => {
     const object: GenericObject = {};
-    const rowValues = row.split(",");
-    headers.forEach((header, i) => {
-      const value = rowValues[i];
-      if (!value) throw new Error(`Row ${i} invalid in fle ${fileName} with headers ${headers}`);
+    const rowColumns = row.split(",");
+    headers.forEach((header, columnIndex) => {
+      const value = rowColumns[columnIndex];
+      if (value === undefined)
+        throw new Error(`Row ${rowIndex + 2} column ${columnIndex + 1} is undefined`);
       object[header] = value.trim() === "" ? undefined : value;
     });
     return object;

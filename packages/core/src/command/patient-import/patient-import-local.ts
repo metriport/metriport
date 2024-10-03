@@ -18,6 +18,13 @@ import { Config } from "../../util/config";
 
 const patientImportBucket = Config.getPatientImportBucket();
 
+type ProcessFileRequestLocal = Omit<ProcessFileRequest, "processPatientCreateQueue">;
+type ProcessPatientCreateRequestLocal = Omit<
+  ProcessPatientCreateRequest,
+  "processPatientQueryQueue"
+>;
+type ProcessPatientQueryRequestLocal = Omit<ProcessPatientQueryRequest, "waitTimeInMillis">;
+
 export class PatientImportHandlerLocal implements PatientImportHandler {
   async startImport({
     cxId,
@@ -25,10 +32,10 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     jobId,
     rerunPdOnNewDemographics = true,
     dryrun = false,
-  }: Omit<StartImportRequest, "processFileLambda">): Promise<void> {
+  }: StartImportRequest): Promise<void> {
     if (!patientImportBucket) throw new Error("patientImportBucket not setup");
     const jobStartedAt = new Date().toISOString();
-    const processFileRequest: Omit<ProcessFileRequest, "processPatientCreateQueue"> = {
+    const processFileRequest: ProcessFileRequestLocal = {
       cxId,
       facilityId,
       jobId,
@@ -37,7 +44,8 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
       rerunPdOnNewDemographics,
       dryrun,
     };
-    await this.processFile(processFileRequest);
+    const boundProcessFile = this.processFile.bind(this);
+    await boundProcessFile(processFileRequest);
   }
 
   async processFile({
@@ -48,7 +56,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     s3BucketName,
     rerunPdOnNewDemographics,
     dryrun,
-  }: Omit<ProcessFileRequest, "processPatientCreateQueue">): Promise<void> {
+  }: ProcessFileRequestLocal): Promise<void> {
     if (!patientImportBucket) throw new Error("patientImportBucket not setup");
     await createJobRecord({
       cxId,
@@ -62,21 +70,21 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
       s3BucketName,
     });
     if (dryrun) return;
-    const processPatientCreateRequests: Omit<
-      ProcessPatientCreateRequest,
-      "processPatientQueryQueue"
-    >[] = patients.map(patient => {
-      const patientPayload = createPatientPayload(patient);
-      return {
-        cxId,
-        facilityId,
-        jobId,
-        patientPayload,
-        s3BucketName: patientImportBucket,
-        rerunPdOnNewDemographics,
-      };
-    });
-    await executeAsynchronously(processPatientCreateRequests, this.processPatientCreate, {
+    const processPatientCreateRequests: ProcessPatientCreateRequestLocal[] = patients.map(
+      patient => {
+        const patientPayload = createPatientPayload(patient);
+        return {
+          cxId,
+          facilityId,
+          jobId,
+          patientPayload,
+          s3BucketName: patientImportBucket,
+          rerunPdOnNewDemographics,
+        };
+      }
+    );
+    const boundProcessPatientCreate = this.processPatientCreate.bind(this);
+    await executeAsynchronously(processPatientCreateRequests, boundProcessPatientCreate, {
       numberOfParallelExecutions: 10,
     });
   }
@@ -88,7 +96,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     patientPayload,
     s3BucketName,
     rerunPdOnNewDemographics,
-  }: Omit<ProcessPatientCreateRequest, "processPatientQueryQueue">): Promise<void> {
+  }: ProcessPatientCreateRequestLocal): Promise<void> {
     if (!patientImportBucket) throw new Error("patientImportBucket not setup");
     const patientId = await createPatient({
       cxId,
@@ -123,7 +131,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     patientId,
     s3BucketName,
     rerunPdOnNewDemographics,
-  }: Omit<ProcessPatientQueryRequest, "waitTimeInMillis">) {
+  }: ProcessPatientQueryRequestLocal) {
     await startPatientQuery({
       cxId,
       patientId,

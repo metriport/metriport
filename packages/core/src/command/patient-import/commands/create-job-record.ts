@@ -40,6 +40,7 @@ export async function createJobRecord({
       extra: {
         cxId,
         jobId,
+        key,
         context: "patient-import.create-job-record",
         error,
       },

@@ -21,7 +21,7 @@ export async function createPatient({
     const response = await api.post(patientUrl, patientPayload);
     if (!response.data) throw new Error(`No body returned from ${patientUrl}`);
     debug(`${patientUrl} resp: ${JSON.stringify(response.data)}`);
-    return patientCreateResponseSchema.parse(response).id;
+    return patientCreateResponseSchema.parse(response.data).id;
   } catch (error) {
     const msg = `Failure while creating patient @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
@@ -29,6 +29,7 @@ export async function createPatient({
       extra: {
         url: patientUrl,
         cxId,
+        facilityId,
         context: "patient-import.create-patient",
         error,
       },

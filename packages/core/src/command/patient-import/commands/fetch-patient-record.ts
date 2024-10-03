@@ -39,6 +39,7 @@ export async function fetchPatientRecord({
         cxId,
         jobId,
         patientId,
+        key,
         context: "patient-import.fetch-patient-record",
         error,
       },

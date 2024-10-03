@@ -24,7 +24,17 @@ const region = Config.getAWSRegion();
 const lambdaClient = makeLambdaClient(region);
 const sqsClient = new SQSClient({ region });
 
-export class PatientImportHandlerLambda implements PatientImportHandler {
+type ProcessFileRequestCloud = Omit<
+  ProcessFileRequest,
+  "jobStartedAt" | "s3BucketName" | "processPatientCreateQueue"
+>;
+type ProcessPatientCreateRequestCloud = Omit<
+  ProcessPatientCreateRequest,
+  "s3BucketName" | "processPatientQueryQueue"
+>;
+type ProcessPatientQueryRequestCloud = Omit<ProcessPatientQueryRequest, "waitTimeInMillis">;
+
+export class PatientImportHandlerCloud implements PatientImportHandler {
   async startImport({
     cxId,
     facilityId,
@@ -33,10 +43,7 @@ export class PatientImportHandlerLambda implements PatientImportHandler {
     rerunPdOnNewDemographics = true,
     dryrun = false,
   }: StartImportRequest): Promise<void> {
-    const processFileRequest: Omit<
-      ProcessFileRequest,
-      "jobStartedAt" | "s3BucketName" | "processPatientCreateQueue"
-    > = {
+    const processFileRequest: ProcessFileRequestCloud = {
       cxId,
       facilityId,
       jobId,
@@ -74,10 +81,7 @@ export class PatientImportHandlerLambda implements PatientImportHandler {
     if (dryrun) return;
     patients.map(patient => {
       const patientPayload = createPatientPayload(patient);
-      const processPatientCreateRequest: Omit<
-        ProcessPatientCreateRequest,
-        "s3BucketName" | "processPatientQueryQueue"
-      > = {
+      const processPatientCreateRequest: ProcessPatientCreateRequestCloud = {
         cxId,
         facilityId,
         jobId,
@@ -123,7 +127,7 @@ export class PatientImportHandlerLambda implements PatientImportHandler {
       patientId,
       s3BucketName,
     });
-    const processPatientQueryRequest: Omit<ProcessPatientQueryRequest, "waitTimeInMillis"> = {
+    const processPatientQueryRequest: ProcessPatientQueryRequestCloud = {
       cxId,
       jobId,
       patientId,

@@ -23,7 +23,7 @@ export async function checkPatientRecord({
   s3BucketName: string;
 }): Promise<boolean> {
   const { log } = out(
-    `PatientImport check or upload record - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
+    `PatientImport check patient record - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
   );
   const s3Utils = getS3UtilsInstance();
   const key = createFileKeyPatient(cxId, jobId, patientId);
@@ -38,6 +38,7 @@ export async function checkPatientRecord({
         cxId,
         jobId,
         patientId,
+        key,
         context: "patient-import.check-patient-record",
         error,
       },

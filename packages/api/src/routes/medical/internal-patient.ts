@@ -981,8 +981,8 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getFrom("query").orFail("facilityId", req);
     const jobId = getFrom("query").orFail("jobId", req);
-    const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req) ?? true;
-    const dryrun = getFromQueryAsBoolean("dryrun", req) ?? false;
+    const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
+    const dryrun = getFromQueryAsBoolean("dryrun", req);
 
     const patientImportConnector = makePatientImportHandler();
     patientImportConnector
@@ -990,7 +990,7 @@ router.post(
         cxId,
         facilityId,
         jobId,
-        processFileLambda: "local",
+        processFileLambda: "local", // TODO
         dryrun,
         rerunPdOnNewDemographics,
       })
