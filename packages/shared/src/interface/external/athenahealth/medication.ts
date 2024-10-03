@@ -1,9 +1,9 @@
 import { z } from "zod";
 
 export const medicationCreateResponseSchema = z.object({
-  success: z.string(),
+  success: z.boolean(),
   errormessage: z.string().optional(),
-  medicationentryid: z.number().optional(),
+  medicationentryid: z.string().optional(),
 });
 export type MedicationCreateResponse = z.infer<typeof medicationCreateResponseSchema>;
 
