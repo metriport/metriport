@@ -11,8 +11,8 @@ import { createPatient } from "./commands/create-patient";
 import { startPatientQuery } from "./commands/start-patient-query";
 import {
   PatientImportHandler,
-  StartImportRequest,
-  ProcessFileRequest,
+  StartPatientImportRequest,
+  ProcessPatientImportRequest,
   ProcessPatientCreateRequest,
   ProcessPatientQueryRequest,
 } from "./patient-import";
@@ -24,8 +24,8 @@ const region = Config.getAWSRegion();
 const lambdaClient = makeLambdaClient(region);
 const sqsClient = new SQSClient({ region });
 
-type ProcessFileRequestCloud = Omit<
-  ProcessFileRequest,
+type ProcessPatientImportRequestCloud = Omit<
+  ProcessPatientImportRequest,
   "jobStartedAt" | "s3BucketName" | "processPatientCreateQueue"
 >;
 type ProcessPatientCreateRequestCloud = Omit<
@@ -38,15 +38,15 @@ type ProcessPatientQueryRequestCloud = Omit<
 >;
 
 export class PatientImportHandlerCloud implements PatientImportHandler {
-  async startImport({
+  async startPatientImport({
     cxId,
     facilityId,
     jobId,
-    processFileLambda,
+    processPatientImportLambda,
     rerunPdOnNewDemographics = true,
     dryrun = false,
-  }: StartImportRequest): Promise<void> {
-    const processFileRequest: ProcessFileRequestCloud = {
+  }: StartPatientImportRequest): Promise<void> {
+    const processPatientImportRequest: ProcessPatientImportRequestCloud = {
       cxId,
       facilityId,
       jobId,
@@ -54,13 +54,13 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
       dryrun,
     };
     lambdaClient.invoke({
-      FunctionName: processFileLambda,
+      FunctionName: processPatientImportLambda,
       InvocationType: "Event",
-      Payload: JSON.stringify(processFileRequest),
+      Payload: JSON.stringify(processPatientImportRequest),
     });
   }
 
-  async processFile({
+  async processPatientImport({
     cxId,
     facilityId,
     jobId,
@@ -69,7 +69,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
     processPatientCreateQueue,
     rerunPdOnNewDemographics,
     dryrun,
-  }: ProcessFileRequest): Promise<void> {
+  }: ProcessPatientImportRequest): Promise<void> {
     await createJobRecord({
       cxId,
       jobId,

@@ -9,8 +9,8 @@ import { createPatient } from "./commands/create-patient";
 import { startPatientQuery } from "./commands/start-patient-query";
 import {
   PatientImportHandler,
-  StartImportRequest,
-  ProcessFileRequest,
+  StartPatientImportRequest,
+  ProcessPatientImportRequest,
   ProcessPatientCreateRequest,
   ProcessPatientQueryRequest,
 } from "./patient-import";
@@ -20,16 +20,16 @@ import { Config } from "../../util/config";
 const patientImportBucket = Config.getPatientImportBucket();
 
 export class PatientImportHandlerLocal implements PatientImportHandler {
-  async startImport({
+  async startPatientImport({
     cxId,
     facilityId,
     jobId,
     rerunPdOnNewDemographics = true,
     dryrun = false,
-  }: StartImportRequest): Promise<void> {
+  }: StartPatientImportRequest): Promise<void> {
     if (!patientImportBucket) throw new Error("patientImportBucket not setup");
     const jobStartedAt = new Date().toISOString();
-    const processFileRequest: ProcessFileRequest = {
+    const processPatientImportRequest: ProcessPatientImportRequest = {
       cxId,
       facilityId,
       jobId,
@@ -39,11 +39,11 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
       rerunPdOnNewDemographics,
       dryrun,
     };
-    const boundProcessFile = this.processFile.bind(this);
-    await boundProcessFile(processFileRequest);
+    const boundProcessPatientImport = this.processPatientImport.bind(this);
+    await boundProcessPatientImport(processPatientImportRequest);
   }
 
-  async processFile({
+  async processPatientImport({
     cxId,
     facilityId,
     jobId,
@@ -51,7 +51,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     s3BucketName,
     rerunPdOnNewDemographics,
     dryrun,
-  }: ProcessFileRequest): Promise<void> {
+  }: ProcessPatientImportRequest): Promise<void> {
     if (!patientImportBucket) throw new Error("patientImportBucket not setup");
     await createJobRecord({
       cxId,

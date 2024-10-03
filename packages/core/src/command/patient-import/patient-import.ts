@@ -19,16 +19,16 @@ export type JobRecord = {
 
 export type JobRecordUpdate = JobRecord;
 
-export type StartImportRequest = {
+export type StartPatientImportRequest = {
   cxId: string;
   facilityId: string;
   jobId: string;
-  processFileLambda: string;
+  processPatientImportLambda: string;
   rerunPdOnNewDemographics?: boolean;
   dryrun?: boolean;
 };
 
-export type ProcessFileRequest = {
+export type ProcessPatientImportRequest = {
   cxId: string;
   facilityId: string;
   jobId: string;
@@ -61,8 +61,8 @@ export type ProcessPatientQueryRequest = {
 };
 
 export interface PatientImportHandler {
-  startImport(request: StartImportRequest): Promise<void>;
-  processFile(request: ProcessFileRequest): Promise<void>;
+  startPatientImport(request: StartPatientImportRequest): Promise<void>;
+  processPatientImport(request: ProcessPatientImportRequest): Promise<void>;
   processPatientCreate(request: ProcessPatientCreateRequest): Promise<void>;
   processPatientQuery(request: ProcessPatientQueryRequest): Promise<void>;
 }

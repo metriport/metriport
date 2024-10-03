@@ -51,7 +51,6 @@ export async function validateAndParsePatientImportCsv({
     const invalidRows: rowError[] = [];
     const patients = rows.flatMap((row, rowIndex) => {
       const rowColumns = stripEol(row).split(",");
-      console.log(rowColumns);
       if (rowColumns.length !== headers.length) {
         invalidRows.push({
           rowColumns,
@@ -71,7 +70,6 @@ export async function validateAndParsePatientImportCsv({
       validRows.push(rowColumns);
       return parsedPatient.data;
     });
-    console.log(invalidRows);
     await Promise.all([
       validRows.length > 0
         ? creatValidationFile({

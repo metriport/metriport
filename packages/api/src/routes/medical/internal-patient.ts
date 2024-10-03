@@ -69,6 +69,7 @@ import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-upda
 import { getCqOrgIdsToDenyOnCw } from "../../external/hie/cross-hie-ids";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../../external/hie/run-or-schedule-patient-discovery";
 import { PatientLoaderLocal } from "../../models/helpers/patient-loader-local";
+import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
 import { requestLogger } from "../helpers/request-logger";
@@ -986,11 +987,11 @@ router.post(
 
     const patientImportConnector = makePatientImportHandler();
     patientImportConnector
-      .startImport({
+      .startPatientImport({
         cxId,
         facilityId,
         jobId,
-        processFileLambda: "local", // TODO
+        processPatientImportLambda: Config.getPatientImportLambdaName(),
         dryrun,
         rerunPdOnNewDemographics,
       })
