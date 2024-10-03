@@ -11,31 +11,35 @@ import {
 } from "@metriport/shared";
 import { PatientPayload } from "./patient-import";
 
-export function createFilePathPatientImport(
-  cxId: string,
-  jobId: string,
-  patientId: string
-): string {
-  return `${cxId}/${jobId}/${patientId}.json`;
+const globalPrefix = "patient-import";
+
+export function createCxJobPrefix(cxId: string, jobId: string): string {
+  return `cxid=${cxId}/jobid=${jobId}`;
 }
 
-export function createFileKey(cxId: string, jobId: string, patientId: string): string {
-  const fileName = createFilePathPatientImport(cxId, jobId, patientId);
-  const key = `patient-import/${fileName}`;
+export function createFileKeyJob(cxId: string, jobId: string): string {
+  return `${createCxJobPrefix(cxId, jobId)}/status.json}`;
+}
+
+export function createFilePathPatients(cxId: string, jobId: string, patientId: string): string {
+  return `${createCxJobPrefix(cxId, jobId)}/patients/patientid=${patientId}/status.json`;
+}
+
+export function createFileKeyPatient(cxId: string, jobId: string, patientId: string): string {
+  const fileName = createFilePathPatients(cxId, jobId, patientId);
+  const key = `${globalPrefix}/${fileName}`;
   return key;
 }
 
-export function createFilePathPatientImportHistory(
-  cxId: string,
-  inputFileName: string,
-  jobId: string
-): string {
-  return `${cxId}/${inputFileName}/${jobId}.json`;
+export type FileStages = "raw" | "valid" | "invalid";
+
+export function createFilePathFiles(cxId: string, jobId: string, stage: FileStages): string {
+  return `${createCxJobPrefix(cxId, jobId)}/files/${stage}.csv`;
 }
 
-export function createHistoryFileKey(cxId: string, inputFileName: string, jobId: string): string {
-  const fileName = createFilePathPatientImportHistory(cxId, inputFileName, jobId);
-  const key = `patient-import/${fileName}`;
+export function createFileKeyFiles(cxId: string, jobId: string, stage: FileStages): string {
+  const fileName = createFilePathFiles(cxId, jobId, stage);
+  const key = `${globalPrefix}/${fileName}`;
   return key;
 }
 

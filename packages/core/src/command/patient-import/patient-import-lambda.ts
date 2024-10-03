@@ -1,29 +1,25 @@
 import { sleep } from "@metriport/shared";
-import { uuidv4 } from "../../util/uuid-v7";
+import { uuidv7 } from "../../util/uuid-v7";
 import { makeLambdaClient } from "../../external/aws/lambda";
 import { SQSClient } from "../../external/aws/sqs";
-import { creatUploadHistory } from "./commands/create-upload-history";
-import { getValidPatientsFromImport } from "./commands/validate-and-parse-import";
-import { checkUploadRecord } from "./commands/check-upload-record";
-import { creatOrUpdateUploadRecord } from "./commands/create-or-update-upload-record";
+import { createJobRecord } from "./commands/create-job-record";
+import { validateAndParsePatientImportCsv } from "./commands/validate-and-parse-import";
+import { checkPatientRecord } from "./commands/check-patient-record";
+import { creatOrUpdatePatientRecord } from "./commands/create-or-update-patient-record";
 import { startDocumentQuery } from "./commands/start-document-query";
 import { createPatient } from "./commands/create-patient";
-import { startPatientDiscovery } from "./commands/start-patient-discovery";
+import { startPatientQuery } from "./commands/start-patient-query";
 import {
   PatientImportHandler,
   StartImportRequest,
   ProcessFileRequest,
   ProcessPatientCreateRequest,
-  ProcessPatientDiscoveryRequest,
+  ProcessPatientQueryRequest,
 } from "./patient-import";
 import { createPatientPayload } from "./patient-import-shared";
 import { Config } from "../../util/config";
 
 const region = Config.getAWSRegion();
-const patientImportBucket = Config.getPatientImportBucket();
-const startPatientImportLambda = Config.getStartPatientImportLamda();
-const processPatientCreateLambda = Config.getProcessPatientCreateLamda();
-const processPatientDiscoveryQueue = Config.getProcessPatientDiscoveryQueueUrl();
 
 const lambdaClient = makeLambdaClient(region);
 const sqsClient = new SQSClient({ region });
@@ -32,33 +28,25 @@ export class PatientImportHandlerLambda implements PatientImportHandler {
   async startImport({
     cxId,
     facilityId,
-    s3BucketName,
-    s3FileName,
-    dryrun = false,
+    jobId,
+    processFileLambda,
     rerunPdOnNewDemographics = true,
+    dryrun = false,
   }: StartImportRequest): Promise<void> {
-    if (!startPatientImportLambda) throw new Error("Start patient import lambda not setup.");
-    if (!patientImportBucket) throw new Error("Patient import bucket not setup.");
-    const jobId = uuidv4();
-    await creatUploadHistory({
+    const processFileRequest: Omit<
+      ProcessFileRequest,
+      "jobStartedAt" | "s3BucketName" | "processPatientCreateQueue"
+    > = {
       cxId,
+      facilityId,
       jobId,
-      patientImportBucket,
-      s3FileName,
-    });
+      rerunPdOnNewDemographics,
+      dryrun,
+    };
     lambdaClient.invoke({
-      FunctionName: startPatientImportLambda,
+      FunctionName: processFileLambda,
       InvocationType: "Event",
-      Payload: JSON.stringify({
-        cxId,
-        facilityId,
-        jobId,
-        s3BucketName,
-        s3FileName,
-        fileType: "csv", // TODO Parse extension
-        dryrun,
-        rerunPdOnNewDemographics,
-      }),
+      Payload: JSON.stringify(processFileRequest),
     });
   }
 
@@ -66,31 +54,45 @@ export class PatientImportHandlerLambda implements PatientImportHandler {
     cxId,
     facilityId,
     jobId,
+    jobStartedAt,
     s3BucketName,
-    s3FileName,
-    fileType,
-    dryrun,
+    processPatientCreateQueue,
     rerunPdOnNewDemographics,
+    dryrun,
   }: ProcessFileRequest): Promise<void> {
-    if (!processPatientCreateLambda) throw new Error("Process patient create lambda not setup.");
-    if (!patientImportBucket) throw new Error("Patient import bucket not setup.");
-    const patients = await getValidPatientsFromImport({ s3BucketName, s3FileName, fileType });
+    await createJobRecord({
+      cxId,
+      jobId,
+      data: { jobStartedAt },
+      s3BucketName,
+    });
+    const patients = await validateAndParsePatientImportCsv({
+      cxId,
+      jobId,
+      s3BucketName,
+    });
     if (dryrun) return;
     patients.map(patient => {
       const patientPayload = createPatientPayload(patient);
-      const processPatientCreateRequest: ProcessPatientCreateRequest = {
+      const processPatientCreateRequest: Omit<
+        ProcessPatientCreateRequest,
+        "s3BucketName" | "processPatientQueryQueue"
+      > = {
         cxId,
         facilityId,
         jobId,
         patientPayload,
-        patientImportBucket,
         rerunPdOnNewDemographics,
       };
-      lambdaClient.invoke({
-        FunctionName: processPatientCreateLambda,
-        InvocationType: "Event",
-        Payload: JSON.stringify(processPatientCreateRequest),
-      });
+      sqsClient.sendMessageToQueue(
+        processPatientCreateQueue,
+        JSON.stringify(processPatientCreateRequest),
+        {
+          fifo: true,
+          messageDeduplicationId: uuidv7(),
+          messageGroupId: cxId,
+        }
+      );
     });
   }
 
@@ -99,39 +101,38 @@ export class PatientImportHandlerLambda implements PatientImportHandler {
     facilityId,
     jobId,
     patientPayload,
-    patientImportBucket,
+    s3BucketName,
+    processPatientQueryQueue,
     rerunPdOnNewDemographics,
   }: ProcessPatientCreateRequest): Promise<void> {
-    if (!processPatientDiscoveryQueue)
-      throw new Error("Process patient discovery queue lambda not setup.");
     const patientId = await createPatient({
       cxId,
       facilityId,
       patientPayload,
     });
-    const patientAlreadyProcessed = await checkUploadRecord({
+    const patientAlreadyProcessed = await checkPatientRecord({
       cxId,
       jobId,
       patientId,
-      patientImportBucket,
+      s3BucketName,
     });
     if (patientAlreadyProcessed) return;
-    await creatOrUpdateUploadRecord({
+    await creatOrUpdatePatientRecord({
       cxId,
       jobId,
       patientId,
-      patientImportBucket,
+      s3BucketName,
     });
-    const processPatientDiscoveryRequest: ProcessPatientDiscoveryRequest = {
+    const processPatientQueryRequest: Omit<ProcessPatientQueryRequest, "waitTimeInMillis"> = {
       cxId,
       jobId,
       patientId,
-      patientImportBucket,
+      s3BucketName,
       rerunPdOnNewDemographics,
     };
-    await sqsClient.sendMessageToQueue(
-      processPatientDiscoveryQueue,
-      JSON.stringify(processPatientDiscoveryRequest),
+    sqsClient.sendMessageToQueue(
+      processPatientQueryQueue,
+      JSON.stringify(processPatientQueryRequest),
       {
         fifo: true,
         messageDeduplicationId: patientId,
@@ -140,15 +141,15 @@ export class PatientImportHandlerLambda implements PatientImportHandler {
     );
   }
 
-  async processPatientDiscovery({
+  async processPatientQuery({
     cxId,
     jobId,
     patientId,
-    patientImportBucket,
+    s3BucketName,
     rerunPdOnNewDemographics,
-    timeout,
-  }: ProcessPatientDiscoveryRequest) {
-    await startPatientDiscovery({
+    waitTimeInMillis,
+  }: ProcessPatientQueryRequest) {
+    await startPatientQuery({
       cxId,
       patientId,
       rerunPdOnNewDemographics,
@@ -157,13 +158,13 @@ export class PatientImportHandlerLambda implements PatientImportHandler {
       cxId,
       patientId,
     });
-    await creatOrUpdateUploadRecord({
+    await creatOrUpdatePatientRecord({
       cxId,
       jobId,
       patientId,
-      data: { patientDiscoveryStatus: "processing" },
-      patientImportBucket,
+      data: { patientQueryStatus: "processing" },
+      s3BucketName,
     });
-    if (timeout) sleep(timeout);
+    if (waitTimeInMillis > 0) sleep(waitTimeInMillis);
   }
 }

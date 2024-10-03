@@ -980,19 +980,17 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getFrom("query").orFail("facilityId", req);
+    const jobId = getFrom("query").orFail("jobId", req);
     const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req) ?? true;
     const dryrun = getFromQueryAsBoolean("dryrun", req) ?? false;
-
-    const s3BucketName = getFrom("query").orFail("s3BucketName", req);
-    const s3FileName = getFrom("query").orFail("s3FileName", req);
 
     const patientImportConnector = makePatientImportHandler();
     patientImportConnector
       .startImport({
         cxId,
         facilityId,
-        s3BucketName,
-        s3FileName,
+        jobId,
+        processFileLambda: "local",
         dryrun,
         rerunPdOnNewDemographics,
       })

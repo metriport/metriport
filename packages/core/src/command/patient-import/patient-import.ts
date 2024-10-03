@@ -2,22 +2,28 @@ import { PatientDemoData } from "../../domain/patient";
 
 export type PhaseStatus = "processing" | "completed" | "failed";
 
-export type UploadRecord = {
+export type PatientRecord = {
   patientId: string;
-  patientDiscoveryStatus?: PhaseStatus;
+  patientQueryStatus?: PhaseStatus;
   documentQueryStatus?: PhaseStatus;
   documentRetrevialStatus?: PhaseStatus;
   documentConversionStatus?: PhaseStatus;
   cleanUpStatus?: PhaseStatus;
 };
 
-export type UploadRecordUpdate = Omit<UploadRecord, "patientId">;
+export type PatientRecordUpdate = Omit<PatientRecord, "patientId">;
+
+export type JobRecord = {
+  jobStartedAt: string;
+};
+
+export type JobRecordUpdate = JobRecord;
 
 export type StartImportRequest = {
   cxId: string;
   facilityId: string;
-  s3BucketName: string;
-  s3FileName: string;
+  jobId: string;
+  processFileLambda: string;
   rerunPdOnNewDemographics?: boolean;
   dryrun?: boolean;
 };
@@ -26,9 +32,9 @@ export type ProcessFileRequest = {
   cxId: string;
   facilityId: string;
   jobId: string;
+  jobStartedAt: string;
   s3BucketName: string;
-  s3FileName: string;
-  fileType: "csv";
+  processPatientCreateQueue: string;
   rerunPdOnNewDemographics: boolean;
   dryrun: boolean;
 };
@@ -40,22 +46,23 @@ export type ProcessPatientCreateRequest = {
   facilityId: string;
   jobId: string;
   patientPayload: PatientPayload;
-  patientImportBucket: string;
+  s3BucketName: string;
+  processPatientQueryQueue: string;
   rerunPdOnNewDemographics: boolean;
 };
 
-export type ProcessPatientDiscoveryRequest = {
+export type ProcessPatientQueryRequest = {
   cxId: string;
   jobId: string;
   patientId: string;
-  patientImportBucket: string;
+  s3BucketName: string;
   rerunPdOnNewDemographics: boolean;
-  timeout?: number;
+  waitTimeInMillis: number;
 };
 
 export interface PatientImportHandler {
   startImport(request: StartImportRequest): Promise<void>;
   processFile(request: ProcessFileRequest): Promise<void>;
   processPatientCreate(request: ProcessPatientCreateRequest): Promise<void>;
-  processPatientDiscovery(request: ProcessPatientDiscoveryRequest): Promise<void>;
+  processPatientQuery(request: ProcessPatientQueryRequest): Promise<void>;
 }

@@ -1,18 +1,17 @@
-import { uuidv4 } from "../../util/uuid-v7";
 import { executeAsynchronously } from "../../util/concurrency";
-import { creatUploadHistory } from "./commands/create-upload-history";
-import { getValidPatientsFromImport } from "./commands/validate-and-parse-import";
-import { checkUploadRecord } from "./commands/check-upload-record";
-import { creatOrUpdateUploadRecord } from "./commands/create-or-update-upload-record";
+import { createJobRecord } from "./commands/create-job-record";
+import { validateAndParsePatientImportCsv } from "./commands/validate-and-parse-import";
+import { checkPatientRecord } from "./commands/check-patient-record";
+import { creatOrUpdatePatientRecord } from "./commands/create-or-update-patient-record";
 import { startDocumentQuery } from "./commands/start-document-query";
 import { createPatient } from "./commands/create-patient";
-import { startPatientDiscovery } from "./commands/start-patient-discovery";
+import { startPatientQuery } from "./commands/start-patient-query";
 import {
   PatientImportHandler,
   StartImportRequest,
   ProcessFileRequest,
   ProcessPatientCreateRequest,
-  ProcessPatientDiscoveryRequest,
+  ProcessPatientQueryRequest,
 } from "./patient-import";
 import { createPatientPayload } from "./patient-import-shared";
 import { Config } from "../../util/config";
@@ -23,52 +22,57 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
   async startImport({
     cxId,
     facilityId,
-    s3BucketName,
-    s3FileName,
-    dryrun = false,
+    jobId,
     rerunPdOnNewDemographics = true,
-  }: StartImportRequest): Promise<void> {
-    if (!patientImportBucket) throw new Error("Patient import bucket not setup.");
-    const jobId = uuidv4();
-    await creatUploadHistory({
-      cxId,
-      jobId,
-      patientImportBucket,
-      s3FileName,
-    });
-    await this.processFile({
+    dryrun = false,
+  }: Omit<StartImportRequest, "processFileLambda">): Promise<void> {
+    if (!patientImportBucket) throw new Error("patientImportBucket not setup");
+    const jobStartedAt = new Date().toISOString();
+    const processFileRequest: Omit<ProcessFileRequest, "processPatientCreateQueue"> = {
       cxId,
       facilityId,
       jobId,
-      s3BucketName,
-      s3FileName,
-      fileType: "csv", // TODO Parse extension
-      dryrun,
+      jobStartedAt,
+      s3BucketName: patientImportBucket,
       rerunPdOnNewDemographics,
-    });
+      dryrun,
+    };
+    await this.processFile(processFileRequest);
   }
 
   async processFile({
     cxId,
     facilityId,
     jobId,
+    jobStartedAt,
     s3BucketName,
-    s3FileName,
-    fileType,
-    dryrun,
     rerunPdOnNewDemographics,
-  }: ProcessFileRequest): Promise<void> {
-    if (!patientImportBucket) throw new Error("Patient import bucket not setup.");
-    const patients = await getValidPatientsFromImport({ s3BucketName, s3FileName, fileType });
+    dryrun,
+  }: Omit<ProcessFileRequest, "processPatientCreateQueue">): Promise<void> {
+    if (!patientImportBucket) throw new Error("patientImportBucket not setup");
+    await createJobRecord({
+      cxId,
+      jobId,
+      data: { jobStartedAt },
+      s3BucketName,
+    });
+    const patients = await validateAndParsePatientImportCsv({
+      cxId,
+      jobId,
+      s3BucketName,
+    });
     if (dryrun) return;
-    const processPatientCreateRequests: ProcessPatientCreateRequest[] = patients.map(patient => {
+    const processPatientCreateRequests: Omit<
+      ProcessPatientCreateRequest,
+      "processPatientQueryQueue"
+    >[] = patients.map(patient => {
       const patientPayload = createPatientPayload(patient);
       return {
         cxId,
         facilityId,
         jobId,
         patientPayload,
-        patientImportBucket,
+        s3BucketName: patientImportBucket,
         rerunPdOnNewDemographics,
       };
     });
@@ -82,44 +86,45 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     facilityId,
     jobId,
     patientPayload,
-    patientImportBucket,
+    s3BucketName,
     rerunPdOnNewDemographics,
-  }: ProcessPatientCreateRequest): Promise<void> {
+  }: Omit<ProcessPatientCreateRequest, "processPatientQueryQueue">): Promise<void> {
+    if (!patientImportBucket) throw new Error("patientImportBucket not setup");
     const patientId = await createPatient({
       cxId,
       facilityId,
       patientPayload,
     });
-    const patientAlreadyProcessed = await checkUploadRecord({
+    const patientAlreadyProcessed = await checkPatientRecord({
       cxId,
       jobId,
       patientId,
-      patientImportBucket,
+      s3BucketName,
     });
     if (patientAlreadyProcessed) return;
-    await creatOrUpdateUploadRecord({
+    await creatOrUpdatePatientRecord({
       cxId,
       jobId,
       patientId,
-      patientImportBucket,
+      s3BucketName,
     });
-    await this.processPatientDiscovery({
+    await this.processPatientQuery({
       cxId,
       jobId,
       patientId,
-      patientImportBucket,
+      s3BucketName: patientImportBucket,
       rerunPdOnNewDemographics,
     });
   }
 
-  async processPatientDiscovery({
+  async processPatientQuery({
     cxId,
     jobId,
     patientId,
-    patientImportBucket,
+    s3BucketName,
     rerunPdOnNewDemographics,
-  }: ProcessPatientDiscoveryRequest) {
-    await startPatientDiscovery({
+  }: Omit<ProcessPatientQueryRequest, "waitTimeInMillis">) {
+    await startPatientQuery({
       cxId,
       patientId,
       rerunPdOnNewDemographics,
@@ -128,12 +133,12 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
       cxId,
       patientId,
     });
-    await creatOrUpdateUploadRecord({
+    await creatOrUpdatePatientRecord({
       cxId,
       jobId,
       patientId,
-      data: { patientDiscoveryStatus: "processing" },
-      patientImportBucket,
+      data: { patientQueryStatus: "processing" },
+      s3BucketName,
     });
   }
 }

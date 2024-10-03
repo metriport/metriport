@@ -150,16 +150,4 @@ export class Config {
   static getPatientImportBucket(): string | undefined {
     return getEnvVar("PATIENT_IMPORT_BUCKET_NAME");
   }
-
-  static getStartPatientImportLamda(): string | undefined {
-    return getEnvVar("START_PATIENT_IMPORT_LAMBDA_NAME");
-  }
-
-  static getProcessPatientCreateLamda(): string | undefined {
-    return getEnvVar("PROCESS_PATIENT_CREATE_LAMBDA_NAME");
-  }
-
-  static getProcessPatientDiscoveryQueueUrl(): string | undefined {
-    return getEnvVar("PROCESS_ATIENT_DISCOVERY_QUEUE_URL");
-  }
 }
