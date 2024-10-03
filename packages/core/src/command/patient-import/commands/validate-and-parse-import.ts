@@ -19,7 +19,10 @@ function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
-type rowError = { row: string; error: string };
+type rowError = { rowColumns: string[]; error: string };
+
+const eolRegex = new RegExp(/\r/g);
+const commaRegex = new RegExp(/,/g);
 
 export async function validateAndParsePatientImportCsv({
   cxId,
@@ -38,20 +41,21 @@ export async function validateAndParsePatientImportCsv({
     const allRows = csvAsString.split("\n");
     const headersRow = allRows[0];
     if (!headersRow) throw new Error(`File is empty for ${key}`);
-    const headers = normalizeHeaders(headersRow.split(","));
+    const headers = normalizeHeaders(stripEol(headersRow).split(","));
     if (!compareCsvHeaders(PatientImportCsvHeaders, headers)) {
       throw new Error(`Headers are invalid for ${key}`);
     }
     const rows = allRows.slice(1);
     if (rows.length === 0) throw new Error(`File is empty except for headers for ${key}`);
-    const validRows: string[] = [];
+    const validRows: string[][] = [];
     const invalidRows: rowError[] = [];
     const patients = rows.flatMap((row, rowIndex) => {
-      const rowColumns = row.split(",");
+      const rowColumns = stripEol(row).split(",");
+      console.log(rowColumns);
       if (rowColumns.length !== headers.length) {
         invalidRows.push({
-          row,
-          error: `Row ${rowIndex} did not split into correct number of columns.`,
+          rowColumns,
+          error: `Row ${rowIndex} did not split into correct number of columns`,
         });
         return [];
       }
@@ -59,24 +63,22 @@ export async function validateAndParsePatientImportCsv({
       const parsedPatient = patientImportPatientSchema.safeParse(patientObject);
       if (!parsedPatient.success) {
         invalidRows.push({
-          row,
-          error: `Row ${rowIndex} had zod error ${errorToString(parsedPatient.error).replace(
-            "\n",
-            ""
-          )}`,
+          rowColumns,
+          error: `Row ${rowIndex} had zod error ${JSON.stringify(parsedPatient.error)}`,
         });
         return [];
       }
-      validRows.push(row);
+      validRows.push(rowColumns);
       return parsedPatient.data;
     });
+    console.log(invalidRows);
     await Promise.all([
       validRows.length > 0
         ? creatValidationFile({
             cxId,
             jobId,
             stage: "valid",
-            rows: [headers.join(","), ...validRows],
+            rows: [headers.join(","), ...validRows.map(rowColumn => rowColumn.join(","))],
             s3BucketName,
           })
         : async () => Promise<void>,
@@ -86,8 +88,8 @@ export async function validateAndParsePatientImportCsv({
             jobId,
             stage: "invalid",
             rows: [
-              `${headers.join(",")},error`,
-              ...invalidRows.map(row => `${row.row},${row.error}`),
+              [...headers, "error"].join(","),
+              ...invalidRows.map(row => [...row.rowColumns, stripCommas(row.error)].join(",")),
             ],
             s3BucketName,
           })
@@ -108,4 +110,12 @@ export async function validateAndParsePatientImportCsv({
     });
     throw error;
   }
+}
+
+function stripEol(input: string, replacement = "") {
+  return input.replace(eolRegex, replacement);
+}
+
+function stripCommas(input: string, replacement = "") {
+  return input.replace(commaRegex, replacement);
 }
