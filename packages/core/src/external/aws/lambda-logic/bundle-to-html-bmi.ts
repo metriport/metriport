@@ -54,7 +54,6 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
   }
 
   const { bmiSection, bmiChartData } = createBmiFromObservationVitalsSection(observationVitals);
-
   const htmlPage = `
     <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
     <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
@@ -610,21 +609,25 @@ function createBmiFromObservationVitalsSection(observations: Observation[]): {
     return aDate === bDate && aText === bText;
   });
 
+  if (removeDuplicate.length === 0) {
+    return {
+      bmiSection: createBmiSection(
+        "BMI History",
+        `<table><tbody><tr><td>No BMI readings found</td></tr></tbody></table>`,
+        false
+      ),
+      bmiChartData: { labels: [], data: [] },
+    };
+  }
   const { tableContent, chartData } = createVitalsByDate(removeDuplicate);
-  const observationTableContents =
-    removeDuplicate.length > 0
-      ? tableContent
-      : `        <table>
-      <tbody><tr><td>No observation info found</td></tr></tbody>        </table>
-      `;
 
   return {
-    bmiSection: createBmiSection("BMI History", observationTableContents),
+    bmiSection: createBmiSection("BMI History", tableContent, true),
     bmiChartData: chartData,
   };
 }
 
-function createBmiSection(title: string, tableContents: string) {
+function createBmiSection(title: string, tableContents: string, contentPresent: boolean) {
   return `
     <div id="${title.toLowerCase().replace(/\s+/g, "-")}" class="section">
       <div class="section-title">
@@ -632,7 +635,7 @@ function createBmiSection(title: string, tableContents: string) {
         <a href="#mr-header">&#x25B2; Back to Top</a>
       </div>
 
-      <div><canvas id="bmiChart"></canvas></div>
+      ${contentPresent ? `<div><canvas id="bmiChart"></canvas></div>` : ``}
       <div class="section-content">
           ${tableContents}
       </div>
@@ -657,12 +660,16 @@ function createVitalsByDate(observations: Observation[]): {
   const filteredObservations = filterObservationsByDate(observations);
 
   const observationObjects: ObsSummary[] = filteredObservations
-    .map(tables => {
+    .flatMap(tables => {
       return tables.observations.map(observation => {
-        return {
-          effectiveDate: dayjs(observation.effectiveDateTime).format(ISO_DATE),
-          vitalsValue: renderVitalsValue(observation),
-        };
+        const value = renderVitalsValue(observation);
+        if (value) {
+          return {
+            effectiveDate: dayjs(observation.effectiveDateTime).format(ISO_DATE),
+            vitalsValue: value,
+          };
+        }
+        return [];
       });
     })
     .flat();
@@ -710,9 +717,8 @@ function renderVitalsValue(observation: Observation) {
     const unit = observation.valueQuantity?.unit?.replace(/[{()}]/g, "");
 
     return `${value} ${unit}`;
-  } else {
-    return "";
   }
+  return undefined;
 }
 
 type RenderCondition = {
@@ -752,6 +758,7 @@ const listOfConditionCodes = [
   "J44.9",
   "K75.81",
   "I25.10",
+  "Z68.41",
 ];
 
 const listOfConditionNames = [
@@ -797,6 +804,31 @@ const listOfConditionNames = [
   "Atherosclerotic cardiovascular disease",
 ];
 
+const matchesCode = (codingCode: string | undefined, listOfCodes: string[]): boolean =>
+  !!codingCode &&
+  listOfCodes.some(code => code.trim().toLowerCase() === codingCode.trim().toLowerCase());
+
+const matchesDisplay = (codingDisplay: string | undefined, listOfNames: string[]): boolean => {
+  const display = codingDisplay?.trim().toLowerCase();
+
+  return (
+    !!display &&
+    listOfNames
+      .map(name => name.trim().toLowerCase())
+      .some(name => display.includes(name) || name.includes(display))
+  );
+};
+
+const matchesText = (codeText: string | undefined, listOfNames: string[]): boolean => {
+  const text = codeText?.trim().toLowerCase();
+  return (
+    !!text &&
+    listOfNames
+      .map(name => name.trim().toLowerCase())
+      .some(name => text.includes(name) || name.includes(text))
+  );
+};
+
 function createWeightComoborbidities(conditions: Condition[], encounter: Encounter[]) {
   if (!conditions) {
     return "";
@@ -806,19 +838,9 @@ function createWeightComoborbidities(conditions: Condition[], encounter: Encount
     return (
       condition.code?.coding?.some(
         coding =>
-          (coding.code &&
-            listOfConditionCodes
-              .map(c => c.toLowerCase())
-              .includes(coding.code.trim().toLowerCase())) ||
-          (coding.display &&
-            listOfConditionNames
-              .map(c => c.toLowerCase())
-              .includes(coding.display.trim().toLowerCase()))
-      ) ||
-      (condition.code?.text &&
-        listOfConditionNames
-          .map(c => c.toLowerCase())
-          .includes(condition.code.text.trim().toLowerCase()))
+          matchesCode(coding.code, listOfConditionCodes) ||
+          matchesDisplay(coding.display, listOfConditionNames)
+      ) || matchesText(condition.code?.text, listOfConditionNames)
     );
   });
 
@@ -913,19 +935,9 @@ function createRelatedConditions(conditions: Condition[], encounter: Encounter[]
     return (
       condition.code?.coding?.some(
         coding =>
-          (coding.code &&
-            listOfRelatedCodes
-              .map(c => c.toLowerCase())
-              .includes(coding.code.trim().toLowerCase())) ||
-          (coding.display &&
-            listOfRelatedNames
-              .map(c => c.toLowerCase())
-              .includes(coding.display.trim().toLowerCase()))
-      ) ||
-      (condition.code?.text &&
-        listOfRelatedNames
-          .map(c => c.toLowerCase())
-          .includes(condition.code.text.trim().toLowerCase()))
+          matchesCode(coding.code, listOfRelatedCodes) ||
+          matchesDisplay(coding.display, listOfRelatedNames)
+      ) || matchesText(condition.code?.text, listOfRelatedNames)
     );
   });
 
@@ -980,19 +992,9 @@ function createObesitySection(conditions: Condition[], encounter: Encounter[]) {
     return (
       condition.code?.coding?.some(
         coding =>
-          (coding.code &&
-            listOfObesityCodes
-              .map(c => c.toLowerCase())
-              .includes(coding.code.trim().toLowerCase())) ||
-          (coding.display &&
-            listOfObesityNames
-              .map(c => c.toLowerCase())
-              .includes(coding.display.trim().toLowerCase()))
-      ) ||
-      (condition.code?.text &&
-        listOfObesityNames
-          .map(c => c.toLowerCase())
-          .includes(condition.code.text.trim().toLowerCase()))
+          matchesCode(coding.code, listOfObesityCodes) ||
+          matchesDisplay(coding.display, listOfObesityNames)
+      ) || matchesText(condition.code?.text, listOfObesityNames)
     );
   });
 
@@ -1301,7 +1303,7 @@ function createSectionInMedications(
   return medicalTableContents;
 }
 
-const listOfGastricProcedureCodes = [
+const listOfSurgeryCodes = [
   "LG39287-4",
   "43847",
   "43644",
@@ -1339,7 +1341,7 @@ const listOfGastricProcedureCodes = [
   "047K3DZ",
 ];
 
-const listOfGastricProcedureNames = [
+const listOfSurgeryNames = [
   "Gastric Bypass",
   "Bariatric Surgery",
   "Cholecystectomy",
@@ -1388,43 +1390,30 @@ function createGastricProceduresSection(
     return "";
   }
 
-  const gastricSurgeryConditions = conditions.filter(condition => {
+  const surgeryConditions = conditions.filter(condition => {
     return (
       condition.code?.coding?.some(
         coding =>
-          (coding.code && listOfGastricProcedureCodes.includes(coding.code.toLowerCase().trim())) ||
-          (coding.display &&
-            listOfGastricProcedureNames.includes(coding.display.toLowerCase().trim())) ||
-          listOfGastricProcedureNames.some(name => coding.display?.toLowerCase().includes(name))
-      ) ||
-      (condition.code?.text &&
-        listOfGastricProcedureNames.includes(condition.code.text.toLowerCase().trim())) ||
-      listOfGastricProcedureNames.some(name => condition.code?.text?.toLowerCase().includes(name))
+          matchesCode(coding.code, listOfSurgeryCodes) ||
+          matchesDisplay(coding.display, listOfSurgeryNames)
+      ) || matchesText(condition.code?.text, listOfSurgeryNames)
     );
   });
 
   const conditionDateDict = getConditionDatesFromEncounters(encounter);
-  const noDuplicateConditions = removeDuplicateConditions(
-    gastricSurgeryConditions,
-    conditionDateDict
-  );
+  const noDuplicateConditions = removeDuplicateConditions(surgeryConditions, conditionDateDict);
 
-  const gastricProcedures = procedures.filter(procedure => {
+  const surgeries = procedures.filter(procedure => {
     return (
       procedure.code?.coding?.some(
         coding =>
-          (coding.code && listOfGastricProcedureCodes.includes(coding.code.toLowerCase().trim())) ||
-          (coding.display &&
-            listOfGastricProcedureNames.includes(coding.display.toLowerCase().trim())) ||
-          listOfGastricProcedureNames.some(name => coding.display?.toLowerCase().includes(name))
-      ) ||
-      (procedure.code?.text &&
-        listOfGastricProcedureNames.includes(procedure.code.text.toLowerCase().trim())) ||
-      listOfGastricProcedureNames.some(name => procedure.code?.text?.toLowerCase().includes(name))
+          matchesCode(coding.code, listOfSurgeryCodes) ||
+          matchesDisplay(coding.display, listOfSurgeryNames)
+      ) || matchesText(procedure.code?.text, listOfSurgeryNames)
     );
   });
 
-  const proceduresSortedByDate = gastricProcedures.sort((a, b) => {
+  const proceduresSortedByDate = surgeries.sort((a, b) => {
     return dayjs(a.performedDateTime).isBefore(dayjs(b.performedDateTime)) ? 1 : -1;
   });
 
@@ -1489,7 +1478,7 @@ function createGastricProceduresSection(
 
   `
       : `        <table>
-      <tbody><tr><td>No gastric surgiers info found</td></tr></tbody>        </table>
+      <tbody><tr><td>No surgiers info found</td></tr></tbody>        </table>
       `;
 
   return createSection("Surgeries", procedureTableContents);
