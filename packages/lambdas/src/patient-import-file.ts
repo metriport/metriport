@@ -35,7 +35,7 @@ export async function handler(event: EventBody) {
   const errorMsg = "Error processing event on " + lambdaName;
   const startedAt = new Date().getTime();
   try {
-    console.log(`Running with unparsed body: ${event}`);
+    console.log(`Running with unparsed body: ${JSON.stringify(event)}`);
     const parsedBody = parseBody(event);
     const { cxId, jobId = uuidv7(), s3BucketName, s3FileName, amountOfPatients } = parsedBody;
 
@@ -125,9 +125,12 @@ function parseBody(body?: unknown): EventBody {
 
   // TODO 2230 remove this
   const amountOfPatientsRaw = bodyAsJson.amountOfPatients;
-  if (!amountOfPatientsRaw) throw new Error(`Missing amountOfPatients`);
-  if (typeof amountOfPatientsRaw !== "number") throw new Error(`Invalid amountOfPatients`);
-  const amountOfPatients = amountOfPatientsRaw as number;
+  const amountOfPatients =
+    typeof amountOfPatientsRaw === "number"
+      ? (amountOfPatientsRaw as number)
+      : typeof amountOfPatientsRaw === "string"
+      ? parseInt(amountOfPatientsRaw)
+      : 1;
 
   return { cxId, jobId, s3BucketName, s3FileName, amountOfPatients };
 }

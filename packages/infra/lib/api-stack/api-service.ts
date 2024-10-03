@@ -95,6 +95,7 @@ export function createAPIService({
   outboundPatientDiscoveryLambda,
   outboundDocumentQueryLambda,
   outboundDocumentRetrievalLambda,
+  patientImportLambda,
   generalBucket,
   medicalDocumentsUploadBucket,
   ehrResponsesBucket,
@@ -126,6 +127,7 @@ export function createAPIService({
   outboundPatientDiscoveryLambda: ILambda;
   outboundDocumentQueryLambda: ILambda;
   outboundDocumentRetrievalLambda: ILambda;
+  patientImportLambda: ILambda;
   generalBucket: s3.Bucket;
   medicalDocumentsUploadBucket: s3.Bucket;
   ehrResponsesBucket: s3.Bucket | undefined;
@@ -245,6 +247,7 @@ export function createAPIService({
           OUTBOUND_PATIENT_DISCOVERY_LAMBDA_NAME: outboundPatientDiscoveryLambda.functionName,
           OUTBOUND_DOC_QUERY_LAMBDA_NAME: outboundDocumentQueryLambda.functionName,
           OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,
+          PATIENT_IMPORT_LAMBDA_NAME: patientImportLambda.functionName,
           FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
           ...(fhirToMedicalRecordLambda && {
             FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
@@ -368,11 +371,13 @@ export function createAPIService({
   }
   // RW grant for Dynamo DB
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
+
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   outboundPatientDiscoveryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   outboundDocumentQueryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   outboundDocumentRetrievalLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  patientImportLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToCdaConverterLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToBundleLambda.grantInvoke(fargateService.taskDefinition.taskRole);
 

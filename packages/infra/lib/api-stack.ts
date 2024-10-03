@@ -341,16 +341,16 @@ export class APIStack extends Stack {
       },
     });
 
-    const { patientCreateLambda, patientQueryLambda } = new PatientImportNestedStack(
-      this,
-      "PatientImportNestedStack",
-      {
-        config: props.config,
-        lambdaLayers,
-        vpc: this.vpc,
-        alarmAction: slackNotification?.alarmAction,
-      }
-    );
+    const {
+      importFileLambda: patientImportLambda,
+      patientCreateLambda,
+      patientQueryLambda,
+    } = new PatientImportNestedStack(this, "PatientImportNestedStack", {
+      config: props.config,
+      lambdaLayers,
+      vpc: this.vpc,
+      alarmAction: slackNotification?.alarmAction,
+    });
 
     //-------------------------------------------
     // OPEN SEARCH Domains
@@ -452,6 +452,7 @@ export class APIStack extends Stack {
       outboundPatientDiscoveryLambda,
       outboundDocumentQueryLambda,
       outboundDocumentRetrievalLambda,
+      patientImportLambda,
       generalBucket,
       medicalDocumentsUploadBucket,
       ehrResponsesBucket,
