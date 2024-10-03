@@ -142,4 +142,16 @@ export class Config {
   static getEhrResponsesBucketName(): string | undefined {
     return getEnvVar("EHR_RESPONSES_BUCKET_NAME");
   }
+
+  static getProcessBulkUploadLamda(): string | undefined {
+    return getEnvVar("PROCESS_BULK_UPLOAD_LAMBDA_NAME");
+  }
+
+  static getProcessPatientCreateLamda(): string | undefined {
+    return getEnvVar("PROCESS_PATIENT_CREATE_LAMBDA_NAME");
+  }
+
+  static getProcessPatientDiscoveryQueueUrl(): string | undefined {
+    return getEnvVar("PROCESS_ATIENT_DISCOVERY_QUEUE_URL");
+  }
 }
