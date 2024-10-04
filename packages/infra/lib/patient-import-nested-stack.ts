@@ -24,7 +24,7 @@ function settings() {
     lambdaMemory: 2048,
     lambdaTimeout: fileImportLambdaTimeout,
   };
-  const waitTimePatientCreate = Duration.minutes(waitTimePatientCreateInSeconds);
+  const waitTimePatientCreate = Duration.seconds(waitTimePatientCreateInSeconds);
   const patientCreateLambdaTimeout = Duration.seconds(waitTimePatientCreateInSeconds + 30).minus(
     Duration.seconds(5)
   ); // 25secs for processinng
@@ -46,7 +46,7 @@ function settings() {
     },
     waitTime: waitTimePatientCreate,
   };
-  const waitTimePatientQuery = Duration.minutes(waitTimePatientQueryInSeconds);
+  const waitTimePatientQuery = Duration.seconds(waitTimePatientQueryInSeconds);
   const patientQueryLambdaTimeout = Duration.seconds(waitTimePatientQueryInSeconds + 30).minus(
     Duration.seconds(5)
   ); // 25secs for processinng
