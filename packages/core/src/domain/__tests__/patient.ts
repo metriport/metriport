@@ -3,6 +3,7 @@ import { USState } from "@metriport/shared";
 import { ISO_DATE } from "@metriport/shared/common/date";
 import dayjs from "dayjs";
 import { Patient, PatientData, PersonalIdentifier } from "../patient";
+import { Contact } from "../contact";
 import { makeBaseDomain } from "./base-domain";
 import { makeAddressStrict } from "./location-address";
 
@@ -14,6 +15,13 @@ export function makePersonalIdentifier(): PersonalIdentifier {
   };
 }
 
+export function makeContact(): Contact {
+  return {
+    email: faker.internet.email(),
+    phone: faker.helpers.replaceSymbols("###-###-####"),
+  };
+}
+
 export function makePatientData(data: Partial<PatientData> = {}): PatientData {
   return {
     firstName: data.firstName ?? faker.person.firstName(),
@@ -21,6 +29,7 @@ export function makePatientData(data: Partial<PatientData> = {}): PatientData {
     dob: data.dob ?? dayjs(faker.date.past()).format(ISO_DATE),
     genderAtBirth: data.genderAtBirth ?? faker.helpers.arrayElement(["F", "M"]),
     personalIdentifiers: data.personalIdentifiers ?? [makePersonalIdentifier()],
+    contact: [makeContact()],
     address: data.address ?? [makeAddressStrict()],
     consolidatedLinkDemographics: data.consolidatedLinkDemographics,
     documentQueryProgress: data.documentQueryProgress,

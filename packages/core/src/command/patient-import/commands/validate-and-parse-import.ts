@@ -41,7 +41,6 @@ export async function validateAndParsePatientImportCsvFromS3({
     const { patients, invalidRows, validRows, headers } = await validateAndParsePatientImportCsv({
       contents: csvAsString,
     });
-    console.log(invalidRows);
     await Promise.all([
       validRows.length > 0
         ? creatValidationFile({
