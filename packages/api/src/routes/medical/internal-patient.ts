@@ -928,7 +928,7 @@ router.post(
  * POST /internal/patient
  *
  * Creates the patient corresponding to the specified facility at the
- * customer's organization if it doesn't exist already. This WILL NOT kickoff patient discovery.
+ * customer's organization if it doesn't exist already. This WILL NOT kickoff patient discovery by defaul.
  *
  * @param  req.query.facilityId The ID of the Facility the Patient should be associated with.
  * @return The newly created patient.
@@ -944,6 +944,7 @@ router.post(
     );
     const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
+    const runPd = getFromQueryAsBoolean("runPd", req) ?? false;
     const payload = patientCreateSchema.parse(req.body);
 
     const patientCreate: PatientCreateCmd = {
@@ -954,7 +955,7 @@ router.post(
 
     const patient = await createPatient({
       patient: patientCreate,
-      runPd: false,
+      runPd,
       rerunPdOnNewDemographics,
       forceCommonwell,
       forceCarequality,
@@ -984,6 +985,8 @@ router.post(
     const jobId = getFrom("query").orFail("jobId", req);
     const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
     const dryrun = getFromQueryAsBoolean("dryrun", req);
+
+    await getFacilityOrFail({ cxId, id: facilityId });
 
     const patientImportConnector = makePatientImportHandler();
     await patientImportConnector.startPatientImport({

@@ -87,12 +87,13 @@ function parseBody(body?: unknown): ProcessPatientImportEvemtPayload {
   if (typeof jobIdRaw !== "string") throw new Error(`Invalid jobId`);
 
   const rerunPdOnNewDemographicsRaw = bodyAsJson.rerunPdOnNewDemographics;
-  if (!rerunPdOnNewDemographicsRaw) throw new Error(`Missing rerunPdOnNewDemographics`);
+  if (rerunPdOnNewDemographicsRaw === undefined)
+    throw new Error(`Missing rerunPdOnNewDemographics`);
   if (typeof rerunPdOnNewDemographicsRaw !== "boolean")
     throw new Error(`Invalid rerunPdOnNewDemographics`);
 
   const dryrunRaw = bodyAsJson.dryrun;
-  if (!dryrunRaw) throw new Error(`Missing dryrun`);
+  if (dryrunRaw === undefined) throw new Error(`Missing dryrun`);
   if (typeof dryrunRaw !== "boolean") throw new Error(`Invalid dryrun`);
 
   const cxId = cxIdRaw as string;

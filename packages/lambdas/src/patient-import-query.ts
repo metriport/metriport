@@ -92,7 +92,8 @@ function parseBody(body?: unknown): ProcessPatientQueryEvemtPayload {
   if (typeof patientIdRaw !== "string") throw new Error(`Invalid patientId`);
 
   const rerunPdOnNewDemographicsRaw = bodyAsJson.rerunPdOnNewDemographics;
-  if (!rerunPdOnNewDemographicsRaw) throw new Error(`Missing rerunPdOnNewDemographics`);
+  if (rerunPdOnNewDemographicsRaw === undefined)
+    throw new Error(`Missing rerunPdOnNewDemographics`);
   if (typeof rerunPdOnNewDemographicsRaw !== "boolean")
     throw new Error(`Invalid rerunPdOnNewDemographics`);
 
