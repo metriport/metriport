@@ -143,12 +143,10 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
         patientId,
         s3BucketName,
       });
-      console.log(recordExists);
       if (recordExists) {
         log(`Record exists for patientId ${patientId}, returning...`);
         return;
       }
-      console.log("here");
       await creatOrUpdatePatientRecord({
         cxId,
         jobId,
