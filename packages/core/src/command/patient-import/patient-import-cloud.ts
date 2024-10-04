@@ -4,7 +4,7 @@ import { makeLambdaClient } from "../../external/aws/lambda";
 import { SQSClient } from "../../external/aws/sqs";
 import { createJobRecord } from "./commands/create-job-record";
 import { validateAndParsePatientImportCsvFromS3 } from "./commands/validate-and-parse-import";
-import { checkPatientRecord } from "./commands/check-patient-record";
+import { checkPatientRecordExists } from "./commands/check-patient-record-exists";
 import { creatOrUpdatePatientRecord } from "./commands/create-or-update-patient-record";
 import { startDocumentQuery } from "./commands/start-document-query";
 import { createPatient } from "./commands/create-patient";
@@ -122,13 +122,13 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
       facilityId,
       patientPayload,
     });
-    const patientAlreadyProcessed = await checkPatientRecord({
+    const recordExists = await checkPatientRecordExists({
       cxId,
       jobId,
       patientId,
       s3BucketName,
     });
-    if (patientAlreadyProcessed) return;
+    if (recordExists) return;
     await creatOrUpdatePatientRecord({
       cxId,
       jobId,

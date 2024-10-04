@@ -11,7 +11,7 @@ function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
-export async function checkPatientRecord({
+export async function checkPatientRecordExists({
   cxId,
   jobId,
   patientId,
@@ -23,7 +23,7 @@ export async function checkPatientRecord({
   s3BucketName: string;
 }): Promise<boolean> {
   const { log } = out(
-    `PatientImport check patient record - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
+    `PatientImport check patient record exists - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
   );
   const s3Utils = getS3UtilsInstance();
   const key = createFileKeyPatient(cxId, jobId, patientId);
@@ -31,7 +31,7 @@ export async function checkPatientRecord({
     const fileExists = await s3Utils.fileExists(s3BucketName, key);
     return fileExists;
   } catch (error) {
-    const msg = `Failure while checking patient record @ PatientImport`;
+    const msg = `Failure while checking patient record exists @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
@@ -39,7 +39,7 @@ export async function checkPatientRecord({
         jobId,
         patientId,
         key,
-        context: "patient-import.check-patient-record",
+        context: "patient-import.check-patient-record-exists",
         error,
       },
     });
