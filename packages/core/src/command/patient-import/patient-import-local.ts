@@ -1,7 +1,6 @@
 import { errorToString } from "@metriport/shared";
 import { capture } from "../../util/notifications";
 import { out } from "../../util/log";
-import { executeAsynchronously } from "../../util/concurrency";
 import { createJobRecord } from "./commands/create-job-record";
 import { validateAndParsePatientImportCsvFromS3 } from "./commands/validate-and-parse-import";
 import { checkPatientRecordExists } from "./commands/check-patient-record-exists";
@@ -86,24 +85,26 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
         log(`Dryrun is true, returning...`);
         return;
       }
-      const processPatientCreateRequests: ProcessPatientCreateRequest[] = patients.map(patient => {
-        const patientPayload = createPatientPayload(patient);
-        return {
-          cxId,
-          facilityId,
-          jobId,
-          jobStartedAt,
-          patientPayload,
-          s3BucketName: this.patientImportBucket,
-          processPatientQueryQueue: "local",
-          rerunPdOnNewDemographics,
-          waitTimeInMillis: 0,
-        };
-      });
-      const boundProcessPatientCreate = this.processPatientCreate.bind(this);
-      await executeAsynchronously(processPatientCreateRequests, boundProcessPatientCreate, {
-        numberOfParallelExecutions: 10,
-      });
+      const outcomes = await Promise.allSettled(
+        patients.map(async patient => {
+          const patientPayload = createPatientPayload(patient);
+          const processPatientCreateRequest: ProcessPatientCreateRequest = {
+            cxId,
+            facilityId,
+            jobId,
+            jobStartedAt,
+            patientPayload,
+            s3BucketName: this.patientImportBucket,
+            processPatientQueryQueue: "local",
+            rerunPdOnNewDemographics,
+            waitTimeInMillis: 0,
+          };
+          const boundProcessPatientCreate = this.processPatientCreate.bind(this);
+          await boundProcessPatientCreate(processPatientCreateRequest);
+        })
+      );
+      const hadFailure = outcomes.some(outcome => outcome.status === "rejected");
+      if (hadFailure) throw new Error("At least one payload failed in patient create");
     } catch (error) {
       const msg = `Failure while processing patient import @ PatientImport`;
       log(`${msg}. Cause: ${errorToString(error)}`);
@@ -142,10 +143,12 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
         patientId,
         s3BucketName,
       });
+      console.log(recordExists);
       if (recordExists) {
         log(`Record exists for patientId ${patientId}, returning...`);
         return;
       }
+      console.log("here");
       await creatOrUpdatePatientRecord({
         cxId,
         jobId,

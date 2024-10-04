@@ -18,7 +18,7 @@ export function makePersonalIdentifier(): PersonalIdentifier {
 export function makeContact(): Contact {
   return {
     email: faker.internet.email(),
-    phone: faker.helpers.replaceSymbols("###-###-####"),
+    phone: faker.helpers.replaceSymbols("##########"),
   };
 }
 
