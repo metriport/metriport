@@ -15,30 +15,54 @@ const globalPrefix = "patient-import";
 
 export type FileStages = "raw" | "valid" | "invalid";
 
-function createCxJobPrefix(cxId: string, jobId: string): string {
-  return `cxid=${cxId}/jobid=${jobId}`;
+function createCxJobPrefix(cxId: string, jobStartedAt: string, jobId: string): string {
+  return `cxid=${cxId}/date=${jobStartedAt.slice(0, 10)}/jobid=${jobId}`;
 }
 
-function createFilePathPatients(cxId: string, jobId: string, patientId: string): string {
-  return `${createCxJobPrefix(cxId, jobId)}/patients/patientid=${patientId}/status.json`;
+function createFilePathPatients(
+  cxId: string,
+  jobStartedAt: string,
+  jobId: string,
+  patientId: string
+): string {
+  return `${createCxJobPrefix(
+    cxId,
+    jobStartedAt,
+    jobId
+  )}/patients/patientid=${patientId}/status.json`;
 }
 
-function createFilePathFiles(cxId: string, jobId: string, stage: FileStages): string {
-  return `${createCxJobPrefix(cxId, jobId)}/files/${stage}.csv`;
+function createFilePathFiles(
+  cxId: string,
+  jobStartedAt: string,
+  jobId: string,
+  stage: FileStages
+): string {
+  return `${createCxJobPrefix(cxId, jobStartedAt, jobId)}/files/${stage}.csv`;
 }
 
-export function createFileKeyJob(cxId: string, jobId: string): string {
-  return `${globalPrefix}/${createCxJobPrefix(cxId, jobId)}/status.json`;
+export function createFileKeyJob(cxId: string, jobStartedAt: string, jobId: string): string {
+  return `${globalPrefix}/${createCxJobPrefix(cxId, jobStartedAt, jobId)}/status.json`;
 }
 
-export function createFileKeyPatient(cxId: string, jobId: string, patientId: string): string {
-  const fileName = createFilePathPatients(cxId, jobId, patientId);
+export function createFileKeyPatient(
+  cxId: string,
+  jobStartedAt: string,
+  jobId: string,
+  patientId: string
+): string {
+  const fileName = createFilePathPatients(cxId, jobStartedAt, jobId, patientId);
   const key = `${globalPrefix}/${fileName}`;
   return key;
 }
 
-export function createFileKeyFiles(cxId: string, jobId: string, stage: FileStages): string {
-  const fileName = createFilePathFiles(cxId, jobId, stage);
+export function createFileKeyFiles(
+  cxId: string,
+  jobStartedAt: string,
+  jobId: string,
+  stage: FileStages
+): string {
+  const fileName = createFilePathFiles(cxId, jobStartedAt, jobId, stage);
   const key = `${globalPrefix}/${fileName}`;
   return key;
 }

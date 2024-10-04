@@ -15,12 +15,14 @@ function getS3UtilsInstance(): S3Utils {
 export async function creatOrUpdatePatientRecord({
   cxId,
   jobId,
+  jobStartedAt,
   patientId,
   data = {},
   s3BucketName,
 }: {
   cxId: string;
   jobId: string;
+  jobStartedAt: string;
   patientId: string;
   data?: PatientRecordUpdate;
   s3BucketName: string;
@@ -29,7 +31,7 @@ export async function creatOrUpdatePatientRecord({
     `PatientImport check or patient record - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
   );
   const s3Utils = getS3UtilsInstance();
-  const key = createFileKeyPatient(cxId, jobId, patientId);
+  const key = createFileKeyPatient(cxId, jobStartedAt, jobId, patientId);
   try {
     await s3Utils.uploadFile({
       bucket: s3BucketName,

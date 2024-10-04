@@ -26,15 +26,17 @@ const commaRegex = new RegExp(/,/g);
 export async function validateAndParsePatientImportCsvFromS3({
   cxId,
   jobId,
+  jobStartedAt,
   s3BucketName,
 }: {
   cxId: string;
   jobId: string;
+  jobStartedAt: string;
   s3BucketName: string;
 }): Promise<PatientImportPatient[]> {
   const { log } = out(`PatientImport validate and parse import - cxId ${cxId} jobId ${jobId}`);
   const s3Utils = getS3UtilsInstance();
-  const key = createFileKeyFiles(cxId, jobId, "raw");
+  const key = createFileKeyFiles(cxId, jobStartedAt, jobId, "raw");
   try {
     const csvAsString = await s3Utils.getFileContentsAsString(s3BucketName, key);
 
@@ -46,6 +48,7 @@ export async function validateAndParsePatientImportCsvFromS3({
         ? creatValidationFile({
             cxId,
             jobId,
+            jobStartedAt,
             stage: "valid",
             rows: [headers.join(","), ...validRows.map(rowColumn => rowColumn.join(","))],
             s3BucketName,
@@ -55,6 +58,7 @@ export async function validateAndParsePatientImportCsvFromS3({
         ? creatValidationFile({
             cxId,
             jobId,
+            jobStartedAt,
             stage: "invalid",
             rows: [
               [...headers, "error"].join(","),

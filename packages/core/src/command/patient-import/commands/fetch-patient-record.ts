@@ -15,11 +15,13 @@ function getS3UtilsInstance(): S3Utils {
 export async function fetchPatientRecord({
   cxId,
   jobId,
+  jobStartedAt,
   patientId,
   s3BucketName,
 }: {
   cxId: string;
   jobId: string;
+  jobStartedAt: string;
   patientId: string;
   s3BucketName: string;
 }): Promise<PatientRecord> {
@@ -27,7 +29,7 @@ export async function fetchPatientRecord({
     `PatientImport fetch patient record - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
   );
   const s3Utils = getS3UtilsInstance();
-  const key = createFileKeyPatient(cxId, jobId, patientId);
+  const key = createFileKeyPatient(cxId, jobStartedAt, jobId, patientId);
   try {
     const file = await s3Utils.getFileContentsAsString(s3BucketName, key);
     return JSON.parse(file);

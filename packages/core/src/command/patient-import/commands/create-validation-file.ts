@@ -14,12 +14,14 @@ function getS3UtilsInstance(): S3Utils {
 export async function creatValidationFile({
   cxId,
   jobId,
+  jobStartedAt,
   stage,
   rows,
   s3BucketName,
 }: {
   cxId: string;
   jobId: string;
+  jobStartedAt: string;
   stage: FileStages;
   rows: string[];
   s3BucketName: string;
@@ -28,7 +30,7 @@ export async function creatValidationFile({
     `PatientImport create validation file - cxId ${cxId} jobId ${jobId} stage ${stage}`
   );
   const s3Utils = getS3UtilsInstance();
-  const key = createFileKeyFiles(cxId, jobId, stage);
+  const key = createFileKeyFiles(cxId, jobStartedAt, jobId, stage);
   try {
     await s3Utils.uploadFile({
       bucket: s3BucketName,

@@ -45,6 +45,7 @@ export type ProcessPatientCreateRequest = {
   cxId: string;
   facilityId: string;
   jobId: string;
+  jobStartedAt: string;
   patientPayload: PatientPayload;
   s3BucketName: string;
   processPatientQueryQueue: string;
@@ -55,6 +56,7 @@ export type ProcessPatientCreateRequest = {
 export type ProcessPatientQueryRequest = {
   cxId: string;
   jobId: string;
+  jobStartedAt: string;
   patientId: string;
   s3BucketName: string;
   rerunPdOnNewDemographics: boolean;

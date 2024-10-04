@@ -15,17 +15,19 @@ function getS3UtilsInstance(): S3Utils {
 export async function createJobRecord({
   cxId,
   jobId,
+  jobStartedAt,
   data,
   s3BucketName,
 }: {
   cxId: string;
   jobId: string;
+  jobStartedAt: string;
   data: JobRecord;
   s3BucketName: string;
 }): Promise<void> {
   const { log } = out(`PatientImport create job record - cxId ${cxId} jobId ${jobId}`);
   const s3Utils = getS3UtilsInstance();
-  const key = createFileKeyJob(cxId, jobId);
+  const key = createFileKeyJob(cxId, jobStartedAt, jobId);
   try {
     await s3Utils.uploadFile({
       bucket: s3BucketName,

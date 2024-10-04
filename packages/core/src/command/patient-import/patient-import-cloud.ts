@@ -72,6 +72,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
           extra: {
             cxId,
             jobId,
+            processPatientImportRequest,
             context: "patient-import-cloud.send-payload-to-patient-import-lambda",
             error,
           },
@@ -108,12 +109,14 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
       await createJobRecord({
         cxId,
         jobId,
+        jobStartedAt,
         data: { jobStartedAt },
         s3BucketName,
       });
       const patients = await validateAndParsePatientImportCsvFromS3({
         cxId,
         jobId,
+        jobStartedAt,
         s3BucketName,
       });
       if (dryrun) {
@@ -127,6 +130,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
             cxId,
             facilityId,
             jobId,
+            jobStartedAt,
             patientPayload,
             rerunPdOnNewDemographics,
           };
@@ -147,7 +151,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
               extra: {
                 cxId,
                 jobId,
-                patientPayload,
+                processPatientCreateRequest,
                 context: "patient-import-cloud.send-payload-to-patient-create-queue",
                 error,
               },
@@ -177,6 +181,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
     cxId,
     facilityId,
     jobId,
+    jobStartedAt,
     patientPayload,
     s3BucketName,
     processPatientQueryQueue,
@@ -193,6 +198,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
       const recordExists = await checkPatientRecordExists({
         cxId,
         jobId,
+        jobStartedAt,
         patientId,
         s3BucketName,
       });
@@ -203,12 +209,14 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
       await creatOrUpdatePatientRecord({
         cxId,
         jobId,
+        jobStartedAt,
         patientId,
         s3BucketName,
       });
       const processPatientQueryRequest: ProcessPatientQueryEvemtPayload = {
         cxId,
         jobId,
+        jobStartedAt,
         patientId,
         rerunPdOnNewDemographics,
       };
@@ -230,6 +238,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
             cxId,
             jobId,
             patientId,
+            processPatientQueryRequest,
             context: "patient-import-cloud.send-payload-to-patient-query-queue",
             error,
           },
@@ -255,6 +264,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
   async processPatientQuery({
     cxId,
     jobId,
+    jobStartedAt,
     patientId,
     s3BucketName,
     rerunPdOnNewDemographics,
@@ -276,6 +286,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
       await creatOrUpdatePatientRecord({
         cxId,
         jobId,
+        jobStartedAt,
         patientId,
         data: { patientQueryStatus: "processing" },
         s3BucketName,

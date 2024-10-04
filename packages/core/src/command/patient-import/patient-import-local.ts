@@ -72,12 +72,14 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
       await createJobRecord({
         cxId,
         jobId,
+        jobStartedAt,
         data: { jobStartedAt },
         s3BucketName,
       });
       const patients = await validateAndParsePatientImportCsvFromS3({
         cxId,
         jobId,
+        jobStartedAt,
         s3BucketName,
       });
       if (dryrun) {
@@ -90,6 +92,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
           cxId,
           facilityId,
           jobId,
+          jobStartedAt,
           patientPayload,
           s3BucketName: this.patientImportBucket,
           processPatientQueryQueue: "local",
@@ -120,6 +123,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     cxId,
     facilityId,
     jobId,
+    jobStartedAt,
     patientPayload,
     s3BucketName,
     rerunPdOnNewDemographics,
@@ -134,6 +138,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
       const recordExists = await checkPatientRecordExists({
         cxId,
         jobId,
+        jobStartedAt,
         patientId,
         s3BucketName,
       });
@@ -144,6 +149,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
       await creatOrUpdatePatientRecord({
         cxId,
         jobId,
+        jobStartedAt,
         patientId,
         s3BucketName,
       });
@@ -151,6 +157,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
       await boundProcessPatientQuery({
         cxId,
         jobId,
+        jobStartedAt,
         patientId,
         s3BucketName: this.patientImportBucket,
         rerunPdOnNewDemographics,
@@ -174,6 +181,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
   async processPatientQuery({
     cxId,
     jobId,
+    jobStartedAt,
     patientId,
     s3BucketName,
     rerunPdOnNewDemographics,
@@ -194,6 +202,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
       await creatOrUpdatePatientRecord({
         cxId,
         jobId,
+        jobStartedAt,
         patientId,
         data: { patientQueryStatus: "processing" },
         s3BucketName,

@@ -14,11 +14,13 @@ function getS3UtilsInstance(): S3Utils {
 export async function checkPatientRecordExists({
   cxId,
   jobId,
+  jobStartedAt,
   patientId,
   s3BucketName,
 }: {
   cxId: string;
   jobId: string;
+  jobStartedAt: string;
   patientId: string;
   s3BucketName: string;
 }): Promise<boolean> {
@@ -26,7 +28,7 @@ export async function checkPatientRecordExists({
     `PatientImport check patient record exists - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
   );
   const s3Utils = getS3UtilsInstance();
-  const key = createFileKeyPatient(cxId, jobId, patientId);
+  const key = createFileKeyPatient(cxId, jobStartedAt, jobId, patientId);
   try {
     const fileExists = await s3Utils.fileExists(s3BucketName, key);
     return fileExists;
