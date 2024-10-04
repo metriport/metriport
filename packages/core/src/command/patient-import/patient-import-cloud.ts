@@ -150,7 +150,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
         messageGroupId: cxId,
       }
     );
-    if (waitTimeInMillis > 0) sleep(waitTimeInMillis);
+    if (waitTimeInMillis > 0) await sleep(waitTimeInMillis);
   }
 
   async processPatientQuery({
@@ -177,6 +177,6 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
       data: { patientQueryStatus: "processing" },
       s3BucketName,
     });
-    if (waitTimeInMillis > 0) sleep(waitTimeInMillis);
+    if (waitTimeInMillis > 0) await sleep(waitTimeInMillis);
   }
 }
