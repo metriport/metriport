@@ -91,9 +91,14 @@ describe("zip", () => {
       expect(normalizeZipCodeNewSafe(input)).toBe(expectedOutput);
     });
 
+    it("should return undefined for zip codes that are too short", () => {
+      const input = "12";
+      expect(normalizeZipCodeNewSafe(input)).toBeUndefined();
+    });
+
     it("should handle short zip codes", () => {
-      const input = "1";
-      const expectedOutput = "00001";
+      const input = "123";
+      const expectedOutput = "00123";
       expect(normalizeZipCodeNewSafe(input)).toBe(expectedOutput);
     });
 

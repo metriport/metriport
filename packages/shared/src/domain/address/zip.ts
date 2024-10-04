@@ -55,6 +55,7 @@ export function normalizeZipCodeNewSafe(zipCode: string): string | undefined {
   const mainPart = trimmedZip.split("-")[0];
   if (!mainPart) return trimmedZip;
   if (mainPart.length === 5) return mainPart;
+  if (mainPart.length < 3) return undefined;
   if (mainPart.length < 5) return mainPart.padStart(5, "0");
   return mainPart.slice(0, 5);
 }
