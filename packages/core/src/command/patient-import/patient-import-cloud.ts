@@ -53,11 +53,13 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
       rerunPdOnNewDemographics,
       dryrun,
     };
-    lambdaClient.invoke({
-      FunctionName: processPatientImportLambda,
-      InvocationType: "Event",
-      Payload: JSON.stringify(processPatientImportRequest),
-    });
+    await lambdaClient
+      .invoke({
+        FunctionName: processPatientImportLambda,
+        InvocationType: "Event",
+        Payload: JSON.stringify(processPatientImportRequest),
+      })
+      .promise();
   }
 
   async processPatientImport({
@@ -82,25 +84,27 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
       s3BucketName,
     });
     if (dryrun) return;
-    patients.map(patient => {
-      const patientPayload = createPatientPayload(patient);
-      const processPatientCreateRequest: ProcessPatientCreateEvemtPayload = {
-        cxId,
-        facilityId,
-        jobId,
-        patientPayload,
-        rerunPdOnNewDemographics,
-      };
-      sqsClient.sendMessageToQueue(
-        processPatientCreateQueue,
-        JSON.stringify(processPatientCreateRequest),
-        {
-          fifo: true,
-          messageDeduplicationId: uuidv7(),
-          messageGroupId: cxId,
-        }
-      );
-    });
+    await Promise.allSettled(
+      patients.map(async patient => {
+        const patientPayload = createPatientPayload(patient);
+        const processPatientCreateRequest: ProcessPatientCreateEvemtPayload = {
+          cxId,
+          facilityId,
+          jobId,
+          patientPayload,
+          rerunPdOnNewDemographics,
+        };
+        await sqsClient.sendMessageToQueue(
+          processPatientCreateQueue,
+          JSON.stringify(processPatientCreateRequest),
+          {
+            fifo: true,
+            messageDeduplicationId: uuidv7(),
+            messageGroupId: cxId,
+          }
+        );
+      })
+    );
   }
 
   async processPatientCreate({
@@ -136,7 +140,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
       patientId,
       rerunPdOnNewDemographics,
     };
-    sqsClient.sendMessageToQueue(
+    await sqsClient.sendMessageToQueue(
       processPatientQueryQueue,
       JSON.stringify(processPatientQueryRequest),
       {

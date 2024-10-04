@@ -970,9 +970,9 @@ router.post(
  * @param req.query.cxId The customer ID.
  * @param req.params.id The patient ID.
  * @param req.query.facilityId The facility ID for running the coverage assessment.
+ * @param req.query.jobId The job Id of the fle. TEMPORARY.
+ * @param req.query.rerunPdOnNewDemographics Optional. Indicates whether to use demo augmentation on this PD run.
  * @param req.query.dryrun Whether to simply validate or run the assessment (optional, defaults to false).
- * @param req.query.s3BucketName The of bucket of the import.
- * @param req.query.s3FileName The of file name of the import.
  *
  */
 router.post(
@@ -986,16 +986,16 @@ router.post(
     const dryrun = getFromQueryAsBoolean("dryrun", req);
 
     const patientImportConnector = makePatientImportHandler();
-    patientImportConnector
+    await patientImportConnector
       .startPatientImport({
         cxId,
         facilityId,
         jobId,
         processPatientImportLambda: Config.getPatientImportLambdaName(),
-        dryrun,
         rerunPdOnNewDemographics,
+        dryrun,
       })
-      .catch(processAsyncError("patientImportConnector.startImport"));
+      .catch(processAsyncError("patientImportConnector.startPatientImport"));
 
     return res.sendStatus(status.OK);
   })
