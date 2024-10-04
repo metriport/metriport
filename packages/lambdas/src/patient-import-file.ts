@@ -47,7 +47,7 @@ export async function handler(event: ProcessPatientImportEvemtPayload) {
       };
 
       const patientImportHandler = makePatientImportHandler();
-      patientImportHandler.processPatientImport(processPatientImportRequest);
+      await patientImportHandler.processPatientImport(processPatientImportRequest);
 
       const finishedAt = new Date().getTime();
       console.log(`Done local duration: ${finishedAt - startedAt}ms`);

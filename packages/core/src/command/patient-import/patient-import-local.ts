@@ -1,4 +1,3 @@
-import { sleep } from "@metriport/shared";
 import { executeAsynchronously } from "../../util/concurrency";
 import { createJobRecord } from "./commands/create-job-record";
 import { validateAndParsePatientImportCsv } from "./commands/validate-and-parse-import";
@@ -72,6 +71,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
         s3BucketName: this.patientImportBucket,
         processPatientQueryQueue: "local",
         rerunPdOnNewDemographics,
+        waitTimeInMillis: 0,
       };
     });
     const boundProcessPatientCreate = this.processPatientCreate.bind(this);
@@ -122,7 +122,6 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     patientId,
     s3BucketName,
     rerunPdOnNewDemographics,
-    waitTimeInMillis,
   }: ProcessPatientQueryRequest) {
     await startPatientQuery({
       cxId,
@@ -140,6 +139,5 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
       data: { patientQueryStatus: "processing" },
       s3BucketName,
     });
-    if (waitTimeInMillis > 0) sleep(waitTimeInMillis);
   }
 }

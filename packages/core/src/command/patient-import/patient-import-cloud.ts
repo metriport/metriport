@@ -30,7 +30,7 @@ export type ProcessPatientImportEvemtPayload = Omit<
 >;
 export type ProcessPatientCreateEvemtPayload = Omit<
   ProcessPatientCreateRequest,
-  "s3BucketName" | "processPatientQueryQueue"
+  "s3BucketName" | "processPatientQueryQueue" | "waitTimeInMillis"
 >;
 export type ProcessPatientQueryEvemtPayload = Omit<
   ProcessPatientQueryRequest,
@@ -115,6 +115,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
     s3BucketName,
     processPatientQueryQueue,
     rerunPdOnNewDemographics,
+    waitTimeInMillis,
   }: ProcessPatientCreateRequest): Promise<void> {
     const patientId = await createPatient({
       cxId,
@@ -149,6 +150,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
         messageGroupId: cxId,
       }
     );
+    if (waitTimeInMillis > 0) sleep(waitTimeInMillis);
   }
 
   async processPatientQuery({

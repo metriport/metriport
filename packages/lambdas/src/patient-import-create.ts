@@ -19,8 +19,8 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 // Set by us
 const patientImportBucket = getEnvOrFail("PATIENT_IMPORT_BUCKET_NAME");
 const processPatientQueryQueue = getEnvOrFail("PATIENT_QUERY_QUEUE_URL");
-//const waitTimeInMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
-//const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
+const waitTimeInMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
+const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
 
 // Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
 export async function handler(event: SQSEvent) {
@@ -40,7 +40,7 @@ export async function handler(event: SQSEvent) {
       log(
         `Parsed: ${JSON.stringify(
           parsedBody
-        )}, patientImportBucket ${patientImportBucket}, processPatientQueryQueue ${processPatientQueryQueue}`
+        )}, patientImportBucket ${patientImportBucket}, processPatientQueryQueue ${processPatientQueryQueue}, waitTimeInMillis ${waitTimeInMillis}`
       );
 
       const processPatientCreateRequest: ProcessPatientCreateRequest = {
@@ -51,10 +51,11 @@ export async function handler(event: SQSEvent) {
         patientPayload,
         processPatientQueryQueue,
         rerunPdOnNewDemographics,
+        waitTimeInMillis,
       };
 
       const patientImportHandler = makePatientImportHandler();
-      patientImportHandler.processPatientCreate(processPatientCreateRequest);
+      await patientImportHandler.processPatientCreate(processPatientCreateRequest);
 
       const finishedAt = new Date().getTime();
       console.log(`Done local duration: ${finishedAt - startedAt}ms`);

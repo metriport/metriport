@@ -49,6 +49,7 @@ export type ProcessPatientCreateRequest = {
   s3BucketName: string;
   processPatientQueryQueue: string;
   rerunPdOnNewDemographics: boolean;
+  waitTimeInMillis: number;
 };
 
 export type ProcessPatientQueryRequest = {

@@ -49,7 +49,7 @@ export async function handler(event: SQSEvent) {
       };
 
       const patientImportHandler = makePatientImportHandler();
-      patientImportHandler.processPatientQuery(processPatientQueryRequest);
+      await patientImportHandler.processPatientQuery(processPatientQueryRequest);
 
       const finishedAt = new Date().getTime();
       console.log(`Done local duration: ${finishedAt - startedAt}ms`);
