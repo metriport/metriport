@@ -21,11 +21,13 @@ export type PatientCreateCmd = PatientNoExternalData & Identifier;
 
 export async function createPatient({
   patient,
+  runPd = true,
   rerunPdOnNewDemographics,
   forceCommonwell,
   forceCarequality,
 }: {
   patient: PatientCreateCmd;
+  runPd?: boolean;
   rerunPdOnNewDemographics?: boolean;
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
@@ -79,13 +81,14 @@ export async function createPatient({
   const fhirPatient = toFHIR(newPatient);
   await upsertPatientToFHIRServer(newPatient.cxId, fhirPatient);
 
-  runInitialPatientDiscoveryAcrossHies({
-    patient: newPatient.dataValues,
-    facilityId,
-    rerunPdOnNewDemographics,
-    forceCarequality,
-    forceCommonwell,
-  }).catch(processAsyncError("runInitialPatientDiscoveryAcrossHies"));
-
+  if (runPd) {
+    runInitialPatientDiscoveryAcrossHies({
+      patient: newPatient.dataValues,
+      facilityId,
+      rerunPdOnNewDemographics,
+      forceCarequality,
+      forceCommonwell,
+    }).catch(processAsyncError("runInitialPatientDiscoveryAcrossHies"));
+  }
   return newPatient;
 }

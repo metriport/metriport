@@ -1,7 +1,8 @@
-import { genderAtBirthSchema } from "@metriport/api-sdk";
+import { patientCreateSchema, genderAtBirthSchema } from "@metriport/api-sdk";
+import { patientImportSchema } from "@metriport/shared";
+import { makePatientImportHandler } from "@metriport/core/command/patient-import/patient-import-factory";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
-import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
@@ -36,7 +37,7 @@ import {
 } from "../../command/medical/patient/consolidated-get";
 import { createCoverageAssessments } from "../../command/medical/patient/coverage-assessment-create";
 import { getCoverageAssessments } from "../../command/medical/patient/coverage-assessment-get";
-import { PatientCreateCmd } from "../../command/medical/patient/create-patient";
+import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getPatientIds,
@@ -85,12 +86,13 @@ import {
   getFromQueryAsArray,
   getFromQueryAsArrayOrFail,
   getFromQueryAsBoolean,
+  getFromQueryOrFail,
 } from "../util";
 import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
-import { coverageAssessmentSchema } from "./schemas/patient";
+import { schemaCreateToPatientData } from "./schemas/patient";
 
 dayjs.extend(duration);
 
@@ -800,7 +802,7 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getFrom("query").orFail("facilityId", req);
     const dryrun = getFromQueryAsBoolean("dryrun", req) ?? false;
-    const payload = coverageAssessmentSchema.parse(req.body);
+    const payload = patientImportSchema.parse(req.body);
 
     const facility = await getFacilityOrFail({ cxId, id: facilityId });
     const patientCreates: PatientCreateCmd[] = payload.patients.map(patient => {
@@ -922,34 +924,81 @@ router.post(
   })
 );
 
-// TODO 2330 Remove this endpoint when we introduce the real `/import` one
+/** ---------------------------------------------------------------------------
+ * POST /internal/patient
+ *
+ * Creates the patient corresponding to the specified facility at the
+ * customer's organization if it doesn't exist already. This WILL NOT kickoff patient discovery by defaul.
+ *
+ * @param  req.query.facilityId The ID of the Facility the Patient should be associated with.
+ * @return The newly created patient.
+ */
 router.post(
-  "/mocked-import",
+  "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const amountOfPatients = getFrom("query").optional("amountOfPatients", req);
-    const patientImportLambda = Config.getPatientImportLambdaName();
-    const region = Config.getAWSRegion();
-    const lambdaClient = makeLambdaClient(region);
+    const facilityId = getFromQueryOrFail("facilityId", req);
+    const rerunPdOnNewDemographics = stringToBoolean(
+      getFrom("query").optional("rerunPdOnNewDemographics", req)
+    );
+    const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
+    const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
+    const runPd = getFromQueryAsBoolean("runPd", req) ?? false;
+    const payload = patientCreateSchema.parse(req.body);
 
-    const payload = {
+    const patientCreate: PatientCreateCmd = {
+      ...schemaCreateToPatientData(payload),
       cxId,
-      jobId: uuidv7(),
-      s3BucketName: "bucket-name",
-      s3FileName: "file-name",
-      amountOfPatients: amountOfPatients ?? 1,
+      facilityId,
     };
-    const result = await lambdaClient
-      .invoke({
-        FunctionName: patientImportLambda,
-        InvocationType: "RequestResponse",
-        Payload: JSON.stringify(payload),
-      })
-      .promise();
 
-    const resultPayload = getLambdaResultPayload({ result, lambdaName: patientImportLambda });
-    return res.status(status.OK).json(resultPayload);
+    const patient = await createPatient({
+      patient: patientCreate,
+      runPd,
+      rerunPdOnNewDemographics,
+      forceCommonwell,
+      forceCarequality,
+    });
+
+    return res.status(status.CREATED).json(dtoFromModel(patient));
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/patient/import
+ *
+ * @param req.query.cxId The customer ID.
+ * @param req.params.id The patient ID.
+ * @param req.query.facilityId The facility ID for running the coverage assessment.
+ * @param req.query.jobId The job Id of the fle. TEMPORARY.
+ * @param req.query.rerunPdOnNewDemographics Optional. Indicates whether to use demo augmentation on this PD run.
+ * @param req.query.dryrun Whether to simply validate or run the assessment (optional, defaults to false).
+ *
+ */
+router.post(
+  "/import",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const facilityId = getFrom("query").orFail("facilityId", req);
+    const jobId = getFrom("query").orFail("jobId", req);
+    const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
+    const dryrun = getFromQueryAsBoolean("dryrun", req);
+
+    await getFacilityOrFail({ cxId, id: facilityId });
+
+    const patientImportConnector = makePatientImportHandler();
+    await patientImportConnector.startPatientImport({
+      cxId,
+      facilityId,
+      jobId,
+      processPatientImportLambda: Config.getPatientImportLambdaName(),
+      rerunPdOnNewDemographics,
+      dryrun,
+    });
+
+    return res.sendStatus(status.OK);
   })
 );
 

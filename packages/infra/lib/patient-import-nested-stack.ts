@@ -13,11 +13,10 @@ import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { createQueue } from "./shared/sqs";
 
+const waitTimePatientCreateInSeconds = 300; // 5min
+const waitTimePatientQueryInSeconds = 0;
+
 function settings() {
-  // TODO 2330 CUSTOMIZE THIS
-  // TODO 2330 CUSTOMIZE THIS
-  // TODO 2330 CUSTOMIZE THIS
-  const waitTime = Duration.seconds(20);
   const fileImportLambdaTimeout = Duration.minutes(15).minus(Duration.seconds(5));
   const fileImport = {
     name: "PatientImportFile",
@@ -25,7 +24,10 @@ function settings() {
     lambdaMemory: 2048,
     lambdaTimeout: fileImportLambdaTimeout,
   };
-  const patientCreateLambdaTimeout = Duration.minutes(5).minus(Duration.seconds(5));
+  const waitTimePatientCreate = Duration.minutes(waitTimePatientCreateInSeconds);
+  const patientCreateLambdaTimeout = Duration.seconds(waitTimePatientCreateInSeconds + 30).minus(
+    Duration.seconds(5)
+  ); // 25secs for processinng
   const patientCreate: QueueAndLambdaSettings = {
     name: "PatientImportCreate",
     entry: "patient-import-create",
@@ -42,9 +44,12 @@ function settings() {
       visibilityTimeout: Duration.seconds(patientCreateLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
     },
-    waitTime,
+    waitTime: waitTimePatientCreate,
   };
-  const patientQueryLambdaTimeout = Duration.minutes(15).minus(Duration.seconds(5));
+  const waitTimePatientQuery = Duration.minutes(waitTimePatientQueryInSeconds);
+  const patientQueryLambdaTimeout = Duration.seconds(waitTimePatientQueryInSeconds + 30).minus(
+    Duration.seconds(5)
+  ); // 25secs for processinng
   const patientQuery: QueueAndLambdaSettings = {
     name: "PatientImportQuery",
     entry: "patient-import-query",
@@ -60,7 +65,7 @@ function settings() {
       visibilityTimeout: Duration.seconds(patientQueryLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
     },
-    waitTime,
+    waitTime: waitTimePatientQuery,
   };
   return {
     fileImport,

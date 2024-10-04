@@ -1,7 +1,11 @@
-import { errorToString, MetriportError, sleep } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
-import AWS from "aws-sdk";
-import { PatientImportQueryBody } from "./patient-import-query";
+import { errorToString, MetriportError } from "@metriport/shared";
+import { makePatientImportHandler } from "@metriport/core/command/patient-import/patient-import-factory";
+import { ProcessPatientCreateEvemtPayload } from "@metriport/core/command/patient-import/patient-import-cloud";
+import {
+  ProcessPatientCreateRequest,
+  PatientPayload,
+} from "@metriport/core/command/patient-import/patient-import";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
@@ -12,23 +16,11 @@ capture.init();
 
 // Automatically set by AWS
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
-const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const patientImportBucket = getEnvOrFail("PATIENT_IMPORT_BUCKET_NAME");
-const apiURL = getEnvOrFail("API_URL");
-const patientQueryQueueURL = getEnvOrFail("PATIENT_QUERY_QUEUE_URL");
-const waitTimeMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
-const waitTimeMillis = parseInt(waitTimeMillisRaw);
-
-export type PatientImportCreateBody = {
-  cxId: string;
-  jobId: string;
-  jobStartedAt: string; // TODO consider moving to Date if we need to work with it here
-  // TODO 2230 Prob want to expand this to include the columns of the CSV
-  patientId: string;
-};
-
-const sqs = new AWS.SQS({ region });
+const processPatientQueryQueue = getEnvOrFail("PATIENT_QUERY_QUEUE_URL");
+const waitTimeInMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
+const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
 
 // Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
 export async function handler(event: SQSEvent) {
@@ -39,39 +31,33 @@ export async function handler(event: SQSEvent) {
     const message = getSingleMessageOrFail(event.Records, lambdaName);
     if (!message) return;
 
-    console.log(`Body: ${message.body}, patientImportBucket ${patientImportBucket}`);
+    console.log(`Running with unparsed body: ${message.body}`);
     const parsedBody = parseBody(message.body);
-    const { cxId, patientId, jobId, jobStartedAt } = parsedBody;
+    const { cxId, facilityId, jobId, jobStartedAt, patientPayload, rerunPdOnNewDemographics } =
+      parsedBody;
 
-    const log = prefixedLog(`cxId ${cxId}, patientId ${patientId}, job ${jobId}`);
+    const log = prefixedLog(`cxId ${cxId}, job ${jobId}`);
     try {
-      // TODO 2330 call the logic from Core
-      // TODO 2330 call the logic from Core
-      // TODO 2330 call the logic from Core
-      log(`apiURL: ${apiURL}`);
-      log(`Parsed: ${JSON.stringify(parsedBody)}`);
+      log(
+        `Parsed: ${JSON.stringify(
+          parsedBody
+        )}, patientImportBucket ${patientImportBucket}, processPatientQueryQueue ${processPatientQueryQueue}, waitTimeInMillis ${waitTimeInMillis}`
+      );
 
-      // TODO 2330 MOCKED BEHAVIOR
-      // TODO 2330 MOCKED BEHAVIOR
-      // TODO 2330 MOCKED BEHAVIOR
-      await sleep(waitTimeMillis);
-
-      // TODO 2330 Move this to Core, we should have diff implementations for this, so we can run it
-      // local and on the cloud
-      const body: PatientImportQueryBody = {
+      const processPatientCreateRequest: ProcessPatientCreateRequest = {
         cxId,
+        facilityId,
         jobId,
         jobStartedAt,
-        patientId,
+        s3BucketName: patientImportBucket,
+        patientPayload,
+        processPatientQueryQueue,
+        rerunPdOnNewDemographics,
+        waitTimeInMillis,
       };
-      const sendParams = {
-        MessageBody: JSON.stringify(body),
-        QueueUrl: patientQueryQueueURL,
-        MessageGroupId: cxId,
-        MessageDeduplicationId: patientId,
-      };
-      log(`Sending message to query lambda...`);
-      await sqs.sendMessage(sendParams).promise();
+
+      const patientImportHandler = makePatientImportHandler();
+      await patientImportHandler.processPatientCreate(processPatientCreateRequest);
 
       const finishedAt = new Date().getTime();
       console.log(`Done local duration: ${finishedAt - startedAt}ms`);
@@ -81,7 +67,9 @@ export async function handler(event: SQSEvent) {
       capture.error(errorMsg, {
         extra: { event, context: lambdaName, error },
       });
-      throw new MetriportError(errorMsg, error, { ...parsedBody });
+      throw new MetriportError(errorMsg, error, {
+        ...{ ...parsedBody, patientPayload: undefined },
+      });
     }
   } catch (error) {
     if (errorHandled) throw error;
@@ -93,7 +81,7 @@ export async function handler(event: SQSEvent) {
   }
 }
 
-function parseBody(body?: unknown): PatientImportCreateBody {
+function parseBody(body?: unknown): ProcessPatientCreateEvemtPayload {
   if (!body) throw new Error(`Missing message body`);
 
   const bodyString = typeof body === "string" ? (body as string) : undefined;
@@ -105,9 +93,9 @@ function parseBody(body?: unknown): PatientImportCreateBody {
   if (!cxIdRaw) throw new Error(`Missing cxId`);
   if (typeof cxIdRaw !== "string") throw new Error(`Invalid cxId`);
 
-  const patientIdRaw = bodyAsJson.patientId;
-  if (!patientIdRaw) throw new Error(`Missing patientId`);
-  if (typeof patientIdRaw !== "string") throw new Error(`Invalid patientId`);
+  const facilityIdRaw = bodyAsJson.facilityId;
+  if (!facilityIdRaw) throw new Error(`Missing cxId`);
+  if (typeof facilityIdRaw !== "string") throw new Error(`Invalid facilityId`);
 
   const jobIdRaw = bodyAsJson.jobId;
   if (!jobIdRaw) throw new Error(`Missing jobId`);
@@ -117,10 +105,22 @@ function parseBody(body?: unknown): PatientImportCreateBody {
   if (!jobStartedAtRaw) throw new Error(`Missing jobStartedAt`);
   if (typeof jobStartedAtRaw !== "string") throw new Error(`Invalid jobStartedAt`);
 
+  const patientPayloadRaw = bodyAsJson.patientPayload;
+  if (!patientPayloadRaw) throw new Error(`Missing patientPayload`);
+  if (typeof patientPayloadRaw !== "object") throw new Error(`Invalid patientPayload`);
+
+  const rerunPdOnNewDemographicsRaw = bodyAsJson.rerunPdOnNewDemographics;
+  if (rerunPdOnNewDemographicsRaw === undefined)
+    throw new Error(`Missing rerunPdOnNewDemographics`);
+  if (typeof rerunPdOnNewDemographicsRaw !== "boolean")
+    throw new Error(`Invalid rerunPdOnNewDemographics`);
+
   const cxId = cxIdRaw as string;
-  const patientId = patientIdRaw as string;
+  const facilityId = facilityIdRaw as string;
   const jobId = jobIdRaw as string;
   const jobStartedAt = jobStartedAtRaw as string;
+  const patientPayload = patientPayloadRaw as PatientPayload;
+  const rerunPdOnNewDemographics = rerunPdOnNewDemographicsRaw as boolean;
 
-  return { cxId, patientId, jobId, jobStartedAt };
+  return { cxId, facilityId, jobId, jobStartedAt, patientPayload, rerunPdOnNewDemographics };
 }
