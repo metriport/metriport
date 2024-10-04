@@ -5,17 +5,25 @@ import * as getConsolidatedFromS3File from "@metriport/core/command/consolidated
 import { makeAllergyIntollerance } from "@metriport/core/external/fhir/__tests__/allergy-intolerance";
 import { makeBundle } from "@metriport/core/external/fhir/__tests__/bundle";
 import { makeMedicationRequest } from "@metriport/core/fhir-deduplication/__tests__/examples/medication-related";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { SearchSetBundle } from "@metriport/shared/medical";
+import * as getPatient from "../../../../command/medical/patient/get-patient";
+import { makePatientModelSafe } from "../../../../models/medical/__tests__/patient";
 import { countResourcesOnS3 } from "../count-resources-on-s3";
 
 let getConsolidatedFromS3_mock: jest.SpyInstance;
+let getPatientOrFail_mock: jest.SpyInstance;
 
 beforeEach(() => {
   jest.restoreAllMocks();
   getConsolidatedFromS3_mock = jest
     .spyOn(getConsolidatedFromS3File, "getConsolidatedFromS3")
     .mockImplementation(async () => ({} as SearchSetBundle));
+  getPatientOrFail_mock = jest
+    .spyOn(getPatient, "getPatientOrFail")
+    .mockImplementation(async () => {
+      console.log(`mocked `);
+      return makePatientModelSafe();
+    });
 });
 afterEach(() => {
   jest.clearAllMocks();
@@ -130,22 +138,22 @@ describe("countResourcesOnS3", () => {
 
   it(`forwards params to getConsolidatedFromS3`, async () => {
     const bundle = makeBundle();
-    const cxId = uuidv7();
-    const patientId = uuidv7();
+    const patient = makePatientModelSafe();
     const dateFrom = faker.date.past().toISOString();
     const dateTo = faker.date.recent().toISOString();
     const resources: ResourceTypeForConsolidation[] = ["MedicationRequest", "Encounter"];
     getConsolidatedFromS3_mock.mockResolvedValueOnce(bundle);
+    getPatientOrFail_mock.mockResolvedValueOnce(patient);
     await countResourcesOnS3({
-      patient: { cxId, id: patientId },
+      patient,
       dateFrom,
       dateTo,
       resources,
     });
     expect(getConsolidatedFromS3_mock).toHaveBeenCalledTimes(1);
     expect(getConsolidatedFromS3_mock).toHaveBeenCalledWith({
-      cxId,
-      patientId,
+      cxId: patient.cxId,
+      patient,
       dateFrom,
       dateTo,
       resources,
