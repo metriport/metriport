@@ -3,7 +3,7 @@ import { uuidv7 } from "../../util/uuid-v7";
 import { makeLambdaClient } from "../../external/aws/lambda";
 import { SQSClient } from "../../external/aws/sqs";
 import { createJobRecord } from "./commands/create-job-record";
-import { validateAndParsePatientImportCsv } from "./commands/validate-and-parse-import";
+import { validateAndParsePatientImportCsvFromS3 } from "./commands/validate-and-parse-import";
 import { checkPatientRecord } from "./commands/check-patient-record";
 import { creatOrUpdatePatientRecord } from "./commands/create-or-update-patient-record";
 import { startDocumentQuery } from "./commands/start-document-query";
@@ -76,7 +76,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
       data: { jobStartedAt },
       s3BucketName,
     });
-    const patients = await validateAndParsePatientImportCsv({
+    const patients = await validateAndParsePatientImportCsvFromS3({
       cxId,
       jobId,
       s3BucketName,

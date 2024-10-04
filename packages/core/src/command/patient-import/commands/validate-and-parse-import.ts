@@ -1,17 +1,16 @@
-import { PatientImportPatient, patientImportPatientSchema } from "@metriport/shared";
-import { errorToString } from "@metriport/shared";
-import { out } from "../../../util/log";
-import { capture } from "../../../util/notifications";
+import { errorToString, PatientImportPatient, patientImportPatientSchema } from "@metriport/shared";
 import { S3Utils } from "../../../external/aws/s3";
 import { Config } from "../../../util/config";
-import { creatValidationFile } from "./create-validation-file";
+import { out } from "../../../util/log";
+import { capture } from "../../../util/notifications";
 import {
-  createFileKeyFiles,
-  PatientImportCsvHeaders,
   compareCsvHeaders,
-  normalizeHeaders,
+  createFileKeyFiles,
   createObjectFromCsv,
+  normalizeHeaders,
+  patientImportCsvHeaders,
 } from "../patient-import-shared";
+import { creatValidationFile } from "./create-validation-file";
 
 const region = Config.getAWSRegion();
 
@@ -19,12 +18,12 @@ function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
-type rowError = { rowColumns: string[]; error: string };
+export type RowError = { rowColumns: string[]; error: string };
 
 const eolRegex = new RegExp(/\r/g);
 const commaRegex = new RegExp(/,/g);
 
-export async function validateAndParsePatientImportCsv({
+export async function validateAndParsePatientImportCsvFromS3({
   cxId,
   jobId,
   s3BucketName,
@@ -38,38 +37,11 @@ export async function validateAndParsePatientImportCsv({
   const key = createFileKeyFiles(cxId, jobId, "raw");
   try {
     const csvAsString = await s3Utils.getFileContentsAsString(s3BucketName, key);
-    const allRows = csvAsString.split("\n");
-    const headersRow = allRows[0];
-    if (!headersRow) throw new Error(`File is empty for ${key}`);
-    const headers = normalizeHeaders(stripEol(headersRow).split(","));
-    if (!compareCsvHeaders(PatientImportCsvHeaders, headers)) {
-      throw new Error(`Headers are invalid for ${key}`);
-    }
-    const rows = allRows.slice(1);
-    if (rows.length === 0) throw new Error(`File is empty except for headers for ${key}`);
-    const validRows: string[][] = [];
-    const invalidRows: rowError[] = [];
-    const patients = rows.flatMap((row, rowIndex) => {
-      const rowColumns = stripEol(row).split(",");
-      if (rowColumns.length !== headers.length) {
-        invalidRows.push({
-          rowColumns,
-          error: `Row ${rowIndex} did not split into correct number of columns`,
-        });
-        return [];
-      }
-      const patientObject = createObjectFromCsv({ rowColumns, headers });
-      const parsedPatient = patientImportPatientSchema.safeParse(patientObject);
-      if (!parsedPatient.success) {
-        invalidRows.push({
-          rowColumns,
-          error: `Row ${rowIndex} had zod error ${JSON.stringify(parsedPatient.error)}`,
-        });
-        return [];
-      }
-      validRows.push(rowColumns);
-      return parsedPatient.data;
+
+    const { patients, invalidRows, validRows, headers } = await validateAndParsePatientImportCsv({
+      contents: csvAsString,
     });
+    console.log(invalidRows);
     await Promise.all([
       validRows.length > 0
         ? creatValidationFile({
@@ -108,6 +80,51 @@ export async function validateAndParsePatientImportCsv({
     });
     throw error;
   }
+}
+
+export async function validateAndParsePatientImportCsv({
+  contents: csvAsString,
+}: {
+  contents: string;
+}): Promise<{
+  validRows: string[][];
+  invalidRows: RowError[];
+  headers: string[];
+  patients: PatientImportPatient[];
+}> {
+  const allRows = csvAsString.split("\n");
+  const headersRow = allRows[0];
+  if (!headersRow) throw new Error(`File is empty`);
+  const headers = normalizeHeaders(stripEol(headersRow).split(","));
+  if (!compareCsvHeaders(patientImportCsvHeaders, headers)) {
+    throw new Error(`Headers are invalid`);
+  }
+  const rows = allRows.slice(1);
+  if (rows.length === 0) throw new Error(`File is empty except for headers`);
+  const validRows: string[][] = [];
+  const invalidRows: RowError[] = [];
+  const patients = rows.flatMap((row, rowIndex) => {
+    const rowColumns = stripEol(row).split(",");
+    if (rowColumns.length !== headers.length) {
+      invalidRows.push({
+        rowColumns,
+        error: `Row ${rowIndex} did not split into correct number of columns`,
+      });
+      return [];
+    }
+    const patientObject = createObjectFromCsv({ rowColumns, headers });
+    const parsedPatient = patientImportPatientSchema.safeParse(patientObject);
+    if (!parsedPatient.success) {
+      invalidRows.push({
+        rowColumns,
+        error: `Row ${rowIndex} had zod error ${JSON.stringify(parsedPatient.error)}`,
+      });
+      return [];
+    }
+    validRows.push(rowColumns);
+    return parsedPatient.data;
+  });
+  return { validRows, invalidRows, headers, patients };
 }
 
 function stripEol(input: string, replacement = "") {

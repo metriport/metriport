@@ -1,12 +1,12 @@
 import {
-  PatientImportPatient,
   normalizeDate,
-  normalizeGender,
-  normalizeState,
-  normalizeZipCode,
-  normalizePhoneNumberStrict,
   normalizeEmailStrict,
   normalizeExternalId,
+  normalizeGender,
+  normalizePhoneNumberStrict,
+  normalizeState,
+  normalizeZipCodeNew,
+  PatientImportPatient,
   toTitleCase,
 } from "@metriport/shared";
 import { PatientPayload } from "./patient-import";
@@ -43,7 +43,7 @@ export function createFileKeyFiles(cxId: string, jobId: string, stage: FileStage
   return key;
 }
 
-export const PatientImportCsvHeaders = [
+export const patientImportCsvHeaders = [
   "externalid",
   "firstname",
   "lastname",
@@ -56,12 +56,13 @@ export const PatientImportCsvHeaders = [
   "addressline2",
   "phone1",
   "email1",
-  "phone2",
-  "email2",
+  // "phone2",
+  // "email2",
 ];
 
 const replaceCharacters = ["*"];
 
+// TODO gotta accept email, email1, phone, phone1, etc
 export function normalizeHeaders(headers: string[]): string[] {
   let newHeaders = headers;
   replaceCharacters.map(char => {
@@ -117,7 +118,7 @@ export function createPatientPayload(patient: PatientImportPatient): PatientPayl
         ...(patient.addressline2 ? { addressLine2: toTitleCase(patient.addressline2) } : undefined),
         city: toTitleCase(patient.city),
         state: normalizeState(patient.state),
-        zip: normalizeZipCode(patient.zip),
+        zip: normalizeZipCodeNew(patient.zip),
         country: "USA",
       },
     ],
