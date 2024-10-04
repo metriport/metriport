@@ -26,7 +26,7 @@ import { CxSources, cxMappingsSourceMap } from "../domain/cx-mapping";
 import { FacilitySources, facilitysMappingsSourceList } from "../domain/facility-mapping";
 import { isEnhancedCoverageEnabledForCx } from "../external/aws/app-config";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
-import { countResources } from "../external/fhir/patient/count-resources";
+import { countResourcesOnFhir } from "../external/fhir/patient/count-resources-on-fhir";
 import { OrganizationModel } from "../models/medical/organization";
 import userRoutes from "./devices/internal-user";
 import { requestLogger } from "./helpers/request-logger";
@@ -175,7 +175,7 @@ router.get(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const result = await countResources({ patient: { cxId } });
+    const result = await countResourcesOnFhir({ patient: { cxId } });
     return res.json(result);
   })
 );
