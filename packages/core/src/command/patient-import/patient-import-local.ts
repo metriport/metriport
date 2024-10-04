@@ -1,6 +1,6 @@
 import { executeAsynchronously } from "../../util/concurrency";
 import { createJobRecord } from "./commands/create-job-record";
-import { validateAndParsePatientImportCsv } from "./commands/validate-and-parse-import";
+import { validateAndParsePatientImportCsvFromS3 } from "./commands/validate-and-parse-import";
 import { checkPatientRecord } from "./commands/check-patient-record";
 import { creatOrUpdatePatientRecord } from "./commands/create-or-update-patient-record";
 import { startDocumentQuery } from "./commands/start-document-query";
@@ -55,7 +55,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
       data: { jobStartedAt },
       s3BucketName,
     });
-    const patients = await validateAndParsePatientImportCsv({
+    const patients = await validateAndParsePatientImportCsvFromS3({
       cxId,
       jobId,
       s3BucketName,
