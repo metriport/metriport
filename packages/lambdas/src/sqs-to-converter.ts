@@ -403,7 +403,7 @@ async function sendConversionResult(
     .promise();
 
   await ossApi.internal.notifyApi(
-    { cxId, patientId, status: "success", source: medicalDataSource },
+    { cxId, patientId, jobId, source: medicalDataSource, status: "success" },
     log
   );
 }
