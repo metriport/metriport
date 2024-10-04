@@ -986,16 +986,14 @@ router.post(
     const dryrun = getFromQueryAsBoolean("dryrun", req);
 
     const patientImportConnector = makePatientImportHandler();
-    await patientImportConnector
-      .startPatientImport({
-        cxId,
-        facilityId,
-        jobId,
-        processPatientImportLambda: Config.getPatientImportLambdaName(),
-        rerunPdOnNewDemographics,
-        dryrun,
-      })
-      .catch(processAsyncError("patientImportConnector.startPatientImport"));
+    await patientImportConnector.startPatientImport({
+      cxId,
+      facilityId,
+      jobId,
+      processPatientImportLambda: Config.getPatientImportLambdaName(),
+      rerunPdOnNewDemographics,
+      dryrun,
+    });
 
     return res.sendStatus(status.OK);
   })

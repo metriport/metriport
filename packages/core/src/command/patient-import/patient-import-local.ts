@@ -15,11 +15,10 @@ import {
   ProcessPatientQueryRequest,
 } from "./patient-import";
 import { createPatientPayload } from "./patient-import-shared";
-import { Config } from "../../util/config";
-
-const patientImportBucket = Config.getPatientImportBucket();
 
 export class PatientImportHandlerLocal implements PatientImportHandler {
+  constructor(private readonly patientImportBucket: string) {}
+
   async startPatientImport({
     cxId,
     facilityId,
@@ -27,14 +26,13 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     rerunPdOnNewDemographics = true,
     dryrun = false,
   }: StartPatientImportRequest): Promise<void> {
-    if (!patientImportBucket) throw new Error("patientImportBucket not setup");
     const jobStartedAt = new Date().toISOString();
     const processPatientImportRequest: ProcessPatientImportRequest = {
       cxId,
       facilityId,
       jobId,
       jobStartedAt,
-      s3BucketName: patientImportBucket,
+      s3BucketName: this.patientImportBucket,
       processPatientCreateQueue: "local",
       rerunPdOnNewDemographics,
       dryrun,
@@ -52,7 +50,6 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     rerunPdOnNewDemographics,
     dryrun,
   }: ProcessPatientImportRequest): Promise<void> {
-    if (!patientImportBucket) throw new Error("patientImportBucket not setup");
     await createJobRecord({
       cxId,
       jobId,
@@ -72,7 +69,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
         facilityId,
         jobId,
         patientPayload,
-        s3BucketName: patientImportBucket,
+        s3BucketName: this.patientImportBucket,
         processPatientQueryQueue: "local",
         rerunPdOnNewDemographics,
       };
@@ -91,7 +88,6 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     s3BucketName,
     rerunPdOnNewDemographics,
   }: ProcessPatientCreateRequest): Promise<void> {
-    if (!patientImportBucket) throw new Error("patientImportBucket not setup");
     const patientId = await createPatient({
       cxId,
       facilityId,
@@ -114,7 +110,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
       cxId,
       jobId,
       patientId,
-      s3BucketName: patientImportBucket,
+      s3BucketName: this.patientImportBucket,
       rerunPdOnNewDemographics,
       waitTimeInMillis: 0,
     });
