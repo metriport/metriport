@@ -111,6 +111,13 @@ export async function validateAndParsePatientImportCsv({
       });
       return [];
     }
+    if (rowColumns.some(col => col.includes('"'))) {
+      invalidRows.push({
+        rowColumns,
+        error: `Row ${rowIndex} has an unsupport double-quote`,
+      });
+      return [];
+    }
     const patientObject = createObjectFromCsv({ rowColumns, headers });
     const parsedPatient = patientImportPatientSchema.safeParse(patientObject);
     if (!parsedPatient.success) {
