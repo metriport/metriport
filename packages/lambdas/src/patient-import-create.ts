@@ -101,7 +101,7 @@ function parseBody(body?: unknown): ProcessPatientCreateEvemtPayload {
 
   const patientPayloadRaw = bodyAsJson.patientPayload;
   if (!patientPayloadRaw) throw new Error(`Missing patientPayload`);
-  if (typeof patientPayloadRaw !== "string") throw new Error(`Invalid patientPayload`);
+  if (typeof patientPayloadRaw !== "object") throw new Error(`Invalid patientPayload`);
 
   const rerunPdOnNewDemographicsRaw = bodyAsJson.rerunPdOnNewDemographics;
   if (rerunPdOnNewDemographicsRaw === undefined)
@@ -112,7 +112,7 @@ function parseBody(body?: unknown): ProcessPatientCreateEvemtPayload {
   const cxId = cxIdRaw as string;
   const facilityId = facilityIdRaw as string;
   const jobId = jobIdRaw as string;
-  const patientPayload = JSON.parse(patientPayloadRaw) as PatientPayload;
+  const patientPayload = patientPayloadRaw as PatientPayload;
   const rerunPdOnNewDemographics = rerunPdOnNewDemographicsRaw as boolean;
 
   return { cxId, facilityId, jobId, patientPayload, rerunPdOnNewDemographics };
