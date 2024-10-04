@@ -118,7 +118,7 @@ export async function validateAndParsePatientImportCsv({
     if (rowColumns.some(col => col.includes('"'))) {
       invalidRows.push({
         rowColumns,
-        error: `Row ${rowIndex} has an unsupport double-quote`,
+        error: `Row ${rowIndex} has an unspported double-quote`,
       });
       return [];
     }

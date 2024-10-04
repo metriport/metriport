@@ -48,7 +48,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
     rerunPdOnNewDemographics = true,
     dryrun = false,
   }: StartPatientImportRequest): Promise<void> {
-    const { log } = out(`PatientImport start patient import - cxId ${cxId} jobId ${jobId}`);
+    const { log } = out(`startPatientImport- cxId ${cxId} jobId ${jobId}`);
     try {
       const processPatientImportRequest: ProcessPatientImportEvemtPayload = {
         cxId,
@@ -104,7 +104,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
     rerunPdOnNewDemographics,
     dryrun,
   }: ProcessPatientImportRequest): Promise<void> {
-    const { log } = out(`PatientImport proces patient import - cxId ${cxId} jobId ${jobId}`);
+    const { log } = out(`processPatientImport - cxId ${cxId} jobId ${jobId}`);
     try {
       await createJobRecord({
         cxId,
@@ -188,7 +188,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
     rerunPdOnNewDemographics,
     waitTimeInMillis,
   }: ProcessPatientCreateRequest): Promise<void> {
-    const { log } = out(`PatientImport proces patient create - cxId ${cxId} jobId ${jobId}`);
+    const { log } = out(`processPatientCreate - cxId ${cxId} jobId ${jobId}`);
     try {
       const patientId = await createPatient({
         cxId,
@@ -271,7 +271,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
     waitTimeInMillis,
   }: ProcessPatientQueryRequest) {
     const { log } = out(
-      `PatientImport proces patient query - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
+      `PprocessPatientQuery - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
     );
     try {
       await startPatientQuery({

@@ -28,7 +28,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     rerunPdOnNewDemographics = true,
     dryrun = false,
   }: StartPatientImportRequest): Promise<void> {
-    const { log } = out(`PatientImport start patient import - cxId ${cxId} jobId ${jobId}`);
+    const { log } = out(`startPatientImport - cxId ${cxId} jobId ${jobId}`);
     try {
       const jobStartedAt = new Date().toISOString();
       const processPatientImportRequest: ProcessPatientImportRequest = {
@@ -67,7 +67,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     rerunPdOnNewDemographics,
     dryrun,
   }: ProcessPatientImportRequest): Promise<void> {
-    const { log } = out(`PatientImport proces patient import - cxId ${cxId} jobId ${jobId}`);
+    const { log } = out(`processPatientImport - cxId ${cxId} jobId ${jobId}`);
     try {
       await createJobRecord({
         cxId,
@@ -128,7 +128,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     s3BucketName,
     rerunPdOnNewDemographics,
   }: ProcessPatientCreateRequest): Promise<void> {
-    const { log } = out(`PatientImport proces patient create - cxId ${cxId} jobId ${jobId}`);
+    const { log } = out(`processPatientCreate - cxId ${cxId} jobId ${jobId}`);
     try {
       const patientId = await createPatient({
         cxId,
@@ -186,9 +186,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     s3BucketName,
     rerunPdOnNewDemographics,
   }: ProcessPatientQueryRequest) {
-    const { log } = out(
-      `PatientImport proces patient query - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
-    );
+    const { log } = out(`processPatientQuery - cxId ${cxId} jobId ${jobId} patientId ${patientId}`);
     try {
       await startPatientQuery({
         cxId,
