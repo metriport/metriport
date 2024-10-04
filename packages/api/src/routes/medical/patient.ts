@@ -38,6 +38,7 @@ import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-li
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import BadRequestError from "../../errors/bad-request";
 import NotFoundError from "../../errors/not-found";
+import { countResources } from "../../external/fhir/patient/count-resources";
 import { PatientModel as Patient } from "../../models/medical/patient";
 import { REQUEST_ID_HEADER_NAME } from "../../routes/header";
 import { Config } from "../../shared/config";
@@ -464,19 +465,12 @@ router.get(
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
 
-    // tmp added for Authorization purposes
-    await getPatientOrFail({ cxId, id: patientId });
-    // TODO 2215: revert this once we have count from the new consolidated flow
-    const resourceCount = {
-      total: 100,
-      resources: {},
-    };
-    // const resourceCount = await countResources({
-    //   patient: { id: patientId, cxId },
-    //   resources,
-    //   dateFrom,
-    //   dateTo,
-    // });
+    const resourceCount = await countResources({
+      patient: { id: patientId, cxId },
+      resources,
+      dateFrom,
+      dateTo,
+    });
 
     return res.json({
       ...resourceCount,
