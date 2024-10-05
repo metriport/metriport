@@ -1,4 +1,3 @@
-import { Duration } from "aws-cdk-lib";
 import { chunk } from "lodash";
 import { sleep, errorToString } from "@metriport/shared";
 import { capture } from "../../util/notifications";
@@ -29,7 +28,7 @@ const lambdaClient = makeLambdaClient(region);
 const sqsClient = new SQSClient({ region });
 
 // CURRENT: 5 chunks every 250ms is 20 patients per second -> 18000 in 15min (the lambda timeout)
-const sleepBetweenPatientCreateChunks = Duration.millis(250);
+const sleepBetweenPatientCreateChunksInMillis = 250;
 const patientCreateChunk = 5;
 
 export type ProcessPatientImportEvemtPayload = Omit<
@@ -170,7 +169,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
           })
         );
         allOutcomes.push(...chunkOutcomes);
-        await sleep(sleepBetweenPatientCreateChunks.toMilliseconds());
+        await sleep(sleepBetweenPatientCreateChunksInMillis);
       }
       const hadFailure = allOutcomes.some(outcome => outcome.status === "rejected");
       if (hadFailure) throw new Error("At least one payload failed to send to create queue");
