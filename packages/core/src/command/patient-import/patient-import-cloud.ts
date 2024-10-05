@@ -1,3 +1,5 @@
+import { Duration } from "aws-cdk-lib";
+import { chunk } from "lodash";
 import { sleep, errorToString } from "@metriport/shared";
 import { capture } from "../../util/notifications";
 import { out } from "../../util/log";
@@ -25,6 +27,10 @@ const region = Config.getAWSRegion();
 
 const lambdaClient = makeLambdaClient(region);
 const sqsClient = new SQSClient({ region });
+
+// 20 / second -> 18000 in 15min
+const sleepBetweenPatientCreateChunks = Duration.millis(250);
+const patientCreateChunk = 5;
 
 export type ProcessPatientImportEvemtPayload = Omit<
   ProcessPatientImportRequest,
@@ -123,44 +129,50 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
         log(`Dryrun is true, returning...`);
         return;
       }
-      const outcomes = await Promise.allSettled(
-        patients.map(async patient => {
-          const patientPayload = createPatientPayload(patient);
-          const processPatientCreateRequest: ProcessPatientCreateEvemtPayload = {
-            cxId,
-            facilityId,
-            jobId,
-            jobStartedAt,
-            patientPayload,
-            rerunPdOnNewDemographics,
-          };
-          try {
-            await sqsClient.sendMessageToQueue(
-              processPatientCreateQueue,
-              JSON.stringify(processPatientCreateRequest),
-              {
-                fifo: true,
-                messageDeduplicationId: uuidv7(),
-                messageGroupId: cxId,
-              }
-            );
-          } catch (error) {
-            const msg = `Failure while sending payload to patient create queue @ PatientImport`;
-            log(`${msg}. Cause: ${errorToString(error)}`);
-            capture.error(msg, {
-              extra: {
-                cxId,
-                jobId,
-                processPatientCreateRequest,
-                context: "patient-import-cloud.send-payload-to-patient-create-queue",
-                error,
-              },
-            });
-            throw error;
-          }
-        })
-      );
-      const hadFailure = outcomes.some(outcome => outcome.status === "rejected");
+      const allOutcomes: PromiseSettledResult<void>[] = [];
+      const patientChunks = chunk(patients, patientCreateChunk);
+      for (const patientChunk of patientChunks) {
+        const chunkOutcomes = await Promise.allSettled(
+          patientChunk.map(async patient => {
+            const patientPayload = createPatientPayload(patient);
+            const processPatientCreateRequest: ProcessPatientCreateEvemtPayload = {
+              cxId,
+              facilityId,
+              jobId,
+              jobStartedAt,
+              patientPayload,
+              rerunPdOnNewDemographics,
+            };
+            try {
+              await sqsClient.sendMessageToQueue(
+                processPatientCreateQueue,
+                JSON.stringify(processPatientCreateRequest),
+                {
+                  fifo: true,
+                  messageDeduplicationId: uuidv7(),
+                  messageGroupId: cxId,
+                }
+              );
+            } catch (error) {
+              const msg = `Failure while sending payload to patient create queue @ PatientImport`;
+              log(`${msg}. Cause: ${errorToString(error)}`);
+              capture.error(msg, {
+                extra: {
+                  cxId,
+                  jobId,
+                  processPatientCreateRequest,
+                  context: "patient-import-cloud.send-payload-to-patient-create-queue",
+                  error,
+                },
+              });
+              throw error;
+            }
+          })
+        );
+        allOutcomes.push(...chunkOutcomes);
+        await sleep(sleepBetweenPatientCreateChunks.toMilliseconds());
+      }
+      const hadFailure = allOutcomes.some(outcome => outcome.status === "rejected");
       if (hadFailure) throw new Error("At least one payload failed to send to create queue");
     } catch (error) {
       const msg = `Failure while processing patient import @ PatientImport`;
