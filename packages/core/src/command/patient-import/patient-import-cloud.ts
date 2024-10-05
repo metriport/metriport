@@ -28,7 +28,7 @@ const region = Config.getAWSRegion();
 const lambdaClient = makeLambdaClient(region);
 const sqsClient = new SQSClient({ region });
 
-// 20 / second -> 18000 in 15min
+// CURRENT: 5 chunks every 250ms is 20 patients per second -> 18000 in 15min (the lambda timeout)
 const sleepBetweenPatientCreateChunks = Duration.millis(250);
 const patientCreateChunk = 5;
 
