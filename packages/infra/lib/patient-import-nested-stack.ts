@@ -13,8 +13,8 @@ import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { createQueue } from "./shared/sqs";
 
-const waitTimePatientCreateInSeconds = 300; // 5min
-const waitTimePatientQueryInSeconds = 0;
+const waitTimePatientCreate = Duration.seconds(60);
+const waitTimePatientQuery = Duration.seconds(0);
 
 function settings() {
   const fileImportLambdaTimeout = Duration.minutes(15).minus(Duration.seconds(5));
@@ -24,10 +24,8 @@ function settings() {
     lambdaMemory: 2048,
     lambdaTimeout: fileImportLambdaTimeout,
   };
-  const waitTimePatientCreate = Duration.seconds(waitTimePatientCreateInSeconds);
-  const patientCreateLambdaTimeout = Duration.seconds(waitTimePatientCreateInSeconds + 30).minus(
-    Duration.seconds(5)
-  ); // 25secs for processinng
+  // 25secs for processinng
+  const patientCreateLambdaTimeout = waitTimePatientCreate.plus(Duration.seconds(25));
   const patientCreate: QueueAndLambdaSettings = {
     name: "PatientImportCreate",
     entry: "patient-import-create",
@@ -46,10 +44,8 @@ function settings() {
     },
     waitTime: waitTimePatientCreate,
   };
-  const waitTimePatientQuery = Duration.seconds(waitTimePatientQueryInSeconds);
-  const patientQueryLambdaTimeout = Duration.seconds(waitTimePatientQueryInSeconds + 30).minus(
-    Duration.seconds(5)
-  ); // 25secs for processinng
+  // 25secs for processinng
+  const patientQueryLambdaTimeout = waitTimePatientQuery.plus(Duration.seconds(25));
   const patientQuery: QueueAndLambdaSettings = {
     name: "PatientImportQuery",
     entry: "patient-import-query",
