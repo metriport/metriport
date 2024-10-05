@@ -9,14 +9,12 @@ import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnvOrFail } from "./shared/env";
 import { Log, prefixedLog } from "./shared/log";
-import { apiClient } from "./shared/oss-api";
 
 // Automatically set by AWS
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
-const apiURL = getEnvOrFail("API_URL");
 const fhirServerUrl = getEnvOrFail("FHIR_SERVER_URL");
 
 const maxRetries = 10;
@@ -27,7 +25,6 @@ const defaultS3RetriesConfig = {
 
 const s3Utils = new S3Utils(region);
 const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace);
-const ossApi = apiClient(apiURL);
 
 /* Example of a single message/record in event's `Records` array:
 {
@@ -92,11 +89,9 @@ export async function handler(event: SQSEvent) {
       const patientId = attrib.patientId?.stringValue;
       const jobId = attrib.jobId?.stringValue;
       const jobStartedAt = attrib.startedAt?.stringValue;
-      const source = attrib.source?.stringValue;
       if (!cxId) throw new Error(`Missing cxId`);
       if (!patientId) throw new Error(`Missing patientId`);
       const log = prefixedLog(`${i}, patient ${patientId}, job ${jobId}`);
-      const lambdaParams = { cxId, patientId, jobId, source };
 
       log(`Body: ${message.body}`);
       const { s3BucketName, s3FileName } = parseBody(message.body);
@@ -167,23 +162,13 @@ export async function handler(event: SQSEvent) {
       processFHIRResponse(response, event, log);
 
       await cloudWatchUtils.reportMetrics(metrics);
-
-      // TODO 2215 Remove this when we're ready to move the notification from the FHIR server here
-      await ossApi.internal.notifyApi({ ...lambdaParams, status: "success" }, log);
     }
     console.log(`Done`);
   } catch (error) {
     const msg = "Error processing event on " + lambdaName;
     console.log(`${msg}: ${errorToString(error)}`);
     capture.error(msg, {
-      extra: {
-        event,
-        context: lambdaName,
-        error,
-        notes:
-          "This means the API was not notified about the failure, the patient's doc query is " +
-          "likely not to get completed - it might need manual intervention",
-      },
+      extra: { event, context: lambdaName, error },
     });
     throw new MetriportError(msg, error);
   }

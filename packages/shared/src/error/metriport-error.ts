@@ -1,6 +1,6 @@
 import status from "http-status";
 
-export type AdditionalInfo = Record<string, string | number | undefined | null>;
+export type AdditionalInfo = Record<string, string | number | boolean | undefined | null>;
 
 export class MetriportError extends Error {
   status: number = status.INTERNAL_SERVER_ERROR;
