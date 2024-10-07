@@ -1,6 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
+import fs from "fs";
 import { getSortedMessageDetails, handleSingleMessage } from "./shared";
 
 /**
@@ -17,29 +18,40 @@ import { getSortedMessageDetails, handleSingleMessage } from "./shared";
  *
  */
 
-const peekDlqOutputFilePath =
-  "/Users/ramilgaripov/Desktop/metriport/full_stack/metriport/packages/utils/fhir-converter-dlq-oct4.json";
+const peekDlqOutputFilePath = "";
 const LOG_GROUP_NAME = "/aws/lambda/FHIRServerLambda";
 const THREE_HOUR_WINDOW_MS = 3 * 60 * 60 * 1000;
 const startDate = Date.now();
 const outputFolder = `runs/fhir-to-server-lambda/${startDate}`;
 
 async function main() {
+  if (!fs.existsSync(outputFolder)) {
+    fs.mkdirSync(outputFolder, { recursive: true });
+  }
+
   const sortedMessages = getSortedMessageDetails(peekDlqOutputFilePath);
+
+  const errorResults = [];
 
   for (const [index, message] of sortedMessages.entries()) {
     const startTime = new Date(message.startedAt).getTime();
     const endTime = startTime + THREE_HOUR_WINDOW_MS;
 
-    await handleSingleMessage({
+    const errorDetailsResult = await handleSingleMessage({
       logGroupName: LOG_GROUP_NAME,
       filterPattern: `"${message.fileName}"`,
       startDate: startTime,
       endDate: endTime,
-      index: index + 1,
-      outputFolder,
     });
+
+    errorResults.push({
+      ...errorDetailsResult,
+      ...message,
+    });
+
+    console.log(`Log query completed for index ${index}`);
   }
+  fs.appendFileSync(`${outputFolder}/results.json`, JSON.stringify(errorResults, null, 2));
 }
 
 main();

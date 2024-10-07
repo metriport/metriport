@@ -34,20 +34,13 @@ export async function handleSingleMessage({
   filterPattern,
   startDate,
   endDate,
-  index,
-  outputFolder,
 }: {
   logGroupName: string;
   filterPattern: string;
   startDate: number;
   endDate: number;
-  index: number;
-  outputFolder: string;
 }) {
   console.log("Starting log query...");
-  if (!fs.existsSync(outputFolder)) {
-    fs.mkdirSync(outputFolder, { recursive: true });
-  }
 
   try {
     const simpleEvents = await queryLogs(
@@ -63,16 +56,11 @@ export async function handleSingleMessage({
     const errorLogs = await queryLogs(logGroupName, errorFilter, startDate, endDate);
     const errorDetails = parseFhirConverterErrorLog(errorLogs);
 
-    fs.appendFileSync(
-      `${outputFolder}/${index}_${requestId}.json`,
-      JSON.stringify(errorDetails, null, 2)
-    );
-
-    await sleep(1000);
+    await sleep(500);
+    return { errorDetails, requestId };
   } catch (error) {
     console.error("An error occurred during the query:", error);
   }
-  console.log(`Log query completed for index ${index}`);
 }
 
 export function getRequestId(logEvent: string): string {
