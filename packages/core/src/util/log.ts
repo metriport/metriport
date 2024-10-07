@@ -21,7 +21,7 @@ export function log(prefix?: string, suffix?: string) {
 }
 
 export function debug(prefix?: string, suffix?: string) {
-  if (Config.isCloudEnv()) return emptyFunction;
+  if (Config.isProd()) return emptyFunction;
   return log(prefix, suffix);
 }
 

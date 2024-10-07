@@ -4,6 +4,6 @@ import { FHIRConverterConnectorHTTP } from "./connector-http";
 import { FHIRConverterConnectorSQS } from "./connector-sqs";
 
 export function makeFHIRConverterConnector(): FHIRConverterConnector {
-  if (!Config.isCloudEnv()) return new FHIRConverterConnectorHTTP();
+  if (Config.isDev()) return new FHIRConverterConnectorHTTP();
   return new FHIRConverterConnectorSQS();
 }

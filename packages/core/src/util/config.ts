@@ -12,8 +12,8 @@ export class Config {
   static readonly SANDBOX_ENV = "sandbox";
   static readonly STAGING_ENV = "staging";
 
-  static isCloudEnv(): boolean {
-    return process.env.NODE_ENV === this.PROD_ENV;
+  static isProd(): boolean {
+    return Config.getEnvType() === this.PROD_ENV;
   }
 
   static isSandbox(): boolean {
