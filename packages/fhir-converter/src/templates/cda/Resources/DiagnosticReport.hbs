@@ -40,11 +40,13 @@
         "category":[{{>DataType/CodeableConcept.hbs code=categoryCode}}],
         "effectivePeriod": {{>DataType/Period.hbs period=diagReport.effectiveTime}},
 
-        {{#with (buildPresentedForm diagReport.text._b64 diagReport.component) as |presentedFormArray|}}
-            {{#if presentedFormArray}} 
-                "presentedForm":{{{presentedFormArray}}},
-            {{/if}}
-        {{/with}}
+        {{#if (or diagReport.text._b64 diagReport.component.observation.text._b64) }} 
+            {{#with (buildPresentedForm diagReport.text._b64 diagReport.component) as |presentedFormArray|}}
+                {{#if presentedFormArray}} 
+                    "presentedForm":{{{presentedFormArray}}},
+                {{/if}}
+            {{/with}}
+        {{/if}}
     },
     "request":{
         "method":"PUT",
