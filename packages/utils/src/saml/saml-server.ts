@@ -32,7 +32,7 @@ import { MockS3Utils } from "./mock-s3";
  * Metriport-IHE GW / XML + SAML Constructor - Postman collection
  */
 
-const env = "PRODUCTION";
+const env = "STAGING";
 const app = express();
 const port = 8043;
 app.use(json());
