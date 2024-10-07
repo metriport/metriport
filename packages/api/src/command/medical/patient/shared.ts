@@ -1,7 +1,7 @@
+import { BadRequestError } from "@metriport/shared";
 import { Period } from "@metriport/core/domain/patient";
 import dayjs from "dayjs";
 import { cloneDeep } from "lodash";
-import BadRequestError from "../../../errors/bad-request";
 import { PatientCreateCmd } from "./create-patient";
 import { PatientUpdateCmd } from "./update-patient";
 import { PatientMatchCmd } from "./get-patient";

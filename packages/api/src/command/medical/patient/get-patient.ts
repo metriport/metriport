@@ -1,11 +1,10 @@
-import { USState } from "@metriport/shared";
+import { NotFoundError, USState } from "@metriport/shared";
 import { Organization } from "@metriport/core/domain/organization";
 import { getStatesFromAddresses, Patient, PatientDemoData } from "@metriport/core/domain/patient";
 import { getPatientByDemo as getPatientByDemoMPI } from "@metriport/core/mpi/get-patient-by-demo";
 import { uniq } from "lodash";
 import { Op, Transaction } from "sequelize";
 import { Facility } from "../../../domain/medical/facility";
-import NotFoundError from "../../../errors/not-found";
 import { PatientLoaderLocal } from "../../../models/helpers/patient-loader-local";
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilities } from "../facility/get-facility";

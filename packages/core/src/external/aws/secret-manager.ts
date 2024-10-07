@@ -1,5 +1,5 @@
 import * as AWS from "aws-sdk";
-import { MetriportError } from "../../util/error/metriport-error";
+import { MetriportError } from "@metriport/shared";
 
 export function makeSecretManagerClient(region: string) {
   return new AWS.SecretsManager({ region });

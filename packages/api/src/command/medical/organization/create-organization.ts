@@ -1,8 +1,8 @@
+import { BadRequestError } from "@metriport/shared";
 import { OrganizationBizType, OrganizationCreate } from "@metriport/core/domain/organization";
 import { toFHIR } from "@metriport/core/external/fhir/organization/conversion";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { UniqueConstraintError } from "sequelize";
-import BadRequestError from "../../../errors/bad-request";
 import { createTenantIfNotExists } from "../../../external/fhir/admin";
 import { upsertOrgToFHIRServer } from "../../../external/fhir/organization/upsert-organization";
 import { OrganizationModel } from "../../../models/medical/organization";

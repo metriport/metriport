@@ -1,4 +1,5 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
+import { BadRequestError } from "@metriport/shared";
 import { createUploadFilePath, FHIR_BUNDLE_SUFFIX } from "@metriport/core/domain/document/upload";
 import { Patient } from "@metriport/core/domain/patient";
 import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/conversion";
@@ -6,7 +7,6 @@ import { toFHIR as toFhirPatient } from "@metriport/core/external/fhir/patient/c
 import { uploadCdaDocuments, uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import BadRequestError from "../../../errors/bad-request";
 import { processCcdRequest } from "../../../external/cda/process-ccd-request";
 import { countResources } from "../../../external/fhir/patient/count-resources";
 import { hydrateBundle } from "../../../external/fhir/shared/hydrate-bundle";

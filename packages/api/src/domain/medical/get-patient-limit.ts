@@ -1,4 +1,4 @@
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
+import { MetriportError } from "@metriport/shared";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared/common/error";
 import { getCxsWithIncreasedSandboxLimitFeatureFlagValue } from "../../external/aws/app-config";

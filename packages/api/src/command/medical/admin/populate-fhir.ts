@@ -1,7 +1,7 @@
+import { BadRequestError } from "@metriport/shared";
 import { toFHIR as orgToFHIR } from "@metriport/core/external/fhir/organization/conversion";
 import { toFHIR as patientToFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { chunk } from "lodash";
-import BadRequestError from "../../../errors/bad-request";
 import { tenantExists } from "../../../external/fhir/admin";
 import { makeFhirAdminApi, makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { Util } from "../../../shared/util";

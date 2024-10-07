@@ -1,4 +1,4 @@
-import NotFoundError from "../../../errors/not-found";
+import { NotFoundError } from "@metriport/shared";
 import { FacilityModel } from "../../../models/medical/facility";
 
 type GetFacilitiesQuery = Pick<FacilityModel, "cxId"> & Partial<{ ids: FacilityModel["id"][] }>;

@@ -1,9 +1,9 @@
 import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { MetriportError } from "@metriport/shared";
 import { CodeChallenge } from ".";
 import { sendToSlack } from "../../../external/slack";
-import { MetriportError } from "../../../util/error/metriport-error";
 import { sleep } from "../../../util/sleep";
 
 dayjs.extend(duration);

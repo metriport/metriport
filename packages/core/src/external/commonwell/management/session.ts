@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { Browser, Page } from "playwright";
+import { MetriportError } from "@metriport/shared";
 import { CodeChallenge } from "../../../domain/auth/code-challenge";
 import {
   Cookie,
   CookieManager,
   cookiesToString,
 } from "../../../domain/auth/cookie-management/cookie-manager";
-import { MetriportError } from "../../../util/error/metriport-error";
 import { sleep } from "../../../util/sleep";
 import { CommonWellManagementAPI } from "./api";
 import { userAgent } from "./api-impl";

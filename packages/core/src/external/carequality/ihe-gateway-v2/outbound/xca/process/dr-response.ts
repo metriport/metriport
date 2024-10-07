@@ -6,6 +6,7 @@ import {
   XCAGateway,
   DocumentReference,
 } from "@metriport/ihe-gateway-sdk";
+import { MetriportError } from "@metriport/shared";
 import {
   handleRegistryErrorResponse,
   handleHttpErrorResponse,
@@ -20,7 +21,6 @@ import { successStatus, partialSuccessStatus } from "./constants";
 import { S3Utils } from "../../../../../aws/s3";
 import { Config } from "../../../../../../util/config";
 import { createDocumentFilePath } from "../../../../../../domain/document/filename";
-import { MetriportError } from "../../../../../../util/error/metriport-error";
 import { getCidReference } from "../mtom/cid";
 import { out } from "../../../../../../util/log";
 import { errorToString, toArray } from "@metriport/shared";

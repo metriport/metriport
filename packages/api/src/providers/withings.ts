@@ -2,6 +2,7 @@ import { Activity, Biometrics, Body, Sleep } from "@metriport/api-sdk";
 import crypto from "crypto";
 import dayjs from "dayjs";
 import { Token } from "simple-oauth2";
+import { MetriportError } from "@metriport/shared";
 import { getProviderTokenFromConnectedUserOrFail } from "../command/connected-user/get-connected-user";
 import { updateProviderData } from "../command/connected-user/save-connected-user";
 import {
@@ -10,7 +11,6 @@ import {
   bodyCategory,
   sleepCategory,
 } from "../command/webhook/withings";
-import MetriportError from "../errors/metriport-error";
 import { mapToActivity } from "../mappings/withings/activity";
 import { mapToBiometrics } from "../mappings/withings/biometrics";
 import { mapToBody } from "../mappings/withings/body";

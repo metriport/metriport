@@ -1,13 +1,5 @@
-import { patientCreateSchema, genderAtBirthSchema } from "@metriport/api-sdk";
-import { patientImportSchema } from "@metriport/shared";
-import { makePatientImportHandler } from "@metriport/core/command/patient-import/patient-import-factory";
-import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
-import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
-import { MedicalDataSource } from "@metriport/core/external/index";
-import { processAsyncError } from "@metriport/core/util/error/shared";
-import { out } from "@metriport/core/util/log";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
+  BadRequestError,
   internalSendConsolidatedSchema,
   normalizeDate,
   normalizeEmailStrict,
@@ -20,6 +12,15 @@ import {
   stringToBoolean,
   toTitleCase,
 } from "@metriport/shared";
+import { patientCreateSchema, genderAtBirthSchema } from "@metriport/api-sdk";
+import { patientImportSchema } from "@metriport/shared";
+import { makePatientImportHandler } from "@metriport/core/command/patient-import/patient-import-factory";
+import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
+import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { MedicalDataSource } from "@metriport/core/external/index";
+import { processAsyncError } from "@metriport/core/util/error/shared";
+import { out } from "@metriport/core/util/log";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -50,7 +51,6 @@ import {
   updatePatientWithoutHIEs,
 } from "../../command/medical/patient/update-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
-import BadRequestError from "../../errors/bad-request";
 import {
   getCxsWithCQDirectFeatureFlagValue,
   getCxsWithEnhancedCoverageFeatureFlagValue,

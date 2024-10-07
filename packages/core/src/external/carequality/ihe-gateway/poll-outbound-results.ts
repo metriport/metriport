@@ -5,8 +5,8 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { MetriportError } from "@metriport/shared";
 import { QueryTypes, Sequelize } from "sequelize";
-import { MetriportError } from "../../../util/error/metriport-error";
 import { errorToString } from "../../../util/error/shared";
 import { capture } from "../../../util/notifications";
 import { checkIfRaceIsComplete, controlDuration, RaceControl } from "../../../util/race-control";

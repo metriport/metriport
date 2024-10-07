@@ -1,4 +1,4 @@
-import NotFoundError from "../../errors/not-found";
+import { NotFoundError } from "@metriport/shared";
 import { MAPIAccess } from "../../models/medical/mapi-access";
 
 export async function allowMapiAccess(cxId: string): Promise<"new" | "existing"> {

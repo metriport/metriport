@@ -7,6 +7,7 @@ import {
   Patient as CommonwellPatient,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
+import { MetriportError } from "@metriport/shared";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
@@ -22,7 +23,6 @@ import {
   createAugmentedPatient,
   getNewDemographics,
 } from "../../domain/medical/patient-demographics";
-import MetriportError from "../../errors/metriport-error";
 import { Config } from "../../shared/config";
 import {
   isCommonwellEnabled,

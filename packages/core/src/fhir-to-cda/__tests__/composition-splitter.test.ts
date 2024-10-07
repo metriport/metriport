@@ -1,5 +1,5 @@
 import { Bundle } from "@medplum/fhirtypes";
-import BadRequestError from "../../util/error/bad-request";
+import { BadRequestError } from "@metriport/shared";
 import { splitBundleByCompositions } from "../composition-splitter";
 
 describe("splitBundleByCompositions", () => {

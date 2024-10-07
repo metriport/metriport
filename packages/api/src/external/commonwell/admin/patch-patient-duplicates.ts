@@ -1,8 +1,8 @@
 import { getPersonId, getPersonIdFromUrl } from "@metriport/commonwell-sdk";
+import { MetriportError } from "@metriport/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
-import MetriportError from "../../../errors/metriport-error";
 import { autoUpgradeNetworkLinks } from "../link/shared";
 import {
   updateCommonwellIdsAndStatus,

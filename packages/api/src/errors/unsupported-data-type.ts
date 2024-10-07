@@ -1,5 +1,5 @@
+import { MetriportError } from "@metriport/shared";
 import { ConsumerHealthDataType } from "../providers/provider";
-import MetriportError from "./metriport-error";
 
 export default class UnsupportedDataTypeError extends MetriportError {
   constructor(providerName: string, dataType: ConsumerHealthDataType) {
