@@ -128,7 +128,7 @@ export const expectedXcpdResponse: OutboundPatientDiscoveryRespSuccessfulSchema 
         line: ["1100 Test Street"],
         city: "Helena",
         state: "AL",
-        postalCode: "35080",
+        postalCode: "05080",
         country: "USA",
       },
     ],
