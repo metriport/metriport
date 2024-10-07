@@ -28,6 +28,10 @@ export async function processInboundDrRequest(
       textNodeName: "_text",
       parseAttributeValue: false,
       removeNSPrefix: true,
+      numberParseOptions: {
+        hex: false,
+        leadingZeros: false,
+      },
     });
     const jsonObj = parser.parse(request);
     const iti39Request = iti39RequestSchema.parse(jsonObj);

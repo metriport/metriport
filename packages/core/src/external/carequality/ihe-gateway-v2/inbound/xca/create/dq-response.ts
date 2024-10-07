@@ -13,6 +13,10 @@ function createIti38SoapBody(response: InboundDocumentQueryResp): object {
     textNodeName: "_text",
     parseAttributeValue: false,
     removeNSPrefix: true,
+    numberParseOptions: {
+      hex: false,
+      leadingZeros: false,
+    },
   });
   const success = response?.extrinsicObjectXmls ? true : false;
   const extrinsicObjects = success

@@ -219,6 +219,10 @@ export function processXCPDResponse({
     textNodeName: "_text",
     parseAttributeValue: false,
     removeNSPrefix: true,
+    numberParseOptions: {
+      hex: false,
+      leadingZeros: false,
+    },
   });
 
   const jsonObj = parser.parse(response);

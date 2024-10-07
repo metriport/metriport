@@ -38,6 +38,10 @@ export async function processInboundDqRequest(request: string): Promise<InboundD
       textNodeName: "_text",
       parseAttributeValue: false,
       removeNSPrefix: true,
+      numberParseOptions: {
+        hex: false,
+        leadingZeros: false,
+      },
     });
     const jsonObj = parser.parse(request);
     const iti38Request = iti38RequestSchema.parse(jsonObj);

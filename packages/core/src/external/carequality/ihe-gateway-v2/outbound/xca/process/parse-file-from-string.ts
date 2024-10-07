@@ -81,6 +81,10 @@ function extractNonXmlBody(
     textNodeName: "_text",
     parseAttributeValue: false,
     removeNSPrefix: true,
+    numberParseOptions: {
+      hex: false,
+      leadingZeros: false,
+    },
   });
 
   const cda = parser.parse(decodedString);
