@@ -14,3 +14,15 @@ export function limitStringLength<T extends string | undefined>(
 export function stripNonNumericChars(str: string): string {
   return str.trim().replace(/\D/g, "");
 }
+
+export function trimAndCheckEmpty(str: string): string {
+  const normalizedString = trimAndCheckEmptySafe(str);
+  if (!normalizedString) throw new Error("Invalid string");
+  return normalizedString;
+}
+
+export function trimAndCheckEmptySafe(str: string): string | undefined {
+  const normalizedString = str.trim().toLowerCase();
+  if (normalizedString === "") return undefined;
+  return normalizedString;
+}

@@ -7,11 +7,7 @@ import { CQLink, CQData, CQPatientData } from "../cq-patient-data";
 import { makeAddressStrict } from "../../../domain/medical/__tests__/location-address";
 import {
   normalizeAndStringifyNames,
-  normalizeAddress,
-  stringifyAddress,
-  normalizeTelephone,
-  normalizeEmail,
-  normalizeSsn,
+  normalizeAndStringfyAddress,
 } from "../../../domain/medical/patient-demographics";
 
 export function makeCqDataLink(): CQLink {
@@ -56,33 +52,28 @@ export function makeCqDataLink(): CQLink {
 
 export function makeLinksHistory(): LinkDemographicsHistory {
   const address = makeAddressStrict();
-  const email = normalizeEmail(faker.internet.email()) ?? "test@test.com";
+  const nameOrUndefined = normalizeAndStringifyNames({
+    firstName: faker.person.firstName(),
+    lastName: faker.person.lastName(),
+  });
+  const addressOrUndefined = normalizeAndStringfyAddress({
+    line: [address.addressLine1],
+    city: address.city,
+    state: address.state,
+    zip: address.zip,
+    country: address.country,
+  });
   return {
     [faker.string.uuid()]: [
       {
         dob: dayjs(faker.date.past()).format(ISO_DATE),
         gender: "male",
-        names: [
-          normalizeAndStringifyNames({
-            firstName: faker.person.firstName(),
-            lastName: faker.person.lastName(),
-          }),
-        ],
-        addresses: [
-          stringifyAddress(
-            normalizeAddress({
-              line: [address.addressLine1],
-              city: address.city,
-              state: address.state,
-              zip: address.zip,
-              country: address.country,
-            })
-          ),
-        ],
-        telephoneNumbers: [normalizeTelephone(faker.phone.number("##########"))],
-        emails: [email],
+        names: nameOrUndefined ? [nameOrUndefined] : [],
+        addresses: addressOrUndefined ? [addressOrUndefined] : [],
+        telephoneNumbers: [faker.phone.number("##########")],
+        emails: [faker.internet.email().toLowerCase()],
         driversLicenses: [], // TODO
-        ssns: [normalizeSsn(faker.phone.number("#########"))],
+        ssns: [faker.phone.number("#########")],
       },
     ],
   };

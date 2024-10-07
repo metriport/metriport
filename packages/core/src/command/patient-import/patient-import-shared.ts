@@ -1,11 +1,11 @@
 import {
   normalizeDate,
-  normalizeEmailStrict,
+  normalizeEmail,
   normalizeExternalId,
   normalizeGender,
   normalizePhoneNumberStrict,
   normalizeState,
-  normalizeZipCodeNew,
+  normalizeZipCode,
   PatientImportPatient,
   toTitleCase,
 } from "@metriport/shared";
@@ -123,9 +123,9 @@ export function createObjectFromCsv({
 
 export function createPatientPayload(patient: PatientImportPatient): PatientPayload {
   const phone1 = patient.phone1 ? normalizePhoneNumberStrict(patient.phone1) : undefined;
-  const email1 = patient.email1 ? normalizeEmailStrict(patient.email1) : undefined;
+  const email1 = patient.email1 ? normalizeEmail(patient.email1) : undefined;
   const phone2 = patient.phone2 ? normalizePhoneNumberStrict(patient.phone2) : undefined;
-  const email2 = patient.email2 ? normalizeEmailStrict(patient.email2) : undefined;
+  const email2 = patient.email2 ? normalizeEmail(patient.email2) : undefined;
   const contact1 = phone1 || email1 ? { phone: phone1, email: email1 } : undefined;
   const contact2 = phone2 || email2 ? { phone: phone2, email: email2 } : undefined;
   const contact = [contact1, contact2].flatMap(c => c ?? []);
@@ -142,7 +142,7 @@ export function createPatientPayload(patient: PatientImportPatient): PatientPayl
         ...(patient.addressline2 ? { addressLine2: toTitleCase(patient.addressline2) } : undefined),
         city: toTitleCase(patient.city),
         state: normalizeState(patient.state),
-        zip: normalizeZipCodeNew(patient.zip),
+        zip: normalizeZipCode(patient.zip),
         country: "USA",
       },
     ],

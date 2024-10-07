@@ -70,6 +70,7 @@ describe("phone", () => {
       const phoneValid = "4150000000";
       const phonesToCheck = [
         phoneValid,
+        "tel:+1-415-000-0000",
         " 4150000000 ",
         "(415)-000-0000",
         "14150000000",

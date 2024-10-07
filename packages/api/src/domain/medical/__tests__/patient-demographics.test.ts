@@ -1,38 +1,18 @@
 import { USState } from "@metriport/shared";
-import { Patient, PatientDemoData, splitDob } from "@metriport/core/domain/patient";
+import { Patient, PatientDemoData } from "@metriport/core/domain/patient";
 import { LinkDemographics, LinkGender } from "@metriport/core/domain/patient-demographics";
 import {
+  normalizeAndStringfyAddress,
+  normalizeAndStringifyDriversLicense,
+  normalizeAndStringifyNames,
   checkDemoMatch,
   createAugmentedPatient,
   linkHasNewDemographics,
-  normalizeAddress,
-  normalizeAndStringifyDriversLicense,
-  normalizeAndStringifyNames,
-  normalizeDob,
-  normalizeEmail,
-  normalizeSsn,
   patientToNormalizedCoreDemographics,
-  stringifyAddress,
 } from "../patient-demographics";
 import { consolidatedLinkDemographics, coreDemographics, patient } from "./demographics.const";
 
 describe("normalization", () => {
-  const dobValid = "2023-08-01";
-  describe("normalizeDob", () => {
-    const dobsToCheck = [dobValid, " 2023-08-01 ", "20230801", undefined];
-    for (const dob of dobsToCheck) {
-      it(`dob: ${dob}`, async () => {
-        const result = normalizeDob(dob);
-        expect(result).toBe(dob ? dobValid : undefined);
-      });
-    }
-  });
-
-  it("dob split", async () => {
-    const result = splitDob(dobValid);
-    expect(result).toMatchObject(["2023", "08", "01"]);
-  });
-
   describe("normalizeAndStringifyNames", () => {
     const nameValid = { firstName: "john", lastName: "smith" };
     const nameValidString = JSON.stringify(nameValid, Object.keys(nameValid).sort());
@@ -49,7 +29,7 @@ describe("normalization", () => {
     }
   });
 
-  describe("normalizeAddress", () => {
+  describe("normalizeAndStringfyAddress", () => {
     const expectedAddress = {
       line: ["1 mordhaus st rd ave dr", "apt 1a", "2"],
       city: "mordhaus",
@@ -97,45 +77,19 @@ describe("normalization", () => {
     ];
     for (const address of addressesToCheck) {
       it(`address: ${JSON.stringify(address)}`, async () => {
-        const result = normalizeAddress(address);
+        const result = normalizeAndStringfyAddress(address);
+        const expectedAddressOrEmpty = address.line
+          ? expectedAddress
+          : {
+              line: [],
+              city: "",
+              state: "",
+              zip: "",
+              country: "usa",
+            };
         expect(result).toMatchObject(
-          address.line
-            ? expectedAddress
-            : {
-                line: [],
-                city: "",
-                state: "",
-                zip: "",
-                country: "usa",
-              }
+          JSON.stringify(expectedAddressOrEmpty, Object.keys(expectedAddress).sort())
         );
-      });
-    }
-    it("address stringify", () => {
-      const result = stringifyAddress(expectedAddress);
-      expect(result).toBe(JSON.stringify(expectedAddress, Object.keys(expectedAddress).sort()));
-    });
-  });
-
-  describe("normalizeEmail", () => {
-    const emailValid = "john.smith@gmail.com";
-    const emailsToCheck = [
-      emailValid,
-      " john.smith@gmail.com ",
-      "JOHN.SMITH@GMAIL.COM",
-      "mailto:john.smith@gmail.com",
-    ];
-    for (const email of emailsToCheck) {
-      it(`email: ${email}`, async () => {
-        const result = normalizeEmail(email);
-        expect(result).toBe(emailValid);
-      });
-    }
-    const emailsToCheckInvalid = ["john:smith@gmail.com"];
-    for (const email of emailsToCheckInvalid) {
-      it(`email: ${email}`, async () => {
-        const result = normalizeEmail(email);
-        expect(result).toBe(undefined);
       });
     }
   });
@@ -153,17 +107,6 @@ describe("normalization", () => {
       it(`dl: ${JSON.stringify(dl)}`, async () => {
         const result = normalizeAndStringifyDriversLicense(dl);
         expect(result).toBe(dlValidString);
-      });
-    }
-  });
-
-  describe("normalizeSsn", () => {
-    const ssnValid = "000000000";
-    const ssnsToCheck = [ssnValid, " 000000000 ", "000-00-0000", "1000000000"];
-    for (const ssn of ssnsToCheck) {
-      it(`ssn: ${ssn}`, async () => {
-        const result = normalizeSsn(ssn);
-        expect(result).toBe(ssnValid);
       });
     }
   });

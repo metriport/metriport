@@ -1,6 +1,6 @@
 import { PatientResource } from "@metriport/shared/interface/external/athenahealth/patient";
 import {
-  normalizeEmail,
+  normalizeEmailSafe,
   normalizePhoneNumber,
   normalizeState,
   normalizeZipCode,
@@ -12,7 +12,7 @@ export function createMetriportContacts(patient: PatientResource): Contact[] {
   return (patient.telecom ?? []).flatMap(telecom => {
     if (telecom.system === "email") {
       return {
-        email: normalizeEmail(telecom.value),
+        email: normalizeEmailSafe(telecom.value),
       };
     } else if (telecom.system === "phone") {
       return {

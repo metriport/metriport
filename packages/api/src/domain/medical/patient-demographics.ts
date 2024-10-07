@@ -1,24 +1,31 @@
-import { normalizePhoneNumber, stripNonNumericChars, USState } from "@metriport/shared";
+import {
+  trimAndCheckEmptySafe,
+  normalizeDateSafe,
+  normalizeGenderSafe,
+  normalizeEmailSafe,
+  normalizePhoneNumber,
+  normalizeStateSafe,
+  normalizeZipCodeSafe,
+  normalizeCountrySafe,
+  normalizeSsnSafe,
+  USState,
+  defaultCountry,
+} from "@metriport/shared";
 import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
 import {
   ConsolidatedLinkDemographics,
   Patient,
+  PersonalIdentifier,
   splitDob,
   splitName,
 } from "@metriport/core/domain/patient";
 import {
-  LinkDateOfBirth,
   LinkDemographics,
   LinkDemographicsComparison,
   LinkGenericAddress,
-  LinkGenericDriversLicense,
-  LinkGenericName,
 } from "@metriport/core/domain/patient-demographics";
 import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/conversion";
-import { emailSchema } from "@metriport/api-sdk/medical/models/demographics";
-import dayjs from "dayjs";
-import { ISO_DATE } from "../../shared/date";
 
 /**
  * Evaluates whether the input linked demographics are similar enough to the Patient to be considered a usable "match".
@@ -153,86 +160,59 @@ export function checkDemoMatch({
  * @returns core demographics representing the Patient's demographics.
  */
 export function patientToNormalizedCoreDemographics(patient: Patient): LinkDemographics {
-  const dob = normalizeDob(patient.data.dob);
-  const gender = mapMetriportGenderToFhirGender(patient.data.genderAtBirth);
+  const dob = normalizeDateSafe(patient.data.dob);
+  const gender = mapMetriportGenderToFhirGender(normalizeGenderSafe(patient.data.genderAtBirth));
   const patientFirstNames: string[] = splitName(patient.data.firstName);
   const patientLastNames: string[] = splitName(patient.data.lastName);
   const names = patientLastNames.flatMap(lastName => {
-    return patientFirstNames.map(firstName => {
-      return normalizeAndStringifyNames({ firstName, lastName });
+    return patientFirstNames.flatMap(firstName => {
+      const normalizedNames = normalizeAndStringifyNames({ firstName, lastName });
+      if (!normalizedNames) return [];
+      return [normalizedNames];
     });
   });
-  const addresses = patient.data.address.map(address => {
-    return stringifyAddress(
-      normalizeAddress({
-        line: [address.addressLine1, ...(address.addressLine2 ? [address.addressLine2] : [])],
-        ...address,
-      })
-    );
+  const addresses = patient.data.address.flatMap(address => {
+    const normalizedAddress = normalizeAndStringfyAddress({
+      line: [address.addressLine1, ...(address.addressLine2 ? [address.addressLine2] : [])],
+      ...address,
+    });
+    if (!normalizedAddress) return [];
+    return [normalizedAddress];
   });
   const telephoneNumbers = (patient.data.contact ?? []).flatMap(c => {
     if (!c.phone) return [];
-    return [normalizeTelephone(c.phone)];
+    return [normalizePhoneNumber(c.phone)];
   });
   const emails = (patient.data.contact ?? []).flatMap(c => {
     if (!c.email) return [];
-    const email = normalizeEmail(c.email);
-    if (!email) return [];
-    return [email];
+    const normalizedEmail = normalizeEmailSafe(c.email);
+    if (!normalizedEmail) return [];
+    return [normalizedEmail];
   });
+  /*
   const driversLicenses = (patient.data.personalIdentifiers ?? []).flatMap(p => {
     if (p.type !== "driversLicense") return [];
-    return [normalizeAndStringifyDriversLicense({ value: p.value, state: p.state })];
+    const normalizedDl = normalizeAndStringifyDriversLicense({ value: p.value, state: p.state });
+    if (!normalizedDl) return [];
+    return [normalizedDl];
   });
+  */
   const ssns = (patient.data.personalIdentifiers ?? []).flatMap(p => {
     if (p.type !== "ssn") return [];
-    return [normalizeSsn(p.value)];
+    const normalizedSsn = normalizeSsnSafe(p.value);
+    if (!normalizedSsn) return [];
+    return [normalizedSsn];
   });
-  return removeInvalidArrayValues({
+  return {
     dob,
     gender,
     names,
     addresses,
     telephoneNumbers,
     emails,
-    driversLicenses,
+    driversLicenses: [],
     ssns,
-  });
-}
-
-/**
- * Removes values from core or link demographics that are incomplete.
- *
- * @param demographics The incoming core or link demographics.
- * @returns the input demographics with incomplete values removed.
- */
-export function removeInvalidArrayValues(demographics: LinkDemographics): LinkDemographics {
-  return {
-    dob: demographics.dob,
-    gender: demographics.gender,
-    names: demographics.names.filter(name => {
-      const nameObj: LinkGenericName = JSON.parse(name);
-      return nameObj.firstName !== "" && nameObj.lastName !== "";
-    }),
-    addresses: demographics.addresses.filter(address => {
-      const addressObj: LinkGenericAddress = JSON.parse(address);
-      return addressObj.line.length > 0 && addressObj.city !== "" && addressObj.zip !== "";
-    }),
-    telephoneNumbers: demographics.telephoneNumbers.filter(tn => tn !== ""),
-    emails: demographics.emails.filter(email => email !== ""),
-    driversLicenses: demographics.driversLicenses.filter(dl => {
-      const dlObj: LinkGenericDriversLicense = JSON.parse(dl);
-      return dlObj.value !== "" && dlObj.state !== "";
-    }),
-    ssns: demographics.ssns.filter(ssn => ssn !== ""),
   };
-}
-
-export function normalizeDob(dob?: string): LinkDateOfBirth {
-  const normalDob = dob?.trim() ?? "";
-  const parsedDate = dayjs(normalDob);
-  if (parsedDate.isValid()) return parsedDate.format(ISO_DATE);
-  return undefined;
 }
 
 export function normalizeAndStringifyNames({
@@ -241,15 +221,19 @@ export function normalizeAndStringifyNames({
 }: {
   firstName: string;
   lastName: string;
-}): string {
+}): string | undefined {
+  const normalizedFirstName = trimAndCheckEmptySafe(firstName);
+  if (!normalizedFirstName) return undefined;
+  const normalizedLastName = trimAndCheckEmptySafe(lastName);
+  if (!normalizedLastName) return undefined;
   const normalizedName = {
-    firstName: firstName.trim().toLowerCase(),
-    lastName: lastName.trim().toLowerCase(),
+    firstName: normalizedFirstName.toLowerCase(),
+    lastName: normalizedLastName.toLowerCase(),
   };
   return JSON.stringify(normalizedName, Object.keys(normalizedName).sort());
 }
 
-export function normalizeAddress({
+export function normalizeAndStringfyAddress({
   line,
   city,
   state,
@@ -261,53 +245,36 @@ export function normalizeAddress({
   state?: string;
   zip?: string;
   country?: string;
-}): LinkGenericAddress {
-  return {
-    line:
-      line
-        ?.filter(l => l !== "")
-        .map(l => {
-          return l
-            .trim()
-            .toLowerCase()
-            .replaceAll("street", "st")
-            .replaceAll("drive", "dr")
-            .replaceAll("road", "rd")
-            .replaceAll("avenue", "ave");
-        }) ?? [],
-    city: city?.trim().toLowerCase() ?? "",
-    state: state?.trim().toLowerCase().slice(0, 2) ?? "",
-    zip: stripNonNumericChars(zip ?? "")
-      .trim()
-      .slice(0, 5),
-    country:
-      country
-        ?.trim()
-        .toLowerCase()
-        .replaceAll("us", "usa")
-        .replaceAll("united states", "usa")
-        .slice(0, 3) ?? "usa",
+}): string | undefined {
+  if (!line || !city || !state || !zip) return undefined;
+  const normalizedLines = line.flatMap(l => {
+    const normalizedLine = trimAndCheckEmptySafe(l);
+    if (!normalizedLine) return [];
+    return [normalizedLine.toLowerCase()];
+  });
+  if (normalizedLines.length === 0) return undefined;
+  const normalizedCity = trimAndCheckEmptySafe(city);
+  if (!normalizedCity) return undefined;
+  const normalizeState = normalizeStateSafe(state);
+  if (!normalizeState) return undefined;
+  const normalizedZip = normalizeZipCodeSafe(zip);
+  if (!normalizedZip) return undefined;
+  const normalizedCountry = normalizeCountrySafe(country ?? defaultCountry);
+  if (!normalizedCountry) return undefined;
+  const normalizedAddress = {
+    line: normalizedLines.map(l => {
+      return l
+        .replaceAll("street", "st")
+        .replaceAll("drive", "dr")
+        .replaceAll("road", "rd")
+        .replaceAll("avenue", "ave");
+    }),
+    city: normalizedCity.toLowerCase(),
+    state: normalizeState.toLowerCase(),
+    zip: normalizedZip,
+    country: normalizedCountry,
   };
-}
-
-export function stringifyAddress(normalizedAddress: LinkGenericAddress): string {
   return JSON.stringify(normalizedAddress, Object.keys(normalizedAddress).sort());
-}
-
-/**
- * @deprecated use `normalizePhoneNumber` from `@metriport/shared` instead.
- */
-export function normalizeTelephone(telephone: string): string {
-  return normalizePhoneNumber(telephone);
-}
-
-export function normalizeEmail(email: string): string | undefined {
-  let normalEmail = email.trim().toLowerCase();
-  if (normalEmail.startsWith("mailto:")) {
-    normalEmail = normalEmail.slice(7);
-  }
-  const validEmail = emailSchema.safeParse(normalEmail);
-  return validEmail.success ? normalEmail : undefined;
 }
 
 export function normalizeAndStringifyDriversLicense({
@@ -316,16 +283,16 @@ export function normalizeAndStringifyDriversLicense({
 }: {
   value: string;
   state: string;
-}): string {
+}): string | undefined {
+  const normalizedValue = trimAndCheckEmptySafe(value);
+  if (!normalizedValue) return undefined;
+  const normalizedState = normalizeStateSafe(state);
+  if (!normalizedState) return undefined;
   const normalizedDl = {
-    value: value.trim().toLowerCase(),
-    state: state.trim().toLowerCase().slice(0, 2),
+    value: normalizedValue.toLowerCase(),
+    state: normalizedState.toLowerCase(),
   };
   return JSON.stringify(normalizedDl, Object.keys(normalizedDl).sort());
-}
-
-export function normalizeSsn(ssn: string): string {
-  return stripNonNumericChars(ssn).slice(-9);
 }
 
 /**
@@ -362,6 +329,11 @@ export function createAugmentedPatient(patient: Patient): Patient {
     .map(email => {
       return { email };
     });
+  const newSsns: PersonalIdentifier[] = consolidatedLinkDemographics.ssns
+    .filter(ssn => !coreDemographics.ssns.includes(ssn))
+    .map(ssn => {
+      return { type: "ssn", value: ssn };
+    });
   const aupmentedPatient = {
     ...patient,
     data: {
@@ -370,6 +342,9 @@ export function createAugmentedPatient(patient: Patient): Patient {
         ? [...patient.data.contact, ...newTelephoneNumbers, ...newEmails]
         : [...newTelephoneNumbers, ...newEmails],
       address: [...patient.data.address, ...newAddresses],
+      personalIdentifiers: patient.data.personalIdentifiers
+        ? [...patient.data.personalIdentifiers, ...newSsns]
+        : [...newSsns],
     },
   };
   return aupmentedPatient;
