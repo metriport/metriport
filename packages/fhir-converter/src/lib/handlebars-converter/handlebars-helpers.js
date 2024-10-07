@@ -1483,6 +1483,15 @@ module.exports.external = [
           }
         });
       }
+
+      const obsTextB64 = comp.observation?.text?._b64;
+      if (obsTextB64) {
+        presentedForm.push({
+          contentType: "text/html",
+          data: obsTextB64,
+        });
+      }
+
       if (presentedForm.length === 0) return undefined;
       return JSON.stringify(presentedForm);
     },
