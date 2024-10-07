@@ -13,19 +13,19 @@ import { getSortedMessageDetails, handleSingleMessage } from "./shared";
  * For each message in the DLQ, the script will first query the logs using the file name from the message to get the request ID.
  * Then, using the request ID, it will get all the error logs for that request and save them in a file.
  *
- * All files are stored in the `runs/fhir-to-server-lambda` folder in a sorted manner (from oldest to newest).
+ * All files are stored in the `runs/fhir-converter-lambda` folder in a sorted manner (from oldest to newest).
  *
  */
 
-const peekDlqOutputFilePath =
+const peekDlqOutput =
   "/Users/ramilgaripov/Desktop/metriport/full_stack/metriport/packages/utils/fhir-converter-dlq-oct4.json";
-const LOG_GROUP_NAME = "/aws/lambda/FHIRServerLambda";
+const LOG_GROUP_NAME = "/aws/lambda/FHIRConverter2Lambda";
 const THREE_HOUR_WINDOW_MS = 3 * 60 * 60 * 1000;
 const startDate = Date.now();
-const outputFolder = `runs/fhir-to-server-lambda/${startDate}`;
+const outputFolder = `runs/fhir-converter-lambda/${startDate}`;
 
 async function main() {
-  const sortedMessages = getSortedMessageDetails(peekDlqOutputFilePath);
+  const sortedMessages = getSortedMessageDetails(peekDlqOutput);
 
   for (const [index, message] of sortedMessages.entries()) {
     const startTime = new Date(message.startedAt).getTime();

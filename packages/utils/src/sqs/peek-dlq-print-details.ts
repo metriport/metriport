@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { BadRequestError } from "@metriport/shared";
+import { BadRequestError, getEnvVarOrFail } from "@metriport/shared";
 import { SQS } from "aws-sdk";
 import fs from "fs";
 import { Config } from "../../../api/src/shared/config";
@@ -10,67 +10,11 @@ import { Config } from "../../../api/src/shared/config";
  * This script saves the details of the messages in the DLQ to a file.
  */
 
-// Link to the FHIR Server DLQ (https://sqs....)
-const fhirServerDlqUrl = "";
+// Link to the FHIR Server DLQ / FHIR Converter DLQ(https://sqs....)
+const fhirServerDlqUrl = getEnvVarOrFail("DLQ_URL");
+const outputFileName = "fhir-converter-dlq";
+
 const maxNumberOfMessagesPerQuery = 1;
-
-export type MessageDetails = {
-  messageId: string | undefined;
-  bucketName: string | undefined;
-  fileName: string;
-  cxId: string | undefined;
-  jobId: string | undefined;
-  startedAt: string;
-  patientId: string | undefined;
-};
-
-async function peekIntoQueue() {
-  const s3FileNames = new Set<string>();
-  if (!fhirServerDlqUrl) throw new BadRequestError("Missing FHIR Server DLQ URL");
-
-  const messageCount = await getMessageCountFromQueue(fhirServerDlqUrl);
-  console.log(`>>> Message count: ${messageCount}`);
-
-  const messageDetails: MessageDetails[] = [];
-  console.log(`>>> Getting messages from source queue...`);
-  for (let i = 0; i < messageCount; i++) {
-    const messagesOfRequest = await peekMessagesFromQueue(fhirServerDlqUrl, {
-      maxNumberOfMessagesPerQuery,
-      maxNumberOfMessages: maxNumberOfMessagesPerQuery,
-    });
-
-    if (!messagesOfRequest || !messagesOfRequest.length) {
-      console.log(`>>> No messages found`);
-      return { messageCount: 0, first10Items: [] };
-    }
-
-    messagesOfRequest.map(async m => {
-      const patientId = m.MessageAttributes?.patientId?.StringValue ?? "na";
-      const body = m.Body ? JSON.parse(m.Body) : undefined;
-      const s3FileName = body.s3FileName ?? "na";
-
-      const attr = m.MessageAttributes;
-      if (!attr) return;
-      const startedAt = attr.jobStartedAt.StringValue;
-      if (!startedAt) return;
-
-      const details: MessageDetails = {
-        messageId: m.MessageId,
-        bucketName: body.s3BucketName,
-        fileName: body.s3FileName,
-        cxId: attr.cxId?.StringValue,
-        jobId: attr.jobId?.StringValue,
-        startedAt: startedAt,
-        patientId: attr.patientId?.StringValue,
-      };
-
-      messageDetails.push(details);
-      s3FileNames.add(`${patientId}|||${s3FileName}`);
-    });
-  }
-
-  fs.writeFileSync("messages-details.json", JSON.stringify(messageDetails));
-}
 
 const sqsConfig = {
   awsRegion: Config.getAWSRegion(),
@@ -98,6 +42,81 @@ type GetMessageSQSParameters = SharedInternalGetMessageSQSParameters & {
    */
   poolUntilEmpty?: boolean;
 };
+
+export type MessageDetails = {
+  messageId: string | undefined;
+  bucketName: string | undefined;
+  fileName: string;
+  cxId: string | undefined;
+  jobId: string | undefined;
+  startedAt: string;
+  patientId: string | undefined;
+};
+
+type DlqMessageAttributes = {
+  cxId: {
+    StringValue: string;
+  };
+  jobId: {
+    StringValue: string;
+  };
+  patientId: {
+    StringValue: string;
+  };
+  startedAt?: {
+    StringValue: string;
+  };
+  jobStartedAt?: {
+    StringValue: string;
+  };
+};
+
+async function peekIntoQueue() {
+  if (!fhirServerDlqUrl) throw new BadRequestError("Missing FHIR Server DLQ URL");
+  if (!outputFileName.length) throw new BadRequestError("Set the output file name");
+
+  const messageCount = await getMessageCountFromQueue(fhirServerDlqUrl);
+  console.log(`>>> Message count: ${messageCount}`);
+
+  const messageDetails: MessageDetails[] = [];
+  console.log(`>>> Getting messages from source queue...`);
+  for (let i = 0; i < messageCount; i++) {
+    const messagesOfRequest = await peekMessagesFromQueue(fhirServerDlqUrl, {
+      maxNumberOfMessagesPerQuery,
+      maxNumberOfMessages: maxNumberOfMessagesPerQuery,
+    });
+
+    if (!messagesOfRequest || !messagesOfRequest.length) {
+      console.log(`>>> No messages found`);
+      return { messageCount: 0, first10Items: [] };
+    }
+
+    messagesOfRequest.map(async m => {
+      const attr = m.MessageAttributes as DlqMessageAttributes | undefined;
+      if (!attr) return;
+      const startedAt = attr.jobStartedAt?.StringValue ?? attr.startedAt?.StringValue;
+      const patientId = attr.patientId?.StringValue;
+      const body = m.Body ? JSON.parse(m.Body) : undefined;
+      const s3FileName = body.s3FileName;
+      const s3BucketName = body.s3BucketName;
+      if (!patientId || !startedAt || !s3FileName || !s3BucketName) return;
+
+      const details: MessageDetails = {
+        messageId: m.MessageId,
+        bucketName: s3BucketName,
+        fileName: s3FileName,
+        cxId: attr.cxId?.StringValue,
+        jobId: attr.jobId?.StringValue,
+        startedAt: startedAt,
+        patientId: patientId,
+      };
+
+      messageDetails.push(details);
+    });
+  }
+
+  fs.writeFileSync(outputFileName, JSON.stringify(messageDetails));
+}
 
 /**
  * Reads messages from the queue, returns them, but does not remove them.
