@@ -16,29 +16,40 @@ const parallelS3Queries = 10;
 export async function getNonExistentDocRefs(
   documents: DocumentReferenceWithMetriportId[],
   patientId: string,
-  cxId: string
+  cxId: string,
+  // TEMP #2349 - Remove console.log
+  log?: typeof console.log
 ): Promise<DocumentReferenceWithMetriportId[]> {
   const [{ existingDocRefs, nonExistingDocRefs }, fhirDocRefs] = await Promise.all([
     checkDocRefsExistInS3(documents, patientId, cxId),
     getDocumentsFromFHIR({ cxId, patientId }),
   ]);
 
-  console.log("TEMP #2349 - existingDocRefs", existingDocRefs, existingDocRefs.length);
-  console.log("TEMP #2349 - nonExistingDocRefs", nonExistingDocRefs, nonExistingDocRefs.length);
+  // TEMP #2349 - Remove console.log
+  if (log) {
+    log("existingDocRefs", `${existingDocRefs.length}`, JSON.stringify(existingDocRefs));
+    log("nonExistingDocRefs", `${nonExistingDocRefs.length}`, JSON.stringify(nonExistingDocRefs));
+  }
 
   const foundOnStorageButNotOnFHIR = existingDocRefs.filter(
     f => !fhirDocRefs.find(d => d.id === f.metriportId)
   );
 
-  console.log(
-    "TEMP #2349 - foundOnStorageButNotOnFHIR",
-    foundOnStorageButNotOnFHIR,
-    foundOnStorageButNotOnFHIR.length
-  );
+  // TEMP #2349 - Remove console.log
+  if (log) {
+    log(
+      "foundOnStorageButNotOnFHIR",
+      `${foundOnStorageButNotOnFHIR.length}`,
+      JSON.stringify(foundOnStorageButNotOnFHIR)
+    );
+  }
 
   const docsToDownload = nonExistingDocRefs.concat(foundOnStorageButNotOnFHIR);
 
-  console.log("TEMP #2349 - docsToDownload", docsToDownload, docsToDownload.length);
+  // TEMP #2349 - Remove console.log
+  if (log) {
+    log("docsToDownload", `${docsToDownload.length}`, JSON.stringify(docsToDownload));
+  }
 
   return docsToDownload;
 }

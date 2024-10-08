@@ -241,6 +241,9 @@ async function getRespWithDocsToDownload({
   requestId,
   response,
 }: OutboundDocQueryRespParam): Promise<DqRespWithDocRefsWithMetriportId[]> {
+  // TEMP #2349 - Remove console.log
+  const { log } = out(`TEMP #2349 docs to download - requestId ${requestId}, patient ${patientId}`);
+
   const respWithDocsToDownload: DqRespWithDocRefsWithMetriportId[] = [];
   const seenMetriportIds = new Set<string>();
 
@@ -254,31 +257,36 @@ async function getRespWithDocsToDownload({
         response: gwResp,
       });
 
-      console.log(
-        "TEMP #2349 - resultsWithMetriportId",
-        resultsWithMetriportId,
-        resultsWithMetriportId.length
+      // TEMP #2349 - Remove console.log
+      log(
+        "resultsWithMetriportId",
+        `${resultsWithMetriportId.length}`,
+        JSON.stringify(resultsWithMetriportId)
       );
+
       const docRefs = resultsWithMetriportId.flatMap(result => result.documentReference ?? []);
 
-      console.log("TEMP #2349 - docRefs", docRefs, docRefs.length);
+      // TEMP #2349 - Remove console.log
+      log("docRefs", `${docRefs.length}`, JSON.stringify(docRefs));
 
       const docRefsWithMetriportId = docRefs.filter(containsMetriportId);
 
-      console.log(
-        "TEMP #2349 - docRefsWithMetriportId",
-        docRefsWithMetriportId,
-        docRefsWithMetriportId.length
+      // TEMP #2349 - Remove console.log
+      log(
+        "docRefsWithMetriportId",
+        `${docRefsWithMetriportId.length}`,
+        JSON.stringify(docRefsWithMetriportId)
       );
 
       const deduplicatedDocRefsWithMetriportId = docRefsWithMetriportId.filter(
         docRef => !containsDuplicateMetriportId(docRef, seenMetriportIds)
       );
 
-      console.log(
-        "TEMP #2349 - deduplicatedDocRefsWithMetriportId",
-        deduplicatedDocRefsWithMetriportId,
-        deduplicatedDocRefsWithMetriportId.length
+      // TEMP #2349 - Remove console.log
+      log(
+        "deduplicatedDocRefsWithMetriportId",
+        `${deduplicatedDocRefsWithMetriportId.length}`,
+        JSON.stringify(deduplicatedDocRefsWithMetriportId)
       );
 
       const docsToDownload = await getNonExistentDocRefs(
@@ -287,7 +295,8 @@ async function getRespWithDocsToDownload({
         cxId
       );
 
-      console.log("TEMP #2349 - docsToDownload", docsToDownload, docsToDownload.length);
+      // TEMP #2349 - Remove console.log
+      log("docsToDownload", `${docsToDownload.length}`, JSON.stringify(docsToDownload));
 
       if (docsToDownload.length === 0) {
         return;
