@@ -253,10 +253,32 @@ async function getRespWithDocsToDownload({
         requestId,
         response: gwResp,
       });
+
+      console.log(
+        "TEMP #2349 - resultsWithMetriportId",
+        resultsWithMetriportId,
+        resultsWithMetriportId.length
+      );
       const docRefs = resultsWithMetriportId.flatMap(result => result.documentReference ?? []);
+
+      console.log("TEMP #2349 - docRefs", docRefs, docRefs.length);
+
       const docRefsWithMetriportId = docRefs.filter(containsMetriportId);
+
+      console.log(
+        "TEMP #2349 - docRefsWithMetriportId",
+        docRefsWithMetriportId,
+        docRefsWithMetriportId.length
+      );
+
       const deduplicatedDocRefsWithMetriportId = docRefsWithMetriportId.filter(
         docRef => !containsDuplicateMetriportId(docRef, seenMetriportIds)
+      );
+
+      console.log(
+        "TEMP #2349 - deduplicatedDocRefsWithMetriportId",
+        deduplicatedDocRefsWithMetriportId,
+        deduplicatedDocRefsWithMetriportId.length
       );
 
       const docsToDownload = await getNonExistentDocRefs(
@@ -264,6 +286,8 @@ async function getRespWithDocsToDownload({
         patientId,
         cxId
       );
+
+      console.log("TEMP #2349 - docsToDownload", docsToDownload, docsToDownload.length);
 
       if (docsToDownload.length === 0) {
         return;

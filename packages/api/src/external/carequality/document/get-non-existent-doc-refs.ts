@@ -23,11 +23,22 @@ export async function getNonExistentDocRefs(
     getDocumentsFromFHIR({ cxId, patientId }),
   ]);
 
+  console.log("TEMP #2349 - existingDocRefs", existingDocRefs, existingDocRefs.length);
+  console.log("TEMP #2349 - nonExistingDocRefs", nonExistingDocRefs, nonExistingDocRefs.length);
+
   const foundOnStorageButNotOnFHIR = existingDocRefs.filter(
     f => !fhirDocRefs.find(d => d.id === f.metriportId)
   );
 
+  console.log(
+    "TEMP #2349 - foundOnStorageButNotOnFHIR",
+    foundOnStorageButNotOnFHIR,
+    foundOnStorageButNotOnFHIR.length
+  );
+
   const docsToDownload = nonExistingDocRefs.concat(foundOnStorageButNotOnFHIR);
+
+  console.log("TEMP #2349 - docsToDownload", docsToDownload, docsToDownload.length);
 
   return docsToDownload;
 }
