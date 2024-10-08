@@ -1,4 +1,3 @@
-import { XMLParser } from "fast-xml-parser";
 import dayjs from "dayjs";
 import {
   OutboundDocumentRetrievalReq,
@@ -12,6 +11,7 @@ import {
   handleEmptyResponse,
   handleSchemaErrorResponse,
 } from "./error";
+import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { parseFileFromString, parseFileFromBuffer } from "./parse-file-from-string";
 import { stripUrnPrefix } from "../../../../../../util/urn";
 import { DrSamlClientResponse } from "../send/dr-requests";
@@ -223,16 +223,12 @@ export async function processDrResponse({
     throw new Error("No mtom response found");
   }
   const soapData: Buffer = mtomResponse.parts[0]?.body || Buffer.from("");
-  const parser = new XMLParser({
+  const parser = createXMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "_",
     textNodeName: "_text",
     parseAttributeValue: false,
     removeNSPrefix: true,
-    numberParseOptions: {
-      hex: false,
-      leadingZeros: false,
-    },
   });
   const jsonObj = parser.parse(soapData.toString());
 

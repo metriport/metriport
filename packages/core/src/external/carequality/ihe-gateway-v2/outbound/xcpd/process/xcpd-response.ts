@@ -1,4 +1,3 @@
-import { XMLParser } from "fast-xml-parser";
 import {
   OutboundPatientDiscoveryResp,
   OutboundPatientDiscoveryReq,
@@ -10,6 +9,7 @@ import {
   PersonalIdentifier,
 } from "@metriport/ihe-gateway-sdk";
 import { errorToString, toArray } from "@metriport/shared";
+import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { XCPDSamlClientResponse } from "../send/xcpd-requests";
 import { out } from "../../../../../../util/log";
 import { extractText } from "../../../utils";
@@ -213,16 +213,12 @@ export function processXCPDResponse({
     });
   }
 
-  const parser = new XMLParser({
+  const parser = createXMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "_",
     textNodeName: "_text",
     parseAttributeValue: false,
     removeNSPrefix: true,
-    numberParseOptions: {
-      hex: false,
-      leadingZeros: false,
-    },
   });
 
   const jsonObj = parser.parse(response);

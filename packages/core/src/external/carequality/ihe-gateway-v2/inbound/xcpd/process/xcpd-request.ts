@@ -1,6 +1,6 @@
-import { XMLParser } from "fast-xml-parser";
 import dayjs from "dayjs";
 import { PatientResource, InboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
+import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { errorToString, toArray } from "@metriport/shared";
 import { Iti55Request, iti55RequestSchema } from "./schema";
 import { convertSamlHeaderToAttributes, extractTimestamp } from "../../shared";
@@ -58,16 +58,12 @@ export async function processInboundXcpdRequest(
   request: string
 ): Promise<InboundPatientDiscoveryReq> {
   const log = out("Inbound XCPD Request").log;
-  const parser = new XMLParser({
+  const parser = createXMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "_",
     textNodeName: "_text",
     parseAttributeValue: false,
     removeNSPrefix: true,
-    numberParseOptions: {
-      hex: false,
-      leadingZeros: false,
-    },
   });
 
   const jsonObj = parser.parse(request);

@@ -1,6 +1,6 @@
 import { InboundDocumentQueryReq, XCPDPatientId } from "@metriport/ihe-gateway-sdk";
 import { errorToString, toArray } from "@metriport/shared";
-import { XMLParser } from "fast-xml-parser";
+import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { stripUrnPrefix } from "../../../../../../util/urn";
 import { storeDqRequest } from "../../../monitor/store";
 import { Slot } from "../../../schema";
@@ -32,16 +32,12 @@ export async function processInboundDqRequest(request: string): Promise<InboundD
   const log = out("Inbound DQ Request").log;
   log(request);
   try {
-    const parser = new XMLParser({
+    const parser = createXMLParser({
       ignoreAttributes: false,
       attributeNamePrefix: "_",
       textNodeName: "_text",
       parseAttributeValue: false,
       removeNSPrefix: true,
-      numberParseOptions: {
-        hex: false,
-        leadingZeros: false,
-      },
     });
     const jsonObj = parser.parse(request);
     const iti38Request = iti38RequestSchema.parse(jsonObj);
