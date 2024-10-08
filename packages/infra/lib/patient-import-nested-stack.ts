@@ -13,7 +13,7 @@ import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { createQueue } from "./shared/sqs";
 
-const waitTimePatientCreate = Duration.seconds(30);
+const waitTimePatientCreate = Duration.seconds(15);
 const waitTimePatientQuery = Duration.seconds(0);
 
 function settings() {
