@@ -3,10 +3,9 @@ import {
   getFeatureFlags,
   isFeatureFlagEnabled,
 } from "@metriport/core/external/aws/app-config";
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { getEnvVar } from "@metriport/shared";
+import { MetriportError, getEnvVar } from "@metriport/shared";
 import { getCxIdFromApiKey } from "../../routes/middlewares/auth";
 import { Config } from "../../shared/config";
 

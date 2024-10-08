@@ -1,5 +1,5 @@
+import { MetriportError } from "@metriport/shared";
 import { Input, Output } from "@metriport/core/domain/conversion/cda-to-html-pdf";
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import * as Sentry from "@sentry/serverless";
 import chromium from "@sparticuz/chromium";
 import AWS from "aws-sdk";

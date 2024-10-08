@@ -1,5 +1,5 @@
+import { MetriportError } from "@metriport/shared";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { out } from "@metriport/core/util/log";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
