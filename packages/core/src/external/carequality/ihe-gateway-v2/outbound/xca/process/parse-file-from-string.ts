@@ -1,6 +1,6 @@
+import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { detectFileType, isXMLContentType } from "../../../../../../util/file-type";
 import { XML_APP_MIME_TYPE, XML_TXT_MIME_TYPE } from "../../../../../../util/mime";
-import { XMLParser } from "fast-xml-parser";
 import { out } from "../../../../../../util/log";
 
 const { log } = out("[parseFileFromString] ");
@@ -75,7 +75,7 @@ function extractNonXmlBody(
     log(msg);
     throw new Error(msg);
   }
-  const parser = new XMLParser({
+  const parser = createXMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "_",
     textNodeName: "_text",
