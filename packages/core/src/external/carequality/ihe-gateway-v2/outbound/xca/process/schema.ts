@@ -9,10 +9,12 @@ import {
 } from "../../../schema";
 
 const name = z.object({
-  LocalizedString: z.object({
-    _charset: z.string().optional(),
-    _value: z.string(),
-  }),
+  LocalizedString: schemaOrEmpty(
+    z.object({
+      _charset: z.string().optional(),
+      _value: z.string(),
+    })
+  ),
 });
 export type Name = z.infer<typeof name>;
 
