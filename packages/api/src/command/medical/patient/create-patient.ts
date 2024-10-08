@@ -69,14 +69,29 @@ export async function createPatient({
       contact,
     },
   };
+
+  let newPatient = await PatientModel.create(patientCreate);
+
   const addressWithCoordinates = await addCoordinatesToAddresses({
     addresses: patientCreate.data.address,
     cxId: patientCreate.cxId,
     reportRelevance: true,
   });
-  if (addressWithCoordinates) patientCreate.data.address = addressWithCoordinates;
-
-  const newPatient = await PatientModel.create(patientCreate);
+  if (addressWithCoordinates) {
+    newPatient = await newPatient.update({
+      data: {
+        ...newPatient.data,
+        firstName,
+        lastName,
+        dob,
+        genderAtBirth,
+        personalIdentifiers,
+        address: addressWithCoordinates,
+        contact: contact,
+      },
+      externalId,
+    });
+  }
 
   const fhirPatient = toFHIR(newPatient);
   await upsertPatientToFHIRServer(newPatient.cxId, fhirPatient);
