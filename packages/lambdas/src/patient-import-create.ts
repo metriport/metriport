@@ -67,9 +67,7 @@ export async function handler(event: SQSEvent) {
       capture.error(errorMsg, {
         extra: { event, context: lambdaName, error },
       });
-      throw new MetriportError(errorMsg, error, {
-        ...{ ...parsedBody, patientPayload: undefined },
-      });
+      throw new MetriportError(errorMsg, error, { ...parsedBody });
     }
   } catch (error) {
     if (errorHandled) throw error;
