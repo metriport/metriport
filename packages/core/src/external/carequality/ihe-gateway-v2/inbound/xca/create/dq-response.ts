@@ -1,5 +1,6 @@
-import { XMLBuilder, XMLParser } from "fast-xml-parser";
+import { XMLBuilder } from "fast-xml-parser";
 import { v4 as uuidv4 } from "uuid";
+import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
 import { successStatus, failureStatus, errorSeverity, createSecurityHeader } from "../../shared";
 import { xmlBuilderAttributes, attributeNamePrefix } from "../../../shared";
@@ -7,7 +8,7 @@ import { namespaces } from "../../../constants";
 import { wrapIdInUrnUuid } from "../../../../../../util/urn";
 
 function createIti38SoapBody(response: InboundDocumentQueryResp): object {
-  const parser = new XMLParser({
+  const parser = createXMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: attributeNamePrefix,
     textNodeName: "_text",

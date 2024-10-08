@@ -1,3 +1,5 @@
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
 import {
   DocumentReference,
   OutboundDocumentQueryReq,
@@ -5,9 +7,7 @@ import {
   XCAGateway,
 } from "@metriport/ihe-gateway-sdk";
 import { toArray } from "@metriport/shared";
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
-import { XMLParser } from "fast-xml-parser";
+import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import {
   XDSDocumentEntryAuthor,
   XDSDocumentEntryClassCode,
@@ -186,7 +186,7 @@ export function processDqResponse({
       gateway: gateway,
     });
   }
-  const parser = new XMLParser({
+  const parser = createXMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "_",
     textNodeName: "_text",

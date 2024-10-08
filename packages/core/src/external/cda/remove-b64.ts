@@ -1,12 +1,13 @@
 import { toArray } from "@metriport/shared";
-import { XMLBuilder, XMLParser } from "fast-xml-parser";
+import { XMLBuilder } from "fast-xml-parser";
+import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { BINARY_MIME_TYPES } from "../../util/mime";
 
 const notesTemplateId = "2.16.840.1.113883.10.20.22.2.65";
 const b64Representation = "B64";
 
 export function removeBase64PdfEntries(payloadRaw: string): string {
-  const parser = new XMLParser({
+  const parser = createXMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "@_",
     removeNSPrefix: true,
