@@ -1,7 +1,7 @@
+import { MetriportError } from "@metriport/shared";
 import { Patient } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { isHealthcareItVendor } from "@metriport/core/domain/organization";
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { isFacilityActiveForHie, Facility } from "../../domain/medical/facility";
 import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
 

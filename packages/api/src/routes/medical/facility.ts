@@ -1,5 +1,5 @@
+import { NotFoundError } from "@metriport/shared";
 import { OrgType } from "@metriport/core/domain/organization";
-import NotFoundError from "@metriport/core/util/error/not-found";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";

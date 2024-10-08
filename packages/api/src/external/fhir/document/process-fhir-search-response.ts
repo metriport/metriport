@@ -1,4 +1,4 @@
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
+import { MetriportError } from "@metriport/shared";
 import { Patient } from "@metriport/core/domain/patient";
 
 export function processFhirResponse(

@@ -1,4 +1,4 @@
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
+import { MetriportError } from "@metriport/shared";
 import { QueryInterface, Sequelize } from "sequelize";
 import { MigrationError, MigrationMeta, MigrationParams, SequelizeStorage, Umzug } from "umzug";
 import { Config } from "../shared/config";

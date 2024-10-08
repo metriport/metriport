@@ -6,12 +6,12 @@ import {
   Identifier,
   Resource,
 } from "@medplum/fhirtypes";
+import { BadRequestError } from "@metriport/shared";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { appendIdentifierOID, toFHIR } from "@metriport/core/external/fhir/organization/conversion";
 import { toFHIRSubject } from "@metriport/core/external/fhir/patient/conversion";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { IETF_URI } from "@metriport/core/external/fhir/shared/namespaces";
-import BadRequestError from "@metriport/core/util/error/bad-request";
 import { cloneDeep } from "lodash";
 import { OrganizationModel } from "../../../models/medical/organization";
 import { Config } from "../../../shared/config";

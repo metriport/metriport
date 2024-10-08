@@ -1,5 +1,4 @@
-import NotFoundError from "@metriport/core/util/error/not-found";
-import { BadRequestError } from "@metriport/shared";
+import { BadRequestError, NotFoundError } from "@metriport/shared";
 import { mocked, MockedObject } from "jest-mock";
 import { makeFacility, makeFacilityModel } from "../../../../domain/medical/__tests__/facility";
 import { FacilityModel } from "../../../../models/medical/facility";
