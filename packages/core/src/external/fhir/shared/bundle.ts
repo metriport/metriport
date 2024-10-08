@@ -31,6 +31,7 @@ import {
   ResourceType,
   ServiceRequest,
 } from "@medplum/fhirtypes";
+import { filterTruthy } from "@metriport/shared/common/filter-map";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -42,34 +43,35 @@ dayjs.extend(duration);
 
 const referenceRegex = new RegExp(/"reference":\s*"(.+?)"/g);
 
-export type ReferenceWithIdAndType<T extends Resource = Resource> = Required<
-  Pick<Reference<T>, "id" | "type">
->;
+export type ReferenceWithIdAndType<T extends Resource = Resource> = Reference<T> &
+  Required<Pick<Reference<T>, "id" | "type">>;
 
 /**
  * Returns the references found in the given resources, including the missing ones.
  *
  * @param resources
- * @param referencesToInclude Resource types to include in the result. If empty, references
- *        with all resource types will be included.
+ * @param resourceTypesToInclude The resource types to include in the result. If not set,
+ *        references with all resource types will be included.
+ * @param resourceTypesToExclude The resource types to exclude from the result. If not set,
+ *        no references will be excluded.
  * @returns References found in the given resources, including the missing ones.
  */
-export function getReferencesFromResources({
+export function getReferencesAndMissingOnes({
   resources,
-  referencesToInclude = [],
-  referencesToExclude = [],
+  resourceTypesToInclude,
+  resourceTypesToExclude,
 }: {
   resources: Resource[];
-  referencesToInclude?: ResourceType[];
-  referencesToExclude?: ResourceType[];
+  resourceTypesToInclude?: ResourceType[];
+  resourceTypesToExclude?: ResourceType[];
 }): { references: Reference[]; missingReferences: ReferenceWithIdAndType[] } {
   if (resources.length <= 0) return { references: [], missingReferences: [] };
   const resourceIds = resources.flatMap(r => r.id ?? []);
-  const references = getReferencesFromRaw(
-    JSON.stringify(resources),
-    referencesToInclude,
-    referencesToExclude
-  );
+  const references = getReferences({
+    resources,
+    referencesToInclude: resourceTypesToInclude,
+    referencesToExclude: resourceTypesToExclude,
+  });
   const missingReferences: ReferenceWithIdAndType[] = [];
   for (const ref of references) {
     if (!ref.id) continue;
@@ -78,31 +80,58 @@ export function getReferencesFromResources({
   return { references, missingReferences };
 }
 
-function getReferencesFromRaw(
-  rawContents: string,
-  referencesToInclude: ResourceType[],
-  referencesToExclude: ResourceType[]
-): ReferenceWithIdAndType[] {
+// TODO 2355 Refactor this
+/**
+ * @deprecated This is not a proper implementation to return References. Those might be represented
+ * in different ways than the relative one "Patient/123". We should create a generic implementation
+ * based on `getPatientReferencesFromFhirBundle` so we can get all references from a list of
+ * resources (and update the patient's one to use it).
+ * @see https://github.com/metriport/metriport-internal/issues/2355
+ *
+ * Return the references found in the given resources.
+ *
+ * @param resources The resources to search for references
+ * @param resourceTypesToInclude The resource types to include in the result. If not set,
+ *        references with all resource types will be included.
+ * @param resourceTypesToExclude The resource types to exclude from the result. If not set,
+ *        no references will be excluded.
+ * @returns The references found in the given resources.
+ */
+export function getReferences({
+  resources,
+  referencesToInclude,
+  referencesToExclude = [],
+}: {
+  resources: Resource[] | undefined;
+  referencesToInclude?: ResourceType[] | undefined;
+  referencesToExclude?: ResourceType[] | undefined;
+}): ReferenceWithIdAndType[] {
+  if (!resources || resources.length <= 0) return [];
+  const rawContents = JSON.stringify(resources);
   const matches = rawContents.matchAll(referenceRegex);
-  const references = [];
+  const references: string[] = [];
   for (const match of matches) {
     const ref = match[1];
     if (ref) references.push(ref);
   }
   const uniqueRefs = uniq(references);
-  const preResult: ReferenceWithIdAndType[] = uniqueRefs.flatMap(r => {
-    const parts = r.split("/");
-    const type = parts[0] as ResourceType | undefined;
-    const id = parts[1];
-    if (!id || !type) return [];
-    return { type, id, reference: r };
-  });
-  if (referencesToInclude.length <= 0 && referencesToExclude.length <= 0) return preResult;
+  const preResult: ReferenceWithIdAndType[] = uniqueRefs
+    .flatMap(buildReferenceFromStringRelative)
+    .flatMap(filterTruthy);
+  if (!referencesToInclude && referencesToExclude.length <= 0) return preResult;
   return preResult.filter(
     r =>
-      (!referencesToInclude.length || referencesToInclude.includes(r.type as ResourceType)) &&
+      (!referencesToInclude || referencesToInclude.includes(r.type as ResourceType)) &&
       !referencesToExclude.includes(r.type as ResourceType)
   );
+}
+
+function buildReferenceFromStringRelative(reference: string): ReferenceWithIdAndType | undefined {
+  const parts = reference.split("/");
+  const type = parts[0] as ResourceType | undefined;
+  const id = parts[1];
+  if (!id || !type) return undefined;
+  return { id, type, reference };
 }
 
 export function buildBundle({

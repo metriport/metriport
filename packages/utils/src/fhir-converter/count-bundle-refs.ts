@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { Bundle, Resource, ResourceType } from "@medplum/fhirtypes";
-import { getReferencesFromResources } from "@metriport/core/external/fhir/shared/bundle";
+import { getReferencesAndMissingOnes } from "@metriport/core/external/fhir/shared/bundle";
 import { sleep } from "@metriport/shared";
 import { formatNumber } from "@metriport/shared/common/numbers";
 import { Command } from "commander";
@@ -20,8 +20,8 @@ dayjs.extend(duration);
 const folderName: string = ``; // eslint-disable-line @typescript-eslint/no-inferrable-types
 
 // keep empty to include all references
-const referencesToInclude: ResourceType[] = [];
-// const referencesToInclude: ResourceType[] = [
+const resourceTypesToInclude: ResourceType[] | undefined = undefined;
+// const resourceTypesToInclude: ResourceType[] = [
 //   "Location",
 //   "Organization",
 //   "RelatedPerson",
@@ -91,9 +91,9 @@ async function executeForFile(fileName: string, verbose: boolean) {
     }
   }
 
-  const { references, missingReferences } = getReferencesFromResources({
+  const { references, missingReferences } = getReferencesAndMissingOnes({
     resources,
-    referencesToInclude,
+    resourceTypesToInclude,
   });
 
   totalResources += resources.length;

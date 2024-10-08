@@ -2,7 +2,10 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import { MetriportError } from "@metriport/shared";
 import { filterTruthy } from "@metriport/shared/common/filter-map";
 import { uniq } from "lodash";
-import { out } from "../../../util";
+import { capture, out } from "../../../util";
+import { getPatientReferencesFromResources, isPatientReference } from "../patient/reference";
+import { isPatient } from "../shared";
+import { getIdFromReference } from "../shared/references";
 import { getPatientsFromBundle } from "./patient";
 
 /**
@@ -22,21 +25,24 @@ export function checkBundleForPatient(
 
   const patientsInBundle = getPatientsFromBundle(bundle);
   if (patientsInBundle.length < 1) {
-    throw new MetriportError(`Bundle contains no patients`, undefined, additionalInfo);
-  }
-  if (patientsInBundle.length > 1) {
-    const ids = patientsInBundle.map(p => p.id);
-    throw new MetriportError(`Bundle contains more than one patient`, undefined, {
-      ...additionalInfo,
-      patientsIds: ids.join(", "),
-    });
-  }
-  const patientInBundle = patientsInBundle[0]!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
-  if (patientInBundle.id !== patientId) {
-    throw new MetriportError(`Patient in bundle is diff than expected`, undefined, {
-      ...additionalInfo,
-      patientIdInBundle: patientInBundle.id,
-    });
+    const msg = `Bundle contains no patients`;
+    log(msg);
+    capture.message(msg, { extra: additionalInfo, level: "warning" });
+  } else {
+    if (patientsInBundle.length > 1) {
+      const ids = patientsInBundle.map(p => p.id);
+      throw new MetriportError(`Bundle contains more than one patient`, undefined, {
+        ...additionalInfo,
+        patientsIds: ids.join(", "),
+      });
+    }
+    const patientInBundle = patientsInBundle[0]!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    if (patientInBundle.id !== patientId) {
+      throw new MetriportError(`Patient in bundle is diff than expected`, undefined, {
+        ...additionalInfo,
+        patientIdInBundle: patientInBundle.id,
+      });
+    }
   }
 
   const patientsIdInBundle = getPatientIdsFromBundle(bundle);
@@ -45,10 +51,11 @@ export function checkBundleForPatient(
     log(
       `Found ${mismatchingPatientsIds.length} mismatching patients in bundle: ${mismatchingPatientsIds}`
     );
-    throw new MetriportError("Unexpected patient IDs in bundle", undefined, {
+    throw new MetriportError("Bundle contains invalid data", undefined, {
       cxId,
       patientId,
-      mismatchingPatientsIds: mismatchingPatientsIds.join(", "),
+      type: "Unexpected patient ID in bundle",
+      unexpectedPatientsIds: mismatchingPatientsIds.join(", "),
     });
   }
 
@@ -56,13 +63,35 @@ export function checkBundleForPatient(
 }
 
 export function getPatientIdsFromBundle(bundle: Bundle<Resource>): string[] {
-  const contents = JSON.stringify(bundle);
-  const matches = contents.match(/"Patient\/(.+?)"/g);
-  const uniquePatientIds = uniq(matches).map(getPatientIdFromRef).flatMap(filterTruthy);
+  const resources = (bundle.entry ?? []).flatMap(entry => entry.resource ?? []);
+  return [
+    ...getPatientIdsFromPatient(resources),
+    ...getPatientIdsFromContained(resources),
+    ...getPatientIdsFromReferences(resources),
+  ];
+}
+
+export function getPatientIdsFromPatient(resources: Resource[]): string[] {
+  const patientResources = resources.filter(isPatient);
+  const patientIdsFromPatients = patientResources.map(p => p.id).flatMap(filterTruthy);
+  const uniquePatientIds = uniq(patientIdsFromPatients);
   return uniquePatientIds;
 }
 
-export function getPatientIdFromRef(ref: string): string | undefined {
-  const id = ref.split("/")[1];
-  return id ? id.replace(/"/g, "") : undefined;
+export function getPatientIdsFromContained(resources: Resource[]): string[] {
+  const containedResources = resources.flatMap(r => ("contained" in r ? r.contained ?? [] : []));
+  const patientIdsFromContained = containedResources
+    .filter(isPatient)
+    .map(p => p.id)
+    .flatMap(filterTruthy);
+  const uniquePatientIds = uniq(patientIdsFromContained);
+  return uniquePatientIds;
+}
+
+export function getPatientIdsFromReferences(resources: Resource[]): string[] {
+  const references = getPatientReferencesFromResources(resources);
+  const patientReferences = references.filter(isPatientReference);
+  const patientIdsFromRefs = patientReferences.map(getIdFromReference).flatMap(filterTruthy);
+  const uniquePatientIds = uniq(patientIdsFromRefs);
+  return uniquePatientIds;
 }

@@ -2,7 +2,7 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import { ResourceTypeForConsolidation, SearchSetBundle } from "@metriport/shared/medical";
 import {
   buildBundleEntry,
-  getReferencesFromResources,
+  getReferencesAndMissingOnes,
   ReferenceWithIdAndType,
 } from "../../external/fhir/shared/bundle";
 import { out } from "../../util";
@@ -101,7 +101,7 @@ export function addMissingReferences(
 ): Bundle<Resource> {
   const filteredResources = (filteredBundle.entry ?? []).flatMap(e => e.resource ?? []);
 
-  const { missingReferences } = getReferencesFromResources({ resources: filteredResources });
+  const { missingReferences } = getReferencesAndMissingOnes({ resources: filteredResources });
 
   const resourcesToAdd = getResourcesFromBundle(missingReferences, originalBundle);
 
@@ -110,7 +110,7 @@ export function addMissingReferences(
     entry: [...(filteredBundle.entry ?? []), ...resourcesToAdd.map(buildBundleEntry)],
   };
 
-  const { missingReferences: missingRefsFromAddedResources } = getReferencesFromResources({
+  const { missingReferences: missingRefsFromAddedResources } = getReferencesAndMissingOnes({
     resources: resourcesToAdd,
   });
 
