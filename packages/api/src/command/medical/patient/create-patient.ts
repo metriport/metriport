@@ -87,7 +87,7 @@ export async function createPatient({
         genderAtBirth,
         personalIdentifiers,
         address: addressWithCoordinates,
-        contact: contact,
+        contact,
       },
       externalId,
     });
