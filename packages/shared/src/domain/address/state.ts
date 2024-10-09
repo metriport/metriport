@@ -1,9 +1,12 @@
+import { toTitleCase } from "../../common/titleCase";
+
 export function normalizeStateSafe(state: string): USState | undefined {
-  if (Object.values(states).includes(USState[state as keyof typeof USState])) {
-    return USState[state as keyof typeof USState];
-  } else if (states[state]) {
-    return states[state];
-  } else if (state === "DC") {
+  const trimmedState = applyCasing(state.trim());
+  if (Object.values(states).includes(USState[trimmedState as keyof typeof USState])) {
+    return USState[trimmedState as keyof typeof USState];
+  } else if (states[trimmedState]) {
+    return states[trimmedState];
+  } else if (trimmedState === "DC") {
     return USState.DC;
   }
   return undefined;
@@ -13,6 +16,13 @@ export function normalizeState(state: string): USState {
   const stateOrUndefined = normalizeStateSafe(state);
   if (!stateOrUndefined) throw new Error("Invalid state.");
   return stateOrUndefined;
+}
+
+function applyCasing(state: string): string {
+  if (state.length === 2) {
+    return state.toUpperCase();
+  }
+  return toTitleCase(state);
 }
 
 export enum USState {

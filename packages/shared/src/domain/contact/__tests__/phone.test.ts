@@ -49,51 +49,83 @@ describe("phone", () => {
   });
 
   describe("normalizePhoneSafe", () => {
-    it(`removes country code when it starts with 1 and has 11 digits`, () => {
-      const expectedPhone = "0987654321";
-      const result = normalizePhoneSafe("1" + expectedPhone);
-      expect(result).toBe(expectedPhone);
+    it("should return undefined when it gets empty string", () => {
+      const input = "";
+      expect(normalizePhoneSafe(input)).toBeUndefined();
     });
 
-    it(`does not remove country code when it starts with diff than 1 and has 11 digits`, () => {
-      const inputPhone = "20987654321";
-      const expectedPhone = "2098765432";
-      const result = normalizePhoneSafe(inputPhone);
-      expect(result).toBe(expectedPhone);
+    it("should return undefined when it gets space", () => {
+      const input = " ";
+      expect(normalizePhoneSafe(input)).toBeUndefined();
     });
 
     it(`does not remove country code when it starts with 1 and has 10 digits`, () => {
-      const expectedPhone = "1098765432";
-      const result = normalizePhoneSafe(expectedPhone);
-      expect(result).toBe(expectedPhone);
+      const expectedOutput = "1098765431";
+      expect(normalizePhoneSafe(expectedOutput)).toBe(expectedOutput);
+    });
+
+    it(`removes country code when it starts with 1 and has 11 digits`, () => {
+      const expectedOutput = "1098765431";
+      const input = "1" + expectedOutput;
+      expect(normalizePhoneSafe(input)).toBe(expectedOutput);
+    });
+
+    it(`does not remove country code when it starts with diff than 1 and has 10 digits`, () => {
+      const expectedOutput = "2098765431";
+      expect(normalizePhoneSafe(expectedOutput)).toBe(expectedOutput);
     });
 
     it(`removes country code when it starts with 1 and has 12 digits`, () => {
-      const expectedPhone = "0987654321";
-      const result = normalizePhoneSafe("1" + expectedPhone);
-      expect(result).toBe(expectedPhone);
+      const expectedOutput = "1098765431";
+      const input = "1" + expectedOutput + "1";
+      expect(normalizePhoneSafe(input)).toBe(expectedOutput);
     });
 
     describe(`does not remove country when it does not start with 1`, () => {
-      const phonesWithFewerDigits = ["2", "3", "4", "5", "6", "7", "8", "9", "55", "21"];
+      const phonesWithFewerDigits = ["2", "3", "4", "5", "6", "7", "8", "9", "0", "55", "21"];
       for (const code of phonesWithFewerDigits) {
         it(`starts with ${code}`, () => {
-          const inputPhone = code + "0987654321";
-          const expectedPhone = inputPhone.slice(0, 10);
-          const result = normalizePhoneSafe(inputPhone);
-          expect(result).toBe(expectedPhone);
+          const inputPhone = code + "1098765431";
+          const expectedOutput = inputPhone.slice(0, 10);
+          expect(normalizePhoneSafe(inputPhone)).toBe(expectedOutput);
         });
       }
     });
 
     it(`returns 10 leftmost digits when does not start with 1 and has more than 10 digits`, () => {
-      const result = normalizePhoneSafe("0987654321 ext 999");
-      expect(result).toBe("0987654321");
+      const expectedOutput = "2098765431";
+      const input = expectedOutput + " ext 999";
+      expect(normalizePhoneSafe(input)).toBe(expectedOutput);
     });
 
     it(`removes first digit and returns remaining leftmost digits when starts with 1 and has more than 10 digits`, () => {
-      const result = normalizePhoneSafe("1987654321 ext 555");
-      expect(result).toBe("9876543215");
+      const expectedOutput = "2098765431";
+      const input = "1" + expectedOutput + " ext 999";
+      expect(normalizePhoneSafe(input)).toBe(expectedOutput);
+    });
+
+    it(`handle short phones (v1)`, () => {
+      const expectedOutput = "0198765431";
+      const input = expectedOutput.slice(1, 10);
+      expect(normalizePhoneSafe(input)).toBe(expectedOutput);
+    });
+
+    it(`handle short phones (v2)`, () => {
+      const expectedOutput = "0098765431";
+      const input = expectedOutput.slice(2, 10);
+      expect(normalizePhoneSafe(input)).toBe(expectedOutput);
+    });
+
+    it("should trim input prefix", () => {
+      const expectedOutput = "1098765432";
+      const input = " " + expectedOutput;
+      expect(normalizePhoneSafe(input)).toBe(expectedOutput);
+    });
+
+    it("should trim input suffix", () => {
+      const expectedOutput = "1098765432";
+      const input = expectedOutput + " ";
+      expect(normalizePhoneSafe(input)).toBe(expectedOutput);
     });
   });
 });

@@ -19,14 +19,6 @@ export function normalizeZipCodeSafe(zipCode: string): string | undefined {
   return trimmedZipMainPart.slice(0, zipLength);
 }
 
-/**
- * Normalizes a zip code by taking the first 4-5 characters.
- * @param zipCode - The zip code to be normalized.
- * @returns The normalized zip code as a string.
- *
- * TODO: Refactor, so `normalize` simply returns a zip of a certain format and returns undefined if it cannot,
- * while `validate` would throw an error.
- */
 export function normalizeZipCode(zipCode: string): string {
   const zipOrUndefined = normalizeZipCodeSafe(zipCode);
   if (!zipOrUndefined) throw new Error("Invalid Zip.");

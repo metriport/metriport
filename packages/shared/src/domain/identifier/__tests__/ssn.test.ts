@@ -6,7 +6,7 @@ function getNineDigitSsn() {
 }
 
 describe("ssn", () => {
-  describe("safe normalizeSsnSafe", () => {
+  describe("normalizeSsnSafe", () => {
     it("should return undefined when it gets empty string", () => {
       const input = "";
       expect(normalizeSsnSafe(input)).toBeUndefined();

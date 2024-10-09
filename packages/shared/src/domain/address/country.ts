@@ -1,11 +1,13 @@
-const validCountryStrings = ["usa", "us", "u.s.", "u.s.a.", "united states"];
+import { stripPeriods } from "../../common/string";
 
-export const defaultCountry = "usa";
+const validCountryStrings = ["US", "USA", "UNITED STATES", "UNITED STATES OF AMERICA"];
+
+export const normalizedCountryUsa = "USA";
 
 export function normalizeCountrySafe(country: string): string | undefined {
-  const trimmedCountry = country.trim().toLowerCase();
-  if (!validCountryStrings.includes(trimmedCountry)) return undefined;
-  return defaultCountry;
+  const strippedCountry = stripPeriods(country.trim().toUpperCase());
+  if (!validCountryStrings.includes(strippedCountry)) return undefined;
+  return normalizedCountryUsa;
 }
 
 export function normalizeCountry(country: string): string {

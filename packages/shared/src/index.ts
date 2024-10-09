@@ -7,6 +7,7 @@ export { emptyFunction } from "./common/general";
 export { isValidUrl } from "./common/net";
 export { normalizeOid } from "./common/normalize-oid";
 export { toTitleCase } from "./common/titleCase";
+export * from "./domain/address/addressline";
 export * from "./domain/address/country";
 export * from "./domain/address/state";
 export * from "./domain/address/zip";

@@ -15,6 +15,10 @@ export function stripNonNumericChars(str: string): string {
   return str.trim().replace(/\D/g, "");
 }
 
+export function stripPeriods(str: string): string {
+  return str.trim().replace(/\./g, "");
+}
+
 export function normalizeString(str: string): string {
   const normalizedString = normalizeStringSafe(str);
   if (!normalizedString) throw new Error("Invalid string");

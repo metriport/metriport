@@ -34,29 +34,6 @@ export const coreDemographics: LinkDemographics = {
   ),
   ssns: ["123014442"],
 };
-export const linkDemographics: LinkDemographics = {
-  dob: "1900-02-28",
-  gender: "male",
-  names: [
-    { firstName: "john", lastName: "george" },
-    { firstName: "johnathan", lastName: "george" },
-  ].map(name => JSON.stringify(name, Object.keys(name).sort())),
-  addresses: [
-    {
-      line: ["88 75th st.", "apt 8"],
-      city: "ny",
-      state: "ny",
-      zip: "66622",
-      country: "usa",
-    },
-  ].map(address => JSON.stringify(address, Object.keys(address).sort())),
-  telephoneNumbers: ["6194009999"],
-  emails: ["johnathan.george@gmail.com"],
-  driversLicenses: [{ value: "ny1234", state: "ny" }].map(dl =>
-    JSON.stringify(dl, Object.keys(dl).sort())
-  ),
-  ssns: ["123456789"],
-};
 export const consolidatedLinkDemographics = {
   names: [
     { firstName: "john", lastName: "george" },

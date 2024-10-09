@@ -24,7 +24,7 @@ describe("ssn", () => {
       expect(normalizeEmailSafe(input)).toBe(expectedOutput);
     });
 
-    it("should relace input prefix", () => {
+    it("should trim input prefix", () => {
       const expectedOutput = exampleEmail;
       const input = " " + expectedOutput;
       expect(normalizeEmailSafe(input)).toBe(expectedOutput);

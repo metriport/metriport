@@ -1,13 +1,15 @@
 import {
+  toTitleCase,
+  PatientImportPatient,
+  normalizeString,
   normalizeDate,
-  normalizeEmail,
-  normalizeExternalId,
   normalizeGender,
-  normalizePhoneNumberStrict,
+  normalizePhone,
+  normalizeEmail,
   normalizeState,
   normalizeZipCode,
-  PatientImportPatient,
-  toTitleCase,
+  normalizeExternalId,
+  normalizedCountryUsa,
 } from "@metriport/shared";
 import { PatientPayload } from "./patient-import";
 
@@ -122,9 +124,9 @@ export function createObjectFromCsv({
 }
 
 export function createPatientPayload(patient: PatientImportPatient): PatientPayload {
-  const phone1 = patient.phone1 ? normalizePhoneNumberStrict(patient.phone1) : undefined;
+  const phone1 = patient.phone1 ? normalizePhone(patient.phone1) : undefined;
   const email1 = patient.email1 ? normalizeEmail(patient.email1) : undefined;
-  const phone2 = patient.phone2 ? normalizePhoneNumberStrict(patient.phone2) : undefined;
+  const phone2 = patient.phone2 ? normalizePhone(patient.phone2) : undefined;
   const email2 = patient.email2 ? normalizeEmail(patient.email2) : undefined;
   const contact1 = phone1 || email1 ? { phone: phone1, email: email1 } : undefined;
   const contact2 = phone2 || email2 ? { phone: phone2, email: email2 } : undefined;
@@ -132,18 +134,18 @@ export function createPatientPayload(patient: PatientImportPatient): PatientPayl
   const externalId = patient.externalid ? normalizeExternalId(patient.externalid) : undefined;
   return {
     externalId,
-    firstName: toTitleCase(patient.firstname),
-    lastName: toTitleCase(patient.lastname),
+    firstName: toTitleCase(normalizeString(patient.firstname)),
+    lastName: toTitleCase(normalizeString(patient.lastname)),
     dob: normalizeDate(patient.dob),
     genderAtBirth: normalizeGender(patient.gender),
     address: [
       {
-        addressLine1: toTitleCase(patient.addressline1),
+        addressLine1: toTitleCase(normalizeString(patient.addressline1)),
         ...(patient.addressline2 ? { addressLine2: toTitleCase(patient.addressline2) } : undefined),
-        city: toTitleCase(patient.city),
+        city: toTitleCase(normalizeString(patient.city)),
         state: normalizeState(patient.state),
         zip: normalizeZipCode(patient.zip),
-        country: "USA",
+        country: normalizedCountryUsa,
       },
     ],
     contact,

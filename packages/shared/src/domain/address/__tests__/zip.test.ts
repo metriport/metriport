@@ -6,7 +6,7 @@ function getFiveDigitZip() {
 }
 
 describe("zip", () => {
-  describe("safe normalizeZipCodeSafe", () => {
+  describe("normalizeZipCodeSafe", () => {
     it("should return undefined when it gets empty string", () => {
       const input = "";
       expect(normalizeZipCodeSafe(input)).toBeUndefined();
@@ -63,19 +63,19 @@ describe("zip", () => {
       expect(normalizeZipCodeSafe(input)).toBe(expectedOutput);
     });
 
-    it("should handle 5 digits when contains dash at position 4", () => {
+    it("should handle 5 digits when contains dash at index 5", () => {
       const input = "12345-6677";
       const expectedOutput = "12345";
       expect(normalizeZipCodeSafe(input)).toBe(expectedOutput);
     });
 
-    it("should slice 5 digits when contains dash at position 4", () => {
+    it("should slice 5 digits when contains dash at index 5+", () => {
       const input = "123456-6677";
       const expectedOutput = "12345";
       expect(normalizeZipCodeSafe(input)).toBe(expectedOutput);
     });
 
-    it("should handle short zip codes when contains dash at position 4", () => {
+    it("should handle short zip codes when contains dash at index 5-", () => {
       const input = "1234-6677";
       const expectedOutput = "01234";
       expect(normalizeZipCodeSafe(input)).toBe(expectedOutput);

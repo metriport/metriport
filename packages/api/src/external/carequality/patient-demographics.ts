@@ -2,7 +2,7 @@ import {
   normalizeDateSafe,
   normalizeGenderSafe,
   normalizeEmailSafe,
-  normalizePhoneNumber,
+  normalizePhoneSafe,
   normalizeSsnSafe,
 } from "@metriport/shared";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
@@ -42,7 +42,9 @@ export function patientResourceToNormalizedLinkDemographics(
   const telephoneNumbers = (patientResource.telecom ?? []).flatMap(tc => {
     if (!tc.value) return [];
     if (tc.system !== "phone" && tc.value.includes("@")) return [];
-    return [normalizePhoneNumber(tc.value)];
+    const normalizedPhone = normalizePhoneSafe(tc.value);
+    if (!normalizedPhone) return [];
+    return [normalizedPhone];
   });
   const emails = (patientResource.telecom ?? []).flatMap(tc => {
     if (!tc.value) return [];

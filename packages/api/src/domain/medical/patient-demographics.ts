@@ -1,15 +1,16 @@
 import {
-  trimAndCheckEmptySafe,
+  USState,
+  normalizeStringSafe,
   normalizeDateSafe,
   normalizeGenderSafe,
   normalizeEmailSafe,
-  normalizePhoneNumber,
+  normalizePhoneSafe,
   normalizeStateSafe,
   normalizeZipCodeSafe,
   normalizeCountrySafe,
   normalizeSsnSafe,
-  USState,
-  defaultCountry,
+  commonReplacementsForAddressLine,
+  normalizedCountryUsa,
 } from "@metriport/shared";
 import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
@@ -181,7 +182,9 @@ export function patientToNormalizedCoreDemographics(patient: Patient): LinkDemog
   });
   const telephoneNumbers = (patient.data.contact ?? []).flatMap(c => {
     if (!c.phone) return [];
-    return [normalizePhoneNumber(c.phone)];
+    const normalizedPhone = normalizePhoneSafe(c.phone);
+    if (!normalizedPhone) return [];
+    return [normalizedPhone];
   });
   const emails = (patient.data.contact ?? []).flatMap(c => {
     if (!c.email) return [];
@@ -189,14 +192,12 @@ export function patientToNormalizedCoreDemographics(patient: Patient): LinkDemog
     if (!normalizedEmail) return [];
     return [normalizedEmail];
   });
-  /*
   const driversLicenses = (patient.data.personalIdentifiers ?? []).flatMap(p => {
     if (p.type !== "driversLicense") return [];
     const normalizedDl = normalizeAndStringifyDriversLicense({ value: p.value, state: p.state });
     if (!normalizedDl) return [];
     return [normalizedDl];
   });
-  */
   const ssns = (patient.data.personalIdentifiers ?? []).flatMap(p => {
     if (p.type !== "ssn") return [];
     const normalizedSsn = normalizeSsnSafe(p.value);
@@ -210,7 +211,7 @@ export function patientToNormalizedCoreDemographics(patient: Patient): LinkDemog
     addresses,
     telephoneNumbers,
     emails,
-    driversLicenses: [],
+    driversLicenses,
     ssns,
   };
 }
@@ -222,13 +223,13 @@ export function normalizeAndStringifyNames({
   firstName: string;
   lastName: string;
 }): string | undefined {
-  const normalizedFirstName = trimAndCheckEmptySafe(firstName);
+  const normalizedFirstName = normalizeStringSafe(firstName);
   if (!normalizedFirstName) return undefined;
-  const normalizedLastName = trimAndCheckEmptySafe(lastName);
+  const normalizedLastName = normalizeStringSafe(lastName);
   if (!normalizedLastName) return undefined;
   const normalizedName = {
-    firstName: normalizedFirstName.toLowerCase(),
-    lastName: normalizedLastName.toLowerCase(),
+    firstName: normalizedFirstName,
+    lastName: normalizedLastName,
   };
   return JSON.stringify(normalizedName, Object.keys(normalizedName).sort());
 }
@@ -248,31 +249,26 @@ export function normalizeAndStringfyAddress({
 }): string | undefined {
   if (!line || !city || !state || !zip) return undefined;
   const normalizedLines = line.flatMap(l => {
-    const normalizedLine = trimAndCheckEmptySafe(l);
+    const normalizedLine = normalizeStringSafe(l);
     if (!normalizedLine) return [];
-    return [normalizedLine.toLowerCase()];
+    return [commonReplacementsForAddressLine(normalizedLine)];
   });
   if (normalizedLines.length === 0) return undefined;
-  const normalizedCity = trimAndCheckEmptySafe(city);
+  const normalizedCity = normalizeStringSafe(city);
   if (!normalizedCity) return undefined;
-  const normalizeState = normalizeStateSafe(state);
-  if (!normalizeState) return undefined;
+  const normalizedState = normalizeStateSafe(state);
+  if (!normalizedState) return undefined;
   const normalizedZip = normalizeZipCodeSafe(zip);
   if (!normalizedZip) return undefined;
-  const normalizedCountry = normalizeCountrySafe(country ?? defaultCountry);
+  const normalizedCountryString = normalizeStringSafe(country ?? "");
+  const normalizedCountry = normalizeCountrySafe(normalizedCountryString ?? normalizedCountryUsa);
   if (!normalizedCountry) return undefined;
   const normalizedAddress = {
-    line: normalizedLines.map(l => {
-      return l
-        .replaceAll("street", "st")
-        .replaceAll("drive", "dr")
-        .replaceAll("road", "rd")
-        .replaceAll("avenue", "ave");
-    }),
-    city: normalizedCity.toLowerCase(),
-    state: normalizeState.toLowerCase(),
+    line: normalizedLines,
+    city: normalizedCity,
+    state: normalizedState.toLowerCase(),
     zip: normalizedZip,
-    country: normalizedCountry,
+    country: normalizedCountry.toLowerCase(),
   };
   return JSON.stringify(normalizedAddress, Object.keys(normalizedAddress).sort());
 }
@@ -284,12 +280,12 @@ export function normalizeAndStringifyDriversLicense({
   value: string;
   state: string;
 }): string | undefined {
-  const normalizedValue = trimAndCheckEmptySafe(value);
+  const normalizedValue = normalizeStringSafe(value);
   if (!normalizedValue) return undefined;
   const normalizedState = normalizeStateSafe(state);
   if (!normalizedState) return undefined;
   const normalizedDl = {
-    value: normalizedValue.toLowerCase(),
+    value: normalizedValue,
     state: normalizedState.toLowerCase(),
   };
   return JSON.stringify(normalizedDl, Object.keys(normalizedDl).sort());
@@ -305,7 +301,6 @@ export function createAugmentedPatient(patient: Patient): Patient {
   const coreDemographics = patientToNormalizedCoreDemographics(patient);
   const consolidatedLinkDemographics = patient.data.consolidatedLinkDemographics;
   if (!consolidatedLinkDemographics) return patient;
-  // TODO Is submitting lower case addresses to CQ / CW okay, or do we have to grab the original version?
   const newAddresses: Address[] = consolidatedLinkDemographics.addresses
     .filter(address => !coreDemographics.addresses.includes(address))
     .map(address => {
