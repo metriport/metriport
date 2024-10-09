@@ -4,6 +4,6 @@ import { FhirToCdaConverterDirect } from "./connector-direct";
 import { FhirToCdaConverterLambda } from "./connector-lambda";
 
 export function makeFhirToCdaConverter(): FhirToCdaConverter {
-  if (Config.isDev()) return new FhirToCdaConverterDirect();
+  if (!Config.isCloudEnv()) return new FhirToCdaConverterDirect();
   return new FhirToCdaConverterLambda();
 }

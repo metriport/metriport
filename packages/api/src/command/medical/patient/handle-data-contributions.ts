@@ -97,7 +97,7 @@ export async function handleDataContribution({
  * SANDBOX ONLY. Checks if the incoming amount of resources, plus what's already stored, exceeds the limit.
  */
 async function checkResourceLimit(incomingAmount: number, patient: Patient) {
-  if (Config.isSandbox()) {
+  if (!Config.isCloudEnv() || Config.isSandbox()) {
     const { total: currentAmount } = await countResources({
       patient: { id: patient.id, cxId: patient.cxId },
     });
