@@ -20,10 +20,11 @@ export function getSlotValue(slot: Slot | undefined): string | undefined {
   }
   if (typeof slot.ValueList === "object" && slot.ValueList !== undefined) {
     const value = slot.ValueList.Value;
-    if (value && Array.isArray(value)) {
+
+    if (!value) return undefined;
+    if (Array.isArray(value)) {
       return String(value[0]);
-    }
-    return String(value);
+    } else return String(value);
   }
   return undefined;
 }
