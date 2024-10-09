@@ -4,12 +4,8 @@ import {
   baseRequestSchema,
   codeSchema,
   xcaGatewaySchema,
+  dateRangeSchema,
 } from "../shared";
-
-export const dateRangeSchema = z.object({
-  dateFrom: z.string(),
-  dateTo: z.string(),
-});
 
 export type DateRange = z.infer<typeof dateRangeSchema>;
 

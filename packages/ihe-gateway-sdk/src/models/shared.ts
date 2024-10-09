@@ -150,3 +150,8 @@ export const documentReferenceSchema = z.object({
     .nullish(),
 });
 export type DocumentReference = z.infer<typeof documentReferenceSchema>;
+
+export const dateRangeSchema = z.object({
+  dateFrom: z.string(),
+  dateTo: z.string(),
+});

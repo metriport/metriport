@@ -169,6 +169,7 @@ function handleSuccessResponse({
     documentReference: documentReferences,
     externalGatewayPatient: outboundRequest.externalGatewayPatient,
     iheGatewayV2: true,
+    serviceDate: outboundRequest.serviceDate,
   };
   return response;
 }

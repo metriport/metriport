@@ -82,6 +82,8 @@ export function handleRegistryErrorResponseDq({
     gateway,
     operationOutcome,
     iheGatewayV2: true,
+    externalGatewayPatient: outboundRequest.externalGatewayPatient,
+    serviceDate: outboundRequest.serviceDate,
   };
 }
 
@@ -159,6 +161,8 @@ export function handleHttpErrorResponseDq({
     operationOutcome,
     retried: attempt,
     iheGatewayV2: true,
+    externalGatewayPatient: outboundRequest.externalGatewayPatient,
+    serviceDate: outboundRequest.serviceDate,
   };
 }
 
@@ -234,6 +238,8 @@ export function handleEmptyResponseDq({
     gateway,
     operationOutcome,
     iheGatewayV2: true,
+    externalGatewayPatient: outboundRequest.externalGatewayPatient,
+    serviceDate: outboundRequest.serviceDate,
   };
 }
 
@@ -306,6 +312,8 @@ export function handleSchemaErrorResponseDq({
     gateway,
     operationOutcome,
     iheGatewayV2: true,
+    externalGatewayPatient: outboundRequest.externalGatewayPatient,
+    serviceDate: outboundRequest.serviceDate,
   };
 }
 
