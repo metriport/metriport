@@ -13,17 +13,17 @@ import {
   makeUrlReference,
   makeUrnUuidReference,
 } from "../../__tests__/reference";
-import { checkBundleForPatient, getPatientIdsFromPatient } from "../qa";
+import { checkBundle, getPatientIdsFromPatient } from "../qa";
 
-const invalidBundleMessage = "Bundle contains invalid data";
+const invalidBundleMessage = "Unexpected patient ID in bundle";
 
 describe("Bundle QA", () => {
-  describe("checkBundleForPatient", () => {
+  describe("checkBundle", () => {
     it(`returns true when the bundle only contains the patient`, async () => {
       const cxId = uuidv7();
       const patient = makePatient();
       const bundle = makeBundle({ entries: [patient] });
-      const res = checkBundleForPatient(bundle, cxId, patient.id);
+      const res = checkBundle(bundle, cxId, patient.id);
       expect(res).toBeTruthy();
     });
 
@@ -31,7 +31,7 @@ describe("Bundle QA", () => {
       const cxId = uuidv7();
       const patient = makePatient();
       const bundle = makeBundle({ entries: [patient] });
-      const res = checkBundleForPatient(bundle, cxId, patient.id);
+      const res = checkBundle(bundle, cxId, patient.id);
       expect(res).toBeTruthy();
     });
 
@@ -40,7 +40,7 @@ describe("Bundle QA", () => {
       const patient1 = makePatient();
       const patient2 = makePatient();
       const bundle = makeBundle({ entries: [patient1, patient2] });
-      expect(() => checkBundleForPatient(bundle, cxId, patient1.id)).toThrow(
+      expect(() => checkBundle(bundle, cxId, patient1.id)).toThrow(
         "Bundle contains more than one patient"
       );
     });
@@ -49,7 +49,7 @@ describe("Bundle QA", () => {
       const cxId = uuidv7();
       const patient = makePatient();
       const bundle = makeBundle({ entries: [] });
-      const res = checkBundleForPatient(bundle, cxId, patient.id);
+      const res = checkBundle(bundle, cxId, patient.id);
       expect(res).toBeTruthy();
     });
 
@@ -63,7 +63,7 @@ describe("Bundle QA", () => {
           makeAllergyIntollerance({ patient }),
         ],
       });
-      const res = checkBundleForPatient(bundle, cxId, patient.id);
+      const res = checkBundle(bundle, cxId, patient.id);
       expect(res).toBeTruthy();
     });
 
@@ -79,7 +79,7 @@ describe("Bundle QA", () => {
           makeAllergyIntollerance({ patient: patient1 }),
         ],
       });
-      expect(() => checkBundleForPatient(bundle, cxId, patient1.id)).toThrow(
+      expect(() => checkBundle(bundle, cxId, patient1.id)).toThrow(
         "Bundle contains more than one patient"
       );
     });
@@ -95,8 +95,8 @@ describe("Bundle QA", () => {
           makeAllergyIntollerance({ patient: patient1 }),
         ],
       });
-      expect(() => checkBundleForPatient(bundle, cxId, patient1.id)).toThrow(
-        "Patient in bundle is diff than expected"
+      expect(() => checkBundle(bundle, cxId, patient1.id)).toThrow(
+        "Patient in bundle is different than expected"
       );
     });
 
@@ -111,7 +111,7 @@ describe("Bundle QA", () => {
           makeAllergyIntollerance({ patient: patient2 }),
         ],
       });
-      expect(() => checkBundleForPatient(bundle, cxId, patient1.id)).toThrow(invalidBundleMessage);
+      expect(() => checkBundle(bundle, cxId, patient1.id)).toThrow(invalidBundleMessage);
     });
 
     it(`throws when an Observation points to a diff patient`, async () => {
@@ -120,7 +120,7 @@ describe("Bundle QA", () => {
       const patient2 = makePatient();
       const observation = makeObservation({ subject: makeReference(patient2) });
       const bundle = makeBundle({ entries: [patient1, observation] });
-      expect(() => checkBundleForPatient(bundle, cxId, patient1.id)).toThrow(invalidBundleMessage);
+      expect(() => checkBundle(bundle, cxId, patient1.id)).toThrow(invalidBundleMessage);
     });
 
     it(`throws when an Observation has a diff patient on contained`, async () => {
@@ -130,7 +130,7 @@ describe("Bundle QA", () => {
       const observation = makeObservation({ subject: makeReference(patient1) });
       observation.contained = [patient2];
       const bundle = makeBundle({ entries: [observation] });
-      expect(() => checkBundleForPatient(bundle, cxId, patient1.id)).toThrow(invalidBundleMessage);
+      expect(() => checkBundle(bundle, cxId, patient1.id)).toThrow(invalidBundleMessage);
     });
 
     it(`throws when the bundle has a Condition pointing to a diff patient`, async () => {
@@ -143,7 +143,7 @@ describe("Bundle QA", () => {
           makeCondition({ subject: makeReference(patient2) }),
         ],
       });
-      expect(() => checkBundleForPatient(bundle, cxId, patient1.id)).toThrow(invalidBundleMessage);
+      expect(() => checkBundle(bundle, cxId, patient1.id)).toThrow(invalidBundleMessage);
     });
 
     it(`does not throw when Condition references the same patient using urn:uuid`, async () => {
@@ -155,7 +155,7 @@ describe("Bundle QA", () => {
           makeCondition({ subject: makeUrnUuidReference(patient1) }),
         ],
       });
-      const res = checkBundleForPatient(bundle, cxId, patient1.id);
+      const res = checkBundle(bundle, cxId, patient1.id);
       expect(res).toBeTruthy();
     });
 
@@ -169,7 +169,7 @@ describe("Bundle QA", () => {
           makeCondition({ subject: makeUrnUuidReference(patient2) }),
         ],
       });
-      expect(() => checkBundleForPatient(bundle, cxId, patient1.id)).toThrow(invalidBundleMessage);
+      expect(() => checkBundle(bundle, cxId, patient1.id)).toThrow(invalidBundleMessage);
     });
 
     it(`does not throw when Condition references the same patient using url`, async () => {
@@ -181,7 +181,7 @@ describe("Bundle QA", () => {
           makeCondition({ subject: makeUrlReference(patient1) }),
         ],
       });
-      const res = checkBundleForPatient(bundle, cxId, patient1.id);
+      const res = checkBundle(bundle, cxId, patient1.id);
       expect(res).toBeTruthy();
     });
 
@@ -195,7 +195,7 @@ describe("Bundle QA", () => {
           makeCondition({ subject: makeUrlReference(patient2) }),
         ],
       });
-      expect(() => checkBundleForPatient(bundle, cxId, patient1.id)).toThrow(invalidBundleMessage);
+      expect(() => checkBundle(bundle, cxId, patient1.id)).toThrow(invalidBundleMessage);
     });
 
     it(`throws when Condition references a diff patient using the reference's id with type`, async () => {
@@ -208,7 +208,7 @@ describe("Bundle QA", () => {
           makeCondition({ subject: makeIdReference(patient2) }),
         ],
       });
-      expect(() => checkBundleForPatient(bundle, cxId, patient1.id)).toThrow(invalidBundleMessage);
+      expect(() => checkBundle(bundle, cxId, patient1.id)).toThrow(invalidBundleMessage);
     });
 
     it(`does not throw when Condition references a diff patient using the reference's id without type`, async () => {
@@ -223,7 +223,7 @@ describe("Bundle QA", () => {
           makeCondition({ subject: idOnlyRef }),
         ],
       });
-      const res = checkBundleForPatient(bundle, cxId, patient1.id);
+      const res = checkBundle(bundle, cxId, patient1.id);
       expect(res).toBeTruthy();
     });
 
@@ -237,7 +237,7 @@ describe("Bundle QA", () => {
       diagReport.code.coding.push({ display: "Patient/Family" });
       const bundle = makeBundle({ entries: [patient, diagReport] });
 
-      const res = checkBundleForPatient(bundle, cxId, patient.id);
+      const res = checkBundle(bundle, cxId, patient.id);
       expect(res).toBeTruthy();
     });
   });

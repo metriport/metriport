@@ -1,14 +1,18 @@
-import { executeWithNetworkRetries, InternalSendConsolidated } from "@metriport/shared";
+import {
+  executeWithNetworkRetries,
+  InternalSendConsolidated,
+  MetriportError,
+} from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import axios from "axios";
 import { isConsolidatedFromS3Enabled } from "../../external/aws/app-config";
-import { checkBundleForPatient } from "../../external/fhir/bundle/qa";
+import { checkBundle } from "../../external/fhir/bundle/qa";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { buildBundleEntry } from "../../external/fhir/shared/bundle";
-import { out } from "../../util";
+import { capture, out } from "../../util";
 import { getConsolidatedFromS3 } from "./consolidated-filter";
 import {
   ConsolidatedSnapshotConnector,
@@ -37,7 +41,15 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
 
     const dedupedBundle = deduplicate({ cxId, patientId, bundle: originalBundle });
 
-    checkBundleForPatient(dedupedBundle, cxId, patientId);
+    try {
+      checkBundle(dedupedBundle, cxId, patientId);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      const msg = "Bundle contains invalid data";
+      const additionalInfo = { cxId, patientId, type: error.message };
+      capture.error(msg, { extra: { additionalInfo, error } });
+      throw new MetriportError(msg, error, additionalInfo);
+    }
 
     const [, dedupedS3Info] = await Promise.all([
       uploadConsolidatedSnapshotToS3({

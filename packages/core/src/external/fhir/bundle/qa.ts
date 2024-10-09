@@ -13,14 +13,10 @@ import { getPatientsFromBundle } from "./patient";
  * @param bundle
  * @param cxId
  * @param patientId
- * @returns true if the bundle is valid, otherwise throws an error
+ * @returns true if the bundle is valid, otherwise throws an error indicating the error
  */
-export function checkBundleForPatient(
-  bundle: Bundle<Resource>,
-  cxId: string,
-  patientId: string
-): true {
-  const { log } = out(`checkBundleForPatient - cx ${cxId}, pat ${patientId}`);
+export function checkBundle(bundle: Bundle<Resource>, cxId: string, patientId: string): true {
+  const { log } = out(`checkBundle - cx ${cxId}, pat ${patientId}`);
   const additionalInfo = { cxId, patientId };
 
   const patientsInBundle = getPatientsFromBundle(bundle);
@@ -38,7 +34,7 @@ export function checkBundleForPatient(
     }
     const patientInBundle = patientsInBundle[0]!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
     if (patientInBundle.id !== patientId) {
-      throw new MetriportError(`Patient in bundle is diff than expected`, undefined, {
+      throw new MetriportError(`Patient in bundle is different than expected`, undefined, {
         ...additionalInfo,
         patientIdInBundle: patientInBundle.id,
       });
@@ -51,10 +47,9 @@ export function checkBundleForPatient(
     log(
       `Found ${mismatchingPatientsIds.length} mismatching patients in bundle: ${mismatchingPatientsIds}`
     );
-    throw new MetriportError("Bundle contains invalid data", undefined, {
+    throw new MetriportError("Unexpected patient ID in bundle", undefined, {
       cxId,
       patientId,
-      type: "Unexpected patient ID in bundle",
       unexpectedPatientsIds: mismatchingPatientsIds.join(", "),
     });
   }
