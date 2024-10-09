@@ -970,9 +970,10 @@ router.post(
  *
  * @param req.query.cxId The customer ID.
  * @param req.params.id The patient ID.
- * @param req.query.facilityId The facility ID for running the coverage assessment.
+ * @param req.query.facilityId The facility ID for running the patient import.
  * @param req.query.jobId The job Id of the fle. TEMPORARY.
- * @param req.query.rerunPdOnNewDemographics Optional. Indicates whether to use demo augmentation on this PD run.
+ * @param req.query.triggerConsolidated - Optional; Whether to force get consolidated PDF on conversion finish.
+ * @param req.query.rerunPdOnNewDemographics Optional: Indicates whether to use demo augmentation on this PD run.
  * @param req.query.dryrun Whether to simply validate or run the assessment (optional, defaults to false).
  *
  */
