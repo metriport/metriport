@@ -358,6 +358,7 @@ router.post(
     const facilityId = getFrom("query").optional("facilityId", req);
     const forcePatientDiscovery = getFromQueryAsBoolean("forcePatientDiscovery", req);
     const cqManagingOrgName = getFrom("query").optional("cqManagingOrgName", req);
+    const triggerConsolidated = getFromQueryAsBoolean("forcePatientDiscovery", req);
     const cxDocumentRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
     const docQueryProgress = await queryDocumentsAcrossHIEs({
@@ -367,6 +368,7 @@ router.post(
       forceQuery: true,
       forcePatientDiscovery,
       cqManagingOrgName,
+      triggerConsolidated,
       cxDocumentRequestMetadata: cxDocumentRequestMetadata?.metadata,
     });
 

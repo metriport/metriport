@@ -6,6 +6,7 @@ import { ProcessPatientQueryRequest } from "@metriport/core/command/patient-impo
 import {
   parseCxIdAndJob,
   parseJobStartedAt,
+  parseTriggerConsolidated,
   parseRerunPdOnNewDemos,
 } from "./shared/patient-import";
 import { capture } from "./shared/capture";
@@ -34,7 +35,8 @@ export async function handler(event: SQSEvent) {
 
     console.log(`Running with unparsed body: ${message.body}`);
     const parsedBody = parseBody(message.body);
-    const { cxId, jobId, jobStartedAt, patientId, rerunPdOnNewDemographics } = parsedBody;
+    const { cxId, jobId, jobStartedAt, patientId, triggerConsolidated, rerunPdOnNewDemographics } =
+      parsedBody;
 
     const log = prefixedLog(`cxId ${cxId}, job ${jobId}, patientId ${patientId}`);
     try {
@@ -50,6 +52,7 @@ export async function handler(event: SQSEvent) {
         jobStartedAt,
         patientId,
         s3BucketName: patientImportBucket,
+        triggerConsolidated,
         rerunPdOnNewDemographics,
         waitTimeInMillis,
       };
@@ -87,6 +90,7 @@ function parseBody(body?: unknown): ProcessPatientQueryEvemtPayload {
 
   const { cxIdRaw, jobIdRaw } = parseCxIdAndJob(bodyAsJson);
   const { jobStartedAtRaw } = parseJobStartedAt(bodyAsJson);
+  const { triggerConsolidatedRaw } = parseTriggerConsolidated(bodyAsJson);
   const { rerunPdOnNewDemographicsRaw } = parseRerunPdOnNewDemos(bodyAsJson);
 
   const patientIdRaw = bodyAsJson.patientId;
@@ -97,7 +101,8 @@ function parseBody(body?: unknown): ProcessPatientQueryEvemtPayload {
   const jobId = jobIdRaw as string;
   const jobStartedAt = jobStartedAtRaw as string;
   const patientId = patientIdRaw as string;
+  const triggerConsolidated = triggerConsolidatedRaw as boolean;
   const rerunPdOnNewDemographics = rerunPdOnNewDemographicsRaw as boolean;
 
-  return { cxId, jobId, jobStartedAt, patientId, rerunPdOnNewDemographics };
+  return { cxId, jobId, jobStartedAt, patientId, triggerConsolidated, rerunPdOnNewDemographics };
 }

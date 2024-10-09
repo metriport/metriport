@@ -10,6 +10,7 @@ import {
   parseCxIdAndJob,
   parseJobStartedAt,
   parseFacilityId,
+  parseTriggerConsolidated,
   parseRerunPdOnNewDemos,
 } from "./shared/patient-import";
 import { capture } from "./shared/capture";
@@ -39,8 +40,15 @@ export async function handler(event: SQSEvent) {
 
     console.log(`Running with unparsed body: ${message.body}`);
     const parsedBody = parseBody(message.body);
-    const { cxId, facilityId, jobId, jobStartedAt, patientPayload, rerunPdOnNewDemographics } =
-      parsedBody;
+    const {
+      cxId,
+      facilityId,
+      jobId,
+      jobStartedAt,
+      patientPayload,
+      triggerConsolidated,
+      rerunPdOnNewDemographics,
+    } = parsedBody;
 
     const log = prefixedLog(`cxId ${cxId}, job ${jobId}`);
     try {
@@ -58,6 +66,7 @@ export async function handler(event: SQSEvent) {
         s3BucketName: patientImportBucket,
         patientPayload,
         processPatientQueryQueue,
+        triggerConsolidated,
         rerunPdOnNewDemographics,
         waitTimeInMillis,
       };
@@ -98,6 +107,7 @@ function parseBody(body?: unknown): ProcessPatientCreateEvemtPayload {
   const { cxIdRaw, jobIdRaw } = parseCxIdAndJob(bodyAsJson);
   const { jobStartedAtRaw } = parseJobStartedAt(bodyAsJson);
   const { facilityIdRaw } = parseFacilityId(bodyAsJson);
+  const { triggerConsolidatedRaw } = parseTriggerConsolidated(bodyAsJson);
   const { rerunPdOnNewDemographicsRaw } = parseRerunPdOnNewDemos(bodyAsJson);
 
   const patientPayloadRaw = bodyAsJson.patientPayload;
@@ -109,7 +119,16 @@ function parseBody(body?: unknown): ProcessPatientCreateEvemtPayload {
   const jobId = jobIdRaw as string;
   const jobStartedAt = jobStartedAtRaw as string;
   const patientPayload = patientPayloadRaw as PatientPayload;
+  const triggerConsolidated = triggerConsolidatedRaw as boolean;
   const rerunPdOnNewDemographics = rerunPdOnNewDemographicsRaw as boolean;
 
-  return { cxId, facilityId, jobId, jobStartedAt, patientPayload, rerunPdOnNewDemographics };
+  return {
+    cxId,
+    facilityId,
+    jobId,
+    jobStartedAt,
+    patientPayload,
+    triggerConsolidated,
+    rerunPdOnNewDemographics,
+  };
 }

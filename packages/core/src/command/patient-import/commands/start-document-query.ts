@@ -7,15 +7,17 @@ import { Config } from "../../../util/config";
 export async function startDocumentQuery({
   cxId,
   patientId,
+  triggerConsolidated,
 }: {
   cxId: string;
   patientId: string;
+  triggerConsolidated: boolean;
 }): Promise<void> {
   const { log, debug } = out(
     `PatientImport start document query - cxId ${cxId} patientId ${patientId}`
   );
   const api = axios.create({ baseURL: Config.getApiUrl() });
-  const patientUrl = `/internal/docs/query?cxId=${cxId}&patientId=${patientId}`;
+  const patientUrl = `/internal/docs/query?cxId=${cxId}&patientId=${patientId}&triggerConsolidated=${triggerConsolidated}`;
   try {
     const response = await api.post(patientUrl, {});
     if (!response.data) throw new Error(`No body returned from ${patientUrl}`);

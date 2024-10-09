@@ -30,6 +30,15 @@ export function parseFacilityId(bodyAsJson: any) {
 }
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function parseTriggerConsolidated(bodyAsJson: any) {
+  const triggerConsolidatedRaw = bodyAsJson.triggerConsolidated;
+  if (triggerConsolidatedRaw === undefined) throw new Error(`Missing triggerConsolidated`);
+  if (typeof triggerConsolidatedRaw !== "boolean") throw new Error(`Invalid triggerConsolidated`);
+
+  return { triggerConsolidatedRaw };
+}
+
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function parseRerunPdOnNewDemos(bodyAsJson: any) {
   const rerunPdOnNewDemographicsRaw = bodyAsJson.rerunPdOnNewDemographics;
   if (rerunPdOnNewDemographicsRaw === undefined)

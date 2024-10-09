@@ -983,6 +983,7 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getFrom("query").orFail("facilityId", req);
     const jobId = getFrom("query").orFail("jobId", req);
+    const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
     const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
     const dryrun = getFromQueryAsBoolean("dryrun", req);
 
@@ -994,6 +995,7 @@ router.post(
       facilityId,
       jobId,
       processPatientImportLambda: Config.getPatientImportLambdaName(),
+      triggerConsolidated,
       rerunPdOnNewDemographics,
       dryrun,
     });

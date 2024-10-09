@@ -50,7 +50,8 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
     facilityId,
     jobId,
     processPatientImportLambda,
-    rerunPdOnNewDemographics = true,
+    triggerConsolidated = false,
+    rerunPdOnNewDemographics = false,
     dryrun = false,
   }: StartPatientImportRequest): Promise<void> {
     const { log } = out(`startPatientImport- cxId ${cxId} jobId ${jobId}`);
@@ -59,6 +60,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
         cxId,
         facilityId,
         jobId,
+        triggerConsolidated,
         rerunPdOnNewDemographics,
         dryrun,
       };
@@ -106,6 +108,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
     jobStartedAt,
     s3BucketName,
     processPatientCreateQueue,
+    triggerConsolidated,
     rerunPdOnNewDemographics,
     dryrun,
   }: ProcessPatientImportRequest): Promise<void> {
@@ -140,6 +143,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
               jobId,
               jobStartedAt,
               patientPayload,
+              triggerConsolidated,
               rerunPdOnNewDemographics,
             };
             try {
@@ -196,6 +200,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
     patientPayload,
     s3BucketName,
     processPatientQueryQueue,
+    triggerConsolidated,
     rerunPdOnNewDemographics,
     waitTimeInMillis,
   }: ProcessPatientCreateRequest): Promise<void> {
@@ -229,6 +234,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
         jobId,
         jobStartedAt,
         patientId,
+        triggerConsolidated,
         rerunPdOnNewDemographics,
       };
       try {
@@ -278,6 +284,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
     jobStartedAt,
     patientId,
     s3BucketName,
+    triggerConsolidated,
     rerunPdOnNewDemographics,
     waitTimeInMillis,
   }: ProcessPatientQueryRequest) {
@@ -293,6 +300,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
       await startDocumentQuery({
         cxId,
         patientId,
+        triggerConsolidated,
       });
       await creatOrUpdatePatientRecord({
         cxId,
