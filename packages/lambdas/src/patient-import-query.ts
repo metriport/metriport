@@ -3,6 +3,11 @@ import { errorToString, MetriportError } from "@metriport/shared";
 import { makePatientImportHandler } from "@metriport/core/command/patient-import/patient-import-factory";
 import { ProcessPatientQueryEvemtPayload } from "@metriport/core/command/patient-import/patient-import-cloud";
 import { ProcessPatientQueryRequest } from "@metriport/core/command/patient-import/patient-import";
+import {
+  parseCxIdAndJob,
+  parseJobStartedAt,
+  parseRerunPdOnNewDemos,
+} from "./shared/patient-import";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
@@ -80,27 +85,13 @@ function parseBody(body?: unknown): ProcessPatientQueryEvemtPayload {
 
   const bodyAsJson = JSON.parse(bodyString);
 
-  const cxIdRaw = bodyAsJson.cxId;
-  if (!cxIdRaw) throw new Error(`Missing cxId`);
-  if (typeof cxIdRaw !== "string") throw new Error(`Invalid cxId`);
-
-  const jobIdRaw = bodyAsJson.jobId;
-  if (!jobIdRaw) throw new Error(`Missing jobId`);
-  if (typeof jobIdRaw !== "string") throw new Error(`Invalid jobId`);
-
-  const jobStartedAtRaw = bodyAsJson.jobStartedAt;
-  if (!jobStartedAtRaw) throw new Error(`Missing jobStartedAt`);
-  if (typeof jobStartedAtRaw !== "string") throw new Error(`Invalid jobStartedAt`);
+  const { cxIdRaw, jobIdRaw } = parseCxIdAndJob(bodyAsJson);
+  const { jobStartedAtRaw } = parseJobStartedAt(bodyAsJson);
+  const { rerunPdOnNewDemographicsRaw } = parseRerunPdOnNewDemos(bodyAsJson);
 
   const patientIdRaw = bodyAsJson.patientId;
   if (!patientIdRaw) throw new Error(`Missing patientId`);
   if (typeof patientIdRaw !== "string") throw new Error(`Invalid patientId`);
-
-  const rerunPdOnNewDemographicsRaw = bodyAsJson.rerunPdOnNewDemographics;
-  if (rerunPdOnNewDemographicsRaw === undefined)
-    throw new Error(`Missing rerunPdOnNewDemographics`);
-  if (typeof rerunPdOnNewDemographicsRaw !== "boolean")
-    throw new Error(`Invalid rerunPdOnNewDemographics`);
 
   const cxId = cxIdRaw as string;
   const jobId = jobIdRaw as string;
