@@ -82,7 +82,7 @@ beforeEach(() => {
   bundle.type = "searchset";
 });
 
-describe.skip("deduplicateFhir", () => {
+describe("deduplicateFhir", () => {
   it("correctly deduplicates medication-related resources following medication deduplication and ref replacement", () => {
     medication.code = { coding: [rxnormCodeAm] };
     medication2.code = { coding: [rxnormCodeAm] };
