@@ -1,3 +1,5 @@
+export const zipLength = 5;
+
 function isValidZipCode(zipCode: string): boolean {
   if (!zipCode) return false;
   if (zipCode.length < 3) return false;
@@ -12,9 +14,9 @@ export function normalizeZipCodeSafe(zipCode: string): string | undefined {
   const trimmedZipMainPart = trimmedZip.split("-")[0];
   if (!trimmedZipMainPart) return undefined;
   if (!isValidZipCode(trimmedZipMainPart)) return undefined;
-  if (trimmedZipMainPart.length === 5) return trimmedZipMainPart;
-  if (trimmedZipMainPart.length < 5) return trimmedZipMainPart.padStart(5, "0");
-  return trimmedZipMainPart.slice(0, 5);
+  if (trimmedZipMainPart.length === zipLength) return trimmedZipMainPart;
+  if (trimmedZipMainPart.length < zipLength) return trimmedZipMainPart.padStart(zipLength, "0");
+  return trimmedZipMainPart.slice(0, zipLength);
 }
 
 /**

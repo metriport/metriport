@@ -11,16 +11,20 @@ export function isEmailValid(email: string): boolean {
 }
 
 export function normalizeEmailSafe(email: string): string | undefined {
-  const trimmedEmail = email.trim().toLowerCase();
-  if (trimmedEmail.startsWith("mailto:")) {
-    return trimmedEmail.slice(7);
-  }
-  if (!isEmailValid(trimmedEmail)) return undefined;
-  return trimmedEmail;
+  const strippedEmail = removeMailto(email.trim().toLowerCase());
+  if (!isEmailValid(strippedEmail)) return undefined;
+  return strippedEmail;
 }
 
 export function normalizeEmail(email: string): string {
   const emailOrUndefined = normalizeEmailSafe(email);
   if (!emailOrUndefined) throw new Error("Invalid email.");
   return emailOrUndefined;
+}
+
+function removeMailto(email: string): string {
+  if (email.startsWith("mailto:")) {
+    return email.slice(7);
+  }
+  return email;
 }
