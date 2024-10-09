@@ -3,7 +3,7 @@ import { MetriportError } from "@metriport/shared";
 import { filterTruthy } from "@metriport/shared/common/filter-map";
 import { uniq } from "lodash";
 import { capture, out } from "../../../util";
-import { getPatientReferencesFromResources, isPatientReference } from "../patient/reference";
+import { getPatientReferencesFromResources } from "../patient/reference";
 import { isPatient } from "../shared";
 import { getIdFromReference } from "../shared/references";
 import { getPatientsFromBundle } from "./patient";
@@ -42,15 +42,15 @@ export function checkBundle(bundle: Bundle<Resource>, cxId: string, patientId: s
   }
 
   const patientsIdInBundle = getPatientIdsFromBundle(bundle);
-  const mismatchingPatientsIds = patientsIdInBundle.filter(id => id !== patientId);
-  if (mismatchingPatientsIds.length > 0) {
+  const unexpectedPatientsIds = patientsIdInBundle.filter(id => id !== patientId);
+  if (unexpectedPatientsIds.length > 0) {
     log(
-      `Found ${mismatchingPatientsIds.length} mismatching patients in bundle: ${mismatchingPatientsIds}`
+      `Found ${unexpectedPatientsIds.length} unexpected patients in bundle: ${unexpectedPatientsIds}`
     );
     throw new MetriportError("Unexpected patient ID in bundle", undefined, {
       cxId,
       patientId,
-      unexpectedPatientsIds: mismatchingPatientsIds.join(", "),
+      unexpectedPatientsIds: unexpectedPatientsIds.join(", "),
     });
   }
 
@@ -59,11 +59,12 @@ export function checkBundle(bundle: Bundle<Resource>, cxId: string, patientId: s
 
 export function getPatientIdsFromBundle(bundle: Bundle<Resource>): string[] {
   const resources = (bundle.entry ?? []).flatMap(entry => entry.resource ?? []);
-  return [
+  const patientIds = [
     ...getPatientIdsFromPatient(resources),
     ...getPatientIdsFromContained(resources),
     ...getPatientIdsFromReferences(resources),
   ];
+  return uniq(patientIds);
 }
 
 export function getPatientIdsFromPatient(resources: Resource[]): string[] {
@@ -84,8 +85,7 @@ export function getPatientIdsFromContained(resources: Resource[]): string[] {
 }
 
 export function getPatientIdsFromReferences(resources: Resource[]): string[] {
-  const references = getPatientReferencesFromResources(resources);
-  const patientReferences = references.filter(isPatientReference);
+  const patientReferences = getPatientReferencesFromResources(resources);
   const patientIdsFromRefs = patientReferences.map(getIdFromReference).flatMap(filterTruthy);
   const uniquePatientIds = uniq(patientIdsFromRefs);
   return uniquePatientIds;

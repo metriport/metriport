@@ -16,7 +16,7 @@ beforeEach(() => {
   jest.restoreAllMocks();
   Config.getFHIRServerUrl = jest.fn(() => "http://localhost:8888");
   fhir_searchResourcePages = jest.spyOn(HapiFhirClient.prototype, "searchResourcePages");
-  fhir_getReferencesFromResources = jest.spyOn(fhirBundle, "getReferencesAndMissingOnes");
+  fhir_getReferencesFromResources = jest.spyOn(fhirBundle, "getReferencesFromResources");
   fhir_getReferencesFromFHIR = jest.spyOn(fhirReferences, "getReferencesFromFHIR");
 });
 afterAll(() => {

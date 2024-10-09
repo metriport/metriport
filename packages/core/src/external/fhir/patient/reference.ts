@@ -1,5 +1,5 @@
 import { Patient, Reference, Resource } from "@medplum/fhirtypes";
-import { isReferenceOfType, toReference } from "../shared/references";
+import { isReferenceOfType } from "../shared/references";
 
 /**
  * Returns the Patient references from the given resources.
@@ -11,11 +11,6 @@ import { isReferenceOfType, toReference } from "../shared/references";
 export function getPatientReferencesFromResources(resources: Resource[]): Reference<Patient>[] {
   const references: Reference<Patient>[] = [];
   for (const resource of resources) {
-    if (resource.resourceType === "Patient") {
-      const ref = toReference(resource);
-      if (ref) references.push(ref);
-      continue;
-    }
     if (resource.resourceType === "AdverseEvent") {
       if (resource.subject && isPatientReference(resource.subject)) {
         references.push(resource.subject);

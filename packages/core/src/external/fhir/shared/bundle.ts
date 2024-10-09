@@ -56,7 +56,7 @@ export type ReferenceWithIdAndType<T extends Resource = Resource> = Reference<T>
  *        no references will be excluded.
  * @returns References found in the given resources, including the missing ones.
  */
-export function getReferencesAndMissingOnes({
+export function getReferencesFromResources({
   resources,
   resourceTypesToInclude,
   resourceTypesToExclude,
