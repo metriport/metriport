@@ -7,6 +7,8 @@ import { makePatient } from "../../__tests__/patient";
 import { makeReferece } from "../../__tests__/reference";
 import { checkBundleForPatient } from "../qa";
 
+const invalidBundleMessage = "Unexpected patient IDs in bundle";
+
 describe("Bundle QA", () => {
   describe("checkBundleForPatient", () => {
     it(`returns true when the bundle only contains the patient`, async () => {
@@ -86,9 +88,7 @@ describe("Bundle QA", () => {
           makeAllergyIntollerance({ patient: patient2 }),
         ],
       });
-      expect(() => checkBundleForPatient(bundle, cxId, patient1.id)).toThrow(
-        "Bundle contains invalid data"
-      );
+      expect(() => checkBundleForPatient(bundle, cxId, patient1.id)).toThrow(invalidBundleMessage);
     });
 
     it(`throw when the bundle w/ Condition has a diff patient`, async () => {
@@ -102,9 +102,7 @@ describe("Bundle QA", () => {
           makeCondition({ subject: makeReferece(patient2) }),
         ],
       });
-      expect(() => checkBundleForPatient(bundle, cxId, patient1.id)).toThrow(
-        "Bundle contains invalid data"
-      );
+      expect(() => checkBundleForPatient(bundle, cxId, patient1.id)).toThrow(invalidBundleMessage);
     });
   });
 });

@@ -20,7 +20,6 @@ export function checkBundleForPatient(
   const { log } = out(`checkBundleForPatient - cx ${cxId}, pat ${patientId}`);
   const additionalInfo = { cxId, patientId };
 
-  // check there's one and only one patient
   const patientsInBundle = getPatientsFromBundle(bundle);
   if (patientsInBundle.length < 1) {
     throw new MetriportError(`Bundle contains no patients`, undefined, additionalInfo);
@@ -32,7 +31,6 @@ export function checkBundleForPatient(
       patientsIds: ids.join(", "),
     });
   }
-  // check the patient's id is the expected one
   const patientInBundle = patientsInBundle[0]!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
   if (patientInBundle.id !== patientId) {
     throw new MetriportError(`Patient in bundle is diff than expected`, undefined, {
@@ -41,20 +39,19 @@ export function checkBundleForPatient(
     });
   }
 
-  // check all references are for the expected patient
   const patientsIdInBundle = getPatientIdsFromBundle(bundle);
   const mismatchingPatientsIds = patientsIdInBundle.filter(id => id !== patientId);
-
   if (mismatchingPatientsIds.length > 0) {
     log(
       `Found ${mismatchingPatientsIds.length} mismatching patients in bundle: ${mismatchingPatientsIds}`
     );
-    throw new MetriportError(`Bundle contains invalid data`, undefined, {
+    throw new MetriportError("Unexpected patient IDs in bundle", undefined, {
       cxId,
       patientId,
       mismatchingPatientsIds: mismatchingPatientsIds.join(", "),
     });
   }
+
   return true;
 }
 
