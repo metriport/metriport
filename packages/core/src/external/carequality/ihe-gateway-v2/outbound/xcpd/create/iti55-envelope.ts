@@ -161,7 +161,7 @@ function createSoapBodyContent({
                   [`${prefix}semanticsText`]: "LivingSubject.birthTime",
                 }
               : {},
-            ...(identifiers
+            ...(identifiers && identifiers.length > 0
               ? {
                   [`${prefix}livingSubjectId`]: {
                     [`${prefix}value`]: identifiers.map(identifier => ({
@@ -202,7 +202,7 @@ function createSoapBodyContent({
                   },
                 }
               : {}),
-            ...(patientTelecoms
+            ...(patientTelecoms && patientTelecoms.length > 0
               ? {
                   [`${prefix}patientTelecom`]: {
                     [`${prefix}value`]: patientTelecoms.map(telecom => ({
