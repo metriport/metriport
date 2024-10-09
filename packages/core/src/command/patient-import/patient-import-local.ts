@@ -24,7 +24,8 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     cxId,
     facilityId,
     jobId,
-    rerunPdOnNewDemographics = true,
+    triggerConsolidated = false,
+    rerunPdOnNewDemographics = false,
     dryrun = false,
   }: StartPatientImportRequest): Promise<void> {
     const { log } = out(`startPatientImport - cxId ${cxId} jobId ${jobId}`);
@@ -37,6 +38,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
         jobStartedAt,
         s3BucketName: this.patientImportBucket,
         processPatientCreateQueue: "local",
+        triggerConsolidated,
         rerunPdOnNewDemographics,
         dryrun,
       };
@@ -63,6 +65,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     jobId,
     jobStartedAt,
     s3BucketName,
+    triggerConsolidated,
     rerunPdOnNewDemographics,
     dryrun,
   }: ProcessPatientImportRequest): Promise<void> {
@@ -96,6 +99,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
             patientPayload,
             s3BucketName: this.patientImportBucket,
             processPatientQueryQueue: "local",
+            triggerConsolidated,
             rerunPdOnNewDemographics,
             waitTimeInMillis: 0,
           };
@@ -127,6 +131,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     jobStartedAt,
     patientPayload,
     s3BucketName,
+    triggerConsolidated,
     rerunPdOnNewDemographics,
   }: ProcessPatientCreateRequest): Promise<void> {
     const { log } = out(`processPatientCreate - cxId ${cxId} jobId ${jobId}`);
@@ -161,6 +166,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
         jobStartedAt,
         patientId,
         s3BucketName: this.patientImportBucket,
+        triggerConsolidated,
         rerunPdOnNewDemographics,
         waitTimeInMillis: 0,
       });
@@ -185,6 +191,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     jobStartedAt,
     patientId,
     s3BucketName,
+    triggerConsolidated,
     rerunPdOnNewDemographics,
   }: ProcessPatientQueryRequest) {
     const { log } = out(`processPatientQuery - cxId ${cxId} jobId ${jobId} patientId ${patientId}`);
@@ -197,6 +204,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
       await startDocumentQuery({
         cxId,
         patientId,
+        triggerConsolidated,
       });
       await creatOrUpdatePatientRecord({
         cxId,
