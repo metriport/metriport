@@ -1,8 +1,10 @@
 import {
   examplePhoneNumber,
-  isPhoneValid,
-  normalizeUsPhoneWithPlusOne,
-  phoneLength,
+  exampleEmail,
+  normalizePhoneSafe,
+  normalizePhone,
+  normalizeEmailSafe,
+  normalizeEmail,
 } from "@metriport/shared";
 import { z } from "zod";
 import { defaultDateString, defaultNameString } from "../../shared";
@@ -55,19 +57,24 @@ export type PersonalIdentifier = z.infer<typeof personalIdentifierSchema>;
 
 export const genderAtBirthSchema = z.enum(["F", "M", "O", "U"]);
 
-export const emailSchema = z.string().email();
-
 export const contactSchema = z
   .object({
     phone: z.coerce
       .string()
-      .transform(normalizeUsPhoneWithPlusOne)
-      .refine(isPhoneValid, {
-        message: `Phone must be a string consisting of ${phoneLength} numbers. For example: ${examplePhoneNumber}`,
+      .refine(normalizePhoneSafe, {
+        message: `Phone is invalid. For example: ${examplePhoneNumber}`,
       })
+      .transform(normalizePhone)
       .or(z.null())
       .or(z.undefined()),
-    email: emailSchema.nullish(),
+    email: z.coerce
+      .string()
+      .refine(normalizeEmailSafe, {
+        message: `Email is invalid. For example: ${exampleEmail}`,
+      })
+      .transform(normalizeEmail)
+      .or(z.null())
+      .or(z.undefined()),
   })
   .refine(c => c.email || c.phone, { message: "Either email or phone must be present" });
 export type Contact = z.infer<typeof contactSchema>;
