@@ -1,8 +1,7 @@
-import { errorToString } from "@metriport/shared";
+import { MetriportError, errorToString } from "@metriport/shared";
 import { AppConfig } from "aws-sdk";
 import { z } from "zod";
 import { Config } from "../../util/config";
-import { MetriportError } from "../../util/error/metriport-error";
 import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
 import { uuidv4 } from "../../util/uuid-v7";

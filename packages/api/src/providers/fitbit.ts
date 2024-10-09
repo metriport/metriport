@@ -1,3 +1,4 @@
+import { MetriportError } from "@metriport/shared";
 import {
   Activity,
   Biometrics,
@@ -14,7 +15,6 @@ import {
   getProviderTokenFromConnectedUserOrFail,
 } from "../command/connected-user/get-connected-user";
 import { sendProviderDisconnected } from "../command/webhook/devices";
-import MetriportError from "../errors/metriport-error";
 import { FitbitWebhookSubscriptions, fitbitWebhookSubscriptionsSchema } from "../mappings/fitbit";
 import { mapToActivity } from "../mappings/fitbit/activity";
 import { mapToBiometrics } from "../mappings/fitbit/biometrics";

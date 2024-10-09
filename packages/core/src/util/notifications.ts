@@ -1,13 +1,13 @@
 import * as Sentry from "@sentry/node";
 import { Extras, ScopeContext } from "@sentry/types";
 import stringify from "json-stringify-safe";
+import { MetriportError } from "@metriport/shared";
 import {
   sendAlert as sendAlertToSlack,
   sendNotification as sendNotificationToSlack,
   SlackMessage,
 } from "../external/slack/index";
 import { Capture } from "./capture";
-import { MetriportError } from "./error/metriport-error";
 
 export type NotificationMessage = SlackMessage;
 

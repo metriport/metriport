@@ -1,5 +1,5 @@
+import { NotFoundError } from "@metriport/shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import NotFoundError from "../../errors/not-found";
 import { FacilityMappingModel } from "../../models/facility-mapping";
 import { FacilityMapping, FacilityMappingPerSource } from "../../domain/facility-mapping";
 

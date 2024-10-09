@@ -1,5 +1,5 @@
+import { MetriportError } from "@metriport/shared";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { groupBy } from "lodash";
 import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
 import { getPatients } from "../../../command/medical/patient/get-patient";

@@ -1,7 +1,7 @@
 import Ajv, { ErrorObject } from "ajv";
 import metaSchema from "ajv/lib/refs/json-schema-draft-06.json";
 import { cloneDeep } from "lodash";
-import BadRequestError from "../../../errors/bad-request";
+import { BadRequestError } from "@metriport/shared";
 import { Bundle } from "../../../routes/medical/schemas/fhir";
 import schema from "./fhir.schema.json";
 

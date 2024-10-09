@@ -25,7 +25,7 @@ export { validateNPI } from "./common/validate-npi";
 export { metriportCompanyDetails } from "./domain/metriport";
 export { metriportOrganization } from "./common/metriport-organization";
 export { BadRequestError } from "./error/bad-request";
-export { MetriportError } from "./error/metriport-error";
+export { MetriportError, AdditionalInfo } from "./error/metriport-error";
 export { NotFoundError } from "./error/not-found";
 export { errorToString } from "./error/shared";
 export * from "./interface";

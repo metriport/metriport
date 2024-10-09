@@ -1,4 +1,4 @@
-import NotFoundError from "@metriport/core/util/error/not-found";
+import { NotFoundError, metriportCompanyDetails } from "@metriport/shared";
 import { CarequalityManagementAPI } from "@metriport/carequality-sdk";
 import { isOboFacility } from "../../../../domain/medical/facility";
 import { OrganizationModel } from "../../../../models/medical/organization";
@@ -11,7 +11,6 @@ import { CQOrganization } from "../../organization";
 import { CQOrgDetails, getCqAddress, getParsedCqOrgOrFail } from "../../shared";
 import { metriportIntermediaryOid, metriportOid } from "./create-or-update-cq-facility";
 import { metriportEmail as metriportEmailForCq } from "../../constants";
-import { metriportCompanyDetails } from "@metriport/shared";
 
 const cq = makeCarequalityManagementAPI();
 

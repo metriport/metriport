@@ -1,6 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
+import { MetriportError } from "@metriport/shared";
 import { ConversionType, Input } from "@metriport/core/domain/conversion/cda-to-html-pdf";
 import {
   getLambdaError,
@@ -9,7 +10,6 @@ import {
   makeLambdaClient,
 } from "@metriport/core/external/aws/lambda";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
 
 /**
  * Script to execute the CdaToVisualization lambda.

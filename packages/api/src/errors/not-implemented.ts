@@ -1,4 +1,4 @@
-import MetriportError from "./metriport-error";
+import { MetriportError } from "@metriport/shared";
 
 export default class NotImplementedError extends MetriportError {
   constructor(message = `Not implemented`) {

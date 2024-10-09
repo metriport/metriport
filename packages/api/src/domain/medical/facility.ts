@@ -1,8 +1,8 @@
+import { MetriportError } from "@metriport/shared";
 import { BaseDomain, BaseDomainCreate } from "@metriport/core/domain/base-domain";
 import { AddressStrict } from "@metriport/core/domain/location-address";
 import { OIDNode } from "@metriport/core/domain/oid";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { Config } from "../../shared/config";
 
 export enum FacilityType {

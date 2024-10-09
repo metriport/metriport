@@ -1,3 +1,4 @@
+import { BadRequestError } from "@metriport/shared";
 import { BulkGetDocUrlStatus } from "@metriport/core/domain/bulk-get-document-url";
 import { convertResult } from "@metriport/core/domain/document-query";
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
@@ -27,7 +28,6 @@ import { getOrganizationOrFail } from "../../command/medical/organization/get-or
 import { appendDocQueryProgress } from "../../command/medical/patient/append-doc-query-progress";
 import { appendBulkGetDocUrlProgress } from "../../command/medical/patient/bulk-get-doc-url-progress";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import BadRequestError from "../../errors/bad-request";
 import { processCcdRequest, processEmptyCcdRequest } from "../../external/cda/process-ccd-request";
 import { parseJobId } from "../../external/fhir/connector/connector";
 import { setDocQueryProgress } from "../../external/hie/set-doc-query-progress";

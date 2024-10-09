@@ -1,9 +1,8 @@
 import { Organization } from "@medplum/fhirtypes";
-import { errorToString } from "@metriport/shared";
+import { MetriportError, errorToString } from "@metriport/shared";
 import { S3Utils } from "../external/aws/s3";
 import { cdaDocumentUploaderHandler } from "../shareback/cda-uploader";
 import { Config } from "../util/config";
-import { MetriportError } from "../util/error/metriport-error";
 import { out } from "../util/log";
 import { JSON_APP_MIME_TYPE } from "../util/mime";
 import { capture } from "../util/notifications";

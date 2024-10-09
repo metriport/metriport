@@ -2,11 +2,11 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import z from "zod";
+import { BadRequestError } from "@metriport/shared";
 import { getConnectedUserOrFail } from "../command/connected-user/get-connected-user";
 import { updateProviderData } from "../command/connected-user/save-connected-user";
 import { getUserToken } from "../command/cx-user/get-user-token";
 import { sendProviderConnected } from "../command/webhook/devices";
-import BadRequestError from "../errors/bad-request";
 import UnauthorizedError from "../errors/unauthorized";
 import { Config } from "../shared/config";
 import {

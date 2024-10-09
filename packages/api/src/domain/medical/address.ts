@@ -1,5 +1,5 @@
+import { MetriportError } from "@metriport/shared";
 import { AddressStrict, AddressWithCoordinates } from "@metriport/core/domain/location-address";
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { addCoordinatesToAddresses } from "../../command/medical/patient/add-coordinates";
 
 export async function getAddressWithCoordinates(

@@ -1,5 +1,4 @@
-import BadRequestError from "@metriport/core/util/error/bad-request";
-import NotFoundError from "@metriport/core/util/error/not-found";
+import { BadRequestError, NotFoundError, emptyFunction } from "@metriport/shared";
 import { capture } from "@metriport/core/util/notifications";
 import { initDbPool } from "@metriport/core/util/sequelize";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
@@ -10,7 +9,6 @@ import {
   outboundDocumentRetrievalRespSchema,
   outboundPatientDiscoveryRespSchema,
 } from "@metriport/ihe-gateway-sdk";
-import { emptyFunction } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";

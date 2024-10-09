@@ -1,4 +1,4 @@
-import { executeWithNetworkRetries, NetworkError } from "@metriport/shared";
+import { MetriportError, executeWithNetworkRetries, NetworkError } from "@metriport/shared";
 import * as AWS from "aws-sdk";
 import axios from "axios";
 import { constants } from "crypto";
@@ -6,7 +6,6 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import https from "https";
 import { Config } from "../../../../util/config";
-import { MetriportError } from "../../../../util/error/metriport-error";
 import { log as getLog, out } from "../../../../util/log";
 import { createMtomContentTypeAndPayload } from "../outbound/xca/mtom/builder";
 import {

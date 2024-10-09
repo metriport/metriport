@@ -1,4 +1,4 @@
-import NotFoundError from "../../../errors/not-found";
+import { NotFoundError } from "@metriport/shared";
 import { OrganizationModel } from "../../../models/medical/organization";
 
 type Filter = Pick<OrganizationModel, "cxId"> & Partial<Pick<OrganizationModel, "id">>;

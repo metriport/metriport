@@ -1,5 +1,5 @@
+import { BadRequestError } from "@metriport/shared";
 import { capture, out } from "@metriport/core/util";
-import BadRequestError from "../../../errors/bad-request";
 import { isAiBriefEnabledForCx } from "../../../external/aws/app-config";
 
 // TODO merge this with lambda's isAiBriefEnabled and move it to Core

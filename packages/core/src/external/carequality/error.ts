@@ -8,8 +8,8 @@ import {
   InboundPatientDiscoveryResp,
   BaseErrorResponse,
 } from "@metriport/ihe-gateway-sdk";
+import { MetriportError } from "@metriport/shared";
 import { METRIPORT_HOME_COMMUNITY_ID, CODE_SYSTEM_ERROR } from "./shared";
-import { MetriportError } from "../../util/error/metriport-error";
 import status from "http-status";
 
 export class IHEGatewayError extends MetriportError {

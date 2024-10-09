@@ -1,4 +1,4 @@
-import { emptyFunction } from "@metriport/shared";
+import { MetriportError, emptyFunction } from "@metriport/shared";
 import axios, { AxiosResponse } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -8,7 +8,6 @@ import {
   CookieManager,
   cookiesToString,
 } from "../../../domain/auth/cookie-management/cookie-manager";
-import { MetriportError } from "../../../util/error/metriport-error";
 import { safeStringify } from "../../../util/string";
 import { CommonWellManagementAPI, Member } from "./api";
 

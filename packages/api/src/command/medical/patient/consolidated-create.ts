@@ -1,8 +1,8 @@
 import { Bundle, BundleEntry, Patient } from "@medplum/fhirtypes";
+import { MetriportError } from "@metriport/shared";
 import { createUploadFilePath } from "@metriport/core/domain/document/upload";
 import { OPERATION_OUTCOME_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/extension";
 import { uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { out } from "@metriport/core/util/log";
 import { errorToString } from "@metriport/shared";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";

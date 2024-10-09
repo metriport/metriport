@@ -1,5 +1,5 @@
 import * as AWS from "aws-sdk";
-import { MetriportError } from "../../../util/error/metriport-error";
+import { MetriportError } from "@metriport/shared";
 import { Cookie, CookieManager } from "./cookie-manager";
 
 export class CookieManagerOnSecrets extends CookieManager {

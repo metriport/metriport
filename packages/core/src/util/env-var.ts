@@ -1,4 +1,4 @@
-import { MetriportError } from "./error/metriport-error";
+import { MetriportError } from "@metriport/shared";
 
 /**
  * @deprecated User @metriport/shared/common/env-var instead
