@@ -292,7 +292,8 @@ async function getRespWithDocsToDownload({
       const docsToDownload = await getNonExistentDocRefs(
         deduplicatedDocRefsWithMetriportId,
         patientId,
-        cxId
+        cxId,
+        log
       );
 
       // TEMP #2349 - Remove console.log

@@ -29,6 +29,7 @@ export async function getNonExistentDocRefs(
   if (log) {
     log("existingDocRefs", `${existingDocRefs.length}`, JSON.stringify(existingDocRefs));
     log("nonExistingDocRefs", `${nonExistingDocRefs.length}`, JSON.stringify(nonExistingDocRefs));
+    log("fhirDocRefs", `${fhirDocRefs.length}`, JSON.stringify(fhirDocRefs));
   }
 
   const foundOnStorageButNotOnFHIR = existingDocRefs.filter(
