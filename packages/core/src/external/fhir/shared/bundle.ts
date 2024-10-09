@@ -50,27 +50,27 @@ export type ReferenceWithIdAndType<T extends Resource = Resource> = Reference<T>
  * Returns the references found in the given resources, including the missing ones.
  *
  * @param resources
- * @param resourceTypesToInclude The resource types to include in the result. If not set,
+ * @param referencesToInclude The resource types to include in the result. If not set,
  *        references with all resource types will be included.
- * @param resourceTypesToExclude The resource types to exclude from the result. If not set,
+ * @param referencesToExclude The resource types to exclude from the result. If not set,
  *        no references will be excluded.
  * @returns References found in the given resources, including the missing ones.
  */
 export function getReferencesFromResources({
   resources,
-  resourceTypesToInclude,
-  resourceTypesToExclude,
+  referencesToInclude,
+  referencesToExclude,
 }: {
   resources: Resource[];
-  resourceTypesToInclude?: ResourceType[];
-  resourceTypesToExclude?: ResourceType[];
+  referencesToInclude?: ResourceType[];
+  referencesToExclude?: ResourceType[];
 }): { references: Reference[]; missingReferences: ReferenceWithIdAndType[] } {
   if (resources.length <= 0) return { references: [], missingReferences: [] };
   const resourceIds = resources.flatMap(r => r.id ?? []);
   const references = getReferences({
     resources,
-    referencesToInclude: resourceTypesToInclude,
-    referencesToExclude: resourceTypesToExclude,
+    referencesToInclude,
+    referencesToExclude,
   });
   const missingReferences: ReferenceWithIdAndType[] = [];
   for (const ref of references) {
@@ -91,9 +91,9 @@ export function getReferencesFromResources({
  * Return the references found in the given resources.
  *
  * @param resources The resources to search for references
- * @param resourceTypesToInclude The resource types to include in the result. If not set,
+ * @param referencesToInclude The resource types to include in the result. If not set,
  *        references with all resource types will be included.
- * @param resourceTypesToExclude The resource types to exclude from the result. If not set,
+ * @param referencesToExclude The resource types to exclude from the result. If not set,
  *        no references will be excluded.
  * @returns The references found in the given resources.
  */
@@ -115,15 +115,20 @@ export function getReferences({
     if (ref) references.push(ref);
   }
   const uniqueRefs = uniq(references);
+
   const preResult: ReferenceWithIdAndType[] = uniqueRefs
     .flatMap(buildReferenceFromStringRelative)
     .flatMap(filterTruthy);
-  if (!referencesToInclude && referencesToExclude.length <= 0) return preResult;
-  return preResult.filter(
-    r =>
-      (!referencesToInclude || referencesToInclude.includes(r.type as ResourceType)) &&
-      !referencesToExclude.includes(r.type as ResourceType)
-  );
+
+  const includedRefs = !referencesToInclude
+    ? preResult
+    : preResult.filter(r => referencesToInclude.includes(r.type));
+
+  const remainingRefs = !referencesToExclude.length
+    ? includedRefs
+    : includedRefs.filter(r => !referencesToExclude.includes(r.type));
+
+  return remainingRefs;
 }
 
 function buildReferenceFromStringRelative(reference: string): ReferenceWithIdAndType | undefined {

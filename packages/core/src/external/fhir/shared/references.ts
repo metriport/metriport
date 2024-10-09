@@ -1,4 +1,3 @@
-// import { Bundle, Reference, Resource, ResourceType } from "@medplum/fhirtypes";
 import { Reference, Resource, ResourceType } from "@medplum/fhirtypes";
 import { chunk, groupBy } from "lodash";
 import { executeAsynchronously } from "../../../util/concurrency";
