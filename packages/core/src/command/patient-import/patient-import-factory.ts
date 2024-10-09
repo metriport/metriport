@@ -4,7 +4,7 @@ import { PatientImportHandlerLocal } from "./patient-import-local";
 import { PatientImportHandlerCloud } from "./patient-import-cloud";
 
 export function makePatientImportHandler(): PatientImportHandler {
-  if (!Config.isCloudEnv()) {
+  if (Config.isDev()) {
     const patientImportBucket = Config.getPatientImportBucket();
     if (!patientImportBucket) throw new Error("patientImportBucket not setup");
     return new PatientImportHandlerLocal(patientImportBucket);
