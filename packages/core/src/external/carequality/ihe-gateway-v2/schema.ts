@@ -64,7 +64,7 @@ export const slot = z.object({
   ValueList: z.object({
     Value: schemaOrArray(stringOrNumberSchema),
   }),
-  _name: z.string(),
+  _name: z.string().optional(),
 });
 export type Slot = z.infer<typeof slot>;
 

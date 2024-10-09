@@ -16,15 +16,18 @@ import {
   MedicationRequest,
   MedicationStatement,
   Observation,
+  Patient,
   Procedure,
   Provenance,
   RelatedPerson,
 } from "@medplum/fhirtypes";
+import { addAgeToDob } from "../../external/fhir/shared/age";
 import {
   areDatesWithinRange,
   arePeriodsWithinRange,
   areRangesWithinRange,
   DateRange,
+  dateRangeToOngoing,
   getDatesFromEffectiveDateTimeOrPeriod,
   isDateWithinDateRange,
   isPeriodWithinRange,
@@ -44,22 +47,20 @@ export function filterBundleByDate(bundle: Bundle, dateFrom?: string, dateTo?: s
   if (!dateFrom && !dateTo) return bundle;
   const range = { dateFrom, dateTo };
 
-  // const patient = bundle.entry?.find(entry => entry.resource?.resourceType === "Patient")
-  //   ?.resource as Patient | undefined;
+  const patient = bundle.entry?.find(entry => entry.resource?.resourceType === "Patient")
+    ?.resource as Patient | undefined;
 
   const filteredEntries = bundle.entry?.filter(entry => {
     if (!entry.resource) return false;
     switch (entry.resource.resourceType) {
       case "AllergyIntolerance":
-        // return isAllergyIntoleranceWithinDateRange(entry.resource, range, patient);
-        return isAllergyIntoleranceWithinDateRange(entry.resource, range);
+        return isAllergyIntoleranceWithinDateRange(entry.resource, range, patient);
       case "Communication":
         return isCommunicationWithinDateRange(entry.resource, range);
       case "Composition":
         return isCompositionWithinDateRange(entry.resource, range);
       case "Condition":
-        // return isConditionWithinDateRange(entry.resource, range, patient);
-        return isConditionWithinDateRange(entry.resource, range);
+        return isConditionWithinDateRange(entry.resource, range, patient);
       case "Consent":
         return isConsentWithinDateRange(entry.resource, range);
       case "Coverage":
@@ -85,7 +86,7 @@ export function filterBundleByDate(bundle: Bundle, dateFrom?: string, dateTo?: s
       case "Observation":
         return isObservationWithinDateRange(entry.resource, range);
       case "Procedure":
-        return isProcedureWithinDateRange(entry.resource, range);
+        return isProcedureWithinDateRange(entry.resource, range, patient);
       case "Provenance":
         return isProvenanceWithinDateRange(entry.resource, range);
       case "RelatedPerson":
@@ -102,7 +103,8 @@ export function filterBundleByDate(bundle: Bundle, dateFrom?: string, dateTo?: s
 
 function isAllergyIntoleranceWithinDateRange(
   resource: AllergyIntolerance,
-  range: DateRange
+  range: DateRange,
+  patient: Patient | undefined
 ): boolean {
   if (resource.onsetPeriod) {
     const res = arePeriodsWithinRange([resource.onsetPeriod], range);
@@ -112,19 +114,26 @@ function isAllergyIntoleranceWithinDateRange(
     const res = areRangesWithinRange([resource.onsetRange], range);
     if (res !== undefined) return res;
   }
+  if (resource.lastOccurrence) {
+    const res = isDateWithinDateRange(resource.lastOccurrence, range);
+    if (res !== undefined) return res;
+  }
   if (resource.onsetString) {
-    const res = isDateWithinDateRange(resource.onsetString, range);
+    const res = isDateWithinDateRange(resource.onsetString, dateRangeToOngoing(range));
     if (res !== undefined) return res;
   }
   if (resource.onsetDateTime) {
-    const res = isDateWithinDateRange(resource.onsetDateTime, range);
+    const res = isDateWithinDateRange(resource.onsetDateTime, dateRangeToOngoing(range));
     if (res !== undefined) return res;
   }
-  // TODO 2215 finish implementing this
-  // if (resource.onsetAge) {
-  // }
-  if (resource.lastOccurrence) {
-    const res = isDateWithinDateRange(resource.lastOccurrence, range);
+  if (resource.onsetAge && patient?.birthDate) {
+    const date = addAgeToDob(resource.onsetAge, patient.birthDate);
+    const res = isDateWithinDateRange(date, dateRangeToOngoing(range));
+    if (res !== undefined) return res;
+  }
+  if (resource.reaction && resource.reaction.length > 0) {
+    const dates = resource.reaction.flatMap(r => r.onset ?? []);
+    const res = areDatesWithinRange(dates, dateRangeToOngoing(range));
     if (res !== undefined) return res;
   }
   return includeIfNoDate;
@@ -145,8 +154,8 @@ function isCompositionWithinDateRange(resource: Composition, range: DateRange): 
 
 function isConditionWithinDateRange(
   resource: Condition,
-  range: DateRange
-  // patient: Patient | undefined
+  range: DateRange,
+  patient: Patient | undefined
 ): boolean {
   if (resource.onsetPeriod) {
     const res = arePeriodsWithinRange([resource.onsetPeriod], range);
@@ -157,19 +166,18 @@ function isConditionWithinDateRange(
     if (res !== undefined) return res;
   }
   if (resource.onsetString) {
-    const res = isDateWithinDateRange(resource.onsetString, range);
+    const res = isDateWithinDateRange(resource.onsetString, dateRangeToOngoing(range));
     if (res !== undefined) return res;
   }
   if (resource.onsetDateTime) {
-    const res = isDateWithinDateRange(resource.onsetDateTime, range);
+    const res = isDateWithinDateRange(resource.onsetDateTime, dateRangeToOngoing(range));
     if (res !== undefined) return res;
   }
-  // TODO 2215 finish implementing this
-  // if (resource.onsetAge && patient?.birthDate) {
-  //   const date = addAgeToDob(patient.birthDate, resource.onsetAge);
-  //   const res = isDateWithinDateRange(date, range);
-  //   if (res !== undefined) return res;
-  // }
+  if (resource.onsetAge && patient?.birthDate) {
+    const date = addAgeToDob(resource.onsetAge, patient.birthDate);
+    const res = isDateWithinDateRange(date, dateRangeToOngoing(range));
+    if (res !== undefined) return res;
+  }
   if (resource.abatementPeriod) {
     const res = arePeriodsWithinRange([resource.abatementPeriod], range);
     if (res !== undefined) return res;
@@ -184,6 +192,11 @@ function isConditionWithinDateRange(
   }
   if (resource.abatementDateTime) {
     const res = isDateWithinDateRange(resource.abatementDateTime, range);
+    if (res !== undefined) return res;
+  }
+  if (resource.abatementAge && patient?.birthDate) {
+    const date = addAgeToDob(resource.abatementAge, patient.birthDate);
+    const res = isDateWithinDateRange(date, range);
     if (res !== undefined) return res;
   }
   return includeIfNoDate;
@@ -334,8 +347,11 @@ function isObservationWithinDateRange(resource: Observation, range: DateRange): 
   return includeIfNoDate;
 }
 
-// function isProcedureWithinDateRange(resource: Procedure, range: DateRange, patient: Patient | undefined): boolean {
-function isProcedureWithinDateRange(resource: Procedure, range: DateRange): boolean {
+function isProcedureWithinDateRange(
+  resource: Procedure,
+  range: DateRange,
+  patient: Patient | undefined
+): boolean {
   if (resource.performedPeriod) {
     const res = isPeriodWithinRange(resource.performedPeriod, range);
     if (res !== undefined) return res;
@@ -352,9 +368,11 @@ function isProcedureWithinDateRange(resource: Procedure, range: DateRange): bool
     const res = isDateWithinDateRange(resource.performedString, range);
     if (res !== undefined) return res;
   }
-  // TODO 2215 finish implementing this
-  // if (resource.performedAge) {
-  // }
+  if (resource.performedAge && patient?.birthDate) {
+    const date = addAgeToDob(resource.performedAge, patient.birthDate);
+    const res = isDateWithinDateRange(date, range);
+    if (res !== undefined) return res;
+  }
   return includeIfNoDate;
 }
 

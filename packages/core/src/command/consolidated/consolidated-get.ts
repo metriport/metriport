@@ -1,4 +1,5 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
+import { parseFhirBundle } from "@metriport/shared/medical";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { executeWithRetriesS3, returnUndefinedOn404, S3Utils } from "../../external/aws/s3";
 import { out } from "../../util";
@@ -44,5 +45,5 @@ function parseConsolidatedRaw(
 ): Bundle | undefined {
   if (!contents) return undefined;
   log(`Converting payload to JSON, length ${contents.length}`);
-  return JSON.parse(contents) as Bundle;
+  return parseFhirBundle(contents);
 }
