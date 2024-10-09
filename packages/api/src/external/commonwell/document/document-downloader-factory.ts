@@ -10,7 +10,7 @@ import { makeCommonWellAPI } from "../api";
 export function makeDocumentDownloader({ name, oid, npi }: HieInitiator): DocumentDownloader {
   const region = Config.getAWSRegion();
   const bucketName = Config.getMedicalDocumentsBucketName();
-  if (Config.isDev()) {
+  if (!Config.isCloudEnv()) {
     const commonWell = makeCommonWellAPI(name, addOidPrefix(oid));
     const queryMeta = organizationQueryMeta(name, { npi });
     return new DocumentDownloaderLocal({

@@ -7,7 +7,7 @@ const bulkSigningLambdaName = "BulkUrlSigningLambda";
 
 export function makeDocumentBulkSigner(): DocumentBulkSigner {
   const region = Config.getAWSRegion();
-  if (Config.isDev()) {
+  if (!Config.isCloudEnv()) {
     const bucketName = Config.getMedicalDocumentsBucketName();
     const apiURL = Config.getApiUrl();
     return new DocumentBulkSignerLocal(region, bucketName, apiURL);
