@@ -261,8 +261,8 @@ describe("normalization", () => {
 
 describe("total patient normalization", () => {
   it("check patient normalization", () => {
-    const coreDemographicsTest = patientToNormalizedCoreDemographics(patient);
-    expect(coreDemographicsTest).toMatchObject(coreDemographics);
+    const createCoreDemographics = patientToNormalizedCoreDemographics(patient);
+    expect(createCoreDemographics).toMatchObject(coreDemographics);
   });
 });
 

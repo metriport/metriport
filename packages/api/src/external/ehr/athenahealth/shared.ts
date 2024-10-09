@@ -1,7 +1,7 @@
 import { PatientResource } from "@metriport/shared/interface/external/athenahealth/patient";
 import {
   normalizeEmailSafe,
-  normalizePhoneNumber,
+  normalizePhoneSafe,
   normalizeState,
   normalizeZipCode,
 } from "@metriport/shared";
@@ -16,7 +16,7 @@ export function createMetriportContacts(patient: PatientResource): Contact[] {
       };
     } else if (telecom.system === "phone") {
       return {
-        phone: normalizePhoneNumber(telecom.value),
+        phone: normalizePhoneSafe(telecom.value),
       };
     }
     return [];
