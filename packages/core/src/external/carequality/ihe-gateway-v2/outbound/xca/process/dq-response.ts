@@ -27,6 +27,7 @@ import {
   handleSchemaErrorResponse,
 } from "./error";
 import { Classification, ExternalIdentifier, ExtrinsicObject, iti38Schema } from "./schema";
+import { getNameValue } from "../../../utils";
 
 dayjs.extend(utc);
 
@@ -108,7 +109,7 @@ export function parseDocumentReference({
       (classification: Classification) => classification?._classificationScheme === scheme
     );
     if (!classification) return undefined;
-    const title = classification?.Name?.LocalizedString?._value;
+    const title = getNameValue(classification?.Name);
     return title;
   };
 
