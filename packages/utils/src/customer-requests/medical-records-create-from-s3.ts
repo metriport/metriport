@@ -9,6 +9,7 @@ import { makeFhirApi } from "@metriport/core/external/fhir/api/api-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { errorToString } from "@metriport/shared/common/error";
+import { parseFhirBundle } from "@metriport/shared/medical";
 import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -104,13 +105,14 @@ async function getMedicalRecordURL(
     }
     debug(`Downloading ${key}...`);
     const objBuffer = await s3.downloadFile({ bucket: bucketName, key });
-    const obj = JSON.parse(objBuffer.toString()) as Bundle<Resource>;
-    if (obj.resourceType !== "Bundle") {
-      debug(`Not a bundle (${obj.resourceType}), skipping...`);
+    const rawBuffer = objBuffer.toString();
+    const bundle = parseFhirBundle(rawBuffer);
+    if (!bundle) {
+      log(`Not a bundle, skipping...`);
       return;
     }
-    const objResources = obj.entry?.flatMap(entry => entry.resource ?? []);
-    resources.push(...(objResources ?? []));
+    const objResources = (bundle.entry ?? []).flatMap(entry => entry.resource ?? []);
+    resources.push(...objResources);
   }
 
   await executeAsynchronously(filteredObjects, processSingleObject, {

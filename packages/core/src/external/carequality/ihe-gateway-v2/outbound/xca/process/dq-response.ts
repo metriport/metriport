@@ -1,3 +1,5 @@
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
 import {
   DocumentReference,
   OutboundDocumentQueryReq,
@@ -5,9 +7,7 @@ import {
   XCAGateway,
 } from "@metriport/ihe-gateway-sdk";
 import { toArray } from "@metriport/shared";
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
-import { XMLParser } from "fast-xml-parser";
+import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import {
   XDSDocumentEntryAuthor,
   XDSDocumentEntryClassCode,
@@ -27,7 +27,7 @@ import {
   handleSchemaErrorResponse,
 } from "./error";
 import { Classification, ExternalIdentifier, ExtrinsicObject, iti38Schema } from "./schema";
-import { getSlotValue } from "../../../utils";
+import { getNameValue, getSlotValue } from "../../../utils";
 
 dayjs.extend(utc);
 
@@ -109,7 +109,7 @@ export function parseDocumentReference({
       (classification: Classification) => classification?._classificationScheme === scheme
     );
     if (!classification) return undefined;
-    const title = classification?.Name?.LocalizedString?._value;
+    const title = getNameValue(classification?.Name);
     return title;
   };
 
@@ -187,7 +187,7 @@ export function processDqResponse({
       gateway: gateway,
     });
   }
-  const parser = new XMLParser({
+  const parser = createXMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "_",
     textNodeName: "_text",

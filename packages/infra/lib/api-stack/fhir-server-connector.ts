@@ -23,6 +23,7 @@ function settings() {
     lambdaMemory: 1024,
     // Number of messages the lambda pull from SQS at once
     lambdaBatchSize: 1,
+    reservedConcurrentExecutions: 0, // Throttle/disable it
     // Max number of concurrent instances of the lambda that an Amazon SQS event source can invoke [2 - 1000].
     maxConcurrency: prod ? 384 : 4,
     // How long can the lambda run for, max is 900 seconds (15 minutes)
@@ -57,17 +58,13 @@ export function createConnector({
     console.log("No FHIR Server URL provided, skipping connector creation");
     return undefined;
   }
-  const apiURL = config.loadBalancerDnsName;
-  if (!apiURL) {
-    console.log("No API URL provided, skipping connector creation");
-    return undefined;
-  }
   const {
     connectorName,
     lambdaMemory,
     lambdaTimeout,
     lambdaBatchSize,
     maxConcurrency,
+    reservedConcurrentExecutions,
     maxReceiveCount,
     visibilityTimeout,
     retryAttempts,
@@ -83,8 +80,12 @@ export function createConnector({
     lambdaLayers: [lambdaLayers.shared],
     envType,
     alarmSnsAction,
-    alarmMaxAgeOfOldestMessage: Duration.minutes(4),
-    maxMessageCountAlarmThreshold: 2000,
+    ...(!reservedConcurrentExecutions || reservedConcurrentExecutions > 0
+      ? {
+          alarmMaxAgeOfOldestMessage: Duration.minutes(4),
+          maxMessageCountAlarmThreshold: 2000,
+        }
+      : {}),
   });
 
   const dlq = queue.deadLetterQueue;
@@ -104,10 +105,10 @@ export function createConnector({
       METRICS_NAMESPACE,
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       FHIR_SERVER_URL: fhirServerUrl,
-      API_URL: apiURL,
     },
     timeout: lambdaTimeout,
     alarmSnsAction,
+    reservedConcurrentExecutions,
   });
 
   fhirConverterBucket.grantRead(sqsToFhirLambda);

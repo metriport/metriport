@@ -54,7 +54,7 @@
                         <statusCode code="active"/>
                         <subject1 typeCode="SBJ">
                             <patient classCode="PAT">
-                                <id extension="ODFmMmVjNGUtYzcxYy00MDkwLWJmMWMtOWQ4NTI5ZjY1YjVhLzAxOGUxMDU4LTllMWEtN2MzMy1hMmRkLTVhNzg4NGU2ZmMzOA==" root="2.16.840.1.113883.3.9621"/>
+                                <id extension="0ODFmMmVjNGUtYzcxYy00MDkwLWJmMWMtOWQ4NTI5ZjY1YjVhLzAxOGUxMDU4LTllMWEtN2MzMy1hMmRkLTVhNzg4NGU2ZmMzOA==" root="2.16.840.1.113883.3.9621"/>
                                 <statusCode code="active"/>
                                 <patientPerson>
                                     <name>
@@ -76,7 +76,7 @@
                                         <streetAddressLine>1100 Test Street</streetAddressLine>
                                         <city>Helena</city>
                                         <state>AL</state>
-                                        <postalCode>35080</postalCode>
+                                        <postalCode>05080</postalCode>
                                         <country>USA</country>
                                     </addr>
                                     <addr>

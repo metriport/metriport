@@ -10,8 +10,8 @@ export type NotificationParams = {
   cxId: string;
   patientId: string;
   status: "success" | "failed";
-  details?: string;
-  jobId?: string;
+  details?: string | undefined;
+  jobId: string | undefined;
   /** The MedicalDataSource, or HIE name */
   source?: string;
 };
