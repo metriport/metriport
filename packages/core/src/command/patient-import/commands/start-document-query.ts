@@ -17,7 +17,7 @@ export async function startDocumentQuery({
     `PatientImport start document query - cxId ${cxId} patientId ${patientId}`
   );
   const api = axios.create({ baseURL: Config.getApiUrl() });
-  const patientUrl = `/internal/docs/query?cxId=${cxId}&patientId=${patientId}&triggerConsolidated=${triggerConsolidated}`;
+  const patientUrl = `/internal/docs/query?cxId=${cxId}&patientId=${patientId}&triggerConsolidated=${triggerConsolidated}&forceQuery=false`;
   try {
     const response = await api.post(patientUrl, {});
     if (!response.data) throw new Error(`No body returned from ${patientUrl}`);
