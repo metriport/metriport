@@ -3,6 +3,7 @@ import { MetriportError } from "@metriport/shared";
 import { filterTruthy } from "@metriport/shared/common/filter-map";
 import { uniq } from "lodash";
 import { out } from "../../../util";
+import { getPatientsFromBundle } from "./patient";
 
 /**
  * Check the FHIR bundle only contains references for the given patient.
@@ -17,20 +18,40 @@ export function checkBundleForPatient(
   patientId: string
 ): true {
   const { log } = out(`checkBundleForPatient - cx ${cxId}, pat ${patientId}`);
+  const additionalInfo = { cxId, patientId };
+
+  const patientsInBundle = getPatientsFromBundle(bundle);
+  if (patientsInBundle.length < 1) {
+    throw new MetriportError(`Bundle contains no patients`, undefined, additionalInfo);
+  }
+  if (patientsInBundle.length > 1) {
+    const ids = patientsInBundle.map(p => p.id);
+    throw new MetriportError(`Bundle contains more than one patient`, undefined, {
+      ...additionalInfo,
+      patientsIds: ids.join(", "),
+    });
+  }
+  const patientInBundle = patientsInBundle[0]!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+  if (patientInBundle.id !== patientId) {
+    throw new MetriportError(`Patient in bundle is diff than expected`, undefined, {
+      ...additionalInfo,
+      patientIdInBundle: patientInBundle.id,
+    });
+  }
 
   const patientsIdInBundle = getPatientIdsFromBundle(bundle);
   const mismatchingPatientsIds = patientsIdInBundle.filter(id => id !== patientId);
-
   if (mismatchingPatientsIds.length > 0) {
     log(
       `Found ${mismatchingPatientsIds.length} mismatching patients in bundle: ${mismatchingPatientsIds}`
     );
-    throw new MetriportError(`Bundle contains invalid data`, undefined, {
+    throw new MetriportError("Unexpected patient IDs in bundle", undefined, {
       cxId,
       patientId,
       mismatchingPatientsIds: mismatchingPatientsIds.join(", "),
     });
   }
+
   return true;
 }
 
