@@ -65,6 +65,13 @@ export enum USState {
   WY = "WY",
 }
 
+export enum USTerritory {
+  AS = "AZ",
+  GU = "GU",
+  PR = "PR",
+  VI = "VI",
+}
+
 export const states: Record<USState, string> = {
   [USState.AZ]: "Arizona",
   [USState.AL]: "Alabama",

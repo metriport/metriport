@@ -5,7 +5,7 @@ import { DocumentQueryProgress } from "./document-query";
 import { DiscoveryParams, ScheduledPatientDiscovery } from "./patient-discovery";
 import { BulkGetDocumentsUrlProgress } from "./bulk-get-document-url";
 import { MedicalDataSource } from "../external";
-import { Address, getState } from "./address";
+import { Address, getState, USStateForAddress } from "./address";
 import { Contact } from "./contact";
 import { LinkDemographics } from "./patient-demographics";
 
@@ -101,7 +101,7 @@ export function joinName(name: string[]): string {
 
 export interface Patient extends BaseDomain, PatientCreate {}
 
-export function getStatesFromAddresses(patient: Patient): USState[] {
+export function getStatesFromAddresses(patient: Patient): USStateForAddress[] {
   return patient.data.address.map(getState);
 }
 

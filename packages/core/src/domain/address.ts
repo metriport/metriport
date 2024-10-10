@@ -1,5 +1,7 @@
+import { USState, USTerritory } from "@metriport/shared";
 import { uniqBy } from "lodash";
-import { USState } from "@metriport/shared";
+
+export type USStateForAddress = USState | USTerritory;
 
 export type Coordinates = {
   lat: number;
@@ -10,13 +12,13 @@ export type Address = {
   addressLine1: string;
   addressLine2?: string;
   city: string;
-  state: USState;
+  state: USState | USTerritory;
   zip: string;
   country?: string;
   coordinates?: Coordinates;
 };
 
-export function getState(address: Address): USState {
+export function getState(address: Address): USStateForAddress {
   return address.state;
 }
 
