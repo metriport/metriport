@@ -54,6 +54,7 @@ export async function sendProcessXcpdRequest({
       cxId,
       index,
     });
+
     return processXCPDResponse({
       xcpdResponse: response,
       patientId,

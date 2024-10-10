@@ -27,7 +27,7 @@ import {
   handleSchemaErrorResponse,
 } from "./error";
 import { Classification, ExternalIdentifier, ExtrinsicObject, iti38Schema } from "./schema";
-import { getNameValue } from "../../../utils";
+import { getNameValue, getSlotValue } from "../../../utils";
 
 dayjs.extend(utc);
 
@@ -78,7 +78,7 @@ export function parseDocumentReference({
 
   const findSlotValue = (name: string): string | undefined => {
     const slot = slots.find((slot: Slot) => slot._name === name);
-    return slot ? String(slot.ValueList.Value) : undefined;
+    return getSlotValue(slot);
   };
 
   const findExternalIdentifierValue = (scheme: string): string | undefined => {
@@ -101,7 +101,7 @@ export function parseDocumentReference({
     const classificationSlots = slotArray.flatMap((slot: Slot) => slot ?? []);
 
     const slot = classificationSlots.find((s: Slot) => s._name === slotName);
-    return slot ? String(slot.ValueList.Value) : undefined;
+    return getSlotValue(slot);
   };
 
   const findClassificationName = (scheme: string): string | undefined => {
