@@ -1,5 +1,5 @@
 import { ConsolidatedQuery } from "@metriport/api-sdk";
-import { USState } from "@metriport/shared";
+import { USState, USStateWithoutTerritories } from "@metriport/shared";
 import { BaseDomain, BaseDomainCreate } from "./base-domain";
 import { DocumentQueryProgress } from "./document-query";
 import { DiscoveryParams, ScheduledPatientDiscovery } from "./patient-discovery";
@@ -33,12 +33,12 @@ export type BaseIdentifier = {
 export type PersonalIdentifier = BaseIdentifier &
   (
     | { type: GeneralPersonalIdentifiers }
-    | { type: DriversLicensePersonalIdentifier; state: USState }
+    | { type: DriversLicensePersonalIdentifier; state: USStateWithoutTerritories }
   );
 
 export type DriversLicense = {
   value: string;
-  state: USState;
+  state: USStateWithoutTerritories;
 };
 
 export const genderAtBirthTypes = ["F", "M", "O", "U"] as const;
@@ -107,7 +107,7 @@ export function getStatesFromAddresses(patient: Patient): USState[] {
 
 export function createDriversLicensePersonalIdentifier(
   value: string,
-  state: USState
+  state: USStateWithoutTerritories
 ): PersonalIdentifier {
   const personalIdentifier: PersonalIdentifier = {
     type: "driversLicense",

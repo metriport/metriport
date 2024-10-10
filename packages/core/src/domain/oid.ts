@@ -1,4 +1,4 @@
-import { USState } from "@metriport/shared";
+import { USStateWithoutTerritories } from "@metriport/shared";
 import { generalPersonalIdentifiers } from "../domain/patient";
 
 export const OID_ID_START = 100;
@@ -24,7 +24,9 @@ export function addOidPrefix(oid: string): string {
   return `${OID_PREFIX}${oid}`;
 }
 
-export const driversLicenseURIs: { [k in USState]: string } = {
+export const driversLicenseURIs: {
+  [k in USStateWithoutTerritories]: string;
+} = {
   AK: `${OID_PREFIX}2.16.840.1.113883.4.3.2`,
   AL: `${OID_PREFIX}2.16.840.1.113883.4.3.1`,
   AR: `${OID_PREFIX}2.16.840.1.113883.4.3.5`,

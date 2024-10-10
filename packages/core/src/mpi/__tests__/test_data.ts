@@ -1,4 +1,4 @@
-import { USState } from "@metriport/shared";
+import { USStateWithoutTerritories, USState } from "@metriport/shared";
 import { PatientMPI } from "../shared";
 
 export const testPatientMPI: {
@@ -32,7 +32,7 @@ export const testPatientMPI: {
         {
           type: "driversLicense",
           value: "123456789",
-          state: USState.NY,
+          state: USStateWithoutTerritories.NY,
         },
       ],
     },
@@ -60,7 +60,7 @@ export const testPatientMPI: {
         {
           type: "driversLicense",
           value: "123456789",
-          state: USState.NY,
+          state: USStateWithoutTerritories.NY,
         },
       ],
     },
@@ -88,7 +88,7 @@ export const testPatientMPI: {
         {
           type: "driversLicense",
           value: "123456789",
-          state: USState.NY,
+          state: USStateWithoutTerritories.NY,
         },
       ],
     },
@@ -113,7 +113,7 @@ export const testPatientMPI: {
         {
           type: "driversLicense",
           value: "123456789",
-          state: USState.NY,
+          state: USStateWithoutTerritories.NY,
         },
       ],
     },
