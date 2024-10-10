@@ -3,6 +3,7 @@ import { parseSearchsetFhirBundle, SearchSetBundle } from "@metriport/shared/med
 import { createConsolidatedSnapshotFileName } from "../../domain/consolidated/filename";
 import { S3Utils } from "../../external/aws/s3";
 import { Config } from "../../util/config";
+import { ConsolidatedFileType } from "./consolidated-shared";
 import { ConsolidatedSnapshotRequest } from "./get-snapshot";
 
 const NULL = "null";
@@ -29,17 +30,17 @@ export async function uploadConsolidatedSnapshotToS3({
   dateTo,
   bundle,
   s3BucketName,
-  isDeduped,
+  type,
 }: Omit<ConsolidatedSnapshotRequest, "requestId" | "isAsync" | "conversionType"> & {
   requestId?: string;
   bundle: unknown;
   s3BucketName: string;
-  isDeduped?: boolean;
+  type: ConsolidatedFileType;
 }): Promise<{
   bucket: string;
   key: string;
 }> {
-  const key = createConsolidatedSnapshotFileName(patient.cxId, patient.id, requestId, isDeduped);
+  const key = createConsolidatedSnapshotFileName(patient.cxId, patient.id, requestId, type);
   const s3Utils = new S3Utils(Config.getAWSRegion());
   const uploadPayloadWithoutMeta = {
     bucket: s3BucketName,
