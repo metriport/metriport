@@ -1,13 +1,15 @@
 import { Bundle, Resource, Patient, Composition } from "@medplum/fhirtypes";
+import { faker } from "@faker-js/faker";
 import { removeContainedPatients } from "../get-snapshot-local";
 
 describe("removeContainedPatients", () => {
-  const testPatientId = "test-patient-id";
+  const testPatientId = faker.string.uuid();
 
   it("returns the same bundle when there are no entries", () => {
     const bundle: Bundle = {
       resourceType: "Bundle",
       type: "searchset",
+      total: 0,
     };
 
     const result = removeContainedPatients(bundle, testPatientId);
@@ -18,11 +20,12 @@ describe("removeContainedPatients", () => {
     const bundle: Bundle = {
       resourceType: "Bundle",
       type: "searchset",
+      total: 1,
       entry: [
         {
           resource: {
             resourceType: "Observation",
-            id: "obs1",
+            id: faker.string.uuid(),
           },
         },
       ],
@@ -35,7 +38,7 @@ describe("removeContainedPatients", () => {
   it("removes contained Patient resources and leaves other resources with matching id from entries", () => {
     const patientResource: Patient = {
       resourceType: "Patient",
-      id: "patient1",
+      id: faker.string.uuid(),
     };
 
     const observationResourceWithMatchingId: Resource = {
@@ -45,12 +48,13 @@ describe("removeContainedPatients", () => {
 
     const observationResource: Resource = {
       resourceType: "Observation",
-      id: "obs1",
+      id: faker.string.uuid(),
     };
 
     const bundle: Bundle = {
       resourceType: "Bundle",
       type: "searchset",
+      total: 1,
       entry: [
         {
           resource: {
@@ -72,6 +76,7 @@ describe("removeContainedPatients", () => {
     const bundle: Bundle = {
       resourceType: "Bundle",
       type: "searchset",
+      total: 1,
       entry: [
         {
           resource: {
@@ -89,6 +94,7 @@ describe("removeContainedPatients", () => {
     const bundle: Bundle = {
       resourceType: "Bundle",
       type: "searchset",
+      total: 1,
       entry: [
         {
           resource: {
@@ -106,22 +112,23 @@ describe("removeContainedPatients", () => {
   it("removes multiple contained Patient resources", () => {
     const patientResource1: Patient = {
       resourceType: "Patient",
-      id: "patient1",
+      id: faker.string.uuid(),
     };
 
     const patientResource2: Patient = {
       resourceType: "Patient",
-      id: "patient2",
+      id: faker.string.uuid(),
     };
 
     const observationResource: Resource = {
       resourceType: "Observation",
-      id: "obs1",
+      id: faker.string.uuid(),
     };
 
     const bundle: Bundle = {
       resourceType: "Bundle",
       type: "searchset",
+      total: 1,
       entry: [
         {
           resource: {
@@ -142,17 +149,18 @@ describe("removeContainedPatients", () => {
   it("does not remove resources other than Patient and non-matching ids from contained", () => {
     const observationResource: Resource = {
       resourceType: "Observation",
-      id: "obs1",
+      id: faker.string.uuid(),
     };
 
     const medicationResource: Resource = {
       resourceType: "Medication",
-      id: "med1",
+      id: faker.string.uuid(),
     };
 
     const bundle: Bundle = {
       resourceType: "Bundle",
       type: "searchset",
+      total: 1,
       entry: [
         {
           resource: {
@@ -176,22 +184,23 @@ describe("removeContainedPatients", () => {
 
     const patientResource2: Patient = {
       resourceType: "Patient",
-      id: "patient2",
+      id: faker.string.uuid(),
     };
 
     const observationResource: Resource = {
       resourceType: "Observation",
-      id: "obs1",
+      id: faker.string.uuid(),
     };
 
     const medicationResource: Resource = {
       resourceType: "Medication",
-      id: "med1",
+      id: faker.string.uuid(),
     };
 
     const bundle: Bundle = {
       resourceType: "Bundle",
       type: "searchset",
+      total: 1,
       entry: [
         {
           resource: {
