@@ -93,9 +93,30 @@ async function processDocumentReference({
     const s3Utils = getS3UtilsInstance();
     const { mimeType, decodedBytes } = getMtomBytesAndMimeType(documentResponse, mtomResponse);
     const strippedDocUniqueId = stripUrnPrefix(documentResponse.DocumentUniqueId);
-    const metriportId = idMapping[strippedDocUniqueId];
+    let metriportId = idMapping[strippedDocUniqueId];
     if (!metriportId) {
-      throw new MetriportError("MetriportId not found for document");
+      const decodedBytesSizeInBytes = decodedBytes.length;
+      let closestSizeDiff = Infinity;
+      let closestMetriportId = "";
+
+      for (const docRef of outboundRequest.documentReference) {
+        if (docRef.size) {
+          const sizeDiff = Math.abs(docRef.size - decodedBytesSizeInBytes);
+          if (
+            sizeDiff < closestSizeDiff &&
+            docRef.metriportId &&
+            docRef.contentType === documentResponse.mimeType
+          ) {
+            closestSizeDiff = sizeDiff;
+            closestMetriportId = docRef.metriportId;
+          }
+        }
+      }
+      if (closestMetriportId) {
+        metriportId = closestMetriportId;
+      } else {
+        throw new MetriportError("MetriportId not found for document");
+      }
     }
 
     const filePath = createDocumentFilePath(
