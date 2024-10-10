@@ -7,6 +7,7 @@ import {
   Resource,
   Encounter,
   Patient,
+  Observation,
 } from "@medplum/fhirtypes";
 import { makeBundle } from "../../external/fhir/__tests__/bundle";
 import {
@@ -25,6 +26,11 @@ import { makeObservation } from "../../fhir-to-cda/cda-templates/components/__te
 import { makeCondition } from "../../fhir-to-cda/cda-templates/components/__tests__/make-condition";
 import { makeEncounter } from "../../fhir-to-cda/cda-templates/components/__tests__/make-encounter";
 import { makePatient } from "../../fhir-to-cda/cda-templates/components/__tests__/make-patient";
+import {
+  makePractitioner,
+  practitionerNameZoidberg,
+} from "../../fhir-to-cda/cda-templates/components/__tests__/make-encounter";
+
 import { deduplicateFhir } from "../deduplicate-fhir";
 import { createRef } from "../shared";
 import { dateTime } from "./examples/condition-examples";
@@ -461,4 +467,37 @@ describe("deduplicateFhir", () => {
     const deduplicatedDiagnosticReport = deduplicatedDiagnosticReports[0];
     expect(deduplicatedDiagnosticReport?.result?.length).toBe(1);
   });
+});
+
+it("removes duplicate practitioner references from an Observation", () => {
+  const practitionerId = faker.string.uuid();
+  const practitioner = makePractitioner({ id: practitionerId, name: [practitionerNameZoidberg] });
+
+  const observation = makeObservation({
+    id: faker.string.uuid(),
+    performer: [
+      { reference: `Practitioner/${practitionerId}` },
+      { reference: `Practitioner/${practitionerId}` },
+    ],
+    code: loincCodeTobacco,
+    valueCodeableConcept: valueConceptTobacco,
+    effectiveDateTime: dateTime.start,
+  });
+
+  const entries = [
+    { resource: observation },
+    { resource: practitioner },
+    { resource: patient },
+  ] as BundleEntry<Resource>[];
+
+  bundle.entry = entries;
+  console.log("before deduplication", JSON.stringify(bundle.entry, null, 2));
+  bundle = deduplicateFhir(bundle, cxId, patientId);
+  console.log("after deduplication", JSON.stringify(bundle.entry, null, 2));
+  const deduplicatedObservation = bundle.entry?.find(
+    entry => entry.resource?.resourceType === "Observation"
+  )?.resource as Observation;
+
+  expect(deduplicatedObservation?.performer?.length).toBe(1);
+  expect(deduplicatedObservation?.performer?.[0]?.reference).toBe(`Practitioner/${practitionerId}`);
 });
