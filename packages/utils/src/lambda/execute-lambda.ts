@@ -3,8 +3,7 @@ dotenv.config();
 // keep that ^ on top
 import { ConversionType, Input } from "@metriport/core/domain/conversion/cda-to-html-pdf";
 import {
-  getLambdaError,
-  isLambdaError,
+  getLambdaResultPayload,
   logResultToString,
   makeLambdaClient,
 } from "@metriport/core/external/aws/lambda";
@@ -24,7 +23,7 @@ const conversionType: ConversionType = "pdf";
 // LIKELY DON'T NEED TO UPDATE THESE
 const bucketName = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const region = getEnvVarOrFail("AWS_REGION");
-const lambdaName = "CdaToVisualizationLambda";
+const lambdaName = "CdaToVisualizationLambda_v2";
 
 const lambdaClient = makeLambdaClient(region);
 
@@ -58,17 +57,9 @@ async function main() {
       log: logResultToString(lambdaResult.LogResult),
     });
   }
+  const response = getLambdaResultPayload({ result: lambdaResult, lambdaName });
 
-  if (isLambdaError(lambdaResult)) {
-    console.log(
-      `Error calling lambda ${lambdaName}: ${JSON.stringify(getLambdaError(lambdaResult), null, 2)}`
-    );
-    return;
-  }
-
-  const response = JSON.parse(lambdaResult.Payload.toString());
-
-  const url = response.url;
+  const url = JSON.parse(response).url;
   console.log(`URL: '${url}'`);
 }
 

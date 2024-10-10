@@ -1,4 +1,5 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
+import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import {
   ConsolidationConversionType,
   Input as ConversionInput,
@@ -9,10 +10,10 @@ import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-s
 import { Patient } from "@metriport/core/domain/patient";
 import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { makeS3Client, S3Utils } from "@metriport/core/external/aws/s3";
+import { out } from "@metriport/core/util";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import { Config } from "../../../shared/config";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
 import { createSandboxMRSummaryFileName } from "./shared";
@@ -50,6 +51,7 @@ export async function handleBundleToMedicalRecord({
   conversionType: MedicalRecordFormat;
   generateAiBrief?: boolean;
 }): Promise<SearchSetBundle<Resource>> {
+  const { log } = out(`handleBundleToMedicalRecord - pt ${patient.id}`);
   const bucketName = Config.getSandboxSeedBucketName();
   if (Config.isSandbox() && bucketName) {
     const patientMatch = getSandboxSeedData(patient.data.firstName);
@@ -75,7 +77,7 @@ export async function handleBundleToMedicalRecord({
 
   const newBundle = buildDocRefBundleWithAttachment(patient.id, url, conversionType);
   if (!hasContents) {
-    console.log(`No contents in the consolidated data for patient ${patient.id}`);
+    log(`No contents in the consolidated data for patient ${patient.id}`);
     newBundle.entry = [];
     newBundle.total = 0;
   }
