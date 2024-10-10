@@ -1,4 +1,4 @@
-import { USStateForAddress } from "@metriport/core/domain/address";
+import { USStateForAddress } from "@metriport/shared";
 import { Organization } from "@metriport/core/domain/organization";
 import { getStatesFromAddresses, Patient, PatientDemoData } from "@metriport/core/domain/patient";
 import { getPatientByDemo as getPatientByDemoMPI } from "@metriport/core/mpi/get-patient-by-demo";

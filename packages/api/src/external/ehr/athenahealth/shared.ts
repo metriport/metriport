@@ -1,12 +1,12 @@
-import { PatientResource } from "@metriport/shared/interface/external/athenahealth/patient";
+import { Address } from "@metriport/core/domain/address";
+import { Contact } from "@metriport/core/domain/contact";
 import {
   normalizeEmail,
   normalizePhoneNumber,
-  normalizeState,
+  normalizeUSStateForAddress,
   normalizeZipCode,
 } from "@metriport/shared";
-import { Contact } from "@metriport/core/domain/contact";
-import { Address } from "@metriport/core/domain/address";
+import { PatientResource } from "@metriport/shared/interface/external/athenahealth/patient";
 
 export function createMetriportContacts(patient: PatientResource): Contact[] {
   return (patient.telecom ?? []).flatMap(telecom => {
@@ -32,7 +32,7 @@ export function createMetriportAddresses(patient: PatientResource): Address[] {
       addressLine1: address.line[0] as string,
       addressLine2: address.line.length > 1 ? address.line.slice(1).join(" ") : undefined,
       city: address.city,
-      state: normalizeState(address.state),
+      state: normalizeUSStateForAddress(address.state),
       zip: normalizeZipCode(address.postalCode),
       country: address.country,
     };

@@ -14,13 +14,15 @@ describe("state", () => {
       expect(normalizeStateSafe(input)).toEqual(expectedOutput);
     });
 
-    for (const usState of Object.values(USState)) {
-      it(`should convert ${usState} to USState`, () => {
-        const input = usState;
-        const expectedOutput = usState;
-        expect(normalizeStateSafe(input)).toEqual(expectedOutput);
-      });
-    }
+    describe(`should convert to USState`, () => {
+      for (const usState of Object.values(USState)) {
+        it(usState, () => {
+          const input = usState;
+          const expectedOutput = usState;
+          expect(normalizeStateSafe(input)).toEqual(expectedOutput);
+        });
+      }
+    });
 
     it("should return undefined if can't match a US state", () => {
       const input = "Ariz";

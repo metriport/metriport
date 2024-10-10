@@ -1,3 +1,5 @@
+import { BadRequestError } from "../../error/bad-request";
+
 export function normalizeStateSafe(state: string): USState | undefined {
   const keyFromEntries = Object.entries(states).find(
     ([key, value]) => key === state || value.toLowerCase() === state.toLowerCase()
@@ -7,7 +9,7 @@ export function normalizeStateSafe(state: string): USState | undefined {
 
 export function normalizeState(state: string): USState {
   const stateOrUndefined = normalizeStateSafe(state);
-  if (!stateOrUndefined) throw new Error("Invalid state.");
+  if (!stateOrUndefined) throw new BadRequestError("Invalid state", undefined, { state });
   return stateOrUndefined;
 }
 
@@ -65,14 +67,7 @@ export enum USState {
   WY = "WY",
 }
 
-export enum USTerritory {
-  AS = "AZ",
-  GU = "GU",
-  PR = "PR",
-  VI = "VI",
-}
-
-export const states: Record<USState, string> = {
+const states: Record<USState, string> = {
   [USState.AZ]: "Arizona",
   [USState.AL]: "Alabama",
   [USState.AK]: "Alaska",
