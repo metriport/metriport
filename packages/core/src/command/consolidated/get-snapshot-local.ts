@@ -170,7 +170,7 @@ export function removeContainedPatients(bundle: Bundle, patientId: string): Bund
 
   return {
     ...bundle,
-    entry: updatedEntry,
     total: updatedEntry.length,
+    entry: updatedEntry,
   };
 }
