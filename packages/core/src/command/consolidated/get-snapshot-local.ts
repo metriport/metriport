@@ -66,7 +66,7 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       uploadConsolidatedSnapshotToS3({
         ...params,
         s3BucketName: this.bucketName,
-        bundle: originalBundle,
+        bundle: originalBundleWithoutContainedPatients,
       }),
       uploadConsolidatedSnapshotToS3({
         ...params,
