@@ -1,4 +1,4 @@
-export function isSsnValid(ssn: string): boolean {
+function isSsnValid(ssn: string): boolean {
   if (!ssn) return false;
   if (ssn.length < 9) return false;
   if (!ssn.match(/^[0-9-]+$/)) return false;
@@ -6,13 +6,27 @@ export function isSsnValid(ssn: string): boolean {
   return true;
 }
 
-export function normalizeSsnSafe(ssn: string): string | undefined {
-  const trimmedSsn = ssn.trim();
-  if (!isSsnValid(trimmedSsn)) return undefined;
-  const trimmedSsnNumbers = trimmedSsn.split("-").join("");
-  if (!isSsnValid(trimmedSsnNumbers)) return undefined;
-  if (trimmedSsnNumbers.length === 9) return trimmedSsnNumbers;
-  return trimmedSsnNumbers.slice(0, 9);
+function isSsnNumbersValid(ssn: string): boolean {
+  if (!ssn) return false;
+  if (ssn.length < 9) return false;
+  if (!ssn.match(/^[0-9]+$/)) return false;
+  return true;
+}
+
+function noramlizeSsnBase(ssn: string): string {
+  return ssn.trim();
+}
+
+export function normalizeSsnSafe(
+  ssn: string,
+  normalizeBase: (ssn: string) => string = noramlizeSsnBase
+): string | undefined {
+  const baseSsn = normalizeBase(ssn);
+  if (!isSsnValid(baseSsn)) return undefined;
+  const baseSsnNumbers = baseSsn.split("-").join("");
+  if (!isSsnNumbersValid(baseSsnNumbers)) return undefined;
+  if (baseSsnNumbers.length === 9) return baseSsnNumbers;
+  return baseSsnNumbers.slice(0, 9);
 }
 
 export function normalizeSsn(ssn: string): string {

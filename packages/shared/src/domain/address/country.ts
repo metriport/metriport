@@ -4,10 +4,22 @@ const validCountryStrings = ["US", "USA", "UNITED STATES", "UNITED STATES OF AME
 
 export const normalizedCountryUsa = "USA";
 
-export function normalizeCountrySafe(country: string): string | undefined {
-  const strippedCountry = stripPeriods(country.trim().toUpperCase());
-  if (!validCountryStrings.includes(strippedCountry)) return undefined;
-  return normalizedCountryUsa;
+function isValidCountry(country: string) {
+  if (!validCountryStrings.includes(country)) return false;
+  return true;
+}
+
+function noramlizeCountryBase(country: string): string {
+  return stripPeriods(country.trim().toUpperCase());
+}
+
+export function normalizeCountrySafe(
+  country: string,
+  normalizeBase: (country: string) => string = noramlizeCountryBase
+): string | undefined {
+  const baseCountry = normalizeBase(country);
+  if (!isValidCountry(baseCountry)) return undefined;
+  return baseCountry;
 }
 
 export function normalizeCountry(country: string): string {

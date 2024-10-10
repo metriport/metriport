@@ -8,15 +8,29 @@ function isValidZipCode(zipCode: string): boolean {
   return true;
 }
 
-export function normalizeZipCodeSafe(zipCode: string): string | undefined {
-  const trimmedZip = zipCode.trim();
-  if (!isValidZipCode(trimmedZip)) return undefined;
-  const trimmedZipMainPart = trimmedZip.split("-")[0];
-  if (!trimmedZipMainPart) return undefined;
-  if (!isValidZipCode(trimmedZipMainPart)) return undefined;
-  if (trimmedZipMainPart.length === zipLength) return trimmedZipMainPart;
-  if (trimmedZipMainPart.length < zipLength) return trimmedZipMainPart.padStart(zipLength, "0");
-  return trimmedZipMainPart.slice(0, zipLength);
+function isValidZipCodeMainPart(zipCode: string): boolean {
+  if (!zipCode) return false;
+  if (zipCode.length < 3) return false;
+  if (!zipCode.match(/^[0-9]+$/)) return false;
+  return true;
+}
+
+function noramlizeZipBase(zipCode: string): string {
+  return zipCode.trim();
+}
+
+export function normalizeZipCodeSafe(
+  zipCode: string,
+  normalizeBase: (zipCode: string) => string = noramlizeZipBase
+): string | undefined {
+  const baseZip = normalizeBase(zipCode);
+  if (!isValidZipCode(baseZip)) return undefined;
+  const baseZipMainPart = baseZip.split("-")[0];
+  if (!baseZipMainPart) return undefined;
+  if (!isValidZipCodeMainPart(baseZipMainPart)) return undefined;
+  if (baseZipMainPart.length === zipLength) return baseZipMainPart;
+  if (baseZipMainPart.length < zipLength) return baseZipMainPart.padStart(zipLength, "0");
+  return baseZipMainPart.slice(0, zipLength);
 }
 
 export function normalizeZipCode(zipCode: string): string {

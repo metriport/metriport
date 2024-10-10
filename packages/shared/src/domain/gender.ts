@@ -1,14 +1,21 @@
 export type GenderAtBirth = "F" | "M" | "O" | "U";
 
-export function normalizeGenderSafe(gender: string): "F" | "M" | "O" | "U" | undefined {
-  const lowerGender = gender.toLowerCase().trim();
-  if (lowerGender === "male" || lowerGender === "m") {
+function noramlizeGenderBase(gender: string): string {
+  return gender.toLowerCase().trim();
+}
+
+export function normalizeGenderSafe(
+  gender: string,
+  normalizeBase: (gender: string) => string = noramlizeGenderBase
+): "F" | "M" | "O" | "U" | undefined {
+  const baseGender = normalizeBase(gender);
+  if (baseGender === "male" || baseGender === "m") {
     return "M";
-  } else if (lowerGender === "female" || lowerGender === "f") {
+  } else if (baseGender === "female" || baseGender === "f") {
     return "F";
-  } else if (lowerGender === "other" || lowerGender === "un" || lowerGender === "o") {
+  } else if (baseGender === "other" || baseGender === "un" || baseGender === "o") {
     return "O";
-  } else if (lowerGender === "unknown" || lowerGender === "unk" || lowerGender === "u") {
+  } else if (baseGender === "unknown" || baseGender === "unk" || baseGender === "u") {
     return "U";
   }
   return undefined;

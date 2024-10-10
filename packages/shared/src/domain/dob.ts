@@ -1,9 +1,17 @@
 import { ISO_DATE, buildDayjs } from "../common/date";
 import dayjs from "dayjs";
 
-export function normalizeDateSafe(date: string, afterDate?: dayjs.Dayjs): string | undefined {
-  const trimmedDate = date.trim();
-  const parsedDate = buildDayjs(trimmedDate);
+function noramlizeDateBase(date: string): string {
+  return date.trim();
+}
+
+export function normalizeDateSafe(
+  date: string,
+  normalizeBase: (date: string) => string = noramlizeDateBase,
+  afterDate?: dayjs.Dayjs
+): string | undefined {
+  const baseDate = normalizeBase(date);
+  const parsedDate = buildDayjs(baseDate);
   if (!parsedDate.isValid()) return undefined;
   if (afterDate && parsedDate < afterDate) return undefined;
   return parsedDate.format(ISO_DATE);

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const exampleEmail = "test@test.com";
 
-export function isEmailValid(email: string): boolean {
+function isEmailValid(email: string): boolean {
   if (!email) return false;
   if (email.length === 0) return false;
   const safeParseEmail = z.string().email().safeParse(email);
@@ -10,16 +10,8 @@ export function isEmailValid(email: string): boolean {
   return true;
 }
 
-export function normalizeEmailSafe(email: string): string | undefined {
-  const strippedEmail = removeMailto(email.trim().toLowerCase());
-  if (!isEmailValid(strippedEmail)) return undefined;
-  return strippedEmail;
-}
-
-export function normalizeEmail(email: string): string {
-  const emailOrUndefined = normalizeEmailSafe(email);
-  if (!emailOrUndefined) throw new Error("Invalid email.");
-  return emailOrUndefined;
+function noramlizeEmailBase(email: string): string {
+  return removeMailto(email.trim().toLowerCase());
 }
 
 function removeMailto(email: string): string {
@@ -27,4 +19,19 @@ function removeMailto(email: string): string {
     return email.slice(7);
   }
   return email;
+}
+
+export function normalizeEmailSafe(
+  email: string,
+  normalizeBase: (email: string) => string = noramlizeEmailBase
+): string | undefined {
+  const baseEmail = normalizeBase(email);
+  if (!isEmailValid(baseEmail)) return undefined;
+  return baseEmail;
+}
+
+export function normalizeEmail(email: string): string {
+  const emailOrUndefined = normalizeEmailSafe(email);
+  if (!emailOrUndefined) throw new Error("Invalid email.");
+  return emailOrUndefined;
 }
