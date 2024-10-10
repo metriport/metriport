@@ -7,7 +7,7 @@ import {
 import { z } from "zod";
 import { defaultDateString, defaultNameString } from "../../shared";
 import { addressSchema } from "./common/address";
-import { usStateSchema } from "./common/us-data";
+import { usStateWithoutTerritoriesSchema } from "./common/us-data";
 
 export const generalPersonalIdentifiers = ["ssn"] as const;
 export const driversLicensePersonalIdentifier = ["driversLicense"] as const;
@@ -33,7 +33,7 @@ const basePersonalIdentifierSchema = z.object({
 
 export const driverLicenseIdentifierSchema = z.object({
   type: z.enum(driversLicensePersonalIdentifier),
-  state: usStateSchema,
+  state: usStateWithoutTerritoriesSchema,
 });
 export const driverLicenseIdentifierWithBaseSchema = basePersonalIdentifierSchema.merge(
   driverLicenseIdentifierSchema

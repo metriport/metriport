@@ -1,4 +1,4 @@
-import { USState } from "@metriport/shared";
+import { USState, USStateWithoutTerritories } from "@metriport/shared";
 import { Patient, PatientDemoData } from "@metriport/core/domain/patient";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 
@@ -103,7 +103,7 @@ export const patientDemo: PatientDemoData = {
     {
       type: "driversLicense",
       value: "I1234568",
-      state: "CA" as USState,
+      state: "CA" as USStateWithoutTerritories,
     },
     {
       type: "ssn",
