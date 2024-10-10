@@ -45,7 +45,7 @@ dayjs.extend(duration);
 export type GetConsolidatedParams = {
   patient: Patient;
   organization: Organization;
-  bundle?: SearchSetBundle<Resource>;
+  bundle?: SearchSetBundle;
   requestId?: string;
   documentIds?: string[];
 } & GetConsolidatedFilters;
@@ -424,7 +424,7 @@ export async function getConsolidatedPatientData({
   generateAiBrief,
   fromDashboard = false,
   forceDataFromFhir = false,
-}: GetConsolidatedPatientData): Promise<SearchSetBundle<Resource>> {
+}: GetConsolidatedPatientData): Promise<SearchSetBundle> {
   const payload: ConsolidatedSnapshotRequestSync = {
     patient,
     resources,

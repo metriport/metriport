@@ -54,7 +54,7 @@ export function areRangesWithinRange(
  */
 export function areDatesWithinRange(
   dates: (string | undefined)[],
-  range: DateRange
+  range: DateRange | undefined
 ): boolean | undefined {
   // we need to check if the dates are valid before we call `.some`, b/c that will always return boolean
   // and we need to return undefined if there are no valid dates to check - so upstream functions can
@@ -71,20 +71,21 @@ export function areDatesWithinRange(
  */
 export function isDateWithinDateRange(
   date: string | undefined,
-  range: DateRange
+  range: DateRange | undefined
 ): boolean | undefined {
   if (!date || !safeDate(date)) return undefined;
+  if (!range) return undefined;
   if (range.dateFrom && range.dateTo) {
     return (
-      buildDayjs(date).isSameOrAfter(range.dateFrom) &&
-      buildDayjs(date).isSameOrBefore(range.dateTo)
+      buildDayjs(date).isSameOrAfter(buildDayjs(range.dateFrom).startOf("day")) &&
+      buildDayjs(date).isSameOrBefore(buildDayjs(range.dateTo).endOf("day"))
     );
   }
   if (range.dateFrom) {
-    return buildDayjs(date).isSameOrAfter(range.dateFrom);
+    return buildDayjs(date).isSameOrAfter(buildDayjs(range.dateFrom).startOf("day"));
   }
   if (range.dateTo) {
-    return buildDayjs(date).isSameOrBefore(range.dateTo);
+    return buildDayjs(date).isSameOrBefore(buildDayjs(range.dateTo).endOf("day"));
   }
   return undefined;
 }
@@ -133,11 +134,21 @@ export function safeDate(date: string | number | undefined): string | undefined 
   const dateAsDayjs = buildDayjs(date);
   if (
     !dateAsDayjs.isValid() ||
-    dateAsDayjs.isBefore("1900-01-01") ||
-    dateAsDayjs.isAfter("2100-01-01")
+    dateAsDayjs.isBefore(buildDayjs("1900-01-01")) ||
+    dateAsDayjs.isAfter(buildDayjs("2100-01-01"))
   ) {
     return undefined;
   }
   if (typeof date === "number") return buildDayjs(date).toISOString();
   return date;
+}
+
+/**
+ * Some resources are ongoing conditions, so when their property is a single point in time, we want
+ * to only consider the start of the date range.
+ */
+export function dateRangeToOngoing(range?: DateRange): DateRange | undefined {
+  if (!range || !range.dateFrom) return undefined;
+  const ongoing = { dateFrom: range.dateFrom };
+  return ongoing;
 }
