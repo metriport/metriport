@@ -1,64 +1,62 @@
 import { USState } from "@metriport/shared";
-import { Patient, PatientDemoData, splitDob } from "@metriport/core/domain/patient";
+import { Patient, PatientDemoData } from "@metriport/core/domain/patient";
 import { LinkDemographics, LinkGender } from "@metriport/core/domain/patient-demographics";
 import {
+  normalizeAndStringfyAddress,
+  normalizeAndStringifyDriversLicense,
+  normalizeAndStringifyNames,
   checkDemoMatch,
   createAugmentedPatient,
   linkHasNewDemographics,
-  normalizeAddress,
-  normalizeAndStringifyDriversLicense,
-  normalizeAndStringifyNames,
-  normalizeDob,
-  normalizeEmail,
-  normalizeSsn,
   patientToNormalizedCoreDemographics,
-  stringifyAddress,
 } from "../patient-demographics";
 import { consolidatedLinkDemographics, coreDemographics, patient } from "./demographics.const";
 
 describe("normalization", () => {
-  const dobValid = "2023-08-01";
-  describe("normalizeDob", () => {
-    const dobsToCheck = [dobValid, " 2023-08-01 ", "20230801", undefined];
-    for (const dob of dobsToCheck) {
-      it(`dob: ${dob}`, async () => {
-        const result = normalizeDob(dob);
-        expect(result).toBe(dob ? dobValid : undefined);
-      });
-    }
-  });
-
-  it("dob split", async () => {
-    const result = splitDob(dobValid);
-    expect(result).toMatchObject(["2023", "08", "01"]);
-  });
-
   describe("normalizeAndStringifyNames", () => {
-    const nameValid = { firstName: "john", lastName: "smith" };
-    const nameValidString = JSON.stringify(nameValid, Object.keys(nameValid).sort());
-    const namesToCheck = [
-      nameValid,
+    const name = { firstName: "john", lastName: "smith" };
+    const expectedNameString = JSON.stringify(name, Object.keys(name).sort());
+    const names = [
+      name,
       { firstName: " john ", lastName: " smith " },
       { firstName: "John", lastName: "Smith" },
     ];
-    for (const name of namesToCheck) {
-      it(`name: ${JSON.stringify(name)}`, async () => {
+    for (const name of names) {
+      it(`valid - ${JSON.stringify(name)}`, () => {
         const result = normalizeAndStringifyNames(name);
-        expect(result).toBe(nameValidString);
+        expect(result).toBe(expectedNameString);
       });
     }
+
+    it("invalid - no first name", () => {
+      const result = normalizeAndStringifyNames({ firstName: "", lastName: "smith" });
+      expect(result).toBeUndefined();
+    });
+    it("invalid - no last name", () => {
+      const result = normalizeAndStringifyNames({ firstName: "john", lastName: "" });
+      expect(result).toBeUndefined();
+    });
+    it("invalid - no first name or last name", () => {
+      const result = normalizeAndStringifyNames({ firstName: "", lastName: "" });
+      expect(result).toBeUndefined();
+    });
+    it("invalid - no first name or last name w/ empty space", () => {
+      const result = normalizeAndStringifyNames({ firstName: " ", lastName: " " });
+      expect(result).toBeUndefined();
+    });
   });
 
-  describe("normalizeAddress", () => {
-    const expectedAddress = {
+  describe("normalizeAndStringfyAddress", () => {
+    const address = {
       line: ["1 mordhaus st rd ave dr", "apt 1a", "2"],
       city: "mordhaus",
       state: "ny",
       zip: "66666",
       country: "usa",
     };
-    const addressesToCheck = [
-      expectedAddress,
+    const expectedAddressString = JSON.stringify(address, Object.keys(address).sort());
+    const addresses = [
+      address,
       {
         line: [" 1 mordhaus st rd ave dr ", " apt 1a ", " 2 "],
         city: " mordhaus ",
@@ -74,112 +72,205 @@ describe("normalization", () => {
         country: "USA",
       },
       {
-        line: ["1 Mordhaus St Rd Ave Dr", "Apt 1A", "2"],
-        city: "Mordhaus",
-        state: "NYY",
-        zip: "66666-1234",
-        country: "USAA",
-      },
-      {
         line: ["1 Mordhaus Street Road Avenue Drive", "Apt 1A", "2"],
-        city: "Mordhaus",
-        state: "NY",
+        city: "mordhaus",
+        state: "ny",
         zip: "66666",
-        country: "USA",
-      },
-      {
-        line: undefined,
-        city: undefined,
-        state: undefined,
-        zip: undefined,
-        country: undefined,
+        country: "usa",
       },
     ];
-    for (const address of addressesToCheck) {
-      it(`address: ${JSON.stringify(address)}`, async () => {
-        const result = normalizeAddress(address);
-        expect(result).toMatchObject(
-          address.line
-            ? expectedAddress
-            : {
-                line: [],
-                city: "",
-                state: "",
-                zip: "",
-                country: "usa",
-              }
-        );
+    for (const address of addresses) {
+      it(`valid - ${JSON.stringify(address)}`, () => {
+        const result = normalizeAndStringfyAddress(address);
+        expect(result).toBe(expectedAddressString);
       });
     }
-    it("address stringify", () => {
-      const result = stringifyAddress(expectedAddress);
-      expect(result).toBe(JSON.stringify(expectedAddress, Object.keys(expectedAddress).sort()));
-    });
-  });
 
-  describe("normalizeEmail", () => {
-    const emailValid = "john.smith@gmail.com";
-    const emailsToCheck = [
-      emailValid,
-      " john.smith@gmail.com ",
-      "JOHN.SMITH@GMAIL.COM",
-      "mailto:john.smith@gmail.com",
-    ];
-    for (const email of emailsToCheck) {
-      it(`email: ${email}`, async () => {
-        const result = normalizeEmail(email);
-        expect(result).toBe(emailValid);
+    it("invalid - no line", () => {
+      const result = normalizeAndStringfyAddress({
+        line: undefined,
+        city: "mordhaus",
+        state: "ny",
+        zip: "66666",
+        country: "usa",
       });
-    }
-    const emailsToCheckInvalid = ["john:smith@gmail.com"];
-    for (const email of emailsToCheckInvalid) {
-      it(`email: ${email}`, async () => {
-        const result = normalizeEmail(email);
-        expect(result).toBe(undefined);
+      expect(result).toBeUndefined();
+    });
+    it("invalid - empty line", () => {
+      const result = normalizeAndStringfyAddress({
+        line: [],
+        city: "mordhaus",
+        state: "ny",
+        zip: "66666",
+        country: "usa",
       });
-    }
+      expect(result).toBeUndefined();
+    });
+    it("invalid - empty line after normalization", () => {
+      const result = normalizeAndStringfyAddress({
+        line: [""],
+        city: "mordhaus",
+        state: "ny",
+        zip: "66666",
+        country: "usa",
+      });
+      expect(result).toBeUndefined();
+    });
+    it("invalid - empty line after normalization w/ empty space", () => {
+      const result = normalizeAndStringfyAddress({
+        line: [" "],
+        city: "mordhaus",
+        state: "ny",
+        zip: "66666",
+        country: "usa",
+      });
+      expect(result).toBeUndefined();
+    });
+    it("invalid - no city", () => {
+      const result = normalizeAndStringfyAddress({
+        line: ["1 mordhaus st rd ave dr", "apt 1a", "2"],
+        city: undefined,
+        state: "ny",
+        zip: "66666",
+        country: "usa",
+      });
+      expect(result).toBeUndefined();
+    });
+    it("invalid - empty city", () => {
+      const result = normalizeAndStringfyAddress({
+        line: ["1 mordhaus st rd ave dr", "apt 1a", "2"],
+        city: "",
+        state: "ny",
+        zip: "66666",
+        country: "usa",
+      });
+      expect(result).toBeUndefined();
+    });
+    it("invalid - empty city w/ empty space", () => {
+      const result = normalizeAndStringfyAddress({
+        line: ["1 mordhaus st rd ave dr", "apt 1a", "2"],
+        city: " ",
+        state: "ny",
+        zip: "66666",
+        country: "usa",
+      });
+      expect(result).toBeUndefined();
+    });
+    it("invalid - no state", () => {
+      const result = normalizeAndStringfyAddress({
+        line: ["1 mordhaus st rd ave dr", "apt 1a", "2"],
+        city: "mordhaus",
+        state: undefined,
+        zip: "66666",
+        country: "usa",
+      });
+      expect(result).toBeUndefined();
+    });
+    it("invalid - empty state", () => {
+      const result = normalizeAndStringfyAddress({
+        line: ["1 mordhaus st rd ave dr", "apt 1a", "2"],
+        city: "mordhaus",
+        state: "",
+        zip: "66666",
+        country: "usa",
+      });
+      expect(result).toBeUndefined();
+    });
+    it("invalid - empty state w/ empty space", () => {
+      const result = normalizeAndStringfyAddress({
+        line: ["1 mordhaus st rd ave dr", "apt 1a", "2"],
+        city: "mordhaus",
+        state: " ",
+        zip: "66666",
+        country: "usa",
+      });
+      expect(result).toBeUndefined();
+    });
+    it("invalid - invalid state", () => {
+      const result = normalizeAndStringfyAddress({
+        line: ["1 mordhaus st rd ave dr", "apt 1a", "2"],
+        city: "mordhaus",
+        state: "ZZ",
+        zip: "66666",
+        country: "usa",
+      });
+      expect(result).toBeUndefined();
+    });
+    it("invalid - no zip", () => {
+      const result = normalizeAndStringfyAddress({
+        line: ["1 mordhaus st rd ave dr", "apt 1a", "2"],
+        city: "mordhaus",
+        state: "ny",
+        zip: undefined,
+        country: "usa",
+      });
+      expect(result).toBeUndefined();
+    });
+    it("invalid - empty zip", () => {
+      const result = normalizeAndStringfyAddress({
+        line: ["1 mordhaus st rd ave dr", "apt 1a", "2"],
+        city: "mordhaus",
+        state: "ny",
+        zip: "",
+        country: "usa",
+      });
+      expect(result).toBeUndefined();
+    });
+    it("invalid - empty zip w/ empty space", () => {
+      const result = normalizeAndStringfyAddress({
+        line: ["1 mordhaus st rd ave dr", "apt 1a", "2"],
+        city: "mordhaus",
+        state: "ny",
+        zip: " ",
+        country: "usa",
+      });
+      expect(result).toBeUndefined();
+    });
+    // TODO Country
   });
 
   describe("normalizeAndStringifyDriversLicense", () => {
-    const dlValid = { value: "i1234568", state: "ca" };
-    const dlValidString = JSON.stringify(dlValid, Object.keys(dlValid).sort());
-    const dlsToCheck = [
-      dlValid,
-      { value: " i1234568 ", state: " ca " },
-      { value: "I1234568", state: "CA" },
-      { value: "I1234568", state: "CAA" },
-    ];
-    for (const dl of dlsToCheck) {
-      it(`dl: ${JSON.stringify(dl)}`, async () => {
+    const dl = { value: "i1234568", state: "ca" };
+    const expectedDlString = JSON.stringify(dl, Object.keys(dl).sort());
+    const dls = [dl, { value: " i1234568 ", state: " ca " }, { value: "I1234568", state: "CA" }];
+    for (const dl of dls) {
+      it(`valid - ${JSON.stringify(dl)}`, () => {
         const result = normalizeAndStringifyDriversLicense(dl);
-        expect(result).toBe(dlValidString);
+        expect(result).toBe(expectedDlString);
       });
     }
-  });
 
-  describe("normalizeSsn", () => {
-    const ssnValid = "000000000";
-    const ssnsToCheck = [ssnValid, " 000000000 ", "000-00-0000", "1000000000"];
-    for (const ssn of ssnsToCheck) {
-      it(`ssn: ${ssn}`, async () => {
-        const result = normalizeSsn(ssn);
-        expect(result).toBe(ssnValid);
-      });
-    }
+    it("invalid - no value", () => {
+      const result = normalizeAndStringifyDriversLicense({ value: "", state: "ca" });
+      expect(result).toBeUndefined();
+    });
+    it("invalid - no state", () => {
+      const result = normalizeAndStringifyDriversLicense({ value: "i1234568", state: "" });
+      expect(result).toBeUndefined();
+    });
+    it("invalid - no value or state", () => {
+      const result = normalizeAndStringifyDriversLicense({ value: "", state: "" });
+      expect(result).toBeUndefined();
+    });
+    it("invalid - no value or state w/ empty space", () => {
+      const result = normalizeAndStringifyDriversLicense({ value: " ", state: " " });
+      expect(result).toBeUndefined();
+    });
   });
 });
 
 describe("total patient normalization", () => {
-  it("check patient normalization", async () => {
-    const coreDemographicsTest = patientToNormalizedCoreDemographics(patient);
-    expect(coreDemographicsTest).toMatchObject(coreDemographics);
+  it("check patient normalization", () => {
+    const createdCoreDemographics = patientToNormalizedCoreDemographics(patient);
+    const expectedCoreDemographics = coreDemographics;
+    expect(createdCoreDemographics).toMatchObject(expectedCoreDemographics);
   });
 });
 
 describe("create augmented patient", () => {
-  it("check augmented patient", async () => {
+  it("check augmented patient", () => {
     const augmentedPatient = createAugmentedPatient(patient);
-    const patientDemoAugmented: PatientDemoData = {
+    const expectedPatientDemoAugmented: PatientDemoData = {
       dob: patient.data.dob,
       genderAtBirth: patient.data.genderAtBirth,
       lastName: patient.data.lastName,
@@ -195,7 +286,13 @@ describe("create augmented patient", () => {
           addressLine2: "apt 8",
         },
       ],
-      personalIdentifiers: patient.data.personalIdentifiers,
+      personalIdentifiers: [
+        ...(patient.data.personalIdentifiers ?? []),
+        {
+          type: "ssn",
+          value: "123456789",
+        },
+      ],
       contact: [
         ...(patient.data.contact ?? []),
         {
@@ -206,19 +303,19 @@ describe("create augmented patient", () => {
         },
       ],
     };
-    const patientAugmented: Patient = {
+    const expectedPatientAugmented: Patient = {
       ...patient,
       data: {
-        ...patientDemoAugmented,
+        ...expectedPatientDemoAugmented,
         consolidatedLinkDemographics,
       },
     };
-    expect(augmentedPatient).toMatchObject(patientAugmented);
+    expect(augmentedPatient).toMatchObject(expectedPatientAugmented);
   });
 });
 
 describe("link has new demographics", () => {
-  it("new dob", async () => {
+  it("new dob", () => {
     const newDob = "1901-04-28";
     const newData = linkHasNewDemographics({
       coreDemographics,
@@ -231,7 +328,7 @@ describe("link has new demographics", () => {
     // new dob does NOT trigger new demopgraphics
     expect(newData.hasNewDemographics).toBe(false);
   });
-  it("new gender", async () => {
+  it("new gender", () => {
     const newGender = "female";
     const newData = linkHasNewDemographics({
       coreDemographics,
@@ -244,7 +341,7 @@ describe("link has new demographics", () => {
     // new gender does NOT trigger new demopgraphics
     expect(newData.hasNewDemographics).toBe(false);
   });
-  it("new name", async () => {
+  it("new name", () => {
     const newNames = [
       ...coreDemographics.names,
       ...[{ fistName: "jon", lastName: "smith" }].map(name =>
@@ -261,7 +358,7 @@ describe("link has new demographics", () => {
     });
     expect(newData.hasNewDemographics).toBe(true);
   });
-  it("new address", async () => {
+  it("new address", () => {
     const newAddresses = [
       ...consolidatedLinkDemographics.addresses,
       ...[
@@ -284,7 +381,7 @@ describe("link has new demographics", () => {
     });
     expect(newData.hasNewDemographics).toBe(true);
   });
-  it("new telephone", async () => {
+  it("new telephone", () => {
     const newTelephone = [...consolidatedLinkDemographics.telephoneNumbers, "00000000"];
     const newData = linkHasNewDemographics({
       coreDemographics,
@@ -296,7 +393,7 @@ describe("link has new demographics", () => {
     });
     expect(newData.hasNewDemographics).toBe(true);
   });
-  it("new email", async () => {
+  it("new email", () => {
     const newEmail = [...consolidatedLinkDemographics.emails, "test@gmail.com"];
     const newData = linkHasNewDemographics({
       coreDemographics,
@@ -308,7 +405,7 @@ describe("link has new demographics", () => {
     });
     expect(newData.hasNewDemographics).toBe(true);
   });
-  it("new dl", async () => {
+  it("new dl", () => {
     const newDl = [
       ...consolidatedLinkDemographics.driversLicenses,
       ...[{ value: "p234212", state: "ri" }].map(dl => JSON.stringify(dl, Object.keys(dl).sort())),
@@ -323,7 +420,7 @@ describe("link has new demographics", () => {
     });
     expect(newData.hasNewDemographics).toBe(true);
   });
-  it("new ssn", async () => {
+  it("new ssn", () => {
     const newSsn = [...consolidatedLinkDemographics.ssns, "999999999"];
     const newData = linkHasNewDemographics({
       coreDemographics,
@@ -335,7 +432,7 @@ describe("link has new demographics", () => {
     });
     expect(newData.hasNewDemographics).toBe(true);
   });
-  it("link has no new demographics", async () => {
+  it("link has no new demographics", () => {
     const noNewPatient = linkHasNewDemographics({
       coreDemographics,
       consolidatedLinkDemographics,
@@ -428,14 +525,14 @@ describe("check demo function", () => {
     driversLicenses: [],
     ssns: ssns.different,
   };
-  it("fail w/ default different", async () => {
+  it("fail w/ default different", () => {
     const result = checkDemoMatch({
       coreDemographics,
       linkDemographics: defaultDifferent,
     });
     expect(result.isMatched).toBe(false);
   });
-  it("pass w/ dob (8), name (10), exact address (2)", async () => {
+  it("pass w/ dob (8), name (10), exact address (2)", () => {
     const linkDemographics: LinkDemographics = {
       ...defaultDifferent,
       dob: dob.exact,
@@ -448,7 +545,7 @@ describe("check demo function", () => {
     });
     expect(result.isMatched).toBe(true);
   });
-  it("pass w/ dob (8), name (10), partial address (1) and gender (1)", async () => {
+  it("pass w/ dob (8), name (10), partial address (1) and gender (1)", () => {
     const linkDemographics: LinkDemographics = {
       ...defaultDifferent,
       dob: dob.exact,
@@ -462,7 +559,7 @@ describe("check demo function", () => {
     });
     expect(result.isMatched).toBe(true);
   });
-  it("pass w/ dob (8), name (10), exact phone (2)", async () => {
+  it("pass w/ dob (8), name (10), exact phone (2)", () => {
     const linkDemographics: LinkDemographics = {
       ...defaultDifferent,
       dob: dob.exact,
@@ -475,7 +572,7 @@ describe("check demo function", () => {
     });
     expect(result.isMatched).toBe(true);
   });
-  it("pass w/ dob (8), name (10), exact email (2)", async () => {
+  it("pass w/ dob (8), name (10), exact email (2)", () => {
     const linkDemographics: LinkDemographics = {
       ...defaultDifferent,
       dob: dob.exact,
@@ -488,7 +585,7 @@ describe("check demo function", () => {
     });
     expect(result.isMatched).toBe(true);
   });
-  it("pass w/ dob (8), name (10), exact ssn (5)", async () => {
+  it("pass w/ dob (8), name (10), exact ssn (5)", () => {
     const linkDemographics: LinkDemographics = {
       ...defaultDifferent,
       dob: dob.exact,
@@ -501,7 +598,7 @@ describe("check demo function", () => {
     });
     expect(result.isMatched).toBe(true);
   });
-  it("pass w/ name (10), partial dob (2), exact address (2), exact phone (2), exact ssn (5)", async () => {
+  it("pass w/ name (10), partial dob (2), exact address (2), exact phone (2), exact ssn (5)", () => {
     const linkDemographics: LinkDemographics = {
       ...defaultDifferent,
       names: names.exact,
@@ -516,7 +613,7 @@ describe("check demo function", () => {
     });
     expect(result.isMatched).toBe(true);
   });
-  it("pass w/ name (10), partial dob (2), exact address (2), exact email (2), exact ssn (5)", async () => {
+  it("pass w/ name (10), partial dob (2), exact address (2), exact email (2), exact ssn (5)", () => {
     const linkDemographics: LinkDemographics = {
       ...defaultDifferent,
       names: names.exact,
@@ -531,7 +628,7 @@ describe("check demo function", () => {
     });
     expect(result.isMatched).toBe(true);
   });
-  it("pass w/ name (10), partial dob (2), exact phone (2), exact email (2), exact ssn (5)", async () => {
+  it("pass w/ name (10), partial dob (2), exact phone (2), exact email (2), exact ssn (5)", () => {
     const linkDemographics: LinkDemographics = {
       ...defaultDifferent,
       names: names.exact,
@@ -546,7 +643,7 @@ describe("check demo function", () => {
     });
     expect(result.isMatched).toBe(true);
   });
-  it("pass w/ name (10), exact address (2), exact phone (2), exact email (2), exact ssn (5)", async () => {
+  it("pass w/ name (10), exact address (2), exact phone (2), exact email (2), exact ssn (5)", () => {
     const linkDemographics: LinkDemographics = {
       ...defaultDifferent,
       names: names.exact,
@@ -561,7 +658,7 @@ describe("check demo function", () => {
     });
     expect(result.isMatched).toBe(true);
   });
-  it("pass w/ name (10), partial address (1), gender (1), exact phone (2), exact email (2), exact ssn (5)", async () => {
+  it("pass w/ name (10), partial address (1), gender (1), exact phone (2), exact email (2), exact ssn (5)", () => {
     const linkDemographics: LinkDemographics = {
       ...defaultDifferent,
       names: names.exact,
@@ -577,7 +674,7 @@ describe("check demo function", () => {
     });
     expect(result.isMatched).toBe(true);
   });
-  it("fail w/ dob (8), exact address (2), gender (1), exact phone (2), exact email (2), exact ssn (5)", async () => {
+  it("fail w/ dob (8), exact address (2), gender (1), exact phone (2), exact email (2), exact ssn (5)", () => {
     const linkDemographics: LinkDemographics = {
       ...defaultDifferent,
       dob: dob.exact,
@@ -593,7 +690,7 @@ describe("check demo function", () => {
     });
     expect(result.isMatched).toBe(false);
   });
-  it("fail w/ dob (8), name (10)", async () => {
+  it("fail w/ dob (8), name (10)", () => {
     const linkDemographics: LinkDemographics = {
       ...defaultDifferent,
       dob: dob.exact,
@@ -605,7 +702,7 @@ describe("check demo function", () => {
     });
     expect(result.isMatched).toBe(false);
   });
-  it("fail w/ dob (8), name (10), gender (1)", async () => {
+  it("fail w/ dob (8), name (10), gender (1)", () => {
     const linkDemographics: LinkDemographics = {
       ...defaultDifferent,
       dob: dob.exact,
@@ -618,7 +715,7 @@ describe("check demo function", () => {
     });
     expect(result.isMatched).toBe(false);
   });
-  it("fail w/ dob (8), name (10), partial address (1)", async () => {
+  it("fail w/ dob (8), name (10), partial address (1)", () => {
     const linkDemographics: LinkDemographics = {
       ...defaultDifferent,
       dob: dob.exact,
@@ -631,7 +728,7 @@ describe("check demo function", () => {
     });
     expect(result.isMatched).toBe(false);
   });
-  it("fail w/ name (10), exact address (2), exact phone (2), exact email (2)", async () => {
+  it("fail w/ name (10), exact address (2), exact phone (2), exact email (2)", () => {
     const linkDemographics: LinkDemographics = {
       ...defaultDifferent,
       names: names.exact,
@@ -645,7 +742,7 @@ describe("check demo function", () => {
     });
     expect(result.isMatched).toBe(false);
   });
-  it("fail w/ name (10), exact address (2), exact phone (2), exact ssn (5)", async () => {
+  it("fail w/ name (10), exact address (2), exact phone (2), exact ssn (5)", () => {
     const linkDemographics: LinkDemographics = {
       ...defaultDifferent,
       names: names.exact,
@@ -659,7 +756,7 @@ describe("check demo function", () => {
     });
     expect(result.isMatched).toBe(false);
   });
-  it("fail w/ name (10), exact address (2), exact email (2), exact ssn (5)", async () => {
+  it("fail w/ name (10), exact address (2), exact email (2), exact ssn (5)", () => {
     const linkDemographics: LinkDemographics = {
       ...defaultDifferent,
       names: names.exact,

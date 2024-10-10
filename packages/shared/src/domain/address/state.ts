@@ -1,9 +1,26 @@
-export function normalizeStateSafe(state: string): USState | undefined {
-  if (Object.values(states).includes(USState[state as keyof typeof USState])) {
-    return USState[state as keyof typeof USState];
-  } else if (states[state]) {
-    return states[state];
-  } else if (state === "DC") {
+import { toTitleCase } from "../../common/titleCase";
+
+function noramlizeStateBase(state: string): string {
+  return applyCasing(state.trim());
+}
+
+function applyCasing(state: string): string {
+  if (state.length === 2) {
+    return state.toUpperCase();
+  }
+  return toTitleCase(state);
+}
+
+export function normalizeStateSafe(
+  state: string,
+  normalizeBase: (state: string) => string = noramlizeStateBase
+): USState | undefined {
+  const baseState = normalizeBase(state);
+  if (Object.values(states).includes(USState[baseState as keyof typeof USState])) {
+    return USState[baseState as keyof typeof USState];
+  } else if (states[baseState]) {
+    return states[baseState];
+  } else if (baseState === "DC") {
     return USState.DC;
   }
   return undefined;
