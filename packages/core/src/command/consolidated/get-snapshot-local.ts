@@ -1,3 +1,4 @@
+import { Bundle } from "@medplum/fhirtypes";
 import {
   executeWithNetworkRetries,
   InternalSendConsolidated,
@@ -21,6 +22,7 @@ import {
   ConsolidatedSnapshotResponse,
 } from "./get-snapshot";
 import { uploadConsolidatedSnapshotToS3 } from "./snapshot-on-s3";
+import { isPatient } from "../../external/fhir/shared";
 
 const MAX_API_NOTIFICATION_ATTEMPTS = 5;
 
@@ -39,7 +41,13 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
     originalBundle.entry = [patientEntry, ...(originalBundle.entry ?? [])];
     originalBundle.total = originalBundle.entry.length;
 
-    const dedupedBundle = deduplicate({ cxId, patientId, bundle: originalBundle });
+    const originalBundleWithoutContainedPatients = removeContainedPatients(originalBundle);
+
+    const dedupedBundle = deduplicate({
+      cxId,
+      patientId,
+      bundle: originalBundleWithoutContainedPatients,
+    });
 
     try {
       checkBundle(dedupedBundle, cxId, patientId);
@@ -124,4 +132,26 @@ async function postSnapshotToApi({
       maxAttempts: MAX_API_NOTIFICATION_ATTEMPTS,
     }
   );
+}
+
+export function removeContainedPatients(bundle: Bundle): Bundle {
+  if (!bundle.entry) return bundle;
+
+  const updatedEntry = bundle.entry.map(entry => {
+    if (entry.resource && "contained" in entry.resource) {
+      return {
+        ...entry,
+        resource: {
+          ...entry.resource,
+          contained: entry.resource.contained?.filter(r => !isPatient(r)),
+        },
+      };
+    }
+    return entry;
+  });
+
+  return {
+    ...bundle,
+    entry: updatedEntry,
+  };
 }
