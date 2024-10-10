@@ -216,6 +216,7 @@ export function epicMatchingAlgorithm(
     }
   }
 
+  // TODO WE NEED TO TREAT FIRST NAMES AS ARRAYSq
   const names1 = [patient1.firstName, patient1.lastName].filter(Boolean);
   const names2 = [patient2.firstName, patient2.lastName].filter(Boolean);
   const overlapNames = names2.filter(name => names1.includes(name));
@@ -271,9 +272,15 @@ export function epicMatchingAlgorithm(
     const match = totalScore >= newThreshold;
     if (match) {
       log(
-        `Match: ${match}, Score: ${totalScore}, Threshold: ${newThreshold}, Patient1: ${JSON.stringify(
-          patient1
-        )}, Patient2: ${JSON.stringify(patient2)}`
+        `Match: ${match}, Score: ${totalScore}, Threshold: ${newThreshold}, Total Scores: ${JSON.stringify(
+          scores,
+          null,
+          2
+        )}, Patient1: ${JSON.stringify(patient1, null, 2)}, Patient2: ${JSON.stringify(
+          patient2,
+          null,
+          2
+        )}`
       );
     }
     return match;
@@ -282,9 +289,15 @@ export function epicMatchingAlgorithm(
   const match = totalScore >= threshold;
   if (match) {
     log(
-      `Match: ${match}, Score: ${totalScore}, Threshold: ${threshold}, Patient1: ${JSON.stringify(
-        patient1
-      )}, Patient2: ${JSON.stringify(patient2)}`
+      `Match: ${match}, Score: ${totalScore}, Threshold: ${threshold}, Total Scores: ${JSON.stringify(
+        scores,
+        null,
+        2
+      )}, Patient1: ${JSON.stringify(patient1, null, 2)}, Patient2: ${JSON.stringify(
+        patient2,
+        null,
+        2
+      )}`
     );
   }
   return match;

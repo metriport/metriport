@@ -28,6 +28,7 @@ export function normalizePatient<T extends PatientData>(patient: T): T {
     lastName,
     contact: (patient.contact ?? []).map(contact => ({
       ...contact,
+      // TODO WE PUT EMAIL IN PHONE SLOT SO THEN NORMALIZE PHONE KILLS EMAIL
       email: contact.email ? normalizeEmail(contact.email) : contact.email,
       phone: contact.phone ? normalizePhoneNumber(contact.phone) : contact.phone,
     })),
