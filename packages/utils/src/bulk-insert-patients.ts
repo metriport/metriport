@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { MetriportMedicalApi, PatientCreate } from "@metriport/api-sdk";
+import { MetriportMedicalApi, PatientCreate, PatientDTO, Address } from "@metriport/api-sdk";
 import {
   normalizeExternalId,
   normalizeEmail,
@@ -120,6 +120,46 @@ async function loadData(
 
   for (const [i, patient] of results.entries()) {
     try {
+      await sleep(delayTime);
+      const existingPatient = await metriportAPI.matchPatient(patient);
+      let updatedPatient: PatientDTO;
+      if (existingPatient) {
+        console.log(
+          `Patient ${existingPatient.firstName} ${existingPatient.lastName} exists with Id ${existingPatient.id}`
+        );
+        const updatePatient = {
+          id: existingPatient.id,
+          dob: existingPatient.dob,
+          genderAtBirth: existingPatient.genderAtBirth,
+          firstName: existingPatient.firstName,
+          lastName: existingPatient.lastName,
+          address: (Array.isArray(existingPatient.address)
+            ? existingPatient.address
+            : [existingPatient.address]) as [Address, ...Address[]],
+          ...(existingPatient.contact
+            ? {
+                contact: Array.isArray(existingPatient.contact)
+                  ? existingPatient.contact
+                  : [existingPatient.contact],
+              }
+            : undefined),
+          ...(existingPatient.personalIdentifiers
+            ? { personalIdentifiers: existingPatient.personalIdentifiers }
+            : undefined),
+          ...(existingPatient.externalId ? { externalId: existingPatient.externalId } : undefined),
+        };
+        updatedPatient = await metriportAPI.updatePatient(updatePatient, localFacilityId, {
+          rerunPdOnNewDemographics: true,
+        });
+      } else {
+        console.log(`Patient ${patient.firstName} ${patient.lastName} does not exist`);
+        updatedPatient = await metriportAPI.createPatient(patient, localFacilityId, {
+          rerunPdOnNewDemographics: true,
+        });
+      }
+      successfulCount++;
+      console.log(i + 1, updatedPatient);
+      storePatientId(updatedPatient.id, outputFileName);
       const createdPatient = await metriportAPI.createPatient(patient, localFacilityId, {
         rerunPdOnNewDemographics: true,
       });
@@ -137,7 +177,7 @@ async function loadData(
     }
   }
   console.log(errors);
-  console.log(`Done, inserted ${successfulCount} patients.`);
+  console.log(`Done, inserted / updated ${successfulCount} patients.`);
 }
 
 async function displayWarningAndConfirmation(results: unknown[], orgName: string, dryRun: boolean) {
@@ -213,6 +253,11 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
   addressLine1: string | undefined;
   address2: string | undefined;
   addressLine2: string | undefined;
+  address2Zip: string | undefined;
+  address2City: string | undefined;
+  address2State: string | undefined;
+  address2AddressLine1: string | undefined;
+  address2AddressLine2: string | undefined;
   phone: string | undefined;
   phone1: string | undefined;
   phone2: string | undefined;
