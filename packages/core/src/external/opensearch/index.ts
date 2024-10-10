@@ -14,7 +14,9 @@ export type IndexFields = {
 };
 
 export function isDocStatusReady(doc: DocumentReference): boolean {
-  return !isDocStatusPreliminary(doc) && !isDocStatusEnteredInError(doc);
+  return (
+    !isDocStatusPreliminary(doc) && !isDocStatusEnteredInError(doc) && !isDocStatusSuperseded(doc)
+  );
 }
 export function isDocStatusFinal(doc: DocumentReference): boolean {
   return doc.docStatus === "final";
@@ -22,6 +24,11 @@ export function isDocStatusFinal(doc: DocumentReference): boolean {
 export function isDocStatusAmended(doc: DocumentReference): boolean {
   return doc.docStatus === "amended";
 }
+
+export function isDocStatusSuperseded(doc: DocumentReference): boolean {
+  return doc.status === "superseded";
+}
+
 export function isDocStatusPreliminary(doc: DocumentReference): boolean {
   return doc.docStatus === "preliminary";
 }

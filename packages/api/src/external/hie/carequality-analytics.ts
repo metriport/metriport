@@ -2,12 +2,16 @@ import {
   OutboundPatientDiscoveryResp,
   OutboundDocumentQueryResp,
   OutboundDocumentRetrievalResp,
-  isSuccessfulOutboundDocRetrievalResponse,
   isNonErroringOutboundPatientDiscoveryResponse,
   isSuccessfulOutboundPatientDiscoveryResponse,
 } from "@metriport/ihe-gateway-sdk";
 
-import { httpErrorCode, schemaErrorCode } from "@metriport/core/external/carequality/error";
+import {
+  httpErrorCode,
+  schemaErrorCode,
+  registryErrorCode,
+  documentNotFoundErrorCode,
+} from "@metriport/core/external/carequality/error";
 
 export type GatewayCounts = {
   ehealthexchange: number;
@@ -178,16 +182,56 @@ export function getOutboundDocQuerySuccessFailureCount(response: OutboundDocumen
 
 export function getOutboundDocRetrievalSuccessFailureCount(
   response: OutboundDocumentRetrievalResp[]
-): { successCount: number; failureCount: number } {
+): {
+  totalCount: number;
+  successCount: number;
+  failureCount: number;
+  noDocumentFoundCount: number;
+  schemaErrorCount: number;
+  httpErrorCount: number;
+  registryErrorCount: number;
+} {
   let successCount = 0;
   let failureCount = 0;
+  let totalCount = 0;
+  let noDocumentFoundCount = 0;
+  let schemaErrorCount = 0;
+  let httpErrorCount = 0;
+  let registryErrorCount = 0;
   for (const result of response) {
-    if (isSuccessfulOutboundDocRetrievalResponse(result)) {
-      successCount++;
-    } else if (result.operationOutcome?.issue) {
-      failureCount++;
+    if (result.documentReference) {
+      totalCount += result.documentReference.length;
+      successCount += result.documentReference.length;
+    }
+    if (result.operationOutcome?.issue) {
+      totalCount += result.operationOutcome.issue.filter(
+        issue => issue.id != undefined && issue.id.length > 0
+      ).length;
+      failureCount += result.operationOutcome.issue.filter(
+        issue => issue.severity === "error"
+      ).length;
+      noDocumentFoundCount += result.operationOutcome.issue.filter(
+        issue => issue.code === documentNotFoundErrorCode
+      ).length;
+      schemaErrorCount += result.operationOutcome.issue.filter(
+        issue => issue.code === schemaErrorCode
+      ).length;
+      httpErrorCount += result.operationOutcome.issue.filter(
+        issue => issue.code === httpErrorCode
+      ).length;
+      registryErrorCount += result.operationOutcome.issue.filter(
+        issue => issue.code === registryErrorCode
+      ).length;
     }
   }
 
-  return { successCount, failureCount };
+  return {
+    totalCount,
+    successCount,
+    failureCount,
+    noDocumentFoundCount,
+    schemaErrorCount,
+    httpErrorCount,
+    registryErrorCount,
+  };
 }
