@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { OrgType, OrganizationBizType } from "@metriport/core/domain/organization";
-import { AddressStrictSchema } from "./address";
+import { addressStrictSchema } from "./address";
 
 export const orgTypeSchema = z.nativeEnum(OrgType);
 
@@ -9,7 +9,7 @@ export const organizationBizTypeSchema = z.nativeEnum(OrganizationBizType);
 export const organizationCreateSchema = z.object({
   name: z.string().min(1),
   type: orgTypeSchema,
-  location: AddressStrictSchema,
+  location: addressStrictSchema,
 });
 
 export const organizationUpdateSchema = organizationCreateSchema;
@@ -27,4 +27,4 @@ export const organiationInternalDetailsSchema = z
     cwApproved: z.boolean().optional(),
     cwActive: z.boolean().optional(),
   })
-  .merge(AddressStrictSchema);
+  .merge(addressStrictSchema);

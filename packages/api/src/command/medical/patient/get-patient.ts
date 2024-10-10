@@ -1,4 +1,4 @@
-import { USState } from "@metriport/shared";
+import { USStateForAddress } from "@metriport/core/domain/address";
 import { Organization } from "@metriport/core/domain/organization";
 import { getStatesFromAddresses, Patient, PatientDemoData } from "@metriport/core/domain/patient";
 import { getPatientByDemo as getPatientByDemoMPI } from "@metriport/core/mpi/get-patient-by-demo";
@@ -170,7 +170,7 @@ export async function getPatientStates({
 }: {
   cxId: string;
   patientIds: string[];
-}): Promise<USState[]> {
+}): Promise<USStateForAddress[]> {
   if (!patientIds || !patientIds.length) return [];
   const patients = await getPatients({ cxId, patientIds });
   const nonUniqueStates = patients.flatMap(getStatesFromAddresses).filter(s => s);
