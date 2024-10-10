@@ -1,5 +1,7 @@
 import { Config } from "../../util/config";
 
+export type ConsolidatedFileType = "original" | "dedup" | "invalid";
+
 export function getConsolidatedLocation() {
   return Config.getMedicalDocumentsBucketName();
 }

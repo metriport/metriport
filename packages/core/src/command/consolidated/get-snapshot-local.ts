@@ -1,5 +1,6 @@
 import { Bundle } from "@medplum/fhirtypes";
 import {
+  errorToString,
   executeWithNetworkRetries,
   InternalSendConsolidated,
   MetriportError,
@@ -33,6 +34,7 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
     params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
   ): Promise<ConsolidatedSnapshotResponse> {
     const { cxId, id: patientId } = params.patient;
+    const { log } = out(`ConsolidatedSnapshotConnectorLocal cx ${cxId} pat ${patientId}`);
 
     const originalBundle = await getBundle(params);
 
@@ -58,7 +60,18 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
     } catch (error: any) {
       const msg = "Bundle contains invalid data";
       const additionalInfo = { cxId, patientId, type: error.message };
+      log(`${msg} - ${JSON.stringify(additionalInfo)}`);
       capture.error(msg, { extra: { additionalInfo, error } });
+      try {
+        uploadConsolidatedSnapshotToS3({
+          ...params,
+          s3BucketName: this.bucketName,
+          bundle: dedupedBundle,
+          type: "invalid",
+        });
+      } catch (error) {
+        log(`Failed to store invalid bundle on S3 - ${errorToString(error)}`);
+      }
       throw new MetriportError(msg, error, additionalInfo);
     }
 
@@ -67,12 +80,13 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
         ...params,
         s3BucketName: this.bucketName,
         bundle: originalBundleWithoutContainedPatients,
+        type: "original",
       }),
       uploadConsolidatedSnapshotToS3({
         ...params,
         s3BucketName: this.bucketName,
         bundle: dedupedBundle,
-        isDeduped: true,
+        type: "dedup",
       }),
     ]);
 
