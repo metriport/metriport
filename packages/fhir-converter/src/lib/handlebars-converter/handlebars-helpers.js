@@ -726,6 +726,7 @@ module.exports.external = [
 
       for (let i = 0; i < flatVals.length; i++) {
         const val = flatVals[i];
+        if (val && typeof val === "object" && "lookupProperty" in val) continue;
         let hash;
 
         if (typeof val === "object" && val !== null) {
