@@ -11,8 +11,9 @@ import { Config } from "../../../api/src/shared/config";
  */
 
 // Link to the FHIR Server DLQ / FHIR Converter DLQ(https://sqs....)
-const fhirServerDlqUrl = getEnvVarOrFail("DLQ_URL");
+const dlqUrl = getEnvVarOrFail("DLQ_URL");
 const outputFileName = "fhir-converter-dlq";
+const dirName = `runs/sqs/${outputFileName}`;
 
 const maxNumberOfMessagesPerQuery = 1;
 
@@ -72,16 +73,19 @@ type DlqMessageAttributes = {
 };
 
 async function peekIntoQueue() {
-  if (!fhirServerDlqUrl) throw new BadRequestError("Missing FHIR Server DLQ URL");
+  if (!fs.existsSync(dirName)) {
+    fs.mkdirSync(dirName, { recursive: true });
+  }
+  if (!dlqUrl) throw new BadRequestError("Missing FHIR Server DLQ URL");
   if (!outputFileName.length) throw new BadRequestError("Set the output file name");
 
-  const messageCount = await getMessageCountFromQueue(fhirServerDlqUrl);
+  const messageCount = await getMessageCountFromQueue(dlqUrl);
   console.log(`>>> Message count: ${messageCount}`);
 
   const messageDetails: MessageDetails[] = [];
   console.log(`>>> Getting messages from source queue...`);
   for (let i = 0; i < messageCount; i++) {
-    const messagesOfRequest = await peekMessagesFromQueue(fhirServerDlqUrl, {
+    const messagesOfRequest = await peekMessagesFromQueue(dlqUrl, {
       maxNumberOfMessagesPerQuery,
       maxNumberOfMessages: maxNumberOfMessagesPerQuery,
     });
@@ -115,7 +119,7 @@ async function peekIntoQueue() {
     });
   }
 
-  fs.writeFileSync(outputFileName, JSON.stringify(messageDetails));
+  fs.writeFileSync(`${dirName}/${outputFileName}.json`, JSON.stringify(messageDetails));
 }
 
 /**
