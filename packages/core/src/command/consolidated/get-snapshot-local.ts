@@ -41,7 +41,10 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
     originalBundle.entry = [patientEntry, ...(originalBundle.entry ?? [])];
     originalBundle.total = originalBundle.entry.length;
 
-    const originalBundleWithoutContainedPatients = removeContainedPatients(originalBundle);
+    const originalBundleWithoutContainedPatients = removeContainedPatients(
+      originalBundle,
+      patientId
+    );
 
     const dedupedBundle = deduplicate({
       cxId,
@@ -134,16 +137,17 @@ async function postSnapshotToApi({
   );
 }
 
-export function removeContainedPatients(bundle: Bundle): Bundle {
+export function removeContainedPatients(bundle: Bundle, patientId: string): Bundle {
   if (!bundle.entry) return bundle;
 
   const updatedEntry = bundle.entry.map(entry => {
-    if (entry.resource && "contained" in entry.resource) {
+    const resource = entry.resource;
+    if (resource && "contained" in resource) {
       return {
         ...entry,
         resource: {
-          ...entry.resource,
-          contained: entry.resource.contained?.filter(r => !isPatient(r)),
+          ...resource,
+          contained: resource.contained?.filter(r => !isPatient(r) || r.id === patientId),
         },
       };
     }
