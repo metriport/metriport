@@ -24,7 +24,8 @@ export function getSlotValue(slot: Slot | undefined): string | undefined {
     if (!value) return undefined;
     if (Array.isArray(value)) {
       return String(value[0]);
-    } else return String(value);
+    }
+    return String(value);
   }
   return undefined;
 }
