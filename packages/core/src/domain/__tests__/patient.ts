@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { USState } from "@metriport/shared";
+import { USStateWithoutTerritories } from "@metriport/shared";
 import { ISO_DATE } from "@metriport/shared/common/date";
 import dayjs from "dayjs";
 import { Patient, PatientData, PersonalIdentifier } from "../patient";
@@ -11,7 +11,7 @@ export function makePersonalIdentifier(): PersonalIdentifier {
   return {
     type: "driversLicense",
     value: faker.string.uuid(),
-    state: faker.helpers.arrayElement(Object.values(USState)),
+    state: faker.helpers.arrayElement(Object.values(USStateWithoutTerritories)),
   };
 }
 

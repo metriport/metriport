@@ -1,4 +1,4 @@
-import { USState } from "@metriport/shared";
+import { USStateWithoutTerritories } from "@metriport/shared";
 import { generalPersonalIdentifiers } from "../domain/patient";
 
 export const OID_ID_START = 100;
@@ -24,11 +24,12 @@ export function addOidPrefix(oid: string): string {
   return `${OID_PREFIX}${oid}`;
 }
 
-export const driversLicenseURIs: { [k in USState]: string } = {
+export const driversLicenseURIs: {
+  [k in USStateWithoutTerritories]: string;
+} = {
   AK: `${OID_PREFIX}2.16.840.1.113883.4.3.2`,
   AL: `${OID_PREFIX}2.16.840.1.113883.4.3.1`,
   AR: `${OID_PREFIX}2.16.840.1.113883.4.3.5`,
-  AS: `n/a`,
   AZ: `${OID_PREFIX}2.16.840.1.113883.4.3.4`,
   CA: `${OID_PREFIX}2.16.840.1.113883.4.3.6`,
   CO: `${OID_PREFIX}2.16.840.1.113883.4.3.8`,
@@ -37,7 +38,6 @@ export const driversLicenseURIs: { [k in USState]: string } = {
   DE: `${OID_PREFIX}2.16.840.1.113883.4.3.10`,
   FL: `${OID_PREFIX}2.16.840.1.113883.4.3.12`,
   GA: `${OID_PREFIX}2.16.840.1.113883.4.3.13`,
-  GU: `n/a`,
   HI: `${OID_PREFIX}2.16.840.1.113883.4.3.15`,
   IN: `${OID_PREFIX}2.16.840.1.113883.4.3.18`,
   IA: `${OID_PREFIX}2.16.840.1.113883.4.3.19`,
@@ -66,7 +66,6 @@ export const driversLicenseURIs: { [k in USState]: string } = {
   OK: `${OID_PREFIX}2.16.840.1.113883.4.3.40`,
   OR: `${OID_PREFIX}2.16.840.1.113883.4.3.41`,
   PA: `${OID_PREFIX}2.16.840.1.113883.4.3.42`,
-  PR: `n/a`,
   RI: `${OID_PREFIX}2.16.840.1.113883.4.3.44`,
   SC: `${OID_PREFIX}2.16.840.1.113883.4.3.45`,
   SD: `${OID_PREFIX}2.16.840.1.113883.4.3.46`,
@@ -74,7 +73,6 @@ export const driversLicenseURIs: { [k in USState]: string } = {
   TX: `${OID_PREFIX}2.16.840.1.113883.4.3.48`,
   UT: `${OID_PREFIX}2.16.840.1.113883.4.3.49`,
   VA: `${OID_PREFIX}2.16.840.1.113883.4.3.51`,
-  VI: `n/a`,
   VT: `${OID_PREFIX}2.16.840.1.113883.4.3.50`,
   WA: `${OID_PREFIX}2.16.840.1.113883.4.3.53`,
   WI: `${OID_PREFIX}2.16.840.1.113883.4.3.55`,
