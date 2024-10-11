@@ -113,8 +113,8 @@ function normalizeString(str: string): string {
  * @returns The normalized email address.
  */
 export function normalizeEmail(email: string): string {
-  const cleanedEmail = email.replace(/^mailto:/i, "");
-  return cleanedEmail.trim().toLowerCase();
+  const trimmedEmail = email.trim().toLowerCase();
+  return trimmedEmail.replace(/^mailto:/i, "");
 }
 
 /**
