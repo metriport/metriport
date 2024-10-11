@@ -107,12 +107,15 @@ function normalizeString(str: string): string {
 
 /**
  * Normalizes an email address by removing leading and trailing spaces, converting all characters to lowercase
+ * and removing the "mailto:" prefix if present.
  *
  * @param email - The email address to be normalized.
  * @returns The normalized email address.
  */
 export function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
+  // Remove "mailto:" prefix if present
+  const cleanedEmail = email.replace(/^mailto:/i, "");
+  return cleanedEmail.trim().toLowerCase();
 }
 
 /**
