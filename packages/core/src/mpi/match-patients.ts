@@ -279,14 +279,8 @@ export function epicMatchingAlgorithm(
     if (match) {
       log(
         `Match: ${match}, Score: ${totalScore}, Threshold: ${newThreshold}, Total Scores: ${JSON.stringify(
-          scores,
-          null,
-          2
-        )}, Patient1: ${JSON.stringify(patient1, null, 2)}, Patient2: ${JSON.stringify(
-          patient2,
-          null,
-          2
-        )}`
+          scores
+        )}, Patient1: ${JSON.stringify(patient1, null, 2)}, Patient2: ${JSON.stringify(patient2)}`
       );
     }
     return match;
@@ -296,14 +290,8 @@ export function epicMatchingAlgorithm(
   if (match) {
     log(
       `Match: ${match}, Score: ${totalScore}, Threshold: ${threshold}, Total Scores: ${JSON.stringify(
-        scores,
-        null,
-        2
-      )}, Patient1: ${JSON.stringify(patient1, null, 2)}, Patient2: ${JSON.stringify(
-        patient2,
-        null,
-        2
-      )}`
+        scores
+      )}, Patient1: ${JSON.stringify(patient1, null, 2)}, Patient2: ${JSON.stringify(patient2)}`
     );
   }
   return match;
