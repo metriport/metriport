@@ -61,10 +61,12 @@ export const genderCodeSchema = z.union([
 export type IheGender = z.infer<typeof genderCodeSchema>;
 
 export const slot = z.object({
-  ValueList: z.object({
-    Value: schemaOrArray(stringOrNumberSchema),
-  }),
-  _name: z.string().optional(),
+  ValueList: schemaOrEmpty(
+    z.object({
+      Value: schemaOrArray(stringOrNumberSchema),
+    })
+  ),
+  _name: z.string(),
 });
 export type Slot = z.infer<typeof slot>;
 

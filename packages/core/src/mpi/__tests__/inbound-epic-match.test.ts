@@ -271,4 +271,66 @@ describe("epicMatchingAlgorithm", () => {
     };
     expect(epicMatchingAlgorithm(patient1, patient2, 20)).toBe(false);
   });
+
+  it("pass w/ comma-separated first names in patient2 (10), dob (8), exact address (2)", () => {
+    const patient1 = { ...basePatient };
+    const patient2 = {
+      ...differentPatient,
+      dob: basePatient.dob,
+      firstName: "John,Johnny",
+      lastName: basePatient.lastName,
+      address: basePatient.address,
+    };
+    expect(epicMatchingAlgorithm(patient1, patient2, 20)).toBe(true);
+  });
+
+  it("pass w/ comma-separated last names in patient2 (10), dob (8), exact address (2)", () => {
+    const patient1 = { ...basePatient };
+    const patient2 = {
+      ...differentPatient,
+      dob: basePatient.dob,
+      firstName: basePatient.firstName,
+      lastName: "Doe,Smith",
+      address: basePatient.address,
+    };
+    expect(epicMatchingAlgorithm(patient1, patient2, 20)).toBe(true);
+  });
+
+  it("pass w/ comma-separated first and last names in patient2 (10), dob (8), exact address (2)", () => {
+    const patient1 = { ...basePatient };
+    const patient2 = {
+      ...differentPatient,
+      dob: basePatient.dob,
+      firstName: "John,Johnny",
+      lastName: "Doe,Smith",
+      address: basePatient.address,
+    };
+    expect(epicMatchingAlgorithm(patient1, patient2, 20)).toBe(true);
+  });
+
+  it("pass w/ partial match in comma-separated names in patient2 (5), dob (8), exact address (2), gender (1), exact phone (2), exact email (2)", () => {
+    const patient1 = { ...basePatient };
+    const patient2 = {
+      ...differentPatient,
+      dob: basePatient.dob,
+      firstName: "Johnny,Jane",
+      lastName: "Doe,Johnson",
+      address: basePatient.address,
+      genderAtBirth: basePatient.genderAtBirth,
+      contact: basePatient.contact ?? [],
+    };
+    expect(epicMatchingAlgorithm(patient1, patient2, 20)).toBe(true);
+  });
+
+  it("fail w/ no match in comma-separated names in patient2, dob (8), exact address (2)", () => {
+    const patient1 = { ...basePatient };
+    const patient2 = {
+      ...differentPatient,
+      dob: basePatient.dob,
+      firstName: "Jane,Janet",
+      lastName: "Smith,Johnson",
+      address: basePatient.address,
+    };
+    expect(epicMatchingAlgorithm(patient1, patient2, 20)).toBe(false);
+  });
 });

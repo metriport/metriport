@@ -177,10 +177,7 @@ function createSoapBodyContent({
                   [`${prefix}livingSubjectName`]: {
                     [`${prefix}value`]: {
                       [`${prefix}family`]: name.family,
-                      ...name.given?.reduce((acc: { [key: string]: string }, givenName: string) => {
-                        acc[`${prefix}given`] = givenName;
-                        return acc;
-                      }, {}),
+                      [`${prefix}given`]: name.given,
                     },
                     [`${prefix}semanticsText`]: "LivingSubject.name",
                   },
