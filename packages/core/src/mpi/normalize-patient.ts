@@ -72,6 +72,8 @@ export function normalizePatientInboundMpi<T extends PatientData>(patient: T): T
     address: (patient.address ?? []).map(addr => {
       try {
         const newAddress: Address = {
+          // TODO 2368 address normalization needs improvements
+          // https://github.com/metriport/metriport-internal/issues/2368
           addressLine1: normalizeAddress(addr.addressLine1),
           city: normalizeString(addr.city),
           zip: normalizeZipCode(addr.zip),
@@ -133,6 +135,7 @@ export function normalizePhoneNumber(phoneNumber: string): string {
  * @returns The function `normalizeAddress` returns a string.
  */
 export function normalizeAddress(address: string): string {
+  //TODO
   return normalizeString(address);
 }
 
