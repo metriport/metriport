@@ -66,6 +66,7 @@ import {
 } from "./shared";
 import { getDocumentReferenceContentTypeCounts } from "../../hie/carequality-analytics";
 import { processAsyncError } from "@metriport/core/util/error/shared";
+import { isCommonwellEnabledForPatient } from "../patient";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -135,6 +136,8 @@ export async function queryAndProcessDocuments({
   if (!isCwEnabledForCx) return interrupt(`CW disabled for cx ${cxId}`);
   const isCwQueryEnabled = await isFacilityEnabledToQueryCW(facilityId, patientParam);
   if (!isCwQueryEnabled) return interrupt(`CW disabled for facility ${facilityId}`);
+  const isCwEnabledForPatient = isCommonwellEnabledForPatient(patientParam);
+  if (!isCwEnabledForPatient) return interrupt(`CW disabled for patient, skipping...`);
 
   try {
     const [initiator] = await Promise.all([
