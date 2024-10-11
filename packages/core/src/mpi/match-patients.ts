@@ -5,6 +5,7 @@ import { PatientData, PersonalIdentifier } from "../domain/patient";
 import { normalizePatient } from "./normalize-patient";
 import { PatientMPI } from "./shared";
 import { out } from "../util/log";
+import { splitName } from "./normalize-patient";
 
 const { log } = out(`Patient Matching`);
 
@@ -216,13 +217,15 @@ export function epicMatchingAlgorithm(
     }
   }
 
-  // TODO WE NEED TO TREAT FIRST NAMES AS ARRAYSq
-  const names1 = [patient1.firstName, patient1.lastName].filter(Boolean);
-  const names2 = [patient2.firstName, patient2.lastName].filter(Boolean);
-  const overlapNames = names2.filter(name => names1.includes(name));
-  if (overlapNames.length === 2) {
+  const firstNames1 = splitName(patient1.firstName);
+  const firstNames2 = splitName(patient2.firstName);
+
+  const hasMatchingFirstName = firstNames1.some(name => firstNames2.includes(name));
+  const hasMatchingLastName = patient1.lastName === patient2.lastName;
+
+  if (hasMatchingFirstName && hasMatchingLastName) {
     scores.names = 10;
-  } else if (overlapNames.length === 1) {
+  } else if (hasMatchingFirstName || hasMatchingLastName) {
     scores.names = 5;
   }
 

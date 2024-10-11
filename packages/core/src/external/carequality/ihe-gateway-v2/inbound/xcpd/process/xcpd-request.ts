@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import { PatientResource, InboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
+import { isEmailValid, isPhoneValid } from "@metriport/shared";
 import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { errorToString, toArray } from "@metriport/shared";
 import { Iti55Request, iti55RequestSchema } from "./schema";
@@ -29,10 +30,17 @@ export function transformIti55RequestToPatientResource(
   }));
 
   // TODO calling email and phone both phone
-  const telecom = toArray(queryParams.patientTelecom?.value).map(tel => ({
-    system: "phone",
-    value: tel._value,
-  }));
+  const telecom = toArray(queryParams.patientTelecom?.value)
+    .map(tel => {
+      const value = tel._value;
+      if (isPhoneValid(value)) {
+        return { system: "phone", value };
+      } else if (isEmailValid(value)) {
+        return { system: "email", value };
+      }
+      return undefined;
+    })
+    .filter((tel): tel is { system: string; value: string } => tel !== undefined);
 
   const identifier = toArray(queryParams.livingSubjectId?.value).map(id => ({
     system: id._root,

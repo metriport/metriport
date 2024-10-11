@@ -55,6 +55,45 @@ export function normalizePatient<T extends PatientData>(patient: T): T {
   return normalizedPatient;
 }
 
+export function normalizePatientInboundMpi<T extends PatientData>(patient: T): T {
+  const { log } = out(`MPI normalize patient, request id - ${patient.requestId}`);
+  // array destructuring to extract the first element of the array with defaults
+  const firstName = normalizeString(patient.firstName);
+  const lastName = normalizeString(patient.lastName);
+
+  const normalizedPatient: T = {
+    ...patient,
+    firstName,
+    lastName,
+    contact: (patient.contact ?? []).map(contact => ({
+      ...contact,
+      // TODO WE PUT EMAIL IN PHONE SLOT SO THEN NORMALIZE PHONE KILLS EMAIL
+      email: contact.email ? normalizeEmail(contact.email) : contact.email,
+      phone: contact.phone ? normalizePhoneNumber(contact.phone) : contact.phone,
+    })),
+    address: (patient.address ?? []).map(addr => {
+      try {
+        const newAddress: Address = {
+          addressLine1: normalizeAddress(addr.addressLine1),
+          city: normalizeString(addr.city),
+          zip: normalizeZipCode(addr.zip),
+          state: addr.state,
+          country: addr.country || "USA",
+        };
+        if (addr.addressLine2) {
+          newAddress.addressLine2 = normalizeAddress(addr.addressLine2);
+        }
+        return newAddress;
+      } catch (err) {
+        const msg = `Failed to parse the address for MPI`;
+        log(`${msg} - error ${errorToString(err)}`);
+      }
+      return;
+    }),
+  };
+  return normalizedPatient;
+}
+
 /**
  * The normalizeString function takes a string as input, removes leading and trailing whitespace,
  * converts all characters to lowercase, and removes any apostrophes or hyphens.

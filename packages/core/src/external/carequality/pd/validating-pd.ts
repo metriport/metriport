@@ -23,7 +23,8 @@ import { STATE_MAPPINGS } from "../shared";
 
 export function validateFHIRAndExtractPatient(payload: InboundPatientDiscoveryReq): PatientData {
   const patient = payload.patientResource;
-  const firstName = patient.name?.[0]?.given?.[0]; // TODO VERY BAD BROKEN. ONLY USES FIRST NAME
+  //TODO multiple names are not supported yet. We would need to refactor this a bit
+  const firstName = patient.name?.[0]?.given?.join(", ");
   if (!firstName) {
     throw new XDSRegistryError("Given name is not defined");
   }
