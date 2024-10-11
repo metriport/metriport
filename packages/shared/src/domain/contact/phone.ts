@@ -5,7 +5,7 @@ export const examplePhoneNumber = "1231231234";
 
 export function isPhoneNumber(phone: string): boolean {
   const numericChars = phone.replace(/\D/g, "");
-  return numericChars.length >= 10 && !phone.includes("@");
+  return !phone.includes("@") && numericChars.length >= 10;
 }
 
 export function isPhoneValid(phone: string): boolean {
