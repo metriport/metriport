@@ -3,7 +3,7 @@ import { faker } from "@faker-js/faker";
 import { makePatient } from "@metriport/core/domain/__tests__/patient";
 import { Config } from "../../../shared/config";
 import * as appConfig from "../../aws/app-config";
-import { validateCWEnabled } from "../patient";
+import { validateCWEnabled } from "../shared";
 import * as cwShared from "../shared";
 
 describe("patient", () => {
