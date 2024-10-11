@@ -52,14 +52,14 @@ export async function validateCWEnabled({
 }): Promise<boolean> {
   const { cxId } = patient;
 
-  if (forceCW) {
-    log(`CW forced, proceeding...`);
-    return true;
-  }
-
   if (!isCommonwellEnabledForPatient(patient)) {
     log(`CW disabled for patient, skipping...`);
     return false;
+  }
+
+  if (forceCW) {
+    log(`CW forced, proceeding...`);
+    return true;
   }
 
   try {
