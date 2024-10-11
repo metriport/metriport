@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { normalizeUSStateForAddress } from "../address";
+import { normalizeUSStateForAddressSafe } from "../address";
 import { normalizeZipCodeNewSafe } from "../address/zip";
 import { isEmailValid } from "../contact/email";
 import { isPhoneValid } from "../contact/phone";
@@ -11,9 +11,11 @@ export const patientImportPatientSchema = z.object({
   gender: z.string().refine(normalizeGenderSafe, { message: "Invalid gender" }),
   firstname: z.string().min(1, { message: "First name must be defined" }),
   lastname: z.string().min(1, { message: "Last name must be defined" }),
-  zip: z.string().refine(arg => normalizeZipCodeNewSafe(arg), { message: "Invalid zip" }),
+  zip: z.string().refine(normalizeZipCodeNewSafe, { message: "Invalid zip" }),
   city: z.string().min(1, { message: "City must be defined" }),
-  state: z.string().refine(normalizeUSStateForAddress, { message: "Invalid state or territory" }),
+  state: z
+    .string()
+    .refine(normalizeUSStateForAddressSafe, { message: "Invalid state or territory" }),
   addressline1: z.string().min(1, { message: "Address line must be defined" }),
   addressline2: z.string().optional(),
   phone1: z.string().refine(isPhoneValid, { message: "Invalid phone" }).optional(),

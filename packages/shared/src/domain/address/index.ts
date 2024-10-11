@@ -4,6 +4,10 @@ import { normalizeTerritorySafe, USTerritory } from "./territory";
 
 export type USStateForAddress = USState | USTerritory;
 
+export function normalizeUSStateForAddressSafe(value: string): USStateForAddress | undefined {
+  return normalizeStateSafe(value) ?? normalizeTerritorySafe(value);
+}
+
 export function normalizeUSStateForAddress(value: string): USStateForAddress {
   const state = normalizeStateSafe(value) ?? normalizeTerritorySafe(value);
   if (!state) {
