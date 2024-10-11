@@ -29,11 +29,7 @@ import {
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { Util } from "../../../shared/util";
-import {
-  isCQDirectEnabledForCx,
-  isCWEnabledForCx,
-  isEnhancedCoverageEnabledForCx,
-} from "../../aws/app-config";
+import { isCQDirectEnabledForCx, isEnhancedCoverageEnabledForCx } from "../../aws/app-config";
 import { reportMetric } from "../../aws/cloudwatch";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
@@ -44,7 +40,6 @@ import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-re
 import { reportFHIRError } from "../../fhir/shared/error-mapping";
 import { getAllPages } from "../../fhir/shared/paginated";
 import { HieInitiator } from "../../hie/get-hie-initiator";
-import { isFacilityEnabledToQueryCW } from "../../commonwell/shared";
 import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
@@ -66,7 +61,7 @@ import {
 } from "./shared";
 import { getDocumentReferenceContentTypeCounts } from "../../hie/carequality-analytics";
 import { processAsyncError } from "@metriport/core/util/error/shared";
-import { isCommonwellEnabledForPatient } from "../patient";
+import { validateCWEnabled } from "../shared";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -132,12 +127,12 @@ export async function queryAndProcessDocuments({
     source: MedicalDataSource.COMMONWELL,
     log,
   });
-  const isCwEnabledForCx = await isCWEnabledForCx(cxId);
-  if (!isCwEnabledForCx) return interrupt(`CW disabled for cx ${cxId}`);
-  const isCwQueryEnabled = await isFacilityEnabledToQueryCW(facilityId, patientParam);
-  if (!isCwQueryEnabled) return interrupt(`CW disabled for facility ${facilityId}`);
-  const isCwEnabledForPatient = isCommonwellEnabledForPatient(patientParam);
-  if (!isCwEnabledForPatient) return interrupt(`CW disabled for patient, skipping...`);
+  const isCwEnabled = await validateCWEnabled({
+    patient: patientParam,
+    facilityId,
+    log,
+  });
+  if (!isCwEnabled) return interrupt(`CW disabled for cxId ${cxId} patientId ${patientId}`);
 
   try {
     const [initiator] = await Promise.all([
