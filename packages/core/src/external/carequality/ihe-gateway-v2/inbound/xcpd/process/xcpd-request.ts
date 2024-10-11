@@ -29,7 +29,6 @@ export function transformIti55RequestToPatientResource(
     country: addr.country ? String(addr.country) : undefined,
   }));
 
-  // TODO calling email and phone both phone
   const telecom = toArray(queryParams.patientTelecom?.value)
     .map(tel => {
       const value = tel._value;

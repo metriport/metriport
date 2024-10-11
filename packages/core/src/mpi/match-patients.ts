@@ -220,8 +220,11 @@ export function epicMatchingAlgorithm(
   const firstNames1 = splitName(patient1.firstName);
   const firstNames2 = splitName(patient2.firstName);
 
+  const lastNames1 = splitName(patient1.lastName);
+  const lastNames2 = splitName(patient2.lastName);
+
   const hasMatchingFirstName = firstNames1.some(name => firstNames2.includes(name));
-  const hasMatchingLastName = patient1.lastName === patient2.lastName;
+  const hasMatchingLastName = lastNames1.some(name => lastNames2.includes(name));
 
   if (hasMatchingFirstName && hasMatchingLastName) {
     scores.names = 10;

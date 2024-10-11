@@ -46,7 +46,6 @@ export async function processInboundXcpd(
 ): Promise<InboundPatientDiscoveryResp> {
   try {
     const patient = validateFHIRAndExtractPatient(payload);
-    console.log(`patient: ${JSON.stringify(patient, null, 2)}`);
     const matchingPatient = await mpi.findMatchingPatient(patient);
     if (!matchingPatient) {
       return constructPDNoMatchResponse(payload);
