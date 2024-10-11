@@ -14,6 +14,12 @@ describe("state", () => {
       expect(normalizeStateSafe(input)).toEqual(expectedOutput);
     });
 
+    it("should convert District of Columbia to DC", () => {
+      const input = "District of Columbia";
+      const expectedOutput = USState.DC;
+      expect(normalizeStateSafe(input)).toEqual(expectedOutput);
+    });
+
     describe(`should convert to USState`, () => {
       for (const usState of Object.values(USState)) {
         it(usState, () => {

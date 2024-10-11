@@ -76,7 +76,7 @@ const states: Record<USState, string> = {
   [USState.CO]: "Colorado",
   [USState.CT]: "Connecticut",
   [USState.DE]: "Delaware",
-  [USState.DC]: "DC",
+  [USState.DC]: "District of Columbia",
   [USState.FL]: "Florida",
   [USState.GA]: "Georgia",
   [USState.HI]: "Hawaii",
