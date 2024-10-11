@@ -56,7 +56,7 @@ export function normalizePatient<T extends PatientData>(patient: T): T {
 
 export function normalizePatientInboundMpi<T extends PatientData>(patient: T): T {
   const { log } = out(`MPI normalize patient, request id - ${patient.requestId}`);
-  // array destructuring to extract the first element of the array with defaults
+
   const firstName = normalizeString(patient.firstName);
   const lastName = normalizeString(patient.lastName);
 
@@ -135,7 +135,6 @@ export function normalizePhoneNumber(phoneNumber: string): string {
  * @returns The function `normalizeAddress` returns a string.
  */
 export function normalizeAddress(address: string): string {
-  //TODO
   return normalizeString(address);
 }
 

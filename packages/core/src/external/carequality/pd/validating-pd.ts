@@ -23,12 +23,12 @@ import { STATE_MAPPINGS } from "../shared";
 
 export function validateFHIRAndExtractPatient(payload: InboundPatientDiscoveryReq): PatientData {
   const patient = payload.patientResource;
-  const firstName = patient.name?.flatMap(n => n.given ?? []).join(", ");
+  const firstName = patient.name?.flatMap(n => n.given ?? []).join(",");
 
   if (!firstName) {
     throw new XDSRegistryError("Given name is not defined");
   }
-  const lastName = patient.name?.flatMap(n => n.family ?? []).join(", ");
+  const lastName = patient.name?.flatMap(n => n.family ?? []).join(",");
   if (!lastName) {
     throw new XDSRegistryError("Family name is not defined");
   }

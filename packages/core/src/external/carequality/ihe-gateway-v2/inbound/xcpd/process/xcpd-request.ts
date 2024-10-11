@@ -29,17 +29,15 @@ export function transformIti55RequestToPatientResource(
     country: addr.country ? String(addr.country) : undefined,
   }));
 
-  const telecom = toArray(queryParams.patientTelecom?.value)
-    .map(tel => {
-      const value = tel._value;
-      if (isPhoneValid(value)) {
-        return { system: "phone", value };
-      } else if (isEmailValid(value)) {
-        return { system: "email", value };
-      }
-      return undefined;
-    })
-    .filter((tel): tel is { system: string; value: string } => tel !== undefined);
+  const telecom = toArray(queryParams.patientTelecom?.value).flatMap(tel => {
+    const value = tel._value;
+    if (isPhoneValid(value)) {
+      return [{ system: "phone", value }];
+    } else if (isEmailValid(value)) {
+      return [{ system: "email", value }];
+    }
+    return [];
+  });
 
   const identifier = toArray(queryParams.livingSubjectId?.value).map(id => ({
     system: id._root,
