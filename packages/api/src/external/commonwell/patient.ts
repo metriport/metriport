@@ -499,7 +499,7 @@ export async function validateCWEnabled({
   }
 }
 
-function isCommonwellEnabledForPatient(patient: Patient): boolean {
+export function isCommonwellEnabledForPatient(patient: Patient): boolean {
   if (patient.data.genderAtBirth === "U") return false;
   return true;
 }
