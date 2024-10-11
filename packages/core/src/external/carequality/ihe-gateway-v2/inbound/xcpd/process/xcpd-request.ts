@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { PatientResource, InboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
-import { isEmailValid, isPhoneValid } from "@metriport/shared";
+import { isEmail, isPhoneNumber } from "@metriport/shared";
 import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { errorToString, toArray } from "@metriport/shared";
 import { Iti55Request, iti55RequestSchema } from "./schema";
@@ -31,9 +31,9 @@ export function transformIti55RequestToPatientResource(
 
   const telecom = toArray(queryParams.patientTelecom?.value).flatMap(tel => {
     const value = tel._value;
-    if (isPhoneValid(value)) {
+    if (isPhoneNumber(value)) {
       return [{ system: "phone", value }];
-    } else if (isEmailValid(value)) {
+    } else if (isEmail(value)) {
       return [{ system: "email", value }];
     }
     return [];
