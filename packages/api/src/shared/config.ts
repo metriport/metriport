@@ -249,6 +249,10 @@ export class Config {
   static getCWMemberOID(): string {
     return getEnvVarOrFail("CW_MEMBER_OID");
   }
+
+  static getCdaToFhirConversionBucketName(): string {
+    return getEnvVarOrFail("CONVERSION_RESULT_BUCKET_NAME");
+  }
   static getMedicalDocumentsBucketName(): string {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
   }

@@ -97,6 +97,7 @@ export function createAPIService({
   outboundDocumentRetrievalLambda,
   patientImportLambda,
   generalBucket,
+  conversionBucket,
   medicalDocumentsUploadBucket,
   ehrResponsesBucket,
   fhirToBundleLambda,
@@ -128,9 +129,10 @@ export function createAPIService({
   outboundDocumentQueryLambda: ILambda;
   outboundDocumentRetrievalLambda: ILambda;
   patientImportLambda: ILambda;
-  generalBucket: s3.Bucket;
-  medicalDocumentsUploadBucket: s3.Bucket;
-  ehrResponsesBucket: s3.Bucket | undefined;
+  generalBucket: s3.IBucket;
+  conversionBucket: s3.IBucket;
+  medicalDocumentsUploadBucket: s3.IBucket;
+  ehrResponsesBucket: s3.IBucket | undefined;
   fhirToBundleLambda: ILambda;
   fhirToMedicalRecordLambda: ILambda | undefined;
   fhirToCdaConverterLambda: ILambda | undefined;
@@ -228,12 +230,14 @@ export function createAPIService({
           ...(props.config.usageReportUrl && {
             USAGE_URL: props.config.usageReportUrl,
           }),
+          CONVERSION_RESULT_BUCKET_NAME: conversionBucket.bucketName,
           ...(props.config.medicalDocumentsBucketName && {
             MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
           }),
           ...(props.config.medicalDocumentsUploadBucketName && {
             MEDICAL_DOCUMENTS_UPLOADS_BUCKET_NAME: props.config.medicalDocumentsUploadBucketName,
           }),
+          // TODO we have access to ehrResponsesBucket here, can't we use it instead of a config?
           ...(props.config.ehrResponsesBucketName && {
             EHR_RESPONSES_BUCKET_NAME: props.config.ehrResponsesBucketName,
           }),
@@ -381,7 +385,8 @@ export function createAPIService({
   fhirToCdaConverterLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToBundleLambda.grantInvoke(fargateService.taskDefinition.taskRole);
 
-  // Access grant for medical document buckets
+  // Access grant for buckets
+  conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   if (ehrResponsesBucket) {
     ehrResponsesBucket.grantReadWrite(fargateService.taskDefinition.taskRole);

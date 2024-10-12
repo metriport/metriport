@@ -9,14 +9,14 @@ import {
 } from "@metriport/commonwell-sdk";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import NotFoundError from "@metriport/core/util/error/not-found";
-import { errorToString } from "@metriport/core/util/error/shared";
+import { errorToString, processAsyncError } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
-import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import httpStatus from "http-status";
 import { chunk, partition } from "lodash";
 import { removeDocRefMapping } from "../../../command/medical/docref-mapping/remove-docref-mapping";
@@ -36,6 +36,7 @@ import {
 } from "../../aws/app-config";
 import { reportMetric } from "../../aws/cloudwatch";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
+import { isFacilityEnabledToQueryCW } from "../../commonwell/shared";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { makeFhirApi } from "../../fhir/api/api-factory";
 import { cwToFHIR } from "../../fhir/document";
@@ -43,8 +44,8 @@ import { processFhirResponse } from "../../fhir/document/process-fhir-search-res
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { reportFHIRError } from "../../fhir/shared/error-mapping";
 import { getAllPages } from "../../fhir/shared/paginated";
+import { getDocumentReferenceContentTypeCounts } from "../../hie/carequality-analytics";
 import { HieInitiator } from "../../hie/get-hie-initiator";
-import { isFacilityEnabledToQueryCW } from "../../commonwell/shared";
 import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
@@ -61,11 +62,9 @@ import {
   CWDocumentWithMetriportData,
   DocumentWithLocation,
   DocumentWithMetriportId,
-  getFileName,
   getContentTypeOrUnknown,
+  getFileName,
 } from "./shared";
-import { getDocumentReferenceContentTypeCounts } from "../../hie/carequality-analytics";
-import { processAsyncError } from "@metriport/core/util/error/shared";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -117,10 +116,7 @@ export async function queryAndProcessDocuments({
   const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
 
   if (Config.isSandbox()) {
-    await sandboxGetDocRefsAndUpsert({
-      patient: patientParam,
-      requestId,
-    });
+    await sandboxGetDocRefsAndUpsert({ patient: patientParam, requestId });
     return;
   }
 
