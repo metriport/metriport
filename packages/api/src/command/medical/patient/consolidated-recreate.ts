@@ -20,14 +20,14 @@ export async function recreateConsolidated({
   patient,
   organization,
   conversionType,
-  context = "",
+  context,
 }: {
   patient: Patient;
   organization: Organization;
   conversionType?: ConsolidationConversionType;
   context?: string;
 }): Promise<void> {
-  const { log } = out(`${context}recreateConsolidated - pt ${patient.id}`);
+  const { log } = out(`${context ? context + " " : ""}recreateConsolidated - pt ${patient.id}`);
   try {
     await deleteConsolidated({
       cxId: patient.cxId,

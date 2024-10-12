@@ -3,6 +3,11 @@ import { stripNonNumericChars } from "../../common/string";
 export const phoneLength = 10;
 export const examplePhoneNumber = "1231231234";
 
+export function isPhoneNumber(phone: string): boolean {
+  const numericChars = phone.replace(/\D/g, "");
+  return !phone.includes("@") && numericChars.length >= 10;
+}
+
 export function isPhoneValid(phone: string): boolean {
   if (!phone) return false;
   if (phone.length !== phoneLength) return false;
