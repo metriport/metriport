@@ -5,6 +5,7 @@ import { MedicalDataSource } from "@metriport/core/external/index";
 import z from "zod";
 import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
 import { isCommonwellEnabled, isCWEnabledForCx } from "../aws/app-config";
+import { Config } from "../../shared/config";
 
 export async function getCwInitiator(
   patient: Pick<Patient, "id" | "cxId">,
@@ -39,6 +40,16 @@ export const cwOrgActiveSchema = z.object({
   active: z.boolean(),
 });
 
+/**
+ * Check whether CW should be enabled. Currently used in PD / DQ.
+ *
+ * IMPORTANT: This method will return true for Sandbox unless the patient has Undefined gender.
+ *
+ * @param patient The patient @ Metriport.
+ * @param facilityId The facility ID @ Metriport. Will check if this facility is active in CW. Optional.
+ * @param forceCW Will skip global, hie, and facility level checks. Will NOT skip Undefined gender check for patient.
+ * @returns
+ */
 export async function validateCWEnabled({
   patient,
   facilityId,
@@ -51,13 +62,14 @@ export async function validateCWEnabled({
   log?: typeof console.log;
 }): Promise<boolean> {
   const { cxId } = patient;
+  const isSandbox = Config.isSandbox();
 
   if (!isCommonwellEnabledForPatient(patient)) {
     log(`CW disabled for patient, skipping...`);
     return false;
   }
 
-  if (forceCW) {
+  if (forceCW || isSandbox) {
     log(`CW forced, proceeding...`);
     return true;
   }

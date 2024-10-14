@@ -23,7 +23,6 @@ import {
   getNewDemographics,
 } from "../../domain/medical/patient-demographics";
 import MetriportError from "../../errors/metriport-error";
-import { Config } from "../../shared/config";
 import { isEnhancedCoverageEnabledForCx, isDemoAugEnabledForCx } from "../aws/app-config";
 import { checkLinkDemographicsAcrossHies } from "../hie/check-patient-link-demographics";
 import { HieInitiator } from "../hie/get-hie-initiator";
@@ -110,7 +109,7 @@ export async function create({
   const isCwEnabled = await validateCWEnabled({
     patient,
     facilityId,
-    forceCW: forceCWCreate || Config.isSandbox(),
+    forceCW: forceCWCreate,
     log,
   });
 
@@ -281,7 +280,7 @@ export async function update({
   const isCwEnabled = await validateCWEnabled({
     patient,
     facilityId,
-    forceCW: forceCWUpdate || Config.isSandbox(),
+    forceCW: forceCWUpdate,
     log,
   });
 
@@ -607,7 +606,6 @@ export async function get(
     const isCwEnabled = await validateCWEnabled({
       patient,
       facilityId,
-      forceCW: Config.isSandbox(),
       log,
     });
     if (!isCwEnabled) return undefined;
@@ -648,7 +646,6 @@ export async function remove(patient: Patient, facilityId: string): Promise<void
     const isCwEnabled = await validateCWEnabled({
       patient,
       facilityId,
-      forceCW: Config.isSandbox(),
       log,
     });
     if (!isCwEnabled) return;
