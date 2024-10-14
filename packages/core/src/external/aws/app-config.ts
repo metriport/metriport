@@ -44,6 +44,7 @@ export const cxBasedFFsSchema = z.object({
   cxsWithIncreasedSandboxLimitFeatureFlag: ffStringValuesSchema,
   cxsWithEpicEnabled: ffStringValuesSchema,
   cxsWithDemoAugEnabled: ffStringValuesSchema,
+  cxsWithStalePatientUpdateEnabled: ffStringValuesSchema,
 });
 export type CxBasedFFsSchema = z.infer<typeof cxBasedFFsSchema>;
 

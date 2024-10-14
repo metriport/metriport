@@ -7,6 +7,7 @@ import {
   operationOutcomeResourceType,
   organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
@@ -33,6 +34,7 @@ import {
   isCQDirectEnabledForCx,
   isCWEnabledForCx,
   isEnhancedCoverageEnabledForCx,
+  isStalePatientUpdateEnabledForCx,
 } from "../../aws/app-config";
 import { reportMetric } from "../../aws/cloudwatch";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
@@ -65,6 +67,8 @@ import {
   getContentTypeOrUnknown,
   getFileName,
 } from "./shared";
+
+const staleLookbackHours = 24;
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -148,8 +152,17 @@ export async function queryAndProcessDocuments({
     const patientCWData = getCWData(patientParam.data.externalData);
     const hasNoCWStatus = !patientCWData || !patientCWData.status;
     const isProcessing = patientCWData?.status === "processing";
+    const updateStalePatients = await isStalePatientUpdateEnabledForCx(cxId);
+    const now = buildDayjs(new Date());
+    const patientCreatedAt = buildDayjs(patientParam.createdAt);
+    const pdStartedAt = patientCWData?.discoveryParams?.startedAt
+      ? buildDayjs(patientCWData.discoveryParams.startedAt)
+      : undefined;
+    const isStale =
+      updateStalePatients &&
+      (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackHours, "hours");
 
-    if (hasNoCWStatus || isProcessing || forcePatientDiscovery) {
+    if (hasNoCWStatus || isProcessing || forcePatientDiscovery || isStale) {
       await scheduleDocQuery({
         requestId,
         patient: { id: patientId, cxId },
@@ -157,7 +170,7 @@ export async function queryAndProcessDocuments({
         triggerConsolidated,
       });
 
-      if (forcePatientDiscovery && !isProcessing) {
+      if ((forcePatientDiscovery || isStale) && !isProcessing) {
         update({
           patient: patientParam,
           facilityId: initiator.facilityId,
