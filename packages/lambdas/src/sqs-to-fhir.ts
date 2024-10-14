@@ -112,7 +112,7 @@ export async function handler(event: SQSEvent) {
       };
 
       log(`Converting payload to JSON, length ${payloadRaw.length}`);
-      const payload: Bundle = parseRawBundleForFhirServer(payloadRaw, patientId, log);
+      const payload: Bundle = parseRawBundleForFhirServer(payloadRaw, patientId);
 
       log(`Sending payload to FHIRServer...`);
       let response: Bundle<Resource> | undefined;

@@ -1,7 +1,6 @@
-import { patientCreateSchema, genderAtBirthSchema } from "@metriport/api-sdk";
-import { patientImportSchema } from "@metriport/shared";
-import { makePatientImportHandler } from "@metriport/core/command/patient-import/patient-import-factory";
+import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
+import { makePatientImportHandler } from "@metriport/core/command/patient-import/patient-import-factory";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -14,8 +13,9 @@ import {
   normalizeExternalId,
   normalizeGender,
   normalizePhoneNumberStrict,
-  normalizeState,
+  normalizeUSStateForAddress,
   normalizeZipCode,
+  patientImportSchema,
   sleep,
   stringToBoolean,
   toTitleCase,
@@ -827,7 +827,7 @@ router.post(
             addressLine1: toTitleCase(patient.addressline1),
             addressLine2: patient.addressline2 ? toTitleCase(patient.addressline2) : undefined,
             city: toTitleCase(patient.city),
-            state: normalizeState(patient.state),
+            state: normalizeUSStateForAddress(patient.state),
             zip: normalizeZipCode(patient.zip),
             country: "USA",
           },

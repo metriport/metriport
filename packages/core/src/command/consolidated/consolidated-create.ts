@@ -14,7 +14,7 @@ import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion"
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
 
-const conversionBundleSuffix = ".xml.json";
+export const conversionBundleSuffix = ".xml.json";
 const numberOfParallelExecutions = 10;
 const defaultS3RetriesConfig = {
   maxAttempts: 3,

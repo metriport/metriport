@@ -454,6 +454,7 @@ export class APIStack extends Stack {
       outboundDocumentRetrievalLambda,
       patientImportLambda,
       generalBucket,
+      conversionBucket: fhirConverterBucket,
       medicalDocumentsUploadBucket,
       ehrResponsesBucket,
       fhirToMedicalRecordLambda,
@@ -558,6 +559,7 @@ export class APIStack extends Stack {
     patientCreateLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     patientQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
 
+    // TODO move this to each place where it's used
     // Access grant for medical documents bucket
     sandboxSeedDataBucket &&
       sandboxSeedDataBucket.grantReadWrite(apiService.taskDefinition.taskRole);
