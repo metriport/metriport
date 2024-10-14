@@ -67,7 +67,7 @@ import {
   getFileName,
 } from "./shared";
 
-const staleLookBackHours = 24;
+const staleLookbackHours = 24;
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -157,7 +157,7 @@ export async function queryAndProcessDocuments({
     const now = buildDayjs(new Date());
     const isStale =
       mostRecentPdStartedAt === undefined ||
-      mostRecentPdStartedAt < now.subtract(staleLookBackHours, "hours");
+      mostRecentPdStartedAt < now.subtract(staleLookbackHours, "hours");
 
     if (hasNoCWStatus || isProcessing || forcePatientDiscovery || isStale) {
       await scheduleDocQuery({
