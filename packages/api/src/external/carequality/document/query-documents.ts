@@ -75,13 +75,12 @@ export async function getDocumentsFromCQ({
     const patientCQData = getCQData(patient.data.externalData);
     const hasNoCQStatus = !patientCQData || !patientCQData.discoveryStatus;
     const isProcessing = patientCQData?.discoveryStatus === "processing";
-    const mostRecentPdStartedAt = patientCQData?.discoveryParams?.startedAt
+    const now = buildDayjs(new Date());
+    const patientCreatedAt = buildDayjs(patient.createdAt);
+    const pdStartedAt = patientCQData?.discoveryParams?.startedAt
       ? buildDayjs(patientCQData.discoveryParams.startedAt)
       : undefined;
-    const now = buildDayjs(new Date());
-    const isStale =
-      mostRecentPdStartedAt === undefined ||
-      mostRecentPdStartedAt < now.subtract(staleLookbackHours, "hours");
+    const isStale = (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackHours, "hours");
 
     if (hasNoCQStatus || isProcessing || forcePatientDiscovery || isStale) {
       await scheduleDocQuery({

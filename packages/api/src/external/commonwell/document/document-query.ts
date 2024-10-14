@@ -151,13 +151,12 @@ export async function queryAndProcessDocuments({
     const patientCWData = getCWData(patientParam.data.externalData);
     const hasNoCWStatus = !patientCWData || !patientCWData.status;
     const isProcessing = patientCWData?.status === "processing";
-    const mostRecentPdStartedAt = patientCWData?.discoveryParams?.startedAt
+    const now = buildDayjs(new Date());
+    const patientCreatedAt = buildDayjs(patientParam.createdAt);
+    const pdStartedAt = patientCWData?.discoveryParams?.startedAt
       ? buildDayjs(patientCWData.discoveryParams.startedAt)
       : undefined;
-    const now = buildDayjs(new Date());
-    const isStale =
-      mostRecentPdStartedAt === undefined ||
-      mostRecentPdStartedAt < now.subtract(staleLookbackHours, "hours");
+    const isStale = (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackHours, "hours");
 
     if (hasNoCWStatus || isProcessing || forcePatientDiscovery || isStale) {
       await scheduleDocQuery({
