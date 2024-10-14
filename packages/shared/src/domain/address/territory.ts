@@ -21,7 +21,7 @@ export enum USTerritory {
   VI = "VI",
 }
 
-const territories: Record<USTerritory, string> = {
+export const territories: Record<USTerritory, string> = {
   [USTerritory.AS]: "American Samoa",
   [USTerritory.GU]: "Guam",
   [USTerritory.PR]: "Puerto Rico",
