@@ -2,21 +2,11 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { MetriportMedicalApi, PatientCreate } from "@metriport/api-sdk";
+import { PatientPayload } from "@metriport/core/command/patient-import/patient-import";
+import { createPatientPayload } from "@metriport/core/command/patient-import/patient-import-shared";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { sleep } from "@metriport/core/util/sleep";
-import {
-  isEmailValid,
-  isPhoneValid,
-  normalizeDate,
-  normalizeEmail,
-  normalizeExternalId,
-  normalizeGender,
-  normalizePhoneNumber,
-  normalizeUSStateForAddress,
-  normalizeZipCode,
-  toTitleCase,
-} from "@metriport/shared";
 import { Command } from "commander";
 import csv from "csv-parser";
 import dayjs from "dayjs";
@@ -163,52 +153,14 @@ function storePatientId(patientId: string, fileName: string) {
   fs.appendFileSync(fileName, patientId + "\n");
 }
 
-function normalizeName(name: string | undefined, propName: string): string {
-  if (name == undefined) throw new Error(`Missing ` + propName);
-  return toTitleCase(name);
-}
-
-function normalizeAddressLine(addressLine: string | undefined, propName: string): string {
-  if (addressLine == undefined) throw new Error(`Missing ` + propName);
-  return toTitleCase(addressLine);
-}
-
-function normalizeCity(city: string | undefined): string {
-  if (city == undefined) throw new Error(`Missing city`);
-  return toTitleCase(city);
-}
-
-function normalizePhoneNumberUtils(phone: string | undefined): string | undefined {
-  if (phone == undefined) return undefined;
-  const normalPhone = normalizePhoneNumber(phone);
-  if (normalPhone.length === 0) return undefined;
-  if (!isPhoneValid(normalPhone)) throw new Error("Invalid Phone");
-  return normalPhone;
-}
-
-function normalizeEmailUtils(email: string | undefined): string | undefined {
-  if (email == undefined) return undefined;
-  const normalEmail = normalizeEmail(email);
-  if (normalEmail.length === 0) return undefined;
-  if (!isEmailValid(normalEmail)) throw new Error("Invalid Email");
-  return normalEmail;
-}
-
-function normalizeExternalIdUtils(id: string | undefined): string | undefined {
-  if (id == undefined) return undefined;
-  const normalId = normalizeExternalId(id);
-  if (normalId.length === 0) return undefined;
-  return normalId;
-}
-
 const mapCSVPatientToMetriportPatient = (csvPatient: {
   firstname: string | undefined;
   lastname: string | undefined;
   dob: string | undefined;
   gender: string | undefined;
-  zip: string | undefined;
   city: string | undefined;
   state: string | undefined;
+  zip: string | undefined;
   address1: string | undefined;
   addressLine1: string | undefined;
   address2: string | undefined;
@@ -221,39 +173,23 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
   email2: string | undefined;
   id: string | undefined;
   externalId: string | undefined;
-}): PatientCreate | undefined => {
-  const phone1 = normalizePhoneNumberUtils(csvPatient.phone ?? csvPatient.phone1);
-  const email1 = normalizeEmailUtils(csvPatient.email ?? csvPatient.email1);
-  const phone2 = normalizePhoneNumberUtils(csvPatient.phone2);
-  const email2 = normalizeEmailUtils(csvPatient.email2);
-  const contact1 = phone1 || email1 ? { phone: phone1, email: email1 } : undefined;
-  const contact2 = phone2 || email2 ? { phone: phone2, email: email2 } : undefined;
-  const contact = [contact1, contact2].flatMap(c => c ?? []);
-  const externalId = csvPatient.id
-    ? normalizeExternalIdUtils(csvPatient.id)
-    : normalizeExternalIdUtils(csvPatient.externalId) ?? undefined;
-  return {
-    externalId,
-    firstName: normalizeName(csvPatient.firstname, "firstname"),
-    lastName: normalizeName(csvPatient.lastname, "lastname"),
-    dob: normalizeDate(csvPatient.dob ?? ""),
-    genderAtBirth: normalizeGender(csvPatient.gender ?? ""),
-    address: {
-      addressLine1: normalizeAddressLine(
-        csvPatient.address1 ?? csvPatient.addressLine1,
-        "address1 | addressLine1"
-      ),
-      addressLine2: normalizeAddressLine(
-        csvPatient.address2 ?? csvPatient.addressLine2,
-        "address2 | addressLine2"
-      ),
-      city: normalizeCity(csvPatient.city),
-      state: normalizeUSStateForAddress(csvPatient.state ?? ""),
-      zip: normalizeZipCode(csvPatient.zip ?? ""),
-      country: "USA",
-    },
-    contact,
-  };
+}): PatientPayload => {
+  return createPatientPayload({
+    firstname: csvPatient.firstname ?? "",
+    lastname: csvPatient.lastname ?? "",
+    dob: csvPatient.dob ?? "",
+    gender: csvPatient.gender ?? "",
+    addressline1: csvPatient.address1 ?? csvPatient.addressLine1 ?? "",
+    addressline2: csvPatient.address2 ?? csvPatient.addressLine2,
+    city: csvPatient.city ?? "",
+    state: csvPatient.state ?? "",
+    zip: csvPatient.zip ?? "",
+    phone1: csvPatient.phone ?? csvPatient.phone1,
+    phone2: csvPatient.phone2,
+    email1: csvPatient.email ?? csvPatient.email1,
+    email2: csvPatient.email2,
+    externalid: csvPatient.externalId,
+  });
 };
 
 main();

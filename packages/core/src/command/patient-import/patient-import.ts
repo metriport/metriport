@@ -1,3 +1,5 @@
+import { USState } from "@metriport/shared";
+import { Address } from "../../domain/address";
 import { PatientDemoData } from "../../domain/patient";
 
 export type PhaseStatus = "processing" | "completed" | "failed";
@@ -39,7 +41,11 @@ export type ProcessPatientImportRequest = {
   dryrun: boolean;
 };
 
-export type PatientPayload = PatientDemoData & { externalId: string | undefined };
+type AddressWithCountry = Omit<Address, "county" | "state"> & { state: USState; country: "USA" };
+type PatientDemoDataWithCountry = Omit<PatientDemoData, "address"> & {
+  address: AddressWithCountry[];
+};
+export type PatientPayload = PatientDemoDataWithCountry & { externalId: string | undefined };
 
 export type ProcessPatientCreateRequest = {
   cxId: string;
