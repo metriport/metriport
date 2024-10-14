@@ -34,6 +34,7 @@ import {
   isCQDirectEnabledForCx,
   isCWEnabledForCx,
   isEnhancedCoverageEnabledForCx,
+  isStalePatientUpdateEnabledForCx,
 } from "../../aws/app-config";
 import { reportMetric } from "../../aws/cloudwatch";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
@@ -151,12 +152,15 @@ export async function queryAndProcessDocuments({
     const patientCWData = getCWData(patientParam.data.externalData);
     const hasNoCWStatus = !patientCWData || !patientCWData.status;
     const isProcessing = patientCWData?.status === "processing";
+    const updateStalePatients = await isStalePatientUpdateEnabledForCx(cxId);
     const now = buildDayjs(new Date());
     const patientCreatedAt = buildDayjs(patientParam.createdAt);
     const pdStartedAt = patientCWData?.discoveryParams?.startedAt
       ? buildDayjs(patientCWData.discoveryParams.startedAt)
       : undefined;
-    const isStale = (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackHours, "hours");
+    const isStale =
+      updateStalePatients &&
+      (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackHours, "hours");
 
     if (hasNoCWStatus || isProcessing || forcePatientDiscovery || isStale) {
       await scheduleDocQuery({

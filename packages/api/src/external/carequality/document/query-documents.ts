@@ -5,7 +5,7 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { isCQDirectEnabledForCx } from "../../aws/app-config";
+import { isCQDirectEnabledForCx, isStalePatientUpdateEnabledForCx } from "../../aws/app-config";
 import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
@@ -75,12 +75,15 @@ export async function getDocumentsFromCQ({
     const patientCQData = getCQData(patient.data.externalData);
     const hasNoCQStatus = !patientCQData || !patientCQData.discoveryStatus;
     const isProcessing = patientCQData?.discoveryStatus === "processing";
+    const updateStalePatients = await isStalePatientUpdateEnabledForCx(cxId);
     const now = buildDayjs(new Date());
     const patientCreatedAt = buildDayjs(patient.createdAt);
     const pdStartedAt = patientCQData?.discoveryParams?.startedAt
       ? buildDayjs(patientCQData.discoveryParams.startedAt)
       : undefined;
-    const isStale = (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackHours, "hours");
+    const isStale =
+      updateStalePatients &&
+      (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackHours, "hours");
 
     if (hasNoCQStatus || isProcessing || forcePatientDiscovery || isStale) {
       await scheduleDocQuery({
