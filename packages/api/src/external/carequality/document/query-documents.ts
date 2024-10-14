@@ -1,3 +1,4 @@
+import { buildDayjs } from "@metriport/shared/common/date";
 import { Patient } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
@@ -20,6 +21,8 @@ import { getCqInitiator } from "../shared";
 import { isFacilityEnabledToQueryCQ } from "../../carequality/shared";
 import { filterCqLinksByManagingOrg } from "./filter-oids-by-managing-org";
 import { processAsyncError } from "@metriport/core/util/error/shared";
+
+const staleLookBackHours = 24;
 
 const resultPoller = makeOutboundResultPoller();
 
@@ -72,8 +75,15 @@ export async function getDocumentsFromCQ({
     const patientCQData = getCQData(patient.data.externalData);
     const hasNoCQStatus = !patientCQData || !patientCQData.discoveryStatus;
     const isProcessing = patientCQData?.discoveryStatus === "processing";
+    const mostRecentPdStartedAt = patientCQData?.discoveryParams?.startedAt
+      ? buildDayjs(patientCQData?.discoveryParams?.startedAt)
+      : undefined;
+    const now = buildDayjs(new Date());
+    const isStale =
+      mostRecentPdStartedAt === undefined ||
+      mostRecentPdStartedAt < now.subtract(staleLookBackHours, "hours");
 
-    if (hasNoCQStatus || isProcessing || forcePatientDiscovery) {
+    if (hasNoCQStatus || isProcessing || forcePatientDiscovery || isStale) {
       await scheduleDocQuery({
         requestId,
         patient,
@@ -81,7 +91,7 @@ export async function getDocumentsFromCQ({
         triggerConsolidated,
       });
 
-      if (forcePatientDiscovery && !isProcessing) {
+      if ((forcePatientDiscovery || isStale) && !isProcessing) {
         discover({
           patient,
           facilityId: initiator.facilityId,

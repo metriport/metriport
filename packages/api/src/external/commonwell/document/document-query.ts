@@ -7,6 +7,7 @@ import {
   operationOutcomeResourceType,
   organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
@@ -65,6 +66,8 @@ import {
   getContentTypeOrUnknown,
   getFileName,
 } from "./shared";
+
+const staleLookBackHours = 24;
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -148,8 +151,15 @@ export async function queryAndProcessDocuments({
     const patientCWData = getCWData(patientParam.data.externalData);
     const hasNoCWStatus = !patientCWData || !patientCWData.status;
     const isProcessing = patientCWData?.status === "processing";
+    const mostRecentPdStartedAt = patientCWData?.discoveryParams?.startedAt
+      ? buildDayjs(patientCWData.discoveryParams.startedAt)
+      : undefined;
+    const now = buildDayjs(new Date());
+    const isStale =
+      mostRecentPdStartedAt === undefined ||
+      mostRecentPdStartedAt < now.subtract(staleLookBackHours, "hours");
 
-    if (hasNoCWStatus || isProcessing || forcePatientDiscovery) {
+    if (hasNoCWStatus || isProcessing || forcePatientDiscovery || isStale) {
       await scheduleDocQuery({
         requestId,
         patient: { id: patientId, cxId },
@@ -157,7 +167,7 @@ export async function queryAndProcessDocuments({
         triggerConsolidated,
       });
 
-      if (forcePatientDiscovery && !isProcessing) {
+      if ((forcePatientDiscovery || isStale) && !isProcessing) {
         update({
           patient: patientParam,
           facilityId: initiator.facilityId,
