@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { addressSchema } from "./common/address";
-import { baseUpdateSchema } from "./common/base-update";
+import { addressSchema } from "../../../../api-sdk/src/medical/models/common/address";
+import { baseUpdateSchema } from "../../../../api-sdk/src/medical/models/common/base-update";
 import { validateNPI } from "@metriport/shared";
 
 export const facilityCreateSchema = z.object({

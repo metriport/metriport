@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { baseUpdateSchema } from "./common/base-update";
-import { demographicsSchema } from "./demographics";
-import { ConsolidatedQuery } from "./fhir";
+import { baseUpdateSchema } from "../../../../api-sdk/src/medical/models/common/base-update";
+import { demographicsSchema } from "../../../../api-sdk/src/medical/models/demographics";
+import { ConsolidatedQuery } from "../../../../api-sdk/src/medical/models/fhir";
 
 export const patientCreateSchema = demographicsSchema.merge(
   z.object({
