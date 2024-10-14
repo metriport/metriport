@@ -22,7 +22,7 @@ import { isFacilityEnabledToQueryCQ } from "../../carequality/shared";
 import { filterCqLinksByManagingOrg } from "./filter-oids-by-managing-org";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 
-const staleLookBackHours = 24;
+const staleLookbackHours = 24;
 
 const resultPoller = makeOutboundResultPoller();
 
@@ -81,7 +81,7 @@ export async function getDocumentsFromCQ({
     const now = buildDayjs(new Date());
     const isStale =
       mostRecentPdStartedAt === undefined ||
-      mostRecentPdStartedAt < now.subtract(staleLookBackHours, "hours");
+      mostRecentPdStartedAt < now.subtract(staleLookbackHours, "hours");
 
     if (hasNoCQStatus || isProcessing || forcePatientDiscovery || isStale) {
       await scheduleDocQuery({
