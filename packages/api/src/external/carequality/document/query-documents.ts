@@ -1,10 +1,11 @@
+import { buildDayjs } from "@metriport/shared/common/date";
 import { Patient } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { isCQDirectEnabledForCx } from "../../aws/app-config";
+import { isCQDirectEnabledForCx, isStalePatientUpdateEnabledForCx } from "../../aws/app-config";
 import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
@@ -20,6 +21,8 @@ import { getCqInitiator } from "../shared";
 import { isFacilityEnabledToQueryCQ } from "../../carequality/shared";
 import { filterCqLinksByManagingOrg } from "./filter-oids-by-managing-org";
 import { processAsyncError } from "@metriport/core/util/error/shared";
+
+const staleLookbackHours = 24;
 
 const resultPoller = makeOutboundResultPoller();
 
@@ -72,8 +75,17 @@ export async function getDocumentsFromCQ({
     const patientCQData = getCQData(patient.data.externalData);
     const hasNoCQStatus = !patientCQData || !patientCQData.discoveryStatus;
     const isProcessing = patientCQData?.discoveryStatus === "processing";
+    const updateStalePatients = await isStalePatientUpdateEnabledForCx(cxId);
+    const now = buildDayjs(new Date());
+    const patientCreatedAt = buildDayjs(patient.createdAt);
+    const pdStartedAt = patientCQData?.discoveryParams?.startedAt
+      ? buildDayjs(patientCQData.discoveryParams.startedAt)
+      : undefined;
+    const isStale =
+      updateStalePatients &&
+      (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackHours, "hours");
 
-    if (hasNoCQStatus || isProcessing || forcePatientDiscovery) {
+    if (hasNoCQStatus || isProcessing || forcePatientDiscovery || isStale) {
       await scheduleDocQuery({
         requestId,
         patient,
@@ -81,7 +93,7 @@ export async function getDocumentsFromCQ({
         triggerConsolidated,
       });
 
-      if (forcePatientDiscovery && !isProcessing) {
+      if ((forcePatientDiscovery || isStale) && !isProcessing) {
         discover({
           patient,
           facilityId: initiator.facilityId,
