@@ -2,7 +2,11 @@ import { z } from "zod";
 
 export const exampleEmail = "test@test.com";
 
-function isEmailValid(email: string): boolean {
+export function isEmail(email: string): boolean {
+  return email.includes("@");
+}
+
+export function isEmailValid(email: string): boolean {
   if (!email) return false;
   if (email.length === 0) return false;
   const safeParseEmail = z.string().email().safeParse(email);

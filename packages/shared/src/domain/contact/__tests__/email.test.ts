@@ -1,7 +1,7 @@
-import { normalizeEmailSafe, exampleEmail } from "../email";
+import { normalizeEmailSafe, isEmailValid, exampleEmail } from "../email";
 
-describe("ssn", () => {
-  describe("safe normalizeEmailSafe", () => {
+describe("Email Normalization", () => {
+  describe("normalizeEmailSafe", () => {
     it("should return undefined when it gets empty string", () => {
       const input = "";
       expect(normalizeEmailSafe(input)).toBeUndefined();
@@ -45,6 +45,26 @@ describe("ssn", () => {
     it("should return undefined for emails that invalid", () => {
       const input = "this.is.not.an.email";
       expect(normalizeEmailSafe(input)).toBeUndefined();
+    });
+  });
+});
+
+describe("Email Utility Functions", () => {
+  describe("isEmailValid", () => {
+    it("should return false for empty string", () => {
+      expect(isEmailValid("")).toBe(false);
+    });
+
+    it("should return false for invalid email format", () => {
+      expect(isEmailValid("invalid-email")).toBe(false);
+    });
+
+    it("should return true for valid email", () => {
+      expect(isEmailValid("test@example.com")).toBe(true);
+    });
+
+    it('should return false for email with "mailto:" prefix', () => {
+      expect(isEmailValid("mailto:test@example.com")).toBe(false);
     });
   });
 });

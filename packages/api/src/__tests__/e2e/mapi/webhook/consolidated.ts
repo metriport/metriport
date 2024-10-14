@@ -1,4 +1,4 @@
-import { ConsolidatedWebhookRequest } from "@metriport/shared/src/medical/webhook/webhook-request";
+import { ConsolidatedWebhookRequest } from "@metriport/shared/medical";
 import { Response } from "express";
 
 let webhookRequest: ConsolidatedWebhookRequest | undefined = undefined;

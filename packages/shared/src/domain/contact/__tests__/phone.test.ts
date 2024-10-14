@@ -1,6 +1,6 @@
 import { isPhoneValid, normalizePhoneSafe } from "../phone";
 
-describe("phone", () => {
+describe("Phone Normalization", () => {
   describe("isPhoneValid", () => {
     it("returns true when phone has 10 digits", () => {
       const res = isPhoneValid("1234567890");
@@ -29,6 +29,41 @@ describe("phone", () => {
 
     it("returns false when phone contains non-number in the middle", () => {
       const res = isPhoneValid("1234-67890");
+      expect(res).toBeFalsy();
+    });
+
+    it("returns false when phone contains dashes", () => {
+      const res = isPhoneValid("123-456-7890");
+      expect(res).toBeFalsy();
+    });
+
+    it("returns false when phone contains spaces and dashes", () => {
+      const res = isPhoneValid("123 456-7890");
+      expect(res).toBeFalsy();
+    });
+
+    it("returns false when phone contains parentheses and dashes", () => {
+      const res = isPhoneValid("(123)-456-7890");
+      expect(res).toBeFalsy();
+    });
+
+    it("returns false when phone contains multiple dashes", () => {
+      const res = isPhoneValid("12-3456-7890");
+      expect(res).toBeFalsy();
+    });
+
+    it("returns false when phone has leading dash", () => {
+      const res = isPhoneValid("-1234567890");
+      expect(res).toBeFalsy();
+    });
+
+    it("returns false when phone has trailing dash", () => {
+      const res = isPhoneValid("1234567890-");
+      expect(res).toBeFalsy();
+    });
+
+    it("returns false when phone is formatted with international code and dashes", () => {
+      const res = isPhoneValid("+1-123-456-7890");
       expect(res).toBeFalsy();
     });
 

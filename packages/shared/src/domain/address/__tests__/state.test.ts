@@ -1,4 +1,4 @@
-import { normalizeStateSafe } from "../state";
+import { USState, normalizeStateSafe } from "../state";
 
 describe("country", () => {
   describe("normalizeCountrySafe", () => {
@@ -12,8 +12,16 @@ describe("country", () => {
       expect(normalizeStateSafe(input)).toBeUndefined();
     });
 
-    const expectedState = "NY";
-    const states = [expectedState, "ny", "New York", "new york", "NEW YORK", "New york"];
+    const expectedState = USState.NY;
+    const states = [
+      expectedState,
+      "ny",
+      "New York",
+      "new york",
+      "nEw YoRk",
+      "NEW YORK",
+      "New york",
+    ];
     for (const state of states) {
       it(`valid - ${state}`, () => {
         const result = normalizeStateSafe(state);
@@ -33,9 +41,30 @@ describe("country", () => {
       expect(normalizeStateSafe(input)).toBe(expectedOutput);
     });
 
-    it("should return undefined when it gets invalid state", () => {
+    it("should return undefined if can't match a US state (v1)", () => {
       const input = "ZZ";
       expect(normalizeStateSafe(input)).toBeUndefined();
+    });
+
+    it("should return undefined if can't match a US state (v2)", () => {
+      const input = "Ariz";
+      expect(normalizeStateSafe(input)).toBeUndefined();
+    });
+
+    it("should convert District of Columbia to DC", () => {
+      const input = "District of Columbia";
+      const expectedOutput = USState.DC;
+      expect(normalizeStateSafe(input)).toEqual(expectedOutput);
+    });
+
+    describe(`should convert to USState`, () => {
+      for (const usState of Object.values(USState)) {
+        it(usState, () => {
+          const input = usState;
+          const expectedOutput = usState;
+          expect(normalizeStateSafe(input)).toEqual(expectedOutput);
+        });
+      }
     });
   });
 });

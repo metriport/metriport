@@ -259,7 +259,7 @@ export async function getConsolidated({
   conversionType,
   bundle,
 }: GetConsolidatedParams): Promise<ConsolidatedData> {
-  const { log } = out(`getConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
+  const { log } = out(`API getConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
   const filters = {
     resources: resources ? resources.join(", ") : undefined,
     dateFrom,

@@ -1,34 +1,15 @@
-import { toTitleCase } from "../../common/titleCase";
+import { BadRequestError } from "../../error/bad-request";
 
-function noramlizeStateBase(state: string): string {
-  return applyCasing(state.trim());
-}
-
-function applyCasing(state: string): string {
-  if (state.length === 2) {
-    return state.toUpperCase();
-  }
-  return toTitleCase(state);
-}
-
-export function normalizeStateSafe(
-  state: string,
-  normalizeBase: (state: string) => string = noramlizeStateBase
-): USState | undefined {
-  const baseState = normalizeBase(state);
-  if (Object.values(states).includes(USState[baseState as keyof typeof USState])) {
-    return USState[baseState as keyof typeof USState];
-  } else if (states[baseState]) {
-    return states[baseState];
-  } else if (baseState === "DC") {
-    return USState.DC;
-  }
-  return undefined;
+export function normalizeStateSafe(state: string): USState | undefined {
+  const keyFromEntries = Object.entries(states).find(
+    ([key, value]) => key === state || value.toLowerCase() === state.toLowerCase()
+  );
+  return keyFromEntries?.[0] as USState | undefined;
 }
 
 export function normalizeState(state: string): USState {
   const stateOrUndefined = normalizeStateSafe(state);
-  if (!stateOrUndefined) throw new Error("Invalid state.");
+  if (!stateOrUndefined) throw new BadRequestError("Invalid state", undefined, { state });
   return stateOrUndefined;
 }
 
@@ -86,55 +67,56 @@ export enum USState {
   WY = "WY",
 }
 
-export const states: { [k in string]: USState } = {
-  Arizona: USState.AZ,
-  Alabama: USState.AL,
-  Alaska: USState.AK,
-  Arkansas: USState.AR,
-  California: USState.CA,
-  Colorado: USState.CO,
-  Connecticut: USState.CT,
-  Delaware: USState.DE,
-  Florida: USState.FL,
-  Georgia: USState.GA,
-  Hawaii: USState.HI,
-  Idaho: USState.ID,
-  Illinois: USState.IL,
-  Indiana: USState.IN,
-  Iowa: USState.IA,
-  Kansas: USState.KS,
-  Kentucky: USState.KY,
-  Louisiana: USState.LA,
-  Maine: USState.ME,
-  Maryland: USState.MD,
-  Massachusetts: USState.MA,
-  Michigan: USState.MI,
-  Minnesota: USState.MN,
-  Mississippi: USState.MS,
-  Missouri: USState.MO,
-  Montana: USState.MT,
-  Nebraska: USState.NE,
-  Nevada: USState.NV,
-  "New Hampshire": USState.NH,
-  "New Jersey": USState.NJ,
-  "New Mexico": USState.NM,
-  "New York": USState.NY,
-  "North Carolina": USState.NC,
-  "North Dakota": USState.ND,
-  Ohio: USState.OH,
-  Oklahoma: USState.OK,
-  Oregon: USState.OR,
-  Pennsylvania: USState.PA,
-  "Rhode Island": USState.RI,
-  "South Carolina": USState.SC,
-  "South Dakota": USState.SD,
-  Tennessee: USState.TN,
-  Texas: USState.TX,
-  Utah: USState.UT,
-  Vermont: USState.VT,
-  Virginia: USState.VA,
-  Washington: USState.WA,
-  "West Virginia": USState.WV,
-  Wisconsin: USState.WI,
-  Wyoming: USState.WY,
+const states: Record<USState, string> = {
+  [USState.AZ]: "Arizona",
+  [USState.AL]: "Alabama",
+  [USState.AK]: "Alaska",
+  [USState.AR]: "Arkansas",
+  [USState.CA]: "California",
+  [USState.CO]: "Colorado",
+  [USState.CT]: "Connecticut",
+  [USState.DE]: "Delaware",
+  [USState.DC]: "District of Columbia",
+  [USState.FL]: "Florida",
+  [USState.GA]: "Georgia",
+  [USState.HI]: "Hawaii",
+  [USState.ID]: "Idaho",
+  [USState.IL]: "Illinois",
+  [USState.IN]: "Indiana",
+  [USState.IA]: "Iowa",
+  [USState.KS]: "Kansas",
+  [USState.KY]: "Kentucky",
+  [USState.LA]: "Louisiana",
+  [USState.ME]: "Maine",
+  [USState.MD]: "Maryland",
+  [USState.MA]: "Massachusetts",
+  [USState.MI]: "Michigan",
+  [USState.MN]: "Minnesota",
+  [USState.MS]: "Mississippi",
+  [USState.MO]: "Missouri",
+  [USState.MT]: "Montana",
+  [USState.NE]: "Nebraska",
+  [USState.NV]: "Nevada",
+  [USState.NH]: "New Hampshire",
+  [USState.NJ]: "New Jersey",
+  [USState.NM]: "New Mexico",
+  [USState.NY]: "New York",
+  [USState.NC]: "North Carolina",
+  [USState.ND]: "North Dakota",
+  [USState.OH]: "Ohio",
+  [USState.OK]: "Oklahoma",
+  [USState.OR]: "Oregon",
+  [USState.PA]: "Pennsylvania",
+  [USState.RI]: "Rhode Island",
+  [USState.SC]: "South Carolina",
+  [USState.SD]: "South Dakota",
+  [USState.TN]: "Tennessee",
+  [USState.TX]: "Texas",
+  [USState.UT]: "Utah",
+  [USState.VT]: "Vermont",
+  [USState.VA]: "Virginia",
+  [USState.WA]: "Washington",
+  [USState.WV]: "West Virginia",
+  [USState.WI]: "Wisconsin",
+  [USState.WY]: "Wyoming",
 };

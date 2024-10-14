@@ -59,3 +59,41 @@ export function normalizePatient<T extends PatientData>(patient: T): T {
   log(`normalizedPatient ${JSON.stringify(normalizedPatient)}`);
   return normalizedPatient;
 }
+
+export function normalizePatientInboundMpi<T extends PatientData>(patient: T): T {
+  const { log } = out(`MPI normalize patient, request id - ${patient.requestId}`);
+
+  const firstName = normalizeStringSafe(patient.firstName) ?? "";
+  const lastName = normalizeStringSafe(patient.lastName) ?? "";
+
+  const normalizedPatient: T = {
+    ...patient,
+    firstName,
+    lastName,
+    contact: (patient.contact ?? []).map(contact => ({
+      ...contact,
+      email: contact.email ? normalizeEmailSafe(contact.email) : undefined,
+      phone: contact.phone ? normalizePhoneSafe(contact.phone) : undefined,
+    })),
+    address: (patient.address ?? []).map(addr => {
+      const normalizedCountryString = normalizeStringSafe(addr.country ?? "");
+      const newAddress: Address = {
+        addressLine1: commonReplacementsForAddressLine(
+          normalizeStringSafe(addr.addressLine1) ?? ""
+        ),
+        city: normalizeStringSafe(addr.city) ?? "",
+        state: normalizeStateSafe(addr.state) ?? ("" as USState),
+        zip: normalizeZipCodeSafe(addr.zip) ?? "",
+        country: normalizeCountrySafe(normalizedCountryString ?? normalizedCountryUsa) ?? "",
+      };
+      if (addr.addressLine2) {
+        newAddress.addressLine2 = commonReplacementsForAddressLine(
+          normalizeStringSafe(addr.addressLine2) ?? ""
+        );
+      }
+      return newAddress;
+    }),
+  };
+  log(`normalizePatientInboundMpi ${JSON.stringify(normalizedPatient)}`);
+  return normalizedPatient;
+}

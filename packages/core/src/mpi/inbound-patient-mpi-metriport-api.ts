@@ -3,7 +3,7 @@ import { PatientData } from "../domain/patient";
 import { epicMatchingAlgorithm, matchPatients } from "./match-patients";
 import { useFirstMatchingPatient } from "./merge-patients";
 import { MPI } from "./mpi";
-import { normalizePatient } from "./normalize-patient";
+import { normalizePatientInboundMpi } from "./normalize-patient";
 import { PatientMPI, patientToPatientMPI } from "./shared";
 
 export class InboundMpiMetriportApi implements MPI {
@@ -13,7 +13,7 @@ export class InboundMpiMetriportApi implements MPI {
   constructor(protected apiUrl: string) {}
 
   public async findMatchingPatient(patient: PatientData): Promise<PatientMPI | undefined> {
-    const normalizedPatientDemo = normalizePatient(patient);
+    const normalizedPatientDemo = normalizePatientInboundMpi(patient);
     if (!normalizedPatientDemo) throw new Error("Invalid Patient Data");
 
     const foundPatients = await this.patientLoader.findBySimilarityAcrossAllCxs({
