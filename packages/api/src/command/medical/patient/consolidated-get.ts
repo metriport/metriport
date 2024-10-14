@@ -277,7 +277,7 @@ export async function getConsolidated({
       });
     }
     bundle.entry = filterOutPrelimDocRefs(bundle.entry);
-    bundle.total = bundle.entry?.length;
+    bundle.total = bundle.entry?.length ?? 0;
     const hasResources = bundle.entry && bundle.entry.length > 0;
     const shouldCreateMedicalRecord = conversionType && conversionType != "json" && hasResources;
     const currentConsolidatedProgress = patient.data.consolidatedQueries?.find(
