@@ -1,14 +1,20 @@
-import { executeWithNetworkRetries, InternalSendConsolidated } from "@metriport/shared";
+import { Bundle } from "@medplum/fhirtypes";
+import {
+  errorToString,
+  executeWithNetworkRetries,
+  InternalSendConsolidated,
+  MetriportError,
+} from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import axios from "axios";
 import { isConsolidatedFromS3Enabled } from "../../external/aws/app-config";
-import { checkBundleForPatient } from "../../external/fhir/bundle/qa";
+import { checkBundle } from "../../external/fhir/bundle/qa";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { buildBundleEntry } from "../../external/fhir/shared/bundle";
-import { out } from "../../util";
+import { capture, out } from "../../util";
 import { getConsolidatedFromS3 } from "./consolidated-filter";
 import {
   ConsolidatedSnapshotConnector,
@@ -17,6 +23,7 @@ import {
   ConsolidatedSnapshotResponse,
 } from "./get-snapshot";
 import { uploadConsolidatedSnapshotToS3 } from "./snapshot-on-s3";
+import { isPatient } from "../../external/fhir/shared";
 
 const MAX_API_NOTIFICATION_ATTEMPTS = 5;
 
@@ -27,6 +34,7 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
     params: ConsolidatedSnapshotRequestSync | ConsolidatedSnapshotRequestAsync
   ): Promise<ConsolidatedSnapshotResponse> {
     const { cxId, id: patientId } = params.patient;
+    const { log } = out(`ConsolidatedSnapshotConnectorLocal cx ${cxId} pat ${patientId}`);
 
     const originalBundle = await getBundle(params);
 
@@ -35,21 +43,50 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
     originalBundle.entry = [patientEntry, ...(originalBundle.entry ?? [])];
     originalBundle.total = originalBundle.entry.length;
 
-    const dedupedBundle = deduplicate({ cxId, patientId, bundle: originalBundle });
+    const originalBundleWithoutContainedPatients = removeContainedPatients(
+      originalBundle,
+      patientId
+    );
 
-    checkBundleForPatient(dedupedBundle, cxId, patientId);
+    const dedupedBundle = deduplicate({
+      cxId,
+      patientId,
+      bundle: originalBundleWithoutContainedPatients,
+    });
+
+    try {
+      checkBundle(dedupedBundle, cxId, patientId);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      const msg = "Bundle contains invalid data";
+      const additionalInfo = { cxId, patientId, type: error.message };
+      log(`${msg} - ${JSON.stringify(additionalInfo)}`);
+      capture.error(msg, { extra: { additionalInfo, error } });
+      try {
+        uploadConsolidatedSnapshotToS3({
+          ...params,
+          s3BucketName: this.bucketName,
+          bundle: dedupedBundle,
+          type: "invalid",
+        });
+      } catch (error) {
+        log(`Failed to store invalid bundle on S3 - ${errorToString(error)}`);
+      }
+      throw new MetriportError(msg, error, additionalInfo);
+    }
 
     const [, dedupedS3Info] = await Promise.all([
       uploadConsolidatedSnapshotToS3({
         ...params,
         s3BucketName: this.bucketName,
-        bundle: originalBundle,
+        bundle: originalBundleWithoutContainedPatients,
+        type: "original",
       }),
       uploadConsolidatedSnapshotToS3({
         ...params,
         s3BucketName: this.bucketName,
         bundle: dedupedBundle,
-        isDeduped: true,
+        type: "dedup",
       }),
     ]);
 
@@ -112,4 +149,28 @@ async function postSnapshotToApi({
       maxAttempts: MAX_API_NOTIFICATION_ATTEMPTS,
     }
   );
+}
+
+export function removeContainedPatients(bundle: Bundle, patientId: string): Bundle {
+  if (!bundle.entry) return bundle;
+
+  const updatedEntry = bundle.entry.map(entry => {
+    const resource = entry.resource;
+    if (resource && "contained" in resource) {
+      return {
+        ...entry,
+        resource: {
+          ...resource,
+          contained: resource.contained?.filter(r => !isPatient(r) || r.id === patientId),
+        },
+      };
+    }
+    return entry;
+  });
+
+  return {
+    ...bundle,
+    total: updatedEntry.length,
+    entry: updatedEntry,
+  };
 }

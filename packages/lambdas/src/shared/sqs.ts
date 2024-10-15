@@ -1,7 +1,9 @@
-import { SQSMessageAttributes } from "aws-lambda";
+import { MetriportError } from "@metriport/shared";
+import { SQSMessageAttributes, SQSRecord } from "aws-lambda";
 import * as AWS from "aws-sdk";
 import { SQS } from "aws-sdk";
 import { MessageBodyAttributeMap } from "aws-sdk/clients/sqs";
+import { capture } from "./capture";
 
 export class SQSUtils {
   public readonly _sqs: SQS;
@@ -55,4 +57,28 @@ export function toMessageGroupId(
     return replaced.slice(0, maxChars);
   }
   return replaced.slice(-maxChars);
+}
+
+export function getSingleMessageOrFail(
+  records: SQSRecord[],
+  lambdaName: string
+): SQSRecord | undefined {
+  if (!records || records.length < 1) {
+    console.log(`No records, discarding this event: ${JSON.stringify(records)}`);
+    return undefined;
+  }
+  if (records.length > 1) {
+    const msg = "Got more than one message from SQS";
+    capture.error(msg, {
+      extra: {
+        event,
+        context: lambdaName,
+        additional: `This lambda is supposed to run w/ only 1 message per batch, got ${records.length}`,
+      },
+    });
+    throw new MetriportError(msg, undefined, { amountOfRecords: records.length });
+  }
+  // Safe as we just checked the length
+  const message = records[0]!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+  return message;
 }

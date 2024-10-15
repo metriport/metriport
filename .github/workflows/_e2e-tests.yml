@@ -15,9 +15,16 @@ on:
         description: "the url for the fhir server"
         required: true
         type: string
+      CONVERSION_RESULT_BUCKET_NAME:
+        description: "the name of the bucket with the CDA>FHIR conversions"
+        required: true
+        type: string
       test_patient_id:
         description: "the ID of a test patient for e2e tests"
         required: false
+        type: string
+      AWS_REGION:
+        required: true
         type: string
     secrets:
       AWS_ACCESS_KEY_ID:
@@ -97,6 +104,8 @@ jobs:
           CW_MEMBER_NAME: ${{ secrets.CW_MEMBER_NAME }}
           API_URL: ${{ inputs.api_url }}
           FHIR_SERVER_URL: ${{ inputs.fhir_url }}
+          CONVERSION_RESULT_BUCKET_NAME: ${{ inputs.CONVERSION_RESULT_BUCKET_NAME }}
+          AWS_REGION: ${{ inputs.AWS_REGION }}
           ENV_TYPE: ${{ inputs.deploy_env }}
 
       - name: Store Test Results

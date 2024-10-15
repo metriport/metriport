@@ -76,6 +76,9 @@ export const config: EnvConfigNonSandbox = {
     CW_GATEWAY_AUTHORIZATION_CLIENT_ID: "CW_GATEWAY_AUTHORIZATION_CLIENT_ID",
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: "CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET",
   },
+  patientImport: {
+    bucketName: "your-bucket-name",
+  },
   connectWidget: {
     stackName: "MetriportConnectInfraStack",
     region: "us-east-1",

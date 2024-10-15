@@ -1,4 +1,5 @@
 import { Bundle, BundleEntry } from "@medplum/fhirtypes";
+import { parseFhirBundle } from "@metriport/shared/medical";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { createFolderName } from "../../domain/filename";
 import { executeWithRetriesS3, S3Utils } from "../../external/aws/s3";
@@ -13,7 +14,7 @@ import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion"
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
 
-const conversionBundleSuffix = ".xml.json";
+export const conversionBundleSuffix = ".xml.json";
 const numberOfParallelExecutions = 10;
 const defaultS3RetriesConfig = {
   maxAttempts: 3,
@@ -116,8 +117,11 @@ async function getConversions({
         { ...defaultS3RetriesConfig, log }
       );
       log(`Merging bundle ${key} into the consolidated one`);
-      const singleConversion = JSON.parse(contents) as Bundle;
-
+      const singleConversion = parseFhirBundle(contents);
+      if (!singleConversion) {
+        log(`No valid bundle found in ${bucket}/${key}, skipping`);
+        return;
+      }
       merge(singleConversion).into(mergedBundle);
     },
     { numberOfParallelExecutions }

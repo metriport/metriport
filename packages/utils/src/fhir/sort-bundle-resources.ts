@@ -29,8 +29,8 @@ async function main() {
     const bundle: Bundle = JSON.parse(contents);
 
     const sortedResources = sortBy(bundle.entry, sortFn);
-    bundle.entry = sortedResources;
     bundle.total = sortedResources.length;
+    bundle.entry = sortedResources;
     writeFileContents(fileName + "_sorted.json", JSON.stringify(bundle, null, 2));
   }
 

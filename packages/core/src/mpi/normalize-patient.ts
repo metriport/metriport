@@ -54,6 +54,46 @@ export function normalizePatient<T extends PatientData>(patient: T): T {
   return normalizedPatient;
 }
 
+export function normalizePatientInboundMpi<T extends PatientData>(patient: T): T {
+  const { log } = out(`MPI normalize patient, request id - ${patient.requestId}`);
+
+  const firstName = normalizeString(patient.firstName);
+  const lastName = normalizeString(patient.lastName);
+
+  const normalizedPatient: T = {
+    ...patient,
+    firstName,
+    lastName,
+    contact: (patient.contact ?? []).map(contact => ({
+      ...contact,
+      email: contact.email ? normalizeEmail(contact.email) : contact.email,
+      phone: contact.phone ? normalizePhoneNumber(contact.phone) : contact.phone,
+    })),
+    address: (patient.address ?? []).map(addr => {
+      try {
+        const newAddress: Address = {
+          // TODO 2368 address normalization needs improvements
+          // https://github.com/metriport/metriport-internal/issues/2368
+          addressLine1: normalizeAddress(addr.addressLine1),
+          city: normalizeString(addr.city),
+          zip: normalizeZipCode(addr.zip),
+          state: addr.state,
+          country: addr.country || "USA",
+        };
+        if (addr.addressLine2) {
+          newAddress.addressLine2 = normalizeAddress(addr.addressLine2);
+        }
+        return newAddress;
+      } catch (err) {
+        const msg = `Failed to parse the address for MPI`;
+        log(`${msg} - error ${errorToString(err)}`);
+      }
+      return;
+    }),
+  };
+  return normalizedPatient;
+}
+
 /**
  * The normalizeString function takes a string as input, removes leading and trailing whitespace,
  * converts all characters to lowercase, and removes any apostrophes or hyphens.
@@ -67,12 +107,14 @@ function normalizeString(str: string): string {
 
 /**
  * Normalizes an email address by removing leading and trailing spaces, converting all characters to lowercase
+ * and removing the "mailto:" prefix if present.
  *
  * @param email - The email address to be normalized.
  * @returns The normalized email address.
  */
 export function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
+  const trimmedEmail = email.trim().toLowerCase();
+  return trimmedEmail.replace(/^mailto:/i, "");
 }
 
 /**
