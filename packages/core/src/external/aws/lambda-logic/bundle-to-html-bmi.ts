@@ -1502,10 +1502,12 @@ function createObservationLaboratorySection(observations: Observation[]) {
     const bDate = dayjs(b.effectiveDateTime).format(ISO_DATE);
     const aText = a.code?.text;
     const bText = b.code?.text;
-    if (aText === undefined || bText === undefined) {
+    const aCode = a.code?.coding?.[0]?.code;
+    const bCode = b.code?.coding?.[0]?.code;
+    if (aText === undefined || bText === undefined || aCode === undefined || bCode === undefined) {
       return false;
     }
-    return aDate === bDate && aText === bText;
+    return aDate === bDate && aText === bText && aCode === bCode;
   });
 
   const observationTableContents =
