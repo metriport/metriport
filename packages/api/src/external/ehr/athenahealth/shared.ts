@@ -1,8 +1,8 @@
 import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
 import {
-  normalizeEmail,
-  normalizePhoneNumber,
+  normalizeEmailSafe,
+  normalizePhoneSafe,
   normalizeUSStateForAddress,
   normalizeZipCode,
 } from "@metriport/shared";
@@ -12,11 +12,11 @@ export function createMetriportContacts(patient: PatientResource): Contact[] {
   return (patient.telecom ?? []).flatMap(telecom => {
     if (telecom.system === "email") {
       return {
-        email: normalizeEmail(telecom.value),
+        email: normalizeEmailSafe(telecom.value),
       };
     } else if (telecom.system === "phone") {
       return {
-        phone: normalizePhoneNumber(telecom.value),
+        phone: normalizePhoneSafe(telecom.value),
       };
     }
     return [];
