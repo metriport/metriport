@@ -1,11 +1,18 @@
+import { USState as USStateShared, USTerritory as USTerritoryShared } from "@metriport/shared";
 import { z } from "zod";
-import { USState as USStateShared } from "@metriport/shared";
 
 export const USState = {
   ...USStateShared,
 };
 
 export const usStateSchema = z.preprocess(
-  val => (typeof val === "string" ? val.toUpperCase() : val),
+  val => (typeof val === "string" ? val.toUpperCase().trim() : val),
   z.nativeEnum(USState)
+);
+
+export const USTerritory = USTerritoryShared;
+
+export const usTerritorySchema = z.preprocess(
+  val => (typeof val === "string" ? val.toUpperCase().trim() : val),
+  z.nativeEnum(USTerritory)
 );

@@ -2,21 +2,21 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { MetriportMedicalApi, PatientCreate } from "@metriport/api-sdk";
-import {
-  normalizeExternalId,
-  normalizeEmail,
-  isEmailValid,
-  normalizePhoneNumber,
-  isPhoneValid,
-  normalizeDate,
-  normalizeGender,
-  normalizeZipCode,
-  normalizeState,
-  toTitleCase,
-} from "@metriport/shared";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { sleep } from "@metriport/core/util/sleep";
+import {
+  isEmailValid,
+  isPhoneValid,
+  normalizeDate,
+  normalizeEmail,
+  normalizeExternalId,
+  normalizeGender,
+  normalizePhoneNumber,
+  normalizeUSStateForAddress,
+  normalizeZipCode,
+  toTitleCase,
+} from "@metriport/shared";
 import { Command } from "commander";
 import csv from "csv-parser";
 import dayjs from "dayjs";
@@ -248,7 +248,7 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
         "address2 | addressLine2"
       ),
       city: normalizeCity(csvPatient.city),
-      state: normalizeState(csvPatient.state ?? ""),
+      state: normalizeUSStateForAddress(csvPatient.state ?? ""),
       zip: normalizeZipCode(csvPatient.zip ?? ""),
       country: "USA",
     },
