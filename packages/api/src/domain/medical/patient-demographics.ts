@@ -224,7 +224,12 @@ export function removeInvalidArrayValues(demographics: LinkDemographics): LinkDe
     }),
     addresses: demographics.addresses.filter(address => {
       const addressObj: LinkGenericAddress = JSON.parse(address);
-      return addressObj.line.length > 0 && addressObj.city !== "" && addressObj.zip !== "";
+      return (
+        addressObj.line.length > 0 &&
+        addressObj.state !== "" &&
+        addressObj.city !== "" &&
+        addressObj.zip !== ""
+      );
     }),
     telephoneNumbers: demographics.telephoneNumbers.filter(tn => tn !== ""),
     emails: demographics.emails.filter(email => email !== ""),
@@ -318,7 +323,7 @@ export function normalizeAndStringifyDriversLicense({
 }): string {
   const normalizedDl = {
     value: value.trim().toLowerCase(),
-    state: state.trim().toLowerCase().slice(0, 2),
+    state: normalizeUSStateForAddressSafe(state ?? "")?.toLowerCase() ?? "",
   };
   return JSON.stringify(normalizedDl, Object.keys(normalizedDl).sort());
 }

@@ -1,8 +1,11 @@
 import { BadRequestError } from "../../error/bad-request";
 
 export function normalizeTerritorySafe(territory: string): USTerritory | undefined {
+  const trimmedTerriroty = territory.trim();
   const keyFromEntries = Object.entries(territories).find(
-    ([key, value]) => key === territory || value.toLowerCase() === territory.toLowerCase()
+    ([key, value]) =>
+      key.toLowerCase() === trimmedTerriroty.toLowerCase() ||
+      value.toLowerCase() === trimmedTerriroty.toLowerCase()
   );
   return keyFromEntries?.[0] as USTerritory | undefined;
 }
