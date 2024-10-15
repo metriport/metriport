@@ -22,7 +22,7 @@ afterAll(async () => {
   await tearDownMapiE2e();
 });
 
-describe.skip("MAPI E2E Tests", () => {
+describe("MAPI E2E Tests", () => {
   const e2e: E2eContext = {};
 
   describe("Settings", () => {

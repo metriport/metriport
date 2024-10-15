@@ -5,7 +5,7 @@ import BadRequestError from "../../../errors/bad-request";
 import { Bundle } from "../../../routes/medical/schemas/fhir";
 import schema from "./fhir.schema.json";
 
-type Error = {
+type LocalError = {
   resourceType: string;
   resourceId: string;
   errors: ErrorObject[] | null | undefined;
@@ -20,7 +20,7 @@ const validate = ajv.compile(schema);
 const clonedSchema = cloneDeep(schema);
 
 export const validateFhirEntries = (bundle: Bundle): Bundle => {
-  const errors: Error[] = [];
+  const errors: LocalError[] = [];
 
   for (const entry of bundle.entry) {
     const resourceType = entry.resource.resourceType;
@@ -48,7 +48,7 @@ export const validateFhirEntries = (bundle: Bundle): Bundle => {
   return bundle;
 };
 
-function toErrorMessage(error: Error): string {
+function toErrorMessage(error: LocalError): string {
   return `${error.resourceType} ${error.resourceId}`;
 }
 
