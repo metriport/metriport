@@ -20,6 +20,6 @@ describe("validate-npi", () => {
   });
 
   it("returns false when it gets invalid 10 digit string", async () => {
-    expect(validateNPI("1_123_123_123")).toBeFalsy();
+    expect(validateNPI(String(1_123_123_123))).toBeFalsy();
   });
 });
