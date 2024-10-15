@@ -1,10 +1,11 @@
 import { faker } from "@faker-js/faker";
-import { USState } from "@metriport/shared";
 import { Facility, FacilityCreate } from "@metriport/api-sdk";
+import { USState } from "@metriport/shared";
+import { makeNPI } from "@metriport/shared/common/__tests__/validate-npi";
 
 export const createFacility: FacilityCreate = {
   name: faker.word.noun(),
-  npi: "2974324529",
+  npi: makeNPI(),
   active: true,
   address: {
     addressLine1: faker.location.streetAddress(),
