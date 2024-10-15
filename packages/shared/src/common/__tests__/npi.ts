@@ -1,9 +1,6 @@
 /**
  * Generates a valid NPI number that passes the validateNPI() function.
  *
- * Generated with by Anthropic's Claude 3.5.
- * Slightly updated by human.
- *
  * @returns A valid 10-digit NPI number as a string.
  */
 export function makeNPI(): string {

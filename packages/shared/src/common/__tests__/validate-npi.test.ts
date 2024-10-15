@@ -1,5 +1,5 @@
 import { validateNPI } from "../validate-npi";
-import { makeNPI } from "./validate-npi";
+import { makeNPI } from "./npi";
 
 describe("validate-npi", () => {
   describe("returns true when it gets valid NPI number", () => {
