@@ -1,4 +1,10 @@
-import { normalizePhoneNumber, stripNonNumericChars, USState } from "@metriport/shared";
+import {
+  normalizeUSStateForAddressSafe,
+  normalizeZipCodeNewSafe,
+  normalizePhoneNumberSafe,
+  stripNonNumericChars,
+  USState,
+} from "@metriport/shared";
 import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
 import {
@@ -172,7 +178,9 @@ export function patientToNormalizedCoreDemographics(patient: Patient): LinkDemog
   });
   const telephoneNumbers = (patient.data.contact ?? []).flatMap(c => {
     if (!c.phone) return [];
-    return [normalizeTelephone(c.phone)];
+    const phone = normalizePhoneNumberSafe(c.phone);
+    if (!phone) return [];
+    return [phone];
   });
   const emails = (patient.data.contact ?? []).flatMap(c => {
     if (!c.email) return [];
@@ -276,10 +284,8 @@ export function normalizeAddress({
             .replaceAll("avenue", "ave");
         }) ?? [],
     city: city?.trim().toLowerCase() ?? "",
-    state: state?.trim().toLowerCase().slice(0, 2) ?? "",
-    zip: stripNonNumericChars(zip ?? "")
-      .trim()
-      .slice(0, 5),
+    state: normalizeUSStateForAddressSafe(state ?? "")?.toLowerCase() ?? "",
+    zip: normalizeZipCodeNewSafe(zip ?? "") ?? "",
     country:
       country
         ?.trim()
@@ -292,13 +298,6 @@ export function normalizeAddress({
 
 export function stringifyAddress(normalizedAddress: LinkGenericAddress): string {
   return JSON.stringify(normalizedAddress, Object.keys(normalizedAddress).sort());
-}
-
-/**
- * @deprecated use `normalizePhoneNumber` from `@metriport/shared` instead.
- */
-export function normalizeTelephone(telephone: string): string {
-  return normalizePhoneNumber(telephone);
 }
 
 export function normalizeEmail(email: string): string | undefined {
