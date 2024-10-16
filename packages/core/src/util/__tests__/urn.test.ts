@@ -64,4 +64,10 @@ describe("stripBrackets", () => {
     const res = stripBrackets(original);
     expect(res).toEqual("2.16.840.1.113883.3.9621");
   });
+
+  it("returns unstripped string when gets bracket in middle", async () => {
+    const original = "2.16.840.1.[113883.3.9621]";
+    const res = stripBrackets(original);
+    expect(res).toEqual("2.16.840.1.[113883.3.9621");
+  });
 });

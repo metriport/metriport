@@ -1,5 +1,5 @@
 const urnRegex = /^urn:(oid|uuid):/;
-const bracketRegex = /(\[|\])/g;
+const bracketRegex = /(^\[|\]$)/g;
 
 export function wrapIdInUrnUuid(id: string): string {
   return `urn:uuid:${id}`;
