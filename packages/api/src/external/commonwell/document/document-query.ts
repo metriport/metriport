@@ -31,7 +31,6 @@ import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { Util } from "../../../shared/util";
 import {
-  isCQDirectEnabledForCx,
   isEnhancedCoverageEnabledForCx,
   isStalePatientUpdateEnabledForCx,
 } from "../../aws/app-config";
@@ -190,10 +189,9 @@ export async function queryAndProcessDocuments({
       startedAt,
     });
 
-    const [patient, isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all([
+    const [patient, isECEnabledForThisCx] = await Promise.all([
       getPatientWithCWData(patientParam),
       isEnhancedCoverageEnabledForCx(cxId),
-      isCQDirectEnabledForCx(cxId),
     ]);
 
     if (!patient) {
@@ -211,7 +209,7 @@ export async function queryAndProcessDocuments({
       cwData.cqLinkStatus && // we're not waiting for EC if the patient was created before cqLinkStatus was introduced
       cwData.cqLinkStatus !== "linked";
 
-    const isTriggerDQ = forceQuery || !isWaitingForEnhancedCoverage || isCQDirectEnabledForThisCx;
+    const isTriggerDQ = forceQuery || !isWaitingForEnhancedCoverage;
 
     if (!isTriggerDQ) return;
 
