@@ -157,17 +157,14 @@ async function main() {
                 // Update unique patient count for this cxId
                 const uniquePatientCount = cxIdMap.get(cxId) || 0;
                 cxIdMap.set(cxId, uniquePatientCount + 1);
-              }
 
-              // Check if the patient is recent
-              const recentPatients = recentPatientsMap.get(cxId);
-              if (recentPatients && recentPatients.has(patientId)) {
-                const recentCount = recentPatientCountMap.get(cxId) || 0;
-                recentPatientCountMap.set(cxId, recentCount + 1);
+                // Check if the patient is recent
+                const recentPatients = recentPatientsMap.get(cxId);
+                if (recentPatients && recentPatients.has(patientId)) {
+                  const recentCount = recentPatientCountMap.get(cxId) || 0;
+                  recentPatientCountMap.set(cxId, recentCount + 1);
+                }
               }
-
-              console.log(`Decoded CX ID: ${cxId}`);
-              console.log(`Decoded Patient ID: ${patientId}`);
             } else {
               console.error(`Unexpected decoded ID format: ${decodedId}`);
             }
