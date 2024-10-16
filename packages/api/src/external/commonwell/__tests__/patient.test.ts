@@ -3,8 +3,8 @@ import { faker } from "@faker-js/faker";
 import { makePatient } from "@metriport/core/domain/__tests__/patient";
 import { Config } from "../../../shared/config";
 import * as appConfig from "../../aws/app-config";
-import { validateCWEnabled } from "../patient";
-import * as cwShared from "../shared";
+import * as hieInitiator from "../../hie/get-hie-initiator";
+import { validateCWEnabled } from "../shared";
 
 describe("patient", () => {
   describe("validateCWEnabled", () => {
@@ -13,7 +13,7 @@ describe("patient", () => {
       jest.restoreAllMocks();
       jest.spyOn(appConfig, "isCommonwellEnabled").mockResolvedValue(true);
       jest.spyOn(appConfig, "isCWEnabledForCx").mockResolvedValue(true);
-      jest.spyOn(cwShared, "isFacilityEnabledToQueryCW").mockResolvedValue(true);
+      jest.spyOn(hieInitiator, "isHieEnabledToQuery").mockResolvedValue(true);
       config_isSandbox = jest.spyOn(Config, "isSandbox");
     });
     afterAll(() => {

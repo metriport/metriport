@@ -3,7 +3,7 @@ import { makeBaseDomain } from "./shared";
 
 export function makePatient(params: Partial<Patient> = {}): Patient {
   return {
-    ...makeBaseDomain(),
+    ...makeBaseDomain(params.id),
     resourceType: "Patient",
     ...params,
   };

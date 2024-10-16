@@ -2,9 +2,10 @@ import { faker } from "@faker-js/faker";
 import { Address, Encounter, HumanName, Location, Practitioner } from "@medplum/fhirtypes";
 import { makeSubjectReference } from "./shared";
 
-export function makePractitioner(params: Partial<Practitioner>): Practitioner {
+export function makePractitioner(params: Partial<Practitioner> = {}): Practitioner {
   return {
     resourceType: "Practitioner",
+    id: params.id ?? faker.string.uuid(),
     ...params,
   };
 }
@@ -24,21 +25,28 @@ export const exampleAddress: Address = {
   postalCode: "12123",
 };
 
-export function makeLocation(params: Partial<Location>): Location {
+export function makeLocation(params: Partial<Location> = {}): Location {
   return {
     resourceType: "Location",
+    id: params.id ?? faker.string.uuid(),
     ...params,
   };
 }
 
 export function makeEncounter(
   params: Partial<Encounter> = {},
-  ids?: { enc?: string; pract?: string; loc?: string }
+  ids?: { enc?: string; pract?: string; loc?: string; patient?: string }
 ): Encounter {
   return {
-    ...makeSubjectReference(),
+    ...makeSubjectReference(ids?.patient),
     id: ids?.enc ?? faker.string.uuid(),
     resourceType: "Encounter",
+    status: "finished",
+    class: {
+      system: "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+      code: "AMB",
+      display: "ambulatory",
+    },
     participant: [
       { individual: { reference: `Practitioner/${ids?.pract ?? faker.string.uuid()}` } },
     ],
