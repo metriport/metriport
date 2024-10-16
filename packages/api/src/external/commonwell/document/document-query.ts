@@ -30,7 +30,11 @@ import {
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { Util } from "../../../shared/util";
-import { isCQDirectEnabledForCx, isEnhancedCoverageEnabledForCx } from "../../aws/app-config";
+import {
+  isCQDirectEnabledForCx,
+  isEnhancedCoverageEnabledForCx,
+  isStalePatientUpdateEnabledForCx,
+} from "../../aws/app-config";
 import { reportMetric } from "../../aws/cloudwatch";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
