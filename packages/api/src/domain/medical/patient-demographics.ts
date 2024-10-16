@@ -323,7 +323,7 @@ export function normalizeAndStringifyDriversLicense({
 }): string {
   const normalizedDl = {
     value: value.trim().toLowerCase(),
-    state: normalizeUSStateForAddressSafe(state ?? "")?.toLowerCase() ?? "",
+    state: normalizeUSStateForAddressSafe(state)?.toLowerCase() ?? "",
   };
   return JSON.stringify(normalizedDl, Object.keys(normalizedDl).sort());
 }
