@@ -20,14 +20,12 @@ import * as path from "path";
  */
 const LOG_GROUP_NAME = "/aws/lambda/IHEInboundPatientDiscoveryV2Lambda";
 const FILTER_PATTERN = '"Match: true"';
-const DAYS_TO_QUERY = 15; // Number of past days to include
+const DAYS_TO_QUERY = 15;
 
-// Global caches for cxIds (with counts) and unique patientIds
 const cxIdMap: Map<string, number> = new Map();
 const recentPatientCountMap: Map<string, number> = new Map();
 const patientIdSet: Set<string> = new Set();
 
-// List of CX IDs to process
 const CX_IDS: string[] = [];
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -116,7 +114,6 @@ function extractMatchData(message: string): { id: string } | undefined {
 async function main() {
   console.log("Starting log queries for the past two weeks...");
 
-  // Retrieve recent patient IDs for the specified CX IDs
   const recentPatientsMap = await getRecentPatientIds(CX_IDS);
 
   const today = new Date();
@@ -146,19 +143,12 @@ async function main() {
             if (parts.length === 2) {
               const [cxId, patientId] = parts;
 
-              // Update cxId total count
-              const currentCount = cxIdMap.get(cxId) || 0;
-              cxIdMap.set(cxId, currentCount + 1);
-
-              // Add to unique patientIds if not already present
               if (!patientIdSet.has(patientId)) {
                 patientIdSet.add(patientId);
 
-                // Update unique patient count for this cxId
                 const uniquePatientCount = cxIdMap.get(cxId) || 0;
                 cxIdMap.set(cxId, uniquePatientCount + 1);
 
-                // Check if the patient is recent
                 const recentPatients = recentPatientsMap.get(cxId);
                 if (recentPatients && recentPatients.has(patientId)) {
                   const recentCount = recentPatientCountMap.get(cxId) || 0;
@@ -184,10 +174,8 @@ async function main() {
   console.log(`\nCumulative total occurrences: ${cumulativeTotal}`);
   console.log(`Total unique Patient IDs matched: ${patientIdSet.size}`);
 
-  // Sort cxIds by total count in descending order
   const sortedCxIds = Array.from(cxIdMap.entries()).sort((a, b) => b[1] - a[1]);
 
-  // Prepare data for display with both percentages
   const cxIdSummary = sortedCxIds.map(([cxId, count]) => {
     const totalPatientsMatched = count;
     const totalPatientsMatchedRecent = recentPatientCountMap.get(cxId) || 0;
