@@ -13,7 +13,7 @@ import {
 } from "./error";
 import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { parseFileFromString, parseFileFromBuffer } from "./parse-file-from-string";
-import { stripUrnPrefix, stripBrackets } from "../../../../../../util/urn";
+import { stripUrnPrefix } from "../../../../../../util/urn";
 import { DrSamlClientResponse } from "../send/dr-requests";
 import { MtomAttachments, MtomPart } from "../mtom/parser";
 import { successStatus, partialSuccessStatus } from "./constants";
@@ -92,7 +92,7 @@ async function processDocumentReference({
   try {
     const s3Utils = getS3UtilsInstance();
     const { mimeType, decodedBytes } = getMtomBytesAndMimeType(documentResponse, mtomResponse);
-    const strippedDocUniqueId = stripBrackets(stripUrnPrefix(documentResponse.DocumentUniqueId));
+    const strippedDocUniqueId = stripUrnPrefix(documentResponse.DocumentUniqueId);
     const metriportId = idMapping[strippedDocUniqueId];
     if (!metriportId) {
       throw new MetriportError("MetriportId not found for document");
