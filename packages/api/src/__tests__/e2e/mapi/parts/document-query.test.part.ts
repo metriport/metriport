@@ -5,7 +5,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import isBetween from "dayjs/plugin/isBetween";
 import { areDocumentsProcessing } from "../../../../command/medical/document/document-status";
-import { E2eContext, fhirApi, fhirHeaders, medicalApi } from "../shared";
+import { E2eContext, medicalApi } from "../shared";
 
 dayjs.extend(isBetween);
 dayjs.extend(duration);
@@ -44,28 +44,5 @@ export function runDocumentQueryTests(e2e: E2eContext) {
     expect(documents).toBeTruthy();
     expect(documents.length).toEqual(expectedDocRefs.length);
     // TODO 1634 compare documents vs. expectedDocRefs
-  });
-
-  it("contains expected data on FHIR server", async () => {
-    // TODO 1634 implement this
-    // do we need a dedicated one for MR's data or does it come from consolidated?
-  });
-
-  it("deletes a patient's consolidated data", async () => {
-    if (!e2e.patient) throw new Error("Missing patient");
-    const consolidated = await medicalApi.getPatientConsolidated(e2e.patient.id);
-    if (consolidated && consolidated.entry) {
-      for (const docEntry of consolidated.entry) {
-        if (docEntry.resource && docEntry.resource.id) {
-          await fhirApi.deleteResource(
-            docEntry.resource.resourceType,
-            docEntry.resource.id,
-            fhirHeaders
-          );
-        }
-      }
-    }
-    const count = await medicalApi.countPatientConsolidated(e2e.patient.id);
-    expect(count.total).toEqual(0);
   });
 }

@@ -67,7 +67,7 @@ export enum USState {
   WY = "WY",
 }
 
-const states: Record<USState, string> = {
+export const states: Record<USState, string> = {
   [USState.AZ]: "Arizona",
   [USState.AL]: "Alabama",
   [USState.AK]: "Alaska",

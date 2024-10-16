@@ -13,10 +13,11 @@ To run E2E (end-to-end) tests, first have these services running local, each wit
 - API server
 - FHIR Server
 
-Set this environment variable on your local `.env` file with a valid API key from your local environment:
+Set this environment variable on your local `.env` file with valid API and Webhook keys from your local environment (from the Dash's Developer settings):
 
 ```shell
 $ echo "TEST_API_KEY=XXXXXXXX" >> .env
+$ echo "WH_KEY=XXXXXXXX" >> .env
 ```
 
 Then execute E2E tests with:
