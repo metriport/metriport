@@ -126,7 +126,9 @@ jobs:
       deploy_env: "staging"
       api_url: ${{ vars.API_URL_STAGING }}
       fhir_url: ${{ vars.FHIR_SERVER_URL_STAGING }}
-      conversions_bucket_name: ${{ vars.CONVERSION_RESULT_BUCKET_NAME_STAGING }}
+      CONVERSION_RESULT_BUCKET_NAME: ${{ vars.CONVERSION_RESULT_BUCKET_NAME_STAGING }}
+      MEDICAL_DOCUMENTS_BUCKET_NAME: ${{ vars.MEDICAL_DOCUMENTS_BUCKET_NAME_STAGING }}
+      AWS_REGION: ${{ vars.API_REGION_STAGING }}
       test_patient_id: ${{ vars.TEST_PATIENT_ID }}
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
