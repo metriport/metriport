@@ -1,0 +1,335 @@
+Build your application using example clinical data
+
+# Overview
+
+Metriport offers a Sandbox environment so you can develop your medical applications more easily. This environment
+allows you to try out the Medical API with some example de-identified clinical data (see section below for more details).
+
+After you get access to the Medical API, you can go to the Developers page and toggle the switch under the Sandbox section to
+activate Sandbox mode.
+
+## Example Clinical Data
+
+The Sandbox environment will give you access to comprehensive example clinical data for several
+test patients - this data will be representative of what you can expect to see in production:
+
+- C-CDA documents in XML format.
+- FHIR resources in JSON format.
+- Various de-identified unstructured clinical documents in PDF format.
+- Various de-identified images in formats like TIFF and JPEG.
+
+To access this data, you just need to create Patients that match some pre-defined
+demographics.
+
+<Callout intent="warn">
+  In Sandbox mode, any Patient you create with a **first name** that matches one of the pre-defined
+  Patients below will be populated with the corresponding test data.
+</Callout>
+
+<Callout intent="warn">
+  When querying for consolidated data in sandbox mode using a `conversionType`, if you pass a
+  patient that is not one of the pre-defined Patients below, we will always return a pre-defined
+  file.
+</Callout>
+
+<Callout intent="success">
+  You can expect about 6 example documents per Patient, roughtly breaking down to: a C-CDA XML (and
+  the resulting FHIR resources), 3 PDFs, and 2 images.
+</Callout>
+
+The sections below will describe the pre-defined Patient demographics which you can use
+as a base for requests to the [create Patient endpoint](/medical-api/api-reference/patient/create-patient):
+
+### Jane Smith
+
+```json
+{
+  "firstName": "Jane",
+  "lastName": "Smith",
+  "dob": "1996-02-10",
+  "genderAtBirth": "F",
+  "address": [
+    {
+      "addressLine1": "123 Arsenal St",
+      "city": "Phoenix",
+      "state": "AZ",
+      "zip": "85300",
+      "country": "USA"
+    }
+  ]
+}
+```
+
+### Ollie Brown
+
+```json
+{
+  "firstName": "Ollie",
+  "lastName": "Brown",
+  "dob": "1946-03-18",
+  "genderAtBirth": "M",
+  "address": [
+    {
+      "addressLine1": "201 Armada St",
+      "city": "Harrisburg",
+      "state": "PA",
+      "zip": "15300",
+      "country": "USA"
+    }
+  ]
+}
+```
+
+### Kyla Fields
+
+```json
+{
+  "firstName": "Kyla",
+  "lastName": "Fields",
+  "dob": "1927-05-23",
+  "genderAtBirth": "F",
+  "address": [
+    {
+      "addressLine1": "332 16th St",
+      "city": "Portland",
+      "state": "ME",
+      "zip": "04000",
+      "country": "USA"
+    }
+  ]
+}
+```
+
+### Andreas Sims
+
+```json
+{
+  "firstName": "Andreas",
+  "lastName": "Sims",
+  "dob": "1952-01-01",
+  "genderAtBirth": "M",
+  "address": [
+    {
+      "addressLine1": "4430 York St",
+      "city": "Jefferson City",
+      "state": "MO",
+      "zip": "64000",
+      "country": "USA"
+    }
+  ]
+}
+```
+
+### Hajra Powers
+
+```json
+{
+  "firstName": "Hajra",
+  "lastName": "Powers",
+  "dob": "2001-04-04",
+  "genderAtBirth": "F",
+  "address": [
+    {
+      "addressLine1": "1984 Juniper Way",
+      "city": "Sacramento",
+      "state": "CA",
+      "zip": "95300",
+      "country": "USA"
+    }
+  ]
+}
+```
+
+### Rory Mills
+
+```json
+{
+  "firstName": "Rory",
+  "lastName": "Mills",
+  "dob": "1959-09-09",
+  "genderAtBirth": "M",
+  "address": [
+    {
+      "addressLine1": "891 E. Galvin Court",
+      "city": "Ames",
+      "state": "IA",
+      "zip": "51500",
+      "country": "USA"
+    }
+  ]
+}
+```
+
+### Lexi Stevenson
+
+```json
+{
+  "firstName": "Lexi",
+  "lastName": "Stevenson",
+  "dob": "1928-03-26",
+  "genderAtBirth": "F",
+  "address": [
+    {
+      "addressLine1": "85 Hillside Street",
+      "city": "Springfield",
+      "state": "IL",
+      "zip": "62600",
+      "country": "USA"
+    }
+  ]
+}
+```
+
+### Aamina Alexander
+
+```json
+{
+  "firstName": "Aamina",
+  "lastName": "Alexander",
+  "dob": "1954-10-01",
+  "genderAtBirth": "F",
+  "address": [
+    {
+      "addressLine1": "796 Thorne Lane",
+      "city": "Austin",
+      "state": "TX",
+      "zip": "75400",
+      "country": "USA"
+    }
+  ]
+}
+```
+
+### Gavin Blackwell
+
+```json
+{
+  "firstName": "Gavin",
+  "lastName": "Blackwell",
+  "dob": "1948-05-10",
+  "genderAtBirth": "M",
+  "address": [
+    {
+      "addressLine1": "7028 Stillwater Street",
+      "city": "Tallahassee",
+      "state": "FL",
+      "zip": "34600",
+      "country": "USA"
+    }
+  ]
+}
+```
+
+### William Donovan
+
+```json
+{
+  "firstName": "William",
+  "lastName": "Donovan",
+  "dob": "1955-09-14",
+  "genderAtBirth": "M",
+  "address": [
+    {
+      "addressLine1": "7362 Canterbury Street",
+      "city": "New Orleans",
+      "state": "LA",
+      "zip": "71200",
+      "country": "USA"
+    }
+  ]
+}
+```
+
+### Wanda Walsh
+
+```json
+{
+  "firstName": "Wanda",
+  "lastName": "Walsh",
+  "dob": "1941-02-19",
+  "genderAtBirth": "F",
+  "address": [
+    {
+      "addressLine1": "7517 Cooper Street",
+      "city": "Santa Fe",
+      "state": "NM",
+      "zip": "87400",
+      "country": "USA"
+    }
+  ]
+}
+```
+
+### Damien Jensen
+
+```json
+{
+  "firstName": "Damien",
+  "lastName": "Jensen",
+  "dob": "1964-08-23",
+  "genderAtBirth": "M",
+  "address": [
+    {
+      "addressLine1": "1440 Mallard Dr",
+      "city": "Springfield",
+      "state": "IL",
+      "zip": "61200",
+      "country": "USA"
+    }
+  ]
+}
+```
+
+### Emelia Crane
+
+```json
+{
+  "firstName": "Emelia",
+  "lastName": "Crane",
+  "dob": "1944-07-30",
+  "genderAtBirth": "F",
+  "address": [
+    {
+      "addressLine1": "9366 Piper Street",
+      "city": "Denver",
+      "state": "CO",
+      "zip": "81300",
+      "country": "USA"
+    }
+  ]
+}
+```
+
+### Heather Alverez
+
+```json
+{
+  "firstName": "Heather",
+  "lastName": "Alverez",
+  "dob": "1939-11-01",
+  "genderAtBirth": "F",
+  "address": [
+    {
+      "addressLine1": "670 9th Ave",
+      "city": "Harrisburg",
+      "state": "PA",
+      "zip": "15300",
+      "country": "USA"
+    }
+  ]
+}
+```
+
+## SDK
+
+To connect to the sandbox using the SDK just provide the `options` parameter with `sandbox = true`:
+
+<CodeBlock title = "Nodejs">
+  ```typescript
+  import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+  const metriportClient = new MetriportMedicalApi("YOUR_API_KEY", {
+    sandbox: true
+  });
+  ```
+</CodeBlock>
