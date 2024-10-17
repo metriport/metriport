@@ -1,10 +1,10 @@
 import { Period } from "@metriport/core/domain/patient";
+import { BadRequestError } from "@metriport/shared";
 import dayjs from "dayjs";
 import { cloneDeep } from "lodash";
-import BadRequestError from "../../../errors/bad-request";
 import { PatientCreateCmd } from "./create-patient";
-import { PatientUpdateCmd } from "./update-patient";
 import { PatientMatchCmd } from "./get-patient";
+import { PatientUpdateCmd } from "./update-patient";
 
 export function sanitize<T extends PatientCreateCmd | PatientUpdateCmd | PatientMatchCmd>(
   patient: T
@@ -34,18 +34,17 @@ function validatePeriod(period: Period): boolean {
 }
 
 function validateIsPast(date: string): boolean {
-  if (dayjs(date).isAfter(dayjs())) throw new BadRequestError(`Date must be in the past: ${date}`);
+  if (dayjs(date).isAfter(dayjs()))
+    throw new BadRequestError(`Date must be in the past`, undefined, { date });
   return true;
 }
 
 function validateDateRange(start: string, end: string): boolean {
-  if (dayjs(start).isAfter(end)) throw new BadRequestError(`'start' must be before 'end'`);
+  if (dayjs(start).isAfter(end)) {
+    throw new BadRequestError(`Invalid date range: 'start' must be before 'end'`, undefined, {
+      start,
+      end,
+    });
+  }
   return true;
-}
-
-export function createSandboxMRSummaryFileName(
-  firstName: string,
-  extension: "pdf" | "html"
-): string {
-  return extension === "pdf" ? `${firstName}_MR.html.pdf` : `${firstName}_MR.html`;
 }
