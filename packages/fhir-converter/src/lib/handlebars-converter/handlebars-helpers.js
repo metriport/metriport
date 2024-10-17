@@ -1486,14 +1486,14 @@ module.exports.external = [
               data: obsValueB64,
             });
           }
-        });
-      }
 
-      const obsTextB64 = comp.observation?.text?._b64;
-      if (obsTextB64) {
-        presentedForm.push({
-          contentType: "text/html",
-          data: obsTextB64,
+          const obsTextB64 = comp.observation?.text?._b64;
+          if (obsTextB64) {
+            presentedForm.push({
+              contentType: "text/html",
+              data: obsTextB64,
+            });
+          }
         });
       }
 
