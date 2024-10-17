@@ -24,18 +24,32 @@ export const cxId = getCxIdFromApiKey(testApiKey);
 export const fhirApi = new MedplumClient({ baseUrl: baseURL });
 export const medicalApi = new MetriportMedicalApi(testApiKey, { baseAddress: baseURL });
 
+export type ConsolidatedE2eContext = {
+  bundle: Bundle<Resource>;
+  allergyIntolerance: AllergyIntolerance;
+  condition: Condition;
+  encounter: Encounter;
+  location: Location;
+  practitioner: Practitioner;
+};
+
+export type ContributedE2eContext = {
+  bundle: Bundle<Resource>;
+  allergyIntolerance: AllergyIntolerance;
+  condition: Condition;
+  encounter: Encounter;
+  location: Location;
+  practitioner: Practitioner;
+  documentReference: DocumentReference;
+  binary: Binary;
+};
+
 export type E2eContext = {
   facility?: Facility | undefined;
   patient?: PatientDTO | undefined;
   patientFhir?: PatientWithId | undefined;
-  consolidatedPayload?: Bundle<Resource> | undefined;
-  allergyIntolerance?: AllergyIntolerance | undefined;
-  condition?: Condition | undefined;
-  encounter?: Encounter | undefined;
-  location?: Location;
-  practitioner?: Practitioner;
-  documentReference?: DocumentReference | undefined;
-  binary?: Binary | undefined;
+  consolidated?: ConsolidatedE2eContext | undefined;
+  contributed?: ContributedE2eContext | undefined;
   url?: string | undefined;
   mrContentBuffer?: Buffer | undefined;
   expectedWebhookMeta?: Record<string, string> | undefined;
@@ -43,31 +57,31 @@ export type E2eContext = {
 };
 
 export function getAllergyIdOrFail(e2e: E2eContext): string {
-  const allergyId = e2e.allergyIntolerance?.id;
+  const allergyId = e2e.consolidated?.allergyIntolerance?.id;
   if (!allergyId) throw new Error("Missing allergyIntolerance.id");
   return allergyId;
 }
 
 export function getConditionIdOrFail(e2e: E2eContext): string {
-  const conditionId = e2e.condition?.id;
+  const conditionId = e2e.consolidated?.condition?.id;
   if (!conditionId) throw new Error("Missing condition.id");
   return conditionId;
 }
 
 export function getEncounterIdOrFail(e2e: E2eContext): string {
-  const encounterId = e2e.encounter?.id;
+  const encounterId = e2e.consolidated?.encounter?.id;
   if (!encounterId) throw new Error("Missing encounter.id");
   return encounterId;
 }
 
 export function getLocationIdOrFail(e2e: E2eContext): string {
-  const locationId = e2e.location?.id;
+  const locationId = e2e.consolidated?.location?.id;
   if (!locationId) throw new Error("Missing location.id");
   return locationId;
 }
 
 export function getPractitionerIdOrFail(e2e: E2eContext): string {
-  const practitionerId = e2e.practitioner?.id;
+  const practitionerId = e2e.consolidated?.practitioner?.id;
   if (!practitionerId) throw new Error("Missing practitioner.id");
   return practitionerId;
 }
@@ -79,14 +93,14 @@ export function getPatientLastNameOrFail(e2e: E2eContext): string {
 }
 
 export function getDocumentReferenceIdOrFail(e2e: E2eContext): string {
-  const documentId = e2e.documentReference?.id;
-  if (!documentId) throw new Error("Missing documentReference.id");
+  const documentId = e2e.contributed?.documentReference?.id;
+  if (!documentId) throw new Error("Missing contributed.documentReference.id");
   return documentId;
 }
 
 export function getBinaryIdOrFail(e2e: E2eContext): string {
-  const binaryId = e2e.binary?.id;
-  if (!binaryId) throw new Error("Missing binary");
+  const binaryId = e2e.contributed?.binary?.id;
+  if (!binaryId) throw new Error("Missing contributed.binary");
   return binaryId;
 }
 

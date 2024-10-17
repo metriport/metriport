@@ -24,8 +24,8 @@ export function runDocumentQueryTests(e2e: E2eContext) {
 
   it("gets successful response from document query", async () => {
     if (!e2e.patient) throw new Error("Missing patient");
-    const expectedDocRefs = (e2e.consolidatedPayload?.entry ?? []).flatMap(e =>
-      e.resource && isDocumentReference(e.resource) ? e.resource : []
+    const expectedDocRefs = (e2e.contributed?.bundle.entry ?? []).flatMap(e =>
+      isDocumentReference(e.resource) ? e.resource : []
     );
     let status = await medicalApi.getDocumentQueryStatus(e2e.patient.id);
     let retryLimit = 0;
