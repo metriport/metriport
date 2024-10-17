@@ -1,22 +1,21 @@
 import { faker } from "@faker-js/faker";
 import {
   AllergyIntolerance,
-  Binary,
   Bundle,
   Condition,
-  DocumentReference,
   Encounter,
   Location,
   Practitioner,
 } from "@medplum/fhirtypes";
-import { conversionBundleSuffix } from "@metriport/core/command/consolidated/consolidated-create";
+import {
+  buildConsolidatedBundle,
+  conversionBundleSuffix,
+} from "@metriport/core/command/consolidated/consolidated-create";
 import { deleteConsolidated } from "@metriport/core/command/consolidated/consolidated-delete";
 import { createFilePath } from "@metriport/core/domain/filename";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { makeDocumentReference } from "@metriport/core/external/fhir/document/__tests__/document-reference";
+import { isDocumentReference } from "@metriport/core/external/fhir/document/document-reference";
 import { buildBundleEntry } from "@metriport/core/external/fhir/shared/bundle";
-import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
-import { makeBinary } from "@metriport/core/external/fhir/__tests__/binary";
 import { PatientWithId } from "@metriport/core/external/fhir/__tests__/patient";
 import { makeReference } from "@metriport/core/external/fhir/__tests__/reference";
 import { snomedCodeMd } from "@metriport/core/fhir-deduplication/__tests__/examples/condition-examples";
@@ -41,16 +40,16 @@ dayjs.extend(utc);
 const s3Utils = new S3Utils(Config.getAWSRegion());
 const s3BucketName = getEnvVarOrFail("CONVERSION_RESULT_BUCKET_NAME");
 
-export function createConsolidatedPayloads(patient: PatientWithId): {
+export type ConsolidatedPayloads = {
   consolidated: Bundle;
   allergyIntolerance: AllergyIntolerance;
   condition: Condition;
   encounter: Encounter;
   location: Location;
   practitioner: Practitioner;
-  documentReference: DocumentReference;
-  binary: Binary;
-} {
+};
+
+export function createConsolidatedPayloads(patient: PatientWithId): ConsolidatedPayloads {
   const patientReference = makeReference(patient);
   const allergyIntolerance = makeAllergyMedication({ patient: patientReference });
   const dateTime = { start: "2012-01-01T10:00:00.000Z" };
@@ -75,15 +74,7 @@ export function createConsolidatedPayloads(patient: PatientWithId): {
     },
     { patient: patient.id, loc: location.id, pract: practitioner.id }
   );
-  const binary = makeBinary();
-  const documentReference = makeDocumentReference({
-    patient,
-    extension: [metriportDataSourceExtension],
-    binary,
-  });
-  const entry: Bundle["entry"] = [condition, encounter, allergyIntolerance, documentReference].map(
-    buildBundleEntry
-  );
+  const entry: Bundle["entry"] = [condition, encounter, allergyIntolerance].map(buildBundleEntry);
   return {
     consolidated: {
       resourceType: "Bundle",
@@ -96,8 +87,6 @@ export function createConsolidatedPayloads(patient: PatientWithId): {
     encounter,
     location,
     practitioner,
-    documentReference,
-    binary,
   };
 }
 
@@ -211,28 +200,37 @@ export async function prepareConsolidatedTests(e2e: E2eContext) {
   if (!e2e.patient) throw new Error("Missing patient");
   if (!e2e.patientFhir) throw new Error("Missing patientFhir");
   const payloads = createConsolidatedPayloads(e2e.patientFhir);
-  e2e.consolidatedPayload = payloads.consolidated;
-  e2e.allergyIntolerance = payloads.allergyIntolerance;
-  e2e.condition = payloads.condition;
-  e2e.encounter = payloads.encounter;
-  e2e.location = payloads.location;
-  e2e.practitioner = payloads.practitioner;
-  e2e.documentReference = payloads.documentReference;
-  e2e.binary = payloads.binary;
-  async function storeConversionOnS3(patientId: string) {
-    const key = makeConversionFileName({ cxId, patientId });
-    await s3Utils.uploadFile({
-      bucket: s3BucketName,
-      key,
-      file: Buffer.from(JSON.stringify(e2e.consolidatedPayload)),
-      contentType: "application/json",
-    });
-  }
+  e2e.consolidated = {
+    bundle: payloads.consolidated,
+    allergyIntolerance: payloads.allergyIntolerance,
+    condition: payloads.condition,
+    encounter: payloads.encounter,
+    location: payloads.location,
+    practitioner: payloads.practitioner,
+  };
   await Promise.all([
-    storeConversionOnS3(e2e.patient.id),
     deleteConsolidated({
       cxId,
       patientId: e2e.patient.id,
     }),
+    storeConversionOnS3(payloads, e2e.patient.id),
   ]);
+}
+
+async function storeConversionOnS3(
+  payloads: ConsolidatedPayloads,
+  patientId: string
+): Promise<void> {
+  const key = makeConversionFileName({ cxId, patientId });
+  const consolidatedToStoreOnS3 = payloads.consolidated?.entry?.filter(
+    e => !isDocumentReference(e.resource)
+  );
+  if (!consolidatedToStoreOnS3) return;
+  const bundle = buildConsolidatedBundle(consolidatedToStoreOnS3);
+  await s3Utils.uploadFile({
+    bucket: s3BucketName,
+    key,
+    file: Buffer.from(JSON.stringify(bundle)),
+    contentType: "application/json",
+  });
 }
