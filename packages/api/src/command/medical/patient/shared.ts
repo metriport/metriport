@@ -1,6 +1,5 @@
 import { Period } from "@metriport/core/domain/patient";
-import { BadRequestError } from "@metriport/shared";
-import dayjs from "dayjs";
+import { validateDateRange, validateIsPast } from "@metriport/shared/common/date";
 import { cloneDeep } from "lodash";
 import { PatientCreateCmd } from "./create-patient";
 import { PatientMatchCmd } from "./get-patient";
@@ -29,22 +28,6 @@ function validatePeriod(period: Period): boolean {
   }
   if (period.start) {
     return validateIsPast(period.start);
-  }
-  return true;
-}
-
-function validateIsPast(date: string): boolean {
-  if (dayjs(date).isAfter(dayjs()))
-    throw new BadRequestError(`Date must be in the past`, undefined, { date });
-  return true;
-}
-
-function validateDateRange(start: string, end: string): boolean {
-  if (dayjs(start).isAfter(end)) {
-    throw new BadRequestError(`Invalid date range: 'start' must be before 'end'`, undefined, {
-      start,
-      end,
-    });
   }
   return true;
 }
