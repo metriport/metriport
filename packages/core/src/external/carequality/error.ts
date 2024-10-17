@@ -140,3 +140,5 @@ export function constructPDErrorResponse(
 
 export const httpErrorCode = "http-error";
 export const schemaErrorCode = "schema-error";
+export const registryErrorCode = "registry-error";
+export const documentNotFoundErrorCode = "document-not-found";

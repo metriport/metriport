@@ -6,6 +6,7 @@ import {
   xcaGatewaySchema,
   documentReferenceSchema,
   DocumentReference,
+  dateRangeSchema,
 } from "../shared";
 
 // TO EXTERNAL GATEWAY
@@ -34,11 +35,13 @@ export type InboundDocumentQueryResp = z.infer<typeof inboundDocumentQueryRespSc
 const documentQueryRespFromExternalSuccessfulSchema = baseResponseSchema.extend({
   documentReference: z.array(documentReferenceSchema),
   gateway: xcaGatewaySchema,
+  serviceDate: dateRangeSchema.optional(),
 });
 
 const documentQueryRespFromExternalFaultSchema = baseErrorResponseSchema.extend({
   documentReference: z.never().or(z.literal(undefined)),
   gateway: xcaGatewaySchema,
+  serviceDate: dateRangeSchema.optional(),
 });
 
 export const outboundDocumentQueryRespSchema = z.union([
