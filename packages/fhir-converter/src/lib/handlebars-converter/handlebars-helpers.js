@@ -1451,6 +1451,11 @@ module.exports.external = [
             const ret = cleanUpReturn(low, high, "low", "high");
             if (ret) return ret;
           }
+        } else if (range.low || range.high) {
+          const low = getRangeLimit(range.low);
+          const high = getRangeLimit(range.high);
+          const ret = cleanUpReturn(low, high, "low", "high");
+          if (ret) return ret;
         }
         if (range.text?._) {
           return buildRange(range.text._);

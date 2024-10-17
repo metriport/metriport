@@ -2,6 +2,7 @@ import { EnvType } from "../lib/env-type";
 import { RDSAlarmThresholds } from "./aws/rds";
 import { IHEGatewayProps } from "./ihe-gateway-config";
 import { OpenSearchConnectorConfig } from "./open-search-config";
+import { PatientImportProps } from "./patient-import";
 
 export type ConnectWidgetConfig = {
   stackName: string;
@@ -195,6 +196,7 @@ type EnvConfigBase = {
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: string;
   };
   iheGateway?: IHEGatewayProps;
+  patientImport: PatientImportProps;
   canvas?: {
     secretNames: {
       CANVAS_CLIENT_ID: string;

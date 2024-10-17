@@ -45,7 +45,7 @@ dayjs.extend(duration);
 export type GetConsolidatedParams = {
   patient: Patient;
   organization: Organization;
-  bundle?: SearchSetBundle<Resource>;
+  bundle?: SearchSetBundle;
   requestId?: string;
   documentIds?: string[];
 } & GetConsolidatedFilters;
@@ -57,6 +57,8 @@ type GetConsolidatedPatientData = {
   dateTo?: string;
   generateAiBrief?: boolean;
   fromDashboard?: boolean;
+  // TODO 2215 Remove this when we have contributed data as part of get consolidated (from S3)
+  forceDataFromFhir?: boolean;
 };
 
 export type GetConsolidatedSendToCxParams = GetConsolidatedParams & {
@@ -257,7 +259,7 @@ export async function getConsolidated({
   conversionType,
   bundle,
 }: GetConsolidatedParams): Promise<ConsolidatedData> {
-  const { log } = out(`getConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
+  const { log } = out(`API getConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
   const filters = {
     resources: resources ? resources.join(", ") : undefined,
     dateFrom,
@@ -275,6 +277,7 @@ export async function getConsolidated({
       });
     }
     bundle.entry = filterOutPrelimDocRefs(bundle.entry);
+    bundle.total = bundle.entry?.length ?? 0;
     const hasResources = bundle.entry && bundle.entry.length > 0;
     const shouldCreateMedicalRecord = conversionType && conversionType != "json" && hasResources;
     const currentConsolidatedProgress = patient.data.consolidatedQueries?.find(
@@ -421,7 +424,8 @@ export async function getConsolidatedPatientData({
   dateTo,
   generateAiBrief,
   fromDashboard = false,
-}: GetConsolidatedPatientData): Promise<SearchSetBundle<Resource>> {
+  forceDataFromFhir = false,
+}: GetConsolidatedPatientData): Promise<SearchSetBundle> {
   const payload: ConsolidatedSnapshotRequestSync = {
     patient,
     resources,
@@ -430,6 +434,7 @@ export async function getConsolidatedPatientData({
     generateAiBrief,
     isAsync: false,
     fromDashboard,
+    forceDataFromFhir,
   };
   const connector = buildConsolidatedSnapshotConnector();
   const { bundleLocation, bundleFilename } = await connector.execute(payload);

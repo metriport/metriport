@@ -1,4 +1,3 @@
-import { XMLParser } from "fast-xml-parser";
 import dayjs from "dayjs";
 import {
   OutboundDocumentRetrievalReq,
@@ -12,8 +11,9 @@ import {
   handleEmptyResponse,
   handleSchemaErrorResponse,
 } from "./error";
+import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { parseFileFromString, parseFileFromBuffer } from "./parse-file-from-string";
-import { stripUrnPrefix } from "../../../../../../util/urn";
+import { stripUrnPrefix, stripBrackets } from "../../../../../../util/urn";
 import { DrSamlClientResponse } from "../send/dr-requests";
 import { MtomAttachments, MtomPart } from "../mtom/parser";
 import { successStatus, partialSuccessStatus } from "./constants";
@@ -92,7 +92,7 @@ async function processDocumentReference({
   try {
     const s3Utils = getS3UtilsInstance();
     const { mimeType, decodedBytes } = getMtomBytesAndMimeType(documentResponse, mtomResponse);
-    const strippedDocUniqueId = stripUrnPrefix(documentResponse.DocumentUniqueId);
+    const strippedDocUniqueId = stripBrackets(stripUrnPrefix(documentResponse.DocumentUniqueId));
     const metriportId = idMapping[strippedDocUniqueId];
     if (!metriportId) {
       throw new MetriportError("MetriportId not found for document");
@@ -223,7 +223,7 @@ export async function processDrResponse({
     throw new Error("No mtom response found");
   }
   const soapData: Buffer = mtomResponse.parts[0]?.body || Buffer.from("");
-  const parser = new XMLParser({
+  const parser = createXMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "_",
     textNodeName: "_text",

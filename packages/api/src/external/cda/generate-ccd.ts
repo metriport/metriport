@@ -64,7 +64,7 @@ export async function generateCcd(
 async function getFhirResourcesForCcd(
   patient: Patient
 ): Promise<BundleEntry<Resource>[] | undefined> {
-  const allResources = await getConsolidatedPatientData({ patient });
+  const allResources = await getConsolidatedPatientData({ patient, forceDataFromFhir: true });
   return allResources.entry?.filter(entry => {
     const resource = entry.resource;
     if (resource?.resourceType === "Composition") return false;

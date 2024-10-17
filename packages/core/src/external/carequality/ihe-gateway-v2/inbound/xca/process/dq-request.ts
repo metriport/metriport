@@ -1,6 +1,6 @@
 import { InboundDocumentQueryReq, XCPDPatientId } from "@metriport/ihe-gateway-sdk";
 import { errorToString, toArray } from "@metriport/shared";
-import { XMLParser } from "fast-xml-parser";
+import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { stripUrnPrefix } from "../../../../../../util/urn";
 import { storeDqRequest } from "../../../monitor/store";
 import { Slot } from "../../../schema";
@@ -8,6 +8,7 @@ import { extractText } from "../../../utils";
 import { convertSamlHeaderToAttributes, extractTimestamp } from "../../shared";
 import { iti38RequestSchema } from "./schema";
 import { out } from "../../../../../../util/log";
+import { getSlotValue } from "../../../utils";
 
 const externalGatewayPatientRegex = /(.+)\^\^\^(.+)/i;
 const externalGatewayIdRegex = /'/g;
@@ -15,8 +16,8 @@ const externalGatewaySystemRegex = /&|ISO'/g;
 
 function extractExternalGatewayPatient(slots: Slot[]): XCPDPatientId {
   const slot = slots.find((slot: Slot) => slot._name === "$XDSDocumentEntryPatientId");
-  const value = String(slot?.ValueList.Value);
-  const match = value.match(externalGatewayPatientRegex);
+  const value = getSlotValue(slot);
+  const match = value?.match(externalGatewayPatientRegex);
   const externalGatewayPatient = match && match[1]?.replace(externalGatewayIdRegex, "");
   const system = match && match[2]?.replace(externalGatewaySystemRegex, "");
   if (!externalGatewayPatient) {
@@ -32,7 +33,7 @@ export async function processInboundDqRequest(request: string): Promise<InboundD
   const log = out("Inbound DQ Request").log;
   log(request);
   try {
-    const parser = new XMLParser({
+    const parser = createXMLParser({
       ignoreAttributes: false,
       attributeNamePrefix: "_",
       textNodeName: "_text",

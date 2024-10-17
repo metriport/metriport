@@ -26,6 +26,7 @@ import { deduplicatePractitioners } from "./resources/practitioner";
 import { deduplicateProcedures } from "./resources/procedure";
 import { deduplicateRelatedPersons } from "./resources/related-person";
 import { createRef } from "./shared";
+import { capture } from "../util";
 
 const medicationRelatedTypes = [
   "MedicationStatement",
@@ -33,9 +34,13 @@ const medicationRelatedTypes = [
   "MedicationRequest",
 ];
 
-export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> {
+export function deduplicateFhir(
+  fhirBundle: Bundle<Resource>,
+  cxId: string,
+  patientId: string
+): Bundle<Resource> {
   const deduplicatedBundle: Bundle = cloneDeep(fhirBundle);
-  let resourceArrays = extractFhirTypesFromBundle(fhirBundle);
+  let resourceArrays = extractFhirTypesFromBundle(deduplicatedBundle);
 
   const medicationsResult = deduplicateMedications(resourceArrays.medications);
   /* WARNING we need to replace references in the following resource arrays before deduplicating them because their deduplication keys 
@@ -176,6 +181,17 @@ export function deduplicateFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> 
     deletedRefs
   );
   resourceArrays = updatedResourceArrays2;
+
+  if (!resourceArrays.patient) {
+    capture.message("Critical Missing Patient in Deduplicate FHIR", {
+      extra: {
+        cxId,
+        patientId,
+        patient: resourceArrays.patient,
+      },
+      level: "error",
+    });
+  }
 
   deduplicatedBundle.entry = Object.entries(resourceArrays)
     .filter(([resourceType]) => resourceType !== "devices")
@@ -426,20 +442,36 @@ function removeDuplicateReferences<T extends Resource>(entry: T): T {
   }
 
   if ("performer" in entry && entry.performer) {
-    if (entry.resourceType === "DiagnosticReport") {
-      const uniquePerformers = new Set();
-      entry.performer = entry.performer?.filter(performer => {
-        if (uniquePerformers.has(performer.reference)) return false;
-        uniquePerformers.add(performer.reference);
-        return true;
-      });
-    } else if (entry.resourceType === "Procedure") {
-      const uniquePerformers = new Set();
-      entry.performer = entry.performer?.filter(performer => {
-        if (uniquePerformers.has(performer.actor)) return false;
-        uniquePerformers.add(performer.actor);
-        return true;
-      });
+    if (Array.isArray(entry.performer)) {
+      const uniquePerformers = new Set<string>();
+      if (
+        entry.resourceType === "DiagnosticReport" ||
+        entry.resourceType === "Observation" ||
+        entry.resourceType === "ServiceRequest"
+      ) {
+        entry.performer = entry.performer.filter(performer => {
+          if (performer.reference && !uniquePerformers.has(performer.reference)) {
+            uniquePerformers.add(performer.reference);
+            return true;
+          }
+          return false;
+        });
+      } else if (
+        entry.resourceType === "Immunization" ||
+        entry.resourceType === "MedicationAdministration" ||
+        entry.resourceType === "MedicationDispense" ||
+        entry.resourceType === "MedicationRequest" ||
+        entry.resourceType === "Procedure" ||
+        entry.resourceType === "RiskAssessment"
+      ) {
+        entry.performer = entry.performer.filter(performer => {
+          if (performer.actor?.reference && !uniquePerformers.has(performer.actor.reference)) {
+            uniquePerformers.add(performer.actor.reference);
+            return true;
+          }
+          return false;
+        });
+      }
     }
   }
 
@@ -563,8 +595,8 @@ function replaceResourceReference<T extends Resource>(
       if ("reference" in performer) {
         const newReference = referenceMap.get(performer.reference);
         if (newReference) performer.reference = newReference;
-      } else if ("actor" in performer && "reference" in performer.actor) {
-        const newReference = referenceMap.get(performer.actor.reference);
+      } else if ("actor" in performer && performer.actor?.reference) {
+        const newReference = referenceMap.get(performer.actor?.reference);
         if (newReference) performer.actor.reference = newReference;
       }
       return performer;

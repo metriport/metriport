@@ -1,13 +1,13 @@
 import { ConsolidatedQuery } from "@metriport/api-sdk";
-import { USState } from "@metriport/shared";
-import { BaseDomain, BaseDomainCreate } from "./base-domain";
-import { DocumentQueryProgress } from "./document-query";
-import { DiscoveryParams, ScheduledPatientDiscovery } from "./patient-discovery";
-import { BulkGetDocumentsUrlProgress } from "./bulk-get-document-url";
+import { USState, USStateForAddress } from "@metriport/shared";
 import { MedicalDataSource } from "../external";
 import { Address, getState } from "./address";
+import { BaseDomain, BaseDomainCreate } from "./base-domain";
+import { BulkGetDocumentsUrlProgress } from "./bulk-get-document-url";
 import { Contact } from "./contact";
+import { DocumentQueryProgress } from "./document-query";
 import { LinkDemographics } from "./patient-demographics";
+import { DiscoveryParams, ScheduledPatientDiscovery } from "./patient-discovery";
 
 export const generalPersonalIdentifiers = ["ssn"] as const;
 export const driversLicensePersonalIdentifier = ["driversLicense"] as const;
@@ -101,7 +101,7 @@ export function joinName(name: string[]): string {
 
 export interface Patient extends BaseDomain, PatientCreate {}
 
-export function getStatesFromAddresses(patient: Patient): USState[] {
+export function getStatesFromAddresses(patient: Patient): USStateForAddress[] {
   return patient.data.address.map(getState);
 }
 

@@ -253,8 +253,11 @@ async function getRespWithDocsToDownload({
         requestId,
         response: gwResp,
       });
+
       const docRefs = resultsWithMetriportId.flatMap(result => result.documentReference ?? []);
+
       const docRefsWithMetriportId = docRefs.filter(containsMetriportId);
+
       const deduplicatedDocRefsWithMetriportId = docRefsWithMetriportId.filter(
         docRef => !containsDuplicateMetriportId(docRef, seenMetriportIds)
       );

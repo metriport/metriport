@@ -142,4 +142,8 @@ export class Config {
   static getEhrResponsesBucketName(): string | undefined {
     return getEnvVar("EHR_RESPONSES_BUCKET_NAME");
   }
+
+  static getPatientImportBucket(): string | undefined {
+    return getEnvVar("PATIENT_IMPORT_BUCKET_NAME");
+  }
 }

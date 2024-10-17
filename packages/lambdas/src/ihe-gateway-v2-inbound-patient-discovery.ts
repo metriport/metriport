@@ -7,7 +7,7 @@ import { errorToString } from "@metriport/shared";
 import { processInboundXcpdRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xcpd/process/xcpd-request";
 import { processInboundXcpd } from "@metriport/core/external/carequality/pd/process-inbound-pd";
 import { createInboundXcpdResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xcpd/create/xcpd-response";
-import { MPIMetriportAPI } from "@metriport/core/mpi/patient-mpi-metriport-api";
+import { InboundMpiMetriportApi } from "@metriport/core/mpi/inbound-patient-mpi-metriport-api";
 import { getEnvVarOrFail, getEnvVar } from "@metriport/core/util/env-var";
 import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
 import { analyticsAsync, EventTypes } from "@metriport/core/external/analytics/posthog";
@@ -21,7 +21,7 @@ const region = getEnvVarOrFail("AWS_REGION");
 const engineeringCxId = getEnvVar("ENGINEERING_CX_ID");
 const postHogSecretName = getEnvVar("POST_HOG_API_KEY_SECRET");
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
-const mpi = new MPIMetriportAPI(apiUrl);
+const mpi = new InboundMpiMetriportApi(apiUrl);
 const { log } = out(`ihe-gateway-v2-inbound-patient-discovery`);
 
 export async function handler(event: APIGatewayProxyEventV2) {

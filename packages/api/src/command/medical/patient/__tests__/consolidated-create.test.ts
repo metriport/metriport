@@ -70,7 +70,6 @@ describe("createConsolidateData", () => {
       resource: {
         ...diagnosticReportWithId.resource,
         resourceType: "DiagnosticReport",
-        contained: [patient],
       },
       request: {
         method: "PUT",

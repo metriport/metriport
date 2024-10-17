@@ -1,5 +1,6 @@
 import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
+import { DOC_ID_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE, XML_APP_MIME_TYPE } from "@metriport/core/util/mime";
 import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import { SQSEvent, SQSRecord } from "aws-lambda";
@@ -27,7 +28,6 @@ const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
 const fhirServerQueueURL = getEnvOrFail("FHIR_SERVER_QUEUE_URL");
 const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME");
 
-const sourceUrl = "https://api.metriport.com/cda/to/fhir";
 const defaultS3RetriesConfig = {
   maxAttempts: 3,
   initialDelay: 500,
@@ -52,6 +52,10 @@ function replaceIDs(fhirBundle: FHIRBundle, patientId: string): FHIRBundle {
     if (!bundleEntry.resource) throw new Error(`Missing resource`);
     if (!bundleEntry.resource.id) throw new Error(`Missing resource id`);
     if (bundleEntry.resource.id === patientId) continue;
+
+    const docIdExtension = bundleEntry.resource.extension?.find(
+      ext => ext.url === DOC_ID_EXTENSION_URL
+    );
     const idToUse = bundleEntry.resource.id;
     const newId = uuid.v4();
     bundleEntry.resource.id = newId;
@@ -59,7 +63,7 @@ function replaceIDs(fhirBundle: FHIRBundle, patientId: string): FHIRBundle {
     // replace meta's source and profile
     bundleEntry.resource.meta = {
       lastUpdated: bundleEntry.resource.meta?.lastUpdated ?? new Date().toISOString(),
-      source: sourceUrl,
+      source: docIdExtension?.valueString ?? "",
     };
   }
   let fhirBundleStr = JSON.stringify(fhirBundle);
@@ -398,11 +402,10 @@ async function sendConversionResult(
     })
     .promise();
 
-  // TODO 2215 Reenable this when we're ready to move the notification from the FHIR server here
-  // await ossApi.internal.notifyApi(
-  //   { cxId, patientId, status: "success", source: medicalDataSource },
-  //   log
-  // );
+  await ossApi.internal.notifyApi(
+    { cxId, patientId, jobId, source: medicalDataSource, status: "success" },
+    log
+  );
 }
 
 async function storePreProcessedConversionResult({

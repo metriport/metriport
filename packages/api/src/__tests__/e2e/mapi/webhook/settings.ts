@@ -1,4 +1,4 @@
-import { PingWebhookRequest } from "@metriport/shared/src/medical/webhook/webhook-request";
+import { PingWebhookRequest } from "@metriport/shared/medical";
 import { Response } from "express";
 
 let webhookRequest: PingWebhookRequest | undefined = undefined;

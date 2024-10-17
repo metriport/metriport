@@ -20,6 +20,7 @@ const defaultPostHogApiKey = Config.getPostHogApiKey();
 
 export function analytics(params: EventMessageV1, postApiKey?: string): PostHog | void {
   const apiKey = postApiKey ?? defaultPostHogApiKey;
+
   if (!apiKey) return;
 
   const posthog = new PostHog(apiKey);

@@ -1,6 +1,7 @@
+import { ConsolidatedFileType } from "../../command/consolidated/consolidated-shared";
 import { createFilePath } from "../filename";
 
-const extension = ".json";
+export const extension = ".json";
 
 export function createConsolidatedDataFilePath(
   cxId: string,
@@ -15,12 +16,24 @@ export function createConsolidatedSnapshotFileName(
   cxId: string,
   patientId: string,
   requestId?: string,
-  isDeduped?: boolean
+  type?: ConsolidatedFileType
 ): string {
   const date = new Date().toISOString();
   return createFilePath(
     cxId,
     patientId,
-    `consolidated_${date}_${requestId}${isDeduped ? "_deduped" : ""}${extension}`
+    `consolidated_${date}_${requestId}${getSuffixForType(type)}${extension}`
   );
+}
+
+function getSuffixForType(type?: ConsolidatedFileType): string {
+  switch (type) {
+    case "original":
+      return "";
+    case "dedup":
+      return "_deduped";
+    case "invalid":
+      return "_invalid";
+  }
+  return "";
 }

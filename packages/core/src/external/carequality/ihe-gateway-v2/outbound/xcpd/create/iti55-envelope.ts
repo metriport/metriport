@@ -161,7 +161,7 @@ function createSoapBodyContent({
                   [`${prefix}semanticsText`]: "LivingSubject.birthTime",
                 }
               : {},
-            ...(identifiers
+            ...(identifiers && identifiers.length > 0
               ? {
                   [`${prefix}livingSubjectId`]: {
                     [`${prefix}value`]: identifiers.map(identifier => ({
@@ -177,10 +177,7 @@ function createSoapBodyContent({
                   [`${prefix}livingSubjectName`]: {
                     [`${prefix}value`]: {
                       [`${prefix}family`]: name.family,
-                      ...name.given?.reduce((acc: { [key: string]: string }, givenName: string) => {
-                        acc[`${prefix}given`] = givenName;
-                        return acc;
-                      }, {}),
+                      [`${prefix}given`]: name.given,
                     },
                     [`${prefix}semanticsText`]: "LivingSubject.name",
                   },
@@ -202,7 +199,7 @@ function createSoapBodyContent({
                   },
                 }
               : {}),
-            ...(patientTelecoms
+            ...(patientTelecoms && patientTelecoms.length > 0
               ? {
                   [`${prefix}patientTelecom`]: {
                     [`${prefix}value`]: patientTelecoms.map(telecom => ({
