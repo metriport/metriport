@@ -2,6 +2,7 @@ import dayjs, { ConfigType } from "dayjs";
 import utc from "dayjs/plugin/utc";
 
 import { CustomErrorParams, z } from "zod";
+import { BadRequestError } from "../error/bad-request";
 
 dayjs.extend(utc);
 
@@ -11,8 +12,30 @@ export function isValidISODate(date: string): boolean {
   return buildDayjs(date, ISO_DATE, true).isValid();
 }
 
-const isValidISODateOptional = (date: string | undefined | null): boolean =>
-  date ? isValidISODate(date) : true;
+function isValidISODateOptional(date: string | undefined | null): boolean {
+  return date ? isValidISODate(date) : true;
+}
+
+export function validateIsPast(date: string): boolean {
+  if (dayjs(date).isAfter(dayjs())) {
+    throw new BadRequestError(`Date must be in the past`, undefined, { date });
+  }
+  return true;
+}
+export function validateIsPastSafe(date: string): boolean {
+  if (dayjs(date).isAfter(dayjs())) return false;
+  return true;
+}
+
+export function validateDateRange(start: string, end: string): boolean {
+  if (dayjs(start).isAfter(end)) {
+    throw new BadRequestError(`Invalid date range: 'start' must be before 'end'`, undefined, {
+      start,
+      end,
+    });
+  }
+  return true;
+}
 
 const invalidIsoMsg: CustomErrorParams = { message: "Invalid ISO date" };
 
