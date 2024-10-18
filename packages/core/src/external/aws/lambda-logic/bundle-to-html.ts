@@ -25,6 +25,7 @@ import { uniqWith } from "lodash";
 import { Brief } from "./bundle-to-brief";
 import {
   buildEncounterSections,
+  EncounterSection,
   formatDateForDisplay,
   ISO_DATE,
   MISSING_DATE_KEY,
@@ -564,19 +565,6 @@ export function createBrief(brief?: Brief): string {
   return createSection("Brief (AI-generated)", briefContents);
 }
 
-type EncounterTypes =
-  | "labs"
-  | "progressNotes"
-  | "afterInstructions"
-  | "reasonForVisit"
-  | "documentation";
-
-type EncounterSection = {
-  [key: string]: {
-    [k in EncounterTypes]?: DiagnosticReport[];
-  };
-};
-
 function createAWESection(
   diagnosticReports: DiagnosticReport[],
   practitioners: Practitioner[],
@@ -590,7 +578,7 @@ function createAWESection(
     return "";
   }
 
-  const encounterSections = buildEncounterSections({}, diagnosticReports);
+  const encounterSections = buildEncounterSections(diagnosticReports);
 
   const aweReports = buildReports(
     encounterSections,
@@ -632,7 +620,7 @@ function createDiagnosticReportsSection(
     return "";
   }
 
-  const encounterSections = buildEncounterSections({}, diagnosticReports);
+  const encounterSections = buildEncounterSections(diagnosticReports);
 
   const nonAWEreports = buildReports(
     encounterSections,
