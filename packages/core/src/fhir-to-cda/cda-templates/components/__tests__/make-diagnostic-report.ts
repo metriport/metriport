@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { DiagnosticReport } from "@medplum/fhirtypes";
+import { CodeableConcept, Coding, DiagnosticReport } from "@medplum/fhirtypes";
 import { makeSubjectReference } from "./shared";
 
 export function makeDiagnosticReport(params: Partial<DiagnosticReport> = {}): DiagnosticReport {
@@ -32,3 +32,15 @@ export const resultExample = [
     reference: "Observation/some-obs-ID",
   },
 ];
+
+export function makeDiagnosticReportCategory(
+  coding: Coding = {
+    code: "30954-2",
+    display: "Relevant diagnostic tests/laboratory data Narrative",
+    system: "http://loinc.org",
+  }
+): CodeableConcept {
+  return {
+    coding: [coding],
+  };
+}
