@@ -589,7 +589,7 @@ function createAWESection(
     return "";
   }
 
-  const encounterSections: EncounterSection = buildEncounterSections({}, diagnosticReports);
+  const encounterSections: EncounterSection = buildEncounterSections(diagnosticReports);
 
   const AWEreports = buildReports(
     encounterSections,
@@ -631,7 +631,7 @@ function createDiagnosticReportsSection(
     return "";
   }
 
-  const encounterSections: EncounterSection = buildEncounterSections({}, diagnosticReports);
+  const encounterSections: EncounterSection = buildEncounterSections(diagnosticReports);
 
   const nonAWEreports = buildReports(
     encounterSections,
@@ -661,10 +661,8 @@ function createDiagnosticReportsSection(
 }
 // assumes date is defined
 // doesnt deduplicate reports of key (type + date)
-function buildEncounterSections(
-  encounterSections: EncounterSection,
-  diagnosticReports: DiagnosticReport[]
-): EncounterSection {
+function buildEncounterSections(diagnosticReports: DiagnosticReport[]): EncounterSection {
+  const encounterSections: EncounterSection = {};
   for (const report of diagnosticReports) {
     const time = report.effectiveDateTime ?? report.effectivePeriod?.start;
     const formattedDate = dayjs(time).format(ISO_DATE) ?? "";
@@ -676,7 +674,8 @@ function buildEncounterSections(
     let diagnosticReportsType: EncounterTypes = "documentation";
 
     if (report.category) {
-      for (const iterator of report.category) {
+      const categories = Array.isArray(report.category) ? report.category : [report.category];
+      for (const iterator of categories) {
         if (iterator.text?.toLowerCase() === "lab") {
           diagnosticReportsType = "labs";
           break;

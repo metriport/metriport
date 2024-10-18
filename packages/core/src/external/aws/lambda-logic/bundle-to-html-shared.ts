@@ -16,7 +16,7 @@ type EncounterTypes =
  * EncounterSection is a map of strings to DiagnosticReport arrays.
  * NOTE: don't assume key is a date, it might be MISSING_DATE_KEY, in case the date is not available.
  */
-type EncounterSection = {
+export type EncounterSection = {
   [key: string]: {
     [k in EncounterTypes]?: DiagnosticReport[];
   };
@@ -33,10 +33,8 @@ export function formatDateForDisplay(date?: Date | string | undefined): string {
  * @returns EncounterSection - NOTE: don't assume key is a date, it might be MISSING_DATE_KEY, in
  * case the date is not available. See EncounterSection type for more details.
  */
-export function buildEncounterSections(
-  encounterSections: EncounterSection,
-  diagnosticReports: DiagnosticReport[]
-): EncounterSection {
+export function buildEncounterSections(diagnosticReports: DiagnosticReport[]): EncounterSection {
+  const encounterSections: EncounterSection = {};
   for (const report of diagnosticReports) {
     const time = report.effectiveDateTime ?? report.effectivePeriod?.start;
     const reportDate =
@@ -49,7 +47,8 @@ export function buildEncounterSections(
     let diagnosticReportsType: EncounterTypes | undefined = "documentation";
 
     if (report.category) {
-      for (const iterator of report.category) {
+      const categories = Array.isArray(report.category) ? report.category : [report.category];
+      for (const iterator of categories) {
         if (iterator.text?.toLowerCase() === "lab") {
           diagnosticReportsType = "labs";
         }
