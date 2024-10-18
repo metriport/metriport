@@ -713,19 +713,20 @@ export class MetriportMedicalApi {
    * Verifies the signature of a webhook request.
    * Refer to Metriport's documentation for more details: https://docs.metriport.com/medical-api/more-info/webhooks.
    *
-   * @param wh_key - your webhook key.
-   * @param req.body - the body of the webhook request.
+   * @param key - your webhook key.
+   * @param body - the body of the webhook request, as string.
    * @param signature - the signature obtained from the webhook request header.
    *
    * @returns True if the signature is verified, false otherwise.
    */
-  static verifyWebhookSignature(wh_key: string, reqBody: string, signature: string): boolean {
-    const signatureAsString = String(signature);
-    const receivedHash = crypto
-      .createHmac("sha256", wh_key)
-      .update(JSON.stringify(reqBody))
-      .digest("hex");
-    return receivedHash === signatureAsString;
+  static verifyWebhookSignature(key: string, body: string, signature: string): boolean {
+    const normalizedBody = typeof body === "string" ? body : JSON.stringify(body);
+    const receivedSignature = signature;
+    const expectedSignature = crypto.createHmac("sha256", key).update(normalizedBody).digest("hex");
+    const a = Buffer.from(expectedSignature);
+    const b = Buffer.from(receivedSignature);
+    if (Buffer.byteLength(a) != Buffer.byteLength(b)) return false;
+    return crypto.timingSafeEqual(a, b);
   }
 
   /**
