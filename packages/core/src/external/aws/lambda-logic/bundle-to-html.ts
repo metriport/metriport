@@ -1493,7 +1493,7 @@ function createObservationVitalsSection(observations: Observation[]) {
     const bText = b.code?.text;
     const aCode = a.code?.coding?.[0]?.code;
     const bCode = b.code?.coding?.[0]?.code;
-    if (aText === undefined || bText === undefined || aCode === undefined || bCode === undefined) {
+    if (!aText || !bText || !aCode || !bCode) {
       return false;
     }
     return aDate === bDate && aText === bText && aCode === bCode;
@@ -1581,7 +1581,7 @@ function createObservationLaboratorySection(observations: Observation[]) {
     const bText = b.code?.text;
     const aCode = a.code?.coding?.[0]?.code;
     const bCode = b.code?.coding?.[0]?.code;
-    if (aText === undefined || bText === undefined || aCode === undefined || bCode === undefined) {
+    if (!aText || !bText || !aCode || !bCode) {
       return false;
     }
     return aDate === bDate && aText === bText && aCode === bCode;

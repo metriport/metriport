@@ -113,7 +113,6 @@
     "@opensearch-project/opensearch": "^2.3.1",
     "asn1js": "^3.0.5",
     "aws-sdk": "^2.1243.0",
-    "chart.js": "^3.9.1",
     "dayjs": "^1.11.9",
     "formidable": "^3.5.1",
     "http-status": "^1.7.0",

@@ -267,6 +267,14 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
             background-color: lightcoral;
           }
 
+          @media print {
+            #bmiChart {
+              width: 100% !important;
+              height: auto !important;
+              max-width: 95vw; /* Ensures it doesn't overflow the viewport */
+            }
+          }
+
         </style>
       </head>
 
@@ -311,7 +319,22 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
                     text: 'Date'
                   }
                 },
-                y: { title: { display: true, text: 'BMI Value' }}
+                y: { 
+                  title: { 
+                    display: true, 
+                    text: 'BMI Value' 
+                  },
+                  min: ${bmiChartData.min},
+                  max: ${bmiChartData.max},
+                }
+              },
+              layout: {
+                padding: {
+                  left: 10,
+                  right: 50,
+                  top: 10,
+                  bottom: 10
+                }
               }
             }
           });
@@ -635,7 +658,11 @@ function createBmiSection(title: string, tableContents: string, contentPresent: 
         <a href="#mr-header">&#x25B2; Back to Top</a>
       </div>
 
-      ${contentPresent ? `<div><canvas id="bmiChart"></canvas></div>` : ``}
+      ${
+        contentPresent
+          ? `<div><canvas id="bmiChart" style="width: 95%; height: 400px;"></canvas></div>`
+          : ``
+      }
       <div class="section-content">
           ${tableContents}
       </div>
@@ -651,6 +678,8 @@ type ObsSummary = {
 type ChartData = {
   labels: string[];
   data: number[];
+  min?: number;
+  max?: number;
 };
 
 function createVitalsByDate(observations: Observation[]): {
@@ -681,6 +710,8 @@ function createVitalsByDate(observations: Observation[]): {
   const chartData = {
     labels: observationsAscending.map(obs => obs.effectiveDate),
     data: observationsAscending.map(obs => parseFloat(obs.vitalsValue)),
+    min: Math.floor(Math.min(...observationsAscending.map(obs => parseFloat(obs.vitalsValue))) - 1),
+    max: Math.ceil(Math.max(...observationsAscending.map(obs => parseFloat(obs.vitalsValue))) + 1),
   };
 
   const observationRows = observationObjects
