@@ -720,12 +720,14 @@ export class MetriportMedicalApi {
    * @returns True if the signature is verified, false otherwise.
    */
   static verifyWebhookSignature(wh_key: string, reqBody: string, signature: string): boolean {
-    const signatureAsString = String(signature);
-    const receivedHash = crypto
-      .createHmac("sha256", wh_key)
-      .update(JSON.stringify(reqBody))
-      .digest("hex");
-    return receivedHash === signatureAsString;
+    const receivedSignature = signature;
+    const expectedSignature = crypto.createHmac("sha256", wh_key).update(reqBody).digest("hex");
+    const a = Buffer.from(expectedSignature);
+    const b = Buffer.from(receivedSignature);
+    if (Buffer.byteLength(a) != Buffer.byteLength(b)) {
+      return false;
+    }
+    return crypto.timingSafeEqual(a, b);
   }
 
   /**
