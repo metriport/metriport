@@ -5,7 +5,8 @@
   "main": "src/index.js",
   "private": true,
   "scripts": {
-    "clean": "rimraf node_modules",
+    "clean": "echo 'nothing to clean'",
+    "deepclean": "rimraf node_modules",
     "build": "npm run eslint",
     "pretest": "node --experimental-worker src/init-service.js",
     "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
