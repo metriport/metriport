@@ -4,26 +4,6 @@ export const chrisDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "chris1.json",
-    },
-    docRef: {
-      resourceType: "DocumentReference",
-      id: "QTIyMDEzODgtQzk1RC00RkU2LTlCNzAtQTQ4MTZBMDM3NzVB",
-      content: [
-        {
-          attachment: {
-            title: "chris1.xml",
-            url: "http://api.metriport.com",
-            contentType: "application/xml",
-            creation: "2023-06-16",
-          },
-        },
-      ],
-    },
-  },
-  {
-    s3Info: {
-      bucket,
       key: "chris1.xml",
     },
     docRef: {
@@ -52,7 +32,7 @@ export const chrisDocRefs: DataEntry[] = [
       content: [
         {
           attachment: {
-            title: "chris11.pdf",
+            title: "chris2.pdf",
             url: "http://api.metriport.com",
             contentType: "application/pdf",
             creation: "2017-10-03",
@@ -72,7 +52,7 @@ export const chrisDocRefs: DataEntry[] = [
       content: [
         {
           attachment: {
-            title: "chris12.pdf",
+            title: "chris3.pdf",
             url: "http://api.metriport.com",
             contentType: "application/pdf",
             creation: "2018-12-20",
@@ -92,7 +72,7 @@ export const chrisDocRefs: DataEntry[] = [
       content: [
         {
           attachment: {
-            title: "chris13.pdf",
+            title: "chris4.pdf",
             url: "http://api.metriport.com",
             contentType: "application/pdf",
             creation: "2019-06-30",
@@ -112,7 +92,7 @@ export const chrisDocRefs: DataEntry[] = [
       content: [
         {
           attachment: {
-            title: "chris14.jpeg",
+            title: "chris5.jpeg",
             url: "http://api.metriport.com",
             contentType: "image/jpeg",
           },
@@ -131,7 +111,7 @@ export const chrisDocRefs: DataEntry[] = [
       content: [
         {
           attachment: {
-            title: "chris15.tif",
+            title: "chris6.tif",
             url: "http://api.metriport.com",
             contentType: "image/tiff",
           },
@@ -150,7 +130,7 @@ export const chrisDocRefs: DataEntry[] = [
       content: [
         {
           attachment: {
-            title: "chris16.jpeg",
+            title: "chris7.jpeg",
             url: "http://api.metriport.com",
             contentType: "image/jpeg",
           },
