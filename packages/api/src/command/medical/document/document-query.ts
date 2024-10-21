@@ -114,6 +114,7 @@ export async function queryDocumentsAcrossHIEs({
   let triggeredDocumentQuery = false;
 
   const commonwellEnabled = await isCommonwellEnabled();
+  // Why? Please add a comment explaining why we're not running CW if there's no CQ managing org name.
   if (!cqManagingOrgName) {
     if (commonwellEnabled || forceCommonwell) {
       getDocumentsFromCW({
