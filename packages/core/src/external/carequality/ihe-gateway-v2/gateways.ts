@@ -24,6 +24,7 @@ export const pointClickCareOid = "2.16.840.1.113883.3.6448";
 export const centralOhioPrimaryCarePhysiciansOid = "1.2.840.114350.1.13.698.2.7.3.688884.100";
 export const familyCareNetworkOid = "1.2.840.114350.1.13.699.2.7.3.688884.100";
 export const hattiesburgClinicOid = "1.2.840.114350.1.13.281.2.7.3.688884.100";
+export const healthPointOid = "1.2.840.114350.1.13.756.2.7.3.688884.100";
 export const surescriptsOid = "2.16.840.1.113883.3.2054.2.1.1";
 
 export const epicOidPrefix = "1.2.840.114350.1.13";
@@ -57,6 +58,7 @@ const docRefsPerRequestByGateway: Record<string, number> = {
   [surescriptsOid]: 1,
   [centralOhioPrimaryCarePhysiciansOid]: 9,
   [familyCareNetworkOid]: 9,
+  [healthPointOid]: 9,
   [hattiesburgClinicOid]: 3,
 };
 
