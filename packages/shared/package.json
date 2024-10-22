@@ -1,6 +1,6 @@
 {
   "name": "@metriport/shared",
-  "version": "0.13.4",
+  "version": "0.14.1",
   "description": "Common code shared across packages - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -50,7 +50,8 @@
     "url": "https://github.com/metriport/metriport/issues"
   },
   "scripts": {
-    "clean": "rimraf dist && rimraf node_modules",
+    "clean": "rimraf dist",
+    "deepclean": "npm run clean && rimraf node_modules",
     "tsc": "tsc",
     "watch": "tsc --watch",
     "build": "tsc -p .",

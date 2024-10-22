@@ -5,7 +5,7 @@ import {
   phoneLength,
 } from "@metriport/shared";
 import { z } from "zod";
-import { defaultDateString, defaultNameString } from "../../shared";
+import { defaultNameString, pastOrTodayDateString } from "../../shared";
 import { addressSchema } from "./common/address";
 import { usStateSchema } from "./common/us-data";
 
@@ -75,7 +75,7 @@ export type Contact = z.infer<typeof contactSchema>;
 export const demographicsSchema = z.object({
   firstName: defaultNameString,
   lastName: defaultNameString,
-  dob: defaultDateString,
+  dob: pastOrTodayDateString,
   genderAtBirth: genderAtBirthSchema,
   personalIdentifiers: z.array(personalIdentifierSchema).optional(),
   address: z.array(addressSchema).nonempty().or(addressSchema),

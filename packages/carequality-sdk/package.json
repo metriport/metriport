@@ -1,6 +1,6 @@
 {
   "name": "@metriport/carequality-sdk",
-  "version": "0.13.4",
+  "version": "0.13.6",
   "description": "SDK to interact with the Carequality directory - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -44,7 +44,8 @@
     "directory": "packages/carequality-sdk"
   },
   "scripts": {
-    "clean": "rimraf dist && rimraf node_modules",
+    "clean": "rimraf dist",
+    "deepclean": "npm run clean && rimraf node_modules",
     "tsc": "tsc",
     "watch": "tsc --watch",
     "build": "tsc -p .",

@@ -1,11 +1,12 @@
 {
   "name": "utils",
-  "version": "1.18.4",
+  "version": "1.18.6",
   "description": "",
   "main": "mock-webhook.js",
   "private": true,
   "scripts": {
-    "clean": "rimraf dist && rimraf node_modules",
+    "clean": "rimraf dist",
+    "deepclean": "npm run clean && rimraf node_modules",
     "build": "tsc -p .",
     "build:cloud": "npm run build",
     "typecheck": "tsc --noEmit",

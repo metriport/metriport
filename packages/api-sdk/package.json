@@ -1,6 +1,6 @@
 {
   "name": "@metriport/api-sdk",
-  "version": "12.1.4",
+  "version": "12.2.1",
   "description": "Metriport helps you access and manage health and medical data, through a single open source API.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -35,7 +35,8 @@
     }
   },
   "scripts": {
-    "clean": "rimraf dist && rimraf node_modules",
+    "clean": "rimraf dist",
+    "deepclean": "npm run clean && rimraf node_modules",
     "tsc": "tsc",
     "watch": "tsc --watch",
     "build": "tsc -p .",
@@ -57,8 +58,8 @@
   },
   "dependencies": {
     "@medplum/fhirtypes": "^2.0.32",
-    "@metriport/commonwell-sdk": "^5.1.4",
-    "@metriport/shared": "^0.13.4",
+    "@metriport/commonwell-sdk": "^5.1.6",
+    "@metriport/shared": "^0.14.1",
     "axios": "^1.4.0",
     "dayjs": "^1.11.7",
     "dotenv": "^16.3.1",
