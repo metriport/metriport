@@ -80,8 +80,8 @@ export const patientImportCsvHeaders = [
   "addressline2",
   "phone1",
   "email1",
-  // "phone2",
-  // "email2",
+  "phone2",
+  "email2",
 ];
 
 const replaceCharacters = ["*"];
