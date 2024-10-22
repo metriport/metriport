@@ -16,13 +16,13 @@ function isValidISODateOptional(date: string | undefined | null): boolean {
   return date ? isValidISODate(date) : true;
 }
 
-export function validateIsPast(date: string): boolean {
-  if (dayjs(date).isAfter(dayjs())) {
-    throw new BadRequestError(`Date must be in the past`, undefined, { date });
+export function validateIsPastOrPresent(date: string): boolean {
+  if (!validateIsPastOrPresentSafe(date)) {
+    throw new BadRequestError(`Date can't be in the future`, undefined, { date });
   }
   return true;
 }
-export function validateIsPastSafe(date: string): boolean {
+export function validateIsPastOrPresentSafe(date: string): boolean {
   if (dayjs(date).isAfter(dayjs())) return false;
   return true;
 }

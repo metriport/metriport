@@ -1,4 +1,4 @@
-import { isValidISODate, validateIsPastSafe } from "@metriport/shared/common/date";
+import { isValidISODate, validateIsPastOrPresentSafe } from "@metriport/shared/common/date";
 import dayjs from "dayjs";
 import { z, ZodString } from "zod";
 
@@ -20,7 +20,7 @@ export const defaultOptionalString = optionalString(defaultString);
 export const defaultDateString = defaultString.refine(isValidISODate, {
   message: `Date must be a valid ISO 8601 date formatted ${ISO_DATE}. Example: 2023-03-15`,
 });
-export const pastOrTodayDateString = defaultDateString.refine(validateIsPastSafe, {
+export const pastOrTodayDateString = defaultDateString.refine(validateIsPastOrPresentSafe, {
   message: `Date can't be in the future`,
 });
 export const defaultNameString = defaultString.min(1);
