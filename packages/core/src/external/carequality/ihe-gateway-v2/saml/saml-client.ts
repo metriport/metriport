@@ -188,6 +188,10 @@ export async function sendSignedXmlMtom({
     ? response.data
     : Buffer.from(response.data, "binary");
 
+  if (binaryData.length === 0) {
+    throw new Error("Received empty response from server");
+  }
+
   const boundary = getBoundaryFromMtomResponse(response.headers["content-type"]);
   if (boundary) {
     return { mtomParts: await parseMtomResponse(binaryData, boundary), rawResponse: binaryData };
