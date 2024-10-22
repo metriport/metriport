@@ -19,6 +19,7 @@ import {
   subscriptionCreateResponseSchema,
   departmentsGetResponseSchema,
   FeedType,
+  EventType,
 } from "@metriport/shared";
 import { errorToString, NotFoundError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
@@ -417,13 +418,24 @@ class AthenaHealthApi {
     return medicationOptions;
   }
 
-  async subscribeToEvent({ cxId, feedtype }: { cxId: string; feedtype: FeedType }): Promise<void> {
+  async subscribeToEvent({
+    cxId,
+    feedtype,
+    eventType,
+  }: {
+    cxId: string;
+    feedtype: FeedType;
+    eventType?: EventType;
+  }): Promise<void> {
     const { log, debug } = out(
       `AthenaHealth subscribe to event - cxId ${cxId} practiceId ${this.practiceId} feedtype ${feedtype}`
     );
     const subscribeUrl = `/${feedtype}/changed/subscription`;
     try {
-      const response = await this.axiosInstanceProprietary.post(subscribeUrl, {});
+      const response = await this.axiosInstanceProprietary.post(
+        subscribeUrl,
+        eventType ? this.createDataParams({ eventname: eventType }) : {}
+      );
       if (!response.data) throw new Error(`No body returned from ${subscribeUrl}`);
       debug(`${subscribeUrl} resp: ${JSON.stringify(response.data)}`);
       if (responsesBucket) {
@@ -585,6 +597,7 @@ class AthenaHealthApi {
         await this.subscribeToEvent({
           cxId,
           feedtype: "appointments",
+          eventType: "ScheduleAppointment",
         });
         return [];
       }
