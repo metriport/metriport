@@ -1,6 +1,7 @@
 import hmac
 import hashlib
 import json
+from typing import Optional
 from fastapi import FastAPI, Request, Response, status
 from pydantic import BaseModel
 
@@ -33,7 +34,7 @@ def verify_webhook_signature(key, message, signature, digestmod=hashlib.sha256):
     return hmac.compare_digest(signature, computed_signature)
 
 class WebhookPayload(BaseModel):
-    ping: str = None
+    ping: Optional[str] = None
 
 
 @app.post("/")
