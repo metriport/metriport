@@ -26,6 +26,8 @@
     "./mpi/*": "./dist/mpi/*.js",
     "./fhir-deduplication": "./dist/fhir-deduplication/index.js",
     "./fhir-deduplication/*": "./dist/fhir-deduplication/*.js",
+    "./fhir-hydration": "./dist/fhir-hydration/index.js",
+    "./fhir-hydration/*": "./dist/fhir-hydration/*.js",
     "./fhir-to-cda": "./dist/fhir-to-cda/index.js",
     "./fhir-to-cda/*": "./dist/fhir-to-cda/*.js",
     "./shareback": "./dist/shareback/index.js",
@@ -67,6 +69,12 @@
       ],
       "fhir-deduplication/*": [
         "dist/fhir-deduplication/*"
+      ],
+      "fhir-hydration": [
+        "dist/fhir-hydration/index.d.ts"
+      ],
+      "fhir-hydration/*": [
+        "dist/fhir-hydration/*"
       ],
       "fhir-to-cda": [
         "dist/fhir-to-cda/index.d.ts"
