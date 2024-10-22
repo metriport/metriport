@@ -43,13 +43,13 @@ describe("validate", () => {
     it("throws an error if dob is in the future", async () => {
       const futureDate = dayjs().add(1, "day").format("YYYY-MM-DD");
       const patient = makePatientCreate({ dob: futureDate });
-      expect(() => validate(patient)).toThrow(`Date must be in the past`);
+      expect(() => validate(patient)).toThrow(`Date can't be in the future`);
     });
 
     it("throws an error when dob is a minute in the future", async () => {
       const futureDate = dayjs().add(1, "minute").toISOString();
       const patient = makePatientCreate({ dob: futureDate });
-      expect(() => validate(patient)).toThrow(`Date must be in the past`);
+      expect(() => validate(patient)).toThrow(`Date can't be in the future`);
     });
 
     it("returns true when dob is the current date", async () => {
