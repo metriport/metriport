@@ -6,7 +6,10 @@ import {
   MedicalRecordFormat,
   Output as ConversionOutput,
 } from "@metriport/core/domain/conversion/fhir-to-medical-record";
-import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
+import {
+  createMRSummaryFileName,
+  createSandboxMRSummaryFileName,
+} from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
 import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { makeS3Client, S3Utils } from "@metriport/core/external/aws/s3";
@@ -16,7 +19,6 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Config } from "../../../shared/config";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
-import { createSandboxMRSummaryFileName } from "./shared";
 
 dayjs.extend(duration);
 

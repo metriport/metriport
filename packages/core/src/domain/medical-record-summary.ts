@@ -23,6 +23,13 @@ export const createMRSummaryFileName = (
   );
 };
 
+export function createSandboxMRSummaryFileName(
+  firstName: string,
+  extension: "pdf" | "html"
+): string {
+  return extension === "pdf" ? `${firstName}_MR.html.pdf` : `${firstName}_MR.html`;
+}
+
 export const createMRSummaryBriefFileName = (
   cxId: string,
   patientId: string,
