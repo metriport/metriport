@@ -5,7 +5,8 @@
   "main": "app.js",
   "private": true,
   "scripts": {
-    "clean": "rimraf dist && rimraf node_modules",
+    "clean": "rimraf dist",
+    "deepclean": "npm run clean && rimraf node_modules",
     "dev": "NODE_EXTRA_CA_CERTS=opensearch-root-ca.pem ts-node-dev --transpile-only --respawn --inspect=0.0.0.0:9229 --project tsconfig.dev.json --files src/app.ts",
     "start": "node dist/app.js",
     "start-opensearch": "docker compose -f docker-compose-opensearch.yml -p opensearch up -d && docker cp opensearch-node1:/usr/share/opensearch/config/root-ca.pem ./opensearch-root-ca.pem",
