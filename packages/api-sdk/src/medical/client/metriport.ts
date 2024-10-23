@@ -699,11 +699,11 @@ export class MetriportMedicalApi {
    * Verifies the signature of a webhook request.
    * Refer to Metriport's documentation for more details: https://docs.metriport.com/medical-api/more-info/webhooks.
    *
-   * @param wh_key - your webhook key.
-   * @param req.body - the body of the webhook request.
+   * @param key - your webhook key.
+   * @param body - the body of the webhook request, as string or Buffer.
    * @param signature - the signature obtained from the webhook request header.
-   *
    * @returns True if the signature is verified, false otherwise.
+   * @throws Error if the body is not a string.
    */
   verifyWebhookSignature(wh_key: string, reqBody: string, signature: string): boolean {
     return MetriportMedicalApi.verifyWebhookSignature(wh_key, reqBody, signature);
