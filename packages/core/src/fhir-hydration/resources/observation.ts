@@ -11,9 +11,10 @@ const unitNormalizationMap = new Map<string, string>([["cel", "C"]]);
  */
 const unitConversionMap = new Map<string, string>([
   ["C", "F"],
-  ["g", "kg"],
-  ["lb", "kg"],
-  ["m", "cm"],
+  ["g", "lb"],
+  ["kg", "lb"],
+  ["m", "in"],
+  ["cm", "in"],
 ]);
 
 export function hydrateObservations(observations: Observation[]): Observation[] {
@@ -85,7 +86,7 @@ function getConvertedValueAndUnit(quantity: Quantity):
   if (!convertedValue) return;
 
   return {
-    newValue: convertedValue,
+    newValue: parseFloat(convertedValue.toFixed(2)),
     newUnit: convertedUnit,
   };
 }

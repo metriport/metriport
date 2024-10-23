@@ -15,8 +15,7 @@ import { getFileContents, getFileNames, makeDir } from "../shared/fs";
  *
  * WARNING: this will overwrite the *_hydrated.json files!!!
  */
-const samplesFolderPath =
-  "/Users/ramilgaripov/Documents/phi/0191a376-7055-7e58-96e6-d6a9e43e328f/hydration";
+const samplesFolderPath = "";
 
 const suffix = "_hydrated";
 
