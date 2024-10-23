@@ -714,13 +714,16 @@ export class MetriportMedicalApi {
    * Refer to Metriport's documentation for more details: https://docs.metriport.com/medical-api/more-info/webhooks.
    *
    * @param key - your webhook key.
-   * @param body - the body of the webhook request, as string.
+   * @param body - the body of the webhook request, as string or Buffer.
    * @param signature - the signature obtained from the webhook request header.
-   *
    * @returns True if the signature is verified, false otherwise.
+   * @throws Error if the body is not a string.
    */
-  static verifyWebhookSignature(key: string, body: string, signature: string): boolean {
-    const normalizedBody = typeof body === "string" ? body : JSON.stringify(body);
+  static verifyWebhookSignature(key: string, body: string | Buffer, signature: string): boolean {
+    if (typeof body !== "string" && !(body instanceof Buffer)) {
+      throw new Error("Body must be a string or Buffer");
+    }
+    const normalizedBody = typeof body === "string" ? body : body.toString();
     const receivedSignature = signature;
     const expectedSignature = crypto.createHmac("sha256", key).update(normalizedBody).digest("hex");
     const a = Buffer.from(expectedSignature);
