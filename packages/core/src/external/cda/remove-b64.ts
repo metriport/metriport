@@ -1,9 +1,9 @@
 import { toArray } from "@metriport/shared";
 import { XMLBuilder } from "fast-xml-parser";
 import { createXMLParser } from "@metriport/shared/common/xml-parser";
-import { BINARY_MIME_TYPES } from "../../util/mime";
 
 const notesTemplateId = "2.16.840.1.113883.10.20.22.2.65";
+const resultsTemplateId = "2.16.840.1.113883.10.20.22.2.3.1";
 const b64Representation = "B64";
 
 export function removeBase64PdfEntries(payloadRaw: string): string {
@@ -22,17 +22,19 @@ export function removeBase64PdfEntries(payloadRaw: string): string {
       if (
         toArray(comp.section?.templateId).some(
           //eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (template: any) => template?.["@_root"] === notesTemplateId
+          (template: any) =>
+            template?.["@_root"] === notesTemplateId || template?.["@_root"] === resultsTemplateId
         )
       ) {
         if (comp.section.entry) {
           //eslint-disable-next-line @typescript-eslint/no-explicit-any
           comp.section.entry = toArray(comp.section.entry).filter((entry: any) => {
-            const mediaType = entry.act?.text?.["@_mediaType"]?.trim().toLowerCase();
             if (
-              BINARY_MIME_TYPES.includes(mediaType) &&
-              entry.act.text["@_representation"]?.trim().toLowerCase() ===
-                b64Representation.toLowerCase()
+              entry.act?.text?.["@_representation"]?.trim().toLowerCase() ===
+                b64Representation.toLowerCase() ||
+              entry.organizer?.component?.observationMedia?.value?.["@_representation"]
+                ?.trim()
+                .toLowerCase() === b64Representation.toLowerCase()
             ) {
               removedEntry++;
               return false;
