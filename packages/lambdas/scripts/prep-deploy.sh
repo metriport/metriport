@@ -2,7 +2,7 @@
 
 main() {
    # Clean so we don't have test files on the node_modules that will be copied to the layer
-   npm run clean
+   npm run deepclean
    npm ci --omit=dev --ignore-scripts --no-fund
    ./scripts/build-shared-layer.sh
    # Reinstall WITH dev dependencies so the compilation works - the regular code imports from layers,
