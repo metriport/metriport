@@ -1,6 +1,7 @@
 import { toArray } from "@metriport/shared";
 import { XMLBuilder } from "fast-xml-parser";
 import { createXMLParser } from "@metriport/shared/common/xml-parser";
+import { BINARY_MIME_TYPES } from "../../util/mime";
 
 const notesTemplateId = "2.16.840.1.113883.10.20.22.2.65";
 const resultsTemplateId = "2.16.840.1.113883.10.20.22.2.3.1";
@@ -29,12 +30,14 @@ export function removeBase64PdfEntries(payloadRaw: string): string {
         if (comp.section.entry) {
           //eslint-disable-next-line @typescript-eslint/no-explicit-any
           comp.section.entry = toArray(comp.section.entry).filter((entry: any) => {
+            const mediaType = entry.act?.text?.["@_mediaType"]?.trim().toLowerCase();
             if (
-              entry.act?.text?.["@_representation"]?.trim().toLowerCase() ===
+              (BINARY_MIME_TYPES.includes(mediaType) || mediaType === undefined) &&
+              (entry.act?.text?.["@_representation"]?.trim().toLowerCase() ===
                 b64Representation.toLowerCase() ||
-              entry.organizer?.component?.observationMedia?.value?.["@_representation"]
-                ?.trim()
-                .toLowerCase() === b64Representation.toLowerCase()
+                entry.organizer?.component?.observationMedia?.value?.["@_representation"]
+                  ?.trim()
+                  .toLowerCase() === b64Representation.toLowerCase())
             ) {
               removedEntry++;
               return false;

@@ -54,8 +54,8 @@ dayjs.extend(duration);
  * - fhirBaseUrl: the URL of the FHIR server;
  */
 
-const cdaLocation = ``;
-const converterBaseUrl = "http://localhost:8777";
+const cdaLocation = `/Users/jonahkaye/Documents/phi/breakB64/ignore`;
+const converterBaseUrl = "http://localhost:8080";
 const fhirBaseUrl = "http://localhost:8889";
 const parallelConversions = 10;
 // Execute 1 batch at a time to avoid concurrency when upserting resources (resulting in 409/Conflict), which
