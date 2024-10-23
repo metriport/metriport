@@ -17,7 +17,6 @@ const ajv = new Ajv({
 
 ajv.addMetaSchema(metaSchema);
 const validate = ajv.compile(schema);
-const clonedSchema = cloneDeep(schema);
 
 export const validateFhirEntries = (bundle: Bundle): Bundle => {
   const errors: LocalError[] = [];
@@ -36,7 +35,6 @@ export const validateFhirEntries = (bundle: Bundle): Bundle => {
       const resourceValidate = ajv.compile(getSubSchema(resourceType));
       resourceValidate(entry.resource);
       errors.push({ resourceType, resourceId: entry.resource.id, errors: resourceValidate.errors });
-      schema.oneOf = clonedSchema.oneOf;
     }
   }
 
@@ -53,7 +51,7 @@ function toErrorMessage(error: LocalError): string {
 }
 
 const getSubSchema = (resourceType: string) => {
-  const subSchema = schema;
+  const subSchema = cloneDeep(schema);
 
   subSchema.oneOf = [{ $ref: `#/definitions/${resourceType}` }];
 
