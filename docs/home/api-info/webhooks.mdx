@@ -48,13 +48,19 @@ and performing iterative hashes of the two to create a signature. That signature
 signature in the header for equality. If the signatures are equal, you can trust the webhook
 payload is authentic and has not been tampered with. If they aren't equal, you should throw it away.
 
-You can use this header to verify that the webhook messages sent to your endpoint are from Metriport. Here's an example of how you can do this in Node.js:
+You can use this header to verify that the webhook messages sent to your endpoint are from Metriport. 
+
+Here's an example of how you can do this in Node.js:
 
 <Snippet file="webhook-signature-validation.mdx" />
 
-The important thing is to make sure you use a trusted cryptography library in whatever language you choose to validate the webhook message in.
+The important thing is to make sure you use a trusted cryptography library in whatever language you
+choose to validate the webhook message in.
 
-You can also compute an HMAC in python:
+Avoid parsing the request body before generating the signature - it could result in a slightly
+different signature that's enough to invalidate it.
+
+You can also compute an HMAC in Python:
 
 ```python
 
@@ -80,7 +86,7 @@ def compute_hmac(key, message, signature, digestmod=hashlib.sha256):
 
 # Example usage
 key = 'your_secret_key'  # The webhook key from the Settings page
-message = '{"webhookUrl": "https://api.app.com/webhook"}'  # The message from the request in JSON format
+message = '{"webhookUrl": "https://api.app.com/webhook"}'  # The message from the request in string format
 signature = 'the-request-signature'  # The signature from the header
 
 is_signature_valid = compute_hmac(key, message, signature)
@@ -89,6 +95,7 @@ if is_signature_valid:
     print("Signature verified")
 else:
     print("Signature verification failed")
+    return
 ```
 
 ### Generating a new webhook key

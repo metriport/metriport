@@ -1,14 +1,14 @@
 import * as dotenv from "dotenv";
 dotenv.config();
+// Keep dotenv import/setup before all other imports
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+import { getEnvVarOrFail } from "@metriport/shared";
+import express, { Application, raw, Request, Response } from "express";
 import fs from "fs";
 import https from "https";
-import { MetriportMedicalApi } from "@metriport/api-sdk";
-import express, { Application, Request, Response } from "express";
-import { getEnvVarOrFail } from "@metriport/shared";
 
 const app: Application = express();
 
-app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: false, limit: "2mb" }));
 
 const whKey = getEnvVarOrFail("METRIPORT_WH_KEY");
@@ -19,8 +19,8 @@ const metriportApi = new MetriportMedicalApi(apiKey, {
   baseAddress: isProd ? "https://api.metriport.com" : "https://api.sandbox.metriport.com",
 });
 
-app.post("/", async (req: Request, res: Response) => {
-  console.log(`BODY: ${JSON.stringify(req.body, undefined, 2)}`);
+app.post("/", raw({ type: "*/*" }), async (req: Request, res: Response) => {
+  console.log(`BODY: ${req.body.toString()}`);
 
   const signature = req.headers["x-metriport-signature"];
 
@@ -30,13 +30,14 @@ app.post("/", async (req: Request, res: Response) => {
     console.log(`Signature verification failed`);
     return res.sendStatus(401);
   }
+  const payload = JSON.parse(req.body.toString());
 
-  if (req.body.meta.type === "medical.document-download") {
+  if (payload.meta.type === "medical.document-download") {
     console.log(`Received document download webhook`);
-    const patient = req.body.patients[0];
+    const patient = payload.patients[0];
 
     if (patient.status === "completed") {
-      const documents = req.body.patients[0].documents;
+      const documents = payload.patients[0].documents;
 
       if (documents.length > 0) {
         const firstDoc = documents[0];
@@ -52,9 +53,9 @@ app.post("/", async (req: Request, res: Response) => {
     }
   }
 
-  if (req.body.meta.type === "medical.document-conversion") {
+  if (payload.meta.type === "medical.document-conversion") {
     console.log(`Received document conversion webhook`);
-    const patient = req.body.patients[0];
+    const patient = payload.patients[0];
 
     if (patient.status === "completed") {
       const patientId = patient.patientId;
@@ -73,24 +74,28 @@ app.post("/", async (req: Request, res: Response) => {
     }
   }
 
-  if (req.body.meta.type === "medical.consolidated-data") {
+  if (payload.meta.type === "medical.consolidated-data") {
     console.log(`Received consolidated data webhook`);
-    const patient = req.body.patients[0];
+    const patient = payload.patients[0];
 
     if (patient.status === "completed") {
-      console.log(JSON.stringify(req.body, undefined, 2));
+      console.log(JSON.stringify(payload, undefined, 2));
     } else {
       console.log("Error consolidating data");
     }
   }
 
-  if (req.body.ping) {
+  if (payload.ping) {
     console.log(`Sending 200 | OK + 'pong' body param`);
-    return res.status(200).send({ pong: req.body.ping });
+    return res.status(200).send({ pong: payload.ping });
   }
   console.log(`Sending 200 | OK`);
   res.sendStatus(200);
 });
+
+// If needed, you can parse the body as JSON from here on (the webhook endpoint
+// should work with the raw request body)
+app.use(express.json({ limit: "2mb" }));
 
 const port = 8088;
 app.listen(port, "0.0.0.0", async () => {
