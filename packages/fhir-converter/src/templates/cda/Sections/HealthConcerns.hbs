@@ -34,7 +34,7 @@
                 	{{>References/Condition/subject.hbs ID=(generateUUID (toJsonString healthEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
                 {{/with}}
             {{else if healthEntry.observation.value.value}}
-                {{>Resources/Observation.hbs observationEntry=healthEntry.observation ID=(generateUUID (toJsonString healthEntry.observation))}},
+                {{>Resources/Observation.hbs observationCategory="survey" observationEntry=healthEntry.observation ID=(generateUUID (toJsonString healthEntry.observation))}},
             {{/if}}
         {{/each}}
     {{/each}}
