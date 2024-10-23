@@ -54,7 +54,7 @@ dayjs.extend(duration);
  * - fhirBaseUrl: the URL of the FHIR server;
  */
 
-const cdaLocation = `/Users/jonahkaye/Documents/phi/breakB64/ignore`;
+const cdaLocation = ``;
 const converterBaseUrl = "http://localhost:8080";
 const fhirBaseUrl = "http://localhost:8889";
 const parallelConversions = 10;

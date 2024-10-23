@@ -32,7 +32,7 @@ export function removeBase64PdfEntries(payloadRaw: string): string {
           comp.section.entry = toArray(comp.section.entry).filter((entry: any) => {
             const mediaType = entry.act?.text?.["@_mediaType"]?.trim().toLowerCase();
             if (
-              (BINARY_MIME_TYPES.includes(mediaType) || mediaType === undefined) &&
+              (BINARY_MIME_TYPES.includes(mediaType) || mediaType == undefined) &&
               (entry.act?.text?.["@_representation"]?.trim().toLowerCase() ===
                 b64Representation.toLowerCase() ||
                 entry.organizer?.component?.observationMedia?.value?.["@_representation"]
