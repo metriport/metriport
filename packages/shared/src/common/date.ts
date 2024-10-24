@@ -1,4 +1,4 @@
-import dayjs, { ConfigType } from "dayjs";
+import dayjs, { Dayjs, ConfigType } from "dayjs";
 import utc from "dayjs/plugin/utc";
 
 import { CustomErrorParams, z } from "zod";
@@ -16,13 +16,15 @@ function isValidISODateOptional(date: string | undefined | null): boolean {
   return date ? isValidISODate(date) : true;
 }
 
-export function validateIsPastOrPresent(date: string): boolean {
+export function validateIsPastOrPresent(date: string | Dayjs): boolean {
   if (!validateIsPastOrPresentSafe(date)) {
-    throw new BadRequestError(`Date can't be in the future`, undefined, { date });
+    throw new BadRequestError(`Date can't be in the future`, undefined, {
+      date: typeof date === "string" ? date : date.toISOString(),
+    });
   }
   return true;
 }
-export function validateIsPastOrPresentSafe(date: string): boolean {
+export function validateIsPastOrPresentSafe(date: string | Dayjs): boolean {
   if (dayjs(date).isAfter(dayjs())) return false;
   return true;
 }

@@ -1,4 +1,9 @@
-import { stripNonNumericChars } from "../../common/string";
+import { z } from "zod";
+import {
+  stripNonNumericChars,
+  normalizeNonEmptyStringSafe,
+  normalizeNonEmptyString,
+} from "../../common/string";
 
 export const phoneLength = 10;
 export const examplePhoneNumber = "1231231234";
@@ -60,3 +65,10 @@ export function normalizePhoneNumberSafe(telephone: string): string | undefined 
   if (!isPhoneValid(normalPhone)) return undefined;
   return normalPhone;
 }
+
+export const phoneSchema = z.coerce
+  .string()
+  .refine(normalizeNonEmptyStringSafe, { message: "Invalid phone" })
+  .transform(str => normalizeNonEmptyString(str))
+  .refine(normalizePhoneNumberSafe, { message: "Invalid phone" })
+  .transform(phone => normalizePhoneNumberStrict(phone));

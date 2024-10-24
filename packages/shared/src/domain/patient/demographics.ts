@@ -1,0 +1,17 @@
+import { z } from "zod";
+import { nonEmptyStringSchema } from "../../common/string";
+import { dobSchema } from "../dob";
+import { genderAtBirthSchema } from "../gender";
+import { personalIdentifierSchema } from "../identifier";
+import { addressSchema } from "../address";
+import { contactSchema } from "../contact";
+
+export const demographicsSchema = z.object({
+  firstName: nonEmptyStringSchema,
+  lastName: nonEmptyStringSchema,
+  dob: dobSchema,
+  genderAtBirth: genderAtBirthSchema,
+  personalIdentifiers: z.array(personalIdentifierSchema),
+  address: z.array(addressSchema).nonempty(),
+  contact: z.array(contactSchema),
+});

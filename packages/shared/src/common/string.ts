@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 export function limitStringLength<T extends string | undefined>(
   value: T,
   max = 255,
@@ -14,3 +16,24 @@ export function limitStringLength<T extends string | undefined>(
 export function stripNonNumericChars(str: string): string {
   return str.trim().replace(/\D/g, "");
 }
+
+function trimString(str: string): string {
+  return str.trim();
+}
+
+export function normalizeNonEmptyString(str: string): string {
+  const normalizedString = normalizeNonEmptyStringSafe(str);
+  if (!normalizedString) throw new Error("Invalid string");
+  return normalizedString;
+}
+
+export function normalizeNonEmptyStringSafe(str: string): string | undefined {
+  const normalizedString = trimString(str);
+  if (normalizedString === "") return undefined;
+  return normalizedString;
+}
+
+export const nonEmptyStringSchema = z
+  .string()
+  .refine(normalizeNonEmptyStringSafe, { message: "Invalid string" })
+  .transform(str => normalizeNonEmptyString(str));

@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 function isValidZipCode(zipCode: string): boolean {
   if (!zipCode) return false;
   if (zipCode.length === 0) return false;
@@ -59,3 +61,8 @@ export function normalizeZipCodeNewSafe(zipCode: string): string | undefined {
   if (mainPart.length < 5) return mainPart.padStart(5, "0");
   return mainPart.slice(0, 5);
 }
+
+export const zipSchema = z.coerce
+  .string()
+  .refine(normalizeZipCodeNewSafe, { message: "Invalid zip" })
+  .transform(zip => normalizeZipCodeNew(zip));

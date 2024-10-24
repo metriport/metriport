@@ -132,14 +132,15 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
       const patientChunks = chunk(patients, patientCreateChunk);
       for (const patientChunk of patientChunks) {
         const chunkOutcomes = await Promise.allSettled(
-          patientChunk.map(async patient => {
-            const patientPayload = createPatientPayload(patient);
+          patientChunk.map(async patientWithIndex => {
+            const patientPayload = createPatientPayload(patientWithIndex.patient);
             const processPatientCreateRequest: ProcessPatientCreateEvemtPayload = {
               cxId,
               facilityId,
               jobId,
               jobStartedAt,
               patientPayload,
+              patientRowIndex: patientWithIndex.rowIndex,
               rerunPdOnNewDemographics,
             };
             try {
@@ -194,6 +195,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
     jobId,
     jobStartedAt,
     patientPayload,
+    patientRowIndex,
     s3BucketName,
     processPatientQueryQueue,
     rerunPdOnNewDemographics,
@@ -222,6 +224,10 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
         jobId,
         jobStartedAt,
         patientId,
+        data: {
+          patientPayload,
+          patientRowIndex,
+        },
         s3BucketName,
       });
       const processPatientQueryRequest: ProcessPatientQueryEvemtPayload = {
