@@ -30,7 +30,7 @@ export async function updateValidFileWithPatientId({
     `PatientImport update valid file with patient id - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
   );
   const s3Utils = getS3UtilsInstance();
-  const key = createFileKeyFiles(cxId, jobStartedAt, jobId, "raw");
+  const key = createFileKeyFiles(cxId, jobStartedAt, jobId, "valid");
   try {
     const csvAsString = await s3Utils.getFileContentsAsString(s3BucketName, key);
     const allRows = csvAsString.split("\n");
