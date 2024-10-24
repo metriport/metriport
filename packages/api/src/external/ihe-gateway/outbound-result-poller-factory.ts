@@ -4,8 +4,9 @@ import { OutboundResultPollerLambda } from "@metriport/core/external/carequality
 import { Config } from "../../shared/config";
 
 export function makeOutboundResultPoller(): OutboundResultPoller {
-  if (!Config.isCloudEnv())
+  if (!Config.isCloudEnv()) {
     return new OutboundResultPollerDirect(Config.getApiUrl(), Config.getDBCreds());
+  }
   const patientDiscoveryLambdaName = Config.getOutboundPatientDiscoveryLambdaName();
   const docQueryLambdaName = Config.getOutboundDocumentQueryLambdaName();
   const docRetrievalLambdaName = Config.getOutboundDocumentRetrievalLambdaName();
