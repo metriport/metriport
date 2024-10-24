@@ -12,7 +12,9 @@ import {
   MAPIWebhookStatus,
   processPatientDocumentRequest,
 } from "../../../command/medical/document/document-webhook";
+import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
+import { recreateConsolidated } from "../../../command/medical/patient/consolidated-recreate";
 import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { Config } from "../../../shared/config";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
@@ -153,6 +155,11 @@ export async function sandboxGetDocRefsAndUpsert({
       });
     }
   }
+
+  // After docs are converted (and conversion bundles are stored in S3), we recreate the consolidated
+  // bundle to make sure it's up-to-date.
+  const organization = await getOrganizationOrFail({ cxId });
+  await recreateConsolidated({ patient, organization });
 
   await appendDocQueryProgress({
     patient: { id: patientId, cxId },

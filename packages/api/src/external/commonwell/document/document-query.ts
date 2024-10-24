@@ -32,13 +32,11 @@ import { mapDocRefToMetriport } from "../../../shared/external";
 import { Util } from "../../../shared/util";
 import {
   isCQDirectEnabledForCx,
-  isCWEnabledForCx,
   isEnhancedCoverageEnabledForCx,
   isStalePatientUpdateEnabledForCx,
 } from "../../aws/app-config";
 import { reportMetric } from "../../aws/cloudwatch";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
-import { isFacilityEnabledToQueryCW } from "../../commonwell/shared";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { makeFhirApi } from "../../fhir/api/api-factory";
 import { cwToFHIR } from "../../fhir/document";
@@ -67,6 +65,7 @@ import {
   getContentTypeOrUnknown,
   getFileName,
 } from "./shared";
+import { validateCWEnabled } from "../shared";
 
 const staleLookbackHours = 24;
 
@@ -131,10 +130,12 @@ export async function queryAndProcessDocuments({
     source: MedicalDataSource.COMMONWELL,
     log,
   });
-  const isCwEnabledForCx = await isCWEnabledForCx(cxId);
-  if (!isCwEnabledForCx) return interrupt(`CW disabled for cx ${cxId}`);
-  const isCwQueryEnabled = await isFacilityEnabledToQueryCW(facilityId, patientParam);
-  if (!isCwQueryEnabled) return interrupt(`CW disabled for facility ${facilityId}`);
+  const isCwEnabled = await validateCWEnabled({
+    patient: patientParam,
+    facilityId,
+    log,
+  });
+  if (!isCwEnabled) return interrupt(`CW disabled for cxId ${cxId} patientId ${patientId}`);
 
   try {
     const [initiator] = await Promise.all([

@@ -38,7 +38,7 @@ export async function handleDataContribution({
     patientId,
     `${requestId}_${FHIR_BUNDLE_SUFFIX}.json`
   );
-  let startedAt = Date.now();
+  const mainStartedAt = Date.now();
   const [, organization, patient] = await Promise.all([
     uploadFhirBundleToS3({
       fhirBundle: bundle,
@@ -47,24 +47,23 @@ export async function handleDataContribution({
     getOrganizationOrFail({ cxId }),
     getPatientOrFail({ id: patientId, cxId }),
   ]);
-  log(`${Date.now() - startedAt}ms to get org and patient, and store on S3`);
-  startedAt = Date.now();
+  log(`${Date.now() - mainStartedAt}ms to get org and patient, and store on S3`);
+  const validationStartedAt = Date.now();
 
   const fhirOrganization = toFhirOrganization(organization);
   const fullBundle = hydrateBundle(bundle, patient, fhirBundleDestinationKey);
   const validatedBundle = validateFhirEntries(fullBundle);
   const incomingAmount = validatedBundle.entry.length;
   await checkResourceLimit(incomingAmount, patient);
-  log(`${Date.now() - startedAt}ms to validate and check limits`);
-  startedAt = Date.now();
+  log(`${Date.now() - validationStartedAt}ms to validate and check limits`);
 
   // Do it before storing on the FHIR server since this also validates the bundle
   if (!Config.isSandbox() && hasCompositionResource(validatedBundle)) {
+    const cdaConversionStartedAt = Date.now();
     const fhirPatient = toFhirPatient(patient);
     validatedBundle.entry.push({ resource: fhirPatient });
     validatedBundle.entry.push({ resource: fhirOrganization });
     const converted = await convertFhirToCda({ cxId, validatedBundle });
-
     // intentionally async
     uploadCdaDocuments({
       cxId,
@@ -72,18 +71,17 @@ export async function handleDataContribution({
       cdaBundles: converted,
       organization: fhirOrganization,
       docId: requestId,
-    });
-    log(`${Date.now() - startedAt}ms to convert to CDA`);
-    startedAt = Date.now();
+    }).then(() => log(`${Date.now() - cdaConversionStartedAt}ms to convert to CDA`));
   }
 
+  const storeStartedAt = Date.now();
   const consolidatedDataUploadResults = await createOrUpdateConsolidatedPatientData({
     cxId,
     patientId: patient.id,
     requestId,
     fhirBundle: validatedBundle,
   });
-  log(`${Date.now() - startedAt}ms to store on FHIR server and S3`);
+  log(`${Date.now() - storeStartedAt}ms to store on FHIR server and S3`);
 
   if (!Config.isSandbox()) {
     // intentionally async

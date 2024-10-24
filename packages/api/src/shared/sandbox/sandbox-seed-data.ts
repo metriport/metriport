@@ -4,6 +4,7 @@ import { aaminaDocRefs } from "./sandbox-seed-data-aamina";
 import { andreasDocRefs } from "./sandbox-seed-data-andreas";
 import { damienDocRefs } from "./sandbox-seed-data-damien";
 import { DataEntry } from "./sandbox-seed-data-defaults";
+import { chrisDocRefs } from "./sandbox-seed-data-chris";
 import { emiliaDocRefs } from "./sandbox-seed-data-emilia";
 import { gavinDocRefs } from "./sandbox-seed-data-gavin";
 import { hajraDocRefs } from "./sandbox-seed-data-hajra";
@@ -67,6 +68,24 @@ type DemographicsOnDataEntry = Pick<
 export type PatientEntry = { demographics: DemographicsOnDataEntry; docRefs: DataEntry[] };
 
 export const seedData: Record<string, PatientEntry> = {
+  chris: {
+    demographics: {
+      firstName: "Chris",
+      lastName: "Smith",
+      dob: "1995-01-01",
+      genderAtBirth: "M",
+      address: [
+        {
+          addressLine1: "123 Atlantis Rd",
+          city: "Chicago",
+          state: USState.IL,
+          zip: "12345",
+          country: "USA",
+        },
+      ],
+    },
+    docRefs: chrisDocRefs,
+  },
   jane: {
     demographics: {
       firstName: "Jane",

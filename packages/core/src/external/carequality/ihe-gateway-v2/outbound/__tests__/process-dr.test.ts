@@ -200,5 +200,17 @@ describe("dr-response", () => {
       });
       expect(response.operationOutcome?.issue[0]?.code).toEqual(schemaErrorCode);
     });
+    it("should process response that is an empty buffer correctly", async () => {
+      const randomResponse = "";
+      const mtomResponse = await createMtomMessageWithoutAttachments(randomResponse);
+      const response = await processDrResponse({
+        response: {
+          mtomResponse: mtomResponse,
+          gateway: outboundDrRequest.gateway,
+          outboundRequest: outboundDrRequest,
+        },
+      });
+      expect(response.operationOutcome?.issue[0]?.code).toEqual(schemaErrorCode);
+    });
   });
 });
