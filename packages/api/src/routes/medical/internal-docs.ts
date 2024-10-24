@@ -340,13 +340,15 @@ router.get(
 /**
  * POST /internal/docs/query
  *
- * Starts a new document query even if the current one is in 'processing' state.
+ * Starts a new document query. Optionally overrides even if the current one is in 'processing' state.
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.patientId - The customer/account's ID.
  * @param req.query.facilityId - Optional; The facility providing NPI for the document query.
  * @param req.body Optional metadata to be sent through webhook. {"disableWHFlag": "true"} can be sent here to disable webhook.
- * @param req.query.cqManagingOrgName - Optional; The CQ managing organization name.
+ * @param req.query.forceQuery - Optional; Whether to force doc query to run. DEFAULTS TRUE.
  * @param req.query.forcePatientDiscovery - Optional; Whether to force patient discovery before document query.
+ * @param req.query.cqManagingOrgName - Optional; The CQ managing organization name.
+ * @param req.query.triggerConsolidated - Optional; Whether to force get consolidated PDF on conversion finish.
  * @return updated document query progress
  */
 router.post(
@@ -356,17 +358,20 @@ router.post(
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
     const facilityId = getFrom("query").optional("facilityId", req);
+    const forceQuery = getFromQueryAsBoolean("forceQuery", req) ?? true;
     const forcePatientDiscovery = getFromQueryAsBoolean("forcePatientDiscovery", req);
     const cqManagingOrgName = getFrom("query").optional("cqManagingOrgName", req);
+    const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
     const cxDocumentRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
     const docQueryProgress = await queryDocumentsAcrossHIEs({
       cxId,
       patientId,
       facilityId,
-      forceQuery: true,
+      forceQuery,
       forcePatientDiscovery,
       cqManagingOrgName,
+      triggerConsolidated,
       cxDocumentRequestMetadata: cxDocumentRequestMetadata?.metadata,
     });
 
