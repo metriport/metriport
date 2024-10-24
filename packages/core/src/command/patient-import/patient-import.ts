@@ -4,6 +4,8 @@ export type PhaseStatus = "processing" | "completed" | "failed";
 
 export type PatientRecord = {
   patientId: string;
+  patientPayload?: PatientPayload;
+  patientRowIndex?: string;
   patientQueryStatus?: PhaseStatus;
   documentQueryStatus?: PhaseStatus;
   documentRetrevialStatus?: PhaseStatus;
@@ -47,6 +49,7 @@ export type ProcessPatientCreateRequest = {
   jobId: string;
   jobStartedAt: string;
   patientPayload: PatientPayload;
+  patientRowIndex: string;
   s3BucketName: string;
   processPatientQueryQueue: string;
   rerunPdOnNewDemographics: boolean;

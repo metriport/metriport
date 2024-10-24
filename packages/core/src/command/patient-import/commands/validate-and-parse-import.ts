@@ -23,6 +23,10 @@ export type RowError = { rowColumns: string[]; error: string };
 const eolRegex = new RegExp(/\r/g);
 const commaRegex = new RegExp(/,/g);
 
+type PatientWithRow = { patient: PatientImportPatient; rowColumns: string[] };
+type PatientWithIndex = { patient: PatientImportPatient; rowIndex: string };
+type PatientWithRowAndIndex = PatientWithRow & PatientWithIndex;
+
 export async function validateAndParsePatientImportCsvFromS3({
   cxId,
   jobId,
@@ -33,24 +37,28 @@ export async function validateAndParsePatientImportCsvFromS3({
   jobId: string;
   jobStartedAt: string;
   s3BucketName: string;
-}): Promise<PatientImportPatient[]> {
+}): Promise<PatientWithIndex[]> {
   const { log } = out(`PatientImport validate and parse import - cxId ${cxId} jobId ${jobId}`);
   const s3Utils = getS3UtilsInstance();
   const key = createFileKeyFiles(cxId, jobStartedAt, jobId, "raw");
   try {
     const csvAsString = await s3Utils.getFileContentsAsString(s3BucketName, key);
 
-    const { patients, invalidRows, validRows, headers } = await validateAndParsePatientImportCsv({
-      contents: csvAsString,
-    });
+    const { patientsWithRowAndIndex, invalidRows, headers } =
+      await validateAndParsePatientImportCsv({
+        contents: csvAsString,
+      });
     await Promise.all([
-      validRows.length > 0
+      patientsWithRowAndIndex.length > 0
         ? creatValidationFile({
             cxId,
             jobId,
             jobStartedAt,
             stage: "valid",
-            rows: [headers.join(","), ...validRows.map(rowColumn => rowColumn.join(","))],
+            rows: [
+              ["patientId", ...headers].join(","),
+              ...patientsWithRowAndIndex.map(p => ["", ...p.rowColumns].join(",")),
+            ],
             s3BucketName,
           })
         : async () => Promise<void>,
@@ -68,7 +76,9 @@ export async function validateAndParsePatientImportCsvFromS3({
           })
         : async () => Promise<void>,
     ]);
-    return patients;
+    return patientsWithRowAndIndex.map(p => {
+      return { ...p, rowColumns: undefined };
+    });
   } catch (error) {
     const msg = `Failure validating and parsing import @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);
@@ -90,10 +100,9 @@ export async function validateAndParsePatientImportCsv({
 }: {
   contents: string;
 }): Promise<{
-  validRows: string[][];
+  patientsWithRowAndIndex: PatientWithRowAndIndex[];
   invalidRows: RowError[];
   headers: string[];
-  patients: PatientImportPatient[];
 }> {
   const allRows = csvAsString.split("\n");
   const headersRow = allRows[0];
@@ -104,9 +113,8 @@ export async function validateAndParsePatientImportCsv({
   }
   const rows = allRows.slice(1);
   if (rows.length === 0) throw new Error(`File is empty except for headers`);
-  const validRows: string[][] = [];
   const invalidRows: RowError[] = [];
-  const patients = rows.flatMap((row, rowIndex) => {
+  const patientsWithRow: PatientWithRow[] = rows.flatMap((row, rowIndex) => {
     const rowColumns = stripEol(row).split(",");
     if (rowColumns.length !== headers.length) {
       invalidRows.push({
@@ -131,10 +139,12 @@ export async function validateAndParsePatientImportCsv({
       });
       return [];
     }
-    validRows.push(rowColumns);
-    return parsedPatient.data;
+    return { patient: parsedPatient.data, rowColumns };
   });
-  return { validRows, invalidRows, headers, patients };
+  const patientsWithRowAndIndex: PatientWithRowAndIndex[] = patientsWithRow.map((p, index) => {
+    return { ...p, rowIndex: `${index}` };
+  });
+  return { patientsWithRowAndIndex, invalidRows, headers };
 }
 
 function stripEol(input: string, replacement = "") {

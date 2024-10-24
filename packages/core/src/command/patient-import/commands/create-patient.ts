@@ -1,5 +1,5 @@
 import axios from "axios";
-import { errorToString, patientCreateResponseSchema } from "@metriport/shared";
+import { errorToString, patientDtoSchema } from "@metriport/shared";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import { Config } from "../../../util/config";
@@ -21,7 +21,7 @@ export async function createPatient({
     const response = await api.post(patientUrl, patientPayload);
     if (!response.data) throw new Error(`No body returned from ${patientUrl}`);
     debug(`${patientUrl} resp: ${JSON.stringify(response.data)}`);
-    return patientCreateResponseSchema.parse(response.data).id;
+    return patientDtoSchema.parse(response.data).id;
   } catch (error) {
     const msg = `Failure while creating patient @ PatientImport`;
     log(`${msg}. Cause: ${errorToString(error)}`);

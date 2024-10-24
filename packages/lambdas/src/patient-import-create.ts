@@ -33,8 +33,15 @@ export async function handler(event: SQSEvent) {
 
     console.log(`Running with unparsed body: ${message.body}`);
     const parsedBody = parseBody(message.body);
-    const { cxId, facilityId, jobId, jobStartedAt, patientPayload, rerunPdOnNewDemographics } =
-      parsedBody;
+    const {
+      cxId,
+      facilityId,
+      jobId,
+      jobStartedAt,
+      patientPayload,
+      patientRowIndex,
+      rerunPdOnNewDemographics,
+    } = parsedBody;
 
     const log = prefixedLog(`cxId ${cxId}, job ${jobId}`);
     try {
@@ -51,6 +58,7 @@ export async function handler(event: SQSEvent) {
         jobStartedAt,
         s3BucketName: patientImportBucket,
         patientPayload,
+        patientRowIndex,
         processPatientQueryQueue,
         rerunPdOnNewDemographics,
         waitTimeInMillis,
@@ -109,6 +117,10 @@ function parseBody(body?: unknown): ProcessPatientCreateEvemtPayload {
   if (!patientPayloadRaw) throw new Error(`Missing patientPayload`);
   if (typeof patientPayloadRaw !== "object") throw new Error(`Invalid patientPayload`);
 
+  const patientRowIndexRaw = bodyAsJson.patientRowIndex;
+  if (!patientRowIndexRaw) throw new Error(`Missing patientRowIndex`);
+  if (typeof patientRowIndexRaw !== "string") throw new Error(`Invalid patientRowIndex`);
+
   const rerunPdOnNewDemographicsRaw = bodyAsJson.rerunPdOnNewDemographics;
   if (rerunPdOnNewDemographicsRaw === undefined)
     throw new Error(`Missing rerunPdOnNewDemographics`);
@@ -120,7 +132,16 @@ function parseBody(body?: unknown): ProcessPatientCreateEvemtPayload {
   const jobId = jobIdRaw as string;
   const jobStartedAt = jobStartedAtRaw as string;
   const patientPayload = patientPayloadRaw as PatientPayload;
+  const patientRowIndex = patientRowIndexRaw as string;
   const rerunPdOnNewDemographics = rerunPdOnNewDemographicsRaw as boolean;
 
-  return { cxId, facilityId, jobId, jobStartedAt, patientPayload, rerunPdOnNewDemographics };
+  return {
+    cxId,
+    facilityId,
+    jobId,
+    jobStartedAt,
+    patientPayload,
+    patientRowIndex,
+    rerunPdOnNewDemographics,
+  };
 }

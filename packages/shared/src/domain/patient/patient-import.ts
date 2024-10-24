@@ -1,28 +1,27 @@
 import { z } from "zod";
-import { normalizeUSStateForAddressSafe } from "../address";
-import { normalizeZipCodeNewSafe } from "../address/zip";
-import { isEmailValid } from "../contact/email";
-import { isPhoneValid } from "../contact/phone";
-import { normalizeDateSafe } from "../dob";
-import { normalizeGenderSafe } from "../gender";
+import { nonEmptyStringSchema } from "../../common/string";
+import { dobSchema } from "../dob";
+import { genderAtBirthSchema } from "../gender";
+import { zipSchema } from "../address/zip";
+import { usStateForAddressSchema } from "../address";
+import { phoneSchema } from "../contact/phone";
+import { emailSchema } from "../contact/email";
 
 export const patientImportPatientSchema = z.object({
-  dob: z.string().refine(normalizeDateSafe, { message: "Invalid dob" }),
-  gender: z.string().refine(normalizeGenderSafe, { message: "Invalid gender" }),
-  firstname: z.string().min(1, { message: "First name must be defined" }),
-  lastname: z.string().min(1, { message: "Last name must be defined" }),
-  zip: z.string().refine(normalizeZipCodeNewSafe, { message: "Invalid zip" }),
-  city: z.string().min(1, { message: "City must be defined" }),
-  state: z
-    .string()
-    .refine(normalizeUSStateForAddressSafe, { message: "Invalid state or territory" }),
-  addressline1: z.string().min(1, { message: "Address line must be defined" }),
-  addressline2: z.string().optional(),
-  phone1: z.string().refine(isPhoneValid, { message: "Invalid phone" }).optional(),
-  phone2: z.string().refine(isPhoneValid, { message: "Invalid phone" }).optional(),
-  email1: z.string().refine(isEmailValid, { message: "Invalid email" }).optional(),
-  email2: z.string().refine(isEmailValid, { message: "Invalid email" }).optional(),
-  externalid: z.string().optional(),
+  dob: dobSchema,
+  gender: genderAtBirthSchema,
+  firstname: nonEmptyStringSchema,
+  lastname: nonEmptyStringSchema,
+  addressline1: nonEmptyStringSchema,
+  addressline2: nonEmptyStringSchema.optional(),
+  city: nonEmptyStringSchema,
+  state: usStateForAddressSchema,
+  zip: zipSchema,
+  phone1: phoneSchema.optional(),
+  phone2: phoneSchema.optional(),
+  email1: emailSchema.optional(),
+  email2: emailSchema.optional(),
+  externalid: nonEmptyStringSchema.optional(),
 });
 export type PatientImportPatient = z.infer<typeof patientImportPatientSchema>;
 

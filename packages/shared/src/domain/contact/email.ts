@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { nonEmptyStringSchema } from "../../common/string";
 
 export const exampleEmail = "test@test.com";
 
@@ -24,3 +25,13 @@ export function normalizeEmailStrict(email: string): string {
   if (!isEmailValid(normalEmail)) throw new Error("Invalid email.");
   return normalEmail;
 }
+
+export function normalizeEmailSafe(email: string): string | undefined {
+  const normalEmail = normalizeEmail(email);
+  if (!isEmailValid(normalEmail)) return undefined;
+  return normalEmail;
+}
+
+export const emailSchema = nonEmptyStringSchema
+  .refine(normalizeEmailSafe, { message: "Invalid email" })
+  .transform(email => normalizeEmailStrict(email));

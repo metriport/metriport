@@ -11,6 +11,7 @@ import { checkPatientRecordExists } from "./commands/check-patient-record-exists
 import { creatOrUpdatePatientRecord } from "./commands/create-or-update-patient-record";
 import { startDocumentQuery } from "./commands/start-document-query";
 import { createPatient } from "./commands/create-patient";
+import { updateValidFileWithPatientId } from "./commands/update-valid-file-with-patient-id";
 import { startPatientQuery } from "./commands/start-patient-query";
 import {
   PatientImportHandler,
@@ -132,14 +133,15 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
       const patientChunks = chunk(patients, patientCreateChunk);
       for (const patientChunk of patientChunks) {
         const chunkOutcomes = await Promise.allSettled(
-          patientChunk.map(async patient => {
-            const patientPayload = createPatientPayload(patient);
+          patientChunk.map(async patientWithIndex => {
+            const patientPayload = createPatientPayload(patientWithIndex.patient);
             const processPatientCreateRequest: ProcessPatientCreateEvemtPayload = {
               cxId,
               facilityId,
               jobId,
               jobStartedAt,
               patientPayload,
+              patientRowIndex: patientWithIndex.rowIndex,
               rerunPdOnNewDemographics,
             };
             try {
@@ -194,6 +196,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
     jobId,
     jobStartedAt,
     patientPayload,
+    patientRowIndex,
     s3BucketName,
     processPatientQueryQueue,
     rerunPdOnNewDemographics,
@@ -217,11 +220,23 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
         log(`Record exists for patientId ${patientId}, returning...`);
         return;
       }
+      await updateValidFileWithPatientId({
+        cxId,
+        jobId,
+        jobStartedAt,
+        patientId,
+        patientRowIndex,
+        s3BucketName,
+      });
       await creatOrUpdatePatientRecord({
         cxId,
         jobId,
         jobStartedAt,
         patientId,
+        data: {
+          patientPayload,
+          patientRowIndex,
+        },
         s3BucketName,
       });
       const processPatientQueryRequest: ProcessPatientQueryEvemtPayload = {

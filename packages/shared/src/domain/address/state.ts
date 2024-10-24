@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { BadRequestError } from "../../error/bad-request";
 
 export function normalizeStateSafe(state: string): USState | undefined {
@@ -123,3 +124,8 @@ export const states: Record<USState, string> = {
   [USState.WI]: "Wisconsin",
   [USState.WY]: "Wyoming",
 };
+
+export const usStateSchema = z.preprocess(
+  val => (typeof val === "string" ? val.toUpperCase().trim() : val),
+  z.nativeEnum(USState)
+);

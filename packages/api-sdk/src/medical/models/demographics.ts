@@ -1,4 +1,7 @@
 import {
+  generalPersonalIdentifiers as generalPersonalIdentifiersShared,
+  driversLicensePersonalIdentifier as driversLicensePersonalIdentifierShared,
+  usStateSchema,
   examplePhoneNumber,
   isPhoneValid,
   normalizeUsPhoneWithPlusOne,
@@ -7,10 +10,9 @@ import {
 import { z } from "zod";
 import { defaultNameString, pastOrTodayDateString } from "../../shared";
 import { addressSchema } from "./common/address";
-import { usStateSchema } from "./common/us-data";
 
-export const generalPersonalIdentifiers = ["ssn"] as const;
-export const driversLicensePersonalIdentifier = ["driversLicense"] as const;
+export const generalPersonalIdentifiers = generalPersonalIdentifiersShared;
+export const driversLicensePersonalIdentifier = driversLicensePersonalIdentifierShared;
 export type GeneralPersonalIdentifiers = (typeof generalPersonalIdentifiers)[number];
 export type DriversLicensePersonalIdentifier = (typeof driversLicensePersonalIdentifier)[number];
 
