@@ -1,6 +1,5 @@
 import { ConsolidationConversionType } from "@metriport/api-sdk";
 import { deleteConsolidated } from "@metriport/core/command/consolidated/consolidated-delete";
-import { Organization } from "@metriport/core/domain/organization";
 import { Patient } from "@metriport/core/domain/patient";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
@@ -18,12 +17,10 @@ import { getConsolidated } from "../patient/consolidated-get";
  */
 export async function recreateConsolidated({
   patient,
-  organization,
   conversionType,
   context,
 }: {
   patient: Patient;
-  organization: Organization;
   conversionType?: ConsolidationConversionType;
   context?: string;
 }): Promise<void> {
@@ -37,7 +34,7 @@ export async function recreateConsolidated({
     processAsyncError(`Failed to delete consolidated bundle`, log)(err);
   }
   try {
-    await getConsolidated({ patient, organization, conversionType });
+    await getConsolidated({ patient, conversionType });
   } catch (err) {
     processAsyncError(`Post-DQ getConsolidated`, log)(err);
   }

@@ -11,7 +11,6 @@ import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { getCQData } from "../../../external/carequality/patient";
 import { getCWData } from "../../../external/commonwell/patient";
 import { tallyDocQueryProgress } from "../../../external/hie/tally-doc-query-progress";
-import { getOrganizationOrFail } from "../organization/get-organization";
 import { recreateConsolidated } from "../patient/consolidated-recreate";
 import { getPatientOrFail } from "../patient/get-patient";
 import { updateConversionProgress } from "./document-query";
@@ -43,10 +42,7 @@ export async function calculateDocumentConversionStatus({
       `details: ${details}, result: ${JSON.stringify(convertResult)}`
   );
 
-  const [organization, patient] = await Promise.all([
-    getOrganizationOrFail({ cxId }),
-    getPatientOrFail({ id: patientId, cxId }),
-  ]);
+  const patient = await getPatientOrFail({ id: patientId, cxId });
   const docQueryProgress = patient.data.documentQueryProgress;
   log(`Status pre-update: ${JSON.stringify(docQueryProgress)}`);
 
@@ -113,7 +109,6 @@ export async function calculateDocumentConversionStatus({
       // intentionally async
       recreateConsolidated({
         patient: updatedPatient,
-        organization,
         conversionType: "pdf",
         context: `Post-DQ getConsolidated ${source}`,
       });
@@ -121,7 +116,6 @@ export async function calculateDocumentConversionStatus({
       // intentionally async
       recreateConsolidated({
         patient: updatedPatient,
-        organization,
         context: "Post-DQ getConsolidated GLOBAL",
       });
     }
@@ -139,7 +133,7 @@ export async function calculateDocumentConversionStatus({
 
     if (isConversionCompleted) {
       // we want to await here to ensure the consolidated bundle is created before we send the webhook
-      await recreateConsolidated({ patient, organization, context: "calculate-no-source" });
+      await recreateConsolidated({ patient, context: "calculate-no-source" });
 
       processPatientDocumentRequest(
         cxId,
