@@ -48,14 +48,15 @@ export async function handleDataContribution({
     getPatientOrFail({ id: patientId, cxId }),
   ]);
   log(`${Date.now() - mainStartedAt}ms to get org and patient, and store on S3`);
-  const validationStartedAt = Date.now();
 
+  const validationStartedAt = Date.now();
   const fhirOrganization = toFhirOrganization(organization);
-  const fullBundle = hydrateBundle(bundle, patient, fhirBundleDestinationKey);
+  const normalizedBundle = normalizeBundle(bundle);
+  const fullBundle = hydrateBundle(normalizedBundle, patient, fhirBundleDestinationKey);
   const validatedBundle = validateFhirEntries(fullBundle);
   const incomingAmount = validatedBundle.entry.length;
   await checkResourceLimit(incomingAmount, patient);
-  log(`${Date.now() - validationStartedAt}ms to validate and check limits`);
+  log(`${Date.now() - validationStartedAt}ms to hydrate, validate, and check limits`);
 
   // Do it before storing on the FHIR server since this also validates the bundle
   if (!Config.isSandbox() && hasCompositionResource(validatedBundle)) {
@@ -89,6 +90,13 @@ export async function handleDataContribution({
   }
 
   return consolidatedDataUploadResults;
+}
+
+export function normalizeBundle<T extends Bundle | ValidBundle>(bundle: T): T {
+  const bundleString = JSON.stringify(bundle);
+  // String.fromCharCode(160) represents a non-breaking space (NBSP)
+  const normalizedString = bundleString.replaceAll(String.fromCharCode(160), " ");
+  return JSON.parse(normalizedString) as T;
 }
 
 /**
