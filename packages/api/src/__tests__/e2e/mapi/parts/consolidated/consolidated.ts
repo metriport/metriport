@@ -1,35 +1,80 @@
-import { AllergyIntolerance, Binary, Bundle, DocumentReference } from "@medplum/fhirtypes";
-import { makeDocumentReference } from "@metriport/core/external/fhir/document/__tests__/document-reference";
-import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
-import { makeAllergyIntollerance } from "@metriport/core/external/fhir/__tests__/allergy-intolerance";
-import { makeBinary } from "@metriport/core/external/fhir/__tests__/binary";
+import { faker } from "@faker-js/faker";
+import {
+  AllergyIntolerance,
+  Bundle,
+  Condition,
+  Encounter,
+  Location,
+  Practitioner,
+} from "@medplum/fhirtypes";
+import {
+  buildConsolidatedBundle,
+  conversionBundleSuffix,
+} from "@metriport/core/command/consolidated/consolidated-create";
+import { deleteConsolidated } from "@metriport/core/command/consolidated/consolidated-delete";
+import { createFilePath } from "@metriport/core/domain/filename";
+import { S3Utils } from "@metriport/core/external/aws/s3";
+import { isDocumentReference } from "@metriport/core/external/fhir/document/document-reference";
+import { buildBundleEntry } from "@metriport/core/external/fhir/shared/bundle";
 import { PatientWithId } from "@metriport/core/external/fhir/__tests__/patient";
+import { makeReference } from "@metriport/core/external/fhir/__tests__/reference";
+import { snomedCodeMd } from "@metriport/core/fhir-deduplication/__tests__/examples/condition-examples";
+import { makeAllergyMedication } from "@metriport/core/fhir-to-cda/cda-templates/components/__tests__/make-allergy";
+import { makeCondition } from "@metriport/core/fhir-to-cda/cda-templates/components/__tests__/make-condition";
+import {
+  makeEncounter,
+  makeLocation,
+  makePractitioner,
+} from "@metriport/core/fhir-to-cda/cda-templates/components/__tests__/make-encounter";
+import { getEnvVarOrFail } from "@metriport/shared";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import fs from "fs";
 import { template } from "lodash";
+import { Config } from "../../../../../shared/config";
 import { e2eResultsFolderName } from "../../../shared";
+import { cxId, E2eContext } from "../../shared";
 
 dayjs.extend(utc);
 
-export function createConsolidatedPayloads(patient: PatientWithId): {
+const s3Utils = new S3Utils(Config.getAWSRegion());
+const s3BucketName = getEnvVarOrFail("CONVERSION_RESULT_BUCKET_NAME");
+
+export type ConsolidatedPayloads = {
   consolidated: Bundle;
   allergyIntolerance: AllergyIntolerance;
-  documentReference: DocumentReference;
-  binary: Binary;
-} {
-  const extension = [metriportDataSourceExtension];
-  const allergyIntolerance = makeAllergyIntollerance({ patient });
-  const binary = makeBinary();
-  const documentReference = makeDocumentReference({ patient, extension, binary });
-  const entry: Bundle["entry"] = [
+  condition: Condition;
+  encounter: Encounter;
+  location: Location;
+  practitioner: Practitioner;
+};
+
+export function createConsolidatedPayloads(patient: PatientWithId): ConsolidatedPayloads {
+  const patientReference = makeReference(patient);
+  const allergyIntolerance = makeAllergyMedication({ patient: patientReference });
+  const dateTime = { start: "2012-01-01T10:00:00.000Z" };
+  const condition = makeCondition(
     {
-      resource: { ...allergyIntolerance },
+      id: faker.string.uuid(),
+      code: { coding: [snomedCodeMd] },
+      onsetPeriod: dateTime,
     },
+    patient.id
+  );
+  const practitioner = makePractitioner();
+  const location = makeLocation();
+  const encounter: Encounter = makeEncounter(
     {
-      resource: { ...documentReference },
+      id: faker.string.uuid(),
+      diagnosis: [{ condition: { reference: `Condition/${condition.id}` } }],
+      period: {
+        start: "2013-08-22T17:05:00.000Z",
+        end: "2013-08-22T18:15:00.000Z",
+      },
     },
-  ];
+    { patient: patient.id, loc: location.id, pract: practitioner.id }
+  );
+  const entry: Bundle["entry"] = [condition, encounter, allergyIntolerance].map(buildBundleEntry);
   return {
     consolidated: {
       resourceType: "Bundle",
@@ -38,8 +83,10 @@ export function createConsolidatedPayloads(patient: PatientWithId): {
       entry,
     },
     allergyIntolerance,
-    documentReference,
-    binary,
+    condition,
+    encounter,
+    location,
+    practitioner,
   };
 }
 
@@ -55,6 +102,10 @@ export function checkConsolidatedJson(
     phone: string;
     email: string;
     allergyId: string;
+    conditionId: string;
+    encounterId: string;
+    locationId: string;
+    practitionerId: string;
     documentId: string;
     binaryId: string;
     requestId: string;
@@ -131,4 +182,55 @@ function checkConsolidated({
     );
   }
   return isMatch;
+}
+
+export function makeConversionFileName({
+  cxId,
+  patientId,
+}: {
+  cxId: string;
+  patientId: string;
+}): string {
+  const fileId = `e2e_${new Date().toISOString()}${conversionBundleSuffix}`;
+  const key = createFilePath(cxId, patientId, fileId);
+  return key;
+}
+
+export async function prepareConsolidatedTests(e2e: E2eContext) {
+  if (!e2e.patient) throw new Error("Missing patient");
+  if (!e2e.patientFhir) throw new Error("Missing patientFhir");
+  const payloads = createConsolidatedPayloads(e2e.patientFhir);
+  e2e.consolidated = {
+    bundle: payloads.consolidated,
+    allergyIntolerance: payloads.allergyIntolerance,
+    condition: payloads.condition,
+    encounter: payloads.encounter,
+    location: payloads.location,
+    practitioner: payloads.practitioner,
+  };
+  await Promise.all([
+    deleteConsolidated({
+      cxId,
+      patientId: e2e.patient.id,
+    }),
+    storeConversionOnS3(payloads, e2e.patient.id),
+  ]);
+}
+
+async function storeConversionOnS3(
+  payloads: ConsolidatedPayloads,
+  patientId: string
+): Promise<void> {
+  const key = makeConversionFileName({ cxId, patientId });
+  const consolidatedToStoreOnS3 = payloads.consolidated?.entry?.filter(
+    e => !isDocumentReference(e.resource)
+  );
+  if (!consolidatedToStoreOnS3) return;
+  const bundle = buildConsolidatedBundle(consolidatedToStoreOnS3);
+  await s3Utils.uploadFile({
+    bucket: s3BucketName,
+    key,
+    file: Buffer.from(JSON.stringify(bundle)),
+    contentType: "application/json",
+  });
 }

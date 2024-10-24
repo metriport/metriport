@@ -9,9 +9,7 @@ import {
   normalizeAndStringifyNames,
   normalizeAddress,
   stringifyAddress,
-  normalizeTelephone,
   normalizeEmail,
-  normalizeSsn,
 } from "../../../domain/medical/patient-demographics";
 
 export function makeCwDataLink(): CwLink {
@@ -117,10 +115,10 @@ export function makeLinksHistory(): LinkDemographicsHistory {
             })
           ),
         ],
-        telephoneNumbers: [normalizeTelephone(faker.phone.number("##########"))],
+        telephoneNumbers: [faker.phone.number("##########")],
         emails: [email],
         driversLicenses: [], // TODO
-        ssns: [normalizeSsn(faker.phone.number("#########"))],
+        ssns: [faker.phone.number("#########")],
       },
     ],
   };

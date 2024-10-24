@@ -259,7 +259,7 @@ export async function getConsolidated({
   conversionType,
   bundle,
 }: GetConsolidatedParams): Promise<ConsolidatedData> {
-  const { log } = out(`getConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
+  const { log } = out(`API getConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
   const filters = {
     resources: resources ? resources.join(", ") : undefined,
     dateFrom,
@@ -277,6 +277,7 @@ export async function getConsolidated({
       });
     }
     bundle.entry = filterOutPrelimDocRefs(bundle.entry);
+    bundle.total = bundle.entry?.length ?? 0;
     const hasResources = bundle.entry && bundle.entry.length > 0;
     const shouldCreateMedicalRecord = conversionType && conversionType != "json" && hasResources;
     const currentConsolidatedProgress = patient.data.consolidatedQueries?.find(

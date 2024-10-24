@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import { PatientResource, InboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
+import { isEmail, isPhoneNumber } from "@metriport/shared";
 import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { errorToString, toArray } from "@metriport/shared";
 import { Iti55Request, iti55RequestSchema } from "./schema";
@@ -28,10 +29,15 @@ export function transformIti55RequestToPatientResource(
     country: addr.country ? String(addr.country) : undefined,
   }));
 
-  const telecom = toArray(queryParams.patientTelecom?.value).map(tel => ({
-    system: "phone",
-    value: tel._value,
-  }));
+  const telecom = toArray(queryParams.patientTelecom?.value).flatMap(tel => {
+    const value = tel._value;
+    if (isPhoneNumber(value)) {
+      return [{ system: "phone", value }];
+    } else if (isEmail(value)) {
+      return [{ system: "email", value }];
+    }
+    return [];
+  });
 
   const identifier = toArray(queryParams.livingSubjectId?.value).map(id => ({
     system: id._root,

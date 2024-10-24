@@ -2,19 +2,19 @@ import { Bundle, BundleEntry } from "@medplum/fhirtypes";
 import { parseFhirBundle } from "@metriport/shared/medical";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { createFolderName } from "../../domain/filename";
+import { Patient } from "../../domain/patient";
 import { executeWithRetriesS3, S3Utils } from "../../external/aws/s3";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
+import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle";
 import { executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
-import { Patient } from "../../domain/patient";
-import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
 
-const conversionBundleSuffix = ".xml.json";
+export const conversionBundleSuffix = ".xml.json";
 const numberOfParallelExecutions = 10;
 const defaultS3RetriesConfig = {
   maxAttempts: 3,
@@ -54,7 +54,9 @@ export async function createConsolidatedFromConversions({
   const withDups = buildConsolidatedBundle();
   withDups.entry = [...conversions, ...docRefs.map(buildBundleEntry), patientEntry];
   withDups.total = withDups.entry.length;
-  log(`Added ${docRefs.length} docRefs, to a total of ${withDups.entry.length} entries`);
+  log(
+    `Added ${docRefs.length} docRefs and the Patient, to a total of ${withDups.entry.length} entries`
+  );
 
   log(`Deduplicating consolidated bundle...`);
   const deduped = deduplicate({ cxId, patientId, bundle: withDups });
@@ -83,8 +85,8 @@ export async function createConsolidatedFromConversions({
   return deduped;
 }
 
-function buildConsolidatedBundle(): Bundle {
-  return buildBundle({ type: "collection" });
+export function buildConsolidatedBundle(entries: BundleEntry[] = []): Bundle {
+  return buildBundle({ type: "collection", entries });
 }
 
 async function getConversions({

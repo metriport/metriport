@@ -442,20 +442,36 @@ function removeDuplicateReferences<T extends Resource>(entry: T): T {
   }
 
   if ("performer" in entry && entry.performer) {
-    if (entry.resourceType === "DiagnosticReport") {
-      const uniquePerformers = new Set();
-      entry.performer = entry.performer?.filter(performer => {
-        if (uniquePerformers.has(performer.reference)) return false;
-        uniquePerformers.add(performer.reference);
-        return true;
-      });
-    } else if (entry.resourceType === "Procedure") {
-      const uniquePerformers = new Set();
-      entry.performer = entry.performer?.filter(performer => {
-        if (uniquePerformers.has(performer.actor)) return false;
-        uniquePerformers.add(performer.actor);
-        return true;
-      });
+    if (Array.isArray(entry.performer)) {
+      const uniquePerformers = new Set<string>();
+      if (
+        entry.resourceType === "DiagnosticReport" ||
+        entry.resourceType === "Observation" ||
+        entry.resourceType === "ServiceRequest"
+      ) {
+        entry.performer = entry.performer.filter(performer => {
+          if (performer.reference && !uniquePerformers.has(performer.reference)) {
+            uniquePerformers.add(performer.reference);
+            return true;
+          }
+          return false;
+        });
+      } else if (
+        entry.resourceType === "Immunization" ||
+        entry.resourceType === "MedicationAdministration" ||
+        entry.resourceType === "MedicationDispense" ||
+        entry.resourceType === "MedicationRequest" ||
+        entry.resourceType === "Procedure" ||
+        entry.resourceType === "RiskAssessment"
+      ) {
+        entry.performer = entry.performer.filter(performer => {
+          if (performer.actor?.reference && !uniquePerformers.has(performer.actor.reference)) {
+            uniquePerformers.add(performer.actor.reference);
+            return true;
+          }
+          return false;
+        });
+      }
     }
   }
 
@@ -579,8 +595,8 @@ function replaceResourceReference<T extends Resource>(
       if ("reference" in performer) {
         const newReference = referenceMap.get(performer.reference);
         if (newReference) performer.reference = newReference;
-      } else if ("actor" in performer && "reference" in performer.actor) {
-        const newReference = referenceMap.get(performer.actor.reference);
+      } else if ("actor" in performer && performer.actor?.reference) {
+        const newReference = referenceMap.get(performer.actor?.reference);
         if (newReference) performer.actor.reference = newReference;
       }
       return performer;

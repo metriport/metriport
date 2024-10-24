@@ -1,6 +1,7 @@
 import { BulkGetDocUrlStatus } from "@metriport/core/domain/bulk-get-document-url";
 import { convertResult } from "@metriport/core/domain/document-query";
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
+import { parseJobId } from "@metriport/core/domain/job";
 import { documentBulkSignerLambdaResponseArraySchema } from "@metriport/core/external/aws/document-signing/document-bulk-signer-response";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/conversion";
@@ -29,7 +30,6 @@ import { appendBulkGetDocUrlProgress } from "../../command/medical/patient/bulk-
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import BadRequestError from "../../errors/bad-request";
 import { processCcdRequest, processEmptyCcdRequest } from "../../external/cda/process-ccd-request";
-import { parseJobId } from "../../external/fhir/connector/connector";
 import { setDocQueryProgress } from "../../external/hie/set-doc-query-progress";
 import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";

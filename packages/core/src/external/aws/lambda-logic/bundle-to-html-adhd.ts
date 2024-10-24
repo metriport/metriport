@@ -609,7 +609,7 @@ function createDiagnosticReportsSection(
 
   const visitDateDict = getConditionDatesFromEncounters(encounters);
 
-  const encounterSections = buildEncounterSections({}, diagnosticReports);
+  const encounterSections = buildEncounterSections(diagnosticReports);
 
   const encountersWithoutAWEAndADHD = Object.entries(encounterSections)
     .filter(([key]) => {
@@ -683,7 +683,7 @@ function createFilteredReportSection(
     return "";
   }
 
-  const encounterSections = buildEncounterSections({}, diagnosticReports);
+  const encounterSections = buildEncounterSections(diagnosticReports);
 
   const conditionDateDict = getConditionDatesFromEncounters(encounters);
 
@@ -958,7 +958,7 @@ function getLatestDrPerSpecialty(
     }
   }
 
-  const encounterSectionsBySpecialty = buildEncounterSections({}, reportsBySpecialty);
+  const encounterSectionsBySpecialty = buildEncounterSections(reportsBySpecialty);
 
   return encounterSectionsBySpecialty;
 }
