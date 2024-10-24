@@ -1,7 +1,7 @@
-import { patientCreateSchema, genderAtBirthSchema } from "@metriport/api-sdk";
-import { patientImportSchema } from "@metriport/shared";
-import { makePatientImportHandler } from "@metriport/core/command/patient-import/patient-import-factory";
+import { createPatientPayload } from "@metriport/core/command/patient-import/patient-import-shared";
+import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
+import { makePatientImportHandler } from "@metriport/core/command/patient-import/patient-import-factory";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -9,16 +9,9 @@ import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
   internalSendConsolidatedSchema,
-  normalizeDate,
-  normalizeEmailStrict,
-  normalizeExternalId,
-  normalizeGender,
-  normalizePhoneNumberStrict,
-  normalizeState,
-  normalizeZipCode,
+  patientImportSchema,
   sleep,
   stringToBoolean,
-  toTitleCase,
 } from "@metriport/shared";
 import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
@@ -806,33 +799,11 @@ router.post(
 
     const facility = await getFacilityOrFail({ cxId, id: facilityId });
     const patientCreates: PatientCreateCmd[] = payload.patients.map(patient => {
-      const phone1 = patient.phone1 ? normalizePhoneNumberStrict(patient.phone1) : undefined;
-      const email1 = patient.email1 ? normalizeEmailStrict(patient.email1) : undefined;
-      const phone2 = patient.phone2 ? normalizePhoneNumberStrict(patient.phone2) : undefined;
-      const email2 = patient.email2 ? normalizeEmailStrict(patient.email2) : undefined;
-      const contact1 = phone1 || email1 ? { phone: phone1, email: email1 } : undefined;
-      const contact2 = phone2 || email2 ? { phone: phone2, email: email2 } : undefined;
-      const contact = [contact1, contact2].flatMap(c => c ?? []);
-      const externalId = patient.externalid ? normalizeExternalId(patient.externalid) : undefined;
+      const payload = createPatientPayload(patient);
       return {
         cxId,
         facilityId: facility.id,
-        externalId,
-        firstName: toTitleCase(patient.firstname),
-        lastName: toTitleCase(patient.lastname),
-        dob: normalizeDate(patient.dob),
-        genderAtBirth: normalizeGender(patient.gender),
-        address: [
-          {
-            addressLine1: toTitleCase(patient.addressline1),
-            addressLine2: patient.addressline2 ? toTitleCase(patient.addressline2) : undefined,
-            city: toTitleCase(patient.city),
-            state: normalizeState(patient.state),
-            zip: normalizeZipCode(patient.zip),
-            country: "USA",
-          },
-        ],
-        contact,
+        ...payload,
       };
     });
 

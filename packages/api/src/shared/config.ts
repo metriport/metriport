@@ -201,10 +201,6 @@ export class Config {
     return getEnvVarOrFail("FHIR_SERVER_URL");
   }
 
-  static getFHIRServerQueueURL(): string {
-    return getEnvVarOrFail("FHIR_SERVER_QUEUE_URL");
-  }
-
   static getSystemRootOID(): string {
     return getEnvVarOrFail("SYSTEM_ROOT_OID");
   }
@@ -248,6 +244,10 @@ export class Config {
   }
   static getCWMemberOID(): string {
     return getEnvVarOrFail("CW_MEMBER_OID");
+  }
+
+  static getCdaToFhirConversionBucketName(): string {
+    return getEnvVarOrFail("CONVERSION_RESULT_BUCKET_NAME");
   }
   static getMedicalDocumentsBucketName(): string {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");

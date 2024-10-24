@@ -5,6 +5,7 @@ import { PatientData, PersonalIdentifier } from "../domain/patient";
 import { normalizePatient } from "./normalize-patient";
 import { PatientMPI } from "./shared";
 import { out } from "../util/log";
+import { splitName } from "./normalize-patient";
 
 const { log } = out(`Patient Matching`);
 
@@ -216,12 +217,18 @@ export function epicMatchingAlgorithm(
     }
   }
 
-  const names1 = [patient1.firstName, patient1.lastName].filter(Boolean);
-  const names2 = [patient2.firstName, patient2.lastName].filter(Boolean);
-  const overlapNames = names2.filter(name => names1.includes(name));
-  if (overlapNames.length === 2) {
+  const firstNames1 = splitName(patient1.firstName);
+  const firstNames2 = splitName(patient2.firstName);
+
+  const lastNames1 = splitName(patient1.lastName);
+  const lastNames2 = splitName(patient2.lastName);
+
+  const hasMatchingFirstName = firstNames1.some(name => firstNames2.includes(name));
+  const hasMatchingLastName = lastNames1.some(name => lastNames2.includes(name));
+
+  if (hasMatchingFirstName && hasMatchingLastName) {
     scores.names = 10;
-  } else if (overlapNames.length === 1) {
+  } else if (hasMatchingFirstName || hasMatchingLastName) {
     scores.names = 5;
   }
 
@@ -271,9 +278,9 @@ export function epicMatchingAlgorithm(
     const match = totalScore >= newThreshold;
     if (match) {
       log(
-        `Match: ${match}, Score: ${totalScore}, Threshold: ${newThreshold}, Patient1: ${JSON.stringify(
-          patient1
-        )}, Patient2: ${JSON.stringify(patient2)}`
+        `Match: ${match}, Score: ${totalScore}, Threshold: ${newThreshold}, Total Scores: ${JSON.stringify(
+          scores
+        )}, Patient1: ${JSON.stringify(patient1)}, Patient2: ${JSON.stringify(patient2)}`
       );
     }
     return match;
@@ -282,9 +289,9 @@ export function epicMatchingAlgorithm(
   const match = totalScore >= threshold;
   if (match) {
     log(
-      `Match: ${match}, Score: ${totalScore}, Threshold: ${threshold}, Patient1: ${JSON.stringify(
-        patient1
-      )}, Patient2: ${JSON.stringify(patient2)}`
+      `Match: ${match}, Score: ${totalScore}, Threshold: ${threshold}, Total Scores: ${JSON.stringify(
+        scores
+      )}, Patient1: ${JSON.stringify(patient1)}, Patient2: ${JSON.stringify(patient2)}`
     );
   }
   return match;
