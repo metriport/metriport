@@ -43,7 +43,9 @@ describe("processDqResponse", () => {
         outboundRequest: outboundDqRequest,
       },
     });
-    expect(response.operationOutcome?.issue[0]?.code).toEqual("XDSRegistryError");
+    expect(response.operationOutcome?.issue[0]?.details?.coding?.[0]?.code).toEqual(
+      "XDSRegistryError"
+    );
   });
 
   it("should process response that is not a string correctly", async () => {
