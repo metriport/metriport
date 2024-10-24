@@ -24,4 +24,4 @@ export function normalizeGender(gender: string): GenderAtBirth {
 
 export const genderAtBirthSchema = nonEmptyStringSchema
   .refine(normalizeGenderSafe, { message: "Invalid gender" })
-  .transform(email => normalizeGender(email));
+  .transform(gender => normalizeGender(gender));

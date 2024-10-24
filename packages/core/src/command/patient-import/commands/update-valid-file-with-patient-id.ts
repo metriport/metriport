@@ -36,8 +36,9 @@ export async function updateValidFileWithPatientId({
     const allRows = csvAsString.split("\n");
     const targetIndex = +patientRowIndex + 1;
     const targetRow = allRows[targetIndex];
-    if (!targetRow)
+    if (!targetRow) {
       throw new Error(`targetRow does not exist in valid file at index ${targetIndex}`);
+    }
     allRows[targetIndex] = `${patientId}` + targetRow;
     await s3Utils.uploadFile({
       bucket: s3BucketName,
@@ -52,6 +53,8 @@ export async function updateValidFileWithPatientId({
       extra: {
         cxId,
         jobId,
+        patientId,
+        patientRowIndex,
         key,
         context: "patient-import.update-valid-file-with-patient-id",
         error,

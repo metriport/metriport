@@ -11,6 +11,7 @@ import { checkPatientRecordExists } from "./commands/check-patient-record-exists
 import { creatOrUpdatePatientRecord } from "./commands/create-or-update-patient-record";
 import { startDocumentQuery } from "./commands/start-document-query";
 import { createPatient } from "./commands/create-patient";
+import { updateValidFileWithPatientId } from "./commands/update-valid-file-with-patient-id";
 import { startPatientQuery } from "./commands/start-patient-query";
 import {
   PatientImportHandler,
@@ -219,6 +220,14 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
         log(`Record exists for patientId ${patientId}, returning...`);
         return;
       }
+      await updateValidFileWithPatientId({
+        cxId,
+        jobId,
+        jobStartedAt,
+        patientId,
+        patientRowIndex,
+        s3BucketName,
+      });
       await creatOrUpdatePatientRecord({
         cxId,
         jobId,
