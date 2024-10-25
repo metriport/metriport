@@ -1,11 +1,11 @@
 import {
   Aspects,
-  aws_wafv2 as wafv2,
   CfnOutput,
   Duration,
   RemovalPolicy,
   Stack,
   StackProps,
+  aws_wafv2 as wafv2,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
@@ -48,10 +48,10 @@ import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { PatientImportNestedStack } from "./patient-import-nested-stack";
 import * as AppConfigUtils from "./shared/app-config";
 import { DailyBackup } from "./shared/backup";
-import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
+import { MAXIMUM_LAMBDA_TIMEOUT, addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { addDBClusterPerformanceAlarms } from "./shared/rds";
-import { getSecrets, Secrets } from "./shared/secrets";
+import { Secrets, getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
@@ -670,18 +670,6 @@ export class APIStack extends Stack {
       apiDirectUrl,
       props.config.lambdasSentryDSN
     );
-
-    // token auth for connect sessions
-    const tokenAuth = this.setupTokenAuthLambda(
-      lambdaLayers,
-      dynamoDBTokenTable,
-      slackNotification?.alarmAction,
-      props.config.environmentType,
-      props.config.lambdasSentryDSN
-    );
-
-    // setup /token path with token auth
-    this.setupAPIGWApiTokenResource(id, api, tokenAuth);
 
     const userPoolClientSecret = this.setupOAuthUserPool(props.config, publicZone);
     const oauthScopes = this.enableFHIROnUserPool(userPoolClientSecret);
@@ -1418,42 +1406,6 @@ export class APIStack extends Stack {
     tokenAuthLambda.role && dynamoDBTokenTable.grantReadData(tokenAuthLambda.role);
 
     return tokenAuth;
-  }
-
-  private setupAPIGWApiTokenResource(
-    stackId: string,
-    api: apig.RestApi,
-    authorizer: apig.RequestAuthorizer
-  ): apig.Resource {
-    const apiTokenResource = api.root.addResource("token");
-    const tokenProxy = new apig.ProxyResource(this, `${stackId}/token/Proxy`, {
-      parent: apiTokenResource,
-      anyMethod: false,
-    });
-
-    const deprecatedIntegration = new apig.MockIntegration({
-      integrationResponses: [
-        {
-          statusCode: "404",
-          responseTemplates: {
-            "application/json": JSON.stringify({ message: "This route is no longer available." }),
-          },
-        },
-      ],
-      requestTemplates: {
-        "application/json": '{"statusCode": 404}',
-      },
-      passthroughBehavior: apig.PassthroughBehavior.NEVER,
-    });
-
-    tokenProxy.addMethod("ANY", deprecatedIntegration, {
-      requestParameters: {
-        "method.request.path.proxy": true,
-      },
-      authorizer,
-    });
-
-    return apiTokenResource;
   }
 
   private setupOAuthUserPool(config: EnvConfig, dnsZone: r53.IHostedZone): cognito.IUserPool {
