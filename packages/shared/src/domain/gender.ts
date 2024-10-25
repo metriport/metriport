@@ -1,4 +1,4 @@
-import { nonEmptyStringSchema } from "../common/string";
+import { z } from "zod";
 
 export type GenderAtBirth = "F" | "M" | "O" | "U";
 
@@ -22,6 +22,7 @@ export function normalizeGender(gender: string): GenderAtBirth {
   return genderOrUndefined;
 }
 
-export const genderAtBirthSchema = nonEmptyStringSchema
+export const genderAtBirthSchema = z
+  .string()
   .refine(normalizeGenderSafe, { message: "Invalid gender" })
   .transform(gender => normalizeGender(gender));

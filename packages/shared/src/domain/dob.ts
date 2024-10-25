@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { nonEmptyStringSchema } from "../common/string";
+import { z } from "zod";
 import { ISO_DATE, isValidISODate, validateIsPastOrPresentSafe } from "../common/date";
 
 export function normalizeDateSafe(date: string): string | undefined {
@@ -15,6 +15,7 @@ export function normalizeDate(date: string): string {
   return dateOrUndefined;
 }
 
-export const dobSchema = nonEmptyStringSchema
+export const dobSchema = z
+  .string()
   .refine(isValidISODate, { message: "Invalid date of birth" })
   .refine(validateIsPastOrPresentSafe, { message: "Date can't be in the future" });

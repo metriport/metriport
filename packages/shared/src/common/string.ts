@@ -33,7 +33,9 @@ export function normalizeNonEmptyStringSafe(str: string): string | undefined {
   return normalizedString;
 }
 
-export const nonEmptyStringSchema = z
-  .string()
-  .refine(normalizeNonEmptyStringSafe, { message: "Invalid string" })
-  .transform(str => normalizeNonEmptyString(str));
+export function createNonEmptryStringSchema(param: string): z.ZodSchema {
+  return z
+    .string()
+    .refine(normalizeNonEmptyStringSafe, { message: `Invalid ${param}` })
+    .transform(str => normalizeNonEmptyString(str));
+}
