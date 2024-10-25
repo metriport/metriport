@@ -12,7 +12,6 @@ import { downloadDocument } from "../../command/medical/document/document-downlo
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { startBulkGetDocumentUrls } from "../../command/medical/document/start-bulk-get-doc-url";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import ForbiddenError from "../../errors/forbidden";
 import {
   composeDocumentReference,
@@ -22,6 +21,7 @@ import { upsertDocumentToFHIRServer } from "../../external/fhir/document/save-do
 import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { sanitize } from "../helpers/string";
+import { getPatientInfoOrFail, patientAuthorization } from "../middlewares/patient-authorization";
 import { optionalDateSchema } from "../schemas/date";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
@@ -59,13 +59,10 @@ const getDocSchema = z.object({
 router.get(
   "/",
   requestLogger,
+  patientAuthorization("query"),
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const patientId = getFromQueryOrFail("patientId", req);
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
     const { dateFrom, dateTo, content, output } = getDocSchema.parse(req.query);
-
-    // Confirm the CX can access this patient
-    await getPatientOrFail({ cxId, id: patientId });
 
     const documents = await searchDocuments({
       cxId,
@@ -89,10 +86,9 @@ router.get(
 router.get(
   "/query",
   requestLogger,
+  patientAuthorization("query"),
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const patientId = getFromQueryOrFail("patientId", req);
-    const patient = await getPatientOrFail({ cxId, id: patientId });
+    const { patient } = getPatientInfoOrFail(req);
     return res.status(OK).json(patient.data.documentQueryProgress ?? {});
   })
 );
@@ -111,9 +107,9 @@ router.get(
 router.post(
   "/query",
   requestLogger,
+  patientAuthorization("query"),
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const patientId = getFromQueryOrFail("patientId", req);
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
     const facilityId = getFrom("query").optional("facilityId", req);
     const override = stringToBoolean(getFrom("query").optional("override", req));
     const cxDocumentRequestMetadata = cxRequestMetadataSchema.parse(req.body);
@@ -134,6 +130,7 @@ router.post(
   })
 );
 
+// TODO see https://github.com/metriport/metriport-internal/issues/2422
 /**
  * Handles the logic for download url endpoints.
  *
@@ -145,21 +142,20 @@ async function getDownloadUrl(req: Request): Promise<string> {
 
   const fileName = getFromQueryOrFail("fileName", req);
   const fileNameString = docFileNameSchema.parse(fileName);
-  const fileHasCxId = fileNameString.includes(cxId);
+  const fileHasCxId = fileNameString.includes(cxId); // Should probably check for startsWith
   const type = getFrom("query").optional("conversionType", req);
   const conversionType = type ? docConversionTypeSchema.parse(type) : undefined;
 
   if (!fileHasCxId && !Config.isSandbox()) {
-    const message = "File name is invalid or does not contain the CX ID";
+    const message = "File name is invalid or does not exist";
     console.log(`${message}: ${fileName}, ${cxId}`);
-    throw new ForbiddenError(message);
+    throw new ForbiddenError(message); // This should be 404
   }
 
-  const url = await downloadDocument({ fileName, conversionType });
+  const url = await downloadDocument({ fileName: fileNameString, conversionType });
   return url;
 }
 
-// TODO: Redirect this endpoint to the new one (download-url)
 /** ---------------------------------------------------------------------------
  * GET /document/downloadUrl
  * Fetches the document from S3 and sends a presigned URL
@@ -178,6 +174,7 @@ router.get(
   })
 );
 
+// TODO see https://github.com/metriport/metriport-internal/issues/2422
 /** ---------------------------------------------------------------------------
  * GET /document/download-url
  *
@@ -209,9 +206,9 @@ router.get(
 router.post(
   "/download-url/bulk",
   requestLogger,
+  patientAuthorization("query"),
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const patientId = getFromQueryOrFail("patientId", req);
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
     const cxDownloadRequestMetadata = cxRequestMetadataSchema.parse(req.body);
     const BulkGetDocumentsUrlProgress = await startBulkGetDocumentUrls(
       cxId,
@@ -224,8 +221,7 @@ router.post(
 );
 
 async function getUploadUrlAndCreateDocRef(req: Request): Promise<UploadDocumentResult> {
-  const cxId = getCxIdOrFail(req);
-  const patientId = getFromQueryOrFail("patientId", req);
+  const { cxId, id: patientId } = getPatientInfoOrFail(req);
   const docRefId = uuidv7();
   const s3FileName = createDocumentFilePath(cxId, patientId, docRefId);
   const organization = await getOrganizationOrFail({ cxId });
@@ -277,6 +273,7 @@ async function getUploadUrlAndCreateDocRef(req: Request): Promise<UploadDocument
 router.post(
   "/upload-url",
   requestLogger,
+  patientAuthorization("query"),
   asyncHandler(async (req: Request, res: Response) => {
     const resp = await getUploadUrlAndCreateDocRef(req);
     const url = resp.uploadUrl;
@@ -299,6 +296,7 @@ router.post(
 router.post(
   "/upload",
   requestLogger,
+  patientAuthorization("query"),
   asyncHandler(async (req: Request, res: Response) => {
     const resp = await getUploadUrlAndCreateDocRef(req);
     return res.status(httpStatus.OK).json(resp);
