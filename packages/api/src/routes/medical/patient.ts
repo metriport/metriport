@@ -32,7 +32,7 @@ import {
   matchPatient,
 } from "../../command/medical/patient/get-patient";
 import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
-import { handleDataContribution } from "../../command/medical/patient/handle-data-contributions";
+import { handleDataContribution } from "../../command/medical/patient/data-contribution/handle-data-contributions";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";

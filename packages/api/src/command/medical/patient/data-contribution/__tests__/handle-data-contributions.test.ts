@@ -4,7 +4,7 @@ import { makeBundle } from "@metriport/core/external/fhir/__tests__/bundle";
 import { makePatient } from "@metriport/core/external/fhir/__tests__/patient";
 import { makeEncounter } from "@metriport/core/fhir-to-cda/cda-templates/components/__tests__/make-encounter";
 import { cloneDeep } from "lodash";
-import { normalizeBundle } from "../handle-data-contributions";
+import { normalizeBundle } from "../shared";
 
 describe("handle-data-contribution", () => {
   describe("normalizeBundle", () => {
