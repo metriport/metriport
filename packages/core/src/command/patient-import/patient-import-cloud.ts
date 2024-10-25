@@ -204,11 +204,12 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
   }: ProcessPatientCreateRequest): Promise<void> {
     const { log } = out(`processPatientCreate - cxId ${cxId} jobId ${jobId}`);
     try {
-      const patientId = await createPatient({
+      const patientDto = await createPatient({
         cxId,
         facilityId,
         patientPayload,
       });
+      const patientId = patientDto.id;
       const recordExists = await checkPatientRecordExists({
         cxId,
         jobId,
@@ -236,6 +237,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
         data: {
           patientPayload,
           patientRowIndex,
+          patientDto,
         },
         s3BucketName,
       });
