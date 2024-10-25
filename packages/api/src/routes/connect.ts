@@ -21,8 +21,10 @@ import { processOAuth1 } from "./middlewares/oauth1";
 import { processOAuth2 } from "./middlewares/oauth2";
 import { getUserIdFrom } from "./schemas/user-id";
 import { asyncHandler, getCxIdFromHeaders } from "./util";
+import { deprecateAllRoutes } from "./middlewares/deprecate-routes";
 
 const router = Router();
+router.use(deprecateAllRoutes);
 
 /** ---------------------------------------------------------------------------
  * Builds the success or error connect widget redirect URL based on the
