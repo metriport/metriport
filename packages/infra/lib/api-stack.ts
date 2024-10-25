@@ -1373,41 +1373,6 @@ export class APIStack extends Stack {
     return cwLambda;
   }
 
-  private setupTokenAuthLambda(
-    lambdaLayers: LambdaLayers,
-    dynamoDBTokenTable: dynamodb.Table,
-    alarmAction: SnsAction | undefined,
-    envType: EnvType,
-    sentryDsn: string | undefined
-  ): apig.RequestAuthorizer {
-    const tokenAuthLambda = createLambda({
-      stack: this,
-      name: "TokenAuth",
-      runtime: lambda.Runtime.NODEJS_16_X,
-      entry: "token-auth",
-      layers: [lambdaLayers.shared],
-      envType,
-      envVars: {
-        TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
-        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-      },
-      alarmSnsAction: alarmAction,
-    });
-
-    const tokenAuth = new apig.RequestAuthorizer(this, "APITokenAuth", {
-      handler: tokenAuthLambda,
-      identitySources: ["method.request.querystring.state"],
-      // todo: instead of removing caching, investigate explicitly listing
-      //        the permitted methods in the lambda: "Resource: event.methodArn"
-      //
-      // see: https://forum.serverless.com/t/rest-api-with-custom-authorizer-how-are-you-dealing-with-authorization-and-policy-cache/3310
-      resultsCacheTtl: Duration.minutes(0),
-    });
-    tokenAuthLambda.role && dynamoDBTokenTable.grantReadData(tokenAuthLambda.role);
-
-    return tokenAuth;
-  }
-
   private setupOAuthUserPool(config: EnvConfig, dnsZone: r53.IHostedZone): cognito.IUserPool {
     const domainName = `${config.authSubdomain}.${config.domain}`;
     const userPool = new cognito.UserPool(this, "oauth-client-secret-user-pool2", {
