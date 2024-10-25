@@ -705,8 +705,8 @@ export class MetriportMedicalApi {
    * @returns True if the signature is verified, false otherwise.
    * @throws Error if the body is not a string.
    */
-  verifyWebhookSignature(wh_key: string, reqBody: string, signature: string): boolean {
-    return MetriportMedicalApi.verifyWebhookSignature(wh_key, reqBody, signature);
+  verifyWebhookSignature(key: string, reqBody: string, signature: string): boolean {
+    return MetriportMedicalApi.verifyWebhookSignature(key, reqBody, signature);
   }
 
   /**

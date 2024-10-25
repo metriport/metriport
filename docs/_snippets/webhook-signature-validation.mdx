@@ -8,9 +8,10 @@
   });
   if (metriportClient.verifyWebhookSignature(webhookKey, req.body, signatureAsString)) {
     console.log(`Signature verified`);
+    return true;
   } else {
     console.log(`Signature verification failed`);
-    return false; // or throw and error
+    return false; // or throw an error
   }
 
 ```

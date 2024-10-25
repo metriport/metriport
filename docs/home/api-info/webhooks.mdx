@@ -85,17 +85,18 @@ def compute_hmac(key, message, signature, digestmod=hashlib.sha256):
     return hmac.compare_digest(signature, computed_signature)
 
 # Example usage
-key = 'your_secret_key'  # The webhook key from the Settings page
+key = 'your_secret_key'  # Webhook key from the Settings page
 message = '{"webhookUrl": "https://api.app.com/webhook"}'  # The message from the request in string format
-signature = 'the-request-signature'  # The signature from the header
+signature = request.headers.get('x-metriport-signature')  # The signature from the header
 
 is_signature_valid = compute_hmac(key, message, signature)
 
 if is_signature_valid:
     print("Signature verified")
+    return true
 else:
     print("Signature verification failed")
-    return
+    return false  # or throw an error
 ```
 
 ### Generating a new webhook key
