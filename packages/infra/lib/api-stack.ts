@@ -681,7 +681,7 @@ export class APIStack extends Stack {
     );
 
     // setup /token path with token auth
-    this.setupAPIGWApiTokenResource(id, api, link, tokenAuth, apiLoadBalancerAddress);
+    this.setupAPIGWApiTokenResource(id, api, tokenAuth);
 
     const userPoolClientSecret = this.setupOAuthUserPool(props.config, publicZone);
     const oauthScopes = this.enableFHIROnUserPool(userPoolClientSecret);
@@ -813,7 +813,6 @@ export class APIStack extends Stack {
 
     // add another usage plan for Publishable (Client) API keys
     // everything is throttled to 0 - except explicitely permitted routes
-    const appleHealthThrottleKey = `${appleHealthResource.path}/POST`;
     const clientPlan = new apig.CfnUsagePlan(this, "APIClientUsagePlan", {
       usagePlanName: "Client Plan",
       description: "Client Plan for API",
@@ -823,16 +822,15 @@ export class APIStack extends Stack {
           stage: api.deploymentStage.stageName,
           throttle: {
             "*/*": { burstLimit: 0, rateLimit: 0 },
-            [appleHealthThrottleKey]: { burstLimit: 10, rateLimit: 50 },
           },
         },
       ],
       throttle: {
-        burstLimit: 10,
-        rateLimit: 50,
+        burstLimit: 0,
+        rateLimit: 0,
       },
       quota: {
-        limit: this.isProd(props) ? 10000 : 500,
+        limit: 0,
         period: apig.Period.DAY,
       },
     });
@@ -1425,36 +1423,36 @@ export class APIStack extends Stack {
   private setupAPIGWApiTokenResource(
     stackId: string,
     api: apig.RestApi,
-    link: apig.VpcLink,
-    authorizer: apig.RequestAuthorizer,
-    serverAddress: string
+    authorizer: apig.RequestAuthorizer
   ): apig.Resource {
     const apiTokenResource = api.root.addResource("token");
     const tokenProxy = new apig.ProxyResource(this, `${stackId}/token/Proxy`, {
       parent: apiTokenResource,
       anyMethod: false,
     });
-    const integrationToken = new apig.Integration({
-      type: apig.IntegrationType.HTTP_PROXY,
-      options: {
-        connectionType: apig.ConnectionType.VPC_LINK,
-        vpcLink: link,
-        requestParameters: {
-          "integration.request.path.proxy": "method.request.path.proxy",
-          "integration.request.header.api-token": "context.authorizer.api-token",
-          "integration.request.header.cxId": "context.authorizer.cxId",
-          "integration.request.header.userId": "context.authorizer.userId",
+
+    const deprecatedIntegration = new apig.MockIntegration({
+      integrationResponses: [
+        {
+          statusCode: "404",
+          responseTemplates: {
+            "application/json": JSON.stringify({ message: "This route is no longer available." }),
+          },
         },
+      ],
+      requestTemplates: {
+        "application/json": '{"statusCode": 404}',
       },
-      integrationHttpMethod: "ANY",
-      uri: `http://${serverAddress}/{proxy}`,
+      passthroughBehavior: apig.PassthroughBehavior.NEVER,
     });
-    tokenProxy.addMethod("ANY", integrationToken, {
+
+    tokenProxy.addMethod("ANY", deprecatedIntegration, {
       requestParameters: {
         "method.request.path.proxy": true,
       },
       authorizer,
     });
+
     return apiTokenResource;
   }
 
