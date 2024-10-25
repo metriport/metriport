@@ -5,7 +5,7 @@ import { demographicsSchema } from "./demographics";
 export const patientDtoSchema = demographicsSchema.merge(
   z.object({
     id: createNonEmptryStringSchema("id"),
-    externalId: createNonEmptryStringSchema("externalId").optional(),
+    externalId: z.string(),
   })
 );
 export type PatientDTO = z.infer<typeof patientDtoSchema>;
