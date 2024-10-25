@@ -18,4 +18,4 @@ export function normalizeDate(date: string): string {
 export const dobSchema = z
   .string()
   .refine(isValidISODate, { message: "Invalid date of birth" })
-  .refine(validateIsPastOrPresentSafe, { message: "Date can't be in the future" });
+  .refine(validateIsPastOrPresentSafe, { message: "Date of birth can't be in the future" });
