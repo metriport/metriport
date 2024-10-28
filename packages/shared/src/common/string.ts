@@ -1,9 +1,5 @@
 import { z } from "zod";
 
-function trimString(str: string): string {
-  return str.trim();
-}
-
 export function limitStringLength<T extends string | undefined>(
   value: T,
   max = 255,
@@ -18,7 +14,7 @@ export function limitStringLength<T extends string | undefined>(
 }
 
 export function stripNonNumericChars(str: string): string {
-  return trimString(str).replace(/\D/g, "");
+  return str.trim().replace(/\D/g, "");
 }
 
 export function normalizeNonEmptyString(str: string): string {
@@ -28,7 +24,7 @@ export function normalizeNonEmptyString(str: string): string {
 }
 
 export function normalizeNonEmptyStringSafe(str: string): string | undefined {
-  const normalizedString = trimString(str);
+  const normalizedString = str.trim();
   if (normalizedString === "") return undefined;
   return normalizedString;
 }
