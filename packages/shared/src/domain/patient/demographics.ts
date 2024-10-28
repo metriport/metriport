@@ -11,7 +11,7 @@ export const demographicsSchema = z.object({
   lastName: createNonEmptryStringSchema("lastName"),
   dob: dobSchema,
   genderAtBirth: genderAtBirthSchema,
-  personalIdentifiers: z.array(personalIdentifierSchema),
+  personalIdentifiers: z.array(personalIdentifierSchema).nullish(),
   address: z.array(addressSchema).nonempty(),
-  contact: z.array(contactSchema),
+  contact: z.array(contactSchema).nullish(),
 });

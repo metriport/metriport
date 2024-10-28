@@ -221,14 +221,6 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
         log(`Record exists for patientId ${patientId}, returning...`);
         return;
       }
-      await updateValidFileWithPatientId({
-        cxId,
-        jobId,
-        jobStartedAt,
-        patientId,
-        patientRowIndex,
-        s3BucketName,
-      });
       await creatOrUpdatePatientRecord({
         cxId,
         jobId,
@@ -239,6 +231,14 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
           patientRowIndex,
           patientDto,
         },
+        s3BucketName,
+      });
+      await updateValidFileWithPatientId({
+        cxId,
+        jobId,
+        jobStartedAt,
+        patientId,
+        patientRowIndex,
         s3BucketName,
       });
       const processPatientQueryRequest: ProcessPatientQueryEvemtPayload = {

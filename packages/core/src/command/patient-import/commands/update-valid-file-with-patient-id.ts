@@ -39,7 +39,7 @@ export async function updateValidFileWithPatientId({
     if (!targetRow) {
       throw new Error(`targetRow does not exist in valid file at index ${targetIndex}`);
     }
-    allRows[targetIndex] = `${patientId}` + targetRow;
+    allRows[targetIndex] = `${patientId}${targetRow}`;
     await s3Utils.uploadFile({
       bucket: s3BucketName,
       key,

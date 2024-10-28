@@ -1,3 +1,4 @@
+import { chunk } from "lodash";
 import { errorToString } from "@metriport/shared";
 import { capture } from "../../util/notifications";
 import { out } from "../../util/log";
@@ -17,6 +18,8 @@ import {
   ProcessPatientQueryRequest,
 } from "./patient-import";
 import { createPatientPayload } from "./patient-import-shared";
+
+const patientCreateChunk = 1; // Mimics 1 patient / cx lambda consumer
 
 export class PatientImportHandlerLocal implements PatientImportHandler {
   constructor(private readonly patientImportBucket: string) {}
@@ -86,27 +89,32 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
         log(`Dryrun is true, returning...`);
         return;
       }
-      const outcomes = await Promise.allSettled(
-        patients.map(async patientWithIndex => {
-          const patientPayload = createPatientPayload(patientWithIndex.patient);
-          const processPatientCreateRequest: ProcessPatientCreateRequest = {
-            cxId,
-            facilityId,
-            jobId,
-            jobStartedAt,
-            patientPayload,
-            patientRowIndex: patientWithIndex.rowIndex,
-            s3BucketName: this.patientImportBucket,
-            processPatientQueryQueue: "local",
-            rerunPdOnNewDemographics,
-            waitTimeInMillis: 0,
-          };
-          const boundProcessPatientCreate = this.processPatientCreate.bind(this);
-          await boundProcessPatientCreate(processPatientCreateRequest);
-        })
-      );
-      const hadFailure = outcomes.some(outcome => outcome.status === "rejected");
-      if (hadFailure) throw new Error("At least one payload failed in patient create");
+      const allOutcomes: PromiseSettledResult<void>[] = [];
+      const patientChunks = chunk(patients, patientCreateChunk);
+      for (const patientChunk of patientChunks) {
+        const chunkOutcomes = await Promise.allSettled(
+          patientChunk.map(async patientWithIndex => {
+            const patientPayload = createPatientPayload(patientWithIndex.patient);
+            const processPatientCreateRequest: ProcessPatientCreateRequest = {
+              cxId,
+              facilityId,
+              jobId,
+              jobStartedAt,
+              patientPayload,
+              patientRowIndex: patientWithIndex.rowIndex,
+              s3BucketName: this.patientImportBucket,
+              processPatientQueryQueue: "local",
+              rerunPdOnNewDemographics,
+              waitTimeInMillis: 0,
+            };
+            const boundProcessPatientCreate = this.processPatientCreate.bind(this);
+            await boundProcessPatientCreate(processPatientCreateRequest);
+          })
+        );
+        allOutcomes.push(...chunkOutcomes);
+      }
+      const hadFailure = allOutcomes.some(outcome => outcome.status === "rejected");
+      if (hadFailure) throw new Error("At least one payload failed to send to create queue");
     } catch (error) {
       const msg = `Failure while processing patient import @ PatientImport`;
       log(`${msg}. Cause: ${errorToString(error)}`);
@@ -151,14 +159,6 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
         log(`Record exists for patientId ${patientId}, returning...`);
         return;
       }
-      await updateValidFileWithPatientId({
-        cxId,
-        jobId,
-        jobStartedAt,
-        patientId,
-        patientRowIndex,
-        s3BucketName,
-      });
       await creatOrUpdatePatientRecord({
         cxId,
         jobId,
@@ -169,6 +169,14 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
           patientRowIndex,
           patientDto,
         },
+        s3BucketName,
+      });
+      await updateValidFileWithPatientId({
+        cxId,
+        jobId,
+        jobStartedAt,
+        patientId,
+        patientRowIndex,
         s3BucketName,
       });
       const boundProcessPatientQuery = this.processPatientQuery.bind(this);
