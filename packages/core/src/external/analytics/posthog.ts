@@ -61,6 +61,7 @@ export enum EventTypes {
   documentRetrieval = "documentRetrieval",
   documentConversion = "documentConversion",
   fhirDeduplication = "fhirDeduplication",
+  fhirHydration = "fhirHydration",
   consolidatedQuery = "consolidatedQuery",
   inboundPatientDiscovery = "inbound.patientDiscovery",
   inboundDocumentQuery = "inbound.documentQuery",

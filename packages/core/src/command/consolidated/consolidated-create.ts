@@ -3,8 +3,9 @@ import { parseFhirBundle } from "@metriport/shared/medical";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { createFolderName } from "../../domain/filename";
 import { Patient } from "../../domain/patient";
-import { executeWithRetriesS3, S3Utils } from "../../external/aws/s3";
+import { S3Utils, executeWithRetriesS3 } from "../../external/aws/s3";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
+import { hydrate } from "../../external/fhir/consolidated/hydrate";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle";
@@ -61,6 +62,8 @@ export async function createConsolidatedFromConversions({
   log(`Deduplicating consolidated bundle...`);
   const deduped = deduplicate({ cxId, patientId, bundle: withDups });
   log(`...done, from ${withDups.entry?.length} to ${deduped.entry?.length} resources`);
+  const hydrated = hydrate({ cxId, patientId, bundle: deduped });
+  log(`...and successfully hydrated`);
 
   const dedupDestFileName = createConsolidatedDataFilePath(cxId, patientId, true);
   const withDupsDestFileName = createConsolidatedDataFilePath(cxId, patientId, false);
@@ -70,7 +73,7 @@ export async function createConsolidatedFromConversions({
     s3Utils.uploadFile({
       bucket: destinationBucketName,
       key: dedupDestFileName,
-      file: Buffer.from(JSON.stringify(deduped)),
+      file: Buffer.from(JSON.stringify(hydrated)),
       contentType: "application/json",
     }),
     s3Utils.uploadFile({
@@ -82,7 +85,7 @@ export async function createConsolidatedFromConversions({
   ]);
 
   log(`Done`);
-  return deduped;
+  return hydrated;
 }
 
 export function buildConsolidatedBundle(entries: BundleEntry[] = []): Bundle {
