@@ -8,7 +8,7 @@ import { asyncHandler } from "./util";
 
 const fhirRouter = Router();
 
-function createFhirRequest(req: Request): FhirRequest {
+function parseIntoFhirRequest(req: Request): FhirRequest {
   return {
     method: req.method as HttpMethod,
     pathname: req.originalUrl.replace("/fhir/R4", "").split("?").shift() || "",
@@ -20,47 +20,52 @@ function createFhirRequest(req: Request): FhirRequest {
 }
 
 fhirRouter.post(
-  "/CodeSystem/import",
+  "/code-system/import",
   asyncHandler(async (req: Request, res: Response) => {
-    const fhirRequest = createFhirRequest(req);
+    const fhirRequest = parseIntoFhirRequest(req);
     const response = await codeSystemImportHandler(fhirRequest);
     res.status(200).json(response);
+    return;
   })
 );
 
 fhirRouter.post(
-  "/CodeSystem/lookup",
+  "/code-system/lookup",
   asyncHandler(async (req: Request, res: Response) => {
-    const fhirRequest = createFhirRequest(req);
+    const fhirRequest = parseIntoFhirRequest(req);
     const response = await codeSystemLookupHandler(fhirRequest, false);
-    res.status(200).json(response);
+    res.status(200).json({ response });
+    return;
   })
 );
 
 fhirRouter.post(
-  "/CodeSystem/lookup/partial",
+  "/code-system/lookup/partial",
   asyncHandler(async (req: Request, res: Response) => {
-    const fhirRequest = createFhirRequest(req);
+    const fhirRequest = parseIntoFhirRequest(req);
     const response = await codeSystemLookupHandler(fhirRequest, true);
-    res.status(200).json(response);
+    res.status(200).json({ response });
+    return;
   })
 );
 
 fhirRouter.post(
-  "/ConceptMap/import",
+  "/concept-map/import",
   asyncHandler(async (req: Request, res: Response) => {
-    const fhirRequest = createFhirRequest(req);
+    const fhirRequest = parseIntoFhirRequest(req);
     const response = await conceptMapImportHandler(fhirRequest);
-    res.status(200).json(response);
+    res.status(200).json({ response });
+    return;
   })
 );
 
 fhirRouter.post(
-  "/ConceptMap/translate",
+  "/concept-map/translate",
   asyncHandler(async (req: Request, res: Response) => {
-    const fhirRequest = createFhirRequest(req);
+    const fhirRequest = parseIntoFhirRequest(req);
     const response = await conceptMapTranslateHandler(fhirRequest);
-    res.status(200).json(response);
+    res.status(200).json({ response });
+    return;
   })
 );
 

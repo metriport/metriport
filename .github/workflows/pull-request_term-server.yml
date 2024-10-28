@@ -45,7 +45,7 @@ jobs:
           npm install
         working-directory: ${{env.working-directory}}
 
-      - name: Build (linters)
+      - name: Build
         run: npm run build
         working-directory: ${{env.working-directory}}
 

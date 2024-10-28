@@ -1,12 +1,10 @@
+import { getEnvVarOrFail } from "@metriport/shared";
+import { existsSync, writeFileSync } from "fs";
 import { join } from "path";
-import { writeFileSync, existsSync } from "fs";
-
 import { S3Utils } from "./s3";
-
+import { seedCodeSystems } from "./seed/seedCodeSystem";
 import { createTermServerClient, DbClient } from "./sqlClient";
 import { tables } from "./tables";
-import { seedCodeSystems } from "./seed/seedCodeSystem";
-import { getEnvVarOrFail } from "@metriport/shared";
 
 const region = getEnvVarOrFail("AWS_REGION");
 

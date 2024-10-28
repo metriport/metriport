@@ -20,7 +20,7 @@ async function main() {
 
   await initTermServer();
 
-  app.use("/fhir/R4/", fhirRouter);
+  app.use("/terminology/", fhirRouter);
 
   const PORT = 8080;
   const server = app.listen(PORT, () => {

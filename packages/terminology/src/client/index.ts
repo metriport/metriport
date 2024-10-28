@@ -13,7 +13,7 @@ export class TerminologyClient {
   }
 
   async lookupCode(parameters: Parameters): Promise<CodeSystemLookupOutput[]> {
-    const response = await axios.post(`${this.baseUrl}/CodeSystem/lookup`, parameters, {
+    const response = await axios.post(`${this.baseUrl}/code-system/lookup`, parameters, {
       headers: {
         "Content-Type": "application/json",
       },
@@ -22,7 +22,7 @@ export class TerminologyClient {
   }
 
   async lookupPartialCode(parameters: Parameters): Promise<CodeSystemLookupOutput[]> {
-    const response = await axios.post(`${this.baseUrl}/CodeSystem/lookup/partial`, parameters, {
+    const response = await axios.post(`${this.baseUrl}/code-system/lookup/partial`, parameters, {
       headers: {
         "Content-Type": "application/json",
       },
@@ -31,7 +31,7 @@ export class TerminologyClient {
   }
 
   async importCode(parameters: Parameters): Promise<OperationOutcome[]> {
-    const response = await axios.post(`${this.baseUrl}/CodeSystem/import`, parameters, {
+    const response = await axios.post(`${this.baseUrl}/code-system/import`, parameters, {
       headers: {
         "Content-Type": "application/json",
       },
@@ -40,7 +40,7 @@ export class TerminologyClient {
   }
 
   async importConceptMap(conceptMap: ConceptMap): Promise<ConceptMap[] | OperationOutcome[]> {
-    const response = await axios.post(`${this.baseUrl}/ConceptMap/import`, conceptMap, {
+    const response = await axios.post(`${this.baseUrl}/concept-map/import`, conceptMap, {
       headers: {
         "Content-Type": "application/json",
       },
@@ -49,7 +49,7 @@ export class TerminologyClient {
   }
 
   async translateCode(parameters: Parameters): Promise<ConceptMap | OperationOutcome[]> {
-    const response = await axios.post(`${this.baseUrl}/ConceptMap/translate`, parameters, {
+    const response = await axios.post(`${this.baseUrl}/concept-map/translate`, parameters, {
       headers: {
         "Content-Type": "application/json",
       },
