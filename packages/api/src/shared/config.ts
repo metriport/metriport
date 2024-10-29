@@ -201,10 +201,6 @@ export class Config {
     return getEnvVarOrFail("FHIR_SERVER_URL");
   }
 
-  static getFHIRServerQueueURL(): string {
-    return getEnvVarOrFail("FHIR_SERVER_QUEUE_URL");
-  }
-
   static getSystemRootOID(): string {
     return getEnvVarOrFail("SYSTEM_ROOT_OID");
   }

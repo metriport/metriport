@@ -1,15 +1,21 @@
+import { z } from "zod";
 import { BadRequestError } from "../../error/bad-request";
 
 export function normalizeStateSafe(state: string): USState | undefined {
+  const trimmedState = state.trim();
   const keyFromEntries = Object.entries(states).find(
-    ([key, value]) => key === state || value.toLowerCase() === state.toLowerCase()
+    ([key, value]) =>
+      key.toLowerCase() === trimmedState.toLowerCase() ||
+      value.toLowerCase() === trimmedState.toLowerCase()
   );
   return keyFromEntries?.[0] as USState | undefined;
 }
 
 export function normalizeState(state: string): USState {
   const stateOrUndefined = normalizeStateSafe(state);
-  if (!stateOrUndefined) throw new BadRequestError("Invalid state", undefined, { state });
+  if (!stateOrUndefined) {
+    throw new BadRequestError("Invalid state", undefined, { state });
+  }
   return stateOrUndefined;
 }
 
@@ -67,7 +73,7 @@ export enum USState {
   WY = "WY",
 }
 
-const states: Record<USState, string> = {
+export const states: Record<USState, string> = {
   [USState.AZ]: "Arizona",
   [USState.AL]: "Alabama",
   [USState.AK]: "Alaska",
@@ -120,3 +126,8 @@ const states: Record<USState, string> = {
   [USState.WI]: "Wisconsin",
   [USState.WY]: "Wyoming",
 };
+
+export const usStateSchema = z.preprocess(
+  val => (typeof val === "string" ? val.toUpperCase().trim() : val),
+  z.nativeEnum(USState)
+);

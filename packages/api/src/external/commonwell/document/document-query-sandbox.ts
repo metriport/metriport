@@ -13,6 +13,7 @@ import {
   processPatientDocumentRequest,
 } from "../../../command/medical/document/document-webhook";
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
+import { recreateConsolidated } from "../../../command/medical/patient/consolidated-recreate";
 import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { Config } from "../../../shared/config";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
@@ -153,6 +154,10 @@ export async function sandboxGetDocRefsAndUpsert({
       });
     }
   }
+
+  // After docs are converted (and conversion bundles are stored in S3), we recreate the consolidated
+  // bundle to make sure it's up-to-date.
+  await recreateConsolidated({ patient });
 
   await appendDocQueryProgress({
     patient: { id: patientId, cxId },

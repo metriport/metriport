@@ -1,5 +1,5 @@
-import { ISO_DATE, buildDayjs } from "../common/date";
-import dayjs from "dayjs";
+import { z } from "zod";
+import { buildDayjs, ISO_DATE, validateIsPastOrPresentSafe } from "../common/date";
 
 function noramlizeDateBase(date: string): string {
   return date.trim();
@@ -8,17 +8,29 @@ function noramlizeDateBase(date: string): string {
 export function normalizeDateSafe(
   date: string,
   normalizeBase: (date: string) => string = noramlizeDateBase,
-  afterDate?: dayjs.Dayjs
+  validateIsPastOrPresentSafe: ((date: string) => boolean) | undefined = undefined
 ): string | undefined {
   const baseDate = normalizeBase(date);
   const parsedDate = buildDayjs(baseDate);
   if (!parsedDate.isValid()) return undefined;
-  if (afterDate && parsedDate < afterDate) return undefined;
+  if (validateIsPastOrPresentSafe) {
+    if (!validateIsPastOrPresentSafe(date)) return undefined;
+  }
   return parsedDate.format(ISO_DATE);
 }
 
-export function normalizeDate(date: string): string {
-  const dateOrUndefined = normalizeDateSafe(date);
+export function normalizeDate(
+  date: string,
+  normalizeBase: (date: string) => string = noramlizeDateBase,
+  validateIsPastOrPresentSafe: ((date: string) => boolean) | undefined = undefined
+): string {
+  const dateOrUndefined = normalizeDateSafe(date, normalizeBase, validateIsPastOrPresentSafe);
   if (!dateOrUndefined) throw new Error("Invalid date.");
   return dateOrUndefined;
 }
+
+export const dobSchema = z.coerce
+  .string()
+  .refine(normalizeDateSafe, { message: "Invalid date of birth" })
+  .transform(dob => normalizeDate(dob))
+  .refine(validateIsPastOrPresentSafe, { message: "Date of birth can't be in the future" });

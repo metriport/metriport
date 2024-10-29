@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { stripPeriods } from "../../common/string";
 
 const validCountryStrings = ["US", "USA", "UNITED STATES", "UNITED STATES OF AMERICA"];
@@ -27,3 +28,8 @@ export function normalizeCountry(country: string): string {
   if (!countryOrUndefined) throw new Error("Invalid country.");
   return countryOrUndefined;
 }
+
+export const countrySchema = z.coerce
+  .string()
+  .refine(normalizeCountrySafe, { message: "Invalid zip" })
+  .transform(country => normalizeCountry(country));

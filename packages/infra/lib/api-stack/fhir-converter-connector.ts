@@ -98,7 +98,6 @@ export function createLambda({
   stack,
   vpc,
   sourceQueue,
-  fhirServerQueue,
   dlq,
   fhirConverterBucket,
   apiServiceDnsAddress,
@@ -109,7 +108,6 @@ export function createLambda({
   stack: Construct;
   vpc: IVpc;
   sourceQueue: IQueue;
-  fhirServerQueue: IQueue;
   dlq: IQueue;
   fhirConverterBucket: s3.IBucket;
   apiServiceDnsAddress: string;
@@ -140,7 +138,6 @@ export function createLambda({
       API_URL: `http://${apiServiceDnsAddress}`,
       QUEUE_URL: sourceQueue.queueUrl,
       DLQ_URL: dlq.queueUrl,
-      FHIR_SERVER_QUEUE_URL: fhirServerQueue.queueUrl,
       CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,
     },
     timeout: lambdaTimeout,
@@ -159,7 +156,6 @@ export function createLambda({
   );
   provideAccessToQueue({ accessType: "both", queue: sourceQueue, resource: conversionLambda });
   provideAccessToQueue({ accessType: "send", queue: dlq, resource: conversionLambda });
-  provideAccessToQueue({ accessType: "send", queue: fhirServerQueue, resource: conversionLambda });
 
   return conversionLambda;
 }

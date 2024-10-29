@@ -6,7 +6,8 @@
   "scripts": {
     "preinstall": "npm i -g rimraf",
     "clean-playwright-layer": "pushd layers/playwright && npm run clean && popd",
-    "clean": "rimraf dist && rimraf node_modules && rimraf layers/shared && npm run clean-playwright-layer",
+    "clean": "rimraf dist",
+    "deepclean": "npm run clean && rimraf node_modules && rimraf layers/shared && npm run clean-playwright-layer",
     "build": "tsc -p tsconfig.build.json",
     "build:cloud": "tsc -p tsconfig.cloud.json",
     "typecheck": "tsc --noEmit",

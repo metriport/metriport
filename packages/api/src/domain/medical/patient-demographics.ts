@@ -1,16 +1,18 @@
 import {
-  USState,
-  normalizeStringSafe,
+  toLowerCase,
+  normalizeNonEmptyStringSafe,
   normalizeDateSafe,
   normalizeGenderSafe,
-  normalizeEmailSafe,
-  normalizePhoneSafe,
+  normalizeUSStateForAddressSafe,
   normalizeStateSafe,
   normalizeZipCodeSafe,
   normalizeCountrySafe,
+  normalizedCountryUsa,
+  normalizePhoneSafe,
+  normalizeEmailSafe,
   normalizeSsnSafe,
   commonReplacementsForAddressLine,
-  normalizedCountryUsa,
+  USState,
 } from "@metriport/shared";
 import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
@@ -223,9 +225,9 @@ export function normalizeAndStringifyNames({
   firstName: string;
   lastName: string;
 }): string | undefined {
-  const normalizedFirstName = normalizeStringSafe(firstName);
+  const normalizedFirstName = normalizeNonEmptyStringSafe(firstName, toLowerCase);
   if (!normalizedFirstName) return undefined;
-  const normalizedLastName = normalizeStringSafe(lastName);
+  const normalizedLastName = normalizeNonEmptyStringSafe(lastName, toLowerCase);
   if (!normalizedLastName) return undefined;
   const normalizedName = {
     firstName: normalizedFirstName,
@@ -249,19 +251,18 @@ export function normalizeAndStringfyAddress({
 }): string | undefined {
   if (!line || !city || !state || !zip) return undefined;
   const normalizedLines = line.flatMap(l => {
-    const normalizedLine = normalizeStringSafe(l);
+    const normalizedLine = normalizeNonEmptyStringSafe(l, toLowerCase);
     if (!normalizedLine) return [];
     return [commonReplacementsForAddressLine(normalizedLine)];
   });
   if (normalizedLines.length === 0) return undefined;
-  const normalizedCity = normalizeStringSafe(city);
+  const normalizedCity = normalizeNonEmptyStringSafe(city, toLowerCase);
   if (!normalizedCity) return undefined;
-  const normalizedState = normalizeStateSafe(state);
+  const normalizedState = normalizeUSStateForAddressSafe(state);
   if (!normalizedState) return undefined;
   const normalizedZip = normalizeZipCodeSafe(zip);
   if (!normalizedZip) return undefined;
-  const normalizedCountryString = normalizeStringSafe(country ?? "");
-  const normalizedCountry = normalizeCountrySafe(normalizedCountryString ?? normalizedCountryUsa);
+  const normalizedCountry = normalizeCountrySafe(country ?? normalizedCountryUsa);
   if (!normalizedCountry) return undefined;
   const normalizedAddress = {
     line: normalizedLines,
@@ -280,7 +281,7 @@ export function normalizeAndStringifyDriversLicense({
   value: string;
   state: string;
 }): string | undefined {
-  const normalizedValue = normalizeStringSafe(value);
+  const normalizedValue = normalizeNonEmptyStringSafe(value, toLowerCase);
   if (!normalizedValue) return undefined;
   const normalizedState = normalizeStateSafe(state);
   if (!normalizedState) return undefined;

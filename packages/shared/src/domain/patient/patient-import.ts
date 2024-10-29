@@ -1,41 +1,27 @@
 import { z } from "zod";
-import { normalizeStringSafe } from "../../common/string";
-import { normalizeDateSafe } from "../dob";
-import { normalizeGenderSafe } from "../gender";
-import { normalizeUSStateForAddressSafe } from "../address";
-import { normalizeZipCodeSafe } from "../address/zip";
-import { normalizeEmailSafe } from "../contact/email";
-import { normalizePhoneSafe } from "../contact/phone";
+import { createNonEmptryStringSchema } from "../../common/string";
+import { dobSchema } from "../dob";
+import { genderAtBirthSchema } from "../gender";
+import { zipSchema } from "../address/zip";
+import { usStateForAddressSchema } from "../address";
+import { phoneSchema } from "../contact/phone";
+import { emailSchema } from "../contact/email";
 
 export const patientImportPatientSchema = z.object({
-  dob: z.string().refine(normalizeDateSafe, { message: "Invalid dob" }),
-  gender: z.string().refine(normalizeGenderSafe, { message: "Invalid gender" }),
-  firstname: z
-    .string()
-    .min(1, { message: "First name must be defined" })
-    .refine(normalizeStringSafe, { message: "Invalid first name" }),
-  lastname: z
-    .string()
-    .min(1, { message: "Last name must be defined" })
-    .refine(normalizeStringSafe, { message: "Invalid last name" }),
-  addressline1: z
-    .string()
-    .min(1, { message: "Address line must be defined" })
-    .refine(normalizeStringSafe, { message: "Invalid adderess line" }),
-  addressline2: z.string().optional(),
-  city: z
-    .string()
-    .min(1, { message: "City must be defined" })
-    .refine(normalizeStringSafe, { message: "Invalid city" }),
-  state: z
-    .string()
-    .refine(normalizeUSStateForAddressSafe, { message: "Invalid state or territory" }),
-  zip: z.string().refine(normalizeZipCodeSafe, { message: "Invalid zip" }),
-  phone1: z.string().refine(normalizePhoneSafe, { message: "Invalid phone" }).optional(),
-  phone2: z.string().refine(normalizePhoneSafe, { message: "Invalid phone" }).optional(),
-  email1: z.string().refine(normalizeEmailSafe, { message: "Invalid email" }).optional(),
-  email2: z.string().refine(normalizeEmailSafe, { message: "Invalid email" }).optional(),
-  externalid: z.string().optional(),
+  dob: dobSchema,
+  gender: genderAtBirthSchema,
+  firstname: createNonEmptryStringSchema("firstname"),
+  lastname: createNonEmptryStringSchema("lastname"),
+  addressline1: createNonEmptryStringSchema("addressline1"),
+  addressline2: createNonEmptryStringSchema("addressline2").optional(),
+  city: createNonEmptryStringSchema("city"),
+  state: usStateForAddressSchema,
+  zip: zipSchema,
+  phone1: phoneSchema.optional(),
+  phone2: phoneSchema.optional(),
+  email1: emailSchema.optional(),
+  email2: emailSchema.optional(),
+  externalid: createNonEmptryStringSchema("externId").optional(),
 });
 export type PatientImportPatient = z.infer<typeof patientImportPatientSchema>;
 

@@ -1,3 +1,9 @@
+import { z } from "zod";
+
+export function toLowerCase(str: string): string {
+  return str.toLowerCase();
+}
+
 export function limitStringLength<T extends string | undefined>(
   value: T,
   max = 255,
@@ -19,14 +25,27 @@ export function stripPeriods(str: string): string {
   return str.trim().replace(/\./g, "");
 }
 
-export function normalizeString(str: string): string {
-  const normalizedString = normalizeStringSafe(str);
+export function normalizeNonEmptyStringSafe(
+  str: string,
+  applyCase: (str: string) => string = (str: string) => str
+): string | undefined {
+  const normalizedString = applyCase(str.trim());
+  if (normalizedString === "") return undefined;
+  return normalizedString;
+}
+
+export function normalizeNonEmptyString(
+  str: string,
+  applyCase: (str: string) => string = (str: string) => str
+): string {
+  const normalizedString = normalizeNonEmptyStringSafe(str, applyCase);
   if (!normalizedString) throw new Error("Invalid string");
   return normalizedString;
 }
 
-export function normalizeStringSafe(str: string): string | undefined {
-  const normalizedString = str.trim().toLowerCase();
-  if (normalizedString === "") return undefined;
-  return normalizedString;
+export function createNonEmptryStringSchema(param: string): z.ZodSchema {
+  return z
+    .string()
+    .refine(normalizeNonEmptyStringSafe, { message: `Invalid ${param}` })
+    .transform(str => normalizeNonEmptyString(str));
 }

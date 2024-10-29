@@ -43,16 +43,16 @@ export function patientNetworkLinkToNormalizedLinkDemographics(
   const telephoneNumbers = (patientNetworkLink.details.telecom ?? []).flatMap(tc => {
     if (!tc.value || !tc.system) return [];
     if (tc.system !== "phone") return [];
-    const normalizedPhone = normalizePhoneSafe(tc.value);
-    if (!normalizedPhone) return [];
-    return [normalizedPhone];
+    const phone = normalizePhoneSafe(tc.value);
+    if (!phone) return [];
+    return [phone];
   });
   const emails = (patientNetworkLink.details.telecom ?? []).flatMap(tc => {
     if (!tc.value || !tc.system) return [];
     if (tc.system !== "email") return [];
-    const normalizedEmail = normalizeEmailSafe(tc.value);
-    if (!normalizedEmail) return [];
-    return [normalizedEmail];
+    const email = normalizeEmailSafe(tc.value);
+    if (!email) return [];
+    return [email];
   });
   /* TODO
   const driversLicenses = (patientNetworkLink.details.identifiers ?? []).flatMap(p => {

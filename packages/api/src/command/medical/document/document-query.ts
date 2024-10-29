@@ -20,7 +20,6 @@ import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { resetDocQueryProgress } from "../../../external/hie/reset-doc-query-progress";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { Config } from "../../../shared/config";
 import { Util } from "../../../shared/util";
 import { getPatientOrFail } from "../patient/get-patient";
 import { storeQueryInit } from "../patient/query-init";
@@ -115,8 +114,9 @@ export async function queryDocumentsAcrossHIEs({
   let triggeredDocumentQuery = false;
 
   const commonwellEnabled = await isCommonwellEnabled();
+  // Why? Please add a comment explaining why we're not running CW if there's no CQ managing org name.
   if (!cqManagingOrgName) {
-    if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
+    if (commonwellEnabled || forceCommonwell) {
       getDocumentsFromCW({
         patient: updatedPatient,
         facilityId,

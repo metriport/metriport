@@ -42,16 +42,16 @@ export function patientResourceToNormalizedLinkDemographics(
   const telephoneNumbers = (patientResource.telecom ?? []).flatMap(tc => {
     if (!tc.value) return [];
     if (tc.system !== "phone" && tc.value.includes("@")) return [];
-    const normalizedPhone = normalizePhoneSafe(tc.value);
-    if (!normalizedPhone) return [];
-    return [normalizedPhone];
+    const phone = normalizePhoneSafe(tc.value);
+    if (!phone) return [];
+    return [phone];
   });
   const emails = (patientResource.telecom ?? []).flatMap(tc => {
     if (!tc.value) return [];
     if (tc.system !== "email" && !tc.value.includes("@")) return [];
-    const normalizedEmail = normalizeEmailSafe(tc.value);
-    if (!normalizedEmail) return [];
-    return [normalizedEmail];
+    const email = normalizeEmailSafe(tc.value);
+    if (!email) return [];
+    return [email];
   });
   /* TODO
   const driversLicenses = (patientResource.identifiers ?? []).flatMap(p => {

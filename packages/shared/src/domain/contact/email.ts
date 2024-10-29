@@ -39,3 +39,8 @@ export function normalizeEmail(email: string): string {
   if (!emailOrUndefined) throw new Error("Invalid email.");
   return emailOrUndefined;
 }
+
+export const emailSchema = z
+  .string()
+  .refine(normalizeEmailSafe, { message: "Invalid email" })
+  .transform(email => normalizeEmail(email));

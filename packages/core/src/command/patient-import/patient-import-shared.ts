@@ -1,7 +1,7 @@
 import {
   toTitleCase,
   PatientImportPatient,
-  normalizeString,
+  normalizeNonEmptyString,
   normalizeDate,
   normalizeGender,
   normalizePhone,
@@ -11,6 +11,7 @@ import {
   normalizeExternalId,
   normalizedCountryUsa,
 } from "@metriport/shared";
+import { validateIsPastOrPresent } from "@metriport/shared/common/date";
 import { PatientPayload } from "./patient-import";
 
 const globalPrefix = "patient-import";
@@ -117,7 +118,7 @@ export function createObjectFromCsv({
   const object: GenericObject = {};
   headers.forEach((header, columnIndex) => {
     const value = rowColumns[columnIndex];
-    if (value === undefined) throw Error("rowColumns and headers have different sizes");
+    if (value === undefined) throw new Error("rowColumns and headers have different sizes");
     object[header] = value.trim() === "" ? undefined : value;
   });
   return object;
@@ -134,15 +135,17 @@ export function createPatientPayload(patient: PatientImportPatient): PatientPayl
   const externalId = patient.externalid ? normalizeExternalId(patient.externalid) : undefined;
   return {
     externalId,
-    firstName: toTitleCase(normalizeString(patient.firstname)),
-    lastName: toTitleCase(normalizeString(patient.lastname)),
-    dob: normalizeDate(patient.dob),
+    firstName: normalizeNonEmptyString(patient.firstname, toTitleCase),
+    lastName: normalizeNonEmptyString(patient.lastname, toTitleCase),
+    dob: normalizeDate(patient.dob, validateIsPastOrPresent),
     genderAtBirth: normalizeGender(patient.gender),
     address: [
       {
-        addressLine1: toTitleCase(normalizeString(patient.addressline1)),
-        ...(patient.addressline2 ? { addressLine2: toTitleCase(patient.addressline2) } : undefined),
-        city: toTitleCase(normalizeString(patient.city)),
+        addressLine1: normalizeNonEmptyString(patient.addressline1, toTitleCase),
+        ...(patient.addressline2
+          ? { addressLine2: normalizeNonEmptyString(patient.addressline2, toTitleCase) }
+          : undefined),
+        city: normalizeNonEmptyString(patient.city, toTitleCase),
         state: normalizeUSStateForAddress(patient.state),
         zip: normalizeZipCode(patient.zip),
         country: normalizedCountryUsa,
