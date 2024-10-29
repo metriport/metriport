@@ -19,7 +19,7 @@ import {
 } from "./patient-import";
 import { createPatientPayload } from "./patient-import-shared";
 
-const patientCreateChunk = 1; // Mimics 1 patient / cx lambda consumer
+const patientCreateChunk = 1; // Mimics 1 patient at a time from the queue
 
 export class PatientImportHandlerLocal implements PatientImportHandler {
   constructor(private readonly patientImportBucket: string) {}
@@ -114,7 +114,7 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
         allOutcomes.push(...chunkOutcomes);
       }
       const hadFailure = allOutcomes.some(outcome => outcome.status === "rejected");
-      if (hadFailure) throw new Error("At least one payload failed to send to create queue");
+      if (hadFailure) throw new Error("At least one payload failed to create");
     } catch (error) {
       const msg = `Failure while processing patient import @ PatientImport`;
       log(`${msg}. Cause: ${errorToString(error)}`);
