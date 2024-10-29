@@ -5,6 +5,7 @@ import { Patient } from "@metriport/core/domain/patient";
 import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
 import { parseRawBundleForFhirServer } from "@metriport/core/external/fhir/parse-bundle";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util";
 import { getFileExtension } from "@metriport/core/util/mime";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
@@ -22,6 +23,7 @@ import { ContentMimeType, isConvertible } from "../../fhir-converter/converter";
 import { DocumentReferenceWithId } from "../../fhir/document";
 import { getDocumentsFromFHIR } from "../../fhir/document/get-documents";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
+import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { sandboxSleepTime } from "./shared";
 
 const randomDates = [
@@ -47,6 +49,15 @@ export async function sandboxGetDocRefsAndUpsert({
 }): Promise<void> {
   const { log } = Util.out(`sandboxGetDocRefsAndUpsert - M patient ${patient.id}`);
   const { id: patientId, cxId } = patient;
+
+  await setDocQueryProgress({
+    patient: { id: patientId, cxId },
+    downloadProgress: { status: "processing" },
+    convertProgress: { status: "processing" },
+    requestId,
+    source: MedicalDataSource.COMMONWELL,
+    triggerConsolidated: false,
+  });
 
   // Mimic Prod by waiting for docs to download
   await Util.sleep(Math.random() * sandboxSleepTime.asMilliseconds());
