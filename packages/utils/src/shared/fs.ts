@@ -1,25 +1,23 @@
-import {
-  fileExists as fileExistsFromCore,
-  getFileContents as getFileContentsFromCore,
-  getFileContentsAsync as getFileContentsAsyncFromCore,
-  getFileNames as getFileNamesFromCore,
-  isDirectory as isDirectoryFromCore,
-  makeDir as makeDirFromCore,
-  makeDirIfNeeded as makeDirIfNeededFromCore,
-  writeFileContents as writeFileContentsFromCore,
-} from "@metriport/core/util/fs";
+import * as fs from "fs";
+import path from "path";
 
-/** @deprecated Use @metriport/core instead */
 export function isDirectory(path: string): boolean {
-  return isDirectoryFromCore(path);
+  return fs.statSync(path).isDirectory();
 }
 
-/** @deprecated Use @metriport/core instead */
 export function fileExists(path: string): boolean {
-  return fileExistsFromCore(path);
+  try {
+    return fs.openSync(path, "r") !== undefined;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    if (error.code === "ENOENT") {
+      return false;
+    } else {
+      throw error;
+    }
+  }
 }
 
-/** @deprecated Use @metriport/core instead */
 export function getFileNames({
   folder,
   recursive = false,
@@ -29,29 +27,49 @@ export function getFileNames({
   recursive?: boolean;
   extension?: string;
 }): string[] {
-  return getFileNamesFromCore({ folder, recursive, extension });
+  const dirContents = fs.readdirSync(folder, {
+    withFileTypes: true,
+  });
+  const isFileToBeIncluded = (f: fs.Dirent) => {
+    if (!extension) return f.isFile();
+    return f.isFile() && f.name.endsWith(extension);
+  };
+  const files = dirContents
+    .filter(isFileToBeIncluded)
+    .map(f => path.join(folder, path.sep, f.name));
+  const directories = dirContents.filter(f => f.isDirectory()).map(f => f.name);
+  if (recursive) {
+    for (const directory of directories) {
+      const subDirPath = path.join(folder, path.sep, directory);
+      const subDirFiles = getFileNames({ folder: subDirPath, recursive, extension });
+      files.push(...subDirFiles);
+    }
+  }
+  return files;
 }
 
-/** @deprecated Use @metriport/core instead */
 export function getFileContents(fileName: string): string {
-  return getFileContentsFromCore(fileName);
+  return fs.readFileSync(fileName, "utf8");
 }
-/** @deprecated Use @metriport/core instead */
 export function getFileContentsAsync(fileName: string): Promise<string> {
-  return getFileContentsAsyncFromCore(fileName);
+  return new Promise((resolve, reject) => {
+    fs.readFile(fileName, "utf8", (err, data) => {
+      if (err) reject(err);
+      else resolve(data);
+    });
+  });
 }
 
-/** @deprecated Use @metriport/core instead */
 export function writeFileContents(fileName: string, contents: string): void {
-  return writeFileContentsFromCore(fileName, contents);
+  fs.writeFileSync(fileName, contents);
 }
 
-/** @deprecated Use @metriport/core instead */
 export function makeDir(dir: string): void {
-  return makeDirFromCore(dir);
+  fs.mkdirSync(dir, { recursive: true });
 }
 
-/** @deprecated Use @metriport/core instead */
 export function makeDirIfNeeded(fileName: string, base = "") {
-  return makeDirIfNeededFromCore(fileName, base);
+  if (!fileName.includes("/")) return;
+  const dirName = fileName.split("/").slice(0, -1).join("/");
+  makeDir(path.join(base, dirName));
 }

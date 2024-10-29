@@ -3,7 +3,7 @@ import { out } from "@metriport/core/util/log";
 import { NextFunction, Request, Response } from "express";
 import status from "http-status";
 import * as jwt from "jsonwebtoken";
-import { hasMapiAccess } from "../../command/medical/mapi-access";
+import { MAPIAccess } from "../../models/medical/mapi-access";
 import { Config } from "../../shared/config";
 import { getCxIdOrFail } from "../util";
 import { getAuth, getCxId, PropelAuth } from "./propelauth";
@@ -84,20 +84,19 @@ export async function checkMAPIAccess(
   res: Response,
   next: NextFunction
 ): Promise<void> {
+  let hasMAPIAccess = false;
   try {
     const cxId = getCxIdOrFail(req);
-    const hasMAPIAccess = await hasMapiAccess(cxId);
-    if (hasMAPIAccess || Config.isSandbox()) {
-      next();
-      return;
-    } else {
-      res.sendStatus(status.FORBIDDEN);
-      return;
-    }
+    const mapiAccess = await MAPIAccess.findOne({ where: { id: cxId } });
+    hasMAPIAccess = mapiAccess != null;
   } catch (error) {
     out().log(`Failed checking MAPI access with error ${error}`);
-    res.sendStatus(status.INTERNAL_SERVER_ERROR);
-    return;
+  }
+  if (hasMAPIAccess || Config.isSandbox()) {
+    next();
+  } else {
+    res.status(status.FORBIDDEN);
+    res.end();
   }
 }
 
