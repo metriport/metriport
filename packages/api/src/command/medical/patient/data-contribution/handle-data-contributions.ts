@@ -1,25 +1,20 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { createUploadFilePath, FHIR_BUNDLE_SUFFIX } from "@metriport/core/domain/document/upload";
-import { Patient } from "@metriport/core/domain/patient";
 import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/conversion";
 import { toFHIR as toFhirPatient } from "@metriport/core/external/fhir/patient/conversion";
 import { uploadCdaDocuments, uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import BadRequestError from "../../../errors/bad-request";
-import { processCcdRequest } from "../../../external/cda/process-ccd-request";
-import { countResources } from "../../../external/fhir/patient/count-resources";
-import { hydrateBundle } from "../../../external/fhir/shared/hydrate-bundle";
-import { validateFhirEntries } from "../../../external/fhir/shared/json-validator";
-import { Bundle as ValidBundle } from "../../../routes/medical/schemas/fhir";
-import { Config } from "../../../shared/config";
-import { getOrganizationOrFail } from "../organization/get-organization";
-import { createOrUpdateConsolidatedPatientData } from "./consolidated-create";
-import { convertFhirToCda } from "./convert-fhir-to-cda";
-import { getPatientOrFail } from "./get-patient";
-
-const MAX_RESOURCE_COUNT_PER_REQUEST = 50;
-const MAX_RESOURCE_STORED_LIMIT = 1000;
+import { processCcdRequest } from "../../../../external/cda/process-ccd-request";
+import { hydrateBundle } from "../../../../external/fhir/shared/hydrate-bundle";
+import { validateFhirEntries } from "../../../../external/fhir/shared/json-validator";
+import { Bundle as ValidBundle } from "../../../../routes/medical/schemas/fhir";
+import { Config } from "../../../../shared/config";
+import { getOrganizationOrFail } from "../../organization/get-organization";
+import { createOrUpdateConsolidatedPatientData } from "../consolidated-create";
+import { convertFhirToCda } from "../convert-fhir-to-cda";
+import { getPatientOrFail } from "../get-patient";
+import { checkResourceLimit, hasCompositionResource, normalizeBundle } from "./shared";
 
 export async function handleDataContribution({
   requestId = uuidv7(),
@@ -48,14 +43,15 @@ export async function handleDataContribution({
     getPatientOrFail({ id: patientId, cxId }),
   ]);
   log(`${Date.now() - mainStartedAt}ms to get org and patient, and store on S3`);
-  const validationStartedAt = Date.now();
 
+  const validationStartedAt = Date.now();
   const fhirOrganization = toFhirOrganization(organization);
-  const fullBundle = hydrateBundle(bundle, patient, fhirBundleDestinationKey);
+  const normalizedBundle = normalizeBundle(bundle);
+  const fullBundle = hydrateBundle(normalizedBundle, patient, fhirBundleDestinationKey);
   const validatedBundle = validateFhirEntries(fullBundle);
   const incomingAmount = validatedBundle.entry.length;
   await checkResourceLimit(incomingAmount, patient);
-  log(`${Date.now() - validationStartedAt}ms to validate and check limits`);
+  log(`${Date.now() - validationStartedAt}ms to hydrate, validate, and check limits`);
 
   // Do it before storing on the FHIR server since this also validates the bundle
   if (!Config.isSandbox() && hasCompositionResource(validatedBundle)) {
@@ -89,33 +85,4 @@ export async function handleDataContribution({
   }
 
   return consolidatedDataUploadResults;
-}
-
-/**
- * SANDBOX ONLY. Checks if the incoming amount of resources, plus what's already stored, exceeds the limit.
- */
-async function checkResourceLimit(incomingAmount: number, patient: Patient) {
-  if (!Config.isCloudEnv() || Config.isSandbox()) {
-    const { total: currentAmount } = await countResources({
-      patient: { id: patient.id, cxId: patient.cxId },
-    });
-    if (currentAmount + incomingAmount > MAX_RESOURCE_STORED_LIMIT) {
-      throw new BadRequestError(
-        `Reached maximum number of resources per patient in Sandbox mode.`,
-        null,
-        { currentAmount, incomingAmount, MAX_RESOURCE_STORED_LIMIT }
-      );
-    }
-    // Limit the amount of resources that can be created at once
-    if (incomingAmount > MAX_RESOURCE_COUNT_PER_REQUEST) {
-      throw new BadRequestError(`Cannot create this many resources at a time.`, null, {
-        incomingAmount,
-        MAX_RESOURCE_COUNT_PER_REQUEST,
-      });
-    }
-  }
-}
-
-function hasCompositionResource(bundle: ValidBundle): boolean {
-  return bundle.entry.some(entry => entry.resource?.resourceType === "Composition");
 }
