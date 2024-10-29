@@ -94,6 +94,8 @@ router.put(
  *
  * Returns a patient corresponding to the specified facility at the customer's organization.
  *
+ * USED WITHIN EHR INTEGRATION.
+ *
  * @param   req.cxId      The customer ID.
  * @param   req.param.id  The ID of the patient to be returned.
  * @return  The customer's patients associated with the given facility.
@@ -180,6 +182,8 @@ router.get(
  * Returns a patient's consolidated data query status.
  * To trigger a new consolidated query, call POST /patient/:id/consolidated/query.
  *
+ * USED WITHIN EHR INTEGRATION.
+ *
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient whose data is to be returned.
  * @returns all consolidated queries for the patient that have been triggered.
@@ -212,6 +216,8 @@ const medicalRecordFormatSchema = z.enum(mrFormat);
  *
  * Triggers a patient's consolidated data query. Results are sent through Webhook.
  * If the query is already in progress, just return the current status.
+ *
+ * USED WITHIN EHR INTEGRATION.
  *
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient whose data is to be returned.
@@ -264,6 +270,8 @@ router.post(
  *
  * Returns the url to download a patient's medical record summary, if it exists.
  *
+ * USED WITHIN EHR INTEGRATION.
+ *
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient whose data is to be returned.
  * @param req.query.conversionType Indicates how the medical record summary should be rendered. Accepts "pdf" or "html".
@@ -288,6 +296,8 @@ router.get(
  * GET /patient/:id/medical-record-status
  *
  * Checks if a patient's medical record summary exists in either PDF or HTML format and the date it was created.
+ *
+ * USED WITHIN EHR INTEGRATION.
  *
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient whose data is to be returned.
@@ -338,6 +348,8 @@ async function putConsolidated(req: Request, res: Response) {
  * GET /patient/:id/consolidated/count
  *
  * Returns the amount of resources a patient has on the FHIR server, total and per resource.
+ *
+ * USED WITHIN EHR INTEGRATION.
  *
  * @param req.cxId The customer ID.
  * @param req.query.patientId The ID of the patient whose data is to be returned.
