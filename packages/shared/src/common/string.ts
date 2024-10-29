@@ -26,18 +26,18 @@ export function normalizeNonEmptyStringSafe(
   applyCase: ((str: string) => string) | undefined = undefined
 ): string | undefined {
   const trimmedString = str.trim();
-  const normalizedString = applyCase ? applyCase(trimmedString) : trimmedString;
-  if (normalizedString === "") return undefined;
-  return normalizedString;
+  const casedString = applyCase ? applyCase(trimmedString) : trimmedString;
+  if (casedString === "") return undefined;
+  return casedString;
 }
 
 export function normalizeNonEmptyString(
   str: string,
   applyCase: ((str: string) => string) | undefined = undefined
 ): string {
-  const normalizedString = normalizeNonEmptyStringSafe(str, applyCase);
-  if (!normalizedString) throw new Error("Invalid string");
-  return normalizedString;
+  const stringOrUndefined = normalizeNonEmptyStringSafe(str, applyCase);
+  if (!stringOrUndefined) throw new Error("Invalid string");
+  return stringOrUndefined;
 }
 
 export function createNonEmptryStringSchema(
