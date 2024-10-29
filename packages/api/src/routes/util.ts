@@ -143,15 +143,6 @@ export const getCxIdOrFail = (req: Request): string => {
   return cxId;
 };
 
-export const getId = (req: Request): string | undefined => {
-  return req.id;
-};
-export const getIdOrFail = (req: Request): string => {
-  const id = getId(req);
-  if (!id) throw new BadRequestError("Missing id on the request");
-  return id;
-};
-
 export const getCxIdFromQuery = (req: Request): string | undefined => {
   const cxId = req.query.cxId as string | undefined;
   cxId && capture.setUser({ id: cxId });

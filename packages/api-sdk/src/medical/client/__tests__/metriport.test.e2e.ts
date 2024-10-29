@@ -125,6 +125,7 @@ describe("listDocuments", () => {
     const filters = {
       dateFrom: dayjs().subtract(10, "years").format(ISO_DATE),
       dateTo: dayjs().add(1, "day").format(ISO_DATE),
+      content: "john",
     };
     const { documents } = await metriport.listDocuments(patientId, filters);
     expect(documents).toBeTruthy();
