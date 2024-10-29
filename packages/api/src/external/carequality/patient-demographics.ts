@@ -23,21 +23,21 @@ export function patientResourceToNormalizedLinkDemographics(
   const names = patientResource.name.flatMap(name => {
     const lastName = name.family;
     return name.given.flatMap(firstName => {
-      const normalizedNames = normalizeAndStringifyNames({ firstName, lastName });
-      if (!normalizedNames) return [];
-      return [normalizedNames];
+      const name = normalizeAndStringifyNames({ firstName, lastName });
+      if (!name) return [];
+      return [name];
     });
   });
   const addresses = (patientResource.address ?? []).flatMap(a => {
-    const normalizedAddress = normalizeAndStringfyAddress({
+    const address = normalizeAndStringfyAddress({
       line: a.line,
       city: a.city,
       state: a.state,
       zip: a.postalCode,
       country: a.country,
     });
-    if (!normalizedAddress) return [];
-    return [normalizedAddress];
+    if (!address) return [];
+    return [address];
   });
   const telephoneNumbers = (patientResource.telecom ?? []).flatMap(tc => {
     if (!tc.value) return [];
@@ -60,9 +60,9 @@ export function patientResourceToNormalizedLinkDemographics(
   const ssns = (patientResource.identifier ?? []).flatMap(id => {
     if (!id.value) return [];
     if (id.system !== ssnSystemCode) return [];
-    const normalizedSsn = normalizeSsnSafe(id.value);
-    if (!normalizedSsn) return [];
-    return [normalizedSsn];
+    const ssn = normalizeSsnSafe(id.value);
+    if (!ssn) return [];
+    return [ssn];
   });
   return {
     dob,

@@ -23,22 +23,22 @@ export function patientNetworkLinkToNormalizedLinkDemographics(
   const names = patientNetworkLink.details.name.flatMap(name => {
     return name.family.flatMap(lastName => {
       return (name.given ?? []).flatMap(firstName => {
-        const normalizedNames = normalizeAndStringifyNames({ firstName, lastName });
-        if (!normalizedNames) return [];
-        return [normalizedNames];
+        const name = normalizeAndStringifyNames({ firstName, lastName });
+        if (!name) return [];
+        return [name];
       });
     });
   });
-  const addresses = patientNetworkLink.details.address.flatMap(address => {
-    const normalizedAddress = normalizeAndStringfyAddress({
-      line: address.line ?? undefined,
-      city: address.city ?? undefined,
-      state: address.state ?? undefined,
-      zip: address.zip ?? undefined,
-      country: address.country ?? undefined,
+  const addresses = patientNetworkLink.details.address.flatMap(a => {
+    const address = normalizeAndStringfyAddress({
+      line: a.line ?? undefined,
+      city: a.city ?? undefined,
+      state: a.state ?? undefined,
+      zip: a.zip ?? undefined,
+      country: a.country ?? undefined,
     });
-    if (!normalizedAddress) return [];
-    return [normalizedAddress];
+    if (!address) return [];
+    return [address];
   });
   const telephoneNumbers = (patientNetworkLink.details.telecom ?? []).flatMap(tc => {
     if (!tc.value || !tc.system) return [];

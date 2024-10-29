@@ -51,11 +51,11 @@ export function makeCqDataLink(): CQLink {
 }
 
 export function makeLinksHistory(): LinkDemographicsHistory {
-  const address = makeAddressStrict();
   const nameOrUndefined = normalizeAndStringifyNames({
     firstName: faker.person.firstName(),
     lastName: faker.person.lastName(),
   });
+  const address = makeAddressStrict();
   const addressOrUndefined = normalizeAndStringfyAddress({
     line: [address.addressLine1],
     city: address.city,
