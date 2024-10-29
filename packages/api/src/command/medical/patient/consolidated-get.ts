@@ -13,6 +13,7 @@ import {
 import { buildConsolidatedSnapshotConnector } from "@metriport/core/command/consolidated/get-snapshot-factory";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
+import { Organization } from "@metriport/core/domain/organization";
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { out } from "@metriport/core/util";
@@ -43,6 +44,7 @@ dayjs.extend(duration);
 
 export type GetConsolidatedParams = {
   patient: Patient;
+  organization: Organization;
   bundle?: SearchSetBundle;
   requestId?: string;
   documentIds?: string[];

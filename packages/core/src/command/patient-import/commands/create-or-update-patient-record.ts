@@ -33,15 +33,10 @@ export async function creatOrUpdatePatientRecord({
   const s3Utils = getS3UtilsInstance();
   const key = createFileKeyPatient(cxId, jobStartedAt, jobId, patientId);
   try {
-    const existingData = await getParsedFileData({
-      bucket: s3BucketName,
-      key,
-      s3Utils,
-    });
     await s3Utils.uploadFile({
       bucket: s3BucketName,
       key,
-      file: Buffer.from(JSON.stringify({ patientId, ...existingData, ...data }), "utf8"),
+      file: Buffer.from(JSON.stringify({ patientId, ...data }), "utf8"),
       contentType: "application/json",
     });
   } catch (error) {
@@ -59,21 +54,4 @@ export async function creatOrUpdatePatientRecord({
     });
     throw error;
   }
-}
-
-async function getParsedFileData({
-  bucket,
-  key,
-  s3Utils,
-}: {
-  bucket: string;
-  key: string;
-  s3Utils: S3Utils;
-}): Promise<PatientRecordUpdate> {
-  const fileExsts = await s3Utils.fileExists(bucket, key);
-  if (fileExsts) {
-    const fileData = await s3Utils.getFileContentsAsString(bucket, key);
-    return JSON.parse(fileData);
-  }
-  return {};
 }

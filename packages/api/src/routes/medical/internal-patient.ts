@@ -1,18 +1,18 @@
+import { createPatientPayload } from "@metriport/core/command/patient-import/patient-import-shared";
+import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
+import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
+import { makePatientImportHandler } from "@metriport/core/command/patient-import/patient-import-factory";
+import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { MedicalDataSource } from "@metriport/core/external/index";
+import { processAsyncError } from "@metriport/core/util/error/shared";
+import { out } from "@metriport/core/util/log";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
   internalSendConsolidatedSchema,
   patientImportSchema,
   sleep,
   stringToBoolean,
 } from "@metriport/shared";
-import { patientCreateSchema, genderAtBirthSchema } from "@metriport/api-sdk";
-import { makePatientImportHandler } from "@metriport/core/command/patient-import/patient-import-factory";
-import { createPatientPayload } from "@metriport/core/command/patient-import/patient-import-shared";
-import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
-import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
-import { MedicalDataSource } from "@metriport/core/external/index";
-import { processAsyncError } from "@metriport/core/util/error/shared";
-import { out } from "@metriport/core/util/log";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -23,6 +23,7 @@ import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
+import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import {
   getConsolidated,
   getConsolidatedAndSendToCx,
@@ -622,9 +623,13 @@ router.get(
       ? consolidationConversionTypeSchema.parse(typeRaw.toLowerCase())
       : undefined;
 
-    const patient = await getPatientOrFail({ id: patientId, cxId });
+    const [organization, patient] = await Promise.all([
+      getOrganizationOrFail({ cxId }),
+      getPatientOrFail({ id: patientId, cxId }),
+    ]);
     const data = await getConsolidated({
       patient,
+      organization,
       documentIds,
       resources,
       dateFrom,
@@ -851,7 +856,10 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFromParamsOrFail("id", req);
-    const patient = await getPatientOrFail({ id, cxId });
+    const [organization, patient] = await Promise.all([
+      getOrganizationOrFail({ cxId }),
+      getPatientOrFail({ id, cxId }),
+    ]);
     const {
       requestId,
       conversionType,
@@ -870,6 +878,7 @@ router.post(
 
     getConsolidatedAndSendToCx({
       patient,
+      organization,
       bundle,
       requestId,
       conversionType,

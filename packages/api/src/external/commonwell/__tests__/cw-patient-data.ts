@@ -7,7 +7,9 @@ import { CwLink, CwData, CwPatientData } from "../cw-patient-data";
 import { makeAddressStrict } from "../../../domain/medical/__tests__/location-address";
 import {
   normalizeAndStringifyNames,
-  normalizeAndStringfyAddress,
+  normalizeAddress,
+  stringifyAddress,
+  normalizeEmail,
 } from "../../../domain/medical/patient-demographics";
 
 export function makeCwDataLink(): CwLink {
@@ -90,26 +92,31 @@ export function makeCwDataLink(): CwLink {
 
 export function makeLinksHistory(): LinkDemographicsHistory {
   const address = makeAddressStrict();
-  const nameOrUndefined = normalizeAndStringifyNames({
-    firstName: faker.person.firstName(),
-    lastName: faker.person.lastName(),
-  });
-  const addressOrUndefined = normalizeAndStringfyAddress({
-    line: [address.addressLine1],
-    city: address.city,
-    state: address.state,
-    zip: address.zip,
-    country: address.country,
-  });
+  const email = normalizeEmail(faker.internet.email()) ?? "test@test.com";
   return {
     [faker.string.uuid()]: [
       {
         dob: dayjs(faker.date.past()).format(ISO_DATE),
         gender: "male",
-        names: nameOrUndefined ? [nameOrUndefined] : [],
-        addresses: addressOrUndefined ? [addressOrUndefined] : [],
+        names: [
+          normalizeAndStringifyNames({
+            firstName: faker.person.firstName(),
+            lastName: faker.person.lastName(),
+          }),
+        ],
+        addresses: [
+          stringifyAddress(
+            normalizeAddress({
+              line: [address.addressLine1],
+              city: address.city,
+              state: address.state,
+              zip: address.zip,
+              country: address.country,
+            })
+          ),
+        ],
         telephoneNumbers: [faker.phone.number("##########")],
-        emails: [faker.internet.email().toLowerCase()],
+        emails: [email],
         driversLicenses: [], // TODO
         ssns: [faker.phone.number("#########")],
       },

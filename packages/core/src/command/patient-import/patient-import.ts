@@ -1,13 +1,9 @@
-import { PatientDTO } from "@metriport/shared";
 import { PatientDemoData } from "../../domain/patient";
 
 export type PhaseStatus = "processing" | "completed" | "failed";
 
 export type PatientRecord = {
   patientId: string;
-  patientPayload?: PatientPayload;
-  patientRowIndex?: string;
-  patientDto?: PatientDTO;
   patientQueryStatus?: PhaseStatus;
   documentQueryStatus?: PhaseStatus;
   documentRetrevialStatus?: PhaseStatus;
@@ -51,7 +47,6 @@ export type ProcessPatientCreateRequest = {
   jobId: string;
   jobStartedAt: string;
   patientPayload: PatientPayload;
-  patientRowIndex: string;
   s3BucketName: string;
   processPatientQueryQueue: string;
   rerunPdOnNewDemographics: boolean;

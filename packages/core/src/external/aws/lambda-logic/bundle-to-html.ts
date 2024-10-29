@@ -21,15 +21,15 @@ import {
   Task,
 } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
-import { intersection, uniqWith } from "lodash";
+import { uniqWith } from "lodash";
 import { Brief } from "./bundle-to-brief";
 import {
+  buildEncounterSections,
   EncounterSection,
+  formatDateForDisplay,
   ISO_DATE,
   MISSING_DATE_KEY,
   MISSING_DATE_TEXT,
-  buildEncounterSections,
-  formatDateForDisplay,
 } from "./bundle-to-html-shared";
 
 const RX_NORM_CODE = "rxnorm";
@@ -1479,12 +1479,10 @@ function createObservationVitalsSection(observations: Observation[]) {
     const bDate = dayjs(b.effectiveDateTime).format(ISO_DATE);
     const aText = a.code?.text;
     const bText = b.code?.text;
-    const aCode = a.code?.coding?.flatMap(coding => coding.code || []);
-    const bCode = b.code?.coding?.flatMap(coding => coding.code || []);
-    if (!aText || !bText || !aCode || !bCode) {
+    if (aText === undefined || bText === undefined) {
       return false;
     }
-    return aDate === bDate && aText === bText && !!intersection(aCode, bCode).length;
+    return aDate === bDate && aText === bText;
   });
 
   const observationTableContents =
@@ -1567,12 +1565,10 @@ function createObservationLaboratorySection(observations: Observation[]) {
     const bDate = dayjs(b.effectiveDateTime).format(ISO_DATE);
     const aText = a.code?.text;
     const bText = b.code?.text;
-    const aCode = a.code?.coding?.flatMap(coding => coding.code || []);
-    const bCode = b.code?.coding?.flatMap(coding => coding.code || []);
-    if (!aText || !bText || !aCode || !bCode) {
+    if (aText === undefined || bText === undefined) {
       return false;
     }
-    return aDate === bDate && aText === bText && !!intersection(aCode, bCode).length;
+    return aDate === bDate && aText === bText;
   });
 
   const observationTableContents =
