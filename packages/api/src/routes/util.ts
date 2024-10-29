@@ -98,6 +98,14 @@ export const getFromParamsOrFail = (prop: string, req: Request): string => {
   return value;
 };
 
+export const getFromLocals = (prop: string, res: Response): string | undefined =>
+  res.locals[prop] as string | undefined;
+export const getFromLocalsOrFail = (prop: string, res: Response): string => {
+  const value = getFromLocals(prop, res);
+  if (!value) throw new BadRequestError(`Missing ${prop} locals`);
+  return value;
+};
+
 export const getFromHeader = (prop: string, req: Request): string | undefined => req.header(prop);
 export const getFromHeaderOrFail = (prop: string, req: Request): string => {
   const value = getFromHeader(prop, req);
