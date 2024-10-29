@@ -39,19 +39,23 @@ async function main() {
   const stringBundle = getFileContents(inputFileName);
 
   const {
-    patients: patientsFromValidation,
+    patientsWithRowAndIndex: patientsFromValidation,
     headers,
-    validRows,
     invalidRows,
   } = await validateAndParsePatientImportCsv({
     contents: stringBundle,
   });
 
-  const patientsForCreate: PatientPayload[] = patientsFromValidation.map(createPatientPayload);
+  const patientsForCreate: PatientPayload[] = patientsFromValidation.map(p =>
+    createPatientPayload(p.patient)
+  );
 
-  const outputValid = headers + "\n" + validRows.map(validToString).join("\n");
+  const outputValid =
+    headers + "\n" + patientsFromValidation.map(p => validToString(p.rowColumns)).join("\n");
   const outputInvalid = headers + ",error" + "\n" + invalidRows.map(invalidToString).join("\n");
-  const outputPatientsValidation = patientsFromValidation.map(patientValidationToString).join("\n");
+  const outputPatientsValidation = patientsFromValidation
+    .map(p => patientValidationToString(p.patient))
+    .join("\n");
   const outputPatientsCreation = patientsForCreate.map(patientCreationToString).join("\n");
 
   fs.writeFileSync(`./${outputFolderName}/valid.csv`, outputValid);
