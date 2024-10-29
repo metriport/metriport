@@ -20,30 +20,26 @@ export function validatePath(req: Request, paths: PathDetails[]): PathDetails {
 }
 
 export function parseIdFromPathParams(req: Request, pathParamkey: string): string {
-  if (!req.params) throw new BadRequestError(`Request missing path param ${pathParamkey}`);
+  if (!req.params) throw new BadRequestError(`Request missing path params`);
   const pathParamValue = req.params[pathParamkey];
   if (!pathParamValue) throw new BadRequestError(`Request missing path param ${pathParamkey}`);
   const re = new RegExp(idRegex);
   if (!re.test(pathParamValue)) {
-    throw new BadRequestError(
-      `Path param value for path param ${pathParamValue} is incorrectly formmated`
-    );
+    throw new BadRequestError(`Value for path param ${pathParamValue} is incorrectly formmated`);
   }
   return pathParamValue;
 }
 
 export function parseIdFromQueryParams(req: Request, queryParamKey: string): string {
-  if (!req.query) throw new BadRequestError(`Request missing query param ${queryParamKey}`);
+  if (!req.query) throw new BadRequestError(`Request missing query params`);
   const queryParamValue = req.query[queryParamKey];
   if (!queryParamValue) throw new BadRequestError(`Request missing query param ${queryParamKey}`);
   if (typeof queryParamValue !== "string") {
-    throw new BadRequestError(`Query param type for query param ${queryParamKey} is not string`);
+    throw new BadRequestError(`Type for query param ${queryParamKey} is not string`);
   }
   const re = new RegExp(idRegex);
   if (!re.test(queryParamValue)) {
-    throw new BadRequestError(
-      `Query param value for query param ${queryParamKey} is incorrectly formmated`
-    );
+    throw new BadRequestError(`Value for query param ${queryParamKey} is incorrectly formmated`);
   }
   return queryParamValue;
 }

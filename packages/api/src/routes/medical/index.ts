@@ -16,10 +16,10 @@ routes.use("/facility", facilityRoot);
 routes.use("/facility/:id", facilityAuthorization("params"), facility);
 
 routes.use("/patient", patientRoot);
-// patient routes are also used in EHR Integrations
+// patient routes are also used in EHR Integrations routes
 routes.use("/patient/:id", patientAuthorization("params"), patient);
 
-// document routes are also used in EHR Integrations
+// document routes are also used in EHR Integrations routes
 routes.use("/document", document);
 
 export default routes;
