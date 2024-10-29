@@ -9,6 +9,7 @@ import { QueryTypes } from "sequelize";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { capture } from "../../../shared/notifications";
+import { getOrganizationOrFail } from "../organization/get-organization";
 import { recreateConsolidated } from "../patient/consolidated-recreate";
 import { getPatientOrFail } from "../patient/get-patient";
 import { sendWHNotifications } from "./check-doc-queries-notification";
@@ -167,10 +168,13 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
       return updatedPatient;
     });
   }
-  const patient = await updatePatient();
+  const [patient, organization] = await Promise.all([
+    updatePatient(),
+    getOrganizationOrFail({ cxId }),
+  ]);
   if (!patient) return;
   // we want to await here to ensure the consolidated bundle is created before we send the webhook
-  await recreateConsolidated({ patient, context: "check-queries" });
+  await recreateConsolidated({ patient, organization, context: "check-queries" });
 }
 
 export async function getPatientsToUpdate(patientIds?: string[]): Promise<Patient[]> {

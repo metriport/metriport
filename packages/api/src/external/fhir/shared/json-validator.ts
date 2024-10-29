@@ -1,39 +1,43 @@
-import { Bundle } from "@medplum/fhirtypes";
-import Ajv from "ajv";
+import Ajv, { ErrorObject } from "ajv";
 import metaSchema from "ajv/lib/refs/json-schema-draft-06.json";
+import { cloneDeep } from "lodash";
 import BadRequestError from "../../../errors/bad-request";
-import { Bundle as ValidBundle } from "../../../routes/medical/schemas/fhir";
+import { Bundle } from "../../../routes/medical/schemas/fhir";
 import schema from "./fhir.schema.json";
 
 type LocalError = {
   resourceType: string;
   resourceId: string;
+  errors: ErrorObject[] | null | undefined;
 };
 
-/**
- * Make sure not to modify these as they are reused across different requests
- */
-const ajv = new Ajv({ strict: false });
+const ajv = new Ajv({
+  strict: false,
+});
+
 ajv.addMetaSchema(metaSchema);
 const validate = ajv.compile(schema);
+const clonedSchema = cloneDeep(schema);
 
-export function validateFhirEntries(bundle: Bundle): ValidBundle {
-  if (bundle.type !== "collection") throw new BadRequestError("Bundle must be a collection");
-  if (!bundle.entry) throw new BadRequestError("Bundle must have entries");
-
+export const validateFhirEntries = (bundle: Bundle): Bundle => {
   const errors: LocalError[] = [];
-  for (const entry of bundle.entry) {
-    if (!entry.resource) throw new BadRequestError("Entry must have a resource");
-    if (!entry.resource.id) throw new BadRequestError("Entry's resource must have an id");
 
-    const resourceType = entry.resource?.resourceType;
+  for (const entry of bundle.entry) {
+    const resourceType = entry.resource.resourceType;
     if (typeof resourceType !== "string") {
       throw new BadRequestError("Resource type must be a string", undefined, {
         actualType: typeof resourceType,
       });
     }
+
     const isValid = validate(entry.resource);
-    if (!isValid) errors.push({ resourceType, resourceId: entry.resource.id });
+
+    if (!isValid) {
+      const resourceValidate = ajv.compile(getSubSchema(resourceType));
+      resourceValidate(entry.resource);
+      errors.push({ resourceType, resourceId: entry.resource.id, errors: resourceValidate.errors });
+      schema.oneOf = clonedSchema.oneOf;
+    }
   }
 
   if (errors.length > 0) {
@@ -41,13 +45,17 @@ export function validateFhirEntries(bundle: Bundle): ValidBundle {
     throw new BadRequestError(`Invalid FHIR resource(s): ${resourceErrors}`);
   }
 
-  return {
-    ...bundle,
-    type: bundle.type,
-    entry: bundle.entry,
-  };
-}
+  return bundle;
+};
 
 function toErrorMessage(error: LocalError): string {
   return `${error.resourceType} ${error.resourceId}`;
 }
+
+const getSubSchema = (resourceType: string) => {
+  const subSchema = schema;
+
+  subSchema.oneOf = [{ $ref: `#/definitions/${resourceType}` }];
+
+  return subSchema;
+};
