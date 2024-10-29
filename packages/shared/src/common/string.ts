@@ -18,15 +18,15 @@ export function stripNonNumericChars(str: string): string {
 }
 
 export function normalizeNonEmptyString(str: string): string {
-  const normalizedString = normalizeNonEmptyStringSafe(str);
-  if (!normalizedString) throw new Error("Invalid string");
-  return normalizedString;
+  const stringOrUndefined = normalizeNonEmptyStringSafe(str);
+  if (!stringOrUndefined) throw new Error("Invalid string");
+  return stringOrUndefined;
 }
 
 export function normalizeNonEmptyStringSafe(str: string): string | undefined {
-  const normalizedString = str.trim();
-  if (normalizedString === "") return undefined;
-  return normalizedString;
+  const trimmedString = str.trim();
+  if (trimmedString === "") return undefined;
+  return trimmedString;
 }
 
 export function createNonEmptryStringSchema(param: string): z.ZodSchema {
