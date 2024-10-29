@@ -29,7 +29,7 @@ export function normalizeCountry(country: string): string {
   return countryOrUndefined;
 }
 
-export const countrySchema = z.coerce
+export const countrySchema = z
   .string()
-  .refine(normalizeCountrySafe, { message: "Invalid zip" })
+  .refine(normalizeCountrySafe, { message: "Invalid country" })
   .transform(country => normalizeCountry(country));

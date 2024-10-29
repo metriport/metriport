@@ -81,13 +81,13 @@ describe("zip", () => {
       expect(normalizeZipCodeSafe(input)).toBe(expectedOutput);
     });
 
-    it("should return undefined if zip contains non-digit and non-dash characters (length 9)", () => {
-      const input = "12345-667a";
+    it("should return undefined if zip contains non-digit and non-dash characters (length 5)", () => {
+      const input = "1234a";
       expect(normalizeZipCodeSafe(input)).toBeUndefined();
     });
 
-    it("should return undefined if zip contains non-digit and non-dash characters (length 5)", () => {
-      const input = "1234a";
+    it("should return undefined if zip contains non-digit and non-dash characters (length 9)", () => {
+      const input = "12345-667a";
       expect(normalizeZipCodeSafe(input)).toBeUndefined();
     });
 

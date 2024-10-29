@@ -43,3 +43,18 @@ export const phoneSchema = z.coerce
   .string()
   .refine(normalizePhoneSafe, { message: "Invalid phone" })
   .transform(phone => normalizePhone(phone));
+
+/**	function noramlizePhoneBase(phone: string): string {
+ * Normalize a telephone number to a 10-digit string. Removes all non-numeric characters.	  return stripNonNumericChars(phone.trim());
+ * Removes the first digit (country code) if the number is more than 10 digits long and starts
+ * with a 1.
+ * @param telephone the phone number to be normalized
+ */
+export function normalizeUsPhoneWithPlusOne(telephone: string): string {
+  const stripped = stripNonNumericChars(telephone);
+  const startsWithUsCode = stripped[0] === "1";
+  if (startsWithUsCode && stripped.length === phoneLength + 1) {
+    return stripped.slice(1);
+  }
+  return stripped;
+}

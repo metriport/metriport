@@ -16,6 +16,7 @@ describe("country", () => {
       normalizedCountryUsa,
       "US",
       "U.S",
+      "U.S.",
       "U.S.A",
       "UNITED STATES",
       "UNITED STATES OF AMERICA",

@@ -1,7 +1,7 @@
-import { USState, normalizeStateSafe } from "../state";
+import { normalizeStateSafe, USState } from "../state";
 
-describe("country", () => {
-  describe("normalizeCountrySafe", () => {
+describe("state", () => {
+  describe("normalizeStateSafe", () => {
     it("should return undefined when it gets empty string", () => {
       const input = "";
       expect(normalizeStateSafe(input)).toBeUndefined();

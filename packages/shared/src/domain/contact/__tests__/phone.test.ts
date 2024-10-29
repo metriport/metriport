@@ -1,6 +1,6 @@
 import { isPhoneValid, normalizePhoneSafe } from "../phone";
 
-describe("Phone Normalization", () => {
+describe("phone", () => {
   describe("isPhoneValid", () => {
     it("returns true when phone has 10 digits", () => {
       const res = isPhoneValid("1234567890");
