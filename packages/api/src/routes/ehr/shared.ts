@@ -45,7 +45,7 @@ export async function processCxIdAsync(
 
 export const validPatientPaths: PathDetails[] = [
   {
-    pathRegex: new RegExp(`^$`),
+    pathRegex: new RegExp(`^/$`),
     pathParamKey: "id",
   },
   {
