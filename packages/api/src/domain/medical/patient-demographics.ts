@@ -156,8 +156,6 @@ export function checkDemoMatch({
 
 /**
  * Converts a Patient's demographics into a normalized and stringified core demographics payload.
- * Currently general normalization: trim(), toLowerCase() for all strings, JSON.stringify for objects (sorted along keys) to convert to strings.
- * Special cases: WIP.
  *
  * @param patient The Patient @ Metriport.
  * @returns core demographics representing the Patient's demographics.
@@ -262,7 +260,9 @@ export function normalizeAndStringfyAddress({
   if (!normalizedState) return undefined;
   const normalizedZip = normalizeZipCodeSafe(zip);
   if (!normalizedZip) return undefined;
-  const normalizedCountry = normalizeCountrySafe(country ?? normalizedCountryUsa);
+  const normalizedCountry = normalizeCountrySafe(
+    (country && country === "" ? normalizedCountryUsa : country) ?? normalizedCountryUsa
+  );
   if (!normalizedCountry) return undefined;
   const normalizedAddress = {
     line: normalizedLines,

@@ -7,8 +7,8 @@ function noramlizeDateBase(date: string): string {
 
 export function normalizeDateSafe(
   date: string,
-  normalizeBase: (date: string) => string = noramlizeDateBase,
-  validateIsPastOrPresentSafe: ((date: string) => boolean) | undefined = undefined
+  validateIsPastOrPresentSafe: ((date: string) => boolean) | undefined = undefined,
+  normalizeBase: (date: string) => string = noramlizeDateBase
 ): string | undefined {
   const baseDate = normalizeBase(date);
   const parsedDate = buildDayjs(baseDate);
@@ -21,10 +21,10 @@ export function normalizeDateSafe(
 
 export function normalizeDate(
   date: string,
-  normalizeBase: (date: string) => string = noramlizeDateBase,
-  validateIsPastOrPresentSafe: ((date: string) => boolean) | undefined = undefined
+  validateIsPastOrPresentSafe: ((date: string) => boolean) | undefined = undefined,
+  normalizeBase: (date: string) => string = noramlizeDateBase
 ): string {
-  const dateOrUndefined = normalizeDateSafe(date, normalizeBase, validateIsPastOrPresentSafe);
+  const dateOrUndefined = normalizeDateSafe(date, validateIsPastOrPresentSafe, normalizeBase);
   if (!dateOrUndefined) throw new Error("Invalid date.");
   return dateOrUndefined;
 }

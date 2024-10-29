@@ -12,6 +12,7 @@ export * from "./common/retry";
 export { sleep } from "./common/sleep";
 export * from "./common/string";
 export { toTitleCase } from "./common/titleCase";
+export { toLowerCase } from "./common/lowerCase";
 export * from "./domain/address/addressline";
 export * from "./domain/address/country";
 export { AtLeastOne, stringToBoolean } from "./common/types";

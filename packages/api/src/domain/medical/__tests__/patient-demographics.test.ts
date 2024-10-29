@@ -32,8 +32,16 @@ describe("normalization", () => {
       const result = normalizeAndStringifyNames({ firstName: "", lastName: "smith" });
       expect(result).toBeUndefined();
     });
+    it("invalid - no first name w/ empty space", () => {
+      const result = normalizeAndStringifyNames({ firstName: " ", lastName: "smith" });
+      expect(result).toBeUndefined();
+    });
     it("invalid - no last name", () => {
       const result = normalizeAndStringifyNames({ firstName: "john", lastName: "" });
+      expect(result).toBeUndefined();
+    });
+    it("invalid - no last name w/ empty space", () => {
+      const result = normalizeAndStringifyNames({ firstName: "john", lastName: " " });
       expect(result).toBeUndefined();
     });
     it("invalid - no first name or last name", () => {
@@ -226,7 +234,16 @@ describe("normalization", () => {
       });
       expect(result).toBeUndefined();
     });
-    // TODO Country
+    it("invalid - valid zip", () => {
+      const result = normalizeAndStringfyAddress({
+        line: ["1 mordhaus st rd ave dr", "apt 1a", "2"],
+        city: "mordhaus",
+        state: "ny",
+        zip: "12345-12345-1",
+        country: "usa",
+      });
+      expect(result).toBeUndefined();
+    });
   });
 
   describe("normalizeAndStringifyDriversLicense", () => {
@@ -244,8 +261,16 @@ describe("normalization", () => {
       const result = normalizeAndStringifyDriversLicense({ value: "", state: "ca" });
       expect(result).toBeUndefined();
     });
+    it("invalid - no value w/ empty space", () => {
+      const result = normalizeAndStringifyDriversLicense({ value: " ", state: "ca" });
+      expect(result).toBeUndefined();
+    });
     it("invalid - no state", () => {
       const result = normalizeAndStringifyDriversLicense({ value: "i1234568", state: "" });
+      expect(result).toBeUndefined();
+    });
+    it("invalid - no stat w/ empty spacee", () => {
+      const result = normalizeAndStringifyDriversLicense({ value: "i1234568", state: " " });
       expect(result).toBeUndefined();
     });
     it("invalid - no value or state", () => {

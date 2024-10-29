@@ -1,6 +1,6 @@
 import {
+  toLowerCase,
   USState,
-  normalizeStringSafe,
   normalizeEmailSafe,
   normalizePhoneSafe,
   normalizeStateSafe,
@@ -9,6 +9,7 @@ import {
   commonReplacementsForAddressLine,
   normalizedCountryUsa,
 } from "@metriport/shared";
+import { normalizeNonEmptyStringSafe } from "@metriport/shared/common/string";
 import { Address } from "../domain/address";
 import { PatientData, splitName } from "../domain/patient";
 import { out } from "../util/log";
@@ -25,8 +26,12 @@ import { out } from "../util/log";
 export function normalizePatient<T extends PatientData>(patient: T): T {
   const { log } = out(`MPI normalize patient, request id - ${patient.requestId}`);
   // array destructuring to extract the first element of the array with defaults
-  const [firstName = patient.firstName] = splitName(normalizeStringSafe(patient.firstName) ?? "");
-  const [lastName = patient.lastName] = splitName(normalizeStringSafe(patient.lastName) ?? "");
+  const [firstName = patient.firstName] = splitName(
+    normalizeNonEmptyStringSafe(patient.firstName, toLowerCase) ?? ""
+  );
+  const [lastName = patient.lastName] = splitName(
+    normalizeNonEmptyStringSafe(patient.lastName, toLowerCase) ?? ""
+  );
 
   const normalizedPatient: T = {
     ...patient,
@@ -38,19 +43,18 @@ export function normalizePatient<T extends PatientData>(patient: T): T {
       phone: contact.phone ? normalizePhoneSafe(contact.phone) : undefined,
     })),
     address: (patient.address ?? []).map(addr => {
-      const normalizedCountryString = normalizeStringSafe(addr.country ?? "");
       const newAddress: Address = {
         addressLine1: commonReplacementsForAddressLine(
-          normalizeStringSafe(addr.addressLine1) ?? ""
+          normalizeNonEmptyStringSafe(addr.addressLine1, toLowerCase) ?? ""
         ),
-        city: normalizeStringSafe(addr.city) ?? "",
+        city: normalizeNonEmptyStringSafe(addr.city, toLowerCase) ?? "",
         state: normalizeStateSafe(addr.state) ?? ("" as USState),
         zip: normalizeZipCodeSafe(addr.zip) ?? "",
-        country: normalizeCountrySafe(normalizedCountryString ?? normalizedCountryUsa) ?? "",
+        country: normalizeCountrySafe(addr.country ?? "") ?? normalizedCountryUsa,
       };
       if (addr.addressLine2) {
         newAddress.addressLine2 = commonReplacementsForAddressLine(
-          normalizeStringSafe(addr.addressLine2) ?? ""
+          normalizeNonEmptyStringSafe(addr.addressLine2, toLowerCase) ?? ""
         );
       }
       return newAddress;
@@ -63,8 +67,8 @@ export function normalizePatient<T extends PatientData>(patient: T): T {
 export function normalizePatientInboundMpi<T extends PatientData>(patient: T): T {
   const { log } = out(`MPI normalize patient, request id - ${patient.requestId}`);
 
-  const firstName = normalizeStringSafe(patient.firstName) ?? "";
-  const lastName = normalizeStringSafe(patient.lastName) ?? "";
+  const firstName = normalizeNonEmptyStringSafe(patient.firstName, toLowerCase) ?? "";
+  const lastName = normalizeNonEmptyStringSafe(patient.lastName, toLowerCase) ?? "";
 
   const normalizedPatient: T = {
     ...patient,
@@ -76,19 +80,18 @@ export function normalizePatientInboundMpi<T extends PatientData>(patient: T): T
       phone: contact.phone ? normalizePhoneSafe(contact.phone) : undefined,
     })),
     address: (patient.address ?? []).map(addr => {
-      const normalizedCountryString = normalizeStringSafe(addr.country ?? "");
       const newAddress: Address = {
         addressLine1: commonReplacementsForAddressLine(
-          normalizeStringSafe(addr.addressLine1) ?? ""
+          normalizeNonEmptyStringSafe(addr.addressLine1, toLowerCase) ?? ""
         ),
-        city: normalizeStringSafe(addr.city) ?? "",
+        city: normalizeNonEmptyStringSafe(addr.city, toLowerCase) ?? "",
         state: normalizeStateSafe(addr.state) ?? ("" as USState),
         zip: normalizeZipCodeSafe(addr.zip) ?? "",
-        country: normalizeCountrySafe(normalizedCountryString ?? normalizedCountryUsa) ?? "",
+        country: normalizeCountrySafe(addr.country ?? "") ?? normalizedCountryUsa,
       };
       if (addr.addressLine2) {
         newAddress.addressLine2 = commonReplacementsForAddressLine(
-          normalizeStringSafe(addr.addressLine2) ?? ""
+          normalizeNonEmptyStringSafe(addr.addressLine2, toLowerCase) ?? ""
         );
       }
       return newAddress;
