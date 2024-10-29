@@ -20,7 +20,7 @@ export function normalizeCountrySafe(
 ): string | undefined {
   const baseCountry = normalizeBase(country);
   if (!isValidCountry(baseCountry)) return undefined;
-  return baseCountry;
+  return normalizedCountryUsa;
 }
 
 export function normalizeCountry(country: string): string {
