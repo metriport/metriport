@@ -1,13 +1,13 @@
 import {
   toLowerCase,
-  USState,
   normalizeEmailSafe,
   normalizePhoneSafe,
   normalizeStateSafe,
+  USState,
   normalizeZipCodeSafe,
   normalizeCountrySafe,
-  commonReplacementsForAddressLine,
   normalizedCountryUsa,
+  commonReplacementsForAddressLine,
 } from "@metriport/shared";
 import { normalizeNonEmptyStringSafe } from "@metriport/shared/common/string";
 import { Address } from "../domain/address";

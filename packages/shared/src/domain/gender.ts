@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { BadRequestError } from "../error/bad-request";
 
 export type GenderAtBirth = "F" | "M" | "O" | "U";
 
@@ -25,7 +26,9 @@ export function normalizeGenderSafe(
 
 export function normalizeGender(gender: string): GenderAtBirth {
   const genderOrUndefined = normalizeGenderSafe(gender);
-  if (!genderOrUndefined) throw new Error("Invalid gender");
+  if (!genderOrUndefined) {
+    throw new BadRequestError("Invalid gender", undefined, { gender });
+  }
   return genderOrUndefined;
 }
 

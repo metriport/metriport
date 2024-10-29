@@ -1,12 +1,19 @@
 import { z } from "zod";
 import { BadRequestError } from "../../error/bad-request";
 
-export function normalizeStateSafe(state: string): USState | undefined {
-  const trimmedState = state.trim();
+function noramlizeStateBase(state: string): string {
+  return state.trim();
+}
+
+export function normalizeStateSafe(
+  state: string,
+  normalizeBase: (state: string) => string = noramlizeStateBase
+): USState | undefined {
+  const baseState = normalizeBase(state);
   const keyFromEntries = Object.entries(states).find(
     ([key, value]) =>
-      key.toLowerCase() === trimmedState.toLowerCase() ||
-      value.toLowerCase() === trimmedState.toLowerCase()
+      key.toLowerCase() === baseState.toLowerCase() ||
+      value.toLowerCase() === baseState.toLowerCase()
   );
   return keyFromEntries?.[0] as USState | undefined;
 }

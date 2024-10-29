@@ -8,8 +8,8 @@ import {
   normalizeEmail,
   normalizeUSStateForAddress,
   normalizeZipCode,
-  normalizeExternalId,
   normalizedCountryUsa,
+  normalizeExternalId,
 } from "@metriport/shared";
 import { validateIsPastOrPresent } from "@metriport/shared/common/date";
 import { PatientPayload } from "./patient-import";

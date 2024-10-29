@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { BadRequestError } from "../../error/bad-request";
 import { stripPeriods } from "../../common/string";
 
 const validCountryStrings = ["US", "USA", "UNITED STATES", "UNITED STATES OF AMERICA"];
@@ -25,7 +26,9 @@ export function normalizeCountrySafe(
 
 export function normalizeCountry(country: string): string {
   const countryOrUndefined = normalizeCountrySafe(country);
-  if (!countryOrUndefined) throw new Error("Invalid country.");
+  if (!countryOrUndefined) {
+    throw new BadRequestError("Invalid country", undefined, { country });
+  }
   return countryOrUndefined;
 }
 

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { BadRequestError } from "../../error/bad-request";
 import { stripNonNumericChars } from "../../common/string";
 
 export const phoneLength = 10;
@@ -35,7 +36,9 @@ export function normalizePhoneSafe(
 
 export function normalizePhone(phone: string): string {
   const phoneOrUndefined = normalizePhoneSafe(phone);
-  if (!phoneOrUndefined) throw new Error("Invalid phone.");
+  if (!phoneOrUndefined) {
+    throw new BadRequestError("Invalid phone", undefined, { phone });
+  }
   return phoneOrUndefined;
 }
 

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { BadRequestError } from "../../error/bad-request";
 
 export const zipLength = 5;
 
@@ -37,7 +38,9 @@ export function normalizeZipCodeSafe(
 
 export function normalizeZipCode(zipCode: string): string {
   const zipOrUndefined = normalizeZipCodeSafe(zipCode);
-  if (!zipOrUndefined) throw new Error("Invalid Zip.");
+  if (!zipOrUndefined) {
+    throw new BadRequestError("Invalid zip", undefined, { zipCode });
+  }
   return zipOrUndefined;
 }
 

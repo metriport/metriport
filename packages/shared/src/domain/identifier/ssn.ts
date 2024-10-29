@@ -1,3 +1,5 @@
+import { BadRequestError } from "../../error/bad-request";
+
 function isSsnValid(ssn: string): boolean {
   if (!ssn) return false;
   if (ssn.length < 9) return false;
@@ -31,6 +33,8 @@ export function normalizeSsnSafe(
 
 export function normalizeSsn(ssn: string): string {
   const ssnOrUndefined = normalizeSsnSafe(ssn);
-  if (!ssnOrUndefined) throw new Error("Invalid ssn.");
+  if (!ssnOrUndefined) {
+    throw new BadRequestError("Invalid ssn", undefined, { ssn });
+  }
   return ssnOrUndefined;
 }
