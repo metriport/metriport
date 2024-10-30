@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { Bundle } from "@medplum/fhirtypes";
-import { hydrateFhir } from "@metriport/core/fhir-hydration/hydrate-fhir";
+import { normalizeFhir } from "@metriport/core/fhir-normalization/normalize-fhir";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import dayjs from "dayjs";
@@ -13,11 +13,11 @@ import { getFileContents, getFileNames, makeDir } from "../shared/fs";
 /**
  * Folder with consolidated files/bundles.
  *
- * WARNING: this will overwrite the *_hydrated.json files!!!
+ * WARNING: this will overwrite the *_normalized.json files!!!
  */
 const samplesFolderPath = "";
 
-const suffix = "_hydrated";
+const suffix = "_normalized";
 
 async function main() {
   const bundleFileNames = getFileNames({
@@ -28,7 +28,7 @@ async function main() {
   const filteredBundleFileNames = bundleFileNames.filter(f => !f.includes(suffix));
 
   const timestamp = dayjs().toISOString();
-  const logsFolderName = `runs/hydration/${timestamp}`;
+  const logsFolderName = `runs/normalization/${timestamp}`;
 
   makeDir(logsFolderName);
 
@@ -42,9 +42,9 @@ async function main() {
 
     const cxId = uuidv4();
     const patientId = uuidv4();
-    const resultingBundle = hydrateFhir(initialBundle, cxId, patientId);
+    const resultingBundle = normalizeFhir(initialBundle, cxId, patientId);
 
-    console.log(`Hydrated bundle in ${elapsedTimeFromNow(startedAt)} ms.`);
+    console.log(`normalized bundle in ${elapsedTimeFromNow(startedAt)} ms.`);
 
     const lastSlash = filePath.lastIndexOf("/");
     const fileName = filePath.slice(lastSlash + 1).split(".json")[0];

@@ -1,9 +1,9 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
-import { hydrateFhir } from "../../../fhir-hydration/hydrate-fhir";
+import { normalizeFhir } from "../../../fhir-normalization/normalize-fhir";
 import { EventTypes, analytics } from "../../analytics/posthog";
 
-export function hydrate({
+export function normalize({
   cxId,
   patientId,
   bundle,
@@ -13,17 +13,17 @@ export function hydrate({
   bundle: Bundle<Resource>;
 }): Bundle<Resource> {
   const startedAt = new Date();
-  const hydratedBundle = hydrateFhir(bundle, cxId, patientId);
+  const normalizedBundle = normalizeFhir(bundle, cxId, patientId);
 
-  const hydrationAnalyticsProps = {
+  const normalizationAnalyticsProps = {
     distinctId: cxId,
-    event: EventTypes.fhirHydration,
+    event: EventTypes.fhirNormalization,
     properties: {
       patientId: patientId,
-      bundleLength: hydratedBundle.entry?.length,
+      bundleLength: normalizedBundle.entry?.length,
       duration: elapsedTimeFromNow(startedAt),
     },
   };
-  analytics(hydrationAnalyticsProps);
-  return hydratedBundle;
+  analytics(normalizationAnalyticsProps);
+  return normalizedBundle;
 }

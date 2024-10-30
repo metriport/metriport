@@ -6,10 +6,10 @@ export const extension = ".json";
 export function createConsolidatedDataFilePath(
   cxId: string,
   patientId: string,
-  deduped = true
+  modification?: "deduped" | "normalized" | "hydrated" | undefined
 ): string {
-  const additionalSuffix = deduped ? "" : "_with-duplicates";
-  return createFilePath(cxId, patientId, `CONSOLIDATED_DATA${additionalSuffix}${extension}`);
+  const additionalSuffix = modification ?? "with-duplicates";
+  return createFilePath(cxId, patientId, `CONSOLIDATED_DATA_${additionalSuffix}${extension}`);
 }
 
 export function createConsolidatedSnapshotFileName(
@@ -32,6 +32,8 @@ function getSuffixForType(type?: ConsolidatedFileType): string {
       return "";
     case "dedup":
       return "_deduped";
+    case "normalize":
+      return "_normalized";
     case "invalid":
       return "_invalid";
   }

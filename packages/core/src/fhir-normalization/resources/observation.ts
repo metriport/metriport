@@ -25,7 +25,7 @@ const unitConversionMap = new Map<string, UnitComplex>([
   ["cm", { unit: "in" }],
 ]);
 
-export function hydrateObservations(observations: Observation[]): Observation[] {
+export function normalizeObservations(observations: Observation[]): Observation[] {
   observations.map(o => {
     if (o.valueQuantity) {
       const initialValueUnit = processValueQuantity(o.valueQuantity);

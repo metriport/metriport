@@ -12,7 +12,7 @@ import { isConsolidatedFromS3Enabled } from "../../external/aws/app-config";
 import { checkBundle } from "../../external/fhir/bundle/qa";
 import { getConsolidatedFhirBundle as getConsolidatedFromFhirServer } from "../../external/fhir/consolidated/consolidated";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
-import { hydrate } from "../../external/fhir/consolidated/hydrate";
+import { normalize } from "../../external/fhir/consolidated/normalize";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { isPatient } from "../../external/fhir/shared";
 import { buildBundleEntry } from "../../external/fhir/shared/bundle";
@@ -49,20 +49,20 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       patientId
     );
 
-    const dedupedBundle = deduplicate({
+    const normalizedBundle = normalize({
       cxId,
       patientId,
       bundle: originalBundleWithoutContainedPatients,
     });
 
-    const hydratedBundle = hydrate({
+    const dedupedBundle = deduplicate({
       cxId,
       patientId,
-      bundle: dedupedBundle,
+      bundle: normalizedBundle,
     });
 
     try {
-      checkBundle(hydratedBundle, cxId, patientId);
+      checkBundle(dedupedBundle, cxId, patientId);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       const msg = "Bundle contains invalid data";
@@ -73,7 +73,7 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
         uploadConsolidatedSnapshotToS3({
           ...params,
           s3BucketName: this.bucketName,
-          bundle: hydratedBundle,
+          bundle: dedupedBundle,
           type: "invalid",
         });
       } catch (error) {
@@ -92,7 +92,13 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
       uploadConsolidatedSnapshotToS3({
         ...params,
         s3BucketName: this.bucketName,
-        bundle: hydratedBundle,
+        bundle: normalizedBundle,
+        type: "normalize",
+      }),
+      uploadConsolidatedSnapshotToS3({
+        ...params,
+        s3BucketName: this.bucketName,
+        bundle: dedupedBundle,
         type: "dedup",
       }),
     ]);

@@ -2,18 +2,18 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import { buildBundleEntry, extractFhirTypesFromBundle } from "../external/fhir/shared/bundle";
 import { cloneDeep } from "lodash";
 import { capture } from "../util";
-import { hydrateObservations } from "./resources/observation";
+import { normalizeObservations } from "./resources/observation";
 
-export function hydrateFhir(
+export function normalizeFhir(
   fhirBundle: Bundle<Resource>,
   cxId: string,
   patientId: string
 ): Bundle<Resource> {
-  const hydratedBundle: Bundle = cloneDeep(fhirBundle);
-  const resourceArrays = extractFhirTypesFromBundle(hydratedBundle);
+  const normalizedBundle: Bundle = cloneDeep(fhirBundle);
+  const resourceArrays = extractFhirTypesFromBundle(normalizedBundle);
 
-  const hydratedObservations = hydrateObservations(resourceArrays.observationVitals);
-  resourceArrays.observationVitals = hydratedObservations;
+  const normalizedObservations = normalizeObservations(resourceArrays.observationVitals);
+  resourceArrays.observationVitals = normalizedObservations;
 
   if (!resourceArrays.patient) {
     capture.message("Critical Missing Patient in Hydrate FHIR", {
@@ -26,11 +26,11 @@ export function hydrateFhir(
     });
   }
 
-  hydratedBundle.entry = Object.entries(resourceArrays).flatMap(([, resources]) => {
+  normalizedBundle.entry = Object.entries(resourceArrays).flatMap(([, resources]) => {
     const entriesArray = Array.isArray(resources) ? resources : [resources];
     return entriesArray.flatMap(v => v || []).map(entry => buildBundleEntry(entry as Resource));
   });
-  hydratedBundle.total = hydratedBundle.entry.length;
+  normalizedBundle.total = normalizedBundle.entry.length;
 
-  return hydratedBundle;
+  return normalizedBundle;
 }

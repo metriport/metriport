@@ -5,7 +5,7 @@ import { createFolderName } from "../../domain/filename";
 import { Patient } from "../../domain/patient";
 import { S3Utils, executeWithRetriesS3 } from "../../external/aws/s3";
 import { deduplicate } from "../../external/fhir/consolidated/deduplicate";
-import { hydrate } from "../../external/fhir/consolidated/hydrate";
+import { normalize } from "../../external/fhir/consolidated/normalize";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle";
@@ -52,40 +52,47 @@ export async function createConsolidatedFromConversions({
   ]);
   log(`Got ${conversions.length} resources from conversions`);
 
-  const withDups = buildConsolidatedBundle();
-  withDups.entry = [...conversions, ...docRefs.map(buildBundleEntry), patientEntry];
-  withDups.total = withDups.entry.length;
+  const original = buildConsolidatedBundle();
+  original.entry = [...conversions, ...docRefs.map(buildBundleEntry), patientEntry];
+  original.total = original.entry.length;
   log(
-    `Added ${docRefs.length} docRefs and the Patient, to a total of ${withDups.entry.length} entries`
+    `Added ${docRefs.length} docRefs and the Patient, to a total of ${original.entry.length} entries`
   );
 
-  log(`Deduplicating consolidated bundle...`);
-  const deduped = deduplicate({ cxId, patientId, bundle: withDups });
-  log(`...done, from ${withDups.entry?.length} to ${deduped.entry?.length} resources`);
-  const hydrated = hydrate({ cxId, patientId, bundle: deduped });
-  log(`...and successfully hydrated`);
+  log(`Normalizing consolidated bundle...`);
+  const normalized = normalize({ cxId, patientId, bundle: original });
+  log(`...done. Deduplicating consolidated bundle...`);
+  const deduped = deduplicate({ cxId, patientId, bundle: normalized });
+  log(`...done, from ${normalized.entry?.length} to ${deduped.entry?.length} resources`);
 
-  const dedupDestFileName = createConsolidatedDataFilePath(cxId, patientId, true);
-  const withDupsDestFileName = createConsolidatedDataFilePath(cxId, patientId, false);
+  const originalDupsDestFileName = createConsolidatedDataFilePath(cxId, patientId);
+  const normalizedDestFileName = createConsolidatedDataFilePath(cxId, patientId, "normalized");
+  const dedupDestFileName = createConsolidatedDataFilePath(cxId, patientId, "deduped");
   log(`Storing consolidated bundle on ${destinationBucketName}, key ${dedupDestFileName}`);
   log(`Storing consolidated bundle w/ dups on ${destinationBucketName}, key ${dedupDestFileName}`);
   await Promise.all([
     s3Utils.uploadFile({
       bucket: destinationBucketName,
       key: dedupDestFileName,
-      file: Buffer.from(JSON.stringify(hydrated)),
+      file: Buffer.from(JSON.stringify(deduped)),
       contentType: "application/json",
     }),
     s3Utils.uploadFile({
       bucket: destinationBucketName,
-      key: withDupsDestFileName,
-      file: Buffer.from(JSON.stringify(withDups)),
+      key: normalizedDestFileName,
+      file: Buffer.from(JSON.stringify(normalized)),
+      contentType: "application/json",
+    }),
+    s3Utils.uploadFile({
+      bucket: destinationBucketName,
+      key: originalDupsDestFileName,
+      file: Buffer.from(JSON.stringify(original)),
       contentType: "application/json",
     }),
   ]);
 
   log(`Done`);
-  return hydrated;
+  return deduped;
 }
 
 export function buildConsolidatedBundle(entries: BundleEntry[] = []): Bundle {

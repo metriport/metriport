@@ -1,5 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { Observation } from "@medplum/fhirtypes";
+import { cloneDeep } from "lodash";
 import {
   referenceRangeHemoglobin,
   referenceRangeHemoglobinNoUnit,
@@ -12,7 +13,7 @@ import {
   valueQuantityWeightLb,
 } from "../../fhir-deduplication/__tests__/examples/observation-examples";
 import { makeObservation } from "../../fhir-to-cda/cda-templates/components/__tests__/make-observation";
-import { hydrateObservations } from "../resources/observation";
+import { normalizeObservations } from "../resources/observation";
 
 let observationId: string;
 let observation: Observation;
@@ -22,11 +23,11 @@ beforeEach(() => {
   observation = makeObservation({ id: observationId });
 });
 
-describe("groupSameObservations", () => {
+describe("normalizeObservations", () => {
   it("correctly handle temperature units", () => {
-    observation.valueQuantity = valueQuantityTempCel;
+    observation.valueQuantity = cloneDeep(valueQuantityTempCel);
 
-    let hydrated = hydrateObservations([observation]);
+    let hydrated = normalizeObservations([observation]);
     expect(hydrated.length).toBe(1);
     let result = hydrated[0];
     if (!result) throw new Error("Expected result undefined");
@@ -35,9 +36,9 @@ describe("groupSameObservations", () => {
     expect(result.valueQuantity?.value).toBe(98.6);
     expect(result.valueQuantity?.code).toBe("degF");
 
-    observation.valueQuantity = valueQuantityTempF;
+    observation.valueQuantity = cloneDeep(valueQuantityTempF);
 
-    hydrated = hydrateObservations([observation]);
+    hydrated = normalizeObservations([observation]);
     expect(hydrated.length).toBe(1);
     result = hydrated[0];
     if (!result) throw new Error("Expected result undefined");
@@ -48,18 +49,18 @@ describe("groupSameObservations", () => {
   });
 
   it("correctly handle weight units", () => {
-    observation.valueQuantity = valueQuantityWeightKg;
+    observation.valueQuantity = cloneDeep(valueQuantityWeightKg);
 
-    let hydrated = hydrateObservations([observation]);
+    let hydrated = normalizeObservations([observation]);
     expect(hydrated.length).toBe(1);
     let result = hydrated[0];
     if (!result) throw new Error("Expected result undefined");
     expect(result.valueQuantity?.unit).toBe("lb");
     expect(result.valueQuantity?.value).toBe(149.91);
 
-    observation.valueQuantity = valueQuantityWeightLb;
+    observation.valueQuantity = cloneDeep(valueQuantityWeightLb);
 
-    hydrated = hydrateObservations([observation]);
+    hydrated = normalizeObservations([observation]);
     expect(hydrated.length).toBe(1);
     result = hydrated[0];
 
@@ -69,9 +70,9 @@ describe("groupSameObservations", () => {
   });
 
   it("correctly handle height units", () => {
-    observation.valueQuantity = valueQuantityHeightCm;
+    observation.valueQuantity = cloneDeep(valueQuantityHeightCm);
 
-    let hydrated = hydrateObservations([observation]);
+    let hydrated = normalizeObservations([observation]);
     expect(hydrated.length).toBe(1);
     let result = hydrated[0];
 
@@ -79,9 +80,9 @@ describe("groupSameObservations", () => {
     expect(result.valueQuantity?.unit).toBe("in");
     expect(result.valueQuantity?.value).toBe(62.99);
 
-    observation.valueQuantity = valueQuantityHeightIn;
+    observation.valueQuantity = cloneDeep(valueQuantityHeightIn);
 
-    hydrated = hydrateObservations([observation]);
+    hydrated = normalizeObservations([observation]);
     expect(hydrated.length).toBe(1);
     result = hydrated[0];
 
@@ -91,16 +92,16 @@ describe("groupSameObservations", () => {
   });
 
   it("correctly handle referenceRange units", () => {
-    observation.valueQuantity = valueQuantityHemoglobin;
-    observation.referenceRange = referenceRangeHemoglobin;
+    observation.valueQuantity = cloneDeep(valueQuantityHemoglobin);
+    observation.referenceRange = cloneDeep(referenceRangeHemoglobin);
 
-    const hydrated = hydrateObservations([observation]);
+    const hydrated = normalizeObservations([observation]);
     expect(hydrated.length).toBe(1);
     const result = hydrated[0];
     if (!result) throw new Error("Expected result undefined");
 
     expect(result.valueQuantity?.unit).toBe("g/dL");
-    expect(result.valueQuantity?.value).toBe(14);
+    expect(result.valueQuantity?.value).toBe(valueQuantityHemoglobin.value);
 
     const rangeResult = result.referenceRange;
     if (!rangeResult) throw new Error("Expected rangeResult undefined");
@@ -111,10 +112,10 @@ describe("groupSameObservations", () => {
   });
 
   it("correctly fills in referenceRanges units from the valueQuantity", () => {
-    observation.valueQuantity = valueQuantityHemoglobin;
-    observation.referenceRange = referenceRangeHemoglobinNoUnit;
+    observation.valueQuantity = cloneDeep(valueQuantityHemoglobin);
+    observation.referenceRange = cloneDeep(referenceRangeHemoglobinNoUnit);
 
-    const hydrated = hydrateObservations([observation]);
+    const hydrated = normalizeObservations([observation]);
     const result = hydrated[0];
     if (!result) throw new Error("Expected result undefined");
 
