@@ -32,7 +32,12 @@ def verify_webhook_signature(key: str, raw_body: str, signature: str) -> bool:
     
     hmac_obj = hmac.new(key_bytes, body_bytes, hashlib.sha256)
     computed_signature = hmac_obj.hexdigest()
-    return hmac.compare_digest(computed_signature, signature)
+    if hmac.compare_digest(computed_signature, signature):
+        print('Signature verified')
+        return True
+    else:
+        print('Signature verification failed')
+        return False
 
 class WebhookPayload(BaseModel):
     ping: Optional[str] = None
@@ -59,10 +64,7 @@ async def webhook(request: Request):
 
     print(json.dumps(body, indent=2))
     
-    if verify_webhook_signature(WH_KEY, raw_body_str, signature):
-        print('Signature verified')
-    else:
-        print('Signature verification failed')
+    if not verify_webhook_signature(WH_KEY, raw_body_str, signature):
         return Response(status_code=status.HTTP_401_UNAUTHORIZED)
 
     if 'ping' in body:

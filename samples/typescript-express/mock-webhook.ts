@@ -27,7 +27,7 @@ function verifySignature(req: Request): boolean {
     return true;
   } else {
     console.log(`Signature verification failed`);
-    return false; // return status code 401 - UNAUTHORIZED
+    return false;
   }
 }
 /******************************************************
