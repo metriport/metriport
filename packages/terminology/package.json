@@ -38,7 +38,8 @@
     "sqlite3": "^5.1.7",
     "ts-node": "^10.9.2",
     "unzip-stream": "^0.3.4",
-    "uuid": "^10.0.0"
+    "uuid": "^10.0.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.627.0",
