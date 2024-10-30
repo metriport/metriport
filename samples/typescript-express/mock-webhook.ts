@@ -11,27 +11,37 @@ const app: Application = express();
 
 app.use(express.urlencoded({ extended: false, limit: "2mb" }));
 
-const whKey = getEnvVarOrFail("METRIPORT_WH_KEY");
 const apiKey = getEnvVarOrFail("METRIPORT_API_KEY");
-const isProd = getEnvVarOrFail("IS_PROD") === "true";
+const webhookKey = getEnvVarOrFail("METRIPORT_WH_KEY");
+/******************************************************
+ START - Docs section
+ ******************************************************/
+// const webhookKey = "your_secret_key"; // Webhook key from the Settings page
+const metriportApi = new MetriportMedicalApi(apiKey, { sandbox: true });
 
-const metriportApi = new MetriportMedicalApi(apiKey, {
-  baseAddress: isProd ? "https://api.metriport.com" : "https://api.sandbox.metriport.com",
-});
+function verifySignature(req: Request): boolean {
+  const signature = String(req.headers["x-metriport-signature"]);
+  const payload = req.body; // unparsed, raw body
+  if (metriportApi.verifyWebhookSignature(webhookKey, payload, signature)) {
+    console.log(`Signature verified`);
+    return true;
+  } else {
+    console.log(`Signature verification failed`);
+    return false; // return status code 401 - UNAUTHORIZED
+  }
+}
+/******************************************************
+ END - Docs section
+ ******************************************************/
 
 app.post("/", raw({ type: "*/*" }), async (req: Request, res: Response) => {
   console.log(`BODY: ${req.body.toString()}`);
 
-  const signature = req.headers["x-metriport-signature"];
-
-  if (metriportApi.verifyWebhookSignature(whKey, req.body, String(signature))) {
-    console.log(`Signature verified`);
-  } else {
-    console.log(`Signature verification failed`);
+  if (!verifySignature(req)) {
     return res.sendStatus(401);
   }
-  const payload = JSON.parse(req.body.toString());
 
+  const payload = JSON.parse(req.body.toString());
   if (payload.meta.type === "medical.document-download") {
     console.log(`Received document download webhook`);
     const patient = payload.patients[0];

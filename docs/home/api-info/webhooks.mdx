@@ -50,15 +50,15 @@ payload is authentic and has not been tampered with. If they aren't equal, you s
 
 You can use this header to verify that the webhook messages sent to your endpoint are from Metriport. 
 
-Here's an example of how you can do this in Node.js:
+Avoid parsing the request body before generating the signature - it could result in a slightly
+different signature that's enough to invalidate it.
+
+Here's an example of how you can do this in Node.js - see the full sample code [here](https://github.com/metriport/metriport/blob/develop/samples/typescript-express/mock-webhook.ts):
 
 <Snippet file="webhook-signature-validation.mdx" />
 
 The important thing is to make sure you use a trusted cryptography library in whatever language you
 choose to validate the webhook message in.
-
-Avoid parsing the request body before generating the signature - it could result in a slightly
-different signature that's enough to invalidate it.
 
 You can also compute an HMAC in Python:
 
