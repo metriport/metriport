@@ -198,6 +198,7 @@ router.get(
 
     if (!Config.isCloudEnv()) {
       const useToken = await getUserToken({ token });
+      if (!useToken) throw new UnauthorizedError();
       cxId = useToken.cxId;
       userId = useToken.userId;
     } else {
@@ -239,6 +240,7 @@ router.get(
 
     if (!Config.isCloudEnv()) {
       const useToken = await getUserToken({ token });
+      if (!useToken) throw new UnauthorizedError();
       cxId = useToken.cxId;
       userId = useToken.userId;
     } else {

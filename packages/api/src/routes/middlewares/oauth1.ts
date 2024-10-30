@@ -12,6 +12,8 @@ export const processOAuth1 = async (
   oauth_verifier: string | undefined
 ): Promise<ConnectedUser> => {
   const userToken = await getUserToken({ token: state });
+  if (!userToken) throw new UnauthorizedError();
+
   if (userToken.oauthRequestToken !== oauth_token) throw new UnauthorizedError();
   if (!oauth_verifier) throw new UnauthorizedError();
 

@@ -15,6 +15,7 @@ export const processOAuth2 = async (
   // get the cx/user ids from DDB if this isn't cloud mode
   if (!Config.isCloudEnv()) {
     const useToken = await getUserToken({ token: state });
+    if (!useToken) throw new UnauthorizedError();
     cxId = useToken.cxId;
     userId = useToken.userId;
   }

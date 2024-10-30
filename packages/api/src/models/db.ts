@@ -72,7 +72,7 @@ export const getDB = (): MetriportDB => {
 export interface DocTableNames {
   token: string;
 }
-export let docTableNames: DocTableNames;
+export let docTableNames: DocTableNames | undefined;
 
 async function initDB(): Promise<void> {
   // make sure we have the env vars we need

@@ -12,6 +12,7 @@ import { Config } from "../../shared/config";
 import { ProviderOAuth1Options } from "../../shared/constants";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
+import UnauthorizedError from "../../errors/unauthorized";
 
 const axios = Axios.create();
 
@@ -57,6 +58,7 @@ export class OAuth1DefaultImpl implements OAuth1 {
    */
   async processStep1(token: string): Promise<string> {
     const userToken = await getUserToken({ token });
+    if (!userToken) throw new UnauthorizedError();
     // connect to provider to obtain token and secret for URL that'll be sent to user
     const { oauth_token, oauth_token_secret } = await this.getTokenAndSecret(this.requestTokenUrl);
     // store the info on DynamoDB for the next steps
