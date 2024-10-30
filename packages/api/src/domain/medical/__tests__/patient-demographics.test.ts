@@ -1,4 +1,4 @@
-import { USState } from "@metriport/core/domain/geographic-locations";
+import { USState } from "@metriport/shared";
 import { Patient, PatientDemoData, splitDob } from "@metriport/core/domain/patient";
 import { LinkDemographics, LinkGender } from "@metriport/core/domain/patient-demographics";
 import {
@@ -76,7 +76,7 @@ describe("normalization", () => {
       {
         line: ["1 Mordhaus St Rd Ave Dr", "Apt 1A", "2"],
         city: "Mordhaus",
-        state: "NYY",
+        state: "NY",
         zip: "66666-1234",
         country: "USAA",
       },
@@ -147,7 +147,6 @@ describe("normalization", () => {
       dlValid,
       { value: " i1234568 ", state: " ca " },
       { value: "I1234568", state: "CA" },
-      { value: "I1234568", state: "CAA" },
     ];
     for (const dl of dlsToCheck) {
       it(`dl: ${JSON.stringify(dl)}`, async () => {
@@ -228,7 +227,8 @@ describe("link has new demographics", () => {
         dob: newDob,
       },
     });
-    expect(newData.hasNewDemographics).toBe(true);
+    // new dob does NOT trigger new demopgraphics
+    expect(newData.hasNewDemographics).toBe(false);
   });
   it("new gender", async () => {
     const newGender = "female";
@@ -240,7 +240,8 @@ describe("link has new demographics", () => {
         gender: newGender,
       },
     });
-    expect(newData.hasNewDemographics).toBe(true);
+    // new gender does NOT trigger new demopgraphics
+    expect(newData.hasNewDemographics).toBe(false);
   });
   it("new name", async () => {
     const newNames = [

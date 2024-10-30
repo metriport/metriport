@@ -1,4 +1,5 @@
 import { Encounter, Practitioner, Location } from "@medplum/fhirtypes";
+import { exampleAddress } from "./make-encounter";
 
 export const encounter1: Partial<Encounter> = {
   status: "finished",
@@ -45,16 +46,7 @@ export const encounter1: Partial<Encounter> = {
 export const practitioner1: Partial<Practitioner> = {
   identifier: [{ system: "http://hl7.org/fhir/sid/us-npi", value: "111222333" }],
   name: [{ family: "Zoidberg", given: ["John A."], suffix: ["MD"] }],
-  address: [
-    {
-      use: "work",
-      line: ["1111 Sample Street", "Suite 987"],
-      city: "Springfield",
-      state: "CA",
-      country: "USA",
-      postalCode: "12123",
-    },
-  ],
+  address: [exampleAddress],
   telecom: [{ system: "phone", value: "+1-600-700-8000", use: "work" }],
   qualification: [
     {
@@ -98,14 +90,7 @@ export const practitioner2: Partial<Practitioner> = {
 
 export const location1: Partial<Location> = {
   name: "Planet Express Medical Office",
-  address: {
-    use: "work",
-    line: ["1111 Sample Street", "Suite 987"],
-    city: "Springfield",
-    state: "CA",
-    country: "USA",
-    postalCode: "12123",
-  },
+  address: exampleAddress,
   type: [
     {
       text: "Urgent Care",

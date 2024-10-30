@@ -12,6 +12,8 @@ import {
   Immunization,
   Location,
   Medication,
+  MedicationAdministration,
+  MedicationRequest,
   MedicationStatement,
   ResourceType as MedplumResourceType,
   Observation,
@@ -204,6 +206,16 @@ export function isMedication(resource: Resource | undefined): resource is Medica
   return resource?.resourceType === "Medication";
 }
 
+export function isMedicationAdministration(
+  resource: Resource | undefined
+): resource is MedicationAdministration {
+  return resource?.resourceType === "MedicationAdministration";
+}
+
+export function isMedicationRequest(resource: Resource | undefined): resource is MedicationRequest {
+  return resource?.resourceType === "MedicationRequest";
+}
+
 export function isAllergyIntolerance(
   resource: Resource | undefined
 ): resource is AllergyIntolerance {
@@ -222,12 +234,50 @@ export function findCompositionResources(fhirBundle: Bundle): Composition[] {
   return fhirBundle.entry?.map(e => e.resource).filter(isComposition) || [];
 }
 
+export function findConditionResources(fhirBundle: Bundle): Condition[] {
+  return fhirBundle.entry?.map(e => e.resource).filter(isCondition) || [];
+}
+
+export function findMedicationResources(fhirBundle: Bundle): Medication[] {
+  return fhirBundle.entry?.map(e => e.resource).filter(isMedication) || [];
+}
+
+export function findMedicationAdministrationResources(
+  fhirBundle: Bundle
+): MedicationAdministration[] {
+  return fhirBundle.entry?.map(e => e.resource).filter(isMedicationAdministration) || [];
+}
+
+export function findMedicationRequestResources(fhirBundle: Bundle): MedicationRequest[] {
+  return fhirBundle.entry?.map(e => e.resource).filter(isMedicationRequest) || [];
+}
+
+export function findMedicationStatementResources(fhirBundle: Bundle): MedicationStatement[] {
+  return fhirBundle.entry?.map(e => e.resource).filter(isMedicationStatement) || [];
+}
+
+export function findProcedureResources(fhirBundle: Bundle): Procedure[] {
+  return fhirBundle.entry?.map(e => e.resource).filter(isProcedure) || [];
+}
+
+export function findFamilyMemberHistoryResources(fhirBundle: Bundle): FamilyMemberHistory[] {
+  return fhirBundle.entry?.map(e => e.resource).filter(isFamilyMemberHistory) || [];
+}
+
+export function findImmunizationResources(fhirBundle: Bundle): Immunization[] {
+  return fhirBundle.entry?.map(e => e.resource).filter(isImmunization) || [];
+}
+
 export function findPatientResource(fhirBundle: Bundle): Patient | undefined {
   return fhirBundle.entry?.map(e => e.resource).find(isPatient);
 }
 
 export function findDiagnosticReportResources(fhirBundle: Bundle): DiagnosticReport[] {
   return fhirBundle.entry?.map(e => e.resource).filter(isDiagnosticReport) || [];
+}
+
+export function findEncounterResources(fhirBundle: Bundle): Encounter[] {
+  return fhirBundle.entry?.map(e => e.resource).filter(isEncounter) || [];
 }
 
 export function findResourceInBundle(bundle: Bundle, reference: string): Resource | undefined {

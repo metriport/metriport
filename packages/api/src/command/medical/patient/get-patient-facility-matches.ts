@@ -1,5 +1,5 @@
+import { USState } from "@metriport/shared";
 import { Address } from "@metriport/core/domain/address";
-import { USState } from "@metriport/api-sdk";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { CQLink } from "../../../external/carequality/cq-patient-data";
 import { CwLink } from "../../../external/commonwell/cw-patient-data";
@@ -42,10 +42,6 @@ async function getCqFacilityMatches(cqLinks: CQLink[]): Promise<PatientFacilityM
   const patientFacilityMatches: PatientFacilityMatch[] = [];
 
   for (const cqLink of cqLinks) {
-    if (!cqLink.patientResource) {
-      continue;
-    }
-
     const cqFacility = await CQDirectoryEntryModel.findOne({
       where: { id: cqLink.oid },
     });
@@ -54,7 +50,9 @@ async function getCqFacilityMatches(cqLinks: CQLink[]): Promise<PatientFacilityM
       continue;
     }
 
-    const patientMatchDemo = cqPatientResourceToNormalizedLinkDemographics(cqLink.patientResource);
+    const patientMatchDemo = cqLink.patientResource
+      ? cqPatientResourceToNormalizedLinkDemographics(cqLink.patientResource)
+      : undefined;
 
     patientFacilityMatches.push({
       name: cqFacility.name ?? undefined,

@@ -263,14 +263,123 @@ describe("getDateTime", function () {
     expect(date).toEqual("2023-06-26T19:08:46.000-0300");
   });
 
+  it("should render date when incomplete ISO YYYY-MM-DD HH:MM:SS", function () {
+    var date = functions.getDateTime("2023-06-26 19:08:46");
+    expect(date).toEqual("2023-06-26T19:08:46.000Z");
+  });
+
   it("should render date when ISO YYYY-MM-DD HH:MM:SS.MMMZ", function () {
     var date = functions.getDateTime("2023-06-26 19:08:46.000Z");
-    expect(date).toEqual("2023-06-26 19:08:46.000Z");
+    expect(date).toEqual("2023-06-26T19:08:46.000Z");
+  });
+
+  it("should render date when valid date on invalid dateTimeString", function () {
+    var date = functions.getDateTime("20240714040785-0400");
+    expect(date).toEqual("2024-07-14T00:00:00.000Z");
   });
 
   it("should render nothing when invalid dateTimeString", function () {
-    var date = functions.getDateTime("20240714040785-0400");
-    expect(date).toEqual("2024-07-14T00:00:00.000Z");
+    var date = functions.getDateTime("a202407140407f");
+    expect(date).toEqual("");
+  });
+
+  it("should render date when gets a Date object", function () {
+    var date = functions.getDateTime(new Date("2023-06-26T19:08:46.000Z"));
+    expect(date).toEqual("2023-06-26T19:08:46.000Z");
+  });
+
+  it("should render date when gets a non-Date object that has a value prop", function () {
+    var date = functions.getDateTime({ value: "20230626150846-0400" });
+    expect(date).toEqual("2023-06-26T19:08:46.000Z");
+  });
+
+  it("should render nothing when gets a non-Date object that has a value prop that's undefined", function () {
+    var date = functions.getDateTime({ value: undefined });
+    expect(date).toEqual("");
+  });
+
+  it("should render nothing when gets a non-Date object", function () {
+    var date = functions.getDateTime({ a: "123" });
+    expect(date).toEqual("");
+  });
+
+  it("should render nothing when gets undefined", function () {
+    var date = functions.getDateTime(undefined);
+    expect(date).toEqual("");
+  });
+
+  it("should render nothing when gets null", function () {
+    var date = functions.getDateTime(null);
+    expect(date).toEqual("");
+  });
+});
+
+describe("extractReferenceRange", function () {
+  const extractReferenceRange = helpers.find(h => h.name === "extractReferenceRange").func;
+
+  it("should process range with low and high values", function () {
+    const input = {
+      unit: 'mg',
+      low: { value: "325", unit: "mg" },
+      high: { value: "650", unit: "mg" },
+    };    
+    const expectedOutput = {
+      low: { value: "325", unit: "mg" },
+      high: { value: "650", unit: "mg" },
+    };
+    expect(extractReferenceRange(input)).toEqual(expectedOutput);
+  });
+  it("should process range with just low", function () {
+    const input = {
+      unit: 'mg',
+      low: { value: "325", unit: "mg" },
+    };    
+    const expectedOutput = {
+      low: { value: "325", unit: "mg" },
+    };
+    expect(extractReferenceRange(input)).toEqual(expectedOutput);
+  });
+  it("should process range with just high", function () {
+    const input = {
+      unit: 'mg',
+      high: { value: "650", unit: "mg" },
+    };    
+    const expectedOutput = {
+      high: { value: "650", unit: "mg" },
+    };
+    expect(extractReferenceRange(input)).toEqual(expectedOutput);
+  });
+});
+
+describe("extractDecimal", function () {
+  const extractDecimal = helpers.find(h => h.name === "extractDecimal").func;
+
+  it("should return undefined for null or undefined input", function () {
+    expect(extractDecimal(null)).toBeUndefined();
+    expect(extractDecimal(undefined)).toBeUndefined();
+  });
+
+  it("should return undefined for non-decimal strings", function () {
+    expect(extractDecimal("abc")).toBeUndefined();
+    expect(extractDecimal("123a")).toBeUndefined();
+    expect(extractDecimal("12.34.56")).toBeUndefined();
+  });
+
+  it("should return correct value for valid decimal strings", function () {
+    expect(extractDecimal("123")).toBe(123);
+    expect(extractDecimal("123.45")).toBe(123.45);
+    expect(extractDecimal("-123.45")).toBe(-123.45);
+    expect(extractDecimal("123.45")).toBe(123.45);
+  });
+
+  it("should correctly handle leading decimal point", function () {
+    expect(extractDecimal(".45")).toBe(0.45);
+    expect(extractDecimal("-.45")).toBe(-0.45);
+  });
+
+  it("should correctly handle zero values", function () {
+    expect(extractDecimal("0")).toBe(0);
+    expect(extractDecimal("0.0")).toBe(0.0);
   });
 });
 

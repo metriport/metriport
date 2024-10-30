@@ -51,7 +51,14 @@ export interface LambdaProps extends StackProps {
   readonly envType: EnvType;
   readonly timeout?: Duration;
   readonly memory?: number;
+  /**
+   * The maximum of concurrent executions you want to reserve for the function.
+   * Setting this to zero will throttle the lambda (disable its execution).
+   * Default: no specific limit - account limit.
+   * @see https://docs.aws.amazon.com/lambda/latest/dg/concurrent-executions.html
+   */
   readonly reservedConcurrentExecutions?: number;
+  /** The maximum number of times to retry when the function returns an error. */
   readonly retryAttempts?: number;
   readonly maxEventAge?: Duration;
   readonly alarmSnsAction?: SnsAction;

@@ -1,11 +1,12 @@
 {
   "name": "api",
-  "version": "1.21.3",
+  "version": "1.22.7",
   "description": "",
   "main": "app.js",
   "private": true,
   "scripts": {
-    "clean": "rimraf dist && rimraf node_modules",
+    "clean": "rimraf dist",
+    "deepclean": "npm run clean && rimraf node_modules",
     "dev": "NODE_EXTRA_CA_CERTS=opensearch-root-ca.pem ts-node-dev --transpile-only --respawn --inspect=0.0.0.0:9229 --project tsconfig.dev.json --files src/app.ts",
     "start": "node dist/app.js",
     "start-opensearch": "docker compose -f docker-compose-opensearch.yml -p opensearch up -d && docker cp opensearch-node1:/usr/share/opensearch/config/root-ca.pem ./opensearch-root-ca.pem",
@@ -27,8 +28,7 @@
   "license": "ISC",
   "dependencies": {
     "@aws-sdk/client-cloudwatch": "^3.338.0",
-    "@medplum/core": "^2.0.32",
-    "@medplum/fhirtypes": "^2.0.32",
+    "@medplum/core": "^2.2.10",
     "@metriport/api-sdk": "file:packages/api-sdk",
     "@metriport/carequality-sdk": "file:packages/carequality-sdk",
     "@metriport/commonwell-sdk": "file:packages/commonwell-sdk",
@@ -73,6 +73,7 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^8.0.2",
+    "@medplum/fhirtypes": "^2.2.10",
     "@ngrok/ngrok": "^1.2.0",
     "@tsconfig/node18": "^1.0.1",
     "@types/convert-units": "^2.3.5",

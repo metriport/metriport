@@ -3,6 +3,7 @@ import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/extern
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { Config } from "../../shared/config";
 import { FhirToCdaConverter, FhirToCdaConverterRequest } from "./connector";
+import { isCdaCustodianEnabledForCx } from "../aws/app-config";
 
 const region = Config.getAWSRegion();
 const lambdaClient = makeLambdaClient(region);
@@ -18,11 +19,13 @@ export class FhirToCdaConverterLambda implements FhirToCdaConverter {
       throw new Error("FHIR to CDA Converter Lambda Name is undefined");
     }
     const organization = await getOrganizationOrFail({ cxId });
+    const isCustodian = await isCdaCustodianEnabledForCx(cxId);
     const lambdaInput: Input = {
       cxId,
       bundle,
       splitCompositions,
       orgOid: organization.oid,
+      isCustodian,
     };
 
     const result = await lambdaClient

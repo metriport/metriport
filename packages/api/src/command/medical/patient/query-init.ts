@@ -15,7 +15,8 @@ export type InitConsolidatedQueryCmd = {
 export type InitDocumentQueryCmd = {
   documentQueryProgress: Required<
     Pick<DocumentQueryProgress, "download" | "requestId" | "startedAt">
-  >;
+  > &
+    Pick<DocumentQueryProgress, "triggerConsolidated">;
   cxDocumentRequestMetadata?: unknown;
   consolidatedQueries?: never;
   patientDiscovery?: never;
@@ -37,14 +38,16 @@ export const storeQueryInit = async ({ id, cxId, cmd }: StoreQueryParams): Promi
       transaction,
     });
 
-    return patient.update(
-      {
-        data: {
-          ...patient.data,
-          ...cmd,
+    return (
+      await patient.update(
+        {
+          data: {
+            ...patient.data,
+            ...cmd,
+          },
         },
-      },
-      { transaction }
-    );
+        { transaction }
+      )
+    ).dataValues;
   });
 };

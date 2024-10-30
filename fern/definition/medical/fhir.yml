@@ -8,7 +8,7 @@ service:
   endpoints:
     startConsolidatedQuery:
       display-name: Start Consolidated Data Query
-      docs: [
+      docs: |
           Trigger a consolidated data query for the given patient.
           When executed,
           this endpoint triggers an asynchronous query to retrieve a Patient's consolidated data from the FHIR repository.
@@ -24,7 +24,6 @@ service:
           from the FHIR bundle as a PDF or HTML document. This will be returned via a webhook
           as a FHIR bundle with a DocumentReference resource
           that will contain a URL to retrieve the data from.,
-        ]
       method: POST
       path: /patient/{id}/consolidated/query
       path-parameters:
@@ -36,8 +35,9 @@ service:
         query-parameters:
           resources:
             docs: |
-              A comma separated, case sensitive list of resources to be returned.
-              If none are provided all resources will be included.
+              A comma separated, case sensitive list of resources to be returned. If none are provided all
+              resources will be included. Metriport will automatically hydrate the initially filtered 
+              resources with referenced ones to create bundle consistency.
             type: optional<string>
           dateFrom:
             docs: |
@@ -65,7 +65,8 @@ service:
         type: StartConsolidatedQueryResponse
         docs: Returns the filters used for this query, in addition to the identifier used by the system to uniquely identify this query (property `requestId`).
       examples:
-        - path-parameters:
+        - name: Example1
+          path-parameters:
             id: "12345678"
           response:
             body: $StartConsolidatedQueryResponse.Example0
@@ -168,7 +169,8 @@ types:
       message: optional<string>
     examples:
       - name: Example0
-        value: $PatientConsolidatedDataStatus.Example0
+        value:
+          query: $PatientConsolidatedDataStatus.Example0
 
   PatientConsolidatedDataStatus:
     properties:
@@ -181,15 +183,9 @@ types:
       dateTo:
         type: optional<string>
       conversionType:
-        enum:
-          - html
-          - pdf
-          - json
+        type: ConversionTypeFHIR
       status:
-        enum:
-          - processing
-          - completed
-          - failed
+        type: DocumentQueryStatusFHIR
     examples:
       - name: Example0
         value:
@@ -198,7 +194,19 @@ types:
           dateFrom: "2023-07-27"
           dateTo: "2024-07-27"
           conversionType: "html"
-          status: processing
+          status: "processing"
+
+  DocumentQueryStatusFHIR:
+    enum:
+      - processing
+      - completed
+      - failed
+
+  ConversionTypeFHIR:
+    enum:
+      - html
+      - pdf
+      - json
 
   GetConsolidatedQueryStatusResponse:
     properties:
@@ -215,8 +223,8 @@ types:
   ConsolidatedCountResponse:
     properties:
       total:
-        type: integer
         docs: The sum of all resource type count.
+        type: integer
       resources:
         docs: |
           Object containing resource types as properties and the amount of entries for

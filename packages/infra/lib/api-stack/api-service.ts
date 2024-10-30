@@ -87,7 +87,6 @@ export function createAPIService({
   alarmAction,
   dnsZones,
   fhirServerUrl,
-  fhirServerQueueUrl,
   fhirConverterQueueUrl,
   fhirConverterServiceUrl,
   cdaToVisualizationLambda,
@@ -95,8 +94,12 @@ export function createAPIService({
   outboundPatientDiscoveryLambda,
   outboundDocumentQueryLambda,
   outboundDocumentRetrievalLambda,
+  patientImportLambda,
   generalBucket,
+  conversionBucket,
   medicalDocumentsUploadBucket,
+  ehrResponsesBucket,
+  fhirToBundleLambda,
   fhirToMedicalRecordLambda,
   fhirToCdaConverterLambda,
   searchIngestionQueue,
@@ -116,7 +119,6 @@ export function createAPIService({
   alarmAction: SnsAction | undefined;
   dnsZones: DnsZones;
   fhirServerUrl: string;
-  fhirServerQueueUrl: string | undefined;
   fhirConverterQueueUrl: string | undefined;
   fhirConverterServiceUrl: string | undefined;
   cdaToVisualizationLambda: ILambda;
@@ -124,8 +126,12 @@ export function createAPIService({
   outboundPatientDiscoveryLambda: ILambda;
   outboundDocumentQueryLambda: ILambda;
   outboundDocumentRetrievalLambda: ILambda;
-  generalBucket: s3.Bucket;
-  medicalDocumentsUploadBucket: s3.Bucket;
+  patientImportLambda: ILambda;
+  generalBucket: s3.IBucket;
+  conversionBucket: s3.IBucket;
+  medicalDocumentsUploadBucket: s3.IBucket;
+  ehrResponsesBucket: s3.IBucket | undefined;
+  fhirToBundleLambda: ILambda;
   fhirToMedicalRecordLambda: ILambda | undefined;
   fhirToCdaConverterLambda: ILambda | undefined;
   searchIngestionQueue: IQueue;
@@ -222,11 +228,16 @@ export function createAPIService({
           ...(props.config.usageReportUrl && {
             USAGE_URL: props.config.usageReportUrl,
           }),
+          CONVERSION_RESULT_BUCKET_NAME: conversionBucket.bucketName,
           ...(props.config.medicalDocumentsBucketName && {
             MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
           }),
           ...(props.config.medicalDocumentsUploadBucketName && {
             MEDICAL_DOCUMENTS_UPLOADS_BUCKET_NAME: props.config.medicalDocumentsUploadBucketName,
+          }),
+          // TODO we have access to ehrResponsesBucket here, can't we use it instead of a config?
+          ...(props.config.ehrResponsesBucketName && {
+            EHR_RESPONSES_BUCKET_NAME: props.config.ehrResponsesBucketName,
           }),
           ...(isSandbox(props.config) && {
             SANDBOX_SEED_DATA_BUCKET_NAME: props.config.sandboxSeedDataBucketName,
@@ -238,6 +249,8 @@ export function createAPIService({
           OUTBOUND_PATIENT_DISCOVERY_LAMBDA_NAME: outboundPatientDiscoveryLambda.functionName,
           OUTBOUND_DOC_QUERY_LAMBDA_NAME: outboundDocumentQueryLambda.functionName,
           OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,
+          PATIENT_IMPORT_LAMBDA_NAME: patientImportLambda.functionName,
+          FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
           ...(fhirToMedicalRecordLambda && {
             FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
           }),
@@ -245,9 +258,6 @@ export function createAPIService({
             FHIR_TO_CDA_CONVERTER_LAMBDA_NAME: fhirToCdaConverterLambda.functionName,
           }),
           FHIR_SERVER_URL: fhirServerUrl,
-          ...(fhirServerQueueUrl && {
-            FHIR_SERVER_QUEUE_URL: fhirServerQueueUrl,
-          }),
           ...(fhirConverterQueueUrl && {
             FHIR_CONVERTER_QUEUE_URL: fhirConverterQueueUrl,
           }),
@@ -281,6 +291,12 @@ export function createAPIService({
           }),
           ...(props.config.iheGateway?.trustStoreBucketName && {
             CQ_TRUST_BUNDLE_BUCKET_NAME: props.config.iheGateway.trustStoreBucketName,
+          }),
+          ...(props.config.ehrIntegration && {
+            EHR_ATHENA_ENVIRONMENT: props.config.ehrIntegration.athenaHealth.env,
+            EHR_ATHENA_CLIENT_KEY_ARN: props.config.ehrIntegration.athenaHealth.athenaClientKeyArn,
+            EHR_ATHENA_CLIENT_SECRET_ARN:
+              props.config.ehrIntegration.athenaHealth.athenaClientSecretArn,
           }),
         },
       },
@@ -337,17 +353,39 @@ export function createAPIService({
 
   // Access grant for Aurora DB's secret
   dbCredsSecret.grantRead(fargateService.taskDefinition.taskRole);
+  // Access to EHR secrets
+  if (props.config.ehrIntegration) {
+    const athenaClientKey = secret.Secret.fromSecretCompleteArn(
+      stack,
+      "EhrAthenaClientKeySecret",
+      props.config.ehrIntegration.athenaHealth.athenaClientKeyArn
+    );
+    athenaClientKey.grantRead(fargateService.taskDefinition.taskRole);
+    const athenaClientSecret = secret.Secret.fromSecretCompleteArn(
+      stack,
+      "EhrAthenaClientSecretSecret",
+      props.config.ehrIntegration.athenaHealth.athenaClientSecretArn
+    );
+    athenaClientSecret.grantRead(fargateService.taskDefinition.taskRole);
+  }
   // RW grant for Dynamo DB
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
+
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   outboundPatientDiscoveryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   outboundDocumentQueryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   outboundDocumentRetrievalLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  patientImportLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToCdaConverterLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
+  fhirToBundleLambda.grantInvoke(fargateService.taskDefinition.taskRole);
 
-  // Access grant for medical document buckets
+  // Access grant for buckets
+  conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  if (ehrResponsesBucket) {
+    ehrResponsesBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  }
 
   if (fhirToMedicalRecordLambda) {
     fhirToMedicalRecordLambda.grantInvoke(fargateService.taskDefinition.taskRole);

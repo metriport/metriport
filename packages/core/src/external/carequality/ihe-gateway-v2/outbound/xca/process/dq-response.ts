@@ -1,32 +1,33 @@
-import { XMLParser } from "fast-xml-parser";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import {
+  DocumentReference,
   OutboundDocumentQueryReq,
   OutboundDocumentQueryResp,
-  DocumentReference,
   XCAGateway,
 } from "@metriport/ihe-gateway-sdk";
-import {
-  handleRegistryErrorResponse,
-  handleHttpErrorResponse,
-  handleEmptyResponse,
-  handleSchemaErrorResponse,
-} from "./error";
-import { DQSamlClientResponse } from "../send/dq-requests";
-import { stripUrnPrefix } from "../../../../../../util/urn";
+import { toArray } from "@metriport/shared";
+import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import {
   XDSDocumentEntryAuthor,
   XDSDocumentEntryClassCode,
   XDSDocumentEntryUniqueId,
-} from "../../../../shared";
-import { successStatus, partialSuccessStatus } from "./constants";
-import { capture } from "../../../../../../util/notifications";
-import { toArray } from "@metriport/shared";
-import { iti38Schema, ExternalIdentifier, Classification, ExtrinsicObject } from "./schema";
-import { Slot } from "../../../schema";
-import { out } from "../../../../../../util/log";
+} from "../../../../../../shareback/metadata/constants";
 import { errorToString } from "../../../../../../util/error/shared";
+import { out } from "../../../../../../util/log";
+import { capture } from "../../../../../../util/notifications";
+import { stripUrnPrefix } from "../../../../../../util/urn";
+import { Slot } from "../../../schema";
+import { DQSamlClientResponse } from "../send/dq-requests";
+import { partialSuccessStatus, successStatus } from "./constants";
+import {
+  handleEmptyResponse,
+  handleHttpErrorResponse,
+  handleRegistryErrorResponse,
+  handleSchemaErrorResponse,
+} from "./error";
+import { Classification, ExternalIdentifier, ExtrinsicObject, iti38Schema } from "./schema";
+import { getNameValue, getSlotValue } from "../../../utils";
 
 dayjs.extend(utc);
 
@@ -77,7 +78,7 @@ export function parseDocumentReference({
 
   const findSlotValue = (name: string): string | undefined => {
     const slot = slots.find((slot: Slot) => slot._name === name);
-    return slot ? String(slot.ValueList.Value) : undefined;
+    return getSlotValue(slot);
   };
 
   const findExternalIdentifierValue = (scheme: string): string | undefined => {
@@ -100,7 +101,7 @@ export function parseDocumentReference({
     const classificationSlots = slotArray.flatMap((slot: Slot) => slot ?? []);
 
     const slot = classificationSlots.find((s: Slot) => s._name === slotName);
-    return slot ? String(slot.ValueList.Value) : undefined;
+    return getSlotValue(slot);
   };
 
   const findClassificationName = (scheme: string): string | undefined => {
@@ -108,7 +109,7 @@ export function parseDocumentReference({
       (classification: Classification) => classification?._classificationScheme === scheme
     );
     if (!classification) return undefined;
-    const title = classification?.Name?.LocalizedString?._value;
+    const title = getNameValue(classification?.Name);
     return title;
   };
 
@@ -116,8 +117,8 @@ export function parseDocumentReference({
   const repositoryUniqueId = findSlotValue("repositoryUniqueId");
   const docUniqueId = findExternalIdentifierValue(XDSDocumentEntryUniqueId);
 
-  if (!repositoryUniqueId || !docUniqueId) {
-    const msg = "Document Reference is missing repositoryUniqueId or docUniqueId";
+  if (!docUniqueId) {
+    const msg = "Document Reference is missing docUniqueId";
     capture.error(msg, {
       extra: {
         extrinsicObject,
@@ -131,9 +132,11 @@ export function parseDocumentReference({
   const serviceStartTimeValue = findSlotValue("serviceStartTime");
   const serviceStopTimeValue = findSlotValue("serviceStopTime");
 
+  const homeCommunityId = getHomeCommunityIdForDr(extrinsicObject);
+
   const documentReference: DocumentReference = {
-    homeCommunityId: getHomeCommunityIdForDr(extrinsicObject),
-    repositoryUniqueId,
+    homeCommunityId,
+    repositoryUniqueId: repositoryUniqueId ?? homeCommunityId,
     docUniqueId: stripUrnPrefix(docUniqueId),
     contentType: extrinsicObject?._mimeType,
     language: findSlotValue("languageCode"),
@@ -184,7 +187,7 @@ export function processDqResponse({
       gateway: gateway,
     });
   }
-  const parser = new XMLParser({
+  const parser = createXMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "_",
     textNodeName: "_text",

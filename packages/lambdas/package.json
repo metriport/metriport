@@ -6,7 +6,8 @@
   "scripts": {
     "preinstall": "npm i -g rimraf",
     "clean-playwright-layer": "pushd layers/playwright && npm run clean && popd",
-    "clean": "rimraf dist && rimraf node_modules && rimraf layers/shared && npm run clean-playwright-layer",
+    "clean": "rimraf dist",
+    "deepclean": "npm run clean && rimraf node_modules && rimraf layers/shared && npm run clean-playwright-layer",
     "build": "tsc -p tsconfig.build.json",
     "build:cloud": "tsc -p tsconfig.cloud.json",
     "typecheck": "tsc --noEmit",
@@ -26,8 +27,7 @@
     "@aws-sdk/client-s3": "^3.435.0",
     "@aws-sdk/client-secrets-manager": "^3.348.0",
     "@aws-sdk/s3-request-presigner": "^3.435.0",
-    "@medplum/core": "^2.0.32",
-    "@medplum/fhirtypes": "^2.0.32",
+    "@medplum/core": "^2.2.10",
     "@metriport/api-sdk": "^7.12.7",
     "@metriport/commonwell-sdk": "^4.12.10",
     "@opensearch-project/opensearch": "^2.3.1",
@@ -61,6 +61,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@medplum/fhirtypes": "^2.2.10",
     "@metriport/core": "file:packages/core",
     "@metriport/ihe-gateway-sdk": "file:packages/ihe-gateway-sdk",
     "@metriport/shared": "file:packages/shared",

@@ -57,7 +57,6 @@ export async function processOutboundDocumentRetrievalResps({
         hie: MedicalDataSource.CAREQUALITY,
         successCount,
         failureCount,
-        documentCount: successDocsRetrievedCount,
         duration,
       },
     });

@@ -8,6 +8,9 @@ export const schemaOrArray = <T extends z.ZodTypeAny>(schema: T) =>
   z.union([schema, z.array(schema)]);
 export const schemaOrArrayOrEmpty = <T extends z.ZodTypeAny>(schema: T) =>
   z.union([schema, z.array(schema), z.literal("")]);
+
+export const schemaOrString = <T extends z.ZodTypeAny>(schema: T) => z.union([schema, z.string()]);
+
 export const textSchema = z.union([
   stringOrNumberSchema,
   z.object({
@@ -58,9 +61,11 @@ export const genderCodeSchema = z.union([
 export type IheGender = z.infer<typeof genderCodeSchema>;
 
 export const slot = z.object({
-  ValueList: z.object({
-    Value: schemaOrArray(stringOrNumberSchema),
-  }),
+  ValueList: schemaOrEmpty(
+    z.object({
+      Value: schemaOrArray(stringOrNumberSchema),
+    })
+  ),
   _name: z.string(),
 });
 export type Slot = z.infer<typeof slot>;

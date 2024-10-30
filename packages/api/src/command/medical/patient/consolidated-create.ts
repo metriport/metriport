@@ -1,4 +1,4 @@
-import { Bundle, BundleEntry, Patient } from "@medplum/fhirtypes";
+import { Bundle, BundleEntry } from "@medplum/fhirtypes";
 import { createUploadFilePath } from "@metriport/core/domain/document/upload";
 import { OPERATION_OUTCOME_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/extension";
 import { uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
@@ -32,10 +32,7 @@ export async function createOrUpdateConsolidatedPatientData({
   try {
     const fhir = makeFhirApi(cxId);
 
-    const patient = await fhir.readResource("Patient", patientId);
-
     const fhirBundleTransaction = convertCollectionBundleToTransactionBundle({
-      patient,
       fhirBundle,
     });
 
@@ -60,10 +57,8 @@ export async function createOrUpdateConsolidatedPatientData({
 }
 
 const convertCollectionBundleToTransactionBundle = ({
-  patient,
   fhirBundle,
 }: {
-  patient: Patient;
   fhirBundle: Bundle;
 }): Bundle => {
   const transactionBundle: Bundle = {
@@ -104,13 +99,6 @@ const convertCollectionBundleToTransactionBundle = ({
       resource,
       request: { method: "PUT", url: resource.resourceType + "/" + resource.id },
     };
-
-    if (resource.resourceType !== "Patient") {
-      transactionEntry.resource = {
-        ...resource,
-        contained: resource.contained ? [...resource.contained, patient] : [patient],
-      };
-    }
 
     transactionBundle.entry?.push(transactionEntry);
   }

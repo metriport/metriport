@@ -143,6 +143,15 @@ export const getCxIdOrFail = (req: Request): string => {
   return cxId;
 };
 
+export const getId = (req: Request): string | undefined => {
+  return req.id;
+};
+export const getIdOrFail = (req: Request): string => {
+  const id = getId(req);
+  if (!id) throw new BadRequestError("Missing id on the request");
+  return id;
+};
+
 export const getCxIdFromQuery = (req: Request): string | undefined => {
   const cxId = req.query.cxId as string | undefined;
   cxId && capture.setUser({ id: cxId });
@@ -168,3 +177,11 @@ export const getDateOrFail = (req: Request): string => {
   if (!date) throw new BadRequestError("Missing date query param");
   return date as string;
 };
+
+export function getAuthorizationToken(req: Request): string {
+  const header = req.header("Authorization");
+  if (!header) throw new Error("Missing Authorization Header");
+  const token = header.replace("Bearer ", "");
+  if (token === "") throw new Error("Empty Authorization Header");
+  return token;
+}

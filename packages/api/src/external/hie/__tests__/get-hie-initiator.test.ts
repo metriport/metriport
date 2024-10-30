@@ -2,13 +2,13 @@
 import { faker } from "@faker-js/faker";
 import { Organization, OrganizationBizType } from "@metriport/core/domain/organization";
 import { Patient } from "@metriport/core/domain/patient";
+import { makePatient } from "@metriport/core/domain/__tests__/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import * as getPatient from "../../../command/medical/patient/get-patient";
 import { Facility, FacilityType } from "../../../domain/medical/facility";
 import { makeFacility } from "../../../domain/medical/__tests__/facility";
 import { makeOrganization } from "../../../domain/medical/__tests__/organization";
-import { makePatient } from "../../../domain/medical/__tests__/patient";
-import { getHieInitiator, isHieEnabledToQuery, getPatientsFacility } from "../get-hie-initiator";
+import { getHieInitiator, getPatientsFacility, isHieEnabledToQuery } from "../get-hie-initiator";
 
 let defaultDeps: {
   organization: Organization;
@@ -32,15 +32,14 @@ beforeEach(() => {
     facilities: [makeOboFacility()],
     patient: makePatient(),
   };
-  getPatientWithDependencies_mock = jest
-    .spyOn(getPatient, "getPatientWithDependencies")
-    .mockImplementation(async () => defaultDeps);
+  getPatientWithDependencies_mock = jest.spyOn(getPatient, "getPatientWithDependencies");
 });
 
 describe("getHieInitiator", () => {
   it("gets data from DB with expected params", async () => {
     const patient = defaultDeps.patient;
     const facility = defaultDeps.facilities[0];
+    getPatientWithDependencies_mock.mockResolvedValueOnce(defaultDeps);
     await getHieInitiator(defaultDeps.patient, facility.id);
     expect(getPatientWithDependencies_mock).toHaveBeenCalledWith(patient);
   });

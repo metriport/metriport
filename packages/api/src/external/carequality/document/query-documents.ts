@@ -1,10 +1,11 @@
+import { buildDayjs } from "@metriport/shared/common/date";
 import { Patient } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { isCQDirectEnabledForCx } from "../../aws/app-config";
+import { isCQDirectEnabledForCx, isStalePatientUpdateEnabledForCx } from "../../aws/app-config";
 import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
@@ -13,12 +14,15 @@ import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poll
 import { getCQDirectoryEntry } from "../command/cq-directory/get-cq-directory-entry";
 import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
 import { CQLink } from "../cq-patient-data";
-import { getCQData } from "../patient";
+import { getCQData, discover } from "../patient";
 import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { getCqInitiator } from "../shared";
 import { isFacilityEnabledToQueryCQ } from "../../carequality/shared";
 import { filterCqLinksByManagingOrg } from "./filter-oids-by-managing-org";
+import { processAsyncError } from "@metriport/core/util/error/shared";
+
+const staleLookbackHours = 24;
 
 const resultPoller = makeOutboundResultPoller();
 
@@ -27,11 +31,15 @@ export async function getDocumentsFromCQ({
   facilityId,
   patient,
   cqManagingOrgName,
+  forcePatientDiscovery = false,
+  triggerConsolidated = false,
 }: {
   requestId: string;
   facilityId?: string;
   patient: Patient;
   cqManagingOrgName?: string;
+  forcePatientDiscovery?: boolean;
+  triggerConsolidated?: boolean;
 }) {
   const { log } = out(`CQ DQ - requestId ${requestId}, patient ${patient.id}`);
   const { cxId, id: patientId } = patient;
@@ -51,20 +59,48 @@ export async function getDocumentsFromCQ({
   if (!isCqQueryEnabled) return interrupt(`CQ disabled for facility ${facilityId}`);
 
   try {
-    const [cqPatientData] = await Promise.all([
+    const [cqPatientData, initiator] = await Promise.all([
       getCQPatientData({ id: patient.id, cxId }),
+      getCqInitiator(patient, facilityId),
       setDocQueryProgress({
         patient: { id: patient.id, cxId: patient.cxId },
         downloadProgress: { status: "processing" },
         convertProgress: { status: "processing" },
         requestId,
         source: MedicalDataSource.CAREQUALITY,
+        triggerConsolidated,
       }),
     ]);
 
-    // If DQ is triggered while the PD is in progress, schedule it to be done when PD is completed
-    if (getCQData(patient.data.externalData)?.discoveryStatus === "processing") {
-      await scheduleDocQuery({ requestId, patient, source: MedicalDataSource.CAREQUALITY });
+    const patientCQData = getCQData(patient.data.externalData);
+    const hasNoCQStatus = !patientCQData || !patientCQData.discoveryStatus;
+    const isProcessing = patientCQData?.discoveryStatus === "processing";
+    const updateStalePatients = await isStalePatientUpdateEnabledForCx(cxId);
+    const now = buildDayjs(new Date());
+    const patientCreatedAt = buildDayjs(patient.createdAt);
+    const pdStartedAt = patientCQData?.discoveryParams?.startedAt
+      ? buildDayjs(patientCQData.discoveryParams.startedAt)
+      : undefined;
+    const isStale =
+      updateStalePatients &&
+      (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackHours, "hours");
+
+    if (hasNoCQStatus || isProcessing || forcePatientDiscovery || isStale) {
+      await scheduleDocQuery({
+        requestId,
+        patient,
+        source: MedicalDataSource.CAREQUALITY,
+        triggerConsolidated,
+      });
+
+      if ((forcePatientDiscovery || isStale) && !isProcessing) {
+        discover({
+          patient,
+          facilityId: initiator.facilityId,
+          requestId,
+        }).catch(processAsyncError("CQ discover"));
+      }
+
       return;
     }
     if (!cqPatientData || cqPatientData.data.links.length <= 0) {
@@ -72,7 +108,7 @@ export async function getDocumentsFromCQ({
     }
 
     await setDocQueryStartAt({
-      patient: { id: patient.id, cxId: patient.cxId },
+      patient: { id: patient.id, cxId },
       source: MedicalDataSource.CAREQUALITY,
       startedAt: new Date(),
     });
@@ -107,8 +143,6 @@ export async function getDocumentsFromCQ({
     await executeAsynchronously(cqPatientData.data.links, addDqUrlToCqLink, {
       numberOfParallelExecutions: 20,
     });
-
-    const initiator = await getCqInitiator(patient);
 
     const cqLinks = cqManagingOrgName
       ? await filterCqLinksByManagingOrg(cqManagingOrgName, linksWithDqUrl)

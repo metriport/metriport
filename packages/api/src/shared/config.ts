@@ -84,11 +84,9 @@ export class Config {
     return `${Config.getApiUrl()}/connect`;
   }
 
+  /** @deprecated Use core's version of Config instead */
   static getApiUrl(): string {
-    return getEnvVarOrFail("API_URL");
-  }
-  static getApiLoadBalancerAddress(): string | undefined {
-    return getEnvVar("API_LB_ADDRESS");
+    return CoreConfig.getApiUrl();
   }
 
   static getApiGatewayUsagePlanId(): string | undefined {
@@ -203,10 +201,6 @@ export class Config {
     return getEnvVarOrFail("FHIR_SERVER_URL");
   }
 
-  static getFHIRServerQueueURL(): string {
-    return getEnvVarOrFail("FHIR_SERVER_QUEUE_URL");
-  }
-
   static getSystemRootOID(): string {
     return getEnvVarOrFail("SYSTEM_ROOT_OID");
   }
@@ -251,6 +245,10 @@ export class Config {
   static getCWMemberOID(): string {
     return getEnvVarOrFail("CW_MEMBER_OID");
   }
+
+  static getCdaToFhirConversionBucketName(): string {
+    return getEnvVarOrFail("CONVERSION_RESULT_BUCKET_NAME");
+  }
   static getMedicalDocumentsBucketName(): string {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
   }
@@ -292,6 +290,10 @@ export class Config {
   }
   static getOutboundDocumentRetrievalLambdaName(): string | undefined {
     return getEnvVar("OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME");
+  }
+
+  static getPatientImportLambdaName(): string {
+    return getEnvVarOrFail("PATIENT_IMPORT_LAMBDA_NAME");
   }
 
   static getSearchIngestionQueueUrl(): string {
@@ -342,5 +344,17 @@ export class Config {
   }
   static getOrgOidsWithIHEGatewayV2Enabled(): string {
     return getEnvVarOrFail("OIDS_WITH_IHE_GATEWAY_V2_ENABLED");
+  }
+
+  static getAthenaHealthEnv(): string | undefined {
+    return getEnvVar("EHR_ATHENA_ENVIRONMENT");
+  }
+
+  static getAthenaHealthClientKeyArn(): string | undefined {
+    return getEnvVar("EHR_ATHENA_CLIENT_KEY_ARN");
+  }
+
+  static getAthenaHealthClientSecretArn(): string | undefined {
+    return getEnvVar("EHR_ATHENA_CLIENT_SECRET_ARN");
   }
 }

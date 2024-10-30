@@ -1,12 +1,13 @@
+import { faker } from "@faker-js/faker";
 import { Condition } from "@medplum/fhirtypes";
 import { makeBaseDomain, makeSubjectReference } from "./shared";
 
-export function makeCondition(params: Partial<Condition> = {}): Condition {
+export function makeCondition(params: Partial<Condition> = {}, patientId?: string): Condition {
   return {
     ...makeBaseDomain(),
-    ...makeSubjectReference(),
+    ...makeSubjectReference(patientId),
     resourceType: "Condition",
-    ...(params.id ? { id: params.id } : {}),
+    ...(params.id ? { id: params.id } : { id: faker.string.uuid() }),
     code: params.code ?? {
       coding: [
         {
@@ -17,7 +18,6 @@ export function makeCondition(params: Partial<Condition> = {}): Condition {
       ],
       text: "NICOTINE DEPENDENCE, UNSP, UNCOMPLI",
     },
-    note: params.note ?? [],
     ...params,
   };
 }

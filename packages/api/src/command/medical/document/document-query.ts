@@ -1,3 +1,4 @@
+import { deleteConsolidated } from "@metriport/core/command/consolidated/consolidated-delete";
 import {
   ConvertResult,
   DocumentQueryProgress,
@@ -5,21 +6,21 @@ import {
   Progress,
 } from "@metriport/core/domain/document-query";
 import { Patient } from "@metriport/core/domain/patient";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { emptyFunction } from "@metriport/shared";
 import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
 import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
+import { processAsyncError } from "../../../errors";
 import { isCarequalityEnabled, isCommonwellEnabled } from "../../../external/aws/app-config";
 import { getDocumentsFromCQ } from "../../../external/carequality/document/query-documents";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
+import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { resetDocQueryProgress } from "../../../external/hie/reset-doc-query-progress";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { Config } from "../../../shared/config";
 import { Util } from "../../../shared/util";
-import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { getPatientOrFail } from "../patient/get-patient";
 import { storeQueryInit } from "../patient/query-init";
 import { areDocumentsProcessing } from "./document-status";
@@ -47,9 +48,11 @@ export async function queryDocumentsAcrossHIEs({
   override,
   cxDocumentRequestMetadata,
   forceQuery = false,
+  forcePatientDiscovery = false,
   forceCommonwell = false,
   forceCarequality = false,
   cqManagingOrgName,
+  triggerConsolidated = false,
 }: {
   cxId: string;
   patientId: string;
@@ -57,9 +60,11 @@ export async function queryDocumentsAcrossHIEs({
   override?: boolean;
   cxDocumentRequestMetadata?: unknown;
   forceQuery?: boolean;
+  forcePatientDiscovery?: boolean;
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
   cqManagingOrgName?: string;
+  triggerConsolidated?: boolean;
 }): Promise<DocumentQueryProgress> {
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
@@ -87,7 +92,12 @@ export async function queryDocumentsAcrossHIEs({
     id: patient.id,
     cxId: patient.cxId,
     cmd: {
-      documentQueryProgress: { requestId, startedAt, download: { status: "processing" } },
+      documentQueryProgress: {
+        requestId,
+        startedAt,
+        triggerConsolidated,
+        download: { status: "processing" },
+      },
       cxDocumentRequestMetadata,
     },
   });
@@ -101,17 +111,22 @@ export async function queryDocumentsAcrossHIEs({
     },
   });
 
+  let triggeredDocumentQuery = false;
+
   const commonwellEnabled = await isCommonwellEnabled();
+  // Why? Please add a comment explaining why we're not running CW if there's no CQ managing org name.
   if (!cqManagingOrgName) {
-    if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
+    if (commonwellEnabled || forceCommonwell) {
       getDocumentsFromCW({
         patient: updatedPatient,
         facilityId,
         forceDownload: override,
         forceQuery,
+        forcePatientDiscovery,
         requestId,
         getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
       }).catch(emptyFunction);
+      triggeredDocumentQuery = true;
     }
   }
 
@@ -122,7 +137,16 @@ export async function queryDocumentsAcrossHIEs({
       facilityId,
       requestId,
       cqManagingOrgName,
+      forcePatientDiscovery,
     }).catch(emptyFunction);
+    triggeredDocumentQuery = true;
+  }
+
+  if (triggeredDocumentQuery) {
+    deleteConsolidated({
+      cxId: patient.cxId,
+      patientId: patient.id,
+    }).catch(processAsyncError("Failed to delete consolidated bundle"));
   }
 
   return createQueryResponse("processing", updatedPatient);

@@ -2,6 +2,7 @@ import { EnvType } from "../lib/env-type";
 import { RDSAlarmThresholds } from "./aws/rds";
 import { IHEGatewayProps } from "./ihe-gateway-config";
 import { OpenSearchConnectorConfig } from "./open-search-config";
+import { PatientImportProps } from "./patient-import";
 
 export type ConnectWidgetConfig = {
   stackName: string;
@@ -118,6 +119,7 @@ type EnvConfigBase = {
   generalBucketName: string;
   medicalDocumentsBucketName: string;
   medicalDocumentsUploadBucketName: string;
+  ehrResponsesBucketName?: string;
   iheResponsesBucketName: string;
   iheParsedResponsesBucketName: string;
   iheRequestsBucketName: string;
@@ -194,6 +196,7 @@ type EnvConfigBase = {
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: string;
   };
   iheGateway?: IHEGatewayProps;
+  patientImport: PatientImportProps;
   canvas?: {
     secretNames: {
       CANVAS_CLIENT_ID: string;
@@ -206,6 +209,7 @@ type EnvConfigBase = {
   slack?: {
     SLACK_ALERT_URL?: string;
     SLACK_NOTIFICATION_URL?: string;
+    SLACK_SENSITIVE_DATA_URL?: string;
     workspaceId: string;
     alertsChannelId: string;
   };
@@ -219,6 +223,13 @@ type EnvConfigBase = {
   };
   cqDirectoryRebuilder?: {
     scheduleExpressions: string | string[];
+  };
+  ehrIntegration?: {
+    athenaHealth: {
+      env: string;
+      athenaClientKeyArn: string;
+      athenaClientSecretArn: string;
+    };
   };
 };
 

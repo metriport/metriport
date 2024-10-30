@@ -1,4 +1,4 @@
-import { USState } from "@metriport/core/domain/geographic-locations";
+import { USStateForAddress } from "@metriport/shared";
 import { Organization } from "@metriport/core/domain/organization";
 import { getStatesFromAddresses, Patient, PatientDemoData } from "@metriport/core/domain/patient";
 import { getPatientByDemo as getPatientByDemoMPI } from "@metriport/core/mpi/get-patient-by-demo";
@@ -34,7 +34,7 @@ export async function matchPatient(patient: PatientMatchCmd): Promise<Patient | 
   return await getPatientByDemo({ cxId, demo });
 }
 
-export const getPatients = async ({
+export async function getPatients({
   facilityId,
   cxId,
   patientIds,
@@ -42,7 +42,7 @@ export const getPatients = async ({
   facilityId?: string;
   cxId: string;
   patientIds?: string[];
-}): Promise<Patient[]> => {
+}): Promise<PatientModel[]> {
   const patients = await PatientModel.findAll({
     where: {
       cxId,
@@ -58,15 +58,15 @@ export const getPatients = async ({
     order: [["id", "ASC"]],
   });
   return patients;
-};
+}
 
-export const getPatientIds = async ({
+export async function getPatientIds({
   facilityId,
   cxId,
 }: {
   facilityId?: string;
   cxId: string;
-}): Promise<string[]> => {
+}): Promise<string[]> {
   const patients = await PatientModel.findAll({
     attributes: ["id"],
     where: {
@@ -81,7 +81,7 @@ export const getPatientIds = async ({
     },
   });
   return patients.map(p => p.id);
-};
+}
 
 /**
  * Retrieves a patient based on their demographic information. Utilizes functions
@@ -90,16 +90,16 @@ export const getPatientIds = async ({
  * @param demo - The demographic information of the patient.
  * @returns The matched patient object if found, otherwise undefined.
  */
-export const getPatientByDemo = async ({
+export async function getPatientByDemo({
   cxId,
   demo,
 }: {
   cxId: string;
   demo: PatientDemoData;
-}): Promise<Patient | undefined> => {
+}): Promise<Patient | undefined> {
   const patientLoader = new PatientLoaderLocal();
   return getPatientByDemoMPI({ cxId, demo, patientLoader });
-};
+}
 
 export type GetPatient = {
   id: string;
@@ -124,28 +124,28 @@ export type GetPatient = {
 /**
  * @see executeOnDBTx() for details about the 'transaction' and 'lock' parameters.
  */
-export const getPatient = async ({
+export async function getPatient({
   id,
   cxId,
   transaction,
   lock,
-}: GetPatient): Promise<PatientModel | undefined> => {
+}: GetPatient): Promise<PatientModel | undefined> {
   const patient = await PatientModel.findOne({
     where: { cxId, id },
     transaction,
     lock,
   });
   return patient ?? undefined;
-};
+}
 
 /**
  * @see executeOnDBTx() for details about the 'transaction' and 'lock' parameters.
  */
-export const getPatientOrFail = async (params: GetPatient): Promise<PatientModel> => {
+export async function getPatientOrFail(params: GetPatient): Promise<PatientModel> {
   const patient = await getPatient(params);
   if (!patient) throw new NotFoundError(`Could not find patient`, undefined, { id: params.id });
   return patient;
-};
+}
 
 export async function getPatientWithDependencies({
   id,
@@ -154,7 +154,7 @@ export async function getPatientWithDependencies({
   id: string;
   cxId: string;
 }): Promise<{
-  patient: Patient;
+  patient: PatientModel;
   facilities: Facility[];
   organization: Organization;
 }> {
@@ -164,15 +164,15 @@ export async function getPatientWithDependencies({
   return { patient, facilities, organization };
 }
 
-export const getPatientStates = async ({
+export async function getPatientStates({
   cxId,
   patientIds,
 }: {
   cxId: string;
   patientIds: string[];
-}): Promise<USState[]> => {
+}): Promise<USStateForAddress[]> {
   if (!patientIds || !patientIds.length) return [];
   const patients = await getPatients({ cxId, patientIds });
   const nonUniqueStates = patients.flatMap(getStatesFromAddresses).filter(s => s);
   return uniq(nonUniqueStates);
-};
+}

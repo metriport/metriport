@@ -13,7 +13,7 @@ import { LambdaLayers } from "../shared/lambda-layers";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
 import { settings as settingsFhirConverter } from "./fhir-converter-service";
 
-export type FHIRConnector = {
+export type FHIRConverterConnector = {
   queue: IQueue;
   dlq: IQueue;
   bucket: s3.IBucket;
@@ -27,7 +27,7 @@ function settings() {
   } = settingsFhirConverter();
   const lambdaTimeout = maxExecutionTimeout.minus(Duration.seconds(5));
   return {
-    connectorName: "FHIRConverter",
+    connectorName: "FHIRConverter2",
     lambdaMemory: 1024,
     // Number of messages the lambda pull from SQS at once
     lambdaBatchSize: 1,
@@ -55,7 +55,7 @@ export function createQueueAndBucket({
   lambdaLayers: LambdaLayers;
   envType: EnvType;
   alarmSnsAction?: SnsAction;
-}): FHIRConnector {
+}): FHIRConverterConnector {
   const config = getConfig();
   const { connectorName, visibilityTimeout, maxReceiveCount } = settings();
   const queue = defaultCreateQueue({
@@ -98,11 +98,9 @@ export function createLambda({
   stack,
   vpc,
   sourceQueue,
-  destinationQueue,
   dlq,
   fhirConverterBucket,
   apiServiceDnsAddress,
-  conversionResultQueueUrl,
   alarmSnsAction,
 }: {
   lambdaLayers: LambdaLayers;
@@ -110,11 +108,9 @@ export function createLambda({
   stack: Construct;
   vpc: IVpc;
   sourceQueue: IQueue;
-  destinationQueue: IQueue;
   dlq: IQueue;
   fhirConverterBucket: s3.IBucket;
   apiServiceDnsAddress: string;
-  conversionResultQueueUrl: string;
   alarmSnsAction?: SnsAction;
 }): Lambda {
   const config = getConfig();
@@ -142,7 +138,6 @@ export function createLambda({
       API_URL: `http://${apiServiceDnsAddress}`,
       QUEUE_URL: sourceQueue.queueUrl,
       DLQ_URL: dlq.queueUrl,
-      CONVERSION_RESULT_QUEUE_URL: conversionResultQueueUrl,
       CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,
     },
     timeout: lambdaTimeout,
@@ -161,7 +156,6 @@ export function createLambda({
   );
   provideAccessToQueue({ accessType: "both", queue: sourceQueue, resource: conversionLambda });
   provideAccessToQueue({ accessType: "send", queue: dlq, resource: conversionLambda });
-  provideAccessToQueue({ accessType: "send", queue: destinationQueue, resource: conversionLambda });
 
   return conversionLambda;
 }

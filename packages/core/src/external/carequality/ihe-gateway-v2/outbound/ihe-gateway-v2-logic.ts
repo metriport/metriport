@@ -54,6 +54,7 @@ export async function sendProcessXcpdRequest({
       cxId,
       index,
     });
+
     return processXCPDResponse({
       xcpdResponse: response,
       patientId,
@@ -180,20 +181,30 @@ export async function createSignSendProcessXCPDRequest({
     }
     if (parsedResponsesBucket) {
       try {
+        const partitionDate = result.requestTimestamp
+          ? new Date(Date.parse(result.requestTimestamp))
+          : new Date();
         const filePath = createHivePartitionFilePath({
           cxId,
           patientId,
           keys: {
             stage: "pd",
-            requestId: result.id,
-            gatewayOid: result.gateway.oid,
+            request_id: result.id,
+            gateway_oid: result.gateway.oid,
           },
+          date: partitionDate,
         });
         const key = `${filePath}/result.json`;
+        const extendedResult = {
+          ...result,
+          _date: partitionDate.toISOString().slice(0, 10),
+          cxid: cxId,
+          _stage: "pd",
+        };
         await s3Utils.uploadFile({
           bucket: parsedResponsesBucket,
           key,
-          file: Buffer.from(JSON.stringify(result), "utf8"),
+          file: Buffer.from(JSON.stringify(extendedResult), "utf8"),
           contentType: "application/json",
         });
       } catch (error) {

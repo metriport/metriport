@@ -1,4 +1,5 @@
 import { chunk } from "lodash";
+import { out } from "../../../util";
 import { Config } from "../../../util/config";
 import { capture } from "../../../util/notifications";
 import { makeFhirApi } from "../api/api-factory";
@@ -18,6 +19,8 @@ export async function getDocuments({
   to?: string | undefined;
   documentIds?: string[];
 }): Promise<DocumentReferenceWithId[]> {
+  const { log } = out(`getDocuments - cx ${cxId}, pat ${patientId}`);
+  const startedAt = new Date().getTime();
   try {
     const api = makeFhirApi(cxId, Config.getFHIRServerUrl());
     const docs: DocumentReferenceWithId[] = [];
@@ -29,10 +32,12 @@ export async function getDocuments({
         docs.push(...page.filter(hasId));
       }
     }
+    const duration = new Date().getTime() - startedAt;
+    log(`Got ${docs.length} doc refs from the FHIR server in ${duration}ms`);
     return docs;
   } catch (error) {
     const msg = `Error getting documents from FHIR server`;
-    console.log(`${msg} - patientId: ${patientId}, error: ${error}`);
+    log(`${msg} - patientId: ${patientId}, error: ${error}`);
     capture.error(msg, { extra: { patientId, error } });
     throw error;
   }

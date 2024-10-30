@@ -1,3 +1,4 @@
+import { toFHIR } from "@metriport/core/external/fhir/organization/conversion";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -5,20 +6,22 @@ import { createOrganization } from "../../command/medical/organization/create-or
 import { getOrganization } from "../../command/medical/organization/get-organization";
 import { updateOrganization } from "../../command/medical/organization/update-organization";
 import { getETag } from "../../shared/http";
-import { asyncHandler, getCxIdOrFail, getFromQuery, getFromParamsOrFail } from "../util";
+import { getOutputFormatFromRequest } from "../helpers/output-format";
+import { requestLogger } from "../helpers/request-logger";
+import { asyncHandler, getCxIdOrFail, getFromParamsOrFail, getFromQuery } from "../util";
 import { dtoFromModel } from "./dtos/organizationDTO";
 import {
+  organizationBizTypeSchema,
   organizationCreateSchema,
   organizationUpdateSchema,
-  organizationBizTypeSchema,
 } from "./schemas/organization";
-import { requestLogger } from "../helpers/request-logger";
 
 const router = Router();
 
 /** ---------------------------------------------------------------------------
  * POST /organization
  *
+ * @deprecated
  * Creates a new organization at Metriport and HIEs.
  *
  * @param req.body The data to create the organization.
@@ -47,6 +50,7 @@ router.post(
 /** ---------------------------------------------------------------------------
  * PUT /organization/:id
  *
+ * @deprecated
  * Updates the organization at Metriport and HIEs.
  *
  * @param req.body The data to update the organization.
@@ -83,9 +87,14 @@ router.get(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
+    const output = getOutputFormatFromRequest(req);
 
     const org = await getOrganization({ cxId });
-    return res.status(status.OK).json(org ? dtoFromModel(org) : undefined);
+
+    const respStatus = status.OK;
+    if (!org) return res.status(respStatus).json(undefined);
+    if (output === "fhir") return res.status(respStatus).json(toFHIR(org));
+    return res.status(respStatus).json(dtoFromModel(org));
   })
 );
 

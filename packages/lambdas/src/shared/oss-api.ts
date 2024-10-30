@@ -10,8 +10,9 @@ export type NotificationParams = {
   cxId: string;
   patientId: string;
   status: "success" | "failed";
-  details?: string;
-  jobId?: string;
+  details?: string | undefined;
+  jobId: string | undefined;
+  /** The MedicalDataSource, or HIE name */
   source?: string;
 };
 
@@ -36,8 +37,6 @@ export function apiClient(apiURL: string) {
   }
 
   return {
-    /** @deprecated: use internal.notifyApi() instead */
-    notifyApi,
     internal: {
       notifyApi,
       createFeedback,

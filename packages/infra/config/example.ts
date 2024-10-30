@@ -76,6 +76,9 @@ export const config: EnvConfigNonSandbox = {
     CW_GATEWAY_AUTHORIZATION_CLIENT_ID: "CW_GATEWAY_AUTHORIZATION_CLIENT_ID",
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: "CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET",
   },
+  patientImport: {
+    bucketName: "your-bucket-name",
+  },
   connectWidget: {
     stackName: "MetriportConnectInfraStack",
     region: "us-east-1",
@@ -141,6 +144,7 @@ export const config: EnvConfigNonSandbox = {
   generalBucketName: "test-bucket",
   medicalDocumentsBucketName: "test-bucket",
   medicalDocumentsUploadBucketName: "test-upload-bucket",
+  ehrResponsesBucketName: "test-ehr-responses-bucket",
   iheResponsesBucketName: "test-ihe-responses-bucket",
   iheParsedResponsesBucketName: "test-ihe-parsed-responses-bucket",
   iheRequestsBucketName: "test-ihe-requests-bucket",

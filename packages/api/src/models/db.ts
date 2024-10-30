@@ -20,6 +20,10 @@ import { FeedbackModel } from "./feedback";
 import { PatientModel } from "./medical/patient";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
+import { CxMappingModel } from "./cx-mapping";
+import { PatientMappingModel } from "./patient-mapping";
+import { FacilityMappingModel } from "./facility-mapping";
+import { JwtTokenModel } from "./jwt-token";
 import { ModelSetup } from "./_default";
 
 // models to setup with sequelize
@@ -41,6 +45,10 @@ const models: ModelSetup[] = [
   CoverageEnhancementModel.setup,
   FeedbackModel.setup,
   FeedbackEntryModel.setup,
+  CxMappingModel.setup,
+  PatientMappingModel.setup,
+  FacilityMappingModel.setup,
+  JwtTokenModel.setup,
 ];
 
 export type DbPoolProps = {

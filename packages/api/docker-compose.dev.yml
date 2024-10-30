@@ -64,7 +64,7 @@ services:
       - metriportNetwork
     command: "-jar DynamoDBLocal.jar -sharedDb"
   # This is the configuration for our PostgreSQL database container
-  # Note the `postgres` name is important, in out Node app when we refer
+  # Note the `postgres` name is important, in our Node app when we refer
   # to  `host: "postgres"` that value is mapped on the network to the
   # address of this container.
   postgres:

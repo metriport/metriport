@@ -1,4 +1,4 @@
-import { Duration, NestedStackProps } from "aws-cdk-lib";
+import { Duration, NestedStackProps, NestedStack } from "aws-cdk-lib";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -39,6 +39,12 @@ interface TerminologyServerNestedStackProps extends NestedStackProps {
   generalBucket: Bucket;
   vpc: ec2.IVpc;
   alarmAction: SnsAction | undefined;
+}
+
+interface TermServerServiceProps {
+  config: EnvConfig;
+  version?: string;
+  generalBucket: Bucket;
 }
 
 export class TerminologyServerNestedStack extends NestedStack {

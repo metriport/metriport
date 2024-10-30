@@ -8,6 +8,10 @@ on:
         required: false
         type: string
         default: "restart-ecs.sh"
+      deploy_env:
+        required: true
+        type: string
+        description: "the environment we're deploying to, either 'staging', 'production', or 'sandbox'"
       ECR_REPO_URI:
         description: "The URI of the ECR repository to push the Docker image to"
         required: true
@@ -39,8 +43,9 @@ jobs:
     # https://serverlessfirst.com/emails/how-to-prevent-concurrent-deployments-of-serverless-stacks-in-github-actions/
     # TODO Consider the solution here: https://github.com/tj-actions/aws-cdk/blob/main/action.yml
     concurrency:
-      group: ${{ format('{0}-{1}-{2}', github.job, inputs.script_name, inputs.deploy_env) }}
+      group: ${{ format('{0}-{1}', inputs.script_name, inputs.deploy_env) }}
     runs-on: ubuntu-latest
+    environment: ${{ inputs.deploy_env }}
     steps:
       - name: Log Environment
         run: |

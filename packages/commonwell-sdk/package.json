@@ -1,6 +1,6 @@
 {
   "name": "@metriport/commonwell-sdk",
-  "version": "5.0.5",
+  "version": "5.1.7",
   "description": "SDK to simplify CommonWell API integration - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -44,7 +44,8 @@
     "directory": "packages/commonwell-sdk"
   },
   "scripts": {
-    "clean": "rimraf dist && rimraf node_modules",
+    "clean": "rimraf dist",
+    "deepclean": "npm run clean && rimraf node_modules",
     "tsc": "tsc",
     "watch": "tsc --watch",
     "build": "tsc -p .",
@@ -59,7 +60,7 @@
     "url": "https://github.com/metriport/metriport/issues"
   },
   "dependencies": {
-    "@metriport/shared": "^0.12.2",
+    "@metriport/shared": "^0.14.2",
     "axios": "^1.4.0",
     "http-status": "^1.7.0",
     "jsonwebtoken": "^9.0.0",

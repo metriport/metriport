@@ -10,7 +10,7 @@ import { queryResponseCodes, ackCodes, xmlBuilderAttributes } from "../../../sha
 import { namespaces } from "../../../constants";
 import { timestampToSoapBody } from "../../../utils";
 import { METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX } from "../../../../shared";
-import { mapFhirToMetriportGender } from "../../../../../fhir/patient/index";
+import { mapFhirToMetriportGender } from "../../../../../fhir/patient/conversion";
 
 function createQueryByParameter(request: InboundPatientDiscoveryReq): object {
   const { id, samlAttributes, patientResource } = request;
@@ -213,7 +213,7 @@ function createIti55SoapBody(
         },
         ...(response.operationOutcome && {
           acknowledgementDetail: {
-            typeCode: "E",
+            "@_typeCode": "E",
             code: response.operationOutcome?.issue?.[0]?.details?.coding?.[0]
               ? {
                   "@_code": response.operationOutcome.issue[0].details?.coding[0].code,

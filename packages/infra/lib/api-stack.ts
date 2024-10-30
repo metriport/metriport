@@ -42,11 +42,12 @@ import * as documentUploader from "./api-stack/document-upload";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import { TerminologyServerNestedStack } from "./api-stack/terminology-server-service";
-import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
 import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
 import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
+import { PatientImportNestedStack } from "./patient-import-nested-stack";
+import * as AppConfigUtils from "./shared/app-config";
 import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
@@ -256,6 +257,12 @@ export class APIStack extends Stack {
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
       versioned: true,
+      cors: [
+        {
+          allowedOrigins: ["*"],
+          allowedMethods: [s3.HttpMethods.GET],
+        },
+      ],
     });
 
     const medicalDocumentsUploadBucket = new s3.Bucket(this, "APIMedicalDocumentsUploadBucket", {
@@ -263,7 +270,23 @@ export class APIStack extends Stack {
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
       versioned: true,
+      cors: [
+        {
+          allowedOrigins: ["*"],
+          allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.POST],
+        },
+      ],
     });
+
+    let ehrResponsesBucket: s3.Bucket | undefined;
+    if (!isSandbox(props.config)) {
+      ehrResponsesBucket = new s3.Bucket(this, "EhrResponsedBucket", {
+        bucketName: props.config.ehrResponsesBucketName,
+        publicReadAccess: false,
+        encryption: s3.BucketEncryption.S3_MANAGED,
+        versioned: true,
+      });
+    }
 
     const getSandboxSeedDataBucket = (sandboxConfig: EnvConfigSandbox) => {
       const seedBucketCfnName = "APISandboxSeedDataBucket";
@@ -297,6 +320,12 @@ export class APIStack extends Stack {
       outboundPatientDiscoveryLambda,
       outboundDocumentQueryLambda,
       outboundDocumentRetrievalLambda,
+      fhirToBundleLambda,
+      fhirConverterConnector: {
+        queue: fhirConverterQueue,
+        dlq: fhirConverterDLQ,
+        bucket: fhirConverterBucket,
+      },
     } = new LambdasNestedStack(this, "LambdasNestedStack", {
       config: props.config,
       vpc: this.vpc,
@@ -305,6 +334,21 @@ export class APIStack extends Stack {
       secrets,
       medicalDocumentsBucket,
       sandboxSeedDataBucket,
+      alarmAction: slackNotification?.alarmAction,
+      appConfigEnvVars: {
+        appId: appConfigAppId,
+        configId: appConfigConfigId,
+      },
+    });
+
+    const {
+      importFileLambda: patientImportLambda,
+      patientCreateLambda,
+      patientQueryLambda,
+    } = new PatientImportNestedStack(this, "PatientImportNestedStack", {
+      config: props.config,
+      lambdaLayers,
+      vpc: this.vpc,
       alarmAction: slackNotification?.alarmAction,
     });
 
@@ -352,29 +396,6 @@ export class APIStack extends Stack {
         slackNotification?.alarmAction
       );
     }
-
-    //-------------------------------------------
-    // FHIR CONNECTORS, initalize
-    //-------------------------------------------
-    const {
-      queue: fhirConverterQueue,
-      dlq: fhirConverterDLQ,
-      bucket: fhirConverterBucket,
-    } = fhirConverterConnector.createQueueAndBucket({
-      stack: this,
-      lambdaLayers,
-      envType: props.config.environmentType,
-      alarmSnsAction: slackNotification?.alarmAction,
-    });
-
-    const fhirServerQueue = fhirServerConnector.createConnector({
-      envType: props.config.environmentType,
-      stack: this,
-      vpc: this.vpc,
-      fhirConverterBucket: sandboxSeedDataBucket ?? fhirConverterBucket,
-      lambdaLayers,
-      alarmSnsAction: slackNotification?.alarmAction,
-    });
 
     let fhirToMedicalRecordLambda: Lambda | undefined = undefined;
     if (!isSandbox(props.config)) {
@@ -427,7 +448,6 @@ export class APIStack extends Stack {
       alarmAction: slackNotification?.alarmAction,
       dnsZones,
       fhirServerUrl: props.config.fhirServerUrl,
-      fhirServerQueueUrl: fhirServerQueue?.queueUrl,
       fhirConverterQueueUrl: fhirConverterQueue.queueUrl,
       fhirConverterServiceUrl: fhirConverter ? `http://${fhirConverter.address}` : undefined,
       cdaToVisualizationLambda,
@@ -435,10 +455,14 @@ export class APIStack extends Stack {
       outboundPatientDiscoveryLambda,
       outboundDocumentQueryLambda,
       outboundDocumentRetrievalLambda,
+      patientImportLambda,
       generalBucket,
+      conversionBucket: fhirConverterBucket,
       medicalDocumentsUploadBucket,
+      ehrResponsesBucket,
       fhirToMedicalRecordLambda,
       fhirToCdaConverterLambda,
+      fhirToBundleLambda,
       searchIngestionQueue: ccdaSearchQueue,
       searchEndpoint: ccdaSearchDomain.domainEndpoint,
       searchAuth: { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
@@ -508,34 +532,28 @@ export class APIStack extends Stack {
       queue: fhirConverterQueue,
       resource: apiService.service.taskDefinition.taskRole,
     });
-    fhirServerQueue &&
-      provideAccessToQueue({
-        accessType: "send",
-        queue: fhirServerQueue,
-        resource: apiService.service.taskDefinition.taskRole,
-      });
-    const fhirConverterLambda = fhirServerQueue?.queueUrl
-      ? fhirConverterConnector.createLambda({
-          envType: props.config.environmentType,
-          stack: this,
-          lambdaLayers,
-          vpc: this.vpc,
-          sourceQueue: fhirConverterQueue,
-          destinationQueue: fhirServerQueue,
-          dlq: fhirConverterDLQ,
-          fhirConverterBucket,
-          conversionResultQueueUrl: fhirServerQueue.queueUrl,
-          apiServiceDnsAddress: apiDirectUrl,
-          alarmSnsAction: slackNotification?.alarmAction,
-        })
-      : undefined;
+    const fhirConverterLambda = fhirConverterConnector.createLambda({
+      envType: props.config.environmentType,
+      stack: this,
+      lambdaLayers,
+      vpc: this.vpc,
+      sourceQueue: fhirConverterQueue,
+      dlq: fhirConverterDLQ,
+      fhirConverterBucket,
+      apiServiceDnsAddress: apiDirectUrl,
+      alarmSnsAction: slackNotification?.alarmAction,
+    });
 
     // Add ENV after the API service is created
     fhirToMedicalRecordLambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundPatientDiscoveryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
     outboundDocumentRetrievalLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    fhirToBundleLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    patientCreateLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
+    patientQueryLambda.addEnvironment("API_URL", `http://${apiDirectUrl}`);
 
+    // TODO move this to each place where it's used
     // Access grant for medical documents bucket
     sandboxSeedDataBucket &&
       sandboxSeedDataBucket.grantReadWrite(apiService.taskDefinition.taskRole);
@@ -1327,20 +1345,12 @@ export class APIStack extends Stack {
       alarmSnsAction: alarmAction,
     });
 
-    fhirToMedicalRecordLambda.role?.attachInlinePolicy(
-      new iam.Policy(this, "FhirLambdaPermissionsForAppConfig", {
-        statements: [
-          new iam.PolicyStatement({
-            actions: [
-              "appconfig:StartConfigurationSession",
-              "appconfig:GetLatestConfiguration",
-              "appconfig:GetConfiguration",
-            ],
-            resources: ["*"],
-          }),
-        ],
-      })
-    );
+    AppConfigUtils.allowReadConfig({
+      scope: this,
+      resourceName: "FhirToMrLambda",
+      resourceRole: fhirToMedicalRecordLambda.role,
+      appConfigResources: ["*"],
+    });
 
     medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambda);
 

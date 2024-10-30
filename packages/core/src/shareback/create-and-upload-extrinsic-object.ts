@@ -1,10 +1,10 @@
 import { DocumentReference, Organization } from "@medplum/fhirtypes";
 import { S3Utils } from "../external/aws/s3";
-import { createExtrinsicObjectXml } from "../external/carequality/dq/create-metadata-xml";
 import { createPatientUniqueId } from "../external/carequality/shared";
 import { isOrganization } from "../external/fhir/shared";
 import { out } from "../util/log";
 import { XML_APP_MIME_TYPE } from "../util/mime";
+import { createExtrinsicObjectXml } from "./metadata/create-metadata-xml";
 
 const { log } = out("Core Create and Upload Extrinsic Object");
 

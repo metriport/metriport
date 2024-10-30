@@ -1,7 +1,7 @@
-{{!-- 
-  // ------------------------------------------------------------------------------------------------- 
-  // Copyright (c) 2022-present Metriport Inc.   
-  //  
+{{!--
+  // -------------------------------------------------------------------------------------------------
+  // Copyright (c) 2022-present Metriport Inc.
+  //
   // Licensed under AGPLv3. See LICENSE in the repo root for license information.
   //  
   // This file incorporates work covered by the following copyright and  
@@ -77,13 +77,18 @@
                             "status":"generated",
                             "div":"<div xmlns=\"http://www.w3.org/1999/xhtml\">{{this.section.title._}}</div>",
                         }
-                    {{else if this.section.code.displayName}}                    
+                    {{else if this.section.code.displayName}}
                         "title":"{{this.section.code.displayName}}",
                         "text":
                         {
                             "status":"generated",
                             "div":"<div xmlns=\"http://www.w3.org/1999/xhtml\">{{this.section.code.displayName}}</div>",
                         }
+                    {{else}}
+                    "text": {
+                        "status": "generated",
+                        "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">unknown</div>"
+                    }
                     {{/if}}
                     "code":{{>DataType/CodeableConcept.hbs code=this.section.code}},
                     "mode":"snapshot",

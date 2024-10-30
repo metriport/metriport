@@ -1,9 +1,18 @@
-import { genderAtBirthSchema } from "@metriport/api-sdk";
+import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
+import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
+import { makePatientImportHandler } from "@metriport/core/command/patient-import/patient-import-factory";
+import { createPatientPayload } from "@metriport/core/command/patient-import/patient-import-shared";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { sleep, stringToBoolean } from "@metriport/shared";
+import {
+  internalSendConsolidatedSchema,
+  patientImportSchema,
+  sleep,
+  stringToBoolean,
+} from "@metriport/shared";
 import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -14,13 +23,19 @@ import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
-import { getConsolidated } from "../../command/medical/patient/consolidated-get";
+import {
+  getConsolidated,
+  getConsolidatedAndSendToCx,
+} from "../../command/medical/patient/consolidated-get";
+import { createCoverageAssessments } from "../../command/medical/patient/coverage-assessment-create";
+import { getCoverageAssessments } from "../../command/medical/patient/coverage-assessment-get";
+import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getPatientIds,
   getPatientOrFail,
-  getPatientStates,
   getPatients,
+  getPatientStates,
 } from "../../command/medical/patient/get-patient";
 import {
   PatientUpdateCmd,
@@ -46,6 +61,7 @@ import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-upda
 import { getCqOrgIdsToDenyOnCw } from "../../external/hie/cross-hie-ids";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../../external/hie/run-or-schedule-patient-discovery";
 import { PatientLoaderLocal } from "../../models/helpers/patient-loader-local";
+import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
 import { requestLogger } from "../helpers/request-logger";
@@ -62,11 +78,13 @@ import {
   getFromQueryAsArray,
   getFromQueryAsArrayOrFail,
   getFromQueryAsBoolean,
+  getFromQueryOrFail,
 } from "../util";
-import { PatientLinksDTO, dtoFromCW } from "./dtos/linkDTO";
+import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
+import { schemaCreateToPatientData } from "./schemas/patient";
 
 dayjs.extend(duration);
 
@@ -604,7 +622,7 @@ router.get(
       ? consolidationConversionTypeSchema.parse(typeRaw.toLowerCase())
       : undefined;
 
-    const patient = await getPatientOrFail({ cxId, id: patientId });
+    const patient = await getPatientOrFail({ id: patientId, cxId });
     const data = await getConsolidated({
       patient,
       documentIds,
@@ -752,6 +770,197 @@ router.post(
       requestId,
     });
     return res.status(status.OK).json({ requestId });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/patient/bulk/coverage-assessment
+ *
+ * return the coverage
+ * @param req.query.cxId The customer ID.
+ * @param req.params.id The patient ID.
+ * @param req.query.facilityId The facility ID for running the coverage assessment.
+ * @param req.query.dryrun Whether to simply validate or run the assessment (optional, defaults to false).
+ *
+ */
+router.post(
+  "/bulk/coverage-assessment",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const facilityId = getFrom("query").orFail("facilityId", req);
+    const dryrun = getFromQueryAsBoolean("dryrun", req) ?? false;
+    const payload = patientImportSchema.parse(req.body);
+
+    const facility = await getFacilityOrFail({ cxId, id: facilityId });
+    const patientCreates: PatientCreateCmd[] = payload.patients.map(patient => {
+      const payload = createPatientPayload(patient);
+      return {
+        cxId,
+        facilityId: facility.id,
+        ...payload,
+      };
+    });
+
+    if (dryrun) return res.sendStatus(status.OK);
+
+    createCoverageAssessments({
+      cxId,
+      facilityId,
+      patientCreates,
+    }).catch(processAsyncError("createCoverageAssessments"));
+
+    return res.sendStatus(status.OK);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/patient/bulk/coverage-assessment
+ *
+ * Returns the cx patients for a given facility used for internal scripts
+ * @param req.query.facilityId - The facility ID.
+ * @return list of patients.
+ */
+router.get(
+  "/bulk/coverage-assessment",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const facilityId = getFrom("query").orFail("facilityId", req);
+    const patients = await getPatients({ cxId, facilityId });
+    const patientsWithAssessments = await getCoverageAssessments({ cxId, patients });
+
+    const response = { patientsWithAssessments };
+    return res.status(status.OK).json(response);
+  })
+);
+
+/**
+ * POST /internal/patient/:id/consolidated
+ *
+ * Continues the process of consolidating a patient's data by sending the consolidated bundle to the customer.
+ *
+ * @param req.query.cxId The customer ID.
+ * @param req.params.id The patient ID.
+ * @param req.body The data to send to getConsolidatedAndSendToCx and S3 info about the bundle to be loaded.
+ * @see internalSendConsolidatedSchema on @metriport/shared
+ */
+router.post(
+  "/:id/consolidated",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const id = getFromParamsOrFail("id", req);
+    const patient = await getPatientOrFail({ id, cxId });
+    const {
+      requestId,
+      conversionType,
+      resources,
+      generateAiBrief,
+      dateFrom,
+      dateTo,
+      bundleLocation,
+      bundleFilename,
+    } = internalSendConsolidatedSchema.parse(req.body);
+
+    const bundle = await getConsolidatedSnapshotFromS3({
+      bundleLocation,
+      bundleFilename,
+    });
+
+    getConsolidatedAndSendToCx({
+      patient,
+      bundle,
+      requestId,
+      conversionType,
+      generateAiBrief,
+      resources,
+      dateFrom,
+      dateTo,
+    }).catch(
+      processAsyncError(
+        "POST /internal/patient/:id/consolidated, calling getConsolidatedAndSendToCx"
+      )
+    );
+    return res.sendStatus(status.OK);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/patient
+ *
+ * Creates the patient corresponding to the specified facility at the
+ * customer's organization if it doesn't exist already. This WILL NOT kickoff patient discovery by defaul.
+ *
+ * @param  req.query.facilityId The ID of the Facility the Patient should be associated with.
+ * @return The newly created patient.
+ */
+router.post(
+  "/",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const facilityId = getFromQueryOrFail("facilityId", req);
+    const rerunPdOnNewDemographics = stringToBoolean(
+      getFrom("query").optional("rerunPdOnNewDemographics", req)
+    );
+    const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
+    const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
+    const runPd = getFromQueryAsBoolean("runPd", req) ?? false;
+    const payload = patientCreateSchema.parse(req.body);
+
+    const patientCreate: PatientCreateCmd = {
+      ...schemaCreateToPatientData(payload),
+      cxId,
+      facilityId,
+    };
+
+    const patient = await createPatient({
+      patient: patientCreate,
+      runPd,
+      rerunPdOnNewDemographics,
+      forceCommonwell,
+      forceCarequality,
+    });
+
+    return res.status(status.CREATED).json(dtoFromModel(patient));
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/patient/import
+ *
+ * @param req.query.cxId The customer ID.
+ * @param req.params.id The patient ID.
+ * @param req.query.facilityId The facility ID for running the coverage assessment.
+ * @param req.query.jobId The job Id of the fle. TEMPORARY.
+ * @param req.query.rerunPdOnNewDemographics Optional. Indicates whether to use demo augmentation on this PD run.
+ * @param req.query.dryrun Whether to simply validate or run the assessment (optional, defaults to false).
+ *
+ */
+router.post(
+  "/import",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const facilityId = getFrom("query").orFail("facilityId", req);
+    const jobId = getFrom("query").orFail("jobId", req);
+    const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
+    const dryrun = getFromQueryAsBoolean("dryrun", req);
+
+    await getFacilityOrFail({ cxId, id: facilityId });
+
+    const patientImportConnector = makePatientImportHandler();
+    await patientImportConnector.startPatientImport({
+      cxId,
+      facilityId,
+      jobId,
+      processPatientImportLambda: Config.getPatientImportLambdaName(),
+      rerunPdOnNewDemographics,
+      dryrun,
+    });
+
+    return res.sendStatus(status.OK);
   })
 );
 

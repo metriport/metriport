@@ -4,15 +4,13 @@ import dayjs from "dayjs";
 import fs from "fs";
 import { formatDateToCdaTimestamp, formatDateToHumanReadableFormat } from "../../commons";
 
-export function makeBaseDomain() {
-  return {
-    id: faker.string.uuid(),
-  };
+export function makeBaseDomain(id = faker.string.uuid()) {
+  return { id };
 }
 
-export function makeSubjectReference() {
+export function makeSubjectReference(id: string = faker.string.uuid()) {
   return {
-    subject: { reference: `Patient/${faker.string.uuid()}` },
+    subject: { reference: `Patient/${id}` },
   };
 }
 

@@ -38,6 +38,9 @@ export class Config {
   static getSlackNotificationUrl(): string | undefined {
     return getEnvVar("SLACK_NOTIFICATION_URL");
   }
+  static getSlackSensitiveDataChannelUrl(): string | undefined {
+    return getEnvVar("SLACK_SENSITIVE_DATA_URL");
+  }
 
   static getAWSRegion(): string {
     return getEnvVarOrFail("AWS_REGION");
@@ -69,6 +72,9 @@ export class Config {
   static getMedicalDocumentsBucketName(): string {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
   }
+  static getCdaToFhirConversionBucketName(): string | undefined {
+    return getEnvVar("CONVERSION_RESULT_BUCKET_NAME");
+  }
 
   static getCQOrgPrivateKey(): string {
     return getEnvVarOrFail("CQ_ORG_PRIVATE_KEY");
@@ -91,6 +97,10 @@ export class Config {
   static getApiUrl(): string {
     return getEnvVarOrFail("API_URL");
   }
+  static getApiLoadBalancerAddress(): string {
+    return getEnvVarOrFail("API_LB_ADDRESS");
+  }
+
   static getPostHogApiKey(): string | undefined {
     return getEnvVar("POST_HOG_API_KEY_SECRET");
   }
@@ -107,6 +117,10 @@ export class Config {
     return getEnvVar("IHE_PARSED_RESPONSES_BUCKET_NAME");
   }
 
+  static getFHIRtoBundleLambdaName(): string {
+    return getEnvVarOrFail("FHIR_TO_BUNDLE_LAMBDA_NAME");
+  }
+
   static getBedrockRegion(): string | undefined {
     return getEnvVar("BEDROCK_REGION");
   }
@@ -117,5 +131,19 @@ export class Config {
 
   static getAiBriefModelId(): string | undefined {
     return getEnvVar("AI_BRIEF_MODEL_ID");
+  }
+  static getAppConfigAppId(): string {
+    return getEnvVarOrFail("APPCONFIG_APPLICATION_ID");
+  }
+  static getAppConfigConfigId(): string {
+    return getEnvVarOrFail("APPCONFIG_CONFIGURATION_ID");
+  }
+
+  static getEhrResponsesBucketName(): string | undefined {
+    return getEnvVar("EHR_RESPONSES_BUCKET_NAME");
+  }
+
+  static getPatientImportBucket(): string | undefined {
+    return getEnvVar("PATIENT_IMPORT_BUCKET_NAME");
   }
 }

@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { ScheduledPatientDiscovery } from "@metriport/core/domain/patient-discovery";
-import { PatientModel } from "../../../models/medical/patient";
-import { CQDirectoryEntryModel } from "../../carequality/models/cq-directory";
+import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { makePatient, makePatientData } from "../../../domain/medical/__tests__/patient";
+import { PatientModel } from "../../../models/medical/patient";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
+import { CQDirectoryEntryModel } from "../../carequality/models/cq-directory";
 import { PatientDataCommonwell } from "../../commonwell/patient-shared";
-import { schedulePatientDiscovery } from "../schedule-patient-discovery";
-import { resetScheduledPatientDiscovery } from "../reset-scheduled-patient-discovery-request";
 import { getCqOrgIdsToDenyOnCw } from "../cross-hie-ids";
+import { resetScheduledPatientDiscovery } from "../reset-scheduled-patient-discovery-request";
+import { schedulePatientDiscovery } from "../schedule-patient-discovery";
 
 let patientModel_findOne: jest.SpyInstance;
 let patientModel_update: jest.SpyInstance;

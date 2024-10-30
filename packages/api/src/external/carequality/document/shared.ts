@@ -1,6 +1,6 @@
 import { DocumentReferenceContent, Organization, Resource } from "@medplum/fhirtypes";
 import { cqExtension } from "@metriport/core/external/carequality/extension";
-import { toFHIRSubject } from "@metriport/core/external/fhir/patient/index";
+import { toFHIRSubject } from "@metriport/core/external/fhir/patient/conversion";
 import { MetriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import {
   DocumentReference,

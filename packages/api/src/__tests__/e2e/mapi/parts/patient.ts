@@ -1,8 +1,9 @@
 import { faker } from "@faker-js/faker";
 import { Address, Patient as FhirPatient } from "@medplum/fhirtypes";
-import { PatientCreate, PatientDTO, USState } from "@metriport/api-sdk";
+import { USState } from "@metriport/shared";
+import { PatientCreate, PatientDTO } from "@metriport/api-sdk";
 import { Patient } from "@metriport/core/domain/patient";
-import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/index";
+import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/conversion";
 import { PatientWithId } from "@metriport/core/external/fhir/__tests__/patient";
 
 export const createPatient: PatientCreate = {

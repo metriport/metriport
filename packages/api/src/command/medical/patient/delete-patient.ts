@@ -7,6 +7,7 @@ import { validateVersionForUpdate } from "../../../models/_default";
 import { capture } from "../../../shared/notifications";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getPatientOrFail } from "./get-patient";
+import { deleteAllPatientMappings } from "../../mapping/patient";
 
 const deleteContext = "cw.patient.delete";
 
@@ -39,6 +40,7 @@ export const deletePatient = async (patientDelete: PatientDeleteCmd): Promise<vo
       }),
       fhirApi.deleteResource("Patient", patient.id).catch(processAsyncError(deleteContext)),
       cqCommands.patient.remove(patient).catch(processAsyncError(deleteContext)),
+      deleteAllPatientMappings({ cxId, patientId: id }),
     ]);
     await patient.destroy();
   } catch (error) {

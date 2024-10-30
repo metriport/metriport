@@ -6,7 +6,6 @@
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
     "allowJs": true,
-    "checkJs": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
     "sourceMap": true /* Create source map files for emitted JavaScript files. */,
