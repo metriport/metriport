@@ -41,7 +41,7 @@ import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as documentUploader from "./api-stack/document-upload";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
-import { createTermServerService } from "./api-stack/terminology-server-service";
+import { TerminologyServerNestedStack } from "./api-stack/terminology-server-service";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
@@ -331,12 +331,13 @@ export class APIStack extends Stack {
     // Terminology Server Service
     //-------------------------------------------
     if (!isSandbox(props.config)) {
-      createTermServerService(
-        this,
-        { ...props, generalBucket },
-        this.vpc,
-        slackNotification?.alarmAction
-      );
+      new TerminologyServerNestedStack(this, "TerminologyServerNestedStack", {
+        config: props.config,
+        version: props.version,
+        generalBucket: generalBucket,
+        vpc: this.vpc,
+        alarmAction: slackNotification?.alarmAction,
+      });
     }
 
     //-------------------------------------------

@@ -1,4 +1,4 @@
-import { Duration, StackProps } from "aws-cdk-lib";
+import { Duration, NestedStackProps } from "aws-cdk-lib";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -33,10 +33,33 @@ export function settings() {
   };
 }
 
-interface TermServerServiceProps extends StackProps {
+interface TerminologyServerNestedStackProps extends NestedStackProps {
   config: EnvConfig;
   version: string | undefined;
   generalBucket: Bucket;
+  vpc: ec2.IVpc;
+  alarmAction: SnsAction | undefined;
+}
+
+export class TerminologyServerNestedStack extends NestedStack {
+  public readonly serviceAddress: string;
+
+  constructor(scope: Construct, id: string, props: TerminologyServerNestedStackProps) {
+    super(scope, id, props);
+
+    const { address } = createTermServerService(
+      this,
+      {
+        config: props.config,
+        version: props.version,
+        generalBucket: props.generalBucket,
+      },
+      props.vpc,
+      props.alarmAction
+    );
+
+    this.serviceAddress = address;
+  }
 }
 
 export function createTermServerService(
