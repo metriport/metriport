@@ -1,0 +1,13 @@
+{
+  "name": "metriport-github-actions-bots",
+  "version": "1.0.0",
+  "private": "true",
+  "scripts": {
+    "clean": "rimraf node_modules",
+    "deepclean": "npm run clean"
+  },
+  "author": "metriport",
+  "dependencies": {
+    "@actions/github": "^6.0.0"
+  }
+}
