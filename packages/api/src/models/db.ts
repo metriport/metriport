@@ -81,9 +81,11 @@ async function initDB(): Promise<void> {
   const logDBOperations = Config.isCloudEnv() ? false : true;
   const dbPoolSettings = getDbPoolSettings();
 
-  docTableNames = {
-    token: tokenTableName,
-  };
+  if (tokenTableName) {
+    docTableNames = {
+      token: tokenTableName,
+    };
+  }
 
   // get database creds
   const dbCreds = JSON.parse(sqlDBCreds);
