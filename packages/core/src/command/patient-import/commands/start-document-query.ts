@@ -26,7 +26,7 @@ export async function startDocumentQuery({
       disableWebhooks
         ? {
             metadata: {
-              disableWHFlag: true,
+              disableWHFlag: "true",
             },
           }
         : {}
