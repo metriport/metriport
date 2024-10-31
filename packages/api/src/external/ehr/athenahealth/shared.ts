@@ -4,7 +4,7 @@ import {
   normalizeEmail,
   normalizePhoneNumber,
   normalizeUSStateForAddress,
-  normalizeZipCode,
+  normalizeZipCodeNew,
 } from "@metriport/shared";
 import { PatientResource } from "@metriport/shared/interface/external/athenahealth/patient";
 
@@ -33,7 +33,7 @@ export function createMetriportAddresses(patient: PatientResource): Address[] {
       addressLine2: address.line.length > 1 ? address.line.slice(1).join(" ") : undefined,
       city: address.city,
       state: normalizeUSStateForAddress(address.state),
-      zip: normalizeZipCode(address.postalCode),
+      zip: normalizeZipCodeNew(address.postalCode),
       country: address.country,
     };
   });
