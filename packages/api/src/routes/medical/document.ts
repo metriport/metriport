@@ -45,6 +45,8 @@ const getDocSchema = z.object({
  *
  * Lists all Documents that can be retrieved for a Patient.
  *
+ * USED WITHIN EHR INTEGRATION.
+ *
  * @param req.query.patientId Patient ID for which to list documents.
  * @param req.query.dateFrom Optional start date that docs will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that docs will be filtered by (inclusive).
@@ -80,6 +82,8 @@ router.get(
  *
  * Returns the document query status for the specified patient.
  *
+ * USED WITHIN EHR INTEGRATION.
+ *
  * @param req.query.patientId Patient ID for which to retrieve document query status.
  * @return The status of document querying across HIEs.
  */
@@ -97,6 +101,8 @@ router.get(
  * POST /document/query
  *
  * Triggers a document query for the specified patient across HIEs.
+ *
+ * USED WITHIN EHR INTEGRATION.
  *
  * @param req.query.patientId Patient ID for which to retrieve document metadata.
  * @param req.query.facilityId The facility providing NPI for the document query.
@@ -179,6 +185,8 @@ router.get(
  * GET /document/download-url
  *
  * Fetches the document from S3 and sends a presigned URL
+ *
+ * USED WITHIN EHR INTEGRATION.
  *
  * @param req.query.fileName The file name of the document in s3.
  * @param req.query.conversionType The doc type to convert to.
