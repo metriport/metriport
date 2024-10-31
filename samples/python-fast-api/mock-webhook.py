@@ -16,19 +16,18 @@ WH_KEY = gcp_instance.get_secret("METRIPORT_WH_KEY")
 PATIENT_ID = gcp_instance.get_secret("METRIPORT_PATIENT_ID")
 
 # Function to verify webhook signature
-def verify_webhook_signature(key: str, raw_body: str, signature: str) -> bool:
+def verify_webhook_signature(key: str, body: str, signature: str) -> bool:
     """
     Verify the HMAC signature for a given message and key.
 
-    :param key: The secret key (string).
-    :param message: The message to be authenticated (raw string).
-    :param signature: The provided HMAC signature to verify against (string).
-    :param digestmod: The hash function to use (defaults to hashlib.sha256).
+    :param key: your webhook key (string).
+    :param body: the raw body of the webhook request (string).
+    :param signature: the signature obtained from the webhook request header (string).
     :return: True if signature is verified, False otherwise.
     """
 
     key_bytes = key.encode('utf-8')
-    body_bytes = raw_body.encode('utf-8')
+    body_bytes = body.encode('utf-8')
     
     hmac_obj = hmac.new(key_bytes, body_bytes, hashlib.sha256)
     computed_signature = hmac_obj.hexdigest()

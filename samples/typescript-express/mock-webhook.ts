@@ -89,6 +89,7 @@ app.post("/", raw({ type: "*/*" }), async (req: Request, res: Response) => {
     const patient = payload.patients[0];
 
     if (patient.status === "completed") {
+      // Process/store the consolidated data
       console.log(JSON.stringify(payload, undefined, 2));
     } else {
       console.log("Error consolidating data");
