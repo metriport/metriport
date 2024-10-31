@@ -21,7 +21,7 @@ import {
   FeedType,
   EventType,
 } from "@metriport/shared";
-import { errorToString, NotFoundError } from "@metriport/shared";
+import { errorToString, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { S3Utils } from "../aws/s3";
 import { out } from "../../util/log";
@@ -201,7 +201,9 @@ class AthenaHealthApi {
       }
       const patient = patientResourceSchema.safeParse(response.data);
       if (!patient.success) {
-        capture.message(`Patient could not be parsed @ AthenaHealth`, {
+        const msg = "Patient from AthenaHealth could not be parsed";
+        log(msg);
+        capture.message(msg, {
           extra: {
             url: patientUrl,
             cxId,
@@ -273,7 +275,9 @@ class AthenaHealthApi {
       }
       const searchSet = patientSearchResourceSchema.safeParse(response.data);
       if (!searchSet.success) {
-        capture.message(`Patient search set could not be parsed @ AthenaHealth`, {
+        const msg = "Patient search set from AthenaHealth could not be parsed";
+        log(msg);
+        capture.message(msg, {
           extra: {
             url: patientSearchUrl,
             cxId,
@@ -286,7 +290,7 @@ class AthenaHealthApi {
         return undefined;
       }
       const entry = searchSet.data.entry;
-      if (entry.length > 1) throw new NotFoundError("More than one AthenaHealth patient found");
+      if (entry.length > 1) throw new MetriportError("More than one AthenaHealth patient found");
       return entry[0]?.resource;
     } catch (error) {
       const msg = `Failure while searching patient @ AthenaHealth`;
