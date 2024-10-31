@@ -2,11 +2,10 @@ import {
   stripNonNumericChars,
   geoCoordinateSchema,
   usStateForAddressSchema,
+  zipLength,
 } from "@metriport/shared";
 import { z } from "zod";
 import { defaultOptionalString, defaultString } from "../../../shared";
-
-const zipLength = 5;
 
 export const addressSchema = z.object({
   addressLine1: defaultString.min(1, { message: "Address line must be specified." }),

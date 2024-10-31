@@ -1,20 +1,28 @@
 import { z } from "zod";
 import { BadRequestError } from "../../error/bad-request";
 
-export function normalizeTerritorySafe(territory: string): USTerritory | undefined {
-  const trimmedTerritory = territory.trim();
+function noramlizeTerritoryBase(territory: string): string {
+  return territory.trim();
+}
+
+export function normalizeTerritorySafe(
+  territory: string,
+  normalizeBase: (territory: string) => string = noramlizeTerritoryBase
+): USTerritory | undefined {
+  const baseTerritory = normalizeBase(territory);
   const keyFromEntries = Object.entries(territories).find(
     ([key, value]) =>
-      key.toLowerCase() === trimmedTerritory.toLowerCase() ||
-      value.toLowerCase() === trimmedTerritory.toLowerCase()
+      key.toLowerCase() === baseTerritory.toLowerCase() ||
+      value.toLowerCase() === baseTerritory.toLowerCase()
   );
   return keyFromEntries?.[0] as USTerritory | undefined;
 }
 
 export function normalizeTerritory(territory: string): USTerritory {
   const territoryOrUndefined = normalizeTerritorySafe(territory);
-  if (!territoryOrUndefined)
+  if (!territoryOrUndefined) {
     throw new BadRequestError("Invalid territory", undefined, { territory });
+  }
   return territoryOrUndefined;
 }
 

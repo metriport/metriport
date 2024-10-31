@@ -7,9 +7,7 @@ import { CQLink, CQData, CQPatientData } from "../cq-patient-data";
 import { makeAddressStrict } from "../../../domain/medical/__tests__/location-address";
 import {
   normalizeAndStringifyNames,
-  normalizeAddress,
-  stringifyAddress,
-  normalizeEmail,
+  normalizeAndStringfyAddress,
 } from "../../../domain/medical/patient-demographics";
 
 export function makeCqDataLink(): CQLink {
@@ -53,32 +51,27 @@ export function makeCqDataLink(): CQLink {
 }
 
 export function makeLinksHistory(): LinkDemographicsHistory {
+  const nameOrUndefined = normalizeAndStringifyNames({
+    firstName: faker.person.firstName(),
+    lastName: faker.person.lastName(),
+  });
   const address = makeAddressStrict();
-  const email = normalizeEmail(faker.internet.email()) ?? "test@test.com";
+  const addressOrUndefined = normalizeAndStringfyAddress({
+    line: [address.addressLine1],
+    city: address.city,
+    state: address.state,
+    zip: address.zip,
+    country: address.country,
+  });
   return {
     [faker.string.uuid()]: [
       {
         dob: dayjs(faker.date.past()).format(ISO_DATE),
         gender: "male",
-        names: [
-          normalizeAndStringifyNames({
-            firstName: faker.person.firstName(),
-            lastName: faker.person.lastName(),
-          }),
-        ],
-        addresses: [
-          stringifyAddress(
-            normalizeAddress({
-              line: [address.addressLine1],
-              city: address.city,
-              state: address.state,
-              zip: address.zip,
-              country: address.country,
-            })
-          ),
-        ],
+        names: nameOrUndefined ? [nameOrUndefined] : [],
+        addresses: addressOrUndefined ? [addressOrUndefined] : [],
         telephoneNumbers: [faker.phone.number("##########")],
-        emails: [email],
+        emails: [faker.internet.email().toLowerCase()],
         driversLicenses: [], // TODO
         ssns: [faker.phone.number("#########")],
       },

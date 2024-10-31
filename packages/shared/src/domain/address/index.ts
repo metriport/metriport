@@ -5,6 +5,7 @@ import { normalizeStateSafe, USState, usStateSchema } from "./state";
 import { normalizeTerritorySafe, USTerritory, usTerritorySchema } from "./territory";
 import { zipSchema } from "./zip";
 import { geoCoordinateSchema } from "./geo";
+import { countrySchema } from "./country";
 
 export type USStateForAddress = USState | USTerritory;
 
@@ -31,5 +32,5 @@ export const addressSchema = z.object({
   state: usStateForAddressSchema,
   zip: zipSchema,
   coordinates: geoCoordinateSchema.optional(),
-  country: z.literal("USA"),
+  country: countrySchema,
 });

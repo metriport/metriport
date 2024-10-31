@@ -5,7 +5,7 @@ import { PatientData, PersonalIdentifier } from "../domain/patient";
 import { normalizePatient } from "./normalize-patient";
 import { PatientMPI } from "./shared";
 import { out } from "../util/log";
-import { splitName } from "./normalize-patient";
+import { splitName, splitDob } from "../domain/patient";
 
 const { log } = out(`Patient Matching`);
 
@@ -295,8 +295,4 @@ export function epicMatchingAlgorithm(
     );
   }
   return match;
-}
-
-function splitDob(dob: string): string[] {
-  return dob.split(/[-/]/);
 }

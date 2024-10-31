@@ -1,62 +1,70 @@
-import { normalizePhoneNumberSafe } from "@metriport/shared";
+import {
+  normalizeDateSafe,
+  normalizeGenderSafe,
+  normalizeEmailSafe,
+  normalizePhoneSafe,
+  normalizeSsnSafe,
+} from "@metriport/shared";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { PatientResource } from "@metriport/ihe-gateway-sdk";
 import {
-  removeInvalidArrayValues,
-  normalizeDob,
   normalizeAndStringifyNames,
-  normalizeAddress,
-  stringifyAddress,
-  normalizeEmail,
+  normalizeAndStringfyAddress,
 } from "../../domain/medical/patient-demographics";
+import { ssnSystemCode } from "@metriport/core/domain/oid";
+import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/conversion";
 import { CQLink } from "./cq-patient-data";
 
 export function patientResourceToNormalizedLinkDemographics(
   patientResource: PatientResource
 ): LinkDemographics {
-  const dob = normalizeDob(patientResource.birthDate);
-  const gender = patientResource.gender;
+  const dob = normalizeDateSafe(patientResource.birthDate);
+  const gender = mapMetriportGenderToFhirGender(normalizeGenderSafe(patientResource.gender));
   const names = patientResource.name.flatMap(name => {
-    return name.given.map(firstName => {
-      return normalizeAndStringifyNames({ firstName, lastName: name.family });
+    const lastName = name.family;
+    return name.given.flatMap(firstName => {
+      const name = normalizeAndStringifyNames({ firstName, lastName });
+      if (!name) return [];
+      return [name];
     });
   });
-  const addresses = (patientResource.address ?? []).map(a => {
-    return stringifyAddress(
-      normalizeAddress({
-        line: a.line,
-        city: a.city,
-        state: a.state,
-        zip: a.postalCode,
-        country: a.country,
-      })
-    );
+  const addresses = (patientResource.address ?? []).flatMap(a => {
+    const address = normalizeAndStringfyAddress({
+      line: a.line,
+      city: a.city,
+      state: a.state,
+      zip: a.postalCode,
+      country: a.country,
+    });
+    if (!address) return [];
+    return [address];
   });
   const telephoneNumbers = (patientResource.telecom ?? []).flatMap(tc => {
     if (!tc.value) return [];
-    if (tc.system === "phone" || !tc.value.includes("@")) {
-      const phone = normalizePhoneNumberSafe(tc.value);
-      if (!phone) return [];
-      return [phone];
-    }
-    return [];
+    if (tc.system !== "phone" && tc.value.includes("@")) return [];
+    const phone = normalizePhoneSafe(tc.value);
+    if (!phone) return [];
+    return [phone];
   });
   const emails = (patientResource.telecom ?? []).flatMap(tc => {
     if (!tc.value) return [];
-    if (tc.system === "email" || tc.value.includes("@")) {
-      const email = normalizeEmail(tc.value);
-      if (!email) return [];
-      return [email];
-    }
-    return [];
+    if (tc.system !== "email" && !tc.value.includes("@")) return [];
+    const email = normalizeEmailSafe(tc.value);
+    if (!email) return [];
+    return [email];
   });
   /* TODO
-  const driversLicenses = (patientResource.personalIdentifiers ?? []).flatMap(p => {
-  });
-  const ssns = (ppatientResource.personalIdentifiers ?? []).flatMap(p => {
+  const driversLicenses = (patientResource.identifiers ?? []).flatMap(p => {
   });
   */
-  return removeInvalidArrayValues({
+  const ssns = (patientResource.identifier ?? []).flatMap(id => {
+    if (!id.value) return [];
+    if (id.system !== ssnSystemCode) return [];
+    const ssn = normalizeSsnSafe(id.value);
+    if (!ssn) return [];
+    return [ssn];
+  });
+  return {
     dob,
     gender,
     names,
@@ -64,8 +72,8 @@ export function patientResourceToNormalizedLinkDemographics(
     telephoneNumbers,
     emails,
     driversLicenses: [],
-    ssns: [],
-  });
+    ssns,
+  };
 }
 
 export function getPatientResources(linkResults: CQLink[]): PatientResource[] {

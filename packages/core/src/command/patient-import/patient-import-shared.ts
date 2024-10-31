@@ -1,14 +1,17 @@
 import {
-  normalizeDate,
-  normalizeEmailStrict,
-  normalizeExternalId,
-  normalizeGender,
-  normalizePhoneNumberStrict,
-  normalizeUSStateForAddress,
-  normalizeZipCodeNew,
-  PatientImportPatient,
   toTitleCase,
+  PatientImportPatient,
+  normalizeNonEmptyString,
+  normalizeDate,
+  normalizeGender,
+  normalizePhone,
+  normalizeEmail,
+  normalizeUSStateForAddress,
+  normalizeZipCode,
+  normalizedCountryUsa,
+  normalizeExternalId,
 } from "@metriport/shared";
+import { validateIsPastOrPresent } from "@metriport/shared/common/date";
 import { PatientPayload } from "./patient-import";
 
 const globalPrefix = "patient-import";
@@ -122,28 +125,30 @@ export function createObjectFromCsv({
 }
 
 export function createPatientPayload(patient: PatientImportPatient): PatientPayload {
-  const phone1 = patient.phone1 ? normalizePhoneNumberStrict(patient.phone1) : undefined;
-  const email1 = patient.email1 ? normalizeEmailStrict(patient.email1) : undefined;
-  const phone2 = patient.phone2 ? normalizePhoneNumberStrict(patient.phone2) : undefined;
-  const email2 = patient.email2 ? normalizeEmailStrict(patient.email2) : undefined;
+  const phone1 = patient.phone1 ? normalizePhone(patient.phone1) : undefined;
+  const email1 = patient.email1 ? normalizeEmail(patient.email1) : undefined;
+  const phone2 = patient.phone2 ? normalizePhone(patient.phone2) : undefined;
+  const email2 = patient.email2 ? normalizeEmail(patient.email2) : undefined;
   const contact1 = phone1 || email1 ? { phone: phone1, email: email1 } : undefined;
   const contact2 = phone2 || email2 ? { phone: phone2, email: email2 } : undefined;
   const contact = [contact1, contact2].flatMap(c => c ?? []);
   const externalId = patient.externalid ? normalizeExternalId(patient.externalid) : undefined;
   return {
     externalId,
-    firstName: toTitleCase(patient.firstname),
-    lastName: toTitleCase(patient.lastname),
-    dob: normalizeDate(patient.dob),
+    firstName: normalizeNonEmptyString(patient.firstname, toTitleCase),
+    lastName: normalizeNonEmptyString(patient.lastname, toTitleCase),
+    dob: normalizeDate(patient.dob, validateIsPastOrPresent),
     genderAtBirth: normalizeGender(patient.gender),
     address: [
       {
-        addressLine1: toTitleCase(patient.addressline1),
-        ...(patient.addressline2 ? { addressLine2: toTitleCase(patient.addressline2) } : undefined),
-        city: toTitleCase(patient.city),
+        addressLine1: normalizeNonEmptyString(patient.addressline1, toTitleCase),
+        ...(patient.addressline2
+          ? { addressLine2: normalizeNonEmptyString(patient.addressline2, toTitleCase) }
+          : undefined),
+        city: normalizeNonEmptyString(patient.city, toTitleCase),
         state: normalizeUSStateForAddress(patient.state),
-        zip: normalizeZipCodeNew(patient.zip),
-        country: "USA",
+        zip: normalizeZipCode(patient.zip),
+        country: normalizedCountryUsa,
       },
     ],
     contact,

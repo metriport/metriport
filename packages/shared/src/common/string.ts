@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { BadRequestError } from "../error/bad-request";
 
 export function limitStringLength<T extends string | undefined>(
   value: T,
@@ -17,21 +18,44 @@ export function stripNonNumericChars(str: string): string {
   return str.trim().replace(/\D/g, "");
 }
 
-export function normalizeNonEmptyString(str: string): string {
-  const stringOrUndefined = normalizeNonEmptyStringSafe(str);
-  if (!stringOrUndefined) throw new Error("Invalid string");
+export function stripPeriods(str: string): string {
+  return str.trim().replace(/\./g, "");
+}
+
+function noramlizeStringBase(str: string): string {
+  return str.trim();
+}
+
+export function normalizeNonEmptyStringSafe(
+  str: string,
+  applyCase: ((str: string) => string) | undefined = undefined,
+  normalizeBase: (str: string) => string = noramlizeStringBase
+): string | undefined {
+  const baseString = normalizeBase(str);
+  const casedString = applyCase ? applyCase(baseString) : baseString;
+  if (casedString === "") return undefined;
+  return casedString;
+}
+
+export function normalizeNonEmptyString(
+  str: string,
+  applyCase: ((str: string) => string) | undefined = undefined
+): string {
+  const stringOrUndefined = normalizeNonEmptyStringSafe(str, applyCase);
+  if (!stringOrUndefined) {
+    throw new BadRequestError("Invalid string", undefined, { str });
+  }
   return stringOrUndefined;
 }
 
-export function normalizeNonEmptyStringSafe(str: string): string | undefined {
-  const trimmedString = str.trim();
-  if (trimmedString === "") return undefined;
-  return trimmedString;
-}
-
-export function createNonEmptryStringSchema(param: string): z.ZodSchema {
+export function createNonEmptryStringSchema(
+  paramTitle: string,
+  applyCase: ((str: string) => string) | undefined = undefined
+): z.ZodSchema {
   return z
     .string()
-    .refine(normalizeNonEmptyStringSafe, { message: `Invalid ${param}` })
-    .transform(str => normalizeNonEmptyString(str));
+    .refine(str => normalizeNonEmptyStringSafe(str, applyCase), {
+      message: `Invalid ${paramTitle}`,
+    })
+    .transform(str => normalizeNonEmptyString(str, applyCase));
 }

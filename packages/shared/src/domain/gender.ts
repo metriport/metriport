@@ -1,16 +1,24 @@
 import { z } from "zod";
+import { BadRequestError } from "../error/bad-request";
 
 export type GenderAtBirth = "F" | "M" | "O" | "U";
 
-export function normalizeGenderSafe(gender: string): GenderAtBirth | undefined {
-  const lowerGender = gender.toLowerCase().trim();
-  if (lowerGender === "male" || lowerGender === "m") {
+function noramlizeGenderBase(gender: string): string {
+  return gender.toLowerCase().trim();
+}
+
+export function normalizeGenderSafe(
+  gender: string,
+  normalizeBase: (gender: string) => string = noramlizeGenderBase
+): GenderAtBirth | undefined {
+  const baseGender = normalizeBase(gender);
+  if (baseGender === "male" || baseGender === "m") {
     return "M";
-  } else if (lowerGender === "female" || lowerGender === "f") {
+  } else if (baseGender === "female" || baseGender === "f") {
     return "F";
-  } else if (lowerGender === "other" || lowerGender === "un" || lowerGender === "o") {
+  } else if (baseGender === "other" || baseGender === "un" || baseGender === "o") {
     return "O";
-  } else if (lowerGender === "unknown" || lowerGender === "unk" || lowerGender === "u") {
+  } else if (baseGender === "unknown" || baseGender === "unk" || baseGender === "u") {
     return "U";
   }
   return undefined;
@@ -18,7 +26,9 @@ export function normalizeGenderSafe(gender: string): GenderAtBirth | undefined {
 
 export function normalizeGender(gender: string): GenderAtBirth {
   const genderOrUndefined = normalizeGenderSafe(gender);
-  if (!genderOrUndefined) throw new Error("Invalid gender");
+  if (!genderOrUndefined) {
+    throw new BadRequestError("Invalid gender", undefined, { gender });
+  }
   return genderOrUndefined;
 }
 
