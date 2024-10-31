@@ -195,12 +195,12 @@ export async function getCqOrg(
   cq: CarequalityManagementAPI,
   oid: string
 ): Promise<CQOrganization | undefined> {
-  const { log } = out(`CQ doesOrganizationExistInCQ - CQ Org OID ${oid}`);
+  const { log } = out(`CQ getCqOrg - CQ Org OID ${oid}`);
 
   try {
-    const orgExistsAction = await cq.listOrganizations({ oid, active: true });
+    const orgExistsActive = await cq.listOrganizations({ oid, active: true });
     const orgExistsInActive = await cq.listOrganizations({ oid, active: false });
-    const orgs = [...orgExistsAction, ...orgExistsInActive];
+    const orgs = [...orgExistsActive, ...orgExistsInActive];
     if (orgs.length > 1) {
       capture.message("More than one organization with the same OID found in the CQ directory", {
         extra: {
