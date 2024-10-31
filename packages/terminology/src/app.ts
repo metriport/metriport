@@ -5,7 +5,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import express from "express";
 import { fhirRouter } from "./router";
-import { initTermServer } from "./initTermServer";
+import { initTermServer } from "./init-term-server";
 
 dayjs.extend(duration);
 

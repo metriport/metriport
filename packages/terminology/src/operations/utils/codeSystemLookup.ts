@@ -1,5 +1,5 @@
 import { CodeSystem } from "@medplum/fhirtypes";
-import { getTermServerClient } from "../../initTermServer";
+import { getTermServerClient } from "../../init-term-server";
 
 export const parentProperty = "http://hl7.org/fhir/concept-properties#parent";
 export const childProperty = "http://hl7.org/fhir/concept-properties#child";

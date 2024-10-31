@@ -4,7 +4,7 @@ import { normalizeOperationOutcome, badRequest, TypedValue, notFound, append } f
 import { codeLookupOperationDefinition } from "./definitions/codeLookupOperation";
 import { parseInputParameters } from "./utils/parameters";
 import { findCodeSystemResource } from "./utils/codeSystemLookup";
-import { getTermServerClient } from "../initTermServer";
+import { getTermServerClient } from "../init-term-server";
 
 const operation: OperationDefinition = codeLookupOperationDefinition;
 

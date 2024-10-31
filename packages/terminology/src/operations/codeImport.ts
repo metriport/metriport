@@ -2,7 +2,7 @@ import { FhirRequest, FhirResponse } from "@medplum/fhir-router";
 import { OperationDefinition, Coding, CodeSystem } from "@medplum/fhirtypes";
 import { OperationOutcomeError, allOk, badRequest, normalizeOperationOutcome } from "@medplum/core";
 import { v4 as uuidv4 } from "uuid";
-import { getTermServerClient } from "../initTermServer";
+import { getTermServerClient } from "../init-term-server";
 import { parseInputParameters } from "./utils/parameters";
 import { findCodeSystemResource, parentProperty } from "./utils/codeSystemLookup";
 

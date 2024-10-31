@@ -3,7 +3,7 @@ import { ConceptMap } from "@medplum/fhirtypes";
 import { normalizeOperationOutcome } from "@medplum/core";
 import { v4 as uuidv4 } from "uuid";
 
-import { getTermServerClient } from "../initTermServer";
+import { getTermServerClient } from "../init-term-server";
 
 function generateReverseConceptMaps(conceptMap: ConceptMap): ConceptMap[] {
   const reverseMaps: ConceptMap[] = [];

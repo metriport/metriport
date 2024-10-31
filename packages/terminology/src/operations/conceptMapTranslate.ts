@@ -3,7 +3,7 @@ import { OperationDefinition, ConceptMap } from "@medplum/fhirtypes";
 import { ConceptMapTranslateParameters, normalizeOperationOutcome } from "@medplum/core";
 import { conceptMapTranslateOperationDefinition } from "./definitions/conceptMapTranslate";
 import { parseInputParameters } from "./utils/parameters";
-import { getTermServerClient } from "../initTermServer";
+import { getTermServerClient } from "../init-term-server";
 
 const operation: OperationDefinition = conceptMapTranslateOperationDefinition;
 
