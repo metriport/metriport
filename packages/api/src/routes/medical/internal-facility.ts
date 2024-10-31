@@ -59,10 +59,8 @@ router.put(
       cwApproved: facilityDetails.cwApproved,
     };
     let facility: Facility;
-    let facilityCurrentActive = false;
     if (facilityDetails.id) {
-      const currentFacility = await getFacilityOrFail({ cxId, id: facilityDetails.id });
-      facilityCurrentActive = currentFacility.cqActive;
+      await getFacilityOrFail({ cxId, id: facilityDetails.id });
       facility = await updateFacility({ id: facilityDetails.id, ...facilityCreate });
     } else {
       facility = await createFacility(facilityCreate);
@@ -75,7 +73,6 @@ router.put(
       createOrUpdateFacilityInCq({
         cxId,
         facility,
-        facilityCurrentActive,
         cxOrgName: org.data.name,
         cxOrgBizType: org.type,
         cqOboOid: facilityDetails.cqOboOid,

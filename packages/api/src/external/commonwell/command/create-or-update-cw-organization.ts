@@ -38,6 +38,15 @@ export async function getAndUpdateCWOrgAndMetriportOrg({
   facility?: FacilityModel;
 }): Promise<void> {
   const cwOrg = await getParsedOrgOrFail(oid);
+  if (facility) {
+    await facility.update({
+      cwActive: active,
+    });
+  } else {
+    await org.update({
+      cwActive: active,
+    });
+  }
   await createOrUpdateCWOrganization({
     cxId,
     org: {
@@ -51,13 +60,4 @@ export async function getAndUpdateCWOrgAndMetriportOrg({
     },
     isObo: facility ? isOboFacility(facility.cwType) : false,
   });
-  if (facility) {
-    await facility.update({
-      cwActive: active,
-    });
-  } else {
-    await org.update({
-      cwActive: active,
-    });
-  }
 }
