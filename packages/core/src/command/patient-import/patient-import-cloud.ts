@@ -51,6 +51,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
     jobId,
     processPatientImportLambda,
     triggerConsolidated = false,
+    disableWebhooks = false,
     rerunPdOnNewDemographics = false,
     dryrun = false,
   }: StartPatientImportRequest): Promise<void> {
@@ -61,6 +62,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
         facilityId,
         jobId,
         triggerConsolidated,
+        disableWebhooks,
         rerunPdOnNewDemographics,
         dryrun,
       };
@@ -109,6 +111,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
     s3BucketName,
     processPatientCreateQueue,
     triggerConsolidated,
+    disableWebhooks,
     rerunPdOnNewDemographics,
     dryrun,
   }: ProcessPatientImportRequest): Promise<void> {
@@ -144,6 +147,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
               jobStartedAt,
               patientPayload,
               triggerConsolidated,
+              disableWebhooks,
               rerunPdOnNewDemographics,
             };
             try {
@@ -201,6 +205,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
     s3BucketName,
     processPatientQueryQueue,
     triggerConsolidated,
+    disableWebhooks,
     rerunPdOnNewDemographics,
     waitTimeInMillis,
   }: ProcessPatientCreateRequest): Promise<void> {
@@ -235,6 +240,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
         jobStartedAt,
         patientId,
         triggerConsolidated,
+        disableWebhooks,
         rerunPdOnNewDemographics,
       };
       try {
@@ -285,6 +291,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
     patientId,
     s3BucketName,
     triggerConsolidated,
+    disableWebhooks,
     rerunPdOnNewDemographics,
     waitTimeInMillis,
   }: ProcessPatientQueryRequest) {
@@ -301,6 +308,7 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
         cxId,
         patientId,
         triggerConsolidated,
+        disableWebhooks,
       });
       await creatOrUpdatePatientRecord({
         cxId,

@@ -39,6 +39,15 @@ export function parseTriggerConsolidated(bodyAsJson: any) {
 }
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function parseDisableWebhooks(bodyAsJson: any) {
+  const disableWebhooksRaw = bodyAsJson.disableWebhooks;
+  if (disableWebhooksRaw === undefined) throw new Error(`Missing disableWebhooks`);
+  if (typeof disableWebhooksRaw !== "boolean") throw new Error(`Invalid disableWebhooks`);
+
+  return { disableWebhooksRaw };
+}
+
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function parseRerunPdOnNewDemos(bodyAsJson: any) {
   const rerunPdOnNewDemographicsRaw = bodyAsJson.rerunPdOnNewDemographics;
   if (rerunPdOnNewDemographicsRaw === undefined)

@@ -7,6 +7,7 @@ import {
   parseCxIdAndJob,
   parseJobStartedAt,
   parseTriggerConsolidated,
+  parseDisableWebhooks,
   parseRerunPdOnNewDemos,
 } from "./shared/patient-import";
 import { capture } from "./shared/capture";
@@ -35,8 +36,15 @@ export async function handler(event: SQSEvent) {
 
     console.log(`Running with unparsed body: ${message.body}`);
     const parsedBody = parseBody(message.body);
-    const { cxId, jobId, jobStartedAt, patientId, triggerConsolidated, rerunPdOnNewDemographics } =
-      parsedBody;
+    const {
+      cxId,
+      jobId,
+      jobStartedAt,
+      patientId,
+      triggerConsolidated,
+      disableWebhooks,
+      rerunPdOnNewDemographics,
+    } = parsedBody;
 
     const log = prefixedLog(`cxId ${cxId}, job ${jobId}, patientId ${patientId}`);
     try {
@@ -53,6 +61,7 @@ export async function handler(event: SQSEvent) {
         patientId,
         s3BucketName: patientImportBucket,
         triggerConsolidated,
+        disableWebhooks,
         rerunPdOnNewDemographics,
         waitTimeInMillis,
       };
@@ -91,6 +100,7 @@ function parseBody(body?: unknown): ProcessPatientQueryEvemtPayload {
   const { cxIdRaw, jobIdRaw } = parseCxIdAndJob(bodyAsJson);
   const { jobStartedAtRaw } = parseJobStartedAt(bodyAsJson);
   const { triggerConsolidatedRaw } = parseTriggerConsolidated(bodyAsJson);
+  const { disableWebhooksRaw } = parseDisableWebhooks(bodyAsJson);
   const { rerunPdOnNewDemographicsRaw } = parseRerunPdOnNewDemos(bodyAsJson);
 
   const patientIdRaw = bodyAsJson.patientId;
@@ -102,7 +112,16 @@ function parseBody(body?: unknown): ProcessPatientQueryEvemtPayload {
   const jobStartedAt = jobStartedAtRaw as string;
   const patientId = patientIdRaw as string;
   const triggerConsolidated = triggerConsolidatedRaw as boolean;
+  const disableWebhooks = disableWebhooksRaw as boolean;
   const rerunPdOnNewDemographics = rerunPdOnNewDemographicsRaw as boolean;
 
-  return { cxId, jobId, jobStartedAt, patientId, triggerConsolidated, rerunPdOnNewDemographics };
+  return {
+    cxId,
+    jobId,
+    jobStartedAt,
+    patientId,
+    triggerConsolidated,
+    disableWebhooks,
+    rerunPdOnNewDemographics,
+  };
 }

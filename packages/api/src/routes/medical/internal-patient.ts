@@ -935,6 +935,7 @@ router.post(
  * @param req.query.facilityId The facility ID for running the patient import.
  * @param req.query.jobId The job Id of the fle. TEMPORARY.
  * @param req.query.triggerConsolidated - Optional; Whether to force get consolidated PDF on conversion finish.
+ * @param req.query.disableWebhooks Optional: Indicates whether send webhooks.
  * @param req.query.rerunPdOnNewDemographics Optional: Indicates whether to use demo augmentation on this PD run.
  * @param req.query.dryrun Whether to simply validate or run the assessment (optional, defaults to false).
  *
@@ -947,6 +948,7 @@ router.post(
     const facilityId = getFrom("query").orFail("facilityId", req);
     const jobId = getFrom("query").orFail("jobId", req);
     const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
+    const disableWebhooks = getFromQueryAsBoolean("disableWebhooks", req);
     const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
     const dryrun = getFromQueryAsBoolean("dryrun", req);
 
@@ -959,6 +961,7 @@ router.post(
       jobId,
       processPatientImportLambda: Config.getPatientImportLambdaName(),
       triggerConsolidated,
+      disableWebhooks,
       rerunPdOnNewDemographics,
       dryrun,
     });

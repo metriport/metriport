@@ -11,6 +11,7 @@ import {
   parseJobStartedAt,
   parseFacilityId,
   parseTriggerConsolidated,
+  parseDisableWebhooks,
   parseRerunPdOnNewDemos,
 } from "./shared/patient-import";
 import { capture } from "./shared/capture";
@@ -47,6 +48,7 @@ export async function handler(event: SQSEvent) {
       jobStartedAt,
       patientPayload,
       triggerConsolidated,
+      disableWebhooks,
       rerunPdOnNewDemographics,
     } = parsedBody;
 
@@ -67,6 +69,7 @@ export async function handler(event: SQSEvent) {
         patientPayload,
         processPatientQueryQueue,
         triggerConsolidated,
+        disableWebhooks,
         rerunPdOnNewDemographics,
         waitTimeInMillis,
       };
@@ -108,6 +111,7 @@ function parseBody(body?: unknown): ProcessPatientCreateEvemtPayload {
   const { jobStartedAtRaw } = parseJobStartedAt(bodyAsJson);
   const { facilityIdRaw } = parseFacilityId(bodyAsJson);
   const { triggerConsolidatedRaw } = parseTriggerConsolidated(bodyAsJson);
+  const { disableWebhooksRaw } = parseDisableWebhooks(bodyAsJson);
   const { rerunPdOnNewDemographicsRaw } = parseRerunPdOnNewDemos(bodyAsJson);
 
   const patientPayloadRaw = bodyAsJson.patientPayload;
@@ -120,6 +124,7 @@ function parseBody(body?: unknown): ProcessPatientCreateEvemtPayload {
   const jobStartedAt = jobStartedAtRaw as string;
   const patientPayload = patientPayloadRaw as PatientPayload;
   const triggerConsolidated = triggerConsolidatedRaw as boolean;
+  const disableWebhooks = disableWebhooksRaw as boolean;
   const rerunPdOnNewDemographics = rerunPdOnNewDemographicsRaw as boolean;
 
   return {
@@ -129,6 +134,7 @@ function parseBody(body?: unknown): ProcessPatientCreateEvemtPayload {
     jobStartedAt,
     patientPayload,
     triggerConsolidated,
+    disableWebhooks,
     rerunPdOnNewDemographics,
   };
 }

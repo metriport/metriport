@@ -6,6 +6,7 @@ import {
   parseCxIdAndJob,
   parseFacilityId,
   parseTriggerConsolidated,
+  parseDisableWebhooks,
   parseRerunPdOnNewDemos,
 } from "./shared/patient-import";
 import { capture } from "./shared/capture";
@@ -29,8 +30,15 @@ export async function handler(event: ProcessPatientImportEvemtPayload) {
   try {
     console.log(`Running with unparsed body: ${JSON.stringify(event)}`);
     const parsedBody = parseBody(event);
-    const { cxId, facilityId, jobId, triggerConsolidated, rerunPdOnNewDemographics, dryrun } =
-      parsedBody;
+    const {
+      cxId,
+      facilityId,
+      jobId,
+      triggerConsolidated,
+      disableWebhooks,
+      rerunPdOnNewDemographics,
+      dryrun,
+    } = parsedBody;
 
     const jobStartedAt = new Date().toISOString();
 
@@ -50,6 +58,7 @@ export async function handler(event: ProcessPatientImportEvemtPayload) {
         s3BucketName: patientImportBucket,
         processPatientCreateQueue,
         triggerConsolidated,
+        disableWebhooks,
         rerunPdOnNewDemographics,
         dryrun,
       };
@@ -85,6 +94,7 @@ function parseBody(body?: unknown): ProcessPatientImportEvemtPayload {
   const { cxIdRaw, jobIdRaw } = parseCxIdAndJob(bodyAsJson);
   const { facilityIdRaw } = parseFacilityId(bodyAsJson);
   const { triggerConsolidatedRaw } = parseTriggerConsolidated(bodyAsJson);
+  const { disableWebhooksRaw } = parseDisableWebhooks(bodyAsJson);
   const { rerunPdOnNewDemographicsRaw } = parseRerunPdOnNewDemos(bodyAsJson);
 
   const dryrunRaw = bodyAsJson.dryrun;
@@ -95,8 +105,17 @@ function parseBody(body?: unknown): ProcessPatientImportEvemtPayload {
   const facilityId = facilityIdRaw as string;
   const jobId = jobIdRaw as string;
   const triggerConsolidated = triggerConsolidatedRaw as boolean;
+  const disableWebhooks = disableWebhooksRaw as boolean;
   const rerunPdOnNewDemographics = rerunPdOnNewDemographicsRaw as boolean;
   const dryrun = dryrunRaw as boolean;
 
-  return { cxId, facilityId, jobId, triggerConsolidated, rerunPdOnNewDemographics, dryrun };
+  return {
+    cxId,
+    facilityId,
+    jobId,
+    triggerConsolidated,
+    disableWebhooks,
+    rerunPdOnNewDemographics,
+    dryrun,
+  };
 }

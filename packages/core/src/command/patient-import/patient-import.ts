@@ -25,6 +25,7 @@ export type StartPatientImportRequest = {
   jobId: string;
   processPatientImportLambda: string;
   triggerConsolidated?: boolean;
+  disableWebhooks?: boolean;
   rerunPdOnNewDemographics?: boolean;
   dryrun?: boolean;
 };
@@ -37,6 +38,7 @@ export type ProcessPatientImportRequest = {
   s3BucketName: string;
   processPatientCreateQueue: string;
   triggerConsolidated: boolean;
+  disableWebhooks: boolean;
   rerunPdOnNewDemographics: boolean;
   dryrun: boolean;
 };
@@ -52,6 +54,7 @@ export type ProcessPatientCreateRequest = {
   s3BucketName: string;
   processPatientQueryQueue: string;
   triggerConsolidated: boolean;
+  disableWebhooks: boolean;
   rerunPdOnNewDemographics: boolean;
   waitTimeInMillis: number;
 };
@@ -63,6 +66,7 @@ export type ProcessPatientQueryRequest = {
   patientId: string;
   s3BucketName: string;
   triggerConsolidated: boolean;
+  disableWebhooks: boolean;
   rerunPdOnNewDemographics: boolean;
   waitTimeInMillis: number;
 };
