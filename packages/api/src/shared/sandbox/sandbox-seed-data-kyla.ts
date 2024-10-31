@@ -4,17 +4,18 @@ export const kylaDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "kyla1.xml",
+      key: "demo.xml",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "NjNmYmZkZWMtNDkxZS00NDJmLThjNTUtNDJlN2E0NTJjYTll",
+      id: "QTIyMDEzODgtQzk1RC00RkU2LTlCNzAtQTQ4MTZBMDM3NzVB",
       content: [
         {
           attachment: {
-            title: "kyla1.xml",
+            title: "demo.xml",
             url: "http://api.metriport.com",
             contentType: "application/xml",
+            creation: "2023-06-16",
           },
         },
       ],
@@ -23,17 +24,18 @@ export const kylaDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "kyla11.pdf",
+      key: "demo2.pdf",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "NjE4MmZmNzUtNmI0MC00MTQyLTgwMTQtNTYyMmJlZTQyMjkx",
+      id: "QTExMDEzMjItNzg5NC0xMjM0LTFCNzAtQjM4MTZBMDM3NzVC",
       content: [
         {
           attachment: {
-            title: "kyla11.pdf",
+            title: "demo2.pdf",
             url: "http://api.metriport.com",
             contentType: "application/pdf",
+            creation: "2017-10-03",
           },
         },
       ],
@@ -42,17 +44,18 @@ export const kylaDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "kyla12.pdf",
+      key: "demo3.pdf",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "ODY4Y2UwYmYtODAxYi00YWU3LTgxYmUtMjAwYzhjYjVjOTM4",
+      id: "QTExMDEzMjItNzg5NC1CNTQzLTFCNzAtQjM4MTZBMDM3NzVC",
       content: [
         {
           attachment: {
-            title: "kyla12.pdf",
+            title: "demo3.pdf",
             url: "http://api.metriport.com",
             contentType: "application/pdf",
+            creation: "2018-12-20",
           },
         },
       ],
@@ -61,17 +64,18 @@ export const kylaDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "kyla13.pdf",
+      key: "demo4.pdf",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "Yzk0NDNkN2YtODQyYy00Njc1LWE3OTEtMTMwYWIxYWY5NzZj",
+      id: "QTExMDEzMjItSDM5Mi1CNTQzLTFCNzAtQjM4MTZBMDM3NzVC",
       content: [
         {
           attachment: {
-            title: "kyla13.pdf",
+            title: "demo4.pdf",
             url: "http://api.metriport.com",
             contentType: "application/pdf",
+            creation: "2019-06-30",
           },
         },
       ],
@@ -80,15 +84,34 @@ export const kylaDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "kyla14.tif",
+      key: "demo5.jpeg",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "NTBiY2FiMjEtOWIzMS00ZGE5LWE4NjUtOWRkYTY1MmQ4OTZh",
+      id: "QTExMDEzMjItSDM5Mi1CNTQzLTFCNzAtQjM4MTZBMDM3NzVD",
       content: [
         {
           attachment: {
-            title: "kyla14.tif",
+            title: "demo5.jpeg",
+            url: "http://api.metriport.com",
+            contentType: "image/jpeg",
+          },
+        },
+      ],
+    },
+  },
+  {
+    s3Info: {
+      bucket,
+      key: "demo6.tif",
+    },
+    docRef: {
+      resourceType: "DocumentReference",
+      id: "QTExMDEzMjItSDM5Mi1CNTQzLTFCNzAtQjM4MTZBMDM3NzZD",
+      content: [
+        {
+          attachment: {
+            title: "demo6.tif",
             url: "http://api.metriport.com",
             contentType: "image/tiff",
           },
@@ -99,17 +122,17 @@ export const kylaDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "kyla15.tif",
+      key: "demo7.jpeg",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "YjY5YTE3ODktODYzNi00NmFlLWI3OGEtYjEwMTdhNzVkMzdh",
+      id: "QTExMDEzMjItSDM5Mi1CNTQzLTFCNzAtQjM4NDZBMDM3NzZD",
       content: [
         {
           attachment: {
-            title: "kyla15.tif",
+            title: "demo7.jpeg",
             url: "http://api.metriport.com",
-            contentType: "image/tiff",
+            contentType: "image/jpeg",
           },
         },
       ],
