@@ -11,7 +11,7 @@ import { getOrganizationOrFail } from "../../command/medical/organization/get-or
 import { facilityInternalDetailsSchema } from "./schemas/facility";
 import { internalDtoFromModel } from "./dtos/facilityDTO";
 import { getUUIDFrom } from "../schemas/uuid";
-import { asyncHandler } from "../util";
+import { asyncHandler, getFromQueryAsBoolean } from "../util";
 import { createOrUpdateFacilityInCq } from "../../external/carequality/command/cq-directory/create-or-update-cq-facility";
 import { createOrUpdateFacilityInCw } from "../../external/commonwell/command/create-or-update-cw-facility";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -33,6 +33,7 @@ router.put(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const skipHie = getFromQueryAsBoolean("skipHie", req);
 
     const facilityDetails = facilityInternalDetailsSchema.parse(req.body);
     const facilityCreate: FacilityCreate = {
@@ -69,7 +70,7 @@ router.put(
     const syncInHie = await verifyCxItVendorAccess(cxId, false);
     // TODO Move to external/hie https://github.com/metriport/metriport-internal/issues/1940
     // CAREQUALITY
-    if (syncInHie && facility.cqApproved) {
+    if (syncInHie && facility.cqApproved && !skipHie) {
       createOrUpdateFacilityInCq({
         cxId,
         facility,
@@ -79,7 +80,7 @@ router.put(
       }).catch(processAsyncError("cq.internal.facility"));
     }
     // COMMONWELL
-    if (syncInHie && facility.cwApproved) {
+    if (syncInHie && facility.cwApproved && !skipHie) {
       createOrUpdateFacilityInCw({
         cxId,
         facility,

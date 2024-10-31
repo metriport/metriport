@@ -12,7 +12,7 @@ import { updateOrganization } from "../../command/medical/organization/update-or
 import { organiationInternalDetailsSchema } from "./schemas/organization";
 import { internalDtoFromModel } from "./dtos/organizationDTO";
 import { getUUIDFrom } from "../schemas/uuid";
-import { asyncHandler } from "../util";
+import { asyncHandler, getFromQueryAsBoolean } from "../util";
 import { createOrUpdateCQOrganization } from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
 import { createOrUpdateCWOrganization } from "../../external/commonwell/command/create-or-update-cw-organization";
 import { getCqAddress } from "../../external/carequality/shared";
@@ -33,6 +33,7 @@ router.put(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const skipHie = getFromQueryAsBoolean("skipHie", req);
 
     const orgDetails = organiationInternalDetailsSchema.parse(req.body);
     const organizationCreate: OrganizationCreate = {
@@ -56,10 +57,8 @@ router.put(
       cwApproved: orgDetails.cwApproved,
     };
     let org: Organization;
-    let orgCurrentActive = false;
     if (orgDetails.id) {
-      const currentOrg = await getOrganizationOrFail({ cxId, id: orgDetails.id });
-      orgCurrentActive = currentOrg.cqActive;
+      await getOrganizationOrFail({ cxId, id: orgDetails.id });
       org = await updateOrganization({ id: orgDetails.id, ...organizationCreate });
     } else {
       org = await createOrganization(organizationCreate);
@@ -67,30 +66,27 @@ router.put(
     const syncInHie = await verifyCxProviderAccess(cxId, false);
     // TODO Move to external/hie https://github.com/metriport/metriport-internal/issues/1940
     // CAREQUALITY
-    if (syncInHie && org.cqApproved) {
+    if (syncInHie && org.cqApproved && !skipHie) {
       const { coordinates, addressLine } = await getCqAddress({ cxId, address: org.data.location });
-      createOrUpdateCQOrganization(
-        {
-          name: org.data.name,
-          addressLine1: addressLine,
-          lat: coordinates.lat.toString(),
-          lon: coordinates.lon.toString(),
-          city: org.data.location.city,
-          state: org.data.location.state,
-          postalCode: org.data.location.zip,
-          oid: org.oid,
-          organizationBizType: org.type,
-          contactName: metriportCompanyDetails.name,
-          phone: metriportCompanyDetails.phone,
-          email: metriportEmailForCq,
-          active: org.cqActive,
-          role: "Connection" as const,
-        },
-        orgCurrentActive
-      ).catch(processAsyncError("cq.internal.organization"));
+      createOrUpdateCQOrganization({
+        name: org.data.name,
+        addressLine1: addressLine,
+        lat: coordinates.lat.toString(),
+        lon: coordinates.lon.toString(),
+        city: org.data.location.city,
+        state: org.data.location.state,
+        postalCode: org.data.location.zip,
+        oid: org.oid,
+        organizationBizType: org.type,
+        contactName: metriportCompanyDetails.name,
+        phone: metriportCompanyDetails.phone,
+        email: metriportEmailForCq,
+        active: org.cqActive,
+        role: "Connection" as const,
+      }).catch(processAsyncError("cq.internal.organization"));
     }
     // COMMONWELL
-    if (syncInHie && org.cwApproved) {
+    if (syncInHie && org.cwApproved && !skipHie) {
       createOrUpdateCWOrganization({
         cxId,
         org: {
