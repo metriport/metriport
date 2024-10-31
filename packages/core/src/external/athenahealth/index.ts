@@ -199,7 +199,21 @@ class AthenaHealthApi {
           })
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - getPatient"));
       }
-      return patientResourceSchema.parse(response.data);
+      const patient = patientResourceSchema.safeParse(response.data);
+      if (!patient.success) {
+        capture.message(`Patient could not be parsed @ AthenaHealth`, {
+          extra: {
+            url: patientUrl,
+            cxId,
+            practiceId: this.practiceId,
+            patientId,
+            context: "athenahealth.get-patient",
+          },
+          level: "info",
+        });
+        return undefined;
+      }
+      return patient.data;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       if (error.response?.status === 404) return undefined;
@@ -257,11 +271,23 @@ class AthenaHealthApi {
           })
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - getPatientViaSearch"));
       }
-      const searchSet = patientSearchResourceSchema.parse(response.data);
-      if (searchSet.entry.length > 1) {
-        throw new NotFoundError("More than one AthenaHealth patient found");
+      const searchSet = patientSearchResourceSchema.safeParse(response.data);
+      if (!searchSet.success) {
+        capture.message(`Patient search set could not be parsed @ AthenaHealth`, {
+          extra: {
+            url: patientSearchUrl,
+            cxId,
+            practiceId: this.practiceId,
+            patientId,
+            context: "athenahealth.get-patient",
+          },
+          level: "info",
+        });
+        return undefined;
       }
-      return searchSet.entry[0]?.resource;
+      const entry = searchSet.data.entry;
+      if (entry.length > 1) throw new NotFoundError("More than one AthenaHealth patient found");
+      return entry[0]?.resource;
     } catch (error) {
       const msg = `Failure while searching patient @ AthenaHealth`;
       log(`${msg}. Cause: ${errorToString(error)}`);
