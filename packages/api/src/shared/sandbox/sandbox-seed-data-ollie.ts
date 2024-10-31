@@ -4,17 +4,18 @@ export const ollieDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "ollie1.xml",
+      key: "demo.xml",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "OWVlMGRhNDYtNDJkNS00ZWU0LWI1N2YtNjRjYWNlYjZmYTY2",
+      id: "QTIyMDEzODgtQzk1RC00RkU2LTlCNzAtQTQ4MTZBMDM3NzVB",
       content: [
         {
           attachment: {
-            title: "ollie1.xml",
+            title: "demo.xml",
             url: "http://api.metriport.com",
             contentType: "application/xml",
+            creation: "2023-06-16",
           },
         },
       ],
@@ -23,17 +24,18 @@ export const ollieDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "ollie11.pdf",
+      key: "demo2.pdf",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "Y2RjMjhkNGUtZTg3Mi00NDQ3LThhYzAtZDkwNjkxMzdmNWUz",
+      id: "QTExMDEzMjItNzg5NC0xMjM0LTFCNzAtQjM4MTZBMDM3NzVC",
       content: [
         {
           attachment: {
-            title: "ollie11.pdf",
+            title: "demo2.pdf",
             url: "http://api.metriport.com",
             contentType: "application/pdf",
+            creation: "2017-10-03",
           },
         },
       ],
@@ -42,17 +44,18 @@ export const ollieDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "ollie12.pdf",
+      key: "demo3.pdf",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "ZTBhMGUzOWMtNDVjMi00NDRkLWE5MDItMDFmNmU4ZDg3NmVj",
+      id: "QTExMDEzMjItNzg5NC1CNTQzLTFCNzAtQjM4MTZBMDM3NzVC",
       content: [
         {
           attachment: {
-            title: "ollie12.pdf",
+            title: "demo3.pdf",
             url: "http://api.metriport.com",
             contentType: "application/pdf",
+            creation: "2018-12-20",
           },
         },
       ],
@@ -61,17 +64,18 @@ export const ollieDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "ollie13.pdf",
+      key: "demo4.pdf",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "MDAyN2M2NGYtMzQ1Mi00MDNjLTg1MzYtNTg2YzYzM2JkMDY3",
+      id: "QTExMDEzMjItSDM5Mi1CNTQzLTFCNzAtQjM4MTZBMDM3NzVC",
       content: [
         {
           attachment: {
-            title: "ollie13.pdf",
+            title: "demo4.pdf",
             url: "http://api.metriport.com",
             contentType: "application/pdf",
+            creation: "2019-06-30",
           },
         },
       ],
@@ -80,15 +84,34 @@ export const ollieDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "ollie14.tif",
+      key: "demo5.jpeg",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "MGM2MTg5NzMtZDdiNy00NjUtYWMwYi02NDYyYjlhNTJkOWE",
+      id: "QTExMDEzMjItSDM5Mi1CNTQzLTFCNzAtQjM4MTZBMDM3NzVD",
       content: [
         {
           attachment: {
-            title: "ollie14.tif",
+            title: "demo5.jpeg",
+            url: "http://api.metriport.com",
+            contentType: "image/jpeg",
+          },
+        },
+      ],
+    },
+  },
+  {
+    s3Info: {
+      bucket,
+      key: "demo6.tif",
+    },
+    docRef: {
+      resourceType: "DocumentReference",
+      id: "QTExMDEzMjItSDM5Mi1CNTQzLTFCNzAtQjM4MTZBMDM3NzZD",
+      content: [
+        {
+          attachment: {
+            title: "demo6.tif",
             url: "http://api.metriport.com",
             contentType: "image/tiff",
           },
@@ -99,17 +122,17 @@ export const ollieDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "ollie15.tif",
+      key: "demo7.jpeg",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "ZGIzYTk0YWYtZTFiYy00NGViLWJkYmQtNzdjNGQxNWEwZDJm",
+      id: "QTExMDEzMjItSDM5Mi1CNTQzLTFCNzAtQjM4NDZBMDM3NzZD",
       content: [
         {
           attachment: {
-            title: "ollie15.tif",
+            title: "demo7.jpeg",
             url: "http://api.metriport.com",
-            contentType: "image/tiff",
+            contentType: "image/jpeg",
           },
         },
       ],
