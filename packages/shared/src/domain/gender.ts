@@ -1,6 +1,8 @@
+import { z } from "zod";
+
 export type GenderAtBirth = "F" | "M" | "O" | "U";
 
-export function normalizeGenderSafe(gender: string): "F" | "M" | "O" | "U" | undefined {
+export function normalizeGenderSafe(gender: string): GenderAtBirth | undefined {
   const lowerGender = gender.toLowerCase().trim();
   if (lowerGender === "male" || lowerGender === "m") {
     return "M";
@@ -19,3 +21,8 @@ export function normalizeGender(gender: string): GenderAtBirth {
   if (!genderOrUndefined) throw new Error("Invalid gender");
   return genderOrUndefined;
 }
+
+export const genderAtBirthSchema = z
+  .string()
+  .refine(normalizeGenderSafe, { message: "Invalid gender" })
+  .transform(gender => normalizeGender(gender));

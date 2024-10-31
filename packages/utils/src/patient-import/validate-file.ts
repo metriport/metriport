@@ -38,14 +38,12 @@ async function main() {
   console.log(`Reading file ${inputFileName}`);
   const stringBundle = getFileContents(inputFileName);
 
-  const {
-    patients: patientsFromValidation,
-    headers,
-    validRows,
-    invalidRows,
-  } = await validateAndParsePatientImportCsv({
+  const { patientsWithRowAndIndex, headers, invalidRows } = await validateAndParsePatientImportCsv({
     contents: stringBundle,
   });
+
+  const validRows = patientsWithRowAndIndex.map(p => p.rowColumns);
+  const patientsFromValidation = patientsWithRowAndIndex.map(p => p.patient);
 
   const patientsForCreate: PatientPayload[] = patientsFromValidation.map(createPatientPayload);
 

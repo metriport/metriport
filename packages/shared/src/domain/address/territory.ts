@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { BadRequestError } from "../../error/bad-request";
 
 export function normalizeTerritorySafe(territory: string): USTerritory | undefined {
@@ -30,3 +31,8 @@ export const territories: Record<USTerritory, string> = {
   [USTerritory.PR]: "Puerto Rico",
   [USTerritory.VI]: "Virgin Islands",
 };
+
+export const usTerritorySchema = z.preprocess(
+  val => (typeof val === "string" ? val.toUpperCase().trim() : val),
+  z.nativeEnum(USTerritory)
+);

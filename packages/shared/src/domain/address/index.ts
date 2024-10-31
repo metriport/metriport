@@ -1,6 +1,10 @@
+import { z } from "zod";
 import { BadRequestError } from "../../error/bad-request";
-import { normalizeStateSafe, USState } from "./state";
-import { normalizeTerritorySafe, USTerritory } from "./territory";
+import { createNonEmptryStringSchema } from "../../common/string";
+import { normalizeStateSafe, USState, usStateSchema } from "./state";
+import { normalizeTerritorySafe, USTerritory, usTerritorySchema } from "./territory";
+import { zipSchema } from "./zip";
+import { geoCoordinateSchema } from "./geo";
 
 export type USStateForAddress = USState | USTerritory;
 
@@ -17,3 +21,15 @@ export function normalizeUSStateForAddress(value: string): USStateForAddress {
   }
   return state;
 }
+
+export const usStateForAddressSchema = usStateSchema.or(usTerritorySchema);
+
+export const addressSchema = z.object({
+  addressLine1: createNonEmptryStringSchema("addressLine1"),
+  addressLine2: createNonEmptryStringSchema("addressLine2").optional(),
+  city: createNonEmptryStringSchema("city"),
+  state: usStateForAddressSchema,
+  zip: zipSchema,
+  coordinates: geoCoordinateSchema.optional(),
+  country: z.literal("USA"),
+});

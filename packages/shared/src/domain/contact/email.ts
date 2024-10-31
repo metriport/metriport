@@ -24,3 +24,14 @@ export function normalizeEmailStrict(email: string): string {
   if (!isEmailValid(normalEmail)) throw new Error("Invalid email.");
   return normalEmail;
 }
+
+export function normalizeEmailSafe(email: string): string | undefined {
+  const normalEmail = normalizeEmail(email);
+  if (!isEmailValid(normalEmail)) return undefined;
+  return normalEmail;
+}
+
+export const emailSchema = z
+  .string()
+  .refine(normalizeEmailSafe, { message: "Invalid email" })
+  .transform(email => normalizeEmailStrict(email));
