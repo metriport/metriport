@@ -88,26 +88,23 @@ describe("registerFacility", () => {
       cqOboOid: mockedFacility.cqOboOid ?? undefined,
     });
 
-    expect(createOrUpdateCqOrganizationMock).toHaveBeenCalledWith(
-      {
-        name: orgName,
-        addressLine1: addressLine,
-        lat: mockedAddress.coordinates.lat.toString(),
-        lon: mockedAddress.coordinates.lon.toString(),
-        city: address.city,
-        state: address.state,
-        postalCode: address.zip,
-        oid: mockedFacility.oid,
-        contactName: metriportCompanyDetails.name,
-        phone: metriportCompanyDetails.phone,
-        email: metriportEmailForCq,
-        organizationBizType: cxOrgBizType,
-        active: mockedFacility.cqActive,
-        parentOrgOid: metriportOid,
-        role: "Connection" as const,
-      },
-      mockedFacility.cqActive
-    );
+    expect(createOrUpdateCqOrganizationMock).toHaveBeenCalledWith({
+      name: orgName,
+      addressLine1: addressLine,
+      lat: mockedAddress.coordinates.lat.toString(),
+      lon: mockedAddress.coordinates.lon.toString(),
+      city: address.city,
+      state: address.state,
+      postalCode: address.zip,
+      oid: mockedFacility.oid,
+      contactName: metriportCompanyDetails.name,
+      phone: metriportCompanyDetails.phone,
+      email: metriportEmailForCq,
+      organizationBizType: cxOrgBizType,
+      active: mockedFacility.cqActive,
+      parentOrgOid: metriportOid,
+      role: "Connection" as const,
+    });
   });
 
   it("calls hie creates with expected params when createOrUpdateFacilityInCq is called - obo", async () => {
@@ -140,25 +137,22 @@ describe("registerFacility", () => {
       cqOboOid: mockedOboFacility.cqOboOid ?? undefined,
     });
 
-    expect(createOrUpdateCqOrganizationMock).toHaveBeenCalledWith(
-      {
-        name: orgName,
-        addressLine1: addressLine,
-        lat: mockedAddress.coordinates.lat.toString(),
-        lon: mockedAddress.coordinates.lon.toString(),
-        city: address.city,
-        state: address.state,
-        postalCode: address.zip,
-        oid: mockedOboFacility.oid,
-        contactName: metriportCompanyDetails.name,
-        phone: metriportCompanyDetails.phone,
-        email: metriportEmailForCq,
-        organizationBizType: cxOrgBizType,
-        active: mockedOboFacility.cqActive,
-        parentOrgOid: metriportIntermediaryOid,
-        role: "Connection" as const,
-      },
-      mockedFacility.cqActive
-    );
+    expect(createOrUpdateCqOrganizationMock).toHaveBeenCalledWith({
+      name: orgName,
+      addressLine1: addressLine,
+      lat: mockedAddress.coordinates.lat.toString(),
+      lon: mockedAddress.coordinates.lon.toString(),
+      city: address.city,
+      state: address.state,
+      postalCode: address.zip,
+      oid: mockedOboFacility.oid,
+      contactName: metriportCompanyDetails.name,
+      phone: metriportCompanyDetails.phone,
+      email: metriportEmailForCq,
+      organizationBizType: cxOrgBizType,
+      active: mockedOboFacility.cqActive,
+      parentOrgOid: metriportIntermediaryOid,
+      role: "Connection" as const,
+    });
   });
 });
