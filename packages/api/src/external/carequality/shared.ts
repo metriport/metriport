@@ -1,13 +1,16 @@
-import NotFoundError from "@metriport/core/util/error/not-found";
-import { CarequalityManagementAPI } from "@metriport/carequality-sdk";
+import { NotFoundError, errorToString } from "@metriport/shared";
+import {
+  CarequalityManagementAPI,
+  Organization as CQOrganization,
+} from "@metriport/carequality-sdk";
 import { Patient } from "@metriport/core/domain/patient";
 import { AddressStrict } from "@metriport/core/domain/location-address";
 import { Coordinates } from "@metriport/core/domain/address";
 import { capture } from "@metriport/core/util/notifications";
+import { out } from "@metriport/core/util/log";
 import { PurposeOfUse } from "@metriport/shared";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { OrganizationBizType } from "@metriport/core/domain/organization";
-import { errorToString } from "@metriport/shared/common/error";
 import z from "zod";
 import { isCarequalityEnabled, isCQDirectEnabledForCx } from "../aws/app-config";
 import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
@@ -171,20 +174,53 @@ export const cqOrgActiveSchema = z.object({
 
 export async function getParsedCqOrgOrFail(
   cq: CarequalityManagementAPI,
-  oid: string,
-  active: boolean
+  oid: string
 ): Promise<CQDirectoryEntryData> {
-  const resp = await cq.listOrganizations({ count: 1, oid, active });
-  if (resp.length === 0) throw new NotFoundError("Organization not found");
-  const cqOrgs = parseCQDirectoryEntries(resp);
-  const cqOrg = cqOrgs[0] as CQDirectoryEntryData;
-  if (cqOrgs.length > 1) {
-    capture.message("More than one organization with the same OID found in the CQ directory", {
+  const org = await getCqOrgOrFail(cq, oid);
+  const parsedOrgs = parseCQDirectoryEntries([org]);
+  const parsedOrg = parsedOrgs[0] as CQDirectoryEntryData;
+  return parsedOrg;
+}
+
+export async function getCqOrgOrFail(
+  cq: CarequalityManagementAPI,
+  oid: string
+): Promise<CQOrganization> {
+  const org = await getCqOrg(cq, oid);
+  if (!org) throw new NotFoundError("Organization not found");
+  return org;
+}
+
+export async function getCqOrg(
+  cq: CarequalityManagementAPI,
+  oid: string
+): Promise<CQOrganization | undefined> {
+  const { log } = out(`CQ doesOrganizationExistInCQ - CQ Org OID ${oid}`);
+
+  try {
+    const orgExistsAction = await cq.listOrganizations({ oid, active: true });
+    const orgExistsInActive = await cq.listOrganizations({ oid, active: false });
+    const orgs = [...orgExistsAction, ...orgExistsInActive];
+    if (orgs.length > 1) {
+      capture.message("More than one organization with the same OID found in the CQ directory", {
+        extra: {
+          orgOid: oid,
+          context: `cq.org.directory`,
+        },
+        level: "warning",
+      });
+    }
+    return orgs[0];
+  } catch (error) {
+    const msg = `Failure while getting Org @ CQ`;
+    log(`${msg}. Org OID: ${oid}. Cause: ${errorToString(error)}`);
+    capture.error(msg, {
       extra: {
         orgOid: oid,
-        context: `cq.org.directory`,
+        context: `cq.org.get`,
+        error,
       },
     });
+    throw error;
   }
-  return cqOrg;
 }

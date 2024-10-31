@@ -166,11 +166,11 @@ router.get(
 
     let cqOrg: CQDirectoryEntryData;
     if (facilityId) {
-      const facility = await getFaciltiyByOidOrFail({ cxId, id: facilityId, oid });
-      cqOrg = await getParsedCqOrgOrFail(cq, oid, facility.cqActive);
+      await getFaciltiyByOidOrFail({ cxId, id: facilityId, oid });
+      cqOrg = await getParsedCqOrgOrFail(cq, oid);
     } else {
-      const org = await getOrganizationByOidOrFail({ cxId, oid });
-      cqOrg = await getParsedCqOrgOrFail(cq, oid, org.cqActive);
+      await getOrganizationByOidOrFail({ cxId, oid });
+      cqOrg = await getParsedCqOrgOrFail(cq, oid);
     }
 
     return res.status(httpStatus.OK).json(cqOrg);
