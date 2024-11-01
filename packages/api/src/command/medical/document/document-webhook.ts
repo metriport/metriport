@@ -73,6 +73,7 @@ export const processPatientDocumentRequest = async (
 
     // send it to the customer and update the request status
     if (!isWebhookDisabled(metadata)) {
+      log(`Sending WH...`);
       const webhookRequest = await createWebhookRequest({
         cxId,
         type: whType,
@@ -86,7 +87,7 @@ export const processPatientDocumentRequest = async (
         requestId ? { requestId } : undefined,
         metadata
       );
-      log(`WH sent successfully.`);
+      log(`WH Sent successfully`);
     } else {
       log(`WH disabled. Not sending it`);
       await createWebhookRequest({
@@ -94,7 +95,7 @@ export const processPatientDocumentRequest = async (
         type: whType,
         payload,
         requestId,
-        status: "not_sent",
+        status: "success",
       });
     }
 
