@@ -20,7 +20,7 @@ export type DAPIWebhookType = (typeof dapiWebhookType)[number];
 export type MAPIWebhookType = MAPIWebhookTypeFromShared;
 export type WebhookType = WebhookTypeFromShared | DAPIWebhookType;
 
-export type WebhookRequestStatus = "processing" | "success" | "failure";
+export type WebhookRequestStatus = "processing" | "success" | "failure" | "not_sent";
 
 export interface WebhookRequestCreate extends Omit<BaseDomainCreate, "id"> {
   cxId: string;

@@ -93,7 +93,7 @@ export const processPatientDocumentRequest = async (
         type: whType,
         payload,
         requestId,
-        status: "success",
+        status: "not_sent",
       });
     }
 
