@@ -1,6 +1,6 @@
 import { Config } from "../../util/config";
 
-export type ConsolidatedFileType = "original" | "dedup" | "normalize" | "invalid";
+export type ConsolidatedFileType = "original" | "deduped" | "normalized" | "invalid";
 
 export function getConsolidatedLocation() {
   return Config.getMedicalDocumentsBucketName();

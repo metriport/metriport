@@ -24,23 +24,27 @@ beforeEach(() => {
 });
 
 describe("normalizeObservations", () => {
-  it("correctly handle temperature units", () => {
+  it("correctly handle temperature celsius", () => {
     observation.valueQuantity = cloneDeep(valueQuantityTempCel);
 
-    let hydrated = normalizeObservations([observation]);
-    expect(hydrated.length).toBe(1);
-    let result = hydrated[0];
+    const normalized = normalizeObservations([observation]);
+    expect(normalized.length).toBe(1);
+    const result = normalized[0];
+    expect(result).toBeTruthy();
     if (!result) throw new Error("Expected result undefined");
 
     expect(result.valueQuantity?.unit).toBe("F");
     expect(result.valueQuantity?.value).toBe(98.6);
     expect(result.valueQuantity?.code).toBe("degF");
+  });
 
+  it("correctly handle temperature farhrenheit", () => {
     observation.valueQuantity = cloneDeep(valueQuantityTempF);
 
-    hydrated = normalizeObservations([observation]);
-    expect(hydrated.length).toBe(1);
-    result = hydrated[0];
+    const normalized = normalizeObservations([observation]);
+    expect(normalized.length).toBe(1);
+    const result = normalized[0];
+
     if (!result) throw new Error("Expected result undefined");
 
     expect(result.valueQuantity?.unit).toBe("F");
@@ -48,44 +52,49 @@ describe("normalizeObservations", () => {
     expect(result.valueQuantity?.code).toBe("degF");
   });
 
-  it("correctly handle weight units", () => {
+  it("correctly handle weight kg", () => {
     observation.valueQuantity = cloneDeep(valueQuantityWeightKg);
 
-    let hydrated = normalizeObservations([observation]);
-    expect(hydrated.length).toBe(1);
-    let result = hydrated[0];
+    const normalized = normalizeObservations([observation]);
+    expect(normalized.length).toBe(1);
+    const result = normalized[0];
+    expect(result).toBeTruthy();
     if (!result) throw new Error("Expected result undefined");
     expect(result.valueQuantity?.unit).toBe("lb");
     expect(result.valueQuantity?.value).toBe(149.91);
+  });
 
+  it("correctly handle weight lb", () => {
     observation.valueQuantity = cloneDeep(valueQuantityWeightLb);
 
-    hydrated = normalizeObservations([observation]);
-    expect(hydrated.length).toBe(1);
-    result = hydrated[0];
-
+    const normalized = normalizeObservations([observation]);
+    expect(normalized.length).toBe(1);
+    const result = normalized[0];
+    expect(result).toBeTruthy();
     if (!result) throw new Error("Expected result undefined");
     expect(result.valueQuantity?.unit).toBe("lb");
     expect(result.valueQuantity?.value).toBe(valueQuantityWeightLb.value);
   });
 
-  it("correctly handle height units", () => {
+  it("correctly handle height cm", () => {
     observation.valueQuantity = cloneDeep(valueQuantityHeightCm);
 
-    let hydrated = normalizeObservations([observation]);
-    expect(hydrated.length).toBe(1);
-    let result = hydrated[0];
-
+    const normalized = normalizeObservations([observation]);
+    expect(normalized.length).toBe(1);
+    const result = normalized[0];
+    expect(result).toBeTruthy();
     if (!result) throw new Error("Expected result undefined");
     expect(result.valueQuantity?.unit).toBe("in");
     expect(result.valueQuantity?.value).toBe(62.99);
+  });
 
+  it("correctly handle height in", () => {
     observation.valueQuantity = cloneDeep(valueQuantityHeightIn);
 
-    hydrated = normalizeObservations([observation]);
-    expect(hydrated.length).toBe(1);
-    result = hydrated[0];
-
+    const normalized = normalizeObservations([observation]);
+    expect(normalized.length).toBe(1);
+    const result = normalized[0];
+    expect(result).toBeTruthy();
     if (!result) throw new Error("Expected result undefined");
     expect(result.valueQuantity?.unit).toBe("in");
     expect(result.valueQuantity?.value).toBe(valueQuantityHeightIn.value);
@@ -95,15 +104,17 @@ describe("normalizeObservations", () => {
     observation.valueQuantity = cloneDeep(valueQuantityHemoglobin);
     observation.referenceRange = cloneDeep(referenceRangeHemoglobin);
 
-    const hydrated = normalizeObservations([observation]);
-    expect(hydrated.length).toBe(1);
-    const result = hydrated[0];
+    const normalized = normalizeObservations([observation]);
+    expect(normalized.length).toBe(1);
+    const result = normalized[0];
+    expect(result).toBeTruthy();
     if (!result) throw new Error("Expected result undefined");
 
     expect(result.valueQuantity?.unit).toBe("g/dL");
     expect(result.valueQuantity?.value).toBe(valueQuantityHemoglobin.value);
 
     const rangeResult = result.referenceRange;
+    expect(rangeResult).toBeTruthy();
     if (!rangeResult) throw new Error("Expected rangeResult undefined");
 
     expect(rangeResult.length).toBe(1);
@@ -115,11 +126,13 @@ describe("normalizeObservations", () => {
     observation.valueQuantity = cloneDeep(valueQuantityHemoglobin);
     observation.referenceRange = cloneDeep(referenceRangeHemoglobinNoUnit);
 
-    const hydrated = normalizeObservations([observation]);
-    const result = hydrated[0];
+    const normalized = normalizeObservations([observation]);
+    const result = normalized[0];
+    expect(result).toBeTruthy();
     if (!result) throw new Error("Expected result undefined");
 
     const rangeResult = result.referenceRange;
+    expect(rangeResult).toBeTruthy();
     if (!rangeResult) throw new Error("Expected rangeResult undefined");
 
     expect(rangeResult[0]?.low?.unit).toBe("g/dL");

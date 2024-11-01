@@ -93,13 +93,13 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
         ...params,
         s3BucketName: this.bucketName,
         bundle: normalizedBundle,
-        type: "normalize",
+        type: "normalized",
       }),
       uploadConsolidatedSnapshotToS3({
         ...params,
         s3BucketName: this.bucketName,
         bundle: dedupedBundle,
-        type: "dedup",
+        type: "deduped",
       }),
     ]);
 
