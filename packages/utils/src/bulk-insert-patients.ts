@@ -248,7 +248,7 @@ function normalizeName(name: string | undefined, propName: string): string {
 
 function normalizeAddressLine(addressLine: string | undefined, propName: string): string {
   if (addressLine == undefined) throw new Error(`Missing ` + propName);
-  return toTitleCase(addressLine);
+  return toTitleCase(addressLine.replace(/\./g, ""));
 }
 
 function normalizeCity(city: string | undefined): string {
