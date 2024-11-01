@@ -87,6 +87,7 @@ export const processPatientDocumentRequest = async (
         metadata
       );
     } else {
+      log(`WH disabled. Not sending it`);
       // TODO 858 indicate this was not really sent to the customer
       await createWebhookRequest({
         cxId,
