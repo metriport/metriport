@@ -2,6 +2,13 @@ import { errorToString, MetriportError } from "@metriport/shared";
 import { makePatientImportHandler } from "@metriport/core/command/patient-import/patient-import-factory";
 import { ProcessPatientImportEvemtPayload } from "@metriport/core/command/patient-import/patient-import-cloud";
 import { ProcessPatientImportRequest } from "@metriport/core/command/patient-import/patient-import";
+import {
+  parseCxIdAndJob,
+  parseFacilityId,
+  parseTriggerConsolidated,
+  parseDisableWebhooks,
+  parseRerunPdOnNewDemos,
+} from "./shared/patient-import";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
@@ -23,7 +30,15 @@ export async function handler(event: ProcessPatientImportEvemtPayload) {
   try {
     console.log(`Running with unparsed body: ${JSON.stringify(event)}`);
     const parsedBody = parseBody(event);
-    const { cxId, facilityId, jobId, rerunPdOnNewDemographics, dryrun } = parsedBody;
+    const {
+      cxId,
+      facilityId,
+      jobId,
+      triggerConsolidated,
+      disableWebhooks,
+      rerunPdOnNewDemographics,
+      dryrun,
+    } = parsedBody;
 
     const jobStartedAt = new Date().toISOString();
 
@@ -42,6 +57,8 @@ export async function handler(event: ProcessPatientImportEvemtPayload) {
         jobStartedAt,
         s3BucketName: patientImportBucket,
         processPatientCreateQueue,
+        triggerConsolidated,
+        disableWebhooks,
         rerunPdOnNewDemographics,
         dryrun,
       };
@@ -74,23 +91,11 @@ function parseBody(body?: unknown): ProcessPatientImportEvemtPayload {
 
   const bodyAsJson = typeof body === "string" ? JSON.parse(body) : body;
 
-  const cxIdRaw = bodyAsJson.cxId;
-  if (!cxIdRaw) throw new Error(`Missing cxId`);
-  if (typeof cxIdRaw !== "string") throw new Error(`Invalid cxId`);
-
-  const facilityIdRaw = bodyAsJson.facilityId;
-  if (!facilityIdRaw) throw new Error(`Missing cxId`);
-  if (typeof facilityIdRaw !== "string") throw new Error(`Invalid facilityId`);
-
-  const jobIdRaw = bodyAsJson.jobId;
-  if (!jobIdRaw) throw new Error(`Missing jobId`);
-  if (typeof jobIdRaw !== "string") throw new Error(`Invalid jobId`);
-
-  const rerunPdOnNewDemographicsRaw = bodyAsJson.rerunPdOnNewDemographics;
-  if (rerunPdOnNewDemographicsRaw === undefined)
-    throw new Error(`Missing rerunPdOnNewDemographics`);
-  if (typeof rerunPdOnNewDemographicsRaw !== "boolean")
-    throw new Error(`Invalid rerunPdOnNewDemographics`);
+  const { cxIdRaw, jobIdRaw } = parseCxIdAndJob(bodyAsJson);
+  const { facilityIdRaw } = parseFacilityId(bodyAsJson);
+  const { triggerConsolidatedRaw } = parseTriggerConsolidated(bodyAsJson);
+  const { disableWebhooksRaw } = parseDisableWebhooks(bodyAsJson);
+  const { rerunPdOnNewDemographicsRaw } = parseRerunPdOnNewDemos(bodyAsJson);
 
   const dryrunRaw = bodyAsJson.dryrun;
   if (dryrunRaw === undefined) throw new Error(`Missing dryrun`);
@@ -99,8 +104,18 @@ function parseBody(body?: unknown): ProcessPatientImportEvemtPayload {
   const cxId = cxIdRaw as string;
   const facilityId = facilityIdRaw as string;
   const jobId = jobIdRaw as string;
+  const triggerConsolidated = triggerConsolidatedRaw as boolean;
+  const disableWebhooks = disableWebhooksRaw as boolean;
   const rerunPdOnNewDemographics = rerunPdOnNewDemographicsRaw as boolean;
   const dryrun = dryrunRaw as boolean;
 
-  return { cxId, facilityId, jobId, rerunPdOnNewDemographics, dryrun };
+  return {
+    cxId,
+    facilityId,
+    jobId,
+    triggerConsolidated,
+    disableWebhooks,
+    rerunPdOnNewDemographics,
+    dryrun,
+  };
 }
