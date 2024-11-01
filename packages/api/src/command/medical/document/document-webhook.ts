@@ -1,11 +1,12 @@
 import { PatientData } from "@metriport/core/domain/patient";
+import { out } from "@metriport/core/util";
 import { WebhookMetadata } from "@metriport/shared/medical";
 import { Product } from "../../../domain/product";
 import { MAPIWebhookType } from "../../../domain/webhook";
+import { patientEvents } from "../../../event/medical/patient-event";
 import { DocumentBulkUrlDTO } from "../../../routes/medical/dtos/document-bulk-downloadDTO";
 import { DocumentReferenceDTO } from "../../../routes/medical/dtos/documentDTO";
 import { capture } from "../../../shared/notifications";
-import { Util } from "../../../shared/util";
 import { getSettingsOrFail } from "../../settings/getSettings";
 import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
 import { isWebhookDisabled, processRequest } from "../../webhook/webhook";
@@ -13,9 +14,6 @@ import { createWebhookRequest } from "../../webhook/webhook-request";
 import { updateProgressWebhookSent } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
 import { CONVERSION_WEBHOOK_TYPE, DOWNLOAD_WEBHOOK_TYPE } from "./process-doc-query-webhook";
-import { patientEvents } from "../../../event/medical/patient-event";
-
-const log = Util.log(`Document Webhook`);
 
 export enum MAPIWebhookStatus {
   completed = "completed",
@@ -52,6 +50,7 @@ export const processPatientDocumentRequest = async (
   requestId: string | undefined,
   documents?: DocumentReferenceDTO[] | DocumentBulkUrlDTO[]
 ): Promise<void> => {
+  const { log } = out(`Document Webhook - cxId: ${cxId}, patientId: ${patientId}`);
   try {
     const [settings, patient] = await Promise.all([
       getSettingsOrFail({ id: cxId }),
@@ -73,7 +72,7 @@ export const processPatientDocumentRequest = async (
 
     // send it to the customer and update the request status
     if (!isWebhookDisabled(metadata)) {
-      log(`Sending WH...`);
+      log(`Sending WH... metadata: ${metadata}`);
       const webhookRequest = await createWebhookRequest({
         cxId,
         type: whType,
@@ -89,7 +88,7 @@ export const processPatientDocumentRequest = async (
       );
       log(`WH Sent successfully`);
     } else {
-      log(`WH disabled. Not sending it`);
+      log(`WH disabled. Not sending it - metadata: ${metadata}`);
       await createWebhookRequest({
         cxId,
         type: whType,
