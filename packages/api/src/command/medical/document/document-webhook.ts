@@ -86,7 +86,6 @@ export const processPatientDocumentRequest = async (
         requestId ? { requestId } : undefined,
         metadata
       );
-      log(`WH Sent successfully`);
     } else {
       log(`WH disabled. Not sending it - metadata: ${metadata}`);
       await createWebhookRequest({
