@@ -1,7 +1,7 @@
 import {
   errorToString,
   normalizePhoneNumber as normalizePhoneNumberFromShared,
-  normalizeZipCode,
+  normalizeZipCodeNew,
 } from "@metriport/shared";
 import { Address } from "../domain/address";
 import { PatientData } from "../domain/patient";
@@ -36,7 +36,7 @@ export function normalizePatient<T extends PatientData>(patient: T): T {
         const newAddress: Address = {
           addressLine1: normalizeAddress(addr.addressLine1),
           city: normalizeString(addr.city),
-          zip: normalizeZipCode(addr.zip),
+          zip: normalizeZipCodeNew(addr.zip),
           state: addr.state,
           country: addr.country || "USA",
         };
@@ -76,7 +76,7 @@ export function normalizePatientInboundMpi<T extends PatientData>(patient: T): T
           // https://github.com/metriport/metriport-internal/issues/2368
           addressLine1: normalizeAddress(addr.addressLine1),
           city: normalizeString(addr.city),
-          zip: normalizeZipCode(addr.zip),
+          zip: normalizeZipCodeNew(addr.zip),
           state: addr.state,
           country: addr.country || "USA",
         };
