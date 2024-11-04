@@ -7,7 +7,11 @@ import {
   SampledData,
 } from "@medplum/fhirtypes";
 import { LOINC_CODE, LOINC_OID, SNOMED_CODE, SNOMED_OID } from "../../util/constants";
-import { isUnknownCoding } from "../shared";
+import {
+  isUnknownCoding,
+  fetchCodingCodeOrDisplayOrSystem,
+  fetchCodeableConceptText,
+} from "../shared";
 
 export const observationStatus = [
   "entered-in-error",
@@ -45,15 +49,15 @@ export function extractCodes(concept: CodeableConcept | undefined): {
 
   if (concept && concept.coding) {
     for (const coding of concept.coding) {
-      const system = coding.system?.toLowerCase();
-      const code = coding.code?.trim().toLowerCase();
+      const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+      const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
       if (system && code) {
         if (system.includes(LOINC_CODE) || system.includes(LOINC_OID)) {
           loincCode = code;
         } else if (system.includes(SNOMED_CODE) || system.includes(SNOMED_OID)) {
           snomedCode = code;
         } else {
-          const text = concept.text?.trim().toLowerCase();
+          const text = fetchCodeableConceptText(concept, "text");
           if (isUnknownCoding(coding, text)) {
             continue;
           } else {
