@@ -742,7 +742,10 @@ module.exports.external = [
         }
       }
 
-      return combinedArr;
+      return combinedArr.filter(el => {
+        if (!el) return true;
+        return !("lookupProperty" in el);
+      });
     },
   },
   {
