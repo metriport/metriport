@@ -333,8 +333,10 @@ export function extractDisplayFromConcept(
   concept: CodeableConcept | undefined
 ): string | undefined {
   const displayCoding = concept?.coding?.find(coding => {
-    if (coding.code !== UNK_CODE && coding.display !== UNKNOWN_DISPLAY) {
-      return coding.display;
+    const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
+    const display = fetchCodingCodeOrDisplayOrSystem(coding, "display");
+    if (code !== UNK_CODE && display !== UNKNOWN_DISPLAY) {
+      return display;
     }
     return;
   });

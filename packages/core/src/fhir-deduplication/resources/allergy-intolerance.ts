@@ -186,7 +186,12 @@ function isUnknownAllergy(substance: CodeableConcept | undefined): boolean {
     return true;
   }
 
-  if (coding?.some(coding => isUnknownAllergyText(coding.display))) {
+  if (
+    coding?.some(coding => {
+      const display = fetchCodingCodeOrDisplayOrSystem(coding, "display");
+      return isUnknownAllergyText(display);
+    })
+  ) {
     return true;
   }
 
@@ -194,7 +199,7 @@ function isUnknownAllergy(substance: CodeableConcept | undefined): boolean {
 }
 
 function isUnknownAllergyText(text: string | undefined) {
-  return text && blacklistedSubstanceDisplays.includes(text.toLowerCase().trim());
+  return text && blacklistedSubstanceDisplays.includes(text.trim().toLowerCase());
 }
 
 function isKnownManifestation(concept: CodeableConcept) {
