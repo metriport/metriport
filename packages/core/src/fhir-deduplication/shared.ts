@@ -1,11 +1,10 @@
-import { CodeableConcept, Coding, Identifier, Resource, Period } from "@medplum/fhirtypes";
+import { CodeableConcept, Coding, Identifier, Period, Resource } from "@medplum/fhirtypes";
+import { errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import _, { cloneDeep } from "lodash";
 import { v4 as uuidv4 } from "uuid";
-import { errorToString } from "@metriport/shared";
-import { capture } from "../util";
-import { out } from "../util";
+import { capture, out } from "../util";
 
 dayjs.extend(utc);
 
@@ -416,11 +415,12 @@ export function fetchCodingCodeOrDisplayOrSystem(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     if (error instanceof TypeError) {
-      const msg = `Error fetching field from coding. ${errorToString(error)}`;
-      log(msg);
+      const msg = "Error fetching field from coding.";
+      log(`${msg}. Cause: ${errorToString(error)}`);
       capture.message(msg, {
         extra: {
           coding,
+          error,
         },
         level: "info",
       });
@@ -430,21 +430,19 @@ export function fetchCodingCodeOrDisplayOrSystem(
   }
 }
 
-export function fetchCodeableConceptText(
-  concept: CodeableConcept,
-  field: "text"
-): string | undefined {
+export function fetchCodeableConceptText(concept: CodeableConcept): string | undefined {
   const { log } = out(`fetchCodeableConceptText - coding ${concept}`);
   try {
-    return concept[field]?.trim().toLowerCase();
+    return concept.text?.trim().toLowerCase();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     if (error instanceof TypeError) {
-      const msg = `Error fetching field from concept. ${errorToString(error)}`;
-      log(msg);
+      const msg = "Error fetching field from concept.";
+      log(`${msg}. Cause: ${errorToString(error)}`);
       capture.message(msg, {
         extra: {
           concept,
+          error,
         },
         level: "info",
       });

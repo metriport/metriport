@@ -57,7 +57,7 @@ export function extractCodes(concept: CodeableConcept | undefined): {
         } else if (system.includes(SNOMED_CODE) || system.includes(SNOMED_OID)) {
           snomedCode = code;
         } else {
-          const text = fetchCodeableConceptText(concept, "text");
+          const text = fetchCodeableConceptText(concept);
           if (isUnknownCoding(coding, text)) {
             continue;
           } else {
