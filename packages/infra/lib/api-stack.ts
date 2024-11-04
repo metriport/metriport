@@ -46,6 +46,7 @@ import { EnvType } from "./env-type";
 import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
 import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { PatientImportNestedStack } from "./patient-import-nested-stack";
+import { RateLimitingNestedStack } from "./rate-limiting-nested-stack";
 import * as AppConfigUtils from "./shared/app-config";
 import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
@@ -340,6 +341,9 @@ export class APIStack extends Stack {
       },
     });
 
+    //-------------------------------------------
+    // Patient Import
+    //-------------------------------------------
     const {
       importFileLambda: patientImportLambda,
       patientCreateLambda,
@@ -350,6 +354,20 @@ export class APIStack extends Stack {
       vpc: this.vpc,
       alarmAction: slackNotification?.alarmAction,
     });
+
+    //-------------------------------------------
+    // Rate Limiting
+    //-------------------------------------------
+    const { rateLimitingTrackingTable, rateLimitingSettingsTable } = new RateLimitingNestedStack(
+      this,
+      "RateLimitingNestedStack",
+      {
+        config: props.config,
+        lambdaLayers,
+        vpc: this.vpc,
+        alarmAction: slackNotification?.alarmAction,
+      }
+    );
 
     //-------------------------------------------
     // OPEN SEARCH Domains
@@ -449,6 +467,8 @@ export class APIStack extends Stack {
       fhirToMedicalRecordLambda,
       fhirToCdaConverterLambda,
       fhirToBundleLambda,
+      rateLimitingTrackingTable,
+      rateLimitingSettingsTable,
       searchIngestionQueue: ccdaSearchQueue,
       searchEndpoint: ccdaSearchDomain.domainEndpoint,
       searchAuth: { userName: ccdaSearchUserName, secret: ccdaSearchSecret },

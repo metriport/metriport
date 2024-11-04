@@ -102,6 +102,8 @@ export function createAPIService({
   fhirToBundleLambda,
   fhirToMedicalRecordLambda,
   fhirToCdaConverterLambda,
+  rateLimitingTrackingTable,
+  rateLimitingSettingsTable,
   searchIngestionQueue,
   searchEndpoint,
   searchAuth,
@@ -134,6 +136,8 @@ export function createAPIService({
   fhirToBundleLambda: ILambda;
   fhirToMedicalRecordLambda: ILambda | undefined;
   fhirToCdaConverterLambda: ILambda | undefined;
+  rateLimitingTrackingTable: dynamodb.Table;
+  rateLimitingSettingsTable: dynamodb.Table;
   searchIngestionQueue: IQueue;
   searchEndpoint: string;
   searchAuth: { userName: string; secret: ISecret };
@@ -264,6 +268,8 @@ export function createAPIService({
           ...(fhirConverterServiceUrl && {
             FHIR_CONVERTER_SERVER_URL: fhirConverterServiceUrl,
           }),
+          RATE_LIMITING_TRACKING_TABLE_NAME: rateLimitingTrackingTable.tableName,
+          RATE_LIMITING_SETTINGS_TABLE_NAME: rateLimitingSettingsTable.tableName,
           SEARCH_INGESTION_QUEUE_URL: searchIngestionQueue.queueUrl,
           SEARCH_ENDPOINT: searchEndpoint,
           SEARCH_USERNAME: searchAuth.userName,
@@ -370,6 +376,8 @@ export function createAPIService({
   }
   // RW grant for Dynamo DB
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
+  rateLimitingTrackingTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
+  rateLimitingSettingsTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
 
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
