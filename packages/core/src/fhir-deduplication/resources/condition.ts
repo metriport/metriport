@@ -112,8 +112,9 @@ export function groupSameConditions(conditions: Condition[]): {
 
 function isKnownCondition(concept: CodeableConcept | undefined) {
   const knownCodings = concept?.coding?.filter(coding => {
+    const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
     const display = fetchCodingCodeOrDisplayOrSystem(coding, "display");
-    return !isUnknownCoding(coding) && (coding.code !== "55607006" || display !== "problem");
+    return !isUnknownCoding(coding) && (code !== "55607006" || display !== "problem");
   });
 
   return knownCodings?.length && knownCodings?.length > 0;
