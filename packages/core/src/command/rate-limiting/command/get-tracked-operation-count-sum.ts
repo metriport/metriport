@@ -40,7 +40,7 @@ export async function getTrackedOperationCountSum({
 
   const trackings = await ddbUtils.query({
     keyConditionExpression: "timestamp BETWEEN :start AND :end",
-    expressionAttributesValues: { ":start": { S: `${start}` }, ":end": { S: `${end}` } },
+    expressionAttributesValues: { ":start": { S: start }, ":end": { S: end } },
   });
   if (!trackings.Items) return undefined;
   const trackingEntries = trackingEntriesSchema.safeParse(trackings.Items);

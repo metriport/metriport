@@ -1,5 +1,10 @@
 import * as AWS from "aws-sdk";
-import { DocumentClient, Key, ExpressionAttributeValueMap } from "aws-sdk/clients/dynamodb";
+import {
+  DocumentClient,
+  Key,
+  ExpressionAttributeValueMap,
+  ConditionExpression,
+} from "aws-sdk/clients/dynamodb";
 
 export class DynamoDbUtils {
   public readonly _docClient: DocumentClient;
@@ -22,17 +27,20 @@ export class DynamoDbUtils {
   async update({
     expression,
     expressionAttributesValues,
+    conditionExpression,
     returnValue = "ALL_NEW",
   }: {
     expression: string;
+    conditionExpression?: ConditionExpression;
     expressionAttributesValues: ExpressionAttributeValueMap;
     returnValue?: "ALL_OLD" | "ALL_NEW";
   }): Promise<DocumentClient.UpdateItemOutput> {
     const params: DocumentClient.UpdateItemInput = {
       TableName: this._table,
       Key: this._key,
-      ExpressionAttributeValues: expressionAttributesValues,
       UpdateExpression: expression,
+      ...(conditionExpression && { ConditionExpression: conditionExpression }),
+      ExpressionAttributeValues: expressionAttributesValues,
       ReturnValues: returnValue,
     };
     // update will insert if not exists

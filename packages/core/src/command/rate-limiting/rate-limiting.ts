@@ -20,13 +20,15 @@ export async function checkRateLimit({
     throw new MetriportError("Operation missing seconds lookup", undefined, { operation });
 
   const end = buildDayjs();
+  const endStr = end.format(secondGranularityIsoDateTime);
   const start = end.subtract(secondsLookback, "seconds");
+  const startStr = start.format(secondGranularityIsoDateTime);
   const [currentCount, limit] = await Promise.all([
     getTrackedOperationCountSum({
       cxId,
       operation,
-      start: start.format(secondGranularityIsoDateTime),
-      end: end.format(secondGranularityIsoDateTime),
+      start: startStr,
+      end: endStr,
     }),
     getCxRateSettingValue({
       cxId,
@@ -39,6 +41,7 @@ export async function checkRateLimit({
   updateTrackedOperationCount({
     cxId,
     operation,
+    end: endStr,
   });
   return true;
 }
