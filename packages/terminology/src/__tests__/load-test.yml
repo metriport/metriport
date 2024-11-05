@@ -1,0 +1,24 @@
+config:
+  target: 'http://127.0.0.1:8080'
+  phases:
+    - duration: 30
+      arrivalRate: 30
+  http:
+    headers:
+      Content-Type: 'application/json'
+  processor: ./codes.ts
+
+scenarios:
+
+  - name: "lookupCode"
+    weight: 1
+    flow:
+      - function: "lookupCode"
+
+  - name: "translateCode"
+    weight: 1
+    flow:
+      - function: "translateCode"
+    
+
+
