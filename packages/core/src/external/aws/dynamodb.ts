@@ -1,13 +1,5 @@
 import * as AWS from "aws-sdk";
-import {
-  DocumentClient,
-  Key,
-  ExpressionAttributeNameMap,
-  KeyConditions,
-  KeyExpression,
-} from "aws-sdk/clients/dynamodb";
-
-export type PrimaryKey = Key;
+import { DocumentClient, Key, ExpressionAttributeValueMap } from "aws-sdk/clients/dynamodb";
 
 export class DynamoDbUtils {
   public readonly _docClient: DocumentClient;
@@ -32,9 +24,8 @@ export class DynamoDbUtils {
     expressionAttributesValues,
     returnValue = "ALL_NEW",
   }: {
-    key: string;
     expression: string;
-    expressionAttributesValues: ExpressionAttributeNameMap;
+    expressionAttributesValues: ExpressionAttributeValueMap;
     returnValue?: "ALL_OLD" | "ALL_NEW";
   }): Promise<DocumentClient.UpdateItemOutput> {
     const params: DocumentClient.UpdateItemInput = {
@@ -48,19 +39,7 @@ export class DynamoDbUtils {
     return await this._docClient.update(params).promise();
   }
 
-  async getByPrimaryKey(): Promise<DocumentClient.GetItemOutput> {
-    const params: DocumentClient.GetItemInput = {
-      TableName: this._table,
-      Key: this._key,
-    };
-    return await this._docClient.get(params).promise();
-  }
-
-  async getByPrimaryKeyAndSortKey({
-    sortKey,
-  }: {
-    sortKey: PrimaryKey;
-  }): Promise<DocumentClient.GetItemOutput> {
+  async getByKey({ sortKey }: { sortKey?: Key }): Promise<DocumentClient.GetItemOutput> {
     const params: DocumentClient.GetItemInput = {
       TableName: this._table,
       Key: { ...this._key, ...sortKey },
@@ -69,16 +48,16 @@ export class DynamoDbUtils {
   }
 
   async query({
-    keyConditions,
     keyConditionExpression,
+    expressionAttributesValues,
   }: {
-    keyConditions: KeyConditions;
-    keyConditionExpression: KeyExpression;
+    keyConditionExpression: string;
+    expressionAttributesValues: ExpressionAttributeValueMap;
   }): Promise<DocumentClient.QueryOutput> {
     const params: DocumentClient.QueryInput = {
       TableName: this._table,
-      KeyConditions: keyConditions,
       KeyConditionExpression: keyConditionExpression,
+      ExpressionAttributeValues: expressionAttributesValues,
     };
     return await this._docClient.query(params).promise();
   }

@@ -29,6 +29,7 @@ export * from "./domain/patient/patient-import";
 export { BadRequestError } from "./error/bad-request";
 export { MetriportError } from "./error/metriport-error";
 export { NotFoundError } from "./error/not-found";
+export { TooManyRequestsError } from "./error/too-many-requests";
 export { errorToString } from "./error/shared";
 export * from "./interface";
 export * as medical from "./medical";
