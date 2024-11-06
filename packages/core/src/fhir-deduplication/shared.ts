@@ -409,13 +409,13 @@ export function fetchCodingCodeOrDisplayOrSystem(
   coding: Coding,
   field: "code" | "display" | "system"
 ): string | undefined {
-  const { log } = out(`fetchCodingCodeOrDisplayOrSystem - coding ${coding}`);
+  const { log } = out(`fetchCodingCodeOrDisplayOrSystem - coding ${JSON.stringify(coding)}`);
   try {
     return coding[field]?.trim().toLowerCase();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     if (error instanceof TypeError) {
-      const msg = "Error fetching field from coding.";
+      const msg = "Error fetching field from coding";
       log(`${msg}. Cause: ${errorToString(error)}`);
       capture.message(msg, {
         extra: {
@@ -431,13 +431,13 @@ export function fetchCodingCodeOrDisplayOrSystem(
 }
 
 export function fetchCodeableConceptText(concept: CodeableConcept): string | undefined {
-  const { log } = out(`fetchCodeableConceptText - coding ${concept}`);
+  const { log } = out(`fetchCodeableConceptText - coding ${JSON.stringify(concept)}`);
   try {
     return concept.text?.trim().toLowerCase();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     if (error instanceof TypeError) {
-      const msg = "Error fetching field from concept.";
+      const msg = "Error fetching field from concept";
       log(`${msg}. Cause: ${errorToString(error)}`);
       capture.message(msg, {
         extra: {
