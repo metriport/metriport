@@ -46,9 +46,6 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
         elapsedTimeInMs
       );
 
-      console.log("URL WITH PARAM1", url);
-      console.log("URL WITH PARAM2", urlWithParams);
-
       analyzeRoute({
         req,
         method,
