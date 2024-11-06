@@ -45,8 +45,6 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
         res.statusCode,
         elapsedTimeInMs
       );
-      console.log("PARAMS", req.aggregatedParams);
-      console.log("URLLLLLL", urlWithParams);
 
       analyzeRoute({
         req,

@@ -124,7 +124,6 @@ class WebhookStatusDTO {
  */
 router.get(
   "/",
-  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const id = getCxIdOrFail(req);
