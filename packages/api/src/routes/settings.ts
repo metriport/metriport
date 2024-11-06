@@ -15,6 +15,7 @@ import { Settings } from "../models/settings";
 import { requestLogger } from "./helpers/request-logger";
 import { asyncHandler, getCxIdOrFail } from "./util";
 import { hasMapiAccess } from "../command/medical/mapi-access";
+import { handleParams } from "./helpers/handle-params";
 
 const mrSectionsKeys = [
   "reports",
@@ -123,6 +124,7 @@ class WebhookStatusDTO {
  */
 router.get(
   "/",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const id = getCxIdOrFail(req);
@@ -173,6 +175,7 @@ const updateSettingsSchema = z
  */
 router.post(
   "/",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
@@ -206,6 +209,7 @@ router.post(
  */
 router.get(
   "/webhook",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const id = getCxIdOrFail(req);
@@ -233,6 +237,7 @@ router.get(
  */
 router.post(
   "/webhook/retry",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
@@ -250,6 +255,7 @@ router.post(
  */
 router.get(
   "/mapi-access",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const id = getCxIdOrFail(req);

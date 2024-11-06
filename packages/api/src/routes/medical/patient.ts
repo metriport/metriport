@@ -101,7 +101,7 @@ router.put(
  * @return  The customer's patients associated with the given facility.
  */
 router.get(
-  "/",
+  "/:make",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { patient } = getPatientInfoOrFail(req);

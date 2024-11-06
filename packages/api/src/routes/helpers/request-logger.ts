@@ -13,14 +13,14 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
   asyncLocalStorage.run(reqId, () => {
     const method = req.method;
     const url = req.baseUrl + req.path;
-    const urlWithParams = replaceParamWithKey(
-      url,
-      req.id ? { id: req.id, ...req.params } : req.params
-    );
+    const urlWithParams = replaceParamWithKey(url, req.aggregatedParams);
 
     const cxId = getCxId(req);
     const query = req.query && Object.keys(req.query).length ? req.query : undefined;
-    const params = req.params && Object.keys(req.params).length ? req.params : undefined;
+    const params =
+      req.aggregatedParams && Object.keys(req.aggregatedParams).length
+        ? req.aggregatedParams
+        : undefined;
 
     console.log(
       "%s ..........Begins %s %s %s %s",
@@ -45,6 +45,8 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
         res.statusCode,
         elapsedTimeInMs
       );
+      console.log("PARAMS", req.aggregatedParams);
+      console.log("URLLLLLL", urlWithParams);
 
       analyzeRoute({
         req,
@@ -60,7 +62,9 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
   });
 };
 
-function replaceParamWithKey(url: string, params: Record<string, string>): string {
+function replaceParamWithKey(url: string, params: Record<string, string> | undefined): string {
+  if (!params) return url;
+
   return Object.keys(params).reduce((acc, key) => acc.replace(params[key], `:${key}`), url);
 }
 

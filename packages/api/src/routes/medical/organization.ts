@@ -15,6 +15,7 @@ import {
   organizationCreateSchema,
   organizationUpdateSchema,
 } from "./schemas/organization";
+import { handleParams } from "../helpers/handle-params";
 
 const router = Router();
 
@@ -58,6 +59,7 @@ router.post(
  */
 router.put(
   "/:id",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);

@@ -85,6 +85,7 @@ import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
 import { schemaCreateToPatientData } from "./schemas/patient";
+import { handleParams } from "../helpers/handle-params";
 
 dayjs.extend(duration);
 
@@ -198,6 +199,7 @@ router.post(
  */
 router.delete(
   "/:id",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -229,6 +231,7 @@ router.delete(
  */
 router.post(
   "/:patientId/link/:source",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -267,6 +270,7 @@ router.post(
  */
 router.delete(
   "/:patientId/link/:source",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -296,6 +300,7 @@ router.delete(
  */
 router.get(
   "/:patientId/link",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -733,6 +738,7 @@ router.get(
  */
 router.get(
   "/:id",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -754,6 +760,7 @@ router.get(
  */
 router.post(
   "/:id/patient-discovery",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -847,6 +854,7 @@ router.get(
  */
 router.post(
   "/:id/consolidated",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();

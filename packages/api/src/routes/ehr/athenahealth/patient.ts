@@ -5,6 +5,7 @@ import { getPatientIdOrFail as getPatientIdFromAthenaPatientOrFail } from "../..
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../../util";
 import { getAuthorizationToken } from "../../util";
+import { handleParams } from "../../helpers/handle-params";
 
 const router = Router();
 
@@ -17,6 +18,7 @@ const router = Router();
  */
 router.get(
   "/:id",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const accessToken = getAuthorizationToken(req);
