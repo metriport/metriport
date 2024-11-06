@@ -128,7 +128,7 @@ export function groupSameRelatedPersons(relatedPersons: RelatedPerson[]): {
 function extractName(names: HumanName[] | undefined): string | undefined {
   if (!names) return undefined;
   for (const name of names) {
-    const first = name.given?.join(" ").trim();
+    const first = name.given?.map(name => name.trim()).join(" ");
     const last = name.family?.trim();
     const text = name.text?.trim();
 
