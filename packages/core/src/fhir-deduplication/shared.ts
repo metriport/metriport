@@ -1,8 +1,10 @@
-import { CodeableConcept, Coding, Identifier, Resource, Period } from "@medplum/fhirtypes";
+import { CodeableConcept, Coding, Identifier, Period, Resource } from "@medplum/fhirtypes";
+import { errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import _, { cloneDeep } from "lodash";
 import { v4 as uuidv4 } from "uuid";
+import { capture, out } from "../util";
 
 dayjs.extend(utc);
 
@@ -330,8 +332,10 @@ export function extractDisplayFromConcept(
   concept: CodeableConcept | undefined
 ): string | undefined {
   const displayCoding = concept?.coding?.find(coding => {
-    if (coding.code !== UNK_CODE && coding.display !== UNKNOWN_DISPLAY) {
-      return coding.display;
+    const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
+    const display = fetchCodingCodeOrDisplayOrSystem(coding, "display");
+    if (code !== UNK_CODE && display !== UNKNOWN_DISPLAY) {
+      return display;
     }
     return;
   });
@@ -361,8 +365,8 @@ export const unknownCode = {
 
 export function isUnknownCoding(coding: Coding, text?: string | undefined): boolean {
   if (_.isEqual(coding, unknownCoding)) return true;
-  const code = coding.code?.trim().toLowerCase();
-  const display = coding.display?.trim().toLowerCase();
+  const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
+  const display = fetchCodingCodeOrDisplayOrSystem(coding, "display");
 
   if (code) {
     return (
@@ -399,4 +403,51 @@ export function ensureValidPeriod(period: Period | undefined): Period | undefine
     }
   }
   return period;
+}
+
+export function fetchCodingCodeOrDisplayOrSystem(
+  coding: Coding,
+  field: "code" | "display" | "system"
+): string | undefined {
+  const { log } = out(`fetchCodingCodeOrDisplayOrSystem - coding ${coding}`);
+  try {
+    return coding[field]?.trim().toLowerCase();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    if (error instanceof TypeError) {
+      const msg = "Error fetching field from coding.";
+      log(`${msg}. Cause: ${errorToString(error)}`);
+      capture.message(msg, {
+        extra: {
+          coding,
+          error,
+        },
+        level: "info",
+      });
+      return undefined;
+    }
+    throw error;
+  }
+}
+
+export function fetchCodeableConceptText(concept: CodeableConcept): string | undefined {
+  const { log } = out(`fetchCodeableConceptText - coding ${concept}`);
+  try {
+    return concept.text?.trim().toLowerCase();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    if (error instanceof TypeError) {
+      const msg = "Error fetching field from concept.";
+      log(`${msg}. Cause: ${errorToString(error)}`);
+      capture.message(msg, {
+        extra: {
+          concept,
+          error,
+        },
+        level: "info",
+      });
+      return undefined;
+    }
+    throw error;
+  }
 }
