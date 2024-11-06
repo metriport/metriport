@@ -49,6 +49,11 @@ const metriportAPI = new MetriportMedicalApi(apiKey, {
  * WARNING: it will override the *_deduped.json files from the source folder!!!
  */
 async function main() {
+  console.log(
+    `Running with createBundle = ${createBundle}${
+      createBundle ? `and existingPatientId ${existingPatientId}` : ""
+    }`
+  );
   const filteredBundleFileNames = await createOrGetBundles(
     createBundle,
     createBundle ? existingPatientId : undefined
@@ -98,44 +103,45 @@ async function createOrGetBundles(createBundle: boolean, patientId?: string) {
     recursive: true,
     extension: "json",
   });
-  if (createBundle) {
-    if (!patientId || patientId === "")
-      throw new Error("Patient ID is required when creating a bundle");
-    const patient = await metriportAPI.getPatient(patientId);
-
-    const fhirPatient = patientToFhir({
-      id: patient.id,
-      data: {
-        ...patient,
-        personalIdentifiers: [], // Typing fix -- not relevant for script
-        address: [], // Typing fix -- not relevant for script
-        contact: [], // Typing fix -- not relevant for script
-      },
-    });
-    const patientEntry = buildBundleEntry(fhirPatient);
-
-    const mergedBundle = buildConsolidatedBundle();
-    await executeAsynchronously(fileNames, async filePath => {
-      console.log(`Getting conversion bundle from fileNames ${filePath}`);
-      const contents = getFileContents(filePath);
-      console.log(`Merging bundle ${filePath} into the consolidated one`);
-      const singleConversion = parseFhirBundle(contents);
-      if (!singleConversion) {
-        console.log(`No valid bundle found in ${filePath}, skipping`);
-        return;
-      }
-      merge(singleConversion).into(mergedBundle);
-    });
-
-    const conversions = mergedBundle.entry ?? [];
-    const withDups = buildConsolidatedBundle();
-    withDups.entry = [...conversions, patientEntry]; // Missing ...docRefs.map(buildBundleEntry)
-    withDups.total = withDups.entry.length;
-    const bundleFileName = `${samplesFolderPath}/generatedBundle${patientId}`;
-    fs.writeFileSync(bundleFileName, JSON.stringify(withDups));
-    return [bundleFileName];
+  if (!createBundle) {
+    return fileNames.filter(f => !f.includes(suffix));
   }
-  return fileNames.filter(f => !f.includes(suffix));
+  if (!patientId || patientId === "") {
+    throw new Error("Patient ID is required when creating a bundle");
+  }
+  const patient = await metriportAPI.getPatient(patientId);
+
+  const fhirPatient = patientToFhir({
+    id: patient.id,
+    data: {
+      ...patient,
+      personalIdentifiers: [], // Typing fix -- not relevant for script
+      address: [], // Typing fix -- not relevant for script
+      contact: [], // Typing fix -- not relevant for script
+    },
+  });
+  const patientEntry = buildBundleEntry(fhirPatient);
+
+  const mergedBundle = buildConsolidatedBundle();
+  await executeAsynchronously(fileNames, async filePath => {
+    console.log(`Getting conversion bundle from filePath ${filePath}`);
+    const contents = getFileContents(filePath);
+    console.log(`Merging bundle ${filePath} into the consolidated one`);
+    const singleConversion = parseFhirBundle(contents);
+    if (!singleConversion) {
+      console.log(`No valid bundle found in ${filePath}, skipping`);
+      return;
+    }
+    merge(singleConversion).into(mergedBundle);
+  });
+
+  const conversions = mergedBundle.entry ?? [];
+  const withDups = buildConsolidatedBundle();
+  withDups.entry = [...conversions, patientEntry]; // Missing ...docRefs.map(buildBundleEntry)
+  withDups.total = withDups.entry.length;
+  const bundleFileName = `${samplesFolderPath}/generatedBundle${patientId}`;
+  fs.writeFileSync(bundleFileName, JSON.stringify(withDups));
+  return [bundleFileName];
 }
 
 main();
