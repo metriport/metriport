@@ -13,7 +13,10 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
   asyncLocalStorage.run(reqId, () => {
     const method = req.method;
     const url = req.baseUrl + req.path;
-    const urlWithParams = replaceParamWithKey(url, req.params);
+    const urlWithParams = replaceParamWithKey(
+      url,
+      req.id ? { id: req.id, ...req.params } : req.params
+    );
 
     const cxId = getCxId(req);
     const query = req.query && Object.keys(req.query).length ? req.query : undefined;
@@ -42,6 +45,9 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
         res.statusCode,
         elapsedTimeInMs
       );
+
+      console.log("URL WITH PARAM1", url);
+      console.log("URL WITH PARAM2", urlWithParams);
 
       analyzeRoute({
         req,
