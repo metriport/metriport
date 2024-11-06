@@ -122,6 +122,7 @@ router.post(
  */
 router.get(
   "/directory/organization/:oid",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
