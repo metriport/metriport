@@ -1,6 +1,7 @@
 import Router from "express-promise-router";
 import { patientAuthorization } from "../../middlewares/patient-authorization";
 import { processPatientRoute, processDocumentRoute } from "./auth/middleware";
+import { handleParams } from "../../helpers/handle-params";
 import patient from "./patient";
 import chart from "./chart";
 import medicalPatient from "../../medical/patient";
@@ -13,6 +14,7 @@ routes.use("/patient", patient);
 routes.use("/chart", chart);
 routes.use(
   "/medical/v1/patient/:id",
+  handleParams,
   processPatientRoute,
   patientAuthorization("query"),
   medicalPatient
