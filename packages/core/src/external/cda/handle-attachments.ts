@@ -7,13 +7,15 @@ import {
   Extension,
   Identifier,
 } from "@medplum/fhirtypes";
-import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { executeWithNetworkRetries } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { cloneDeep } from "lodash";
 import { MedicalDataSource, isMedicalDataSource } from "..";
 import { createAttachmentUploadPath } from "../../domain/document/upload";
 import { createFilePathFromFileName } from "../../domain/filename";
+import { executeAsynchronously } from "../../util/concurrency";
 import { Config } from "../../util/config";
+import { out } from "../../util/log";
 import { sizeInBytes } from "../../util/string";
 import { uuidv4 } from "../../util/uuid-v7";
 import { S3Utils, UploadParams } from "../aws/s3";
@@ -22,8 +24,6 @@ import { cwExtension } from "../commonwell/extension";
 import { FhirClient } from "../fhir/api/api";
 import { convertCollectionBundleToTransactionBundle } from "../fhir/bundle/convert-to-transaction-bundle";
 import { buildDocIdFhirExtension } from "../fhir/shared/extensions/doc-id-extension";
-import { out } from "../../util/log";
-import { buildDayjs } from "@metriport/shared/common/date";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
 const s3BucketName = Config.getMedicalDocumentsBucketName();
