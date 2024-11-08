@@ -236,6 +236,7 @@ const medicalRecordFormatSchema = z.enum(mrFormat);
  */
 router.post(
   "/consolidated/query",
+  checkRateLimit("consolidatedDataQuery", "operationsPerMinute"),
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, id: patientId } = getPatientInfoOrFail(req);
