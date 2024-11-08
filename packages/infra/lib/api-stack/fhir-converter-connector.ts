@@ -100,6 +100,7 @@ export function createLambda({
   sourceQueue,
   dlq,
   fhirConverterBucket,
+  fhirServerUrl,
   apiServiceDnsAddress,
   alarmSnsAction,
 }: {
@@ -110,6 +111,7 @@ export function createLambda({
   sourceQueue: IQueue;
   dlq: IQueue;
   fhirConverterBucket: s3.IBucket;
+  fhirServerUrl: string;
   apiServiceDnsAddress: string;
   alarmSnsAction?: SnsAction;
 }): Lambda {
@@ -136,6 +138,7 @@ export function createLambda({
       AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       API_URL: `http://${apiServiceDnsAddress}`,
+      FHIR_SERVER_URL: fhirServerUrl,
       QUEUE_URL: sourceQueue.queueUrl,
       DLQ_URL: dlq.queueUrl,
       CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,

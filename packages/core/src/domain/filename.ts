@@ -62,3 +62,11 @@ export function parseFilePath(filePath: string): ParsedFileName | undefined {
   }
   return undefined;
 }
+
+export function createFilePathFromFileName(filePath: string): string {
+  const fileNameParts = parseFileName(filePath);
+  if (!fileNameParts) throw new Error("Unable to parse filePath");
+
+  const { cxId, patientId, fileId } = fileNameParts;
+  return createFilePath(cxId, patientId, fileId);
+}

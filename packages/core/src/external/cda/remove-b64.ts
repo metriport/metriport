@@ -1,13 +1,17 @@
 import { toArray } from "@metriport/shared";
-import { XMLBuilder } from "fast-xml-parser";
 import { createXMLParser } from "@metriport/shared/common/xml-parser";
+import { XMLBuilder } from "fast-xml-parser";
 import { BINARY_MIME_TYPES } from "../../util/mime";
 
 const notesTemplateId = "2.16.840.1.113883.10.20.22.2.65";
 const resultsTemplateId = "2.16.840.1.113883.10.20.22.2.3.1";
 const b64Representation = "B64";
 
-export function removeBase64PdfEntries(payloadRaw: string): string {
+export function removeBase64PdfEntries(payloadRaw: string): {
+  documentContents: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  b64Attachments: any[]; // TODO: improve typing
+} {
   const parser = createXMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "@_",
@@ -16,6 +20,9 @@ export function removeBase64PdfEntries(payloadRaw: string): string {
   const json = parser.parse(payloadRaw);
 
   let removedEntry = 0;
+
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const b64Attachments: any[] = [];
 
   if (json.ClinicalDocument?.component?.structuredBody?.component) {
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -40,6 +47,7 @@ export function removeBase64PdfEntries(payloadRaw: string): string {
                   .toLowerCase() === b64Representation.toLowerCase())
             ) {
               removedEntry++;
+              b64Attachments.push(entry);
               return false;
             }
             return true;
@@ -57,5 +65,9 @@ export function removeBase64PdfEntries(payloadRaw: string): string {
     suppressBooleanAttributes: false,
   });
   const xml = builder.build(json);
-  return removedEntry > 0 ? xml : payloadRaw;
+
+  return {
+    documentContents: removedEntry > 0 ? xml : payloadRaw,
+    b64Attachments,
+  };
 }
