@@ -20,15 +20,15 @@ export function createUploadMetadataFilePath(
   return `${uploadFilePath}_metadata.xml`;
 }
 
-export function createAttachmentUploadPath({
-  fileName,
-  ownId,
+export function createAttachmentUploadFileName({
+  filePath,
+  attachmentId,
   mimeType,
 }: {
-  fileName: string;
-  ownId: string;
+  filePath: string;
+  attachmentId: string;
   mimeType: string;
 }): string {
   const extension = getFileExtension(mimeType);
-  return `${fileName}_${ownId}${extension}`;
+  return `${filePath}_${attachmentId}${extension}`;
 }

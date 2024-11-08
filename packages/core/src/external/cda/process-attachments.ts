@@ -9,10 +9,8 @@ import {
 } from "@medplum/fhirtypes";
 import { executeWithNetworkRetries } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { cloneDeep } from "lodash";
 import { MedicalDataSource, isMedicalDataSource } from "..";
-import { createAttachmentUploadPath } from "../../domain/document/upload";
-import { createFilePathFromFileName } from "../../domain/filename";
+import { createAttachmentUploadFileName } from "../../domain/document/upload";
 import { executeAsynchronously } from "../../util/concurrency";
 import { Config } from "../../util/config";
 import { out } from "../../util/log";
@@ -21,46 +19,33 @@ import { uuidv4 } from "../../util/uuid-v7";
 import { S3Utils, UploadParams } from "../aws/s3";
 import { cqExtension } from "../carequality/extension";
 import { cwExtension } from "../commonwell/extension";
-import { FhirClient } from "../fhir/api/api";
+import { makeFhirApi } from "../fhir/api/api-factory";
 import { convertCollectionBundleToTransactionBundle } from "../fhir/bundle/convert-to-transaction-bundle";
 import { buildDocIdFhirExtension } from "../fhir/shared/extensions/doc-id-extension";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
 const s3BucketName = Config.getMedicalDocumentsBucketName();
+const fhirUrl = Config.getFHIRServerUrl();
 
 export async function processAttachments({
   b64Attachments,
   cxId,
   patientId,
-  fileName,
+  filePath,
   medicalDataSource,
-  fhirApi,
 }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   b64Attachments: any[];
   cxId: string;
   patientId: string;
-  fileName: string;
+  filePath: string;
   medicalDataSource?: string | undefined;
-  fhirApi?: FhirClient;
 }) {
-  const { log } = out(`processAttachments - cxId ${cxId}, patientId: ${patientId}`);
-  const filePath = createFilePathFromFileName(fileName);
+  const { log } = out(`processAttachments - cxId ${cxId}, patientId ${patientId}`);
 
   const extensions = [buildDocIdFhirExtension(filePath), getSourceExtension(medicalDataSource)]
     .flat()
     .filter(Boolean) as Extension[];
-
-  const initialDocRef: DocumentReference = {
-    resourceType: "DocumentReference",
-    status: "current",
-    docStatus: "final",
-    subject: {
-      reference: `Patient/${patientId}`,
-      type: "Patient",
-    },
-    extension: extensions,
-  };
 
   const docRefs: DocumentReference[] = [];
   const uploadDetails: UploadParams[] = [];
@@ -69,12 +54,12 @@ export async function processAttachments({
     const act = att.act;
 
     const fileDetails = getDetails(act.text);
-    const docRef = fillDocumentReference(initialDocRef, act);
+    const docRef = buildDocumentReference(patientId, extensions, act);
     if (!docRef.id) throw new Error("Missing ID in DocRef");
 
-    const fileKey = createAttachmentUploadPath({
-      fileName: filePath,
-      ownId: docRef.id,
+    const fileKey = createAttachmentUploadFileName({
+      filePath,
+      attachmentId: docRef.id,
       mimeType: fileDetails.mimeType,
     });
 
@@ -87,7 +72,7 @@ export async function processAttachments({
       title: fileKey,
     };
 
-    if (docRef.date) attachment.creation;
+    if (docRef.date) attachment.creation = docRef.date;
     docRef.content = [{ attachment }];
 
     docRefs.push(docRef);
@@ -114,16 +99,32 @@ export async function processAttachments({
   });
 
   if (transactionBundle.entry?.length) {
-    if (fhirApi) {
-      await executeWithNetworkRetries(async () => await fhirApi.executeBatch(transactionBundle), {
-        log,
-      });
-    }
+    const fhirApi = makeFhirApi(cxId, fhirUrl);
+    await executeWithNetworkRetries(async () => await fhirApi.executeBatch(transactionBundle), {
+      log,
+    });
+
     executeAsynchronously(uploadDetails, async uploadParams => {
       await s3Utils.uploadFile(uploadParams);
     });
   }
   log(`Done...`);
+}
+
+function buildDocumentReferenceDraft(
+  patientId: string,
+  extensions: Extension[]
+): DocumentReference {
+  return {
+    resourceType: "DocumentReference",
+    status: "current",
+    docStatus: "final",
+    subject: {
+      reference: `Patient/${patientId}`,
+      type: "Patient",
+    },
+    extension: extensions,
+  };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -141,22 +142,22 @@ function getDetails(document: any): {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function fillDocumentReference(initDocRef: DocumentReference, act: any) {
-  const updatedDocRef = cloneDeep(initDocRef);
+function buildDocumentReference(patientId: string, extensions: Extension[], act: any) {
+  const docRef = buildDocumentReferenceDraft(patientId, extensions);
   const identifiers = getIdentifiers(act.id);
   const date = getDate(act.effectiveTime);
   const type = getType(act.code);
 
-  updatedDocRef.id = uuidv4();
+  docRef.id = uuidv4();
 
-  if (identifiers.length) updatedDocRef.identifier = identifiers;
+  if (identifiers.length) docRef.identifier = identifiers;
   if (type) {
-    updatedDocRef.type = type;
-    if (type.text) updatedDocRef.description = type.text;
+    docRef.type = type;
+    if (type.text) docRef.description = type.text;
   }
-  if (date) updatedDocRef.date = date;
+  if (date) docRef.date = date;
 
-  return updatedDocRef;
+  return docRef;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

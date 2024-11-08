@@ -1,7 +1,6 @@
 import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
-import { makeFhirApi } from "@metriport/core/external/fhir/api/api-factory";
 import { DOC_ID_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE, XML_APP_MIME_TYPE } from "@metriport/core/util/mime";
 import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
@@ -24,7 +23,6 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const apiURL = getEnvOrFail("API_URL");
-const fhirUrl = getEnvOrFail("FHIR_SERVER_URL");
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
 const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME");
 
@@ -186,14 +184,12 @@ export async function handler(event: SQSEvent) {
 
         log(`Extracted ${b64Attachments.length} B64 attachments`);
         if (b64Attachments.length) {
-          const fhirApi = makeFhirApi(cxId, fhirUrl);
           processAttachments({
             b64Attachments,
             cxId,
             patientId,
-            fileName: s3FileName,
+            filePath: s3FileName,
             medicalDataSource,
-            fhirApi,
           });
         }
 

@@ -62,14 +62,3 @@ export function parseFilePath(filePath: string): ParsedFileName | undefined {
   }
   return undefined;
 }
-
-export function createFilePathFromFileName(fileName: string): string {
-  const name = fileName.includes("/") ? fileName.split("/").pop() : fileName;
-  if (!name) throw new Error("Unable to parse fileName - can't split with slash");
-
-  const fileNameParts = parseFileName(name);
-  if (!fileNameParts) throw new Error("Unable to parse fileName");
-
-  const { cxId, patientId, fileId } = fileNameParts;
-  return createFilePath(cxId, patientId, fileId);
-}
