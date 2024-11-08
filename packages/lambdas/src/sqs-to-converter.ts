@@ -173,7 +173,7 @@ export async function handler(event: SQSEvent) {
         const payloadRaw = await s3Utils.getFileContentsAsString(s3BucketName, s3FileName);
         if (payloadRaw.includes("nonXMLBody")) {
           const msg = "XML document is unstructured CDA with nonXMLBody";
-          console.log(`${msg}, skipping...`);
+          log(`${msg}, skipping...`);
           capture.message(msg, {
             extra: { message, ...lambdaParams, context: lambdaName, fileName: s3FileName },
             level: "warning",
@@ -184,6 +184,7 @@ export async function handler(event: SQSEvent) {
         const { documentContents: payloadNoB64, b64Attachments } =
           removeBase64PdfEntries(payloadRaw);
 
+        log(`Extracted ${b64Attachments.length} B64 attachments`);
         if (b64Attachments.length) {
           const fhirApi = makeFhirApi(cxId, fhirUrl);
           processAttachments({

@@ -540,6 +540,7 @@ export class APIStack extends Stack {
       sourceQueue: fhirConverterQueue,
       dlq: fhirConverterDLQ,
       fhirConverterBucket,
+      medicalDocumentsBucket,
       fhirServerUrl: props.config.fhirServerUrl,
       apiServiceDnsAddress: apiDirectUrl,
       alarmSnsAction: slackNotification?.alarmAction,
