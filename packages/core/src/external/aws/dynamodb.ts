@@ -71,7 +71,9 @@ export class DynamoDbUtils {
     }
   }
 
-  async getByKey({ sortKey }: { sortKey?: DdbMapping }): Promise<DocumentClient.GetItemOutput> {
+  async getByKey(
+    sortKey: DdbMapping | undefined = undefined
+  ): Promise<DocumentClient.GetItemOutput> {
     const { log } = out(`getByKey DDB - table ${this._table} key ${this._key}`);
     const key = { ...this._key, ...sortKey };
     const params: DocumentClient.GetItemInput = {

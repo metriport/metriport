@@ -34,7 +34,7 @@ export async function getCxRateSettingValue({
   const primaryKey = createPrimaryKey({ cxId, operation });
   const ddbUtils = new DynamoDbUtils(region, settingsTableName, primaryKey, client);
   try {
-    const rateLimits = await ddbUtils.getByKey({});
+    const rateLimits = await ddbUtils.getByKey();
     if (!rateLimits.Item) {
       if (!create) return undefined;
       const newLimits = defaultOperationLimits.get(operation);
