@@ -1,10 +1,13 @@
-import { MetriportError } from "@metriport/shared";
 import {
-  RateLimitOperation,
+  errorToString,
+  MetriportError,
   RateLimit,
   rateLimitEntrySchema,
-} from "@metriport/shared/src/domain/rate-limiting";
+  RateLimitOperation,
+} from "@metriport/shared";
+import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { DynamoDbUtils } from "../../../external/aws/dynamodb";
+import { capture, out } from "../../../util";
 import { Config } from "../../../util/config";
 import { createPrimaryKey, defaultOperationLimits } from "../shared";
 
@@ -15,16 +18,21 @@ export async function getCxRateSettingValue({
   operation,
   rateLimit,
   create = true,
+  client,
 }: {
   cxId: string;
   operation: RateLimitOperation;
   rateLimit: RateLimit;
   create?: boolean;
+  client?: DocumentClient | undefined;
 }): Promise<number | undefined> {
+  const { log } = out(
+    `getCxRateSettingValue - cxId ${cxId} operation ${operation} rateLimit ${rateLimit}`
+  );
   const settingsTableName = Config.getRateLimitingSettingsTableName();
   if (!settingsTableName) return undefined;
   const primaryKey = createPrimaryKey({ cxId, operation });
-  const ddbUtils = new DynamoDbUtils(region, settingsTableName, primaryKey);
+  const ddbUtils = new DynamoDbUtils(region, settingsTableName, primaryKey, client);
 
   const rateLimits = await ddbUtils.getByKey({});
   if (!rateLimits.Item) {
@@ -36,7 +44,7 @@ export async function getCxRateSettingValue({
     for (const [limit, value] of newLimits) {
       const attrValueKey = `:${limit}`;
       expressionList.push(`set ${limit} = ${attrValueKey}`);
-      expressionAttributesValuesList.push({ [attrValueKey]: { N: `${value}` } });
+      expressionAttributesValuesList.push({ [attrValueKey]: value });
     }
     if (expressionList.length === 0) {
       throw new MetriportError("Experssion empty", undefined, { operation });
@@ -54,8 +62,19 @@ export async function getCxRateSettingValue({
   }
   const rateLimitEntry = rateLimitEntrySchema.safeParse(rateLimits.Item);
   if (!rateLimitEntry.success) {
-    // TODO Throw error
+    const error = rateLimitEntry.error;
+    const msg = `Error parsing DDB rate limit settings entry`;
+    log(`${msg} - error: ${errorToString(error)}`);
+    capture.error(msg, {
+      extra: {
+        cxId,
+        operation,
+        rateLimit,
+        context: "rate-limiting.getCxRateSettingValue",
+        error,
+      },
+    });
     return undefined;
   }
-  return +rateLimitEntry.data[rateLimit].N;
+  return rateLimitEntry.data[rateLimit];
 }

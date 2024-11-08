@@ -1,5 +1,5 @@
-import { Key } from "aws-sdk/clients/dynamodb";
 import { RateLimitOperation, RateLimit } from "@metriport/shared/src/domain/rate-limiting";
+import { DdbMapping } from "../../external/aws/dynamodb";
 
 export const secondGranularityIsoDateTime = "YYYY-MM-DDTHH:mm:ss";
 
@@ -15,6 +15,22 @@ export const defaultOperationLimits: Map<RateLimitOperation, LimitMap> = new Map
   ["patientCreate", defaultPatientCreateLimits],
 ]);
 
-export function createPrimaryKey({ cxId, operation }: { cxId: string; operation: string }): Key {
-  return { cxId_operation: { S: `${cxId}_${operation}` } };
+export function createPrimaryKey({
+  cxId,
+  operation,
+}: {
+  cxId: string;
+  operation: string;
+}): DdbMapping {
+  return { cxId_operation: createPrimaryKeyValue({ cxId, operation }) };
+}
+
+export function createPrimaryKeyValue({
+  cxId,
+  operation,
+}: {
+  cxId: string;
+  operation: string;
+}): string {
+  return `${cxId}_${operation}`;
 }

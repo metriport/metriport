@@ -1,12 +1,15 @@
-import { MetriportError } from "@metriport/shared";
-import { buildDayjs } from "@metriport/shared/common/date";
 import {
+  errorToString,
+  MetriportError,
   RateLimitOperation,
   trackingEntriesSchema,
-} from "@metriport/shared/src/domain/rate-limiting";
+} from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
+import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { DynamoDbUtils } from "../../../external/aws/dynamodb";
+import { capture, out } from "../../../util";
 import { Config } from "../../../util/config";
-import { createPrimaryKey } from "../shared";
+import { createPrimaryKey, createPrimaryKeyValue } from "../shared";
 
 const region = Config.getAWSRegion();
 
@@ -26,27 +29,45 @@ export async function getTrackedOperationCountSum({
   operation,
   start,
   end,
+  client,
 }: {
   cxId: string;
   operation: RateLimitOperation;
   start: string;
   end: string;
+  client?: DocumentClient | undefined;
 }): Promise<number | undefined> {
+  const { log } = out(`getCxRateSettingValue - cxId ${cxId} operation ${operation}`);
   validateStartAndEnd(start, end);
   const trackingTableName = Config.getRateLimitingTrackingTableName();
   if (!trackingTableName) return undefined;
   const primaryKey = createPrimaryKey({ cxId, operation });
-  const ddbUtils = new DynamoDbUtils(region, trackingTableName, primaryKey);
+  const ddbUtils = new DynamoDbUtils(region, trackingTableName, primaryKey, client);
 
   const trackings = await ddbUtils.query({
-    keyConditionExpression: "timestamp BETWEEN :start AND :end",
-    expressionAttributesValues: { ":start": { S: start }, ":end": { S: end } },
+    keyConditionExpression:
+      "cxId_operation = :primaryKeyValue and window_timestamp BETWEEN :start AND :end",
+    expressionAttributesValues: {
+      ":primaryKeyValue": createPrimaryKeyValue({ cxId, operation }),
+      ":start": start,
+      ":end": end,
+    },
   });
   if (!trackings.Items) return undefined;
   const trackingEntries = trackingEntriesSchema.safeParse(trackings.Items);
   if (!trackingEntries.success) {
-    // TODO Throw error
+    const error = trackingEntries.error;
+    const msg = `Error parsing DDB rate limit tracking entries`;
+    log(`${msg} - error: ${errorToString(error)}`);
+    capture.error(msg, {
+      extra: {
+        cxId,
+        operation,
+        context: "rate-limiting.getTrackedOperationCountSum",
+        error,
+      },
+    });
     return undefined;
   }
-  return trackingEntries.data.reduce((sum, current) => sum + +current.count.N, 0);
+  return trackingEntries.data.reduce((sum, current) => sum + current.numberOfOperation, 0);
 }

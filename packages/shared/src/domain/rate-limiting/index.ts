@@ -5,15 +5,14 @@ export type RateLimitOperation = "patientCreate";
 export type RateLimit = "operationsPerMinute";
 
 export const rateLimitEntrySchema = z.object({
-  operationsPerMinute: z.object({
-    N: z.string(),
-  }),
+  cxId_operation: z.string(),
+  operationsPerMinute: z.number(),
 });
 
 const trackingEntrSchame = z.object({
-  count: z.object({
-    N: z.string(),
-  }),
+  cxId_operation: z.string(),
+  numberOfOperation: z.number(),
+  window_timestamp: z.string(),
 });
 
 export const trackingEntriesSchema = trackingEntrSchame.array();

@@ -64,6 +64,68 @@ const createTokenTable = async (ddb: AWS.DynamoDB): Promise<void> => {
     await ddb.createTable(params).promise();
   }
 };
+//Creates the token table
+const createRateLimitTrackingTable = async (ddb: AWS.DynamoDB): Promise<void> => {
+  //Create a new table if it doesn't already exist
+  if (!docTableNames.rateLimitingTracking) return;
+  if (!(await tableExists(docTableNames.rateLimitingTracking, ddb))) {
+    const params: AWS.DynamoDB.CreateTableInput = {
+      AttributeDefinitions: [
+        {
+          AttributeName: "cxId_operation",
+          AttributeType: "S",
+        },
+        {
+          AttributeName: "window_timestamp",
+          AttributeType: "S",
+        },
+      ],
+      KeySchema: [
+        {
+          AttributeName: "cxId_operation",
+          KeyType: "HASH",
+        },
+        {
+          AttributeName: "window_timestamp",
+          KeyType: "RANGE",
+        },
+      ],
+      ProvisionedThroughput: {
+        ReadCapacityUnits: 1,
+        WriteCapacityUnits: 1,
+      },
+      TableName: docTableNames.rateLimitingTracking,
+    };
+    await ddb.createTable(params).promise();
+  }
+};
+//Creates the token table
+const creatSettingsTable = async (ddb: AWS.DynamoDB): Promise<void> => {
+  //Create a new table if it doesn't already exist
+  if (!docTableNames.rateLimitingSettings) return;
+  if (!(await tableExists(docTableNames.rateLimitingSettings, ddb))) {
+    const params: AWS.DynamoDB.CreateTableInput = {
+      AttributeDefinitions: [
+        {
+          AttributeName: "cxId_operation",
+          AttributeType: "S",
+        },
+      ],
+      KeySchema: [
+        {
+          AttributeName: "cxId_operation",
+          KeyType: "HASH",
+        },
+      ],
+      ProvisionedThroughput: {
+        ReadCapacityUnits: 1,
+        WriteCapacityUnits: 1,
+      },
+      TableName: docTableNames.rateLimitingSettings,
+    };
+    await ddb.createTable(params).promise();
+  }
+};
 export const initDDBDev = async (): Promise<AWS.DynamoDB.DocumentClient> => {
   const doc = new AWS.DynamoDB.DocumentClient({
     apiVersion: "2012-08-10",
@@ -74,6 +136,8 @@ export const initDDBDev = async (): Promise<AWS.DynamoDB.DocumentClient> => {
     endpoint: process.env.DYNAMODB_ENDPOINT,
   });
   await createTokenTable(ddb);
+  await createRateLimitTrackingTable(ddb);
+  await creatSettingsTable(ddb);
   return doc;
 };
 

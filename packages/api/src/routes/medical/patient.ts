@@ -35,7 +35,6 @@ import { getETag } from "../../shared/http";
 import { getOutputFormatFromRequest } from "../helpers/output-format";
 import { requestLogger } from "../helpers/request-logger";
 import { getPatientInfoOrFail } from "../middlewares/patient-authorization";
-import { checkRateLimit } from "../middlewares/rate-limitng";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
@@ -56,7 +55,6 @@ const router = Router();
 router.put(
   "/",
   requestLogger,
-  checkRateLimit("patientCreate", "operationsPerMinute"),
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, id, patient } = getPatientInfoOrFail(req);
     const facilityIdParam = getFrom("query").optional("facilityId", req);

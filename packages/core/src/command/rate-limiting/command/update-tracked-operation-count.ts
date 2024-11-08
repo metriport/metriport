@@ -1,4 +1,5 @@
-import { RateLimitOperation } from "@metriport/shared/src/domain/rate-limiting";
+import { RateLimitOperation } from "@metriport/shared";
+import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { DynamoDbUtils } from "../../../external/aws/dynamodb";
 import { Config } from "../../../util/config";
 import { createPrimaryKey } from "../shared";
@@ -9,22 +10,23 @@ export async function updateTrackedOperationCount({
   cxId,
   operation,
   end,
+  client,
 }: {
   cxId: string;
   operation: RateLimitOperation;
   end: string;
+  client?: DocumentClient | undefined;
 }): Promise<void> {
   const trackingTableName = Config.getRateLimitingTrackingTableName();
   if (!trackingTableName) return undefined;
   const primaryKey = createPrimaryKey({ cxId, operation });
-  const ddbUtils = new DynamoDbUtils(region, trackingTableName, primaryKey);
+  const ddbUtils = new DynamoDbUtils(region, trackingTableName, primaryKey, client);
 
-  const expression = "set count = count + :num";
-  const conditionExpression = "timestamp = :end`";
-  const expressionAttributesValues = { ":num": { N: "1" }, ":end": { S: end } };
   await ddbUtils.update({
-    expression,
-    conditionExpression,
-    expressionAttributesValues,
+    sortKey: { window_timestamp: end },
+    expression: "ADD numberOfOperation :inc",
+    expressionAttributesValues: {
+      ":inc": 1,
+    },
   });
 }

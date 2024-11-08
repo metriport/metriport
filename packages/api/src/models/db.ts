@@ -1,5 +1,6 @@
 import * as AWS from "aws-sdk";
 import { Sequelize } from "sequelize";
+import { Config as ConfigCore } from "@metriport/core/util/config";
 import { CQDirectoryEntryModel } from "../external/carequality/models/cq-directory";
 import { CQPatientDataModel } from "../external/carequality/models/cq-patient-data";
 import { OutboundDocumentQueryRespModel } from "../external/carequality/models/outbound-document-query-resp";
@@ -71,6 +72,8 @@ export const getDB = (): MetriportDB => {
 
 export interface DocTableNames {
   token: string;
+  rateLimitingTracking?: string;
+  rateLimitingSettings?: string;
 }
 export let docTableNames: DocTableNames;
 
@@ -78,11 +81,15 @@ async function initDB(): Promise<void> {
   // make sure we have the env vars we need
   const sqlDBCreds = Config.getDBCreds();
   const tokenTableName = Config.getTokenTableName();
+  const rateLimitingTrackingTableName = ConfigCore.getRateLimitingTrackingTableName();
+  const rateLimitingSettingsTableName = ConfigCore.getRateLimitingSettingsTableName();
   const logDBOperations = Config.isCloudEnv() ? false : true;
   const dbPoolSettings = getDbPoolSettings();
 
   docTableNames = {
     token: tokenTableName,
+    rateLimitingTracking: rateLimitingTrackingTableName,
+    rateLimitingSettings: rateLimitingSettingsTableName,
   };
 
   // get database creds

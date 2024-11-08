@@ -1,7 +1,7 @@
-import { TooManyRequestsError } from "@metriport/shared";
-import { RateLimitOperation, RateLimit } from "@metriport/shared/src/domain/rate-limiting";
 import { checkRateLimit as checkRateLimitCore } from "@metriport/core/command/rate-limiting/rate-limiting";
+import { RateLimit, RateLimitOperation, TooManyRequestsError } from "@metriport/shared";
 import { NextFunction, Request, Response } from "express";
+import { getDB } from "../../models/db";
 import { getCxIdOrFail } from "../util";
 
 /**
@@ -18,6 +18,7 @@ export function checkRateLimit(
       cxId,
       operation,
       rateLimit,
+      client: getDB().doc,
     });
 
     if (!underlimit) {

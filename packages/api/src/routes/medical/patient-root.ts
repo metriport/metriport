@@ -10,7 +10,7 @@ import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFrom } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { schemaDemographicsToPatientData } from "./schemas/patient";
-
+import { checkRateLimit } from "../middlewares/rate-limitng";
 import { patientCreateSchema } from "@metriport/api-sdk";
 import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { getPatients } from "../../command/medical/patient/get-patient";
@@ -32,6 +32,7 @@ const router = Router();
  */
 router.post(
   "/",
+  checkRateLimit("patientCreate", "operationsPerMinute"),
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
