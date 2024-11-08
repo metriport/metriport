@@ -83,7 +83,6 @@ export async function convert(
       cxId,
       patientId,
       fileName,
-      medicalDataSource: "CAREQUALITY",
       fhirApi,
     });
   }

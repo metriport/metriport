@@ -41,8 +41,8 @@ export async function processAttachments({
   cxId: string;
   patientId: string;
   fileName: string;
-  medicalDataSource: string | undefined;
-  fhirApi: FhirClient;
+  medicalDataSource?: string | undefined;
+  fhirApi?: FhirClient;
 }) {
   const { log } = out(`processAttachments - cxId ${cxId}, patientId: ${patientId}`);
   const filePath = createFilePathFromFileName(fileName);
@@ -114,9 +114,11 @@ export async function processAttachments({
   });
 
   if (transactionBundle.entry?.length) {
-    await executeWithNetworkRetries(async () => await fhirApi.executeBatch(transactionBundle), {
-      log,
-    });
+    if (fhirApi) {
+      await executeWithNetworkRetries(async () => await fhirApi.executeBatch(transactionBundle), {
+        log,
+      });
+    }
     executeAsynchronously(uploadDetails, async uploadParams => {
       await s3Utils.uploadFile(uploadParams);
     });
