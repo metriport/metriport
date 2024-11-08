@@ -45,7 +45,6 @@ export async function processAttachments({
   fhirApi: FhirClient;
 }) {
   const { log } = out(`processAttachments - cxId ${cxId}, patientId: ${patientId}`);
-  log(`Starting with the fileName ${fileName}`);
   const filePath = createFilePathFromFileName(fileName);
 
   const extensions = [buildDocIdFhirExtension(filePath), getSourceExtension(medicalDataSource)]
