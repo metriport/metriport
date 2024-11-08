@@ -1,11 +1,13 @@
+import { processAttachments } from "@metriport/core/external/cda/handle-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
 import { DOC_ID_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { AxiosInstance } from "axios";
 import * as uuid from "uuid";
 import { getFileContents, makeDirIfNeeded, writeFileContents } from "../shared/fs";
-import { getPatientIdFromFileName } from "./shared";
+import { getCxIdFromFileName, getPatientIdFromFileName } from "./shared";
 import path = require("node:path");
+import { makeFhirApi } from "@metriport/core/external/fhir/api/api-factory";
 
 export async function convertCDAsToFHIR(
   baseFolderName: string,
@@ -14,7 +16,8 @@ export async function convertCDAsToFHIR(
   startedAt: number,
   api: AxiosInstance,
   fhirExtension: string,
-  outputFolderName: string
+  outputFolderName: string,
+  fhirBaseUrl: string
 ): Promise<{ errorCount: number; nonXMLBodyCount: number }> {
   console.log(`Converting ${fileNames.length} files, ${parallelConversions} at a time...`);
   let errorCount = 0;
@@ -23,7 +26,13 @@ export async function convertCDAsToFHIR(
     fileNames,
     async fileName => {
       try {
-        const conversionResult = await convert(baseFolderName, fileName, api, fhirExtension);
+        const conversionResult = await convert(
+          baseFolderName,
+          fileName,
+          api,
+          fhirExtension,
+          fhirBaseUrl
+        );
         const destFileName = path.join(outputFolderName, fileName.replace(".xml", fhirExtension));
         makeDirIfNeeded(destFileName);
         writeFileContents(destFileName, JSON.stringify(conversionResult));
@@ -54,15 +63,31 @@ export async function convert(
   baseFolderName: string,
   fileName: string,
   api: AxiosInstance,
-  fhirExtension: string
+  fhirExtension: string,
+  fhirBaseUrl: string
 ) {
   const patientId = getPatientIdFromFileName(fileName);
+  const cxId = getCxIdFromFileName(fileName);
   const fileContents = getFileContents(baseFolderName + fileName);
   if (fileContents.includes("nonXMLBody")) {
     throw new Error(`File has nonXMLBody`);
   }
 
-  const noB64FileContents = removeBase64PdfEntries(fileContents);
+  const { documentContents: noB64FileContents, b64Attachments } =
+    removeBase64PdfEntries(fileContents);
+
+  if (b64Attachments.length) {
+    const fhirApi = makeFhirApi(cxId, fhirBaseUrl);
+    console.log("CXID", cxId);
+    processAttachments({
+      b64Attachments,
+      cxId,
+      patientId,
+      fileName,
+      medicalDataSource: "CAREQUALITY",
+      fhirApi,
+    });
+  }
 
   const unusedSegments = false;
   const invalidAccess = false;
