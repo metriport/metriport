@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export type RateLimitOperation = "patientCreate";
+export type RateLimitOperation = "patientQuery" | "documentQuery" | "consolidatedDataQuery";
 
 export type RateLimit = "operationsPerMinute";
 

@@ -1,23 +1,23 @@
-import { demographicsSchema } from "@metriport/api-sdk";
+import { demographicsSchema, patientCreateSchema } from "@metriport/api-sdk";
 import { stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import { getPatientOrFail, matchPatient } from "../../command/medical/patient/get-patient";
+import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
+import {
+  getPatientOrFail,
+  getPatients,
+  matchPatient,
+} from "../../command/medical/patient/get-patient";
+import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
 import NotFoundError from "../../errors/not-found";
+import { PatientModel as Patient } from "../../models/medical/patient";
 import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
-import { asyncHandler, getCxIdOrFail, getFrom } from "../util";
-import { dtoFromModel } from "./dtos/patientDTO";
-import { schemaDemographicsToPatientData } from "./schemas/patient";
 import { checkRateLimit } from "../middlewares/rate-limitng";
-import { patientCreateSchema } from "@metriport/api-sdk";
-import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
-import { getPatients } from "../../command/medical/patient/get-patient";
-import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
-import { PatientModel as Patient } from "../../models/medical/patient";
-import { getFromQueryOrFail } from "../util";
-import { schemaCreateToPatientData } from "./schemas/patient";
+import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
+import { dtoFromModel } from "./dtos/patientDTO";
+import { schemaCreateToPatientData, schemaDemographicsToPatientData } from "./schemas/patient";
 
 const router = Router();
 
@@ -32,7 +32,7 @@ const router = Router();
  */
 router.post(
   "/",
-  checkRateLimit("patientCreate", "operationsPerMinute"),
+  checkRateLimit("patientQuery", "operationsPerMinute"),
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);

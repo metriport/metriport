@@ -16,10 +16,10 @@ const tableExists = async (tableName: string, ddb: AWS.DynamoDB) => {
   }
 };
 
-//Creates the token table
+// Creates the token table
 const createTokenTable = async (ddb: AWS.DynamoDB): Promise<void> => {
-  //Create a new table if it doesn't already exist
-  if (!(await tableExists(docTableNames.token, ddb))) {
+  const doesTableExist = await tableExists(docTableNames.token, ddb);
+  if (!doesTableExist) {
     const params: AWS.DynamoDB.CreateTableInput = {
       AttributeDefinitions: [
         {
@@ -64,11 +64,11 @@ const createTokenTable = async (ddb: AWS.DynamoDB): Promise<void> => {
     await ddb.createTable(params).promise();
   }
 };
-//Creates the token table
+// Creates the rate limting tracaking table
 const createRateLimitTrackingTable = async (ddb: AWS.DynamoDB): Promise<void> => {
-  //Create a new table if it doesn't already exist
   if (!docTableNames.rateLimitingTracking) return;
-  if (!(await tableExists(docTableNames.rateLimitingTracking, ddb))) {
+  const doesTableExist = await tableExists(docTableNames.rateLimitingTracking, ddb);
+  if (!doesTableExist) {
     const params: AWS.DynamoDB.CreateTableInput = {
       AttributeDefinitions: [
         {
@@ -99,11 +99,11 @@ const createRateLimitTrackingTable = async (ddb: AWS.DynamoDB): Promise<void> =>
     await ddb.createTable(params).promise();
   }
 };
-//Creates the token table
+// Creates the rate limiting settings table
 const creatSettingsTable = async (ddb: AWS.DynamoDB): Promise<void> => {
-  //Create a new table if it doesn't already exist
   if (!docTableNames.rateLimitingSettings) return;
-  if (!(await tableExists(docTableNames.rateLimitingSettings, ddb))) {
+  const doseTableExist = await tableExists(docTableNames.rateLimitingSettings, ddb);
+  if (!doseTableExist) {
     const params: AWS.DynamoDB.CreateTableInput = {
       AttributeDefinitions: [
         {

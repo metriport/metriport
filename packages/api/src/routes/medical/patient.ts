@@ -19,10 +19,10 @@ import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
+import { handleDataContribution } from "../../command/medical/patient/data-contribution/handle-data-contributions";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
-import { handleDataContribution } from "../../command/medical/patient/data-contribution/handle-data-contributions";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import BadRequestError from "../../errors/bad-request";
@@ -35,6 +35,7 @@ import { getETag } from "../../shared/http";
 import { getOutputFormatFromRequest } from "../helpers/output-format";
 import { requestLogger } from "../helpers/request-logger";
 import { getPatientInfoOrFail } from "../middlewares/patient-authorization";
+import { checkRateLimit } from "../middlewares/rate-limitng";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
@@ -54,6 +55,7 @@ const router = Router();
  */
 router.put(
   "/",
+  checkRateLimit("patientQuery", "operationsPerMinute"),
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, id, patient } = getPatientInfoOrFail(req);

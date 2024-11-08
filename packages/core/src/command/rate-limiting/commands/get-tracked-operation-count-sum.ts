@@ -15,13 +15,16 @@ const region = Config.getAWSRegion();
 
 function validateStartAndEnd(start: string, end: string) {
   const startJs = buildDayjs(start);
-  if (startJs.millisecond() !== 0)
+  if (startJs.millisecond() !== 0) {
     throw new MetriportError("Start is not second granularity", undefined, { start });
+  }
   const endJs = buildDayjs(end);
-  if (endJs.millisecond() !== 0)
+  if (endJs.millisecond() !== 0) {
     throw new MetriportError("End is not second granularity", undefined, { start });
-  if (endJs.isBefore(startJs))
+  }
+  if (endJs.isBefore(startJs)) {
     throw new MetriportError("end is before start", undefined, { start, end });
+  }
 }
 
 export async function getTrackedOperationCountSum({
@@ -43,31 +46,44 @@ export async function getTrackedOperationCountSum({
   if (!trackingTableName) return undefined;
   const primaryKey = createPrimaryKey({ cxId, operation });
   const ddbUtils = new DynamoDbUtils(region, trackingTableName, primaryKey, client);
-
-  const trackings = await ddbUtils.query({
-    keyConditionExpression:
-      "cxId_operation = :primaryKeyValue and window_timestamp BETWEEN :start AND :end",
-    expressionAttributesValues: {
-      ":primaryKeyValue": createPrimaryKeyValue({ cxId, operation }),
-      ":start": start,
-      ":end": end,
-    },
-  });
-  if (!trackings.Items) return undefined;
-  const trackingEntries = trackingEntriesSchema.safeParse(trackings.Items);
-  if (!trackingEntries.success) {
-    const error = trackingEntries.error;
-    const msg = `Error parsing DDB rate limit tracking entries`;
-    log(`${msg} - error: ${errorToString(error)}`);
+  try {
+    const trackings = await ddbUtils.query({
+      keyConditionExpression:
+        "cxId_operation = :primaryKeyValue and window_timestamp BETWEEN :start AND :end",
+      expressionAttributesValues: {
+        ":primaryKeyValue": createPrimaryKeyValue({ cxId, operation }),
+        ":start": start,
+        ":end": end,
+      },
+    });
+    if (!trackings.Items) return undefined;
+    const trackingEntries = trackingEntriesSchema.safeParse(trackings.Items);
+    if (!trackingEntries.success) {
+      const error = trackingEntries.error;
+      const msg = `Error parsing DDB rate limit tracking entries`;
+      log(`${msg} - error: ${errorToString(error)}`);
+      capture.error(msg, {
+        extra: {
+          cxId,
+          operation,
+          context: "rate-limiting.getTrackedOperationCountSum",
+          error,
+        },
+      });
+      return undefined;
+    }
+    return trackingEntries.data.reduce((sum, current) => sum + current.numberOfOperation, 0);
+  } catch (error) {
+    const msg = `Failure getting tracked operation count sum @ RateLimiting`;
+    log(`${msg}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         cxId,
         operation,
-        context: "rate-limiting.getTrackedOperationCountSum",
+        context: "rate-limiting.get-tracked-operation-count-sum",
         error,
       },
     });
-    return undefined;
+    throw error;
   }
-  return trackingEntries.data.reduce((sum, current) => sum + current.numberOfOperation, 0);
 }

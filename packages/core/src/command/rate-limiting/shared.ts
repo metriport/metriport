@@ -7,12 +7,16 @@ type LimitSecondsMap = Map<RateLimit, number>;
 
 export const secondsLookup: LimitSecondsMap = new Map([["operationsPerMinute", 60]]);
 
+export const defaultPatientQueryLimits: LimitMap = new Map([["operationsPerMinute", 10]]);
+export const defaultDocumentQueryLimits: LimitMap = new Map([["operationsPerMinute", 10]]);
+export const defaultConsolidateDataQueryLimits: LimitMap = new Map([["operationsPerMinute", 100]]);
+
 type LimitMap = Map<RateLimit, number>;
 
-export const defaultPatientCreateLimits: LimitMap = new Map([["operationsPerMinute", 4]]);
-
 export const defaultOperationLimits: Map<RateLimitOperation, LimitMap> = new Map([
-  ["patientCreate", defaultPatientCreateLimits],
+  ["patientQuery", defaultPatientQueryLimits],
+  ["documentQuery", defaultDocumentQueryLimits],
+  ["consolidatedDataQuery", defaultConsolidateDataQueryLimits],
 ]);
 
 export function createPrimaryKey({

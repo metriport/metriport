@@ -1,9 +1,9 @@
 import { MetriportError, RateLimit, RateLimitOperation } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import { getCxRateSettingValue } from "./command/get-settings";
-import { getTrackedOperationCountSum } from "./command/get-tracked-operation-count-sum";
-import { updateTrackedOperationCount } from "./command/update-tracked-operation-count";
+import { getCxRateSettingValue } from "./commands/get-settings";
+import { getTrackedOperationCountSum } from "./commands/get-tracked-operation-count-sum";
+import { updateTrackedOperationCount } from "./commands/update-tracked-operation-count";
 import { secondGranularityIsoDateTime, secondsLookup } from "./shared";
 
 export async function checkRateLimit({
@@ -18,8 +18,9 @@ export async function checkRateLimit({
   client?: DocumentClient;
 }): Promise<boolean> {
   const secondsLookback = secondsLookup.get(rateLimit);
-  if (!secondsLookback)
+  if (!secondsLookback) {
     throw new MetriportError("Operation missing seconds lookup", undefined, { operation });
+  }
 
   const end = buildDayjs();
   const endStr = end.format(secondGranularityIsoDateTime);
@@ -42,6 +43,7 @@ export async function checkRateLimit({
   ]);
   if (currentCount === undefined || limit === undefined) return true;
   if (currentCount > limit) return false;
+  // Needs to be awaited if moved to lambda
   updateTrackedOperationCount({
     cxId,
     operation,
