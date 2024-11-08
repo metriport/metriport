@@ -23,7 +23,7 @@ import {
 import dayjs from "dayjs";
 import { uniqWith } from "lodash";
 import { Brief } from "./bundle-to-brief";
-import { createBrief } from "./bundle-to-html";
+import { createBrief } from "./bundle-to-html copy";
 import {
   buildEncounterSections,
   formatDateForDisplay,
