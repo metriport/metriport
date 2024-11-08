@@ -31,7 +31,7 @@
             {{#if (and FirstId.root FirstId.extension)}}
                 "{{generateUUID (concat (toString FirstId.root) '|' (toString FirstId.extension))}}"
             {{else if ../obj.assignedPerson.name}}
-                "{{generateUUID (concat ../obj.assignedPerson.name ../obj.addr ../obj.telecom)}}"
+                "{{generateUUID (concat (toJsonString ../obj.assignedPerson.name) (toJsonString../obj.addr) (toJsonString ../obj.telecom))}}"
             {{/if}}
     }
 {{/with}}

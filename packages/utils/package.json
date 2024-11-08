@@ -31,7 +31,8 @@
     "compare-total-resource-count-post-fhir-insert": "bash src/fhir-converter/scripts/compare_total_resource_count_post_fhir_insert.sh",
     "generate-patient-csv": "ts-node src/generate-patient-csv",
     "uuidv7": "ts-node src/make-uuidv7",
-    "saml-server": "ts-node src/saml/saml-server"
+    "saml-server": "ts-node src/saml/saml-server",
+    "load-test": "artillery run ./src/terminology/load-test.yml"
   },
   "keywords": [],
   "author": "",

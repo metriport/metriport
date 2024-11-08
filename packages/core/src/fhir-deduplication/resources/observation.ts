@@ -11,6 +11,7 @@ import {
   unknownCoding,
   isUnknownCoding,
   DeduplicationResult,
+  fetchCodingCodeOrDisplayOrSystem,
 } from "../shared";
 import {
   extractCodes,
@@ -56,8 +57,8 @@ export function groupSameObservations(observations: Observation[]): {
   ): Observation {
     const code = master.code;
     const filtered = code?.coding?.filter(coding => {
-      const system = coding.system?.toLowerCase();
-      const code = coding.code?.toLowerCase();
+      const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+      const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
       return !system?.includes(unknownCoding.system) && !code?.includes(unknownCoding.code);
     });
     if (filtered) {

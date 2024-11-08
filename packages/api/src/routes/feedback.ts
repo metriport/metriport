@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getFeedbackOrFail } from "../command/feedback/feedback";
 import { createFeedbackEntry } from "../command/feedback/feedback-entry";
 import { requestLogger } from "./helpers/request-logger";
+import { handleParams } from "./helpers/handle-params";
 import { asyncHandler, getFromParamsOrFail } from "./util";
 
 const router = Router();
@@ -17,6 +18,7 @@ const router = Router();
  */
 router.get(
   "/:id",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const id = getFromParamsOrFail("id", req);

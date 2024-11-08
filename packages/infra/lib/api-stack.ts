@@ -41,6 +41,7 @@ import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as documentUploader from "./api-stack/document-upload";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
+import { TerminologyServerNestedStack } from "./api-stack/terminology-server-service";
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
 import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
@@ -387,6 +388,19 @@ export class APIStack extends Stack {
       envType: props.config.environmentType,
       alarmSnsAction: slackNotification?.alarmAction,
     });
+
+    //-------------------------------------------
+    // Terminology Server Service
+    //-------------------------------------------
+    if (!isSandbox(props.config)) {
+      new TerminologyServerNestedStack(this, "TerminologyServerNestedStack", {
+        config: props.config,
+        version: props.version,
+        generalBucket: generalBucket,
+        vpc: this.vpc,
+        alarmAction: slackNotification?.alarmAction,
+      });
+    }
 
     //-------------------------------------------
     // FHIR Converter Service

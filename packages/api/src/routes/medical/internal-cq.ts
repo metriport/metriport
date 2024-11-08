@@ -57,6 +57,7 @@ import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 import { getUUIDFrom } from "../schemas/uuid";
+import { handleParams } from "../helpers/handle-params";
 
 dayjs.extend(duration);
 const router = Router();
@@ -121,6 +122,7 @@ router.post(
  */
 router.get(
   "/directory/organization/:oid",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
@@ -155,6 +157,7 @@ router.get(
  */
 router.get(
   "/ops/directory/organization/:oid",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
@@ -184,6 +187,7 @@ router.get(
  */
 router.put(
   "/ops/directory/organization/:oid",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
@@ -216,6 +220,7 @@ router.put(
  */
 router.put(
   "/ops/directory/facility/:oid",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
