@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
-import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
+import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/medical-record/bundle-to-html";
 import { sleep } from "@metriport/shared";
 import Axios from "axios";
 import dayjs from "dayjs";

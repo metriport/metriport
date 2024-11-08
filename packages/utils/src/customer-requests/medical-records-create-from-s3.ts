@@ -3,7 +3,7 @@ dotenv.config();
 // keep that ^ on top
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { createFolderName } from "@metriport/core/domain/filename";
-import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
+import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/medical-record/bundle-to-html";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { makeFhirApi } from "@metriport/core/external/fhir/api/api-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";

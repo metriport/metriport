@@ -7,7 +7,7 @@ import {
   createMRSummaryFileName,
 } from "@metriport/core/domain/medical-record-summary";
 import { bundleToBrief } from "@metriport/core/external/aws/lambda-logic/bundle-to-brief";
-import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
+import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/medical-record/bundle-to-html";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { getEnvVarOrFail, MetriportError } from "@metriport/shared";
 import fs from "fs";
