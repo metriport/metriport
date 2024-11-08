@@ -17,7 +17,7 @@ export async function convertCDAsToFHIR(
   api: AxiosInstance,
   fhirExtension: string,
   outputFolderName: string,
-  fhirBaseUrl: string
+  fhirBaseUrl?: string | undefined
 ): Promise<{ errorCount: number; nonXMLBodyCount: number }> {
   console.log(`Converting ${fileNames.length} files, ${parallelConversions} at a time...`);
   let errorCount = 0;
@@ -64,7 +64,7 @@ export async function convert(
   fileName: string,
   api: AxiosInstance,
   fhirExtension: string,
-  fhirBaseUrl: string
+  fhirBaseUrl?: string
 ) {
   const patientId = getPatientIdFromFileName(fileName);
   const cxId = getCxIdFromFileName(fileName);
@@ -76,7 +76,7 @@ export async function convert(
   const { documentContents: noB64FileContents, b64Attachments } =
     removeBase64PdfEntries(fileContents);
 
-  if (b64Attachments.length) {
+  if (b64Attachments.length && fhirBaseUrl) {
     const fhirApi = makeFhirApi(cxId, fhirBaseUrl);
     console.log("CXID", cxId);
     processAttachments({
