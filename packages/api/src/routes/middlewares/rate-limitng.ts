@@ -22,7 +22,9 @@ export function checkRateLimit(
     });
 
     if (!underlimit) {
-      throw new TooManyRequestsError();
+      throw new TooManyRequestsError(
+        `Too many requests for ${operation} - please reduce your request rate`
+      );
     }
 
     next();
