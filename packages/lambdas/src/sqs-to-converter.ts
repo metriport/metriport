@@ -1,5 +1,5 @@
 import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
-import { processAttachments } from "@metriport/core/external/cda/handle-attachments";
+import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
 import { makeFhirApi } from "@metriport/core/external/fhir/api/api-factory";
 import { DOC_ID_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";

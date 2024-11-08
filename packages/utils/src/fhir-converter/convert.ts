@@ -1,5 +1,6 @@
-import { processAttachments } from "@metriport/core/external/cda/handle-attachments";
+import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
+import { makeFhirApi } from "@metriport/core/external/fhir/api/api-factory";
 import { DOC_ID_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { AxiosInstance } from "axios";
@@ -7,7 +8,6 @@ import * as uuid from "uuid";
 import { getFileContents, makeDirIfNeeded, writeFileContents } from "../shared/fs";
 import { getCxIdFromFileName, getPatientIdFromFileName } from "./shared";
 import path = require("node:path");
-import { makeFhirApi } from "@metriport/core/external/fhir/api/api-factory";
 
 export async function convertCDAsToFHIR(
   baseFolderName: string,
@@ -78,7 +78,6 @@ export async function convert(
 
   if (b64Attachments.length && fhirBaseUrl) {
     const fhirApi = makeFhirApi(cxId, fhirBaseUrl);
-    console.log("CXID", cxId);
     processAttachments({
       b64Attachments,
       cxId,
