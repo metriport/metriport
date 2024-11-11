@@ -5,14 +5,14 @@ export type RateLimitOperation = "patientQuery" | "documentQuery" | "consolidate
 export type RateLimit = "operationsPerMinute";
 
 export const rateLimitEntrySchema = z.object({
-  cxId_operation: z.string(),
+  cxIdAndOperation: z.string(),
   operationsPerMinute: z.number(),
 });
 
 const trackingEntrySchema = z.object({
-  cxId_operation: z.string(),
+  cxIdAndOperation: z.string(),
   numberOfOperation: z.number(),
-  window_timestamp: z.string(),
+  windowTimestamp: z.string(),
 });
 
 export const trackingEntriesSchema = trackingEntrySchema.array();

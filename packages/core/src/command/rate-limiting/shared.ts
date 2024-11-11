@@ -26,7 +26,7 @@ export function createPrimaryKey({
   cxId: string;
   operation: string;
 }): DdbMapping {
-  return { cxId_operation: createPrimaryKeyValue({ cxId, operation }) };
+  return { cxIdAndOperation: createPrimaryKeyValue({ cxId, operation }) };
 }
 
 export function createPrimaryKeyValue({

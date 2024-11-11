@@ -25,7 +25,7 @@ export async function updateTrackedOperationCount({
   const ddbUtils = new DynamoDbUtils(region, trackingTableName, primaryKey, client);
   try {
     await ddbUtils.update({
-      sortKey: { window_timestamp: end },
+      sortKey: { windowTimestamp: end },
       expression: "ADD numberOfOperation :inc",
       expressionAttributesValues: {
         ":inc": 1,

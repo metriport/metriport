@@ -25,14 +25,14 @@ export class RateLimitingNestedStack extends NestedStack {
     this.rateLimitingTrackingTable = this.setupRateLimitingTrackingTable({
       isProd: this.isProd(props),
       dynamoConstructName: "APIRateLimitingTracking",
-      keyName: "cxId_operation",
+      keyName: "cxIdAndOperation",
       alarmAction: props.alarmAction,
     });
 
     this.rateLimitingSettingsTable = this.setupRateLimitingSettingsTable({
       isProd: this.isProd(props),
       dynamoConstructName: "APIRateLimitingSettings",
-      keyName: "cxId_operation",
+      keyName: "cxIdAndOperation",
       alarmAction: props.alarmAction,
     });
   }
@@ -49,7 +49,7 @@ export class RateLimitingNestedStack extends NestedStack {
         name: keyName,
         type: dynamodb.AttributeType.STRING,
       },
-      sortKey: { name: "timestamp", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "windowTimestamp", type: dynamodb.AttributeType.STRING },
       replicationRegions: isProd ? ["us-east-1"] : ["ca-central-1"],
       replicationTimeout: Duration.hours(3),
       encryption: dynamodb.TableEncryption.AWS_MANAGED,

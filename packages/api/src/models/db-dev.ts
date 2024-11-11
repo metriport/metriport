@@ -71,21 +71,21 @@ async function createRateLimitTrackingTable(ddb: AWS.DynamoDB): Promise<void> {
     const params: AWS.DynamoDB.CreateTableInput = {
       AttributeDefinitions: [
         {
-          AttributeName: "cxId_operation",
+          AttributeName: "cxIdAndOperation",
           AttributeType: "S",
         },
         {
-          AttributeName: "window_timestamp",
+          AttributeName: "windowTimestamp",
           AttributeType: "S",
         },
       ],
       KeySchema: [
         {
-          AttributeName: "cxId_operation",
+          AttributeName: "cxIdAndOperation",
           KeyType: "HASH",
         },
         {
-          AttributeName: "window_timestamp",
+          AttributeName: "windowTimestamp",
           KeyType: "RANGE",
         },
       ],
@@ -106,13 +106,13 @@ async function creatSettingsTable(ddb: AWS.DynamoDB): Promise<void> {
     const params: AWS.DynamoDB.CreateTableInput = {
       AttributeDefinitions: [
         {
-          AttributeName: "cxId_operation",
+          AttributeName: "cxIdAndOperation",
           AttributeType: "S",
         },
       ],
       KeySchema: [
         {
-          AttributeName: "cxId_operation",
+          AttributeName: "cxIdAndOperation",
           KeyType: "HASH",
         },
       ],

@@ -49,7 +49,7 @@ export async function getTrackedOperationCountSum({
   try {
     const trackings = await ddbUtils.query({
       keyConditionExpression:
-        "cxId_operation = :primaryKeyValue and window_timestamp BETWEEN :start AND :end",
+        "cxIdAndOperation = :primaryKeyValue and windowTimestamp BETWEEN :start AND :end",
       expressionAttributesValues: {
         ":primaryKeyValue": createPrimaryKeyValue({ cxId, operation }),
         ":start": start,
