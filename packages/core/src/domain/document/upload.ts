@@ -20,7 +20,7 @@ export function createUploadMetadataFilePath(
   return `${uploadFilePath}_metadata.xml`;
 }
 
-export function createAttachmentUploadFileName({
+export function createAttachmentUploadFilePath({
   filePath,
   attachmentId,
   mimeType,

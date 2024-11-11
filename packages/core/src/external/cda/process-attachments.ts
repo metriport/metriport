@@ -6,11 +6,12 @@ import {
   DocumentReference,
   Extension,
   Identifier,
+  Resource,
 } from "@medplum/fhirtypes";
 import { executeWithNetworkRetries } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { MedicalDataSource, isMedicalDataSource } from "..";
-import { createAttachmentUploadFileName } from "../../domain/document/upload";
+import { createAttachmentUploadFilePath } from "../../domain/document/upload";
 import {
   CdaCodeCv,
   CdaInstanceIdentifier,
@@ -30,8 +31,11 @@ import { makeFhirApi } from "../fhir/api/api-factory";
 import { convertCollectionBundleToTransactionBundle } from "../fhir/bundle/convert-to-transaction-bundle";
 import { buildDocIdFhirExtension } from "../fhir/shared/extensions/doc-id-extension";
 
-const s3Utils = new S3Utils(Config.getAWSRegion());
+const region = Config.getAWSRegion();
 
+function getS3UtilsInstance(): S3Utils {
+  return new S3Utils(region);
+}
 export async function processAttachments({
   b64Attachments,
   cxId,
@@ -47,10 +51,11 @@ export async function processAttachments({
   patientId: string;
   filePath: string;
   medicalDataSource?: string | undefined;
-  s3BucketName: string;
+  s3BucketName: string | undefined;
   fhirUrl?: string;
 }) {
   const { log } = out(`processAttachments - cxId ${cxId}, patientId ${patientId}`);
+  const s3Utils = getS3UtilsInstance();
 
   const extensions = [buildDocIdFhirExtension(filePath), getSourceExtension(medicalDataSource)]
     .flat()
@@ -63,18 +68,19 @@ export async function processAttachments({
     const act = att.act as ConcernActEntryAct;
 
     const fileDetails = getDetails(act.text);
+    if (!fileDetails.fileB64Contents) return;
+
     const docRef = buildDocumentReference(patientId, extensions, act);
     if (!docRef.id) throw new Error("Missing ID in DocRef");
 
-    const fileKey = createAttachmentUploadFileName({
+    const fileKey = createAttachmentUploadFilePath({
       filePath,
       attachmentId: docRef.id,
       mimeType: fileDetails.mimeType,
     });
 
-    const fileUrl = s3Utils.buildFileUrl(s3BucketName, fileKey);
+    const fileUrl = s3Utils.buildFileUrl(s3BucketName ?? "", fileKey);
 
-    if (!fileDetails.fileB64Contents) return;
     const attachment: Attachment = {
       ...(fileDetails.mimeType && { contentType: fileDetails.mimeType }),
       url: fileUrl,
@@ -88,7 +94,7 @@ export async function processAttachments({
     docRefs.push(docRef);
 
     const uploadParams = {
-      bucket: s3BucketName,
+      bucket: s3BucketName ?? "",
       key: fileKey,
       file: Buffer.from(fileDetails.fileB64Contents, "base64"),
       ...(fileDetails.mimeType && { contentType: fileDetails.mimeType }),
@@ -108,18 +114,40 @@ export async function processAttachments({
     fhirBundle: collectionBundle,
   });
 
-  if (transactionBundle.entry?.length && fhirUrl && s3BucketName.length) {
-    log(`Starting uploads. ${JSON.stringify(transactionBundle)}`);
-    const fhirApi = makeFhirApi(cxId, fhirUrl);
-    await executeWithNetworkRetries(async () => await fhirApi.executeBatch(transactionBundle), {
-      log,
-    });
+  if (transactionBundle.entry?.length) {
+    await Promise.all([
+      handleFhirUpload(transactionBundle, cxId, log, fhirUrl),
+      handleS3Upload(uploadDetails, log, s3Utils, s3BucketName),
+    ]);
+  }
+  log(`Done...`);
+}
 
-    executeAsynchronously(uploadDetails, async uploadParams => {
+async function handleFhirUpload(
+  transactionBundle: Bundle<Resource>,
+  cxId: string,
+  log: typeof console.log,
+  fhirUrl?: string
+): Promise<void> {
+  if (fhirUrl) {
+    log(`Transaction bundle: ${JSON.stringify(transactionBundle)}`);
+    const fhirApi = makeFhirApi(cxId, fhirUrl);
+    await executeWithNetworkRetries(() => fhirApi.executeBatch(transactionBundle), { log });
+  }
+}
+
+async function handleS3Upload(
+  uploadDetails: UploadParams[],
+  log: typeof console.log,
+  s3Utils: S3Utils,
+  s3BucketName?: string
+): Promise<void> {
+  if (s3BucketName) {
+    log(`Upload details: ${JSON.stringify(uploadDetails)}`);
+    await executeAsynchronously(uploadDetails, async (uploadParams: UploadParams) => {
       await s3Utils.uploadFile(uploadParams);
     });
   }
-  log(`Done...`);
 }
 
 function buildDocumentReferenceDraft(
@@ -138,7 +166,6 @@ function buildDocumentReferenceDraft(
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getDetails(document: CdaOriginalText | undefined): {
   fileB64Contents: string | undefined;
   mimeType: string | undefined;
@@ -192,12 +219,12 @@ function getSourceExtension(medicalSource: string | undefined): Extension | unde
 }
 
 function getDate(time: EffectiveTimeLowHigh | undefined): string | undefined {
-  if (time?.low?._value) return buildDayjs(normalizeDateFromFhir(time.low._value)).toISOString();
-  if (time?.high?._value) return buildDayjs(normalizeDateFromFhir(time.high._value)).toISOString();
+  if (time?.low?._value) return buildDayjs(normalizeDateFromXml(time.low._value)).toISOString();
+  if (time?.high?._value) return buildDayjs(normalizeDateFromXml(time.high._value)).toISOString();
   return undefined;
 }
 
-function normalizeDateFromFhir(dateString: string) {
+function normalizeDateFromXml(dateString: string) {
   if (dateString.includes("+")) {
     return dateString.split("+")[0];
   }

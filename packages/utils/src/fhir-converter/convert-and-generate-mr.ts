@@ -42,7 +42,7 @@ const timestamp = dayjs().toISOString();
 const fhirExtension = `.json`;
 const logsFolderName = `runs/convert-and-generate-mr/${timestamp}`;
 const outputFolderName = `${logsFolderName}/output`;
-const s3BucketName = "";
+const s3BucketName = undefined; // Keeping this undefined will disable b64-extracted attachments upload to s3
 
 export async function main() {
   await sleep(100);

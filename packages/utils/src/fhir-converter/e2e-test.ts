@@ -57,7 +57,7 @@ dayjs.extend(duration);
 const cdaLocation = `/Users/ramilgaripov/Documents/phi/one-offs/nov6_nonxml_structured/fake/full_fake/`;
 const converterBaseUrl = "http://localhost:8777";
 const fhirBaseUrl = "http://localhost:8889";
-const s3BucketName = "";
+const s3BucketName = undefined; // Keeping this undefined will disable b64-extracted attachments upload to s3
 const parallelConversions = 10;
 // Execute 1 batch at a time to avoid concurrency when upserting resources (resulting in 409/Conflict), which
 // lead to inconsistent results in resource creation/count.

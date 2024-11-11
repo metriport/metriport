@@ -16,7 +16,7 @@ export async function convertCDAsToFHIR(
   api: AxiosInstance,
   fhirExtension: string,
   outputFolderName: string,
-  s3BucketName: string
+  s3BucketName: string | undefined
 ): Promise<{ errorCount: number; nonXMLBodyCount: number }> {
   console.log(`Converting ${fileNames.length} files, ${parallelConversions} at a time...`);
   let errorCount = 0;
@@ -63,7 +63,7 @@ export async function convert(
   fileName: string,
   api: AxiosInstance,
   fhirExtension: string,
-  s3BucketName: string
+  s3BucketName: string | undefined
 ) {
   const patientId = getPatientIdFromFileName(fileName);
   const cxId = getCxIdFromFileName(fileName);
