@@ -36,7 +36,7 @@ const CPT_CODE = "cpt";
 const UNK_CODE = "UNK";
 const UNKNOWN_DISPLAY = "unknown";
 
-export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
+export function bundleToHtmlBmi(fhirBundle: Bundle, brief?: Brief): string {
   const {
     patient,
     conditions,
@@ -53,7 +53,10 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
     throw new Error("No patient found in bundle");
   }
 
-  const { bmiSection, bmiChartData } = createBmiFromObservationVitalsSection(observationVitals);
+  const { bmiSection } = createBmiFromObservationVitalsSection(observationVitals);
+  const { hba1cSection, hba1cChartData } =
+    createHba1cFromObservationVitalsSection(observationLaboratory);
+
   const htmlPage = `
     <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
     <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
@@ -246,7 +249,7 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
             text-align: center;
             display: inline-block;
           }
-        
+
           .grey-rectangle {
             border: 2px solid grey;
             background-color: lightgrey;
@@ -256,19 +259,19 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
             border: 2px solid green;
             background-color: lightgreen;
           }
-        
+
           .blue-rectangle {
             border: 2px solid blue;
             background-color: lightblue;
           }
-        
+
           .red-rectangle {
             border: 2px solid red;
             background-color: lightcoral;
           }
 
           @media print {
-            #bmiChart {
+            #hba1c-history {
               width: 100% !important;
               height: auto !important;
               max-width: 95vw; /* Ensures it doesn't overflow the viewport */
@@ -291,16 +294,17 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
           ${createWeightComoborbidities(conditions, encounters)}
           ${createRelatedConditions(conditions, encounters)}
           ${createObservationLaboratorySection(observationLaboratory)}
+          ${hba1cSection}
         </div>
         <script>
-          const ctx = document.getElementById('bmiChart').getContext('2d');
-          const bmiChart = new Chart(ctx, {
+         const ctx = document.getElementById('hba1cChart').getContext('2d');
+          const hba1c = new Chart(ctx, {
             type: 'line',
             data: {
-              labels: ${JSON.stringify(bmiChartData.labels)},
+              labels: ${JSON.stringify(hba1cChartData.labels)},
               datasets: [{
-                label: 'BMI over the last 5 years',
-                data: ${JSON.stringify(bmiChartData.data)},
+                label: 'HbA1c over the last 5 years',
+                data: ${JSON.stringify(hba1cChartData.data)},
                 borderColor: 'rgba(75, 192, 192, 1)',
                 borderWidth: 2,
                 fill: false
@@ -311,7 +315,7 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
                 x: {
                   type: 'time',
                   time: {
-                    unit: 'month', 
+                    unit: 'month',
                     tooltipFormat: 'yyyy-MM-dd'
                   },
                   title: {
@@ -319,13 +323,13 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
                     text: 'Date'
                   }
                 },
-                y: { 
-                  title: { 
-                    display: true, 
-                    text: 'BMI Value' 
+                y: {
+                  title: {
+                    display: true,
+                    text: 'BMI Value'
                   },
-                  min: ${bmiChartData.min},
-                  max: ${bmiChartData.max},
+                  min: ${hba1cChartData.min},
+                  max: ${hba1cChartData.max},
                 }
               },
               layout: {
@@ -549,6 +553,9 @@ function createMRHeader(patient: Patient) {
               <li>
                 <a href="#laboratory">Laboratory</a>
               </li>
+              <li>
+                <a href="#hba1c-history">HbA1c History</a>
+              </li>
             </div>
             </ul>
         </div>
@@ -601,10 +608,9 @@ export function createBrief(brief?: Brief): string {
 
 function createBmiFromObservationVitalsSection(observations: Observation[]): {
   bmiSection: string;
-  bmiChartData: ChartData;
 } {
   if (!observations) {
-    return { bmiSection: "", bmiChartData: { labels: [], data: [] } };
+    return { bmiSection: "" };
   }
 
   const bmiObservations = observations.filter(observation => {
@@ -636,21 +642,88 @@ function createBmiFromObservationVitalsSection(observations: Observation[]): {
     return {
       bmiSection: createBmiSection(
         "BMI History",
-        `<table><tbody><tr><td>No BMI readings found</td></tr></tbody></table>`,
+        `<table><tbody><tr><td>No BMI readings found</td></tr></tbody></table>`
+      ),
+    };
+  }
+  const { tableContent } = createVitalsByDate(removeDuplicate);
+
+  return {
+    bmiSection: createBmiSection("BMI History", tableContent),
+  };
+}
+
+function createBmiSection(title: string, tableContents: string) {
+  return `
+    <div id="${title.toLowerCase().replace(/\s+/g, "-")}" class="section">
+      <div class="section-title">
+        <h3 id="${title}" title="${title}">&#x276F; ${title}</h3>
+        <a href="#mr-header">&#x25B2; Back to Top</a>
+      </div>
+
+      <div class="section-content">
+          ${tableContents}
+      </div>
+    </div>
+  `;
+}
+
+function createHba1cFromObservationVitalsSection(observations: Observation[]): {
+  hba1cSection: string;
+  hba1cChartData: ChartData;
+} {
+  if (!observations) {
+    return { hba1cSection: "", hba1cChartData: { labels: [], data: [] } };
+  }
+
+  const a1cLoincCode = "4548-4";
+
+  const hba1cObservations = observations.filter(observation => {
+    const observationDisplay = observation.code?.coding?.find(coding => {
+      return coding.code === a1cLoincCode;
+    });
+
+    return !!observationDisplay;
+  });
+
+  const observationsLast5Years = hba1cObservations.filter(observation => {
+    return dayjs(observation.effectiveDateTime).isAfter(dayjs().subtract(5, "year"));
+  });
+
+  const observationsSortedByDate = observationsLast5Years.sort((a, b) => {
+    return dayjs(a.effectiveDateTime).isBefore(dayjs(b.effectiveDateTime)) ? 1 : -1;
+  });
+
+  const removeDuplicate = uniqWith(observationsSortedByDate, (a, b) => {
+    const aDate = dayjs(a.effectiveDateTime).format(ISO_DATE);
+    const bDate = dayjs(b.effectiveDateTime).format(ISO_DATE);
+    const aText = a.code?.text;
+    const bText = b.code?.text;
+    if (aText === undefined || bText === undefined) {
+      return false;
+    }
+    return aDate === bDate && aText === bText;
+  });
+
+  if (removeDuplicate.length === 0) {
+    return {
+      hba1cSection: createHba1cSection(
+        "HbA1c History",
+        `<table><tbody><tr><td>No HbA1c readings found</td></tr></tbody></table>`,
         false
       ),
-      bmiChartData: { labels: [], data: [] },
+      hba1cChartData: { labels: [], data: [] },
     };
   }
   const { tableContent, chartData } = createVitalsByDate(removeDuplicate);
 
   return {
-    bmiSection: createBmiSection("BMI History", tableContent, true),
-    bmiChartData: chartData,
+    hba1cSection: createHba1cSection("HbA1c History", tableContent, true),
+    hba1cChartData: chartData,
   };
 }
 
-function createBmiSection(title: string, tableContents: string, contentPresent: boolean) {
+function createHba1cSection(title: string, tableContents: string, contentPresent: boolean) {
   return `
     <div id="${title.toLowerCase().replace(/\s+/g, "-")}" class="section">
       <div class="section-title">
@@ -660,7 +733,7 @@ function createBmiSection(title: string, tableContents: string, contentPresent: 
 
       ${
         contentPresent
-          ? `<div><canvas id="bmiChart" style="width: 95%; height: 400px;"></canvas></div>`
+          ? `<div><canvas id="hba1cChart" style="width: 95%; height: 400px;"></canvas></div>`
           : ``
       }
       <div class="section-content">
@@ -1207,7 +1280,7 @@ function createMedicationSection(
 
   const recentMedications = medicationStatements.filter(medicationStatement => {
     return (
-      dayjs(medicationStatement.effectivePeriod?.start).isAfter(dayjs().subtract(3, "year")) ||
+      dayjs(medicationStatement.effectivePeriod?.start).isAfter(dayjs().subtract(4, "months")) ||
       !medicationStatement.effectivePeriod
     );
   });
