@@ -73,7 +73,6 @@ export async function processAttachments({
     });
 
     const fileUrl = s3Utils.buildFileUrl(s3BucketName, fileKey);
-    log(`fileUrl: ${fileUrl}, and fileKey: ${fileKey}`);
 
     if (!fileDetails.fileB64Contents) return;
     const attachment: Attachment = {
@@ -97,7 +96,7 @@ export async function processAttachments({
     uploadDetails.push(uploadParams);
   });
 
-  log(`Extracted ${docRefs.length} attachments. Will start uploads.`);
+  log(`Extracted ${docRefs.length} attachments`);
   const docRefBundleEntries = docRefs.map(dr => ({ resource: dr }));
   const collectionBundle: Bundle = {
     resourceType: "Bundle",
@@ -110,6 +109,7 @@ export async function processAttachments({
   });
 
   if (transactionBundle.entry?.length && fhirUrl && s3BucketName.length) {
+    log(`Starting uploads. ${JSON.stringify(transactionBundle)}`);
     const fhirApi = makeFhirApi(cxId, fhirUrl);
     await executeWithNetworkRetries(async () => await fhirApi.executeBatch(transactionBundle), {
       log,
