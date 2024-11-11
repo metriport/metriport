@@ -23,8 +23,8 @@ export interface Filter {
   key: FilterSectionsKeys;
   customTitle?: string;
   dateFilter?: {
-    from?: string;
-    to?: string;
+    quantity?: string;
+    unit?: dayjs.UnitTypeLong;
   };
   stringFilter?: string;
 }
