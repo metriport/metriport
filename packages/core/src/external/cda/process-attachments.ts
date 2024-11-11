@@ -79,11 +79,11 @@ export async function processAttachments({
       mimeType: fileDetails.mimeType,
     });
 
-    const fileUrl = s3Utils.buildFileUrl(s3BucketName ?? "", fileKey);
+    const fileUrl = s3BucketName ? s3Utils.buildFileUrl(s3BucketName, fileKey) : undefined;
 
     const attachment: Attachment = {
       ...(fileDetails.mimeType && { contentType: fileDetails.mimeType }),
-      url: fileUrl,
+      ...(fileUrl && { url: fileUrl }),
       size: sizeInBytes(fileDetails.fileB64Contents),
       title: fileKey,
     };
@@ -93,13 +93,15 @@ export async function processAttachments({
 
     docRefs.push(docRef);
 
-    const uploadParams = {
-      bucket: s3BucketName ?? "",
-      key: fileKey,
-      file: Buffer.from(fileDetails.fileB64Contents, "base64"),
-      ...(fileDetails.mimeType && { contentType: fileDetails.mimeType }),
-    };
-    uploadDetails.push(uploadParams);
+    if (s3BucketName) {
+      const uploadParams = {
+        bucket: s3BucketName,
+        key: fileKey,
+        file: Buffer.from(fileDetails.fileB64Contents, "base64"),
+        ...(fileDetails.mimeType && { contentType: fileDetails.mimeType }),
+      };
+      uploadDetails.push(uploadParams);
+    }
   });
 
   log(`Extracted ${docRefs.length} attachments`);
@@ -116,38 +118,35 @@ export async function processAttachments({
 
   if (transactionBundle.entry?.length) {
     await Promise.all([
-      handleFhirUpload(transactionBundle, cxId, log, fhirUrl),
-      handleS3Upload(uploadDetails, log, s3Utils, s3BucketName),
+      fhirUrl ? handleFhirUpload(cxId, transactionBundle, fhirUrl, log) : undefined,
+      s3BucketName ? handleS3Upload(uploadDetails, s3Utils, log) : undefined,
     ]);
   }
   log(`Done...`);
 }
 
 async function handleFhirUpload(
-  transactionBundle: Bundle<Resource>,
   cxId: string,
-  log: typeof console.log,
-  fhirUrl?: string
+  transactionBundle: Bundle<Resource>,
+  fhirUrl: string,
+  log: typeof console.log
 ): Promise<void> {
-  if (fhirUrl) {
-    log(`Transaction bundle: ${JSON.stringify(transactionBundle)}`);
-    const fhirApi = makeFhirApi(cxId, fhirUrl);
-    await executeWithNetworkRetries(() => fhirApi.executeBatch(transactionBundle), { log });
-  }
+  log(`Transaction bundle: ${JSON.stringify(transactionBundle)}`);
+  const fhirApi = makeFhirApi(cxId, fhirUrl);
+  await executeWithNetworkRetries(async () => await fhirApi.executeBatch(transactionBundle), {
+    log,
+  });
 }
 
 async function handleS3Upload(
   uploadDetails: UploadParams[],
-  log: typeof console.log,
   s3Utils: S3Utils,
-  s3BucketName?: string
+  log: typeof console.log
 ): Promise<void> {
-  if (s3BucketName) {
-    log(`Upload details: ${JSON.stringify(uploadDetails)}`);
-    await executeAsynchronously(uploadDetails, async (uploadParams: UploadParams) => {
-      await s3Utils.uploadFile(uploadParams);
-    });
-  }
+  log(`Upload details: ${JSON.stringify(uploadDetails)}`);
+  await executeAsynchronously(uploadDetails, async (uploadParams: UploadParams) => {
+    await s3Utils.uploadFile(uploadParams);
+  });
 }
 
 function buildDocumentReferenceDraft(

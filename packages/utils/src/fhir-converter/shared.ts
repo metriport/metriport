@@ -84,7 +84,7 @@ export function getPatientIdFromFileName(fileName: string) {
   return parts.patientId;
 }
 
-export function getCxIdFromFileName(fileName: string) {
+export function getCxIdFromFileNameOrCreate(fileName: string) {
   const parts = parseFilePath(fileName);
   if (!parts) return uuidv7();
   return parts.cxId;

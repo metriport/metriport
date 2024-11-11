@@ -5,7 +5,7 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { AxiosInstance } from "axios";
 import * as uuid from "uuid";
 import { getFileContents, makeDirIfNeeded, writeFileContents } from "../shared/fs";
-import { getCxIdFromFileName, getPatientIdFromFileName } from "./shared";
+import { getCxIdFromFileNameOrCreate, getPatientIdFromFileName } from "./shared";
 import path = require("node:path");
 
 export async function convertCDAsToFHIR(
@@ -66,7 +66,7 @@ export async function convert(
   s3BucketName: string | undefined
 ) {
   const patientId = getPatientIdFromFileName(fileName);
-  const cxId = getCxIdFromFileName(fileName);
+  const cxId = getCxIdFromFileNameOrCreate(fileName);
   const fileContents = getFileContents(baseFolderName + fileName);
   if (fileContents.includes("nonXMLBody")) {
     throw new Error(`File has nonXMLBody`);
