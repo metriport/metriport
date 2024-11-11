@@ -3,9 +3,9 @@ dotenv.config();
 // keep that ^ on top
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import {
+  ResourceTypeForConsolidation,
   resourcesSearchableByPatient,
   resourcesSearchableBySubject,
-  ResourceTypeForConsolidation,
 } from "@metriport/api-sdk";
 import { makeFhirAdminApi, makeFhirApi } from "@metriport/core/external/fhir/api/api-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
@@ -54,9 +54,10 @@ dayjs.extend(duration);
  * - fhirBaseUrl: the URL of the FHIR server;
  */
 
-const cdaLocation = ``;
+const cdaLocation = `/Users/ramilgaripov/Documents/phi/one-offs/nov6_nonxml_structured/fake/full_fake/`;
 const converterBaseUrl = "http://localhost:8777";
 const fhirBaseUrl = "http://localhost:8889";
+const s3BucketName = "";
 const parallelConversions = 10;
 // Execute 1 batch at a time to avoid concurrency when upserting resources (resulting in 409/Conflict), which
 // lead to inconsistent results in resource creation/count.
@@ -123,7 +124,8 @@ export async function main() {
     startedAt,
     converterApi,
     fhirExtension,
-    outputFolderName
+    outputFolderName,
+    s3BucketName
   );
   if (nonXMLBodyCount > 0) {
     console.log(`>>> ${nonXMLBodyCount} files were skipped because they have nonXMLBody`);

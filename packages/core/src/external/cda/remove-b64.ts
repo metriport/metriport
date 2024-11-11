@@ -14,7 +14,7 @@ export function removeBase64PdfEntries(payloadRaw: string): {
 } {
   const parser = createXMLParser({
     ignoreAttributes: false,
-    attributeNamePrefix: "@_",
+    attributeNamePrefix: "_",
     removeNSPrefix: true,
   });
   const json = parser.parse(payloadRaw);
@@ -31,18 +31,18 @@ export function removeBase64PdfEntries(payloadRaw: string): {
         toArray(comp.section?.templateId).some(
           //eslint-disable-next-line @typescript-eslint/no-explicit-any
           (template: any) =>
-            template?.["@_root"] === notesTemplateId || template?.["@_root"] === resultsTemplateId
+            template?.["_root"] === notesTemplateId || template?.["_root"] === resultsTemplateId
         )
       ) {
         if (comp.section.entry) {
           //eslint-disable-next-line @typescript-eslint/no-explicit-any
           comp.section.entry = toArray(comp.section.entry).filter((entry: any) => {
-            const mediaType = entry.act?.text?.["@_mediaType"]?.trim().toLowerCase();
+            const mediaType = entry.act?.text?.["_mediaType"]?.trim().toLowerCase();
             if (
               (BINARY_MIME_TYPES.includes(mediaType) || mediaType == undefined) &&
-              (entry.act?.text?.["@_representation"]?.trim().toLowerCase() ===
+              (entry.act?.text?.["_representation"]?.trim().toLowerCase() ===
                 b64Representation.toLowerCase() ||
-                entry.organizer?.component?.observationMedia?.value?.["@_representation"]
+                entry.organizer?.component?.observationMedia?.value?.["_representation"]
                   ?.trim()
                   .toLowerCase() === b64Representation.toLowerCase())
             ) {
@@ -60,7 +60,7 @@ export function removeBase64PdfEntries(payloadRaw: string): {
   const builder = new XMLBuilder({
     format: false,
     ignoreAttributes: false,
-    attributeNamePrefix: "@_",
+    attributeNamePrefix: "_",
     suppressEmptyNode: true,
     suppressBooleanAttributes: false,
   });

@@ -1,6 +1,5 @@
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
-import { makeFhirApi } from "@metriport/core/external/fhir/api/api-factory";
 import { DOC_ID_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { AxiosInstance } from "axios";
@@ -17,7 +16,7 @@ export async function convertCDAsToFHIR(
   api: AxiosInstance,
   fhirExtension: string,
   outputFolderName: string,
-  fhirBaseUrl?: string | undefined
+  s3BucketName: string
 ): Promise<{ errorCount: number; nonXMLBodyCount: number }> {
   console.log(`Converting ${fileNames.length} files, ${parallelConversions} at a time...`);
   let errorCount = 0;
@@ -31,7 +30,7 @@ export async function convertCDAsToFHIR(
           fileName,
           api,
           fhirExtension,
-          fhirBaseUrl
+          s3BucketName
         );
         const destFileName = path.join(outputFolderName, fileName.replace(".xml", fhirExtension));
         makeDirIfNeeded(destFileName);
@@ -64,7 +63,7 @@ export async function convert(
   fileName: string,
   api: AxiosInstance,
   fhirExtension: string,
-  fhirBaseUrl?: string
+  s3BucketName: string
 ) {
   const patientId = getPatientIdFromFileName(fileName);
   const cxId = getCxIdFromFileName(fileName);
@@ -76,14 +75,13 @@ export async function convert(
   const { documentContents: noB64FileContents, b64Attachments } =
     removeBase64PdfEntries(fileContents);
 
-  if (b64Attachments.length && fhirBaseUrl) {
-    const fhirApi = makeFhirApi(cxId, fhirBaseUrl);
-    processAttachments({
+  if (b64Attachments.length) {
+    await processAttachments({
       b64Attachments,
       cxId,
       patientId,
-      fileName,
-      fhirApi,
+      filePath: fileName,
+      s3BucketName,
     });
   }
 

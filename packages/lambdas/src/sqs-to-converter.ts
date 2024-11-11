@@ -23,6 +23,8 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const apiURL = getEnvOrFail("API_URL");
+const fhirUrl = getEnvOrFail("FHIR_SERVER_URL");
+const medicalDocumentsBucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
 const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME");
 
@@ -184,12 +186,14 @@ export async function handler(event: SQSEvent) {
 
         log(`Extracted ${b64Attachments.length} B64 attachments`);
         if (b64Attachments.length) {
-          processAttachments({
+          await processAttachments({
             b64Attachments,
             cxId,
             patientId,
             filePath: s3FileName,
             medicalDataSource,
+            s3BucketName: medicalDocumentsBucketName,
+            fhirUrl,
           });
         }
 

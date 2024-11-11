@@ -11,6 +11,13 @@ import { executeWithNetworkRetries } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { MedicalDataSource, isMedicalDataSource } from "..";
 import { createAttachmentUploadFileName } from "../../domain/document/upload";
+import {
+  CdaCodeCv,
+  CdaInstanceIdentifier,
+  CdaOriginalText,
+  ConcernActEntryAct,
+  EffectiveTimeLowHigh,
+} from "../../fhir-to-cda/cda-types/shared-types";
 import { executeAsynchronously } from "../../util/concurrency";
 import { Config } from "../../util/config";
 import { out } from "../../util/log";
@@ -24,8 +31,6 @@ import { convertCollectionBundleToTransactionBundle } from "../fhir/bundle/conve
 import { buildDocIdFhirExtension } from "../fhir/shared/extensions/doc-id-extension";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
-const s3BucketName = Config.getMedicalDocumentsBucketName();
-const fhirUrl = Config.getFHIRServerUrl();
 
 export async function processAttachments({
   b64Attachments,
@@ -33,6 +38,8 @@ export async function processAttachments({
   patientId,
   filePath,
   medicalDataSource,
+  s3BucketName,
+  fhirUrl,
 }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   b64Attachments: any[];
@@ -40,6 +47,8 @@ export async function processAttachments({
   patientId: string;
   filePath: string;
   medicalDataSource?: string | undefined;
+  s3BucketName: string;
+  fhirUrl?: string;
 }) {
   const { log } = out(`processAttachments - cxId ${cxId}, patientId ${patientId}`);
 
@@ -51,7 +60,7 @@ export async function processAttachments({
   const uploadDetails: UploadParams[] = [];
 
   b64Attachments.map(async att => {
-    const act = att.act;
+    const act = att.act as ConcernActEntryAct;
 
     const fileDetails = getDetails(act.text);
     const docRef = buildDocumentReference(patientId, extensions, act);
@@ -65,8 +74,10 @@ export async function processAttachments({
 
     const fileUrl = s3Utils.buildFileUrl(s3BucketName, fileKey);
     log(`fileUrl: ${fileUrl}, and fileKey: ${fileKey}`);
+
+    if (!fileDetails.fileB64Contents) return;
     const attachment: Attachment = {
-      contentType: fileDetails.mimeType,
+      ...(fileDetails.mimeType && { contentType: fileDetails.mimeType }),
       url: fileUrl,
       size: sizeInBytes(fileDetails.fileB64Contents),
       title: fileKey,
@@ -81,7 +92,7 @@ export async function processAttachments({
       bucket: s3BucketName,
       key: fileKey,
       file: Buffer.from(fileDetails.fileB64Contents, "base64"),
-      contentType: fileDetails.mimeType,
+      ...(fileDetails.mimeType && { contentType: fileDetails.mimeType }),
     };
     uploadDetails.push(uploadParams);
   });
@@ -98,7 +109,7 @@ export async function processAttachments({
     fhirBundle: collectionBundle,
   });
 
-  if (transactionBundle.entry?.length) {
+  if (transactionBundle.entry?.length && fhirUrl && s3BucketName.length) {
     const fhirApi = makeFhirApi(cxId, fhirUrl);
     await executeWithNetworkRetries(async () => await fhirApi.executeBatch(transactionBundle), {
       log,
@@ -128,12 +139,12 @@ function buildDocumentReferenceDraft(
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getDetails(document: any): {
-  fileB64Contents: string;
-  mimeType: string;
+function getDetails(document: CdaOriginalText | undefined): {
+  fileB64Contents: string | undefined;
+  mimeType: string | undefined;
 } {
   const fileB64Contents = document?.["#text"];
-  const mimeType = document?.["@_mediaType"];
+  const mimeType = document?._mediaType;
 
   return {
     fileB64Contents,
@@ -141,8 +152,11 @@ function getDetails(document: any): {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildDocumentReference(patientId: string, extensions: Extension[], act: any) {
+function buildDocumentReference(
+  patientId: string,
+  extensions: Extension[],
+  act: ConcernActEntryAct
+) {
   const docRef = buildDocumentReferenceDraft(patientId, extensions);
   const identifiers = getIdentifiers(act.id);
   const date = getDate(act.effectiveTime);
@@ -160,12 +174,11 @@ function buildDocumentReference(patientId: string, extensions: Extension[], act:
   return docRef;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getIdentifiers(id: any): Identifier[] {
+function getIdentifiers(id: CdaInstanceIdentifier | undefined): Identifier[] {
   return [
     {
-      system: id["@_root"],
-      value: id["@_extension"],
+      ...(id?._root && { system: id._root }),
+      ...(id?._extension && { value: id._extension }),
     },
   ];
 }
@@ -178,12 +191,9 @@ function getSourceExtension(medicalSource: string | undefined): Extension | unde
   return undefined;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getDate(time: any): string | undefined {
-  if (time.low["@_value"])
-    return buildDayjs(normalizeDateFromFhir(time.low["@_value"])).toISOString();
-  if (time.high["@_value"])
-    return buildDayjs(normalizeDateFromFhir(time.low["@_value"])).toISOString();
+function getDate(time: EffectiveTimeLowHigh | undefined): string | undefined {
+  if (time?.low?._value) return buildDayjs(normalizeDateFromFhir(time.low._value)).toISOString();
+  if (time?.high?._value) return buildDayjs(normalizeDateFromFhir(time.high._value)).toISOString();
   return undefined;
 }
 
@@ -197,19 +207,21 @@ function normalizeDateFromFhir(dateString: string) {
   return dateString;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getType(code: any): CodeableConcept | undefined {
+function getType(code: CdaCodeCv | undefined): CodeableConcept | undefined {
   const codings: Coding[] = [];
   if (code) {
     const coding: Coding = {};
-    if (code["@_codeSystem"]) coding.system = code["@_codeSystem"];
-    if (code["@_code"]) coding.code = code["@_code"];
-    if (code["@_displayName"]) coding.display = code["@_displayName"];
+    if (code?._codeSystem) coding.system = code._codeSystem;
+    if (code?._code) coding.code = code._code;
+    if (code?._displayName) coding.display = code._displayName;
 
     if (Object.keys(coding).length > 0) codings.push(coding);
   }
 
-  const codeText = code.originalText ?? code.translation["@_displayName"] ?? undefined;
+  const origText =
+    typeof code?.originalText === "string" ? code.originalText : code?.originalText?.["#text"];
+
+  const codeText = origText ?? code?.translation?.[0]?._displayName ?? undefined;
 
   const concept: CodeableConcept = {};
   if (codings.length) concept.coding = codings;
