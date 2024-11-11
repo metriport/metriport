@@ -14,6 +14,7 @@ import BadRequestError from "../errors/bad-request";
 import { Settings } from "../models/settings";
 import { requestLogger } from "./helpers/request-logger";
 import { asyncHandler, getCxIdOrFail } from "./util";
+import { hasMapiAccess } from "../command/medical/mapi-access";
 
 const mrSectionsKeys = [
   "reports",
@@ -237,6 +238,23 @@ router.post(
     const cxId = getCxIdOrFail(req);
     await retryFailedRequests(cxId);
     res.sendStatus(status.OK);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /settings/mapi-access
+ *
+ * Returns a boolean indicating whether MAPI access has been provided.
+ *
+ * @return payload Indicating access has been given (prop hasMapiAccess).
+ */
+router.get(
+  "/mapi-access",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const id = getCxIdOrFail(req);
+    const hasMapi = await hasMapiAccess(id);
+    return res.status(status.OK).json({ hasMapiAccess: hasMapi });
   })
 );
 

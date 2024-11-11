@@ -1,3 +1,4 @@
+import { normalizePhoneNumberSafe } from "@metriport/shared";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { PatientResource } from "@metriport/ihe-gateway-sdk";
 import {
@@ -6,7 +7,6 @@ import {
   normalizeAndStringifyNames,
   normalizeAddress,
   stringifyAddress,
-  normalizeTelephone,
   normalizeEmail,
 } from "../../domain/medical/patient-demographics";
 import { CQLink } from "./cq-patient-data";
@@ -34,7 +34,11 @@ export function patientResourceToNormalizedLinkDemographics(
   });
   const telephoneNumbers = (patientResource.telecom ?? []).flatMap(tc => {
     if (!tc.value) return [];
-    if (tc.system === "phone" || !tc.value.includes("@")) return [normalizeTelephone(tc.value)];
+    if (tc.system === "phone" || !tc.value.includes("@")) {
+      const phone = normalizePhoneNumberSafe(tc.value);
+      if (!phone) return [];
+      return [phone];
+    }
     return [];
   });
   const emails = (patientResource.telecom ?? []).flatMap(tc => {

@@ -9,6 +9,7 @@ import {
   getDateFromResource,
   hasBlacklistedText,
   pickMostDescriptiveStatus,
+  fetchCodingCodeOrDisplayOrSystem,
 } from "../shared";
 
 const immunizationStatus = ["entered-in-error", "completed", "not-done"] as const;
@@ -137,8 +138,8 @@ export function extractCodes(concept: CodeableConcept | undefined): {
 
   if (concept && concept.coding) {
     for (const coding of concept.coding) {
-      const system = coding.system?.toLowerCase();
-      const code = coding.code?.trim().toLowerCase();
+      const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+      const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
       if (system && code) {
         if (system.includes(CVX_CODE) || system.includes(CVX_OID)) {
           cvxCode = code;

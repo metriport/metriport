@@ -19,8 +19,9 @@ import {
   subscriptionCreateResponseSchema,
   departmentsGetResponseSchema,
   FeedType,
+  EventType,
 } from "@metriport/shared";
-import { errorToString, NotFoundError } from "@metriport/shared";
+import { errorToString, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { S3Utils } from "../aws/s3";
 import { out } from "../../util/log";
@@ -198,7 +199,24 @@ class AthenaHealthApi {
           })
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - getPatient"));
       }
-      return patientResourceSchema.parse(response.data);
+      const patient = patientResourceSchema.safeParse(response.data);
+      if (!patient.success) {
+        const msg = "Patient from AthenaHealth could not be parsed";
+        log(msg);
+        capture.message(msg, {
+          extra: {
+            url: patientUrl,
+            cxId,
+            practiceId: this.practiceId,
+            patientId,
+            error: patient.error,
+            context: "athenahealth.get-patient",
+          },
+          level: "info",
+        });
+        return undefined;
+      }
+      return patient.data;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       if (error.response?.status === 404) return undefined;
@@ -256,11 +274,26 @@ class AthenaHealthApi {
           })
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - getPatientViaSearch"));
       }
-      const searchSet = patientSearchResourceSchema.parse(response.data);
-      if (searchSet.entry.length > 1) {
-        throw new NotFoundError("More than one AthenaHealth patient found");
+      const searchSet = patientSearchResourceSchema.safeParse(response.data);
+      if (!searchSet.success) {
+        const msg = "Patient search set from AthenaHealth could not be parsed";
+        log(msg);
+        capture.message(msg, {
+          extra: {
+            url: patientSearchUrl,
+            cxId,
+            practiceId: this.practiceId,
+            patientId,
+            error: searchSet.error,
+            context: "athenahealth.get-patient",
+          },
+          level: "info",
+        });
+        return undefined;
       }
-      return searchSet.entry[0]?.resource;
+      const entry = searchSet.data.entry;
+      if (entry.length > 1) throw new MetriportError("More than one AthenaHealth patient found");
+      return entry[0]?.resource;
     } catch (error) {
       const msg = `Failure while searching patient @ AthenaHealth`;
       log(`${msg}. Cause: ${errorToString(error)}`);
@@ -417,13 +450,24 @@ class AthenaHealthApi {
     return medicationOptions;
   }
 
-  async subscribeToEvent({ cxId, feedtype }: { cxId: string; feedtype: FeedType }): Promise<void> {
+  async subscribeToEvent({
+    cxId,
+    feedtype,
+    eventType,
+  }: {
+    cxId: string;
+    feedtype: FeedType;
+    eventType?: EventType;
+  }): Promise<void> {
     const { log, debug } = out(
       `AthenaHealth subscribe to event - cxId ${cxId} practiceId ${this.practiceId} feedtype ${feedtype}`
     );
     const subscribeUrl = `/${feedtype}/changed/subscription`;
     try {
-      const response = await this.axiosInstanceProprietary.post(subscribeUrl, {});
+      const response = await this.axiosInstanceProprietary.post(
+        subscribeUrl,
+        eventType ? this.createDataParams({ eventname: eventType }) : {}
+      );
       if (!response.data) throw new Error(`No body returned from ${subscribeUrl}`);
       debug(`${subscribeUrl} resp: ${JSON.stringify(response.data)}`);
       if (responsesBucket) {
@@ -581,10 +625,12 @@ class AthenaHealthApi {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       if (error.response?.status === 403) {
+        // 403 indicates no existing subscription so we create one
         log(`Subscribing to appointment event for cxId ${cxId}`);
         await this.subscribeToEvent({
           cxId,
           feedtype: "appointments",
+          eventType: "ScheduleAppointment",
         });
         return [];
       }

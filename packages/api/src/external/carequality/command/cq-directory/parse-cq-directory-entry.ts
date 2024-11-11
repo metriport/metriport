@@ -5,7 +5,7 @@ import { ManagingOrganization, Organization } from "@metriport/carequality-sdk/m
 import { Coordinates } from "@metriport/core/external/aws/location";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { errorToString, isValidUrl, normalizeOid, normalizeZipCode } from "@metriport/shared";
+import { errorToString, isValidUrl, normalizeOid, normalizeZipCodeNew } from "@metriport/shared";
 import { CQDirectoryEntryData } from "../../cq-directory";
 import { CQOrgUrls } from "../../shared";
 
@@ -144,9 +144,9 @@ export function getAddressFields(addresses: Address[] | undefined): LenientAddre
     const postalCode = address?.postalCode?.value;
     if (postalCode && postalCode.length > 0) {
       try {
-        parsedAddress.zip = normalizeZipCode(postalCode);
+        parsedAddress.zip = normalizeZipCodeNew(postalCode);
       } catch (err) {
-        log(`normalizeZipCode error for zip ${postalCode} - error: ${errorToString(err)}`);
+        log(`normalizeZipCodeNew error for zip ${postalCode} - error: ${errorToString(err)}`);
       }
     }
 

@@ -4,17 +4,18 @@ export const andreasDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "andreas1.xml",
+      key: "demo.xml",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "NmVjNjQ3M2EtODEwOS00NjI1LWExZjMtNmFmNWFlNDQxZDRh",
+      id: "QTIyMDEzODgtQzk1RC00RkU2LTlCNzAtQTQ4MTZBMDM3NzVB",
       content: [
         {
           attachment: {
-            title: "andreas1.xml",
+            title: "demo.xml",
             url: "http://api.metriport.com",
             contentType: "application/xml",
+            creation: "2023-06-16",
           },
         },
       ],
@@ -23,17 +24,18 @@ export const andreasDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "andreas11.pdf",
+      key: "demo2.pdf",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "M2RjMWMyYTItY2QzNy00MWY5LWJlOTQtZGQzNjA0MTNhNWUy",
+      id: "QTExMDEzMjItNzg5NC0xMjM0LTFCNzAtQjM4MTZBMDM3NzVC",
       content: [
         {
           attachment: {
-            title: "andreas11.pdf",
+            title: "demo2.pdf",
             url: "http://api.metriport.com",
             contentType: "application/pdf",
+            creation: "2017-10-03",
           },
         },
       ],
@@ -42,17 +44,18 @@ export const andreasDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "andreas12.pdf",
+      key: "demo3.pdf",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "MGUzMWE4NDctN2FlNS00MDI2LWE4ZjUtZTZkMGM0MmM2ZTNi",
+      id: "QTExMDEzMjItNzg5NC1CNTQzLTFCNzAtQjM4MTZBMDM3NzVC",
       content: [
         {
           attachment: {
-            title: "andreas12.pdf",
+            title: "demo3.pdf",
             url: "http://api.metriport.com",
             contentType: "application/pdf",
+            creation: "2018-12-20",
           },
         },
       ],
@@ -61,17 +64,18 @@ export const andreasDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "andreas13.pdf",
+      key: "demo4.pdf",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "YTg1MmE3MGYtYWU1NS00MzRjLWIxNzctNTdkNGUwYWJhNGVh",
+      id: "QTExMDEzMjItSDM5Mi1CNTQzLTFCNzAtQjM4MTZBMDM3NzVC",
       content: [
         {
           attachment: {
-            title: "andreas13.pdf",
+            title: "demo4.pdf",
             url: "http://api.metriport.com",
             contentType: "application/pdf",
+            creation: "2019-06-30",
           },
         },
       ],
@@ -80,15 +84,34 @@ export const andreasDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "andreas14.tif",
+      key: "demo5.jpeg",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "ZTU5ODY0MGYtMTdhYi00ZWQ0LTkyOTktZmFiNDU5MmZkOTVi",
+      id: "QTExMDEzMjItSDM5Mi1CNTQzLTFCNzAtQjM4MTZBMDM3NzVD",
       content: [
         {
           attachment: {
-            title: "andreas14.tif",
+            title: "demo5.jpeg",
+            url: "http://api.metriport.com",
+            contentType: "image/jpeg",
+          },
+        },
+      ],
+    },
+  },
+  {
+    s3Info: {
+      bucket,
+      key: "demo6.tif",
+    },
+    docRef: {
+      resourceType: "DocumentReference",
+      id: "QTExMDEzMjItSDM5Mi1CNTQzLTFCNzAtQjM4MTZBMDM3NzZD",
+      content: [
+        {
+          attachment: {
+            title: "demo6.tif",
             url: "http://api.metriport.com",
             contentType: "image/tiff",
           },
@@ -99,17 +122,17 @@ export const andreasDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "andreas15.tif",
+      key: "demo7.jpeg",
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "NWY3MjYwZmUtNWIxYi00NzczLTgyZjAtYzJlMGFmOTUzMTJi",
+      id: "QTExMDEzMjItSDM5Mi1CNTQzLTFCNzAtQjM4NDZBMDM3NzZD",
       content: [
         {
           attachment: {
-            title: "andreas15.tif",
+            title: "demo7.jpeg",
             url: "http://api.metriport.com",
-            contentType: "image/tiff",
+            contentType: "image/jpeg",
           },
         },
       ],

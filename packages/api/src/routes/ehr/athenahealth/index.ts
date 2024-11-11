@@ -1,5 +1,7 @@
 import Router from "express-promise-router";
+import { patientAuthorization } from "../../middlewares/patient-authorization";
 import { processPatientRoute, processDocumentRoute } from "./auth/middleware";
+import { handleParams } from "../../helpers/handle-params";
 import patient from "./patient";
 import chart from "./chart";
 import medicalPatient from "../../medical/patient";
@@ -10,7 +12,13 @@ const routes = Router();
 
 routes.use("/patient", patient);
 routes.use("/chart", chart);
-routes.use("/medical/v1/patient", processPatientRoute, medicalPatient);
+routes.use(
+  "/medical/v1/patient/:id",
+  handleParams,
+  processPatientRoute,
+  patientAuthorization("query"),
+  medicalPatient
+);
 routes.use("/medical/v1/document", processDocumentRoute, medicalDocument);
 routes.use("/settings", settings);
 

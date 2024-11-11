@@ -76,7 +76,7 @@ describe("normalization", () => {
       {
         line: ["1 Mordhaus St Rd Ave Dr", "Apt 1A", "2"],
         city: "Mordhaus",
-        state: "NYY",
+        state: "NY",
         zip: "66666-1234",
         country: "USAA",
       },
@@ -147,7 +147,6 @@ describe("normalization", () => {
       dlValid,
       { value: " i1234568 ", state: " ca " },
       { value: "I1234568", state: "CA" },
-      { value: "I1234568", state: "CAA" },
     ];
     for (const dl of dlsToCheck) {
       it(`dl: ${JSON.stringify(dl)}`, async () => {

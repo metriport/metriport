@@ -41,7 +41,7 @@ import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as documentUploader from "./api-stack/document-upload";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
-import * as fhirServerConnector from "./api-stack/fhir-server-connector";
+import { TerminologyServerNestedStack } from "./api-stack/terminology-server-service";
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
 import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
@@ -372,6 +372,19 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
+    // Terminology Server Service
+    //-------------------------------------------
+    if (!isSandbox(props.config)) {
+      new TerminologyServerNestedStack(this, "TerminologyServerNestedStack", {
+        config: props.config,
+        version: props.version,
+        generalBucket: generalBucket,
+        vpc: this.vpc,
+        alarmAction: slackNotification?.alarmAction,
+      });
+    }
+
+    //-------------------------------------------
     // FHIR Converter Service
     //-------------------------------------------
     let fhirConverter: ReturnType<typeof createFHIRConverterService> | undefined;
@@ -383,15 +396,6 @@ export class APIStack extends Stack {
         slackNotification?.alarmAction
       );
     }
-
-    const fhirServerQueue = fhirServerConnector.createConnector({
-      envType: props.config.environmentType,
-      stack: this,
-      vpc: this.vpc,
-      fhirConverterBucket: sandboxSeedDataBucket ?? fhirConverterBucket,
-      lambdaLayers,
-      alarmSnsAction: slackNotification?.alarmAction,
-    });
 
     let fhirToMedicalRecordLambda: Lambda | undefined = undefined;
     if (!isSandbox(props.config)) {
@@ -444,7 +448,6 @@ export class APIStack extends Stack {
       alarmAction: slackNotification?.alarmAction,
       dnsZones,
       fhirServerUrl: props.config.fhirServerUrl,
-      fhirServerQueueUrl: fhirServerQueue?.queueUrl,
       fhirConverterQueueUrl: fhirConverterQueue.queueUrl,
       fhirConverterServiceUrl: fhirConverter ? `http://${fhirConverter.address}` : undefined,
       cdaToVisualizationLambda,
@@ -529,26 +532,17 @@ export class APIStack extends Stack {
       queue: fhirConverterQueue,
       resource: apiService.service.taskDefinition.taskRole,
     });
-    fhirServerQueue &&
-      provideAccessToQueue({
-        accessType: "send",
-        queue: fhirServerQueue,
-        resource: apiService.service.taskDefinition.taskRole,
-      });
-    const fhirConverterLambda = fhirServerQueue?.queueUrl
-      ? fhirConverterConnector.createLambda({
-          envType: props.config.environmentType,
-          stack: this,
-          lambdaLayers,
-          vpc: this.vpc,
-          sourceQueue: fhirConverterQueue,
-          fhirServerQueue,
-          dlq: fhirConverterDLQ,
-          fhirConverterBucket,
-          apiServiceDnsAddress: apiDirectUrl,
-          alarmSnsAction: slackNotification?.alarmAction,
-        })
-      : undefined;
+    const fhirConverterLambda = fhirConverterConnector.createLambda({
+      envType: props.config.environmentType,
+      stack: this,
+      lambdaLayers,
+      vpc: this.vpc,
+      sourceQueue: fhirConverterQueue,
+      dlq: fhirConverterDLQ,
+      fhirConverterBucket,
+      apiServiceDnsAddress: apiDirectUrl,
+      alarmSnsAction: slackNotification?.alarmAction,
+    });
 
     // Add ENV after the API service is created
     fhirToMedicalRecordLambda?.addEnvironment("API_URL", `http://${apiDirectUrl}`);

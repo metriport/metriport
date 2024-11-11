@@ -1,10 +1,24 @@
 import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
 
-export function makeBundle<T extends Resource>({ entries }: { entries?: T[] } = {}): Bundle<T> {
+export type BundleType =
+  | "document"
+  | "message"
+  | "transaction"
+  | "transaction-response"
+  | "batch"
+  | "batch-response"
+  | "history"
+  | "searchset"
+  | "collection";
+
+export function makeBundle<T extends Resource>({
+  entries,
+  type,
+}: { entries?: T[]; type?: BundleType } = {}): Bundle<T> {
   const entry = entries ? entries.map(makeBundleEntryFor) : undefined;
   return {
     resourceType: "Bundle",
-    type: "transaction",
+    type: type ?? "transaction",
     ...(entry ? { entry } : {}),
   };
 }

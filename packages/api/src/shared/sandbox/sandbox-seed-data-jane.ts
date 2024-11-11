@@ -4,7 +4,7 @@ export const janeDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "jane1.xml",
+      key: "demo.xml",
     },
     docRef: {
       resourceType: "DocumentReference",
@@ -12,7 +12,7 @@ export const janeDocRefs: DataEntry[] = [
       content: [
         {
           attachment: {
-            title: "jane1.xml",
+            title: "demo.xml",
             url: "http://api.metriport.com",
             contentType: "application/xml",
             creation: "2023-06-16",
@@ -24,7 +24,7 @@ export const janeDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "jane11.pdf",
+      key: "demo2.pdf",
     },
     docRef: {
       resourceType: "DocumentReference",
@@ -32,7 +32,7 @@ export const janeDocRefs: DataEntry[] = [
       content: [
         {
           attachment: {
-            title: "jane11.pdf",
+            title: "demo2.pdf",
             url: "http://api.metriport.com",
             contentType: "application/pdf",
             creation: "2017-10-03",
@@ -44,7 +44,7 @@ export const janeDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "jane12.pdf",
+      key: "demo3.pdf",
     },
     docRef: {
       resourceType: "DocumentReference",
@@ -52,7 +52,7 @@ export const janeDocRefs: DataEntry[] = [
       content: [
         {
           attachment: {
-            title: "jane12.pdf",
+            title: "demo3.pdf",
             url: "http://api.metriport.com",
             contentType: "application/pdf",
             creation: "2018-12-20",
@@ -64,7 +64,7 @@ export const janeDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "jane13.pdf",
+      key: "demo4.pdf",
     },
     docRef: {
       resourceType: "DocumentReference",
@@ -72,7 +72,7 @@ export const janeDocRefs: DataEntry[] = [
       content: [
         {
           attachment: {
-            title: "jane13.pdf",
+            title: "demo4.pdf",
             url: "http://api.metriport.com",
             contentType: "application/pdf",
             creation: "2019-06-30",
@@ -84,7 +84,7 @@ export const janeDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "jane14.jpeg",
+      key: "demo5.jpeg",
     },
     docRef: {
       resourceType: "DocumentReference",
@@ -92,7 +92,7 @@ export const janeDocRefs: DataEntry[] = [
       content: [
         {
           attachment: {
-            title: "jane14.jpeg",
+            title: "demo5.jpeg",
             url: "http://api.metriport.com",
             contentType: "image/jpeg",
           },
@@ -103,7 +103,7 @@ export const janeDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "jane15.tif",
+      key: "demo6.tif",
     },
     docRef: {
       resourceType: "DocumentReference",
@@ -111,7 +111,7 @@ export const janeDocRefs: DataEntry[] = [
       content: [
         {
           attachment: {
-            title: "jane15.tif",
+            title: "demo6.tif",
             url: "http://api.metriport.com",
             contentType: "image/tiff",
           },
@@ -122,7 +122,7 @@ export const janeDocRefs: DataEntry[] = [
   {
     s3Info: {
       bucket,
-      key: "jane16.jpeg",
+      key: "demo7.jpeg",
     },
     docRef: {
       resourceType: "DocumentReference",
@@ -130,7 +130,7 @@ export const janeDocRefs: DataEntry[] = [
       content: [
         {
           attachment: {
-            title: "jane16.jpeg",
+            title: "demo7.jpeg",
             url: "http://api.metriport.com",
             contentType: "image/jpeg",
           },

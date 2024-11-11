@@ -1,6 +1,7 @@
 import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
 import { makePatientImportHandler } from "@metriport/core/command/patient-import/patient-import-factory";
+import { createPatientPayload } from "@metriport/core/command/patient-import/patient-import-shared";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -8,17 +9,9 @@ import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
   internalSendConsolidatedSchema,
-  normalizeDate,
-  normalizeEmailStrict,
-  normalizeExternalId,
-  normalizeGender,
-  normalizePhoneNumberStrict,
-  normalizeUSStateForAddress,
-  normalizeZipCode,
   patientImportSchema,
   sleep,
   stringToBoolean,
-  toTitleCase,
 } from "@metriport/shared";
 import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
@@ -30,7 +23,6 @@ import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
-import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import {
   getConsolidated,
   getConsolidatedAndSendToCx,
@@ -93,6 +85,7 @@ import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
 import { schemaCreateToPatientData } from "./schemas/patient";
+import { handleParams } from "../helpers/handle-params";
 
 dayjs.extend(duration);
 
@@ -206,6 +199,7 @@ router.post(
  */
 router.delete(
   "/:id",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -237,6 +231,7 @@ router.delete(
  */
 router.post(
   "/:patientId/link/:source",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -275,6 +270,7 @@ router.post(
  */
 router.delete(
   "/:patientId/link/:source",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -304,6 +300,7 @@ router.delete(
  */
 router.get(
   "/:patientId/link",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -630,13 +627,9 @@ router.get(
       ? consolidationConversionTypeSchema.parse(typeRaw.toLowerCase())
       : undefined;
 
-    const [organization, patient] = await Promise.all([
-      getOrganizationOrFail({ cxId }),
-      getPatientOrFail({ id: patientId, cxId }),
-    ]);
+    const patient = await getPatientOrFail({ id: patientId, cxId });
     const data = await getConsolidated({
       patient,
-      organization,
       documentIds,
       resources,
       dateFrom,
@@ -745,6 +738,7 @@ router.get(
  */
 router.get(
   "/:id",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -766,6 +760,7 @@ router.get(
  */
 router.post(
   "/:id/patient-discovery",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -806,33 +801,11 @@ router.post(
 
     const facility = await getFacilityOrFail({ cxId, id: facilityId });
     const patientCreates: PatientCreateCmd[] = payload.patients.map(patient => {
-      const phone1 = patient.phone1 ? normalizePhoneNumberStrict(patient.phone1) : undefined;
-      const email1 = patient.email1 ? normalizeEmailStrict(patient.email1) : undefined;
-      const phone2 = patient.phone2 ? normalizePhoneNumberStrict(patient.phone2) : undefined;
-      const email2 = patient.email2 ? normalizeEmailStrict(patient.email2) : undefined;
-      const contact1 = phone1 || email1 ? { phone: phone1, email: email1 } : undefined;
-      const contact2 = phone2 || email2 ? { phone: phone2, email: email2 } : undefined;
-      const contact = [contact1, contact2].flatMap(c => c ?? []);
-      const externalId = patient.externalid ? normalizeExternalId(patient.externalid) : undefined;
+      const payload = createPatientPayload(patient);
       return {
         cxId,
         facilityId: facility.id,
-        externalId,
-        firstName: toTitleCase(patient.firstname),
-        lastName: toTitleCase(patient.lastname),
-        dob: normalizeDate(patient.dob),
-        genderAtBirth: normalizeGender(patient.gender),
-        address: [
-          {
-            addressLine1: toTitleCase(patient.addressline1),
-            addressLine2: patient.addressline2 ? toTitleCase(patient.addressline2) : undefined,
-            city: toTitleCase(patient.city),
-            state: normalizeUSStateForAddress(patient.state),
-            zip: normalizeZipCode(patient.zip),
-            country: "USA",
-          },
-        ],
-        contact,
+        ...payload,
       };
     });
 
@@ -881,14 +854,12 @@ router.get(
  */
 router.post(
   "/:id/consolidated",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFromParamsOrFail("id", req);
-    const [organization, patient] = await Promise.all([
-      getOrganizationOrFail({ cxId }),
-      getPatientOrFail({ id, cxId }),
-    ]);
+    const patient = await getPatientOrFail({ id, cxId });
     const {
       requestId,
       conversionType,
@@ -907,7 +878,6 @@ router.post(
 
     getConsolidatedAndSendToCx({
       patient,
-      organization,
       bundle,
       requestId,
       conversionType,
@@ -970,9 +940,11 @@ router.post(
  *
  * @param req.query.cxId The customer ID.
  * @param req.params.id The patient ID.
- * @param req.query.facilityId The facility ID for running the coverage assessment.
+ * @param req.query.facilityId The facility ID for running the patient import.
  * @param req.query.jobId The job Id of the fle. TEMPORARY.
- * @param req.query.rerunPdOnNewDemographics Optional. Indicates whether to use demo augmentation on this PD run.
+ * @param req.query.triggerConsolidated - Optional; Whether to force get consolidated PDF on conversion finish.
+ * @param req.query.disableWebhooks Optional: Indicates whether send webhooks.
+ * @param req.query.rerunPdOnNewDemographics Optional: Indicates whether to use demo augmentation on this PD run.
  * @param req.query.dryrun Whether to simply validate or run the assessment (optional, defaults to false).
  *
  */
@@ -983,6 +955,8 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getFrom("query").orFail("facilityId", req);
     const jobId = getFrom("query").orFail("jobId", req);
+    const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
+    const disableWebhooks = getFromQueryAsBoolean("disableWebhooks", req);
     const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
     const dryrun = getFromQueryAsBoolean("dryrun", req);
 
@@ -994,6 +968,8 @@ router.post(
       facilityId,
       jobId,
       processPatientImportLambda: Config.getPatientImportLambdaName(),
+      triggerConsolidated,
+      disableWebhooks,
       rerunPdOnNewDemographics,
       dryrun,
     });

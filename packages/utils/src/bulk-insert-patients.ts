@@ -14,7 +14,7 @@ import {
   normalizeGender,
   normalizePhoneNumber,
   normalizeUSStateForAddress,
-  normalizeZipCode,
+  normalizeZipCodeNew,
   toTitleCase,
 } from "@metriport/shared";
 import { Command } from "commander";
@@ -249,7 +249,7 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
       ),
       city: normalizeCity(csvPatient.city),
       state: normalizeUSStateForAddress(csvPatient.state ?? ""),
-      zip: normalizeZipCode(csvPatient.zip ?? ""),
+      zip: normalizeZipCodeNew(csvPatient.zip ?? ""),
       country: "USA",
     },
     contact,

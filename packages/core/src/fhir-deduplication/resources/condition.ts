@@ -9,6 +9,7 @@ import {
   getDateFromResource,
   hasBlacklistedText,
   isUnknownCoding,
+  fetchCodingCodeOrDisplayOrSystem,
 } from "../shared";
 
 /**
@@ -49,7 +50,7 @@ export function groupSameConditions(conditions: Condition[]): {
   function removeOtherCodes(master: Condition): Condition {
     const code = master.code;
     const filtered = code?.coding?.filter(coding => {
-      const system = coding.system?.toLowerCase();
+      const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
       return (
         system?.includes(SNOMED_CODE) ||
         system?.includes(SNOMED_OID) ||
@@ -110,11 +111,11 @@ export function groupSameConditions(conditions: Condition[]): {
 }
 
 function isKnownCondition(concept: CodeableConcept | undefined) {
-  const knownCodings = concept?.coding?.filter(
-    coding =>
-      !isUnknownCoding(coding) &&
-      (coding.code !== "55607006" || coding.display?.toLowerCase().trim() !== "problem")
-  );
+  const knownCodings = concept?.coding?.filter(coding => {
+    const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
+    const display = fetchCodingCodeOrDisplayOrSystem(coding, "display");
+    return !isUnknownCoding(coding) && (code !== "55607006" || display !== "problem");
+  });
 
   return knownCodings?.length && knownCodings?.length > 0;
 }
@@ -129,8 +130,8 @@ export function extractCodes(concept: CodeableConcept | undefined): {
 
   if (concept && concept.coding) {
     for (const coding of concept.coding) {
-      const system = coding.system?.toLowerCase();
-      const code = coding.code?.trim().toLowerCase();
+      const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+      const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
       if (system && code) {
         if (system.includes(SNOMED_CODE) || system.includes(SNOMED_OID)) {
           snomedCode = code;

@@ -15,12 +15,14 @@ import {
   organizationCreateSchema,
   organizationUpdateSchema,
 } from "./schemas/organization";
+import { handleParams } from "../helpers/handle-params";
 
 const router = Router();
 
 /** ---------------------------------------------------------------------------
  * POST /organization
  *
+ * @deprecated
  * Creates a new organization at Metriport and HIEs.
  *
  * @param req.body The data to create the organization.
@@ -49,6 +51,7 @@ router.post(
 /** ---------------------------------------------------------------------------
  * PUT /organization/:id
  *
+ * @deprecated
  * Updates the organization at Metriport and HIEs.
  *
  * @param req.body The data to update the organization.
@@ -56,6 +59,7 @@ router.post(
  */
 router.put(
   "/:id",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);

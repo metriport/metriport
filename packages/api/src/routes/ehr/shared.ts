@@ -4,11 +4,10 @@ import { getJwtToken } from "../../command/jwt-token";
 import { getCxMappingOrFail } from "../../command/mapping/cx";
 import {
   PathDetails,
-  idRegex,
   validatePath,
   parseIdFromPathParams,
   parseIdFromQueryParams,
-  replaceIdInUrlAndQuery,
+  replaceIdInQueryParams,
 } from "./util";
 import { JwtTokenData } from "../../domain/jwt-token";
 import { EhrSources } from "../../external/ehr/shared";
@@ -46,50 +45,50 @@ export async function processCxIdAsync(
 
 export const validPatientPaths: PathDetails[] = [
   {
-    regex: new RegExp(`^/(${idRegex})$`),
-    paramRegexIndex: 1,
+    pathRegex: new RegExp(`^/$`),
+    pathParamKey: "id",
   },
   {
-    regex: new RegExp(`^/(${idRegex})(/consolidated/count)$`),
-    paramRegexIndex: 1,
+    pathRegex: new RegExp(`^/consolidated/count$`),
+    pathParamKey: "id",
   },
   {
-    regex: new RegExp(`^/(${idRegex})(/consolidated/query)$`),
-    paramRegexIndex: 1,
+    pathRegex: new RegExp(`^/consolidated/query$`),
+    pathParamKey: "id",
   },
   {
-    regex: new RegExp(`^/(${idRegex})(/consolidated/webhook)$`),
-    paramRegexIndex: 1,
+    pathRegex: new RegExp(`^/consolidated/webhook$`),
+    pathParamKey: "id",
   },
   {
-    regex: new RegExp(`^/(${idRegex})(/medical-record)$`),
-    paramRegexIndex: 1,
+    pathRegex: new RegExp(`^/medical-record$`),
+    pathParamKey: "id",
   },
   {
-    regex: new RegExp(`^/(${idRegex})(/medical-record-status)$`),
-    paramRegexIndex: 1,
+    pathRegex: new RegExp(`^/medical-record-status$`),
+    pathParamKey: "id",
   },
 ];
 
 export const validedDocumentPaths: PathDetails[] = [
   {
-    regex: new RegExp(`^/$`),
+    pathRegex: new RegExp(`^/$`),
     queryParamKey: "patientId",
   },
   {
-    regex: new RegExp(`^/query$`),
+    pathRegex: new RegExp(`^/query$`),
     queryParamKey: "patientId",
   },
   {
-    regex: new RegExp(`^/download-url$`),
+    pathRegex: new RegExp(`^/download-url$`),
   },
 ];
 
 export async function processPatientRouteAsync(req: Request, source: EhrSources): Promise<void> {
   const path = validatePath(req, validPatientPaths);
-  if (path.paramRegexIndex) {
-    const externalId = parseIdFromPathParams(req, path.regex, path.paramRegexIndex);
-    await replaceIdInUrlAndQuery(req, source, externalId);
+  if (path.pathParamKey) {
+    const externalId = parseIdFromPathParams(req, path.pathParamKey);
+    await replaceIdInQueryParams(req, source, externalId);
   }
 }
 
@@ -97,6 +96,6 @@ export async function processDocumentRouteAsync(req: Request, source: EhrSources
   const path = validatePath(req, validedDocumentPaths);
   if (path.queryParamKey) {
     const externalId = parseIdFromQueryParams(req, path.queryParamKey);
-    await replaceIdInUrlAndQuery(req, source, externalId);
+    await replaceIdInQueryParams(req, source, externalId);
   }
 }

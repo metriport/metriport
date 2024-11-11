@@ -7,6 +7,7 @@ import {
   fillMaps,
   getDateFromResource,
   pickMostDescriptiveStatus,
+  fetchCodingCodeOrDisplayOrSystem,
 } from "../shared";
 
 const diagnosticReportStatus = [
@@ -73,7 +74,7 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
   ): DiagnosticReport {
     const code = master.code;
     const filtered = code?.coding?.filter(coding => {
-      const system = coding.system?.toLowerCase();
+      const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
       return system?.includes(LOINC_CODE) || system?.includes(LOINC_OID);
     });
     if (filtered && filtered.length) {
