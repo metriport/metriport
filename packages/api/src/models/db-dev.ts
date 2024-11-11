@@ -101,8 +101,8 @@ async function createRateLimitTrackingTable(ddb: AWS.DynamoDB): Promise<void> {
 // Creates the rate limiting settings table
 async function creatSettingsTable(ddb: AWS.DynamoDB): Promise<void> {
   if (!docTableNames.rateLimitingSettings) return;
-  const doseTableExist = await tableExists(docTableNames.rateLimitingSettings, ddb);
-  if (!doseTableExist) {
+  const doesTableExist = await tableExists(docTableNames.rateLimitingSettings, ddb);
+  if (!doesTableExist) {
     const params: AWS.DynamoDB.CreateTableInput = {
       AttributeDefinitions: [
         {

@@ -43,7 +43,7 @@ export function checkRateLimit(
         },
         level: "info",
       });
-      // TODO Enable error after monitoring
+      // TODO Enable error after monitoring https://github.com/metriport/metriport-internal/issues/2467
       //throw new TooManyRequestsError(msg);
     }
 

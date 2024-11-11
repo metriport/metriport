@@ -9,10 +9,10 @@ export const rateLimitEntrySchema = z.object({
   operationsPerMinute: z.number(),
 });
 
-const trackingEntrSchame = z.object({
+const trackingEntrySchema = z.object({
   cxId_operation: z.string(),
   numberOfOperation: z.number(),
   window_timestamp: z.string(),
 });
 
-export const trackingEntriesSchema = trackingEntrSchame.array();
+export const trackingEntriesSchema = trackingEntrySchema.array();
