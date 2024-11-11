@@ -9,6 +9,7 @@ const validator = new Validator();
 
 const converterBaseUrl = "http://localhost:8777";
 const samplesFolderPath = "";
+const s3BucketName = "";
 
 const converterApi = Axios.create({ baseURL: converterBaseUrl });
 
@@ -38,7 +39,7 @@ export async function main() {
     console.log(`Processing ${index + 1}/${ccdaFileNames.length}. Filename: ${fileName}`);
 
     try {
-      const bundle = await convert("", fileName, converterApi, ".json");
+      const bundle = await convert("", fileName, converterApi, ".json", s3BucketName);
 
       if (!bundle) {
         console.log("Skipping file");

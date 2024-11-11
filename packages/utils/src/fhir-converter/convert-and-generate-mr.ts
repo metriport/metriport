@@ -42,6 +42,7 @@ const timestamp = dayjs().toISOString();
 const fhirExtension = `.json`;
 const logsFolderName = `runs/convert-and-generate-mr/${timestamp}`;
 const outputFolderName = `${logsFolderName}/output`;
+const s3BucketName = "";
 
 export async function main() {
   await sleep(100);
@@ -72,7 +73,8 @@ export async function main() {
     startedAt,
     converterApi,
     fhirExtension,
-    outputFolderName
+    outputFolderName,
+    s3BucketName
   );
   if (nonXMLBodyCount > 0) {
     console.log(`>>> ${nonXMLBodyCount} files were skipped because they have nonXMLBody`);
