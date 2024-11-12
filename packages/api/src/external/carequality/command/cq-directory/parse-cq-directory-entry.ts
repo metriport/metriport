@@ -212,7 +212,8 @@ function getUrlType(value: string | undefined): ChannelUrl | undefined {
   if (value.includes(XCA_DR_STRING)) return XCA_DR_STRING;
 
   if (value.includes("Direct Messaging")) return;
-  if (value.includes(XDR_STRING)) return; // TODO: Learn about the function of this endpoint and see whether we need to include it in our mapping
+  if (value.includes(XDR_STRING)) return; // TODO: #2468 - Learn about the function of this endpoint and see whether we need to include it in our mapping
+
   const msg = `Unknown CQ Endpoint type`;
   log(msg);
   capture.message(msg, {
