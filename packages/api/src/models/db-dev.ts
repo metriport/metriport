@@ -64,7 +64,7 @@ async function createTokenTable(ddb: AWS.DynamoDB): Promise<void> {
     await ddb.createTable(params).promise();
   }
 }
-// Creates the rate limting tracaking table
+// Creates the rate limit table
 async function createRateLimitTable(ddb: AWS.DynamoDB): Promise<void> {
   if (!docTableNames.rateLimit) return;
   const doesTableExist = await tableExists(docTableNames.rateLimit, ddb);
@@ -78,7 +78,7 @@ async function createRateLimitTable(ddb: AWS.DynamoDB): Promise<void> {
       ],
       KeySchema: [
         {
-          AttributeName: "cxIdAndOperation",
+          AttributeName: rateLimitPartitionKey,
           KeyType: "HASH",
         },
       ],
