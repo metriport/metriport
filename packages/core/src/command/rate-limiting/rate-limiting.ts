@@ -15,7 +15,7 @@ const routeMapForError: Record<RateLimitOperation, string> = {
   consolidatedDataQuery: "Too many patient consolidated data query starts, please try again later.",
 };
 
-const defaultOperationLimits: {
+export const defaultOperationLimits: {
   [k in RateLimitOperation]: { [k in RateLimitWindow]: number };
 } = {
   patientQuery: {
@@ -49,10 +49,11 @@ export async function getRateLimiter({
   });
   const key = `${cxId}_${operation}_${window}`;
   const defaultLimit = defaultOperationLimits[operation][window];
-  const limit = await store.getLimit(key, defaultLimit);
   return rateLimit({
     windowMs: window,
-    limit,
+    limit: async () => {
+      return await store.getLimit(key, defaultLimit);
+    },
     message: routeMapForError[operation],
     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers

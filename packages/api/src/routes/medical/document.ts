@@ -22,7 +22,7 @@ import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { sanitize } from "../helpers/string";
 import { getPatientInfoOrFail, patientAuthorization } from "../middlewares/patient-authorization";
-import { checkRateLimit } from "../middlewares/rate-limiting";
+import { rateLimit } from "../middlewares/rate-limiting";
 import { optionalDateSchema } from "../schemas/date";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
@@ -113,7 +113,7 @@ router.get(
  */
 router.post(
   "/query",
-  checkRateLimit("documentQuery"),
+  rateLimit("documentQuery"),
   requestLogger,
   patientAuthorization("query"),
   asyncHandler(async (req: Request, res: Response) => {

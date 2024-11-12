@@ -7,7 +7,7 @@ import { getCxIdOrFail } from "../util";
 /**
  * Checks the CX request for the given operation and rate limit with fixed window.
  */
-export function checkRateLimit(
+export function rateLimit(
   operation: RateLimitOperation,
   window?: RateLimitWindow
 ): (req: Request, res: Response, next: NextFunction) => Promise<void> {

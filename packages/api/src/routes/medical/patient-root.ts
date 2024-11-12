@@ -14,7 +14,7 @@ import NotFoundError from "../../errors/not-found";
 import { PatientModel as Patient } from "../../models/medical/patient";
 import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
-import { checkRateLimit } from "../middlewares/rate-limiting";
+import { rateLimit } from "../middlewares/rate-limiting";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { schemaCreateToPatientData, schemaDemographicsToPatientData } from "./schemas/patient";
@@ -32,7 +32,7 @@ const router = Router();
  */
 router.post(
   "/",
-  checkRateLimit("patientQuery"),
+  rateLimit("patientQuery"),
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
