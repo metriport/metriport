@@ -1,11 +1,12 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { MetriportMedicalApi, PatientCreate } from "@metriport/api-sdk";
+import { Address, Contact, MetriportMedicalApi, PatientCreate } from "@metriport/api-sdk";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { sleep } from "@metriport/core/util/sleep";
 import {
+  getEnvVar,
   isEmailValid,
   isPhoneValid,
   normalizeDate,
@@ -22,7 +23,6 @@ import csv from "csv-parser";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
-import path from "path";
 import { buildGetDirPathInside, initRunsFolder } from "./shared/folder";
 import { getCxData } from "./shared/get-cx-data";
 import { logNotDryRun } from "./shared/log";
@@ -49,16 +49,18 @@ dayjs.extend(duration);
  * Only need to provide the facilityId if the CX has more than one facility.
  * Used to determine the NPI used to query CW.
  */
-const facilityId: string = ""; // eslint-disable-line @typescript-eslint/no-inferrable-types
+
+// Full path to the file
+const inputFileName = "";
 
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 const cxId = getEnvVarOrFail("CX_ID");
+const facilityId = getEnvVar("FACILITY_ID") ?? "";
 const delayTime = dayjs.duration(5, "seconds").asMilliseconds();
-const inputFileName = "bulk-insert-patients.csv";
 const confirmationTime = dayjs.duration(10, "seconds");
 
-const getFileName = buildGetDirPathInside(`bulk-insert`);
+const getFolderName = buildGetDirPathInside(`bulk-insert`);
 
 type Params = {
   dryrun?: boolean;
@@ -82,51 +84,58 @@ async function main() {
 
   const { orgName, facilityId: localFacilityId } = await getCxData(cxId, facilityId.trim());
   if (!localFacilityId) throw new Error("No facility found");
-  const outputFileName = getFileName(orgName) + ".txt";
+  const outputFolderName = getFolderName(orgName);
 
-  if (!dryRun) initPatientIdRepository(outputFileName);
+  initPatientIdRepository(outputFolderName);
 
   // This will insert all the patients into a specific facility.
   // Based off the apiKey it will determine the cx to add to the patients.
   const results: PatientCreate[] = [];
-  fs.createReadStream(path.join(__dirname, inputFileName))
+  const fileName = inputFileName;
+  fs.createReadStream(fileName)
     .pipe(csv({ mapHeaders: ({ header }) => header.replaceAll(" ", "").replaceAll("*", "") }))
     .on("data", async data => {
       const metriportPatient = mapCSVPatientToMetriportPatient(data);
       if (metriportPatient) results.push(metriportPatient);
     })
-    .on("end", async () => loadData(results, orgName, localFacilityId, outputFileName, dryRun));
+    .on("end", async () => loadData(results, orgName, localFacilityId, outputFolderName, dryRun));
 }
 
 async function loadData(
   results: PatientCreate[],
   orgName: string,
   localFacilityId: string,
-  outputFileName: string,
+  outputFolderName: string,
   dryRun: boolean
 ) {
-  const msg = `Loaded ${results.length} patients from the CSV file to be inserted at org/cx ${orgName}`;
+  console.log(`Loaded ${results.length} patients from the CSV, deduplicating them...`);
+  const patientsCreates = dedupPatientCreates(results);
+
+  const msg = `${patientsCreates.length} unique patients from the CSV file to be inserted at org/cx ${orgName}`;
   console.log(msg);
+
+  storePatientCreates(patientsCreates, outputFolderName + "/patient-creates.json");
+
   if (dryRun) {
     console.log("Dry run, not inserting patients.");
-    console.log(`List of patients: ${JSON.stringify(results, null, 2)}`);
+    console.log(`List of patients: ${JSON.stringify(patientsCreates, null, 2)}`);
     console.log(msg);
     console.log("Done.");
     return;
   }
-  await displayWarningAndConfirmation(results, orgName, dryRun);
+  await displayWarningAndConfirmation(patientsCreates.length, orgName, dryRun);
   let successfulCount = 0;
   const errors: Array<{ firstName: string; lastName: string; dob: string; message: string }> = [];
 
-  for (const [i, patient] of results.entries()) {
+  for (const [i, patient] of patientsCreates.entries()) {
     try {
       const createdPatient = await metriportAPI.createPatient(patient, localFacilityId, {
         rerunPdOnNewDemographics: true,
       });
       successfulCount++;
       console.log(i + 1, createdPatient);
-      storePatientId(createdPatient.id, outputFileName);
-      if (i < results.length - 1) await sleep(delayTime);
+      storePatientId(createdPatient.id, outputFolderName + "/ids.txt");
+      if (i < patientsCreates.length - 1) await sleep(delayTime);
     } catch (error) {
       errors.push({
         firstName: patient.firstName,
@@ -140,25 +149,94 @@ async function loadData(
   console.log(`Done, inserted ${successfulCount} patients.`);
 }
 
-async function displayWarningAndConfirmation(results: unknown[], orgName: string, dryRun: boolean) {
+function dedupPatientCreates(patients: PatientCreate[]): PatientCreate[] {
+  const patientMap = new Map<string, PatientCreate>();
+  patients.forEach(patient => {
+    const nameKey = `${patient.firstName} ${patient.lastName}`;
+    const existing = patientMap.get(nameKey);
+    if (existing) {
+      const mergedPatient = mergePatients(existing, patient);
+      patientMap.set(nameKey, mergedPatient);
+    } else {
+      patientMap.set(nameKey, patient);
+    }
+  });
+  return Array.from(patientMap.values());
+}
+
+function mergePatients(p1: PatientCreate, p2: PatientCreate): PatientCreate {
+  const addresses = [
+    ...(Array.isArray(p1.address) ? p1.address : [p1.address]),
+    ...(Array.isArray(p2.address) ? p2.address : [p2.address]),
+  ];
+  const uniqueAddresses = deduplicateAddresses(addresses);
+
+  const contacts = [
+    ...(Array.isArray(p1.contact) ? p1.contact : p1.contact ? [p1.contact] : []),
+    ...(Array.isArray(p2.contact) ? p2.contact : p2.contact ? [p2.contact] : []),
+  ];
+  const uniqueContacts = deduplicateContacts(contacts);
+
+  return {
+    ...p1,
+    address: [uniqueAddresses[0], ...uniqueAddresses.slice(1)],
+    contact: uniqueContacts,
+  };
+}
+
+function deduplicateAddresses(addresses: Address[]): Address[] {
+  const uniqueMap = new Map<string, Address>();
+
+  addresses.forEach(addr => {
+    const key = `${addr.addressLine1}|${addr.addressLine2 ?? ""}|${addr.city}|${addr.state}|${
+      addr.zip
+    }`;
+    if (!uniqueMap.has(key)) {
+      uniqueMap.set(key, addr);
+    }
+  });
+
+  return Array.from(uniqueMap.values());
+}
+
+function deduplicateContacts(contacts: Contact[]): Contact[] {
+  // Split contacts into separate phone and email arrays
+  const phones = contacts.filter(c => c.phone).map(c => ({ phone: c.phone }));
+  const emails = contacts.filter(c => c.email).map(c => ({ email: c.email }));
+  // Deduplicate phones and emails separately
+  const uniquePhones = Array.from(new Set(phones.map(p => p.phone))).map(phone => ({ phone }));
+  const uniqueEmails = Array.from(new Set(emails.map(e => e.email))).map(email => ({ email }));
+  // Merge phones and emails into combined contacts, matching by array position
+  const maxLength = Math.max(uniquePhones.length, uniqueEmails.length);
+  const deduplicatedContacts = Array.from({ length: maxLength }, (_, i) => ({
+    ...(uniquePhones[i] ?? {}),
+    ...(uniqueEmails[i] ?? {}),
+  }));
+  return deduplicatedContacts;
+}
+
+async function displayWarningAndConfirmation(
+  patientCount: number,
+  orgName: string,
+  dryRun: boolean
+) {
   if (!dryRun) logNotDryRun();
   console.log(
-    `Inserting ${
-      results.length
-    } patients at org/cx ${orgName} in ${confirmationTime.asSeconds()} seconds...`
+    `Inserting ${patientCount} patients at org/cx ${orgName} in ${confirmationTime.asSeconds()} seconds...`
   );
   await sleep(confirmationTime.asMilliseconds());
   console.log(`running...`);
 }
 
-function initPatientIdRepository(fileName: string) {
-  const dirname = path.dirname(fileName);
-  if (!fs.existsSync(dirname)) {
-    fs.mkdirSync(dirname, { recursive: true });
+function initPatientIdRepository(folderName: string) {
+  if (!fs.existsSync(folderName)) {
+    fs.mkdirSync(folderName, { recursive: true });
   }
-  fs.writeFileSync(fileName, "");
 }
 
+function storePatientCreates(patientCreate: PatientCreate[], fileName: string) {
+  fs.appendFileSync(fileName, JSON.stringify(patientCreate, null, 2));
+}
 function storePatientId(patientId: string, fileName: string) {
   fs.appendFileSync(fileName, patientId + "\n");
 }
@@ -170,7 +248,7 @@ function normalizeName(name: string | undefined, propName: string): string {
 
 function normalizeAddressLine(addressLine: string | undefined, propName: string): string {
   if (addressLine == undefined) throw new Error(`Missing ` + propName);
-  return toTitleCase(addressLine);
+  return toTitleCase(addressLine.replace(/\./g, ""));
 }
 
 function normalizeCity(city: string | undefined): string {
