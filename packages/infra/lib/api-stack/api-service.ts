@@ -30,6 +30,7 @@ import { DnsZones } from "../shared/dns";
 import { buildLbAccessLogPrefix } from "../shared/s3";
 import { buildSecrets, Secrets, secretsToECS } from "../shared/secrets";
 import { provideAccessToQueue } from "../shared/sqs";
+import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd, isSandbox } from "../shared/util";
 
 interface ApiProps extends StackProps {
@@ -340,15 +341,22 @@ export function createAPIService({
   nlbListener.addTargetGroups("ApiNetworkLoadBalancerTargetGroup", nlbTargetGroup);
 
   // Health checks
+  const targetGroup = fargateService.targetGroup;
   const healthcheck = {
     healthyThresholdCount: 2,
     unhealthyThresholdCount: 2,
     interval: Duration.seconds(10),
   };
-  fargateService.targetGroup.configureHealthCheck(healthcheck);
+  targetGroup.configureHealthCheck(healthcheck);
   nlbTargetGroup.configureHealthCheck({
     ...healthcheck,
     interval: healthcheck.interval.plus(Duration.seconds(3)),
+  });
+  addDefaultMetricsToTargetGroup({
+    targetGroup,
+    scope: stack,
+    id: "API",
+    alarmAction,
   });
 
   // Access grant for Aurora DB's secret

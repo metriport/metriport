@@ -33,3 +33,5 @@ packages/utils/cq-org-builder.failed
 JSON.json
 tmp
 .aider.*
+.aider*
+.env*
