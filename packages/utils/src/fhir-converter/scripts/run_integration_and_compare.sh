@@ -1,8 +1,8 @@
 #!/bin/bash
-# This script runs the e2e-test.ts script without inserting to FHIR, and then runs the compare_total_resource_counts.sh script using the output from e2e-test.ts.
+# This script runs the integration-test.ts script without inserting to FHIR, and then runs the compare_total_resource_counts.sh script using the output from integration-test.ts.
 
-# Run the e2e-test.ts script and capture its output
-OUTPUT=$(ts-node src/fhir-converter/e2e-test.ts)
+# Run the integration-test.ts script and capture its output
+OUTPUT=$(ts-node src/fhir-converter/integration-test.ts)
 echo "$OUTPUT"
 
 # Extract the file1 location from the output
@@ -11,7 +11,7 @@ FILE1_LOCATION=$(echo "$OUTPUT" | grep "File1 Location:" | sed 's/File1 Location
 
 # Check if FILE1_LOCATION is empty
 if [ -z "$FILE1_LOCATION" ]; then
-  echo "Failed to extract file1 location from e2e-test.ts output."
+  echo "Failed to extract file1 location from integration-test.ts output."
   exit 1
 fi
 

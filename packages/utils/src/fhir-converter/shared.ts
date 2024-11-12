@@ -84,12 +84,6 @@ export function getPatientIdFromFileName(fileName: string) {
   return parts.patientId;
 }
 
-export function getCxIdFromFileNameOrCreate(fileName: string) {
-  const parts = parseFilePath(fileName);
-  if (!parts) return uuidv7();
-  return parts.cxId;
-}
-
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function appendResourceCountsToFile(resourceCountData: any, outputPath: string) {
   let existingData = [];

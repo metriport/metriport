@@ -42,7 +42,6 @@ const timestamp = dayjs().toISOString();
 const fhirExtension = `.json`;
 const logsFolderName = `runs/convert-and-generate-mr/${timestamp}`;
 const outputFolderName = `${logsFolderName}/output`;
-const s3BucketName = undefined; // Keeping this undefined will disable b64-extracted attachments upload to s3
 
 export async function main() {
   await sleep(100);
@@ -73,8 +72,7 @@ export async function main() {
     startedAt,
     converterApi,
     fhirExtension,
-    outputFolderName,
-    s3BucketName
+    outputFolderName
   );
   if (nonXMLBodyCount > 0) {
     console.log(`>>> ${nonXMLBodyCount} files were skipped because they have nonXMLBody`);

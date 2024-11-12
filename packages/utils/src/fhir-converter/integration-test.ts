@@ -46,7 +46,7 @@ dayjs.extend(duration);
  * - otherwise, it will:
  *   - count the resources in the JSON files resulting from the conversion;
  * - display statistics (count total and by resource);
- * - stats and logs are stored in a folder with a timestamp in the name (under ./runs/fhir-converter-e2e/).
+ * - stats and logs are stored in a folder with a timestamp in the name (under ./runs/fhir-converter-integration/).
  *
  * Set:
  * - cdaLocation: the folder with the XML files;
@@ -54,10 +54,9 @@ dayjs.extend(duration);
  * - fhirBaseUrl: the URL of the FHIR server;
  */
 
-const cdaLocation = `/Users/ramilgaripov/Documents/phi/one-offs/nov6_nonxml_structured/fake/full_fake/`;
+const cdaLocation = ``;
 const converterBaseUrl = "http://localhost:8777";
 const fhirBaseUrl = "http://localhost:8889";
-const s3BucketName = undefined; // Keeping this undefined will disable b64-extracted attachments upload to s3
 const parallelConversions = 10;
 // Execute 1 batch at a time to avoid concurrency when upserting resources (resulting in 409/Conflict), which
 // lead to inconsistent results in resource creation/count.
@@ -73,7 +72,7 @@ const fhirApiRaw = Axios.create({ baseURL: fhirBaseUrl });
 let startedAt = Date.now();
 const timestamp = dayjs().toISOString();
 const fhirExtension = `.json`;
-const logsFolderName = `runs/fhir-converter-e2e/${timestamp}`;
+const logsFolderName = `runs/fhir-converter-integration/${timestamp}`;
 const outputFolderName = `${logsFolderName}/output`;
 const totalResourceCountStatsLocation = `${logsFolderName}/total-resource-counts.json`;
 const totalResourceCountPostFHIRInsertStatsLocation = `${logsFolderName}/total-resource-counts-post-fhir-insert.json`;
@@ -84,8 +83,8 @@ type Params = {
 };
 const program = new Command();
 program
-  .name("e2e-test")
-  .description("End-to-end test for the FHIR Converter")
+  .name("integration-test")
+  .description("Integration test for the FHIR Converter")
   .option(`--use-fhir-server`, "Insert the result of the conversion on the FHIR server")
   .option(
     `--cleanup`,
@@ -124,8 +123,7 @@ export async function main() {
     startedAt,
     converterApi,
     fhirExtension,
-    outputFolderName,
-    s3BucketName
+    outputFolderName
   );
   if (nonXMLBodyCount > 0) {
     console.log(`>>> ${nonXMLBodyCount} files were skipped because they have nonXMLBody`);

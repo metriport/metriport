@@ -41,18 +41,18 @@ export async function processAttachments({
   cxId,
   patientId,
   filePath,
-  medicalDataSource,
   s3BucketName,
   fhirUrl,
+  medicalDataSource,
 }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   b64Attachments: any[];
   cxId: string;
   patientId: string;
   filePath: string;
+  s3BucketName: string;
+  fhirUrl: string;
   medicalDataSource?: string | undefined;
-  s3BucketName: string | undefined;
-  fhirUrl?: string;
 }) {
   const { log } = out(`processAttachments - cxId ${cxId}, patientId ${patientId}`);
   const s3Utils = getS3UtilsInstance();
@@ -78,30 +78,25 @@ export async function processAttachments({
       attachmentId: docRef.id,
       mimeType: fileDetails.mimeType,
     });
-
-    const fileUrl = s3BucketName ? s3Utils.buildFileUrl(s3BucketName, fileKey) : undefined;
-
+    const fileUrl = s3Utils.buildFileUrl(s3BucketName, fileKey);
     const attachment: Attachment = {
       ...(fileDetails.mimeType && { contentType: fileDetails.mimeType }),
-      ...(fileUrl && { url: fileUrl }),
+      url: fileUrl,
       size: sizeInBytes(fileDetails.fileB64Contents),
       title: fileKey,
     };
 
     if (docRef.date) attachment.creation = docRef.date;
     docRef.content = [{ attachment }];
+    const uploadParams = {
+      bucket: s3BucketName,
+      key: fileKey,
+      file: Buffer.from(fileDetails.fileB64Contents, "base64"),
+      ...(fileDetails.mimeType && { contentType: fileDetails.mimeType }),
+    };
 
+    uploadDetails.push(uploadParams);
     docRefs.push(docRef);
-
-    if (s3BucketName) {
-      const uploadParams = {
-        bucket: s3BucketName,
-        key: fileKey,
-        file: Buffer.from(fileDetails.fileB64Contents, "base64"),
-        ...(fileDetails.mimeType && { contentType: fileDetails.mimeType }),
-      };
-      uploadDetails.push(uploadParams);
-    }
   });
 
   log(`Extracted ${docRefs.length} attachments`);
@@ -118,8 +113,8 @@ export async function processAttachments({
 
   if (transactionBundle.entry?.length) {
     await Promise.all([
-      fhirUrl ? handleFhirUpload(cxId, transactionBundle, fhirUrl, log) : undefined,
-      s3BucketName ? handleS3Upload(uploadDetails, s3Utils, log) : undefined,
+      handleFhirUpload(cxId, transactionBundle, fhirUrl, log),
+      handleS3Upload(uploadDetails, s3Utils, log),
     ]);
   }
   log(`Done...`);
