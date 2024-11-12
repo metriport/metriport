@@ -22,6 +22,7 @@ const EARTH_RADIUS = 6378168;
 const XCPD_STRING = "ITI-55";
 const XCA_DQ_STRING = "ITI-38";
 const XCA_DR_STRING = "ITI-39";
+const XDR_STRING = "ITI-41";
 type ChannelUrl = typeof XCPD_STRING | typeof XCA_DQ_STRING | typeof XCA_DR_STRING;
 
 export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryEntryData[] {
@@ -211,6 +212,7 @@ function getUrlType(value: string | undefined): ChannelUrl | undefined {
   if (value.includes(XCA_DR_STRING)) return XCA_DR_STRING;
 
   if (value.includes("Direct Messaging")) return;
+  if (value.includes(XDR_STRING)) return; // TODO: Learn about the function of this endpoint and see whether we need to include it in our mapping
   const msg = `Unknown CQ Endpoint type`;
   log(msg);
   capture.message(msg, {
