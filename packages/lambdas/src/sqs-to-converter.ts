@@ -1,4 +1,5 @@
 import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
+import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
 import { DOC_ID_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE, XML_APP_MIME_TYPE } from "@metriport/core/util/mime";
@@ -22,6 +23,8 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const apiURL = getEnvOrFail("API_URL");
+const fhirUrl = getEnvOrFail("FHIR_SERVER_URL");
+const medicalDocumentsBucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
 const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME");
 
@@ -170,7 +173,7 @@ export async function handler(event: SQSEvent) {
         const payloadRaw = await s3Utils.getFileContentsAsString(s3BucketName, s3FileName);
         if (payloadRaw.includes("nonXMLBody")) {
           const msg = "XML document is unstructured CDA with nonXMLBody";
-          console.log(`${msg}, skipping...`);
+          log(`${msg}, skipping...`);
           capture.message(msg, {
             extra: { message, ...lambdaParams, context: lambdaName, fileName: s3FileName },
             level: "warning",
@@ -178,7 +181,22 @@ export async function handler(event: SQSEvent) {
           await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
           continue;
         }
-        const payloadNoB64 = removeBase64PdfEntries(payloadRaw);
+        const { documentContents: payloadNoB64, b64Attachments } =
+          removeBase64PdfEntries(payloadRaw);
+
+        log(`Extracted ${b64Attachments.length} B64 attachments`);
+        if (b64Attachments.length) {
+          await processAttachments({
+            b64Attachments,
+            cxId,
+            patientId,
+            filePath: s3FileName,
+            medicalDataSource,
+            s3BucketName: medicalDocumentsBucketName,
+            fhirUrl,
+          });
+        }
+
         const payloadClean = cleanUpPayload(payloadNoB64);
         metrics.download = {
           duration: Date.now() - downloadStart,

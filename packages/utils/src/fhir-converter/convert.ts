@@ -62,7 +62,7 @@ export async function convert(
     throw new Error(`File has nonXMLBody`);
   }
 
-  const noB64FileContents = removeBase64PdfEntries(fileContents);
+  const { documentContents: noB64FileContents } = removeBase64PdfEntries(fileContents);
 
   const unusedSegments = false;
   const invalidAccess = false;
