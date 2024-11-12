@@ -113,7 +113,7 @@ router.get(
  */
 router.post(
   "/query",
-  checkRateLimit("documentQuery", "operationsPerMinute"),
+  checkRateLimit("documentQuery"),
   requestLogger,
   patientAuthorization("query"),
   asyncHandler(async (req: Request, res: Response) => {

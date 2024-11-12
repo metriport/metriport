@@ -1,52 +1,29 @@
-import { checkRateLimit as checkRateLimitCore } from "@metriport/core/command/rate-limiting/rate-limiting";
-import { RateLimit, RateLimitOperation } from "@metriport/shared";
-import { out } from "@metriport/core/util/log";
-import { capture } from "@metriport/core/util/notifications";
+import { getRateLimiter } from "@metriport/core/command/rate-limiting/rate-limiting";
+import { RateLimitWindow, RateLimitOperation } from "@metriport/shared";
 import { NextFunction, Request, Response } from "express";
 import { getDB } from "../../models/db";
 import { getCxIdOrFail } from "../util";
-
-const routeMapForError: Record<RateLimitOperation, string> = {
-  patientQuery: "patient create or update",
-  documentQuery: "documeny query start",
-  consolidatedDataQuery: "consolidated data query start",
-};
 
 /**
  * Checks the CX request for the given operation and rate limit sliding window.
  */
 export function checkRateLimit(
   operation: RateLimitOperation,
-  rateLimit: RateLimit
+  window?: RateLimitWindow
 ): (req: Request, res: Response, next: NextFunction) => Promise<void> {
-  return async (req: Request, _: Response, next: NextFunction): Promise<void> => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const cxId = getCxIdOrFail(req);
-    const { log } = out(
-      `checkRateLimit - cxId ${cxId} operation ${operation} rateLimit ${rateLimit}`
-    );
 
-    const allowed = await checkRateLimitCore({
+    const rateLimiter = await getRateLimiter({
       cxId,
       operation,
-      rateLimit,
+      window,
       client: getDB().doc,
     });
-
-    if (!allowed) {
-      const msg = `Too many requests for ${routeMapForError[operation]} - please reduce your request rate for this operation`;
-      log(msg);
-      capture.message(msg, {
-        extra: {
-          cxId,
-          operation,
-          rateLimit,
-        },
-        level: "info",
-      });
-      // TODO Enable error after monitoring https://github.com/metriport/metriport-internal/issues/2467
-      //throw new TooManyRequestsError(msg);
+    if (!rateLimiter) {
+      next();
+    } else {
+      rateLimiter(req, res, next);
     }
-
-    next();
   };
 }

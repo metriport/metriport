@@ -1,48 +1,56 @@
 import * as AWS from "aws-sdk";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { errorToString } from "@metriport/shared";
+import { Config } from "../../util/config";
 import { capture, out } from "../../util";
 
-export type DdbMapping = Record<string, string | number>;
+const region = Config.getAWSRegion();
+
+export type DynamoDbUtilsOptions = {
+  table: string;
+  partitionKey: string;
+  rangeKey?: string;
+  client?: DocumentClient | undefined;
+};
+
+type AttributeValuesMapping = { [k: string]: string | number };
 
 export class DynamoDbUtils {
   public readonly _docClient: DocumentClient;
   public readonly _table: string;
-  public readonly _key: DdbMapping;
+  public readonly _partitionKey: string;
+  public readonly _rangeKey: string | undefined;
 
-  constructor(
-    readonly region: string,
-    readonly table: string,
-    readonly key: DdbMapping,
-    readonly client?: DocumentClient | undefined
-  ) {
+  constructor(opts: DynamoDbUtilsOptions) {
+    this._table = opts.table;
+    this._partitionKey = opts.partitionKey;
+    this._rangeKey = opts.rangeKey;
     this._docClient =
-      client ??
+      opts.client ??
       new AWS.DynamoDB.DocumentClient({
         region,
         apiVersion: "2012-08-10",
       });
-    this._table = table;
-    this._key = key;
   }
 
-  get docClient(): DocumentClient {
-    return this._docClient;
-  }
-
+  /*
+   * Update will insert if not exists
+   */
   async update({
-    sortKey,
+    partition,
+    range,
     expression,
     expressionAttributesValues,
     returnValue = "ALL_NEW",
   }: {
-    sortKey?: DdbMapping;
+    partition: string;
+    range?: string;
     expression: string;
-    expressionAttributesValues: DdbMapping;
+    expressionAttributesValues: AttributeValuesMapping;
     returnValue?: "ALL_OLD" | "ALL_NEW";
   }): Promise<DocumentClient.UpdateItemOutput> {
-    const { log } = out(`update DDB - table ${this._table} key ${this._key}`);
-    const key = { ...this._key, ...sortKey };
+    const { log } = out(`update DDB - table ${this._table} partition ${partition}`);
+    const key = this.createKey(partition, range);
     const params: DocumentClient.UpdateItemInput = {
       TableName: this._table,
       Key: key,
@@ -50,7 +58,6 @@ export class DynamoDbUtils {
       ExpressionAttributeValues: expressionAttributesValues,
       ReturnValues: returnValue,
     };
-    // update will insert if not exists
     try {
       return await this._docClient.update(params).promise();
     } catch (error) {
@@ -71,11 +78,15 @@ export class DynamoDbUtils {
     }
   }
 
-  async getByKey(
-    sortKey: DdbMapping | undefined = undefined
-  ): Promise<DocumentClient.GetItemOutput> {
-    const { log } = out(`getByKey DDB - table ${this._table} key ${this._key}`);
-    const key = { ...this._key, ...sortKey };
+  async get({
+    partition,
+    range,
+  }: {
+    partition: string;
+    range?: string;
+  }): Promise<DocumentClient.GetItemOutput> {
+    const { log } = out(`getByKey DDB - table ${this._table} partition ${partition}`);
+    const key = this.createKey(partition, range);
     const params: DocumentClient.GetItemInput = {
       TableName: this._table,
       Key: key,
@@ -97,34 +108,10 @@ export class DynamoDbUtils {
     }
   }
 
-  async query({
-    keyConditionExpression,
-    expressionAttributesValues,
-  }: {
-    keyConditionExpression: string;
-    expressionAttributesValues: DdbMapping;
-  }): Promise<DocumentClient.QueryOutput> {
-    const { log } = out(`query DDB - table ${this._table} key ${this._key}`);
-    const params: DocumentClient.QueryInput = {
-      TableName: this._table,
-      KeyConditionExpression: keyConditionExpression,
-      ExpressionAttributeValues: expressionAttributesValues,
+  createKey(partition: string, range: string | undefined) {
+    return {
+      [this._partitionKey]: partition,
+      ...(this._rangeKey && range ? { [this._rangeKey]: range } : undefined),
     };
-    try {
-      return await this._docClient.query(params).promise();
-    } catch (error) {
-      const msg = `Error querying ${this._table} @ DDB`;
-      log(`${msg} - error: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          table: this._table,
-          keyConditionExpression,
-          expressionAttributesValues,
-          context: "ddb.query",
-          error,
-        },
-      });
-      throw error;
-    }
   }
 }

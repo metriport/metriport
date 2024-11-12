@@ -1,18 +1,19 @@
 import { z } from "zod";
 
+export const oneMinuteInMs = 60000;
+export const rateLimitPartitionKey = "cxIdAndOperationAndWindow";
+export const rateLimitLimitKey = "windowLimit";
+
+export type RateLimitWindow = typeof oneMinuteInMs;
 export type RateLimitOperation = "patientQuery" | "documentQuery" | "consolidatedDataQuery";
 
-export type RateLimit = "operationsPerMinute";
-
-export const rateLimitEntrySchema = z.object({
-  cxIdAndOperation: z.string(),
-  operationsPerMinute: z.number(),
+export const rateLimitLimitSchema = z.object({
+  [rateLimitPartitionKey]: z.string(),
+  [rateLimitLimitKey]: z.number(),
 });
 
-const trackingEntrySchema = z.object({
-  cxIdAndOperation: z.string(),
-  numberOfOperation: z.number(),
-  windowTimestamp: z.string(),
+export const rateLimitCountSchema = z.object({
+  [rateLimitPartitionKey]: z.string(),
+  totalHits: z.number(), // https://express-rate-limit.mintlify.app/guides/creating-a-store
+  resetTime: z.number(), // https://express-rate-limit.mintlify.app/guides/creating-a-store
 });
-
-export const trackingEntriesSchema = trackingEntrySchema.array();

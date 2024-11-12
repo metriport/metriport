@@ -1,54 +1,63 @@
-import { MetriportError, RateLimit, RateLimitOperation } from "@metriport/shared";
-import { buildDayjs } from "@metriport/shared/common/date";
+import { RateLimitRequestHandler, rateLimit } from "express-rate-limit";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import { getCxRateSettingValue } from "./commands/get-settings";
-import { getTrackedOperationCountSum } from "./commands/get-tracked-operation-count-sum";
-import { updateTrackedOperationCount } from "./commands/update-tracked-operation-count";
-import { secondGranularityIsoDateTime, secondsLookup } from "./shared";
+import {
+  RateLimitOperation,
+  RateLimitWindow,
+  rateLimitPartitionKey,
+  oneMinuteInMs,
+} from "@metriport/shared";
+import { DynamoStore } from "./ddb-store";
+import { Config } from "../../util/config";
 
-export async function checkRateLimit({
+const routeMapForError: Record<RateLimitOperation, string> = {
+  patientQuery: "Too many patient creates or updates, please try again later.",
+  documentQuery: "Too many patient documeny query starts, please try again later.",
+  consolidatedDataQuery: "Too many patient consolidated data query starts, please try again later.",
+};
+
+const defaultOperationLimits: {
+  [k in RateLimitOperation]: { [k in RateLimitWindow]: number };
+} = {
+  patientQuery: {
+    [oneMinuteInMs]: 10,
+  },
+  documentQuery: {
+    [oneMinuteInMs]: 10,
+  },
+  consolidatedDataQuery: {
+    [oneMinuteInMs]: 100,
+  },
+};
+
+export async function getRateLimiter({
   cxId,
   operation,
-  rateLimit,
+  window = 60000,
   client,
 }: {
   cxId: string;
   operation: RateLimitOperation;
-  rateLimit: RateLimit;
+  window?: RateLimitWindow;
   client?: DocumentClient;
-}): Promise<boolean> {
-  const secondsLookback = secondsLookup.get(rateLimit);
-  if (!secondsLookback) {
-    throw new MetriportError("Operation missing seconds lookup", undefined, { operation });
-  }
-
-  const end = buildDayjs();
-  const endStr = end.format(secondGranularityIsoDateTime);
-  const start = end.subtract(secondsLookback, "seconds");
-  const startStr = start.format(secondGranularityIsoDateTime);
-  const [currentCount, limit] = await Promise.all([
-    getTrackedOperationCountSum({
-      cxId,
-      operation,
-      start: startStr,
-      end: endStr,
-      client,
-    }),
-    getCxRateSettingValue({
-      cxId,
-      operation,
-      rateLimit,
-      client,
-    }),
-  ]);
-  if (currentCount === undefined || limit === undefined) return true;
-  if (currentCount > limit) return false;
-  // Needs to be awaited if moved to lambda
-  updateTrackedOperationCount({
-    cxId,
-    operation,
-    end: endStr,
-    client,
+}): Promise<RateLimitRequestHandler | undefined> {
+  const table = Config.getRateLimitTableName();
+  if (!table) return undefined;
+  const store = new DynamoStore({
+    table,
+    partitionKey: rateLimitPartitionKey,
+    ...(client && { client }),
   });
-  return true;
+  const key = `${cxId}_${operation}_${window}`;
+  const defaultLimit = defaultOperationLimits[operation][window];
+  const limit = await store.getLimit(key, defaultLimit);
+  return rateLimit({
+    windowMs: window,
+    limit,
+    message: routeMapForError[operation],
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    store,
+    passOnStoreError: true,
+    keyGenerator: () => key,
+  });
 }

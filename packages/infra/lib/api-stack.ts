@@ -359,16 +359,12 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Rate Limiting
     //-------------------------------------------
-    const { rateLimitingTrackingTable, rateLimitingSettingsTable } = new RateLimitingNestedStack(
-      this,
-      "RateLimitingNestedStack",
-      {
-        config: props.config,
-        lambdaLayers,
-        vpc: this.vpc,
-        alarmAction: slackNotification?.alarmAction,
-      }
-    );
+    const { rateLimitTable } = new RateLimitingNestedStack(this, "RateLimitingNestedStack", {
+      config: props.config,
+      lambdaLayers,
+      vpc: this.vpc,
+      alarmAction: slackNotification?.alarmAction,
+    });
 
     //-------------------------------------------
     // OPEN SEARCH Domains
@@ -481,8 +477,7 @@ export class APIStack extends Stack {
       fhirToMedicalRecordLambda,
       fhirToCdaConverterLambda,
       fhirToBundleLambda,
-      rateLimitingTrackingTable,
-      rateLimitingSettingsTable,
+      rateLimitTable,
       searchIngestionQueue: ccdaSearchQueue,
       searchEndpoint: ccdaSearchDomain.domainEndpoint,
       searchAuth: { userName: ccdaSearchUserName, secret: ccdaSearchSecret },

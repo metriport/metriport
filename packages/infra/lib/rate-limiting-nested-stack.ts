@@ -16,76 +16,34 @@ interface RateLimitingNestedStackProps extends NestedStackProps {
 }
 
 export class RateLimitingNestedStack extends NestedStack {
-  readonly rateLimitingTrackingTable: dynamodb.Table;
-  readonly rateLimitingSettingsTable: dynamodb.Table;
+  readonly rateLimitTable: dynamodb.Table;
 
   constructor(scope: Construct, id: string, props: RateLimitingNestedStackProps) {
     super(scope, id, props);
 
-    this.rateLimitingTrackingTable = this.setupRateLimitingTrackingTable({
+    this.rateLimitTable = this.setupRateLimitTable({
       isProd: this.isProd(props),
-      dynamoConstructName: "APIRateLimitingTracking",
-      keyName: "cxIdAndOperation",
-      alarmAction: props.alarmAction,
-    });
-
-    this.rateLimitingSettingsTable = this.setupRateLimitingSettingsTable({
-      isProd: this.isProd(props),
-      dynamoConstructName: "APIRateLimitingSettings",
-      keyName: "cxIdAndOperation",
+      dynamoConstructName: "APIRateLimit",
       alarmAction: props.alarmAction,
     });
   }
 
-  private setupRateLimitingTrackingTable(ownProps: {
+  private setupRateLimitTable(ownProps: {
     isProd: boolean;
     dynamoConstructName: string;
-    keyName: string;
     alarmAction?: SnsAction;
   }): dynamodb.Table {
-    const { isProd, dynamoConstructName, keyName, alarmAction } = ownProps;
+    const { isProd, dynamoConstructName, alarmAction } = ownProps;
     const table = new dynamodb.Table(this, dynamoConstructName, {
       partitionKey: {
-        name: keyName,
+        name: "cxIdAndOperationAndWindow",
         type: dynamodb.AttributeType.STRING,
       },
-      sortKey: { name: "windowTimestamp", type: dynamodb.AttributeType.STRING },
       replicationRegions: isProd ? ["us-east-1"] : ["ca-central-1"],
       replicationTimeout: Duration.hours(3),
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
       pointInTimeRecovery: true,
       timeToLiveAttribute: "ttl",
-    });
-    // TODO: note that the pointInTimeRecovery (PITR) setting does not persist
-    // through to the replica tables.
-    //
-    // See this CDK issue: https://github.com/aws/aws-cdk/issues/18582
-    //
-    // For future DDB tables, can potentailly use this is a workaround:
-    // https://stackoverflow.com/questions/70687039/how-to-set-point-in-time-recovery-on-a-dynamodb-replica
-    //
-    // For now, we will manually enable PITR on replicas in the console.
-    // add performance alarms for monitoring prod environment
-    this.addDynamoPerformanceAlarms(table, dynamoConstructName, alarmAction);
-    return table;
-  }
-
-  private setupRateLimitingSettingsTable(ownProps: {
-    isProd: boolean;
-    dynamoConstructName: string;
-    keyName: string;
-    alarmAction?: SnsAction;
-  }): dynamodb.Table {
-    const { isProd, dynamoConstructName, keyName, alarmAction } = ownProps;
-    const table = new dynamodb.Table(this, dynamoConstructName, {
-      partitionKey: {
-        name: keyName,
-        type: dynamodb.AttributeType.STRING,
-      },
-      replicationRegions: isProd ? ["us-east-1"] : ["ca-central-1"],
-      replicationTimeout: Duration.hours(3),
-      encryption: dynamodb.TableEncryption.AWS_MANAGED,
-      pointInTimeRecovery: true,
     });
     // TODO: note that the pointInTimeRecovery (PITR) setting does not persist
     // through to the replica tables.

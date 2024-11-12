@@ -55,7 +55,7 @@ const router = Router();
  */
 router.put(
   "/",
-  checkRateLimit("patientQuery", "operationsPerMinute"),
+  checkRateLimit("patientQuery"),
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, id, patient } = getPatientInfoOrFail(req);
@@ -236,7 +236,7 @@ const medicalRecordFormatSchema = z.enum(mrFormat);
  */
 router.post(
   "/consolidated/query",
-  checkRateLimit("consolidatedDataQuery", "operationsPerMinute"),
+  checkRateLimit("consolidatedDataQuery"),
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, id: patientId } = getPatientInfoOrFail(req);

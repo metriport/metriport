@@ -147,11 +147,7 @@ export class Config {
     return getEnvVar("PATIENT_IMPORT_BUCKET_NAME");
   }
 
-  static getRateLimitingTrackingTableName(): string | undefined {
-    return getEnvVar("RATE_LIMITING_TRACKING_TABLE_NAME");
-  }
-
-  static getRateLimitingSettingsTableName(): string | undefined {
-    return getEnvVar("RATE_LIMITING_SETTINGS_TABLE_NAME");
+  static getRateLimitTableName(): string | undefined {
+    return getEnvVar("RATE_LIMI_TABLE_NAME");
   }
 }

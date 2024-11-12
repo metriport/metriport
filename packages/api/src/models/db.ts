@@ -72,8 +72,7 @@ export const getDB = (): MetriportDB => {
 
 export interface DocTableNames {
   token: string;
-  rateLimitingTracking?: string;
-  rateLimitingSettings?: string;
+  rateLimit?: string;
 }
 export let docTableNames: DocTableNames;
 
@@ -81,15 +80,13 @@ async function initDB(): Promise<void> {
   // make sure we have the env vars we need
   const sqlDBCreds = Config.getDBCreds();
   const tokenTableName = Config.getTokenTableName();
-  const rateLimitingTrackingTableName = ConfigCore.getRateLimitingTrackingTableName();
-  const rateLimitingSettingsTableName = ConfigCore.getRateLimitingSettingsTableName();
+  const rateLimitTableName = ConfigCore.getRateLimitTableName();
   const logDBOperations = Config.isCloudEnv() ? false : true;
   const dbPoolSettings = getDbPoolSettings();
 
   docTableNames = {
     token: tokenTableName,
-    rateLimitingTracking: rateLimitingTrackingTableName,
-    rateLimitingSettings: rateLimitingSettingsTableName,
+    rateLimit: rateLimitTableName,
   };
 
   // get database creds
