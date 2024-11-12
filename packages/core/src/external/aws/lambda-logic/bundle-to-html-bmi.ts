@@ -21,6 +21,7 @@ import {
   Task,
 } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
+import { fetchCodingCodeOrDisplayOrSystem } from "../../../fhir-deduplication/shared";
 import { cloneDeep, uniqWith } from "lodash";
 import { Brief } from "./bundle-to-brief";
 import { ISO_DATE, formatDateForDisplay } from "./bundle-to-html-shared";
@@ -680,7 +681,8 @@ function createHba1cFromObservationVitalsSection(observations: Observation[]): {
 
   const hba1cObservations = observations.filter(observation => {
     const observationDisplay = observation.code?.coding?.find(coding => {
-      return coding.code?.trim() === a1cLoincCode;
+      const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
+      return code === a1cLoincCode;
     });
 
     return !!observationDisplay;
