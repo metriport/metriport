@@ -326,7 +326,7 @@ export function bundleToHtmlBmi(fhirBundle: Bundle, brief?: Brief): string {
                 y: {
                   title: {
                     display: true,
-                    text: 'BMI Value'
+                    text: 'HbA1c Value'
                   },
                   min: ${hba1cChartData.min},
                   max: ${hba1cChartData.max},
@@ -680,7 +680,7 @@ function createHba1cFromObservationVitalsSection(observations: Observation[]): {
 
   const hba1cObservations = observations.filter(observation => {
     const observationDisplay = observation.code?.coding?.find(coding => {
-      return coding.code === a1cLoincCode;
+      return coding.code?.trim() === a1cLoincCode;
     });
 
     return !!observationDisplay;
