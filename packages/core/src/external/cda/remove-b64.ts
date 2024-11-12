@@ -19,7 +19,7 @@ export function removeBase64PdfEntries(payloadRaw: string): {
   });
   const json = parser.parse(payloadRaw);
 
-  let removedEntry = 0;
+  let isRemovedEntries;
 
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
   const b64Attachments: any[] = [];
@@ -46,7 +46,7 @@ export function removeBase64PdfEntries(payloadRaw: string): {
                   ?.trim()
                   .toLowerCase() === b64Representation.toLowerCase())
             ) {
-              removedEntry++;
+              isRemovedEntries = true;
               b64Attachments.push(entry);
               return false;
             }
@@ -67,7 +67,7 @@ export function removeBase64PdfEntries(payloadRaw: string): {
   const xml = builder.build(json);
 
   return {
-    documentContents: removedEntry > 0 ? xml : payloadRaw,
+    documentContents: isRemovedEntries ? xml : payloadRaw,
     b64Attachments,
   };
 }
