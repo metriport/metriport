@@ -35,7 +35,7 @@ import { getETag } from "../../shared/http";
 import { getOutputFormatFromRequest } from "../helpers/output-format";
 import { requestLogger } from "../helpers/request-logger";
 import { getPatientInfoOrFail } from "../middlewares/patient-authorization";
-import { checkRateLimit } from "../middlewares/rate-limitng";
+import { checkRateLimit } from "../middlewares/rate-limiting";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";

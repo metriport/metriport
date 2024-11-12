@@ -14,7 +14,7 @@ import NotFoundError from "../../errors/not-found";
 import { PatientModel as Patient } from "../../models/medical/patient";
 import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
-import { checkRateLimit } from "../middlewares/rate-limitng";
+import { checkRateLimit } from "../middlewares/rate-limiting";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { schemaCreateToPatientData, schemaDemographicsToPatientData } from "./schemas/patient";

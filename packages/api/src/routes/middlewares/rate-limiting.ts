@@ -5,7 +5,7 @@ import { getDB } from "../../models/db";
 import { getCxIdOrFail } from "../util";
 
 /**
- * Checks the CX request for the given operation and rate limit sliding window.
+ * Checks the CX request for the given operation and rate limit with fixed window.
  */
 export function checkRateLimit(
   operation: RateLimitOperation,
