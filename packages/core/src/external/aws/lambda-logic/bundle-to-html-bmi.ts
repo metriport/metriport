@@ -680,7 +680,11 @@ function createHba1cFromObservationVitalsSection(observations: Observation[]): {
 
   const hba1cObservations = observations.filter(observation => {
     const observationDisplay = observation.code?.coding?.find(coding => {
-      return coding.code?.trim() === a1cLoincCode;
+      if (!coding || !coding.code) {
+        return false;
+      }
+
+      return coding.code.trim() === a1cLoincCode;
     });
 
     return !!observationDisplay;
