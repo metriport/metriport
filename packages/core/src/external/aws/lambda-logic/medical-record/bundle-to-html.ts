@@ -1,24 +1,15 @@
-import { Bundle, Resource, ResourceType, Patient } from "@medplum/fhirtypes";
+import { Bundle, Patient } from "@medplum/fhirtypes";
 import { formatDateForDisplay, Filter, defaultFilters } from "./shared";
 // import { Brief } from "../bundle-to-brief";
 import { tableOfContents } from "./table-of-contents";
 import { createPatientDemographics } from "./patient-demographics";
 import { buildPageHeader } from "./mr-header";
-import { createNotesSections } from "./sections/notes/section";
-import { createConditionsSections } from "./sections/conditions/section";
-import { createMedicationsSections } from "./sections/medications/section";
-import { createAllergiesSections } from "./sections/allergies/section";
-import { createProceduresSections } from "./sections/procedures/section";
-import { createSocialHistorySections } from "./sections/social-histroy/section";
-import { createVitalsSections } from "./sections/vitals/section";
-import { createLabsSections } from "./sections/labs/section";
-import { createObservationsSections } from "./sections/observations/section";
-import { createImmunizationsSections } from "./sections/immunizations/section";
-import { createFamilyHistorySections } from "./sections/family-history/section";
-import { createRelatedPersonsSections } from "./sections/related-persons/section";
-import { createCoveragesSections } from "./sections/coverages/section";
-import { createEncountersSections } from "./sections/encounters/section";
 import { mrScripts } from "./mr-scripts";
+import {
+  groupSectionsByFhirResource,
+  getResourcesFromBundle,
+  filterToComponentMap,
+} from "./shared";
 
 export function bundleToHtml(
   fhirBundle: Bundle,
@@ -43,10 +34,13 @@ function buildPageBody(
   filters: Filter[]
   // brief?: Brief
 ): string {
-  const groupedResources = groupSectionsByFhirResource(fhirBundle);
-  const patient = groupedResources.Patient?.[0] as Patient;
+  const mappedResources = groupSectionsByFhirResource(fhirBundle);
+  const patients = getResourcesFromBundle<Patient>(mappedResources, "Patient");
+  const patient = patients[0];
 
-  if (!patient) {
+  if (patients.length > 1) {
+    throw new Error("Multiple patients found in bundle");
+  } else if (!patient) {
     throw new Error("No patient found in bundle");
   }
 
@@ -55,20 +49,9 @@ function buildPageBody(
         <div class="container">
           ${buildContentHeader(patient, filters)}
           <div id="mr-sections">
-            ${createNotesSections()}
-            ${createConditionsSections()}
-            ${createMedicationsSections()}
-            ${createAllergiesSections()}
-            ${createProceduresSections()}
-            ${createSocialHistorySections()}
-            ${createVitalsSections()}
-            ${createLabsSections()}
-            ${createObservationsSections()}
-            ${createImmunizationsSections()}
-            ${createFamilyHistorySections()}
-            ${createRelatedPersonsSections()}
-            ${createCoveragesSections()}
-            ${createEncountersSections()}
+            ${filters
+              .map(filter => filterToComponentMap[filter.key](mappedResources, filter))
+              .join("")}
           </div>
         </div>
         <script>
@@ -98,26 +81,4 @@ function buildContentHeader(patient: Patient, filters: Filter[]): string {
       ${tableOfContents(filters)}
     </div>
   `;
-}
-
-function groupSectionsByFhirResource(fhirBundle: Bundle): Record<ResourceType, Resource[]> {
-  if (!fhirBundle.entry) {
-    throw new Error("No entries found in bundle");
-  }
-
-  return fhirBundle.entry.reduce((acc, entry) => {
-    if (!entry.resource) {
-      return acc;
-    }
-
-    const resourceType = entry.resource.resourceType;
-
-    if (!acc[resourceType]) {
-      acc[resourceType] = [];
-    }
-
-    acc[resourceType].push(entry.resource);
-
-    return acc;
-  }, {} as Record<ResourceType, Resource[]>);
 }

@@ -67,6 +67,7 @@ export const noteStyle = `
   .note-text {
       margin-bottom: 1.5rem;
       line-height: 1.6;
+      white-space: pre-line;
   }
 
   .note-plan {
