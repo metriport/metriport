@@ -1,4 +1,4 @@
-import { toTitleCase } from "../titleCase";
+import { toTitleCase } from "../title-case";
 
 describe("toTitleCase", () => {
   it("returns empty string when input is empty", () => {

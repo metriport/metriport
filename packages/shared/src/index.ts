@@ -11,7 +11,7 @@ export { PurposeOfUse } from "./common/purpose-of-use";
 export * from "./common/retry";
 export { sleep } from "./common/sleep";
 export * from "./common/string";
-export { toTitleCase } from "./common/titleCase";
+export { toTitleCase } from "./common/title-case";
 export { AtLeastOne, stringToBoolean } from "./common/types";
 export { validateNPI } from "./common/validate-npi";
 export * from "./domain/address/index";
