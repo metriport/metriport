@@ -53,11 +53,11 @@ export class DynamoStore implements Store {
    * @param options {DynamoStoreOptions} - Prefix and any store-specific parameters.
    */
   constructor(options: DynamoStoreOptions) {
-    const { log } = out(`DynamoStore constructor`);
+    const { log } = out("DynamoStore constructor");
     this.countPrefix = options.countPrefix ?? "count_";
     this.limitPrefix = options.limitPrefix ?? "limit_";
     if (this.countPrefix === this.limitPrefix) {
-      const msg = `Conflicting prefixes in DynamoStore`;
+      const msg = "Conflicting prefixes in DynamoStore";
       log(msg);
       capture.error(msg, {
         extra: {
