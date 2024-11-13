@@ -3,9 +3,9 @@ dotenv.config();
 // keep that ^ on top
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import {
+  ResourceTypeForConsolidation,
   resourcesSearchableByPatient,
   resourcesSearchableBySubject,
-  ResourceTypeForConsolidation,
 } from "@metriport/api-sdk";
 import { makeFhirAdminApi, makeFhirApi } from "@metriport/core/external/fhir/api/api-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
@@ -46,7 +46,7 @@ dayjs.extend(duration);
  * - otherwise, it will:
  *   - count the resources in the JSON files resulting from the conversion;
  * - display statistics (count total and by resource);
- * - stats and logs are stored in a folder with a timestamp in the name (under ./runs/fhir-converter-e2e/).
+ * - stats and logs are stored in a folder with a timestamp in the name (under ./runs/fhir-converter-integration/).
  *
  * Set:
  * - cdaLocation: the folder with the XML files;
@@ -72,7 +72,7 @@ const fhirApiRaw = Axios.create({ baseURL: fhirBaseUrl });
 let startedAt = Date.now();
 const timestamp = dayjs().toISOString();
 const fhirExtension = `.json`;
-const logsFolderName = `runs/fhir-converter-e2e/${timestamp}`;
+const logsFolderName = `runs/fhir-converter-integration/${timestamp}`;
 const outputFolderName = `${logsFolderName}/output`;
 const totalResourceCountStatsLocation = `${logsFolderName}/total-resource-counts.json`;
 const totalResourceCountPostFHIRInsertStatsLocation = `${logsFolderName}/total-resource-counts-post-fhir-insert.json`;
@@ -83,8 +83,8 @@ type Params = {
 };
 const program = new Command();
 program
-  .name("e2e-test")
-  .description("End-to-end test for the FHIR Converter")
+  .name("integration-test")
+  .description("Integration test for the FHIR Converter")
   .option(`--use-fhir-server`, "Insert the result of the conversion on the FHIR server")
   .option(
     `--cleanup`,

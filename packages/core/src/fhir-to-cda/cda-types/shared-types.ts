@@ -120,9 +120,12 @@ export type CdaName = {
 };
 
 export type CdaOriginalText = {
+  _mediaType?: string;
+  _representation?: string;
   reference: {
     _value: string;
   };
+  "#text"?: string;
 };
 
 // Ce (CE) stands for Coded with Equivalents
@@ -344,21 +347,23 @@ export type SubstanceAdministationEntry = {
 export type ConcernActEntry = {
   _typeCode?: string;
   _contextConductionInd?: boolean;
-  act: {
-    _classCode: string;
-    _moodCode: string;
-    templateId: CdaInstanceIdentifier[];
-    id?: CdaInstanceIdentifier;
-    code?: CdaCodeCe;
-    text?: CdaOriginalText | undefined;
-    statusCode?: {
-      _code: string;
-    };
-    effectiveTime?: EffectiveTimeLowHigh;
-    author?: CdaAuthor | undefined;
-    informant?: ResponsibleParty | undefined;
-    entryRelationship?: ObservationEntryRelationship;
+  act: ConcernActEntryAct;
+};
+
+export type ConcernActEntryAct = {
+  _classCode: string;
+  _moodCode: string;
+  templateId: CdaInstanceIdentifier[];
+  id?: CdaInstanceIdentifier;
+  code?: CdaCodeCe;
+  text?: CdaOriginalText | undefined;
+  statusCode?: {
+    _code: string;
   };
+  effectiveTime?: EffectiveTimeLowHigh;
+  author?: CdaAuthor | undefined;
+  informant?: ResponsibleParty | undefined;
+  entryRelationship?: ObservationEntryRelationship;
 };
 
 export type ProcedureActivityEntry = {
