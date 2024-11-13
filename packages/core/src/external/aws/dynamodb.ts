@@ -46,7 +46,7 @@ export class DynamoDbUtils {
     partition: string;
     range?: string;
     expression: string;
-    expressionAttributesValues: AttributeValuesMapping;
+    expressionAttributesValues?: AttributeValuesMapping;
     returnValue?: "ALL_OLD" | "ALL_NEW";
   }): Promise<DocumentClient.UpdateItemOutput> {
     const { log } = out(`update DDB - table ${this._table} partition ${partition}`);
@@ -55,7 +55,7 @@ export class DynamoDbUtils {
       TableName: this._table,
       Key: key,
       UpdateExpression: expression,
-      ExpressionAttributeValues: expressionAttributesValues,
+      ...(expressionAttributesValues && { ExpressionAttributeValues: expressionAttributesValues }),
       ReturnValues: returnValue,
     };
     try {
@@ -85,7 +85,7 @@ export class DynamoDbUtils {
     partition: string;
     range?: string;
   }): Promise<DocumentClient.GetItemOutput> {
-    const { log } = out(`getByKey DDB - table ${this._table} partition ${partition}`);
+    const { log } = out(`get DDB - table ${this._table} partition ${partition}`);
     const key = this.createKey(partition, range);
     const params: DocumentClient.GetItemInput = {
       TableName: this._table,
@@ -100,7 +100,7 @@ export class DynamoDbUtils {
         extra: {
           table: this._table,
           key,
-          context: "ddb.getByKey",
+          context: "ddb.get",
           error,
         },
       });

@@ -1,6 +1,5 @@
 import * as AWS from "aws-sdk";
 import { Sequelize } from "sequelize";
-import { Config as ConfigCore } from "@metriport/core/util/config";
 import { CQDirectoryEntryModel } from "../external/carequality/models/cq-directory";
 import { CQPatientDataModel } from "../external/carequality/models/cq-patient-data";
 import { OutboundDocumentQueryRespModel } from "../external/carequality/models/outbound-document-query-resp";
@@ -80,7 +79,7 @@ async function initDB(): Promise<void> {
   // make sure we have the env vars we need
   const sqlDBCreds = Config.getDBCreds();
   const tokenTableName = Config.getTokenTableName();
-  const rateLimitTableName = ConfigCore.getRateLimitTableName();
+  const rateLimitTableName = Config.getRateLimitTableName();
   const logDBOperations = Config.isCloudEnv() ? false : true;
   const dbPoolSettings = getDbPoolSettings();
 

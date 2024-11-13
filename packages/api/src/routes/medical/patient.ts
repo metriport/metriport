@@ -35,7 +35,7 @@ import { getETag } from "../../shared/http";
 import { getOutputFormatFromRequest } from "../helpers/output-format";
 import { requestLogger } from "../helpers/request-logger";
 import { getPatientInfoOrFail } from "../middlewares/patient-authorization";
-import { rateLimit } from "../middlewares/rate-limiting";
+import { checkRateLimit } from "../middlewares/rate-limiting";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
@@ -55,7 +55,7 @@ const router = Router();
  */
 router.put(
   "/",
-  rateLimit("patientQuery"),
+  checkRateLimit("patientQuery"),
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, id, patient } = getPatientInfoOrFail(req);
@@ -236,7 +236,7 @@ const medicalRecordFormatSchema = z.enum(mrFormat);
  */
 router.post(
   "/consolidated/query",
-  rateLimit("consolidatedDataQuery"),
+  checkRateLimit("consolidatedDataQuery"),
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, id: patientId } = getPatientInfoOrFail(req);

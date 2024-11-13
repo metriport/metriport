@@ -146,8 +146,4 @@ export class Config {
   static getPatientImportBucket(): string | undefined {
     return getEnvVar("PATIENT_IMPORT_BUCKET_NAME");
   }
-
-  static getRateLimitTableName(): string | undefined {
-    return getEnvVar("RATE_LIMI_TABLE_NAME");
-  }
 }
