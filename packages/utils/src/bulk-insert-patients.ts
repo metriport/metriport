@@ -17,7 +17,9 @@ import {
   normalizeUSStateForAddress,
   normalizeZipCodeNew,
   toTitleCase,
+  USStateForAddress,
 } from "@metriport/shared";
+import { filterTruthy } from "@metriport/shared/common/filter-map";
 import { Command } from "commander";
 import csv from "csv-parser";
 import dayjs from "dayjs";
@@ -91,14 +93,32 @@ async function main() {
   // This will insert all the patients into a specific facility.
   // Based off the apiKey it will determine the cx to add to the patients.
   const results: PatientCreate[] = [];
+  const mappingErrors: Array<{ row: string; errors: string }> = [];
   const fileName = inputFileName;
+
   fs.createReadStream(fileName)
     .pipe(csv({ mapHeaders: ({ header }) => header.replaceAll(" ", "").replaceAll("*", "") }))
     .on("data", async data => {
-      const metriportPatient = mapCSVPatientToMetriportPatient(data);
-      if (metriportPatient) results.push(metriportPatient);
+      const result = mapCSVPatientToMetriportPatient(data);
+      if (Array.isArray(result)) {
+        mappingErrors.push({
+          row: JSON.stringify(data),
+          errors: result.map(e => e.error).join("; "),
+        });
+      } else {
+        results.push(result);
+      }
     })
-    .on("end", async () => loadData(results, orgName, localFacilityId, outputFolderName, dryRun));
+    .on("end", async () => {
+      if (mappingErrors.length > 0) {
+        const errorFilePath = `${outputFolderName}/mapping-errors.json`;
+        fs.writeFileSync(errorFilePath, JSON.stringify(mappingErrors, null, 2));
+        throw new Error(
+          `Found ${mappingErrors.length} mapping errors. Check ${errorFilePath} for details.`
+        );
+      }
+      await loadData(results, orgName, localFacilityId, outputFolderName, dryRun);
+    });
 }
 
 async function loadData(
@@ -246,9 +266,42 @@ function normalizeName(name: string | undefined, propName: string): string {
   return toTitleCase(name);
 }
 
-function normalizeAddressLine(addressLine: string | undefined, propName: string): string {
+export function normalizeAddressLine(
+  addressLine: string | undefined,
+  propName: string,
+  splitUnit: true
+): string[];
+export function normalizeAddressLine(
+  addressLine: string | undefined,
+  propName: string,
+  splitUnit?: false | undefined
+): string;
+export function normalizeAddressLine(
+  addressLine: string | undefined,
+  propName: string,
+  splitUnit = false
+): string | string[] {
   if (addressLine == undefined) throw new Error(`Missing ` + propName);
-  return toTitleCase(addressLine.replace(/\./g, ""));
+  const withoutPunctuation = addressLine.replace(/[.,;]/g, " ");
+  const withoutInstructions = withoutPunctuation.replace(/\(.*\)/g, " ");
+  const normalized = toTitleCase(withoutInstructions);
+  if (!splitUnit) return normalized;
+  // Common street type variations in US addresses
+  const match = (normalized + " ").match(pattern);
+  if (match && match.flatMap(filterTruthy).length > 3) {
+    const [, mainAddressMatch, , unitMatch] = match;
+    const mainAddress = mainAddressMatch ? mainAddressMatch.trim() : undefined;
+    const unit = unitMatch ? unitMatch.trim() : undefined;
+    return [mainAddress, unit].flatMap(filterTruthy);
+  }
+  const matchExact = normalized.match(patternExact);
+  if (matchExact && matchExact.flatMap(filterTruthy).length > 2) {
+    const [, mainAddressMatch, unitMatch] = matchExact;
+    const mainAddress = mainAddressMatch ? mainAddressMatch.trim() : undefined;
+    const unit = unitMatch ? unitMatch.trim() : undefined;
+    return [mainAddress, unit].flatMap(filterTruthy);
+  }
+  return [normalized];
 }
 
 function normalizeCity(city: string | undefined): string {
@@ -279,7 +332,7 @@ function normalizeExternalIdUtils(id: string | undefined): string | undefined {
   return normalId;
 }
 
-const mapCSVPatientToMetriportPatient = (csvPatient: {
+export function mapCSVPatientToMetriportPatient(csvPatient: {
   firstname: string | undefined;
   lastname: string | undefined;
   dob: string | undefined;
@@ -289,8 +342,10 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
   state: string | undefined;
   address1: string | undefined;
   addressLine1: string | undefined;
+  addressline1: string | undefined;
   address2: string | undefined;
   addressLine2: string | undefined;
+  addressline2: string | undefined;
   phone: string | undefined;
   phone1: string | undefined;
   phone2: string | undefined;
@@ -299,39 +354,235 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
   email2: string | undefined;
   id: string | undefined;
   externalId: string | undefined;
-}): PatientCreate | undefined => {
-  const phone1 = normalizePhoneNumberUtils(csvPatient.phone ?? csvPatient.phone1);
-  const email1 = normalizeEmailUtils(csvPatient.email ?? csvPatient.email1);
-  const phone2 = normalizePhoneNumberUtils(csvPatient.phone2);
-  const email2 = normalizeEmailUtils(csvPatient.email2);
+}): PatientCreate | Array<{ field: string; error: string }> {
+  const errors: Array<{ field: string; error: string }> = [];
+
+  // Map and validate each field, collecting errors
+  let firstName: string | undefined = undefined;
+  try {
+    firstName = normalizeName(csvPatient.firstname, "firstname");
+    if (!firstName) throw new Error(`Missing firstName`);
+  } catch (error) {
+    errors.push({
+      field: "firstName",
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+
+  let lastName: string | undefined = undefined;
+  try {
+    lastName = normalizeName(csvPatient.lastname, "lastname");
+    if (!lastName) throw new Error(`Missing lastName`);
+  } catch (error) {
+    errors.push({
+      field: "lastName",
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+
+  let dob: string | undefined = undefined;
+  try {
+    dob = normalizeDate(csvPatient.dob ?? "");
+    if (!dob) throw new Error(`Missing dob`);
+  } catch (error) {
+    errors.push({ field: "dob", error: error instanceof Error ? error.message : String(error) });
+  }
+
+  let genderAtBirth: "M" | "F" | "O" | "U" | undefined = undefined;
+  try {
+    genderAtBirth = normalizeGender(csvPatient.gender ?? "") as "M" | "F" | "O" | "U";
+    if (!genderAtBirth) throw new Error(`Missing gender`);
+  } catch (error) {
+    errors.push({ field: "gender", error: error instanceof Error ? error.message : String(error) });
+  }
+
+  let addressLine1: string | undefined = undefined;
+  let addressLine2: string | undefined = undefined;
+  try {
+    const res = normalizeAddressLine(
+      csvPatient.address1 ?? csvPatient.addressLine1 ?? csvPatient.addressline1,
+      "addressLine1",
+      true
+    );
+    addressLine1 = res[0];
+    addressLine2 = res[1];
+    if (!addressLine1) throw new Error(`Missing addressLine1`);
+  } catch (error) {
+    errors.push({
+      field: "addressLine1",
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+
+  try {
+    const res = normalizeAddressLine(
+      csvPatient.address2 ?? csvPatient.addressLine2 ?? csvPatient.addressline2,
+      "addressLine2"
+    );
+    if (addressLine2 && res) {
+      throw new Error(
+        `Found addressLine2 on both its own field and as part of addressLine1 (from addressLine1: ${addressLine2})`
+      );
+    }
+    if (!addressLine2) addressLine2 = res;
+  } catch (error) {
+    errors.push({
+      field: "addressLine2",
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+
+  let city: string | undefined = undefined;
+  try {
+    city = normalizeCity(csvPatient.city);
+    if (!city) throw new Error(`Missing city`);
+  } catch (error) {
+    errors.push({ field: "city", error: error instanceof Error ? error.message : String(error) });
+  }
+
+  let state: USStateForAddress | undefined = undefined;
+  try {
+    state = normalizeUSStateForAddress(csvPatient.state ?? "");
+    if (!state) throw new Error(`Missing state`);
+  } catch (error) {
+    errors.push({ field: "state", error: error instanceof Error ? error.message : String(error) });
+  }
+
+  let zip: string | undefined = undefined;
+  try {
+    zip = normalizeZipCodeNew(csvPatient.zip ?? "");
+    if (!zip) throw new Error(`Missing zip`);
+  } catch (error) {
+    errors.push({ field: "zip", error: error instanceof Error ? error.message : String(error) });
+  }
+
+  // Contact info validation
+  let phone1: string | undefined = undefined;
+  try {
+    phone1 = normalizePhoneNumberUtils(csvPatient.phone ?? csvPatient.phone1);
+  } catch (error) {
+    errors.push({ field: "phone1", error: error instanceof Error ? error.message : String(error) });
+  }
+
+  let email1: string | undefined = undefined;
+  try {
+    email1 = normalizeEmailUtils(csvPatient.email ?? csvPatient.email1);
+  } catch (error) {
+    errors.push({ field: "email1", error: error instanceof Error ? error.message : String(error) });
+  }
+
+  let phone2: string | undefined = undefined;
+  try {
+    phone2 = normalizePhoneNumberUtils(csvPatient.phone2);
+  } catch (error) {
+    errors.push({ field: "phone2", error: error instanceof Error ? error.message : String(error) });
+  }
+
+  let email2: string | undefined = undefined;
+  try {
+    email2 = normalizeEmailUtils(csvPatient.email2);
+  } catch (error) {
+    errors.push({ field: "email2", error: error instanceof Error ? error.message : String(error) });
+  }
+
   const contact1 = phone1 || email1 ? { phone: phone1, email: email1 } : undefined;
   const contact2 = phone2 || email2 ? { phone: phone2, email: email2 } : undefined;
   const contact = [contact1, contact2].flatMap(c => c ?? []);
+
   const externalId = csvPatient.id
     ? normalizeExternalIdUtils(csvPatient.id)
     : normalizeExternalIdUtils(csvPatient.externalId) ?? undefined;
+
+  // Return errors if any were found
+  if (errors.length > 0) {
+    return errors;
+  }
+
+  // Verify all required fields are present
+  if (
+    !firstName ||
+    !lastName ||
+    !dob ||
+    !genderAtBirth ||
+    !addressLine1 ||
+    !city ||
+    !state ||
+    !zip
+  ) {
+    return [{ field: "general", error: "Missing required fields" }];
+  }
+
+  // All validations passed, return patient object
   return {
     externalId,
-    firstName: normalizeName(csvPatient.firstname, "firstname"),
-    lastName: normalizeName(csvPatient.lastname, "lastname"),
-    dob: normalizeDate(csvPatient.dob ?? ""),
-    genderAtBirth: normalizeGender(csvPatient.gender ?? ""),
+    firstName,
+    lastName,
+    dob,
+    genderAtBirth,
     address: {
-      addressLine1: normalizeAddressLine(
-        csvPatient.address1 ?? csvPatient.addressLine1,
-        "address1 | addressLine1"
-      ),
-      addressLine2: normalizeAddressLine(
-        csvPatient.address2 ?? csvPatient.addressLine2,
-        "address2 | addressLine2"
-      ),
-      city: normalizeCity(csvPatient.city),
-      state: normalizeUSStateForAddress(csvPatient.state ?? ""),
-      zip: normalizeZipCodeNew(csvPatient.zip ?? ""),
+      addressLine1,
+      addressLine2,
+      city,
+      state,
+      zip,
       country: "USA",
     },
     contact,
   };
-};
+}
 
-main();
+const streetTypes = [
+  "street",
+  "st",
+  "road",
+  "rd",
+  "lane",
+  "ln",
+  "drive",
+  "dr",
+  "avenue",
+  "ave",
+  "boulevard",
+  "blvd",
+  "circle",
+  "cir",
+  "court",
+  "ct",
+  "place",
+  "pl",
+  "terrace",
+  "ter",
+  "trail",
+  "trl",
+  "way",
+  "highway",
+  "hwy",
+  "parkway",
+  "pkwy",
+  "crossing",
+  "xing",
+  "square",
+  "sq",
+  "loop",
+  "path",
+  "pike",
+  "alley",
+  "run",
+];
+
+const unitIndicators = ["apt", "apartment", "unit", "suite", "ste", "#", "number", "floor", "trlr"];
+const unitIndicatorsExact = unitIndicators.concat(["no", "fl", "lot", "rm", "room"]);
+const pattern = new RegExp(
+  `(.*?\\W+(${streetTypes.join("|")})\\W+.*?)\\s*((${unitIndicators.join(
+    "|"
+  )})\\s*[#]?\\s*[\\w\\s-]+)?$`,
+  "i"
+);
+const patternExact = new RegExp(
+  `(.+?)\\s*((${unitIndicatorsExact.join("|")})((\\s*#\\s*[\\w\\s-]+)|(\\s*[\\d\\s-]+)))?$`,
+  "i"
+);
+
+if (require.main === module) {
+  main();
+}

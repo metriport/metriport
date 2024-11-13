@@ -32,6 +32,7 @@ packages/utils/opensearch-root-ca.pem
 packages/utils/cq-org-builder.failed
 JSON.json
 tmp
+runs
 .aider.*
 .aider*
 .env*
