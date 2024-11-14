@@ -33,40 +33,13 @@ To invite a new user to your Metriport account:
 
 Metriport offers several roles to help you manage access levels appropriately. Each role has specific permissions designed to provide the right level of access for different team members:
 
-### Owner
-
-- Full system access
-- Can manage all users and roles
-- Can access billing and subscription settings
-- Can manage all clinical and technical settings
-
-### Admin
-
-- Similar to the Owner role
-- Can manage all users and roles
-- Can access billing and subscription settings
-- Can manage all clinical and technical settings
-
-### Clinical
-
-- Can create, read, and update patients
-- Can create, read, and update facilities
-- Can view patients' medical history
-- No access to user management, billing, or developer pages
-
-### Billing
-
-- Can only access the billing page
-- Can view invoices and manage payment methods
-- No access to clinical data, user management, or any other pages
-
-### Developer
-
-- Can create, read, and update patients
-- Can create, read, and update facilities
-- Can view patients' medical history
-- Can access the developers tab, including API credentials and webhook settings
-- No access to user management or billing pages
+| Role      | Manage users and roles | Access billing and subscription | Access clinical data | Access developer features |
+| --------- | :--------------------: | :-----------------------------: | :------------------: | :-----------------------: |
+| Owner     |           ✓            |                ✓                |          ✓           |             ✓             |
+| Admin     |           ✓            |                ✓                |          ✓           |             ✓             |
+| Clinical  |                        |                                 |          ✓           |                           |
+| Billing   |                        |                ✓                |                      |                           |
+| Developer |                        |                                 |          ✓           |             ✓             |
 
 ## Removing Users
 
