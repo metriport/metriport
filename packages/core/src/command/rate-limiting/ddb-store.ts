@@ -4,8 +4,8 @@ import {
   MetriportError,
   errorToString,
   rateLimitCountSchema,
-  rateLimitLimitSchema,
-  rateLimitLimitKey,
+  rateLimitThresholdSchema,
+  rateLimitThresholdKey,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { capture, out } from "../../util";
@@ -27,7 +27,7 @@ type DynamoStoreOptions = {
 };
 
 /**
- * A `Store` that stores the hit count for each client.
+ * A `Store` that stores the hit count for each client in DynamoDB.
  */
 export class DynamoStore implements Store {
   /**
@@ -208,28 +208,13 @@ export class DynamoStore implements Store {
    * @public
    */
   async decrement(key: string): Promise<void> {
-    const { log } = out(`DynamoStore decrement - key ${key}`);
-    const item = await this.ddbUtils.update({
+    await this.ddbUtils.update({
       partition: this.prefixCountKey(key),
       expression: "ADD totalHits :inc",
       expressionAttributesValues: {
         ":inc": -1,
       },
     });
-    const entry = rateLimitCountSchema.safeParse(item.Attributes);
-    if (!entry.success) {
-      const error = entry.error;
-      const msg = "Error parsing DynamoStore count entry";
-      log(`${msg} - error: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          key,
-          context: "dynamo-store.decrement",
-          error,
-        },
-      });
-      throw new MetriportError(msg, error, { method: "decrement", key });
-    }
   }
 
   /**
@@ -240,28 +225,13 @@ export class DynamoStore implements Store {
    * @public
    */
   async resetKey(key: string): Promise<void> {
-    const { log } = out(`DynamoStore resetKey - key ${key}`);
-    const item = await this.ddbUtils.update({
+    await this.ddbUtils.update({
       partition: this.prefixCountKey(key),
       expression: "SET totalHits = :totalHits REMOVE resetTime",
       expressionAttributesValues: {
         ":totalHits": 0,
       },
     });
-    const entry = rateLimitCountSchema.safeParse(item.Attributes);
-    if (!entry.success) {
-      const error = entry.error;
-      const msg = "Error parsing DynamoStore count entry";
-      log(`${msg} - error: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          key,
-          context: "dynamo-store.resetKey",
-          error,
-        },
-      });
-      throw new MetriportError(msg, undefined, { method: "resetKey", key });
-    }
   }
 
   /**
@@ -276,7 +246,7 @@ export class DynamoStore implements Store {
   async getLimit(key: string, defaultLimit: number): Promise<number> {
     const { log } = out(`DynamoStore get - key ${key}`);
     const item = await this.getOrCreateLimit(key, defaultLimit);
-    const entry = rateLimitLimitSchema.safeParse(item);
+    const entry = rateLimitThresholdSchema.safeParse(item);
     if (!entry.success) {
       const error = entry.error;
       const msg = "Error parsing DynamoStore limit entry";
@@ -290,28 +260,26 @@ export class DynamoStore implements Store {
       });
       throw new MetriportError(msg, error, { method: "getLimit", key, defaultLimit });
     }
-    return entry.data.windowLimit;
+    return entry.data.limitThreshold;
   }
 
   async getOrCreateLimit(key: string, defaultLimit: number): Promise<DocumentClient.AttributeMap> {
     const item = await this.ddbUtils.get({ partition: this.prefixLimitKey(key) });
-    if (!item.Item) {
-      const windowLimitAttribute = `:${rateLimitLimitKey}`;
-      const newItem = await this.ddbUtils.update({
-        partition: this.prefixLimitKey(key),
-        expression: `set ${rateLimitLimitKey} = ${windowLimitAttribute}`,
-        expressionAttributesValues: { [windowLimitAttribute]: defaultLimit },
+    if (item.Item) return item.Item;
+    const limitThresholdAttribute = `:${rateLimitThresholdKey}`;
+    const newItem = await this.ddbUtils.update({
+      partition: this.prefixLimitKey(key),
+      expression: `set ${rateLimitThresholdKey} = ${limitThresholdAttribute}`,
+      expressionAttributesValues: { [limitThresholdAttribute]: defaultLimit },
+    });
+    if (!newItem.Attributes) {
+      throw new MetriportError("Missing item attributes", undefined, {
+        method: "getOrCreateLimit",
+        key,
+        defaultLimit,
       });
-      if (!newItem.Attributes) {
-        throw new MetriportError("Missing item attributes", undefined, {
-          method: "getOrCreateLimit",
-          key,
-          defaultLimit,
-        });
-      }
-      return newItem.Attributes;
     }
-    return item.Item;
+    return newItem.Attributes;
   }
 
   buildDate(resetTime: number): Date {

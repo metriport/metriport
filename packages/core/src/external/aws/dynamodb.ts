@@ -1,8 +1,6 @@
 import * as AWS from "aws-sdk";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import { errorToString } from "@metriport/shared";
 import { Config } from "../../util/config";
-import { capture, out } from "../../util";
 
 const region = Config.getAWSRegion();
 
@@ -49,7 +47,6 @@ export class DynamoDbUtils {
     expressionAttributesValues?: AttributeValuesMapping;
     returnValue?: "ALL_OLD" | "ALL_NEW";
   }): Promise<DocumentClient.UpdateItemOutput> {
-    const { log } = out(`update DDB - table ${this._table} partition ${partition}`);
     const key = this.createKey(partition, range);
     const params: DocumentClient.UpdateItemInput = {
       TableName: this._table,
@@ -58,24 +55,7 @@ export class DynamoDbUtils {
       ...(expressionAttributesValues && { ExpressionAttributeValues: expressionAttributesValues }),
       ReturnValues: returnValue,
     };
-    try {
-      return await this._docClient.update(params).promise();
-    } catch (error) {
-      const msg = `Error updating ${this._table} @ DDB`;
-      log(`${msg} - error: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          table: this._table,
-          key,
-          expression,
-          expressionAttributesValues,
-          returnValue,
-          context: "ddb.update",
-          error,
-        },
-      });
-      throw error;
-    }
+    return await this._docClient.update(params).promise();
   }
 
   async get({
@@ -85,27 +65,12 @@ export class DynamoDbUtils {
     partition: string;
     range?: string;
   }): Promise<DocumentClient.GetItemOutput> {
-    const { log } = out(`get DDB - table ${this._table} partition ${partition}`);
     const key = this.createKey(partition, range);
     const params: DocumentClient.GetItemInput = {
       TableName: this._table,
       Key: key,
     };
-    try {
-      return await this._docClient.get(params).promise();
-    } catch (error) {
-      const msg = `Error getting by key ${this._table} @ DDB`;
-      log(`${msg} - error: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          table: this._table,
-          key,
-          context: "ddb.get",
-          error,
-        },
-      });
-      throw error;
-    }
+    return await this._docClient.get(params).promise();
   }
 
   createKey(partition: string, range: string | undefined) {

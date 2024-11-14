@@ -361,8 +361,6 @@ export class APIStack extends Stack {
     //-------------------------------------------
     const { rateLimitTable } = new RateLimitingNestedStack(this, "RateLimitingNestedStack", {
       config: props.config,
-      lambdaLayers,
-      vpc: this.vpc,
       alarmAction: slackNotification?.alarmAction,
     });
 

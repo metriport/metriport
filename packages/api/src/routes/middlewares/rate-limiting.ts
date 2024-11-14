@@ -4,10 +4,9 @@ import {
   RateLimitOperation,
   RateLimitWindow,
   defaultOperationLimits,
-  oneMinuteInMs,
+  globalWindow,
   rateLimitOperations,
   rateLimitPartitionKey,
-  rateLimitWindows,
   routeMapForError,
 } from "@metriport/shared";
 import { NextFunction, Request, Response } from "express";
@@ -15,8 +14,6 @@ import { RateLimitRequestHandler, rateLimit } from "express-rate-limit";
 import { getDB } from "../../models/db";
 import { Config } from "../../shared/config";
 import { getCxIdOrFail } from "../util";
-
-const defaultWindow = oneMinuteInMs;
 
 let rateLimiter: RateLimitRequestHandler | undefined;
 export function initRateLimiter(): void {
@@ -27,21 +24,19 @@ export function initRateLimiter(): void {
  * Checks the CX request for the given operation and rate limit with fixed window.
  */
 export function checkRateLimit(
-  operation: RateLimitOperation,
-  window: RateLimitWindow = defaultWindow
+  operation: RateLimitOperation
 ): (req: Request, res: Response, next: NextFunction) => Promise<void> {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     if (!rateLimiter) {
       next();
     } else {
       req.rateLimitOperation = operation;
-      req.rateLimitWindow = window;
       rateLimiter(req, res, next);
     }
   };
 }
 
-export function createRateLimiter(window = defaultWindow): RateLimitRequestHandler | undefined {
+export function createRateLimiter(): RateLimitRequestHandler | undefined {
   const table = Config.getRateLimitTableName();
   if (!table) return undefined;
   const store = new DynamoStore({
@@ -50,11 +45,11 @@ export function createRateLimiter(window = defaultWindow): RateLimitRequestHandl
     client: getDB().doc,
   });
   return rateLimit({
-    windowMs: window,
+    windowMs: globalWindow.asMilliseconds(),
     limit: async (req: Request) => {
-      const { cxId, operation, window } = parseRequest(req);
-      const key = createKey(cxId, operation, window);
-      const defaultLimit = defaultOperationLimits[operation][window];
+      const { cxId, operation } = parseRequest(req);
+      const key = createKey(cxId, operation, globalWindow);
+      const defaultLimit = defaultOperationLimits[operation];
       return await store.getLimit(key, defaultLimit);
     },
     message: (req: Request) => {
@@ -66,8 +61,8 @@ export function createRateLimiter(window = defaultWindow): RateLimitRequestHandl
     store,
     passOnStoreError: true,
     keyGenerator: (req: Request) => {
-      const { cxId, operation, window } = parseRequest(req);
-      return createKey(cxId, operation, window);
+      const { cxId, operation } = parseRequest(req);
+      return createKey(cxId, operation, globalWindow);
     },
   });
 }
@@ -75,16 +70,13 @@ export function createRateLimiter(window = defaultWindow): RateLimitRequestHandl
 function parseRequest(req: Request): {
   cxId: string;
   operation: RateLimitOperation;
-  window: RateLimitWindow;
 } {
   const cxId = getCxIdOrFail(req);
   const operation = req.rateLimitOperation as RateLimitOperation;
-  const window = req.rateLimitWindow as RateLimitWindow;
-  if (!cxId || !operation || !window) {
+  if (!cxId || !operation) {
     throw new MetriportError("Rate limiter can't parse request", undefined, {
       cxId,
       operation,
-      window,
     });
   }
   if (!rateLimitOperations.includes(operation)) {
@@ -92,14 +84,9 @@ function parseRequest(req: Request): {
       operation,
     });
   }
-  if (!rateLimitWindows.includes(window)) {
-    throw new MetriportError("Request rateLimitWindow is not a valid window", undefined, {
-      window,
-    });
-  }
-  return { cxId, operation, window };
+  return { cxId, operation };
 }
 
 function createKey(cxId: string, operation: RateLimitOperation, window: RateLimitWindow): string {
-  return `${cxId}_${operation}_${window}`;
+  return `${cxId}_${operation}_${window.asMilliseconds()}`;
 }

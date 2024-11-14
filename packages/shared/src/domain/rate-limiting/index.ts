@@ -1,22 +1,22 @@
 import { z } from "zod";
+import dayjs from "dayjs";
 
-export const oneMinuteInMs = 60000;
+export const globalWindow = dayjs.duration(60000, "milliseconds");
 export const rateLimitPartitionKey = "cxIdAndOperationAndWindow";
-export const rateLimitLimitKey = "windowLimit";
+export const rateLimitThresholdKey = "limitThreshold";
 
-export type RateLimitWindow = typeof oneMinuteInMs;
+export type RateLimitWindow = typeof globalWindow;
 export type RateLimitOperation = "patientQuery" | "documentQuery" | "consolidatedDataQuery";
 
-export const rateLimitWindows = [oneMinuteInMs] as RateLimitWindow[];
 export const rateLimitOperations = [
   "patientQuery",
   "documentQuery",
   "consolidatedDataQuery",
 ] as RateLimitOperation[];
 
-export const rateLimitLimitSchema = z.object({
+export const rateLimitThresholdSchema = z.object({
   [rateLimitPartitionKey]: z.string(),
-  [rateLimitLimitKey]: z.number(),
+  [rateLimitThresholdKey]: z.number(),
 });
 
 export const rateLimitCountSchema = z.object({
@@ -27,20 +27,14 @@ export const rateLimitCountSchema = z.object({
 
 export const routeMapForError: Record<RateLimitOperation, string> = {
   patientQuery: "Too many patient creates or updates, please try again later.",
-  documentQuery: "Too many patient documeny query starts, please try again later.",
+  documentQuery: "Too many patient document query starts, please try again later.",
   consolidatedDataQuery: "Too many patient consolidated data query starts, please try again later.",
 };
 
 export const defaultOperationLimits: {
-  [k in RateLimitOperation]: { [k in RateLimitWindow]: number };
+  [k in RateLimitOperation]: number;
 } = {
-  patientQuery: {
-    [oneMinuteInMs]: 10,
-  },
-  documentQuery: {
-    [oneMinuteInMs]: 10,
-  },
-  consolidatedDataQuery: {
-    [oneMinuteInMs]: 100,
-  },
+  patientQuery: 10,
+  documentQuery: 10,
+  consolidatedDataQuery: 100,
 };
