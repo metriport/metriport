@@ -31,22 +31,6 @@ To connect to the sandbox:
 new MetriportMedicalApi("YOUR_API_KEY", { sandbox: true });
 ```
 
-#### Devices API
-
-To use the Devices API, create a new instance of the `MetriportDevicesApi` class:
-
-```ts
-import { MetriportDevicesApi } from "@metriport/api-sdk";
-
-const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
-```
-
-To connect to the sandbox:
-
-```ts
-new MetriportDevicesApi("YOUR_API_KEY", { sandbox: true });
-```
-
 ```
             ,▄,
           ▄▓███▌
