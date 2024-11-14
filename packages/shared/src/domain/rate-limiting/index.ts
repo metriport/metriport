@@ -25,7 +25,7 @@ export const rateLimitCountSchema = z.object({
   resetTime: z.number().optional(), // https://express-rate-limit.mintlify.app/guides/creating-a-store
 });
 
-export const routeMapForError: Record<RateLimitOperation, string> = {
+export const errorMessageByOperation: Record<RateLimitOperation, string> = {
   patientQuery: "Too many patient creates or updates, please try again later.",
   documentQuery: "Too many patient document query starts, please try again later.",
   consolidatedDataQuery: "Too many patient consolidated data query starts, please try again later.",

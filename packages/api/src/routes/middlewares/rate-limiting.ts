@@ -4,10 +4,10 @@ import {
   RateLimitOperation,
   RateLimitWindow,
   defaultOperationLimits,
+  errorMessageByOperation,
   globalWindow,
   rateLimitOperations,
   rateLimitPartitionKey,
-  routeMapForError,
 } from "@metriport/shared";
 import { NextFunction, Request, Response } from "express";
 import { RateLimitRequestHandler, rateLimit } from "express-rate-limit";
@@ -54,7 +54,7 @@ export function createRateLimiter(): RateLimitRequestHandler | undefined {
     },
     message: (req: Request) => {
       const { operation } = parseRequest(req);
-      return routeMapForError[operation];
+      return errorMessageByOperation[operation];
     },
     standardHeaders: true,
     legacyHeaders: false,
