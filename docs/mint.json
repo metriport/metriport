@@ -5,7 +5,10 @@
     "dark": "/logo/dark.png"
   },
   "api": {
-    "baseUrl": ["https://api.sandbox.metriport.com", "https://api.metriport.com"],
+    "baseUrl": [
+      "https://api.sandbox.metriport.com",
+      "https://api.metriport.com"
+    ],
     "auth": {
       "method": "key",
       "name": "x-api-key"
@@ -56,26 +59,38 @@
   "navigation": [
     {
       "group": "Home",
-      "pages": ["home/welcome"]
+      "pages": [
+        "home/welcome"
+      ]
     },
     {
       "group": "API Info",
-      "pages": ["home/api-info/api-keys", "home/api-info/webhooks", "home/api-info/error-responses"]
+      "pages": [
+        "home/api-info/api-keys",
+        "home/api-info/webhooks",
+        "home/api-info/error-responses"
+      ]
     },
     {
       "group": "Getting Started",
-      "pages": ["medical-api/getting-started/quickstart"]
+      "pages": [
+        "medical-api/getting-started/quickstart"
+      ]
     },
     {
       "group": "Getting Started",
-      "pages": ["converter-api/getting-started/quickstart"]
+      "pages": [
+        "converter-api/getting-started/quickstart"
+      ]
     },
     {
       "group": "API Reference",
       "pages": [
         {
           "group": "C-CDA",
-          "pages": ["converter-api/api-reference/ccda/ccda-to-fhir"]
+          "pages": [
+            "converter-api/api-reference/ccda/ccda-to-fhir"
+          ]
         }
       ]
     },
@@ -101,14 +116,6 @@
     {
       "group": "API Reference",
       "pages": [
-        {
-          "group": "Organization",
-          "pages": [
-            "medical-api/api-reference/organization/create-organization",
-            "medical-api/api-reference/organization/get-organization",
-            "medical-api/api-reference/organization/update-organization"
-          ]
-        },
         {
           "group": "Facility",
           "pages": [
@@ -354,7 +361,9 @@
         },
         {
           "group": "Extensions",
-          "pages": ["medical-api/fhir/extensions/doc-id"]
+          "pages": [
+            "medical-api/fhir/extensions/doc-id"
+          ]
         }
       ]
     },
@@ -365,6 +374,8 @@
         "medical-api/more-info/webhooks",
         "medical-api/more-info/sdk",
         "medical-api/more-info/medical-record-summary",
+        "medical-api/more-info/user-roles",
+        "medical-api/more-info/api-tools",
         "medical-api/more-info/sandbox",
         "medical-api/more-info/etag"
       ]

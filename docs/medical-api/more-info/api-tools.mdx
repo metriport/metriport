@@ -1,0 +1,137 @@
+---
+title: "Api Tools"
+description: "Overview of Metriport's API schemas, SDKs, and Postman collection"
+---
+
+## OpenAPI Specification
+
+Our OpenAPI specification defines the structure of our API, including endpoints, request/response formats, and available operations. You can find our OpenAPI definition in our GitHub repository:
+
+[Metriport OpenAPI Specification](https://github.com/metriport/metriport/tree/develop/fern/definition)
+
+## SDKs
+
+We provide Software Development Kits (SDKs) in multiple programming languages to make it easier for developers to integrate with our API. Our SDKs are available for the following languages:
+
+### Python
+
+- Package: [metriport](https://pypi.org/project/metriport/)
+- Installation: `pip install metriport`
+
+#### Usage Example
+
+```python
+import os
+from dotenv import load_dotenv
+from metriport.client import Metriport
+from metriport.medical import BasePatient, PersonalIdentifier_DriversLicense
+from metriport.commons import Address, UsState
+
+load_dotenv()
+
+facility_id = os.environ.get("FACILITY_ID")
+api_key = os.environ.get("API_KEY")
+base_url = os.environ.get("BASE_URL") ## optional param to base to client if want to point to sandbox url.
+
+client = Metriport(api_key=api_key)
+patient_data = BasePatient(
+    first_name="John",
+    last_name="Doe",
+    dob="1980-01-01",
+    gender_at_birth="M",
+    personal_identifiers=[
+        PersonalIdentifier_DriversLicense(
+            type="driversLicense",
+            state=UsState.CA,
+            value="12345678",
+        )
+    ],
+    address=[Address(
+        address_line_1="123 Main St",
+        city="Los Angeles",
+        state=UsState.CA,
+        zip="90001",
+        country="USA"
+    )]
+)
+response = client.medical.patient.create(facility_id=facility_id, request=patient_data)
+print(response)
+```
+
+### Java
+
+- Package: [metriport-java](https://mvnrepository.com/artifact/com.metriport/metriport-java)
+- Installation: Add the following to your `pom.xml`:
+
+```Java
+import io.github.cdimascio.dotenv.Dotenv;
+import com.metriport.api.Metriport;
+
+public class GetPatient {
+    public static void getAllPatients(String[] args) {
+        Dotenv dotenv = Dotenv.load();
+
+        Metriport metriport = Metriport.builder()
+            .apiKey(dotenv.get("API_KEY"))
+            .url(dotenv.get("BASE_URL"))
+            .build();
+
+        var response = metriport.medical().patient().list();
+        System.out.println("Received response!" + response);
+    }
+    public static void getSpecificPatient(String[] args) {
+        Dotenv dotenv = Dotenv.load();
+
+        Metriport metriport = Metriport.builder()
+            .apiKey(dotenv.get("API_KEY"))
+            .url(dotenv.get("BASE_URL"))
+            .build();
+
+        var response = metriport.medical().patient().get();
+        System.out.println("Received response!" + response);
+    }
+}
+```
+
+### TypeScript
+
+- Package: [@metriport/api-sdk](https://www.npmjs.com/package/@metriport/api-sdk)
+- Installation: `npm install @metriport/api-sdk`
+
+#### Usage Example
+
+```typescript
+import * as dotenv from "dotenv";
+dotenv.config();
+// Keep dotenv import and config before everything else
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+
+async function main() {
+  const apiKey = getEnvVarOrFail("API_KEY");
+  const apiAddress = getEnvVarOrFail("API_ADRESS");
+  const patientId = getEnvVarOrFail("PATIENT_ID");
+
+  const api = new MetriportMedicalApi(apiKey, { baseAddress: apiAddress });
+
+  console.log(`Getting doc query status...`);
+  const res = await api.getDocumentQueryStatus(patientId);
+  console.log(`Doc query status: ${JSON.stringify(res, null, 2)}`);
+
+  console.log(`Done`);
+}
+
+main();
+```
+
+## Postman Collection
+
+For developers who prefer to explore APIs using Postman, we provide a comprehensive Postman collection. This collection includes pre-configured requests for our API endpoints, making it easy to test and understand our API functionality.
+
+You can access our Postman collection here:
+
+[Metriport Postman Collection](https://www.postman.com/metriport/metriport-api/folder/7zl228v/medical)
+
+Additionally, you can download the `collection.json` file directly from our GitHub repository:
+
+[Metriport Postman Collection on GitHub](https://github.com/metriport/metriport/tree/develop/packages/postman)
