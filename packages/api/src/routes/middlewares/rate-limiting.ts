@@ -3,7 +3,7 @@ import {
   MetriportError,
   RateLimitOperation,
   RateLimitWindow,
-  defaultOperationLimits,
+  getDefaultLimit,
   errorMessageByOperation,
   globalWindow,
   rateLimitOperations,
@@ -49,7 +49,7 @@ export function createRateLimiter(): RateLimitRequestHandler | undefined {
     limit: async (req: Request) => {
       const { cxId, operation } = parseRequest(req);
       const key = createKey(cxId, operation, globalWindow);
-      const defaultLimit = defaultOperationLimits[operation];
+      const defaultLimit = getDefaultLimit(operation);
       return await store.getLimit(key, defaultLimit);
     },
     message: (req: Request) => {

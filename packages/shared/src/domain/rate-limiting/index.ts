@@ -1,5 +1,6 @@
 import { z } from "zod";
 import dayjs from "dayjs";
+import { MetriportError } from "../../error/metriport-error";
 
 export const globalWindow = dayjs.duration(60000, "milliseconds");
 export const rateLimitPartitionKey = "cxIdAndOperationAndWindow";
@@ -31,7 +32,13 @@ export const errorMessageByOperation: Record<RateLimitOperation, string> = {
   consolidatedDataQuery: "Too many patient consolidated data query starts, please try again later.",
 };
 
-export const defaultOperationLimits: {
+export function getDefaultLimit(operation: RateLimitOperation): number {
+  const limit = defaultOperationLimits[operation];
+  if (!limit) throw new MetriportError("Limit not found", undefined, { operation });
+  return limit;
+}
+
+const defaultOperationLimits: {
   [k in RateLimitOperation]: number;
 } = {
   patientQuery: 10,
