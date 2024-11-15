@@ -12,8 +12,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@metriport/api-sdk": "^13.0.1-alpha.1",
-    "@metriport/shared": "^0.13.5-alpha.0",
+    "@metriport/api-sdk": "^13.0.3",
+    "@metriport/shared": "^0.14.3",
     "express": "^4.19.2"
   },
   "devDependencies": {
