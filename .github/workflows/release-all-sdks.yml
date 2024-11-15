@@ -28,7 +28,10 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+          POSTMAN_WORKSPACE_ID: ${{ secrets.POSTMAN_WORKSPACE_ID }}
+          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
         run: |
           fern generate --group node-sdk --version ${{ inputs.version }} --log-level debug
           fern generate --group java-sdk --version ${{ inputs.version }} --log-level debug
           fern generate --group python-sdk --version ${{ inputs.version }} --log-level debug
+          fern generate --group postman --log-level debug

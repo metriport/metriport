@@ -1,5 +1,15 @@
 default-group: test
 groups:
+  postman:
+    generators:
+      - name: fernapi/fern-postman
+        version: 0.4.0
+        output:
+          location: postman
+          api-key: ${POSTMAN_API_KEY}
+          workspace-id: ${POSTMAN_WORKSPACE_ID}
+        config:
+          collection-name: Api Reference
   python-sdk:
     generators:
       - name: fernapi/fern-python-sdk
@@ -13,7 +23,7 @@ groups:
           pydantic_config:
             require_optional_fields: false
           improved_imports: true
-        github: 
+        github:
           repository: metriport/metriport-python
   java-sdk:
     generators:
@@ -26,7 +36,7 @@ groups:
           password: ${MAVEN_PASSWORD}
         config:
           client-class-name: Metriport
-        github: 
+        github:
           repository: metriport/metriport-java
   node-sdk:
     generators:
@@ -34,12 +44,12 @@ groups:
         version: 0.9.0
         output:
           location: npm
-          package-name: '@metriport/api-sdk'
+          package-name: "@metriport/api-sdk"
           token: ${NPM_TOKEN}
         config:
           namespaceExport: Metriport
           noSerdeLayer: true
-        github: 
+        github:
           repository: metriport/metriport-node
   test: # fern generate --group test will locally generate the SDKs for testing
     generators:
