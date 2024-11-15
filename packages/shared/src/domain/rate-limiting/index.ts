@@ -1,8 +1,11 @@
-import { z } from "zod";
 import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
+import { z } from "zod";
 import { MetriportError } from "../../error/metriport-error";
 
-export const globalWindow = dayjs.duration(60000, "milliseconds");
+dayjs.extend(duration);
+
+export const globalWindow = dayjs.duration(1, "minute");
 export const rateLimitPartitionKey = "cxIdAndOperationAndWindow";
 export const rateLimitThresholdKey = "limitThreshold";
 
@@ -34,7 +37,7 @@ export const errorMessageByOperation: Record<RateLimitOperation, string> = {
 
 export function getDefaultLimit(operation: RateLimitOperation): number {
   const limit = defaultOperationLimits[operation];
-  if (!limit) throw new MetriportError("Limit not found", undefined, { operation });
+  if (!limit) throw new MetriportError("Rate limit threshold not found", undefined, { operation });
   return limit;
 }
 
