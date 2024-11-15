@@ -27,8 +27,10 @@ import { RawParams, getRawParams } from "../shared/raw-params";
 import { getProviderDataForType } from "./helpers/provider-route-helper";
 import { getUserIdFrom } from "./schemas/user-id";
 import { asyncHandler, getCxIdOrFail, getFrom } from "./util";
+import { deprecateAllRoutes } from "./middlewares/deprecate-routes";
 
 const router = Router();
+router.use(deprecateAllRoutes);
 
 /** ---------------------------------------------------------------------------
  * GET /user

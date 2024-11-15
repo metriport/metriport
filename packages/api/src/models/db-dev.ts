@@ -18,6 +18,7 @@ const tableExists = async (tableName: string, ddb: AWS.DynamoDB) => {
 
 //Creates the token table
 const createTokenTable = async (ddb: AWS.DynamoDB): Promise<void> => {
+  if (!docTableNames) return;
   //Create a new table if it doesn't already exist
   if (!(await tableExists(docTableNames.token, ddb))) {
     const params: AWS.DynamoDB.CreateTableInput = {

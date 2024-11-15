@@ -121,8 +121,8 @@ export class Config {
     return getEnvVarOrFail("PLACE_INDEX_REGION");
   }
 
-  static getTokenTableName(): string {
-    return getEnvVarOrFail("TOKEN_TABLE_NAME");
+  static getTokenTableName(): string | undefined {
+    return getEnvVar("TOKEN_TABLE_NAME");
   }
 
   static getDBCreds(): string {

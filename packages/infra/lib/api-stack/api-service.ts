@@ -2,7 +2,6 @@ import { CfnOutput, Duration, StackProps } from "aws-cdk-lib";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { Metric } from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
-import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Repository } from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
@@ -28,7 +27,7 @@ import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
 import { DnsZones } from "../shared/dns";
 import { buildLbAccessLogPrefix } from "../shared/s3";
-import { buildSecrets, Secrets, secretsToECS } from "../shared/secrets";
+import { Secrets, buildSecrets, secretsToECS } from "../shared/secrets";
 import { provideAccessToQueue } from "../shared/sqs";
 import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd, isSandbox } from "../shared/util";
@@ -84,7 +83,6 @@ export function createAPIService({
   vpc,
   dbCredsSecret,
   dbReadReplicaEndpoint,
-  dynamoDBTokenTable,
   alarmAction,
   dnsZones,
   fhirServerUrl,
@@ -116,7 +114,6 @@ export function createAPIService({
   vpc: ec2.IVpc;
   dbCredsSecret: secret.ISecret;
   dbReadReplicaEndpoint: rds.Endpoint;
-  dynamoDBTokenTable: dynamodb.Table;
   alarmAction: SnsAction | undefined;
   dnsZones: DnsZones;
   fhirServerUrl: string;
@@ -214,7 +211,6 @@ export function createAPIService({
           LB_TIMEOUT_IN_MILLIS: loadBalancerIdleTimeout.toMilliseconds().toString(),
           DB_READ_REPLICA_ENDPOINT: dbReadReplicaEndpointAsString,
           DB_POOL_SETTINGS: dbPoolSettings,
-          TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
           API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
           API_LB_ADDRESS: props.config.loadBalancerDnsName,
           ...(props.config.apiGatewayUsagePlanId
@@ -377,7 +373,6 @@ export function createAPIService({
     athenaClientSecret.grantRead(fargateService.taskDefinition.taskRole);
   }
   // RW grant for Dynamo DB
-  dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
 
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);

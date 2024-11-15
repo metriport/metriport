@@ -22,6 +22,7 @@ export const saveRpmDevice = async (
   deviceUserId: string
 ): Promise<ConnectedUser> => {
   const userToken = await getUserToken({ token });
+  if (!userToken) throw new UnauthorizedError();
   const cxId = userToken.cxId;
   const userId = userToken.userId;
 

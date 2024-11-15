@@ -1,22 +1,19 @@
 import {
   Aspects,
-  aws_wafv2 as wafv2,
   CfnOutput,
   Duration,
   RemovalPolicy,
   Stack,
   StackProps,
+  aws_wafv2 as wafv2,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
-import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as cognito from "aws-cdk-lib/aws-cognito";
-import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import { InstanceType, Port } from "aws-cdk-lib/aws-ec2";
-import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
+import { InstanceType } from "aws-cdk-lib/aws-ec2";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
@@ -49,15 +46,13 @@ import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { PatientImportNestedStack } from "./patient-import-nested-stack";
 import * as AppConfigUtils from "./shared/app-config";
 import { DailyBackup } from "./shared/backup";
-import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
+import { MAXIMUM_LAMBDA_TIMEOUT, addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { addDBClusterPerformanceAlarms } from "./shared/rds";
-import { getSecrets, Secrets } from "./shared/secrets";
+import { getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
-
-const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 
 interface APIStackProps extends StackProps {
   config: EnvConfig;
@@ -212,33 +207,6 @@ export class APIStack extends Stack {
       dbCluster,
       dbClusterName,
       dbConfig.alarmThresholds,
-      slackNotification?.alarmAction
-    );
-
-    //----------------------------------------------------------
-    // DynamoDB
-    //----------------------------------------------------------
-
-    // global table for auth token management
-    const dynamoConstructName = "APIUserTokens";
-    const dynamoDBTokenTable = new dynamodb.Table(this, dynamoConstructName, {
-      partitionKey: { name: "token", type: dynamodb.AttributeType.STRING },
-      replicationRegions: this.isProd(props) ? ["us-east-1"] : ["ca-central-1"],
-      replicationTimeout: Duration.hours(3),
-      encryption: dynamodb.TableEncryption.AWS_MANAGED,
-      pointInTimeRecovery: true,
-    });
-    dynamoDBTokenTable.addGlobalSecondaryIndex({
-      indexName: "oauthUserAccessToken_idx",
-      partitionKey: {
-        name: "oauthUserAccessToken",
-        type: dynamodb.AttributeType.STRING,
-      },
-      projectionType: dynamodb.ProjectionType.ALL,
-    });
-    this.addDynamoPerformanceAlarms(
-      dynamoDBTokenTable,
-      dynamoConstructName,
       slackNotification?.alarmAction
     );
 
@@ -444,7 +412,6 @@ export class APIStack extends Stack {
       vpc: this.vpc,
       dbCredsSecret,
       dbReadReplicaEndpoint: dbCluster.clusterReadEndpoint,
-      dynamoDBTokenTable,
       alarmAction: slackNotification?.alarmAction,
       dnsZones,
       fhirServerUrl: props.config.fhirServerUrl,
@@ -687,18 +654,6 @@ export class APIStack extends Stack {
       props.config.lambdasSentryDSN
     );
 
-    // token auth for connect sessions
-    const tokenAuth = this.setupTokenAuthLambda(
-      lambdaLayers,
-      dynamoDBTokenTable,
-      slackNotification?.alarmAction,
-      props.config.environmentType,
-      props.config.lambdasSentryDSN
-    );
-
-    // setup /token path with token auth
-    this.setupAPIGWApiTokenResource(id, api, link, tokenAuth, apiLoadBalancerAddress);
-
     const userPoolClientSecret = this.setupOAuthUserPool(props.config, publicZone);
     const oauthScopes = this.enableFHIROnUserPool(userPoolClientSecret);
     const oauthAuth = this.setupOAuthAuthorizer(userPoolClientSecret);
@@ -738,9 +693,6 @@ export class APIStack extends Stack {
       apiKeyRequired: true,
     });
 
-    // WEBHOOKS
-    const webhookResource = api.root.addResource("webhook");
-
     documentUploader.createLambda({
       lambdaLayers,
       stack: this,
@@ -767,90 +719,6 @@ export class APIStack extends Stack {
       searchPassword: ccdaSearchSecret.secretValue.unsafeUnwrap(),
       apiTaskRole: apiService.service.taskDefinition.taskRole,
       apiAddress: apiDirectUrl,
-    });
-
-    this.setupGarminWebhookAuth({
-      lambdaLayers,
-      baseResource: webhookResource,
-      vpc: this.vpc,
-      fargateService: apiService,
-      dynamoDBTokenTable,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-    });
-
-    this.setupWithingsWebhookAuth({
-      lambdaLayers,
-      baseResource: webhookResource,
-      vpc: this.vpc,
-      fargateService: apiService,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-    });
-
-    this.setupFitbitWebhook({
-      lambdaLayers,
-      baseResource: webhookResource,
-      secrets,
-      vpc: this.vpc,
-      fargateService: apiService,
-      fitbitClientSecret: props.config.providerSecretNames.FITBIT_CLIENT_SECRET,
-      fitbitSubscriberVerificationCode:
-        props.config.providerSecretNames.FITBIT_SUBSCRIBER_VERIFICATION_CODE,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-    });
-
-    this.setupTenoviWebhookAuth({
-      lambdaLayers,
-      baseResource: webhookResource,
-      secrets,
-      vpc: this.vpc,
-      fargateService: apiService,
-      tenoviAuthHeader: props.config.providerSecretNames.TENOVI_AUTH_HEADER,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-    });
-
-    // add webhook path for apple health clients
-    const appleHealthResource = webhookResource.addResource("apple");
-    const integrationApple = new apig.Integration({
-      type: apig.IntegrationType.HTTP_PROXY,
-      options: {
-        connectionType: apig.ConnectionType.VPC_LINK,
-        vpcLink: link,
-      },
-      integrationHttpMethod: "POST",
-      uri: `http://${apiLoadBalancerAddress}${appleHealthResource.path}`,
-    });
-    appleHealthResource.addMethod("POST", integrationApple, {
-      apiKeyRequired: true,
-    });
-
-    // add another usage plan for Publishable (Client) API keys
-    // everything is throttled to 0 - except explicitely permitted routes
-    const appleHealthThrottleKey = `${appleHealthResource.path}/POST`;
-    const clientPlan = new apig.CfnUsagePlan(this, "APIClientUsagePlan", {
-      usagePlanName: "Client Plan",
-      description: "Client Plan for API",
-      apiStages: [
-        {
-          apiId: api.restApiId,
-          stage: api.deploymentStage.stageName,
-          throttle: {
-            "*/*": { burstLimit: 0, rateLimit: 0 },
-            [appleHealthThrottleKey]: { burstLimit: 10, rateLimit: 50 },
-          },
-        },
-      ],
-      throttle: {
-        burstLimit: 10,
-        rateLimit: 50,
-      },
-      quota: {
-        limit: this.isProd(props) ? 10000 : 500,
-        period: apig.Period.DAY,
-      },
     });
 
     createScheduledAPIQuotaChecker({
@@ -901,10 +769,6 @@ export class APIStack extends Stack {
       description: "API Gateway Root Resource ID",
       value: api.root.resourceId,
     });
-    new CfnOutput(this, "APIGatewayWebhookResourceID", {
-      description: "API Gateway Webhook Resource ID",
-      value: webhookResource.resourceId,
-    });
     new CfnOutput(this, "VPCID", {
       description: "VPC ID",
       value: this.vpc.vpcId,
@@ -924,10 +788,6 @@ export class APIStack extends Stack {
     new CfnOutput(this, "APIUsagePlan", {
       description: "API Usage Plan",
       value: plan.usagePlanId,
-    });
-    new CfnOutput(this, "ClientAPIUsagePlan", {
-      description: "Client API Usage Plan",
-      value: clientPlan.attrId,
     });
     new CfnOutput(this, "APIDBCluster", {
       description: "API DB Cluster",
@@ -1015,207 +875,6 @@ export class APIStack extends Stack {
       },
       architecture: lambda.Architecture.ARM_64,
     });
-  }
-
-  private setupGarminWebhookAuth(ownProps: {
-    lambdaLayers: LambdaLayers;
-    baseResource: apig.Resource;
-    vpc: ec2.IVpc;
-    fargateService: ecs_patterns.ApplicationLoadBalancedFargateService;
-    dynamoDBTokenTable: dynamodb.Table;
-    envType: EnvType;
-    sentryDsn: string | undefined;
-  }) {
-    const {
-      lambdaLayers,
-      baseResource,
-      vpc,
-      fargateService: server,
-      dynamoDBTokenTable,
-      envType,
-      sentryDsn,
-    } = ownProps;
-
-    const garminLambda = createLambda({
-      stack: this,
-      name: "Garmin",
-      runtime: lambda.Runtime.NODEJS_16_X,
-      entry: "garmin",
-      layers: [lambdaLayers.shared],
-      envType,
-      envVars: {
-        TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
-        API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/garmin`,
-        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-      },
-      vpc,
-    });
-
-    // Grant lambda access to the DynamoDB token table
-    garminLambda.role && dynamoDBTokenTable.grantReadData(garminLambda.role);
-
-    // Grant lambda access to the api server
-    server.service.connections.allowFrom(garminLambda, Port.allTcp());
-
-    // setup $base/garmin path with token auth
-    const garminResource = baseResource.addResource("garmin");
-    garminResource.addMethod("ANY", new apig.LambdaIntegration(garminLambda));
-  }
-
-  private setupWithingsWebhookAuth(ownProps: {
-    lambdaLayers: LambdaLayers;
-    baseResource: apig.Resource;
-    vpc: ec2.IVpc;
-    fargateService: ecs_patterns.ApplicationLoadBalancedFargateService;
-    envType: EnvType;
-    sentryDsn: string | undefined;
-  }) {
-    const {
-      lambdaLayers,
-      baseResource,
-      vpc,
-      fargateService: server,
-      envType,
-      sentryDsn,
-    } = ownProps;
-
-    const withingsLambda = createLambda({
-      stack: this,
-      name: "Withings",
-      runtime: lambda.Runtime.NODEJS_16_X,
-      entry: "withings",
-      layers: [lambdaLayers.shared, lambdaLayers.dig],
-      envType,
-      envVars: {
-        API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/withings`,
-        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-      },
-      vpc,
-    });
-
-    // Grant lambda access to the api server
-    server.service.connections.allowFrom(withingsLambda, Port.allTcp());
-
-    const withingsResource = baseResource.addResource("withings");
-    withingsResource.addMethod("ANY", new apig.LambdaIntegration(withingsLambda));
-  }
-
-  private setupFitbitWebhook(ownProps: {
-    lambdaLayers: LambdaLayers;
-    baseResource: apig.Resource;
-    secrets: Secrets;
-    vpc: ec2.IVpc;
-    fargateService: ecs_patterns.ApplicationLoadBalancedFargateService;
-    fitbitClientSecret: string;
-    fitbitSubscriberVerificationCode: string;
-    envType: EnvType;
-    sentryDsn: string | undefined;
-  }) {
-    const {
-      lambdaLayers,
-      baseResource,
-      secrets,
-      vpc,
-      fargateService: server,
-      fitbitClientSecret,
-      fitbitSubscriberVerificationCode,
-      envType,
-      sentryDsn,
-    } = ownProps;
-
-    const fitbitAuthLambda = createLambda({
-      stack: this,
-      name: "FitbitAuth",
-      runtime: lambda.Runtime.NODEJS_18_X,
-      entry: "fitbit-auth",
-      layers: [lambdaLayers.shared],
-      envType,
-      envVars: {
-        API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/fitbit`,
-        FITBIT_CLIENT_SECRET: fitbitClientSecret,
-        FITBIT_TIMEOUT_MS: FITBIT_LAMBDA_TIMEOUT.toMilliseconds().toString(),
-        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-      },
-      vpc,
-      timeout: FITBIT_LAMBDA_TIMEOUT,
-    });
-
-    const fitbitSubscriberVerificationLambda = createLambda({
-      stack: this,
-      name: "FitbitSubscriberVerification",
-      runtime: lambda.Runtime.NODEJS_18_X,
-      entry: "fitbit-subscriber-verification",
-      layers: [lambdaLayers.shared],
-      envType,
-      envVars: {
-        FITBIT_SUBSCRIBER_VERIFICATION_CODE: fitbitSubscriberVerificationCode,
-        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-      },
-      vpc,
-    });
-
-    // granting secrets read access to both lambdas
-    const fitbitClientSecretKey = "FITBIT_CLIENT_SECRET";
-    if (!secrets[fitbitClientSecretKey]) {
-      throw new Error(`${fitbitClientSecretKey} is not defined in config`);
-    }
-    const fitbitSubVerifSecretKey = "FITBIT_SUBSCRIBER_VERIFICATION_CODE";
-    secrets[fitbitClientSecretKey].grantRead(fitbitAuthLambda);
-    if (!secrets[fitbitSubVerifSecretKey]) {
-      throw new Error(`${fitbitSubVerifSecretKey} is not defined in config`);
-    }
-    secrets[fitbitSubVerifSecretKey].grantRead(fitbitSubscriberVerificationLambda);
-
-    const fitbitResource = baseResource.addResource("fitbit");
-    fitbitResource.addMethod("POST", new apig.LambdaIntegration(fitbitAuthLambda));
-    fitbitResource.addMethod("GET", new apig.LambdaIntegration(fitbitSubscriberVerificationLambda));
-  }
-
-  private setupTenoviWebhookAuth(ownProps: {
-    lambdaLayers: LambdaLayers;
-    baseResource: apig.Resource;
-    secrets: Secrets;
-    vpc: ec2.IVpc;
-    fargateService: ecs_patterns.ApplicationLoadBalancedFargateService;
-    tenoviAuthHeader: string;
-    envType: EnvType;
-    sentryDsn: string | undefined;
-  }) {
-    const {
-      lambdaLayers,
-      baseResource,
-      secrets,
-      vpc,
-      fargateService: server,
-      tenoviAuthHeader,
-      envType,
-      sentryDsn,
-    } = ownProps;
-
-    const tenoviAuthLambda = createLambda({
-      stack: this,
-      name: "TenoviAuth",
-      runtime: lambda.Runtime.NODEJS_18_X,
-      entry: "tenovi",
-      layers: [lambdaLayers.shared],
-      envType,
-      envVars: {
-        API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/tenovi`,
-        TENOVI_AUTH_HEADER: tenoviAuthHeader,
-        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-      },
-      vpc,
-    });
-
-    const tenoviAuthHeaderSecretKey = "TENOVI_AUTH_HEADER";
-    if (!secrets[tenoviAuthHeaderSecretKey]) {
-      throw new Error(`${tenoviAuthHeaderSecretKey} is not defined in config`);
-    }
-
-    secrets[tenoviAuthHeaderSecretKey].grantRead(tenoviAuthLambda);
-
-    const tenoviResource = baseResource.addResource("tenovi");
-    tenoviResource.addMethod("POST", new apig.LambdaIntegration(tenoviAuthLambda));
   }
 
   private setupBulkUrlSigningLambda(ownProps: {
@@ -1403,77 +1062,6 @@ export class APIStack extends Stack {
     return cwLambda;
   }
 
-  private setupTokenAuthLambda(
-    lambdaLayers: LambdaLayers,
-    dynamoDBTokenTable: dynamodb.Table,
-    alarmAction: SnsAction | undefined,
-    envType: EnvType,
-    sentryDsn: string | undefined
-  ): apig.RequestAuthorizer {
-    const tokenAuthLambda = createLambda({
-      stack: this,
-      name: "TokenAuth",
-      runtime: lambda.Runtime.NODEJS_16_X,
-      entry: "token-auth",
-      layers: [lambdaLayers.shared],
-      envType,
-      envVars: {
-        TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
-        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-      },
-      alarmSnsAction: alarmAction,
-    });
-
-    const tokenAuth = new apig.RequestAuthorizer(this, "APITokenAuth", {
-      handler: tokenAuthLambda,
-      identitySources: ["method.request.querystring.state"],
-      // todo: instead of removing caching, investigate explicitly listing
-      //        the permitted methods in the lambda: "Resource: event.methodArn"
-      //
-      // see: https://forum.serverless.com/t/rest-api-with-custom-authorizer-how-are-you-dealing-with-authorization-and-policy-cache/3310
-      resultsCacheTtl: Duration.minutes(0),
-    });
-    tokenAuthLambda.role && dynamoDBTokenTable.grantReadData(tokenAuthLambda.role);
-
-    return tokenAuth;
-  }
-
-  private setupAPIGWApiTokenResource(
-    stackId: string,
-    api: apig.RestApi,
-    link: apig.VpcLink,
-    authorizer: apig.RequestAuthorizer,
-    serverAddress: string
-  ): apig.Resource {
-    const apiTokenResource = api.root.addResource("token");
-    const tokenProxy = new apig.ProxyResource(this, `${stackId}/token/Proxy`, {
-      parent: apiTokenResource,
-      anyMethod: false,
-    });
-    const integrationToken = new apig.Integration({
-      type: apig.IntegrationType.HTTP_PROXY,
-      options: {
-        connectionType: apig.ConnectionType.VPC_LINK,
-        vpcLink: link,
-        requestParameters: {
-          "integration.request.path.proxy": "method.request.path.proxy",
-          "integration.request.header.api-token": "context.authorizer.api-token",
-          "integration.request.header.cxId": "context.authorizer.cxId",
-          "integration.request.header.userId": "context.authorizer.userId",
-        },
-      },
-      integrationHttpMethod: "ANY",
-      uri: `http://${serverAddress}/{proxy}`,
-    });
-    tokenProxy.addMethod("ANY", integrationToken, {
-      requestParameters: {
-        "method.request.path.proxy": true,
-      },
-      authorizer,
-    });
-    return apiTokenResource;
-  }
-
   private setupOAuthUserPool(config: EnvConfig, dnsZone: r53.IHostedZone): cognito.IUserPool {
     const domainName = `${config.authSubdomain}.${config.domain}`;
     const userPool = new cognito.UserPool(this, "oauth-client-secret-user-pool2", {
@@ -1569,38 +1157,6 @@ export class APIStack extends Stack {
       authorizationScopes: oauthScopes.map(s => s.scopeName),
     });
     return oauthResource;
-  }
-
-  private addDynamoPerformanceAlarms(
-    table: dynamodb.Table,
-    dynamoConstructName: string,
-    alarmAction?: SnsAction
-  ) {
-    const readUnitsMetric = table.metricConsumedReadCapacityUnits();
-    const readAlarm = readUnitsMetric.createAlarm(
-      this,
-      `${dynamoConstructName}ConsumedReadCapacityUnitsAlarm`,
-      {
-        threshold: 10_000, // units per second
-        evaluationPeriods: 1,
-        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-      }
-    );
-    alarmAction && readAlarm.addAlarmAction(alarmAction);
-    alarmAction && readAlarm.addOkAction(alarmAction);
-
-    const writeUnitsMetric = table.metricConsumedWriteCapacityUnits();
-    const writeAlarm = writeUnitsMetric.createAlarm(
-      this,
-      `${dynamoConstructName}ConsumedWriteCapacityUnitsAlarm`,
-      {
-        threshold: 10_000, // units per second
-        evaluationPeriods: 1,
-        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-      }
-    );
-    alarmAction && writeAlarm.addAlarmAction(alarmAction);
-    alarmAction && writeAlarm.addOkAction(alarmAction);
   }
 
   private isProd(props: APIStackProps): boolean {

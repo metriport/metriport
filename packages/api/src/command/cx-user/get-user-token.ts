@@ -3,12 +3,14 @@ import { UserToken } from "../../domain/user-token";
 import NotFoundError from "../../errors/not-found";
 import { docTableNames, getDB } from "../../models/db";
 import { capture } from "../../shared/notifications";
+import UnauthorizedError from "../../errors/unauthorized";
 
 export type GetUserTokenCommand = {
   token: string;
 };
 
 export const getUserToken = async ({ token }: GetUserTokenCommand): Promise<UserToken> => {
+  if (!docTableNames) throw new UnauthorizedError();
   const item = await getDB()
     .doc?.get({
       TableName: docTableNames.token,
@@ -32,6 +34,7 @@ export type GetUserTokenByUATCommand = {
 export const getUserTokenByUAT = async ({
   oauthUserAccessToken,
 }: GetUserTokenByUATCommand): Promise<UserToken[]> => {
+  if (!docTableNames) throw new UnauthorizedError();
   const items = await getDB()
     .doc?.query({
       TableName: docTableNames.token,

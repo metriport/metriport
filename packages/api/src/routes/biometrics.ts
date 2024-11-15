@@ -5,7 +5,10 @@ import status from "http-status";
 import { ConsumerHealthDataType } from "../providers/provider";
 import { getProviderDataForType } from "./helpers/provider-route-helper";
 import { asyncHandler } from "./util";
+import { deprecateAllRoutes } from "./middlewares/deprecate-routes";
+
 const router = Router();
+router.use(deprecateAllRoutes);
 
 /** ---------------------------------------------------------------------------
  * GET /biometrics
