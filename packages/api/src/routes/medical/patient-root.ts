@@ -32,7 +32,7 @@ const router = Router();
  */
 router.post(
   "/",
-  checkRateLimit("patientQuery"),
+  checkRateLimit("patientCreateOrUpdate"),
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);

@@ -10,10 +10,13 @@ export const rateLimitPartitionKey = "cxIdAndOperationAndWindow";
 export const rateLimitThresholdKey = "limitThreshold";
 
 export type RateLimitWindow = typeof globalWindow;
-export type RateLimitOperation = "patientQuery" | "documentQuery" | "consolidatedDataQuery";
+export type RateLimitOperation =
+  | "patientCreateOrUpdate"
+  | "documentQuery"
+  | "consolidatedDataQuery";
 
 export const rateLimitOperations = [
-  "patientQuery",
+  "patientCreateOrUpdate",
   "documentQuery",
   "consolidatedDataQuery",
 ] as RateLimitOperation[];
@@ -30,7 +33,7 @@ export const rateLimitCountSchema = z.object({
 });
 
 export const errorMessageByOperation: Record<RateLimitOperation, string> = {
-  patientQuery: "Too many patient creates or updates, please try again later.",
+  patientCreateOrUpdate: "Too many patient creates or updates, please try again later.",
   documentQuery: "Too many patient document query starts, please try again later.",
   consolidatedDataQuery: "Too many patient consolidated data query starts, please try again later.",
 };
@@ -44,7 +47,7 @@ export function getDefaultLimit(operation: RateLimitOperation): number {
 const defaultOperationLimits: {
   [k in RateLimitOperation]: number;
 } = {
-  patientQuery: 10,
+  patientCreateOrUpdate: 10,
   documentQuery: 10,
   consolidatedDataQuery: 100,
 };

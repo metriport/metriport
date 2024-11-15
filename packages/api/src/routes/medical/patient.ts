@@ -55,7 +55,7 @@ const router = Router();
  */
 router.put(
   "/",
-  checkRateLimit("patientQuery"),
+  checkRateLimit("patientCreateOrUpdate"),
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, id, patient } = getPatientInfoOrFail(req);
