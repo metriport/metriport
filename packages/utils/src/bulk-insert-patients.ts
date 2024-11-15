@@ -34,6 +34,11 @@ dayjs.extend(duration);
 /**
  * This script will read patients from a .csv file and insert them into the Metriport API.
  *
+ * It outputs the result of processing in the ./runs/bulk-insert/<cx-date>/ folder.
+ * - ids.csv: contains the list of patient ids and external ids
+ * - patient-creates.json: contains the list of patients that would be created (when run w/ dryrun)
+ * - mapping-errors.json: contains the list of errors found in the CSV file
+ *
  * Format of the .csv file:
  * - first line contains column names
  * - columns can be in any order
@@ -58,7 +63,9 @@ const inputFileName = "";
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 const cxId = getEnvVarOrFail("CX_ID");
-const facilityId = getEnvVar("FACILITY_ID") ?? "";
+const facilityIdEnvVar = getEnvVar("FACILITY_ID");
+const facilityId =
+  facilityIdEnvVar && facilityIdEnvVar.trim().length > 1 ? facilityIdEnvVar?.trim() : undefined;
 const delayTime = dayjs.duration(5, "seconds").asMilliseconds();
 const confirmationTime = dayjs.duration(10, "seconds");
 
@@ -84,7 +91,7 @@ async function main() {
   const { dryrun: dryRunParam } = program.opts<Params>();
   const dryRun = dryRunParam ?? false;
 
-  const { orgName, facilityId: localFacilityId } = await getCxData(cxId, facilityId.trim());
+  const { orgName, facilityId: localFacilityId } = await getCxData(cxId, facilityId);
   if (!localFacilityId) throw new Error("No facility found");
   const outputFolderName = getFolderName(orgName);
 
@@ -97,7 +104,13 @@ async function main() {
   const fileName = inputFileName;
 
   fs.createReadStream(fileName)
-    .pipe(csv({ mapHeaders: ({ header }) => header.replaceAll(" ", "").replaceAll("*", "") }))
+    .pipe(
+      csv({
+        mapHeaders: ({ header }: { header: string }) => {
+          return header.replace(/[!@#$%^&*()+=\-[\]\\';,./{}|":<>?~_\s]/gi, "").toLowerCase();
+        },
+      })
+    )
     .on("data", async data => {
       const result = mapCSVPatientToMetriportPatient(data);
       if (Array.isArray(result)) {
@@ -134,6 +147,7 @@ async function loadData(
   const msg = `${patientsCreates.length} unique patients from the CSV file to be inserted at org/cx ${orgName}`;
   console.log(msg);
 
+  const storePatientId = buildStorePatientId(outputFolderName);
   storePatientCreates(patientsCreates, outputFolderName + "/patient-creates.json");
 
   if (dryRun) {
@@ -154,7 +168,7 @@ async function loadData(
       });
       successfulCount++;
       console.log(i + 1, createdPatient);
-      storePatientId(createdPatient.id, outputFolderName + "/ids.txt");
+      storePatientId(createdPatient.id, createdPatient.externalId);
       if (i < patientsCreates.length - 1) await sleep(delayTime);
     } catch (error) {
       errors.push({
@@ -257,8 +271,14 @@ function initPatientIdRepository(folderName: string) {
 function storePatientCreates(patientCreate: PatientCreate[], fileName: string) {
   fs.appendFileSync(fileName, JSON.stringify(patientCreate, null, 2));
 }
-function storePatientId(patientId: string, fileName: string) {
-  fs.appendFileSync(fileName, patientId + "\n");
+function buildStorePatientId(outputFolderName: string) {
+  const idsFileName = outputFolderName + "/ids.csv";
+  const header = "patientId,externalId";
+  fs.appendFileSync(idsFileName, header + "\n");
+  return (patientId: string, externalId: string | undefined) => {
+    const record = `${patientId},${externalId ?? ""}`;
+    fs.appendFileSync(idsFileName, record + "\n");
+  };
 }
 
 function normalizeName(name: string | undefined, propName: string): string {
@@ -341,10 +361,8 @@ export function mapCSVPatientToMetriportPatient(csvPatient: {
   city: string | undefined;
   state: string | undefined;
   address1: string | undefined;
-  addressLine1: string | undefined;
   addressline1: string | undefined;
   address2: string | undefined;
-  addressLine2: string | undefined;
   addressline2: string | undefined;
   phone: string | undefined;
   phone1: string | undefined;
@@ -353,7 +371,7 @@ export function mapCSVPatientToMetriportPatient(csvPatient: {
   email1: string | undefined;
   email2: string | undefined;
   id: string | undefined;
-  externalId: string | undefined;
+  externalid: string | undefined;
 }): PatientCreate | Array<{ field: string; error: string }> {
   const errors: Array<{ field: string; error: string }> = [];
 
@@ -400,7 +418,7 @@ export function mapCSVPatientToMetriportPatient(csvPatient: {
   let addressLine2: string | undefined = undefined;
   try {
     const res = normalizeAddressLine(
-      csvPatient.address1 ?? csvPatient.addressLine1 ?? csvPatient.addressline1,
+      csvPatient.address1 ?? csvPatient.addressline1,
       "addressLine1",
       true
     );
@@ -416,7 +434,7 @@ export function mapCSVPatientToMetriportPatient(csvPatient: {
 
   try {
     const res = normalizeAddressLine(
-      csvPatient.address2 ?? csvPatient.addressLine2 ?? csvPatient.addressline2,
+      csvPatient.address2 ?? csvPatient.addressline2,
       "addressLine2"
     );
     if (addressLine2 && res) {
@@ -491,7 +509,7 @@ export function mapCSVPatientToMetriportPatient(csvPatient: {
 
   const externalId = csvPatient.id
     ? normalizeExternalIdUtils(csvPatient.id)
-    : normalizeExternalIdUtils(csvPatient.externalId) ?? undefined;
+    : normalizeExternalIdUtils(csvPatient.externalid) ?? undefined;
 
   // Return errors if any were found
   if (errors.length > 0) {

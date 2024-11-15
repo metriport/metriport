@@ -31,7 +31,6 @@ export async function getCxData(
   const facilities: Facility[] | undefined = respCxData.data.facilities;
 
   if (!org) throw new Error("No organization found");
-  if (!facilities) throw new Error("No organization found");
 
   const getFacility = async (): Promise<Facility> => {
     if (!facilities || facilities.length < 1) throw new Error("No facility found");
