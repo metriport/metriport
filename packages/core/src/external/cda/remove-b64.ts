@@ -40,11 +40,8 @@ export function removeBase64PdfEntries(payloadRaw: string): {
             const mediaType = entry.act?.text?.["_mediaType"]?.trim().toLowerCase();
             if (
               (BINARY_MIME_TYPES.includes(mediaType) || mediaType == undefined) &&
-              (entry.act?.text?.["_representation"]?.trim().toLowerCase() ===
-                b64Representation.toLowerCase() ||
-                entry.organizer?.component?.observationMedia?.value?.["_representation"]
-                  ?.trim()
-                  .toLowerCase() === b64Representation.toLowerCase())
+              (isB64Representation(entry.act?.text?.["_representation"]) ||
+                isComponentContainsB64(entry?.organizer?.component))
             ) {
               isRemovedEntries = true;
               b64Attachments.push(entry);
@@ -55,6 +52,19 @@ export function removeBase64PdfEntries(payloadRaw: string): {
         }
       }
     });
+  }
+
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function isComponentContainsB64(component: any) {
+    if (!component) return false;
+    const components = toArray(component);
+    return components.some(comp =>
+      isB64Representation(comp?.observationMedia?.value?.["_representation"])
+    );
+  }
+
+  function isB64Representation(rep: string | undefined): boolean {
+    return rep?.trim().toLowerCase() === b64Representation.toLowerCase();
   }
 
   const builder = new XMLBuilder({
