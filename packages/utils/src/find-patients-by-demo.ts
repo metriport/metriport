@@ -1,9 +1,14 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { Address, Contact, MetriportMedicalApi, PatientCreate } from "@metriport/api-sdk";
+import {
+  Address,
+  Contact,
+  MetriportMedicalApi,
+  PatientCreate,
+  PatientDTO,
+} from "@metriport/api-sdk";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { errorToString } from "@metriport/core/util/error/shared";
 import { sleep } from "@metriport/core/util/sleep";
 import {
   getEnvVar,
@@ -33,29 +38,28 @@ import { logNotDryRun } from "./shared/log";
 dayjs.extend(duration);
 
 /**
- * This script will read patients from a .csv file and insert them into the Metriport API.
+ * This script finds patients by matching demographic data from a CSV file against the Metriport API.
  *
- * It outputs the result of processing in the ./runs/bulk-insert/<cx-date>/ folder.
- * - ids.csv: contains the list of patient ids and external ids
- * - patient-creates.json: contains the list of patients that would be created (when run w/ dryrun)
- * - mapping-errors.json: contains the list of errors found in the CSV file
+ * Format of the CSV file:
+ * - First line must contain column headers
+ * - Columns can be in any order
+ * - Required columns: firstname, lastname, dob, gender, zip, city, state, address1, address2, phone, email, externalId
+ * - Additional columns will be ignored
  *
- * Format of the .csv file:
- * - first line contains column names
- * - columns can be in any order
- * - minimum columns: firstname,lastname,dob,gender,zip,city,state,address1,address2,phone,email,externalId
- * - it may contain more columns, only those above will be used
+ * Environment variables can be set either in the OS or in a .env file in the package root.
  *
- * Either set the env vars below on the OS or create a .env file in the root folder of this package.
+ * Usage:
+ * $ npm run find-patients -- --dryrun  # Validate CSV without querying API
+ * $ npm run find-patients              # Find matching patients
  *
- * Execute this with:
- * $ npm run bulk-insert -- --dryrun
- * $ npm run bulk-insert
- */
-
-/**
- * Only need to provide the facilityId if the CX has more than one facility.
- * Used to determine the NPI used to query CW.
+ * Output:
+ * - Creates a timestamped folder under runs/patients-by-demo/<org-name>
+ * - Generates JSON files:
+ *   - matches.json: Patients found in the system
+ *   - no-matches.json: Patients not found
+ *   - multiple-matches.json: Patients with multiple matches
+ * - Generates SQL file:
+ *   - patient-update.sql: SQL queries used for demographic matching
  */
 
 // Full path to the file
@@ -64,22 +68,22 @@ const inputFileName = "";
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 const cxId = getEnvVarOrFail("CX_ID");
-const facilityIdEnvVar = getEnvVar("FACILITY_ID");
-const facilityId =
-  facilityIdEnvVar && facilityIdEnvVar.trim().length > 1 ? facilityIdEnvVar?.trim() : undefined;
-const delayTime = dayjs.duration(5, "seconds").asMilliseconds();
+/**
+ * Only need to provide the facilityId if the CX has more than one facility.
+ */
+const facilityId = getEnvVar("FACILITY_ID") ?? "";
 const confirmationTime = dayjs.duration(10, "seconds");
 
-const getFolderName = buildGetDirPathInside(`bulk-insert`);
+const getFolderName = buildGetDirPathInside(`patients-by-demo`);
 
 type Params = {
   dryrun?: boolean;
 };
 const program = new Command();
 program
-  .name("bulk-insert-patients")
-  .description("CLI to import patients from a .csv file into the Metriport API.")
-  .option(`--dryrun`, "Just validate the CSV without importing the patients")
+  .name("find-patients-by-demo")
+  .description("CLI to find patients by demo data.")
+  .option(`--dryrun`, "Just validate the CSV without running the query")
   .showHelpAfterError();
 
 const metriportAPI = new MetriportMedicalApi(apiKey, {
@@ -96,7 +100,7 @@ async function main() {
   const { dryrun: dryRunParam } = program.opts<Params>();
   const dryRun = dryRunParam ?? false;
 
-  const { orgName, facilityId: localFacilityId } = await getCxData(cxId, facilityId);
+  const { orgName, facilityId: localFacilityId } = await getCxData(cxId, facilityId.trim());
   if (!localFacilityId) throw new Error("No facility found");
   const outputFolderName = getFolderName(orgName);
 
@@ -104,7 +108,7 @@ async function main() {
 
   // This will insert all the patients into a specific facility.
   // Based off the apiKey it will determine the cx to add to the patients.
-  const results: PatientCreate[] = [];
+  const patientsFromCsv: PatientCreate[] = [];
   const mappingErrors: Array<{ row: string; errors: string }> = [];
   const fileName = inputFileName;
 
@@ -124,7 +128,7 @@ async function main() {
           errors: result.map(e => e.error).join("; "),
         });
       } else {
-        results.push(result);
+        patientsFromCsv.push(result);
       }
     })
     .on("end", async () => {
@@ -135,58 +139,74 @@ async function main() {
           `Found ${mappingErrors.length} mapping errors. Check ${errorFilePath} for details.`
         );
       }
-      await loadData(results, orgName, localFacilityId, outputFolderName, dryRun);
+      await findPatientsByDemo(patientsFromCsv, orgName, localFacilityId, outputFolderName, dryRun);
       console.log(`>>>>>>> Done after ${elapsedTimeAsStr(startedAt)}`);
     });
 }
 
-async function loadData(
-  results: PatientCreate[],
+async function findPatientsByDemo(
+  patientsFromCsv: PatientCreate[],
   orgName: string,
   localFacilityId: string,
   outputFolderName: string,
   dryRun: boolean
 ) {
-  console.log(`Loaded ${results.length} patients from the CSV, deduplicating them...`);
-  const patientsCreates = dedupPatientCreates(results);
+  console.log(`Loaded ${patientsFromCsv.length} patients from the CSV, deduplicating them...`);
+  const dedupedPatients = dedupPatientCreates(patientsFromCsv);
 
-  const msg = `${patientsCreates.length} unique patients from the CSV file to be inserted at org/cx ${orgName}`;
+  const msg = `${dedupedPatients.length} unique patients from the CSV file to be searched on/updated at org/cx ${orgName}`;
   console.log(msg);
 
-  const storePatientId = buildStorePatientId(outputFolderName);
-  storePatientCreates(patientsCreates, outputFolderName + "/patient-creates.json");
+  storePatientCreates(dedupedPatients, outputFolderName + "/patients-from-csv.json");
 
-  if (dryRun) {
-    console.log("Dry run, not inserting patients.");
-    console.log(`List of patients: ${JSON.stringify(patientsCreates, null, 2)}`);
-    console.log(msg);
-    console.log("Done.");
-    return;
-  }
-  await displayWarningAndConfirmation(patientsCreates.length, orgName, dryRun);
-  let successfulCount = 0;
-  const errors: Array<{ firstName: string; lastName: string; dob: string; message: string }> = [];
+  await displayWarningAndConfirmation(orgName, localFacilityId, dryRun);
 
-  for (const [i, patient] of patientsCreates.entries()) {
-    try {
-      const createdPatient = await metriportAPI.createPatient(patient, localFacilityId, {
-        rerunPdOnNewDemographics: true,
-      });
-      successfulCount++;
-      console.log(i + 1, createdPatient);
-      storePatientId(createdPatient.id, createdPatient.externalId);
-      if (i < patientsCreates.length - 1) await sleep(delayTime);
-    } catch (error) {
-      errors.push({
-        firstName: patient.firstName,
-        lastName: patient.lastName,
-        dob: patient.dob,
-        message: errorToString(error),
-      });
+  const patientsFromTheDb = await metriportAPI.listPatients(localFacilityId);
+
+  // Find matches between CSV patients and existing DB patients
+  const matches: Array<{ csvPatient: PatientCreate; dbPatient: PatientDTO }> = [];
+  const noMatches: PatientCreate[] = [];
+  const multipleMatches: Array<{ csvPatient: PatientCreate; dbPatients: PatientDTO[] }> = [];
+
+  for (const csvPatient of dedupedPatients) {
+    const matchingPatients = patientsFromTheDb.filter(dbPatient => {
+      const sameFirstName =
+        csvPatient.firstName.toLowerCase() === dbPatient.firstName.toLowerCase();
+      const sameLastName = csvPatient.lastName.toLowerCase() === dbPatient.lastName.toLowerCase();
+      const sameDOB = csvPatient.dob === dbPatient.dob;
+      const sameGender = csvPatient.genderAtBirth === dbPatient.genderAtBirth;
+      return sameFirstName && sameLastName && sameDOB && sameGender;
+    });
+
+    if (matchingPatients.length === 0) {
+      noMatches.push(csvPatient);
+    } else if (matchingPatients.length === 1) {
+      matches.push({ csvPatient, dbPatient: matchingPatients[0] });
+    } else {
+      multipleMatches.push({ csvPatient, dbPatients: matchingPatients });
     }
   }
-  console.log(errors);
-  console.log(`Done, inserted ${successfulCount} patients.`);
+
+  // Store results in output folder
+  fs.writeFileSync(`${outputFolderName}/matches.json`, JSON.stringify(matches, null, 2));
+  fs.writeFileSync(`${outputFolderName}/no-matches.json`, JSON.stringify(noMatches, null, 2));
+  fs.writeFileSync(
+    `${outputFolderName}/multiple-matches.json`,
+    JSON.stringify(multipleMatches, null, 2)
+  );
+
+  console.log(`Found:
+     ${matches.length} exact matches
+     ${noMatches.length} patients with no matches
+     ${multipleMatches.length} patients with multiple matches`);
+
+  const patientUpdateSql: string[] = [];
+  for (const match of matches) {
+    patientUpdateSql.push(
+      `UPDATE patients SET external_id = '${match.csvPatient.externalId}' WHERE id = '${match.dbPatient.id}';`
+    );
+  }
+  fs.writeFileSync(`${outputFolderName}/patient-update.sql`, patientUpdateSql.join("\n"));
 }
 
 function dedupPatientCreates(patients: PatientCreate[]): PatientCreate[] {
@@ -256,13 +276,13 @@ function deduplicateContacts(contacts: Contact[]): Contact[] {
 }
 
 async function displayWarningAndConfirmation(
-  patientCount: number,
   orgName: string,
+  localFacilityId: string,
   dryRun: boolean
 ) {
   if (!dryRun) logNotDryRun();
   console.log(
-    `Inserting ${patientCount} patients at org/cx ${orgName} in ${confirmationTime.asSeconds()} seconds...`
+    `Reading all patients at org/cx ${orgName}, facility ${localFacilityId}, in ${confirmationTime.asSeconds()} seconds...`
   );
   await sleep(confirmationTime.asMilliseconds());
   console.log(`running...`);
@@ -276,15 +296,6 @@ function initPatientIdRepository(folderName: string) {
 
 function storePatientCreates(patientCreate: PatientCreate[], fileName: string) {
   fs.appendFileSync(fileName, JSON.stringify(patientCreate, null, 2));
-}
-function buildStorePatientId(outputFolderName: string) {
-  const idsFileName = outputFolderName + "/ids.csv";
-  const header = "patientId,externalId";
-  fs.appendFileSync(idsFileName, header + "\n");
-  return (patientId: string, externalId: string | undefined) => {
-    const record = `${patientId},${externalId ?? ""}`;
-    fs.appendFileSync(idsFileName, record + "\n");
-  };
 }
 
 function normalizeName(name: string | undefined, propName: string): string {
