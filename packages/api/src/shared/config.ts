@@ -349,12 +349,14 @@ export class Config {
   static getAthenaHealthEnv(): string | undefined {
     return getEnvVar("EHR_ATHENA_ENVIRONMENT");
   }
-
   static getAthenaHealthClientKeyArn(): string | undefined {
     return getEnvVar("EHR_ATHENA_CLIENT_KEY_ARN");
   }
-
   static getAthenaHealthClientSecretArn(): string | undefined {
     return getEnvVar("EHR_ATHENA_CLIENT_SECRET_ARN");
+  }
+
+  static getRateLimitTableName(): string | undefined {
+    return getEnvVar("RATE_LIMIT_TABLE_NAME");
   }
 }

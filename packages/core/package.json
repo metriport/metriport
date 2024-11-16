@@ -115,6 +115,7 @@
     "asn1js": "^3.0.5",
     "aws-sdk": "^2.1243.0",
     "dayjs": "^1.11.9",
+    "express-rate-limit": "^7.4.1",
     "formidable": "^3.5.1",
     "http-status": "^1.7.0",
     "jaro-winkler": "^0.2.8",

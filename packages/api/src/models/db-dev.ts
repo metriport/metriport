@@ -1,10 +1,11 @@
 import * as AWS from "aws-sdk";
+import { rateLimitPartitionKey } from "@metriport/shared";
 import { docTableNames } from "./db";
 import { getEnvVarOrFail } from "../shared/config";
 import { allowMapiAccess } from "../command/medical/mapi-access";
 
 //Checks if the table exists in the db
-const tableExists = async (tableName: string, ddb: AWS.DynamoDB) => {
+async function tableExists(tableName: string, ddb: AWS.DynamoDB) {
   try {
     await ddb.describeTable({ TableName: tableName }).promise();
     return true;
@@ -14,12 +15,11 @@ const tableExists = async (tableName: string, ddb: AWS.DynamoDB) => {
       return false;
     }
   }
-};
-
-//Creates the token table
-const createTokenTable = async (ddb: AWS.DynamoDB): Promise<void> => {
-  //Create a new table if it doesn't already exist
-  if (!(await tableExists(docTableNames.token, ddb))) {
+}
+// Creates the token table
+async function createTokenTable(ddb: AWS.DynamoDB): Promise<void> {
+  const doesTableExist = await tableExists(docTableNames.token, ddb);
+  if (!doesTableExist) {
     const params: AWS.DynamoDB.CreateTableInput = {
       AttributeDefinitions: [
         {
@@ -63,8 +63,36 @@ const createTokenTable = async (ddb: AWS.DynamoDB): Promise<void> => {
     };
     await ddb.createTable(params).promise();
   }
-};
-export const initDDBDev = async (): Promise<AWS.DynamoDB.DocumentClient> => {
+}
+// Creates the rate limit table
+async function createRateLimitTable(ddb: AWS.DynamoDB): Promise<void> {
+  if (!docTableNames.rateLimit) return;
+  const doesTableExist = await tableExists(docTableNames.rateLimit, ddb);
+  if (!doesTableExist) {
+    const params: AWS.DynamoDB.CreateTableInput = {
+      AttributeDefinitions: [
+        {
+          AttributeName: rateLimitPartitionKey,
+          AttributeType: "S",
+        },
+      ],
+      KeySchema: [
+        {
+          AttributeName: rateLimitPartitionKey,
+          KeyType: "HASH",
+        },
+      ],
+      ProvisionedThroughput: {
+        ReadCapacityUnits: 1,
+        WriteCapacityUnits: 1,
+      },
+      TableName: docTableNames.rateLimit,
+    };
+    await ddb.createTable(params).promise();
+  }
+}
+
+export async function initDDBDev(): Promise<AWS.DynamoDB.DocumentClient> {
   const doc = new AWS.DynamoDB.DocumentClient({
     apiVersion: "2012-08-10",
     endpoint: process.env.DYNAMODB_ENDPOINT,
@@ -74,8 +102,9 @@ export const initDDBDev = async (): Promise<AWS.DynamoDB.DocumentClient> => {
     endpoint: process.env.DYNAMODB_ENDPOINT,
   });
   await createTokenTable(ddb);
+  await createRateLimitTable(ddb);
   return doc;
-};
+}
 
 export async function initLocalCxAccount(): Promise<void> {
   const id = getEnvVarOrFail("LOCAL_ACCOUNT_CXID");
