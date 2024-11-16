@@ -203,7 +203,7 @@ async function findPatientsByDemo(
   const patientUpdateSql: string[] = [];
   for (const match of matches) {
     patientUpdateSql.push(
-      `UPDATE patients SET external_id = '${match.csvPatient.externalId}' WHERE id = '${match.dbPatient.id}';`
+      `UPDATE patient SET external_id = '${match.csvPatient.externalId}' WHERE id = '${match.dbPatient.id}' and cx_id = '${cxId}';`
     );
   }
   fs.writeFileSync(`${outputFolderName}/patient-update.sql`, patientUpdateSql.join("\n"));
