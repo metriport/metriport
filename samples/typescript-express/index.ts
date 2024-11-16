@@ -1,5 +1,6 @@
 import * as dotenv from "dotenv";
 dotenv.config();
+// Keep dotenv import/setup before the other imports
 import { MetriportMedicalApi, USState } from "@metriport/api-sdk";
 import { getEnvVarOrFail } from "@metriport/shared";
 

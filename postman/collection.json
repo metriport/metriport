@@ -1,0 +1,3260 @@
+{
+  "info": {
+    "name": "Api",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": null
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://api.metriport.com",
+      "type": "string"
+    },
+    {
+      "key": "apiKey",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "value",
+        "value": "{{apiKey}}",
+        "type": "string"
+      },
+      {
+        "key": "key",
+        "value": "X-API-Key",
+        "type": "string"
+      },
+      {
+        "key": "in",
+        "value": "header",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "_type": "container",
+      "description": null,
+      "name": "Medical",
+      "item": [
+        {
+          "_type": "container",
+          "description": null,
+          "name": "Document",
+          "item": [
+            {
+              "_type": "endpoint",
+              "name": "Start Document Query",
+              "request": {
+                "description": "Triggers a document query for the specified patient across HIEs.\nWhen executed, this endpoint triggers an asynchronous document query across HIEs.\nThis is a two step process where the documents will first be downloaded from\nthe respective HIE and, if they are C-CDA/XML, then converted to FHIR.\nEach process (download, conversion) will contain its own `total` and `status`\nas well as the count for `successful` operations and `errors`.\nWhen the asynchronous document query finishes, it stores new/updated document\nreferences for future requests and updates the status of download to `completed`.\nMeanwhile, in the background, files will be converted and the convert count will be\nincremented. Once all documents have been converted it too will be marked as `completed`.\nIf there's no document to be converted, the total will be set to zero and\nthe status to `completed`.",
+                "url": {
+                  "raw": "{{baseUrl}}/medical/v1/document/query?patientId=018a80c4-292a-7486-a1234-76yuhe23yu14&facilityId=018a80c4-292a-7486-a1234-9uiu76yhe234",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "medical",
+                    "v1",
+                    "document",
+                    "query"
+                  ],
+                  "query": [
+                    {
+                      "key": "patientId",
+                      "description": "The ID of the Patient for which to list available Documents.",
+                      "value": "018a80c4-292a-7486-a1234-76yuhe23yu14"
+                    },
+                    {
+                      "key": "facilityId",
+                      "description": "The ID of the Facility where the patient is receiving care.",
+                      "value": "018a80c4-292a-7486-a1234-9uiu76yhe234"
+                    }
+                  ],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{apiKey}}",
+                    "type": "string",
+                    "description": null
+                  },
+                  {
+                    "type": "text",
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": null,
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"youCan\": \"putAny\",\n    \"stringKeyValue\": \"pairsHere\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Triggers a document query for the specified patient across HIEs.\nWhen executed, this endpoint triggers an asynchronous document query across HIEs.\nThis is a two step process where the documents will first be downloaded from\nthe respective HIE and, if they are C-CDA/XML, then converted to FHIR.\nEach process (download, conversion) will contain its own `total` and `status`\nas well as the count for `successful` operations and `errors`.\nWhen the asynchronous document query finishes, it stores new/updated document\nreferences for future requests and updates the status of download to `completed`.\nMeanwhile, in the background, files will be converted and the convert count will be\nincremented. Once all documents have been converted it too will be marked as `completed`.\nIf there's no document to be converted, the total will be set to zero and\nthe status to `completed`.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/document/query?patientId=018a80c4-292a-7486-a1234-76yuhe23yu14&facilityId=018a80c4-292a-7486-a1234-9uiu76yhe234",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "document",
+                        "query"
+                      ],
+                      "query": [
+                        {
+                          "key": "patientId",
+                          "description": "The ID of the Patient for which to list available Documents.",
+                          "value": "018a80c4-292a-7486-a1234-76yuhe23yu14"
+                        },
+                        {
+                          "key": "facilityId",
+                          "description": "The ID of the Facility where the patient is receiving care.",
+                          "value": "018a80c4-292a-7486-a1234-9uiu76yhe234"
+                        }
+                      ],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "auth": null,
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"youCan\": \"putAny\",\n    \"stringKeyValue\": \"pairsHere\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "description": null,
+                  "body": "{\n    \"download\": {\n        \"status\": \"completed\",\n        \"total\": 100,\n        \"successful\": 98,\n        \"errors\": 2\n    },\n    \"convert\": {\n        \"status\": \"processing\"\n    }\n}",
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Triggers a document query for the specified patient across HIEs.\nWhen executed, this endpoint triggers an asynchronous document query across HIEs.\nThis is a two step process where the documents will first be downloaded from\nthe respective HIE and, if they are C-CDA/XML, then converted to FHIR.\nEach process (download, conversion) will contain its own `total` and `status`\nas well as the count for `successful` operations and `errors`.\nWhen the asynchronous document query finishes, it stores new/updated document\nreferences for future requests and updates the status of download to `completed`.\nMeanwhile, in the background, files will be converted and the convert count will be\nincremented. Once all documents have been converted it too will be marked as `completed`.\nIf there's no document to be converted, the total will be set to zero and\nthe status to `completed`.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/document/query?patientId=string&facilityId=string",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "document",
+                        "query"
+                      ],
+                      "query": [
+                        {
+                          "key": "patientId",
+                          "description": "The ID of the Patient for which to list available Documents.",
+                          "value": "string"
+                        },
+                        {
+                          "key": "facilityId",
+                          "description": "The ID of the Facility where the patient is receiving care.",
+                          "value": "string"
+                        }
+                      ],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "auth": null,
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"youCan\": \"putAny\",\n    \"stringKeyValue\": \"pairsHere\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "description": null,
+                  "body": "{\n    \"download\": {\n        \"status\": \"completed\",\n        \"total\": 100,\n        \"successful\": 98,\n        \"errors\": 2\n    },\n    \"convert\": {\n        \"status\": \"processing\"\n    }\n}",
+                  "_postman_previewlanguage": "json"
+                }
+              ]
+            },
+            {
+              "_type": "endpoint",
+              "name": "Get Document Query Status",
+              "request": {
+                "description": "Returns the document query status for the specified patient.\nCan be used in to check the progress when the final status\nof the document query is taking longer than expected.\nSee more on [Start Document Query](/medical-api/api-reference/document/start-document-query).",
+                "url": {
+                  "raw": "{{baseUrl}}/medical/v1/document/query?patientId=018a80c4-292a-7486-a1234-76yuhe23yu14",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "medical",
+                    "v1",
+                    "document",
+                    "query"
+                  ],
+                  "query": [
+                    {
+                      "key": "patientId",
+                      "description": "The ID of the Patient for which to list available Documents.",
+                      "value": "018a80c4-292a-7486-a1234-76yuhe23yu14"
+                    }
+                  ],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{apiKey}}",
+                    "type": "string",
+                    "description": null
+                  },
+                  {
+                    "type": "text",
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": null,
+                "body": null
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Returns the document query status for the specified patient.\nCan be used in to check the progress when the final status\nof the document query is taking longer than expected.\nSee more on [Start Document Query](/medical-api/api-reference/document/start-document-query).",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/document/query?patientId=018a80c4-292a-7486-a1234-76yuhe23yu14",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "document",
+                        "query"
+                      ],
+                      "query": [
+                        {
+                          "key": "patientId",
+                          "description": "The ID of the Patient for which to list available Documents.",
+                          "value": "018a80c4-292a-7486-a1234-76yuhe23yu14"
+                        }
+                      ],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "auth": null,
+                    "body": null
+                  },
+                  "description": null,
+                  "body": "{\n    \"download\": {\n        \"status\": \"completed\",\n        \"total\": 100,\n        \"successful\": 98,\n        \"errors\": 2\n    },\n    \"convert\": {\n        \"status\": \"processing\"\n    }\n}",
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Returns the document query status for the specified patient.\nCan be used in to check the progress when the final status\nof the document query is taking longer than expected.\nSee more on [Start Document Query](/medical-api/api-reference/document/start-document-query).",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/document/query?patientId=string",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "document",
+                        "query"
+                      ],
+                      "query": [
+                        {
+                          "key": "patientId",
+                          "description": "The ID of the Patient for which to list available Documents.",
+                          "value": "string"
+                        }
+                      ],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "auth": null,
+                    "body": null
+                  },
+                  "description": null,
+                  "body": "{\n    \"download\": {\n        \"status\": \"completed\",\n        \"total\": 100,\n        \"successful\": 98,\n        \"errors\": 2\n    },\n    \"convert\": {\n        \"status\": \"processing\"\n    }\n}",
+                  "_postman_previewlanguage": "json"
+                }
+              ]
+            },
+            {
+              "_type": "endpoint",
+              "name": "List Documents",
+              "request": {
+                "description": "Lists all Documents that can be retrieved for a Patient.\nThis endpoint returns the document references available\nat Metriport which are associated with the given Patient.\nTo start a new document query, see the [Start Document Query endpoint](/api-reference/medical/document/start-query).",
+                "url": {
+                  "raw": "{{baseUrl}}/medical/v1/document?patientId=string&dateFrom=string&dateTo=string&content=string",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "medical",
+                    "v1",
+                    "document"
+                  ],
+                  "query": [
+                    {
+                      "key": "patientId",
+                      "description": "The ID of the Patient for which to list available Documents.",
+                      "value": "string"
+                    },
+                    {
+                      "key": "dateFrom",
+                      "description": "The start date (inclusive) for which to filter returned documents - formatted `YYYY-MM-DD` as per ISO 8601. If not provided, no start date filter will be applied.",
+                      "value": "string"
+                    },
+                    {
+                      "key": "dateTo",
+                      "description": "The end date (inclusive) for which to filter returned documents - formatted `YYYY-MM-DD` as per ISO 8601. If not provided, no end date filter will be applied.",
+                      "value": "string"
+                    },
+                    {
+                      "key": "content",
+                      "description": "Value to search within the document reference and the actual contents of the document (minimum 3 chars).",
+                      "value": "string"
+                    }
+                  ],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{apiKey}}",
+                    "type": "string",
+                    "description": null
+                  },
+                  {
+                    "type": "text",
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": null,
+                "body": null
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Lists all Documents that can be retrieved for a Patient.\nThis endpoint returns the document references available\nat Metriport which are associated with the given Patient.\nTo start a new document query, see the [Start Document Query endpoint](/api-reference/medical/document/start-query).",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/document?patientId=string&dateFrom=string&dateTo=string&content=string",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "document"
+                      ],
+                      "query": [
+                        {
+                          "key": "patientId",
+                          "description": "The ID of the Patient for which to list available Documents.",
+                          "value": "string"
+                        },
+                        {
+                          "key": "dateFrom",
+                          "description": "The start date (inclusive) for which to filter returned documents - formatted `YYYY-MM-DD` as per ISO 8601. If not provided, no start date filter will be applied.",
+                          "value": "string"
+                        },
+                        {
+                          "key": "dateTo",
+                          "description": "The end date (inclusive) for which to filter returned documents - formatted `YYYY-MM-DD` as per ISO 8601. If not provided, no end date filter will be applied.",
+                          "value": "string"
+                        },
+                        {
+                          "key": "content",
+                          "description": "Value to search within the document reference and the actual contents of the document (minimum 3 chars).",
+                          "value": "string"
+                        }
+                      ],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "auth": null,
+                    "body": null
+                  },
+                  "description": null,
+                  "body": "{\n    \"documents\": [\n        {\n            \"resourceType\": \"DocumentReference\",\n            \"masterIdentifier\": {\n                \"id\": \"string\",\n                \"extension\": [\n                    {}\n                ],\n                \"use\": \"usual\",\n                \"type\": {\n                    \"id\": \"string\",\n                    \"extension\": [],\n                    \"coding\": [],\n                    \"text\": \"string\"\n                },\n                \"system\": \"string\",\n                \"value\": \"string\",\n                \"period\": {\n                    \"id\": \"string\",\n                    \"extension\": [],\n                    \"start\": \"string\",\n                    \"end\": \"string\"\n                },\n                \"assigner\": {\n                    \"resource\": {\n                        \"key\": \"value\"\n                    }\n                }\n            },\n            \"identifier\": [\n                {\n                    \"id\": \"string\",\n                    \"extension\": [\n                        {}\n                    ],\n                    \"use\": \"usual\",\n                    \"type\": {\n                        \"id\": \"string\",\n                        \"extension\": [],\n                        \"coding\": [],\n                        \"text\": \"string\"\n                    },\n                    \"system\": \"string\",\n                    \"value\": \"string\",\n                    \"period\": {\n                        \"id\": \"string\",\n                        \"extension\": [],\n                        \"start\": \"string\",\n                        \"end\": \"string\"\n                    },\n                    \"assigner\": {\n                        \"resource\": {\n                            \"key\": \"value\"\n                        }\n                    }\n                }\n            ],\n            \"status\": \"current\",\n            \"docStatus\": \"string\",\n            \"type\": {\n                \"id\": \"string\",\n                \"extension\": [],\n                \"coding\": [],\n                \"text\": \"string\"\n            },\n            \"category\": [\n                {\n                    \"id\": \"string\",\n                    \"extension\": [],\n                    \"coding\": [],\n                    \"text\": \"string\"\n                }\n            ],\n            \"subject\": {\n                \"resource\": {\n                    \"key\": \"value\"\n                }\n            },\n            \"date\": \"string\",\n            \"author\": [\n                {\n                    \"resource\": {\n                        \"key\": \"value\"\n                    }\n                }\n            ],\n            \"authenticator\": {\n                \"resource\": {\n                    \"key\": \"value\"\n                }\n            },\n            \"custodian\": {\n                \"resource\": {\n                    \"key\": \"value\"\n                }\n            },\n            \"relatesTo\": [\n                {\n                    \"target\": {\n                        \"resource\": {\n                            \"key\": \"value\"\n                        }\n                    }\n                }\n            ],\n            \"description\": \"string\",\n            \"securityLabel\": [\n                {\n                    \"id\": \"string\",\n                    \"extension\": [],\n                    \"coding\": [],\n                    \"text\": \"string\"\n                }\n            ],\n            \"content\": [\n                {\n                    \"id\": \"string\",\n                    \"extension\": [],\n                    \"modifierExtension\": [],\n                    \"attachment\": {\n                        \"id\": \"string\",\n                        \"extension\": [\n                            {}\n                        ],\n                        \"contentType\": \"string\",\n                        \"language\": \"string\",\n                        \"data\": \"string\",\n                        \"url\": \"string\",\n                        \"size\": 1.1,\n                        \"hash\": \"string\",\n                        \"title\": \"string\",\n                        \"creation\": \"string\"\n                    },\n                    \"format\": {\n                        \"id\": \"string\",\n                        \"extension\": [\n                            {}\n                        ],\n                        \"system\": \"string\",\n                        \"version\": \"string\",\n                        \"code\": \"string\",\n                        \"display\": \"string\",\n                        \"userSelected\": true\n                    }\n                }\n            ],\n            \"context\": {\n                \"id\": \"string\",\n                \"extension\": [],\n                \"modifierExtension\": [],\n                \"encounter\": [],\n                \"event\": [],\n                \"period\": {\n                    \"id\": \"string\",\n                    \"extension\": [],\n                    \"start\": \"string\",\n                    \"end\": \"string\"\n                },\n                \"facilityType\": {\n                    \"id\": \"string\",\n                    \"extension\": [],\n                    \"coding\": [],\n                    \"text\": \"string\"\n                },\n                \"practiceSetting\": {\n                    \"id\": \"string\",\n                    \"extension\": [],\n                    \"coding\": [],\n                    \"text\": \"string\"\n                },\n                \"sourcePatientInfo\": {\n                    \"resource\": {\n                        \"key\": \"value\"\n                    }\n                },\n                \"related\": []\n            },\n            \"id\": \"string\",\n            \"meta\": {\n                \"id\": \"string\",\n                \"extension\": [],\n                \"versionId\": \"string\",\n                \"lastUpdated\": \"string\",\n                \"source\": \"string\",\n                \"profile\": [],\n                \"security\": [],\n                \"tag\": [],\n                \"project\": \"string\",\n                \"author\": {\n                    \"resource\": {\n                        \"key\": \"value\"\n                    }\n                },\n                \"account\": {\n                    \"resource\": {\n                        \"key\": \"value\"\n                    }\n                },\n                \"compartment\": []\n            },\n            \"implicitRules\": \"string\",\n            \"language\": \"string\",\n            \"text\": {\n                \"id\": \"string\",\n                \"extension\": [],\n                \"status\": \"generated\",\n                \"div\": {\n                    \"key\": \"value\"\n                }\n            },\n            \"contained\": {\n                \"key\": \"value\"\n            },\n            \"extension\": [\n                {}\n            ],\n            \"modifierExtension\": [\n                {}\n            ]\n        }\n    ]\n}",
+                  "_postman_previewlanguage": "json"
+                }
+              ]
+            },
+            {
+              "_type": "endpoint",
+              "name": "Get Document URL",
+              "request": {
+                "description": "Gets a downloadable URL for downloading the specified document.\nThis endpoint returns a URL which you can use to download\nthe specified document and/or convert using the file name\nprovided from the [List Documents](/api-reference/medical/document/list) endpoint.",
+                "url": {
+                  "raw": "{{baseUrl}}/medical/v1/document/download-url?fileName=x-ray&conversionType=pdf",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "medical",
+                    "v1",
+                    "document",
+                    "download-url"
+                  ],
+                  "query": [
+                    {
+                      "key": "fileName",
+                      "description": "The file name of the document",
+                      "value": "x-ray"
+                    },
+                    {
+                      "key": "conversionType",
+                      "description": "The doc type to convert to. Either `html` or `pdf`.\nThis parameter should only be used for converting XML/CDA files.",
+                      "value": "pdf"
+                    }
+                  ],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{apiKey}}",
+                    "type": "string",
+                    "description": null
+                  },
+                  {
+                    "type": "text",
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": null,
+                "body": null
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Gets a downloadable URL for downloading the specified document.\nThis endpoint returns a URL which you can use to download\nthe specified document and/or convert using the file name\nprovided from the [List Documents](/api-reference/medical/document/list) endpoint.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/document/download-url?fileName=x-ray&conversionType=pdf",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "document",
+                        "download-url"
+                      ],
+                      "query": [
+                        {
+                          "key": "fileName",
+                          "description": "The file name of the document",
+                          "value": "x-ray"
+                        },
+                        {
+                          "key": "conversionType",
+                          "description": "The doc type to convert to. Either `html` or `pdf`.\nThis parameter should only be used for converting XML/CDA files.",
+                          "value": "pdf"
+                        }
+                      ],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "auth": null,
+                    "body": null
+                  },
+                  "description": "A json object containing the URL will be returned.",
+                  "body": "{\n    \"url\": \"abc123-def456\"\n}",
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Gets a downloadable URL for downloading the specified document.\nThis endpoint returns a URL which you can use to download\nthe specified document and/or convert using the file name\nprovided from the [List Documents](/api-reference/medical/document/list) endpoint.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/document/download-url?fileName=string&conversionType=html",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "document",
+                        "download-url"
+                      ],
+                      "query": [
+                        {
+                          "key": "fileName",
+                          "description": "The file name of the document",
+                          "value": "string"
+                        },
+                        {
+                          "key": "conversionType",
+                          "description": "The doc type to convert to. Either `html` or `pdf`.\nThis parameter should only be used for converting XML/CDA files.",
+                          "value": "html"
+                        }
+                      ],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "auth": null,
+                    "body": null
+                  },
+                  "description": "A json object containing the URL will be returned.",
+                  "body": "{\n    \"url\": \"abc123-def456\"\n}",
+                  "_postman_previewlanguage": "json"
+                }
+              ]
+            },
+            {
+              "_type": "endpoint",
+              "name": "Upload Document",
+              "request": {
+                "description": "Creates a DocumentReference and returns its ID and a URL to use for a medical document upload to our servers.",
+                "url": {
+                  "raw": "{{baseUrl}}/medical/v1/document/upload?patientId=018a80c4-292a-7486-a1234-76yuhe23yu14",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "medical",
+                    "v1",
+                    "document",
+                    "upload"
+                  ],
+                  "query": [
+                    {
+                      "key": "patientId",
+                      "description": "The ID of the Patient for which to list available Documents.",
+                      "value": "018a80c4-292a-7486-a1234-76yuhe23yu14"
+                    }
+                  ],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{apiKey}}",
+                    "type": "string",
+                    "description": null
+                  },
+                  {
+                    "type": "text",
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": null,
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"resourceType\": \"DocumentReference\",\n    \"content\": [\n        {\n            \"attachment\": {\n                \"title\": \"Burn management Hospital Progress note\"\n            }\n        }\n    ],\n    \"contained\": [\n        {\n            \"resourceType\": \"ExampleResource\",\n            \"id\": \"exampleId1\"\n        },\n        {\n            \"resourceType\": \"ExampleResource\",\n            \"id\": \"exampleId2\"\n        }\n    ],\n    \"description\": \"Third degree wrist burn treatment\",\n    \"type\": {\n        \"text\": \"Burn management Hospital Progress note\",\n        \"coding\": [\n            {\n                \"code\": \"100556-0\",\n                \"system\": \"http://loinc.org\",\n                \"display\": \"Burn management Hospital Progress note\"\n            }\n        ]\n    },\n    \"context\": {\n        \"period\": {\n            \"start\": \"2023-10-10T14:14:17Z\",\n            \"end\": \"2023-10-10T15:30:30Z\"\n        },\n        \"facilityType\": {\n            \"text\": \"John Snow Clinic - Acute Care Centre\"\n        }\n    }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Creates a DocumentReference and returns its ID and a URL to use for a medical document upload to our servers.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/document/upload?patientId=018a80c4-292a-7486-a1234-76yuhe23yu14",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "document",
+                        "upload"
+                      ],
+                      "query": [
+                        {
+                          "key": "patientId",
+                          "description": "The ID of the Patient for which to list available Documents.",
+                          "value": "018a80c4-292a-7486-a1234-76yuhe23yu14"
+                        }
+                      ],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "auth": null,
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"resourceType\": \"DocumentReference\",\n    \"content\": [\n        {\n            \"attachment\": {\n                \"title\": \"Burn management Hospital Progress note\"\n            }\n        }\n    ],\n    \"contained\": [\n        {\n            \"resourceType\": \"ExampleResource\",\n            \"id\": \"exampleId1\"\n        },\n        {\n            \"resourceType\": \"ExampleResource\",\n            \"id\": \"exampleId2\"\n        }\n    ],\n    \"description\": \"Third degree wrist burn treatment\",\n    \"type\": {\n        \"text\": \"Burn management Hospital Progress note\",\n        \"coding\": [\n            {\n                \"code\": \"100556-0\",\n                \"system\": \"http://loinc.org\",\n                \"display\": \"Burn management Hospital Progress note\"\n            }\n        ]\n    },\n    \"context\": {\n        \"period\": {\n            \"start\": \"2023-10-10T14:14:17Z\",\n            \"end\": \"2023-10-10T15:30:30Z\"\n        },\n        \"facilityType\": {\n            \"text\": \"John Snow Clinic - Acute Care Centre\"\n        }\n    }\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "description": "The DocumentReference ID and a URL to be used for file upload.",
+                  "body": "{\n    \"documentReferenceId\": \"<DocumentReference-ID-string>\",\n    \"uploadUrl\": \"<url-string>\"\n}",
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Creates a DocumentReference and returns its ID and a URL to use for a medical document upload to our servers.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/document/upload?patientId=string",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "document",
+                        "upload"
+                      ],
+                      "query": [
+                        {
+                          "key": "patientId",
+                          "description": "The ID of the Patient for which to list available Documents.",
+                          "value": "string"
+                        }
+                      ],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "auth": null,
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"resourceType\": \"DocumentReference\",\n    \"content\": [\n        {\n            \"attachment\": {\n                \"title\": \"Burn management Hospital Progress note\"\n            }\n        }\n    ],\n    \"contained\": [\n        {\n            \"resourceType\": \"ExampleResource\",\n            \"id\": \"exampleId1\"\n        },\n        {\n            \"resourceType\": \"ExampleResource\",\n            \"id\": \"exampleId2\"\n        }\n    ],\n    \"description\": \"Third degree wrist burn treatment\",\n    \"type\": {\n        \"text\": \"Burn management Hospital Progress note\",\n        \"coding\": [\n            {\n                \"code\": \"100556-0\",\n                \"system\": \"http://loinc.org\",\n                \"display\": \"Burn management Hospital Progress note\"\n            }\n        ]\n    },\n    \"context\": {\n        \"period\": {\n            \"start\": \"2023-10-10T14:14:17Z\",\n            \"end\": \"2023-10-10T15:30:30Z\"\n        },\n        \"facilityType\": {\n            \"text\": \"John Snow Clinic - Acute Care Centre\"\n        }\n    }\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "description": "The DocumentReference ID and a URL to be used for file upload.",
+                  "body": "{\n    \"documentReferenceId\": \"<DocumentReference-ID-string>\",\n    \"uploadUrl\": \"<url-string>\"\n}",
+                  "_postman_previewlanguage": "json"
+                }
+              ]
+            },
+            {
+              "_type": "endpoint",
+              "name": "Start Bulk Get Document URL",
+              "request": {
+                "description": "Triggers a process to generate a list of download URLs for all of the patient's documents.\nThe status of the process is returned in the response. Initially, it will be `processing`,\nand when the process is finished, the status will be updated to `completed` or `failed`.\nIf you trigger this endpoint again while the process is still running, you will get a response\nthat reflects the current progress.",
+                "url": {
+                  "raw": "{{baseUrl}}/medical/v1/document/download-url/bulk?patientId=018a80c4-292a-7486-a1234-76yuhe23yu14",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "medical",
+                    "v1",
+                    "document",
+                    "download-url",
+                    "bulk"
+                  ],
+                  "query": [
+                    {
+                      "key": "patientId",
+                      "description": "The ID of the patient for which to initiate the bulk URL generation.",
+                      "value": "018a80c4-292a-7486-a1234-76yuhe23yu14"
+                    }
+                  ],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{apiKey}}",
+                    "type": "string",
+                    "description": null
+                  },
+                  {
+                    "type": "text",
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": null,
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"youCan\": \"putAny\",\n    \"stringKeyValue\": \"pairsHere\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Triggers a process to generate a list of download URLs for all of the patient's documents.\nThe status of the process is returned in the response. Initially, it will be `processing`,\nand when the process is finished, the status will be updated to `completed` or `failed`.\nIf you trigger this endpoint again while the process is still running, you will get a response\nthat reflects the current progress.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/document/download-url/bulk?patientId=018a80c4-292a-7486-a1234-76yuhe23yu14",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "document",
+                        "download-url",
+                        "bulk"
+                      ],
+                      "query": [
+                        {
+                          "key": "patientId",
+                          "description": "The ID of the patient for which to initiate the bulk URL generation.",
+                          "value": "018a80c4-292a-7486-a1234-76yuhe23yu14"
+                        }
+                      ],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "auth": null,
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"youCan\": \"putAny\",\n    \"stringKeyValue\": \"pairsHere\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "description": "The status of the URL generation process and the request ID.",
+                  "body": "{\n    \"status\": \"processing\",\n    \"requestId\": \"018c1e9d-dfce-70cb-8c0e-edfbbd2a7f5f\"\n}",
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Triggers a process to generate a list of download URLs for all of the patient's documents.\nThe status of the process is returned in the response. Initially, it will be `processing`,\nand when the process is finished, the status will be updated to `completed` or `failed`.\nIf you trigger this endpoint again while the process is still running, you will get a response\nthat reflects the current progress.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/document/download-url/bulk?patientId=string",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "document",
+                        "download-url",
+                        "bulk"
+                      ],
+                      "query": [
+                        {
+                          "key": "patientId",
+                          "description": "The ID of the patient for which to initiate the bulk URL generation.",
+                          "value": "string"
+                        }
+                      ],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "auth": null,
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"youCan\": \"putAny\",\n    \"stringKeyValue\": \"pairsHere\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "description": "The status of the URL generation process and the request ID.",
+                  "body": "{\n    \"status\": \"processing\",\n    \"requestId\": \"018c1e9d-dfce-70cb-8c0e-edfbbd2a7f5f\"\n}",
+                  "_postman_previewlanguage": "json"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "_type": "container",
+          "description": null,
+          "name": "Facility",
+          "item": [
+            {
+              "_type": "endpoint",
+              "name": "Create Facility",
+              "request": {
+                "description": "Creates a Facility in Metriport where your patients receive care.",
+                "url": {
+                  "raw": "{{baseUrl}}/medical/v1/facility",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "medical",
+                    "v1",
+                    "facility"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{apiKey}}",
+                    "type": "string",
+                    "description": null
+                  },
+                  {
+                    "type": "text",
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": null,
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"Care Facility, LLC\",\n    \"npi\": \"1234567891\",\n    \"address\": {\n        \"addressLine1\": \"2261 Market Street\",\n        \"addressLine2\": \"#4818\",\n        \"city\": \"San Francisco\",\n        \"state\": \"CA\",\n        \"zip\": \"94114\",\n        \"country\": \"USA\"\n    },\n    \"tin\": \"12-3456789\",\n    \"active\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Creates a Facility in Metriport where your patients receive care.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/facility",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "facility"
+                      ],
+                      "query": [],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "auth": null,
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"name\": \"Care Facility, LLC\",\n    \"npi\": \"1234567891\",\n    \"address\": {\n        \"addressLine1\": \"2261 Market Street\",\n        \"addressLine2\": \"#4818\",\n        \"city\": \"San Francisco\",\n        \"state\": \"CA\",\n        \"zip\": \"94114\",\n        \"country\": \"USA\"\n    },\n    \"tin\": \"12-3456789\",\n    \"active\": true\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "description": null,
+                  "body": "{\n    \"id\": \"018a80c4-292a-7486-a1234-9uiu76yhe234\",\n    \"oid\": \"2.16.840.1.113883.3.666.123.4.101\",\n    \"name\": \"Care Facility, LLC\",\n    \"npi\": \"1234567891\",\n    \"address\": {\n        \"addressLine1\": \"2261 Market Street\",\n        \"addressLine2\": \"#4818\",\n        \"city\": \"San Francisco\",\n        \"state\": \"CA\",\n        \"zip\": \"94114\",\n        \"country\": \"USA\"\n    },\n    \"tin\": \"12-3456789\",\n    \"active\": true\n}",
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Creates a Facility in Metriport where your patients receive care.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/facility",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "facility"
+                      ],
+                      "query": [],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "auth": null,
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"name\": \"Care Facility, LLC\",\n    \"npi\": \"1234567891\",\n    \"address\": {\n        \"addressLine1\": \"2261 Market Street\",\n        \"addressLine2\": \"#4818\",\n        \"city\": \"San Francisco\",\n        \"state\": \"CA\",\n        \"zip\": \"94114\",\n        \"country\": \"USA\"\n    },\n    \"tin\": \"12-3456789\",\n    \"active\": true\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "description": null,
+                  "body": "{\n    \"id\": \"018a80c4-292a-7486-a1234-9uiu76yhe234\",\n    \"oid\": \"2.16.840.1.113883.3.666.123.4.101\",\n    \"name\": \"Care Facility, LLC\",\n    \"npi\": \"1234567891\",\n    \"address\": {\n        \"addressLine1\": \"2261 Market Street\",\n        \"addressLine2\": \"#4818\",\n        \"city\": \"San Francisco\",\n        \"state\": \"CA\",\n        \"zip\": \"94114\",\n        \"country\": \"USA\"\n    },\n    \"tin\": \"12-3456789\",\n    \"active\": true\n}",
+                  "_postman_previewlanguage": "json"
+                }
+              ]
+            },
+            {
+              "_type": "endpoint",
+              "name": "Get Facility",
+              "request": {
+                "description": "Get a Facility in Metriport where your patients receive care.",
+                "url": {
+                  "raw": "{{baseUrl}}/medical/v1/facility/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "medical",
+                    "v1",
+                    "facility",
+                    ":id"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "description": "The ID assigned to this Facility. This ID will be used\nto uniquely identify this Facility in medical documents.",
+                      "value": "018a80c4-292a-7486-a1234-9uiu76yhe234"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{apiKey}}",
+                    "type": "string",
+                    "description": null
+                  },
+                  {
+                    "type": "text",
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": null,
+                "body": null
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Get a Facility in Metriport where your patients receive care.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/facility/:id",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "facility",
+                        ":id"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "description": "The ID assigned to this Facility. This ID will be used\nto uniquely identify this Facility in medical documents.",
+                          "value": "018a80c4-292a-7486-a1234-9uiu76yhe234"
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "auth": null,
+                    "body": null
+                  },
+                  "description": null,
+                  "body": "{\n    \"id\": \"018a80c4-292a-7486-a1234-9uiu76yhe234\",\n    \"oid\": \"2.16.840.1.113883.3.666.123.4.101\",\n    \"name\": \"Care Facility, LLC\",\n    \"npi\": \"1234567891\",\n    \"address\": {\n        \"addressLine1\": \"2261 Market Street\",\n        \"addressLine2\": \"#4818\",\n        \"city\": \"San Francisco\",\n        \"state\": \"CA\",\n        \"zip\": \"94114\",\n        \"country\": \"USA\"\n    },\n    \"tin\": \"12-3456789\",\n    \"active\": true\n}",
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Get a Facility in Metriport where your patients receive care.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/facility/:id",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "facility",
+                        ":id"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "description": "The ID assigned to this Facility. This ID will be used\nto uniquely identify this Facility in medical documents.",
+                          "value": "string"
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "auth": null,
+                    "body": null
+                  },
+                  "description": null,
+                  "body": "{\n    \"id\": \"018a80c4-292a-7486-a1234-9uiu76yhe234\",\n    \"oid\": \"2.16.840.1.113883.3.666.123.4.101\",\n    \"name\": \"Care Facility, LLC\",\n    \"npi\": \"1234567891\",\n    \"address\": {\n        \"addressLine1\": \"2261 Market Street\",\n        \"addressLine2\": \"#4818\",\n        \"city\": \"San Francisco\",\n        \"state\": \"CA\",\n        \"zip\": \"94114\",\n        \"country\": \"USA\"\n    },\n    \"tin\": \"12-3456789\",\n    \"active\": true\n}",
+                  "_postman_previewlanguage": "json"
+                }
+              ]
+            },
+            {
+              "_type": "endpoint",
+              "name": "Update Facility",
+              "request": {
+                "description": "Updates a Facility in Metriport where your patients receive care.",
+                "url": {
+                  "raw": "{{baseUrl}}/medical/v1/facility/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "medical",
+                    "v1",
+                    "facility",
+                    ":id"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "description": "The ID of the Facility.",
+                      "value": "018a80c4-292a-7486-a1234-9uiu76yhe234"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{apiKey}}",
+                    "type": "string",
+                    "description": null
+                  },
+                  {
+                    "type": "text",
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "PUT",
+                "auth": null,
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"Care Facility, LLC\",\n    \"npi\": \"1234567891\",\n    \"address\": {\n        \"addressLine1\": \"2261 Market Street\",\n        \"addressLine2\": \"#4818\",\n        \"city\": \"San Francisco\",\n        \"state\": \"CA\",\n        \"zip\": \"94114\",\n        \"country\": \"USA\"\n    },\n    \"tin\": \"12-3456789\",\n    \"active\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Updates a Facility in Metriport where your patients receive care.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/facility/:id",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "facility",
+                        ":id"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "description": "The ID of the Facility.",
+                          "value": "018a80c4-292a-7486-a1234-9uiu76yhe234"
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "PUT",
+                    "auth": null,
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"name\": \"Care Facility, LLC\",\n    \"npi\": \"1234567891\",\n    \"address\": {\n        \"addressLine1\": \"2261 Market Street\",\n        \"addressLine2\": \"#4818\",\n        \"city\": \"San Francisco\",\n        \"state\": \"CA\",\n        \"zip\": \"94114\",\n        \"country\": \"USA\"\n    },\n    \"tin\": \"12-3456789\",\n    \"active\": true\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "description": null,
+                  "body": "{\n    \"id\": \"018a80c4-292a-7486-a1234-9uiu76yhe234\",\n    \"oid\": \"2.16.840.1.113883.3.666.123.4.101\",\n    \"name\": \"Care Facility, LLC\",\n    \"npi\": \"1234567891\",\n    \"address\": {\n        \"addressLine1\": \"2261 Market Street\",\n        \"addressLine2\": \"#4818\",\n        \"city\": \"San Francisco\",\n        \"state\": \"CA\",\n        \"zip\": \"94114\",\n        \"country\": \"USA\"\n    },\n    \"tin\": \"12-3456789\",\n    \"active\": true\n}",
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Updates a Facility in Metriport where your patients receive care.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/facility/:id",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "facility",
+                        ":id"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "description": "The ID of the Facility.",
+                          "value": "string"
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "PUT",
+                    "auth": null,
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"name\": \"Care Facility, LLC\",\n    \"npi\": \"1234567891\",\n    \"address\": {\n        \"addressLine1\": \"2261 Market Street\",\n        \"addressLine2\": \"#4818\",\n        \"city\": \"San Francisco\",\n        \"state\": \"CA\",\n        \"zip\": \"94114\",\n        \"country\": \"USA\"\n    },\n    \"tin\": \"12-3456789\",\n    \"active\": true\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "description": null,
+                  "body": "{\n    \"id\": \"018a80c4-292a-7486-a1234-9uiu76yhe234\",\n    \"oid\": \"2.16.840.1.113883.3.666.123.4.101\",\n    \"name\": \"Care Facility, LLC\",\n    \"npi\": \"1234567891\",\n    \"address\": {\n        \"addressLine1\": \"2261 Market Street\",\n        \"addressLine2\": \"#4818\",\n        \"city\": \"San Francisco\",\n        \"state\": \"CA\",\n        \"zip\": \"94114\",\n        \"country\": \"USA\"\n    },\n    \"tin\": \"12-3456789\",\n    \"active\": true\n}",
+                  "_postman_previewlanguage": "json"
+                }
+              ]
+            },
+            {
+              "_type": "endpoint",
+              "name": "List Facilities",
+              "request": {
+                "description": "Lists all of your Facilities.",
+                "url": {
+                  "raw": "{{baseUrl}}/medical/v1/facility",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "medical",
+                    "v1",
+                    "facility"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{apiKey}}",
+                    "type": "string",
+                    "description": null
+                  },
+                  {
+                    "type": "text",
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": null,
+                "body": null
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Lists all of your Facilities.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/facility",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "facility"
+                      ],
+                      "query": [],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "auth": null,
+                    "body": null
+                  },
+                  "description": "Array of all of the Facilities created under your Organization.",
+                  "body": "{\n    \"facilities\": [\n        {\n            \"id\": \"018a80c4-292a-7486-a1234-9uiu76yhe234\",\n            \"oid\": \"2.16.840.1.113883.3.666.123.4.101\",\n            \"name\": \"Care Facility, LLC\",\n            \"npi\": \"1234567891\",\n            \"address\": {\n                \"addressLine1\": \"2261 Market Street\",\n                \"addressLine2\": \"#4818\",\n                \"city\": \"San Francisco\",\n                \"state\": \"CA\",\n                \"zip\": \"94114\",\n                \"country\": \"USA\"\n            },\n            \"tin\": \"12-3456789\",\n            \"active\": true\n        },\n        {\n            \"id\": \"018a80c4-292a-7486-a1234-9uiu76yhe234\",\n            \"oid\": \"2.16.840.1.113883.3.666.123.4.101\",\n            \"name\": \"Care Facility, LLC\",\n            \"npi\": \"1234567891\",\n            \"address\": {\n                \"addressLine1\": \"2261 Market Street\",\n                \"addressLine2\": \"#4818\",\n                \"city\": \"San Francisco\",\n                \"state\": \"CA\",\n                \"zip\": \"94114\",\n                \"country\": \"USA\"\n            },\n            \"tin\": \"12-3456789\",\n            \"active\": true\n        }\n    ]\n}",
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Lists all of your Facilities.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/facility",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "facility"
+                      ],
+                      "query": [],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "auth": null,
+                    "body": null
+                  },
+                  "description": "Array of all of the Facilities created under your Organization.",
+                  "body": "{\n    \"facilities\": [\n        {\n            \"id\": \"018a80c4-292a-7486-a1234-9uiu76yhe234\",\n            \"oid\": \"2.16.840.1.113883.3.666.123.4.101\",\n            \"name\": \"Care Facility, LLC\",\n            \"npi\": \"1234567891\",\n            \"address\": {\n                \"addressLine1\": \"2261 Market Street\",\n                \"addressLine2\": \"#4818\",\n                \"city\": \"San Francisco\",\n                \"state\": \"CA\",\n                \"zip\": \"94114\",\n                \"country\": \"USA\"\n            },\n            \"tin\": \"12-3456789\",\n            \"active\": true\n        },\n        {\n            \"id\": \"018a80c4-292a-7486-a1234-9uiu76yhe234\",\n            \"oid\": \"2.16.840.1.113883.3.666.123.4.101\",\n            \"name\": \"Care Facility, LLC\",\n            \"npi\": \"1234567891\",\n            \"address\": {\n                \"addressLine1\": \"2261 Market Street\",\n                \"addressLine2\": \"#4818\",\n                \"city\": \"San Francisco\",\n                \"state\": \"CA\",\n                \"zip\": \"94114\",\n                \"country\": \"USA\"\n            },\n            \"tin\": \"12-3456789\",\n            \"active\": true\n        }\n    ]\n}",
+                  "_postman_previewlanguage": "json"
+                }
+              ]
+            },
+            {
+              "_type": "endpoint",
+              "name": "Delete Facility",
+              "request": {
+                "description": "Deletes a Facility. Throws 400 if there are patients associated with the Facility.",
+                "url": {
+                  "raw": "{{baseUrl}}/medical/v1/facility/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "medical",
+                    "v1",
+                    "facility",
+                    ":id"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "description": "The ID of the Facility.",
+                      "value": "018a80c4-292a-7486-a1234-9uiu76yhe234"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{apiKey}}",
+                    "type": "string",
+                    "description": null
+                  },
+                  {
+                    "type": "text",
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "DELETE",
+                "auth": null,
+                "body": null
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Deletes a Facility. Throws 400 if there are patients associated with the Facility.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/facility/:id",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "facility",
+                        ":id"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "description": "The ID of the Facility.",
+                          "value": "018a80c4-292a-7486-a1234-9uiu76yhe234"
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "DELETE",
+                    "auth": null,
+                    "body": null
+                  },
+                  "description": null,
+                  "body": "",
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Deletes a Facility. Throws 400 if there are patients associated with the Facility.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/facility/:id",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "facility",
+                        ":id"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "description": "The ID of the Facility.",
+                          "value": "string"
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "DELETE",
+                    "auth": null,
+                    "body": null
+                  },
+                  "description": null,
+                  "body": "",
+                  "_postman_previewlanguage": "json"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "_type": "container",
+          "description": null,
+          "name": "Fhir",
+          "item": [
+            {
+              "_type": "endpoint",
+              "name": "Start Consolidated Data Query",
+              "request": {
+                "description": "Trigger a consolidated data query for the given patient.\nWhen executed,\nthis endpoint triggers an asynchronous query to retrieve a Patient's consolidated data from the FHIR repository.\nOnce the data is consolidated and ready for consumption,\na webhook request is sent to your configured URL containing the Patient's\ndata in FHIR-compliant format,\nbased on the parameters used to trigger the query.\nYou'll be able to query multiple times for the same Patient which will be added to the queue and\nprocessed in order. If the parameters are the same as a previous query that is still processing,\nthe new query will be ignored and you'll get the status and request ID of the previous one.\nYou can check the status of the data query by calling get consolidated data query.\nThis endpoint also provides the ability to render a Medical Record Summary\nfrom the FHIR bundle as a PDF or HTML document. This will be returned via a webhook\nas a FHIR bundle with a DocumentReference resource\nthat will contain a URL to retrieve the data from.,",
+                "url": {
+                  "raw": "{{baseUrl}}/medical/v1/patient/:id/consolidated/query",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "medical",
+                    "v1",
+                    "patient",
+                    ":id",
+                    "consolidated",
+                    "query"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "description": "The ID of the Patient.",
+                      "value": "12345678"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{apiKey}}",
+                    "type": "string",
+                    "description": null
+                  },
+                  {
+                    "type": "text",
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": null,
+                "body": null
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Trigger a consolidated data query for the given patient.\nWhen executed,\nthis endpoint triggers an asynchronous query to retrieve a Patient's consolidated data from the FHIR repository.\nOnce the data is consolidated and ready for consumption,\na webhook request is sent to your configured URL containing the Patient's\ndata in FHIR-compliant format,\nbased on the parameters used to trigger the query.\nYou'll be able to query multiple times for the same Patient which will be added to the queue and\nprocessed in order. If the parameters are the same as a previous query that is still processing,\nthe new query will be ignored and you'll get the status and request ID of the previous one.\nYou can check the status of the data query by calling get consolidated data query.\nThis endpoint also provides the ability to render a Medical Record Summary\nfrom the FHIR bundle as a PDF or HTML document. This will be returned via a webhook\nas a FHIR bundle with a DocumentReference resource\nthat will contain a URL to retrieve the data from.,",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/patient/:id/consolidated/query",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "patient",
+                        ":id",
+                        "consolidated",
+                        "query"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "description": "The ID of the Patient.",
+                          "value": "12345678"
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "auth": null,
+                    "body": null
+                  },
+                  "description": "Returns the filters used for this query, in addition to the identifier used by the system to uniquely identify this query (property `requestId`).",
+                  "body": "{\n    \"query\": {\n        \"requestId\": \"12345678\",\n        \"startedAt\": \"2023-07-27T21:29:31.491+00:00\",\n        \"dateFrom\": \"2023-07-27\",\n        \"dateTo\": \"2024-07-27\",\n        \"conversionType\": \"html\",\n        \"status\": \"processing\"\n    }\n}",
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Trigger a consolidated data query for the given patient.\nWhen executed,\nthis endpoint triggers an asynchronous query to retrieve a Patient's consolidated data from the FHIR repository.\nOnce the data is consolidated and ready for consumption,\na webhook request is sent to your configured URL containing the Patient's\ndata in FHIR-compliant format,\nbased on the parameters used to trigger the query.\nYou'll be able to query multiple times for the same Patient which will be added to the queue and\nprocessed in order. If the parameters are the same as a previous query that is still processing,\nthe new query will be ignored and you'll get the status and request ID of the previous one.\nYou can check the status of the data query by calling get consolidated data query.\nThis endpoint also provides the ability to render a Medical Record Summary\nfrom the FHIR bundle as a PDF or HTML document. This will be returned via a webhook\nas a FHIR bundle with a DocumentReference resource\nthat will contain a URL to retrieve the data from.,",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/patient/:id/consolidated/query?resources=string&dateFrom=string&dateTo=string&conversionType=string",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "patient",
+                        ":id",
+                        "consolidated",
+                        "query"
+                      ],
+                      "query": [
+                        {
+                          "key": "resources",
+                          "description": "A comma separated, case sensitive list of resources to be returned. If none are provided all\nresources will be included. Metriport will automatically hydrate the initially filtered\nresources with referenced ones to create bundle consistency.",
+                          "value": "string"
+                        },
+                        {
+                          "key": "dateFrom",
+                          "description": "The start date (inclusive) for which to filter returned resources -\nformatted `YYYY-MM-DD` as per ISO 8601. If not provided,\nno start date filter will be applied.",
+                          "value": "string"
+                        },
+                        {
+                          "key": "dateTo",
+                          "description": "The end date (inclusive) for which to filter returned resources -\nformatted `YYYY-MM-DD` as per ISO 8601. If not provided,\nno end date filter will be applied.",
+                          "value": "string"
+                        },
+                        {
+                          "key": "conversionType",
+                          "description": "The doc type to convert to. Either `html` or `pdf`.",
+                          "value": "string"
+                        }
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "description": "The ID of the Patient.",
+                          "value": "string"
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "auth": null,
+                    "body": null
+                  },
+                  "description": "Returns the filters used for this query, in addition to the identifier used by the system to uniquely identify this query (property `requestId`).",
+                  "body": "{\n    \"query\": {\n        \"requestId\": \"12345678\",\n        \"startedAt\": \"2023-07-27T21:29:31.491+00:00\",\n        \"dateFrom\": \"2023-07-27\",\n        \"dateTo\": \"2024-07-27\",\n        \"conversionType\": \"html\",\n        \"status\": \"processing\"\n    }\n}",
+                  "_postman_previewlanguage": "json"
+                }
+              ]
+            },
+            {
+              "_type": "endpoint",
+              "name": "Get Consolidated Data Query status",
+              "request": {
+                "description": "Get the status of querying for patient's consolidated data.",
+                "url": {
+                  "raw": "{{baseUrl}}/medical/v1/patient/:id/consolidated/query",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "medical",
+                    "v1",
+                    "patient",
+                    ":id",
+                    "consolidated",
+                    "query"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "description": "The ID of the Patient",
+                      "value": "12345678"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{apiKey}}",
+                    "type": "string",
+                    "description": null
+                  },
+                  {
+                    "type": "text",
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": null,
+                "body": null
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Get the status of querying for patient's consolidated data.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/patient/:id/consolidated/query",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "patient",
+                        ":id",
+                        "consolidated",
+                        "query"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "description": "The ID of the Patient",
+                          "value": "12345678"
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "auth": null,
+                    "body": null
+                  },
+                  "description": null,
+                  "body": "{\n    \"queries\": [\n        {\n            \"requestId\": \"12345678\",\n            \"startedAt\": \"2023-07-27T21:29:31.491+00:00\",\n            \"dateFrom\": \"2023-07-27\",\n            \"dateTo\": \"2024-07-27\",\n            \"conversionType\": \"html\",\n            \"status\": \"processing\"\n        },\n        {\n            \"requestId\": \"12345678\",\n            \"startedAt\": \"2023-07-27T21:29:31.491+00:00\",\n            \"dateFrom\": \"2023-07-27\",\n            \"dateTo\": \"2024-07-27\",\n            \"conversionType\": \"html\",\n            \"status\": \"processing\"\n        }\n    ],\n    \"message\": \"Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook\"\n}",
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Get the status of querying for patient's consolidated data.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/patient/:id/consolidated/query",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "patient",
+                        ":id",
+                        "consolidated",
+                        "query"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "description": "The ID of the Patient",
+                          "value": "string"
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "auth": null,
+                    "body": null
+                  },
+                  "description": null,
+                  "body": "{\n    \"queries\": [\n        {\n            \"requestId\": \"12345678\",\n            \"startedAt\": \"2023-07-27T21:29:31.491+00:00\",\n            \"dateFrom\": \"2023-07-27\",\n            \"dateTo\": \"2024-07-27\",\n            \"conversionType\": \"html\",\n            \"status\": \"processing\"\n        },\n        {\n            \"requestId\": \"12345678\",\n            \"startedAt\": \"2023-07-27T21:29:31.491+00:00\",\n            \"dateFrom\": \"2023-07-27\",\n            \"dateTo\": \"2024-07-27\",\n            \"conversionType\": \"html\",\n            \"status\": \"processing\"\n        }\n    ],\n    \"message\": \"Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook\"\n}",
+                  "_postman_previewlanguage": "json"
+                }
+              ]
+            },
+            {
+              "_type": "endpoint",
+              "name": "Create Patient's Consolidated Data",
+              "request": {
+                "description": "Create Patient's Consolidated Data with a FHIR Bundle.",
+                "url": {
+                  "raw": "{{baseUrl}}/medical/v1/patient/:id/consolidated",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "medical",
+                    "v1",
+                    "patient",
+                    ":id",
+                    "consolidated"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "description": "The ID of the Patient",
+                      "value": "12345678"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{apiKey}}",
+                    "type": "string",
+                    "description": null
+                  },
+                  {
+                    "type": "text",
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "PUT",
+                "auth": null,
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"resourceType\": \"Bundle\",\n    \"type\": \"collection\",\n    \"entry\": [\n        {\n            \"resource\": {\n                \"resourceType\": \"Observation\",\n                \"code\": {\n                    \"text\": \"Cancer\"\n                },\n                \"valueCodeableConcept\": {\n                    \"text\": \"NEGATIVE\"\n                },\n                \"status\": \"final\",\n                \"category\": [\n                    {\n                        \"coding\": [\n                            {\n                                \"system\": \"http://terminology.hl7.org/CodeSystem/observation-category\",\n                                \"code\": \"laboratory\"\n                            }\n                        ]\n                    }\n                ]\n            }\n        }\n    ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Create Patient's Consolidated Data with a FHIR Bundle.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/patient/:id/consolidated",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "patient",
+                        ":id",
+                        "consolidated"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "description": "The ID of the Patient",
+                          "value": "12345678"
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "PUT",
+                    "auth": null,
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"resourceType\": \"Bundle\",\n    \"type\": \"collection\",\n    \"entry\": [\n        {\n            \"resource\": {\n                \"resourceType\": \"Observation\",\n                \"code\": {\n                    \"text\": \"Cancer\"\n                },\n                \"valueCodeableConcept\": {\n                    \"text\": \"NEGATIVE\"\n                },\n                \"status\": \"final\",\n                \"category\": [\n                    {\n                        \"coding\": [\n                            {\n                                \"system\": \"http://terminology.hl7.org/CodeSystem/observation-category\",\n                                \"code\": \"laboratory\"\n                            }\n                        ]\n                    }\n                ]\n            }\n        }\n    ]\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "description": null,
+                  "body": "{\n    \"resourceType\": \"Bundle\",\n    \"id\": \"12345\",\n    \"type\": \"transaction-response\",\n    \"entry\": [\n        {\n            \"resource\": \"\",\n            \"response\": {\n                \"status\": \"201 Created\",\n                \"location\": \"Observation/3/_history/1\",\n                \"etag\": \"1\",\n                \"lastModified\": \"2023-07-27T21:29:31.491+00:00\",\n                \"outcome\": {\n                    \"resourceType\": \"OperationOutcome\",\n                    \"issue\": [\n                        {\n                            \"severity\": \"information\",\n                            \"code\": \"informational\",\n                            \"details\": {\n                                \"coding\": [\n                                    {\n                                        \"system\": \"https://public.metriport.com/fhir/StructureDefinition/operation-outcome\",\n                                        \"code\": \"SUCCESSFUL_CREATE\",\n                                        \"display\": \"Create succeeded.\"\n                                    }\n                                ]\n                            },\n                            \"diagnostics\": \"Successfully created resource \\\"Observation/3/_history/1\\\". Took 7ms.\"\n                        }\n                    ]\n                }\n            }\n        }\n    ]\n}",
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Create Patient's Consolidated Data with a FHIR Bundle.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/patient/:id/consolidated",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "patient",
+                        ":id",
+                        "consolidated"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "description": "The ID of the Patient",
+                          "value": "string"
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "PUT",
+                    "auth": null,
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"resourceType\": \"Bundle\",\n    \"type\": \"collection\",\n    \"entry\": [\n        {\n            \"resource\": {\n                \"resourceType\": \"Observation\",\n                \"code\": {\n                    \"text\": \"Cancer\"\n                },\n                \"valueCodeableConcept\": {\n                    \"text\": \"NEGATIVE\"\n                },\n                \"status\": \"final\",\n                \"category\": [\n                    {\n                        \"coding\": [\n                            {\n                                \"system\": \"http://terminology.hl7.org/CodeSystem/observation-category\",\n                                \"code\": \"laboratory\"\n                            }\n                        ]\n                    }\n                ]\n            }\n        }\n    ]\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "description": null,
+                  "body": "{\n    \"resourceType\": \"Bundle\",\n    \"id\": \"12345\",\n    \"type\": \"transaction-response\",\n    \"entry\": [\n        {\n            \"resource\": \"\",\n            \"response\": {\n                \"status\": \"201 Created\",\n                \"location\": \"Observation/3/_history/1\",\n                \"etag\": \"1\",\n                \"lastModified\": \"2023-07-27T21:29:31.491+00:00\",\n                \"outcome\": {\n                    \"resourceType\": \"OperationOutcome\",\n                    \"issue\": [\n                        {\n                            \"severity\": \"information\",\n                            \"code\": \"informational\",\n                            \"details\": {\n                                \"coding\": [\n                                    {\n                                        \"system\": \"https://public.metriport.com/fhir/StructureDefinition/operation-outcome\",\n                                        \"code\": \"SUCCESSFUL_CREATE\",\n                                        \"display\": \"Create succeeded.\"\n                                    }\n                                ]\n                            },\n                            \"diagnostics\": \"Successfully created resource \\\"Observation/3/_history/1\\\". Took 7ms.\"\n                        }\n                    ]\n                }\n            }\n        }\n    ]\n}",
+                  "_postman_previewlanguage": "json"
+                }
+              ]
+            },
+            {
+              "_type": "endpoint",
+              "name": "Count Patient Data",
+              "request": {
+                "description": "Get a count of a Patient's data per resource.",
+                "url": {
+                  "raw": "{{baseUrl}}/medical/v1/patient/:id/consolidated/count?resources=string&dateFrom=string&dateTo=string",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "medical",
+                    "v1",
+                    "patient",
+                    ":id",
+                    "consolidated",
+                    "count"
+                  ],
+                  "query": [
+                    {
+                      "key": "resources",
+                      "description": "A comma separated, case sensitive list of resources to be returned.\nIf none are provided all resources will be included.",
+                      "value": "string"
+                    },
+                    {
+                      "key": "dateFrom",
+                      "description": "The start date (inclusive) for which to filter returned resources -\nformatted `YYYY-MM-DD` as per ISO 8601. If not provided,\nno start date filter will be applied.",
+                      "value": "string"
+                    },
+                    {
+                      "key": "dateTo",
+                      "description": "The end date (inclusive) for which to filter returned resources -\nformatted `YYYY-MM-DD` as per ISO 8601. If not provided,\nno end date filter will be applied.",
+                      "value": "string"
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "description": "The ID of the Patient",
+                      "value": "string"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{apiKey}}",
+                    "type": "string",
+                    "description": null
+                  },
+                  {
+                    "type": "text",
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": null,
+                "body": null
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Get a count of a Patient's data per resource.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/patient/:id/consolidated/count?resources=string&dateFrom=string&dateTo=string",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "patient",
+                        ":id",
+                        "consolidated",
+                        "count"
+                      ],
+                      "query": [
+                        {
+                          "key": "resources",
+                          "description": "A comma separated, case sensitive list of resources to be returned.\nIf none are provided all resources will be included.",
+                          "value": "string"
+                        },
+                        {
+                          "key": "dateFrom",
+                          "description": "The start date (inclusive) for which to filter returned resources -\nformatted `YYYY-MM-DD` as per ISO 8601. If not provided,\nno start date filter will be applied.",
+                          "value": "string"
+                        },
+                        {
+                          "key": "dateTo",
+                          "description": "The end date (inclusive) for which to filter returned resources -\nformatted `YYYY-MM-DD` as per ISO 8601. If not provided,\nno end date filter will be applied.",
+                          "value": "string"
+                        }
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "description": "The ID of the Patient",
+                          "value": "string"
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "auth": null,
+                    "body": null
+                  },
+                  "description": null,
+                  "body": "{\n    \"total\": 1,\n    \"resources\": {\n        \"string\": 1\n    },\n    \"filter\": {\n        \"resources\": \"string\",\n        \"dateFrom\": \"string\",\n        \"dateTo\": \"string\"\n    }\n}",
+                  "_postman_previewlanguage": "json"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "_type": "container",
+          "description": null,
+          "name": "Patient",
+          "item": [
+            {
+              "_type": "endpoint",
+              "name": "Create Patient",
+              "request": {
+                "description": "Creates a Patient in Metriport for the specified Facility where the patient is receiving care.\nThe more demographic info you can provide about a Patient,\nthe higher chances Metriport will be able to find a match.\nFor example, nicknames, old addresses, multiple phone numbers,\na pre-marital last name, etc.",
+                "url": {
+                  "raw": "{{baseUrl}}/medical/v1/patient?facilityId=2.16.840.1.113883.3.666.5.2004.4.2005",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "medical",
+                    "v1",
+                    "patient"
+                  ],
+                  "query": [
+                    {
+                      "key": "facilityId",
+                      "description": "The ID of the Facility where the Patient is receiving care.",
+                      "value": "2.16.840.1.113883.3.666.5.2004.4.2005"
+                    }
+                  ],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{apiKey}}",
+                    "type": "string",
+                    "description": null
+                  },
+                  {
+                    "type": "text",
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": null,
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"firstName\": \"Karen\",\n    \"lastName\": \"Lynch\",\n    \"dob\": \"1963-12-30\",\n    \"genderAtBirth\": \"F\",\n    \"personalIdentifiers\": [\n        {\n            \"type\": \"driversLicense\",\n            \"state\": \"CA\",\n            \"value\": \"51227265\"\n        }\n    ],\n    \"address\": [\n        {\n            \"addressLine1\": \"2261 Market Street\",\n            \"addressLine2\": \"#4818\",\n            \"city\": \"San Francisco\",\n            \"state\": \"CA\",\n            \"zip\": \"94114\",\n            \"country\": \"USA\"\n        }\n    ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Creates a Patient in Metriport for the specified Facility where the patient is receiving care.\nThe more demographic info you can provide about a Patient,\nthe higher chances Metriport will be able to find a match.\nFor example, nicknames, old addresses, multiple phone numbers,\na pre-marital last name, etc.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/patient?facilityId=2.16.840.1.113883.3.666.5.2004.4.2005",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "patient"
+                      ],
+                      "query": [
+                        {
+                          "key": "facilityId",
+                          "description": "The ID of the Facility where the Patient is receiving care.",
+                          "value": "2.16.840.1.113883.3.666.5.2004.4.2005"
+                        }
+                      ],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "auth": null,
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"firstName\": \"Karen\",\n    \"lastName\": \"Lynch\",\n    \"dob\": \"1963-12-30\",\n    \"genderAtBirth\": \"F\",\n    \"personalIdentifiers\": [\n        {\n            \"type\": \"driversLicense\",\n            \"state\": \"CA\",\n            \"value\": \"51227265\"\n        }\n    ],\n    \"address\": [\n        {\n            \"addressLine1\": \"2261 Market Street\",\n            \"addressLine2\": \"#4818\",\n            \"city\": \"San Francisco\",\n            \"state\": \"CA\",\n            \"zip\": \"94114\",\n            \"country\": \"USA\"\n        }\n    ]\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "description": null,
+                  "body": "{\n    \"id\": \"018a80c4-292a-7486-a1234-76yuhe23yu14\",\n    \"firstName\": \"Karen\",\n    \"lastName\": \"Lynch\",\n    \"dob\": \"1963-12-30\",\n    \"genderAtBirth\": \"F\",\n    \"personalIdentifiers\": [\n        {\n            \"type\": \"driversLicense\",\n            \"state\": \"CA\",\n            \"value\": \"51227265\"\n        }\n    ],\n    \"address\": [\n        {\n            \"addressLine1\": \"2261 Market Street\",\n            \"addressLine2\": \"#4818\",\n            \"city\": \"San Francisco\",\n            \"state\": \"CA\",\n            \"zip\": \"94114\",\n            \"country\": \"USA\"\n        }\n    ],\n    \"facilityIds\": [\n        \"2.16.840.1.113883.3.666.5.2004.4.2005\"\n    ]\n}",
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Creates a Patient in Metriport for the specified Facility where the patient is receiving care.\nThe more demographic info you can provide about a Patient,\nthe higher chances Metriport will be able to find a match.\nFor example, nicknames, old addresses, multiple phone numbers,\na pre-marital last name, etc.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/patient?facilityId=string",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "patient"
+                      ],
+                      "query": [
+                        {
+                          "key": "facilityId",
+                          "description": "The ID of the Facility where the Patient is receiving care.",
+                          "value": "string"
+                        }
+                      ],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "auth": null,
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"firstName\": \"Karen\",\n    \"lastName\": \"Lynch\",\n    \"dob\": \"1963-12-30\",\n    \"genderAtBirth\": \"F\",\n    \"personalIdentifiers\": [\n        {\n            \"type\": \"driversLicense\",\n            \"state\": \"CA\",\n            \"value\": \"51227265\"\n        }\n    ],\n    \"address\": [\n        {\n            \"addressLine1\": \"2261 Market Street\",\n            \"addressLine2\": \"#4818\",\n            \"city\": \"San Francisco\",\n            \"state\": \"CA\",\n            \"zip\": \"94114\",\n            \"country\": \"USA\"\n        }\n    ]\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "description": null,
+                  "body": "{\n    \"id\": \"018a80c4-292a-7486-a1234-76yuhe23yu14\",\n    \"firstName\": \"Karen\",\n    \"lastName\": \"Lynch\",\n    \"dob\": \"1963-12-30\",\n    \"genderAtBirth\": \"F\",\n    \"personalIdentifiers\": [\n        {\n            \"type\": \"driversLicense\",\n            \"state\": \"CA\",\n            \"value\": \"51227265\"\n        }\n    ],\n    \"address\": [\n        {\n            \"addressLine1\": \"2261 Market Street\",\n            \"addressLine2\": \"#4818\",\n            \"city\": \"San Francisco\",\n            \"state\": \"CA\",\n            \"zip\": \"94114\",\n            \"country\": \"USA\"\n        }\n    ],\n    \"facilityIds\": [\n        \"2.16.840.1.113883.3.666.5.2004.4.2005\"\n    ]\n}",
+                  "_postman_previewlanguage": "json"
+                }
+              ]
+            },
+            {
+              "_type": "endpoint",
+              "name": "Get Patient",
+              "request": {
+                "description": "Get a Patient",
+                "url": {
+                  "raw": "{{baseUrl}}/medical/v1/patient/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "medical",
+                    "v1",
+                    "patient",
+                    ":id"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "description": "The ID of the Patient.",
+                      "value": "018a80c4-292a-7486-a1234-76yuhe23yu14"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{apiKey}}",
+                    "type": "string",
+                    "description": null
+                  },
+                  {
+                    "type": "text",
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": null,
+                "body": null
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Get a Patient",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/patient/:id",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "patient",
+                        ":id"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "description": "The ID of the Patient.",
+                          "value": "018a80c4-292a-7486-a1234-76yuhe23yu14"
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "auth": null,
+                    "body": null
+                  },
+                  "description": null,
+                  "body": "{\n    \"id\": \"018a80c4-292a-7486-a1234-76yuhe23yu14\",\n    \"firstName\": \"Karen\",\n    \"lastName\": \"Lynch\",\n    \"dob\": \"1963-12-30\",\n    \"genderAtBirth\": \"F\",\n    \"personalIdentifiers\": [\n        {\n            \"type\": \"driversLicense\",\n            \"state\": \"CA\",\n            \"value\": \"51227265\"\n        }\n    ],\n    \"address\": [\n        {\n            \"addressLine1\": \"2261 Market Street\",\n            \"addressLine2\": \"#4818\",\n            \"city\": \"San Francisco\",\n            \"state\": \"CA\",\n            \"zip\": \"94114\",\n            \"country\": \"USA\"\n        }\n    ],\n    \"facilityIds\": [\n        \"2.16.840.1.113883.3.666.5.2004.4.2005\"\n    ]\n}",
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Get a Patient",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/patient/:id",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "patient",
+                        ":id"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "description": "The ID of the Patient.",
+                          "value": "string"
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "auth": null,
+                    "body": null
+                  },
+                  "description": null,
+                  "body": "{\n    \"id\": \"018a80c4-292a-7486-a1234-76yuhe23yu14\",\n    \"firstName\": \"Karen\",\n    \"lastName\": \"Lynch\",\n    \"dob\": \"1963-12-30\",\n    \"genderAtBirth\": \"F\",\n    \"personalIdentifiers\": [\n        {\n            \"type\": \"driversLicense\",\n            \"state\": \"CA\",\n            \"value\": \"51227265\"\n        }\n    ],\n    \"address\": [\n        {\n            \"addressLine1\": \"2261 Market Street\",\n            \"addressLine2\": \"#4818\",\n            \"city\": \"San Francisco\",\n            \"state\": \"CA\",\n            \"zip\": \"94114\",\n            \"country\": \"USA\"\n        }\n    ],\n    \"facilityIds\": [\n        \"2.16.840.1.113883.3.666.5.2004.4.2005\"\n    ]\n}",
+                  "_postman_previewlanguage": "json"
+                }
+              ]
+            },
+            {
+              "_type": "endpoint",
+              "name": "Update Patient",
+              "request": {
+                "description": "Updates the specified Patient.",
+                "url": {
+                  "raw": "{{baseUrl}}/medical/v1/patient/:id?facilityId=string",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "medical",
+                    "v1",
+                    "patient",
+                    ":id"
+                  ],
+                  "query": [
+                    {
+                      "key": "facilityId",
+                      "description": "The ID of the Facility where the patient is receiving care.",
+                      "value": "string"
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "description": "The ID of the Patient to update.",
+                      "value": "string"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{apiKey}}",
+                    "type": "string",
+                    "description": null
+                  },
+                  {
+                    "type": "text",
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "PUT",
+                "auth": null,
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"externalId\": \"string\",\n    \"firstName\": \"string\",\n    \"lastName\": \"string\",\n    \"dob\": \"string\",\n    \"genderAtBirth\": \"string\",\n    \"personalIdentifiers\": [\n        {\n            \"type\": \"driversLicense\",\n            \"state\": \"CA\",\n            \"value\": \"51227265\"\n        }\n    ],\n    \"address\": [\n        {\n            \"addressLine1\": \"2261 Market Street\",\n            \"addressLine2\": \"#4818\",\n            \"city\": \"San Francisco\",\n            \"state\": \"CA\",\n            \"zip\": \"94114\",\n            \"country\": \"USA\"\n        }\n    ],\n    \"contact\": [\n        {\n            \"phone\": \"1234567899\",\n            \"email\": \"karen@cvspharmacy.com\"\n        }\n    ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Updates the specified Patient.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/patient/:id?facilityId=string",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "patient",
+                        ":id"
+                      ],
+                      "query": [
+                        {
+                          "key": "facilityId",
+                          "description": "The ID of the Facility where the patient is receiving care.",
+                          "value": "string"
+                        }
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "description": "The ID of the Patient to update.",
+                          "value": "string"
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "PUT",
+                    "auth": null,
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"externalId\": \"string\",\n    \"firstName\": \"string\",\n    \"lastName\": \"string\",\n    \"dob\": \"string\",\n    \"genderAtBirth\": \"string\",\n    \"personalIdentifiers\": [\n        {\n            \"type\": \"driversLicense\",\n            \"state\": \"CA\",\n            \"value\": \"51227265\"\n        }\n    ],\n    \"address\": [\n        {\n            \"addressLine1\": \"2261 Market Street\",\n            \"addressLine2\": \"#4818\",\n            \"city\": \"San Francisco\",\n            \"state\": \"CA\",\n            \"zip\": \"94114\",\n            \"country\": \"USA\"\n        }\n    ],\n    \"contact\": [\n        {\n            \"phone\": \"1234567899\",\n            \"email\": \"karen@cvspharmacy.com\"\n        }\n    ]\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "description": null,
+                  "body": "{\n    \"id\": \"018a80c4-292a-7486-a1234-76yuhe23yu14\",\n    \"firstName\": \"Karen\",\n    \"lastName\": \"Lynch\",\n    \"dob\": \"1963-12-30\",\n    \"genderAtBirth\": \"F\",\n    \"personalIdentifiers\": [\n        {\n            \"type\": \"driversLicense\",\n            \"state\": \"CA\",\n            \"value\": \"51227265\"\n        }\n    ],\n    \"address\": [\n        {\n            \"addressLine1\": \"2261 Market Street\",\n            \"addressLine2\": \"#4818\",\n            \"city\": \"San Francisco\",\n            \"state\": \"CA\",\n            \"zip\": \"94114\",\n            \"country\": \"USA\"\n        }\n    ],\n    \"facilityIds\": [\n        \"2.16.840.1.113883.3.666.5.2004.4.2005\"\n    ]\n}",
+                  "_postman_previewlanguage": "json"
+                }
+              ]
+            },
+            {
+              "_type": "endpoint",
+              "name": "List Patients at Facility",
+              "request": {
+                "description": "Lists all Patients receiving care at the specified Facility, or all Patients if no Facility is specified.",
+                "url": {
+                  "raw": "{{baseUrl}}/medical/v1/patient?facilityId=string",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "medical",
+                    "v1",
+                    "patient"
+                  ],
+                  "query": [
+                    {
+                      "key": "facilityId",
+                      "description": "The ID of the Facility where the patient is receiving care.",
+                      "value": "string"
+                    }
+                  ],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{apiKey}}",
+                    "type": "string",
+                    "description": null
+                  },
+                  {
+                    "type": "text",
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": null,
+                "body": null
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Lists all Patients receiving care at the specified Facility, or all Patients if no Facility is specified.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/patient?facilityId=string",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "patient"
+                      ],
+                      "query": [
+                        {
+                          "key": "facilityId",
+                          "description": "The ID of the Facility where the patient is receiving care.",
+                          "value": "string"
+                        }
+                      ],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "auth": null,
+                    "body": null
+                  },
+                  "description": null,
+                  "body": "{\n    \"patients\": [\n        {\n            \"id\": \"018a80c4-292a-7486-a1234-76yuhe23yu14\",\n            \"firstName\": \"Karen\",\n            \"lastName\": \"Lynch\",\n            \"dob\": \"1963-12-30\",\n            \"genderAtBirth\": \"F\",\n            \"personalIdentifiers\": [\n                {\n                    \"type\": \"driversLicense\",\n                    \"state\": \"CA\",\n                    \"value\": \"51227265\"\n                }\n            ],\n            \"address\": [\n                {\n                    \"addressLine1\": \"2261 Market Street\",\n                    \"addressLine2\": \"#4818\",\n                    \"city\": \"San Francisco\",\n                    \"state\": \"CA\",\n                    \"zip\": \"94114\",\n                    \"country\": \"USA\"\n                }\n            ],\n            \"facilityIds\": [\n                \"2.16.840.1.113883.3.666.5.2004.4.2005\"\n            ]\n        }\n    ]\n}",
+                  "_postman_previewlanguage": "json"
+                }
+              ]
+            },
+            {
+              "_type": "endpoint",
+              "name": "Delete Patient",
+              "request": {
+                "description": "Removes the specified Patient.",
+                "url": {
+                  "raw": "{{baseUrl}}/medical/v1/patient/:id?facilityId=string",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "medical",
+                    "v1",
+                    "patient",
+                    ":id"
+                  ],
+                  "query": [
+                    {
+                      "key": "facilityId",
+                      "description": "The ID of the Facility where the patient is receiving care.",
+                      "value": "string"
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "description": "The ID of the Patient to delete.",
+                      "value": "string"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{apiKey}}",
+                    "type": "string",
+                    "description": null
+                  },
+                  {
+                    "type": "text",
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "DELETE",
+                "auth": null,
+                "body": null
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Removes the specified Patient.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/patient/:id?facilityId=string",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "patient",
+                        ":id"
+                      ],
+                      "query": [
+                        {
+                          "key": "facilityId",
+                          "description": "The ID of the Facility where the patient is receiving care.",
+                          "value": "string"
+                        }
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "description": "The ID of the Patient to delete.",
+                          "value": "string"
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "DELETE",
+                    "auth": null,
+                    "body": null
+                  },
+                  "description": null,
+                  "body": "",
+                  "_postman_previewlanguage": "json"
+                }
+              ]
+            },
+            {
+              "_type": "endpoint",
+              "name": "Get Medical Record Summary",
+              "request": {
+                "description": "Returns the URL for a medical record summary",
+                "url": {
+                  "raw": "{{baseUrl}}/medical/v1/patient/:patientId/medical-record?conversionType=string",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "medical",
+                    "v1",
+                    "patient",
+                    ":patientId",
+                    "medical-record"
+                  ],
+                  "query": [
+                    {
+                      "key": "conversionType",
+                      "description": "The type of conversion to perform. `html` or `pdf`",
+                      "value": "string"
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "key": "patientId",
+                      "description": "The ID of the Patient.",
+                      "value": "string"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{apiKey}}",
+                    "type": "string",
+                    "description": null
+                  },
+                  {
+                    "type": "text",
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": null,
+                "body": null
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Returns the URL for a medical record summary",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/patient/:patientId/medical-record?conversionType=string",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "patient",
+                        ":patientId",
+                        "medical-record"
+                      ],
+                      "query": [
+                        {
+                          "key": "conversionType",
+                          "description": "The type of conversion to perform. `html` or `pdf`",
+                          "value": "string"
+                        }
+                      ],
+                      "variable": [
+                        {
+                          "key": "patientId",
+                          "description": "The ID of the Patient.",
+                          "value": "string"
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "auth": null,
+                    "body": null
+                  },
+                  "description": "The URL for the medical record summary",
+                  "body": "\"string\"",
+                  "_postman_previewlanguage": "json"
+                }
+              ]
+            },
+            {
+              "_type": "endpoint",
+              "name": "Get Medical Record Summary Status",
+              "request": {
+                "description": "Returns the status of a medical record summary",
+                "url": {
+                  "raw": "{{baseUrl}}/medical/v1/patient/:patientId/medical-record-status",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "medical",
+                    "v1",
+                    "patient",
+                    ":patientId",
+                    "medical-record-status"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "key": "patientId",
+                      "description": "The ID of the Patient.",
+                      "value": "string"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{apiKey}}",
+                    "type": "string",
+                    "description": null
+                  },
+                  {
+                    "type": "text",
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "auth": null,
+                "body": null
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Returns the status of a medical record summary",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/patient/:patientId/medical-record-status",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "patient",
+                        ":patientId",
+                        "medical-record-status"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "key": "patientId",
+                          "description": "The ID of the Patient.",
+                          "value": "string"
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "auth": null,
+                    "body": null
+                  },
+                  "description": "the status of the medical record summary",
+                  "body": "{\n    \"html\": {\n        \"exists\": true,\n        \"createdAt\": \"string\"\n    },\n    \"pdf\": {\n        \"exists\": true,\n        \"createdAt\": \"string\"\n    }\n}",
+                  "_postman_previewlanguage": "json"
+                }
+              ]
+            },
+            {
+              "_type": "endpoint",
+              "name": "Match Patient",
+              "request": {
+                "description": "Searches for a Patient previously created in Metriport, based on demographic data.",
+                "url": {
+                  "raw": "{{baseUrl}}/medical/v1/patient/match",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "medical",
+                    "v1",
+                    "patient",
+                    "match"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "X-API-Key",
+                    "value": "{{apiKey}}",
+                    "type": "string",
+                    "description": null
+                  },
+                  {
+                    "type": "text",
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "auth": null,
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"firstName\": \"Karen\",\n    \"lastName\": \"Lynch\",\n    \"dob\": \"1963-12-30\",\n    \"genderAtBirth\": \"F\",\n    \"personalIdentifiers\": [\n        {\n            \"type\": \"driversLicense\",\n            \"state\": \"CA\",\n            \"value\": \"51227265\"\n        }\n    ],\n    \"address\": [\n        {\n            \"addressLine1\": \"2261 Market Street\",\n            \"addressLine2\": \"#4818\",\n            \"city\": \"San Francisco\",\n            \"state\": \"CA\",\n            \"zip\": \"94114\",\n            \"country\": \"USA\"\n        }\n    ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Searches for a Patient previously created in Metriport, based on demographic data.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/patient/match",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "patient",
+                        "match"
+                      ],
+                      "query": [],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "auth": null,
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"firstName\": \"Karen\",\n    \"lastName\": \"Lynch\",\n    \"dob\": \"1963-12-30\",\n    \"genderAtBirth\": \"F\",\n    \"personalIdentifiers\": [\n        {\n            \"type\": \"driversLicense\",\n            \"state\": \"CA\",\n            \"value\": \"51227265\"\n        }\n    ],\n    \"address\": [\n        {\n            \"addressLine1\": \"2261 Market Street\",\n            \"addressLine2\": \"#4818\",\n            \"city\": \"San Francisco\",\n            \"state\": \"CA\",\n            \"zip\": \"94114\",\n            \"country\": \"USA\"\n        }\n    ]\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "description": null,
+                  "body": "{\n    \"id\": \"018a80c4-292a-7486-a1234-76yuhe23yu14\",\n    \"firstName\": \"Karen\",\n    \"lastName\": \"Lynch\",\n    \"dob\": \"1963-12-30\",\n    \"genderAtBirth\": \"F\",\n    \"personalIdentifiers\": [\n        {\n            \"type\": \"driversLicense\",\n            \"state\": \"CA\",\n            \"value\": \"51227265\"\n        }\n    ],\n    \"address\": [\n        {\n            \"addressLine1\": \"2261 Market Street\",\n            \"addressLine2\": \"#4818\",\n            \"city\": \"San Francisco\",\n            \"state\": \"CA\",\n            \"zip\": \"94114\",\n            \"country\": \"USA\"\n        }\n    ],\n    \"facilityIds\": [\n        \"2.16.840.1.113883.3.666.5.2004.4.2005\"\n    ]\n}",
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "name": "Success",
+                  "status": "OK",
+                  "code": 200,
+                  "originalRequest": {
+                    "description": "Searches for a Patient previously created in Metriport, based on demographic data.",
+                    "url": {
+                      "raw": "{{baseUrl}}/medical/v1/patient/match",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "medical",
+                        "v1",
+                        "patient",
+                        "match"
+                      ],
+                      "query": [],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "X-API-Key",
+                        "value": "{{apiKey}}",
+                        "type": "string",
+                        "description": null
+                      },
+                      {
+                        "type": "text",
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "auth": null,
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"firstName\": \"Karen\",\n    \"lastName\": \"Lynch\",\n    \"dob\": \"1963-12-30\",\n    \"genderAtBirth\": \"F\",\n    \"personalIdentifiers\": [\n        {\n            \"type\": \"driversLicense\",\n            \"state\": \"CA\",\n            \"value\": \"51227265\"\n        }\n    ],\n    \"address\": [\n        {\n            \"addressLine1\": \"2261 Market Street\",\n            \"addressLine2\": \"#4818\",\n            \"city\": \"San Francisco\",\n            \"state\": \"CA\",\n            \"zip\": \"94114\",\n            \"country\": \"USA\"\n        }\n    ]\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "description": null,
+                  "body": "{\n    \"id\": \"018a80c4-292a-7486-a1234-76yuhe23yu14\",\n    \"firstName\": \"Karen\",\n    \"lastName\": \"Lynch\",\n    \"dob\": \"1963-12-30\",\n    \"genderAtBirth\": \"F\",\n    \"personalIdentifiers\": [\n        {\n            \"type\": \"driversLicense\",\n            \"state\": \"CA\",\n            \"value\": \"51227265\"\n        }\n    ],\n    \"address\": [\n        {\n            \"addressLine1\": \"2261 Market Street\",\n            \"addressLine2\": \"#4818\",\n            \"city\": \"San Francisco\",\n            \"state\": \"CA\",\n            \"zip\": \"94114\",\n            \"country\": \"USA\"\n        }\n    ],\n    \"facilityIds\": [\n        \"2.16.840.1.113883.3.666.5.2004.4.2005\"\n    ]\n}",
+                  "_postman_previewlanguage": "json"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

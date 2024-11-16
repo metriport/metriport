@@ -1,6 +1,7 @@
 # Metriport API SDK Package
 
 A package to get started using [Metriport](https://metriport.com/) - universal and open-source API for healthcare data.
+It’s currently only available for Node-based applications.
 
 ## Usage
 
@@ -28,22 +29,6 @@ To connect to the sandbox:
 
 ```ts
 new MetriportMedicalApi("YOUR_API_KEY", { sandbox: true });
-```
-
-#### Devices API
-
-To use the Devices API, create a new instance of the `MetriportDevicesApi` class:
-
-```ts
-import { MetriportDevicesApi } from "@metriport/api-sdk";
-
-const metriportClient = new MetriportDevicesApi("YOUR_API_KEY");
-```
-
-To connect to the sandbox:
-
-```ts
-new MetriportDevicesApi("YOUR_API_KEY", { sandbox: true });
 ```
 
 ```

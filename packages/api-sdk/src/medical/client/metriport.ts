@@ -699,33 +699,37 @@ export class MetriportMedicalApi {
    * Verifies the signature of a webhook request.
    * Refer to Metriport's documentation for more details: https://docs.metriport.com/medical-api/more-info/webhooks.
    *
-   * @param wh_key - your webhook key.
-   * @param req.body - the body of the webhook request.
+   * @param key - your webhook key.
+   * @param body - the raw body of the webhook request, as string or Buffer.
    * @param signature - the signature obtained from the webhook request header.
-   *
    * @returns True if the signature is verified, false otherwise.
+   * @throws Error if the body is not a string.
    */
-  verifyWebhookSignature(wh_key: string, reqBody: string, signature: string): boolean {
-    return MetriportMedicalApi.verifyWebhookSignature(wh_key, reqBody, signature);
+  verifyWebhookSignature(key: string, body: string | Buffer, signature: string): boolean {
+    return MetriportMedicalApi.verifyWebhookSignature(key, body, signature);
   }
 
   /**
    * Verifies the signature of a webhook request.
    * Refer to Metriport's documentation for more details: https://docs.metriport.com/medical-api/more-info/webhooks.
    *
-   * @param wh_key - your webhook key.
-   * @param req.body - the body of the webhook request.
+   * @param key - your webhook key.
+   * @param body - the raw body of the webhook request, as string or Buffer.
    * @param signature - the signature obtained from the webhook request header.
-   *
    * @returns True if the signature is verified, false otherwise.
+   * @throws Error if the body is not a string.
    */
-  static verifyWebhookSignature(wh_key: string, reqBody: string, signature: string): boolean {
-    const signatureAsString = String(signature);
-    const receivedHash = crypto
-      .createHmac("sha256", wh_key)
-      .update(JSON.stringify(reqBody))
-      .digest("hex");
-    return receivedHash === signatureAsString;
+  static verifyWebhookSignature(key: string, body: string | Buffer, signature: string): boolean {
+    if (typeof body !== "string" && !(body instanceof Buffer)) {
+      throw new Error("Body must be a string or Buffer");
+    }
+    const normalizedBody = typeof body === "string" ? body : body.toString();
+    const receivedSignature = signature;
+    const expectedSignature = crypto.createHmac("sha256", key).update(normalizedBody).digest("hex");
+    const a = Buffer.from(expectedSignature);
+    const b = Buffer.from(receivedSignature);
+    if (Buffer.byteLength(a) != Buffer.byteLength(b)) return false;
+    return crypto.timingSafeEqual(a, b);
   }
 
   /**

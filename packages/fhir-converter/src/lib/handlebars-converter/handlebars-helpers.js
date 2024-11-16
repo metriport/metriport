@@ -865,6 +865,33 @@ module.exports.external = [
     },
   },
   {
+    name: "getAllCdaSectionsWithoutTemplateId",
+    description: "Returns an array of section contents based on the provided section templateIds",
+    func: function getAllCdaSectionsByTemplateId(msg, ...templateIds) {
+      try {
+        var ret = [];
+        if (templateIds.length <= 0) return ret;
+        if (msg?.ClinicalDocument?.component?.structuredBody?.component === undefined) return ret;
+
+        // -1 because templateIds includes the full message at the end
+        for (var t = 0; t < templateIds.length - 1; t++) {
+          for (var i = 0; i < msg.ClinicalDocument.component.structuredBody.component.length; i++) {
+            const sectionObj = msg.ClinicalDocument.component.structuredBody.component[i].section;
+            if (
+              sectionObj?.templateId &&
+              JSON.stringify(sectionObj.templateId).includes(templateIds[t])
+            ) {
+              ret.push(sectionObj);
+            }
+          }
+        }
+        return ret;
+      } catch (err) {
+        throw `helper "getAllCdaSectionsWithoutTemplateId" : ${err}`;
+      }
+    },
+  },
+  {
     name: "getFieldRepeats",
     description: "Returns repeat list for a field: getFieldRepeats fieldData",
     func: function getFieldRepeats(fieldData) {

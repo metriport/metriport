@@ -3,7 +3,7 @@ dotenv.config();
 // Keep dotenv import and config before everything else.
 import { getEnvVar, getEnvVarOrFail, sleep } from "@metriport/shared";
 import ngrok, { Session } from "@ngrok/ngrok";
-import express, { Request, Response } from "express";
+import express, { raw, Request, Response } from "express";
 import { Server } from "http";
 import { asyncHandler } from "../../../../routes/util";
 import whHandler from "./webhook-handler";
@@ -11,14 +11,15 @@ import whHandler from "./webhook-handler";
 const port = 8478;
 
 const app = express();
-app.use(express.json({ limit: "20mb" }));
 
 app.post(
   "/",
+  raw({ type: "*/*" }),
   asyncHandler(async (req: Request, res: Response) => {
     await whHandler.handleRequest(req, res);
   }, true)
 );
+app.use(express.json({ limit: "20mb" }));
 
 let server: Server;
 let session: Session;
