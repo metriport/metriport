@@ -1,10 +1,10 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { normalizeAddressLines } from "../normalize-address";
 
 describe("normalizeAddressLines", () => {
   it("should normalize number to a string", () => {
     const lines = [123];
 
-    /* eslint-disable @typescript-eslint/ban-ts-comment */
     // @ts-ignore
     const norm = normalizeAddressLines(lines);
     expect(norm).toEqual(["123"]);
