@@ -278,10 +278,11 @@ export function normalizeAddress({
   return {
     line:
       line
-        ?.filter(l => Boolean(l))
+        ?.filter(l => l !== undefined && l !== null)
+        .map(String)
+        .filter(l => l !== "")
         .map(l => {
           return l
-            .toString()
             .trim()
             .toLowerCase()
             .replaceAll("street", "st")
@@ -298,6 +299,7 @@ export function normalizeAddress({
         .toLowerCase()
         .replaceAll("us", "usa")
         .replaceAll("united states", "usa")
+        .replaceAll("united", "usa")
         .slice(0, 3) ?? "usa",
   };
 }
