@@ -5,9 +5,10 @@ export function normalizeAddress({ line, city, state, postalCode, country }: Add
   return {
     line:
       line
-        ?.filter(l => l !== "")
+        ?.filter(l => Boolean(l))
         .map(l => {
           return l
+            .toString()
             .trim()
             .toLowerCase()
             .replace(/street/g, "st")

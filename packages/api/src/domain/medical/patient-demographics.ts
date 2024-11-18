@@ -278,9 +278,10 @@ export function normalizeAddress({
   return {
     line:
       line
-        ?.filter(l => l !== "")
+        ?.filter(l => Boolean(l))
         .map(l => {
           return l
+            .toString()
             .trim()
             .toLowerCase()
             .replaceAll("street", "st")
