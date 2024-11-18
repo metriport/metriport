@@ -19,9 +19,9 @@ function getSettings(props: RateLimitingNestedStackProps) {
     dynamoReplicationRegions: isProd(props.config) ? ["us-east-1"] : ["ca-central-1"],
     dynamoReplicationTimeout: Duration.hours(3),
     dynamoPointInTimeRecovery: true,
-    consumedWriteCapacityUnitsAlarmThreshold: isProd(props.config) ? 1000 : 10,
+    consumedWriteCapacityUnitsAlarmThreshold: isProd(props.config) ? 5000 : 100,
     consumedWriteCapacityUnitsAlarmPeriod: 1,
-    consumedReadCapacityUnitsAlarmThreshold: isProd(props.config) ? 1000 : 10,
+    consumedReadCapacityUnitsAlarmThreshold: isProd(props.config) ? 5000 : 100,
     consumedReadCapacityUnitsAlarmPeriod: 1,
   };
 }
