@@ -1,0 +1,68 @@
+config:
+  target: "{{ $processEnvironment.OSS_STAGING_URL }}"
+  http:
+    timeout: 60
+  plugins:
+    # https://www.artillery.io/docs/guides/plugins/plugin-publish-metrics
+    publish-metrics:
+      - type: cloudwatch
+        region: "{{ $processEnvironment.REGION }}"
+    # https://www.artillery.io/docs/guides/plugins/plugin-metrics-by-endpoint
+    metrics-by-endpoint:
+      # Group metrics by request name rather than URL:
+      useOnlyRequestNames: true
+  phases:
+    - pause: 65 # Allow before step to clear system
+    - duration: 26
+      arrivalRate: 4
+      name: Initial ramp
+    - pause: 34 # Pause for remaining minute from first request
+    - duration: 26
+      arrivalRate: 4
+      name: Repeat ramp
+  variables:
+    apiKey: "{{ $processEnvironment.OSS_STAGING_API_KEY }}"
+    facilityId: "{{ $processEnvironment.OSS_STAGING_FACILITY_ID }}"
+  processor: "../patient.js"
+
+before:
+  name: "OSS PATIENT CREATE ONCE"
+  flow:
+    - function: "generatePatientDemographics"
+    - post:
+        name: "Create patient"
+        url: "/medical/v1/patient?facilityId={{ facilityId }}"
+        headers:
+          x-api-key: "{{ apiKey }}"
+        json:
+          firstName: "{{ firstName }}"
+          lastName: "{{ lastName }}"
+          dob: "{{ dob }}"
+          genderAtBirth: "{{ genderAtBirth }}"
+          address:
+            - addressLine1: "{{ addressLine1 }}"
+              city: "{{ city }}"
+              zip: "{{ zip }}"
+              state: "{{ state }}"
+              country: "{{ country }}"
+        capture:
+          - json: "$.id"
+            as: "patientId"
+
+scenarios:
+  - name: "OSS START CONSOLIDATED DATA QUERY"
+    flow:
+      - post:
+          name: "Start consolidated data query"
+          url: "/medical/v1/patient/{{ patientId }}/consolidated/query"
+          headers:
+            x-api-key: "{{ apiKey }}"
+
+after:
+  name: "OSS PATIENT DELETE"
+  flow:
+    - delete:
+        name: "Delete patient"
+        url: "/medical/v1/patient/{{ patientId }}"
+        headers:
+          x-api-key: "{{ apiKey }}"

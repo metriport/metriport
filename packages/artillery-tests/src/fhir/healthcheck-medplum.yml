@@ -15,9 +15,9 @@ config:
       name: Ramp up load
 
 scenarios:
-  - name: 'Healthcheck Medplum'
+  - name: "Healthcheck Medplum"
     flow:
       - loop:
           - get:
-              url: '/healthcheck'
+              url: "/healthcheck"
         count: 10

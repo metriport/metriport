@@ -1,5 +1,5 @@
 config:
-  target: "{{ $processEnvironment.HAPI_URL }}"
+  target: "{{ $processEnvironment.MEDPLUM_URL }}"
   http:
     timeout: 60
   plugins:
@@ -24,17 +24,44 @@ config:
       rampTo: 100
       name: Ramp up load
   variables:
-    tenantId: "{{ $processEnvironment.HAPI_TENANT_ID }}"
-  processor: "../base-processor.js"
+    codeChallenge: "{{ $randomString() }}"
+  processor: "./crud.js"
+
+before:
+  flow:
+    - log: "Get auth token"
+    - post:
+        url: "/auth/login"
+        json:
+          email: "{{ $processEnvironment.MEDPLUM_USER }}"
+          password: "{{ $processEnvironment.MEDPLUM_PASSWORD }}"
+          codeChallengeMethod: "plain"
+          codeChallenge: "{{ codeChallenge }}"
+        capture:
+          - json: $.code
+            as: code
+        name: "Login"
+    - post:
+        url: "/oauth2/token"
+        form:
+          grant_type: "authorization_code"
+          code: "{{ code }}"
+          code_verifier: "{{ codeChallenge }}"
+        capture:
+          - json: $.access_token
+            as: token
+        name: "Get OAuth token"
 
 scenarios:
-  - name: "FHIR CRUD HAPI"
+  - name: "FHIR CRUD Medplum"
     flow:
       - loop:
           - function: "generateRandomData"
           - put:
               name: "Create Patient"
-              url: "/fhir/{{tenantId}}/Patient/{{ id }}"
+              url: "/fhir/R4/Patient/{{ id }}"
+              headers:
+                Authorization: "Bearer {{ token }}"
               json:
                 resourceType: Patient
                 id: "{{ id }}"
@@ -47,19 +74,27 @@ scenarios:
                   as: "familyName"
           - get:
               name: "Get Patient by ID"
-              url: "/fhir/{{tenantId}}/Patient/{{ patientId }}"
+              url: "/fhir/R4/Patient/{{ patientId }}"
+              headers:
+                Authorization: "Bearer {{ token }}"
           - get:
               name: "Get Patient by name"
-              url: "/fhir/{{tenantId}}/Patient?name={{ familyName }}"
+              url: "/fhir/R4/Patient?name={{ familyName }}"
+              headers:
+                Authorization: "Bearer {{ token }}"
           - delete:
               name: "Delete Patient"
-              url: "/fhir/{{tenantId}}/Patient/{{ patientId }}"
+              url: "/fhir/R4/Patient/{{ patientId }}"
+              headers:
+                Authorization: "Bearer {{ token }}"
         count: 2
 
       - function: "generateRandomData"
       - put:
           name: "Create Organization"
-          url: "/fhir/{{tenantId}}/Organization/{{ id }}"
+          url: "/fhir/R4/Organization/{{ id }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
           json:
             resourceType: Organization
             id: "{{ id }}"
@@ -71,18 +106,26 @@ scenarios:
               as: "name"
       - get:
           name: "Get Organization by ID"
-          url: "/fhir/{{tenantId}}/Organization/{{ orgId }}"
+          url: "/fhir/R4/Organization/{{ orgId }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
       - get:
           name: "Get Organization by name"
-          url: "/fhir/{{tenantId}}/Organization?name={{ name }}"
+          url: "/fhir/R4/Organization?name={{ name }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
       - delete:
           name: "Delete Organization"
-          url: "/fhir/{{tenantId}}/Organization/{{ orgId }}"
+          url: "/fhir/R4/Organization/{{ orgId }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
 
       - function: "generateRandomData"
       - put:
           name: "Create DocumentReference"
-          url: "/fhir/{{tenantId}}/DocumentReference/{{ id }}"
+          url: "/fhir/R4/DocumentReference/{{ id }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
           json:
             resourceType: DocumentReference
             id: "{{ id }}"
@@ -95,7 +138,11 @@ scenarios:
               as: "docId"
       - get:
           name: "Get DocumentReference by ID"
-          url: "/fhir/{{tenantId}}/DocumentReference/{{ docId }}"
+          url: "/fhir/R4/DocumentReference/{{ docId }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
       - delete:
           name: "Delete DocumentReference"
-          url: "/fhir/{{tenantId}}/DocumentReference/{{ docId }}"
+          url: "/fhir/R4/DocumentReference/{{ docId }}"
+          headers:
+            Authorization: "Bearer {{ token }}"

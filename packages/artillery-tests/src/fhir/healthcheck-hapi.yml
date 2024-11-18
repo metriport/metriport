@@ -15,9 +15,9 @@ config:
       name: Ramp up load
 
 scenarios:
-  - name: 'Healthcheck HAPI'
+  - name: "Healthcheck HAPI"
     flow:
       - loop:
           - get:
-              url: '/'
+              url: "/"
         count: 10
