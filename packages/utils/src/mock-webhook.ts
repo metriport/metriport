@@ -26,6 +26,7 @@ app.post("/", async (req: Request, res: Response) => {
     console.log(`Signature verified`);
   } else {
     console.log(`Signature verification failed`);
+    return res.sendStatus(401);
   }
 
   if (req.body.meta && req.body.meta.type === "medical.document-bulk-download-urls") {

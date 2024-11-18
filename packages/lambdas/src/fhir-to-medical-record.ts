@@ -7,6 +7,7 @@ import { getFeatureFlagValueStringArray } from "@metriport/core/external/aws/app
 import { Brief, bundleToBrief } from "@metriport/core/external/aws/lambda-logic/bundle-to-brief";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import { bundleToHtmlADHD } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-adhd";
+import { bundleToHtmlBmi } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-bmi";
 import {
   getSignedUrl as coreGetSignedUrl,
   makeS3Client,
@@ -68,6 +69,9 @@ export async function handler({
   try {
     const cxsWithADHDFeatureFlagValue = await getCxsWithADHDFeatureFlagValue();
     const isADHDFeatureFlagEnabled = cxsWithADHDFeatureFlagValue.includes(cxId);
+    const cxsWithBmiFeatureFlagValue = await getCxsWithBmiFeatureFlagValue();
+    const isBmiFeatureFlagEnabled = cxsWithBmiFeatureFlagValue.includes(cxId);
+
     const bundle = await getBundleFromS3(fhirFileName);
     const isBriefFeatureFlagEnabled = await isAiBriefEnabled(generateAiBrief, cxId);
 
@@ -80,6 +84,8 @@ export async function handler({
 
     const html = isADHDFeatureFlagEnabled
       ? bundleToHtmlADHD(bundle, aiBrief)
+      : isBmiFeatureFlagEnabled
+      ? bundleToHtmlBmi(bundle, aiBrief)
       : bundleToHtml(bundle, aiBrief);
     const hasContents = doesMrSummaryHaveContents(html);
     log(`MR Summary has contents: ${hasContents}`);
@@ -254,6 +260,26 @@ async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {
   } catch (error) {
     const msg = `Failed to get Feature Flag Value`;
     const extra = { featureFlagName: "cxsWithADHDMRFeatureFlag" };
+    capture.error(msg, { extra: { ...extra, error } });
+  }
+
+  return [];
+}
+
+async function getCxsWithBmiFeatureFlagValue(): Promise<string[]> {
+  try {
+    const featureFlag = await getFeatureFlagValueStringArray(
+      region,
+      appConfigAppID,
+      appConfigConfigID,
+      getEnvType(),
+      "cxsWithBmiMrFeatureFlag"
+    );
+
+    if (featureFlag?.enabled && featureFlag?.values) return featureFlag.values;
+  } catch (error) {
+    const msg = `Failed to get Feature Flag Value`;
+    const extra = { featureFlagName: "cxsWithBMIMRFeatureFlag" };
     capture.error(msg, { extra: { ...extra, error } });
   }
 

@@ -22,8 +22,9 @@ export async function handleRequest(req: Request, res: Response) {
       console.log(`[WH] ====> Signature verification failed`);
       throw new Error("Signature verification failed");
     }
-    console.log(`[WH] ========> Handling request... type: ${req.body?.meta?.type}`);
-    const whRequest = MetriportMedicalApi.parseWebhookResponse(req.body);
+    const body = JSON.parse(req.body);
+    console.log(`[WH] ========> Handling request... type: ${body?.meta?.type}`);
+    const whRequest = MetriportMedicalApi.parseWebhookResponse(body);
     if (isPingWebhookRequest(whRequest)) {
       return handlePing(whRequest, res);
     }

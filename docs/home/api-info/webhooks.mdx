@@ -48,12 +48,21 @@ and performing iterative hashes of the two to create a signature. That signature
 signature in the header for equality. If the signatures are equal, you can trust the webhook
 payload is authentic and has not been tampered with. If they aren't equal, you should throw it away.
 
-You can use this header to verify that the webhook messages sent to your endpoint are from Metriport. Here's an example of how you can do this in Node.js:
+You can use this header to verify that the webhook messages sent to your endpoint are from Metriport. 
+
+Avoid parsing the request body before generating the signature - it could result in a slightly
+different signature that's enough to invalidate it.
+
+Here's an example of how you can do this in Node.js - see the full sample code 
+[here](https://github.com/metriport/metriport/blob/develop/samples/typescript-express/mock-webhook.ts):
 
 <Snippet file="webhook-signature-validation.mdx" />
 
-The important thing is to make sure you use a trusted cryptography library in whatever language you choose to validate the webhook message in.
-You can also compute an HMAC in python:
+The important thing is to make sure you use a trusted cryptography library in whatever language you
+choose to validate the webhook message in.
+
+You can also validate the HMAC in Python - see the full sample code 
+[here](https://github.com/metriport/metriport/blob/develop/samples/python-fast-api/mock-webhook.py):
 
 ```python
 
@@ -61,34 +70,27 @@ import hmac
 import hashlib
 import json
 
-def compute_hmac(key, message, signature, digestmod=hashlib.sha256):
+def verify_webhook_signature(key: str, body: str, signature: str) -> bool:
     """
     Verify the HMAC signature for a given message and key.
 
-    :param key: The webhook key from the Settings page (string).
-    :param message: The message to be authenticated (string in JSON format).
-    :param signature: The provided HMAC signature to verify against (string).
-    :param digestmod: The hash function to use (defaults to hashlib.sha256).
+    :param key: your webhook key (string).
+    :param body: the raw body of the webhook request (string).
+    :param signature: the signature obtained from the webhook request header (string).
     :return: True if signature is verified, False otherwise.
     """
-    message_bytestring = json.dumps(message, separators=(',', ':')).encode()  # Convert the message string to bytes
-    key_bytestring = key.encode()  # Convert the key string to bytes
-    hmac_object = hmac.new(key_bytestring, message_bytestring, digestmod)
-    computed_signature = hmac_object.hexdigest()
-    print(computed_signature)
-    return signature == computed_signature
 
-# Example usage
-key = 'your_secret_key'  # The webhook key from the Settings page
-message = '{"webhookUrl": "https://api.app.com/webhook"}'  # The message from the request in JSON format
-signature = 'the-request-signature'  # The signature from the header
-
-is_signature_valid = compute_hmac(key, message, signature)
-
-if is_signature_valid:
-    print("Signature verified")
-else:
-    print("Signature verification failed")
+    key_bytes = key.encode('utf-8')
+    body_bytes = body.encode('utf-8')
+    
+    hmac_obj = hmac.new(key_bytes, body_bytes, hashlib.sha256)
+    computed_signature = hmac_obj.hexdigest()
+    if hmac.compare_digest(computed_signature, signature):
+        print('Signature verified')
+        return True
+    else:
+        print('Signature verification failed')
+        return False
 ```
 
 ### Generating a new webhook key
