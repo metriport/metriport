@@ -811,20 +811,22 @@ module.exports.external = [
 
         for (var t = 0; t < templateIds.length - 1; t++) {
           // -1 because templateIds includes the full message at the end
-          let components = Array.isArray(msg.ClinicalDocument.component.structuredBody.component)
-            ? msg.ClinicalDocument.component.structuredBody.component
-            : [msg.ClinicalDocument.component.structuredBody.component];
-          for (var i = 0; i < components.length; i++) {
-            let sectionObj = components[i].section;
-            let templateIdsArray = Array.isArray(sectionObj.templateId)
-              ? sectionObj.templateId
-              : [sectionObj.templateId];
-            const hasExactMatch = templateIdsArray.some(
-              templateIdObj => templateIdObj && templateIdObj.root === templateIds[t]
-            );
-            if (hasExactMatch) {
-              ret[normalizeSectionName(templateIds[t])] = sectionObj;
-              break;
+          if (msg.ClinicalDocument.component?.structuredBody?.component) {
+            let components = Array.isArray(msg.ClinicalDocument.component.structuredBody.component)
+              ? msg.ClinicalDocument.component.structuredBody.component
+              : [msg.ClinicalDocument.component.structuredBody.component];
+            for (var i = 0; i < components.length; i++) {
+              let sectionObj = components[i].section;
+              let templateIdsArray = Array.isArray(sectionObj.templateId)
+                ? sectionObj.templateId
+                : [sectionObj.templateId];
+              const hasExactMatch = templateIdsArray.some(
+                templateIdObj => templateIdObj && templateIdObj.root === templateIds[t]
+              );
+              if (hasExactMatch) {
+                ret[normalizeSectionName(templateIds[t])] = sectionObj;
+                break;
+              }
             }
           }
         }

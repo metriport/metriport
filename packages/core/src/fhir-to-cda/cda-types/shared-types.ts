@@ -148,6 +148,8 @@ export type CdaValueSt = {
 export type CdaValueEd = {
   [_xsiTypeAttribute]?: "ED";
   [_xmlnsXsiAttribute]?: string;
+  _representation?: string;
+  _mediaType?: string;
   reference?: {
     _value: string;
   };
@@ -269,6 +271,18 @@ export type ObservationEntry = {
     entryRelationship?: ObservationEntryRelationship | ObservationEntryRelationship[] | undefined;
     interpretationCode?: CdaCodeCe | CdaCodeCe[] | undefined;
   };
+};
+
+export type ObservationMedia = {
+  _classCode: string;
+  _moodCode: string;
+  templateId?: CdaInstanceIdentifier[];
+  id?: CdaInstanceIdentifier[];
+  value?: CdaValueEd | undefined;
+};
+
+export type ObservationMediaEntry = {
+  observationMedia: ObservationMedia;
 };
 
 export type ObservationEntryRelationship = ObservationEntry & {
@@ -445,7 +459,7 @@ export type ObservationOrganizer = {
         subject: Subject;
       };
     };
-    component?: ObservationEntry[] | undefined;
+    component?: (ObservationEntry | ObservationMediaEntry)[] | undefined;
   };
 };
 
