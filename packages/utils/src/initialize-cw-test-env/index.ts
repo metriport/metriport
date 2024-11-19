@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // Keep dotenv import and config before everything else
-import { MetriportMedicalApi, PatientDTO, Address, patientCreateSchema } from "@metriport/api-sdk";
+import { Address, MetriportMedicalApi, patientCreateSchema, PatientDTO } from "@metriport/api-sdk";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import * as AWS from "aws-sdk";
 import axios from "axios";
@@ -38,7 +38,7 @@ async function main() {
     baseAddress: stagingApiUrl,
   });
 
-  const facilityPatients = await metriportAPI.listPatients(facilityId);
+  const { patients: facilityPatients } = await metriportAPI.listPatients(facilityId);
 
   const patients = Object.values(seedData).map(v => {
     const address: Address[] = v.demographics.address.map(a => ({

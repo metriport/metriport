@@ -18,6 +18,7 @@
   ],
   "exports": {
     ".": "./dist/index.js",
+    "./api": "./dist/api/index.js",
     "./common/*": "./dist/common/*.js",
     "./interface/*": "./dist/interface/*.js",
     "./medical": "./dist/medical/index.js"
@@ -26,6 +27,12 @@
     "*": {
       "/": [
         "dist/index.d.ts"
+      ],
+      "api": [
+        "dist/api/index.d.ts"
+      ],
+      "api/*": [
+        "dist/api/*"
       ],
       "common/*": [
         "dist/common/*"
