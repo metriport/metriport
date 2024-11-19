@@ -49,5 +49,5 @@ const defaultOperationLimits: {
 } = {
   patientCreateOrUpdate: 15,
   documentQuery: 20,
-  consolidatedDataQuery: 100,
+  consolidatedDataQuery: 120,
 };

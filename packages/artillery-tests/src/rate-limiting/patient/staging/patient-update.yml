@@ -12,6 +12,7 @@ config:
       # Group metrics by request name rather than URL:
       useOnlyRequestNames: true
   phases:
+    # Tested at 10 operatiosn / min
     - pause: 65 # Allow before step to clear system
     - duration: 11
       arrivalRate: 1
