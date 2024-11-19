@@ -1,13 +1,14 @@
-import { USStateForAddress } from "@metriport/shared";
 import { Organization } from "@metriport/core/domain/organization";
 import { getStatesFromAddresses, Patient, PatientDemoData } from "@metriport/core/domain/patient";
 import { getPatientByDemo as getPatientByDemoMPI } from "@metriport/core/mpi/get-patient-by-demo";
+import { USStateForAddress } from "@metriport/shared";
 import { uniq } from "lodash";
-import { Op, Transaction } from "sequelize";
+import { FindOptions, Op, OrderItem, Transaction } from "sequelize";
 import { Facility } from "../../../domain/medical/facility";
 import NotFoundError from "../../../errors/not-found";
 import { PatientLoaderLocal } from "../../../models/helpers/patient-loader-local";
 import { PatientModel } from "../../../models/medical/patient";
+import { Pagination } from "../../pagination";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
 import { sanitize, validate } from "./shared";
@@ -38,10 +39,12 @@ export async function getPatients({
   facilityId,
   cxId,
   patientIds,
+  pagination,
 }: {
   facilityId?: string;
   cxId: string;
   patientIds?: string[];
+  pagination?: Pagination;
 }): Promise<PatientModel[]> {
   const patients = await PatientModel.findAll({
     where: {
@@ -54,10 +57,35 @@ export async function getPatients({
           }
         : undefined),
       ...(patientIds ? { id: patientIds } : undefined),
+      ...getPaginationFilters(pagination),
     },
-    order: [["id", "ASC"]],
+    ...getPaginationLimits(pagination),
+    order: [getPaginationSorting(pagination)],
   });
-  return patients;
+  const sortedPatients = sortForPagination(patients, pagination);
+  return sortedPatients;
+}
+
+function getPaginationFilters(pagination: Pagination | undefined) {
+  const { toItem, fromItem } = pagination ?? {};
+  return {
+    ...(toItem ? { id: { [Op.lte]: toItem } } : undefined),
+    ...(fromItem ? { id: { [Op.gte]: fromItem } } : undefined),
+  };
+}
+function getPaginationLimits(
+  pagination: Pagination | undefined
+): Pick<FindOptions, "limit"> | undefined {
+  const { count } = pagination ?? {};
+  return count ? { limit: count } : undefined;
+}
+function getPaginationSorting(pagination: Pagination | undefined): OrderItem {
+  const { toItem } = pagination ?? {};
+  return ["id", toItem ? "DESC" : "ASC"];
+}
+function sortForPagination<T>(items: T[], pagination: Pagination | undefined): T[] {
+  const { toItem } = pagination ?? {};
+  return toItem ? items.reverse() : items;
 }
 
 export async function getPatientIds({

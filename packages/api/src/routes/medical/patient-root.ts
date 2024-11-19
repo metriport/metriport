@@ -1,5 +1,5 @@
 import { demographicsSchema, patientCreateSchema } from "@metriport/api-sdk";
-import { stringToBoolean } from "@metriport/shared";
+import { PaginatedResponse, stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -9,14 +9,16 @@ import {
   getPatients,
   matchPatient,
 } from "../../command/medical/patient/get-patient";
+import { Pagination } from "../../command/pagination";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
 import NotFoundError from "../../errors/not-found";
 import { PatientModel as Patient } from "../../models/medical/patient";
 import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { checkRateLimit } from "../middlewares/rate-limiting";
+import { paginated } from "../pagination";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
-import { dtoFromModel } from "./dtos/patientDTO";
+import { dtoFromModel, PatientDTO } from "./dtos/patientDTO";
 import { schemaCreateToPatientData, schemaDemographicsToPatientData } from "./schemas/patient";
 
 const router = Router();
@@ -88,10 +90,14 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const facilityId = getFrom("query").optional("facilityId", req);
 
-    const patients = await getPatients({ cxId, facilityId: facilityId });
-
-    const patientsData = patients.map(dtoFromModel);
-    return res.status(status.OK).json({ patients: patientsData });
+    const { meta, items } = await paginated(req, async (pagination: Pagination) => {
+      return await getPatients({ cxId, facilityId: facilityId, pagination });
+    });
+    const response: PaginatedResponse<PatientDTO, "patients"> = {
+      meta,
+      patients: items.map(dtoFromModel),
+    };
+    return res.status(status.OK).json(response);
   })
 );
 
