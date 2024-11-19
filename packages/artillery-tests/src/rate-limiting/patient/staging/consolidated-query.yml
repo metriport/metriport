@@ -1,5 +1,5 @@
 config:
-  target: "{{ $processEnvironment.OSS_STAGING_URL }}"
+  target: "{{ $processEnvironment.OSS_URL }}"
   http:
     timeout: 60
   plugins:
@@ -12,7 +12,7 @@ config:
       # Group metrics by request name rather than URL:
       useOnlyRequestNames: true
   phases:
-    # Tested at 100 operatiosn / min
+    # Tested at 100 operations / min
     - pause: 65 # Allow before step to clear system
     - duration: 26
       arrivalRate: 4
@@ -22,8 +22,8 @@ config:
       arrivalRate: 4
       name: Repeat ramp
   variables:
-    apiKey: "{{ $processEnvironment.OSS_STAGING_API_KEY }}"
-    facilityId: "{{ $processEnvironment.OSS_STAGING_FACILITY_ID }}"
+    apiKey: "{{ $processEnvironment.OSS_API_KEY }}"
+    facilityId: "{{ $processEnvironment.OSS_FACILITY_ID }}"
   processor: "../patient.js"
 
 before:
