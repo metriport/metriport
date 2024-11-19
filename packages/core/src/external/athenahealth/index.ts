@@ -201,15 +201,16 @@ class AthenaHealthApi {
       }
       const patient = patientResourceSchema.safeParse(response.data);
       if (!patient.success) {
+        const error = patient.error;
         const msg = "Patient from AthenaHealth could not be parsed";
-        log(msg);
+        log(`${msg} - error ${errorToString(error)}`);
         capture.message(msg, {
           extra: {
             url: patientUrl,
             cxId,
             practiceId: this.practiceId,
             patientId,
-            error: patient.error,
+            error,
             context: "athenahealth.get-patient",
           },
           level: "info",
@@ -276,15 +277,16 @@ class AthenaHealthApi {
       }
       const searchSet = patientSearchResourceSchema.safeParse(response.data);
       if (!searchSet.success) {
+        const error = searchSet.error;
         const msg = "Patient search set from AthenaHealth could not be parsed";
-        log(msg);
+        log(`${msg} - error ${errorToString(error)}`);
         capture.message(msg, {
           extra: {
             url: patientSearchUrl,
             cxId,
             practiceId: this.practiceId,
             patientId,
-            error: searchSet.error,
+            error,
             context: "athenahealth.get-patient",
           },
           level: "info",
