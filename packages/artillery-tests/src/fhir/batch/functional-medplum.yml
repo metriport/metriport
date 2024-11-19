@@ -52,8 +52,8 @@ scenarios:
           json: "{{ requestBody }}"
           expect:
             - statusCode:
-              - 200
-              - 201
+                - 200
+                - 201
       - post:
           name: "RePost Batch"
           url: "/fhir/R4/"

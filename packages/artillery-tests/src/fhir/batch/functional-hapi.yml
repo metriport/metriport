@@ -27,8 +27,8 @@ scenarios:
           json: "{{ requestBody }}"
           expect:
             - statusCode:
-              - 200
-              - 201
+                - 200
+                - 201
       - post:
           name: "RePost Batch"
           url: "/fhir/{{tenantId}}/"
@@ -36,7 +36,7 @@ scenarios:
           afterResponse: "checkOperationOutcomes"
           expect:
             - statusCode:
-              - 200
+                - 200
       # - log: "IDs {{ ids }}"
       - get:
           name: "Check it created Condition"

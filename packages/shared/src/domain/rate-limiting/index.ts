@@ -47,7 +47,7 @@ export function getDefaultLimit(operation: RateLimitOperation): number {
 const defaultOperationLimits: {
   [k in RateLimitOperation]: number;
 } = {
-  patientCreateOrUpdate: 10,
-  documentQuery: 10,
-  consolidatedDataQuery: 100,
+  patientCreateOrUpdate: 15,
+  documentQuery: 20,
+  consolidatedDataQuery: 120,
 };
