@@ -127,7 +127,7 @@ router.post(
     const optingOut = await isPatientOptingOut({ cxId, patientId });
 
     if (optingOut) {
-      throw new ForbiddenError("Patient has opted out of data sharing");
+      throw new ForbiddenError("Patient has opted out of data pulling and sharing");
     }
 
     const docQueryProgress = await queryDocumentsAcrossHIEs({
