@@ -19,12 +19,13 @@ import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
-import { setHieOptOut, isPatientOptingOut } from "../../command/medical/patient/opting-out-patient";
+import { setHieOptOut, isPatientOptingOut } from "../../command/medical/patient/update-hie-opt-out";
 import { handleDataContribution } from "../../command/medical/patient/data-contribution/handle-data-contributions";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import BadRequestError from "../../errors/bad-request";
 import NotFoundError from "../../errors/not-found";
@@ -448,10 +449,14 @@ router.put(
   "/opting-out",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const { cxId, patient } = getPatientInfoOrFail(req);
+    const { cxId, id } = getPatientInfoOrFail(req);
+    const patient = await getPatientOrFail({
+      id,
+      cxId,
+    });
     const optingOut = isTrue(getFrom("query").orFail("optingOut", req));
 
-    const result = await setHieOptOut({ cxId, patientId: patient.id, optingOut });
+    const result = await setHieOptOut({ patient, optingOut });
 
     const respPayload: PatientOptOutResponse = {
       id: result.id,

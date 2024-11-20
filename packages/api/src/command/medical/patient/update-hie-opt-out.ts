@@ -1,29 +1,15 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
-import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getPatientOrFail } from "./get-patient";
 
 export async function setHieOptOut({
-  cxId,
-  patientId,
+  patient,
   optingOut,
 }: {
-  cxId: string;
-  patientId: string;
+  patient: PatientModel;
   optingOut: boolean;
 }): Promise<Patient> {
-  const result = await executeOnDBTx(PatientModel.prototype, async transaction => {
-    const patient = await getPatientOrFail({
-      id: patientId,
-      cxId,
-      lock: true,
-      transaction,
-    });
-
-    return patient.update({ optingOut }, { transaction });
-  });
-
-  return result;
+  return patient.update({ optingOut });
 }
 
 export async function isPatientOptingOut({
