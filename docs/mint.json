@@ -371,6 +371,7 @@
       "group": "More Info",
       "pages": [
         "medical-api/more-info/general-info",
+        "medical-api/more-info/contribution",
         "medical-api/more-info/webhooks",
         "medical-api/more-info/medical-record-summary",
         "medical-api/more-info/user-roles",
