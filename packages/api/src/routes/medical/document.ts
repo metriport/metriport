@@ -12,6 +12,7 @@ import { downloadDocument } from "../../command/medical/document/document-downlo
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { startBulkGetDocumentUrls } from "../../command/medical/document/start-bulk-get-doc-url";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
+import { isPatientOptingOut } from "../../command/medical/patient/opting-out-patient";
 import ForbiddenError from "../../errors/forbidden";
 import {
   composeDocumentReference,
@@ -123,6 +124,11 @@ router.post(
     const cxDocumentRequestMetadata = cxRequestMetadataSchema.parse(req.body);
     const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
+    const optingOut = await isPatientOptingOut({ cxId, patientId });
+
+    if (optingOut) {
+      throw new ForbiddenError("Patient has opted out of data sharing");
+    }
 
     const docQueryProgress = await queryDocumentsAcrossHIEs({
       cxId,

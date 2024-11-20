@@ -7,6 +7,7 @@ export class PatientModel extends BaseModel<PatientModel> implements Patient {
   declare cxId: string;
   declare facilityIds: string[];
   declare externalId?: string;
+  declare optingOut?: boolean;
   declare data: PatientData;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
@@ -21,6 +22,9 @@ export class PatientModel extends BaseModel<PatientModel> implements Patient {
         },
         externalId: {
           type: DataTypes.STRING,
+        },
+        optingOut: {
+          type: DataTypes.BOOLEAN,
         },
         data: {
           type: DataTypes.JSONB,

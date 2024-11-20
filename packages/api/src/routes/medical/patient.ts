@@ -4,7 +4,7 @@ import { mrFormat } from "@metriport/core/domain/conversion/fhir-to-medical-reco
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
 import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { getRequestId } from "@metriport/core/util/request";
-import { stringToBoolean } from "@metriport/shared";
+import { isTrue, stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -19,6 +19,7 @@ import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
+import { optingPatientInOrOut } from "../../command/medical/patient/opting-out-patient";
 import { handleDataContribution } from "../../command/medical/patient/data-contribution/handle-data-contributions";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
@@ -427,6 +428,36 @@ router.get(
     const webhook = await getConsolidatedWebhook({ cxId, consolidatedQueries, requestId });
 
     return res.json(webhook);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * PUT /patient/:id/opting-out
+ *
+ * Returns whether the patient is opted out of data pulling and sharing.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.patientId The ID of the patient whose data is to be returned.
+ * @param req.query.optingOut Boolean value to opt patient out or in.
+ */
+router.put(
+  "/opting-out",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, patient } = getPatientInfoOrFail(req);
+    const optingOut = isTrue(getFrom("query").orFail("optingOut", req));
+
+    const result = await optingPatientInOrOut({ cxId, patientId: patient.id, optingOut });
+
+    const respPayload = {
+      id: result.id,
+      optingOut: result.optingOut,
+      message: `Patient has been opted ${
+        result.optingOut ? "out of" : "in for"
+      } data pulling and sharing`,
+    };
+
+    return res.json(respPayload);
   })
 );
 
