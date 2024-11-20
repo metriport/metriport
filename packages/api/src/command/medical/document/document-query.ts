@@ -70,7 +70,7 @@ export async function queryDocumentsAcrossHIEs({
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
 
-  if (patient.optingOut) {
+  if (patient.hieOptOut) {
     throw new BadRequestError("Patient has opted out of pulling from and sharing to the hies");
   }
 

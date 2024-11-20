@@ -437,16 +437,16 @@ router.get(
 );
 
 /** ---------------------------------------------------------------------------
- * PUT /patient/:id/opting-out
+ * PUT /patient/:id/hie-opt-out
  *
  * Returns whether the patient is opted out of data pulling and sharing.
  *
  * @param req.cxId The customer ID.
  * @param req.param.patientId The ID of the patient whose data is to be returned.
- * @param req.query.optingOut Boolean value to opt patient out or in.
+ * @param req.query.hieOptOut Boolean value to opt patient out or in.
  */
 router.put(
-  "/opting-out",
+  "/hie-opt-out",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, id } = getPatientInfoOrFail(req);
@@ -454,9 +454,9 @@ router.put(
       id,
       cxId,
     });
-    const optingOut = isTrue(getFrom("query").orFail("optingOut", req));
+    const hieOptOut = isTrue(getFrom("query").orFail("hieOptOut", req));
 
-    const result = await setHieOptOut({ patient, optingOut });
+    const result = await setHieOptOut({ patient, hieOptOut });
 
     const respPayload: PatientOptOutResponse = {
       id: result.id,
@@ -472,7 +472,7 @@ router.put(
 
 // TODO #2475 expose this on the patient
 /** ---------------------------------------------------------------------------
- * GET /patient/:id/opting-out
+ * GET /patient/:id/hie-opt-out
  *
  * Returns whether the patient is opted out of data pulling and sharing.
  *
@@ -480,7 +480,7 @@ router.put(
  * @param req.param.patientId The ID of the patient whose data is to be returned.
  */
 router.get(
-  "/opting-out",
+  "/hie-opt-out",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, patient } = getPatientInfoOrFail(req);

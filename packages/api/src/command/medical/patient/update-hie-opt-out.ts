@@ -4,12 +4,12 @@ import { getPatientOrFail } from "./get-patient";
 
 export async function setHieOptOut({
   patient,
-  optingOut,
+  hieOptOut,
 }: {
   patient: PatientModel;
-  optingOut: boolean;
+  hieOptOut: boolean;
 }): Promise<Patient> {
-  return patient.update({ optingOut });
+  return patient.update({ hieOptOut });
 }
 
 export async function isPatientOptingOut({
@@ -21,5 +21,5 @@ export async function isPatientOptingOut({
 }): Promise<boolean> {
   const patient = await getPatientOrFail({ id: patientId, cxId });
 
-  return patient.optingOut || false;
+  return patient.hieOptOut || false;
 }
