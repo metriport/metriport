@@ -229,9 +229,9 @@ Customers can upload various types of FHIR R4 resources to contribute data back 
 
 ## Tips when Contributing
 
-- All Person references must point to the Metriport patient ID the data is being upload for in this example it's `subject.reference` in the Encounter resource.
-- All other references must point to a resource that's available within the same bundle.
-- You can't upload the same resource with the same id twice in the same Bundle, this will result in a conflict error.
+- All Patient references must point to the Metriport patient ID the data is being upload for in this example it's `subject.reference` in the Encounter resource.
+- All other references must point to a resource that's available within the same bundle or one that has been previously uploaded.
+- You can't upload the same resource with the same ID twice in the same Bundle, this will result in a conflict error.
 - All resources must be valid FHIR R4 resources.
-- Anything that would be useful and is clinically relevant to another provider should be contributed.
+- Ultimately, anything that would be useful and is clinically relevant to another provider should be contributed.
   - This includes, but is not limited to, diagnoses, treatments, medications, and any significant findings from the encounter.
