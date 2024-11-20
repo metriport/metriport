@@ -2,14 +2,14 @@ import { DataTypes } from "sequelize";
 import type { Migration } from "..";
 
 const patientTableName = "patient";
-const optingOutColumn = "opting_out";
+const hieOptOutColumn = "hie_opt_out";
 
 export const up: Migration = async ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
     await queryInterface.addColumn(
       patientTableName,
-      optingOutColumn,
-      { type: DataTypes.BOOLEAN, defaultValue: false },
+      hieOptOutColumn,
+      { type: DataTypes.BOOLEAN, defaultValue: false, allowNull: false },
       { transaction }
     );
   });
@@ -17,7 +17,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
 
 export const down: Migration = ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
-    await queryInterface.removeColumn(patientTableName, optingOutColumn, {
+    await queryInterface.removeColumn(patientTableName, hieOptOutColumn, {
       transaction,
     });
   });

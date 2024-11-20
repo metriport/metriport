@@ -41,6 +41,6 @@ export function schemaDemographicsToPatientData(input: Demographics): PatientDat
 
 export type PatientOptOutResponse = {
   id: string;
-  optingOut: boolean;
+  hieOptOut: boolean;
   message: string;
 };

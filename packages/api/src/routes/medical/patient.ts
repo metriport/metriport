@@ -19,10 +19,7 @@ import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
-import {
-  optingPatientInOrOut,
-  isPatientOptingOut,
-} from "../../command/medical/patient/opting-out-patient";
+import { setHieOptOut, isPatientOptingOut } from "../../command/medical/patient/opting-out-patient";
 import { handleDataContribution } from "../../command/medical/patient/data-contribution/handle-data-contributions";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
@@ -454,17 +451,17 @@ router.put(
     const { cxId, patient } = getPatientInfoOrFail(req);
     const optingOut = isTrue(getFrom("query").orFail("optingOut", req));
 
-    const result = await optingPatientInOrOut({ cxId, patientId: patient.id, optingOut });
+    const result = await setHieOptOut({ cxId, patientId: patient.id, optingOut });
 
     const respPayload: PatientOptOutResponse = {
       id: result.id,
-      optingOut: result.optingOut ?? false,
+      hieOptOut: result.hieOptOut ?? false,
       message: `Patient has been opted ${
-        result.optingOut ? "out of" : "in for"
+        result.hieOptOut ? "out of" : "in for"
       } data pulling and sharing`,
     };
 
-    return res.json(respPayload);
+    return res.status(status.OK).json(respPayload);
   })
 );
 
@@ -483,15 +480,15 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, patient } = getPatientInfoOrFail(req);
 
-    const optingOut = await isPatientOptingOut({ cxId, patientId: patient.id });
+    const hieOptOut = await isPatientOptingOut({ cxId, patientId: patient.id });
 
     const respPayload: PatientOptOutResponse = {
       id: patient.id,
-      optingOut: optingOut,
-      message: `Patient has been opted ${optingOut ? "out of" : "in for"} data pulling and sharing`,
+      hieOptOut: hieOptOut,
+      message: `Patient has been opted ${hieOptOut ? "out of" : "in for"} data pulling and sharing`,
     };
 
-    return res.json(respPayload);
+    return res.status(status.OK).json(respPayload);
   })
 );
 

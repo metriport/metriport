@@ -9,7 +9,7 @@ import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { emptyFunction } from "@metriport/shared";
+import { emptyFunction, BadRequestError } from "@metriport/shared";
 import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
 import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
 import { processAsyncError } from "../../../errors";
@@ -69,6 +69,10 @@ export async function queryDocumentsAcrossHIEs({
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
+
+  if (patient.optingOut) {
+    throw new BadRequestError("Patient has opted out of pulling from and sharing to the hies");
+  }
 
   validateOptionalFacilityId(patient, facilityId);
 
