@@ -19,13 +19,12 @@ import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
-import { setHieOptOut, isPatientOptingOut } from "../../command/medical/patient/update-hie-opt-out";
+import { setHieOptOut, getHieOptOut } from "../../command/medical/patient/update-hie-opt-out";
 import { handleDataContribution } from "../../command/medical/patient/data-contribution/handle-data-contributions";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import BadRequestError from "../../errors/bad-request";
 import NotFoundError from "../../errors/not-found";
@@ -44,7 +43,7 @@ import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
 import {
   patientUpdateSchema,
   schemaUpdateToPatientData,
-  PatientOptOutResponse,
+  PatientHieOptOutResponse,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
@@ -450,15 +449,11 @@ router.put(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, id } = getPatientInfoOrFail(req);
-    const patient = await getPatientOrFail({
-      id,
-      cxId,
-    });
     const hieOptOut = isTrue(getFrom("query").orFail("hieOptOut", req));
 
-    const result = await setHieOptOut({ patient, hieOptOut });
+    const result = await setHieOptOut({ patientId: id, cxId, hieOptOut });
 
-    const respPayload: PatientOptOutResponse = {
+    const respPayload: PatientHieOptOutResponse = {
       id: result.id,
       hieOptOut: result.hieOptOut ?? false,
       message: `Patient has been opted ${
@@ -485,9 +480,9 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, patient } = getPatientInfoOrFail(req);
 
-    const hieOptOut = await isPatientOptingOut({ cxId, patientId: patient.id });
+    const hieOptOut = await getHieOptOut({ cxId, patientId: patient.id });
 
-    const respPayload: PatientOptOutResponse = {
+    const respPayload: PatientHieOptOutResponse = {
       id: patient.id,
       hieOptOut: hieOptOut,
       message: `Patient has been opted ${hieOptOut ? "out of" : "in for"} data pulling and sharing`,
