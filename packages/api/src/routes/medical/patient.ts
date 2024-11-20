@@ -19,7 +19,10 @@ import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
-import { optingPatientInOrOut } from "../../command/medical/patient/opting-out-patient";
+import {
+  optingPatientInOrOut,
+  isPatientOptingOut,
+} from "../../command/medical/patient/opting-out-patient";
 import { handleDataContribution } from "../../command/medical/patient/data-contribution/handle-data-contributions";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
@@ -40,7 +43,11 @@ import { checkRateLimit } from "../middlewares/rate-limiting";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
-import { patientUpdateSchema, schemaUpdateToPatientData } from "./schemas/patient";
+import {
+  patientUpdateSchema,
+  schemaUpdateToPatientData,
+  PatientOptOutResponse,
+} from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
 const router = Router();
@@ -449,12 +456,39 @@ router.put(
 
     const result = await optingPatientInOrOut({ cxId, patientId: patient.id, optingOut });
 
-    const respPayload = {
+    const respPayload: PatientOptOutResponse = {
       id: result.id,
-      optingOut: result.optingOut,
+      optingOut: result.optingOut ?? false,
       message: `Patient has been opted ${
         result.optingOut ? "out of" : "in for"
       } data pulling and sharing`,
+    };
+
+    return res.json(respPayload);
+  })
+);
+
+// TODO #2475 expose this on the patient
+/** ---------------------------------------------------------------------------
+ * GET /patient/:id/opting-out
+ *
+ * Returns whether the patient is opted out of data pulling and sharing.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.patientId The ID of the patient whose data is to be returned.
+ */
+router.get(
+  "/opting-out",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, patient } = getPatientInfoOrFail(req);
+
+    const optingOut = await isPatientOptingOut({ cxId, patientId: patient.id });
+
+    const respPayload: PatientOptOutResponse = {
+      id: patient.id,
+      optingOut: optingOut,
+      message: `Patient has been opted ${optingOut ? "out of" : "in for"} data pulling and sharing`,
     };
 
     return res.json(respPayload);
