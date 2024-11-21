@@ -1,7 +1,13 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { Address, Contact, MetriportMedicalApi, PatientCreate } from "@metriport/api-sdk";
+import {
+  Address,
+  Contact,
+  MetriportMedicalApi,
+  PatientCreate,
+  PatientDTO,
+} from "@metriport/api-sdk";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { sleep } from "@metriport/core/util/sleep";
@@ -73,12 +79,14 @@ const getFolderName = buildGetDirPathInside(`bulk-insert`);
 
 type Params = {
   dryrun?: boolean;
+  update?: boolean;
 };
 const program = new Command();
 program
   .name("bulk-insert-patients")
   .description("CLI to import patients from a .csv file into the Metriport API.")
   .option(`--dryrun`, "Just validate the CSV without importing the patients")
+  .option(`--update`, "If")
   .showHelpAfterError();
 
 const metriportAPI = new MetriportMedicalApi(apiKey, {
@@ -88,8 +96,9 @@ const metriportAPI = new MetriportMedicalApi(apiKey, {
 async function main() {
   initRunsFolder();
   program.parse();
-  const { dryrun: dryRunParam } = program.opts<Params>();
+  const { dryrun: dryRunParam, update: updateParam } = program.opts<Params>();
   const dryRun = dryRunParam ?? false;
+  const update = updateParam ?? false;
 
   const { orgName, facilityId: localFacilityId } = await getCxData(cxId, facilityId);
   if (!localFacilityId) throw new Error("No facility found");
@@ -130,7 +139,7 @@ async function main() {
           `Found ${mappingErrors.length} mapping errors. Check ${errorFilePath} for details.`
         );
       }
-      await loadData(results, orgName, localFacilityId, outputFolderName, dryRun);
+      await loadData(results, orgName, localFacilityId, outputFolderName, dryRun, update);
     });
 }
 
@@ -139,12 +148,13 @@ async function loadData(
   orgName: string,
   localFacilityId: string,
   outputFolderName: string,
-  dryRun: boolean
+  dryRun: boolean,
+  update: boolean
 ) {
   console.log(`Loaded ${results.length} patients from the CSV, deduplicating them...`);
   const patientsCreates = dedupPatientCreates(results);
 
-  const msg = `${patientsCreates.length} unique patients from the CSV file to be inserted at org/cx ${orgName}`;
+  const msg = `${patientsCreates.length} unique patients from the CSV file to be inserted at org/cx ${orgName} with update ${update}`;
   console.log(msg);
 
   const storePatientId = buildStorePatientId(outputFolderName);
@@ -157,15 +167,13 @@ async function loadData(
     console.log("Done.");
     return;
   }
-  await displayWarningAndConfirmation(patientsCreates.length, orgName, dryRun);
+  await displayWarningAndConfirmation(patientsCreates.length, orgName, dryRun, update);
   let successfulCount = 0;
   const errors: Array<{ firstName: string; lastName: string; dob: string; message: string }> = [];
 
   for (const [i, patient] of patientsCreates.entries()) {
     try {
-      const createdPatient = await metriportAPI.createPatient(patient, localFacilityId, {
-        rerunPdOnNewDemographics: true,
-      });
+      const createdPatient = await createOrUpdate(patient, localFacilityId, update);
       successfulCount++;
       console.log(i + 1, createdPatient);
       storePatientId(createdPatient.id, createdPatient.externalId);
@@ -181,6 +189,24 @@ async function loadData(
   }
   console.log(errors);
   console.log(`Done, inserted ${successfulCount} patients.`);
+}
+
+async function createOrUpdate(
+  patient: PatientCreate,
+  facilityId: string,
+  update: boolean
+): Promise<PatientDTO> {
+  if (update) {
+    const existingPatient = await metriportAPI.matchPatient(patient);
+    if (existingPatient) {
+      return await metriportAPI.updatePatient({ id: existingPatient.id, ...patient }, facilityId, {
+        rerunPdOnNewDemographics: true,
+      });
+    }
+  }
+  return await metriportAPI.createPatient(patient, facilityId, {
+    rerunPdOnNewDemographics: true,
+  });
 }
 
 function dedupPatientCreates(patients: PatientCreate[]): PatientCreate[] {
@@ -252,11 +278,12 @@ function deduplicateContacts(contacts: Contact[]): Contact[] {
 async function displayWarningAndConfirmation(
   patientCount: number,
   orgName: string,
-  dryRun: boolean
+  dryRun: boolean,
+  update: boolean
 ) {
   if (!dryRun) logNotDryRun();
   console.log(
-    `Inserting ${patientCount} patients at org/cx ${orgName} in ${confirmationTime.asSeconds()} seconds...`
+    `Inserting ${patientCount} patients at org/cx ${orgName} in ${confirmationTime.asSeconds()} with update ${update} seconds...`
   );
   await sleep(confirmationTime.asMilliseconds());
   console.log(`running...`);
