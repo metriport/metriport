@@ -1,5 +1,5 @@
 {
-  "total": 374198,
+  "total": 374343,
   "countPerType": {
     "AllergyIntolerance": 819,
     "Composition": 9445,
@@ -14,7 +14,7 @@
     "Organization": 14764,
     "Practitioner": 54407,
     "RelatedPerson": 12260,
-    "DiagnosticReport": 27810,
+    "DiagnosticReport": 27955,
     "Encounter": 10420,
     "Location": 8262,
     "MedicationRequest": 7163,
