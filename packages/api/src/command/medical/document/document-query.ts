@@ -71,7 +71,7 @@ export async function queryDocumentsAcrossHIEs({
   const patient = await getPatientOrFail({ id: patientId, cxId });
 
   if (patient.hieOptOut) {
-    throw new BadRequestError("Patient has opted out of pulling from and sharing to the hies");
+    throw new BadRequestError("Patient has opted out from the networks");
   }
 
   validateOptionalFacilityId(patient, facilityId);

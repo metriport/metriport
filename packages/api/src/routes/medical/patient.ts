@@ -449,6 +449,7 @@ router.put(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, id } = getPatientInfoOrFail(req);
+    // TODO #2475 SEND THE hieOptOut ID IN THE BODY
     const hieOptOut = isTrue(getFrom("query").orFail("hieOptOut", req));
 
     const result = await setHieOptOut({ patientId: id, cxId, hieOptOut });
