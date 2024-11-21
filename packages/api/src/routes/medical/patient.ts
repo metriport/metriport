@@ -457,9 +457,7 @@ router.put(
     const respPayload: PatientHieOptOutResponse = {
       id: result.id,
       hieOptOut: result.hieOptOut ?? false,
-      message: `Patient has been opted ${
-        result.hieOptOut ? "out of" : "in for"
-      } data pulling and sharing`,
+      message: `Patient has been opted ${result.hieOptOut ? "out from" : "in to"} the networks`,
     };
 
     return res.status(status.OK).json(respPayload);
