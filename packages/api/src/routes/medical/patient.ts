@@ -19,7 +19,7 @@ import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
-import { setHieOptOut, getHieOptOut } from "../../command/medical/patient/update-hie-opt-out";
+import { setHieOptOut } from "../../command/medical/patient/update-hie-opt-out";
 import { handleDataContribution } from "../../command/medical/patient/data-contribution/handle-data-contributions";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
@@ -438,7 +438,7 @@ router.get(
 /** ---------------------------------------------------------------------------
  * PUT /patient/:id/hie-opt-out
  *
- * Returns whether the patient is opted out of data pulling and sharing.
+ * Returns whether the patient is opted out of HIE networks.
  *
  * @param req.cxId The customer ID.
  * @param req.param.patientId The ID of the patient whose data is to be returned.
@@ -458,33 +458,6 @@ router.put(
       id: result.id,
       hieOptOut: result.hieOptOut ?? false,
       message: `Patient has been opted ${result.hieOptOut ? "out from" : "in to"} the networks`,
-    };
-
-    return res.status(status.OK).json(respPayload);
-  })
-);
-
-// TODO #2475 expose this on the patient
-/** ---------------------------------------------------------------------------
- * GET /patient/:id/hie-opt-out
- *
- * Returns whether the patient is opted out of data pulling and sharing.
- *
- * @param req.cxId The customer ID.
- * @param req.param.patientId The ID of the patient whose data is to be returned.
- */
-router.get(
-  "/hie-opt-out",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const { cxId, patient } = getPatientInfoOrFail(req);
-
-    const hieOptOut = await getHieOptOut({ cxId, patientId: patient.id });
-
-    const respPayload: PatientHieOptOutResponse = {
-      id: patient.id,
-      hieOptOut: hieOptOut,
-      message: `Patient has opted ${hieOptOut ? "out from" : "in to"} the networks`,
     };
 
     return res.status(status.OK).json(respPayload);

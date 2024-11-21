@@ -23,6 +23,7 @@ export const patientImportPatientSchema = z.object({
   email1: z.string().refine(isEmailValid, { message: "Invalid email" }).optional(),
   email2: z.string().refine(isEmailValid, { message: "Invalid email" }).optional(),
   externalid: z.string().optional(),
+  hieoptout: z.boolean().optional(),
 });
 export type PatientImportPatient = z.infer<typeof patientImportPatientSchema>;
 

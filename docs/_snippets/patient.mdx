@@ -1,7 +1,7 @@
 <Tip>
-  The more demographic information you can provide about a Patient, the higher chances Metriport will be
-  able to find a match. For example: nicknames, old addresses, multiple phone numbers, a pre-marital
-  last name, etc.
+  The more demographic information you can provide about a Patient, the higher chances Metriport
+  will be able to find a match. For example: nicknames, old addresses, multiple phone numbers, a
+  pre-marital last name, etc.
 </Tip>
 
 <Snippet file="demographics.mdx" />
@@ -13,4 +13,14 @@
 <Info>
   If the optional `externalId` param is provided, you can expect to see it returned in the responses
   involving the Patient. It will also be included within the webhook payloads.
+</Info>
+
+<ParamField body="hieOptOut" type="boolean">
+  Indicates if the Patient has opted out of Health Information Exchanges (HIE).
+</ParamField>
+
+<Info>
+  If the optional `hieOptOut` param is set to `true`, the Patient will not be included in any HIE
+  exchanges. This means that the Patient's information will not be shared with other healthcare
+  providers and will not be able to be accessed from other healthcare providers.
 </Info>

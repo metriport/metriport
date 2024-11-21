@@ -15,7 +15,7 @@ import { runOrSchedulePatientDiscoveryAcrossHies } from "../../../external/hie/r
 
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientUpdateCmd = BaseUpdateCmdWithCustomer &
-  PatientNoExternalData & { externalId?: string; facilityId: string };
+  PatientNoExternalData & { externalId?: string; hieOptOut?: boolean; facilityId: string };
 
 // TODO build unit test to validate the patient is being sent correctly to Sequelize
 // See: document-query.test.ts, "send a modified object to Sequelize"
@@ -95,6 +95,7 @@ export async function updatePatientWithoutHIEs(
           contact: sanitized.contact,
         },
         externalId: sanitized.externalId,
+        hieOptOut: sanitized.hieOptOut,
       },
       { transaction }
     );

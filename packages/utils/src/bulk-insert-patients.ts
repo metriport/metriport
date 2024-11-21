@@ -372,6 +372,7 @@ export function mapCSVPatientToMetriportPatient(csvPatient: {
   email2: string | undefined;
   id: string | undefined;
   externalid: string | undefined;
+  hieOptOut: boolean | undefined;
 }): PatientCreate | Array<{ field: string; error: string }> {
   const errors: Array<{ field: string; error: string }> = [];
 

@@ -270,6 +270,10 @@ types:
       externalId:
         type: optional<string>
         docs: An external Patient ID to associate to a Patient in Metriport.
+      hieOptOut:
+        type: optional<boolean>
+        docs: |
+          Whether the Patient has opted out of the Health Information Exchanges (HIEs).
 
   Patient:
     extends: BasePatient
