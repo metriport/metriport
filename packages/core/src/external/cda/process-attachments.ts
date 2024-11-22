@@ -73,9 +73,7 @@ export async function processAttachments({
   const docRefs: DocumentReference[] = [];
   const uploadDetails: UploadParams[] = [];
 
-  b64Attachments.acts.map(actEntry => {
-    const act = actEntry.act;
-
+  b64Attachments.acts.map(act => {
     const fileDetails = getDetailsForAct(act.text);
     if (!fileDetails) return;
 
@@ -107,11 +105,7 @@ export async function processAttachments({
       const fileDetails = getDetailsForMediaObs(obsMedia.value);
       if (!fileDetails) return;
 
-      const docRef = buildDocumentReferenceFromObsMedia(
-        patientId,
-        extensions,
-        mediaEntry.observationMedia
-      );
+      const docRef = buildDocumentReferenceFromObsMedia(patientId, extensions, obsMedia);
       if (!docRef.id) throw new Error("Missing ID in DocRef");
       const fileKey = createAttachmentUploadFilePath({
         filePath,
@@ -156,7 +150,7 @@ async function handleFhirUpload(
   fhirUrl: string,
   log: typeof console.log
 ): Promise<void> {
-  log(`Transaction bundle would be: ${JSON.stringify(transactionBundle.entry)}`);
+  log(`Transaction bundle: ${JSON.stringify(transactionBundle)}`);
   const fhirApi = makeFhirApi(cxId, fhirUrl);
   await executeWithNetworkRetries(async () => await fhirApi.executeBatch(transactionBundle), {
     log,
@@ -192,7 +186,7 @@ function buildDocumentReferenceDraft(
 
 function getDetailsForAct(document: CdaOriginalText | undefined): FileDetails | undefined {
   const fileB64Contents = document?.["#text"];
-  if (!fileB64Contents) return;
+  if (!fileB64Contents) return undefined;
 
   const mimeType = document?._mediaType;
   return {
@@ -305,7 +299,7 @@ function buildUploadParams(
 
 function getDetailsForMediaObs(value: CdaValueEd | undefined): FileDetails | undefined {
   const fileB64Contents = value?.reference?._value;
-  if (!fileB64Contents) return;
+  if (!fileB64Contents) return undefined;
 
   const mimeType = value?._mediaType;
   return {
@@ -318,7 +312,7 @@ function buildDocumentReferenceFromObsMedia(
   patientId: string,
   extensions: Extension[],
   obsMedia: ObservationMedia
-) {
+): DocumentReference {
   const docRef = buildDocumentReferenceDraft(patientId, extensions);
   const identifiers = getIdentifiers(obsMedia.id);
 

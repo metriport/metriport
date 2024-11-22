@@ -4,6 +4,7 @@ import {
   ObservationEntry,
   ObservationMediaEntry,
   ObservationOrganizer,
+  ObservationOrganizerEntry,
 } from "../../fhir-to-cda/cda-types/shared-types";
 
 const observationOrganizerTemplateId = "2.16.840.1.113883.10.20.22.4.1";
@@ -14,7 +15,7 @@ export function isConcernActEntry(entry: any): entry is ConcernActEntry {
 }
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function isObservationOrganizer(entry: any): entry is ObservationOrganizer {
+export function isObservationOrganizer(entry: any): entry is ObservationOrganizerEntry {
   return toArray(entry?.organizer?.templateId).some(
     template => template._root == observationOrganizerTemplateId
   );
@@ -27,7 +28,7 @@ export function isMediaObservation(
 }
 
 export function getMediaObservations(
-  entry: ObservationOrganizer
+  organizer: ObservationOrganizer
 ): ObservationMediaEntry[] | undefined {
-  return toArray(entry.organizer.component).filter(isMediaObservation);
+  return toArray(organizer.component).filter(isMediaObservation);
 }

@@ -5,7 +5,7 @@ import {
   ConcernActEntry,
   EncounterEntry,
   ObservationEntry,
-  ObservationOrganizer,
+  ObservationOrganizerEntry,
   ProcedureActivityEntry,
   SubstanceAdministationEntry,
   TextParagraph,
@@ -23,7 +23,7 @@ type CdaSection<T> =
     }
   | undefined;
 
-export type ResultsSection = CdaSection<ObservationOrganizer>;
+export type ResultsSection = CdaSection<ObservationOrganizerEntry>;
 export type MedicationSection = CdaSection<SubstanceAdministationEntry>;
 export type ImmunizationsSection = CdaSection<SubstanceAdministationEntry>;
 export type MentalStatusSection = CdaSection<ObservationEntry>;
@@ -31,8 +31,8 @@ export type SocialHistorySection = CdaSection<ObservationEntry>;
 export type ProblemsSection = CdaSection<ConcernActEntry>;
 export type AllergiesSection = CdaSection<ConcernActEntry>;
 export type EncountersSection = CdaSection<EncounterEntry>;
-export type VitalSignsSection = CdaSection<ObservationOrganizer>;
-export type FamilyHistorySection = CdaSection<ObservationOrganizer>;
+export type VitalSignsSection = CdaSection<ObservationOrganizerEntry>;
+export type FamilyHistorySection = CdaSection<ObservationOrganizerEntry>;
 export type NotesSection = CdaSection<ConcernActEntry>;
 export type ProceduresSection = CdaSection<ProcedureActivityEntry>;
-export type AssessmentAndPlanSection = CdaSection<ObservationOrganizer>;
+export type AssessmentAndPlanSection = CdaSection<ObservationOrganizerEntry>;

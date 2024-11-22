@@ -1,7 +1,7 @@
 import { toArray } from "@metriport/shared";
 import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { XMLBuilder } from "fast-xml-parser";
-import { ConcernActEntry, ObservationOrganizer } from "../../fhir-to-cda/cda-types/shared-types";
+import { ConcernActEntryAct, ObservationOrganizer } from "../../fhir-to-cda/cda-types/shared-types";
 import { BINARY_MIME_TYPES } from "../../util/mime";
 import { getMediaObservations, isConcernActEntry, isObservationOrganizer } from "./shared";
 
@@ -10,7 +10,7 @@ const resultsTemplateId = "2.16.840.1.113883.10.20.22.2.3.1";
 const b64Representation = "B64";
 
 export type B64Attachments = {
-  acts: ConcernActEntry[];
+  acts: ConcernActEntryAct[];
   organizers: ObservationOrganizer[];
   total: number;
 };
@@ -48,23 +48,24 @@ export function removeBase64PdfEntries(payloadRaw: string): {
           //eslint-disable-next-line @typescript-eslint/no-explicit-any
           comp.section.entry = toArray(comp.section.entry).filter((entry: any) => {
             if (isConcernActEntry(entry)) {
-              const mediaType = entry.act?.text?.["_mediaType"]?.trim().toLowerCase();
+              const act = entry.act;
+              const mediaType = act.text?.["_mediaType"]?.trim().toLowerCase();
               if (
                 (mediaType == undefined || BINARY_MIME_TYPES.includes(mediaType)) &&
-                isB64Representation(entry.act?.text?.["_representation"])
+                isB64Representation(act.text?.["_representation"])
               ) {
                 isRemovedEntries = true;
-                b64Attachments.acts.push(entry);
+                b64Attachments.acts.push(act);
                 b64Attachments.total++;
                 return false;
               }
             } else if (isObservationOrganizer(entry)) {
-              const mediaComponent = getMediaObservations(entry);
+              const mediaComponents = getMediaObservations(entry.organizer);
               // TODO: Apparently, some XML have B64 attachments in regular observations, so need to account for that as well
-              if (!mediaComponent?.length) return true;
+              if (!mediaComponents?.length) return true;
 
               let filterOut = false;
-              mediaComponent.map(comp => {
+              mediaComponents.map(comp => {
                 const val = comp.observationMedia.value;
                 const mediaType = val?._mediaType?.trim().toLowerCase();
                 if (
@@ -75,7 +76,7 @@ export function removeBase64PdfEntries(payloadRaw: string): {
                 }
               });
               if (filterOut) {
-                b64Attachments.organizers.push(entry);
+                b64Attachments.organizers.push(entry.organizer);
                 b64Attachments.total++;
                 isRemovedEntries = true;
                 return false;

@@ -441,26 +441,28 @@ export type AssignedEntity = {
 };
 
 export type ObservationOrganizer = {
-  _typeCode?: string;
-  organizer: {
-    _classCode: Entry | string;
-    _moodCode: string;
-    templateId: CdaInstanceIdentifier[];
-    id?: CdaInstanceIdentifier;
-    code?: CdaCodeCe | CdaCodeCv | undefined;
-    statusCode: {
-      _code?: string | undefined;
-    };
-    effectiveTime?: EffectiveTimeLowHigh;
-    subject?: {
-      relatedSubject?: {
-        _classCode: string;
-        code: CdaCodeCv | undefined;
-        subject: Subject;
-      };
-    };
-    component?: (ObservationEntry | ObservationMediaEntry)[] | undefined;
+  _classCode: Entry | string;
+  _moodCode: string;
+  templateId: CdaInstanceIdentifier[];
+  id?: CdaInstanceIdentifier;
+  code?: CdaCodeCe | CdaCodeCv | undefined;
+  statusCode: {
+    _code?: string | undefined;
   };
+  effectiveTime?: EffectiveTimeLowHigh;
+  subject?: {
+    relatedSubject?: {
+      _classCode: string;
+      code: CdaCodeCv | undefined;
+      subject: Subject;
+    };
+  };
+  component?: (ObservationEntry | ObservationMediaEntry)[] | undefined;
+};
+
+export type ObservationOrganizerEntry = {
+  _typeCode?: string;
+  organizer: ObservationOrganizer;
 };
 
 export type ResponsibleParty = {
