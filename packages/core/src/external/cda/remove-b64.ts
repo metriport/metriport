@@ -61,26 +61,33 @@ export function removeBase64PdfEntries(payloadRaw: string): {
               }
             } else if (isObservationOrganizer(entry)) {
               const mediaComponents = getMediaObservations(entry.organizer);
-              // TODO: Apparently, some XML have B64 attachments in regular observations, so need to account for that as well
+              // TODO: 2474: Apparently, some XML have B64 attachments in regular observations, so need to account for that as well
               if (!mediaComponents?.length) return true;
 
-              let filterOut = false;
-              mediaComponents.map(comp => {
+              const allComponents = toArray(entry.organizer.component);
+              const nonMediaComponents = allComponents.filter(
+                comp => !("observationMedia" in comp)
+              );
+              const filteredMediaComponents = mediaComponents.filter(comp => {
                 const val = comp.observationMedia.value;
                 const mediaType = val?._mediaType?.trim().toLowerCase();
-                if (
+                const shouldRemove =
                   (mediaType == undefined || BINARY_MIME_TYPES.includes(mediaType)) &&
-                  isB64Representation(val?._representation)
-                ) {
-                  filterOut = true;
+                  isB64Representation(val?._representation);
+
+                if (shouldRemove) {
+                  b64Attachments.organizers.push(entry.organizer);
+                  b64Attachments.total++;
+                  isRemovedEntries = true;
                 }
+                return !shouldRemove;
               });
-              if (filterOut) {
-                b64Attachments.organizers.push(entry.organizer);
-                b64Attachments.total++;
-                isRemovedEntries = true;
-                return false;
-              }
+
+              const remainingComponents = [...nonMediaComponents, ...filteredMediaComponents];
+              entry.organizer.component = remainingComponents;
+
+              // Keep entry only if there are remaining components
+              return remainingComponents.length > 0;
             }
             return true;
           });
