@@ -129,7 +129,7 @@
                             {{/if}}
                             {{#if obsEntry.procedure.text._b64}}
                                 {{>References/Procedure/report.hbs ID=(generateUUID (toJsonString obsEntry.procedure)) REF=(concat 'DiagnosticReport/' (generateUUID (toJsonString drEntry.organizer)))}}
-                                {{>References/DiagnosticReport/assessment.hbs text=(toJsonString (base64Decode obsEntry.procedure.text._b64)) ID=(generateUUID (toJsonString drEntry.organizer))}}
+                                {{>References/DiagnosticReport/assessment.hbs text=(base64Decode obsEntry.procedure.text._b64) ID=(generateUUID (toJsonString drEntry.organizer))}}
                             {{/if}}
                         {{/if}}
                     {{/each}}
