@@ -146,7 +146,7 @@ export async function getPatientIdOrFail({
   } else {
     const defaultFacility = await getFacilityMappingOrFail({
       cxId,
-      externalId: defaultFacilityMappingExternalId,
+      externalId: `${athenaPracticeId}-${defaultFacilityMappingExternalId}`,
       source: EhrSources.athena,
     });
     metriportPatient = await createMetriportPatient({
