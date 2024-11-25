@@ -49,10 +49,9 @@ export function removeBase64PdfEntries(payloadRaw: string): {
           comp.section.entry = toArray(comp.section.entry).filter((entry: any) => {
             if (isConcernActEntry(entry)) {
               const act = entry.act;
-              const mediaType = act.text?.["_mediaType"]?.trim().toLowerCase();
               if (
-                (mediaType == undefined || BINARY_MIME_TYPES.includes(mediaType)) &&
-                isB64Representation(act.text?.["_representation"])
+                isBinaryMimeTypeOrUndefined(act.text?._mediaType) &&
+                isB64Representation(act.text?._representation)
               ) {
                 isRemovedEntries = true;
                 b64Attachments.acts.push(act);
@@ -70,9 +69,8 @@ export function removeBase64PdfEntries(payloadRaw: string): {
               );
               const filteredMediaComponents = mediaComponents.filter(comp => {
                 const val = comp.observationMedia.value;
-                const mediaType = val?._mediaType?.trim().toLowerCase();
                 const shouldRemove =
-                  (mediaType == undefined || BINARY_MIME_TYPES.includes(mediaType)) &&
+                  isBinaryMimeTypeOrUndefined(val?._mediaType) &&
                   isB64Representation(val?._representation);
 
                 if (shouldRemove) {
@@ -109,6 +107,13 @@ export function removeBase64PdfEntries(payloadRaw: string): {
     documentContents: isRemovedEntries ? xml : payloadRaw,
     b64Attachments: b64Attachments.total > 0 ? b64Attachments : undefined,
   };
+}
+
+function isBinaryMimeTypeOrUndefined(mediaType: string | undefined): boolean {
+  const mediaTypeClean = mediaType?.trim().toLowerCase();
+  if (!mediaTypeClean) return true;
+
+  return BINARY_MIME_TYPES.includes(mediaTypeClean);
 }
 
 function isB64Representation(rep: string | undefined): boolean {
