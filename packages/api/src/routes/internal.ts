@@ -6,20 +6,20 @@ import { updateCxHieEnabledFFs } from "../command/internal/update-hie-enabled-fe
 import {
   deleteCxMapping,
   findOrCreateCxMapping,
-  updateCxMapping,
   getCxMappingsByCustomer,
+  setExternalIdOnCxMapping,
 } from "../command/mapping/cx";
 import {
   deleteFacilityMapping,
   findOrCreateFacilityMapping,
-  updateFacilityMapping,
   getFacilityMappingsByCustomer,
+  setExternalIdOnFacilityMapping,
 } from "../command/mapping/facility";
 import { checkApiQuota } from "../command/medical/admin/api";
 import { dbMaintenance } from "../command/medical/admin/db-maintenance";
 import {
-  populateFhirServer,
   PopulateFhirServerResponse,
+  populateFhirServer,
 } from "../command/medical/admin/populate-fhir";
 import { getFacilities, getFacilityOrFail } from "../command/medical/facility/get-facility";
 import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
@@ -354,19 +354,19 @@ router.get(
 /**
  * PUT /internal/cx-mapping
  *
- * Update cx mapping
+ * Update cx mapping external ID
  *
  * @param req.query.cxId - The cutomer's ID.
  * @param req.query.externalId - Mapped external ID.
  */
 router.put(
-  "/cx-mapping/:id",
+  "/cx-mapping/:id/external-id",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFrom("params").orFail("id", req);
     const externalId = getFromQueryOrFail("externalId", req);
-    await updateCxMapping({
+    await setExternalIdOnCxMapping({
       cxId,
       id,
       externalId,
@@ -453,19 +453,19 @@ router.get(
 /**
  * PUT /internal/facility-mapping/:id
  *
- * Update facility mapping
+ * Update facility mapping external ID
  *
  * @param req.query.cxId - The cutomer's ID.
  * @param req.query.externalId - Mapped external ID.
  */
 router.put(
-  "/facility-mapping/:id",
+  "/facility-mapping/:id/external-id",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFrom("params").orFail("id", req);
     const externalId = getFromQueryOrFail("externalId", req);
-    await updateFacilityMapping({
+    await setExternalIdOnFacilityMapping({
       cxId,
       id,
       externalId,

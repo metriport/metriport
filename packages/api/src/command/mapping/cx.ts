@@ -51,16 +51,23 @@ export async function getCxMappingOrFail({
   return mapping;
 }
 
-export async function getCxMappingsBySource(where: { source: CxSources }): Promise<CxMapping[]> {
-  const mappings = await CxMappingModel.findAll({ where });
+export async function getCxMappingsBySource({
+  source,
+}: {
+  source: CxSources;
+}): Promise<CxMapping[]> {
+  const mappings = await CxMappingModel.findAll({ where: { source } });
   return mappings.map(m => m.dataValues);
 }
 
-export async function getCxMappingsByCustomer(where: {
+export async function getCxMappingsByCustomer({
+  cxId,
+  source,
+}: {
   cxId: string;
   source?: string;
 }): Promise<CxMapping[]> {
-  const mappings = await CxMappingModel.findAll({ where });
+  const mappings = await CxMappingModel.findAll({ where: { cxId, ...(source && { source }) } });
   return mappings.map(m => m.dataValues);
 }
 
@@ -89,7 +96,7 @@ async function getCxMappingModelByIdOrFail({
   return mapping;
 }
 
-export async function updateCxMapping({
+export async function setExternalIdOnCxMapping({
   cxId,
   id,
   externalId,

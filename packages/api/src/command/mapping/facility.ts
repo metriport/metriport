@@ -54,11 +54,16 @@ export async function getFacilityMappingOrFail({
   return mapping;
 }
 
-export async function getFacilityMappingsByCustomer(where: {
+export async function getFacilityMappingsByCustomer({
+  cxId,
+  source,
+}: {
   cxId: string;
   source?: string;
 }): Promise<FacilityMapping[]> {
-  const mappings = await FacilityMappingModel.findAll({ where });
+  const mappings = await FacilityMappingModel.findAll({
+    where: { cxId, ...(source && { source }) },
+  });
   return mappings.map(m => m.dataValues);
 }
 
@@ -87,7 +92,7 @@ async function getFacilityMappingModelByIdOrFail({
   return mapping;
 }
 
-export async function updateFacilityMapping({
+export async function setExternalIdOnFacilityMapping({
   cxId,
   id,
   externalId,
