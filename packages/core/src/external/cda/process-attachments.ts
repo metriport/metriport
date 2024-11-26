@@ -20,6 +20,7 @@ import {
   ConcernActEntryAct,
   EffectiveTimeLowHigh,
   ObservationMedia,
+  ObservationOrganizer,
 } from "../../fhir-to-cda/cda-types/shared-types";
 import { executeAsynchronously } from "../../util/concurrency";
 import { Config } from "../../util/config";
@@ -105,7 +106,12 @@ export async function processAttachments({
       const fileDetails = getDetailsForMediaObs(obsMedia.value);
       if (!fileDetails) return;
 
-      const docRef = buildDocumentReferenceFromObsMedia(patientId, extensions, obsMedia);
+      const docRef = buildDocumentReferenceFromObsMedia(
+        patientId,
+        extensions,
+        organizerEntry,
+        obsMedia
+      );
       if (!docRef.id) throw new Error("Missing ID in DocRef");
       const fileKey = createAttachmentUploadFilePath({
         filePath,
@@ -205,16 +211,11 @@ function buildDocumentReferenceFromAct(
   const date = getDate(act.effectiveTime);
   const type = getType(act.code);
 
-  docRef.id = uuidv4();
-
-  if (identifiers.length) docRef.identifier = identifiers;
-  if (type) {
-    docRef.type = type;
-    if (type.text) docRef.description = type.text;
-  }
-  if (date) docRef.date = date;
-
-  return docRef;
+  return fillDocumentReference(docRef, {
+    identifiers,
+    type,
+    date,
+  });
 }
 
 function getIdentifiers(
@@ -311,13 +312,36 @@ function getDetailsForMediaObs(value: CdaValueEd | undefined): FileDetails | und
 function buildDocumentReferenceFromObsMedia(
   patientId: string,
   extensions: Extension[],
+  organizer: ObservationOrganizer,
   obsMedia: ObservationMedia
 ): DocumentReference {
   const docRef = buildDocumentReferenceDraft(patientId, extensions);
   const identifiers = getIdentifiers(obsMedia.id);
+  const date = getDate(organizer.effectiveTime);
+  const type = getType(organizer.code);
+  return fillDocumentReference(docRef, {
+    identifiers,
+    type,
+    date,
+  });
+}
 
+function fillDocumentReference(
+  docRef: DocumentReference,
+  params: {
+    identifiers: Identifier[];
+    type?: CodeableConcept | undefined;
+    date?: string | undefined;
+  }
+): DocumentReference {
+  const { identifiers, type, date } = params;
   docRef.id = uuidv4();
-  if (identifiers.length) docRef.identifier = identifiers;
 
+  if (identifiers.length > 0) docRef.identifier = identifiers;
+  if (type) {
+    docRef.type = type;
+    if (type.text) docRef.description = type.text;
+  }
+  if (date) docRef.date = date;
   return docRef;
 }
