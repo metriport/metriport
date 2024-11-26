@@ -50,20 +50,22 @@ async function main() {
   );
 
   let page = 1;
+  // const { meta, patients } = await metriportClient.listPatients({ facilityId });
   const { meta, patients } = await metriportClient.listPatients();
   console.log(`Page ${page++} has ${patients.length} patients`);
   // do something with the patients...
-  while (meta.nextPage) {
-    const patients = await metriportClient.listPatientsPage(meta.nextPage);
+  let nextPage = meta.nextPage;
+  while (nextPage) {
+    const { meta, patients } = await metriportClient.listPatientsPage(nextPage);
     console.log(`Page ${page++} has ${patients.length} patients`);
     // do something with the patients...
+    nextPage = meta.nextPage;
   }
-  console.log(`Done, in ${page} pages`);
+  console.log(`Done in ${--page} pages`);
 
   // START A DOCUMENT QUERY
   // Expected response https://docs.metriport.com/medical-api/api-reference/document/start-document-query#response
   const resp = await metriportClient.startDocumentQuery(patient.id, facilityId);
-
   console.log(resp);
 }
 
