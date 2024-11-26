@@ -1,11 +1,12 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import NotFoundError from "../../errors/not-found";
-import { CxMappingModel } from "../../models/cx-mapping";
+import { NotFoundError } from "@metriport/shared";
 import { CxMapping, CxMappingPerSource, CxSources } from "../../domain/cx-mapping";
+import { CxMappingModel } from "../../models/cx-mapping";
 
 export type CxMappingParams = CxMappingPerSource;
 
 export type CxMappingLookUpParams = Omit<CxMappingParams, "cxId" | "secondaryMappings">;
+export type CxMappingLookupByIdParams = Pick<CxMappingParams, "cxId"> & { id: string };
 
 export async function findOrCreateCxMapping({
   cxId,
@@ -36,13 +37,6 @@ export async function getCxMapping({
   return existing.dataValues;
 }
 
-export async function getCxMappings({ source }: { source: CxSources }): Promise<CxMapping[]> {
-  const mappings = await CxMappingModel.findAll({
-    where: { source },
-  });
-  return mappings.map(m => m.dataValues);
-}
-
 export async function getCxMappingOrFail({
   externalId,
   source,
@@ -57,23 +51,64 @@ export async function getCxMappingOrFail({
   return mapping;
 }
 
-export async function getCxMappingsForCustomer(where: {
+export async function getCxMappingsBySource({
+  source,
+}: {
+  source: CxSources;
+}): Promise<CxMapping[]> {
+  const mappings = await CxMappingModel.findAll({ where: { source } });
+  return mappings.map(m => m.dataValues);
+}
+
+export async function getCxMappingsByCustomer({
+  cxId,
+  source,
+}: {
   cxId: string;
   source?: string;
 }): Promise<CxMapping[]> {
-  const rows = await CxMappingModel.findAll({ where });
-  return rows.map(r => r.dataValues);
+  const mappings = await CxMappingModel.findAll({
+    where: { cxId, ...(source && { source }) },
+  });
+  return mappings.map(m => m.dataValues);
 }
 
-export async function deleteCxMapping({
-  externalId,
-  source,
-}: CxMappingLookUpParams): Promise<void> {
+async function getCxMappingModelById({
+  cxId,
+  id,
+}: CxMappingLookupByIdParams): Promise<CxMappingModel | undefined> {
   const existing = await CxMappingModel.findOne({
-    where: { externalId, source },
+    where: { cxId, id },
   });
-  if (!existing) {
-    throw new NotFoundError("Entry not found", undefined, { externalId, source });
+  if (!existing) return undefined;
+  return existing;
+}
+
+async function getCxMappingModelByIdOrFail({
+  cxId,
+  id,
+}: CxMappingLookupByIdParams): Promise<CxMappingModel> {
+  const mapping = await getCxMappingModelById({
+    cxId,
+    id,
+  });
+  if (!mapping) {
+    throw new NotFoundError("CxMapping not found", undefined, { cxId, id });
   }
+  return mapping;
+}
+
+export async function setExternalIdOnCxMapping({
+  cxId,
+  id,
+  externalId,
+}: CxMappingLookupByIdParams & { externalId: string }): Promise<CxMapping> {
+  const existing = await getCxMappingModelByIdOrFail({ cxId, id });
+  const updated = await existing.update({ externalId });
+  return updated.dataValues;
+}
+
+export async function deleteCxMapping({ cxId, id }: CxMappingLookupByIdParams): Promise<void> {
+  const existing = await getCxMappingModelByIdOrFail({ cxId, id });
   await existing.destroy();
 }
