@@ -38,7 +38,7 @@ async function main() {
     baseAddress: stagingApiUrl,
   });
 
-  const { patients: facilityPatients } = await metriportAPI.listPatients(facilityId);
+  const { patients: facilityPatients } = await metriportAPI.listPatients({ facilityId });
 
   const patients = Object.values(seedData).map(v => {
     const address: Address[] = v.demographics.address.map(a => ({
