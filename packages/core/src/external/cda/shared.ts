@@ -30,3 +30,20 @@ export function isMediaObservation(
 export function getMediaObservations(organizer: ObservationOrganizer): ObservationMediaEntry[] {
   return toArray(organizer.component).filter(isMediaObservation);
 }
+
+export function groupObservations(organizer: ObservationOrganizer): {
+  mediaObservations: ObservationMediaEntry[];
+  nonMediaObservations: ObservationEntry[];
+} {
+  const mediaObs: ObservationMediaEntry[] = [];
+  const nonMediaObs: ObservationEntry[] = [];
+  toArray(organizer.component).forEach(comp => {
+    if (isMediaObservation(comp)) mediaObs.push(comp);
+    else nonMediaObs.push(comp);
+  });
+
+  return {
+    mediaObservations: mediaObs,
+    nonMediaObservations: nonMediaObs,
+  };
+}

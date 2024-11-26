@@ -3,7 +3,7 @@ import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { XMLBuilder } from "fast-xml-parser";
 import { ConcernActEntryAct, ObservationOrganizer } from "../../fhir-to-cda/cda-types/shared-types";
 import { BINARY_MIME_TYPES } from "../../util/mime";
-import { getMediaObservations, isConcernActEntry, isObservationOrganizer } from "./shared";
+import { groupObservations, isConcernActEntry, isObservationOrganizer } from "./shared";
 
 const notesTemplateId = "2.16.840.1.113883.10.20.22.2.65";
 const resultsTemplateId = "2.16.840.1.113883.10.20.22.2.3.1";
@@ -59,32 +59,30 @@ export function removeBase64PdfEntries(payloadRaw: string): {
                 return false;
               }
             } else if (isObservationOrganizer(entry)) {
-              const mediaComponents = getMediaObservations(entry.organizer);
-              // TODO: 2474: Apparently, some XML have B64 attachments in regular observations, so need to account for that as well
-              if (!mediaComponents?.length) return true;
-
-              const allComponents = toArray(entry.organizer.component);
-              const nonMediaComponents = allComponents.filter(
-                comp => !("observationMedia" in comp)
+              const { mediaObservations, nonMediaObservations } = groupObservations(
+                entry.organizer
               );
-              const filteredMediaComponents = mediaComponents.filter(comp => {
-                const val = comp.observationMedia.value;
-                const shouldRemove =
-                  isBinaryMimeTypeOrUndefined(val?._mediaType) &&
-                  isB64Representation(val?._representation);
+              // TODO: 2474: Apparently, some XML have B64 attachments in regular observations, so need to account for that as well
+              if (!mediaObservations?.length) return true;
 
-                if (shouldRemove) {
+              const filteredMediaComponents = mediaObservations.filter(obs => {
+                const val = obs.observationMedia.value;
+
+                if (
+                  isBinaryMimeTypeOrUndefined(val?._mediaType) &&
+                  isB64Representation(val?._representation)
+                ) {
                   b64Attachments.organizers.push(entry.organizer);
                   b64Attachments.total++;
                   isRemovedEntries = true;
+                  return false;
                 }
-                return !shouldRemove;
+                return true;
               });
 
-              const remainingComponents = [...nonMediaComponents, ...filteredMediaComponents];
+              const remainingComponents = [...nonMediaObservations, ...filteredMediaComponents];
               entry.organizer.component = remainingComponents;
 
-              // Keep entry only if there are remaining components
               return remainingComponents.length > 0;
             }
             return true;
