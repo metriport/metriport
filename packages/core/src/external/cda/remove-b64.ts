@@ -63,7 +63,7 @@ export function removeBase64PdfEntries(payloadRaw: string): {
                 entry.organizer
               );
               // TODO: 2474: Apparently, some XML have B64 attachments in regular observations, so need to account for that as well
-              if (!mediaObservations?.length) return true;
+              if (mediaObservations.length === 0) return true;
 
               const filteredMediaComponents = mediaObservations.filter(obs => {
                 const val = obs.observationMedia.value;
