@@ -42,7 +42,7 @@ function buildConsolidatedFileName(): string {
 }
 
 async function main() {
-  const { patients: listPatient } = await metriportAPI.listPatients(facilityId);
+  const { patients: listPatient } = await metriportAPI.listPatients({ facilityId });
 
   const patients = listPatient.filter(patient => patientIds.includes(patient.id));
 

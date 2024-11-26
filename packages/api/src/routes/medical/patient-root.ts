@@ -12,7 +12,7 @@ import {
 import { Pagination } from "../../command/pagination";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
 import NotFoundError from "../../errors/not-found";
-import { PatientModel as Patient } from "../../models/medical/patient";
+import { PatientModel } from "../../models/medical/patient";
 import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { checkRateLimit } from "../middlewares/rate-limiting";
@@ -48,7 +48,7 @@ router.post(
 
     if (Config.isSandbox()) {
       // limit the amount of patients that can be created in sandbox mode
-      const numPatients = await Patient.count({ where: { cxId } });
+      const numPatients = await PatientModel.count({ where: { cxId } });
       const patientLimit = await getSandboxPatientLimitForCx(cxId);
       if (numPatients >= patientLimit) {
         return res.status(status.BAD_REQUEST).json({
@@ -81,6 +81,10 @@ router.post(
  *
  * @param   req.cxId              The customer ID.
  * @param   req.query.facilityId  The ID of the facility the user patient is associated with (optional).
+ * @param   req.query.filters     Full text search filters. See https://docs.metriport.com/medical-api/more-info/search-filters
+ * @param   req.query.fromItem    The minimum item to be included in the response, inclusive.
+ * @param   req.query.toItem      The maximum item to be included in the response, inclusive.
+ * @param   req.query.count       The number of items to be included in the response.
  * @return  The customer's patients associated with the given facility.
  */
 router.get(
@@ -89,9 +93,15 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityId = getFrom("query").optional("facilityId", req);
+    const fullTextSearchFilters = getFrom("query").optional("filters", req);
 
-    const { meta, items } = await paginated(req, async (pagination: Pagination) => {
-      return await getPatients({ cxId, facilityId: facilityId, pagination });
+    const queryParams = {
+      ...(facilityId ? { facilityId } : {}),
+      ...(fullTextSearchFilters ? { filters: fullTextSearchFilters } : {}),
+    };
+
+    const { meta, items } = await paginated(req, queryParams, async (pagination: Pagination) => {
+      return await getPatients({ cxId, facilityId, pagination, fullTextSearchFilters });
     });
     const response: PaginatedResponse<PatientDTO, "patients"> = {
       meta,
