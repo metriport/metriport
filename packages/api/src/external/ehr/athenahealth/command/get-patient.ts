@@ -32,7 +32,6 @@ const region = Config.getAWSRegion();
 const athenaEnvironment = Config.getAthenaHealthEnv();
 const athenaClientKeySecretArn = Config.getAthenaHealthClientKeyArn();
 const athenaClientSecretSecretArn = Config.getAthenaHealthClientSecretArn();
-const defaultFacilityMappingExternalId = "default";
 
 const parallelPatientMatches = 5;
 
@@ -146,7 +145,7 @@ export async function getPatientIdOrFail({
   } else {
     const defaultFacility = await getFacilityMappingOrFail({
       cxId,
-      externalId: defaultFacilityMappingExternalId,
+      externalId: athenaPracticeId,
       source: EhrSources.athena,
     });
     metriportPatient = await createMetriportPatient({

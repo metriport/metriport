@@ -7,7 +7,7 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/athenahealth/index";
 import { EhrSources } from "../../shared";
-import { getCxMappings } from "../../../../command/mapping/cx";
+import { getCxMappingsBySource } from "../../../../command/mapping/cx";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { Config } from "../../../../shared/config";
 import { getPatientIdOrFail as singleGetPatientIdOrFail } from "./get-patient";
@@ -39,7 +39,7 @@ export async function getPatientIdsOrFailFromAppointmentsSub({
   if (!athenaEnvironment || !athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
     throw new Error("AthenaHealth not setup");
   }
-  const cxMappings = await getCxMappings({ source: EhrSources.athena });
+  const cxMappings = await getCxMappingsBySource({ source: EhrSources.athena });
 
   const athenaClientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
   const athenaClientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
