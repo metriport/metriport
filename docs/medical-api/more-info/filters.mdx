@@ -1,0 +1,21 @@
+---
+title: "Filtering data"
+description: "How to filter data in Metriport."
+---
+
+Some features include the ability to filter data. In those cases, the syntax below can be used:
+- `unquoted text`: all words are required in to be present in the results, in any order.
+- `"quoted text"`: text inside quote marks will be expected to be included in the results as provided.
+- `or`: allows for optional words/parameter.
+- `-`: excludes the word/parameter following the minus sign.
+
+Examples:
+- `"jonh doe"`: returns entries including `john doe` in this order.
+- `john doe`: returns entries including `john` and `doe` in any order; e.g., `john doe`, `john gray doe`, or `doe john`, but not
+  those with only `john` or `doe`.
+- `john or doe`: returns entries including `john` or `doe`; e.g., `john`, `doe`, `john doe`, `doe john`, `doe gray john`.
+- `john -doe`: returns entries including `john` without any `doe` on it.
+
+## Related
+
+For information about Pagination, see [the pagination page](/medical-api/more-info/pagination).
