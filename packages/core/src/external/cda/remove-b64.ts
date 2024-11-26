@@ -1,6 +1,7 @@
 import { toArray } from "@metriport/shared";
 import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { XMLBuilder } from "fast-xml-parser";
+import { cloneDeep } from "lodash";
 import { ConcernActEntryAct, ObservationOrganizer } from "../../fhir-to-cda/cda-types/shared-types";
 import { BINARY_MIME_TYPES } from "../../util/mime";
 import { groupObservations, isConcernActEntry, isObservationOrganizer } from "./shared";
@@ -72,7 +73,7 @@ export function removeBase64PdfEntries(payloadRaw: string): {
                   isBinaryMimeTypeOrUndefined(val?._mediaType) &&
                   isB64Representation(val?._representation)
                 ) {
-                  b64Attachments.organizers.push(entry.organizer);
+                  b64Attachments.organizers.push(cloneDeep(entry.organizer));
                   b64Attachments.total++;
                   isRemovedEntries = true;
                   return false;
