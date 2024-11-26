@@ -1,13 +1,21 @@
 ---
-title: "List Patients at Facility"
-description: "Lists all Patients receiving care at the specified Facility."
+title: "List Patients"
+description: "Lists all Patients receiving care."
 api: "GET /medical/v1/patient"
 ---
+
+This is a paginated endpoint. For more information see [pagination](/medical-api/more-info/pagination).
 
 ## Query Params
 
 <ParamField query="facilityId" type="string" Optional>
-  The ID of the Facility where the patient is receiving care.
+  The ID of the Facility where the patient is receiving care, optional. If not provided, Patients
+  from all Facilities will be returned.
+</ParamField>
+
+<ParamField query="filters" type="string" Optional>
+  How to filter patients. It uses Metriport's [filter/search criteria](/medical-api/more-info/filters) based on the main properties 
+  of a Patient: first name, last name, date of birth, ID, and external ID.
 </ParamField>
 
 ## Response
@@ -29,13 +37,20 @@ import { MetriportMedicalApi } from "@metriport/api-sdk";
 const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
 const facilityId = "018a80c4-292a-7486-a1234-9uiu76yhe234";
-const patients = await metriport.listPatients(facilityId);
+const filters = "john doe";
+const { patients } = await metriport.listPatients(
+  facilityId, 
+  filters
+);
 ```
 
 </ResponseExample>
 
 ```json
 {
+  "meta": {
+    "itemsOnPage": 2
+  },
   "patients": [
     {
       "id": "018a80c4-292a-7486-a1234-76yuhe23yu14",
@@ -66,7 +81,7 @@ const patients = await metriport.listPatients(facilityId);
           "email": "jose@domain.com"
         }
       ],
-      "externalId": "123456789",
+      "externalId": "123456789"
     },
     {
       "id": "018a80c4-292a-7486-a1234-5ert32uij123",
@@ -83,7 +98,7 @@ const patients = await metriport.listPatients(facilityId);
           "state": "CA",
           "country": "USA",
           "addressLine1": "Guadalajara St"
-        },
+        }
       ]
     }
   ]
