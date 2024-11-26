@@ -44,22 +44,43 @@ describe("Pagination", () => {
     });
 
     describe("validation", () => {
-      it("rejects when both fromItem and toItem provided", () => {
-        const req = { query: { fromItem: "1", toItem: "2" }, baseUrl };
-        expect(() => paginated(req as any, undefined, getItems)).rejects.toThrow(
-          "Either fromItem or toItem can be provided, but not both"
-        );
+      it("does not require count parameter", async () => {
+        const req = { query: {}, baseUrl };
+        const result = await paginated(req as any, undefined, getItems);
+        expect(result.meta.itemsOnPage).toEqual(mockItems.length);
       });
 
       it("accepts valid count parameter", async () => {
-        const req = { query: { count: "10" }, baseUrl };
+        const req = { query: { count: "3" }, baseUrl };
         const result = await paginated(req as any, undefined, getItems);
-        expect(result.meta.itemsOnPage).toBeLessThanOrEqual(10);
+        expect(result.meta.itemsOnPage).toEqual(3);
       });
 
-      it("rejects invalid count parameter", () => {
+      it("accepts count equal to limit", async () => {
+        const req = { query: { count: "500" }, baseUrl };
+        await paginated(req as any, undefined, getItems);
+        // One extra since we ask for one more to determine if there is a next page
+        expect(getItems).toHaveBeenNthCalledWith(1, { count: 501 });
+      });
+
+      it("fails if count is lower than 0", async () => {
+        const req = { query: { count: "-1" }, baseUrl };
+        await expect(() => paginated(req as any, undefined, getItems)).rejects.toThrow(
+          "Count has to be equal or greater than 0"
+        );
+      });
+
+      it("fails if count is higher than limit", async () => {
+        const req = { query: { count: "501" }, baseUrl };
+        await expect(() => paginated(req as any, undefined, getItems)).rejects.toThrow(
+          "Count has to be equal or less than 500"
+        );
+      });
+      it("rejects invalid count parameter", async () => {
         const req = { query: { count: "invalid" }, baseUrl };
-        expect(() => paginated(req as any, undefined, getItems)).rejects.toThrow();
+        await expect(() => paginated(req as any, undefined, getItems)).rejects.toThrow(
+          "Expected number, received nan"
+        );
       });
 
       it("accepts fromItem without toItem", async () => {
@@ -74,17 +95,10 @@ describe("Pagination", () => {
         expect(result.items[result.items.length - 1].id).toBe("5");
       });
 
-      it("accepts count equal to limit", async () => {
-        const req = { query: { count: "500" }, baseUrl };
-        await paginated(req as any, undefined, getItems);
-        // One extra since we ask for one more to determine if there is a next page
-        expect(getItems).toHaveBeenNthCalledWith(1, { count: 501 });
-      });
-
-      it("fails if count is higher than limit", async () => {
-        const req = { query: { count: "501" }, baseUrl };
-        expect(() => paginated(req as any, undefined, getItems)).rejects.toThrow(
-          "Count cannot be greater than 500"
+      it("rejects when both fromItem and toItem provided", async () => {
+        const req = { query: { fromItem: "1", toItem: "2" }, baseUrl };
+        await expect(() => paginated(req as any, undefined, getItems)).rejects.toThrow(
+          "Either fromItem or toItem can be provided, but not both"
         );
       });
     });
