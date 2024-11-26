@@ -52,6 +52,7 @@ export function getRequestMeta(req: Request): Pagination {
  */
 export async function paginated<T extends { id: string }>(
   req: Request,
+  additionalQueryParams: Record<string, string> | undefined,
   getItems: (pagination: Pagination) => Promise<T[]>
 ): Promise<PaginatedResponse<T, "items">> {
   const requestMeta = getRequestMeta(req);
@@ -62,8 +63,12 @@ export async function paginated<T extends { id: string }>(
   );
 
   const responseMeta: ResponseMeta = {
-    ...(prevPageItem ? { prevPage: getPrevPageUrl(req, prevPageItem) } : {}),
-    ...(nextPageItem ? { nextPage: getNextPageUrl(req, nextPageItem) } : {}),
+    ...(prevPageItem
+      ? { prevPage: getPrevPageUrl(req, prevPageItem, requestMeta.count, additionalQueryParams) }
+      : {}),
+    ...(nextPageItem
+      ? { nextPage: getNextPageUrl(req, nextPageItem, requestMeta.count, additionalQueryParams) }
+      : {}),
     itemsOnPage: currPageItems.length,
   };
   return { meta: responseMeta, items: currPageItems };
@@ -125,17 +130,38 @@ async function getPaginationItems<T extends { id: string }>(
   return { prevPageItem, nextPageItem, currPageItems };
 }
 
-function getPrevPageUrl(req: Request, prePageToItem: string): string {
+function getPrevPageUrl(
+  req: Request,
+  prePageToItem: string,
+  count: number,
+  additionalQueryParams: Record<string, string> | undefined
+): string {
   const p: PaginationToItem = { toItem: prePageToItem };
-  return getPaginationUrl(req, p);
+  return getPaginationUrl(req, p, count, additionalQueryParams);
 }
 
-function getNextPageUrl(req: Request, nextPageFromItem: string): string {
+function getNextPageUrl(
+  req: Request,
+  nextPageFromItem: string,
+  count: number,
+  additionalQueryParams: Record<string, string> | undefined
+): string {
   const p: PaginationFromItem = { fromItem: nextPageFromItem };
-  return getPaginationUrl(req, p);
+  return getPaginationUrl(req, p, count, additionalQueryParams);
 }
 
-function getPaginationUrl(req: Request, item: PaginationItem): string {
+function getPaginationUrl(
+  req: Request,
+  item: PaginationItem,
+  count: number,
+  additionalQueryParams: Record<string, string> | undefined
+): string {
   const params = new URLSearchParams(item);
+  params.append("count", count.toString());
+  if (additionalQueryParams) {
+    for (const [key, value] of Object.entries(additionalQueryParams)) {
+      params.append(key, value);
+    }
+  }
   return Config.getApiUrl() + req.baseUrl + "?" + params.toString();
 }

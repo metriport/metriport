@@ -506,17 +506,37 @@ export class MetriportMedicalApi {
   /**
    * Returns the patients associated with given facility.
    *
-   * @param facilityId The ID of the facility. Optional, if not provided, all patients will be returned.
+   * @param facilityId The ID of the facility, optional. If not provided, patients from all facilities
+   *                   will be returned.
+   * @param filters Full text search filters, optional. If not provided, all patients will be returned
+   *                (according to pagination settings).
+   *                See https://docs.metriport.com/medical-api/more-info/filters
+   * @param pagination Pagination settings, optional. If not provided, the first page will be returned.
+   *                   See https://docs.metriport.com/medical-api/more-info/pagination
    * @return The list of patients.
    */
-  async listPatients(
-    facilityId: string | undefined,
-    pagination?: Pagination | undefined
-  ): Promise<PaginatedResponse<PatientDTO, "patients">> {
+  async listPatients({
+    facilityId,
+    filters,
+    pagination,
+  }: {
+    facilityId?: string | undefined;
+    filters?: string | undefined;
+    pagination?: Pagination | undefined;
+  }): Promise<PaginatedResponse<PatientDTO, "patients">> {
     const resp = await this.api.get(`${PATIENT_URL}`, {
-      params: { facilityId, ...getPaginationParams(pagination) },
+      params: {
+        facilityId,
+        filters,
+        ...getPaginationParams(pagination),
+      },
     });
     if (!resp.data) return { meta: { itemsOnPage: 0 }, patients: [] };
+    return resp.data;
+  }
+
+  async listPatientsPage(url: string): Promise<PaginatedResponse<PatientDTO, "patients">> {
+    const resp = await this.api.get(url);
     return resp.data;
   }
 
