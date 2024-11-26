@@ -87,7 +87,7 @@ async function getFacilityMappingModelByIdOrFail({
     id,
   });
   if (!mapping) {
-    throw new NotFoundError("FacilityMappingModel not found", undefined, { cxId, id });
+    throw new NotFoundError("FacilityMapping not found", undefined, { cxId, id });
   }
   return mapping;
 }
@@ -97,9 +97,9 @@ export async function setExternalIdOnFacilityMapping({
   id,
   externalId,
 }: FacilityMappingLookupByIdParams & { externalId: string }): Promise<FacilityMapping> {
-  const mapping = await getFacilityMappingModelByIdOrFail({ cxId, id });
-  await mapping.update({ externalId });
-  return mapping.dataValues;
+  const existing = await getFacilityMappingModelByIdOrFail({ cxId, id });
+  const updated = await existing.update({ externalId });
+  return updated.dataValues;
 }
 
 export async function deleteFacilityMapping({

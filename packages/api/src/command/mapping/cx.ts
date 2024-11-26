@@ -67,7 +67,9 @@ export async function getCxMappingsByCustomer({
   cxId: string;
   source?: string;
 }): Promise<CxMapping[]> {
-  const mappings = await CxMappingModel.findAll({ where: { cxId, ...(source && { source }) } });
+  const mappings = await CxMappingModel.findAll({
+    where: { cxId, ...(source && { source }) },
+  });
   return mappings.map(m => m.dataValues);
 }
 
@@ -91,7 +93,7 @@ async function getCxMappingModelByIdOrFail({
     id,
   });
   if (!mapping) {
-    throw new NotFoundError("CxMappingModel not found", undefined, { cxId, id });
+    throw new NotFoundError("CxMapping not found", undefined, { cxId, id });
   }
   return mapping;
 }
