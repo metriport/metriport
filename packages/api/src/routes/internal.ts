@@ -352,7 +352,7 @@ router.get(
 );
 
 /**
- * PUT /internal/cx-mapping
+ * PUT /internal/cx-mapping/:id/external-id
  *
  * Update cx mapping external ID
  *
@@ -451,7 +451,7 @@ router.get(
 );
 
 /**
- * PUT /internal/facility-mapping/:id
+ * PUT /internal/facility-mapping/:id/external-id
  *
  * Update facility mapping external ID
  *
