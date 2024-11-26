@@ -27,8 +27,6 @@ export function isMediaObservation(
   return "observationMedia" in component;
 }
 
-export function getMediaObservations(
-  organizer: ObservationOrganizer
-): ObservationMediaEntry[] | undefined {
+export function getMediaObservations(organizer: ObservationOrganizer): ObservationMediaEntry[] {
   return toArray(organizer.component).filter(isMediaObservation);
 }
