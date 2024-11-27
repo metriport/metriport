@@ -15,7 +15,7 @@ import { getPatientByDemo } from "./get-patient";
 import { sanitize, validate } from "./shared";
 import { runInitialPatientDiscoveryAcrossHies } from "../../../external/hie/run-initial-patient-discovery";
 
-type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
+type Identifier = Pick<Patient, "cxId" | "externalId" | "hieOptOut"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientCreateCmd = PatientNoExternalData & Identifier;
 
@@ -32,7 +32,7 @@ export async function createPatient({
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
 }): Promise<Patient> {
-  const { cxId, facilityId, externalId } = patient;
+  const { cxId, facilityId, externalId, hieOptOut } = patient;
 
   const sanitized = sanitize(patient);
   validate(sanitized);
@@ -59,6 +59,7 @@ export async function createPatient({
     cxId,
     facilityIds: [facilityId],
     externalId,
+    hieOptOut,
     data: {
       firstName,
       lastName,

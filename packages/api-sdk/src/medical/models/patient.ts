@@ -6,6 +6,7 @@ import { ConsolidatedQuery } from "./fhir";
 export const patientCreateSchema = demographicsSchema.merge(
   z.object({
     externalId: z.string().optional(),
+    hieOptOut: z.boolean().optional(),
   })
 );
 export type PatientCreate = z.infer<typeof patientCreateSchema>;

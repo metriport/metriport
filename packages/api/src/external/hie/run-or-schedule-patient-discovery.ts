@@ -4,6 +4,7 @@ import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { runOrScheduleCqPatientDiscovery } from "../carequality/command/run-or-schedule-patient-discovery";
 import { runOrScheduleCwPatientDiscovery } from "../commonwell/command/run-or-schedule-patient-discovery";
 import { processAsyncError } from "@metriport/core/util/error/shared";
+import { out } from "@metriport/core/util/log";
 
 export async function runOrSchedulePatientDiscoveryAcrossHies({
   patient,
@@ -22,7 +23,15 @@ export async function runOrSchedulePatientDiscoveryAcrossHies({
   // END TODO #1572 - remove
   requestId?: string;
 }): Promise<void> {
+  const { log } = out(`Initial PD - patient ${patient.id}`);
+
   const existingPatient = await getPatientOrFail(patient);
+
+  if (existingPatient.hieOptOut) {
+    log("Patient has opted out of HIE - skipping PD");
+    return;
+  }
+
   // CAREQUALITY
   runOrScheduleCqPatientDiscovery({
     patient: existingPatient,

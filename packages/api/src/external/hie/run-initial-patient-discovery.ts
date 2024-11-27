@@ -4,6 +4,7 @@ import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { discover } from "../carequality/patient";
 import { create } from "../commonwell/patient";
 import { processAsyncError } from "@metriport/core/util/error/shared";
+import { out } from "@metriport/core/util/log";
 
 export async function runInitialPatientDiscoveryAcrossHies({
   patient,
@@ -18,7 +19,15 @@ export async function runInitialPatientDiscoveryAcrossHies({
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
 }): Promise<void> {
+  const { log } = out(`Initial PD - patient ${patient.id}`);
+
   const existingPatient = await getPatientOrFail(patient);
+
+  if (existingPatient.hieOptOut) {
+    log("Patient has opted out of HIE - skipping PD");
+    return;
+  }
+
   const requestId = uuidv7();
   // CAREQUALITY
   discover({
