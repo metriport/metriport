@@ -69,11 +69,11 @@ export async function getPatients({
       : "");
 
   const { toItem, fromItem } = pagination ?? {};
-  const toItemStr = toItem ? ` AND id <= :toItem` : "";
-  const fromItemStr = fromItem ? ` AND id >= :fromItem` : "";
+  const toItemStr = toItem ? ` AND id >= :toItem` : "";
+  const fromItemStr = fromItem ? ` AND id <= :fromItem` : "";
   const queryPagination = queryFTS + " " + [toItemStr, fromItemStr].filter(Boolean).join("");
 
-  const queryOrder = queryPagination + " ORDER BY id " + (toItem ? "DESC" : "ASC");
+  const queryOrder = queryPagination + " ORDER BY id " + (toItem ? "ASC" : "DESC");
 
   const { count } = pagination ?? {};
   const queryLimits = queryOrder + (count ? ` LIMIT :count` : "");

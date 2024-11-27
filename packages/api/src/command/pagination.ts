@@ -19,8 +19,8 @@ export type PaginationItem = UnionToIntersection<PaginationFromItem | Pagination
 export function getPaginationFilters(pagination: Pagination | undefined) {
   const { toItem, fromItem } = pagination ?? {};
   return {
-    ...(toItem ? { id: { [Op.lte]: toItem } } : undefined),
-    ...(fromItem ? { id: { [Op.gte]: fromItem } } : undefined),
+    ...(toItem ? { id: { [Op.gte]: toItem } } : undefined),
+    ...(fromItem ? { id: { [Op.lte]: fromItem } } : undefined),
   };
 }
 
@@ -33,7 +33,7 @@ export function getPaginationLimits(
 
 export function getPaginationSorting(pagination: Pagination | undefined): OrderItem {
   const { toItem } = pagination ?? {};
-  return ["id", toItem ? "DESC" : "ASC"];
+  return ["id", toItem ? "ASC" : "DESC"];
 }
 
 export function sortForPagination<T>(items: T[], pagination: Pagination | undefined): T[] {
