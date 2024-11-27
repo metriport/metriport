@@ -20,8 +20,28 @@ And `meta` contains:
 - `itemsOnPage`: the amount of items on the current page.
 - `itemsInTotal`: (optional) the total amount of items in all pages - only available on the first page.
 - `nextPage`: (optional) the URL to return the next page; if not present it means there's not a next page
-  and all items have been returned.
+  - we're on the last page.
 - `prevPage`: (optional) the URL to return the previous page; if not present it means we're on the first page.
+
+#### Example
+
+In the example below, we're loading the first page (there's no `prevPage`), with the default number of items
+per page. We can see the total amount of items included (`113`).
+
+```json
+{
+    "meta": {
+        "nextPage": "https://api.metriport.com/medical/v1/patient?fromItem=01936b20-48f8-7d49-8bc6-50e0c4986011&count=50",
+        "itemsOnPage": 50,
+        "itemsInTotal": 113
+    },
+    ...
+}
+```
+
+To get the next page, we can just call the URL on `nextPage`. When there's no `nextPage` it means we're
+on the last one. As simple as that.
+
 
 ## Pagination parameters
 
