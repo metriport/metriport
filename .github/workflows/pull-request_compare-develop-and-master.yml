@@ -1,0 +1,17 @@
+name: PR Check - compare develop and master
+
+on:
+  pull_request:
+  merge_group:
+  workflow_dispatch:
+
+jobs:
+  compare-develop-and-master:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Is develop ahead of master?
+        run: |
+          ./packages/scripts/check-base-commits.sh
