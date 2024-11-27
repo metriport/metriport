@@ -43,11 +43,13 @@ export function sortForPagination<T>(items: T[], pagination: Pagination | undefi
 
 export async function getPaginationItems<T extends { id: string }>(
   requestMeta: Pagination,
-  getItems: (filterAndPagination: Pagination) => Promise<T[]>
+  getItems: (pagination: Pagination) => Promise<T[]>,
+  getTotalCount: () => Promise<number>
 ): Promise<{
-  prevPageItem: string | undefined;
+  prevPageItemId: string | undefined;
   currPageItems: T[];
-  nextPageItem: string | undefined;
+  nextPageItemId: string | undefined;
+  totalCount?: number;
 }> {
   const itemsPerPage = requestMeta.count;
 
@@ -57,30 +59,43 @@ export async function getPaginationItems<T extends { id: string }>(
     count: itemsPerPage + 1,
   });
   if (itemsWithExtraOne.length < 1) {
-    return { prevPageItem: undefined, currPageItems: [], nextPageItem: undefined };
+    return { prevPageItemId: undefined, currPageItems: [], nextPageItemId: undefined };
   }
 
   if (!requestMeta.toItem) {
     // navigating "forward"
 
     // intentionally one over since we asked for one more to determine if there is a next page
-    const nextPageItem = itemsWithExtraOne[itemsPerPage]?.id;
+    const nextPageItemId = itemsWithExtraOne[itemsPerPage]?.id;
 
     const currPageItems = itemsWithExtraOne.slice(0, itemsPerPage);
+
+    if (!requestMeta.fromItem) {
+      // first page, default request without "fromItem"
+      const totalCount = await getTotalCount();
+      return { prevPageItemId: undefined, currPageItems, nextPageItemId, totalCount };
+    }
 
     // get the immediate item before the first one to determine if there's a previous page
     const itemsPrevious = await getItems({
       toItem: currPageItems[0]?.id,
       count: 2,
     });
-    const prevPageItem = itemsPrevious.length === 2 ? itemsPrevious[0]?.id : undefined;
-    return { prevPageItem, currPageItems, nextPageItem };
+    const prevPageItemId = itemsPrevious.length === 2 ? itemsPrevious[0]?.id : undefined;
+
+    if (!prevPageItemId) {
+      // first page, but provided a "fromItem"
+      const totalCount = await getTotalCount();
+      return { prevPageItemId, currPageItems, nextPageItemId, totalCount };
+    }
+
+    return { prevPageItemId, currPageItems, nextPageItemId };
   }
 
   // navigating "backwards"
 
   // intentionally expects one over since we asked for one more to determine if there is a previous page
-  const prevPageItem =
+  const prevPageItemId =
     itemsWithExtraOne.length > itemsPerPage ? itemsWithExtraOne[0]?.id : undefined;
 
   const currPageItems =
@@ -93,6 +108,12 @@ export async function getPaginationItems<T extends { id: string }>(
     fromItem: currPageItems[currPageItems.length - 1]?.id,
     count: 2,
   });
-  const nextPageItem = itemsNext[1]?.id;
-  return { prevPageItem, currPageItems, nextPageItem };
+  const nextPageItemId = itemsNext[1]?.id;
+
+  if (!prevPageItemId) {
+    // first page, navigating backwards
+    const totalCount = await getTotalCount();
+    return { prevPageItemId, currPageItems, nextPageItemId, totalCount };
+  }
+  return { prevPageItemId, currPageItems, nextPageItemId };
 }

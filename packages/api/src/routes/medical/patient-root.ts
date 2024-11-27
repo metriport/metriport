@@ -7,6 +7,7 @@ import { createPatient, PatientCreateCmd } from "../../command/medical/patient/c
 import {
   getPatientOrFail,
   getPatients,
+  getPatientsCount,
   matchPatient,
 } from "../../command/medical/patient/get-patient";
 import { Pagination } from "../../command/pagination";
@@ -100,8 +101,12 @@ router.get(
       ...(fullTextSearchFilters ? { filters: fullTextSearchFilters } : {}),
     };
 
-    const { meta, items } = await paginated(req, queryParams, async (pagination: Pagination) => {
-      return await getPatients({ cxId, facilityId, pagination, fullTextSearchFilters });
+    const { meta, items } = await paginated({
+      request: req,
+      additionalQueryParams: queryParams,
+      getItems: (pagination: Pagination) =>
+        getPatients({ cxId, facilityId, pagination, fullTextSearchFilters }),
+      getTotalCount: () => getPatientsCount({ cxId, facilityId, fullTextSearchFilters }),
     });
     const response: PaginatedResponse<PatientDTO, "patients"> = {
       meta,

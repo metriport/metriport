@@ -52,30 +52,54 @@ export function getRequestMeta(req: Request): Pagination {
 /**
  * Function to paginate a list of items.
  *
- * @param req - The HTTP request object.
+ * @param request - The HTTP request object.
+ * @param additionalQueryParams - Additional query parameters to be included in the pagination URL.
  * @param getItems - A function that takes pagination settings and returns a list of items for a given page.
+ * @param getTotalCount - A function that returns the total number of items in all pages.
  * @returns An object containing the pagination metadata and the current page's items.
  */
-export async function paginated<T extends { id: string }>(
-  req: Request,
-  additionalQueryParams: Record<string, string> | undefined,
-  getItems: (pagination: Pagination) => Promise<T[]>
-): Promise<PaginatedResponse<T, "items">> {
-  const requestMeta = getRequestMeta(req);
+export async function paginated<T extends { id: string }>({
+  request,
+  additionalQueryParams,
+  getItems,
+  getTotalCount,
+}: {
+  request: Request;
+  additionalQueryParams: Record<string, string> | undefined;
+  getItems: (pagination: Pagination) => Promise<T[]>;
+  getTotalCount: () => Promise<number>;
+}): Promise<PaginatedResponse<T, "items">> {
+  const requestMeta = getRequestMeta(request);
 
-  const { prevPageItem, nextPageItem, currPageItems } = await getPaginationItems(
+  const { prevPageItemId, nextPageItemId, currPageItems, totalCount } = await getPaginationItems(
     requestMeta,
-    getItems
+    getItems,
+    getTotalCount
   );
 
   const responseMeta: ResponseMeta = {
-    ...(prevPageItem
-      ? { prevPage: getPrevPageUrl(req, prevPageItem, requestMeta.count, additionalQueryParams) }
+    ...(prevPageItemId
+      ? {
+          prevPage: getPrevPageUrl(
+            request,
+            prevPageItemId,
+            requestMeta.count,
+            additionalQueryParams
+          ),
+        }
       : {}),
-    ...(nextPageItem
-      ? { nextPage: getNextPageUrl(req, nextPageItem, requestMeta.count, additionalQueryParams) }
+    ...(nextPageItemId
+      ? {
+          nextPage: getNextPageUrl(
+            request,
+            nextPageItemId,
+            requestMeta.count,
+            additionalQueryParams
+          ),
+        }
       : {}),
     itemsOnPage: currPageItems.length,
+    itemsInTotal: totalCount,
   };
   return { meta: responseMeta, items: currPageItems };
 }

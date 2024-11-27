@@ -55,18 +55,12 @@ export async function getPatients({
    * If/when we move to Sequelize v7 we can replace the raw query with ORM:
    * https://sequelize.org/docs/v7/querying/operators/#tsquery-matching-operator
    */
-  const querySelect = `SELECT * FROM ${PatientModel.tableName} WHERE cx_id = :cxId `;
-
-  const queryFacility =
-    querySelect + (facilityId ? ` AND facility_ids::text[] && :facilityIds::text[]` : "");
-
-  const queryPatientIds = queryFacility + (patientIds ? ` AND id IN (:patientIds)` : "");
-
-  const queryFTS =
-    queryPatientIds +
-    (fullTextSearchFilters
-      ? ` AND (search_criteria @@ websearch_to_tsquery('english', :filters) OR external_id = :filters OR id = :filters)`
-      : "");
+  const queryFTS = getPatientsSharedQueryUntilFTS(
+    "*",
+    facilityId,
+    patientIds,
+    fullTextSearchFilters
+  );
 
   const { toItem, fromItem } = pagination ?? {};
   const toItemStr = toItem ? ` AND id >= :toItem` : "";
@@ -84,9 +78,7 @@ export async function getPatients({
     mapToModel: true,
     replacements: {
       cxId,
-      ...(facilityId ? { facilityIds: '{"' + [facilityId].join('","') + '"}' } : {}),
-      ...(patientIds ? { patientIds } : {}),
-      ...(fullTextSearchFilters ? { filters: fullTextSearchFilters } : {}),
+      ...getPatientsSharedReplacements(facilityId, patientIds, fullTextSearchFilters),
       ...(toItem ? { toItem } : {}),
       ...(fromItem ? { fromItem } : {}),
       ...(count ? { count } : {}),
@@ -96,6 +88,73 @@ export async function getPatients({
 
   const sortedPatients = sortForPagination(patients, pagination);
   return sortedPatients;
+}
+
+export async function getPatientsCount({
+  cxId,
+  patientIds,
+  facilityId,
+  fullTextSearchFilters,
+}: {
+  cxId: string;
+  patientIds?: string[];
+  facilityId?: string;
+  fullTextSearchFilters?: string | undefined;
+}): Promise<number> {
+  const sequelize = PatientModel.sequelize;
+  if (!sequelize) throw new Error("Sequelize not found");
+
+  const queryFTS = getPatientsSharedQueryUntilFTS(
+    "count(id)",
+    facilityId,
+    patientIds,
+    fullTextSearchFilters
+  );
+
+  const queryFinal = queryFTS;
+  const result = await sequelize.query(queryFinal, {
+    replacements: {
+      cxId,
+      ...getPatientsSharedReplacements(facilityId, patientIds, fullTextSearchFilters),
+    },
+    type: QueryTypes.SELECT,
+  });
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return parseInt((result[0] as unknown as any).count);
+}
+
+function getPatientsSharedQueryUntilFTS(
+  selectColumns: string,
+  facilityId?: string,
+  patientIds?: string[],
+  fullTextSearchFilters?: string
+): string {
+  const querySelect = `SELECT ${selectColumns} FROM ${PatientModel.tableName} WHERE cx_id = :cxId `;
+
+  const queryFacility =
+    querySelect + (facilityId ? ` AND facility_ids::text[] && :facilityIds::text[]` : "");
+
+  const queryPatientIds = queryFacility + (patientIds ? ` AND id IN (:patientIds)` : "");
+
+  const queryFTS =
+    queryPatientIds +
+    (fullTextSearchFilters
+      ? ` AND (search_criteria @@ websearch_to_tsquery('english', :filters) OR external_id = :filters OR id = :filters)`
+      : "");
+
+  return queryFTS;
+}
+
+function getPatientsSharedReplacements(
+  facilityId?: string,
+  patientIds?: string[],
+  fullTextSearchFilters?: string
+): Record<string, string | string[]> {
+  return {
+    ...(facilityId ? { facilityIds: '{"' + [facilityId].join('","') + '"}' } : {}),
+    ...(patientIds ? { patientIds } : {}),
+    ...(fullTextSearchFilters ? { filters: fullTextSearchFilters } : {}),
+  };
 }
 
 export async function getPatientIds({
