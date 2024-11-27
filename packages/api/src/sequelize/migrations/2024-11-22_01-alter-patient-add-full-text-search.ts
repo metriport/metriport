@@ -17,6 +17,7 @@ generated always as	(
 	to_tsvector('english', coalesce(data->>'firstName', '')) || ' ' || 
 	to_tsvector('english', coalesce(SUBSTRING(data->>'dob',1,4), '')) || ' ' ||
 	to_tsvector('english', coalesce(SUBSTRING(immutable_replace(data->>'dob', '-', ''),1,6), '')) || ' ' ||
+	to_tsvector('english', coalesce(data->>'dob', '')) || ' ' ||
 	to_tsvector('english', coalesce(immutable_replace(data->>'dob', '-', ''), '')) :: tsvector
 ) stored;
 `;

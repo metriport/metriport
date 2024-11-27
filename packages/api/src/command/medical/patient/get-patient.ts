@@ -65,7 +65,7 @@ export async function getPatients({
   const queryFTS =
     queryPatientIds +
     (fullTextSearchFilters
-      ? ` AND search_criteria @@ websearch_to_tsquery('english', :filters)`
+      ? ` AND (search_criteria @@ websearch_to_tsquery('english', :filters) OR external_id = :filters OR id = :filters)`
       : "");
 
   const { toItem, fromItem } = pagination ?? {};
