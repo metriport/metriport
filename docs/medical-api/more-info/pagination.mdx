@@ -3,18 +3,20 @@ title: "Pagination"
 description: "Retrieving larger amounts of data."
 ---
 
-Some of Metriport's endpoints are paginated: they return a limited amount of items each time they are requested. 
+Some of Metriport's endpoints are paginated: they return a limited amount of items each time they are requested.
 Each request being a single "page".
 
 In order to have access to all items, after we receive the items for the current page we can request the
 next page to the API.
 
 Each response includes:
+
 - `meta`: the information about the response.
 - `<items>`: the list of items for the respective request, where `items` is named according to the respective
   type of data being requested - e.g., `patients`, `documents`.
 
 And `meta` contains:
+
 - `itemsOnPage`: the amount of items on the current page.
 - `nextPage`: (optional) the URL to return the next page; if not present it means there's not a next page
   and all items have been returned.
@@ -22,9 +24,10 @@ And `meta` contains:
 
 ## Pagination parameters
 
-Metriport's pagination is designed simplify its usage, hiding away the complexity for most situations.
+Metriport's pagination is designed to simplify its usage, hiding away the complexity for most situations.
 
 But it can be customized using these parameters:
+
 - `count`: the number of items to be included in each page/response, optional. Defaults to 50 items per page.
   The maximum number of items per page is 500.
 - `fromItem`: the ID of the first item to be included in the current page, optional. If not provided, the
@@ -37,10 +40,11 @@ Only two of the parameters above can be specified for each request.
 ## Pagination in the SDK
 
 The SDK includes support for the paginated endpoints in two ways:
+
 - a simpler "page" version of the function, in which we can just pass the respective page's URL;
 - a more detailed version of the function, in which we can specify each pagination parameter individually.
 
-Typically, one would use the dedicated "page" function after obtaining the first page:
+Typically, one would use the simpler, dedicated "page" function after obtaining the first page:
 
 ```ts
 const { meta, patients } = await metriportClient.listPatients({ facilityId });
@@ -53,7 +57,8 @@ while (nextPage) {
 }
 ```
 
-Alternatively, one can request pages providing each individual parameter separately:
+Alternatively, one can use the detailed version, providing each individual parameter separately
+when requesting each page:
 
 ```ts
 await metriportClient.listPatients(facilityId, filters, {
