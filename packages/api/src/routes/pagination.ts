@@ -115,3 +115,18 @@ function getPaginationUrl(
   }
   return Config.getApiUrl() + req.baseUrl + "?" + params.toString();
 }
+
+/**
+ * Normalizes the filters for full text search in Postgres.
+ */
+export function normalizeFiltersForFTS(filters: string | undefined): string | undefined {
+  const normalizedDates = normalizeDateFiltersForFTS(filters);
+  return normalizedDates;
+}
+
+/**
+ * Normalizes the date filters for full text search in Postgres.
+ */
+function normalizeDateFiltersForFTS(filters: string | undefined): string | undefined {
+  return filters?.replace(/(\d\d)-(\d\d)/g, "$1$2");
+}

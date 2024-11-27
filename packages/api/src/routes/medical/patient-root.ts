@@ -16,7 +16,7 @@ import { PatientModel } from "../../models/medical/patient";
 import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { checkRateLimit } from "../middlewares/rate-limiting";
-import { paginated } from "../pagination";
+import { normalizeFiltersForFTS, paginated } from "../pagination";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { dtoFromModel, PatientDTO } from "./dtos/patientDTO";
 import { schemaCreateToPatientData, schemaDemographicsToPatientData } from "./schemas/patient";
@@ -95,13 +95,14 @@ router.get(
     const facilityId = getFrom("query").optional("facilityId", req);
     const fullTextSearchFilters = getFrom("query").optional("filters", req);
 
+    const filters = normalizeFiltersForFTS(fullTextSearchFilters);
     const queryParams = {
       ...(facilityId ? { facilityId } : {}),
-      ...(fullTextSearchFilters ? { filters: fullTextSearchFilters } : {}),
+      ...(fullTextSearchFilters ? { filters } : {}),
     };
 
     const { meta, items } = await paginated(req, queryParams, async (pagination: Pagination) => {
-      return await getPatients({ cxId, facilityId, pagination, fullTextSearchFilters });
+      return await getPatients({ cxId, facilityId, pagination, fullTextSearchFilters: filters });
     });
     const response: PaginatedResponse<PatientDTO, "patients"> = {
       meta,
