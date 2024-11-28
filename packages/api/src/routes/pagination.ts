@@ -41,6 +41,12 @@ export const queryMetaSchema = z.intersection(
 );
 export type HttpMeta = z.infer<typeof queryMetaSchema>;
 
+// TODO 483 remove this once pagination is fully rolled out
+export function isPaginated(req: Request): boolean {
+  const meta = queryMetaSchema.parse(req.query);
+  return Object.keys(meta).length > 0;
+}
+
 export function getRequestMeta(req: Request): Pagination {
   const parsed = queryMetaSchema.parse(req.query);
   return {
