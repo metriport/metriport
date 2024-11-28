@@ -79,8 +79,6 @@ export function removeBase64PdfEntries(payloadRaw: string): {
 
               const remainingComponents = [...nonMediaObservations, ...filteredMediaComponents];
               entry.organizer.component = remainingComponents;
-
-              return remainingComponents.length > 0;
             }
             return true;
           });
