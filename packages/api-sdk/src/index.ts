@@ -18,6 +18,7 @@ export {
   WebhookRequestStatus,
   WebhookType,
 } from "@metriport/shared/medical";
+export type { ResponseMeta, PaginatedResponse } from "@metriport/shared";
 export { MetriportMedicalApi } from "./medical/client/metriport";
 export { Address, addressSchema, usStateForAddressSchema } from "./medical/models/common/address";
 export { BaseUpdate, baseUpdateSchema } from "./medical/models/common/base-update";
