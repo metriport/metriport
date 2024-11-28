@@ -1,3 +1,4 @@
+import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
 import { DOC_ID_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
@@ -50,6 +51,7 @@ export async function convertCDAsToFHIR(
   return { errorCount, nonXMLBodyCount };
 }
 
+// import fs from "fs";
 export async function convert(
   baseFolderName: string,
   fileName: string,
@@ -63,27 +65,45 @@ export async function convert(
   }
 
   const { documentContents: noB64FileContents } = removeBase64PdfEntries(fileContents);
+  const payloads = partitionPayload(noB64FileContents);
 
   const unusedSegments = false;
   const invalidAccess = false;
-  const params = { patientId, fileName, unusedSegments, invalidAccess };
   const url = `/api/convert/cda/ccd.hbs`;
-  const payload = (noB64FileContents ?? "").trim();
-  const res = await api.post(url, payload, {
-    params,
-    headers: { "Content-Type": "text/plain" },
-  });
-  const conversionResult = res.data.fhirResource;
-  addMissingRequests(conversionResult);
 
-  const updatedConversionResult = replaceIDs(conversionResult, patientId);
+  // Process payloads sequentially and combine into single bundle
+  const combinedBundle: FHIRBundle = {
+    resourceType: "Bundle",
+    type: "batch",
+    entry: [],
+  };
+
+  const params = { patientId, fileName, unusedSegments, invalidAccess };
+  for (let index = 0; index < payloads.length; index++) {
+    const payload = payloads[index];
+
+    const res = await api.post(url, payload, {
+      params,
+      headers: { "Content-Type": "text/plain" },
+    });
+
+    const conversionResult = res.data.fhirResource;
+
+    if (conversionResult?.entry?.length) {
+      combinedBundle.entry.push(...conversionResult.entry);
+    }
+  }
+
+  addMissingRequests(combinedBundle);
+
+  const updatedConversionResult = replaceIDs(combinedBundle, patientId);
   addExtensionToConversion(updatedConversionResult, {
     url: "http://metriport.com/fhir/extension/patientId",
     valueString: fhirExtension,
   });
   removePatientFromConversion(updatedConversionResult);
 
-  return updatedConversionResult;
+  return combinedBundle;
 }
 
 interface Entry {

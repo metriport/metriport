@@ -1,6 +1,7 @@
 import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
+import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { DOC_ID_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE, XML_APP_MIME_TYPE } from "@metriport/core/util/mime";
 import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
@@ -228,34 +229,57 @@ export async function handler(event: SQSEvent) {
         log(
           `Calling converter on url ${converterUrl} with params ${JSON.stringify(converterParams)}`
         );
-        const convertPayloadToFHIR = () =>
-          executeWithNetworkRetries(
-            () =>
-              fhirConverter.post(converterUrl, payloadClean, {
-                params: converterParams,
-                headers: { "Content-Type": TXT_MIME_TYPE },
-              }),
-            {
-              // No retries on timeout b/c we want to re-enqueue instead of trying within the same lambda run,
-              // it could lead to timing out the lambda execution.
-              log,
-            }
-          );
-        // The actual payload we send to the Converter
-        const storePayloadInS3 = () =>
-          storePreConversionPayloadInS3({
-            payload: payloadClean,
-            preConversionFilename,
-            message,
-            lambdaParams,
-            log,
-          });
 
-        const [responseFromConverter] = await Promise.all([
-          convertPayloadToFHIR(),
-          storePayloadInS3(),
-        ]);
-        const conversionResult = responseFromConverter.data.fhirResource as FHIRBundle;
+        const partitionedPayload = partitionPayload(payloadClean);
+        const convertPayloadToFHIR = async () => {
+          const combinedBundle: FHIRBundle = {
+            resourceType: "Bundle",
+            type: "batch",
+            entry: [],
+          };
+
+          log(`The file was partitioned into ${partitionedPayload.length} parts...`); // TODO: remove when done testing
+          for (let index = 0; index < partitionedPayload.length; index++) {
+            const payload = partitionedPayload[index];
+
+            const res = await executeWithNetworkRetries(
+              () =>
+                fhirConverter.post(converterUrl, payload, {
+                  params: converterParams,
+                  headers: { "Content-Type": TXT_MIME_TYPE },
+                }),
+              {
+                // No retries on timeout b/c we want to re-enqueue instead of trying within the same lambda run,
+                // it could lead to timing out the lambda execution.
+                log,
+              }
+            );
+
+            const conversionResult = res.data.fhirResource;
+
+            if (conversionResult?.entry?.length > 0) {
+              combinedBundle.entry.push(...conversionResult.entry);
+            }
+            log(`combined bundle length for index ${index}: ${combinedBundle.entry.length}`);
+          }
+          return combinedBundle;
+        };
+        // The actual payload we send to the Converter
+        const storePayloadInS3 = () => {
+          partitionedPayload.forEach((payload, index) => {
+            storePreConversionPayloadInS3({
+              payload,
+              preConversionFilename:
+                index > 0 ? `${preConversionFilename}_part_${index}.xml` : preConversionFilename,
+              message,
+              lambdaParams,
+              log,
+            });
+          });
+        };
+
+        const [conversionResult] = await Promise.all([convertPayloadToFHIR(), storePayloadInS3()]);
+
         metrics.conversion = {
           duration: Date.now() - conversionStart,
           timestamp: new Date(),
@@ -274,6 +298,7 @@ export async function handler(event: SQSEvent) {
 
         // post-process conversion result
         const postProcessStart = Date.now();
+        // already done? or should do it here?
         const updatedConversionResult = replaceIDs(conversionResult, patientId);
         addExtensionToConversion(updatedConversionResult, documentExtension);
         removePatientFromConversion(updatedConversionResult);
