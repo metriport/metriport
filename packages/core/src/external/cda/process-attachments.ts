@@ -34,7 +34,7 @@ import { makeFhirApi } from "../fhir/api/api-factory";
 import { convertCollectionBundleToTransactionBundle } from "../fhir/bundle/convert-to-transaction-bundle";
 import { buildDocIdFhirExtension } from "../fhir/shared/extensions/doc-id-extension";
 import { B64Attachments } from "./remove-b64";
-import { getMediaObservations } from "./shared";
+import { groupObservations } from "./shared";
 
 const region = Config.getAWSRegion();
 
@@ -99,9 +99,9 @@ export async function processAttachments({
   });
 
   b64Attachments.organizers.map(organizerEntry => {
-    const mediaComponents = getMediaObservations(organizerEntry);
+    const { mediaObservations } = groupObservations(organizerEntry);
 
-    mediaComponents?.map(mediaEntry => {
+    mediaObservations.map(mediaEntry => {
       const obsMedia = mediaEntry.observationMedia;
       const fileDetails = getDetailsForMediaObs(obsMedia.value);
       if (!fileDetails) return;

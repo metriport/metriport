@@ -27,8 +27,6 @@ export function removeBase64PdfEntries(payloadRaw: string): {
   });
   const json = parser.parse(payloadRaw);
 
-  let isRemovedEntries;
-
   const b64Attachments: B64Attachments = {
     acts: [],
     organizers: [],
@@ -54,9 +52,8 @@ export function removeBase64PdfEntries(payloadRaw: string): {
                 isBinaryMimeTypeOrUndefined(act.text?._mediaType) &&
                 isB64Representation(act.text?._representation)
               ) {
-                isRemovedEntries = true;
-                b64Attachments.acts.push(act);
                 b64Attachments.total++;
+                b64Attachments.acts.push(act);
                 return false;
               }
             } else if (isObservationOrganizer(entry)) {
@@ -75,7 +72,6 @@ export function removeBase64PdfEntries(payloadRaw: string): {
                 ) {
                   b64Attachments.organizers.push(cloneDeep(entry.organizer));
                   b64Attachments.total++;
-                  isRemovedEntries = true;
                   return false;
                 }
                 return true;
@@ -93,6 +89,13 @@ export function removeBase64PdfEntries(payloadRaw: string): {
     });
   }
 
+  if (b64Attachments.total === 0) {
+    return {
+      documentContents: payloadRaw,
+      b64Attachments: undefined,
+    };
+  }
+
   const builder = new XMLBuilder({
     format: false,
     ignoreAttributes: false,
@@ -103,8 +106,8 @@ export function removeBase64PdfEntries(payloadRaw: string): {
   const xml = builder.build(json);
 
   return {
-    documentContents: isRemovedEntries ? xml : payloadRaw,
-    b64Attachments: b64Attachments.total > 0 ? b64Attachments : undefined,
+    documentContents: xml,
+    b64Attachments,
   };
 }
 

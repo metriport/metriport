@@ -21,14 +21,10 @@ export function isObservationOrganizer(entry: any): entry is ObservationOrganize
   );
 }
 
-export function isMediaObservation(
+function isMediaObservation(
   component: ObservationEntry | ObservationMediaEntry
 ): component is ObservationMediaEntry {
   return "observationMedia" in component;
-}
-
-export function getMediaObservations(organizer: ObservationOrganizer): ObservationMediaEntry[] {
-  return toArray(organizer.component).filter(isMediaObservation);
 }
 
 export function groupObservations(organizer: ObservationOrganizer): {
