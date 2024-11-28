@@ -5,7 +5,6 @@ const tableName = "patient";
 const columnName = "search_criteria";
 const indexName = "search_criteria_index";
 
-// Use 'Promise.all' when changes are independent of each other
 export const up: Migration = async ({ context: queryInterface }) => {
   const createGeneratedColumn = `
 alter table ${tableName}
