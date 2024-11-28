@@ -3,10 +3,9 @@ import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { sizeInBytes } from "../../util/string";
 import { XMLBuilder } from "fast-xml-parser";
 
-const MAX_CHUNK_SIZE = 3_000_000; // 10MB in bytes
+const MAX_CHUNK_SIZE = 10_000_000; // 10MB in bytes
 
 export function partitionPayload(payloadRaw: string): string[] {
-  console.log("sizeInBytes(payloadRaw)", sizeInBytes(payloadRaw));
   if (sizeInBytes(payloadRaw) < MAX_CHUNK_SIZE) return [payloadRaw];
 
   const parser = createXMLParser({
@@ -16,11 +15,9 @@ export function partitionPayload(payloadRaw: string): string[] {
   });
   const json = parser.parse(payloadRaw);
 
-  console.log("TOO BIG");
   if (!json.ClinicalDocument?.component?.structuredBody?.component) {
     return [payloadRaw];
   }
-  console.log("GOT HERE");
 
   const components = toArray(json.ClinicalDocument?.component?.structuredBody?.component);
 

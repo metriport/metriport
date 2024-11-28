@@ -238,7 +238,10 @@ export async function handler(event: SQSEvent) {
             entry: [],
           };
 
-          log(`The file was partitioned into ${partitionedPayload.length} parts...`); // TODO: remove when done testing
+          if (partitionedPayload.length > 1) {
+            log(`The file was partitioned into ${partitionedPayload.length} parts...`);
+          }
+
           for (let index = 0; index < partitionedPayload.length; index++) {
             const payload = partitionedPayload[index];
 
@@ -258,19 +261,26 @@ export async function handler(event: SQSEvent) {
             const conversionResult = res.data.fhirResource;
 
             if (conversionResult?.entry?.length > 0) {
+              log(
+                `Current partial bundle with index ${index} contains: ${conversionResult.entry.length} resources...`
+              );
               combinedBundle.entry.push(...conversionResult.entry);
             }
-            log(`combined bundle length for index ${index}: ${combinedBundle.entry.length}`);
           }
+
+          log(`Combined bundle contains: ${combinedBundle.entry.length} resources`);
           return combinedBundle;
         };
+
         // The actual payload we send to the Converter
         const storePayloadInS3 = () => {
           partitionedPayload.forEach((payload, index) => {
             storePreConversionPayloadInS3({
               payload,
               preConversionFilename:
-                index > 0 ? `${preConversionFilename}_part_${index}.xml` : preConversionFilename,
+                index > 0
+                  ? `${preConversionFilename}_part_${index + 1}.xml`
+                  : preConversionFilename,
               message,
               lambdaParams,
               log,
