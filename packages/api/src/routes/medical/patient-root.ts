@@ -17,7 +17,7 @@ import { PatientModel } from "../../models/medical/patient";
 import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { checkRateLimit } from "../middlewares/rate-limiting";
-import { paginated } from "../pagination";
+import { isPaginated, paginated } from "../pagination";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { dtoFromModel, PatientDTO } from "./dtos/patientDTO";
 import { schemaCreateToPatientData, schemaDemographicsToPatientData } from "./schemas/patient";
@@ -95,6 +95,13 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const facilityId = getFrom("query").optional("facilityId", req);
     const fullTextSearchFilters = getFrom("query").optional("filters", req);
+
+    // TODO 483 remove this (and respected conditional) once pagination is fully rolled out
+    if (!isPaginated(req)) {
+      const patients = await getPatients({ cxId, facilityId: facilityId, fullTextSearchFilters });
+      const patientsData = patients.map(dtoFromModel);
+      return res.status(status.OK).json({ patients: patientsData });
+    }
 
     const queryParams = {
       ...(facilityId ? { facilityId } : {}),
