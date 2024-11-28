@@ -31,10 +31,10 @@ export const queryMetaSchema = z.intersection(
   z.object({
     count: numericValue
       .refine(count => count >= 0, {
-        message: `Count has to be equal or greater than 0`,
+        message: `Count has to be greater than or equal to 0`,
       })
       .refine(count => count <= maxItemsPerPage, {
-        message: `Count has to be equal or less than ${maxItemsPerPage}`,
+        message: `Count has to be less than or equal to ${maxItemsPerPage}`,
       })
       .optional(),
   })

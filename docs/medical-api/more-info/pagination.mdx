@@ -19,9 +19,9 @@ And `meta` contains:
 
 - `itemsOnPage`: the amount of items on the current page.
 - `itemsInTotal`: (optional) the total amount of items in all pages - only available on the first page.
-- `nextPage`: (optional) the URL to return the next page; if not present it means there's not a next page
+- `nextPage`: (optional) the URL to return the next page; if not present, it means there's not a next page
   - we're on the last page.
-- `prevPage`: (optional) the URL to return the previous page; if not present it means we're on the first page.
+- `prevPage`: (optional) the URL to return the previous page; if not present, it means we're on the first page.
 
 #### Example
 
@@ -39,7 +39,7 @@ per page. We can see the total amount of items included (`113`).
 }
 ```
 
-To get the next page, we can just call the URL on `nextPage`. When there's no `nextPage` it means we're
+To get the next page, we can just call the URL on `nextPage`. When there's no `nextPage`, it means we're
 on the last one. As simple as that.
 
 
@@ -53,7 +53,7 @@ But, it can be customized using these parameters:
   The maximum number of items per page is 500.
 - `fromItem`: the ID of the first item to be included in the current page, optional. If not provided, the
   first page will be returned.
-- `toItem`: the last item to be included in the current page, optional. If not provided, it will be
+- `toItem`: the last item to be included in the current page, optional. If not provided, it will 
   automatically be calculated based on `firstItem` and `count`.
 
 Only two of the parameters above can be specified for each request.

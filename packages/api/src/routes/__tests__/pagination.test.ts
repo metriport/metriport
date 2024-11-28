@@ -89,7 +89,7 @@ describe("Pagination", () => {
             getItems,
             getTotalCount,
           })
-        ).rejects.toThrow("Count has to be equal or greater than 0");
+        ).rejects.toThrow("Count has to be greater than or equal to 0");
       });
 
       it("fails if count is higher than limit", async () => {
@@ -101,7 +101,7 @@ describe("Pagination", () => {
             getItems,
             getTotalCount,
           })
-        ).rejects.toThrow("Count has to be equal or less than 500");
+        ).rejects.toThrow("Count has to be less than or equal to 500");
       });
       it("rejects invalid count parameter", async () => {
         const req = { query: { count: "invalid" }, baseUrl };

@@ -104,7 +104,7 @@ describe("Pagination command", () => {
       expect(result.totalCount).toBeUndefined();
     });
 
-    it("returns second page with toItem", async () => {
+    it("returns second page with fromItem", async () => {
       const pagination: Pagination = { count: 2, fromItem: mockItems[4].id };
       const result = await getPaginationItems(pagination, getItems, getTotalCount);
       expect(result.prevPageItemId).toEqual(mockItems[3].id);
