@@ -2,10 +2,12 @@ import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64"
 import { DOC_ID_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { AxiosInstance } from "axios";
+import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import * as uuid from "uuid";
 import { getFileContents, makeDirIfNeeded, writeFileContents } from "../shared/fs";
 import { getPatientIdFromFileName } from "./shared";
 import path = require("node:path");
+import { Bundle, Resource } from "@medplum/fhirtypes";
 
 export async function convertCDAsToFHIR(
   baseFolderName: string,
@@ -73,17 +75,22 @@ export async function convert(
     params,
     headers: { "Content-Type": "text/plain" },
   });
-  const conversionResult = res.data.fhirResource;
-  addMissingRequests(conversionResult);
+  const conversionResult = res.data.fhirResource as Bundle<Resource>;
 
-  const updatedConversionResult = replaceIDs(conversionResult, patientId);
+  const normalizedBundle = normalize({
+    patientId,
+    bundle: conversionResult,
+  }) as FHIRBundle;
+
+  addMissingRequests(conversionResult);
+  const updatedConversionResult = replaceIDs(normalizedBundle, patientId);
   addExtensionToConversion(updatedConversionResult, {
     url: "http://metriport.com/fhir/extension/patientId",
     valueString: fhirExtension,
   });
-  removePatientFromConversion(updatedConversionResult);
+  removePatientFromConversion(normalizedBundle);
 
-  return updatedConversionResult;
+  return normalizedBundle;
 }
 
 interface Entry {

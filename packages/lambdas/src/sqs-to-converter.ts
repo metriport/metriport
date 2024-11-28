@@ -1,6 +1,8 @@
+import { Bundle, Resource } from "@medplum/fhirtypes";
 import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
+import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { DOC_ID_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE, XML_APP_MIME_TYPE } from "@metriport/core/util/mime";
 import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
@@ -272,19 +274,33 @@ export async function handler(event: SQSEvent) {
 
         await cloudWatchUtils.reportMemoryUsage();
 
+        await cloudWatchUtils.reportMemoryUsage();
+
+        const normalizedBundle = normalize({
+          cxId,
+          patientId,
+          bundle: conversionResult as Bundle<Resource>,
+        });
+
+        const fileNamePreNormalization = `${s3FileName}.post_normalization.json`;
+        await storeNormalizedConversionResult({
+          bundle: normalizedBundle,
+          fileName: fileNamePreNormalization,
+          message,
+          lambdaParams,
+          log,
+        });
+
         // post-process conversion result
         const postProcessStart = Date.now();
-        const updatedConversionResult = replaceIDs(conversionResult, patientId);
+        const updatedConversionResult = replaceIDs(normalizedBundle as FHIRBundle, patientId);
         addExtensionToConversion(updatedConversionResult, documentExtension);
-        removePatientFromConversion(updatedConversionResult);
         addMissingRequests(updatedConversionResult);
         metrics.postProcess = {
           duration: Date.now() - postProcessStart,
           timestamp: new Date(),
         };
-
-        await cloudWatchUtils.reportMemoryUsage();
-
+        removePatientFromConversion(updatedConversionResult);
         // Store the conversion result in S3 and send it to the destination(s)
         await sendConversionResult(
           cxId,
@@ -437,6 +453,50 @@ async function storePreProcessedConversionResult({
         message,
         ...lambdaParams,
         conversionResultFilename,
+        context: lambdaName,
+        error,
+      },
+    });
+  }
+}
+
+async function storeNormalizedConversionResult({
+  bundle,
+  fileName,
+  message,
+  lambdaParams,
+  log,
+}: {
+  bundle: Bundle<Resource>;
+  fileName: string;
+  message: SQSRecord;
+  lambdaParams: Record<string, string | undefined>;
+  log: typeof console.log;
+}) {
+  try {
+    await executeWithRetriesS3(
+      () =>
+        s3Utils.s3
+          .upload({
+            Bucket: conversionResultBucketName,
+            Key: fileName,
+            Body: JSON.stringify(bundle),
+            ContentType: FHIR_APP_MIME_TYPE,
+          })
+          .promise(),
+      {
+        ...defaultS3RetriesConfig,
+        log,
+      }
+    );
+  } catch (error) {
+    const msg = "Error uploading prenormalized conversion result";
+    log(`${msg}: ${error}`);
+    capture.error(msg, {
+      extra: {
+        message,
+        ...lambdaParams,
+        conversionResultFilename: fileName,
         context: lambdaName,
         error,
       },
