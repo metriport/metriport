@@ -3,7 +3,7 @@ title: "Pagination"
 description: "Retrieving larger amounts of data."
 ---
 
-Some of Metriport's endpoints are paginated: they return a limited amount of items each time they are requested.
+Some of Metriport's endpoints are paginated - they return a limited amount of items each time they are requested.
 Each request being a single "page".
 
 In order to have access to all items, after we receive the items for the current page we can request the
@@ -47,7 +47,7 @@ on the last one. As simple as that.
 
 Metriport's pagination is designed to simplify its usage, hiding away the complexity for most situations.
 
-But it can be customized using these parameters:
+But, it can be customized using these parameters:
 
 - `count`: the number of items to be included in each page/response, optional. Defaults to 50 items per page.
   The maximum number of items per page is 500.
