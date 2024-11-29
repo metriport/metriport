@@ -811,6 +811,8 @@ module.exports.external = [
 
         for (var t = 0; t < templateIds.length - 1; t++) {
           // -1 because templateIds includes the full message at the end
+          if (!msg.ClinicalDocument.component?.structuredBody?.component) continue;
+
           let components = Array.isArray(msg.ClinicalDocument.component.structuredBody.component)
             ? msg.ClinicalDocument.component.structuredBody.component
             : [msg.ClinicalDocument.component.structuredBody.component];
