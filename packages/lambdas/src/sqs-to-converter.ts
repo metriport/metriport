@@ -47,7 +47,7 @@ const fhirConverter = axios.create({
 });
 const ossApi = apiClient(apiURL);
 
-function replaceIDs(fhirBundle: Bundle<Resource>, patientId: string): FHIRBundle {
+function replaceIDs(fhirBundle: Bundle<Resource>, patientId: string): Bundle<Resource> {
   const stringsToReplace: { old: string; new: string }[] = [];
   if (!fhirBundle.entry) throw new Error(`Missing bundle entries`);
   for (const bundleEntry of fhirBundle.entry) {
@@ -110,27 +110,6 @@ type EventBody = {
 type FHIRExtension = {
   url: string;
   valueString: string;
-};
-
-type FHIRBundle = {
-  resourceType: "Bundle";
-  type: "batch";
-  entry: {
-    fullUrl: string;
-    resource: {
-      resourceType: string;
-      id: string;
-      extension?: FHIRExtension[];
-      meta?: {
-        lastUpdated: string;
-        source: string;
-      };
-    };
-    request?: {
-      method: string;
-      url: string;
-    };
-  }[];
 };
 
 // Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
@@ -355,23 +334,28 @@ function parseBody(body: unknown): EventBody {
   return { s3BucketName, s3FileName, documentExtension };
 }
 
-function addExtensionToConversion(fhirBundle: FHIRBundle, extension: FHIRExtension) {
+function addExtensionToConversion(fhirBundle: Bundle<Resource>, extension: FHIRExtension) {
   if (fhirBundle?.entry?.length) {
     for (const bundleEntry of fhirBundle.entry) {
-      if (!bundleEntry.resource) continue;
-      if (!bundleEntry.resource.extension) bundleEntry.resource.extension = [];
-      bundleEntry.resource.extension.push(extension);
+      const resource = bundleEntry.resource;
+      if (!resource) continue;
+      if (!("extension" in resource)) {
+        //eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (resource as any).extension = [extension];
+      } else {
+        resource.extension?.push(extension);
+      }
     }
   }
 }
 
-function removePatientFromConversion(fhirBundle: FHIRBundle) {
+function removePatientFromConversion(fhirBundle: Bundle<Resource>) {
   const entries = fhirBundle?.entry ?? [];
   const pos = entries.findIndex(e => e.resource?.resourceType === "Patient");
-  if (pos >= 0) fhirBundle.entry.splice(pos, 1);
+  if (pos >= 0) fhirBundle.entry?.splice(pos, 1);
 }
 
-function addMissingRequests(fhirBundle: FHIRBundle) {
+function addMissingRequests(fhirBundle: Bundle<Resource>) {
   if (!fhirBundle?.entry?.length) return;
   fhirBundle.entry.forEach(e => {
     if (!e.request && e.resource) {
@@ -387,7 +371,7 @@ async function sendConversionResult(
   cxId: string,
   patientId: string,
   sourceFileName: string,
-  conversionPayload: FHIRBundle,
+  conversionPayload: Bundle<Resource>,
   jobId: string | undefined,
   medicalDataSource: string | undefined,
   log: Log
@@ -424,7 +408,7 @@ async function storePreProcessedConversionResult({
   lambdaParams,
   log,
 }: {
-  conversionResult: FHIRBundle;
+  conversionResult: Bundle<Resource>;
   conversionResultFilename: string;
   message: SQSRecord;
   lambdaParams: Record<string, string | undefined>;
