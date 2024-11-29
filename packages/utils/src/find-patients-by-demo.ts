@@ -173,9 +173,9 @@ async function findPatientsByDemo(
       const sameFirstName =
         csvPatient.firstName.toLowerCase() === dbPatient.firstName.toLowerCase();
       const sameLastName = csvPatient.lastName.toLowerCase() === dbPatient.lastName.toLowerCase();
-      const sameDOB = csvPatient.dob === dbPatient.dob;
+      const sameDob = csvPatient.dob === dbPatient.dob;
       const sameGender = csvPatient.genderAtBirth === dbPatient.genderAtBirth;
-      return sameFirstName && sameLastName && sameDOB && sameGender;
+      return sameFirstName && sameLastName && sameDob && sameGender;
     });
 
     if (matchingPatients.length === 0) {
@@ -369,7 +369,7 @@ function normalizeExternalIdUtils(id: string | undefined): string | undefined {
   return normalId;
 }
 
-export function mapCSVPatientToMetriportPatient(csvPatient: {
+export function mapCsvPatientToMetriportPatient(csvPatient: {
   firstname: string | undefined;
   lastname: string | undefined;
   dob: string | undefined;
