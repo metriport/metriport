@@ -147,7 +147,17 @@ async function findPatientsByDemo(
 
   await displayWarningAndConfirmation(orgName, localFacilityId, dryRun);
 
-  const patientsFromTheDb = await metriportAPI.listPatients(localFacilityId);
+  let page = 1;
+  const patientsFromDb: PatientDTO[] = [];
+  const { meta, patients } = await metriportAPI.listPatients({ facilityId: localFacilityId });
+  patientsFromDb.push(...patients);
+  let nextPage = meta.nextPage;
+  while (nextPage) {
+    const { meta, patients } = await metriportAPI.listPatientsPage(nextPage);
+    patientsFromDb.push(...patients);
+    nextPage = meta.nextPage;
+  }
+  console.log(`Patients loaded in ${--page} pages`);
 
   // Find matches between CSV patients and existing DB patients
   const matches: Array<{ csvPatient: PatientCreate; dbPatient: PatientDTO }> = [];
@@ -155,7 +165,7 @@ async function findPatientsByDemo(
   const multipleMatches: Array<{ csvPatient: PatientCreate; dbPatients: PatientDTO[] }> = [];
 
   for (const csvPatient of dedupedPatients) {
-    const matchingPatients = patientsFromTheDb.filter(dbPatient => {
+    const matchingPatients = patientsFromDb.filter(dbPatient => {
       const sameFirstName =
         csvPatient.firstName.toLowerCase() === dbPatient.firstName.toLowerCase();
       const sameLastName = csvPatient.lastName.toLowerCase() === dbPatient.lastName.toLowerCase();
