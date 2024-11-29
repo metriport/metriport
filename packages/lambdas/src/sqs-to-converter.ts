@@ -109,6 +109,13 @@ type FHIRExtension = {
   valueString: string;
 };
 
+type FhirConverterParams = {
+  patientId: string;
+  fileName: string;
+  unusedSegments: string | undefined;
+  invalidAccess: string | undefined;
+};
+
 type FHIRBundle = {
   resourceType: "Bundle";
   type: "batch";
@@ -149,6 +156,7 @@ export async function handler(event: SQSEvent) {
       });
     }
     console.log(`Processing ${records.length} records...`);
+
     for (const [i, message] of records.entries()) {
       // Process one record from the SQS message
       console.log(`Record ${i}, messageId: ${message.messageId}`);
@@ -221,7 +229,12 @@ export async function handler(event: SQSEvent) {
         if (!converterUrl) throw new Error(`Missing converterUrl`);
         const unusedSegments = attrib.unusedSegments?.stringValue;
         const invalidAccess = attrib.invalidAccess?.stringValue;
-        const converterParams = { patientId, fileName: s3FileName, unusedSegments, invalidAccess };
+        const converterParams: FhirConverterParams = {
+          patientId,
+          fileName: s3FileName,
+          unusedSegments,
+          invalidAccess,
+        };
 
         const preConversionFilename = `${s3FileName}.pre-conversion.xml`;
         const conversionResultFilename = `${s3FileName}.from_converter.json`;
@@ -231,56 +244,17 @@ export async function handler(event: SQSEvent) {
         );
 
         const partitionedPayload = partitionPayload(payloadClean);
-        const convertPayloadToFHIR = async () => {
-          const combinedBundle: FHIRBundle = {
-            resourceType: "Bundle",
-            type: "batch",
-            entry: [],
-          };
-
-          if (partitionedPayload.length > 1) {
-            log(`The file was partitioned into ${partitionedPayload.length} parts...`);
-          }
-
-          for (let index = 0; index < partitionedPayload.length; index++) {
-            const payload = partitionedPayload[index];
-
-            const res = await executeWithNetworkRetries(
-              () =>
-                fhirConverter.post(converterUrl, payload, {
-                  params: converterParams,
-                  headers: { "Content-Type": TXT_MIME_TYPE },
-                }),
-              {
-                // No retries on timeout b/c we want to re-enqueue instead of trying within the same lambda run,
-                // it could lead to timing out the lambda execution.
-                log,
-              }
-            );
-
-            const conversionResult = res.data.fhirResource;
-
-            if (conversionResult?.entry?.length > 0) {
-              log(
-                `Current partial bundle with index ${index} contains: ${conversionResult.entry.length} resources...`
-              );
-              combinedBundle.entry.push(...conversionResult.entry);
-            }
-          }
-
-          log(`Combined bundle contains: ${combinedBundle.entry.length} resources`);
-          return combinedBundle;
-        };
 
         // The actual payload we send to the Converter
         const storePayloadInS3 = () => {
           partitionedPayload.forEach((payload, index) => {
             storePreConversionPayloadInS3({
               payload,
-              preConversionFilename:
-                index > 0
-                  ? `${preConversionFilename}_part_${index + 1}.xml`
-                  : preConversionFilename,
+              preConversionFilename: buildDocumentNameForPartialConversions(
+                preConversionFilename,
+                partitionedPayload.length,
+                index
+              ),
               message,
               lambdaParams,
               log,
@@ -288,7 +262,15 @@ export async function handler(event: SQSEvent) {
           });
         };
 
-        const [conversionResult] = await Promise.all([convertPayloadToFHIR(), storePayloadInS3()]);
+        const [conversionResult] = await Promise.all([
+          convertPayloadToFHIR({
+            converterUrl,
+            partitionedPayload,
+            converterParams,
+            log,
+          }),
+          storePayloadInS3(),
+        ]);
 
         metrics.conversion = {
           duration: Date.now() - conversionStart,
@@ -308,7 +290,6 @@ export async function handler(event: SQSEvent) {
 
         // post-process conversion result
         const postProcessStart = Date.now();
-        // already done? or should do it here?
         const updatedConversionResult = replaceIDs(conversionResult, patientId);
         addExtensionToConversion(updatedConversionResult, documentExtension);
         removePatientFromConversion(updatedConversionResult);
@@ -347,6 +328,57 @@ export async function handler(event: SQSEvent) {
     });
     throw new MetriportError(msg, error);
   }
+}
+
+async function convertPayloadToFHIR({
+  converterUrl,
+  partitionedPayload,
+  converterParams,
+  log,
+}: {
+  converterUrl: string;
+  partitionedPayload: string[];
+  converterParams: FhirConverterParams;
+  log: typeof console.log;
+}) {
+  const combinedBundle: FHIRBundle = {
+    resourceType: "Bundle",
+    type: "batch",
+    entry: [],
+  };
+
+  if (partitionedPayload.length > 1) {
+    log(`The file was partitioned into ${partitionedPayload.length} parts...`);
+  }
+
+  for (let index = 0; index < partitionedPayload.length; index++) {
+    const payload = partitionedPayload[index];
+
+    const res = await executeWithNetworkRetries(
+      () =>
+        fhirConverter.post(converterUrl, payload, {
+          params: converterParams,
+          headers: { "Content-Type": TXT_MIME_TYPE },
+        }),
+      {
+        // No retries on timeout b/c we want to re-enqueue instead of trying within the same lambda run,
+        // it could lead to timing out the lambda execution.
+        log,
+      }
+    );
+
+    const conversionResult = res.data.fhirResource;
+
+    if (conversionResult?.entry?.length > 0) {
+      log(
+        `Current partial bundle with index ${index} contains: ${conversionResult.entry.length} resources...`
+      );
+      combinedBundle.entry.push(...conversionResult.entry);
+    }
+  }
+
+  log(`Combined bundle contains: ${combinedBundle.entry.length} resources`);
+  return combinedBundle;
 }
 
 function parseBody(body: unknown): EventBody {
@@ -477,6 +509,16 @@ async function storePreProcessedConversionResult({
       },
     });
   }
+}
+
+function buildDocumentNameForPartialConversions(
+  fileName: string,
+  numChunksInPayload: number,
+  index: number
+): string {
+  if (numChunksInPayload <= 1) return fileName;
+
+  return `${fileName}_part_${index}.xml`;
 }
 
 async function storePreConversionPayloadInS3({

@@ -51,7 +51,6 @@ export async function convertCDAsToFHIR(
   return { errorCount, nonXMLBodyCount };
 }
 
-// import fs from "fs";
 export async function convert(
   baseFolderName: string,
   fileName: string,
@@ -103,7 +102,7 @@ export async function convert(
   });
   removePatientFromConversion(updatedConversionResult);
 
-  return combinedBundle;
+  return updatedConversionResult;
 }
 
 interface Entry {
