@@ -47,25 +47,27 @@ const fhirConverter = axios.create({
 });
 const ossApi = apiClient(apiURL);
 
-function replaceIDs(fhirBundle: FHIRBundle, patientId: string): FHIRBundle {
+function replaceIDs(fhirBundle: Bundle<Resource>, patientId: string): FHIRBundle {
   const stringsToReplace: { old: string; new: string }[] = [];
+  if (!fhirBundle.entry) throw new Error(`Missing bundle entries`);
   for (const bundleEntry of fhirBundle.entry) {
     if (!bundleEntry.resource) throw new Error(`Missing resource`);
     if (!bundleEntry.resource.id) throw new Error(`Missing resource id`);
     if (bundleEntry.resource.id === patientId) continue;
 
-    const docIdExtension = bundleEntry.resource.extension?.find(
-      ext => ext.url === DOC_ID_EXTENSION_URL
-    );
-    const idToUse = bundleEntry.resource.id;
-    const newId = uuid.v4();
-    bundleEntry.resource.id = newId;
-    stringsToReplace.push({ old: idToUse, new: newId });
-    // replace meta's source and profile
-    bundleEntry.resource.meta = {
-      lastUpdated: bundleEntry.resource.meta?.lastUpdated ?? new Date().toISOString(),
-      source: docIdExtension?.valueString ?? "",
-    };
+    const resource = bundleEntry.resource;
+    if ("extension" in resource) {
+      const docIdExtension = resource.extension?.find(ext => ext.url === DOC_ID_EXTENSION_URL);
+      const idToUse = bundleEntry.resource.id;
+      const newId = uuid.v4();
+      bundleEntry.resource.id = newId;
+      stringsToReplace.push({ old: idToUse, new: newId });
+      // replace meta's source and profile
+      bundleEntry.resource.meta = {
+        lastUpdated: bundleEntry.resource.meta?.lastUpdated ?? new Date().toISOString(),
+        source: docIdExtension?.valueString ?? "",
+      };
+    }
   }
   let fhirBundleStr = JSON.stringify(fhirBundle);
   for (const stringToReplace of stringsToReplace) {
@@ -257,7 +259,7 @@ export async function handler(event: SQSEvent) {
           convertPayloadToFHIR(),
           storePayloadInS3(),
         ]);
-        const conversionResult = responseFromConverter.data.fhirResource as FHIRBundle;
+        const conversionResult = responseFromConverter.data.fhirResource;
         metrics.conversion = {
           duration: Date.now() - conversionStart,
           timestamp: new Date(),
@@ -279,7 +281,7 @@ export async function handler(event: SQSEvent) {
         const normalizedBundle = normalize({
           cxId,
           patientId,
-          bundle: conversionResult as Bundle<Resource>,
+          bundle: conversionResult,
         });
 
         await storeNormalizedConversionResult({
@@ -292,7 +294,7 @@ export async function handler(event: SQSEvent) {
 
         // post-process conversion result
         const postProcessStart = Date.now();
-        const updatedConversionResult = replaceIDs(normalizedBundle as FHIRBundle, patientId);
+        const updatedConversionResult = replaceIDs(normalizedBundle, patientId);
         addExtensionToConversion(updatedConversionResult, documentExtension);
         addMissingRequests(updatedConversionResult);
         metrics.postProcess = {
