@@ -1,11 +1,11 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
+import { S3Utils, executeWithRetriesS3 } from "@metriport/core/external/aws/s3";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { DOC_ID_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE, XML_APP_MIME_TYPE } from "@metriport/core/util/mime";
-import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
+import { MetriportError, errorToString, executeWithNetworkRetries } from "@metriport/shared";
 import { SQSEvent, SQSRecord } from "aws-lambda";
 import axios from "axios";
 import * as uuid from "uuid";
@@ -282,10 +282,9 @@ export async function handler(event: SQSEvent) {
           bundle: conversionResult as Bundle<Resource>,
         });
 
-        const fileNamePreNormalization = `${s3FileName}.post_normalization.json`;
         await storeNormalizedConversionResult({
           bundle: normalizedBundle,
-          fileName: fileNamePreNormalization,
+          fileName: s3FileName,
           message,
           lambdaParams,
           log,
@@ -473,13 +472,14 @@ async function storeNormalizedConversionResult({
   lambdaParams: Record<string, string | undefined>;
   log: typeof console.log;
 }) {
+  const fileNamePreNormalization = `${fileName}.post_normalization.json`;
   try {
     await executeWithRetriesS3(
       () =>
         s3Utils.s3
           .upload({
             Bucket: conversionResultBucketName,
-            Key: fileName,
+            Key: fileNamePreNormalization,
             Body: JSON.stringify(bundle),
             ContentType: FHIR_APP_MIME_TYPE,
           })
@@ -491,7 +491,7 @@ async function storeNormalizedConversionResult({
     );
   } catch (error) {
     const msg = "Error uploading prenormalized conversion result";
-    log(`${msg}: ${error}`);
+    log(`${msg}: ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         message,

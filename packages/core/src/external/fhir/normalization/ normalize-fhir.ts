@@ -11,7 +11,7 @@ export function normalizeFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> {
 
   normalizedBundle.entry = Object.entries(resourceArrays).flatMap(([, resources]) => {
     const entriesArray = Array.isArray(resources) ? resources : [resources];
-    return entriesArray.flatMap(v => v || []).map(entry => buildBundleEntry(entry as Resource));
+    return entriesArray.flatMap(v => buildBundleEntry(v) || []);
   });
 
   return normalizedBundle;
