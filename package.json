@@ -78,5 +78,10 @@
     "lerna": "^7.4.2",
     "lint-staged": "^13.1.0",
     "typescript": "^4.9.5"
+  },
+  "dependencies": {
+    "@langchain/aws": "^0.1.2",
+    "@langchain/core": "^0.3.19",
+    "langchain": "^0.3.6"
   }
 }

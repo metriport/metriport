@@ -19,7 +19,13 @@ import { findPatientResource } from "@metriport/core/external/fhir/shared/index"
 import { toArray } from "@metriport/shared";
 import fs from "fs";
 import { cloneDeep } from "lodash";
+import { loadSummarizationChain } from "langchain/chains";
+import { TokenTextSplitter, RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+import { PromptTemplate } from "@langchain/core/prompts";
+import { BedrockChat } from "@langchain/community/chat_models/bedrock";
 
+const SOURCE_DIR = "~/Documents/phi/ai-brief";
+const BRIEF_BUNDLE_FILE = "briefed-bundle.json";
 const relevantResources = [
   "AllergyIntolerance",
   "Coverage",
@@ -44,19 +50,101 @@ const referenceResources = [
   "Observation", // maybe worth keeping..
 ];
 
-const outputName = "filteredEntries.json";
+//--------------------------------
+// AI-based brief generation
+//--------------------------------
+async function summarizeFilteredBundleWithAI() {
+  // read filtered bundle from file
+  const fileName = `${SOURCE_DIR}/${BRIEF_BUNDLE_FILE}`;
+  const bundleStr = fs.readFileSync(fileName, { encoding: "utf8" });
+  const bundle = JSON.parse(bundleStr) as Bundle<Resource>;
 
-async function main() {
-  const bundleRaw = fs.readFileSync(
-    "/Users/ramilgaripov/Documents/phi/one-offs/nov25/patient_full.json",
-    "utf8"
-  );
+  const inputString = prepareBundleForBrief(bundle);
+
+  //   const splitter = new TokenTextSplitter({
+  //     chunkSize: 10000,
+  //     chunkOverlap: 250,
+  //   });
+
+  //   const chunks = await splitter.splitText(inputString ?? "");
+  const textSplitter = new RecursiveCharacterTextSplitter({ chunkSize: 10000, chunkOverlap: 250 });
+  const docs = await textSplitter.createDocuments([inputString ?? ""]);
+
+  const llmSummary = new BedrockChat({
+    model: "anthropic.claude-3-5-sonnet-20240620-v1:0",
+    temperature: 0,
+    region: "us-east-1",
+  });
+
+  const todaysDate = new Date().toISOString().split("T")[0];
+  const systemPrompt = "You are an expert primary care doctor.";
+  const summaryTemplate = `
+${systemPrompt}
+
+Today's date is ${todaysDate}.
+Your goal is to write a summary of the patient's most recent medical history, so that another doctor can understand the patient's medical history to be able to treat them effectively.
+Here is some of the patient's medical history:
+--------
+{text}
+--------
+
+Specify whether a DNR or POLST form has been completed.
+Include a summary of the patient's most recent hospitalization, including the location of the hospitalization, the date of the hospitalization, the reason for the hospitalization, and the results of the hospitalization.
+Include a summary of the patient's current chronic conditions, allergies, and any previous surgeries.
+Include a summary of the patient's current medications, including dosages and frequency - do not include instructions on how to take the medications. Include any history of medication allergies or adverse reactions.
+Include any other relevant information about the patient's health.
+
+SUMMARY:
+`;
+  const SUMMARY_PROMPT = PromptTemplate.fromTemplate(summaryTemplate);
+
+  const summaryTemplateRefined = `
+${systemPrompt}
+
+Today's date is ${todaysDate}.
+Your goal is to write a summary of the patient's most recent medical history, so that another doctor can understand the patient's medical history to be able to treat them effectively.
+Here is some of the patient's medical history:
+--------
+{text}
+--------
+
+Given the additional medical history, refine the summary to be more comprehensive and accurate, considering the following goals:
+Specify whether a DNR or POLST form has been completed.
+Include a summary of the patient's most recent hospitalization, including the location of the hospitalization, the date of the hospitalization, the reason for the hospitalization, and the results of the hospitalization.
+Include a summary of the patient's current chronic conditions, allergies, and any previous surgeries.
+Include a summary of the patient's current medications, including dosages and frequency - do not include instructions on how to take the medications. Include any history of medication allergies or adverse reactions.
+Include any other relevant information about the patient's health.
+
+SUMMARY:
+`;
+  const SUMMARY_PROMPT_REFINED = PromptTemplate.fromTemplate(summaryTemplateRefined);
+
+  const summarizeChain = loadSummarizationChain(llmSummary, {
+    type: "refine",
+    verbose: true,
+    questionPrompt: SUMMARY_PROMPT,
+    refinePrompt: SUMMARY_PROMPT_REFINED,
+  });
+
+  const summary = await summarizeChain.invoke({
+    input_documents: docs,
+  });
+
+  console.log(summary);
+}
+
+//--------------------------------
+// Create a briefed bundle
+//--------------------------------
+async function createBriefedBundle() {
+  const fileName = "source-bundle.json";
+  const bundleRaw = fs.readFileSync(`${SOURCE_DIR}/${fileName}`, "utf8");
   const bundle = JSON.parse(bundleRaw) as Bundle<Resource>;
 
   const inputString = prepareBundleForBrief(bundle);
   if (!inputString) return;
 
-  fs.writeFileSync(outputName, inputString);
+  fs.writeFileSync(`${SOURCE_DIR}/${BRIEF_BUNDLE_FILE}`, inputString);
 }
 
 export function prepareBundleForBrief(bundle: Bundle): string | undefined {
@@ -625,4 +713,6 @@ function getNameString(names: HumanName | HumanName[] | undefined): string | und
   return Array.from(nameParts).join(" ");
 }
 
-main();
+createBriefedBundle();
+
+// summarizeFilteredBundleWithAI();
