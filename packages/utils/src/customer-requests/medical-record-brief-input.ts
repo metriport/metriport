@@ -50,9 +50,9 @@ const relevantResources = [
 
 const referenceResources = [
   "Practitioner",
-  // "Organization",
+  "Organization",
   "Observation", // maybe worth keeping..
-  // "Location",
+  "Location",
 ];
 
 //--------------------------------
