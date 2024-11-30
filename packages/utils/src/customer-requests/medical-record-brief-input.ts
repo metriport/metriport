@@ -27,7 +27,8 @@ import fs from "fs";
 import { loadSummarizationChain } from "langchain/chains";
 import { cloneDeep } from "lodash";
 
-const SOURCE_DIR = "/Users/ramilgaripov/Documents/phi/ai-brief";
+const SOURCE_DIR = "/Users/dgoncharov/Documents/phi/ai-brief";
+const SOURCE_BUNDLE_FILE = "source-bundle.json";
 const BRIEF_BUNDLE_FILE = "briefed-bundle.json";
 const relevantResources = [
   "AllergyIntolerance",
@@ -142,8 +143,7 @@ SUMMARY:
 // Create a briefed bundle
 //--------------------------------
 async function createBriefedBundle() {
-  const fileName = "source-bundle.json";
-  const bundleRaw = fs.readFileSync(`${SOURCE_DIR}/${fileName}`, "utf8");
+  const bundleRaw = fs.readFileSync(`${SOURCE_DIR}/${SOURCE_BUNDLE_FILE}`, "utf8");
   const bundle = JSON.parse(bundleRaw) as Bundle<Resource>;
 
   const inputString = prepareBundleForBrief(bundle);
