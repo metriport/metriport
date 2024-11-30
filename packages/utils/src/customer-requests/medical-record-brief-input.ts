@@ -28,8 +28,9 @@ import { loadSummarizationChain } from "langchain/chains";
 import { cloneDeep } from "lodash";
 
 const SOURCE_DIR = "/Users/dgoncharov/Documents/phi/ai-brief";
-const SOURCE_BUNDLE_FILE = "source-bundle.json";
-const BRIEF_BUNDLE_FILE = "briefed-bundle.json";
+const SOURCE_PATIENT_ID = "xxx";
+const SOURCE_BUNDLE_FILE = `${SOURCE_PATIENT_ID}.json`;
+const BRIEF_BUNDLE_FILE = `briefed-${SOURCE_PATIENT_ID}.json`;
 const relevantResources = [
   "AllergyIntolerance",
   // "Coverage",
