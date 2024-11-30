@@ -10,6 +10,7 @@ import {
   EncounterDiagnosis,
   HumanName,
   Location,
+  Observation,
   Organization,
   Patient,
   Resource,
@@ -28,13 +29,19 @@ const relevantResources = [
   "Procedure",
   "Medication",
   "MedicationAdministration",
-  // "MedicationRequest",
-  // "MedicationStatement",
+  "MedicationRequest",
+  "MedicationStatement",
   "Condition",
   "Observation",
   "Practitioner",
   "Organization",
   "Patient",
+];
+
+const referenceResources = [
+  "Practitioner",
+  "Organization",
+  "Observation", // maybe worth keeping..
 ];
 
 const outputName = "filteredEntries.json";
@@ -90,12 +97,18 @@ function filterBundleResources(bundle: Bundle) {
 
   // Filter out embedded resources from the final bundle
   const filteredEntries = processedEntries?.flatMap(entry => {
+    if (referenceResources.includes(entry.resourceType)) return [];
     if (containedResourceIds.includes(entry.id)) return [];
     return {
       ...entry,
       id: undefined,
     };
   });
+
+  delete patient.telecom;
+  delete patient.address;
+  delete patient.text;
+  filteredEntries?.push(patient);
 
   console.log(`Started with ${bundle.entry.length} resource`);
   console.log(`Processed to keep ${processedEntries.length} resources`);
@@ -127,6 +140,7 @@ function removeUselessAttributes(res: Resource) {
   if ("extension" in res) delete res.extension;
   if ("address" in res) delete res.address;
   if ("telecom" in res) delete res.telecom;
+  if ("encounter" in res) delete res.encounter;
 
   // Remove unknown coding displays, empty arrays, and "unknown" string values recursively
   const cleanupObject = (obj: any): void => {
@@ -203,10 +217,7 @@ function getUniqueDisplays(
 
 function applyResourceSpecificFilters(res: Resource) {
   if (res.resourceType === "Patient") {
-    const name = getNameString(res.name);
-    res.name = name;
-
-    delete res.text;
+    res.name = getNameString(res.name);
   }
 
   if (res.resourceType === "AllergyIntolerance") {
@@ -229,6 +240,7 @@ function applyResourceSpecificFilters(res: Resource) {
   if (res.resourceType === "Procedure") {
     const name = getUniqueDisplays(res.code);
     if (name) res.name = name;
+    delete res.code;
   }
   if (res.resourceType === "DiagnosticReport") {
     const code = res.code?.text;
@@ -249,7 +261,7 @@ function applyResourceSpecificFilters(res: Resource) {
     }
   }
   if (res.resourceType === "Observation") {
-    if (res.category && res.category[0]) {
+    if (res.category) {
       const category = getUniqueDisplays(res.category);
       if (category) res.category = category;
     }
@@ -257,9 +269,62 @@ function applyResourceSpecificFilters(res: Resource) {
     const code = getUniqueDisplays(res.code);
     if (code) res.reading = code;
 
+    if (res.valueCodeableConcept) {
+      res.value = getUniqueDisplays(res.valueCodeableConcept);
+      delete res.valueCodeableConcept;
+    }
+
+    if (res.valueQuantity) {
+      res.value = `${res.valueQuantity.value}${
+        res.valueQuantity.unit ? ` ${res.valueQuantity.unit}` : ""
+      }`;
+      delete res.valueQuantity;
+    }
+
     delete res.code;
     delete res.performer;
     delete res.subject;
+  }
+
+  if (res.resourceType === "Medication") {
+    res.name = getUniqueDisplays(res.code);
+    delete res.code;
+  }
+
+  if (res.resourceType === "MedicationRequest") {
+    delete res.requester;
+    delete res.subject;
+  }
+
+  if (res.resourceType === "MedicationStatement") {
+    delete res.subject;
+  }
+
+  if (res.resourceType === "Condition") {
+    res.name = getUniqueDisplays(res.code);
+    delete res.code;
+
+    res.category = getUniqueDisplays(res.category);
+    delete res.subject;
+  }
+
+  if (res.resourceType === "AllergyIntolerance") {
+    res.clinicalStatus = getUniqueDisplays(res.clinicalStatus);
+
+    if (res.reaction) {
+      res.reaction = res.reaction.map(reaction => {
+        const manifestation = getUniqueDisplays(reaction.manifestation);
+        const substance = getUniqueDisplays(reaction.substance);
+
+        return {
+          manifestation,
+          substance,
+        };
+      });
+    }
+
+    delete res.patient;
+    delete res.recorder;
   }
 
   return res;
@@ -440,8 +505,8 @@ function replaceReferencesWithData(
   if ("serviceProvider" in res) {
     const refString = res.serviceProvider.reference;
     if (refString) {
-      referencedIds.add(refString);
       const org = map.get(refString) as Organization | undefined;
+      referencedIds.add(refString);
       if (org) {
         if (org.name) {
           res.serviceProvider = org.name;
@@ -451,16 +516,40 @@ function replaceReferencesWithData(
       }
     }
   }
+  if ("result" in res) {
+    if (res.resourceType === "DiagnosticReport") {
+      res.results = res.result.map(resultRef => {
+        const refString = resultRef.reference;
+        if (refString) {
+          const observation = map.get(refString) as Observation | undefined;
+          referencedIds.add(refString);
+          return {
+            ...observation,
+            resourceType: undefined,
+            id: undefined,
+          };
+        }
+      });
+
+      delete res.result;
+    }
+  }
+
+  if ("medicationReference" in res) {
+    const refString = res.medicationReference?.reference;
+    if (refString) {
+      const medication = map.get(refString) as Medication | undefined;
+      referencedIds.add(refString);
+      if (medication) {
+        res.medication = { ...medication, id: undefined, resourceType: undefined };
+        delete res.medicationReference;
+      }
+    }
+  }
+
   return { updRes: res, ids: Array.from(referencedIds) };
 
   // KEEPING THESE FOR REFERENCE:
-
-  // if ("result" in entry && Array.isArray(entry.result)) {
-  //   entry.result = entry.result.filter(
-  //     item => item?.reference && !danglingLinks.has(item.reference)
-  //   );
-  //   if (entry.result.length === 0) delete entry.result;
-  // }
 
   // if ("encounter" in entry) {
   //   const encounterRef = entry.encounter;
