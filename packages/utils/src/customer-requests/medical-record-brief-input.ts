@@ -3,35 +3,39 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
+import { BedrockChat } from "@langchain/community/chat_models/bedrock";
+import { PromptTemplate } from "@langchain/core/prompts";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import {
+  Address,
   Bundle,
   CodeableConcept,
   Condition,
   EncounterDiagnosis,
   HumanName,
   Location,
+  Medication,
   Observation,
   Organization,
   Patient,
+  Quantity,
   Resource,
 } from "@medplum/fhirtypes";
 import { findPatientResource } from "@metriport/core/external/fhir/shared/index";
 import { toArray } from "@metriport/shared";
 import fs from "fs";
-import { cloneDeep } from "lodash";
 import { loadSummarizationChain } from "langchain/chains";
-import { TokenTextSplitter, RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import { PromptTemplate } from "@langchain/core/prompts";
-import { BedrockChat } from "@langchain/community/chat_models/bedrock";
+import { cloneDeep } from "lodash";
 
-const SOURCE_DIR = "~/Documents/phi/ai-brief";
+const SOURCE_DIR = "/Users/ramilgaripov/Documents/phi/ai-brief";
 const BRIEF_BUNDLE_FILE = "briefed-bundle.json";
 const relevantResources = [
   "AllergyIntolerance",
-  "Coverage",
+  // "Coverage",
   "DiagnosticReport",
   // "Encounter",
   "Immunization",
+  "Location",
   "Procedure",
   "Medication",
   "MedicationAdministration",
@@ -46,8 +50,9 @@ const relevantResources = [
 
 const referenceResources = [
   "Practitioner",
-  "Organization",
+  // "Organization",
   "Observation", // maybe worth keeping..
+  // "Location",
 ];
 
 //--------------------------------
@@ -198,9 +203,9 @@ function filterBundleResources(bundle: Bundle) {
   delete patient.text;
   filteredEntries?.push(patient);
 
-  console.log(`Started with ${bundle.entry.length} resource`);
-  console.log(`Processed to keep ${processedEntries.length} resources`);
-  console.log(`And filtered down to ${filteredEntries.length} resources`);
+  console.log(`Started with ${bundle.entry?.length} resource`);
+  console.log(`Processed to keep ${processedEntries?.length} resources`);
+  console.log(`And filtered down to ${filteredEntries?.length} resources`);
   return JSON.stringify(filteredEntries);
 }
 
@@ -226,7 +231,6 @@ function removeUselessAttributes(res: Resource) {
   if ("masterIdentifier" in res) delete res.masterIdentifier;
   if ("identifier" in res) delete res.identifier;
   if ("extension" in res) delete res.extension;
-  if ("address" in res) delete res.address;
   if ("telecom" in res) delete res.telecom;
   if ("encounter" in res) delete res.encounter;
 
@@ -279,7 +283,6 @@ function removeUselessAttributes(res: Resource) {
   };
 
   cleanupObject(res);
-
   return res;
 }
 
@@ -324,6 +327,8 @@ function applyResourceSpecificFilters(res: Resource) {
 
     const qualificationsText = getUniqueDisplays(res.qualification?.[0]?.code);
     if (qualificationsText) res.qualification = qualificationsText;
+
+    res.address = getAddressString(res.address);
   }
   if (res.resourceType === "Procedure") {
     const name = getUniqueDisplays(res.code);
@@ -363,10 +368,23 @@ function applyResourceSpecificFilters(res: Resource) {
     }
 
     if (res.valueQuantity) {
-      res.value = `${res.valueQuantity.value}${
-        res.valueQuantity.unit ? ` ${res.valueQuantity.unit}` : ""
-      }`;
+      res.value = getQuantityString(res.valueQuantity);
       delete res.valueQuantity;
+    }
+
+    if (res.interpretation) {
+      res.interpretation = getUniqueDisplays(res.interpretation);
+    }
+
+    if (res.referenceRange) {
+      res.referenceRange = res.referenceRange.map(range => {
+        const low = getQuantityString(range.low);
+        const high = getQuantityString(range.high);
+        return {
+          low,
+          high,
+        };
+      });
     }
 
     delete res.code;
@@ -415,7 +433,29 @@ function applyResourceSpecificFilters(res: Resource) {
     delete res.recorder;
   }
 
+  if (res.resourceType === "Organization") {
+    res.address = getAddressString(res.address);
+  }
+
+  if (res.resourceType === "Location") {
+    res.address = getAddressString(res.address);
+    res.type = getUniqueDisplays(res.type);
+  }
+
   return res;
+}
+
+function getQuantityString(quantity: Quantity | undefined): string | undefined {
+  if (!quantity) return undefined;
+  return `${quantity.value}${quantity.unit ? ` ${quantity.unit}` : ""}`;
+}
+
+function getAddressString(address: Address | Address[] | undefined): string | undefined {
+  if (!address) return undefined;
+
+  return toArray(address)
+    .map(addr => `${addr.line}, ${addr.city}, ${addr.state}`)
+    .join("\n");
 }
 
 function replaceReferencesWithData(
@@ -437,12 +477,16 @@ function replaceReferencesWithData(
 
   if ("subject" in res) {
     const ref = res.subject;
-    if ("reference" in ref) {
-      const refString = ref.reference;
-      const pat = map.get(refString);
-      referencedIds.add(refString);
-      if (pat && pat.resourceType === "Patient") {
-        res.subject = pat.name;
+    if (ref) {
+      if ("reference" in ref) {
+        const refString = ref.reference;
+        if (refString) {
+          const pat = map.get(refString);
+          referencedIds.add(refString);
+          if (pat && pat.resourceType === "Patient") {
+            res.subject = pat.name;
+          }
+        }
       }
     }
   }
@@ -503,7 +547,7 @@ function replaceReferencesWithData(
     if (res.resourceType === "Encounter") {
       const locationRefs = res.location;
       res.location = locationRefs
-        .map(locRef => {
+        ?.map(locRef => {
           const refString = locRef.location?.reference;
           if (refString) {
             const loc = map.get(refString) as Location | undefined;
@@ -537,6 +581,7 @@ function replaceReferencesWithData(
       });
     }
   }
+
   if ("performer" in res) {
     if (Array.isArray(res.performer)) {
       if (
@@ -560,13 +605,11 @@ function replaceReferencesWithData(
             return [];
           })
           .join(", ");
-
-        // res.performer = res.performer.filter(p => p.reference);
       } else if (
-        // res.resourceType === "Immunization" ||
-        // res.resourceType === "MedicationAdministration" ||
-        // res.resourceType === "MedicationDispense" ||
-        // res.resourceType === "MedicationRequest" ||
+        res.resourceType === "Immunization" ||
+        res.resourceType === "MedicationAdministration" ||
+        res.resourceType === "MedicationDispense" ||
+        res.resourceType === "MedicationRequest" ||
         res.resourceType === "Procedure"
       ) {
         if (Array.isArray(res.performer)) {
@@ -591,7 +634,7 @@ function replaceReferencesWithData(
   }
 
   if ("serviceProvider" in res) {
-    const refString = res.serviceProvider.reference;
+    const refString = res.serviceProvider?.reference;
     if (refString) {
       const org = map.get(refString) as Organization | undefined;
       referencedIds.add(refString);
@@ -604,9 +647,10 @@ function replaceReferencesWithData(
       }
     }
   }
+
   if ("result" in res) {
     if (res.resourceType === "DiagnosticReport") {
-      res.results = res.result.map(resultRef => {
+      res.results = res.result?.map(resultRef => {
         const refString = resultRef.reference;
         if (refString) {
           const observation = map.get(refString) as Observation | undefined;
@@ -631,6 +675,18 @@ function replaceReferencesWithData(
       if (medication) {
         res.medication = { ...medication, id: undefined, resourceType: undefined };
         delete res.medicationReference;
+      }
+    }
+  }
+
+  if ("recorder" in res) {
+    const refString = res.recorder?.reference;
+    if (refString) {
+      const individual = map.get(refString);
+      referencedIds.add(refString);
+      if (individual && individual.resourceType === "Practitioner") {
+        res.practitioner = { ...individual, id: undefined };
+        delete res.recorder;
       }
     }
   }
