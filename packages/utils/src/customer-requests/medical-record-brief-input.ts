@@ -206,6 +206,7 @@ function filterBundleResources(bundle: Bundle) {
 
   // Filter out embedded resources from the final bundle
   const filteredEntries = processedEntries?.flatMap(entry => {
+    if (Object.keys(entry).length === 0) return []; // TODO: Check why {} not being removed
     if (referenceResources.includes(entry.resourceType)) return [];
     if (containedResourceIds.includes(entry.id)) return [];
     return {
@@ -244,6 +245,8 @@ function buildSlimmerBundle(originalBundle: Bundle<Resource>) {
 
 function removeUselessAttributes(res: Resource) {
   delete res.meta;
+  if ("patient" in res) delete res.patient;
+  if ("subject" in res) delete res.subject;
   if ("masterIdentifier" in res) delete res.masterIdentifier;
   if ("identifier" in res) delete res.identifier;
   if ("extension" in res) delete res.extension;
@@ -332,9 +335,25 @@ function applyResourceSpecificFilters(res: Resource) {
     res.status = Array.from(
       new Set(res.clinicalStatus?.coding?.flatMap(coding => coding.code || []))
     ).join(", ");
+    if (res.status === "") delete res.status;
   }
+
   if (res.resourceType === "Immunization") {
     delete res.lotNumber; // ???
+
+    if (res.vaccineCode) {
+      const resVaccineCodeString = JSON.stringify(res.vaccineCode).toLowerCase();
+      if (
+        resVaccineCodeString.includes("no data") ||
+        resVaccineCodeString.includes("no immunization")
+      ) {
+        res = {};
+      }
+
+      res.vaccineCode = getUniqueDisplays(res.vaccineCode);
+    }
+
+    delete res.doseQuantity;
   }
 
   if (res.resourceType === "Practitioner") {
@@ -346,11 +365,21 @@ function applyResourceSpecificFilters(res: Resource) {
 
     res.address = getAddressString(res.address);
   }
+
   if (res.resourceType === "Procedure") {
     const name = getUniqueDisplays(res.code);
-    if (name) res.name = name;
+    if (name) {
+      res.name = name;
+      if (name.includes("no data")) res = {};
+    }
+
     delete res.code;
+
+    if (res.status === "") delete res.status;
+
+    delete res.reasonCode; // TODO: Introduce term server lookup here
   }
+
   if (res.resourceType === "DiagnosticReport") {
     const code = res.code?.text;
     if (code) res.code = code;
@@ -369,6 +398,7 @@ function applyResourceSpecificFilters(res: Resource) {
       });
     }
   }
+
   if (res.resourceType === "Observation") {
     if (res.category) {
       const category = getUniqueDisplays(res.category);
@@ -405,7 +435,6 @@ function applyResourceSpecificFilters(res: Resource) {
 
     delete res.code;
     delete res.performer;
-    delete res.subject;
   }
 
   if (res.resourceType === "Medication") {
@@ -415,11 +444,16 @@ function applyResourceSpecificFilters(res: Resource) {
 
   if (res.resourceType === "MedicationRequest") {
     delete res.requester;
-    delete res.subject;
   }
 
-  if (res.resourceType === "MedicationStatement") {
-    delete res.subject;
+  if (res.resourceType === "MedicationAdministration") {
+    if (res.dosage) {
+      const dose = getQuantityString(res.dosage.dose);
+      if (dose) res.dose = dose;
+
+      res.route = getUniqueDisplays(res.dosage.route);
+      delete res.dosage;
+    }
   }
 
   if (res.resourceType === "Condition") {
@@ -427,7 +461,9 @@ function applyResourceSpecificFilters(res: Resource) {
     delete res.code;
 
     res.category = getUniqueDisplays(res.category);
-    delete res.subject;
+
+    res.clinicalStatus = getUniqueDisplays(res.clinicalStatus);
+    if (res.clinicalStatus === "") delete res.clinicalStatus;
   }
 
   if (res.resourceType === "AllergyIntolerance") {
@@ -445,7 +481,6 @@ function applyResourceSpecificFilters(res: Resource) {
       });
     }
 
-    delete res.patient;
     delete res.recorder;
   }
 
@@ -479,33 +514,6 @@ function replaceReferencesWithData(
   map: Map<string, Resource>
 ): { updRes: any; ids: string[] } {
   const referencedIds = new Set<string>();
-
-  if ("patient" in res) {
-    const refString = res.patient.reference;
-    if (refString) {
-      const pat = map.get(refString) as Patient | undefined;
-      referencedIds.add(refString);
-      if (pat && pat.resourceType === "Patient") {
-        res.patient = pat.name;
-      }
-    }
-  }
-
-  if ("subject" in res) {
-    const ref = res.subject;
-    if (ref) {
-      if ("reference" in ref) {
-        const refString = ref.reference;
-        if (refString) {
-          const pat = map.get(refString);
-          referencedIds.add(refString);
-          if (pat && pat.resourceType === "Patient") {
-            res.subject = pat.name;
-          }
-        }
-      }
-    }
-  }
 
   if ("payor" in res) {
     const ref = toArray(res.payor);
@@ -703,6 +711,22 @@ function replaceReferencesWithData(
       if (individual && individual.resourceType === "Practitioner") {
         res.practitioner = { ...individual, id: undefined };
         delete res.recorder;
+      }
+    }
+  }
+
+  if ("manufacturer" in res && res.resourceType === "Immunization") {
+    if (res.manufacturer) {
+      if (res.manufacturer.display) {
+        res.manufacturer = res.manufacturer.display;
+      } else if (res.manufacturer.reference) {
+        const refString = res.manufacturer.reference;
+        const org = map.get(refString);
+        referenceIds.add(refString);
+
+        if (org) {
+          res.manufacturer = { ...org, id: undefined };
+        }
       }
     }
   }
