@@ -26,11 +26,14 @@ import { toArray } from "@metriport/shared";
 import fs from "fs";
 import { loadSummarizationChain } from "langchain/chains";
 import { cloneDeep } from "lodash";
+import { filterConsolidated } from "@metriport/core/command/consolidated/consolidated-filter";
 
 const SOURCE_DIR = "/Users/dgoncharov/Documents/phi/ai-brief";
-const SOURCE_PATIENT_ID = "xxx";
+const SOURCE_PATIENT_ID = "xxxx";
 const SOURCE_BUNDLE_FILE = `${SOURCE_PATIENT_ID}.json`;
 const BRIEF_BUNDLE_FILE = `briefed-${SOURCE_PATIENT_ID}.json`;
+const CHUNK_SIZE = 10000;
+const CHUNK_OVERLAP = 250;
 const relevantResources = [
   "AllergyIntolerance",
   // "Coverage",
@@ -60,13 +63,22 @@ const referenceResources = [
 //--------------------------------
 // AI-based brief generation
 //--------------------------------
-async function summarizeFilteredBundleWithAI() {
+async function summarizeFilteredBundleWithAI(saveBriefedBundle: boolean = false) {
   // read filtered bundle from file
   const fileName = `${SOURCE_DIR}/${BRIEF_BUNDLE_FILE}`;
   const bundleStr = fs.readFileSync(fileName, { encoding: "utf8" });
   const bundle = JSON.parse(bundleStr) as Bundle<Resource>;
 
-  const inputString = prepareBundleForBrief(bundle);
+  // filter out historical data
+  const numHistoricalYears = 2;
+  const dateFrom = dayjs().subtract(numHistoricalYears, "year").format(ISO_DATE);
+  const filteredBundle = filterConsolidated(bundle, { dateFrom });
+
+  const inputString = prepareBundleForBrief(filteredBundle);
+  if (saveBriefedBundle) {
+    fs.writeFileSync(`${SOURCE_DIR}/${BRIEF_BUNDLE_FILE}`, inputString);
+  }
+  return;
 
   //   const splitter = new TokenTextSplitter({
   //     chunkSize: 10000,
@@ -74,7 +86,10 @@ async function summarizeFilteredBundleWithAI() {
   //   });
 
   //   const chunks = await splitter.splitText(inputString ?? "");
-  const textSplitter = new RecursiveCharacterTextSplitter({ chunkSize: 10000, chunkOverlap: 250 });
+  const textSplitter = new RecursiveCharacterTextSplitter({
+    chunkSize: CHUNK_SIZE,
+    chunkOverlap: CHUNK_OVERLAP,
+  });
   const docs = await textSplitter.createDocuments([inputString ?? ""]);
 
   const llmSummary = new BedrockChat({
