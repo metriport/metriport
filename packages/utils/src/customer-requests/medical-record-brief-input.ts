@@ -24,16 +24,18 @@ import {
 import { findPatientResource } from "@metriport/core/external/fhir/shared/index";
 import { toArray } from "@metriport/shared";
 import fs from "fs";
-import { loadSummarizationChain } from "langchain/chains";
+import { MapReduceDocumentsChain, LLMChain, StuffDocumentsChain } from "langchain/chains";
 import { cloneDeep } from "lodash";
-import { filterConsolidated } from "@metriport/core/command/consolidated/consolidated-filter";
+import { filterBundleByDate } from "@metriport/core/command/consolidated/consolidated-filter-by-date";
+import dayjs from "dayjs";
+import { ISO_DATE } from "@metriport/shared/common/date";
 
 const SOURCE_DIR = "/Users/dgoncharov/Documents/phi/ai-brief";
-const SOURCE_PATIENT_ID = "xxxx";
+const SOURCE_PATIENT_ID = "...";
 const SOURCE_BUNDLE_FILE = `${SOURCE_PATIENT_ID}.json`;
 const BRIEF_BUNDLE_FILE = `briefed-${SOURCE_PATIENT_ID}.json`;
-const CHUNK_SIZE = 10000;
-const CHUNK_OVERLAP = 250;
+const CHUNK_SIZE = 100000;
+const CHUNK_OVERLAP = 1000;
 const relevantResources = [
   "AllergyIntolerance",
   // "Coverage",
@@ -65,27 +67,21 @@ const referenceResources = [
 //--------------------------------
 async function summarizeFilteredBundleWithAI(saveBriefedBundle: boolean = false) {
   // read filtered bundle from file
-  const fileName = `${SOURCE_DIR}/${BRIEF_BUNDLE_FILE}`;
+  const fileName = `${SOURCE_DIR}/${SOURCE_BUNDLE_FILE}`;
   const bundleStr = fs.readFileSync(fileName, { encoding: "utf8" });
   const bundle = JSON.parse(bundleStr) as Bundle<Resource>;
 
   // filter out historical data
   const numHistoricalYears = 2;
   const dateFrom = dayjs().subtract(numHistoricalYears, "year").format(ISO_DATE);
-  const filteredBundle = filterConsolidated(bundle, { dateFrom });
+  const filteredBundle = filterBundleByDate(bundle, dateFrom);
 
   const inputString = prepareBundleForBrief(filteredBundle);
   if (saveBriefedBundle) {
     fs.writeFileSync(`${SOURCE_DIR}/${BRIEF_BUNDLE_FILE}`, inputString);
   }
-  return;
 
-  //   const splitter = new TokenTextSplitter({
-  //     chunkSize: 10000,
-  //     chunkOverlap: 250,
-  //   });
-
-  //   const chunks = await splitter.splitText(inputString ?? "");
+  // TODO: experiment with different splitters
   const textSplitter = new RecursiveCharacterTextSplitter({
     chunkSize: CHUNK_SIZE,
     chunkOverlap: CHUNK_OVERLAP,
@@ -100,55 +96,69 @@ async function summarizeFilteredBundleWithAI(saveBriefedBundle: boolean = false)
 
   const todaysDate = new Date().toISOString().split("T")[0];
   const systemPrompt = "You are an expert primary care doctor.";
+  // this is the summary prompt for each chunk of the bundle
   const summaryTemplate = `
 ${systemPrompt}
 
 Today's date is ${todaysDate}.
 Your goal is to write a summary of the patient's most recent medical history, so that another doctor can understand the patient's medical history to be able to treat them effectively.
-Here is some of the patient's medical history:
+Here is a portion of the patient's medical history:
 --------
 {text}
 --------
 
-Specify whether a DNR or POLST form has been completed.
-Include a summary of the patient's most recent hospitalization, including the location of the hospitalization, the date of the hospitalization, the reason for the hospitalization, and the results of the hospitalization.
-Include a summary of the patient's current chronic conditions, allergies, and any previous surgeries.
-Include a summary of the patient's current medications, including dosages and frequency - do not include instructions on how to take the medications. Include any history of medication allergies or adverse reactions.
-Include any other relevant information about the patient's health.
+Write a summary of the patient's most recent medical history, considering the following goals:
+1. Specify whether a DNR or POLST form has been completed.
+2. Include a summary of the patient's most recent hospitalization, including the location of the hospitalization, the date of the hospitalization, the reason for the hospitalization, and the results of the hospitalization.
+3. Include a summary of the patient's current chronic conditions, allergies, and any previous surgeries.
+4. Include a summary of the patient's current medications, including dosages and frequency - do not include instructions on how to take the medications. Include any history of medication allergies or adverse reactions.
+5. Include any other relevant information about the patient's health.
+
+If any of the above information is not present, do not include it in the summary.
+Don't tell me that you are writing a summary, just write the summary. Also, don't tell me about any limitations of the information provided.
 
 SUMMARY:
 `;
   const SUMMARY_PROMPT = PromptTemplate.fromTemplate(summaryTemplate);
+  const summaryChain = new LLMChain({
+    llm: llmSummary,
+    prompt: SUMMARY_PROMPT,
+  });
 
+  // this is the prompt for combining the summaries into a single paragraph
   const summaryTemplateRefined = `
 ${systemPrompt}
 
 Today's date is ${todaysDate}.
 Your goal is to write a summary of the patient's most recent medical history, so that another doctor can understand the patient's medical history to be able to treat them effectively.
-Here is some of the patient's medical history:
+Here are the previous summaries written by you of sections of the patient's medical history:
 --------
 {text}
 --------
 
-Given the additional medical history, refine the summary to be more comprehensive and accurate, considering the following goals:
-Specify whether a DNR or POLST form has been completed.
-Include a summary of the patient's most recent hospitalization, including the location of the hospitalization, the date of the hospitalization, the reason for the hospitalization, and the results of the hospitalization.
-Include a summary of the patient's current chronic conditions, allergies, and any previous surgeries.
-Include a summary of the patient's current medications, including dosages and frequency - do not include instructions on how to take the medications. Include any history of medication allergies or adverse reactions.
-Include any other relevant information about the patient's health.
+Combine these summaries into a single, comprehensive summary of the patient's most recent medical history in a single paragraph.
+
+Don't tell me that you are writing a summary, just write the summary. Also, don't tell me about any limitations of the information provided.
 
 SUMMARY:
 `;
   const SUMMARY_PROMPT_REFINED = PromptTemplate.fromTemplate(summaryTemplateRefined);
-
-  const summarizeChain = loadSummarizationChain(llmSummary, {
-    type: "refine",
-    verbose: true,
-    questionPrompt: SUMMARY_PROMPT,
-    refinePrompt: SUMMARY_PROMPT_REFINED,
+  const summaryChainRefined = new StuffDocumentsChain({
+    llmChain: new LLMChain({
+      llm: llmSummary,
+      prompt: SUMMARY_PROMPT_REFINED,
+    }),
+    documentVariableName: "text",
   });
 
-  const summary = await summarizeChain.invoke({
+  const mapReduce = new MapReduceDocumentsChain({
+    llmChain: summaryChain,
+    combineDocumentChain: summaryChainRefined,
+    documentVariableName: "text",
+    verbose: true,
+  });
+
+  const summary = await mapReduce.invoke({
     input_documents: docs,
   });
 
@@ -809,6 +819,6 @@ function getNameString(names: HumanName | HumanName[] | undefined): string | und
   return Array.from(nameParts).join(" ");
 }
 
-createBriefedBundle();
+// createBriefedBundle();
 
-// summarizeFilteredBundleWithAI();
+summarizeFilteredBundleWithAI(true);
