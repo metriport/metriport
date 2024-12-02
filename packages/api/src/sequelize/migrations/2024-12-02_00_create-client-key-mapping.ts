@@ -24,11 +24,6 @@ export const up: Migration = async ({ context: queryInterface }) => {
           field: "cx_id",
           allowNull: false,
         },
-        clientKey: {
-          type: DataTypes.STRING,
-          field: "client_key",
-          allowNull: false,
-        },
         clientSecret: {
           type: DataTypes.STRING,
           field: "client_secret",

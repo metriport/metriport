@@ -12,7 +12,6 @@ import {
   toTitleCase,
 } from "@metriport/shared";
 import { PatientResource } from "@metriport/shared/interface/external/elation/patient";
-import { getClientKeyMappingOrFail } from "../../../../command/mapping/client-key";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
@@ -26,7 +25,12 @@ import {
 } from "../../../../command/medical/patient/get-patient";
 import { Config } from "../../../../shared/config";
 import { EhrSources } from "../../shared";
-import { createMetriportAddresses, createMetriportContacts, createNames } from "../shared";
+import {
+  createMetriportAddresses,
+  createMetriportContacts,
+  createNames,
+  getElationClientKeyAndSecret,
+} from "../shared";
 
 const elationEnvironment = Config.getElationEnv();
 
@@ -62,10 +66,9 @@ export async function getPatientIdOrFail({
 
   let elationApi = api;
   if (!elationApi) {
-    const { clientKey, clientSecret } = await getClientKeyMappingOrFail({
+    const { clientKey, clientSecret } = await getElationClientKeyAndSecret({
       cxId,
-      source: EhrSources.elation,
-      externalId: elationPracticeId,
+      practiceId: elationPracticeId,
     });
     elationApi = await ElationApi.create({
       practiceId: elationPracticeId,

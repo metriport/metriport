@@ -519,14 +519,14 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const source = getFromQueryOrFail("source", req);
+    const clientSecretArn = getFromQueryOrFail("clientSecretArn", req);
     const externalId = getFromQueryOrFail("externalId", req);
     const mappedSource = clientKeyMappingsSourceMap.get(source as ClientKeySources);
     if (!mappedSource) throw new BadRequestError(`Source ${source} is not mapped.`);
-    const { keys, data } = mappedSource.bodyParser.parse(req.body);
+    const data = mappedSource.bodyParser.parse(req.body);
     await findOrCreateClientKeyMapping({
       cxId,
-      clientKey: keys.clientKey,
-      clientSecret: keys.clientSecret,
+      clientSecretArn,
       data,
       source: source as ClientKeySources,
       externalId,

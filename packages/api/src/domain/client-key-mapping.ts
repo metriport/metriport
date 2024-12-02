@@ -1,5 +1,4 @@
 import { BaseDomain } from "@metriport/core/domain/base-domain";
-import { clientKeySchema } from "@metriport/shared";
 import {
   ElationData,
   elationDataSchema,
@@ -11,17 +10,13 @@ export type ClientKeySources = ClientKeyMappingPerSource["source"];
 export type ClientKeyData = ClientKeyMappingPerSource["data"];
 
 export const clientKeyMappingsSourceMap: Map<ClientKeySources, { bodyParser: z.Schema }> = new Map([
-  [
-    EhrSources.elation,
-    { bodyParser: z.object({ keys: clientKeySchema, data: elationDataSchema }) },
-  ],
+  [EhrSources.elation, { bodyParser: elationDataSchema }],
 ]);
 
 export type ClientKeyMappingPerSource = {
   externalId: string;
   cxId: string;
-  clientKey: string;
-  clientSecret: string;
+  clientSecretArn: string;
 } & {
   source: EhrSources.elation;
   data: ElationData | null;

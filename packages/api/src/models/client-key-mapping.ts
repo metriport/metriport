@@ -10,8 +10,7 @@ export class ClientKeyMappingModel
   declare externalId: string;
   declare data: ClientKeyData;
   declare cxId: string;
-  declare clientKey: string;
-  declare clientSecret: string;
+  declare clientSecretArn: string;
   declare source: ClientKeySources;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
@@ -21,10 +20,7 @@ export class ClientKeyMappingModel
         cxId: {
           type: DataTypes.UUID,
         },
-        clientKey: {
-          type: DataTypes.STRING,
-        },
-        clientSecret: {
+        clientSecretArn: {
           type: DataTypes.STRING,
         },
         source: {

@@ -407,8 +407,9 @@ class AthenaHealthApi {
       `AthenaHealth search for medication - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
     const searchValues = medication.code?.coding?.flatMap(c => c.display?.split("/") ?? []);
-    if (!searchValues)
+    if (!searchValues) {
       throw new MetriportError("No code displays values for searching medications.");
+    }
     const medicationOptions: MedicationReference[] = [];
     await Promise.all(
       searchValues.map(async searchValue => {

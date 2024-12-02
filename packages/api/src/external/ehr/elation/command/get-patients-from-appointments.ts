@@ -5,10 +5,10 @@ import { capture } from "@metriport/core/util/notifications";
 import { errorToString, MetriportError } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { getClientKeyMappingOrFail } from "../../../../command/mapping/client-key";
 import { getCxMappingsBySource } from "../../../../command/mapping/cx";
 import { Config } from "../../../../shared/config";
 import { EhrSources, getLookforwardTimeRange } from "../../shared";
+import { getElationClientKeyAndSecret } from "../shared";
 import { getPatientIdOrFail as singleGetPatientIdOrFail } from "./get-patient";
 
 dayjs.extend(duration);
@@ -130,10 +130,9 @@ async function getAppointmentsByPractice({
   log: typeof console.log;
 }): Promise<void> {
   try {
-    const { clientKey, clientSecret } = await getClientKeyMappingOrFail({
+    const { clientKey, clientSecret } = await getElationClientKeyAndSecret({
       cxId,
-      source: EhrSources.elation,
-      externalId: practiceId,
+      practiceId,
     });
     const api = await ElationApi.create({
       practiceId,
@@ -177,10 +176,9 @@ async function getPatientIdOrFailByPractice({
   errors: string[];
   log: typeof console.log;
 }) {
-  const { clientKey, clientSecret } = await getClientKeyMappingOrFail({
+  const { clientKey, clientSecret } = await getElationClientKeyAndSecret({
     cxId,
-    source: EhrSources.elation,
-    externalId: practiceId,
+    practiceId,
   });
   const api = await ElationApi.create({
     practiceId,

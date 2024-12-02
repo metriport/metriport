@@ -7,7 +7,7 @@ export type ClientKeyMappingParams = ClientKeyMappingPerSource;
 
 export type ClientKeyMappingLookUpParams = Omit<
   ClientKeyMappingParams,
-  "clientKey" | "clientSecret" | "data"
+  "clientKey" | "clientSecretArn" | "data"
 >;
 export type ClientKeyMappingLookupByIdParams = Pick<ClientKeyMappingParams, "cxId"> & {
   id: string;
@@ -15,8 +15,7 @@ export type ClientKeyMappingLookupByIdParams = Pick<ClientKeyMappingParams, "cxI
 
 export async function findOrCreateClientKeyMapping({
   cxId,
-  clientKey,
-  clientSecret,
+  clientSecretArn,
   data,
   externalId,
   source,
@@ -26,8 +25,7 @@ export async function findOrCreateClientKeyMapping({
   const created = await ClientKeyMappingModel.create({
     id: uuidv7(),
     cxId,
-    clientKey,
-    clientSecret,
+    clientSecretArn,
     data,
     externalId,
     source,
