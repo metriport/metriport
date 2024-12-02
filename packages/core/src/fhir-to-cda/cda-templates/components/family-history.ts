@@ -12,7 +12,7 @@ import {
   CdaCodeCe,
   CdaCodeCv,
   ObservationEntry,
-  ObservationOrganizer,
+  ObservationOrganizerEntry,
   ObservationTableRow,
   Subject,
 } from "../../cda-types/shared-types";
@@ -157,7 +157,7 @@ function getConditionOnset(age: Age | undefined): string | undefined {
 function createEntryFromMemberHistory(
   augHistory: AugmentedFamilyMemberHistory,
   referenceId: string
-): ObservationOrganizer {
+): ObservationOrganizerEntry {
   return {
     organizer: {
       _classCode: "CLUSTER",

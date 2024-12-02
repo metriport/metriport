@@ -1,4 +1,5 @@
 import { Bundle, DocumentReference as FHIRDocumentReference, Resource } from "@medplum/fhirtypes";
+import { PaginatedResponse } from "@metriport/shared";
 import {
   WebhookRequest,
   WebhookRequestParsingFailure,
@@ -64,6 +65,18 @@ export type Options = {
       baseAddress?: string;
     }
 );
+
+/**
+ * Pagination options. Either fromItem or toItem can be provided, but not both.
+ * - fromItem: The ID of the first item to be returned.
+ * - toItem: The ID of the last item to be returned.
+ * - count: The number of items to be returned - defaults to 50, max is 500.
+ */
+export type Pagination = {
+  fromItem?: string;
+  toItem?: string;
+  count?: number;
+};
 
 export class MetriportMedicalApi {
   // TODO this should be private
@@ -493,15 +506,38 @@ export class MetriportMedicalApi {
   /**
    * Returns the patients associated with given facility.
    *
-   * @param facilityId The ID of the facility.
+   * @param facilityId The ID of the facility, optional. If not provided, patients from all facilities
+   *                   will be returned.
+   * @param filters Full text search filters, optional. If not provided, all patients will be returned
+   *                (according to pagination settings).
+   *                See https://docs.metriport.com/medical-api/more-info/filters
+   * @param pagination Pagination settings, optional. If not provided, the first page will be returned.
+   *                   See https://docs.metriport.com/medical-api/more-info/pagination
    * @return The list of patients.
    */
-  async listPatients(facilityId: string): Promise<PatientDTO[]> {
+  async listPatients({
+    facilityId,
+    filters,
+    pagination,
+  }: {
+    facilityId?: string | undefined;
+    filters?: string | undefined;
+    pagination?: Pagination | undefined;
+  } = {}): Promise<PaginatedResponse<PatientDTO, "patients">> {
     const resp = await this.api.get(`${PATIENT_URL}`, {
-      params: { facilityId },
+      params: {
+        facilityId,
+        filters,
+        ...getPaginationParams(pagination),
+      },
     });
-    if (!resp.data) return [];
-    return resp.data.patients as PatientDTO[];
+    if (!resp.data) return { meta: { itemsOnPage: 0 }, patients: [] };
+    return resp.data;
+  }
+
+  async listPatientsPage(url: string): Promise<PaginatedResponse<PatientDTO, "patients">> {
+    const resp = await this.api.get(url);
+    return resp.data;
   }
 
   /**
@@ -768,4 +804,9 @@ export class MetriportMedicalApi {
     if (parse.success) return parse.data;
     return new WebhookRequestParsingFailure(parse.error, parse.error.format());
   }
+}
+
+function getPaginationParams(pagination?: Pagination) {
+  const { fromItem, toItem, count } = pagination ?? {};
+  return { fromItem, toItem, count };
 }
