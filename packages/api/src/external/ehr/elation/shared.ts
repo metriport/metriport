@@ -73,8 +73,14 @@ export async function getElationClientKeyAndSecret({
   const parsed = JSON.parse(clientSecretRaw);
   const zodParsed = clientKeySchema.safeParse(parsed);
   if (!zodParsed.success) {
-    throw new MetriportError("Invalid Elation client secret", undefined, {
+    throw new MetriportError("Invalid Elation client secret format", undefined, {
       clientSecretArn,
+    });
+  }
+  if (zodParsed.data.cxId !== cxId) {
+    throw new MetriportError("Invalid Elation client secret cxId", undefined, {
+      clientSecretArn,
+      cxId,
     });
   }
   return zodParsed.data;
