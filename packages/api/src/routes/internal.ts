@@ -522,7 +522,6 @@ router.post(
     const externalId = getFromQueryOrFail("externalId", req);
     const mappedSource = clientKeyMappingsSourceMap.get(source as ClientKeySources);
     if (!mappedSource) throw new BadRequestError(`Source ${source} is not mapped.`);
-    console.log(req.body);
     const { keys, data } = mappedSource.bodyParser.parse(req.body);
     await findOrCreateClientKeyMapping({
       cxId,
