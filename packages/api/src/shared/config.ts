@@ -89,6 +89,10 @@ export class Config {
     return CoreConfig.getApiUrl();
   }
 
+  static getDashUrl(): string | undefined {
+    return getEnvVar("DASH_URL");
+  }
+
   static getApiGatewayUsagePlanId(): string | undefined {
     return getEnvVar("API_GW_USAGE_PLAN_ID");
   }
@@ -354,6 +358,10 @@ export class Config {
   }
   static getAthenaHealthClientSecretArn(): string | undefined {
     return getEnvVar("EHR_ATHENA_CLIENT_SECRET_ARN");
+  }
+
+  static getElationEnv(): string | undefined {
+    return getEnvVar("EHR_ELATION_ENVIRONMENT");
   }
 
   static getRateLimitTableName(): string | undefined {

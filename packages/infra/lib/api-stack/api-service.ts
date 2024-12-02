@@ -302,6 +302,9 @@ export function createAPIService({
             EHR_ATHENA_CLIENT_SECRET_ARN:
               props.config.ehrIntegration.athenaHealth.athenaClientSecretArn,
           }),
+          ...(!isSandbox(props.config) && {
+            DASH_URL: props.config.dashUrl,
+          }),
         },
       },
       healthCheckGracePeriod: Duration.seconds(60),

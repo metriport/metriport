@@ -10,7 +10,7 @@ export type FacilityMappingPerSource = {
   cxId: string;
   facilityId: string;
 } & {
-  source: EhrSources.athena;
+  source: EhrSources.athena | EhrSources.elation;
 };
 
 export interface FacilityMapping extends BaseDomain, FacilityMappingPerSource {}

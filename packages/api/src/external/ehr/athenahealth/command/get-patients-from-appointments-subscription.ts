@@ -1,12 +1,11 @@
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { errorToString } from "@metriport/shared";
-import { buildDayjs } from "@metriport/shared/common/date";
+import { MetriportError, errorToString } from "@metriport/shared";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/athenahealth/index";
-import { EhrSources } from "../../shared";
+import { EhrSources, getLookackTimeRange } from "../../shared";
 import { getCxMappingsBySource } from "../../../../command/mapping/cx";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { Config } from "../../../../shared/config";
@@ -15,7 +14,7 @@ import { getPatientIdOrFail as singleGetPatientIdOrFail } from "./get-patient";
 dayjs.extend(duration);
 
 const delayBetweenPracticeBatches = dayjs.duration(30, "seconds");
-const lastModifiedHoursLookback = 12;
+const catupUpLookback = dayjs.duration(12, "hours");
 const parallelPractices = 10;
 const parallelPatients = 2;
 
@@ -39,21 +38,18 @@ export async function getPatientIdsOrFailFromAppointmentsSub({
   if (!athenaEnvironment || !athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
     throw new Error("AthenaHealth not setup");
   }
-  const cxMappings = await getCxMappingsBySource({ source: EhrSources.athena });
 
   const athenaClientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
   const athenaClientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
 
-  const currentDatetime = buildDayjs(new Date());
-  const startLastModifiedDate = buildDayjs(currentDatetime)
-    .hour(currentDatetime.hour() - lastModifiedHoursLookback)
-    .toDate();
-  const endLastModifiedDate = buildDayjs(currentDatetime).toDate();
-  if (catchUp) {
-    log(`Getting appointments from ${startLastModifiedDate} to ${endLastModifiedDate}`);
-  } else {
-    log(`Getting appointments since last run`);
-  }
+  const { startRange, endRange } = catchUp
+    ? getLookackTimeRange({ lookback: catupUpLookback, log })
+    : {
+        startRange: undefined,
+        endRange: undefined,
+      };
+
+  const cxMappings = await getCxMappingsBySource({ source: EhrSources.athena });
 
   const patientAppointments: PatientAppointment[] = [];
   const getAppointmentsErrors: string[] = [];
@@ -62,8 +58,14 @@ export async function getPatientIdsOrFailFromAppointmentsSub({
     const practiceId = mapping.externalId;
     const departmentIds = mapping.secondaryMappings?.departmentIds;
     if (departmentIds && !Array.isArray(departmentIds)) {
-      throw new Error(
-        `cxMapping ${EhrSources.athena} departmentIds exists but is malformed for cxId ${cxId} externalId ${practiceId}`
+      throw new MetriportError(
+        `cxMapping ${EhrSources.athena} departmentIds exists but is malformed for cxId ${cxId} externalId ${practiceId}`,
+        undefined,
+        {
+          cxId,
+          practiceId,
+          departmentIds,
+        }
       );
     }
     return {
@@ -73,8 +75,8 @@ export async function getPatientIdsOrFailFromAppointmentsSub({
       clientKey: athenaClientKey,
       clientSecret: athenaClientSecret,
       patientAppointments,
-      startLastModifiedDate: catchUp ? startLastModifiedDate : undefined,
-      endLastModifiedDate: catchUp ? endLastModifiedDate : undefined,
+      showProcessedStartDateTime: startRange,
+      showProcessedEndDateTime: endRange,
       errors: getAppointmentsErrors,
       log,
     };
@@ -146,8 +148,8 @@ async function getAppointmentsFromSubscriptionByPractice({
   clientKey,
   clientSecret,
   patientAppointments,
-  startLastModifiedDate,
-  endLastModifiedDate,
+  showProcessedStartDateTime,
+  showProcessedEndDateTime,
   errors,
   log,
 }: {
@@ -157,8 +159,8 @@ async function getAppointmentsFromSubscriptionByPractice({
   clientKey: string;
   clientSecret: string;
   patientAppointments: PatientAppointment[];
-  startLastModifiedDate?: Date;
-  endLastModifiedDate?: Date;
+  showProcessedStartDateTime?: Date;
+  showProcessedEndDateTime?: Date;
   errors: string[];
   log: typeof console.log;
 }): Promise<void> {
@@ -173,8 +175,8 @@ async function getAppointmentsFromSubscriptionByPractice({
     const appointments = await api.getAppointmentsFromSubscription({
       cxId,
       departmentIds,
-      startLastModifiedDate,
-      endLastModifiedDate,
+      showProcessedStartDateTime,
+      showProcessedEndDateTime,
     });
     patientAppointments.push(
       ...appointments.map(appointment => {

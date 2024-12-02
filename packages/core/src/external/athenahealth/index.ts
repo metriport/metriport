@@ -20,7 +20,7 @@ import {
   departmentsGetResponseSchema,
   FeedType,
   EventType,
-} from "@metriport/shared";
+} from "@metriport/shared/interface/external/athenahealth/index";
 import { errorToString, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { S3Utils } from "../aws/s3";
@@ -87,10 +87,13 @@ class AthenaHealthApi {
 
   private async fetchtwoLeggedAuthToken(): Promise<void> {
     const url = `${this.baseUrl}/oauth2/v1/token`;
-    const payload = `grant_type=client_credentials&scope=athena/service/Athenanet.MDP.* system/Patient.read`;
+    const data = {
+      grant_type: "client_credentials",
+      scope: "athena/service/Athenanet.MDP.* system/Patient.read",
+    };
 
     try {
-      const response = await axios.post(url, payload, {
+      const response = await axios.post(url, this.createDataParams(data), {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         auth: {
           username: this.config.clientKey,
@@ -576,23 +579,23 @@ class AthenaHealthApi {
   async getAppointmentsFromSubscription({
     cxId,
     departmentIds,
-    startLastModifiedDate,
-    endLastModifiedDate,
+    showProcessedStartDateTime,
+    showProcessedEndDateTime,
   }: {
     cxId: string;
     departmentIds?: string[];
-    startLastModifiedDate?: Date;
-    endLastModifiedDate?: Date;
+    showProcessedStartDateTime?: Date;
+    showProcessedEndDateTime?: Date;
   }): Promise<BookedAppointment[]> {
     const { log, debug } = out(
       `AthenaHealth get appointments from sub - cxId ${cxId} practiceId ${this.practiceId} departmentIds ${departmentIds}`
     );
     const params = {
-      showprocessedstartdatetime: startLastModifiedDate
-        ? this.formatDateTime(startLastModifiedDate.toISOString()) ?? ""
+      showprocessedstartdatetime: showProcessedStartDateTime
+        ? this.formatDateTime(showProcessedStartDateTime.toISOString()) ?? ""
         : "",
-      showprocessedenddatetime: endLastModifiedDate
-        ? this.formatDateTime(endLastModifiedDate.toISOString()) ?? ""
+      showprocessedenddatetime: showProcessedEndDateTime
+        ? this.formatDateTime(showProcessedEndDateTime.toISOString()) ?? ""
         : "",
     };
     const urlParams = new URLSearchParams(params);

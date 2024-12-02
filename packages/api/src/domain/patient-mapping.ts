@@ -8,7 +8,7 @@ export type PatientMappingPerSource = {
   cxId: string;
   patientId: string;
 } & {
-  source: EhrSources.athena;
+  source: EhrSources.athena | EhrSources.elation;
 };
 
 export interface PatientMapping extends BaseDomain, PatientMappingPerSource {}

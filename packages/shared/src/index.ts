@@ -26,6 +26,7 @@ export * from "./domain/gender";
 export { metriportCompanyDetails } from "./domain/metriport";
 export * from "./domain/patient/patient";
 export * from "./domain/patient/patient-import";
+export * from "./domain/mapping/client-key";
 export { BadRequestError } from "./error/bad-request";
 export { MetriportError } from "./error/metriport-error";
 export { NotFoundError } from "./error/not-found";

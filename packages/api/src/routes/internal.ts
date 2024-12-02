@@ -1,4 +1,4 @@
-import BadRequestError from "@metriport/core/util/error/bad-request";
+import { BadRequestError } from "@metriport/shared";
 import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
 import { getCxFFStatus } from "../command/internal/get-hie-enabled-feature-flags-status";
@@ -15,6 +15,12 @@ import {
   getFacilityMappingsByCustomer,
   setExternalIdOnFacilityMapping,
 } from "../command/mapping/facility";
+import {
+  deleteClientKeyMapping,
+  findOrCreateClientKeyMapping,
+  getClientKeyMappingsByCustomer,
+  setExternalIdOnClientKeyMapping,
+} from "../command/mapping/client-key";
 import { checkApiQuota } from "../command/medical/admin/api";
 import { dbMaintenance } from "../command/medical/admin/db-maintenance";
 import {
@@ -26,6 +32,7 @@ import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/med
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
 import { CxSources, cxMappingsSourceMap } from "../domain/cx-mapping";
 import { FacilitySources, facilitysMappingsSourceList } from "../domain/facility-mapping";
+import { ClientKeySources, clientKeyMappingsSourceMap } from "../domain/client-key-mapping";
 import { isEnhancedCoverageEnabledForCx } from "../external/aws/app-config";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
 import { countResourcesOnFhir } from "../external/fhir/patient/count-resources-on-fhir";
@@ -318,7 +325,9 @@ router.post(
     const externalId = getFromQueryOrFail("externalId", req);
     const mappedSource = cxMappingsSourceMap.get(source as CxSources);
     if (!mappedSource) throw new BadRequestError(`Source ${source} is not mapped.`);
-    const secondaryMappings = mappedSource.bodyParser.parse(req.body);
+    const secondaryMappings = mappedSource.bodyParser
+      ? mappedSource.bodyParser.parse(req.body)
+      : null;
     await findOrCreateCxMapping({
       cxId,
       source: source as CxSources,
@@ -488,6 +497,105 @@ router.delete(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFrom("params").orFail("id", req);
     await deleteFacilityMapping({
+      cxId,
+      id,
+    });
+    return res.sendStatus(httpStatus.NO_CONTENT);
+  })
+);
+
+/**
+ * POST /internal/client-key-mapping
+ *
+ * Create client key mapping
+ *
+ * @param req.query.cxId - The cutomer's ID.
+ * @param req.query.source - Mapping source
+ * @param req.query.externalId - Mapped external ID.
+ */
+router.post(
+  "/client-key-mapping",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const source = getFromQueryOrFail("source", req);
+    const externalId = getFromQueryOrFail("externalId", req);
+    const mappedSource = clientKeyMappingsSourceMap.get(source as ClientKeySources);
+    if (!mappedSource) throw new BadRequestError(`Source ${source} is not mapped.`);
+    console.log(req.body);
+    const { keys, data } = mappedSource.bodyParser.parse(req.body);
+    await findOrCreateClientKeyMapping({
+      cxId,
+      clientKey: keys.clientKey,
+      clientSecret: keys.clientSecret,
+      data,
+      source: source as ClientKeySources,
+      externalId,
+    });
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * GET /internal/client-key-mapping
+ *
+ * Get client key mappings for customer
+ *
+ * @param req.query.cxId - The cutomer's ID.
+ * @param req.query.source - Optional mapping source
+ */
+router.get(
+  "/client-key-mapping",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const source = getFrom("query").optional("source", req);
+    const result = await getClientKeyMappingsByCustomer({
+      cxId,
+      ...(source && { source }),
+    });
+    return res.status(httpStatus.OK).json(result);
+  })
+);
+
+/**
+ * PUT /internal/client-key-mapping/:id/external-id
+ *
+ * Update client key mapping external ID
+ *
+ * @param req.query.cxId - The cutomer's ID.
+ * @param req.query.externalId - Mapped external ID.
+ */
+router.put(
+  "/client-key-mapping/:id/external-id",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const id = getFrom("params").orFail("id", req);
+    const externalId = getFromQueryOrFail("externalId", req);
+    await setExternalIdOnClientKeyMapping({
+      cxId,
+      id,
+      externalId,
+    });
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * DELETE /internal/client-key-mapping/:id
+ *
+ * Delete client key mapping
+ *
+ * @param req.query.cxId - The cutomer's ID.
+ */
+router.delete(
+  "/client-key-mapping/:id",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const id = getFrom("params").orFail("id", req);
+    await deleteClientKeyMapping({
       cxId,
       id,
     });
