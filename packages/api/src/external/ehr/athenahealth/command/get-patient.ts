@@ -93,12 +93,12 @@ export async function getPatientIdOrFail({
   if (!athenaPatient) throw new NotFoundError("AthenaHealth patient not found");
   if (athenaPatient.name.length === 0) {
     throw new MetriportError("AthenaHealth patient missing at least one name", undefined, {
-      names: athenaPatient.name.map(name => JSON.stringify(name)).join(", "),
+      name: athenaPatient.name.map(name => JSON.stringify(name)).join(", "),
     });
   }
   if (athenaPatient.address.length === 0) {
     throw new MetriportError("AthenaHealth patient missing at least one address", undefined, {
-      addresses: athenaPatient.address.map(address => JSON.stringify(address)).join(", "),
+      address: athenaPatient.address.map(address => JSON.stringify(address)).join(", "),
     });
   }
 
