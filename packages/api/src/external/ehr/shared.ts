@@ -6,40 +6,26 @@ export enum EhrSources {
   elation = "elation",
 }
 
-export function getLookackTimeRange({
-  lookback,
-  log,
-}: {
-  lookback: Duration;
-  log: typeof console.log;
-}): {
+export function getLookackTimeRange({ lookback }: { lookback: Duration }): {
   startRange: Date;
   endRange: Date;
 } {
   const currentDatetime = buildDayjs(new Date());
   const startRange = buildDayjs(currentDatetime).subtract(lookback).toDate();
   const endRange = buildDayjs(currentDatetime).toDate();
-  log(`Getting appointments from ${startRange} to ${endRange}`);
   return {
     startRange,
     endRange,
   };
 }
 
-export function getLookforwardTimeRange({
-  lookforward,
-  log,
-}: {
-  lookforward: Duration;
-  log: typeof console.log;
-}): {
+export function getLookforwardTimeRange({ lookforward }: { lookforward: Duration }): {
   startRange: Date;
   endRange: Date;
 } {
   const currentDatetime = buildDayjs(new Date());
   const startRange = buildDayjs(currentDatetime).toDate();
   const endRange = buildDayjs(currentDatetime).add(lookforward).toDate();
-  log(`Getting appointments from ${startRange} to ${endRange}`);
   return {
     startRange,
     endRange,

@@ -43,11 +43,12 @@ export async function getPatientIdsOrFailFromAppointmentsSub({
   const athenaClientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
 
   const { startRange, endRange } = catchUp
-    ? getLookackTimeRange({ lookback: catupUpLookback, log })
+    ? getLookackTimeRange({ lookback: catupUpLookback })
     : {
         startRange: undefined,
         endRange: undefined,
       };
+  startRange && endRange && log(`Getting appointments from ${startRange} to ${endRange}`);
 
   const cxMappings = await getCxMappingsBySource({ source: EhrSources.athena });
 
@@ -135,7 +136,7 @@ export async function getPatientIdsOrFailFromAppointmentsSub({
         getPatientIdOrFailArgsCount: patientAppointmentsUnique.length,
         errorCount: getPatientIdOrFailErrors.length,
         errors: getPatientIdOrFailErrors.join(","),
-        context: "athenahealth.get-patients-from-appointments",
+        context: "athenahealth.get-patients-from-appointments-sub",
       },
     });
   }
@@ -244,8 +245,8 @@ async function getPatientIdOrFail({
   athenaPracticeId,
   athenaPatientId,
   accessToken,
-  useSearch = false,
-  triggerDq = false,
+  useSearch,
+  triggerDq,
   errors,
   log,
 }: {

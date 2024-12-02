@@ -40,7 +40,6 @@ export async function getPatientIdOrFail({
   cxId: string;
   elationPracticeId: string;
   elationPatientId: string;
-  accessToken?: string;
   api?: ElationApi;
   triggerDq?: boolean;
 }): Promise<string> {
@@ -60,6 +59,7 @@ export async function getPatientIdOrFail({
     return metriportPatient.id;
   }
   if (!elationEnvironment) throw new MetriportError("Elation not setup");
+
   let elationApi = api;
   if (!elationApi) {
     const { clientKey, clientSecret } = await getClientKeyMappingOrFail({
@@ -129,16 +129,16 @@ export async function getPatientIdOrFail({
       externalId: elationPatientId,
       source: EhrSources.elation,
     }),
-    elationApi.updatePatientMetadata({
-      cxId,
-      patientId: elationPatientId,
-      metadata: {
-        object_id: metriportPatient.id,
-        object_web_link: `${dashUrl}/patients/${metriportPatient.id}`,
-      },
-    }),
+    dashUrl &&
+      elationApi.updatePatientMetadata({
+        cxId,
+        patientId: elationPatientId,
+        metadata: {
+          object_id: metriportPatient.id,
+          object_web_link: `${dashUrl}/patients/${metriportPatient.id}`,
+        },
+      }),
   ]);
-  console.log(`DASH URL: ${dashUrl}`);
   return metriportPatient.id;
 }
 

@@ -30,10 +30,8 @@ export async function getPatientIdsOrFailFromAppointments(): Promise<void> {
   const { log } = out(`Elation getPatientIdsOrFailFromAppointments`);
   if (!elationEnvironment) throw new MetriportError("Elation not setup");
 
-  const { startRange, endRange } = getLookforwardTimeRange({
-    lookforward,
-    log,
-  });
+  const { startRange, endRange } = getLookforwardTimeRange({ lookforward });
+  log(`Getting appointments from ${startRange} to ${endRange}`);
 
   const cxMappings = await getCxMappingsBySource({ source: EhrSources.elation });
 
@@ -196,6 +194,7 @@ async function getPatientIdOrFailByPractice({
       cxId: appointment.cxId,
       elationPracticeId: appointment.elationPracticeId,
       elationPatientId: appointment.elationPatientId,
+      triggerDq: true,
       errors,
       log,
     };
@@ -212,6 +211,7 @@ async function getPatientIdOrFail({
   cxId,
   elationPracticeId,
   elationPatientId,
+  triggerDq,
   errors,
   log,
 }: {
@@ -219,6 +219,7 @@ async function getPatientIdOrFail({
   cxId: string;
   elationPracticeId: string;
   elationPatientId: string;
+  triggerDq: boolean;
   errors: string[];
   log: typeof console.log;
 }): Promise<void> {
@@ -228,6 +229,7 @@ async function getPatientIdOrFail({
       cxId,
       elationPracticeId,
       elationPatientId,
+      triggerDq,
     });
   } catch (error) {
     const cause = `Cause: ${errorToString(error)}`;
