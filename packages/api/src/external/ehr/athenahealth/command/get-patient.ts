@@ -1,31 +1,31 @@
-import { PatientResource } from "@metriport/shared/interface/external/athenahealth/patient";
+import { Patient, PatientDemoData } from "@metriport/core/domain/patient";
+import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/athenahealth/index";
+import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { processAsyncError } from "@metriport/core/util/error/shared";
+import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
 import {
   errorToString,
   normalizeDate,
   normalizeGender,
-  toTitleCase,
   NotFoundError,
+  toTitleCase,
 } from "@metriport/shared";
-import { processAsyncError } from "@metriport/core/util/error/shared";
-import { executeAsynchronously } from "@metriport/core/util/concurrency";
-import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
-import { out } from "@metriport/core/util/log";
-import { capture } from "@metriport/core/util/notifications";
-import { Patient, PatientDemoData } from "@metriport/core/domain/patient";
-import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/athenahealth/index";
-import { EhrSources } from "../../shared";
-import {
-  getPatientOrFail as getMetriportPatientOrFail,
-  getPatientByDemo as singleGetMetriportPatientByDemo,
-} from "../../../../command/medical/patient/get-patient";
+import { PatientResource } from "@metriport/shared/interface/external/athenahealth/patient";
+import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
+import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
+import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 import {
   createPatient as createMetriportPatient,
   PatientCreateCmd,
 } from "../../../../command/medical/patient/create-patient";
-import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
-import { getPatientMapping, findOrCreatePatientMapping } from "../../../../command/mapping/patient";
-import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
+import {
+  getPatientOrFail as getMetriportPatientOrFail,
+  getPatientByDemo as singleGetMetriportPatientByDemo,
+} from "../../../../command/medical/patient/get-patient";
 import { Config } from "../../../../shared/config";
+import { EhrSources } from "../../shared";
 import { createMetriportAddresses, createMetriportContacts, createNames } from "../shared";
 
 const region = Config.getAWSRegion();

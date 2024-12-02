@@ -1,35 +1,35 @@
-import axios, { AxiosInstance } from "axios";
 import {
   Medication,
   MedicationAdministration,
   MedicationDispense,
   MedicationStatement,
 } from "@medplum/fhirtypes";
-import {
-  patientResourceSchema,
-  patientSearchResourceSchema,
-  PatientResource,
-  MedicationReference,
-  medicationReferencesGetResponseSchema,
-  MedicationCreateResponse,
-  medicationCreateResponseSchema,
-  BookedAppointment,
-  bookedAppointmentsGetResponseSchema,
-  appointmentEventGetResponseSchema,
-  subscriptionCreateResponseSchema,
-  departmentsGetResponseSchema,
-  FeedType,
-  EventType,
-} from "@metriport/shared/interface/external/athenahealth/index";
 import { errorToString, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { S3Utils } from "../aws/s3";
+import {
+  appointmentEventGetResponseSchema,
+  BookedAppointment,
+  bookedAppointmentsGetResponseSchema,
+  departmentsGetResponseSchema,
+  EventType,
+  FeedType,
+  MedicationCreateResponse,
+  medicationCreateResponseSchema,
+  MedicationReference,
+  medicationReferencesGetResponseSchema,
+  PatientResource,
+  patientResourceSchema,
+  patientSearchResourceSchema,
+  subscriptionCreateResponseSchema,
+} from "@metriport/shared/interface/external/athenahealth/index";
+import axios, { AxiosInstance } from "axios";
+import { processAsyncError } from "../..//util/error/shared";
+import { createHivePartitionFilePath } from "../../domain/filename";
+import { Config } from "../../util/config";
 import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
-import { Config } from "../../util/config";
 import { uuidv7 } from "../../util/uuid-v7";
-import { createHivePartitionFilePath } from "../../domain/filename";
-import { processAsyncError } from "../..//util/error/shared";
+import { S3Utils } from "../aws/s3";
 
 interface ApiConfig {
   threeLeggedAuthToken: string | undefined;
@@ -94,7 +94,7 @@ class AthenaHealthApi {
 
     try {
       const response = await axios.post(url, this.createDataParams(data), {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        headers: { "content-type": "application/x-www-form-urlencoded" },
         auth: {
           username: this.config.clientKey,
           password: this.config.clientSecret,

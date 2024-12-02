@@ -1,6 +1,9 @@
 import { BaseDomain } from "@metriport/core/domain/base-domain";
 import { clientKeySchema } from "@metriport/shared";
-import { ElationData, elationDataSchema } from "@metriport/shared/src/interface/external/elation";
+import {
+  ElationData,
+  elationDataSchema,
+} from "@metriport/shared/interface/external/elation/client-key-mapping";
 import { z } from "zod";
 import { EhrSources } from "../external/ehr/shared";
 

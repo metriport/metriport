@@ -123,16 +123,16 @@ export async function getPatientIdOrFail({
       externalId: elationPatientId,
       source: EhrSources.elation,
     }),
-    dashUrl &&
-      elationApi.updatePatient({
-        cxId,
-        patientId: metriportPatient.id,
-        metadata: {
-          object_id: metriportPatient.id,
-          object_web_link: `${dashUrl}/patients/${metriportPatient.id}`,
-        },
-      }),
+    elationApi.updatePatientMetadata({
+      cxId,
+      patientId: elationPatientId,
+      metadata: {
+        object_id: metriportPatient.id,
+        object_web_link: `${dashUrl}/patients/${metriportPatient.id}`,
+      },
+    }),
   ]);
+  console.log(`DASH URL: ${dashUrl}`);
   return metriportPatient.id;
 }
 

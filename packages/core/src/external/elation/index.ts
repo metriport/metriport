@@ -1,21 +1,21 @@
-import axios, { AxiosInstance } from "axios";
-import {
-  Resource,
-  Appointment,
-  appointmentsGetResponseSchema,
-  PatientResource,
-  patientResourceSchema,
-  Metadata,
-} from "@metriport/shared/interface/external/elation/index";
 import { errorToString } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { S3Utils } from "../aws/s3";
+import {
+  Appointment,
+  appointmentsGetResponseSchema,
+  Metadata,
+  PatientResource,
+  patientResourceSchema,
+  Resource,
+} from "@metriport/shared/interface/external/elation/index";
+import axios, { AxiosInstance } from "axios";
+import { createHivePartitionFilePath } from "../../domain/filename";
+import { Config } from "../../util/config";
+import { processAsyncError } from "../../util/error/shared";
 import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
-import { Config } from "../../util/config";
 import { uuidv7 } from "../../util/uuid-v7";
-import { createHivePartitionFilePath } from "../../domain/filename";
-import { processAsyncError } from "../../util/error/shared";
+import { S3Utils } from "../aws/s3";
 
 interface ApiConfig {
   practiceId: string;
@@ -65,7 +65,7 @@ class ElationApi {
 
     try {
       const response = await axios.post(url, this.createDataParams(data), {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        headers: { "content-type": "application/x-www-form-urlencoded" },
       });
 
       this.twoLeggedAuthToken = response.data.access_token;
@@ -155,7 +155,7 @@ class ElationApi {
     }
   }
 
-  async updatePatient({
+  async updatePatientMetadata({
     cxId,
     patientId,
     metadata,
@@ -165,11 +165,20 @@ class ElationApi {
     metadata: Metadata;
   }): Promise<PatientResource | undefined> {
     const { log, debug } = out(
-      `Elation update patient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+      `Elation update patient metadata - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
     const patientUrl = `/patients/${patientId}/`;
     try {
-      const response = await this.axiosInstanceProprietary.put(patientUrl, { metadata });
+      const response = await this.axiosInstanceProprietary.patch(
+        patientUrl,
+        { metadata },
+        {
+          headers: {
+            ...this.axiosInstanceProprietary.defaults.headers.common,
+            "content-type": "application/json",
+          },
+        }
+      );
       if (!response.data) throw new Error(`No body returned from ${patientUrl}`);
       debug(`${patientUrl} resp: ${JSON.stringify(response.data)}`);
       if (responsesBucket) {
@@ -178,7 +187,7 @@ class ElationApi {
           patientId,
           date: new Date(),
         });
-        const key = `elation/patient-update/${filePath}/${uuidv7()}.json`;
+        const key = `elation/patient-update-metadata/${filePath}/${uuidv7()}.json`;
         this.s3Utils
           .uploadFile({
             bucket: responsesBucket,

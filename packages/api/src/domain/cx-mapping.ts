@@ -2,7 +2,7 @@ import { BaseDomain } from "@metriport/core/domain/base-domain";
 import {
   AthenaSecondaryMappings,
   athenaSecondaryMappingsSchema,
-} from "@metriport/shared/src/interface/external/athenahealth";
+} from "@metriport/shared/interface/external/athenahealth/cx-mapping";
 import { z } from "zod";
 import { EhrSources } from "../external/ehr/shared";
 

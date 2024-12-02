@@ -39,7 +39,9 @@ export function createMetriportAddresses(patient: PatientResource): Address[] {
 
 export function createNames(patient: PatientResource): { firstName: string; lastName: string } {
   return {
-    firstName: `patient.first_name${patient.middle_name !== "" ? ` ${patient.middle_name}` : ""}`,
+    firstName: `${patient.first_name}${
+      patient.middle_name !== "" ? ` ${patient.middle_name}` : ""
+    }`,
     lastName: patient.last_name,
   };
 }

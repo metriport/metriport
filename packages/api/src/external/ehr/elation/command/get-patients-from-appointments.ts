@@ -1,20 +1,20 @@
-import dayjs from "dayjs";
-import duration from "dayjs/plugin/duration";
-import { errorToString } from "@metriport/shared";
+import ElationApi, { ElationEnv } from "@metriport/core/external/elation/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import ElationApi, { ElationEnv } from "@metriport/core/external/elation/index";
-import { EhrSources, getLookforwardTimeRange } from "../../shared";
-import { getCxMappingsBySource } from "../../../../command/mapping/cx";
+import { errorToString } from "@metriport/shared";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { getClientKeyMappingOrFail } from "../../../../command/mapping/client-key";
+import { getCxMappingsBySource } from "../../../../command/mapping/cx";
 import { Config } from "../../../../shared/config";
+import { EhrSources, getLookforwardTimeRange } from "../../shared";
 import { getPatientIdOrFail as singleGetPatientIdOrFail } from "./get-patient";
 
 dayjs.extend(duration);
 
 const delayBetweenPracticeBatches = dayjs.duration(0, "seconds");
-const lookforward = dayjs.duration(7, "days");
+const lookforward = dayjs.duration(14, "days");
 const parallelPractices = 10;
 const parallelPatients = 2;
 
