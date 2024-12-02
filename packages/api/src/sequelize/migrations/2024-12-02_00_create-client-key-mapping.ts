@@ -26,7 +26,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
         },
         clientSecret: {
           type: DataTypes.STRING,
-          field: "client_secret",
+          field: "client_secret_arn",
           allowNull: false,
         },
         data: {
