@@ -5,10 +5,7 @@ import { ClientKeyMappingModel } from "../../models/client-key-mapping";
 
 export type ClientKeyMappingParams = ClientKeyMappingPerSource;
 
-export type ClientKeyMappingLookUpParams = Omit<
-  ClientKeyMappingParams,
-  "clientKey" | "clientSecretArn" | "data"
->;
+export type ClientKeyMappingLookUpParams = Omit<ClientKeyMappingParams, "clientSecretArn" | "data">;
 export type ClientKeyMappingLookupByIdParams = Pick<ClientKeyMappingParams, "cxId"> & {
   id: string;
 };
