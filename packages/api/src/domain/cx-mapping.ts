@@ -17,7 +17,6 @@ export const cxMappingsSourceMap: Map<CxSources, { bodyParser: z.Schema | undefi
 export type CxMappingPerSource = {
   externalId: string;
   cxId: string;
-} & {
   source: EhrSources.athena | EhrSources.elation;
   secondaryMappings: AthenaSecondaryMappings | null;
 };

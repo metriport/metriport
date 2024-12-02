@@ -9,7 +9,6 @@ export type FacilityMappingPerSource = {
   externalId: string;
   cxId: string;
   facilityId: string;
-} & {
   source: EhrSources.athena | EhrSources.elation;
 };
 

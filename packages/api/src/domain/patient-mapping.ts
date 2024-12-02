@@ -7,7 +7,6 @@ export type PatientMappingPerSource = {
   externalId: string;
   cxId: string;
   patientId: string;
-} & {
   source: EhrSources.athena | EhrSources.elation;
 };
 

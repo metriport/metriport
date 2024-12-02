@@ -8,7 +8,6 @@ export type JwtTokenData = JwtTokenPerSource["data"];
 export type JwtTokenPerSource = {
   token: string;
   exp: Date;
-} & {
   source: EhrSources.athena;
   data: AthenaJwtTokenData;
 };

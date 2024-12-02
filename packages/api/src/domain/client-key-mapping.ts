@@ -17,7 +17,6 @@ export type ClientKeyMappingPerSource = {
   externalId: string;
   cxId: string;
   clientSecretArn: string;
-} & {
   source: EhrSources.elation;
   data: ElationData | null;
 };
