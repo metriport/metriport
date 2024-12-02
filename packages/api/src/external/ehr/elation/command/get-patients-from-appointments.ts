@@ -2,7 +2,7 @@ import ElationApi, { ElationEnv } from "@metriport/core/external/elation/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { errorToString } from "@metriport/shared";
+import { errorToString, MetriportError } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { getClientKeyMappingOrFail } from "../../../../command/mapping/client-key";
@@ -28,7 +28,7 @@ type PatientAppointment = {
 
 export async function getPatientIdsOrFailFromAppointments(): Promise<void> {
   const { log } = out(`Elation getPatientIdsOrFailFromAppointments`);
-  if (!elationEnvironment) throw new Error("Elation not setup");
+  if (!elationEnvironment) throw new MetriportError("Elation not setup");
 
   const { startRange, endRange } = getLookforwardTimeRange({
     lookforward,
@@ -244,6 +244,6 @@ function createMapKey(cxId: string, practiceId: string): string {
 
 function parseMapKey(key: string): { cxId: string; practiceId: string } {
   const [cxId, practiceId] = key.split("|");
-  if (!cxId || !practiceId) throw new Error(`Invalid map key ${key}`);
+  if (!cxId || !practiceId) throw new MetriportError(`Invalid map key ${key}`, undefined, { key });
   return { cxId, practiceId };
 }

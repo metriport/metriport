@@ -1,4 +1,4 @@
-import { errorToString } from "@metriport/shared";
+import { errorToString, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
   Appointment,
@@ -70,7 +70,7 @@ class ElationApi {
 
       this.twoLeggedAuthToken = response.data.access_token;
     } catch (error) {
-      throw new Error("Failed to fetch Two Legged Auth token");
+      throw new MetriportError("Failed to fetch Two Legged Auth token");
     }
   }
 
@@ -99,7 +99,7 @@ class ElationApi {
     const patientUrl = `/patients/${patientId}/`;
     try {
       const response = await this.axiosInstanceProprietary.get(patientUrl);
-      if (!response.data) throw new Error(`No body returned from ${patientUrl}`);
+      if (!response.data) throw new MetriportError(`No body returned from ${patientUrl}`);
       debug(`${patientUrl} resp: ${JSON.stringify(response.data)}`);
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
@@ -179,7 +179,7 @@ class ElationApi {
           },
         }
       );
-      if (!response.data) throw new Error(`No body returned from ${patientUrl}`);
+      if (!response.data) throw new MetriportError(`No body returned from ${patientUrl}`);
       debug(`${patientUrl} resp: ${JSON.stringify(response.data)}`);
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
@@ -256,7 +256,7 @@ class ElationApi {
           target: this.createWebhookUrl(this.practiceId, webhookBaseUrl),
         })
       );
-      if (!response.data) throw new Error(`No body returned from ${subscribeUrl}`);
+      if (!response.data) throw new MetriportError(`No body returned from ${subscribeUrl}`);
       debug(`${subscribeUrl} resp: ${JSON.stringify(response.data)}`);
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
@@ -312,7 +312,7 @@ class ElationApi {
     const appointmentUrl = `/appointments/?${urlParams.toString()}`;
     try {
       const response = await this.axiosInstanceProprietary.get(appointmentUrl);
-      if (!response.data) throw new Error(`No body returned from ${appointmentUrl}`);
+      if (!response.data) throw new MetriportError(`No body returned from ${appointmentUrl}`);
       debug(`${appointmentUrl} resp: ${JSON.stringify(response.data)}`);
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({

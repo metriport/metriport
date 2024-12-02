@@ -36,7 +36,7 @@ export async function getPatientIdsOrFailFromAppointmentsSub({
 }): Promise<void> {
   const { log } = out(`AthenaHealth getPatientIdsOrFailFromAppointmentsSub`);
   if (!athenaEnvironment || !athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
-    throw new Error("AthenaHealth not setup");
+    throw new MetriportError("AthenaHealth not setup");
   }
 
   const athenaClientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);

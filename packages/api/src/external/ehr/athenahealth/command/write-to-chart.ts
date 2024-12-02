@@ -3,6 +3,7 @@ import AthenaHealthApi, {
   MedicationWithRefs,
 } from "@metriport/core/external/athenahealth/index";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
+import { MetriportError } from "@metriport/shared";
 import { Config } from "../../../../shared/config";
 
 const region = Config.getAWSRegion();
@@ -26,7 +27,7 @@ export async function writeMedicationToChart({
   accessToken?: string;
 }) {
   if (!athenaEnvironment || !athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
-    throw new Error("AthenaHealth not setup");
+    throw new MetriportError("AthenaHealth not setup");
   }
   const athenaClientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
   const athenaClientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);

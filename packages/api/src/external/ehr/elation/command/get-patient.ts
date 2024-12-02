@@ -5,6 +5,7 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import {
   errorToString,
+  MetriportError,
   normalizeDate,
   normalizeGender,
   NotFoundError,
@@ -58,7 +59,7 @@ export async function getPatientIdOrFail({
     });
     return metriportPatient.id;
   }
-  if (!elationEnvironment) throw new Error("Elation not setup");
+  if (!elationEnvironment) throw new MetriportError("Elation not setup");
   let elationApi = api;
   if (!elationApi) {
     const { clientKey, clientSecret } = await getClientKeyMappingOrFail({
@@ -79,10 +80,15 @@ export async function getPatientIdOrFail({
   });
   if (!elationPatient) throw new NotFoundError("Elation patient not found");
   if (elationPatient.first_name === "" || elationPatient.last_name === "") {
-    throw new Error("Elation patient has empty first or last name");
+    throw new MetriportError("Elation patient has empty first or last name", undefined, {
+      firstName: elationPatient.first_name,
+      lastName: elationPatient.last_name,
+    });
   }
   if (elationPatient.address.address_line1 === "") {
-    throw new Error("Elation patient has empty address line 1");
+    throw new MetriportError("Elation patient has empty address line 1", undefined, {
+      addressLine1: elationPatient.address.address_line1,
+    });
   }
 
   const patientDemoFilters = createMetriportPatientDemoFilters(elationPatient);

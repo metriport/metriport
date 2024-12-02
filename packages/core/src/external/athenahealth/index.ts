@@ -103,7 +103,7 @@ class AthenaHealthApi {
 
       this.twoLeggedAuthToken = response.data.access_token;
     } catch (error) {
-      throw new Error("Failed to fetch Two Legged Auth token");
+      throw new MetriportError("Failed to fetch Two Legged Auth token");
     }
   }
 
@@ -135,7 +135,7 @@ class AthenaHealthApi {
     const departmentUrl = `/departments`;
     try {
       const response = await this.axiosInstanceProprietary.get(departmentUrl);
-      if (!response.data) throw new Error(`No body returned from ${departmentUrl}`);
+      if (!response.data) throw new MetriportError(`No body returned from ${departmentUrl}`);
       debug(`${departmentUrl} resp: ${JSON.stringify(response.data)}`);
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
@@ -184,7 +184,7 @@ class AthenaHealthApi {
     const patientUrl = `/Patient/${this.createPatientId(patientId)}`;
     try {
       const response = await this.axiosInstanceFhirApi.get(patientUrl);
-      if (!response.data) throw new Error(`No body returned from ${patientUrl}`);
+      if (!response.data) throw new MetriportError(`No body returned from ${patientUrl}`);
       debug(`${patientUrl} resp: ${JSON.stringify(response.data)}`);
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
@@ -260,7 +260,7 @@ class AthenaHealthApi {
         patientSearchUrl,
         this.createDataParams(data)
       );
-      if (!response.data) throw new Error(`No body returned from ${patientSearchUrl}`);
+      if (!response.data) throw new MetriportError(`No body returned from ${patientSearchUrl}`);
       debug(`${patientSearchUrl} resp: ${JSON.stringify(response.data)}`);
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
@@ -335,7 +335,7 @@ class AthenaHealthApi {
       patientId,
       medication: medication.medication,
     });
-    if (medicationOptions.length === 0) throw new Error("No medication options found");
+    if (medicationOptions.length === 0) throw new MetriportError("No medication options found");
     const data = {
       departmentid: this.stripDepartmentId(departmentId),
       providernote: "Added via Metriport App",
@@ -355,7 +355,7 @@ class AthenaHealthApi {
         chartMedicationUrl,
         this.createDataParams(data)
       );
-      if (!response.data) throw new Error(`No body returned from ${chartMedicationUrl}`);
+      if (!response.data) throw new MetriportError(`No body returned from ${chartMedicationUrl}`);
       debug(`${chartMedicationUrl} resp: ${JSON.stringify(response.data)}`);
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
@@ -374,7 +374,7 @@ class AthenaHealthApi {
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - createMedication"));
       }
       const outcome = medicationCreateResponseSchema.parse(response.data);
-      if (!outcome.success) throw new Error(`Medication create not successful`);
+      if (!outcome.success) throw new MetriportError(`Medication create not successful`);
       return outcome;
     } catch (error) {
       const msg = `Failure while creating medication @ AthenaHealth`;
@@ -407,7 +407,8 @@ class AthenaHealthApi {
       `AthenaHealth search for medication - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
     const searchValues = medication.code?.coding?.flatMap(c => c.display?.split("/") ?? []);
-    if (!searchValues) throw Error("No code displays values for searching medications.");
+    if (!searchValues)
+      throw new MetriportError("No code displays values for searching medications.");
     const medicationOptions: MedicationReference[] = [];
     await Promise.all(
       searchValues.map(async searchValue => {
@@ -415,7 +416,7 @@ class AthenaHealthApi {
         const referenceUrl = `/reference/medications?searchvalue=${searchValue}`;
         try {
           const response = await this.axiosInstanceProprietary.get(referenceUrl);
-          if (!response.data) throw new Error(`No body returned from ${referenceUrl}`);
+          if (!response.data) throw new MetriportError(`No body returned from ${referenceUrl}`);
           debug(`${referenceUrl} resp: ${JSON.stringify(response.data)}`);
           const medications = medicationReferencesGetResponseSchema.parse(response.data);
           medicationOptions.push(...medications);
@@ -473,7 +474,7 @@ class AthenaHealthApi {
         subscribeUrl,
         eventType ? this.createDataParams({ eventname: eventType }) : {}
       );
-      if (!response.data) throw new Error(`No body returned from ${subscribeUrl}`);
+      if (!response.data) throw new MetriportError(`No body returned from ${subscribeUrl}`);
       debug(`${subscribeUrl} resp: ${JSON.stringify(response.data)}`);
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
@@ -492,7 +493,7 @@ class AthenaHealthApi {
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - subscribeToEvent"));
       }
       const outcome = subscriptionCreateResponseSchema.parse(response.data);
-      if (!outcome.success) throw new Error(`Subscription for ${feedtype} not successful`);
+      if (!outcome.success) throw new MetriportError(`Subscription for ${feedtype} not successful`);
     } catch (error) {
       const msg = `Failure while subscribing to event @ AthenaHealth`;
       log(`${msg}. Cause: ${errorToString(error)}`);
@@ -540,7 +541,7 @@ class AthenaHealthApi {
     const appointmentUrl = `/appointments/booked/multipledepartment?${urlParams.toString()}`;
     try {
       const response = await this.axiosInstanceProprietary.get(appointmentUrl);
-      if (!response.data) throw new Error(`No body returned from ${appointmentUrl}`);
+      if (!response.data) throw new MetriportError(`No body returned from ${appointmentUrl}`);
       debug(`${appointmentUrl} resp: ${JSON.stringify(response.data)}`);
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
@@ -605,7 +606,7 @@ class AthenaHealthApi {
     const appointmentUrl = `/appointments/changed?${urlParams.toString()}`;
     try {
       const response = await this.axiosInstanceProprietary.get(appointmentUrl);
-      if (!response.data) throw new Error(`No body returned from ${appointmentUrl}`);
+      if (!response.data) throw new MetriportError(`No body returned from ${appointmentUrl}`);
       debug(`${appointmentUrl} resp: ${JSON.stringify(response.data)}`);
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({

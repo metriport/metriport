@@ -7,6 +7,7 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import {
   errorToString,
+  MetriportError,
   normalizeDate,
   normalizeGender,
   NotFoundError,
@@ -68,7 +69,7 @@ export async function getPatientIdOrFail({
     return metriportPatient.id;
   }
   if (!athenaEnvironment || !athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
-    throw new Error("AthenaHealth not setup");
+    throw new MetriportError("AthenaHealth not setup");
   }
 
   let athenaApi = api;
@@ -91,10 +92,14 @@ export async function getPatientIdOrFail({
   });
   if (!athenaPatient) throw new NotFoundError("AthenaHealth patient not found");
   if (athenaPatient.name.length === 0) {
-    throw new Error("AthenaHealth patient missing at least one name");
+    throw new MetriportError("AthenaHealth patient missing at least one name", undefined, {
+      names: athenaPatient.name.map(name => JSON.stringify(name)).join(", "),
+    });
   }
   if (athenaPatient.address.length === 0) {
-    throw new Error("AthenaHealth patient missing at least one address");
+    throw new MetriportError("AthenaHealth patient missing at least one address", undefined, {
+      addresses: athenaPatient.address.map(address => JSON.stringify(address)).join(", "),
+    });
   }
 
   const patientDemoFilters = createMetriportPatientDemoFilters(athenaPatient);
