@@ -1,5 +1,5 @@
-import { AthenaJwtTokenData } from "@metriport/shared";
 import { BaseDomain } from "@metriport/core/domain/base-domain";
+import { AthenaJwtTokenData } from "@metriport/shared/src/interface/external/athenahealth/jwt-token";
 import { EhrSources } from "../external/ehr/shared";
 
 export type JwtTokenSources = JwtTokenPerSource["source"];
