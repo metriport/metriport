@@ -13,7 +13,7 @@ export function isCxMappingSource(source: string): source is CxMappingSource {
 }
 export function getCxMappingSource(source: string): CxMappingSource {
   if (isCxMappingSource(source)) return source;
-  throw new BadRequestError(`Source ${source} is valid cx mapping source.`);
+  throw new BadRequestError(`Source ${source} is invalid cx mapping source.`);
 }
 
 export type CxSecondaryMappings = AthenaSecondaryMappings | null;

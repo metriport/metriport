@@ -8,7 +8,7 @@ export function isSecretsMappingSource(source: string): source is SecretsMapping
 }
 export function getSecretsMappingSource(source: string): SecretsMappingSource {
   if (isSecretsMappingSource(source)) return source;
-  throw new BadRequestError(`Source ${source} is valid secrets mapping source.`);
+  throw new BadRequestError(`Source ${source} is invalid secrets mapping source.`);
 }
 
 export type SecretsMappingPerSource = {

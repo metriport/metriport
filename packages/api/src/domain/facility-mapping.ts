@@ -8,7 +8,7 @@ export function isFacilityMappingSource(source: string): source is FacilityMappi
 }
 export function getFacilityMappingSource(source: string): FacilityMappingSource {
   if (isFacilityMappingSource(source)) return source;
-  throw new BadRequestError(`Source ${source} is not valid facility mapping source.`);
+  throw new BadRequestError(`Source ${source} is invalid facility mapping source.`);
 }
 
 export type FacilityMappingPerSource = {
