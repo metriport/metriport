@@ -221,8 +221,16 @@ export function getIsSameResources(
 export async function getConsolidatedAndSendToCx(
   params: GetConsolidatedSendToCxParams
 ): Promise<void> {
-  const { patient, requestId, resources, dateFrom, dateTo, conversionType, generateAiBrief } =
-    params;
+  const {
+    patient,
+    requestId,
+    resources,
+    dateFrom,
+    dateTo,
+    conversionType,
+    fromDashboard,
+    generateAiBrief,
+  } = params;
   try {
     const { bundle, filters } = await getConsolidated(params);
     // trigger WH call
@@ -232,12 +240,14 @@ export async function getConsolidatedAndSendToCx(
       status: "completed",
       bundle,
       filters,
+      isDisabled: fromDashboard,
     }).catch(emptyFunction);
   } catch (error) {
     processConsolidatedDataWebhook({
       patient,
       requestId,
       status: "failed",
+      isDisabled: fromDashboard,
       filters: {
         resources: resources ? resources.join(", ") : undefined,
         dateFrom,
