@@ -1,6 +1,5 @@
 import { Patient, PatientDemoData } from "@metriport/core/domain/patient";
 import AthenaHealthApi from "@metriport/core/external/athenahealth/index";
-import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
@@ -25,7 +24,6 @@ import {
   getPatientOrFail as getMetriportPatientOrFail,
   getPatientByDemo as getMetriportPatientByDemo,
 } from "../../../../command/medical/patient/get-patient";
-import { Config } from "../../../../shared/config";
 import { EhrSources } from "../../shared";
 import {
   createMetriportAddresses,
@@ -33,10 +31,6 @@ import {
   createNames,
   getAthenaEnv,
 } from "../shared";
-
-const region = Config.getAWSRegion();
-const athenaClientKeySecretArn = Config.getAthenaHealthClientKeyArn();
-const athenaClientSecretSecretArn = Config.getAthenaHealthClientSecretArn();
 
 const parallelPatientMatches = 5;
 
@@ -75,16 +69,11 @@ export async function getPatientIdOrFail({
 
   let athenaApi = api;
   if (!athenaApi) {
-    const athenaEnvironment = getAthenaEnv();
-    if (!athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
-      throw new MetriportError("AthenaHealth not setup");
-    }
-    const clientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
-    const clientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
+    const { environment, clientKey, clientSecret } = await getAthenaEnv();
     athenaApi = await AthenaHealthApi.create({
       threeLeggedAuthToken: accessToken,
       practiceId: athenaPracticeId,
-      environment: athenaEnvironment,
+      environment,
       clientKey,
       clientSecret,
     });

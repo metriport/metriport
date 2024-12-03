@@ -1,5 +1,4 @@
 import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/athenahealth/index";
-import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -7,7 +6,6 @@ import { MetriportError, errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { getCxMappingsBySource } from "../../../../command/mapping/cx";
-import { Config } from "../../../../shared/config";
 import { EhrSources, getLookackTimeRange } from "../../shared";
 import { getPatientIdOrFail } from "./get-patient";
 import { getAthenaEnv } from "../shared";
@@ -19,10 +17,6 @@ const catupUpLookback = dayjs.duration(12, "hours");
 const parallelPractices = 10;
 const parallelPatients = 2;
 
-const region = Config.getAWSRegion();
-const athenaClientKeySecretArn = Config.getAthenaHealthClientKeyArn();
-const athenaClientSecretSecretArn = Config.getAthenaHealthClientSecretArn();
-
 type PatientAppointment = {
   cxId: string;
   athenaPracticeId: string;
@@ -31,13 +25,7 @@ type PatientAppointment = {
 
 export async function getPatientIdsOrFailFromAppointmentsSub({ catchUp }: { catchUp: boolean }) {
   const { log } = out(`AthenaHealth getPatientIdsOrFailFromAppointmentsSub - catchUp: ${catchUp}`);
-  const athenaEnvironment = getAthenaEnv();
-  if (!athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
-    throw new MetriportError("AthenaHealth not setup");
-  }
-
-  const clientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
-  const clientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
+  const { environment, clientKey, clientSecret } = await getAthenaEnv();
 
   const { startRange, endRange } = catchUp
     ? getLookackTimeRange({ lookback: catupUpLookback })
@@ -70,7 +58,7 @@ export async function getPatientIdsOrFailFromAppointmentsSub({ catchUp }: { catc
       cxId,
       practiceId,
       departmentIds,
-      environment: athenaEnvironment,
+      environment,
       clientKey,
       clientSecret,
       showProcessedStartDateTime: startRange,
@@ -124,7 +112,7 @@ export async function getPatientIdsOrFailFromAppointmentsSub({ catchUp }: { catc
     practiceId => {
       return {
         practiceId,
-        environment: athenaEnvironment,
+        environment,
         patientAppointmentsUnique: patientAppointmentsUniqueByPractice[practiceId] ?? [],
         clientKey,
         clientSecret,

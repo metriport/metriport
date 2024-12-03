@@ -1,6 +1,7 @@
 import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
 import { AthenaEnv, isAthenaEnv } from "@metriport/core/external/athenahealth";
+import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import {
   MetriportError,
   normalizeEmail,
@@ -10,6 +11,10 @@ import {
 } from "@metriport/shared";
 import { PatientResource } from "@metriport/shared/interface/external/athenahealth/patient";
 import { Config } from "../../../shared/config";
+
+const region = Config.getAWSRegion();
+const athenaClientKeySecretArn = Config.getAthenaHealthClientKeyArn();
+const athenaClientSecretSecretArn = Config.getAthenaHealthClientSecretArn();
 
 export function createMetriportContacts(patient: PatientResource): Contact[] {
   return (patient.telecom ?? []).flatMap(telecom => {
@@ -56,10 +61,24 @@ export function createNames(patient: PatientResource): { firstName: string; last
   return names;
 }
 
-export function getAthenaEnv(): AthenaEnv {
-  const env = Config.getAthenaHealthEnv();
-  if (!env) throw new MetriportError("AthenaHealth environment not set");
-  if (!isAthenaEnv(env))
-    throw new MetriportError("Invalid AthenaHealth environment", undefined, { env });
-  return env;
+export async function getAthenaEnv(): Promise<{
+  environment: AthenaEnv;
+  clientKey: string;
+  clientSecret: string;
+}> {
+  const environment = Config.getAthenaHealthEnv();
+  if (!environment) throw new MetriportError("AthenaHealth environment not set");
+  if (!isAthenaEnv(environment)) {
+    throw new MetriportError("Invalid AthenaHealth environment", undefined, { environment });
+  }
+  if (!athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
+    throw new MetriportError("AthenaHealth environment not set");
+  }
+  const clientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
+  const clientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
+  return {
+    environment,
+    clientKey,
+    clientSecret,
+  };
 }

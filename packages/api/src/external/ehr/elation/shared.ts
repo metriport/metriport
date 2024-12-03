@@ -96,10 +96,10 @@ export async function getElationClientKeyAndSecret({
 }
 
 export function getElationEnv(): ElationEnv {
-  const env = Config.getElationEnv();
-  if (!env) throw new MetriportError("Elation environment not set");
-  if (!isElationEnv(env)) {
-    throw new MetriportError("Invalid Elation environment", undefined, { env });
+  const environment = Config.getElationEnv();
+  if (!environment) throw new MetriportError("Elation environment not set");
+  if (!isElationEnv(environment)) {
+    throw new MetriportError("Invalid Elation environment", undefined, { environment });
   }
-  return env;
+  return environment;
 }
