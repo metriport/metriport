@@ -21,7 +21,7 @@ import {
   Task,
 } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
-import { uniqWith } from "lodash";
+import { uniqWith, cloneDeep, camelCase } from "lodash";
 import { Brief } from "./bundle-to-brief";
 import { createBrief } from "./bundle-to-html";
 import {
@@ -31,6 +31,7 @@ import {
   MISSING_DATE_KEY,
   MISSING_DATE_TEXT,
 } from "./bundle-to-html-shared";
+import { fetchCodingCodeOrDisplayOrSystem } from "../../../fhir-deduplication/shared";
 
 const RX_NORM_CODE = "rxnorm";
 const NDC_CODE = "ndc";
@@ -86,11 +87,25 @@ export function bundleToHtmlDerm(fhirBundle: Bundle, brief?: Brief): string {
   const asthmaConditions = getAsthmaConditions(conditions);
   const twoYearAgo = dayjs().subtract(2, "year").format(ISO_DATE);
 
+  const { section: a1cSection, chartData: a1cChartData } = createFromObservationVitalsSection(
+    observationLaboratory,
+    "HbA1c",
+    "4548-4"
+  );
+
+  const { section: bmiSection, chartData: bmiChartData } = createFromObservationVitalsSection(
+    observationVitals,
+    "BMI",
+    "39156-5"
+  );
+
   const htmlPage = `
     <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
     <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
       <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
         <title></title>
         <!-- General CSS -->
         <style type="text/css" media="all">
@@ -321,9 +336,104 @@ export function bundleToHtmlDerm(fhirBundle: Bundle, brief?: Brief): string {
           ${createMedicationSection(medications, medicationStatements)}
           ${createAllergySection(allergies)}
           ${createObservationVitalsSection(observationVitals)}
+          ${bmiSection}
+          ${a1cSection}
           ${createObservationLaboratorySection(observationLaboratory)}
           ${createImmunizationSection(immunizations)}
         </div>
+         <script>
+         const ctx = document.getElementById('hba1cHistory').getContext('2d');
+         const hba1c = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: ${JSON.stringify(a1cChartData.labels)},
+              datasets: [{
+                label: 'HbA1c over the last 5 years',
+                data: ${JSON.stringify(a1cChartData.data)},
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 2,
+                fill: false
+              }]
+            },
+            options: {
+              scales: {
+                x: {
+                  type: 'time',
+                  time: {
+                    unit: 'month',
+                    tooltipFormat: 'yyyy-MM-dd'
+                  },
+                  title: {
+                    display: true,
+                    text: 'Date'
+                  }
+                },
+                y: {
+                  title: {
+                    display: true,
+                    text: 'HbA1c Value'
+                  },
+                  min: ${a1cChartData.min},
+                  max: ${a1cChartData.max},
+                }
+              },
+              layout: {
+                padding: {
+                  left: 10,
+                  right: 50,
+                  top: 10,
+                  bottom: 10
+                }
+              }
+            }
+          });
+
+         const ctx = document.getElementById('bmiHistory').getContext('2d');
+         const bmi = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: ${JSON.stringify(bmiChartData.labels)},
+              datasets: [{
+                label: 'HbA1c over the last 5 years',
+                data: ${JSON.stringify(bmiChartData.data)},
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 2,
+                fill: false
+              }]
+            },
+            options: {
+              scales: {
+                x: {
+                  type: 'time',
+                  time: {
+                    unit: 'month',
+                    tooltipFormat: 'yyyy-MM-dd'
+                  },
+                  title: {
+                    display: true,
+                    text: 'Date'
+                  }
+                },
+                y: {
+                  title: {
+                    display: true,
+                    text: 'BMI Value'
+                  },
+                  min: ${bmiChartData.min},
+                  max: ${bmiChartData.max},
+                }
+              },
+              layout: {
+                padding: {
+                  left: 10,
+                  right: 50,
+                  top: 10,
+                  bottom: 10
+                }
+              }
+            }
+          });
+        </script>
       </body>
     </html>
   `;
@@ -2156,4 +2266,159 @@ function getValidCode(coding: Coding[] | undefined): Coding[] {
       coding.display.toLowerCase() !== UNKNOWN_DISPLAY
     );
   });
+}
+
+type ChartData = {
+  labels: string[];
+  data: number[];
+  min?: number;
+  max?: number;
+};
+
+type ObsSummary = {
+  effectiveDate: string;
+  vitalsValue: string;
+};
+
+function createFromObservationVitalsSection(
+  observations: Observation[],
+  vitalTitle: string,
+  loincCode: string
+): {
+  section: string;
+  chartData: ChartData;
+} {
+  if (!observations) {
+    return { section: "", chartData: { labels: [], data: [] } };
+  }
+
+  const filteredObservations = observations.filter(observation => {
+    const observationDisplay = observation.code?.coding?.find(coding => {
+      const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
+      return code === loincCode;
+    });
+
+    return !!observationDisplay;
+  });
+
+  const observationsLast5Years = filteredObservations.filter(observation => {
+    return dayjs(observation.effectiveDateTime).isAfter(dayjs().subtract(5, "year"));
+  });
+
+  const observationsSortedByDate = observationsLast5Years.sort((a, b) => {
+    return dayjs(a.effectiveDateTime).isBefore(dayjs(b.effectiveDateTime)) ? 1 : -1;
+  });
+
+  const removeDuplicate = uniqWith(observationsSortedByDate, (a, b) => {
+    const aDate = dayjs(a.effectiveDateTime).format(ISO_DATE);
+    const bDate = dayjs(b.effectiveDateTime).format(ISO_DATE);
+    const aText = a.code?.text;
+    const bText = b.code?.text;
+    if (aText === undefined || bText === undefined) {
+      return false;
+    }
+    return aDate === bDate && aText === bText;
+  });
+
+  if (removeDuplicate.length === 0) {
+    return {
+      section: createChartSection(
+        `${vitalTitle} History`,
+        `<table><tbody><tr><td>No ${vitalTitle} readings found</td></tr></tbody></table>`,
+        false
+      ),
+      chartData: { labels: [], data: [] },
+    };
+  }
+  const { tableContent, chartData } = createVitalsChartByDate(removeDuplicate);
+
+  return {
+    section: createChartSection(`${vitalTitle} History`, tableContent, true),
+    chartData: chartData,
+  };
+}
+
+function createChartSection(title: string, tableContents: string, contentPresent: boolean) {
+  console.log("AJJJJJJJJJJJJJJJ", camelCase(title.replace(/\s+/g, "")));
+
+  return `
+    <div id="${title.toLowerCase().replace(/\s+/g, "-")}" class="section">
+      <div class="section-title">
+        <h3 id="${title}" title="${title}">&#x276F; ${title}</h3>
+        <a href="#mr-header">&#x25B2; Back to Top</a>
+      </div>
+
+      ${
+        contentPresent
+          ? `<div><canvas
+            id="${camelCase(title.replace(/\s+/g, ""))}"
+            style="width: 95%; height: 400px;">
+            </canvas></div>`
+          : ``
+      }
+      <div class="section-content">
+          ${tableContents}
+      </div>
+    </div>
+  `;
+}
+
+function createVitalsChartByDate(observations: Observation[]): {
+  tableContent: string;
+  chartData: ChartData;
+} {
+  const filteredObservations = filterObservationsByDate(observations);
+
+  const observationObjects: ObsSummary[] = filteredObservations
+    .flatMap(tables => {
+      return tables.observations.map(observation => {
+        const value = renderVitalsValue(observation);
+        if (value) {
+          return {
+            effectiveDate: dayjs(observation.effectiveDateTime).format(ISO_DATE),
+            vitalsValue: value,
+          };
+        }
+        return [];
+      });
+    })
+    .flat();
+
+  const observationsAscending = cloneDeep(observationObjects).sort((a, b) => {
+    return dayjs(a.effectiveDate).isBefore(dayjs(b.effectiveDate)) ? -1 : 1;
+  });
+
+  const chartData = {
+    labels: observationsAscending.map(obs => obs.effectiveDate),
+    data: observationsAscending.map(obs => parseFloat(obs.vitalsValue)),
+    min: Math.floor(Math.min(...observationsAscending.map(obs => parseFloat(obs.vitalsValue))) - 1),
+    max: Math.ceil(Math.max(...observationsAscending.map(obs => parseFloat(obs.vitalsValue))) + 1),
+  };
+
+  const observationRows = observationObjects
+    .map(obs => {
+      return `
+            <tr>
+              <td>${obs.effectiveDate}</td>
+              <td>${obs.vitalsValue}</td>
+            </tr>
+          `;
+    })
+    .join(" ");
+
+  const observationTableContents = `
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 50%">Date</th>
+        <th style="width: 50%">Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${observationRows}
+    </tbody>
+  </table>
+`;
+
+  return { tableContent: observationTableContents, chartData };
 }
