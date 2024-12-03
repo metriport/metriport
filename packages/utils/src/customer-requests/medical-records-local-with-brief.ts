@@ -6,7 +6,7 @@ import {
   createMRSummaryBriefFileName,
   createMRSummaryFileName,
 } from "@metriport/core/domain/medical-record-summary";
-import { bundleToBrief } from "@metriport/core/external/aws/lambda-logic/bundle-to-brief";
+import { summarizeFilteredBundleWithAI } from "@metriport/core/external/aws/lambda-logic/bundle-to-brief";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { getEnvVarOrFail, MetriportError } from "@metriport/shared";
@@ -40,12 +40,20 @@ const patientId = "";
 // Update this to staging or local URL if you want to test the brief link
 const dashUrl = "http://dash.metriport.com";
 
+const SOURCE_DIR =
+  "/Users/ramilgaripov/Documents/phi/ai_brief_patina/Patina_2024-11-30T20:58:12.766Z";
+const SOURCE_PATIENT_ID = "0190aacc-432b-7ce1-824d-16d92d7cbe10";
+const SOURCE_BUNDLE_FILE = `${SOURCE_PATIENT_ID}.json`;
+
 async function main() {
   // TODO: Condense this functionality under a single function and put it on `@metriport/core`, so this can be used both here, and on the Lambda.
-  const bundle = fs.readFileSync("input.json", "utf8");
-  const bundleParsed = JSON.parse(bundle);
+  const fileName = `${SOURCE_DIR}/${SOURCE_BUNDLE_FILE}`;
+  const bundleStr = fs.readFileSync(fileName, { encoding: "utf8" });
+  const bundle = JSON.parse(bundleStr) as Bundle<Resource>;
 
-  const brief = await bundleToBrief(bundleParsed as Bundle<Resource>, cxId, patientId);
+  const brief = await summarizeFilteredBundleWithAI(bundle);
+
+  fs.writeFileSync("BRIEF.txt", JSON.stringify(brief));
   const briefId = uuidv7();
 
   if (!cxId || !patientId) throw new Error("cxId or patientId is missing");
@@ -54,7 +62,7 @@ async function main() {
 
   // Response from FHIR Converter
   const html = bundleToHtml(
-    bundleParsed,
+    bundle,
     brief ? { content: brief, id: briefId, link: `${dashUrl}/feedback/${briefId}` } : undefined
   );
   await storeMrSummaryAndBriefInS3({

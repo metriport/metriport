@@ -21,26 +21,21 @@ import {
   Quantity,
   Resource,
 } from "@medplum/fhirtypes";
+import { filterBundleByDate } from "@metriport/core/command/consolidated/consolidated-filter-by-date";
 import { findPatientResource } from "@metriport/core/external/fhir/shared/index";
 import { toArray } from "@metriport/shared";
-import fs from "fs";
-import { MapReduceDocumentsChain, LLMChain, StuffDocumentsChain } from "langchain/chains";
-import { cloneDeep } from "lodash";
-import { filterBundleByDate } from "@metriport/core/command/consolidated/consolidated-filter-by-date";
-import dayjs from "dayjs";
 import { ISO_DATE } from "@metriport/shared/common/date";
+import dayjs from "dayjs";
+import fs from "fs";
+import { LLMChain, MapReduceDocumentsChain, StuffDocumentsChain } from "langchain/chains";
+import { cloneDeep } from "lodash";
 
-const SOURCE_DIR = "/Users/dgoncharov/Documents/phi/ai-brief";
-const SOURCE_PATIENT_ID = "...";
-const SOURCE_BUNDLE_FILE = `${SOURCE_PATIENT_ID}.json`;
 const BRIEF_BUNDLE_FILE = `briefed-${SOURCE_PATIENT_ID}.json`;
 const CHUNK_SIZE = 100000;
 const CHUNK_OVERLAP = 1000;
 const relevantResources = [
   "AllergyIntolerance",
-  // "Coverage",
   "DiagnosticReport",
-  // "Encounter",
   "Immunization",
   "Location",
   "Procedure",
@@ -65,12 +60,10 @@ const referenceResources = [
 //--------------------------------
 // AI-based brief generation
 //--------------------------------
-async function summarizeFilteredBundleWithAI(saveBriefedBundle: boolean = false) {
-  // read filtered bundle from file
-  const fileName = `${SOURCE_DIR}/${SOURCE_BUNDLE_FILE}`;
-  const bundleStr = fs.readFileSync(fileName, { encoding: "utf8" });
-  const bundle = JSON.parse(bundleStr) as Bundle<Resource>;
-
+export async function summarizeFilteredBundleWithAI(
+  bundle: Bundle<Resource>,
+  saveBriefedBundle: boolean = false
+): Promise<string | undefined> {
   // filter out historical data
   const numHistoricalYears = 2;
   const dateFrom = dayjs().subtract(numHistoricalYears, "year").format(ISO_DATE);
@@ -158,25 +151,28 @@ SUMMARY:
     verbose: true,
   });
 
-  const summary = await mapReduce.invoke({
+  const summary = (await mapReduce.invoke({
     input_documents: docs,
-  });
+  })) as { text: string };
 
-  console.log(summary);
+  if (summary.text) {
+    return summary.text;
+  }
+  return undefined;
 }
 
-//--------------------------------
-// Create a briefed bundle
-//--------------------------------
-async function createBriefedBundle() {
-  const bundleRaw = fs.readFileSync(`${SOURCE_DIR}/${SOURCE_BUNDLE_FILE}`, "utf8");
-  const bundle = JSON.parse(bundleRaw) as Bundle<Resource>;
+// //--------------------------------
+// // Create a briefed bundle
+// //--------------------------------
+// async function createBriefedBundle() {
+//   const bundleRaw = fs.readFileSync(`${SOURCE_DIR}/${SOURCE_BUNDLE_FILE}`, "utf8");
+//   const bundle = JSON.parse(bundleRaw) as Bundle<Resource>;
 
-  const inputString = prepareBundleForBrief(bundle);
-  if (!inputString) return;
+//   const inputString = prepareBundleForBrief(bundle);
+//   if (!inputString) return;
 
-  fs.writeFileSync(`${SOURCE_DIR}/${BRIEF_BUNDLE_FILE}`, inputString);
-}
+//   fs.writeFileSync(`${SOURCE_DIR}/${BRIEF_BUNDLE_FILE}`, inputString);
+// }
 
 export function prepareBundleForBrief(bundle: Bundle): string | undefined {
   if (bundle.entry?.length === 0) return undefined;
