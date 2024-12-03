@@ -139,7 +139,7 @@ class AthenaHealthApi {
     try {
       const response = await this.axiosInstanceProprietary.get(departmentUrl);
       if (!response.data) throw new MetriportError(`No body returned from ${departmentUrl}`);
-      debug(`${departmentUrl} resp: ${JSON.stringify(response.data)}`);
+      debug(`${departmentUrl} resp: `, () => JSON.stringify(response.data));
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
           cxId,
@@ -188,7 +188,7 @@ class AthenaHealthApi {
     try {
       const response = await this.axiosInstanceFhirApi.get(patientUrl);
       if (!response.data) throw new MetriportError(`No body returned from ${patientUrl}`);
-      debug(`${patientUrl} resp: ${JSON.stringify(response.data)}`);
+      debug(`${patientUrl} resp: `, () => JSON.stringify(response.data));
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
           cxId,
@@ -264,7 +264,7 @@ class AthenaHealthApi {
         this.createDataParams(data)
       );
       if (!response.data) throw new MetriportError(`No body returned from ${patientSearchUrl}`);
-      debug(`${patientSearchUrl} resp: ${JSON.stringify(response.data)}`);
+      debug(`${patientSearchUrl} resp: `, () => JSON.stringify(response.data));
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
           cxId,
@@ -359,7 +359,7 @@ class AthenaHealthApi {
         this.createDataParams(data)
       );
       if (!response.data) throw new MetriportError(`No body returned from ${chartMedicationUrl}`);
-      debug(`${chartMedicationUrl} resp: ${JSON.stringify(response.data)}`);
+      debug(`${chartMedicationUrl} resp: `, () => JSON.stringify(response.data));
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
           cxId,
@@ -421,7 +421,7 @@ class AthenaHealthApi {
         try {
           const response = await this.axiosInstanceProprietary.get(referenceUrl);
           if (!response.data) throw new MetriportError(`No body returned from ${referenceUrl}`);
-          debug(`${referenceUrl} resp: ${JSON.stringify(response.data)}`);
+          debug(`${referenceUrl} resp: `, () => JSON.stringify(response.data));
           const medications = medicationReferencesGetResponseSchema.parse(response.data);
           medicationOptions.push(...medications);
         } catch (error) {
@@ -479,7 +479,7 @@ class AthenaHealthApi {
         eventType ? this.createDataParams({ eventname: eventType }) : {}
       );
       if (!response.data) throw new MetriportError(`No body returned from ${subscribeUrl}`);
-      debug(`${subscribeUrl} resp: ${JSON.stringify(response.data)}`);
+      debug(`${subscribeUrl} resp: `, () => JSON.stringify(response.data));
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
           cxId,
@@ -546,7 +546,7 @@ class AthenaHealthApi {
     try {
       const response = await this.axiosInstanceProprietary.get(appointmentUrl);
       if (!response.data) throw new MetriportError(`No body returned from ${appointmentUrl}`);
-      debug(`${appointmentUrl} resp: ${JSON.stringify(response.data)}`);
+      debug(`${appointmentUrl} resp: `, () => JSON.stringify(response.data));
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
           cxId,
@@ -611,7 +611,7 @@ class AthenaHealthApi {
     try {
       const response = await this.axiosInstanceProprietary.get(appointmentUrl);
       if (!response.data) throw new MetriportError(`No body returned from ${appointmentUrl}`);
-      debug(`${appointmentUrl} resp: ${JSON.stringify(response.data)}`);
+      debug(`${appointmentUrl} resp: `, () => JSON.stringify(response.data));
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
           cxId,

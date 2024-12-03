@@ -103,7 +103,7 @@ class ElationApi {
     try {
       const response = await this.axiosInstance.get(patientUrl);
       if (!response.data) throw new MetriportError(`No body returned from ${patientUrl}`);
-      debug(`${patientUrl} resp: ${JSON.stringify(response.data)}`);
+      debug(`${patientUrl} resp: `, () => JSON.stringify(response.data));
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
           cxId,
@@ -183,7 +183,7 @@ class ElationApi {
         }
       );
       if (!response.data) throw new MetriportError(`No body returned from ${patientUrl}`);
-      debug(`${patientUrl} resp: ${JSON.stringify(response.data)}`);
+      debug(`${patientUrl} resp: `, () => JSON.stringify(response.data));
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
           cxId,
@@ -260,7 +260,7 @@ class ElationApi {
         })
       );
       if (!response.data) throw new MetriportError(`No body returned from ${subscribeUrl}`);
-      debug(`${subscribeUrl} resp: ${JSON.stringify(response.data)}`);
+      debug(`${subscribeUrl} resp: `, () => JSON.stringify(response.data));
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
           cxId,
@@ -316,7 +316,7 @@ class ElationApi {
     try {
       const response = await this.axiosInstance.get(appointmentUrl);
       if (!response.data) throw new MetriportError(`No body returned from ${appointmentUrl}`);
-      debug(`${appointmentUrl} resp: ${JSON.stringify(response.data)}`);
+      debug(`${appointmentUrl} resp: `, () => JSON.stringify(response.data));
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
           cxId,
