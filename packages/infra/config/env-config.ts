@@ -230,6 +230,10 @@ type EnvConfigBase = {
       athenaClientKeyArn: string;
       athenaClientSecretArn: string;
     };
+    elation: {
+      env: string;
+      elationClientKeyAndSecretMapArn: string;
+    };
   };
 };
 
