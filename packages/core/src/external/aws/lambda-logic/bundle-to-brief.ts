@@ -27,7 +27,7 @@ import { filterBundleByDate } from "../../../command/consolidated/consolidated-f
 import { findPatientResource } from "../../../external/fhir/shared/index";
 import { BedrockChat } from "../../langchain/bedrock/index";
 
-const CHUNK_SIZE = 100000;
+const CHUNK_SIZE = 100_000;
 const CHUNK_OVERLAP = 1000;
 const relevantResources = [
   "AllergyIntolerance",
@@ -52,6 +52,8 @@ const referenceResources = [
   "Location",
 ];
 
+const documentVariableName = "text";
+
 export type Brief = {
   id: string;
   content: string;
@@ -71,7 +73,7 @@ export async function summarizeFilteredBundleWithAI(
 
   const inputString = prepareBundleForBrief(filteredBundle);
 
-  // TODO: experiment with different splitters
+  // TODO: #2510 - experiment with different splitters
   const textSplitter = new RecursiveCharacterTextSplitter({
     chunkSize: CHUNK_SIZE,
     chunkOverlap: CHUNK_OVERLAP,
@@ -86,6 +88,8 @@ export async function summarizeFilteredBundleWithAI(
 
   const todaysDate = new Date().toISOString().split("T")[0];
   const systemPrompt = "You are an expert primary care doctor.";
+
+  // TODO: #2516 - experiment with different prompts
   // this is the summary prompt for each chunk of the bundle
   const summaryTemplate = `
 ${systemPrompt}
@@ -94,7 +98,7 @@ Today's date is ${todaysDate}.
 Your goal is to write a summary of the patient's most recent medical history, so that another doctor can understand the patient's medical history to be able to treat them effectively.
 Here is a portion of the patient's medical history:
 --------
-{text}
+{${documentVariableName}}
 --------
 
 Write a summary of the patient's most recent medical history, considering the following goals:
@@ -123,7 +127,7 @@ Today's date is ${todaysDate}.
 Your goal is to write a summary of the patient's most recent medical history, so that another doctor can understand the patient's medical history to be able to treat them effectively.
 Here are the previous summaries written by you of sections of the patient's medical history:
 --------
-{text}
+{${documentVariableName}}
 --------
 
 Combine these summaries into a single, comprehensive summary of the patient's most recent medical history in a single paragraph.
@@ -138,13 +142,13 @@ SUMMARY:
       llm: llmSummary as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       prompt: SUMMARY_PROMPT_REFINED as any, // eslint-disable-line @typescript-eslint/no-explicit-any
     }),
-    documentVariableName: "text",
+    documentVariableName,
   });
 
   const mapReduce = new MapReduceDocumentsChain({
     llmChain: summaryChain,
     combineDocumentChain: summaryChainRefined,
-    documentVariableName: "text",
+    documentVariableName,
     verbose: true,
   });
 
@@ -313,6 +317,15 @@ function getUniqueDisplays(
   if (uniqueDescriptors.size === 0) return undefined;
   return Array.from(uniqueDescriptors).join(", ");
 }
+
+/**
+ * This function applies filters to the resource based on its resourceType, and overwrites and/or creates new specific attributes,
+ * making them into strings most of the time.
+ *
+ * TODO: #2510 - Break this function up into smaller functions, specific to each resourceType.
+ *
+ * @returns updated resources as any
+ */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function applyResourceSpecificFilters(res: Resource): any | undefined {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -368,7 +381,7 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
 
     if (updRes.status === "") delete updRes.status;
 
-    delete res.reasonCode; // TODO: Introduce term server lookup here
+    delete res.reasonCode; // TODO: #2510 - Introduce term server lookup here
   }
 
   if (res.resourceType === "DiagnosticReport") {
@@ -501,6 +514,13 @@ function getAddressString(address: Address | Address[] | undefined): string | un
     .join("\n");
 }
 
+/**
+ * Takes a FHIR resource and replaces referenced resources with the actual contents of those resources.
+ * This allows the context for a resource to be contained entirely within itself.
+ * It also keeps track of the referenced resources, so those can later be removed from the bundle.
+ *
+ * @returns updated resource as any
+ */
 function replaceReferencesWithData(
   res: Resource,
   map: Map<string, Resource>
