@@ -1,5 +1,5 @@
 import { Patient, PatientDemoData } from "@metriport/core/domain/patient";
-import AthenaHealthApi, { AthenaEnv } from "@metriport/core/external/athenahealth/index";
+import AthenaHealthApi from "@metriport/core/external/athenahealth/index";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -23,14 +23,18 @@ import {
 } from "../../../../command/medical/patient/create-patient";
 import {
   getPatientOrFail as getMetriportPatientOrFail,
-  getPatientByDemo as singleGetMetriportPatientByDemo,
+  getPatientByDemo as getMetriportPatientByDemo,
 } from "../../../../command/medical/patient/get-patient";
 import { Config } from "../../../../shared/config";
 import { EhrSources } from "../../shared";
-import { createMetriportAddresses, createMetriportContacts, createNames } from "../shared";
+import {
+  createMetriportAddresses,
+  createMetriportContacts,
+  createNames,
+  getAthenaEnv,
+} from "../shared";
 
 const region = Config.getAWSRegion();
-const athenaEnvironment = Config.getAthenaHealthEnv();
 const athenaClientKeySecretArn = Config.getAthenaHealthClientKeyArn();
 const athenaClientSecretSecretArn = Config.getAthenaHealthClientSecretArn();
 
@@ -68,20 +72,21 @@ export async function getPatientIdOrFail({
     });
     return metriportPatient.id;
   }
-  if (!athenaEnvironment || !athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
-    throw new MetriportError("AthenaHealth not setup");
-  }
 
   let athenaApi = api;
   if (!athenaApi) {
-    const athenaClientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
-    const athenaClientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
+    const athenaEnvironment = getAthenaEnv();
+    if (!athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
+      throw new MetriportError("AthenaHealth not setup");
+    }
+    const clientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
+    const clientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
     athenaApi = await AthenaHealthApi.create({
       threeLeggedAuthToken: accessToken,
       practiceId: athenaPracticeId,
-      environment: athenaEnvironment as AthenaEnv,
-      clientKey: athenaClientKey,
-      clientSecret: athenaClientSecret,
+      environment: athenaEnvironment,
+      clientKey,
+      clientSecret,
     });
   }
   const athenaPatient = await getPatientFromAthena({
@@ -103,39 +108,39 @@ export async function getPatientIdOrFail({
   }
 
   const patientDemoFilters = createMetriportPatientDemoFilters(athenaPatient);
-  const patients: Patient[] = [];
-  const getPatientByDemoErrors: string[] = [];
-  const getPatientByDemoArgs = patientDemoFilters.map(demo => {
+  const patientsFromGetPatientByDemo: Patient[] = [];
+  const errorsFromGetPatientByDemo: string[] = [];
+  const argsForGetPatientByDemo = patientDemoFilters.map(demo => {
     return {
       cxId,
       athenaPracticeId,
       athenaPatientId,
       demo,
-      patients,
-      errors: getPatientByDemoErrors,
+      returnArray: patientsFromGetPatientByDemo,
+      errorArray: errorsFromGetPatientByDemo,
       log,
     };
   });
 
-  await executeAsynchronously(getPatientByDemoArgs, getPatientByDemo, {
+  await executeAsynchronously(argsForGetPatientByDemo, getPatientByDemo, {
     numberOfParallelExecutions: parallelPatientMatches,
   });
 
-  if (getPatientByDemoErrors.length > 0) {
+  if (errorsFromGetPatientByDemo.length > 0) {
     capture.error("Failed to get patient by demo", {
       extra: {
         cxId,
-        getPatientByDemoArgsCount: getPatientByDemoArgs.length,
-        errorCount: getPatientByDemoErrors.length,
-        errors: getPatientByDemoErrors.join(","),
+        getPatientByDemoArgsCount: errorsFromGetPatientByDemo.length,
+        errorCount: errorsFromGetPatientByDemo.length,
+        errors: errorsFromGetPatientByDemo.join(","),
         context: "athenahealth.get-patient",
       },
     });
   }
 
-  let metriportPatient = patients[0];
+  let metriportPatient = patientsFromGetPatientByDemo[0];
   if (metriportPatient) {
-    const uniquePatientIds = new Set(patients.map(patient => patient.id));
+    const uniquePatientIds = new Set(patientsFromGetPatientByDemo.map(patient => patient.id));
     if (uniquePatientIds.size > 1) {
       capture.message("AthenaHealth patient mapping to more than one Metriport patient", {
         extra: {
@@ -213,27 +218,27 @@ async function getPatientByDemo({
   athenaPracticeId,
   athenaPatientId,
   demo,
-  patients,
-  errors,
+  returnArray,
+  errorArray,
   log,
 }: {
   cxId: string;
   athenaPracticeId: string;
   athenaPatientId: string;
   demo: PatientDemoData;
-  patients: Patient[];
-  errors: string[];
+  returnArray: Patient[];
+  errorArray: string[];
   log: typeof console.log;
 }): Promise<void> {
   try {
-    const patient = await singleGetMetriportPatientByDemo({ cxId, demo });
-    if (patient) patients.push(patient);
+    const patient = await getMetriportPatientByDemo({ cxId, demo });
+    if (patient) returnArray.push(patient);
   } catch (error) {
     const cause = `Cause: ${errorToString(error)}`;
     const details = `cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}.`;
     const msg = "Failed to get patient by demo.";
     log(`${msg} ${cause}`);
-    errors.push(`${msg} ${details} ${cause}`);
+    errorArray.push(`${msg} ${details} ${cause}`);
   }
 }
 

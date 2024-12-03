@@ -4,11 +4,11 @@ import httpStatus from "http-status";
 import { getCxFFStatus } from "../command/internal/get-hie-enabled-feature-flags-status";
 import { updateCxHieEnabledFFs } from "../command/internal/update-hie-enabled-feature-flags";
 import {
-  deleteClientKeyMapping,
-  findOrCreateClientKeyMapping,
-  getClientKeyMappingsByCustomer,
-  setExternalIdOnClientKeyMapping,
-} from "../command/mapping/client-key";
+  deleteSecretsMapping,
+  findOrCreateSecretsMapping,
+  getSecretsMappingsByCustomer,
+  setExternalIdOnSecretsMapping,
+} from "../command/mapping/secrets";
 import {
   deleteCxMapping,
   findOrCreateCxMapping,
@@ -30,9 +30,9 @@ import {
 import { getFacilities, getFacilityOrFail } from "../command/medical/facility/get-facility";
 import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
-import { ClientKeySources, clientKeyMappingsSourceMap } from "../domain/client-key-mapping";
-import { CxSources, cxMappingsSourceMap } from "../domain/cx-mapping";
-import { FacilitySources, facilitysMappingsSourceList } from "../domain/facility-mapping";
+import { getSecretsMappingSource } from "../domain/secrets-mapping";
+import { getCxMappingSource, secondaryMappingsParserMap } from "../domain/cx-mapping";
+import { getFacilityMappingSource } from "../domain/facility-mapping";
 import { isEnhancedCoverageEnabledForCx } from "../external/aws/app-config";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
 import { countResourcesOnFhir } from "../external/fhir/patient/count-resources-on-fhir";
@@ -53,6 +53,7 @@ import organizationRoutes from "./medical/internal-organization";
 import patientRoutes from "./medical/internal-patient";
 import { getUUIDFrom } from "./schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsBoolean, getFromQueryOrFail } from "./util";
+import { EhrSources } from "../external/ehr/shared";
 
 const router = Router();
 
@@ -322,16 +323,15 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const source = getFromQueryOrFail("source", req);
+    const source = getCxMappingSource(getFromQueryOrFail("source", req));
     const externalId = getFromQueryOrFail("externalId", req);
-    const mappedSource = cxMappingsSourceMap.get(source as CxSources);
-    if (!mappedSource) throw new BadRequestError(`Source ${source} is not mapped.`);
-    const secondaryMappings = mappedSource.bodyParser
-      ? mappedSource.bodyParser.parse(req.body)
+    const secondaryMappingParser = secondaryMappingsParserMap[source];
+    const secondaryMappings = secondaryMappingParser
+      ? secondaryMappingParser.parse(req.body)
       : null;
     await findOrCreateCxMapping({
       cxId,
-      source: source as CxSources,
+      source,
       externalId,
       secondaryMappings,
     });
@@ -355,7 +355,7 @@ router.get(
     const source = getFrom("query").optional("source", req);
     const result = await getCxMappingsByCustomer({
       cxId,
-      ...(source && { source }),
+      ...(source && { source: getCxMappingSource(source) }),
     });
     return res.status(httpStatus.OK).json(result);
   })
@@ -423,15 +423,12 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getFromQueryOrFail("facilityId", req);
     await getFacilityOrFail({ cxId, id: facilityId });
-    const source = getFromQueryOrFail("source", req);
+    const source = getFacilityMappingSource(getFromQueryOrFail("source", req));
     const externalId = getFromQueryOrFail("externalId", req);
-    if (!facilitysMappingsSourceList.includes(source)) {
-      throw new BadRequestError(`Source ${source} is not mapped.`);
-    }
     await findOrCreateFacilityMapping({
       cxId,
       facilityId,
-      source: source as FacilitySources,
+      source,
       externalId,
     });
     return res.sendStatus(httpStatus.OK);
@@ -454,7 +451,7 @@ router.get(
     const source = getFrom("query").optional("source", req);
     const result = await getFacilityMappingsByCustomer({
       cxId,
-      ...(source && { source }),
+      ...(source && { source: getFacilityMappingSource(source) }),
     });
     return res.status(httpStatus.OK).json(result);
   })
@@ -506,7 +503,7 @@ router.delete(
 );
 
 /**
- * POST /internal/client-key-mapping
+ * POST /internal/secrets-mapping
  *
  * Create client key mapping
  *
@@ -515,22 +512,22 @@ router.delete(
  * @param req.query.externalId - Mapped external ID.
  */
 router.post(
-  "/client-key-mapping",
+  "/secrets-mapping",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const source = getFromQueryOrFail("source", req);
+    const source = getSecretsMappingSource(getFromQueryOrFail("source", req));
+    const secretArn = getFrom("query").optional("secretArn", req);
     const externalId = getFromQueryOrFail("externalId", req);
-    const mappedSource = clientKeyMappingsSourceMap.get(source as ClientKeySources);
-    if (!mappedSource) throw new BadRequestError(`Source ${source} is not mapped.`);
-    const data = mappedSource.bodyParser.parse(req.body);
-    const clientSecretArn = Config.getElationClientKeyAndSecretMapArn();
-    if (!clientSecretArn) throw new BadRequestError("Elation not setup.");
-    await findOrCreateClientKeyMapping({
+    if (source === EhrSources.elation) {
+      const secretArn = Config.getElationClientKeyAndSecretMapArn();
+      if (!secretArn) throw new BadRequestError("Elation not setup.");
+    }
+    if (!secretArn) throw new BadRequestError("Secret ARN is required.");
+    await findOrCreateSecretsMapping({
       cxId,
-      clientSecretArn,
-      data,
-      source: source as ClientKeySources,
+      secretArn,
+      source,
       externalId,
     });
     return res.sendStatus(httpStatus.OK);
@@ -538,7 +535,7 @@ router.post(
 );
 
 /**
- * GET /internal/client-key-mapping
+ * GET /internal/secrets-mapping
  *
  * Get client key mappings for customer
  *
@@ -546,21 +543,21 @@ router.post(
  * @param req.query.source - Optional mapping source
  */
 router.get(
-  "/client-key-mapping",
+  "/secrets-mapping",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const source = getFrom("query").optional("source", req);
-    const result = await getClientKeyMappingsByCustomer({
+    const result = await getSecretsMappingsByCustomer({
       cxId,
-      ...(source && { source }),
+      ...(source && { source: getSecretsMappingSource(source) }),
     });
     return res.status(httpStatus.OK).json(result);
   })
 );
 
 /**
- * PUT /internal/client-key-mapping/:id/external-id
+ * PUT /internal/secrets-mapping/:id/external-id
  *
  * Update client key mapping external ID
  *
@@ -568,13 +565,13 @@ router.get(
  * @param req.query.externalId - Mapped external ID.
  */
 router.put(
-  "/client-key-mapping/:id/external-id",
+  "/secrets-mapping/:id/external-id",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFrom("params").orFail("id", req);
     const externalId = getFromQueryOrFail("externalId", req);
-    await setExternalIdOnClientKeyMapping({
+    await setExternalIdOnSecretsMapping({
       cxId,
       id,
       externalId,
@@ -584,19 +581,19 @@ router.put(
 );
 
 /**
- * DELETE /internal/client-key-mapping/:id
+ * DELETE /internal/secrets-mapping/:id
  *
  * Delete client key mapping
  *
  * @param req.query.cxId - The cutomer's ID.
  */
 router.delete(
-  "/client-key-mapping/:id",
+  "/secrets-mapping/:id",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFrom("params").orFail("id", req);
-    await deleteClientKeyMapping({
+    await deleteSecretsMapping({
       cxId,
       id,
     });

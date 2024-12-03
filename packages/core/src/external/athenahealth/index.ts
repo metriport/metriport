@@ -52,6 +52,9 @@ function getS3UtilsInstance(): S3Utils {
 }
 
 export type AthenaEnv = "api" | "api.preview";
+export function isAthenaEnv(env: string): env is AthenaEnv {
+  return env === "api" || env === "api.preview";
+}
 
 export type MedicationWithRefs = {
   medication: Medication;
@@ -85,7 +88,7 @@ class AthenaHealthApi {
     return instance;
   }
 
-  private async fetchtwoLeggedAuthToken(): Promise<void> {
+  private async fetchTwoLeggedAuthToken(): Promise<void> {
     const url = `${this.baseUrl}/oauth2/v1/token`;
     const data = {
       grant_type: "client_credentials",
@@ -108,7 +111,7 @@ class AthenaHealthApi {
   }
 
   async initialize(): Promise<void> {
-    await this.fetchtwoLeggedAuthToken();
+    await this.fetchTwoLeggedAuthToken();
 
     this.axiosInstanceFhirApi = axios.create({
       baseURL: `${this.baseUrl}/fhir/r4`,

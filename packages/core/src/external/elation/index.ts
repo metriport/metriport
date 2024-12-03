@@ -33,9 +33,12 @@ function getS3UtilsInstance(): S3Utils {
 }
 
 export type ElationEnv = "api" | "sandbox";
+export function isElationEnv(env: string): env is ElationEnv {
+  return env === "api" || env === "sandbox";
+}
 
 class ElationApi {
-  private axiosInstanceProprietary: AxiosInstance;
+  private axiosInstance: AxiosInstance;
   private baseUrl: string;
   private twoLeggedAuthToken: string;
   private practiceId: string;
@@ -45,7 +48,7 @@ class ElationApi {
     this.twoLeggedAuthToken = "";
     this.practiceId = config.practiceId;
     this.s3Utils = getS3UtilsInstance();
-    this.axiosInstanceProprietary = axios.create({});
+    this.axiosInstance = axios.create({});
     this.baseUrl = `https://${config.environment}.elationemr.com/api/2.0`;
   }
 
@@ -55,7 +58,7 @@ class ElationApi {
     return instance;
   }
 
-  private async fetchtwoLeggedAuthToken(): Promise<void> {
+  private async fetchTwoLeggedAuthToken(): Promise<void> {
     const url = `${this.baseUrl}/oauth2/token/`;
     const data = {
       grant_type: "client_credentials",
@@ -75,9 +78,9 @@ class ElationApi {
   }
 
   async initialize(): Promise<void> {
-    await this.fetchtwoLeggedAuthToken();
+    await this.fetchTwoLeggedAuthToken();
 
-    this.axiosInstanceProprietary = axios.create({
+    this.axiosInstance = axios.create({
       baseURL: this.baseUrl,
       headers: {
         Authorization: `Bearer ${this.twoLeggedAuthToken}`,
@@ -98,7 +101,7 @@ class ElationApi {
     );
     const patientUrl = `/patients/${patientId}/`;
     try {
-      const response = await this.axiosInstanceProprietary.get(patientUrl);
+      const response = await this.axiosInstance.get(patientUrl);
       if (!response.data) throw new MetriportError(`No body returned from ${patientUrl}`);
       debug(`${patientUrl} resp: ${JSON.stringify(response.data)}`);
       if (responsesBucket) {
@@ -169,12 +172,12 @@ class ElationApi {
     );
     const patientUrl = `/patients/${patientId}/`;
     try {
-      const response = await this.axiosInstanceProprietary.patch(
+      const response = await this.axiosInstance.patch(
         patientUrl,
         { metadata },
         {
           headers: {
-            ...this.axiosInstanceProprietary.defaults.headers.common,
+            ...this.axiosInstance.defaults.headers.common,
             "content-type": "application/json",
           },
         }
@@ -249,7 +252,7 @@ class ElationApi {
     );
     const subscribeUrl = `/app/subscriptions`;
     try {
-      const response = await this.axiosInstanceProprietary.post(
+      const response = await this.axiosInstance.post(
         subscribeUrl,
         this.createDataParams({
           resource,
@@ -311,7 +314,7 @@ class ElationApi {
     const urlParams = new URLSearchParams(params);
     const appointmentUrl = `/appointments/?${urlParams.toString()}`;
     try {
-      const response = await this.axiosInstanceProprietary.get(appointmentUrl);
+      const response = await this.axiosInstance.get(appointmentUrl);
       if (!response.data) throw new MetriportError(`No body returned from ${appointmentUrl}`);
       debug(`${appointmentUrl} resp: ${JSON.stringify(response.data)}`);
       if (responsesBucket) {

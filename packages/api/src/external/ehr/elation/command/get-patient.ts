@@ -1,5 +1,5 @@
 import { Patient, PatientDemoData } from "@metriport/core/domain/patient";
-import ElationApi, { ElationEnv } from "@metriport/core/external/elation/index";
+import ElationApi from "@metriport/core/external/elation/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -21,7 +21,7 @@ import {
 } from "../../../../command/medical/patient/create-patient";
 import {
   getPatientOrFail as getMetriportPatientOrFail,
-  getPatientByDemo as singleGetMetriportPatientByDemo,
+  getPatientByDemo as getMetriportPatientByDemo,
 } from "../../../../command/medical/patient/get-patient";
 import { Config } from "../../../../shared/config";
 import { EhrSources } from "../../shared";
@@ -30,9 +30,8 @@ import {
   createMetriportContacts,
   createNames,
   getElationClientKeyAndSecret,
+  getElationEnv,
 } from "../shared";
-
-const elationEnvironment = Config.getElationEnv();
 
 export async function getPatientIdOrFail({
   cxId,
@@ -62,17 +61,16 @@ export async function getPatientIdOrFail({
     });
     return metriportPatient.id;
   }
-  if (!elationEnvironment) throw new MetriportError("Elation not setup");
-
   let elationApi = api;
   if (!elationApi) {
+    const elationEnvironment = getElationEnv();
     const { clientKey, clientSecret } = await getElationClientKeyAndSecret({
       cxId,
       practiceId: elationPracticeId,
     });
     elationApi = await ElationApi.create({
       practiceId: elationPracticeId,
-      environment: elationEnvironment as ElationEnv,
+      environment: elationEnvironment,
       clientKey,
       clientSecret,
     });
@@ -82,13 +80,13 @@ export async function getPatientIdOrFail({
     patientId: elationPatientId,
   });
   if (!elationPatient) throw new NotFoundError("Elation patient not found");
-  if (elationPatient.first_name === "" || elationPatient.last_name === "") {
+  if (elationPatient.first_name.trim() === "" || elationPatient.last_name.trim() === "") {
     throw new MetriportError("Elation patient has empty first or last name", undefined, {
       firstName: elationPatient.first_name,
       lastName: elationPatient.last_name,
     });
   }
-  if (elationPatient.address.address_line1 === "") {
+  if (elationPatient.address.address_line1.trim() === "") {
     throw new MetriportError("Elation patient has empty address line 1", undefined, {
       addressLine1: elationPatient.address.address_line1,
     });
@@ -188,7 +186,7 @@ async function getPatientByDemo({
   log: typeof console.log;
 }): Promise<Patient | undefined> {
   try {
-    return await singleGetMetriportPatientByDemo({ cxId, demo });
+    return await getMetriportPatientByDemo({ cxId, demo });
   } catch (error) {
     const msg = "Failed to get patient by demo.";
     log(`${msg}. Cause: ${errorToString(error)}`);
@@ -198,6 +196,7 @@ async function getPatientByDemo({
         elationPracticeId,
         elationPatientId,
         context: "elation.get-patient",
+        error,
       },
     });
   }

@@ -6,10 +6,9 @@ import { errorToString, MetriportError } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { getCxMappingsBySource } from "../../../../command/mapping/cx";
-import { Config } from "../../../../shared/config";
 import { EhrSources, getLookforwardTimeRange } from "../../shared";
-import { getElationClientKeyAndSecret } from "../shared";
-import { getPatientIdOrFail as singleGetPatientIdOrFail } from "./get-patient";
+import { getElationClientKeyAndSecret, getElationEnv, MAP_KEY_SEPARATOR } from "../shared";
+import { getPatientIdOrFail } from "./get-patient";
 
 dayjs.extend(duration);
 
@@ -17,8 +16,6 @@ const delayBetweenPracticeBatches = dayjs.duration(0, "seconds");
 const lookforward = dayjs.duration(14, "days");
 const parallelPractices = 10;
 const parallelPatients = 2;
-
-const elationEnvironment = Config.getElationEnv();
 
 type PatientAppointment = {
   cxId: string;
@@ -28,47 +25,50 @@ type PatientAppointment = {
 
 export async function getPatientIdsOrFailFromAppointments(): Promise<void> {
   const { log } = out(`Elation getPatientIdsOrFailFromAppointments`);
-  if (!elationEnvironment) throw new MetriportError("Elation not setup");
+  const elationEnvironment = getElationEnv();
 
   const { startRange, endRange } = getLookforwardTimeRange({ lookforward });
   log(`Getting appointments from ${startRange} to ${endRange}`);
 
   const cxMappings = await getCxMappingsBySource({ source: EhrSources.elation });
 
-  const patientAppointments: PatientAppointment[] = [];
-  const getAppointmentsErrors: string[] = [];
-  const getAppointmentsArgs = cxMappings.map(mapping => {
+  const patientAppointmentsFromGetAppointmentsByPractice: PatientAppointment[] = [];
+  const errorsFromGetAppointmentsByPractice: string[] = [];
+  const argsForGetAppointmentsByPractice = cxMappings.map(mapping => {
     const cxId = mapping.cxId;
     const practiceId = mapping.externalId;
     return {
       cxId,
       practiceId,
-      patientAppointments,
+      environment: elationEnvironment,
       fromDate: startRange,
       toDate: endRange,
-      errors: getAppointmentsErrors,
+      returnArray: patientAppointmentsFromGetAppointmentsByPractice,
+      errorArray: errorsFromGetAppointmentsByPractice,
       log,
     };
   });
 
-  await executeAsynchronously(getAppointmentsArgs, getAppointmentsByPractice, {
+  await executeAsynchronously(argsForGetAppointmentsByPractice, getAppointmentsByPractice, {
     numberOfParallelExecutions: parallelPractices,
     delay: delayBetweenPracticeBatches.asMilliseconds(),
   });
 
-  if (getAppointmentsErrors.length > 0) {
+  if (errorsFromGetAppointmentsByPractice.length > 0) {
     capture.error("Failed to get appointments", {
       extra: {
-        getAppointmentsArgsCount: getAppointmentsArgs.length,
-        errorCount: getAppointmentsErrors.length,
-        errors: getAppointmentsErrors.join(","),
+        getAppointmentsArgsCount: errorsFromGetAppointmentsByPractice.length,
+        errorCount: errorsFromGetAppointmentsByPractice.length,
+        errors: errorsFromGetAppointmentsByPractice.join(","),
         context: "elation.get-patients-from-appointments",
       },
     });
   }
 
   const patientAppointmentsUnique = [
-    ...new Map(patientAppointments.map(app => [app.elationPatientId, app])).values(),
+    ...new Map(
+      patientAppointmentsFromGetAppointmentsByPractice.map(app => [app.elationPatientId, app])
+    ).values(),
   ];
   const patientAppointmentsUniqueByPractice: { [k: string]: PatientAppointment[] } = {};
   patientAppointmentsUnique.map(appointment => {
@@ -81,31 +81,33 @@ export async function getPatientIdsOrFailFromAppointments(): Promise<void> {
       patientAppointmentsUniqueByPractice[key] = [appointment];
     }
   });
-  const getPatientIdOrFailErrors: string[] = [];
-  const getPatientIdOrFaiLByPracticeArgs = Object.keys(patientAppointmentsUniqueByPractice).map(
+
+  const errorsFromGetPatientIdOrFailByPractice: string[] = [];
+  const argsForGetPatientIdOrFailByPractice = Object.keys(patientAppointmentsUniqueByPractice).map(
     key => {
       const { cxId, practiceId } = parseMapKey(key);
       return {
         cxId,
         practiceId,
+        environment: elationEnvironment,
         patientAppointmentsUnique: patientAppointmentsUniqueByPractice[key] ?? [],
-        errors: getPatientIdOrFailErrors,
+        errorArray: errorsFromGetPatientIdOrFailByPractice,
         log,
       };
     }
   );
 
-  await executeAsynchronously(getPatientIdOrFaiLByPracticeArgs, getPatientIdOrFailByPractice, {
+  await executeAsynchronously(argsForGetPatientIdOrFailByPractice, getPatientIdOrFailByPractice, {
     numberOfParallelExecutions: parallelPractices,
     delay: delayBetweenPracticeBatches.asMilliseconds(),
   });
 
-  if (getPatientIdOrFailErrors.length > 0) {
+  if (errorsFromGetPatientIdOrFailByPractice.length > 0) {
     capture.error("Failed to find or create patients", {
       extra: {
         getPatientIdOrFailArgsCount: patientAppointmentsUnique.length,
-        errorCount: getPatientIdOrFailErrors.length,
-        errors: getPatientIdOrFailErrors.join(","),
+        errorCount: errorsFromGetPatientIdOrFailByPractice.length,
+        errors: errorsFromGetPatientIdOrFailByPractice.join(","),
         context: "elation.get-patients-from-appointments",
       },
     });
@@ -115,18 +117,20 @@ export async function getPatientIdsOrFailFromAppointments(): Promise<void> {
 async function getAppointmentsByPractice({
   cxId,
   practiceId,
-  patientAppointments,
+  environment,
   fromDate,
   toDate,
-  errors,
+  returnArray,
+  errorArray,
   log,
 }: {
   cxId: string;
   practiceId: string;
-  patientAppointments: PatientAppointment[];
+  environment: ElationEnv;
   fromDate: Date;
   toDate: Date;
-  errors: string[];
+  returnArray: PatientAppointment[];
+  errorArray: string[];
   log: typeof console.log;
 }): Promise<void> {
   try {
@@ -136,7 +140,7 @@ async function getAppointmentsByPractice({
     });
     const api = await ElationApi.create({
       practiceId,
-      environment: elationEnvironment as ElationEnv,
+      environment,
       clientKey,
       clientSecret,
     });
@@ -145,7 +149,7 @@ async function getAppointmentsByPractice({
       fromDate,
       toDate,
     });
-    patientAppointments.push(
+    returnArray.push(
       ...appointments.map(appointment => {
         return {
           cxId,
@@ -159,21 +163,23 @@ async function getAppointmentsByPractice({
     const details = `cxId ${cxId} practiceId ${practiceId}.`;
     const msg = "Failed to get appointments.";
     log(`${details} ${msg} ${cause}`);
-    errors.push(`${msg} ${details} ${cause}`);
+    errorArray.push(`${msg} ${details} ${cause}`);
   }
 }
 
 async function getPatientIdOrFailByPractice({
   cxId,
   practiceId,
+  environment,
   patientAppointmentsUnique,
-  errors,
+  errorArray,
   log,
 }: {
   cxId: string;
   practiceId: string;
+  environment: ElationEnv;
   patientAppointmentsUnique: PatientAppointment[];
-  errors: string[];
+  errorArray: string[];
   log: typeof console.log;
 }) {
   const { clientKey, clientSecret } = await getElationClientKeyAndSecret({
@@ -182,35 +188,35 @@ async function getPatientIdOrFailByPractice({
   });
   const api = await ElationApi.create({
     practiceId,
-    environment: elationEnvironment as ElationEnv,
+    environment,
     clientKey,
     clientSecret,
   });
-  const getPatientIdOrFaiLArgs = patientAppointmentsUnique.map(appointment => {
+  const argsForGetPatientIdByPatientOrFail = patientAppointmentsUnique.map(appointment => {
     return {
       api,
       cxId: appointment.cxId,
       elationPracticeId: appointment.elationPracticeId,
       elationPatientId: appointment.elationPatientId,
       triggerDq: true,
-      errors,
+      errorArray,
       log,
     };
   });
 
-  await executeAsynchronously(getPatientIdOrFaiLArgs, getPatientIdOrFail, {
+  await executeAsynchronously(argsForGetPatientIdByPatientOrFail, getPatientIdOrFailByPatient, {
     numberOfParallelExecutions: parallelPatients,
     delay: delayBetweenPracticeBatches.asMilliseconds(),
   });
 }
 
-async function getPatientIdOrFail({
+async function getPatientIdOrFailByPatient({
   api,
   cxId,
   elationPracticeId,
   elationPatientId,
   triggerDq,
-  errors,
+  errorArray,
   log,
 }: {
   api: ElationApi;
@@ -218,11 +224,11 @@ async function getPatientIdOrFail({
   elationPracticeId: string;
   elationPatientId: string;
   triggerDq: boolean;
-  errors: string[];
+  errorArray: string[];
   log: typeof console.log;
 }): Promise<void> {
   try {
-    await singleGetPatientIdOrFail({
+    await getPatientIdOrFail({
       api,
       cxId,
       elationPracticeId,
@@ -234,16 +240,16 @@ async function getPatientIdOrFail({
     const details = `cxId ${cxId} elationPracticeId ${elationPracticeId} elationPatientId ${elationPatientId}.`;
     const msg = "Failed to find or create patients";
     log(`${details} ${msg} ${cause}`);
-    errors.push(`${msg} ${details} ${cause}`);
+    errorArray.push(`${msg} ${details} ${cause}`);
   }
 }
 
 function createMapKey(cxId: string, practiceId: string): string {
-  return `${cxId}|${practiceId}`;
+  return `${cxId}${MAP_KEY_SEPARATOR}${practiceId}`;
 }
 
 function parseMapKey(key: string): { cxId: string; practiceId: string } {
-  const [cxId, practiceId] = key.split("|");
+  const [cxId, practiceId] = key.split(MAP_KEY_SEPARATOR);
   if (!cxId || !practiceId) throw new MetriportError(`Invalid map key ${key}`, undefined, { key });
   return { cxId, practiceId };
 }

@@ -1,3 +1,4 @@
+import { BadRequestError } from "@metriport/shared";
 import { BaseDomain } from "@metriport/core/domain/base-domain";
 import {
   AthenaSecondaryMappings,
@@ -6,19 +7,26 @@ import {
 import { z } from "zod";
 import { EhrSources } from "../external/ehr/shared";
 
-export type CxSources = CxMappingPerSource["source"];
-export type CxSecondaryMappings = CxMappingPerSource["secondaryMappings"];
+export type CxSources = EhrSources.athena | EhrSources.elation;
+export function isCxMappingSource(source: string): source is CxSources {
+  return source === EhrSources.athena || source === EhrSources.elation;
+}
+export function getCxMappingSource(source: string): CxSources {
+  if (!isCxMappingSource(source)) throw new BadRequestError(`Source ${source} is not mapped.`);
+  return source;
+}
 
-export const cxMappingsSourceMap: Map<CxSources, { bodyParser: z.Schema | undefined }> = new Map([
-  [EhrSources.athena, { bodyParser: athenaSecondaryMappingsSchema }],
-  [EhrSources.elation, { bodyParser: undefined }],
-]);
+export type CxSecondaryMappings = AthenaSecondaryMappings | null;
+export const secondaryMappingsParserMap: { [key in CxSources]: z.Schema | undefined } = {
+  [EhrSources.athena]: athenaSecondaryMappingsSchema,
+  [EhrSources.elation]: undefined,
+};
 
 export type CxMappingPerSource = {
   externalId: string;
   cxId: string;
-  source: EhrSources.athena | EhrSources.elation;
-  secondaryMappings: AthenaSecondaryMappings | null;
+  source: CxSources;
+  secondaryMappings: CxSecondaryMappings;
 };
 
 export interface CxMapping extends BaseDomain, CxMappingPerSource {}

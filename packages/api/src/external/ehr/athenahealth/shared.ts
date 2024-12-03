@@ -1,12 +1,15 @@
 import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
+import { AthenaEnv, isAthenaEnv } from "@metriport/core/external/athenahealth";
 import {
+  MetriportError,
   normalizeEmail,
   normalizePhoneNumber,
   normalizeUSStateForAddress,
   normalizeZipCodeNew,
 } from "@metriport/shared";
 import { PatientResource } from "@metriport/shared/interface/external/athenahealth/patient";
+import { Config } from "../../../shared/config";
 
 export function createMetriportContacts(patient: PatientResource): Contact[] {
   return (patient.telecom ?? []).flatMap(telecom => {
@@ -51,4 +54,12 @@ export function createNames(patient: PatientResource): { firstName: string; last
     });
   });
   return names;
+}
+
+export function getAthenaEnv(): AthenaEnv {
+  const env = Config.getAthenaHealthEnv();
+  if (!env) throw new MetriportError("AthenaHealth environment not set");
+  if (!isAthenaEnv(env))
+    throw new MetriportError("Invalid AthenaHealth environment", undefined, { env });
+  return env;
 }

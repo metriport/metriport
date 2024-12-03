@@ -1,26 +1,22 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { ClientKeyMapping, ClientKeySources, ClientKeyData } from "../domain/client-key-mapping";
+import { SecretsMapping, SecretsSources } from "../domain/secrets-mapping";
 import { BaseModel, ModelSetup } from "./_default";
 
-export class ClientKeyMappingModel
-  extends BaseModel<ClientKeyMappingModel>
-  implements ClientKeyMapping
-{
-  static NAME = "client_key_mapping";
+export class SecretsMappingModel extends BaseModel<SecretsMappingModel> implements SecretsMapping {
+  static NAME = "secrets_mapping";
   declare externalId: string;
-  declare data: ClientKeyData;
   declare cxId: string;
-  declare clientSecretArn: string;
-  declare source: ClientKeySources;
+  declare secretArn: string;
+  declare source: SecretsSources;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
-    ClientKeyMappingModel.init(
+    SecretsMappingModel.init(
       {
         ...BaseModel.attributes(),
         cxId: {
           type: DataTypes.UUID,
         },
-        clientSecretArn: {
+        secretArn: {
           type: DataTypes.STRING,
         },
         source: {
@@ -29,13 +25,10 @@ export class ClientKeyMappingModel
         externalId: {
           type: DataTypes.STRING,
         },
-        data: {
-          type: DataTypes.JSONB,
-        },
       },
       {
         ...BaseModel.modelOptions(sequelize),
-        tableName: ClientKeyMappingModel.NAME,
+        tableName: SecretsMappingModel.NAME,
       }
     );
   };
