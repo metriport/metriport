@@ -348,6 +348,38 @@ export function runConsolidatedTests(e2e: E2eContext) {
     resetWebhook(e2e);
     expect(true).toBeTrue();
   });
+
+  /*************************************************************
+   * Consolidated Query - Don't get WH when fromDashboard is true
+   *************************************************************/
+
+  it("does not send WH if fromDashboard is true", async () => {
+    if (!e2e.patient) throw new Error("Missing patient");
+    const conversionProgress = await medicalApi.startConsolidatedQuery(
+      e2e.patient.id,
+      undefined,
+      undefined,
+      undefined,
+      "json",
+      true
+    );
+    expect(conversionProgress).toBeTruthy();
+    expect(conversionProgress.status).toEqual("processing");
+  });
+
+  it("completes conversion w/ disabled WH successfully", async () => {
+    await waitAndCheckConversion();
+  });
+
+  it("does not receive consolidated WH when disabled WH", async () => {
+    const whRequest = getConsolidatedWebhookRequest();
+    expect(whRequest).toBeFalsy();
+  });
+
+  it("resets disabled WH handler", async () => {
+    resetWebhook(e2e);
+    expect(true).toBeTrue();
+  });
 }
 
 function resetWebhook(e2e: E2eContext) {
