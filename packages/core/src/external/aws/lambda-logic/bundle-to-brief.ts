@@ -43,7 +43,6 @@ const relevantResources = [
   "Observation",
   "Practitioner",
   "Organization",
-  "Patient",
 ];
 
 const referenceResources = [
