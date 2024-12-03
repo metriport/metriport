@@ -7,10 +7,8 @@ export function isFacilityMappingSource(source: string): source is FacilityMappi
   return source === EhrSources.athena || source === EhrSources.elation;
 }
 export function getFacilityMappingSource(source: string): FacilityMappingSource {
-  if (!isFacilityMappingSource(source)) {
-    throw new BadRequestError(`Source ${source} is not mapped.`);
-  }
-  return source;
+  if (isFacilityMappingSource(source)) return source;
+  throw new BadRequestError(`Source ${source} is not valid facility mapping source.`);
 }
 
 export type FacilityMappingPerSource = {

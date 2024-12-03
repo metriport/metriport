@@ -7,8 +7,8 @@ export function isSecretsMappingSource(source: string): source is SecretsMapping
   return source === EhrSources.elation;
 }
 export function getSecretsMappingSource(source: string): SecretsMappingSource {
-  if (!isSecretsMappingSource(source)) throw new BadRequestError(`Source ${source} is not mapped.`);
-  return source;
+  if (isSecretsMappingSource(source)) return source;
+  throw new BadRequestError(`Source ${source} is valid secrets mapping source.`);
 }
 
 export type SecretsMappingPerSource = {

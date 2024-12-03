@@ -12,8 +12,8 @@ export function isCxMappingSource(source: string): source is CxMappingSource {
   return source === EhrSources.athena || source === EhrSources.elation;
 }
 export function getCxMappingSource(source: string): CxMappingSource {
-  if (!isCxMappingSource(source)) throw new BadRequestError(`Source ${source} is not mapped.`);
-  return source;
+  if (isCxMappingSource(source)) return source;
+  throw new BadRequestError(`Source ${source} is valid cx mapping source.`);
 }
 
 export type CxSecondaryMappings = AthenaSecondaryMappings | null;
