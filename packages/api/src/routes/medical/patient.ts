@@ -257,6 +257,8 @@ router.post(
     const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
     const cxConsolidatedRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
+    console.log("FROM DASHBOARD 1", fromDashboard);
+
     const respPayload = await startConsolidatedQuery({
       cxId,
       patientId,

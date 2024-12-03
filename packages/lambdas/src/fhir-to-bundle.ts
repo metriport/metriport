@@ -27,6 +27,7 @@ export async function handler(
         `, resources: ${resources}}`
     );
     const conn = new ConsolidatedSnapshotConnectorLocal(bucketName, apiURL);
+    console.log("FROM DASHBOARD 5", params.fromDashboard);
     const result = await conn.execute(params);
     return result;
   } catch (error) {

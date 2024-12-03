@@ -97,6 +97,9 @@ export class ConsolidatedSnapshotConnectorLocal implements ConsolidatedSnapshotC
     };
     if (params.isAsync) {
       const { patient, ...decomposedParams } = params;
+
+      console.log("FROM DASHBOARD 7", params.fromDashboard);
+
       await postSnapshotToApi({
         ...decomposedParams,
         apiURL: this.apiURL,
@@ -142,6 +145,9 @@ async function postSnapshotToApi({
 }: InternalSendConsolidated & { cxId: string; patientId: string; apiURL: string }) {
   const postConsolidated = `${apiURL}/internal/patient/${patientId}/consolidated`;
   const queryParams = new URLSearchParams({ cxId });
+
+  console.log("FROM DASHBOARD 6", payload.fromDashboard);
+
   await executeWithNetworkRetries(
     () => axios.post(postConsolidated + "?" + queryParams.toString(), payload),
     {
