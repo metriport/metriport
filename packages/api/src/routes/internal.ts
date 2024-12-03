@@ -4,12 +4,6 @@ import httpStatus from "http-status";
 import { getCxFFStatus } from "../command/internal/get-hie-enabled-feature-flags-status";
 import { updateCxHieEnabledFFs } from "../command/internal/update-hie-enabled-feature-flags";
 import {
-  deleteSecretsMapping,
-  findOrCreateSecretsMapping,
-  getSecretsMappingsByCustomer,
-  setExternalIdOnSecretsMapping,
-} from "../command/mapping/secrets";
-import {
   deleteCxMapping,
   findOrCreateCxMapping,
   getCxMappingsByCustomer,
@@ -21,6 +15,13 @@ import {
   getFacilityMappingsByCustomer,
   setExternalIdOnFacilityMapping,
 } from "../command/mapping/facility";
+import {
+  deleteSecretsMapping,
+  findOrCreateSecretsMapping,
+  getDefaultSecretArnForSource,
+  getSecretsMappingsByCustomer,
+  setExternalIdOnSecretsMapping,
+} from "../command/mapping/secrets";
 import { checkApiQuota } from "../command/medical/admin/api";
 import { dbMaintenance } from "../command/medical/admin/db-maintenance";
 import {
@@ -30,14 +31,13 @@ import {
 import { getFacilities, getFacilityOrFail } from "../command/medical/facility/get-facility";
 import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
-import { getSecretsMappingSource } from "../domain/secrets-mapping";
 import { getCxMappingSource, secondaryMappingsSchemaMap } from "../domain/cx-mapping";
 import { getFacilityMappingSource } from "../domain/facility-mapping";
+import { getSecretsMappingSource } from "../domain/secrets-mapping";
 import { isEnhancedCoverageEnabledForCx } from "../external/aws/app-config";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
 import { countResourcesOnFhir } from "../external/fhir/patient/count-resources-on-fhir";
 import { OrganizationModel } from "../models/medical/organization";
-import { Config } from "../shared/config";
 import userRoutes from "./devices/internal-user";
 import { requestLogger } from "./helpers/request-logger";
 import { internalDtoFromModel as facilityInternalDto } from "./medical/dtos/facilityDTO";
@@ -53,7 +53,6 @@ import organizationRoutes from "./medical/internal-organization";
 import patientRoutes from "./medical/internal-patient";
 import { getUUIDFrom } from "./schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsBoolean, getFromQueryOrFail } from "./util";
-import { EhrSources } from "../external/ehr/shared";
 
 const router = Router();
 
@@ -517,13 +516,10 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const source = getSecretsMappingSource(getFromQueryOrFail("source", req));
-    const secretArn = getFrom("query").optional("secretArn", req);
-    const externalId = getFromQueryOrFail("externalId", req);
-    if (source === EhrSources.elation) {
-      const secretArn = Config.getElationClientKeyAndSecretMapArn();
-      if (!secretArn) throw new BadRequestError("Elation not setup.");
-    }
+    const secretArn =
+      getFrom("query").optional("secretArn", req) ?? getDefaultSecretArnForSource({ source });
     if (!secretArn) throw new BadRequestError("Secret ARN is required.");
+    const externalId = getFromQueryOrFail("externalId", req);
     await findOrCreateSecretsMapping({
       cxId,
       secretArn,

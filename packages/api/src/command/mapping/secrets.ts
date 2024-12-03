@@ -5,7 +5,9 @@ import {
   SecretsMappingPerSource,
   SecretsMappingSource,
 } from "../../domain/secrets-mapping";
+import { EhrSources } from "../../external/ehr/shared";
 import { SecretsMappingModel } from "../../models/secrets-mapping";
+import { Config } from "../../shared/config";
 
 export type SecretsMappingParams = SecretsMappingPerSource;
 
@@ -112,4 +114,13 @@ export async function deleteSecretsMapping({
 }: SecretsMappingLookupByIdParams): Promise<void> {
   const existing = await getSecretsMappingModelByIdOrFail({ cxId, id });
   await existing.destroy();
+}
+
+export function getDefaultSecretArnForSource({
+  source,
+}: {
+  source: SecretsMappingSource;
+}): string | undefined {
+  if (source === EhrSources.elation) return Config.getElationClientKeyAndSecretMapArn();
+  return undefined;
 }
