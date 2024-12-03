@@ -4,6 +4,12 @@ import httpStatus from "http-status";
 import { getCxFFStatus } from "../command/internal/get-hie-enabled-feature-flags-status";
 import { updateCxHieEnabledFFs } from "../command/internal/update-hie-enabled-feature-flags";
 import {
+  deleteClientKeyMapping,
+  findOrCreateClientKeyMapping,
+  getClientKeyMappingsByCustomer,
+  setExternalIdOnClientKeyMapping,
+} from "../command/mapping/client-key";
+import {
   deleteCxMapping,
   findOrCreateCxMapping,
   getCxMappingsByCustomer,
@@ -15,12 +21,6 @@ import {
   getFacilityMappingsByCustomer,
   setExternalIdOnFacilityMapping,
 } from "../command/mapping/facility";
-import {
-  deleteClientKeyMapping,
-  findOrCreateClientKeyMapping,
-  getClientKeyMappingsByCustomer,
-  setExternalIdOnClientKeyMapping,
-} from "../command/mapping/client-key";
 import { checkApiQuota } from "../command/medical/admin/api";
 import { dbMaintenance } from "../command/medical/admin/db-maintenance";
 import {
@@ -30,13 +30,14 @@ import {
 import { getFacilities, getFacilityOrFail } from "../command/medical/facility/get-facility";
 import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
+import { ClientKeySources, clientKeyMappingsSourceMap } from "../domain/client-key-mapping";
 import { CxSources, cxMappingsSourceMap } from "../domain/cx-mapping";
 import { FacilitySources, facilitysMappingsSourceList } from "../domain/facility-mapping";
-import { ClientKeySources, clientKeyMappingsSourceMap } from "../domain/client-key-mapping";
 import { isEnhancedCoverageEnabledForCx } from "../external/aws/app-config";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
 import { countResourcesOnFhir } from "../external/fhir/patient/count-resources-on-fhir";
 import { OrganizationModel } from "../models/medical/organization";
+import { Config } from "../shared/config";
 import userRoutes from "./devices/internal-user";
 import { requestLogger } from "./helpers/request-logger";
 import { internalDtoFromModel as facilityInternalDto } from "./medical/dtos/facilityDTO";
@@ -519,11 +520,12 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const source = getFromQueryOrFail("source", req);
-    const clientSecretArn = getFromQueryOrFail("clientSecretArn", req);
     const externalId = getFromQueryOrFail("externalId", req);
     const mappedSource = clientKeyMappingsSourceMap.get(source as ClientKeySources);
     if (!mappedSource) throw new BadRequestError(`Source ${source} is not mapped.`);
     const data = mappedSource.bodyParser.parse(req.body);
+    const clientSecretArn = Config.getElationClientKeyAndSecretMapArn();
+    if (!clientSecretArn) throw new BadRequestError("Elation not setup.");
     await findOrCreateClientKeyMapping({
       cxId,
       clientSecretArn,

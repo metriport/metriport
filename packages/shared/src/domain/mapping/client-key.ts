@@ -1,7 +1,9 @@
 import { z } from "zod";
 
-export const clientKeySchema = z.object({
-  cxId: z.string(),
-  clientKey: z.string(),
-  clientSecret: z.string(),
-});
+export const clientKeyAndSecretSchema = z.record(
+  z.string(),
+  z.object({
+    clientKey: z.string(),
+    clientSecret: z.string(),
+  })
+);

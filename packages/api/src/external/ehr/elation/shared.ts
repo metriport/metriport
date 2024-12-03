@@ -2,7 +2,7 @@ import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import {
-  clientKeySchema,
+  clientKeyAndSecretSchema,
   MetriportError,
   normalizeEmail,
   normalizePhoneNumber,
@@ -71,17 +71,18 @@ export async function getElationClientKeyAndSecret({
   });
   const clientSecretRaw = await getSecretValueOrFail(clientSecretArn, region);
   const parsed = JSON.parse(clientSecretRaw);
-  const zodParsed = clientKeySchema.safeParse(parsed);
+  const zodParsed = clientKeyAndSecretSchema.safeParse(parsed);
   if (!zodParsed.success) {
-    throw new MetriportError("Invalid Elation client secret format", undefined, {
+    throw new MetriportError("Invalid Elation key and secret map format", undefined, {
       clientSecretArn,
     });
   }
-  if (zodParsed.data.cxId !== cxId) {
-    throw new MetriportError("Invalid Elation client secret cxId", undefined, {
+  const cxEntry = zodParsed.data[cxId];
+  if (!cxEntry) {
+    throw new MetriportError("CxId not found in Elation key and secret map", undefined, {
       clientSecretArn,
       cxId,
     });
   }
-  return zodParsed.data;
+  return cxEntry;
 }

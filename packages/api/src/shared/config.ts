@@ -364,6 +364,10 @@ export class Config {
     return getEnvVar("EHR_ELATION_ENVIRONMENT");
   }
 
+  static getElationClientKeyAndSecretMapArn(): string | undefined {
+    return getEnvVar("EHR_ELATION_CLIENT_KEY_AND_SECRET_MAP_ARN");
+  }
+
   static getRateLimitTableName(): string | undefined {
     return getEnvVar("RATE_LIMIT_TABLE_NAME");
   }
