@@ -53,7 +53,6 @@ async function main() {
 
   const brief = await summarizeFilteredBundleWithAI(bundle);
 
-  fs.writeFileSync("BRIEF.txt", JSON.stringify(brief));
   const briefId = uuidv7();
 
   if (!cxId || !patientId) throw new Error("cxId or patientId is missing");
@@ -73,7 +72,7 @@ async function main() {
     brief,
   });
 
-  fs.writeFileSync("output.html", html);
+  fs.writeFileSync(`output_${SOURCE_BUNDLE_FILE}`, html);
 }
 
 main();
