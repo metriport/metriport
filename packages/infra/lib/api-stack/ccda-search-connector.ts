@@ -89,7 +89,7 @@ export function setup({
     fifo: false,
     visibilityTimeout,
     maxReceiveCount,
-    lambdaLayers: [lambdaLayers.shared],
+    lambdaLayers: [lambdaLayers.shared, lambdaLayers.awsSdk],
     envType,
     alarmSnsAction,
     alarmMaxAgeOfOldestMessage: Duration.minutes(2),
@@ -104,7 +104,7 @@ export function setup({
     vpc,
     subnets: vpc.privateSubnets,
     entry: "sqs-to-opensearch-xml",
-    layers: [lambdaLayers.shared],
+    layers: [lambdaLayers.shared, lambdaLayers.awsSdk],
     memory,
     envType: config.environmentType,
     envVars: {

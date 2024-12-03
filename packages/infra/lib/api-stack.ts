@@ -1017,7 +1017,7 @@ export class APIStack extends Stack {
     return createLambda({
       stack: this,
       name: "Tester",
-      layers: [lambdaLayers.shared],
+      layers: [lambdaLayers.shared, lambdaLayers.awsSdk],
       vpc: this.vpc,
       subnets: this.vpc.privateSubnets,
       entry: "tester",
@@ -1054,7 +1054,7 @@ export class APIStack extends Stack {
       name: "Garmin",
       runtime: lambda.Runtime.NODEJS_16_X,
       entry: "garmin",
-      layers: [lambdaLayers.shared],
+      layers: [lambdaLayers.shared, lambdaLayers.awsSdk],
       envType,
       envVars: {
         TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
@@ -1097,7 +1097,7 @@ export class APIStack extends Stack {
       name: "Withings",
       runtime: lambda.Runtime.NODEJS_16_X,
       entry: "withings",
-      layers: [lambdaLayers.shared, lambdaLayers.dig],
+      layers: [lambdaLayers.shared, lambdaLayers.awsSdk, lambdaLayers.dig],
       envType,
       envVars: {
         API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/withings`,
@@ -1141,7 +1141,7 @@ export class APIStack extends Stack {
       name: "FitbitAuth",
       runtime: lambda.Runtime.NODEJS_18_X,
       entry: "fitbit-auth",
-      layers: [lambdaLayers.shared],
+      layers: [lambdaLayers.shared, lambdaLayers.awsSdk],
       envType,
       envVars: {
         API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/fitbit`,
@@ -1158,7 +1158,7 @@ export class APIStack extends Stack {
       name: "FitbitSubscriberVerification",
       runtime: lambda.Runtime.NODEJS_18_X,
       entry: "fitbit-subscriber-verification",
-      layers: [lambdaLayers.shared],
+      layers: [lambdaLayers.shared, lambdaLayers.awsSdk],
       envType,
       envVars: {
         FITBIT_SUBSCRIBER_VERIFICATION_CODE: fitbitSubscriberVerificationCode,
@@ -1210,7 +1210,7 @@ export class APIStack extends Stack {
       name: "TenoviAuth",
       runtime: lambda.Runtime.NODEJS_18_X,
       entry: "tenovi",
-      layers: [lambdaLayers.shared],
+      layers: [lambdaLayers.shared, lambdaLayers.awsSdk],
       envType,
       envVars: {
         API_URL: `http://${server.loadBalancer.loadBalancerDnsName}/webhook/tenovi`,
@@ -1284,7 +1284,7 @@ export class APIStack extends Stack {
         API_URL: `http://${apiAddress}`,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: [lambdaLayers.shared],
+      layers: [lambdaLayers.shared, lambdaLayers.awsSdk],
       memory: 512,
       timeout: Duration.minutes(5),
       vpc,
@@ -1352,7 +1352,7 @@ export class APIStack extends Stack {
         }),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: [lambdaLayers.shared, lambdaLayers.chromium],
+      layers: [lambdaLayers.shared, lambdaLayers.awsSdk, lambdaLayers.chromium],
       memory: 4096,
       timeout: lambdaTimeout,
       isEnableInsights: true,
@@ -1395,7 +1395,7 @@ export class APIStack extends Stack {
       name: "CommonWellDocContribution",
       runtime: lambda.Runtime.NODEJS_18_X,
       entry: "cw-doc-contribution",
-      layers: [lambdaLayers.shared],
+      layers: [lambdaLayers.shared, lambdaLayers.awsSdk],
       alarmSnsAction: alarmAction,
       envType,
       envVars: {
@@ -1428,7 +1428,7 @@ export class APIStack extends Stack {
       name: "TokenAuth",
       runtime: lambda.Runtime.NODEJS_16_X,
       entry: "token-auth",
-      layers: [lambdaLayers.shared],
+      layers: [lambdaLayers.shared, lambdaLayers.awsSdk],
       envType,
       envVars: {
         TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,

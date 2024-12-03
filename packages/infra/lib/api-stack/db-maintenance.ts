@@ -35,7 +35,7 @@ export function createScheduledDBMaintenance(props: EnhancedCoverageConnectorPro
 
   const lambda = createScheduledLambda({
     stack,
-    layers: [lambdaLayers.shared],
+    layers: [lambdaLayers.shared, lambdaLayers.awsSdk],
     name,
     vpc,
     scheduleExpression,
