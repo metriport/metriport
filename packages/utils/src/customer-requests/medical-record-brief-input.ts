@@ -30,6 +30,7 @@ import fs from "fs";
 import { LLMChain, MapReduceDocumentsChain, StuffDocumentsChain } from "langchain/chains";
 import { cloneDeep } from "lodash";
 
+const SOURCE_PATIENT_ID = "...";
 const BRIEF_BUNDLE_FILE = `briefed-${SOURCE_PATIENT_ID}.json`;
 const CHUNK_SIZE = 100000;
 const CHUNK_OVERLAP = 1000;
