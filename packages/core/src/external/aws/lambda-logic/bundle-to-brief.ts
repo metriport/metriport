@@ -242,7 +242,7 @@ function removeUselessAttributes(res: Resource) {
   if ("encounter" in res) delete res.encounter;
 
   // Remove unknown coding displays, empty arrays, and "unknown" string values recursively
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const cleanupObject = (obj: any): void => {
     if (!obj || typeof obj !== "object") return;
 
@@ -313,9 +313,9 @@ function getUniqueDisplays(
   if (uniqueDescriptors.size === 0) return undefined;
   return Array.from(uniqueDescriptors).join(", ");
 }
-//eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function applyResourceSpecificFilters(res: Resource): any | undefined {
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updRes: any = cloneDeep(res);
 
   if (res.resourceType === "Patient") {
@@ -504,9 +504,9 @@ function getAddressString(address: Address | Address[] | undefined): string | un
 function replaceReferencesWithData(
   res: Resource,
   map: Map<string, Resource>
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): { updRes: any; ids: string[] } {
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updRes: any = cloneDeep(res);
   const referencedIds = new Set<string>();
 
