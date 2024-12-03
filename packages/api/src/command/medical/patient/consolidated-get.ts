@@ -140,8 +140,6 @@ export async function startConsolidatedQuery({
     },
   });
 
-  console.log("FROM DASHBOARD 2", fromDashboard);
-
   getConsolidatedPatientDataAsync({
     patient: updatedPatient,
     resources,
@@ -476,7 +474,6 @@ export async function getConsolidatedPatientDataAsync({
     isAsync: true,
     fromDashboard,
   };
-  console.log("FROM DASHBOARD 3", fromDashboard);
   const connector = buildConsolidatedSnapshotConnector();
   connector
     .execute(payload)

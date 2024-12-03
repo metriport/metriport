@@ -877,8 +877,6 @@ router.post(
       bundleFilename,
     });
 
-    console.log("FROM DASHBOARD 8", fromDashboard);
-
     getConsolidatedAndSendToCx({
       patient,
       bundle,

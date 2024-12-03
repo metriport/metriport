@@ -38,7 +38,6 @@ export class ConsolidatedSnapshotConnectorLambda implements ConsolidatedSnapshot
         Payload: JSON.stringify(params),
       })
       .promise();
-    console.log("FROM DASHBOARD 4", params.fromDashboard);
     const resultPayload = getLambdaResultPayload({ result, lambdaName: this.lambdaName });
     const response = JSON.parse(resultPayload) as ConsolidatedSnapshotResponse;
     return response;
