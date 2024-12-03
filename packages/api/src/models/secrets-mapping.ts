@@ -1,5 +1,5 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { SecretsMapping, SecretsSources } from "../domain/secrets-mapping";
+import { SecretsMapping, SecretsMappingSource } from "../domain/secrets-mapping";
 import { BaseModel, ModelSetup } from "./_default";
 
 export class SecretsMappingModel extends BaseModel<SecretsMappingModel> implements SecretsMapping {
@@ -7,7 +7,7 @@ export class SecretsMappingModel extends BaseModel<SecretsMappingModel> implemen
   declare externalId: string;
   declare cxId: string;
   declare secretArn: string;
-  declare source: SecretsSources;
+  declare source: SecretsMappingSource;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     SecretsMappingModel.init(

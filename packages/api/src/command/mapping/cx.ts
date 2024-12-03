@@ -1,6 +1,6 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { NotFoundError } from "@metriport/shared";
-import { CxMapping, CxMappingPerSource, CxSources } from "../../domain/cx-mapping";
+import { CxMapping, CxMappingPerSource, CxMappingSource } from "../../domain/cx-mapping";
 import { CxMappingModel } from "../../models/cx-mapping";
 
 export type CxMappingParams = CxMappingPerSource;
@@ -54,7 +54,7 @@ export async function getCxMappingOrFail({
 export async function getCxMappingsBySource({
   source,
 }: {
-  source: CxSources;
+  source: CxMappingSource;
 }): Promise<CxMapping[]> {
   const mappings = await CxMappingModel.findAll({ where: { source } });
   return mappings.map(m => m.dataValues);
@@ -65,7 +65,7 @@ export async function getCxMappingsByCustomer({
   source,
 }: {
   cxId: string;
-  source?: string;
+  source?: CxMappingSource;
 }): Promise<CxMapping[]> {
   const mappings = await CxMappingModel.findAll({
     where: { cxId, ...(source && { source }) },

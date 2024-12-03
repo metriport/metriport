@@ -31,7 +31,7 @@ import { getFacilities, getFacilityOrFail } from "../command/medical/facility/ge
 import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
 import { getSecretsMappingSource } from "../domain/secrets-mapping";
-import { getCxMappingSource, secondaryMappingsParserMap } from "../domain/cx-mapping";
+import { getCxMappingSource, secondaryMappingsSchemaMap } from "../domain/cx-mapping";
 import { getFacilityMappingSource } from "../domain/facility-mapping";
 import { isEnhancedCoverageEnabledForCx } from "../external/aws/app-config";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
@@ -325,9 +325,9 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const source = getCxMappingSource(getFromQueryOrFail("source", req));
     const externalId = getFromQueryOrFail("externalId", req);
-    const secondaryMappingParser = secondaryMappingsParserMap[source];
-    const secondaryMappings = secondaryMappingParser
-      ? secondaryMappingParser.parse(req.body)
+    const secondaryMappingsSchema = secondaryMappingsSchemaMap[source];
+    const secondaryMappings = secondaryMappingsSchema
+      ? secondaryMappingsSchema.parse(req.body)
       : null;
     await findOrCreateCxMapping({
       cxId,

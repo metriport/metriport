@@ -1,6 +1,10 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { NotFoundError } from "@metriport/shared";
-import { SecretsMapping, SecretsMappingPerSource } from "../../domain/secrets-mapping";
+import {
+  SecretsMapping,
+  SecretsMappingPerSource,
+  SecretsMappingSource,
+} from "../../domain/secrets-mapping";
 import { SecretsMappingModel } from "../../models/secrets-mapping";
 
 export type SecretsMappingParams = SecretsMappingPerSource;
@@ -54,23 +58,12 @@ export async function getSecretsMappingOrFail({
   return mapping;
 }
 
-export async function getSecretsMappingsBySource({
-  source,
-}: {
-  source: string;
-}): Promise<SecretsMapping[]> {
-  const mappings = await SecretsMappingModel.findAll({
-    where: { source },
-  });
-  return mappings.map(m => m.dataValues);
-}
-
 export async function getSecretsMappingsByCustomer({
   cxId,
   source,
 }: {
   cxId: string;
-  source?: string;
+  source?: SecretsMappingSource;
 }): Promise<SecretsMapping[]> {
   const mappings = await SecretsMappingModel.findAll({
     where: { cxId, ...(source && { source }) },

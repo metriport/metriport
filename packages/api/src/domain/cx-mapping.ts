@@ -7,17 +7,17 @@ import {
 import { z } from "zod";
 import { EhrSources } from "../external/ehr/shared";
 
-export type CxSources = EhrSources.athena | EhrSources.elation;
-export function isCxMappingSource(source: string): source is CxSources {
+export type CxMappingSource = EhrSources.athena | EhrSources.elation;
+export function isCxMappingSource(source: string): source is CxMappingSource {
   return source === EhrSources.athena || source === EhrSources.elation;
 }
-export function getCxMappingSource(source: string): CxSources {
+export function getCxMappingSource(source: string): CxMappingSource {
   if (!isCxMappingSource(source)) throw new BadRequestError(`Source ${source} is not mapped.`);
   return source;
 }
 
 export type CxSecondaryMappings = AthenaSecondaryMappings | null;
-export const secondaryMappingsParserMap: { [key in CxSources]: z.Schema | undefined } = {
+export const secondaryMappingsSchemaMap: { [key in CxMappingSource]: z.Schema | undefined } = {
   [EhrSources.athena]: athenaSecondaryMappingsSchema,
   [EhrSources.elation]: undefined,
 };
@@ -25,7 +25,7 @@ export const secondaryMappingsParserMap: { [key in CxSources]: z.Schema | undefi
 export type CxMappingPerSource = {
   externalId: string;
   cxId: string;
-  source: CxSources;
+  source: CxMappingSource;
   secondaryMappings: CxSecondaryMappings;
 };
 
