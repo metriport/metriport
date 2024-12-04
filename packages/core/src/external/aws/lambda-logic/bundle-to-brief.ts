@@ -1,7 +1,6 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { BedrockChat } from "@langchain/community/chat_models/bedrock";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import {
@@ -26,6 +25,7 @@ import { LLMChain, MapReduceDocumentsChain, StuffDocumentsChain } from "langchai
 import { cloneDeep } from "lodash";
 import { filterBundleByDate } from "../../../command/consolidated/consolidated-filter-by-date";
 import { findPatientResource } from "../../../external/fhir/shared/index";
+import { BedrockChat } from "../../langchain/bedrock/index";
 
 const CHUNK_SIZE = 100000;
 const CHUNK_OVERLAP = 1000;
@@ -111,8 +111,8 @@ SUMMARY:
 `;
   const SUMMARY_PROMPT = PromptTemplate.fromTemplate(summaryTemplate);
   const summaryChain = new LLMChain({
-    llm: llmSummary,
-    prompt: SUMMARY_PROMPT,
+    llm: llmSummary as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+    prompt: SUMMARY_PROMPT as any, // eslint-disable-line @typescript-eslint/no-explicit-any
   });
 
   // this is the prompt for combining the summaries into a single paragraph
@@ -135,8 +135,8 @@ SUMMARY:
   const SUMMARY_PROMPT_REFINED = PromptTemplate.fromTemplate(summaryTemplateRefined);
   const summaryChainRefined = new StuffDocumentsChain({
     llmChain: new LLMChain({
-      llm: llmSummary,
-      prompt: SUMMARY_PROMPT_REFINED,
+      llm: llmSummary as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+      prompt: SUMMARY_PROMPT_REFINED as any, // eslint-disable-line @typescript-eslint/no-explicit-any
     }),
     documentVariableName: "text",
   });
