@@ -123,7 +123,7 @@
     "lodash": "^4.17.21",
     "pg": "^8.11.3",
     "pkijs": "^3.0.16",
-    "playwright": "1.39.0",
+    "playwright": "^1.39.0",
     "pvutils": "^1.1.3",
     "sequelize": "^6.37.1",
     "whatwg-mimetype": "^4.0.0",
