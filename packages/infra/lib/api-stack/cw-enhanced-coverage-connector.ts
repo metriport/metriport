@@ -245,7 +245,7 @@ function createCodeChallengeStore(
 //     vpc,
 //     subnets: vpc.privateSubnets,
 //     entry: "cw-session-management",
-//     layers: [lambdaLayers.shared, lambdaLayers.playwright],
+//     layers: [lambdaLayers.shared,lambdaLayers.awsSdk, lambdaLayers.playwright],
 //     memory,
 //     envType: config.environmentType,
 //     envVars: {
@@ -316,7 +316,7 @@ function createCodeChallengeStore(
 //     vpc,
 //     subnets: vpc.privateSubnets,
 //     entry: "cw-enhanced-coverage-link-patients",
-//     layers: [lambdaLayers.shared],
+//     layers: [lambdaLayers.shared,lambdaLayers.awsSdk],
 //     memory,
 //     envType: config.environmentType,
 //     envVars: {
@@ -356,7 +356,7 @@ function createScheduledTriggerECLambda(props: EnhancedCoverageConnectorProps): 
 
   const lambda = createScheduledLambda({
     stack,
-    layers: [lambdaLayers.shared],
+    layers: [lambdaLayers.shared, lambdaLayers.awsSdk],
     name,
     vpc,
     scheduleExpression,

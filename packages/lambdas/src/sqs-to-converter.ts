@@ -1,11 +1,9 @@
-import { Bundle, Resource } from "@medplum/fhirtypes";
-import { S3Utils, executeWithRetriesS3 } from "@metriport/core/external/aws/s3";
+import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
-import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { DOC_ID_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE, XML_APP_MIME_TYPE } from "@metriport/core/util/mime";
-import { MetriportError, errorToString, executeWithNetworkRetries } from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import { SQSEvent, SQSRecord } from "aws-lambda";
 import axios from "axios";
 import * as uuid from "uuid";
@@ -47,27 +45,25 @@ const fhirConverter = axios.create({
 });
 const ossApi = apiClient(apiURL);
 
-function replaceIDs(fhirBundle: Bundle<Resource>, patientId: string): Bundle<Resource> {
+function replaceIDs(fhirBundle: FHIRBundle, patientId: string): FHIRBundle {
   const stringsToReplace: { old: string; new: string }[] = [];
-  if (!fhirBundle.entry) throw new Error(`Missing bundle entries`);
   for (const bundleEntry of fhirBundle.entry) {
     if (!bundleEntry.resource) throw new Error(`Missing resource`);
     if (!bundleEntry.resource.id) throw new Error(`Missing resource id`);
     if (bundleEntry.resource.id === patientId) continue;
 
-    const resource = bundleEntry.resource;
-    if ("extension" in resource) {
-      const docIdExtension = resource.extension?.find(ext => ext.url === DOC_ID_EXTENSION_URL);
-      const idToUse = bundleEntry.resource.id;
-      const newId = uuid.v4();
-      bundleEntry.resource.id = newId;
-      stringsToReplace.push({ old: idToUse, new: newId });
-      // replace meta's source and profile
-      bundleEntry.resource.meta = {
-        lastUpdated: bundleEntry.resource.meta?.lastUpdated ?? new Date().toISOString(),
-        source: docIdExtension?.valueString ?? "",
-      };
-    }
+    const docIdExtension = bundleEntry.resource.extension?.find(
+      ext => ext.url === DOC_ID_EXTENSION_URL
+    );
+    const idToUse = bundleEntry.resource.id;
+    const newId = uuid.v4();
+    bundleEntry.resource.id = newId;
+    stringsToReplace.push({ old: idToUse, new: newId });
+    // replace meta's source and profile
+    bundleEntry.resource.meta = {
+      lastUpdated: bundleEntry.resource.meta?.lastUpdated ?? new Date().toISOString(),
+      source: docIdExtension?.valueString ?? "",
+    };
   }
   let fhirBundleStr = JSON.stringify(fhirBundle);
   for (const stringToReplace of stringsToReplace) {
@@ -110,6 +106,27 @@ type EventBody = {
 type FHIRExtension = {
   url: string;
   valueString: string;
+};
+
+type FHIRBundle = {
+  resourceType: "Bundle";
+  type: "batch";
+  entry: {
+    fullUrl: string;
+    resource: {
+      resourceType: string;
+      id: string;
+      extension?: FHIRExtension[];
+      meta?: {
+        lastUpdated: string;
+        source: string;
+      };
+    };
+    request?: {
+      method: string;
+      url: string;
+    };
+  }[];
 };
 
 // Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
@@ -238,7 +255,7 @@ export async function handler(event: SQSEvent) {
           convertPayloadToFHIR(),
           storePayloadInS3(),
         ]);
-        const conversionResult = responseFromConverter.data.fhirResource;
+        const conversionResult = responseFromConverter.data.fhirResource as FHIRBundle;
         metrics.conversion = {
           duration: Date.now() - conversionStart,
           timestamp: new Date(),
@@ -255,32 +272,19 @@ export async function handler(event: SQSEvent) {
 
         await cloudWatchUtils.reportMemoryUsage();
 
-        await cloudWatchUtils.reportMemoryUsage();
-
-        const normalizedBundle = normalize({
-          cxId,
-          patientId,
-          bundle: conversionResult,
-        });
-
-        await storeNormalizedConversionResult({
-          bundle: normalizedBundle,
-          fileName: s3FileName,
-          message,
-          lambdaParams,
-          log,
-        });
-
         // post-process conversion result
         const postProcessStart = Date.now();
-        const updatedConversionResult = replaceIDs(normalizedBundle, patientId);
+        const updatedConversionResult = replaceIDs(conversionResult, patientId);
         addExtensionToConversion(updatedConversionResult, documentExtension);
+        removePatientFromConversion(updatedConversionResult);
         addMissingRequests(updatedConversionResult);
         metrics.postProcess = {
           duration: Date.now() - postProcessStart,
           timestamp: new Date(),
         };
-        removePatientFromConversion(updatedConversionResult);
+
+        await cloudWatchUtils.reportMemoryUsage();
+
         // Store the conversion result in S3 and send it to the destination(s)
         await sendConversionResult(
           cxId,
@@ -334,28 +338,23 @@ function parseBody(body: unknown): EventBody {
   return { s3BucketName, s3FileName, documentExtension };
 }
 
-function addExtensionToConversion(fhirBundle: Bundle<Resource>, extension: FHIRExtension) {
+function addExtensionToConversion(fhirBundle: FHIRBundle, extension: FHIRExtension) {
   if (fhirBundle?.entry?.length) {
     for (const bundleEntry of fhirBundle.entry) {
-      const resource = bundleEntry.resource;
-      if (!resource) continue;
-      if (!("extension" in resource)) {
-        //eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (resource as any).extension = [extension];
-      } else {
-        resource.extension?.push(extension);
-      }
+      if (!bundleEntry.resource) continue;
+      if (!bundleEntry.resource.extension) bundleEntry.resource.extension = [];
+      bundleEntry.resource.extension.push(extension);
     }
   }
 }
 
-function removePatientFromConversion(fhirBundle: Bundle<Resource>) {
+function removePatientFromConversion(fhirBundle: FHIRBundle) {
   const entries = fhirBundle?.entry ?? [];
   const pos = entries.findIndex(e => e.resource?.resourceType === "Patient");
-  if (pos >= 0) fhirBundle.entry?.splice(pos, 1);
+  if (pos >= 0) fhirBundle.entry.splice(pos, 1);
 }
 
-function addMissingRequests(fhirBundle: Bundle<Resource>) {
+function addMissingRequests(fhirBundle: FHIRBundle) {
   if (!fhirBundle?.entry?.length) return;
   fhirBundle.entry.forEach(e => {
     if (!e.request && e.resource) {
@@ -371,7 +370,7 @@ async function sendConversionResult(
   cxId: string,
   patientId: string,
   sourceFileName: string,
-  conversionPayload: Bundle<Resource>,
+  conversionPayload: FHIRBundle,
   jobId: string | undefined,
   medicalDataSource: string | undefined,
   log: Log
@@ -408,7 +407,7 @@ async function storePreProcessedConversionResult({
   lambdaParams,
   log,
 }: {
-  conversionResult: Bundle<Resource>;
+  conversionResult: FHIRBundle;
   conversionResultFilename: string;
   message: SQSRecord;
   lambdaParams: Record<string, string | undefined>;
@@ -438,51 +437,6 @@ async function storePreProcessedConversionResult({
         message,
         ...lambdaParams,
         conversionResultFilename,
-        context: lambdaName,
-        error,
-      },
-    });
-  }
-}
-
-async function storeNormalizedConversionResult({
-  bundle,
-  fileName,
-  message,
-  lambdaParams,
-  log,
-}: {
-  bundle: Bundle<Resource>;
-  fileName: string;
-  message: SQSRecord;
-  lambdaParams: Record<string, string | undefined>;
-  log: typeof console.log;
-}) {
-  const fileNamePreNormalization = `${fileName}.post_normalization.json`;
-  try {
-    await executeWithRetriesS3(
-      () =>
-        s3Utils.s3
-          .upload({
-            Bucket: conversionResultBucketName,
-            Key: fileNamePreNormalization,
-            Body: JSON.stringify(bundle),
-            ContentType: FHIR_APP_MIME_TYPE,
-          })
-          .promise(),
-      {
-        ...defaultS3RetriesConfig,
-        log,
-      }
-    );
-  } catch (error) {
-    const msg = "Error uploading prenormalized conversion result";
-    log(`${msg}: ${errorToString(error)}`);
-    capture.error(msg, {
-      extra: {
-        message,
-        ...lambdaParams,
-        conversionResultFilename: fileName,
         context: lambdaName,
         error,
       },

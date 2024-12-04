@@ -1,7 +1,7 @@
 import { Stack } from "aws-cdk-lib";
 import { Code, ILayerVersion, LayerVersion, Runtime } from "aws-cdk-lib/aws-lambda";
 
-export const layers = ["shared", "chromium", "dig", "playwright"] as const;
+export const layers = ["shared", "chromium", "dig", "playwright", "awsSdk"] as const;
 export type LambdaLayer = (typeof layers)[number];
 
 export type LambdaLayers = Record<LambdaLayer, ILayerVersion>;
@@ -24,6 +24,9 @@ export function setupLambdasLayers(stack: Stack, prefixStackName = false): Lambd
     }),
     playwright: new LayerVersion(stack, `${prefix}PlaywrightLayer`, {
       code: Code.fromAsset("../lambdas/layers/playwright/dist/playwright-layer.zip"),
+    }),
+    awsSdk: new LayerVersion(stack, `${prefix}AwsSdkLayer`, {
+      code: Code.fromAsset("../lambdas/layers/aws-sdk/dist/aws-sdk.zip"),
     }),
   };
 }
