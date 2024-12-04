@@ -1,6 +1,5 @@
 import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
-import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { ElationEnv, isElationEnv } from "@metriport/core/src/external/elation";
 import {
   clientKeyAndSecretMapsSecretSchema,
@@ -11,11 +10,7 @@ import {
   normalizeZipCodeNew,
 } from "@metriport/shared";
 import { PatientResource } from "@metriport/shared/interface/external/elation/patient";
-import { getSecretsMappingOrFail } from "../../../command/mapping/secrets";
 import { Config } from "../../../shared/config";
-import { EhrSources } from "../shared";
-
-const region = Config.getAWSRegion();
 
 export const MAP_KEY_SEPARATOR = "|||";
 
@@ -67,30 +62,20 @@ export async function getElationClientKeyAndSecret({
   clientKey: string;
   clientSecret: string;
 }> {
-  const { secretArn } = await getSecretsMappingOrFail({
-    cxId,
-    source: EhrSources.elation,
-    externalId: practiceId,
-  });
-  const clientSecretRaw = await getSecretValueOrFail(secretArn, region);
-  const parsed = JSON.parse(clientSecretRaw);
-  const secretMap = clientKeyAndSecretMapsSecretSchema.safeParse(parsed);
-  if (!secretMap.success) {
-    throw new MetriportError("Invalid Elation key and secret map format", undefined, {
-      secretArn,
-    });
-  }
-  const cxEntry = secretMap.data[`${cxId}_${practiceId}`];
+  const rawClientKeyAndSecretMap = Config.getElationClientKeyAndSecretMap();
+  if (!rawClientKeyAndSecretMap) throw new MetriportError("Elation key and secret map not set");
+  const clientKeyAndSecretMap =
+    clientKeyAndSecretMapsSecretSchema.safeParse(rawClientKeyAndSecretMap);
+  if (!clientKeyAndSecretMap.success)
+    throw new MetriportError("Elation key and secret map has invalid format");
+  const key = `${cxId}_${practiceId}`;
+  const cxEntry = clientKeyAndSecretMap.data[key];
   if (!cxEntry) {
-    throw new MetriportError(
-      "CxId and PracticeId key not found in Elation key and secret map",
-      undefined,
-      {
-        secretArn,
-        cxId,
-        practiceId,
-      }
-    );
+    throw new MetriportError("Key not found in Elation key and secret map", undefined, {
+      cxId,
+      practiceId,
+      key,
+    });
   }
   return cxEntry;
 }

@@ -15,13 +15,6 @@ import {
   getFacilityMappingsByCustomer,
   setExternalIdOnFacilityMapping,
 } from "../command/mapping/facility";
-import {
-  deleteSecretsMapping,
-  findOrCreateSecretsMapping,
-  getDefaultSecretArnForSource,
-  getSecretsMappingsByCustomer,
-  setExternalIdOnSecretsMapping,
-} from "../command/mapping/secrets";
 import { checkApiQuota } from "../command/medical/admin/api";
 import { dbMaintenance } from "../command/medical/admin/db-maintenance";
 import {
@@ -33,7 +26,6 @@ import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/med
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
 import { getCxMappingSource, secondaryMappingsSchemaMap } from "../domain/cx-mapping";
 import { getFacilityMappingSource } from "../domain/facility-mapping";
-import { getSecretsMappingSource } from "../domain/secrets-mapping";
 import { isEnhancedCoverageEnabledForCx } from "../external/aws/app-config";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
 import { countResourcesOnFhir } from "../external/fhir/patient/count-resources-on-fhir";
@@ -494,102 +486,6 @@ router.delete(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFrom("params").orFail("id", req);
     await deleteFacilityMapping({
-      cxId,
-      id,
-    });
-    return res.sendStatus(httpStatus.NO_CONTENT);
-  })
-);
-
-/**
- * POST /internal/secrets-mapping
- *
- * Create client key mapping
- *
- * @param req.query.cxId - The cutomer's ID.
- * @param req.query.source - Mapping source
- * @param req.query.externalId - Mapped external ID.
- */
-router.post(
-  "/secrets-mapping",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const source = getSecretsMappingSource(getFromQueryOrFail("source", req));
-    const secretArn =
-      getFrom("query").optional("secretArn", req) ?? getDefaultSecretArnForSource({ source });
-    if (!secretArn) throw new BadRequestError("Secret ARN is required.");
-    const externalId = getFromQueryOrFail("externalId", req);
-    await findOrCreateSecretsMapping({
-      cxId,
-      secretArn,
-      source,
-      externalId,
-    });
-    return res.sendStatus(httpStatus.OK);
-  })
-);
-
-/**
- * GET /internal/secrets-mapping
- *
- * Get client key mappings for customer
- *
- * @param req.query.cxId - The cutomer's ID.
- * @param req.query.source - Optional mapping source
- */
-router.get(
-  "/secrets-mapping",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const source = getFrom("query").optional("source", req);
-    const result = await getSecretsMappingsByCustomer({
-      cxId,
-      ...(source && { source: getSecretsMappingSource(source) }),
-    });
-    return res.status(httpStatus.OK).json(result);
-  })
-);
-
-/**
- * PUT /internal/secrets-mapping/:id/external-id
- *
- * Update client key mapping external ID
- *
- * @param req.query.cxId - The cutomer's ID.
- * @param req.query.externalId - Mapped external ID.
- */
-router.put(
-  "/secrets-mapping/:id/external-id",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const id = getFrom("params").orFail("id", req);
-    const externalId = getFromQueryOrFail("externalId", req);
-    await setExternalIdOnSecretsMapping({
-      cxId,
-      id,
-      externalId,
-    });
-    return res.sendStatus(httpStatus.OK);
-  })
-);
-
-/**
- * DELETE /internal/secrets-mapping/:id
- *
- * Delete client key mapping
- *
- * @param req.query.cxId - The cutomer's ID.
- */
-router.delete(
-  "/secrets-mapping/:id",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const id = getFrom("params").orFail("id", req);
-    await deleteSecretsMapping({
       cxId,
       id,
     });
