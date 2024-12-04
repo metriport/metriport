@@ -1,7 +1,7 @@
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { Request, Response } from "express";
-import { processPatientsFromAppointmentsSub } from "../../../../external/ehr/athenahealth/command/process-patients-from-appointments-subscription";
+import { processPatientsFromAppointmentsSub } from "../../../../external/ehr/athenahealth/command/process-patients-from-appointments-sub";
 import { requestLogger } from "../../../helpers/request-logger";
 import { asyncHandler, getFromQueryAsBoolean } from "../../../util";
 const router = Router();
