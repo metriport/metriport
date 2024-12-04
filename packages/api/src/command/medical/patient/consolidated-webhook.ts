@@ -33,12 +33,14 @@ export async function processConsolidatedDataWebhook({
   requestId,
   bundle,
   filters,
+  isDisabled,
 }: {
   patient: Pick<Patient, "id" | "cxId" | "externalId">;
   status: ConsolidatedWebhookStatus;
   requestId: string;
   bundle?: SearchSetBundle<Resource>;
   filters?: Filters;
+  isDisabled?: boolean;
 }): Promise<void> {
   const { id: patientId, cxId, externalId } = patient;
   try {
@@ -60,7 +62,7 @@ export async function processConsolidatedDataWebhook({
     };
 
     // send it to the customer and update the WH request status
-    if (!isWebhookDisabled(currentPatient.data.cxConsolidatedRequestMetadata)) {
+    if (!isWebhookDisabled(currentPatient.data.cxConsolidatedRequestMetadata) && !isDisabled) {
       const webhookRequest = await createWebhookRequest({
         cxId,
         type: "medical.consolidated-data",
