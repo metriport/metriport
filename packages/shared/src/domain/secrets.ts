@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const clientKeyAndSecretMapsSecretSchema = z.record(
+export const cxClientKeyAndSecretMapSecretSchema = z.record(
   z.string(),
   z.object({
     clientKey: z.string(),
