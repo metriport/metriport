@@ -1,0 +1,22 @@
+{
+  "name": "langchain-layer",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "preinstall": "npm i -g rimraf",
+    "clean": "rimraf dist && rimraf node_modules",
+    "prep-deploy": "./scripts/prep-deploy.sh",
+    "build": "tsc -p tsconfig.json"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@langchain/community": "^0.3.16",
+    "@langchain/core": "^0.3.19",
+    "langchain": "^0.3.6"
+  }
+} 
