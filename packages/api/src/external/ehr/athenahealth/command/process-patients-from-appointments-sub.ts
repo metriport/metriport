@@ -33,7 +33,7 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
         startRange: undefined,
         endRange: undefined,
       };
-  startRange && endRange && log(`Getting appointments from ${startRange} to ${endRange}`);
+  if (startRange || endRange) log(`Getting appointments from ${startRange} to ${endRange}`);
 
   const cxMappings = await getCxMappingsBySource({ source: EhrSources.athena });
 
