@@ -9,12 +9,12 @@ import { getCxMappingsBySource } from "../../../../command/mapping/cx";
 import {
   Appointment,
   EhrSources,
-  createMapKey,
+  createPracticePatientMap,
   delayBetweenPracticeBatches,
   getLookBackTimeRange,
   parallelPatients,
   parallelPractices,
-  parseMapKey,
+  parsePracticeMapKey,
 } from "../../shared";
 import { getAthenaEnv } from "../shared";
 import { syncAthenaPatientIntoMetriport } from "./sync-patient";
@@ -119,15 +119,7 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
   const uniqueAppointments: Appointment[] = [
     ...new Map(allAppointments.map(app => [app.patientId, app])).values(),
   ];
-  const uniqueAppointmentsByPractice: { [k: string]: Appointment[] } = {};
-  uniqueAppointments.map(appointment => {
-    const key = createMapKey(appointment.cxId, appointment.practiceId);
-    if (uniqueAppointmentsByPractice[key]) {
-      uniqueAppointmentsByPractice[key].push(appointment);
-    } else {
-      uniqueAppointmentsByPractice[key] = [appointment];
-    }
-  });
+  const uniqueAppointmentsByPractice = createPracticePatientMap(uniqueAppointments);
 
   const syncPatientsErrors: {
     error: unknown;
@@ -140,7 +132,7 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
       const appointments = uniqueAppointmentsByPractice[key];
       if (!appointments) return [];
       return {
-        ...parseMapKey(key),
+        ...parsePracticeMapKey(key),
         environment,
         appointments,
         clientKey,

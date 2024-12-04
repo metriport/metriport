@@ -8,13 +8,13 @@ import duration from "dayjs/plugin/duration";
 import { getCxMappingsBySource } from "../../../../command/mapping/cx";
 import {
   Appointment,
-  createMapKey,
+  createPracticePatientMap,
   delayBetweenPracticeBatches,
   EhrSources,
   getLookForwardTimeRange,
   parallelPatients,
   parallelPractices,
-  parseMapKey,
+  parsePracticeMapKey,
 } from "../../shared";
 import { getElationClientKeyAndSecret, getElationEnv } from "../shared";
 import { syncElationPatientIntoMetriport } from "./sync-patient";
@@ -90,15 +90,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
   const uniqueAppointments: Appointment[] = [
     ...new Map(allAppointments.map(app => [app.patientId, app])).values(),
   ];
-  const uniqueAppointmentsByPractice: { [k: string]: Appointment[] } = {};
-  uniqueAppointments.map(appointment => {
-    const key = createMapKey(appointment.cxId, appointment.practiceId);
-    if (uniqueAppointmentsByPractice[key]) {
-      uniqueAppointmentsByPractice[key].push(appointment);
-    } else {
-      uniqueAppointmentsByPractice[key] = [appointment];
-    }
-  });
+  const uniqueAppointmentsByPractice = createPracticePatientMap(uniqueAppointments);
 
   const syncPatientsErrors: {
     error: unknown;
@@ -111,7 +103,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
       const appointments = uniqueAppointmentsByPractice[key];
       if (!appointments) return [];
       return {
-        ...parseMapKey(key),
+        ...parsePracticeMapKey(key),
         environment,
         appointments,
       };
