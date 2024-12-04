@@ -8,14 +8,14 @@ addPackageToLayer() {
 
    mkdir -p $package_on_layer
    cp $package_folder/package.json $package_on_layer
-   rsync -a $package_folder/dist $package_on_layer --exclude *.ts --exclude *.ts.map --exclude __tests__
+   rsync -a --exclude *.ts --exclude *.d.ts --exclude *.ts.map --exclude *.js.map --exclude __tests__ --exclude *.md --exclude LICENSE  $package_folder/dist $package_on_layer
 }
 
 main() {
    mkdir -p ./layers/shared/nodejs
 
    echo "Copying lambdas dependencies to shared layer..."
-   rsync -a node_modules ./layers/shared/nodejs/ --exclude *.ts --exclude *.ts.map --exclude __tests__ --exclude *.md --exclude LICENSE
+   rsync -a --exclude *.ts --exclude *.d.ts --exclude *.ts.map --exclude *.js.map --exclude __tests__ --exclude *.md --exclude LICENSE node_modules ./layers/shared/nodejs/
 
    addPackageToLayer "shared"
    addPackageToLayer "core"
