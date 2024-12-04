@@ -52,6 +52,23 @@ const referenceResources = [
   "Location",
 ];
 
+const REMOVE_FROM_NOTE = [
+  "xLabel",
+  "5/5",
+  "Â°F",
+  "Â",
+  "â¢",
+  "documented in this encounter",
+  "xnoIndent",
+  "Formatting of this note might be different from the original.",
+  "<content>",
+  "</content>",
+  "<root>",
+  "</root>",
+  "&lt;",
+  "&gt;",
+];
+
 const documentVariableName = "text";
 
 export type Brief = {
@@ -59,7 +76,6 @@ export type Brief = {
   content: string;
   link: string;
 };
-
 //--------------------------------
 // AI-based brief generation
 //--------------------------------
@@ -92,27 +108,27 @@ export async function summarizeFilteredBundleWithAI(
   // TODO: #2516 - experiment with different prompts
   // this is the summary prompt for each chunk of the bundle
   const summaryTemplate = `
-${systemPrompt}
+  ${systemPrompt}
 
-Today's date is ${todaysDate}.
-Your goal is to write a summary of the patient's most recent medical history, so that another doctor can understand the patient's medical history to be able to treat them effectively.
-Here is a portion of the patient's medical history:
---------
-{${documentVariableName}}
---------
+  Today's date is ${todaysDate}.
+  Your goal is to write a summary of the patient's most recent medical history, so that another doctor can understand the patient's medical history to be able to treat them effectively.
+  Here is a portion of the patient's medical history:
+  --------
+  {${documentVariableName}}
+  --------
 
-Write a summary of the patient's most recent medical history, considering the following goals:
-1. Specify whether a DNR or POLST form has been completed.
-2. Include a summary of the patient's most recent hospitalization, including the location of the hospitalization, the date of the hospitalization, the reason for the hospitalization, and the results of the hospitalization.
-3. Include a summary of the patient's current chronic conditions, allergies, and any previous surgeries.
-4. Include a summary of the patient's current medications, including dosages and frequency - do not include instructions on how to take the medications. Include any history of medication allergies or adverse reactions.
-5. Include any other relevant information about the patient's health.
+  Write a summary of the patient's most recent medical history, considering the following goals:
+  1. Specify whether a DNR or POLST form has been completed.
+  2. Include a summary of the patient's most recent hospitalization, including the location of the hospitalization, the date of the hospitalization, the reason for the hospitalization, and the results of the hospitalization.
+  3. Include a summary of the patient's current chronic conditions, allergies, and any previous surgeries.
+  4. Include a summary of the patient's current medications, including dosages and frequency - do not include instructions on how to take the medications. Include any history of medication allergies or adverse reactions.
+  5. Include any other relevant information about the patient's health.
 
-If any of the above information is not present, do not include it in the summary.
-Don't tell me that you are writing a summary, just write the summary. Also, don't tell me about any limitations of the information provided.
+  If any of the above information is not present, do not include it in the summary.
+  Don't tell me that you are writing a summary, just write the summary. Also, don't tell me about any limitations of the information provided.
 
-SUMMARY:
-`;
+  SUMMARY:
+  `;
   const SUMMARY_PROMPT = PromptTemplate.fromTemplate(summaryTemplate);
   const summaryChain = new LLMChain({
     llm: llmSummary as any, // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -121,21 +137,21 @@ SUMMARY:
 
   // this is the prompt for combining the summaries into a single paragraph
   const summaryTemplateRefined = `
-${systemPrompt}
+  ${systemPrompt}
 
-Today's date is ${todaysDate}.
-Your goal is to write a summary of the patient's most recent medical history, so that another doctor can understand the patient's medical history to be able to treat them effectively.
-Here are the previous summaries written by you of sections of the patient's medical history:
---------
-{${documentVariableName}}
---------
+  Today's date is ${todaysDate}.
+  Your goal is to write a summary of the patient's most recent medical history, so that another doctor can understand the patient's medical history to be able to treat them effectively.
+  Here are the previous summaries written by you of sections of the patient's medical history:
+  --------
+  {${documentVariableName}}
+  --------
 
-Combine these summaries into a single, comprehensive summary of the patient's most recent medical history in a single paragraph.
+  Combine these summaries into a single, comprehensive summary of the patient's most recent medical history in a single paragraph.
 
-Don't tell me that you are writing a summary, just write the summary. Also, don't tell me about any limitations of the information provided.
+  Don't tell me that you are writing a summary, just write the summary. Also, don't tell me about any limitations of the information provided.
 
-SUMMARY:
-`;
+  SUMMARY:
+  `;
   const SUMMARY_PROMPT_REFINED = PromptTemplate.fromTemplate(summaryTemplateRefined);
   const summaryChainRefined = new StuffDocumentsChain({
     llmChain: new LLMChain({
@@ -318,6 +334,36 @@ function getUniqueDisplays(
   return Array.from(uniqueDescriptors).join(", ");
 }
 
+function getLongestDisplay(
+  concept: CodeableConcept | CodeableConcept[] | undefined
+): string | undefined {
+  if (!concept) return undefined;
+
+  const uniqueDescriptors = new Set<string>();
+  const concepts = toArray(concept);
+  concepts.forEach(concept => {
+    const text = concept.text;
+    if (text) uniqueDescriptors.add(text.trim().toLowerCase());
+
+    concept.coding?.forEach(coding => {
+      if (coding.display) uniqueDescriptors.add(coding.display.trim().toLowerCase());
+    });
+  });
+
+  if (uniqueDescriptors.size === 0) return undefined;
+  return Array.from(uniqueDescriptors).reduce((longest, current) =>
+    current.length > longest.length ? current : longest
+  );
+}
+
+function cleanUpNote(note: string): string {
+  return note
+    .trim()
+    .replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "")
+    .replace(/<ID>.*?<\/ID>/g, "")
+    .replace(/<styleCode>.*?<\/styleCode>/g, "");
+}
+
 /**
  * This function applies filters to the resource based on its resourceType, and overwrites and/or creates new specific attributes,
  * making them into strings most of the time.
@@ -343,7 +389,7 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
   }
 
   if (res.resourceType === "Immunization") {
-    delete res.lotNumber;
+    delete updRes.lotNumber;
 
     if (res.vaccineCode) {
       const resVaccineCodeString = JSON.stringify(res.vaccineCode).toLowerCase();
@@ -356,15 +402,19 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
 
       updRes.vaccineCode = getUniqueDisplays(res.vaccineCode);
     }
+    if (res.site?.text) {
+      updRes.site = res.site.text;
+    }
+    updRes.route = getUniqueDisplays(res.route);
 
-    delete res.doseQuantity;
+    delete updRes.doseQuantity;
   }
 
   if (res.resourceType === "Practitioner") {
     const name = getNameString(res.name);
     updRes.name = name;
 
-    const qualificationsText = getUniqueDisplays(res.qualification?.[0]?.code);
+    const qualificationsText = getLongestDisplay(res.qualification?.[0]?.code);
     if (qualificationsText) updRes.qualification = qualificationsText;
 
     updRes.address = getAddressString(res.address);
@@ -381,12 +431,17 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
 
     if (updRes.status === "") delete updRes.status;
 
-    delete res.reasonCode; // TODO: #2510 - Introduce term server lookup here
+    delete updRes.reasonCode; // TODO: #2510 - Introduce term server lookup here
+    delete updRes.report;
+    delete updRes.note;
   }
 
   if (res.resourceType === "DiagnosticReport") {
-    const code = res.code?.text;
-    if (code) updRes.code = code;
+    const code = getLongestDisplay(res.code);
+    if (code) {
+      updRes.type = code;
+    }
+    delete updRes.code;
 
     const category = res.category
       ?.map(cat => cat.coding?.flatMap(coding => coding.display || []))
@@ -397,7 +452,8 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
       updRes.presentedForm = res.presentedForm.map(form => {
         delete form.contentType;
         if (form.data) {
-          form.data = Buffer.from(form.data, "base64").toString("utf-8");
+          const rawData = Buffer.from(form.data, "base64").toString("utf-8");
+          form.data = cleanUpNote(rawData);
         }
         return form;
       });
@@ -444,11 +500,24 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
 
   if (res.resourceType === "Medication") {
     updRes.name = getUniqueDisplays(res.code);
-    delete res.code;
+    delete updRes.code;
   }
 
   if (res.resourceType === "MedicationRequest") {
     delete updRes.requester;
+  }
+
+  if (res.resourceType === "MedicationStatement") {
+    if (res.dosage) {
+      const dosages = res.dosage.flatMap(dosage => {
+        const dose = getQuantityString(dosage.doseAndRate?.[0]?.doseQuantity);
+        const route = getUniqueDisplays(dosage.route);
+        if (!dose && !route) return [];
+        return { dose, route };
+      });
+      if (dosages.length > 0) updRes.dosages = dosages;
+      delete updRes.dosage;
+    }
   }
 
   if (res.resourceType === "MedicationAdministration") {
@@ -486,7 +555,7 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
       });
     }
 
-    delete res.recorder;
+    delete updRes.recorder;
   }
 
   if (res.resourceType === "Organization") {
@@ -625,13 +694,14 @@ function replaceReferencesWithData(
   }
 
   if ("performer" in res) {
-    if (Array.isArray(res.performer)) {
+    if (res.performer) {
       if (
         res.resourceType === "DiagnosticReport" ||
         res.resourceType === "Observation" ||
         res.resourceType === "ServiceRequest"
       ) {
-        updRes.performer = res.performer
+        const performers = toArray(res.performer);
+        updRes.performer = performers
           .flatMap(p => {
             const ref = p.reference;
             if (ref) {
@@ -641,8 +711,11 @@ function replaceReferencesWithData(
                 performer?.resourceType === "Organization" ||
                 performer?.resourceType === "Practitioner"
               ) {
-                if (typeof performer.name === "string") return performer.name;
-                return getNameString(performer.name);
+                if (typeof performer.name === "string") {
+                  if (performer.name.length > 0) return performer.name;
+                } else {
+                  return getNameString(performer.name);
+                }
               }
             }
             return [];
@@ -655,23 +728,22 @@ function replaceReferencesWithData(
         res.resourceType === "MedicationRequest" ||
         res.resourceType === "Procedure"
       ) {
-        if (Array.isArray(res.performer)) {
-          updRes.performer = res.performer
-            ?.flatMap(perf => {
-              const refString = perf.actor?.reference;
-              if (refString) {
-                const actor = map.get(refString);
-                referencedIds.add(refString);
-                if (actor && "name" in actor) {
-                  const name = actor.name;
-                  if (typeof name === "string") return name;
-                  return getNameString(name);
-                }
+        const performers = toArray(res.performer);
+        updRes.performer = performers
+          ?.flatMap(perf => {
+            const refString = perf.actor?.reference;
+            if (refString) {
+              const actor = map.get(refString);
+              referencedIds.add(refString);
+              if (actor && "name" in actor) {
+                const name = actor.name;
+                if (typeof name === "string") return name;
+                return getNameString(name);
               }
-              return [];
-            })
-            .join(", ");
-        }
+            }
+            return [];
+          })
+          .join(", ");
       }
     }
   }
@@ -729,7 +801,7 @@ function replaceReferencesWithData(
       const individual = map.get(refString);
       referencedIds.add(refString);
       if (individual && individual.resourceType === "Practitioner") {
-        updRes.practitioner = { ...individual, id: undefined };
+        updRes.practitioner = { ...individual, resourceType: undefined, id: undefined };
         delete updRes.recorder;
       }
     }
@@ -751,7 +823,7 @@ function replaceReferencesWithData(
     }
   }
 
-  return { updRes: res, ids: Array.from(referencedIds) };
+  return { updRes, ids: Array.from(referencedIds) };
 }
 
 function getNameString(names: HumanName | HumanName[] | undefined): string | undefined {
