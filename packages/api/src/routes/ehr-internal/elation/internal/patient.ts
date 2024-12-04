@@ -1,6 +1,7 @@
+import { processAsyncError } from "@metriport/core/util/error/shared";
+import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { Request, Response } from "express";
 import { processPatientsFromAppointments } from "../../../../external/ehr/elation/command/process-patients-from-appointments";
 import { requestLogger } from "../../../helpers/request-logger";
 import { asyncHandler } from "../../../util";
@@ -15,7 +16,9 @@ router.post(
   "/from-appointments",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    processPatientsFromAppointments();
+    processPatientsFromAppointments().catch(
+      processAsyncError("Elation processPatientsFromAppointments")
+    );
     return res.sendStatus(httpStatus.OK);
   })
 );

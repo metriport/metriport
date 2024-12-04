@@ -6,14 +6,14 @@ import { MetriportError, errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { getCxMappingsBySource } from "../../../../command/mapping/cx";
-import { EhrSources, getLookackTimeRange } from "../../shared";
+import { EhrSources, getLookBackTimeRange } from "../../shared";
 import { getPatientIdOrFail } from "./get-patient";
 import { getAthenaEnv } from "../shared";
 
 dayjs.extend(duration);
 
 const delayBetweenPracticeBatches = dayjs.duration(30, "seconds");
-const catupUpLookback = dayjs.duration(12, "hours");
+const catupUpLookBack = dayjs.duration(12, "hours");
 const parallelPractices = 10;
 const parallelPatients = 2;
 
@@ -24,11 +24,11 @@ type PatientAppointment = {
 };
 
 export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp: boolean }) {
-  const { log } = out(`AthenaHealth getPatientIdsOrFailFromAppointmentsSub - catchUp: ${catchUp}`);
+  const { log } = out(`AthenaHealth processPatientsFromAppointmentsSub - catchUp: ${catchUp}`);
   const { environment, clientKey, clientSecret } = await getAthenaEnv();
 
   const { startRange, endRange } = catchUp
-    ? getLookackTimeRange({ lookback: catupUpLookback })
+    ? getLookBackTimeRange({ lookBack: catupUpLookBack })
     : {
         startRange: undefined,
         endRange: undefined,
@@ -61,8 +61,8 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
       environment,
       clientKey,
       clientSecret,
-      showProcessedStartDateTime: startRange,
-      showProcessedEndDateTime: endRange,
+      startProcessedDate: startRange,
+      endProcessedDate: endRange,
       returnArray: patientAppointmentsFromGetAppointmentsFromSubByPractice,
       errorArray: errorsFromGetAppointmentsFromSubByPractice,
       log,
@@ -143,8 +143,8 @@ async function getAppointmentsFromSubByPractice({
   environment,
   clientKey,
   clientSecret,
-  showProcessedStartDateTime,
-  showProcessedEndDateTime,
+  startProcessedDate,
+  endProcessedDate,
   returnArray,
   errorArray,
   log,
@@ -155,8 +155,8 @@ async function getAppointmentsFromSubByPractice({
   departmentIds?: string[];
   clientKey: string;
   clientSecret: string;
-  showProcessedStartDateTime?: Date;
-  showProcessedEndDateTime?: Date;
+  startProcessedDate?: Date;
+  endProcessedDate?: Date;
   returnArray: PatientAppointment[];
   errorArray: string[];
   log: typeof console.log;
@@ -172,8 +172,8 @@ async function getAppointmentsFromSubByPractice({
     const appointments = await api.getAppointmentsFromSubscription({
       cxId,
       departmentIds,
-      showProcessedStartDateTime,
-      showProcessedEndDateTime,
+      startProcessedDate,
+      endProcessedDate,
     });
     returnArray.push(
       ...appointments.map(appointment => {
@@ -266,9 +266,9 @@ async function getPatientIdOrFailByPatient({
       triggerDq,
     });
   } catch (error) {
+    const msg = "Failed to find or create patients";
     const cause = `Cause: ${errorToString(error)}`;
     const details = `cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}.`;
-    const msg = "Failed to find or create patients";
     log(`${details} ${msg} ${cause}`);
     errorArray.push(`${msg} ${details} ${cause}`);
   }

@@ -223,9 +223,9 @@ async function getPatientByDemo({
     const patient = await getMetriportPatientByDemo({ cxId, demo });
     if (patient) returnArray.push(patient);
   } catch (error) {
+    const msg = "Failed to get patient by demo.";
     const cause = `Cause: ${errorToString(error)}`;
     const details = `cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}.`;
-    const msg = "Failed to get patient by demo.";
     log(`${msg} ${cause}`);
     errorArray.push(`${msg} ${details} ${cause}`);
   }

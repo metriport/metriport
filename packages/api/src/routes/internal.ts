@@ -315,7 +315,9 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const source = getFromQueryOrFail("source", req);
-    if (!isCxMappingSource(source)) throw new BadRequestError(`Invalid source ${source}`);
+    if (!isCxMappingSource(source)) {
+      throw new BadRequestError(`Invalid source for cx mapping`, undefined, { source });
+    }
     const externalId = getFromQueryOrFail("externalId", req);
     const secondaryMappingsSchema = secondaryMappingsSchemaMap[source];
     const secondaryMappings = secondaryMappingsSchema
@@ -346,7 +348,7 @@ router.get(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const source = getFrom("query").optional("source", req);
     if (source !== undefined && !isCxMappingSource(source)) {
-      throw new BadRequestError(`Invalid source ${source}`);
+      throw new BadRequestError(`Invalid source for cx mapping`, undefined, { source });
     }
     const result = await getCxMappingsByCustomer({
       cxId,
@@ -419,7 +421,9 @@ router.post(
     const facilityId = getFromQueryOrFail("facilityId", req);
     await getFacilityOrFail({ cxId, id: facilityId });
     const source = getFromQueryOrFail("source", req);
-    if (!isFacilityMappingSource(source)) throw new BadRequestError(`Invalid source ${source}`);
+    if (!isFacilityMappingSource(source)) {
+      throw new BadRequestError(`Invalid source for facility mapping`, undefined, { source });
+    }
     const externalId = getFromQueryOrFail("externalId", req);
     await findOrCreateFacilityMapping({
       cxId,
@@ -446,7 +450,7 @@ router.get(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const source = getFrom("query").optional("source", req);
     if (source !== undefined && !isFacilityMappingSource(source)) {
-      throw new BadRequestError(`Invalid source ${source}`);
+      throw new BadRequestError(`Invalid source for facility mapping`, undefined, { source });
     }
     const result = await getFacilityMappingsByCustomer({
       cxId,

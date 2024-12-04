@@ -584,23 +584,23 @@ class AthenaHealthApi {
   async getAppointmentsFromSubscription({
     cxId,
     departmentIds,
-    showProcessedStartDateTime,
-    showProcessedEndDateTime,
+    startProcessedDate,
+    endProcessedDate,
   }: {
     cxId: string;
     departmentIds?: string[];
-    showProcessedStartDateTime?: Date;
-    showProcessedEndDateTime?: Date;
+    startProcessedDate?: Date;
+    endProcessedDate?: Date;
   }): Promise<BookedAppointment[]> {
     const { log, debug } = out(
       `AthenaHealth get appointments from sub - cxId ${cxId} practiceId ${this.practiceId} departmentIds ${departmentIds}`
     );
     const params = {
-      showprocessedstartdatetime: showProcessedStartDateTime
-        ? this.formatDateTime(showProcessedStartDateTime.toISOString()) ?? ""
+      showprocessedstartdatetime: startProcessedDate
+        ? this.formatDateTime(startProcessedDate.toISOString()) ?? ""
         : "",
-      showprocessedenddatetime: showProcessedEndDateTime
-        ? this.formatDateTime(showProcessedEndDateTime.toISOString()) ?? ""
+      showprocessedenddatetime: endProcessedDate
+        ? this.formatDateTime(endProcessedDate.toISOString()) ?? ""
         : "",
     };
     const urlParams = new URLSearchParams(params);

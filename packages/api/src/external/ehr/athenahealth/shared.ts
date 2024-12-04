@@ -69,8 +69,6 @@ export async function getAthenaEnv(): Promise<{
   if (!isAthenaEnv(environment)) {
     throw new MetriportError("Invalid AthenaHealth environment", undefined, { environment });
   }
-  //const clientKey = Config.getAthenaHealthClientKey();
-  //const clientSecret = Config.getAthenaHealthClientSecret();
   const athenaClientKeySecretArn = Config.getAthenaHealthClientKeyArn();
   const athenaClientSecretSecretArn = Config.getAthenaHealthClientSecretArn();
   if (!athenaClientKeySecretArn || !athenaClientSecretSecretArn) {

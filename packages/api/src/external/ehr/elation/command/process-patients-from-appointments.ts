@@ -6,14 +6,14 @@ import { errorToString, MetriportError } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { getCxMappingsBySource } from "../../../../command/mapping/cx";
-import { EhrSources, getLookforwardTimeRange } from "../../shared";
+import { EhrSources, getLookForwardTimeRange } from "../../shared";
 import { getElationClientKeyAndSecret, getElationEnv, MAP_KEY_SEPARATOR } from "../shared";
 import { getPatientIdOrFail } from "./get-patient";
 
 dayjs.extend(duration);
 
 const delayBetweenPracticeBatches = dayjs.duration(0, "seconds");
-const lookforward = dayjs.duration(14, "days");
+const lookForward = dayjs.duration(14, "days");
 const parallelPractices = 10;
 const parallelPatients = 2;
 
@@ -24,10 +24,10 @@ type PatientAppointment = {
 };
 
 export async function processPatientsFromAppointments(): Promise<void> {
-  const { log } = out(`Elation processPatientIdsOrFailFromAppointments`);
+  const { log } = out(`Elation processPatientsFromAppointments`);
   const elationEnvironment = getElationEnv();
 
-  const { startRange, endRange } = getLookforwardTimeRange({ lookforward });
+  const { startRange, endRange } = getLookForwardTimeRange({ lookForward });
   log(`Getting appointments from ${startRange} to ${endRange}`);
 
   const cxMappings = await getCxMappingsBySource({ source: EhrSources.elation });
@@ -159,9 +159,9 @@ async function getAppointmentsByPractice({
       })
     );
   } catch (error) {
+    const msg = "Failed to get appointments.";
     const cause = `Cause: ${errorToString(error)}`;
     const details = `cxId ${cxId} practiceId ${practiceId}.`;
-    const msg = "Failed to get appointments.";
     log(`${details} ${msg} ${cause}`);
     errorArray.push(`${msg} ${details} ${cause}`);
   }
@@ -236,9 +236,9 @@ async function getPatientIdOrFailByPatient({
       triggerDq,
     });
   } catch (error) {
+    const msg = "Failed to find or create patients";
     const cause = `Cause: ${errorToString(error)}`;
     const details = `cxId ${cxId} elationPracticeId ${elationPracticeId} elationPatientId ${elationPatientId}.`;
-    const msg = "Failed to find or create patients";
     log(`${details} ${msg} ${cause}`);
     errorArray.push(`${msg} ${details} ${cause}`);
   }
