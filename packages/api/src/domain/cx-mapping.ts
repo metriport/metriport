@@ -11,7 +11,7 @@ export function isCxMappingSource(source: string): source is CxMappingSource {
   return source === EhrSources.athena || source === EhrSources.elation;
 }
 
-export type CxSecondaryMappings = AthenaSecondaryMappings | null;
+export type CxMappingSecondaryMappings = AthenaSecondaryMappings | null;
 export const secondaryMappingsSchemaMap: { [key in CxMappingSource]: z.Schema | undefined } = {
   [EhrSources.athena]: athenaSecondaryMappingsSchema,
   [EhrSources.elation]: undefined,
@@ -21,7 +21,7 @@ export type CxMappingPerSource = {
   externalId: string;
   cxId: string;
   source: CxMappingSource;
-  secondaryMappings: CxSecondaryMappings;
+  secondaryMappings: CxMappingSecondaryMappings;
 };
 
 export interface CxMapping extends BaseDomain, CxMappingPerSource {}
