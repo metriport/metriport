@@ -48,8 +48,6 @@ export async function processPatientsFromAppointments(): Promise<void> {
 
   const cxMappings = await getCxMappingsBySource({ source: EhrSources.elation });
 
-  console.log("cxMappings", cxMappings);
-
   const allAppointments: Appointment[] = [];
   const getAppointmentsErrors: { error: unknown; cxId: string; practiceId: string }[] = [];
   const getAppointmentsArgs: GetAppointmentsParams[] = cxMappings.map(mapping => {
@@ -63,15 +61,11 @@ export async function processPatientsFromAppointments(): Promise<void> {
       toDate: endRange,
     };
   });
-  console.log("getAppointmentsArgs", getAppointmentsArgs);
 
   await executeAsynchronously(
     getAppointmentsArgs,
     async (params: GetAppointmentsParams) => {
-      console.log("getAppointments", params);
       const { appointments, error } = await getAppointments(params);
-      console.log("appointments", appointments);
-      console.log("error", error);
       if (appointments) allAppointments.push(...appointments);
       if (error) getAppointmentsErrors.push({ error, ...params });
     },
@@ -154,13 +148,10 @@ async function getAppointments({
   toDate,
 }: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
   const { log } = out(`Elation getAppointments - cxId ${cxId} practiceId ${practiceId}`);
-  console.log("getElationClientKeyAndSecret");
   const { clientKey, clientSecret } = await getElationClientKeyAndSecret({
     cxId,
     practiceId,
   });
-  console.log("clientKey", clientKey);
-  console.log("clientSecret", clientSecret);
   const api = await ElationApi.create({
     practiceId,
     environment,
