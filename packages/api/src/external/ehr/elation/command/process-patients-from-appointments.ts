@@ -8,7 +8,7 @@ import duration from "dayjs/plugin/duration";
 import { getCxMappingsBySource } from "../../../../command/mapping/cx";
 import {
   Appointment,
-  createPracticePatientMap,
+  createPracticeMap,
   delayBetweenPracticeBatches,
   EhrSources,
   getLookForwardTimeRange,
@@ -90,7 +90,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
   const uniqueAppointments: Appointment[] = [
     ...new Map(allAppointments.map(app => [app.patientId, app])).values(),
   ];
-  const uniqueAppointmentsByPractice = createPracticePatientMap(uniqueAppointments);
+  const uniqueAppointmentsByPractice = createPracticeMap(uniqueAppointments);
 
   const syncPatientsErrors: {
     error: unknown;

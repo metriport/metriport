@@ -56,7 +56,7 @@ export function parsePracticeMapKey(key: string): { cxId: string; practiceId: st
   return { cxId, practiceId };
 }
 
-export function createPracticePatientMap(appointments: Appointment[]): {
+export function createPracticeMap(appointments: Appointment[]): {
   [k: string]: Appointment[];
 } {
   const appointmentsByPractice: { [k: string]: Appointment[] } = {};

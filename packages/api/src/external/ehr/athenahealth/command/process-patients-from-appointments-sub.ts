@@ -9,7 +9,7 @@ import { getCxMappingsBySource } from "../../../../command/mapping/cx";
 import {
   Appointment,
   EhrSources,
-  createPracticePatientMap,
+  createPracticeMap,
   delayBetweenPracticeBatches,
   getLookBackTimeRange,
   parallelPatients,
@@ -119,7 +119,7 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
   const uniqueAppointments: Appointment[] = [
     ...new Map(allAppointments.map(app => [app.patientId, app])).values(),
   ];
-  const uniqueAppointmentsByPractice = createPracticePatientMap(uniqueAppointments);
+  const uniqueAppointmentsByPractice = createPracticeMap(uniqueAppointments);
 
   const syncPatientsErrors: {
     error: unknown;
