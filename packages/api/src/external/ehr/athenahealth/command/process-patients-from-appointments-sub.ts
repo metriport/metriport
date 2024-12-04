@@ -5,6 +5,7 @@ import { capture } from "@metriport/core/util/notifications";
 import { MetriportError, errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { uniqBy } from "lodash";
 import { getCxMappingsBySource } from "../../../../command/mapping/cx";
 import {
   Appointment,
@@ -116,9 +117,7 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
     });
   }
 
-  const uniqueAppointments: Appointment[] = [
-    ...new Map(allAppointments.map(app => [app.patientId, app])).values(),
-  ];
+  const uniqueAppointments: Appointment[] = uniqBy(allAppointments, "patientId");
   const uniqueAppointmentsByPractice = createPracticeMap(uniqueAppointments);
 
   const syncPatientsErrors: {
