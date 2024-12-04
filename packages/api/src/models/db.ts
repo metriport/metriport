@@ -24,7 +24,6 @@ import { CxMappingModel } from "./cx-mapping";
 import { PatientMappingModel } from "./patient-mapping";
 import { FacilityMappingModel } from "./facility-mapping";
 import { JwtTokenModel } from "./jwt-token";
-import { SecretsMappingModel } from "./secrets-mapping";
 import { ModelSetup } from "./_default";
 
 // models to setup with sequelize
@@ -50,7 +49,6 @@ const models: ModelSetup[] = [
   PatientMappingModel.setup,
   FacilityMappingModel.setup,
   JwtTokenModel.setup,
-  SecretsMappingModel.setup,
 ];
 
 export type DbPoolProps = {
