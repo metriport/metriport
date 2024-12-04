@@ -198,7 +198,7 @@ async function getAppointments({
     });
     return {
       appointments: appointmentsFromApi.map(appointment => {
-        return { cxId, practiceId, patientId: appointment.patientid };
+        return { cxId, practiceId, patientId: api.createPatientId(appointment.patientid) };
       }),
     };
   } catch (error) {

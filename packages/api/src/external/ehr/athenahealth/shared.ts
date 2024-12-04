@@ -1,6 +1,6 @@
 import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
-import { AthenaEnv, isAthenaEnv } from "@metriport/core/external/athenahealth";
+import { AthenaEnv, isAthenaEnv } from "@metriport/core/external/athenahealth/index";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import {
   MetriportError,
