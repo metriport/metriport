@@ -34,7 +34,7 @@ async function main() {
     brief ? { content: brief, id: briefId, link: `${dashUrl}/feedback/${briefId}` } : undefined
   );
 
-  fs.writeFileSync(`${SOURCE_DIR}/output_${SOURCE_BUNDLE_FILE}`, html);
+  fs.writeFileSync(`${SOURCE_DIR}/output_${SOURCE_BUNDLE_FILE}.html`, html);
 }
 
 main();
