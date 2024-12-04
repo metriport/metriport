@@ -20,8 +20,8 @@ import {
   PatientCreateCmd,
 } from "../../../../command/medical/patient/create-patient";
 import {
-  getPatientOrFail,
   getPatientByDemo,
+  getPatientOrFail,
 } from "../../../../command/medical/patient/get-patient";
 import { Config } from "../../../../shared/config";
 import { EhrSources } from "../../shared";
@@ -106,7 +106,6 @@ export async function syncElationPatientIntoMetriport({
         elationPracticeId,
         elationPatientId,
         error,
-        demo,
       },
     });
     throw error;

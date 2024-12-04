@@ -21,8 +21,8 @@ import {
   PatientCreateCmd,
 } from "../../../../command/medical/patient/create-patient";
 import {
-  getPatientOrFail,
   getPatientByDemo,
+  getPatientOrFail,
 } from "../../../../command/medical/patient/get-patient";
 import { EhrSources } from "../../shared";
 import {
@@ -104,7 +104,7 @@ export async function syncAthenaPatientIntoMetriport({
   const demos = createMetriportPatientDemos(athenaPatient);
 
   const patients: Patient[] = [];
-  const getPatientByDemoErrors: { error: unknown; cxId: string }[] = [];
+  const getPatientByDemoErrors: unknown[] = [];
   const getPatientByDemoArgs: GetPatientByDemoParams[] = demos.map(demo => {
     return { cxId, demo };
   });
@@ -117,7 +117,7 @@ export async function syncAthenaPatientIntoMetriport({
         if (patient) patients.push(patient);
       } catch (error) {
         log(`Failed to get patient by demo. Cause: ${errorToString(error)}`);
-        getPatientByDemoErrors.push({ error, ...params });
+        getPatientByDemoErrors.push(error);
       }
     },
     { numberOfParallelExecutions: parallelPatientMatches }
@@ -126,11 +126,12 @@ export async function syncAthenaPatientIntoMetriport({
   if (getPatientByDemoErrors.length > 0) {
     capture.error("Failed to get patient by demos", {
       extra: {
-        getAppointmentsArgsCount: getPatientByDemoArgs.length,
+        cxId,
+        athenaPracticeId,
+        athenaPatientId,
+        getPatientByDemoArgsCount: getPatientByDemoArgs.length,
         errorCount: getPatientByDemoErrors.length,
-        errors: getPatientByDemoErrors
-          .map(e => `cxId ${e.cxId} Cause: ${errorToString(e.error)}`)
-          .join(","),
+        errors: getPatientByDemoErrors.map(e => `Cause: ${errorToString(e)}`).join(","),
         context: "athenahealth.sync-patient",
       },
     });
