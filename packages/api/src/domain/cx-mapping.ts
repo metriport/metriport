@@ -1,4 +1,3 @@
-import { BadRequestError } from "@metriport/shared";
 import { BaseDomain } from "@metriport/core/domain/base-domain";
 import {
   AthenaSecondaryMappings,
@@ -10,10 +9,6 @@ import { EhrSources } from "../external/ehr/shared";
 export type CxMappingSource = EhrSources.athena | EhrSources.elation;
 export function isCxMappingSource(source: string): source is CxMappingSource {
   return source === EhrSources.athena || source === EhrSources.elation;
-}
-export function getCxMappingSource(source: string): CxMappingSource {
-  if (isCxMappingSource(source)) return source;
-  throw new BadRequestError(`Source ${source} is invalid cx mapping source.`);
 }
 
 export type CxSecondaryMappings = AthenaSecondaryMappings | null;

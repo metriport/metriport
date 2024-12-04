@@ -24,8 +24,8 @@ import {
 import { getFacilities, getFacilityOrFail } from "../command/medical/facility/get-facility";
 import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
-import { getCxMappingSource, secondaryMappingsSchemaMap } from "../domain/cx-mapping";
-import { getFacilityMappingSource } from "../domain/facility-mapping";
+import { isCxMappingSource, secondaryMappingsSchemaMap } from "../domain/cx-mapping";
+import { isFacilityMappingSource } from "../domain/facility-mapping";
 import { isEnhancedCoverageEnabledForCx } from "../external/aws/app-config";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
 import { countResourcesOnFhir } from "../external/fhir/patient/count-resources-on-fhir";
@@ -314,7 +314,8 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const source = getCxMappingSource(getFromQueryOrFail("source", req));
+    const source = getFromQueryOrFail("source", req);
+    if (!isCxMappingSource(source)) throw new BadRequestError(`Invalid source ${source}`);
     const externalId = getFromQueryOrFail("externalId", req);
     const secondaryMappingsSchema = secondaryMappingsSchemaMap[source];
     const secondaryMappings = secondaryMappingsSchema
@@ -344,9 +345,12 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const source = getFrom("query").optional("source", req);
+    if (source !== undefined && !isCxMappingSource(source)) {
+      throw new BadRequestError(`Invalid source ${source}`);
+    }
     const result = await getCxMappingsByCustomer({
       cxId,
-      ...(source && { source: getCxMappingSource(source) }),
+      ...(source && { source }),
     });
     return res.status(httpStatus.OK).json(result);
   })
@@ -414,7 +418,8 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getFromQueryOrFail("facilityId", req);
     await getFacilityOrFail({ cxId, id: facilityId });
-    const source = getFacilityMappingSource(getFromQueryOrFail("source", req));
+    const source = getFromQueryOrFail("source", req);
+    if (!isFacilityMappingSource(source)) throw new BadRequestError(`Invalid source ${source}`);
     const externalId = getFromQueryOrFail("externalId", req);
     await findOrCreateFacilityMapping({
       cxId,
@@ -440,9 +445,12 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const source = getFrom("query").optional("source", req);
+    if (source !== undefined && !isFacilityMappingSource(source)) {
+      throw new BadRequestError(`Invalid source ${source}`);
+    }
     const result = await getFacilityMappingsByCustomer({
       cxId,
-      ...(source && { source: getFacilityMappingSource(source) }),
+      ...(source && { source }),
     });
     return res.status(httpStatus.OK).json(result);
   })
