@@ -37,9 +37,9 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
 
   const cxMappings = await getCxMappingsBySource({ source: EhrSources.athena });
 
-  const patientAppointmentsFromGetAppointmentsFromSubscriptionByPractice: PatientAppointment[] = [];
-  const errorsFromGetAppointmentsFromSubscriptionByPractice: string[] = [];
-  const argsForGetAppointmentsFromSubscriptionByPractice = cxMappings.map(mapping => {
+  const patientAppointmentsFromGetAppointmentsFromSubByPractice: PatientAppointment[] = [];
+  const errorsFromGetAppointmentsFromSubByPractice: string[] = [];
+  const argsForGetAppointmentsFromSubByPractice = cxMappings.map(mapping => {
     const cxId = mapping.cxId;
     const practiceId = mapping.externalId;
     const departmentIds = mapping.secondaryMappings?.departmentIds;
@@ -63,27 +63,27 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
       clientSecret,
       showProcessedStartDateTime: startRange,
       showProcessedEndDateTime: endRange,
-      returnArray: patientAppointmentsFromGetAppointmentsFromSubscriptionByPractice,
-      errorArray: errorsFromGetAppointmentsFromSubscriptionByPractice,
+      returnArray: patientAppointmentsFromGetAppointmentsFromSubByPractice,
+      errorArray: errorsFromGetAppointmentsFromSubByPractice,
       log,
     };
   });
 
   await executeAsynchronously(
-    argsForGetAppointmentsFromSubscriptionByPractice,
-    getAppointmentsFromSubscriptionByPractice,
+    argsForGetAppointmentsFromSubByPractice,
+    getAppointmentsFromSubByPractice,
     {
       numberOfParallelExecutions: parallelPractices,
       delay: delayBetweenPracticeBatches.asMilliseconds(),
     }
   );
 
-  if (errorsFromGetAppointmentsFromSubscriptionByPractice.length > 0) {
+  if (errorsFromGetAppointmentsFromSubByPractice.length > 0) {
     capture.error("Failed to get appointments", {
       extra: {
-        getAppointmentsArgsCount: errorsFromGetAppointmentsFromSubscriptionByPractice.length,
-        errorCount: errorsFromGetAppointmentsFromSubscriptionByPractice.length,
-        errors: errorsFromGetAppointmentsFromSubscriptionByPractice.join(","),
+        getAppointmentsArgsCount: errorsFromGetAppointmentsFromSubByPractice.length,
+        errorCount: errorsFromGetAppointmentsFromSubByPractice.length,
+        errors: errorsFromGetAppointmentsFromSubByPractice.join(","),
         context: "athenahealth.get-patients-from-appointments-sub",
       },
     });
@@ -91,10 +91,7 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
 
   const patientAppointmentsUnique = [
     ...new Map(
-      patientAppointmentsFromGetAppointmentsFromSubscriptionByPractice.map(app => [
-        app.athenaPatientId,
-        app,
-      ])
+      patientAppointmentsFromGetAppointmentsFromSubByPractice.map(app => [app.athenaPatientId, app])
     ).values(),
   ];
   const patientAppointmentsUniqueByPractice: { [k: string]: PatientAppointment[] } = {};
@@ -139,7 +136,7 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
   }
 }
 
-async function getAppointmentsFromSubscriptionByPractice({
+async function getAppointmentsFromSubByPractice({
   cxId,
   practiceId,
   departmentIds,
