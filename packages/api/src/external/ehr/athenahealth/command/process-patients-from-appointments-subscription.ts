@@ -23,7 +23,7 @@ type PatientAppointment = {
   athenaPatientId: string;
 };
 
-export async function getPatientIdsOrFailFromAppointmentsSub({ catchUp }: { catchUp: boolean }) {
+export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp: boolean }) {
   const { log } = out(`AthenaHealth getPatientIdsOrFailFromAppointmentsSub - catchUp: ${catchUp}`);
   const { environment, clientKey, clientSecret } = await getAthenaEnv();
 
@@ -45,7 +45,7 @@ export async function getPatientIdsOrFailFromAppointmentsSub({ catchUp }: { catc
     const departmentIds = mapping.secondaryMappings?.departmentIds;
     if (departmentIds && !Array.isArray(departmentIds)) {
       throw new MetriportError(
-        `cxMapping ${EhrSources.athena} departmentIds exists but is malformed for cxId ${cxId} externalId ${practiceId}`,
+        `AthenaHealth cxMapping departmentIds exists but is malformed`,
         undefined,
         {
           cxId,

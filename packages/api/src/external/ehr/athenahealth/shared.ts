@@ -68,9 +68,7 @@ export async function getAthenaEnv(): Promise<{
   }
   const clientKey = Config.getAthenaHealthClientKey();
   const clientSecret = Config.getAthenaHealthClientSecret();
-  if (!clientKey || !clientSecret) {
-    throw new MetriportError("AthenaHealth environment not set");
-  }
+  if (!clientKey || !clientSecret) throw new MetriportError("AthenaHealth secrets not set");
   return {
     environment,
     clientKey,

@@ -1,7 +1,7 @@
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { Request, Response } from "express";
-import { getPatientIdsOrFailFromAppointments } from "../../../../external/ehr/elation/command/get-patients-from-appointments";
+import { processPatientsFromAppointments } from "../../../../external/ehr/elation/command/process-patients-from-appointments";
 import { requestLogger } from "../../../helpers/request-logger";
 import { asyncHandler } from "../../../util";
 const router = Router();
@@ -15,7 +15,7 @@ router.post(
   "/from-appointments",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    getPatientIdsOrFailFromAppointments();
+    processPatientsFromAppointments();
     return res.sendStatus(httpStatus.OK);
   })
 );

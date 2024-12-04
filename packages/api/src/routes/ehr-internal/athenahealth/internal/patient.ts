@@ -1,7 +1,7 @@
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { Request, Response } from "express";
-import { getPatientIdsOrFailFromAppointmentsSub } from "../../../../external/ehr/athenahealth/command/get-patients-from-appointments-subscription";
+import { processPatientsFromAppointmentsSub } from "../../../../external/ehr/athenahealth/command/process-patients-from-appointments-subscription";
 import { requestLogger } from "../../../helpers/request-logger";
 import { asyncHandler, getFromQueryAsBoolean } from "../../../util";
 const router = Router();
@@ -16,7 +16,7 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const catchUp = getFromQueryAsBoolean("catchUp", req) ?? false;
-    getPatientIdsOrFailFromAppointmentsSub({ catchUp });
+    processPatientsFromAppointmentsSub({ catchUp });
     return res.sendStatus(httpStatus.OK);
   })
 );

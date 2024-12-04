@@ -23,8 +23,8 @@ type PatientAppointment = {
   elationPatientId: string;
 };
 
-export async function getPatientIdsOrFailFromAppointments(): Promise<void> {
-  const { log } = out(`Elation getPatientIdsOrFailFromAppointments`);
+export async function processPatientsFromAppointments(): Promise<void> {
+  const { log } = out(`Elation processPatientIdsOrFailFromAppointments`);
   const elationEnvironment = getElationEnv();
 
   const { startRange, endRange } = getLookforwardTimeRange({ lookforward });
