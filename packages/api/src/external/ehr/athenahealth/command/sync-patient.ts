@@ -21,8 +21,8 @@ import {
   PatientCreateCmd,
 } from "../../../../command/medical/patient/create-patient";
 import {
-  getPatientOrFail as getMetriportPatientOrFail,
-  getPatientByDemo as getMetriportPatientByDemo,
+  getPatientOrFail,
+  getPatientByDemo,
 } from "../../../../command/medical/patient/get-patient";
 import { EhrSources } from "../../shared";
 import {
@@ -34,7 +34,12 @@ import {
 
 const parallelPatientMatches = 5;
 
-export async function getPatientIdOrFail({
+type GetPatientByDemoParams = {
+  cxId: string;
+  demo: PatientDemoData;
+};
+
+export async function syncAthenaPatientIntoMetriport({
   cxId,
   athenaPracticeId,
   athenaPatientId,
@@ -52,7 +57,7 @@ export async function getPatientIdOrFail({
   triggerDq?: boolean;
 }): Promise<string> {
   const { log } = out(
-    `AthenaHealth getPatientIdOrFail - cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}`
+    `AthenaHealth syncAthenaPatientIntoMetriport - cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}`
   );
   const existingPatient = await getPatientMapping({
     cxId,
@@ -60,7 +65,7 @@ export async function getPatientIdOrFail({
     source: EhrSources.athena,
   });
   if (existingPatient) {
-    const metriportPatient = await getMetriportPatientOrFail({
+    const metriportPatient = await getPatientOrFail({
       cxId,
       id: existingPatient.patientId,
     });
@@ -96,47 +101,50 @@ export async function getPatientIdOrFail({
     });
   }
 
-  const patientDemoFilters = createMetriportPatientDemoFilters(athenaPatient);
-  const patientsFromGetPatientByDemo: Patient[] = [];
-  const errorsFromGetPatientByDemo: string[] = [];
-  const argsForGetPatientByDemo = patientDemoFilters.map(demo => {
-    return {
-      cxId,
-      athenaPracticeId,
-      athenaPatientId,
-      demo,
-      returnArray: patientsFromGetPatientByDemo,
-      errorArray: errorsFromGetPatientByDemo,
-      log,
-    };
+  const demos = createMetriportPatientDemos(athenaPatient);
+
+  const patients: Patient[] = [];
+  const getPatientByDemoErrors: { error: unknown; cxId: string }[] = [];
+  const getPatientByDemoArgs: GetPatientByDemoParams[] = demos.map(demo => {
+    return { cxId, demo };
   });
 
-  await executeAsynchronously(argsForGetPatientByDemo, getPatientByDemo, {
-    numberOfParallelExecutions: parallelPatientMatches,
-  });
+  await executeAsynchronously(
+    getPatientByDemoArgs,
+    async (params: GetPatientByDemoParams) => {
+      try {
+        const patient = await getPatientByDemo(params);
+        if (patient) patients.push(patient);
+      } catch (error) {
+        log(`Failed to get patient by demo. Cause: ${errorToString(error)}`);
+        getPatientByDemoErrors.push({ error, ...params });
+      }
+    },
+    { numberOfParallelExecutions: parallelPatientMatches }
+  );
 
-  if (errorsFromGetPatientByDemo.length > 0) {
-    capture.error("Failed to get patient by demo", {
+  if (getPatientByDemoErrors.length > 0) {
+    capture.error("Failed to get patient by demos", {
       extra: {
-        cxId,
-        getPatientByDemoArgsCount: errorsFromGetPatientByDemo.length,
-        errorCount: errorsFromGetPatientByDemo.length,
-        errors: errorsFromGetPatientByDemo.join(","),
-        context: "athenahealth.get-patient",
+        getAppointmentsArgsCount: getPatientByDemoArgs.length,
+        errorCount: getPatientByDemoErrors.length,
+        errors: getPatientByDemoErrors
+          .map(e => `cxId ${e.cxId} Cause: ${errorToString(e.error)}`)
+          .join(","),
+        context: "athenahealth.sync-patient",
       },
     });
   }
 
-  let metriportPatient = patientsFromGetPatientByDemo[0];
+  let metriportPatient = patients[0];
   if (metriportPatient) {
-    const uniquePatientIds = new Set(patientsFromGetPatientByDemo.map(patient => patient.id));
+    const uniquePatientIds = new Set(patients.map(patient => patient.id));
     if (uniquePatientIds.size > 1) {
       capture.message("AthenaHealth patient mapping to more than one Metriport patient", {
         extra: {
           cxId,
-          patientDemoFiltersCount: patientDemoFilters.length,
           patientIds: uniquePatientIds,
-          context: "athenahealth.get-patient",
+          context: "athenahealth.sync-patient",
         },
         level: "warning",
       });
@@ -151,7 +159,7 @@ export async function getPatientIdOrFail({
       patient: {
         cxId,
         facilityId: defaultFacility.facilityId,
-        ...createMetriportPatientDemo(athenaPatient),
+        ...createMetriportPatientCreateCmd(athenaPatient),
       },
     });
     if (triggerDq) {
@@ -170,7 +178,7 @@ export async function getPatientIdOrFail({
   return metriportPatient.id;
 }
 
-function createMetriportPatientDemoFilters(patient: PatientResource): PatientDemoData[] {
+function createMetriportPatientDemos(patient: PatientResource): PatientDemoData[] {
   const addressArray = createMetriportAddresses(patient);
   const contactArray = createMetriportContacts(patient);
   const names = createNames(patient);
@@ -186,7 +194,7 @@ function createMetriportPatientDemoFilters(patient: PatientResource): PatientDem
   });
 }
 
-function createMetriportPatientDemo(
+function createMetriportPatientCreateCmd(
   patient: PatientResource
 ): Omit<PatientCreateCmd, "cxId" | "facilityId"> {
   const addressArray = createMetriportAddresses(patient);
@@ -200,35 +208,6 @@ function createMetriportPatientDemo(
     address: addressArray,
     contact: contactArray,
   };
-}
-
-async function getPatientByDemo({
-  cxId,
-  athenaPracticeId,
-  athenaPatientId,
-  demo,
-  returnArray,
-  errorArray,
-  log,
-}: {
-  cxId: string;
-  athenaPracticeId: string;
-  athenaPatientId: string;
-  demo: PatientDemoData;
-  returnArray: Patient[];
-  errorArray: string[];
-  log: typeof console.log;
-}): Promise<void> {
-  try {
-    const patient = await getMetriportPatientByDemo({ cxId, demo });
-    if (patient) returnArray.push(patient);
-  } catch (error) {
-    const msg = "Failed to get patient by demo.";
-    const cause = `Cause: ${errorToString(error)}`;
-    const details = `cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}.`;
-    log(`${msg} ${cause}`);
-    errorArray.push(`${msg} ${details} ${cause}`);
-  }
 }
 
 async function getPatientFromAthena({

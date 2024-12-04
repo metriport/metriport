@@ -12,8 +12,6 @@ import {
 import { PatientResource } from "@metriport/shared/interface/external/elation/patient";
 import { Config } from "../../../shared/config";
 
-export const MAP_KEY_SEPARATOR = "|||";
-
 export function createMetriportContacts(patient: PatientResource): Contact[] {
   return [
     ...patient.phones.map(p => {

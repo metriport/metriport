@@ -1,10 +1,22 @@
+import { MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
+import dayjs from "dayjs";
 import { Duration } from "dayjs/plugin/duration";
+
+export const delayBetweenPracticeBatches = dayjs.duration(30, "seconds");
+export const parallelPractices = 10;
+export const parallelPatients = 2;
 
 export enum EhrSources {
   athena = "athenahealth",
   elation = "elation",
 }
+
+export type Appointment = {
+  cxId: string;
+  practiceId: string;
+  patientId: string;
+};
 
 export function getLookBackTimeRange({ lookBack }: { lookBack: Duration }): {
   startRange: Date;
@@ -30,4 +42,16 @@ export function getLookForwardTimeRange({ lookForward }: { lookForward: Duration
     startRange,
     endRange,
   };
+}
+
+const MAP_KEY_SEPARATOR = "|||";
+
+export function createMapKey(cxId: string, practiceId: string): string {
+  return `${cxId}${MAP_KEY_SEPARATOR}${practiceId}`;
+}
+
+export function parseMapKey(key: string): { cxId: string; practiceId: string } {
+  const [cxId, practiceId] = key.split(MAP_KEY_SEPARATOR);
+  if (!cxId || !practiceId) throw new MetriportError(`Invalid map key ${key}`, undefined, { key });
+  return { cxId, practiceId };
 }

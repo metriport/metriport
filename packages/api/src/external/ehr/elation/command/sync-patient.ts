@@ -20,8 +20,8 @@ import {
   PatientCreateCmd,
 } from "../../../../command/medical/patient/create-patient";
 import {
-  getPatientOrFail as getMetriportPatientOrFail,
-  getPatientByDemo as getMetriportPatientByDemo,
+  getPatientOrFail,
+  getPatientByDemo,
 } from "../../../../command/medical/patient/get-patient";
 import { Config } from "../../../../shared/config";
 import { EhrSources } from "../../shared";
@@ -33,7 +33,7 @@ import {
   getElationEnv,
 } from "../shared";
 
-export async function getPatientIdOrFail({
+export async function syncElationPatientIntoMetriport({
   cxId,
   elationPracticeId,
   elationPatientId,
@@ -47,7 +47,7 @@ export async function getPatientIdOrFail({
   triggerDq?: boolean;
 }): Promise<string> {
   const { log } = out(
-    `Elation getPatientIdOrFail - cxId ${cxId} elationPracticeId ${elationPracticeId} elationPatientId ${elationPatientId}`
+    `Elation syncElationPatientIntoMetriport - cxId ${cxId} elationPracticeId ${elationPracticeId} elationPatientId ${elationPatientId}`
   );
   const existingPatient = await getPatientMapping({
     cxId,
@@ -55,7 +55,7 @@ export async function getPatientIdOrFail({
     source: EhrSources.elation,
   });
   if (existingPatient) {
-    const metriportPatient = await getMetriportPatientOrFail({
+    const metriportPatient = await getPatientOrFail({
       cxId,
       id: existingPatient.patientId,
     });
@@ -63,14 +63,14 @@ export async function getPatientIdOrFail({
   }
   let elationApi = api;
   if (!elationApi) {
-    const elationEnvironment = getElationEnv();
+    const environment = getElationEnv();
     const { clientKey, clientSecret } = await getElationClientKeyAndSecret({
       cxId,
       practiceId: elationPracticeId,
     });
     elationApi = await ElationApi.create({
       practiceId: elationPracticeId,
-      environment: elationEnvironment,
+      environment,
       clientKey,
       clientSecret,
     });
@@ -92,16 +92,26 @@ export async function getPatientIdOrFail({
     });
   }
 
-  const patientDemoFilters = createMetriportPatientDemoFilters(elationPatient);
-  const patient = await getPatientByDemo({
-    cxId,
-    elationPracticeId,
-    elationPatientId,
-    demo: patientDemoFilters,
-    log,
-  });
+  const demo = createMetriportPatientDemo(elationPatient);
 
-  let metriportPatient = patient;
+  let metriportPatient: Patient | undefined;
+  try {
+    metriportPatient = await getPatientByDemo({ cxId, demo });
+  } catch (error) {
+    const msg = "Failed to get patient by demo";
+    log(`${msg}. Cause: ${errorToString(error)}`);
+    capture.error(msg, {
+      extra: {
+        cxId,
+        elationPracticeId,
+        elationPatientId,
+        error,
+        demo,
+      },
+    });
+    throw error;
+  }
+
   if (!metriportPatient) {
     const defaultFacility = await getFacilityMappingOrFail({
       cxId,
@@ -112,7 +122,7 @@ export async function getPatientIdOrFail({
       patient: {
         cxId,
         facilityId: defaultFacility.facilityId,
-        ...createMetriportPatientDemo(elationPatient),
+        ...createMetriportPatientCreateCmd(elationPatient),
       },
     });
     if (triggerDq) {
@@ -143,7 +153,7 @@ export async function getPatientIdOrFail({
   return metriportPatient.id;
 }
 
-function createMetriportPatientDemoFilters(patient: PatientResource): PatientDemoData {
+function createMetriportPatientDemo(patient: PatientResource): PatientDemoData {
   const addressArray = createMetriportAddresses(patient);
   const contactArray = createMetriportContacts(patient);
   const names = createNames(patient);
@@ -156,7 +166,7 @@ function createMetriportPatientDemoFilters(patient: PatientResource): PatientDem
   };
 }
 
-function createMetriportPatientDemo(
+function createMetriportPatientCreateCmd(
   patient: PatientResource
 ): Omit<PatientCreateCmd, "cxId" | "facilityId"> {
   const addressArray = createMetriportAddresses(patient);
@@ -170,34 +180,4 @@ function createMetriportPatientDemo(
     address: addressArray,
     contact: contactArray,
   };
-}
-
-async function getPatientByDemo({
-  cxId,
-  elationPracticeId,
-  elationPatientId,
-  demo,
-  log,
-}: {
-  cxId: string;
-  elationPracticeId: string;
-  elationPatientId: string;
-  demo: PatientDemoData;
-  log: typeof console.log;
-}): Promise<Patient | undefined> {
-  try {
-    return await getMetriportPatientByDemo({ cxId, demo });
-  } catch (error) {
-    const msg = "Failed to get patient by demo.";
-    log(`${msg}. Cause: ${errorToString(error)}`);
-    capture.error(msg, {
-      extra: {
-        cxId,
-        elationPracticeId,
-        elationPatientId,
-        context: "elation.get-patient",
-        error,
-      },
-    });
-  }
 }
