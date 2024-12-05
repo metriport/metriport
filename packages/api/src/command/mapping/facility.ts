@@ -1,6 +1,10 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { NotFoundError } from "@metriport/shared";
-import { FacilityMapping, FacilityMappingPerSource } from "../../domain/facility-mapping";
+import {
+  FacilityMapping,
+  FacilityMappingPerSource,
+  FacilityMappingSource,
+} from "../../domain/facility-mapping";
 import { FacilityMappingModel } from "../../models/facility-mapping";
 
 export type FacilityMappingParams = FacilityMappingPerSource;
@@ -59,7 +63,7 @@ export async function getFacilityMappingsByCustomer({
   source,
 }: {
   cxId: string;
-  source?: string;
+  source?: FacilityMappingSource;
 }): Promise<FacilityMapping[]> {
   const mappings = await FacilityMappingModel.findAll({
     where: { cxId, ...(source && { source }) },

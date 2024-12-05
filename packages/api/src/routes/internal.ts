@@ -1,4 +1,4 @@
-import BadRequestError from "@metriport/core/util/error/bad-request";
+import { BadRequestError } from "@metriport/shared";
 import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
 import { getCxFFStatus } from "../command/internal/get-hie-enabled-feature-flags-status";
@@ -24,8 +24,8 @@ import {
 import { getFacilities, getFacilityOrFail } from "../command/medical/facility/get-facility";
 import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
-import { CxSources, cxMappingsSourceMap } from "../domain/cx-mapping";
-import { FacilitySources, facilitysMappingsSourceList } from "../domain/facility-mapping";
+import { isCxMappingSource, secondaryMappingsSchemaMap } from "../domain/cx-mapping";
+import { isFacilityMappingSource } from "../domain/facility-mapping";
 import { isEnhancedCoverageEnabledForCx } from "../external/aws/app-config";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
 import { countResourcesOnFhir } from "../external/fhir/patient/count-resources-on-fhir";
@@ -315,13 +315,17 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const source = getFromQueryOrFail("source", req);
+    if (!isCxMappingSource(source)) {
+      throw new BadRequestError(`Invalid source for cx mapping`, undefined, { source });
+    }
     const externalId = getFromQueryOrFail("externalId", req);
-    const mappedSource = cxMappingsSourceMap.get(source as CxSources);
-    if (!mappedSource) throw new BadRequestError(`Source ${source} is not mapped.`);
-    const secondaryMappings = mappedSource.bodyParser.parse(req.body);
+    const secondaryMappingsSchema = secondaryMappingsSchemaMap[source];
+    const secondaryMappings = secondaryMappingsSchema
+      ? secondaryMappingsSchema.parse(req.body)
+      : null;
     await findOrCreateCxMapping({
       cxId,
-      source: source as CxSources,
+      source,
       externalId,
       secondaryMappings,
     });
@@ -343,6 +347,9 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const source = getFrom("query").optional("source", req);
+    if (source !== undefined && !isCxMappingSource(source)) {
+      throw new BadRequestError(`Invalid source for cx mapping`, undefined, { source });
+    }
     const result = await getCxMappingsByCustomer({
       cxId,
       ...(source && { source }),
@@ -414,14 +421,14 @@ router.post(
     const facilityId = getFromQueryOrFail("facilityId", req);
     await getFacilityOrFail({ cxId, id: facilityId });
     const source = getFromQueryOrFail("source", req);
-    const externalId = getFromQueryOrFail("externalId", req);
-    if (!facilitysMappingsSourceList.includes(source)) {
-      throw new BadRequestError(`Source ${source} is not mapped.`);
+    if (!isFacilityMappingSource(source)) {
+      throw new BadRequestError(`Invalid source for facility mapping`, undefined, { source });
     }
+    const externalId = getFromQueryOrFail("externalId", req);
     await findOrCreateFacilityMapping({
       cxId,
       facilityId,
-      source: source as FacilitySources,
+      source,
       externalId,
     });
     return res.sendStatus(httpStatus.OK);
@@ -442,6 +449,9 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const source = getFrom("query").optional("source", req);
+    if (source !== undefined && !isFacilityMappingSource(source)) {
+      throw new BadRequestError(`Invalid source for facility mapping`, undefined, { source });
+    }
     const result = await getFacilityMappingsByCustomer({
       cxId,
       ...(source && { source }),
