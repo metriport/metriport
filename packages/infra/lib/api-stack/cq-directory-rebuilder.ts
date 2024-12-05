@@ -50,7 +50,7 @@ export function createCqDirectoryRebuilder(props: CqDirectoryRebuilderProps): La
 
   const lambda = createScheduledLambda({
     stack,
-    layers: [lambdaLayers.shared, lambdaLayers.awsSdk],
+    layers: [lambdaLayers.shared],
     name,
     vpc,
     scheduleExpression,

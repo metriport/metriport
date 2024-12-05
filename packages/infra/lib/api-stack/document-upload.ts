@@ -30,7 +30,7 @@ export function createLambda({
     name: "DocumentUploader",
     vpc,
     entry: "document-uploader",
-    layers: [lambdaLayers.shared, lambdaLayers.awsSdk],
+    layers: [lambdaLayers.shared],
     envType,
     envVars: {
       API_URL: `http://${apiAddress}`,

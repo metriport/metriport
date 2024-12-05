@@ -11,10 +11,6 @@ main() {
    # Rebuild so ./dist is available to CDK through packages/infra
    npm run build:cloud
 
-   pushd layers/aws-sdk
-   npm run prep-deploy
-   popd
-
    pushd layers/playwright
    npm run prep-deploy
    popd
