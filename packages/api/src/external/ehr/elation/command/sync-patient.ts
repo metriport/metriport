@@ -122,6 +122,7 @@ export async function syncElationPatientIntoMetriport({
         cxId,
         facilityId: defaultFacility.facilityId,
         ...createMetriportPatientCreateCmd(elationPatient),
+        externalId: elationPatientId,
       },
     });
     if (triggerDq) {

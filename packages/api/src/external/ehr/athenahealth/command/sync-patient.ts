@@ -161,6 +161,7 @@ export async function syncAthenaPatientIntoMetriport({
         cxId,
         facilityId: defaultFacility.facilityId,
         ...createMetriportPatientCreateCmd(athenaPatient),
+        externalId: athenaPatientId,
       },
     });
     if (triggerDq) {
