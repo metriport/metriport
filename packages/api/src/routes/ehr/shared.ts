@@ -20,7 +20,7 @@ export type ParseResponse = {
 
 export async function processCxIdAsync(
   req: Request,
-  source: EhrSources,
+  source: EhrSources.athena,
   parseExternalId: (tokenData: JwtTokenData) => ParseResponse
 ): Promise<void> {
   const accessToken = getAuthorizationToken(req);
