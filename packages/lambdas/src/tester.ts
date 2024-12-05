@@ -5,6 +5,7 @@ import axios from "axios";
 import { capture } from "./shared/capture";
 import wkHtmlToPdf from "./wkHtmlToPdf";
 import { WkOptions } from "./wkHtmlToPdf/types";
+import { Readable } from "stream";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -43,7 +44,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(async () => {
     marginLeft: 0,
     orientation: "Portrait",
   };
-  const pdfData = await wkHtmlToPdf(options, fileContents);
+  const stream = Readable.from(Buffer.from(fileContents));
+  const pdfData = await wkHtmlToPdf(options, stream);
 
   console.log(`Uploading to PDF to ${generalBucketName}/${outputFilePath}...`);
   await s3Utils.uploadFile({
