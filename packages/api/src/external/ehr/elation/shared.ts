@@ -77,7 +77,9 @@ export async function getElationClientKeyAndSecret({
       cxId,
       practiceId,
       cxKey,
+      cxKeyEntry: !Config.isProdEnv() ? cxKeyEntry : undefined,
       cxSecret,
+      cxSecretEntry: !Config.isProdEnv() ? cxSecretEntry : undefined,
     });
   }
   return {

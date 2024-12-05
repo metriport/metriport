@@ -1,7 +1,6 @@
 import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
 import { AthenaEnv, isAthenaEnv } from "@metriport/core/external/athenahealth/index";
-import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import {
   MetriportError,
   normalizeEmail,
@@ -11,8 +10,6 @@ import {
 } from "@metriport/shared";
 import { PatientResource } from "@metriport/shared/interface/external/athenahealth/patient";
 import { Config } from "../../../shared/config";
-
-const region = Config.getAWSRegion();
 
 export function createMetriportContacts(patient: PatientResource): Contact[] {
   return (patient.telecom ?? []).flatMap(telecom => {
@@ -69,13 +66,14 @@ export async function getAthenaEnv(): Promise<{
   if (!isAthenaEnv(environment)) {
     throw new MetriportError("Invalid AthenaHealth environment", undefined, { environment });
   }
-  const athenaClientKeySecretArn = Config.getAthenaHealthClientKeyArn();
-  const athenaClientSecretSecretArn = Config.getAthenaHealthClientSecretArn();
-  if (!athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
-    throw new MetriportError("AthenaHealth secrets not set");
+  const clientKey = Config.getAthenaHealthClientKey();
+  const clientSecret = Config.getAthenaHealthClientSecret();
+  if (!clientKey || !clientSecret) {
+    throw new MetriportError("AthenaHealth secrets not set", undefined, {
+      clientKey: !Config.isProdEnv() ? clientKey : undefined,
+      clientSecret: !Config.isProdEnv() ? clientSecret : undefined,
+    });
   }
-  const clientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
-  const clientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
   return {
     environment,
     clientKey,
