@@ -17,6 +17,7 @@ import { uuidv7 } from "../shared/uuid-v7";
 const dashUrl = "http://dash.metriport.com";
 
 const SOURCE_DIR = "";
+const CX_ID = "";
 const SOURCE_PATIENT_ID = "";
 const SOURCE_BUNDLE_FILE = `${SOURCE_PATIENT_ID}.json`;
 
@@ -25,7 +26,7 @@ async function main() {
   const bundleStr = fs.readFileSync(fileName, { encoding: "utf8" });
   const bundle = JSON.parse(bundleStr) as Bundle<Resource>;
 
-  const brief = await summarizeFilteredBundleWithAI(bundle);
+  const brief = await summarizeFilteredBundleWithAI(bundle, CX_ID, SOURCE_PATIENT_ID);
   const briefId = uuidv7();
 
   // Response from FHIR Converter

@@ -84,7 +84,7 @@ export async function handler({
 
     // TODO: Condense this functionality under a single function and put it on `@metriport/core`, so this can be used both here, and on the Lambda.
     const aiBriefContent = isBriefFeatureFlagEnabled
-      ? await summarizeFilteredBundleWithAI(bundle)
+      ? await summarizeFilteredBundleWithAI(bundle, cxId, patientId)
       : undefined;
     const briefFileName = createMRSummaryBriefFileName(cxId, patientId);
     const aiBrief = prepareBriefToBundle({ aiBrief: aiBriefContent });

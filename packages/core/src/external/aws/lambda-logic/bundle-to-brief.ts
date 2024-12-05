@@ -19,12 +19,19 @@ import {
   Resource,
 } from "@medplum/fhirtypes";
 import { toArray } from "@metriport/shared";
-import { ISO_DATE } from "@metriport/shared/common/date";
+import { elapsedTimeFromNow, ISO_DATE } from "@metriport/shared/common/date";
 import dayjs from "dayjs";
 import { LLMChain, MapReduceDocumentsChain, StuffDocumentsChain } from "langchain/chains";
 import { cloneDeep } from "lodash";
 import { filterBundleByDate } from "../../../command/consolidated/consolidated-filter-by-date";
-import { findPatientResource } from "../../../external/fhir/shared/index";
+import { getDatesFromEffectiveDateTimeOrPeriod } from "../../../command/consolidated/consolidated-filter-shared";
+import {
+  findDiagnosticReportResources,
+  findPatientResource,
+} from "../../../external/fhir/shared/index";
+import { out } from "../../../util";
+import { uuidv7 } from "../../../util/uuid-v7";
+import { analytics, EventTypes } from "../../analytics/posthog";
 import { BedrockChat } from "../../langchain/bedrock/index";
 
 const CHUNK_SIZE = 100_000;
@@ -52,6 +59,21 @@ const referenceResources = [
   "Location",
 ];
 
+const UNANSWERED_CALL = "unanswered call";
+const SCHEDULING_CALL = "scheduling call";
+const ADMIN_NOTE = "admin note";
+const SCAN_REF_NOTE = "scan reference";
+
+const REPORT_TYPES_BLACKLIST = [
+  "instructions",
+  "addendum",
+  "nursing note",
+  SCHEDULING_CALL,
+  UNANSWERED_CALL,
+  ADMIN_NOTE,
+  SCAN_REF_NOTE,
+];
+
 const REMOVE_FROM_NOTE = [
   "xLabel",
   "5/5",
@@ -61,6 +83,10 @@ const REMOVE_FROM_NOTE = [
   "documented in this encounter",
   "xnoIndent",
   "Formatting of this note might be different from the original.",
+  "Formatting of this note is different from the original.",
+  "Portions of the history and exam were entered using voice recognition software",
+  "Images from the original note were not included.",
+  "Minor syntax, contextual, and spelling errors may be related to the use of this software and were not intentional. If corrections are necessary, please contact provider.",
   "<content>",
   "</content>",
   "<root>",
@@ -80,14 +106,27 @@ export type Brief = {
 // AI-based brief generation
 //--------------------------------
 export async function summarizeFilteredBundleWithAI(
-  bundle: Bundle<Resource>
+  bundle: Bundle<Resource>,
+  cxId: string,
+  patientId: string
 ): Promise<string | undefined> {
+  const requestId = uuidv7();
+  const startedAt = new Date();
+  const { log } = out(`summarizeFilteredBundleWithAI - cxId ${cxId}, patientId ${patientId}`);
   // filter out historical data
-  const numHistoricalYears = 2;
-  const dateFrom = dayjs().subtract(numHistoricalYears, "year").format(ISO_DATE);
+  log(`Starting with requestId ${requestId}, and bundle length ${bundle.entry?.length}`);
+  const latestReportDate = findDiagnosticReportResources(bundle)
+    .flatMap(report => {
+      return getDatesFromEffectiveDateTimeOrPeriod(report);
+    })
+    .filter((date): date is string => date !== undefined)
+    .sort((a, b) => b.localeCompare(a))[0];
+  const numHistoricalYears = 1;
+  const initialDate = dayjs(latestReportDate) ?? dayjs();
+  const dateFrom = initialDate.subtract(numHistoricalYears, "year").format(ISO_DATE);
   const filteredBundle = filterBundleByDate(bundle, dateFrom);
-
-  const inputString = prepareBundleForBrief(filteredBundle);
+  const slimPayloadBundle = buildSlimmerPayload(filteredBundle);
+  const inputString = JSON.stringify(slimPayloadBundle);
 
   // TODO: #2510 - experiment with different splitters
   const textSplitter = new RecursiveCharacterTextSplitter({
@@ -95,18 +134,31 @@ export async function summarizeFilteredBundleWithAI(
     chunkOverlap: CHUNK_OVERLAP,
   });
   const docs = await textSplitter.createDocuments([inputString ?? ""]);
+  const totalTokensUsed = {
+    input: 0,
+    output: 0,
+  };
 
   const llmSummary = new BedrockChat({
-    model: "anthropic.claude-3-5-sonnet-20240620-v1:0",
+    model: "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
     temperature: 0,
     region: "us-east-1",
+    callbacks: [
+      {
+        handleLLMEnd: output => {
+          const usage = output.llmOutput?.usage;
+          if (usage) {
+            totalTokensUsed.input += usage.input_tokens;
+            totalTokensUsed.output += usage.output_tokens;
+          }
+        },
+      },
+    ],
   });
 
   const todaysDate = new Date().toISOString().split("T")[0];
   const systemPrompt = "You are an expert primary care doctor.";
 
-  // TODO: #2516 - experiment with different prompts
-  // this is the summary prompt for each chunk of the bundle
   const summaryTemplate = `
   ${systemPrompt}
 
@@ -135,7 +187,6 @@ export async function summarizeFilteredBundleWithAI(
     prompt: SUMMARY_PROMPT as any, // eslint-disable-line @typescript-eslint/no-explicit-any
   });
 
-  // this is the prompt for combining the summaries into a single paragraph
   const summaryTemplateRefined = `
   ${systemPrompt}
 
@@ -165,24 +216,48 @@ export async function summarizeFilteredBundleWithAI(
     llmChain: summaryChain,
     combineDocumentChain: summaryChainRefined,
     documentVariableName,
-    verbose: true,
+    verbose: false,
   });
 
   const summary = (await mapReduce.invoke({
     input_documents: docs,
   })) as { text: string };
 
+  const costs = calculateCostsBasedOnTokens(totalTokensUsed);
+
+  const duration = elapsedTimeFromNow(startedAt);
+  log(
+    `Done. Finished in ${duration} ms. Input cost: ${costs.input}, output cost: ${costs.output}. Total cost: ${costs.total}`
+  );
+
+  console.log({
+    requestId,
+    patientId,
+    startBundleSize: bundle.entry?.length,
+    endBundleSize: slimPayloadBundle?.length,
+    duration,
+    costs,
+  });
+  analytics({
+    distinctId: cxId,
+    event: EventTypes.aiBriefGeneration,
+    properties: {
+      requestId,
+      patientId,
+      startBundleSize: bundle.entry?.length,
+      endBundleSize: slimPayloadBundle?.length,
+      duration,
+      costs,
+    },
+  });
   if (!summary.text) return undefined;
   return summary.text;
 }
 
-export function prepareBundleForBrief(bundle: Bundle): string | undefined {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildSlimmerPayload(bundle: Bundle): any[] | undefined {
   if (bundle.entry?.length === 0) return undefined;
-  const filteredString = filterBundleResources(bundle);
-  return filteredString;
-}
 
-function filterBundleResources(bundle: Bundle) {
   const patient = findPatientResource(bundle);
   if (!patient) return undefined;
 
@@ -206,6 +281,8 @@ function filterBundleResources(bundle: Bundle) {
     return updRes;
   });
 
+  const withFilteredReports = filterOutDiagnosticReports(processedEntries);
+
   const containedResourceIds = Array.from(containedResourceIdsSet).flatMap(id => {
     const uuid = id.split("/").pop();
     if (uuid) return uuid;
@@ -213,7 +290,7 @@ function filterBundleResources(bundle: Bundle) {
   });
 
   // Filter out embedded resources from the final bundle
-  const filteredEntries = processedEntries?.flatMap(entry => {
+  const filteredEntries = withFilteredReports?.flatMap(entry => {
     if (Object.keys(entry).length === 0) return []; // TODO: Check why {} not being removed
     if (referenceResources.includes(entry.resourceType)) return [];
     if (containedResourceIds.includes(entry.id)) return [];
@@ -228,10 +305,7 @@ function filterBundleResources(bundle: Bundle) {
   delete patient.text;
   filteredEntries?.push(patient);
 
-  console.log(`Started with ${bundle.entry?.length} resource`);
-  console.log(`Processed to keep ${processedEntries?.length} resources`);
-  console.log(`And filtered down to ${filteredEntries?.length} resources`);
-  return JSON.stringify(filteredEntries);
+  return filteredEntries;
 }
 
 function buildSlimmerBundle(originalBundle: Bundle<Resource>) {
@@ -316,7 +390,7 @@ function removeUselessAttributes(res: Resource) {
 
 function getUniqueDisplays(
   concept: CodeableConcept | CodeableConcept[] | undefined
-): string | undefined {
+): string[] | undefined {
   if (!concept) return undefined;
 
   const uniqueDescriptors = new Set<string>();
@@ -331,7 +405,13 @@ function getUniqueDisplays(
   });
 
   if (uniqueDescriptors.size === 0) return undefined;
-  return Array.from(uniqueDescriptors).join(", ");
+  return Array.from(uniqueDescriptors);
+}
+
+function getUniqueDisplaysString(
+  concept: CodeableConcept | CodeableConcept[] | undefined
+): string | undefined {
+  return getUniqueDisplays(concept)?.join(", ");
 }
 
 function getLongestDisplay(
@@ -361,7 +441,10 @@ function cleanUpNote(note: string): string {
     .trim()
     .replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "")
     .replace(/<ID>.*?<\/ID>/g, "")
-    .replace(/<styleCode>.*?<\/styleCode>/g, "");
+    .replace(/<styleCode>.*?<\/styleCode>/g, "")
+    .replace(/\s*\n\s*/g, "\n")
+    .replace(/\*{2,}/g, "*")
+    .replace(/_{2,}/g, " ");
 }
 
 /**
@@ -385,7 +468,7 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
     updRes.status = Array.from(
       new Set(res.clinicalStatus?.coding?.flatMap(coding => coding.code || []))
     ).join(", ");
-    if (updRes.status === "") delete updRes.status;
+    if (isUselessStatus(updRes.status)) delete updRes.status;
   }
 
   if (res.resourceType === "Immunization") {
@@ -400,12 +483,12 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
         return undefined;
       }
 
-      updRes.vaccineCode = getUniqueDisplays(res.vaccineCode);
+      updRes.vaccineCode = getUniqueDisplaysString(res.vaccineCode);
     }
     if (res.site?.text) {
       updRes.site = res.site.text;
     }
-    updRes.route = getUniqueDisplays(res.route);
+    updRes.route = getUniqueDisplaysString(res.route);
 
     delete updRes.doseQuantity;
   }
@@ -421,7 +504,7 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
   }
 
   if (res.resourceType === "Procedure") {
-    const name = getUniqueDisplays(res.code);
+    const name = getUniqueDisplaysString(res.code);
     if (name) {
       updRes.name = name;
       if (name.includes("no data")) return undefined;
@@ -429,7 +512,7 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
 
     delete updRes.code;
 
-    if (updRes.status === "") delete updRes.status;
+    if (isUselessStatus(updRes.status)) delete updRes.status;
 
     delete updRes.reasonCode; // TODO: #2510 - Introduce term server lookup here
     delete updRes.report;
@@ -437,11 +520,22 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
   }
 
   if (res.resourceType === "DiagnosticReport") {
-    const code = getLongestDisplay(res.code);
-    if (code) {
-      updRes.type = code;
+    const mostDescriptiveType = getLongestDisplay(res.code);
+    if (mostDescriptiveType) updRes.type = mostDescriptiveType;
+    if (isUselessStatus(updRes.status)) delete updRes.status;
+
+    const allTypes = getUniqueDisplays(res.code);
+    if (allTypes) {
+      let removeResource = false;
+      allTypes.forEach(type => {
+        if (
+          REPORT_TYPES_BLACKLIST.includes(type) ||
+          REPORT_TYPES_BLACKLIST.some(blacklistedType => type.includes(blacklistedType))
+        )
+          removeResource = true;
+      });
+      if (removeResource) return undefined;
     }
-    delete updRes.code;
 
     const category = res.category
       ?.map(cat => cat.coding?.flatMap(coding => coding.display || []))
@@ -449,28 +543,54 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
     if (category) updRes.category = category;
 
     if (res.presentedForm) {
-      updRes.presentedForm = res.presentedForm.map(form => {
-        delete form.contentType;
+      const uniqueData = new Set<string>();
+      res.presentedForm.forEach(form => {
         if (form.data) {
           const rawData = Buffer.from(form.data, "base64").toString("utf-8");
-          form.data = cleanUpNote(rawData);
+          const cleanedData = cleanUpNote(rawData);
+          uniqueData.add(cleanedData);
+          if (cleanedData.toLowerCase().includes("appointment scheduling letter")) {
+            updRes.type = SCHEDULING_CALL;
+          } else if (
+            cleanedData.toLowerCase().includes("unable to reach") ||
+            cleanedData.toLowerCase().includes("left a message")
+          ) {
+            updRes.type = UNANSWERED_CALL;
+          } else if (cleanedData.toLowerCase().includes("administrative note")) {
+            updRes.type = ADMIN_NOTE;
+          } else if (
+            cleanedData.toLowerCase().includes("nonva note") &&
+            cleanedData.toLowerCase().includes("refer to scanned")
+          ) {
+            updRes.type = SCAN_REF_NOTE;
+          } else if (cleanedData.toLowerCase().includes("discharge summary")) {
+            updRes.type = "discharge summary";
+          }
         }
-        return form;
       });
+      updRes.presentedForm = Array.from(uniqueData);
     }
+
+    if (updRes.type && REPORT_TYPES_BLACKLIST.includes(updRes.type)) {
+      return undefined;
+    }
+
+    delete updRes.code;
   }
 
   if (res.resourceType === "Observation") {
     if (res.category) {
-      const category = getUniqueDisplays(res.category);
+      const category = getUniqueDisplaysString(res.category);
       if (category) updRes.category = category;
     }
 
-    const code = getUniqueDisplays(res.code);
+    if (isUselessStatus(updRes.status)) delete updRes.status;
+
+    const code = getUniqueDisplaysString(res.code);
     if (code) updRes.reading = code;
 
     if (res.valueCodeableConcept) {
-      updRes.value = getUniqueDisplays(res.valueCodeableConcept);
+      updRes.value = getUniqueDisplaysString(res.valueCodeableConcept);
       delete updRes.valueCodeableConcept;
     }
 
@@ -480,7 +600,7 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
     }
 
     if (res.interpretation) {
-      updRes.interpretation = getUniqueDisplays(res.interpretation);
+      updRes.interpretation = getUniqueDisplaysString(res.interpretation);
     }
 
     if (res.referenceRange) {
@@ -499,7 +619,7 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
   }
 
   if (res.resourceType === "Medication") {
-    updRes.name = getUniqueDisplays(res.code);
+    updRes.name = getUniqueDisplaysString(res.code);
     delete updRes.code;
   }
 
@@ -511,7 +631,7 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
     if (res.dosage) {
       const dosages = res.dosage.flatMap(dosage => {
         const dose = getQuantityString(dosage.doseAndRate?.[0]?.doseQuantity);
-        const route = getUniqueDisplays(dosage.route);
+        const route = getUniqueDisplaysString(dosage.route);
         if (!dose && !route) return [];
         return { dose, route };
       });
@@ -525,28 +645,28 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
       const dose = getQuantityString(res.dosage.dose);
       if (dose) updRes.dose = dose;
 
-      updRes.route = getUniqueDisplays(res.dosage.route);
+      updRes.route = getUniqueDisplaysString(res.dosage.route);
       delete updRes.dosage;
     }
   }
 
   if (res.resourceType === "Condition") {
-    updRes.name = getUniqueDisplays(res.code);
+    updRes.name = getUniqueDisplaysString(res.code);
     delete updRes.code;
 
-    updRes.category = getUniqueDisplays(res.category);
+    updRes.category = getUniqueDisplaysString(res.category);
 
-    updRes.clinicalStatus = getUniqueDisplays(res.clinicalStatus);
-    if (updRes.clinicalStatus === "") delete updRes.clinicalStatus;
+    updRes.clinicalStatus = getUniqueDisplaysString(res.clinicalStatus);
+    if (isUselessStatus(updRes.clinicalStatus)) delete updRes.clinicalStatus;
   }
 
   if (res.resourceType === "AllergyIntolerance") {
-    updRes.clinicalStatus = getUniqueDisplays(res.clinicalStatus);
+    updRes.clinicalStatus = getUniqueDisplaysString(res.clinicalStatus);
 
     if (res.reaction) {
       updRes.reaction = res.reaction.map(reaction => {
-        const manifestation = getUniqueDisplays(reaction.manifestation);
-        const substance = getUniqueDisplays(reaction.substance);
+        const manifestation = getUniqueDisplaysString(reaction.manifestation);
+        const substance = getUniqueDisplaysString(reaction.substance);
 
         return {
           manifestation,
@@ -564,7 +684,7 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
 
   if (res.resourceType === "Location") {
     updRes.address = getAddressString(res.address);
-    updRes.type = getUniqueDisplays(res.type);
+    updRes.type = getUniqueDisplaysString(res.type);
   }
 
   return updRes;
@@ -701,26 +821,32 @@ function replaceReferencesWithData(
         res.resourceType === "ServiceRequest"
       ) {
         const performers = toArray(res.performer);
-        updRes.performer = performers
-          .flatMap(p => {
-            const ref = p.reference;
-            if (ref) {
-              referencedIds.add(ref);
-              const performer = map.get(ref);
-              if (
-                performer?.resourceType === "Organization" ||
-                performer?.resourceType === "Practitioner"
-              ) {
-                if (typeof performer.name === "string") {
-                  if (performer.name.length > 0) return performer.name;
-                } else {
-                  return getNameString(performer.name);
-                }
-              }
-            }
-            return [];
-          })
-          .join(", ");
+        const orgs: string[] = [];
+        const practitioners: string[] = [];
+
+        performers.forEach(p => {
+          const ref = p.reference;
+          if (!ref) return;
+
+          referencedIds.add(ref);
+          const performer = map.get(ref);
+
+          if (performer?.resourceType === "Organization") {
+            const name = typeof performer.name === "string" ? performer.name : "";
+            if (name.length > 0) orgs.push(name);
+          } else if (performer?.resourceType === "Practitioner") {
+            const name =
+              typeof performer.name === "string" ? performer.name : getNameString(performer.name);
+            if (name) practitioners.push(name);
+          }
+        });
+
+        if (orgs.length > 0) updRes.org = orgs.join(", ");
+        if (practitioners.length > 0) {
+          updRes.performer = practitioners.join(", ");
+        } else {
+          delete updRes.performer;
+        }
       } else if (
         res.resourceType === "Immunization" ||
         res.resourceType === "MedicationAdministration" ||
@@ -826,6 +952,134 @@ function replaceReferencesWithData(
   return { updRes, ids: Array.from(referencedIds) };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function filterOutDiagnosticReports(entries: any[] | undefined): any[] | undefined {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const reports: any[] = [];
+  const otherEntries = entries?.filter(entry => {
+    if (entry.resourceType === "DiagnosticReport") {
+      reports.push(entry);
+      return false;
+    }
+    return true;
+  });
+  const withOnlyLatestLabs = filterOutOldLabs(reports);
+  const withLimitedReportsPerPerformer = filterReportsByPerformerAndCategory(withOnlyLatestLabs);
+  const withoutDuplicateReports = filterOutDuplicateReports(withLimitedReportsPerPerformer);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ret: any[] = [];
+  if (withoutDuplicateReports && withoutDuplicateReports.length > 0) {
+    ret.push(...withoutDuplicateReports);
+  }
+  if (otherEntries && otherEntries.length > 0) ret.push(...otherEntries);
+  return ret;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function filterOutOldLabs(reports: any[] | undefined): any[] | undefined {
+  const NUM_MOST_RECENT_LABS_TO_KEEP = 2;
+
+  if (!reports) return undefined;
+
+  const labReports = reports.filter(report =>
+    report.category?.toLowerCase().includes("relevant diagnostic tests and/or laboratory data")
+  );
+  const nonLabReports = reports.filter(report => !report.category?.includes("laboratory data"));
+
+  const sortedLabReports = labReports.sort((a, b) => {
+    const aDates = getDatesFromEffectiveDateTimeOrPeriod(a);
+    const bDates = getDatesFromEffectiveDateTimeOrPeriod(b);
+
+    const aDate = aDates.find(d => d !== undefined);
+    const bDate = bDates.find(d => d !== undefined);
+
+    if (!aDate) return 1;
+    if (!bDate) return -1;
+    return bDate.localeCompare(aDate);
+  });
+
+  const recentLabReports = sortedLabReports.slice(0, NUM_MOST_RECENT_LABS_TO_KEEP);
+
+  return [...recentLabReports, ...nonLabReports];
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function filterReportsByPerformerAndCategory(reports: any[] | undefined): any[] | undefined {
+  if (!reports) return undefined;
+  const MAX_REPORTS_PER_GROUP = 3;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const reportGroups = new Map<string, any[]>();
+
+  reports.forEach(report => {
+    const performer = report.performer ?? "unknown";
+    const type = report.type ?? "unknown";
+    const key = `${performer}|${type}`;
+
+    if (!reportGroups.has(key)) {
+      reportGroups.set(key, []);
+    }
+    reportGroups.get(key)?.push(report);
+  });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const filteredReports: any[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const garbageCollector: any[] = [];
+
+  reportGroups.forEach(group => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sortedGroup = group.sort((a: any, b: any) => {
+      const aDates = getDatesFromEffectiveDateTimeOrPeriod(a);
+      const bDates = getDatesFromEffectiveDateTimeOrPeriod(b);
+
+      const aDate = aDates.find(d => d !== undefined);
+      const bDate = bDates.find(d => d !== undefined);
+
+      if (!aDate) return 1;
+      if (!bDate) return -1;
+      return bDate.localeCompare(aDate);
+    });
+
+    filteredReports.push(...sortedGroup.slice(0, MAX_REPORTS_PER_GROUP));
+    garbageCollector.push(...sortedGroup.slice(MAX_REPORTS_PER_GROUP));
+  });
+
+  return filteredReports;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function filterOutDuplicateReports(reports: any[] | undefined): any[] | undefined {
+  const formDataSet = new Set<string>();
+  return reports?.filter(entry => {
+    if (entry.presentedForm) {
+      const newPresentedForm: string[] = [];
+      entry.presentedForm.forEach((text: string) => {
+        const sentences = text
+          .split(/[.\n]/)
+          .map(s => s.trim())
+          .filter(s => s.length > 0);
+
+        const filteredSentences = sentences.filter(sentence => {
+          if (formDataSet.has(sentence)) {
+            return false;
+          }
+          formDataSet.add(sentence);
+          return true;
+        });
+        newPresentedForm.push(filteredSentences.join(". "));
+      });
+
+      const filsss = newPresentedForm.join("\n");
+      if (filsss.length === 0) {
+        return false;
+      }
+    }
+    return true;
+  });
+}
+
 function getNameString(names: HumanName | HumanName[] | undefined): string | undefined {
   const nameParts = new Set<string>();
   toArray(names).forEach(name => {
@@ -835,4 +1089,20 @@ function getNameString(names: HumanName | HumanName[] | undefined): string | und
   });
 
   return Array.from(nameParts).join(" ");
+}
+
+function isUselessStatus(status: string): boolean {
+  return status === "" || status === "final";
+}
+
+function calculateCostsBasedOnTokens(totalTokens: { input: number; output: number }): {
+  input: number;
+  output: number;
+  total: number;
+} {
+  const input = (totalTokens.input / 1000) * 0.0015;
+  const output = (totalTokens.output / 1000) * 0.0075;
+  const total = input + output;
+
+  return { input, output, total };
 }
