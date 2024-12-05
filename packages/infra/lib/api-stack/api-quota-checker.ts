@@ -36,7 +36,7 @@ export function createScheduledAPIQuotaChecker(props: EnhancedCoverageConnectorP
 
   const lambda = createScheduledLambda({
     stack,
-    layers: [lambdaLayers.shared, lambdaLayers.awsSdk],
+    layers: [lambdaLayers.shared],
     name,
     vpc,
     scheduleExpression,

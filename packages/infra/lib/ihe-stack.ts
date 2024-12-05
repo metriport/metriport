@@ -254,7 +254,7 @@ export class IHEStack extends Stack {
       stack: this,
       name: "IHEInboundDocumentQueryV2",
       entry: "ihe-gateway-v2-inbound-document-query",
-      layers: [lambdaLayers.shared, lambdaLayers.awsSdk],
+      layers: [lambdaLayers.shared],
       memory: 1024,
       envType: props.config.environmentType,
       envVars: {
@@ -301,7 +301,7 @@ export class IHEStack extends Stack {
       stack: this,
       name: "IHEInboundDocumentRetrievalV2",
       entry: "ihe-gateway-v2-inbound-document-retrieval",
-      layers: [lambdaLayers.shared, lambdaLayers.awsSdk],
+      layers: [lambdaLayers.shared],
       memory: 1024,
       envType: props.config.environmentType,
       envVars: {
@@ -345,7 +345,7 @@ export class IHEStack extends Stack {
       stack: this,
       name: "IHEInboundPatientDiscoveryV2",
       entry: "ihe-gateway-v2-inbound-patient-discovery",
-      layers: [lambdaLayers.shared, lambdaLayers.awsSdk],
+      layers: [lambdaLayers.shared],
       memory: 1024,
       envType: props.config.environmentType,
       envVars: {

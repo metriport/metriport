@@ -67,7 +67,7 @@ export function createQueueAndBucket({
     visibilityTimeout,
     maxReceiveCount,
     createRetryLambda: true,
-    lambdaLayers: [lambdaLayers.shared, lambdaLayers.awsSdk],
+    lambdaLayers: [lambdaLayers.shared],
     envType,
     alarmSnsAction,
     alarmMaxAgeOfOldestMessage: Duration.minutes(5),
@@ -132,7 +132,7 @@ export function createLambda({
     vpc,
     subnets: vpc.privateSubnets,
     entry: "sqs-to-converter",
-    layers: [lambdaLayers.shared, lambdaLayers.awsSdk],
+    layers: [lambdaLayers.shared],
     memory: lambdaMemory,
     envType,
     envVars: {
