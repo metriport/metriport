@@ -716,6 +716,7 @@ export class APIStack extends Stack {
       lambdaLayers,
       props.config.environmentType,
       apiDirectUrl,
+      generalBucket,
       props.config.lambdasSentryDSN
     );
 
@@ -1031,22 +1032,26 @@ export class APIStack extends Stack {
     lambdaLayers: LambdaLayers,
     envType: EnvType,
     apiAddress: string,
+    generalBucket: s3.IBucket,
     sentryDsn: string | undefined
   ) {
-    return createLambda({
+    const lambda = createLambda({
       stack: this,
       name: "Tester",
-      layers: [lambdaLayers.shared],
+      layers: [lambdaLayers.shared, lambdaLayers.wkHtmlToPdf],
       vpc: this.vpc,
       subnets: this.vpc.privateSubnets,
       entry: "tester",
       envType,
       envVars: {
         API_URL: apiAddress,
+        GENERAL_BUCKET_NAME: generalBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      architecture: lambda.Architecture.ARM_64,
+      // architecture: lambda.Architecture.ARM_64,
     });
+    generalBucket.grantReadWrite(lambda);
+    return lambda;
   }
 
   private setupGarminWebhookAuth(ownProps: {
