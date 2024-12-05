@@ -3,7 +3,7 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import dayjs from "dayjs";
 import { Duration } from "dayjs/plugin/duration";
 
-export const delayBetweenPracticeBatches = dayjs.duration(0, "seconds");
+export const delayBetweenPracticeBatches = dayjs.duration(30, "seconds");
 export const parallelPractices = 10;
 export const parallelPatients = 2;
 
