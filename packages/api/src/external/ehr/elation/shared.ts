@@ -69,7 +69,7 @@ export async function getElationClientKeyAndSecret({
   const cxSecret = `${cxId}_${practiceId}_secret`;
   const cxEntrySecret = clientMap.data[cxSecret];
   if (!cxEntryKey || !cxEntrySecret) {
-    throw new MetriportError("Key not found in Elation clients map", undefined, {
+    throw new MetriportError("Key or secret not found in Elation clients map", undefined, {
       cxId,
       practiceId,
       cxKey,
