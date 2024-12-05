@@ -17,7 +17,7 @@ import { uuidv7 } from "../shared/uuid-v7";
 const dashUrl = "http://dash.metriport.com";
 
 const SOURCE_DIR = "";
-const CX_ID = "";
+const CX_ID = ""; // OPTIONAL - used for logs and analytics in the summarizeFilteredBundleWithAI function
 const SOURCE_PATIENT_ID = "";
 const SOURCE_BUNDLE_FILE = `${SOURCE_PATIENT_ID}.json`;
 
