@@ -1,7 +1,6 @@
 import { errorToString, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
-  Appointment,
   appointmentsGetResponseSchema,
   Metadata,
   PatientResource,
@@ -36,6 +35,10 @@ export type ElationEnv = "app" | "sandbox";
 export function isElationEnv(env: string): env is ElationEnv {
   return env === "app" || env === "sandbox";
 }
+
+type BookedAppointment = {
+  patient: string;
+};
 
 class ElationApi {
   private axiosInstance: AxiosInstance;
@@ -303,7 +306,7 @@ class ElationApi {
     cxId: string;
     fromDate: Date;
     toDate: Date;
-  }): Promise<Appointment[]> {
+  }): Promise<BookedAppointment[]> {
     const { log, debug } = out(
       `Elation get appointments - cxId ${cxId} practiceId ${this.practiceId}`
     );
@@ -334,7 +337,9 @@ class ElationApi {
           .catch(processAsyncError("Error saving to s3 @ Elation - getAppointments"));
       }
       const appointments = appointmentsGetResponseSchema.parse(response.data).results;
-      return appointments.filter(app => app.status.status === "Scheduled") as Appointment[];
+      return appointments.filter(
+        app => app.patient !== null && app.status !== null && app.status.status === "Scheduled"
+      ) as BookedAppointment[];
     } catch (error) {
       const msg = `Failure while getting appointments @ Elation`;
       log(`${msg}. Cause: ${errorToString(error)}`);
