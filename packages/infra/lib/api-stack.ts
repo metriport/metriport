@@ -1352,7 +1352,12 @@ export class APIStack extends Stack {
         }),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: [lambdaLayers.shared, lambdaLayers.chromium],
+      layers: [
+        lambdaLayers.shared,
+        lambdaLayers.langchain,
+        lambdaLayers.chromium,
+        lambdaLayers.puppeteer,
+      ],
       memory: 4096,
       timeout: lambdaTimeout,
       isEnableInsights: true,

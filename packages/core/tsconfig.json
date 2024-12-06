@@ -20,6 +20,5 @@
     "outDir": "./dist",
     "resolveJsonModule": true
   },
-  "include": ["./src", "./src/**/*.json"],
-  "exclude": ["dist", "node_modules"]
+  "include": ["./src"]
 }

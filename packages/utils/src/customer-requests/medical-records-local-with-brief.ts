@@ -6,7 +6,7 @@ import {
   createMRSummaryBriefFileName,
   createMRSummaryFileName,
 } from "@metriport/core/domain/medical-record-summary";
-import { bundleToBrief } from "@metriport/core/external/aws/lambda-logic/bundle-to-brief";
+import { summarizeFilteredBundleWithAI } from "@metriport/core/external/aws/lambda-logic/bundle-to-brief";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { getEnvVarOrFail, MetriportError } from "@metriport/shared";
@@ -45,7 +45,11 @@ async function main() {
   const bundle = fs.readFileSync("input.json", "utf8");
   const bundleParsed = JSON.parse(bundle);
 
-  const brief = await bundleToBrief(bundleParsed as Bundle<Resource>, cxId, patientId);
+  const brief = await summarizeFilteredBundleWithAI(
+    bundleParsed as Bundle<Resource>,
+    cxId,
+    patientId
+  );
   const briefId = uuidv7();
 
   if (!cxId || !patientId) throw new Error("cxId or patientId is missing");
