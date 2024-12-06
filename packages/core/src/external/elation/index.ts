@@ -335,7 +335,7 @@ class ElationApi {
       }
       const appointments = appointmentsGetResponseSchema.parse(response.data).results;
       return appointments.filter(
-        app => app.patient && app.status?.status === "Scheduled"
+        app => app.patient !== null && app.status?.status === "Scheduled"
       ) as Appointment[];
     } catch (error) {
       const msg = `Failure while getting appointments @ Elation`;
