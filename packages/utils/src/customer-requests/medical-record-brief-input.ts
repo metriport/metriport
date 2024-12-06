@@ -4,7 +4,6 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { Bundle, Resource } from "@medplum/fhirtypes";
-// import { summarizeFilteredBundleWithAI } from "./medical-record-brief-input";
 import { summarizeFilteredBundleWithAI } from "@metriport/core/external/aws/lambda-logic/bundle-to-brief";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import fs from "fs";
@@ -18,16 +17,16 @@ import { uuidv7 } from "../shared/uuid-v7";
 const dashUrl = "http://dash.metriport.com";
 
 const SOURCE_DIR = "";
+const CX_ID = ""; // OPTIONAL - used for logs and analytics in the summarizeFilteredBundleWithAI function
 const SOURCE_PATIENT_ID = "";
 const SOURCE_BUNDLE_FILE = `${SOURCE_PATIENT_ID}.json`;
 
 async function main() {
-  // TODO: Condense this functionality under a single function and put it on `@metriport/core`, so this can be used both here, and on the Lambda.
   const fileName = `${SOURCE_DIR}/${SOURCE_BUNDLE_FILE}`;
   const bundleStr = fs.readFileSync(fileName, { encoding: "utf8" });
   const bundle = JSON.parse(bundleStr) as Bundle<Resource>;
 
-  const brief = await summarizeFilteredBundleWithAI(bundle);
+  const brief = await summarizeFilteredBundleWithAI(bundle, CX_ID, SOURCE_PATIENT_ID);
   const briefId = uuidv7();
 
   // Response from FHIR Converter
@@ -36,7 +35,7 @@ async function main() {
     brief ? { content: brief, id: briefId, link: `${dashUrl}/feedback/${briefId}` } : undefined
   );
 
-  fs.writeFileSync(`${SOURCE_DIR}/output_${SOURCE_BUNDLE_FILE}`, html);
+  fs.writeFileSync(`${SOURCE_DIR}/output_${SOURCE_BUNDLE_FILE}.html`, html);
 }
 
 main();

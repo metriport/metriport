@@ -45,7 +45,11 @@ async function main() {
   const bundle = fs.readFileSync("input.json", "utf8");
   const bundleParsed = JSON.parse(bundle);
 
-  const brief = await summarizeFilteredBundleWithAI(bundleParsed as Bundle<Resource>);
+  const brief = await summarizeFilteredBundleWithAI(
+    bundleParsed as Bundle<Resource>,
+    cxId,
+    patientId
+  );
   const briefId = uuidv7();
 
   if (!cxId || !patientId) throw new Error("cxId or patientId is missing");

@@ -1,3 +1,7 @@
+import "web-streams-polyfill/polyfill";
+// Because we're running this lambda on Node16 and LangChain requires Node18
+import "./shared/fetch-polyfill";
+// Keep this ^ as early on the file as possible
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import {
   createMRSummaryBriefFileName,
@@ -78,9 +82,9 @@ export async function handler({
     const bundle = await getBundleFromS3(fhirFileName);
     const isBriefFeatureFlagEnabled = await isAiBriefEnabled(generateAiBrief, cxId);
 
-    // TODO: Condense this functionality under a single function and put it on `@metriport/core`, so this can be used both here, and on the Lambda.
+    // TODO #2510 Condense this functionality under a single function and put it on `@metriport/core`, so this can be used both here, and on the Lambda.
     const aiBriefContent = isBriefFeatureFlagEnabled
-      ? await summarizeFilteredBundleWithAI(bundle)
+      ? await summarizeFilteredBundleWithAI(bundle, cxId, patientId)
       : undefined;
     const briefFileName = createMRSummaryBriefFileName(cxId, patientId);
     const aiBrief = prepareBriefToBundle({ aiBrief: aiBriefContent });
