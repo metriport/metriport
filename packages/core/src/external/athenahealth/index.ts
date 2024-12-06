@@ -631,7 +631,9 @@ class AthenaHealthApi {
           );
       }
       const appointments = appointmentEventGetResponseSchema.parse(response.data).appointments;
-      return appointments.filter(app => app.appointmentstatus === "f") as BookedAppointment[];
+      return appointments.filter(
+        app => app.patientid && app.appointmentstatus === "f"
+      ) as BookedAppointment[];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       if (error.response?.status === 403) {
