@@ -1,10 +1,17 @@
+import "web-streams-polyfill/polyfill";
+// Because we're running this lambda on Node16 and LangChain requires Node18
+import "./shared/fetch-polyfill";
+// Keep this ^ as early on the file as possible
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import {
   createMRSummaryBriefFileName,
   createMRSummaryFileName,
 } from "@metriport/core/domain/medical-record-summary";
 import { getFeatureFlagValueStringArray } from "@metriport/core/external/aws/app-config";
-import { Brief, bundleToBrief } from "@metriport/core/external/aws/lambda-logic/bundle-to-brief";
+import {
+  Brief,
+  summarizeFilteredBundleWithAI,
+} from "@metriport/core/external/aws/lambda-logic/bundle-to-brief";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import { bundleToHtmlADHD } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-adhd";
 import { bundleToHtmlBmi } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-bmi";
@@ -75,9 +82,9 @@ export async function handler({
     const bundle = await getBundleFromS3(fhirFileName);
     const isBriefFeatureFlagEnabled = await isAiBriefEnabled(generateAiBrief, cxId);
 
-    // TODO: Condense this functionality under a single function and put it on `@metriport/core`, so this can be used both here, and on the Lambda.
+    // TODO #2510 Condense this functionality under a single function and put it on `@metriport/core`, so this can be used both here, and on the Lambda.
     const aiBriefContent = isBriefFeatureFlagEnabled
-      ? await bundleToBrief(bundle, cxId, patientId)
+      ? await summarizeFilteredBundleWithAI(bundle, cxId, patientId)
       : undefined;
     const briefFileName = createMRSummaryBriefFileName(cxId, patientId);
     const aiBrief = prepareBriefToBundle({ aiBrief: aiBriefContent });

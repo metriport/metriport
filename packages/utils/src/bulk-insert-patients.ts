@@ -25,6 +25,7 @@ import csv from "csv-parser";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
+import { elapsedTimeAsStr } from "./shared/duration";
 import { buildGetDirPathInside, initRunsFolder } from "./shared/folder";
 import { getCxData } from "./shared/get-cx-data";
 import { logNotDryRun } from "./shared/log";
@@ -86,6 +87,10 @@ const metriportAPI = new MetriportMedicalApi(apiKey, {
 });
 
 async function main() {
+  await sleep(50); // Give some time to avoid mixing logs w/ Node's
+  const startedAt = Date.now();
+  console.log(`############## Started at ${new Date(startedAt).toISOString()} ##############`);
+
   initRunsFolder();
   program.parse();
   const { dryrun: dryRunParam } = program.opts<Params>();
@@ -112,7 +117,7 @@ async function main() {
       })
     )
     .on("data", async data => {
-      const result = mapCSVPatientToMetriportPatient(data);
+      const result = mapCsvPatientToMetriportPatient(data);
       if (Array.isArray(result)) {
         mappingErrors.push({
           row: JSON.stringify(data),
@@ -131,6 +136,7 @@ async function main() {
         );
       }
       await loadData(results, orgName, localFacilityId, outputFolderName, dryRun);
+      console.log(`>>>>>>> Done after ${elapsedTimeAsStr(startedAt)}`);
     });
 }
 
@@ -183,7 +189,7 @@ async function loadData(
   console.log(`Done, inserted ${successfulCount} patients.`);
 }
 
-function dedupPatientCreates(patients: PatientCreate[]): PatientCreate[] {
+export function dedupPatientCreates(patients: PatientCreate[]): PatientCreate[] {
   const patientMap = new Map<string, PatientCreate>();
   patients.forEach(patient => {
     const nameKey = `${patient.firstName} ${patient.lastName}`;
@@ -198,7 +204,7 @@ function dedupPatientCreates(patients: PatientCreate[]): PatientCreate[] {
   return Array.from(patientMap.values());
 }
 
-function mergePatients(p1: PatientCreate, p2: PatientCreate): PatientCreate {
+export function mergePatients(p1: PatientCreate, p2: PatientCreate): PatientCreate {
   const addresses = [
     ...(Array.isArray(p1.address) ? p1.address : [p1.address]),
     ...(Array.isArray(p2.address) ? p2.address : [p2.address]),
@@ -218,7 +224,7 @@ function mergePatients(p1: PatientCreate, p2: PatientCreate): PatientCreate {
   };
 }
 
-function deduplicateAddresses(addresses: Address[]): Address[] {
+export function deduplicateAddresses(addresses: Address[]): Address[] {
   const uniqueMap = new Map<string, Address>();
 
   addresses.forEach(addr => {
@@ -233,7 +239,7 @@ function deduplicateAddresses(addresses: Address[]): Address[] {
   return Array.from(uniqueMap.values());
 }
 
-function deduplicateContacts(contacts: Contact[]): Contact[] {
+export function deduplicateContacts(contacts: Contact[]): Contact[] {
   // Split contacts into separate phone and email arrays
   const phones = contacts.filter(c => c.phone).map(c => ({ phone: c.phone }));
   const emails = contacts.filter(c => c.email).map(c => ({ email: c.email }));
@@ -262,15 +268,16 @@ async function displayWarningAndConfirmation(
   console.log(`running...`);
 }
 
-function initPatientIdRepository(folderName: string) {
+export function initPatientIdRepository(folderName: string) {
   if (!fs.existsSync(folderName)) {
     fs.mkdirSync(folderName, { recursive: true });
   }
 }
 
-function storePatientCreates(patientCreate: PatientCreate[], fileName: string) {
+export function storePatientCreates(patientCreate: PatientCreate[], fileName: string) {
   fs.appendFileSync(fileName, JSON.stringify(patientCreate, null, 2));
 }
+
 function buildStorePatientId(outputFolderName: string) {
   const idsFileName = outputFolderName + "/ids.csv";
   const header = "patientId,externalId";
@@ -281,7 +288,7 @@ function buildStorePatientId(outputFolderName: string) {
   };
 }
 
-function normalizeName(name: string | undefined, propName: string): string {
+export function normalizeName(name: string | undefined, propName: string): string {
   if (name == undefined) throw new Error(`Missing ` + propName);
   return toTitleCase(name);
 }
@@ -324,12 +331,12 @@ export function normalizeAddressLine(
   return [normalized];
 }
 
-function normalizeCity(city: string | undefined): string {
+export function normalizeCity(city: string | undefined): string {
   if (city == undefined) throw new Error(`Missing city`);
   return toTitleCase(city);
 }
 
-function normalizePhoneNumberUtils(phone: string | undefined): string | undefined {
+export function normalizePhoneNumberUtils(phone: string | undefined): string | undefined {
   if (phone == undefined) return undefined;
   const normalPhone = normalizePhoneNumber(phone);
   if (normalPhone.length === 0) return undefined;
@@ -337,7 +344,7 @@ function normalizePhoneNumberUtils(phone: string | undefined): string | undefine
   return normalPhone;
 }
 
-function normalizeEmailUtils(email: string | undefined): string | undefined {
+export function normalizeEmailUtils(email: string | undefined): string | undefined {
   if (email == undefined) return undefined;
   const normalEmail = normalizeEmail(email);
   if (normalEmail.length === 0) return undefined;
@@ -345,14 +352,14 @@ function normalizeEmailUtils(email: string | undefined): string | undefined {
   return normalEmail;
 }
 
-function normalizeExternalIdUtils(id: string | undefined): string | undefined {
+export function normalizeExternalIdUtils(id: string | undefined): string | undefined {
   if (id == undefined) return undefined;
   const normalId = normalizeExternalId(id);
   if (normalId.length === 0) return undefined;
   return normalId;
 }
 
-export function mapCSVPatientToMetriportPatient(csvPatient: {
+export function mapCsvPatientToMetriportPatient(csvPatient: {
   firstname: string | undefined;
   lastname: string | undefined;
   dob: string | undefined;

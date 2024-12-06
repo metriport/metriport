@@ -1,5 +1,5 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { PatientMapping, PatientSources } from "../domain/patient-mapping";
+import { PatientMapping, PatientMappingSource } from "../domain/patient-mapping";
 import { BaseModel, ModelSetup } from "./_default";
 
 export class PatientMappingModel extends BaseModel<PatientMappingModel> implements PatientMapping {
@@ -7,7 +7,7 @@ export class PatientMappingModel extends BaseModel<PatientMappingModel> implemen
   declare externalId: string;
   declare cxId: string;
   declare patientId: string;
-  declare source: PatientSources;
+  declare source: PatientMappingSource;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     PatientMappingModel.init(

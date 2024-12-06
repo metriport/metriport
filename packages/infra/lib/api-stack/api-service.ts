@@ -301,6 +301,10 @@ export function createAPIService({
             EHR_ATHENA_CLIENT_KEY_ARN: props.config.ehrIntegration.athenaHealth.athenaClientKeyArn,
             EHR_ATHENA_CLIENT_SECRET_ARN:
               props.config.ehrIntegration.athenaHealth.athenaClientSecretArn,
+            EHR_ELATION_ENVIRONMENT: props.config.ehrIntegration.elation.env,
+          }),
+          ...(!isSandbox(props.config) && {
+            DASH_URL: props.config.dashUrl,
           }),
         },
       },
