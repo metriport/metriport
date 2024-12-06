@@ -14,6 +14,18 @@ main() {
    pushd layers/playwright
    npm run prep-deploy
    popd
+
+   pushd layers/puppeteer
+   npm run prep-deploy
+   popd
+
+   pushd layers/saxon
+   npm run prep-deploy
+   popd
+
+   pushd layers/langchain
+   npm run prep-deploy
+   popd
 }
 
 main

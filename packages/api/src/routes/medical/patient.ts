@@ -4,7 +4,7 @@ import { mrFormat } from "@metriport/core/domain/conversion/fhir-to-medical-reco
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
 import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { getRequestId } from "@metriport/core/util/request";
-import { stringToBoolean } from "@metriport/shared";
+import { isTrue, stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -19,10 +19,11 @@ import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
+import { setHieOptOut, getHieOptOut } from "../../command/medical/patient/update-hie-opt-out";
+import { handleDataContribution } from "../../command/medical/patient/data-contribution/handle-data-contributions";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
-import { handleDataContribution } from "../../command/medical/patient/data-contribution/handle-data-contributions";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import BadRequestError from "../../errors/bad-request";
@@ -35,10 +36,15 @@ import { getETag } from "../../shared/http";
 import { getOutputFormatFromRequest } from "../helpers/output-format";
 import { requestLogger } from "../helpers/request-logger";
 import { getPatientInfoOrFail } from "../middlewares/patient-authorization";
+import { checkRateLimit } from "../middlewares/rate-limiting";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
-import { patientUpdateSchema, schemaUpdateToPatientData } from "./schemas/patient";
+import {
+  patientUpdateSchema,
+  schemaUpdateToPatientData,
+  PatientHieOptOutResponse,
+} from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
 const router = Router();
@@ -54,6 +60,7 @@ const router = Router();
  */
 router.put(
   "/",
+  checkRateLimit("patientCreateOrUpdate"),
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, id, patient } = getPatientInfoOrFail(req);
@@ -234,6 +241,7 @@ const medicalRecordFormatSchema = z.enum(mrFormat);
  */
 router.post(
   "/consolidated/query",
+  checkRateLimit("consolidatedDataQuery"),
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, id: patientId } = getPatientInfoOrFail(req);
@@ -424,6 +432,62 @@ router.get(
     const webhook = await getConsolidatedWebhook({ cxId, consolidatedQueries, requestId });
 
     return res.json(webhook);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * PUT /patient/:id/hie-opt-out
+ *
+ * Returns whether the patient is opted out of data pulling and sharing.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.patientId The ID of the patient whose data is to be returned.
+ * @param req.query.hieOptOut Boolean value to opt patient out or in.
+ */
+router.put(
+  "/hie-opt-out",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, id } = getPatientInfoOrFail(req);
+    // TODO #2475 SEND THE hieOptOut ID IN THE BODY
+    const hieOptOut = isTrue(getFrom("query").orFail("hieOptOut", req));
+
+    const result = await setHieOptOut({ patientId: id, cxId, hieOptOut });
+
+    const respPayload: PatientHieOptOutResponse = {
+      id: result.id,
+      hieOptOut: result.hieOptOut ?? false,
+      message: `Patient has been opted ${result.hieOptOut ? "out from" : "in to"} the networks`,
+    };
+
+    return res.status(status.OK).json(respPayload);
+  })
+);
+
+// TODO #2475 expose this on the patient
+/** ---------------------------------------------------------------------------
+ * GET /patient/:id/hie-opt-out
+ *
+ * Returns whether the patient is opted out of data pulling and sharing.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.patientId The ID of the patient whose data is to be returned.
+ */
+router.get(
+  "/hie-opt-out",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, patient } = getPatientInfoOrFail(req);
+
+    const hieOptOut = await getHieOptOut({ cxId, patientId: patient.id });
+
+    const respPayload: PatientHieOptOutResponse = {
+      id: patient.id,
+      hieOptOut: hieOptOut,
+      message: `Patient has opted ${hieOptOut ? "out from" : "in to"} the networks`,
+    };
+
+    return res.status(status.OK).json(respPayload);
   })
 );
 

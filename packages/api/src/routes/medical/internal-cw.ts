@@ -17,6 +17,7 @@ import { getAndUpdateCWOrgAndMetriportOrg } from "../../external/commonwell/comm
 import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler, getFrom } from "../util";
 import { getUUIDFrom } from "../schemas/uuid";
+import { handleParams } from "../helpers/handle-params";
 
 const router = Router();
 
@@ -29,6 +30,7 @@ const router = Router();
  */
 router.get(
   "/ops/organization/:oid",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -52,6 +54,7 @@ router.get(
  */
 router.put(
   "/ops/organization/:oid",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -80,6 +83,7 @@ router.put(
  */
 router.put(
   "/ops/facility/:oid",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();

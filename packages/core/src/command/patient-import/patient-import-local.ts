@@ -24,7 +24,9 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     cxId,
     facilityId,
     jobId,
-    rerunPdOnNewDemographics = true,
+    triggerConsolidated = false,
+    disableWebhooks = false,
+    rerunPdOnNewDemographics = false,
     dryrun = false,
   }: StartPatientImportRequest): Promise<void> {
     const { log } = out(`startPatientImport - cxId ${cxId} jobId ${jobId}`);
@@ -37,6 +39,8 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
         jobStartedAt,
         s3BucketName: this.patientImportBucket,
         processPatientCreateQueue: "local",
+        triggerConsolidated,
+        disableWebhooks,
         rerunPdOnNewDemographics,
         dryrun,
       };
@@ -63,6 +67,8 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     jobId,
     jobStartedAt,
     s3BucketName,
+    triggerConsolidated,
+    disableWebhooks,
     rerunPdOnNewDemographics,
     dryrun,
   }: ProcessPatientImportRequest): Promise<void> {
@@ -96,6 +102,8 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
             patientPayload,
             s3BucketName: this.patientImportBucket,
             processPatientQueryQueue: "local",
+            triggerConsolidated,
+            disableWebhooks,
             rerunPdOnNewDemographics,
             waitTimeInMillis: 0,
           };
@@ -127,6 +135,8 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     jobStartedAt,
     patientPayload,
     s3BucketName,
+    triggerConsolidated,
+    disableWebhooks,
     rerunPdOnNewDemographics,
   }: ProcessPatientCreateRequest): Promise<void> {
     const { log } = out(`processPatientCreate - cxId ${cxId} jobId ${jobId}`);
@@ -161,6 +171,8 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
         jobStartedAt,
         patientId,
         s3BucketName: this.patientImportBucket,
+        triggerConsolidated,
+        disableWebhooks,
         rerunPdOnNewDemographics,
         waitTimeInMillis: 0,
       });
@@ -185,6 +197,8 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
     jobStartedAt,
     patientId,
     s3BucketName,
+    triggerConsolidated,
+    disableWebhooks,
     rerunPdOnNewDemographics,
   }: ProcessPatientQueryRequest) {
     const { log } = out(`processPatientQuery - cxId ${cxId} jobId ${jobId} patientId ${patientId}`);
@@ -197,6 +211,8 @@ export class PatientImportHandlerLocal implements PatientImportHandler {
       await startDocumentQuery({
         cxId,
         patientId,
+        triggerConsolidated,
+        disableWebhooks,
       });
       await creatOrUpdatePatientRecord({
         cxId,

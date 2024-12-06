@@ -1,23 +1,26 @@
-import { demographicsSchema } from "@metriport/api-sdk";
-import { stringToBoolean } from "@metriport/shared";
+import { demographicsSchema, patientCreateSchema } from "@metriport/api-sdk";
+import { PaginatedResponse, stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import { getPatientOrFail, matchPatient } from "../../command/medical/patient/get-patient";
+import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
+import {
+  getPatientOrFail,
+  getPatients,
+  getPatientsCount,
+  matchPatient,
+} from "../../command/medical/patient/get-patient";
+import { Pagination } from "../../command/pagination";
+import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
 import NotFoundError from "../../errors/not-found";
+import { PatientModel } from "../../models/medical/patient";
 import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
-import { asyncHandler, getCxIdOrFail, getFrom } from "../util";
-import { dtoFromModel } from "./dtos/patientDTO";
-import { schemaDemographicsToPatientData } from "./schemas/patient";
-
-import { patientCreateSchema } from "@metriport/api-sdk";
-import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
-import { getPatients } from "../../command/medical/patient/get-patient";
-import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
-import { PatientModel as Patient } from "../../models/medical/patient";
-import { getFromQueryOrFail } from "../util";
-import { schemaCreateToPatientData } from "./schemas/patient";
+import { checkRateLimit } from "../middlewares/rate-limiting";
+import { isPaginated, paginated } from "../pagination";
+import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
+import { dtoFromModel, PatientDTO } from "./dtos/patientDTO";
+import { schemaCreateToPatientData, schemaDemographicsToPatientData } from "./schemas/patient";
 
 const router = Router();
 
@@ -32,6 +35,7 @@ const router = Router();
  */
 router.post(
   "/",
+  checkRateLimit("patientCreateOrUpdate"),
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
@@ -45,7 +49,7 @@ router.post(
 
     if (Config.isSandbox()) {
       // limit the amount of patients that can be created in sandbox mode
-      const numPatients = await Patient.count({ where: { cxId } });
+      const numPatients = await PatientModel.count({ where: { cxId } });
       const patientLimit = await getSandboxPatientLimitForCx(cxId);
       if (numPatients >= patientLimit) {
         return res.status(status.BAD_REQUEST).json({
@@ -78,6 +82,10 @@ router.post(
  *
  * @param   req.cxId              The customer ID.
  * @param   req.query.facilityId  The ID of the facility the user patient is associated with (optional).
+ * @param   req.query.filters     Full text search filters. See https://docs.metriport.com/medical-api/more-info/search-filters
+ * @param   req.query.fromItem    The minimum item to be included in the response, inclusive.
+ * @param   req.query.toItem      The maximum item to be included in the response, inclusive.
+ * @param   req.query.count       The number of items to be included in the response.
  * @return  The customer's patients associated with the given facility.
  */
 router.get(
@@ -86,11 +94,32 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityId = getFrom("query").optional("facilityId", req);
+    const fullTextSearchFilters = getFrom("query").optional("filters", req);
 
-    const patients = await getPatients({ cxId, facilityId: facilityId });
+    // TODO 483 remove this (and respected conditional) once pagination is fully rolled out
+    if (!isPaginated(req)) {
+      const patients = await getPatients({ cxId, facilityId: facilityId, fullTextSearchFilters });
+      const patientsData = patients.map(dtoFromModel);
+      return res.status(status.OK).json({ patients: patientsData });
+    }
 
-    const patientsData = patients.map(dtoFromModel);
-    return res.status(status.OK).json({ patients: patientsData });
+    const queryParams = {
+      ...(facilityId ? { facilityId } : {}),
+      ...(fullTextSearchFilters ? { filters: fullTextSearchFilters } : {}),
+    };
+
+    const { meta, items } = await paginated({
+      request: req,
+      additionalQueryParams: queryParams,
+      getItems: (pagination: Pagination) =>
+        getPatients({ cxId, facilityId, pagination, fullTextSearchFilters }),
+      getTotalCount: () => getPatientsCount({ cxId, facilityId, fullTextSearchFilters }),
+    });
+    const response: PaginatedResponse<PatientDTO, "patients"> = {
+      meta,
+      patients: items.map(dtoFromModel),
+    };
+    return res.status(status.OK).json(response);
   })
 );
 

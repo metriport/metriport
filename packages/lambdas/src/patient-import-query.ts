@@ -3,6 +3,13 @@ import { errorToString, MetriportError } from "@metriport/shared";
 import { makePatientImportHandler } from "@metriport/core/command/patient-import/patient-import-factory";
 import { ProcessPatientQueryEvemtPayload } from "@metriport/core/command/patient-import/patient-import-cloud";
 import { ProcessPatientQueryRequest } from "@metriport/core/command/patient-import/patient-import";
+import {
+  parseCxIdAndJob,
+  parseJobStartedAt,
+  parseTriggerConsolidated,
+  parseDisableWebhooks,
+  parseRerunPdOnNewDemos,
+} from "./shared/patient-import";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
 import { prefixedLog } from "./shared/log";
@@ -29,7 +36,15 @@ export async function handler(event: SQSEvent) {
 
     console.log(`Running with unparsed body: ${message.body}`);
     const parsedBody = parseBody(message.body);
-    const { cxId, jobId, jobStartedAt, patientId, rerunPdOnNewDemographics } = parsedBody;
+    const {
+      cxId,
+      jobId,
+      jobStartedAt,
+      patientId,
+      triggerConsolidated,
+      disableWebhooks,
+      rerunPdOnNewDemographics,
+    } = parsedBody;
 
     const log = prefixedLog(`cxId ${cxId}, job ${jobId}, patientId ${patientId}`);
     try {
@@ -45,6 +60,8 @@ export async function handler(event: SQSEvent) {
         jobStartedAt,
         patientId,
         s3BucketName: patientImportBucket,
+        triggerConsolidated,
+        disableWebhooks,
         rerunPdOnNewDemographics,
         waitTimeInMillis,
       };
@@ -80,33 +97,31 @@ function parseBody(body?: unknown): ProcessPatientQueryEvemtPayload {
 
   const bodyAsJson = JSON.parse(bodyString);
 
-  const cxIdRaw = bodyAsJson.cxId;
-  if (!cxIdRaw) throw new Error(`Missing cxId`);
-  if (typeof cxIdRaw !== "string") throw new Error(`Invalid cxId`);
-
-  const jobIdRaw = bodyAsJson.jobId;
-  if (!jobIdRaw) throw new Error(`Missing jobId`);
-  if (typeof jobIdRaw !== "string") throw new Error(`Invalid jobId`);
-
-  const jobStartedAtRaw = bodyAsJson.jobStartedAt;
-  if (!jobStartedAtRaw) throw new Error(`Missing jobStartedAt`);
-  if (typeof jobStartedAtRaw !== "string") throw new Error(`Invalid jobStartedAt`);
+  const { cxIdRaw, jobIdRaw } = parseCxIdAndJob(bodyAsJson);
+  const { jobStartedAtRaw } = parseJobStartedAt(bodyAsJson);
+  const { triggerConsolidatedRaw } = parseTriggerConsolidated(bodyAsJson);
+  const { disableWebhooksRaw } = parseDisableWebhooks(bodyAsJson);
+  const { rerunPdOnNewDemographicsRaw } = parseRerunPdOnNewDemos(bodyAsJson);
 
   const patientIdRaw = bodyAsJson.patientId;
   if (!patientIdRaw) throw new Error(`Missing patientId`);
   if (typeof patientIdRaw !== "string") throw new Error(`Invalid patientId`);
 
-  const rerunPdOnNewDemographicsRaw = bodyAsJson.rerunPdOnNewDemographics;
-  if (rerunPdOnNewDemographicsRaw === undefined)
-    throw new Error(`Missing rerunPdOnNewDemographics`);
-  if (typeof rerunPdOnNewDemographicsRaw !== "boolean")
-    throw new Error(`Invalid rerunPdOnNewDemographics`);
-
   const cxId = cxIdRaw as string;
   const jobId = jobIdRaw as string;
   const jobStartedAt = jobStartedAtRaw as string;
   const patientId = patientIdRaw as string;
+  const triggerConsolidated = triggerConsolidatedRaw as boolean;
+  const disableWebhooks = disableWebhooksRaw as boolean;
   const rerunPdOnNewDemographics = rerunPdOnNewDemographicsRaw as boolean;
 
-  return { cxId, jobId, jobStartedAt, patientId, rerunPdOnNewDemographics };
+  return {
+    cxId,
+    jobId,
+    jobStartedAt,
+    patientId,
+    triggerConsolidated,
+    disableWebhooks,
+    rerunPdOnNewDemographics,
+  };
 }

@@ -89,6 +89,10 @@ export class Config {
     return CoreConfig.getApiUrl();
   }
 
+  static getDashUrl(): string | undefined {
+    return getEnvVar("DASH_URL");
+  }
+
   static getApiGatewayUsagePlanId(): string | undefined {
     return getEnvVar("API_GW_USAGE_PLAN_ID");
   }
@@ -349,12 +353,28 @@ export class Config {
   static getAthenaHealthEnv(): string | undefined {
     return getEnvVar("EHR_ATHENA_ENVIRONMENT");
   }
-
   static getAthenaHealthClientKeyArn(): string | undefined {
     return getEnvVar("EHR_ATHENA_CLIENT_KEY_ARN");
   }
-
   static getAthenaHealthClientSecretArn(): string | undefined {
     return getEnvVar("EHR_ATHENA_CLIENT_SECRET_ARN");
+  }
+  static getAthenaHealthClientKey(): string | undefined {
+    return getEnvVar("EHR_ATHENA_CLIENT_KEY");
+  }
+  static getAthenaHealthClientSecret(): string | undefined {
+    return getEnvVar("EHR_ATHENA_CLIENT_SECRET");
+  }
+
+  static getElationEnv(): string | undefined {
+    return getEnvVar("EHR_ELATION_ENVIRONMENT");
+  }
+
+  static getElationClientKeyAndSecretMap(): string | undefined {
+    return getEnvVar("EHR_ELATION_CLIENT_KEY_AND_SECRET_MAP");
+  }
+
+  static getRateLimitTableName(): string | undefined {
+    return getEnvVar("RATE_LIMIT_TABLE_NAME");
   }
 }

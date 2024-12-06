@@ -50,7 +50,9 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
     facilityId,
     jobId,
     processPatientImportLambda,
-    rerunPdOnNewDemographics = true,
+    triggerConsolidated = false,
+    disableWebhooks = false,
+    rerunPdOnNewDemographics = false,
     dryrun = false,
   }: StartPatientImportRequest): Promise<void> {
     const { log } = out(`startPatientImport- cxId ${cxId} jobId ${jobId}`);
@@ -59,6 +61,8 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
         cxId,
         facilityId,
         jobId,
+        triggerConsolidated,
+        disableWebhooks,
         rerunPdOnNewDemographics,
         dryrun,
       };
@@ -106,6 +110,8 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
     jobStartedAt,
     s3BucketName,
     processPatientCreateQueue,
+    triggerConsolidated,
+    disableWebhooks,
     rerunPdOnNewDemographics,
     dryrun,
   }: ProcessPatientImportRequest): Promise<void> {
@@ -140,6 +146,8 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
               jobId,
               jobStartedAt,
               patientPayload,
+              triggerConsolidated,
+              disableWebhooks,
               rerunPdOnNewDemographics,
             };
             try {
@@ -196,6 +204,8 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
     patientPayload,
     s3BucketName,
     processPatientQueryQueue,
+    triggerConsolidated,
+    disableWebhooks,
     rerunPdOnNewDemographics,
     waitTimeInMillis,
   }: ProcessPatientCreateRequest): Promise<void> {
@@ -229,6 +239,8 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
         jobId,
         jobStartedAt,
         patientId,
+        triggerConsolidated,
+        disableWebhooks,
         rerunPdOnNewDemographics,
       };
       try {
@@ -278,6 +290,8 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
     jobStartedAt,
     patientId,
     s3BucketName,
+    triggerConsolidated,
+    disableWebhooks,
     rerunPdOnNewDemographics,
     waitTimeInMillis,
   }: ProcessPatientQueryRequest) {
@@ -293,6 +307,8 @@ export class PatientImportHandlerCloud implements PatientImportHandler {
       await startDocumentQuery({
         cxId,
         patientId,
+        triggerConsolidated,
+        disableWebhooks,
       });
       await creatOrUpdatePatientRecord({
         cxId,

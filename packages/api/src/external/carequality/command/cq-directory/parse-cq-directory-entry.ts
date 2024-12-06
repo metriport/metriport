@@ -5,7 +5,7 @@ import { ManagingOrganization, Organization } from "@metriport/carequality-sdk/m
 import { Coordinates } from "@metriport/core/external/aws/location";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { errorToString, isValidUrl, normalizeOid, normalizeZipCode } from "@metriport/shared";
+import { errorToString, isValidUrl, normalizeOid, normalizeZipCodeNew } from "@metriport/shared";
 import { CQDirectoryEntryData } from "../../cq-directory";
 import { CQOrgUrls } from "../../shared";
 
@@ -22,6 +22,7 @@ const EARTH_RADIUS = 6378168;
 const XCPD_STRING = "ITI-55";
 const XCA_DQ_STRING = "ITI-38";
 const XCA_DR_STRING = "ITI-39";
+const XDR_STRING = "ITI-41";
 type ChannelUrl = typeof XCPD_STRING | typeof XCA_DQ_STRING | typeof XCA_DR_STRING;
 
 export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryEntryData[] {
@@ -144,9 +145,9 @@ export function getAddressFields(addresses: Address[] | undefined): LenientAddre
     const postalCode = address?.postalCode?.value;
     if (postalCode && postalCode.length > 0) {
       try {
-        parsedAddress.zip = normalizeZipCode(postalCode);
+        parsedAddress.zip = normalizeZipCodeNew(postalCode);
       } catch (err) {
-        log(`normalizeZipCode error for zip ${postalCode} - error: ${errorToString(err)}`);
+        log(`normalizeZipCodeNew error for zip ${postalCode} - error: ${errorToString(err)}`);
       }
     }
 
@@ -211,6 +212,8 @@ function getUrlType(value: string | undefined): ChannelUrl | undefined {
   if (value.includes(XCA_DR_STRING)) return XCA_DR_STRING;
 
   if (value.includes("Direct Messaging")) return;
+  if (value.includes(XDR_STRING)) return; // TODO: #2468 - Learn about the function of this endpoint and see whether we need to include it in our mapping
+
   const msg = `Unknown CQ Endpoint type`;
   log(msg);
   capture.message(msg, {

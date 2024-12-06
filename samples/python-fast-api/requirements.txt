@@ -2,6 +2,6 @@ python-dotenv
 httpx
 pydantic
 asyncio
-fern-metriport
+metriport
 fastapi
 uvicorn

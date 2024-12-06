@@ -41,11 +41,13 @@ import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as documentUploader from "./api-stack/document-upload";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
+import { TerminologyServerNestedStack } from "./api-stack/terminology-server-service";
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
 import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
 import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { PatientImportNestedStack } from "./patient-import-nested-stack";
+import { RateLimitingNestedStack } from "./rate-limiting-nested-stack";
 import * as AppConfigUtils from "./shared/app-config";
 import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
@@ -340,6 +342,9 @@ export class APIStack extends Stack {
       },
     });
 
+    //-------------------------------------------
+    // Patient Import
+    //-------------------------------------------
     const {
       importFileLambda: patientImportLambda,
       patientCreateLambda,
@@ -348,6 +353,14 @@ export class APIStack extends Stack {
       config: props.config,
       lambdaLayers,
       vpc: this.vpc,
+      alarmAction: slackNotification?.alarmAction,
+    });
+
+    //-------------------------------------------
+    // Rate Limiting
+    //-------------------------------------------
+    const { rateLimitTable } = new RateLimitingNestedStack(this, "RateLimitingNestedStack", {
+      config: props.config,
       alarmAction: slackNotification?.alarmAction,
     });
 
@@ -369,6 +382,19 @@ export class APIStack extends Stack {
       envType: props.config.environmentType,
       alarmSnsAction: slackNotification?.alarmAction,
     });
+
+    //-------------------------------------------
+    // Terminology Server Service
+    //-------------------------------------------
+    if (!isSandbox(props.config)) {
+      new TerminologyServerNestedStack(this, "TerminologyServerNestedStack", {
+        config: props.config,
+        version: props.version,
+        generalBucket: generalBucket,
+        vpc: this.vpc,
+        alarmAction: slackNotification?.alarmAction,
+      });
+    }
 
     //-------------------------------------------
     // FHIR Converter Service
@@ -449,6 +475,7 @@ export class APIStack extends Stack {
       fhirToMedicalRecordLambda,
       fhirToCdaConverterLambda,
       fhirToBundleLambda,
+      rateLimitTable,
       searchIngestionQueue: ccdaSearchQueue,
       searchEndpoint: ccdaSearchDomain.domainEndpoint,
       searchAuth: { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
@@ -526,6 +553,8 @@ export class APIStack extends Stack {
       sourceQueue: fhirConverterQueue,
       dlq: fhirConverterDLQ,
       fhirConverterBucket,
+      medicalDocumentsBucket,
+      fhirServerUrl: props.config.fhirServerUrl,
       apiServiceDnsAddress: apiDirectUrl,
       alarmSnsAction: slackNotification?.alarmAction,
     });
@@ -1323,7 +1352,12 @@ export class APIStack extends Stack {
         }),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: [lambdaLayers.shared, lambdaLayers.chromium],
+      layers: [
+        lambdaLayers.shared,
+        lambdaLayers.langchain,
+        lambdaLayers.chromium,
+        lambdaLayers.puppeteer,
+      ],
       memory: 4096,
       timeout: lambdaTimeout,
       isEnableInsights: true,
