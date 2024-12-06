@@ -32,9 +32,9 @@ function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
-export type ElationEnv = "api" | "sandbox";
+export type ElationEnv = "app" | "sandbox";
 export function isElationEnv(env: string): env is ElationEnv {
-  return env === "api" || env === "sandbox";
+  return env === "app" || env === "sandbox";
 }
 
 class ElationApi {
