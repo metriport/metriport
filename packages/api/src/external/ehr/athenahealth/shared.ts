@@ -33,13 +33,13 @@ export function createMetriportAddresses(patient: PatientResource): Address[] {
       throw new Error("AthenaHealth patient missing at least one line in address");
     }
     if (!address.line[0] || address.line[0].trim() === "") {
-      throw new Error("AthenaHealth patient missing address line 1");
+      throw new Error("AthenaHealth patient address first line is empty");
     }
     if (address.city.trim() === "") {
-      throw new Error("AthenaHealth patient missing city in address");
+      throw new Error("AthenaHealth patient address city is empty");
     }
     if (address.country.trim() === "") {
-      throw new Error("AthenaHealth patient missing country in address");
+      throw new Error("AthenaHealth patient address country is empty");
     }
     if (address.postalCode === undefined) {
       throw new Error("AthenaHealth patient missing postal code in address");
@@ -67,8 +67,9 @@ export function createNames(patient: PatientResource): { firstName: string; last
       names.push({ firstName, lastName });
     });
   });
-  if (names.length === 0)
+  if (names.length === 0) {
     throw new Error("AthenaHealth patient has only empty first or last names");
+  }
   return names;
 }
 

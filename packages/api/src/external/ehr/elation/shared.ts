@@ -30,13 +30,10 @@ export function createMetriportContacts(patient: PatientResource): Contact[] {
 export function createMetriportAddresses(patient: PatientResource): Address[] {
   if (patient.address === null) throw new Error("Elation patient missing address");
   if (patient.address.address_line1.trim() === "") {
-    throw new Error("Elation patient missing address line 1");
+    throw new Error("Elation patient address first line is empty");
   }
   if (patient.address.city.trim() === "") {
-    throw new Error("Elation patient missing city in address");
-  }
-  if (patient.address.zip.trim() === "") {
-    throw new Error("Elation patient missing postal code in address");
+    throw new Error("Elation patient address city is empty");
   }
   return [
     {
