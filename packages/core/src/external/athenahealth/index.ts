@@ -632,7 +632,7 @@ class AthenaHealthApi {
       }
       const appointments = appointmentEventGetResponseSchema.parse(response.data).appointments;
       return appointments.filter(
-        app => app.patientid && app.appointmentstatus === "f"
+        app => app.patientid !== undefined && app.appointmentstatus === "f"
       ) as BookedAppointment[];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
