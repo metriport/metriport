@@ -29,12 +29,23 @@ export function createMetriportContacts(patient: PatientResource): Contact[] {
 export function createMetriportAddresses(patient: PatientResource): Address[] {
   if (patient.address === undefined) throw new Error("AthenaHealth patient missing address");
   return patient.address.map(address => {
-    if (address.line.length === 0)
+    if (address.line.length === 0) {
       throw new Error("AthenaHealth patient missing at least one line in address");
-    if (address.postalCode === undefined)
+    }
+    if (!address.line[0] || address.line[0].trim() === "") {
+      throw new Error("AthenaHealth patient missing address line 1");
+    }
+    if (address.city.trim() === "") {
+      throw new Error("AthenaHealth patient missing city in address");
+    }
+    if (address.country.trim() === "") {
+      throw new Error("AthenaHealth patient missing country in address");
+    }
+    if (address.postalCode === undefined) {
       throw new Error("AthenaHealth patient missing postal code in address");
+    }
     return {
-      addressLine1: address.line[0] as string,
+      addressLine1: address.line[0],
       addressLine2: address.line.length > 1 ? address.line.slice(1).join(" ") : undefined,
       city: address.city,
       state: normalizeUSStateForAddress(address.state),

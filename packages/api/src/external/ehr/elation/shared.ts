@@ -32,6 +32,9 @@ export function createMetriportAddresses(patient: PatientResource): Address[] {
   if (patient.address.address_line1.trim() === "") {
     throw new Error("Elation patient missing address line 1");
   }
+  if (patient.address.city.trim() === "") {
+    throw new Error("Elation patient missing city in address");
+  }
   if (patient.address.zip.trim() === "") {
     throw new Error("Elation patient missing postal code in address");
   }
