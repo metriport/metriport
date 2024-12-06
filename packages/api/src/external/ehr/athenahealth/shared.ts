@@ -27,10 +27,12 @@ export function createMetriportContacts(patient: PatientResource): Contact[] {
 }
 
 export function createMetriportAddresses(patient: PatientResource): Address[] {
+  if (patient.address === undefined) throw new Error("AthenaHealth patient missing address");
   return patient.address.map(address => {
-    if (address.line.length === 0) {
+    if (address.line.length === 0)
       throw new Error("AthenaHealth patient missing at least one line in address");
-    }
+    if (address.postalCode === undefined)
+      throw new Error("AthenaHealth patient missing postal code in address");
     return {
       addressLine1: address.line[0] as string,
       addressLine2: address.line.length > 1 ? address.line.slice(1).join(" ") : undefined,
@@ -43,6 +45,7 @@ export function createMetriportAddresses(patient: PatientResource): Address[] {
 }
 
 export function createNames(patient: PatientResource): { firstName: string; lastName: string }[] {
+  if (patient.name.length === 0) throw new Error("AthenaHealth patient missing at least one name");
   const names: { firstName: string; lastName: string }[] = [];
   patient.name.map(name => {
     const lastName = name.family.trim();
@@ -53,6 +56,8 @@ export function createNames(patient: PatientResource): { firstName: string; last
       names.push({ firstName, lastName });
     });
   });
+  if (names.length === 0)
+    throw new Error("AthenaHealth patient has only empty first or last names");
   return names;
 }
 

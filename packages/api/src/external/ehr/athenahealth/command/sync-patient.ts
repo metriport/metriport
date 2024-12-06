@@ -6,7 +6,6 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import {
   errorToString,
-  MetriportError,
   normalizeDate,
   normalizeGender,
   NotFoundError,
@@ -55,7 +54,7 @@ export async function syncAthenaPatientIntoMetriport({
   api?: AthenaHealthApi;
   useSearch?: boolean;
   triggerDq?: boolean;
-}): Promise<string> {
+}): Promise<string | undefined> {
   const { log } = out(
     `AthenaHealth syncAthenaPatientIntoMetriport - cxId ${cxId} athenaPracticeId ${athenaPracticeId} athenaPatientId ${athenaPatientId}`
   );
@@ -89,17 +88,8 @@ export async function syncAthenaPatientIntoMetriport({
     patientId: athenaPatientId,
     useSearch,
   });
-  if (!athenaPatient) throw new NotFoundError("AthenaHealth patient not found");
-  if (athenaPatient.name.length === 0) {
-    throw new MetriportError("AthenaHealth patient missing at least one name", undefined, {
-      name: athenaPatient.name.map(name => JSON.stringify(name)).join(", "),
-    });
-  }
-  if (athenaPatient.address.length === 0) {
-    throw new MetriportError("AthenaHealth patient missing at least one address", undefined, {
-      address: athenaPatient.address.map(address => JSON.stringify(address)).join(", "),
-    });
-  }
+  if (athenaPatient === null) return undefined;
+  if (athenaPatient === undefined) throw new NotFoundError("AthenaHealth patient not found");
 
   const demos = createMetriportPatientDemos(athenaPatient);
 

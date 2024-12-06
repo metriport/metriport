@@ -5,7 +5,6 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import {
   errorToString,
-  MetriportError,
   normalizeDate,
   normalizeGender,
   NotFoundError,
@@ -45,7 +44,7 @@ export async function syncElationPatientIntoMetriport({
   elationPatientId: string;
   api?: ElationApi;
   triggerDq?: boolean;
-}): Promise<string> {
+}): Promise<string | undefined> {
   const { log } = out(
     `Elation syncElationPatientIntoMetriport - cxId ${cxId} elationPracticeId ${elationPracticeId} elationPatientId ${elationPatientId}`
   );
@@ -79,18 +78,8 @@ export async function syncElationPatientIntoMetriport({
     cxId,
     patientId: elationPatientId,
   });
-  if (!elationPatient) throw new NotFoundError("Elation patient not found");
-  if (elationPatient.first_name.trim() === "" || elationPatient.last_name.trim() === "") {
-    throw new MetriportError("Elation patient has empty first or last name", undefined, {
-      firstName: elationPatient.first_name,
-      lastName: elationPatient.last_name,
-    });
-  }
-  if (elationPatient.address.address_line1.trim() === "") {
-    throw new MetriportError("Elation patient has empty address line 1", undefined, {
-      addressLine1: elationPatient.address.address_line1,
-    });
-  }
+  if (elationPatient === null) return undefined;
+  if (elationPatient === undefined) throw new NotFoundError("Elation patient not found");
 
   const demo = createMetriportPatientDemo(elationPatient);
 

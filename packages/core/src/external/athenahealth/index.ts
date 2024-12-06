@@ -180,7 +180,7 @@ class AthenaHealthApi {
   }: {
     cxId: string;
     patientId: string;
-  }): Promise<PatientResource | undefined> {
+  }): Promise<PatientResource | null | undefined> {
     const { log, debug } = out(
       `AthenaHealth get patient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -223,6 +223,7 @@ class AthenaHealthApi {
         });
         return undefined;
       }
+      if (!this.isValidPatientAddress(patient.data)) return null;
       return patient.data;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
@@ -249,7 +250,7 @@ class AthenaHealthApi {
   }: {
     cxId: string;
     patientId: string;
-  }): Promise<PatientResource | undefined> {
+  }): Promise<PatientResource | null | undefined> {
     const { log, debug } = out(
       `AthenaHealth search patient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -301,7 +302,11 @@ class AthenaHealthApi {
       }
       const entry = searchSet.data.entry;
       if (entry.length > 1) throw new MetriportError("More than one AthenaHealth patient found");
-      return entry[0]?.resource;
+      const rawPatient = entry[0]?.resource;
+      if (!rawPatient) return undefined;
+      const patient = patientResourceSchema.parse(rawPatient);
+      if (!this.isValidPatientAddress(patient)) return null;
+      return patient;
     } catch (error) {
       const msg = `Failure while searching patient @ AthenaHealth`;
       log(`${msg}. Cause: ${errorToString(error)}`);
@@ -704,6 +709,12 @@ class AthenaHealthApi {
     const parsedDate = buildDayjs(trimmedDate);
     if (!parsedDate.isValid()) return undefined;
     return parsedDate.format(athenaDateTimeFormat);
+  }
+
+  private isValidPatientAddress(patient: PatientResource): boolean {
+    if (patient.address === undefined) return false;
+    const validAddresses = patient.address.filter(a => a.postalCode !== undefined);
+    return validAddresses.length > 0;
   }
 }
 

@@ -12,7 +12,7 @@ const address = z.object({
   state: z.string(),
   line: z.string().array(),
   city: z.string(),
-  postalCode: z.string(),
+  postalCode: z.string().optional(),
 });
 
 const telecome = z.object({
@@ -30,7 +30,7 @@ const name = z.object({
 export const patientResourceSchema = z.object({
   gender: z.string(),
   name: name.array(),
-  address: address.array(),
+  address: address.array().optional(),
   birthDate: z.string(),
   telecom: telecome.array().optional(),
 });

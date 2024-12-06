@@ -28,6 +28,13 @@ export function createMetriportContacts(patient: PatientResource): Contact[] {
 }
 
 export function createMetriportAddresses(patient: PatientResource): Address[] {
+  if (patient.address === null) throw new Error("Elation patient missing address");
+  if (patient.address.address_line1.trim() === "") {
+    throw new Error("Elation patient missing address line 1");
+  }
+  if (patient.address.zip.trim() === "") {
+    throw new Error("Elation patient missing postal code in address");
+  }
   return [
     {
       addressLine1: patient.address.address_line1,
@@ -42,6 +49,9 @@ export function createMetriportAddresses(patient: PatientResource): Address[] {
 }
 
 export function createNames(patient: PatientResource): { firstName: string; lastName: string } {
+  if (patient.first_name.trim() === "" || patient.last_name.trim() === "") {
+    throw new Error("Elation patient has empty first or last name");
+  }
   return {
     firstName: `${patient.first_name}${
       patient.middle_name !== "" ? ` ${patient.middle_name}` : ""

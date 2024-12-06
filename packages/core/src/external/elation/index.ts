@@ -95,7 +95,7 @@ class ElationApi {
   }: {
     cxId: string;
     patientId: string;
-  }): Promise<PatientResource | undefined> {
+  }): Promise<PatientResource | null | undefined> {
     const { log, debug } = out(
       `Elation get patient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -138,6 +138,7 @@ class ElationApi {
         });
         return undefined;
       }
+      if (!this.isValidPatientAddress(patient.data)) return null;
       return patient.data;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
@@ -367,6 +368,12 @@ class ElationApi {
     const parsedDate = buildDayjs(trimmedDate);
     if (!parsedDate.isValid()) return undefined;
     return parsedDate.format(elationDateFormat);
+  }
+
+  private isValidPatientAddress(patient: PatientResource): boolean {
+    if (patient.address === null) return false;
+    if (patient.address.zip === "") return false;
+    return true;
   }
 }
 

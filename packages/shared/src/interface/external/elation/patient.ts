@@ -21,7 +21,7 @@ export const patientResourceSchema = z.object({
   last_name: z.string(),
   middle_name: z.string(),
   sex: z.string(),
-  address,
+  address: address.nullable(),
   dob: z.string(),
   phones: phone.array(),
   emails: email.array(),
