@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { AwsCredentialIdentity, Provider } from "@aws-sdk/types";
 import {
   AIMessage,
