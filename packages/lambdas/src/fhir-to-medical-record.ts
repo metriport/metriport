@@ -4,7 +4,10 @@ import {
   createMRSummaryFileName,
 } from "@metriport/core/domain/medical-record-summary";
 import { getFeatureFlagValueStringArray } from "@metriport/core/external/aws/app-config";
-import { Brief, bundleToBrief } from "@metriport/core/external/aws/lambda-logic/bundle-to-brief";
+import {
+  Brief,
+  summarizeFilteredBundleWithAI,
+} from "@metriport/core/external/aws/lambda-logic/bundle-to-brief";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import { bundleToHtmlADHD } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-adhd";
 import { bundleToHtmlBmi } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-bmi";
@@ -77,7 +80,7 @@ export async function handler({
 
     // TODO: Condense this functionality under a single function and put it on `@metriport/core`, so this can be used both here, and on the Lambda.
     const aiBriefContent = isBriefFeatureFlagEnabled
-      ? await bundleToBrief(bundle, cxId, patientId)
+      ? await summarizeFilteredBundleWithAI(bundle)
       : undefined;
     const briefFileName = createMRSummaryBriefFileName(cxId, patientId);
     const aiBrief = prepareBriefToBundle({ aiBrief: aiBriefContent });
