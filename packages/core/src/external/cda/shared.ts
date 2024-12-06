@@ -6,6 +6,7 @@ import {
   ObservationOrganizer,
   ObservationOrganizerEntry,
 } from "../../fhir-to-cda/cda-types/shared-types";
+import { TXT_MIME_TYPE, TXT_RTF_MIME_TYPE } from "../../util/mime";
 
 const observationOrganizerTemplateId = "2.16.840.1.113883.10.20.22.4.1";
 
@@ -42,4 +43,9 @@ export function groupObservations(organizer: ObservationOrganizer): {
     mediaObservations: mediaObs,
     nonMediaObservations: nonMediaObs,
   };
+}
+
+export function getMimeType(mediaType: string | undefined): string {
+  if (mediaType && mediaType === TXT_RTF_MIME_TYPE) return TXT_MIME_TYPE;
+  return mediaType ?? TXT_MIME_TYPE;
 }
