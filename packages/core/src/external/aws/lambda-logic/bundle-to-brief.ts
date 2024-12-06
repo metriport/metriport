@@ -19,16 +19,27 @@ import {
   Resource,
 } from "@medplum/fhirtypes";
 import { toArray } from "@metriport/shared";
-import { ISO_DATE } from "@metriport/shared/common/date";
-import dayjs from "dayjs";
+import { buildDayjs, elapsedTimeFromNow, ISO_DATE } from "@metriport/shared/common/date";
 import { LLMChain, MapReduceDocumentsChain, StuffDocumentsChain } from "langchain/chains";
 import { cloneDeep } from "lodash";
 import { filterBundleByDate } from "../../../command/consolidated/consolidated-filter-by-date";
-import { findPatientResource } from "../../../external/fhir/shared/index";
+import { getDatesFromEffectiveDateTimeOrPeriod } from "../../../command/consolidated/consolidated-filter-shared";
+import {
+  findDiagnosticReportResources,
+  findPatientResource,
+} from "../../../external/fhir/shared/index";
+import { out } from "../../../util";
+import { uuidv7 } from "../../../util/uuid-v7";
+import { analytics, EventTypes } from "../../analytics/posthog";
 import { BedrockChat } from "../../langchain/bedrock/index";
 
-const CHUNK_SIZE = 100000;
+const CHUNK_SIZE = 100_000;
 const CHUNK_OVERLAP = 1000;
+
+const NUM_HISTORICAL_YEARS = 1;
+const SONNET_COST_PER_INPUT_TOKEN = 0.0015 / 1000;
+const SONNET_COST_PER_OUTPUT_TOKEN = 0.0075 / 1000;
+
 const relevantResources = [
   "AllergyIntolerance",
   "DiagnosticReport",
@@ -52,117 +63,204 @@ const referenceResources = [
   "Location",
 ];
 
+const UNANSWERED_CALL = "unanswered call";
+const SCHEDULING_CALL = "scheduling call";
+const ADMIN_NOTE = "admin note";
+const SCAN_REF_NOTE = "scan reference";
+
+const REPORT_TYPES_BLACKLIST = [
+  "instructions",
+  "addendum",
+  "nursing note",
+  SCHEDULING_CALL,
+  UNANSWERED_CALL,
+  ADMIN_NOTE,
+  SCAN_REF_NOTE,
+];
+
+const REMOVE_FROM_NOTE = [
+  "xLabel",
+  "5/5",
+  "Â°F",
+  "Â",
+  "â¢",
+  "documented in this encounter",
+  "xnoIndent",
+  "Formatting of this note might be different from the original.",
+  "Formatting of this note is different from the original.",
+  "Portions of the history and exam were entered using voice recognition software",
+  "Images from the original note were not included.",
+  "Minor syntax, contextual, and spelling errors may be related to the use of this software and were not intentional. If corrections are necessary, please contact provider.",
+  "<content>",
+  "</content>",
+  "<root>",
+  "</root>",
+  "&lt;",
+  "&gt;",
+];
+
+const documentVariableName = "text";
+
 export type Brief = {
   id: string;
   content: string;
   link: string;
 };
-
 //--------------------------------
 // AI-based brief generation
 //--------------------------------
 export async function summarizeFilteredBundleWithAI(
-  bundle: Bundle<Resource>
+  bundle: Bundle<Resource>,
+  cxId: string,
+  patientId: string
 ): Promise<string | undefined> {
+  const requestId = uuidv7();
+  const startedAt = new Date();
+  const { log } = out(`summarizeFilteredBundleWithAI - cxId ${cxId}, patientId ${patientId}`);
   // filter out historical data
-  const numHistoricalYears = 2;
-  const dateFrom = dayjs().subtract(numHistoricalYears, "year").format(ISO_DATE);
+  log(`Starting with requestId ${requestId}, and bundle length ${bundle.entry?.length}`);
+  const latestReportDate = findDiagnosticReportResources(bundle)
+    .flatMap(report => {
+      return getDatesFromEffectiveDateTimeOrPeriod(report);
+    })
+    .filter((date): date is string => date !== undefined)
+    .sort((a, b) => b.localeCompare(a))[0];
+  const initialDate = latestReportDate ? buildDayjs(latestReportDate) : buildDayjs(new Date());
+  const dateFrom = initialDate.subtract(NUM_HISTORICAL_YEARS, "year").format(ISO_DATE);
   const filteredBundle = filterBundleByDate(bundle, dateFrom);
+  const slimPayloadBundle = buildSlimmerPayload(filteredBundle);
+  const inputString = JSON.stringify(slimPayloadBundle);
 
-  const inputString = prepareBundleForBrief(filteredBundle);
-
-  // TODO: experiment with different splitters
+  // TODO: #2510 - experiment with different splitters
   const textSplitter = new RecursiveCharacterTextSplitter({
     chunkSize: CHUNK_SIZE,
     chunkOverlap: CHUNK_OVERLAP,
   });
   const docs = await textSplitter.createDocuments([inputString ?? ""]);
+  const totalTokensUsed = {
+    input: 0,
+    output: 0,
+  };
 
   const llmSummary = new BedrockChat({
-    model: "anthropic.claude-3-5-sonnet-20240620-v1:0",
+    model: "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
     temperature: 0,
     region: "us-east-1",
+    callbacks: [
+      {
+        handleLLMEnd: output => {
+          const usage = output.llmOutput?.usage;
+          if (usage) {
+            totalTokensUsed.input += usage.input_tokens;
+            totalTokensUsed.output += usage.output_tokens;
+          }
+        },
+      },
+    ],
   });
 
   const todaysDate = new Date().toISOString().split("T")[0];
   const systemPrompt = "You are an expert primary care doctor.";
-  // this is the summary prompt for each chunk of the bundle
+
   const summaryTemplate = `
-${systemPrompt}
+  ${systemPrompt}
 
-Today's date is ${todaysDate}.
-Your goal is to write a summary of the patient's most recent medical history, so that another doctor can understand the patient's medical history to be able to treat them effectively.
-Here is a portion of the patient's medical history:
---------
-{text}
---------
+  Today's date is ${todaysDate}.
+  Your goal is to write a summary of the patient's most recent medical history, so that another doctor can understand the patient's medical history to be able to treat them effectively.
+  Here is a portion of the patient's medical history:
+  --------
+  {${documentVariableName}}
+  --------
 
-Write a summary of the patient's most recent medical history, considering the following goals:
-1. Specify whether a DNR or POLST form has been completed.
-2. Include a summary of the patient's most recent hospitalization, including the location of the hospitalization, the date of the hospitalization, the reason for the hospitalization, and the results of the hospitalization.
-3. Include a summary of the patient's current chronic conditions, allergies, and any previous surgeries.
-4. Include a summary of the patient's current medications, including dosages and frequency - do not include instructions on how to take the medications. Include any history of medication allergies or adverse reactions.
-5. Include any other relevant information about the patient's health.
+  Write a summary of the patient's most recent medical history, considering the following goals:
+  1. Specify whether a DNR or POLST form has been completed.
+  2. Include a summary of the patient's most recent hospitalization, including the location of the hospitalization, the date of the hospitalization, the reason for the hospitalization, and the results of the hospitalization.
+  3. Include a summary of the patient's current chronic conditions, allergies, and any previous surgeries.
+  4. Include a summary of the patient's current medications, including dosages and frequency - do not include instructions on how to take the medications. Include any history of medication allergies or adverse reactions.
+  5. Include any other relevant information about the patient's health.
 
-If any of the above information is not present, do not include it in the summary.
-Don't tell me that you are writing a summary, just write the summary. Also, don't tell me about any limitations of the information provided.
+  If any of the above information is not present, do not include it in the summary.
+  Don't tell me that you are writing a summary, just write the summary. Also, don't tell me about any limitations of the information provided.
 
-SUMMARY:
-`;
+  SUMMARY:
+  `;
   const SUMMARY_PROMPT = PromptTemplate.fromTemplate(summaryTemplate);
   const summaryChain = new LLMChain({
     llm: llmSummary as any, // eslint-disable-line @typescript-eslint/no-explicit-any
     prompt: SUMMARY_PROMPT as any, // eslint-disable-line @typescript-eslint/no-explicit-any
   });
 
-  // this is the prompt for combining the summaries into a single paragraph
   const summaryTemplateRefined = `
-${systemPrompt}
+  ${systemPrompt}
 
-Today's date is ${todaysDate}.
-Your goal is to write a summary of the patient's most recent medical history, so that another doctor can understand the patient's medical history to be able to treat them effectively.
-Here are the previous summaries written by you of sections of the patient's medical history:
---------
-{text}
---------
+  Today's date is ${todaysDate}.
+  Your goal is to write a summary of the patient's most recent medical history, so that another doctor can understand the patient's medical history to be able to treat them effectively.
+  Here are the previous summaries written by you of sections of the patient's medical history:
+  --------
+  {${documentVariableName}}
+  --------
 
-Combine these summaries into a single, comprehensive summary of the patient's most recent medical history in a single paragraph.
+  Combine these summaries into a single, comprehensive summary of the patient's most recent medical history in a single paragraph.
 
-Don't tell me that you are writing a summary, just write the summary. Also, don't tell me about any limitations of the information provided.
+  Don't tell me that you are writing a summary, just write the summary. Also, don't tell me about any limitations of the information provided.
 
-SUMMARY:
-`;
+  SUMMARY:
+  `;
   const SUMMARY_PROMPT_REFINED = PromptTemplate.fromTemplate(summaryTemplateRefined);
   const summaryChainRefined = new StuffDocumentsChain({
     llmChain: new LLMChain({
       llm: llmSummary as any, // eslint-disable-line @typescript-eslint/no-explicit-any
       prompt: SUMMARY_PROMPT_REFINED as any, // eslint-disable-line @typescript-eslint/no-explicit-any
     }),
-    documentVariableName: "text",
+    documentVariableName,
   });
 
   const mapReduce = new MapReduceDocumentsChain({
     llmChain: summaryChain,
     combineDocumentChain: summaryChainRefined,
-    documentVariableName: "text",
-    verbose: true,
+    documentVariableName,
+    verbose: false,
   });
 
   const summary = (await mapReduce.invoke({
     input_documents: docs,
   })) as { text: string };
 
+  const costs = calculateCostsBasedOnTokens(totalTokensUsed);
+
+  const duration = elapsedTimeFromNow(startedAt);
+  log(
+    `Done. Finished in ${duration} ms. Input cost: ${costs.input}, output cost: ${costs.output}. Total cost: ${costs.total}`
+  );
+
+  console.log({
+    requestId,
+    patientId,
+    startBundleSize: bundle.entry?.length,
+    endBundleSize: slimPayloadBundle?.length,
+    duration,
+    costs,
+  });
+  analytics({
+    distinctId: cxId,
+    event: EventTypes.aiBriefGeneration,
+    properties: {
+      requestId,
+      patientId,
+      startBundleSize: bundle.entry?.length,
+      endBundleSize: slimPayloadBundle?.length,
+      duration,
+      costs,
+    },
+  });
   if (!summary.text) return undefined;
   return summary.text;
 }
 
-export function prepareBundleForBrief(bundle: Bundle): string | undefined {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildSlimmerPayload(bundle: Bundle): any[] | undefined {
   if (bundle.entry?.length === 0) return undefined;
-  const filteredString = filterBundleResources(bundle);
-  return filteredString;
-}
 
-function filterBundleResources(bundle: Bundle) {
   const patient = findPatientResource(bundle);
   if (!patient) return undefined;
 
@@ -177,6 +275,8 @@ function filterBundleResources(bundle: Bundle) {
     resourceMap.set(mapKey, res);
   });
 
+  // TODO 2510 Review this, could try to do the logic that build containedResourceIds so we
+  // have a single loop through leanBundleEntries
   // Replace the references with actual data and collect references for embedded resources
   const containedResourceIdsSet = new Set<string>();
   const processedEntries = leanBundleEntries?.map(res => {
@@ -186,6 +286,8 @@ function filterBundleResources(bundle: Bundle) {
     return updRes;
   });
 
+  const withFilteredReports = filterOutDiagnosticReports(processedEntries);
+
   const containedResourceIds = Array.from(containedResourceIdsSet).flatMap(id => {
     const uuid = id.split("/").pop();
     if (uuid) return uuid;
@@ -193,7 +295,7 @@ function filterBundleResources(bundle: Bundle) {
   });
 
   // Filter out embedded resources from the final bundle
-  const filteredEntries = processedEntries?.flatMap(entry => {
+  const filteredEntries = withFilteredReports?.flatMap(entry => {
     if (Object.keys(entry).length === 0) return []; // TODO: Check why {} not being removed
     if (referenceResources.includes(entry.resourceType)) return [];
     if (containedResourceIds.includes(entry.id)) return [];
@@ -208,10 +310,7 @@ function filterBundleResources(bundle: Bundle) {
   delete patient.text;
   filteredEntries?.push(patient);
 
-  console.log(`Started with ${bundle.entry?.length} resource`);
-  console.log(`Processed to keep ${processedEntries?.length} resources`);
-  console.log(`And filtered down to ${filteredEntries?.length} resources`);
-  return JSON.stringify(filteredEntries);
+  return filteredEntries;
 }
 
 function buildSlimmerBundle(originalBundle: Bundle<Resource>) {
@@ -296,6 +395,32 @@ function removeUselessAttributes(res: Resource) {
 
 function getUniqueDisplays(
   concept: CodeableConcept | CodeableConcept[] | undefined
+): string[] | undefined {
+  if (!concept) return undefined;
+
+  const uniqueDescriptors = new Set<string>();
+  const concepts = toArray(concept);
+  concepts.forEach(concept => {
+    const text = concept.text;
+    if (text) uniqueDescriptors.add(text.trim().toLowerCase());
+
+    concept.coding?.forEach(coding => {
+      if (coding.display) uniqueDescriptors.add(coding.display.trim().toLowerCase());
+    });
+  });
+
+  if (uniqueDescriptors.size === 0) return undefined;
+  return Array.from(uniqueDescriptors);
+}
+
+function getUniqueDisplaysString(
+  concept: CodeableConcept | CodeableConcept[] | undefined
+): string | undefined {
+  return getUniqueDisplays(concept)?.join(", ");
+}
+
+function getLongestDisplay(
+  concept: CodeableConcept | CodeableConcept[] | undefined
 ): string | undefined {
   if (!concept) return undefined;
 
@@ -311,8 +436,30 @@ function getUniqueDisplays(
   });
 
   if (uniqueDescriptors.size === 0) return undefined;
-  return Array.from(uniqueDescriptors).join(", ");
+  return Array.from(uniqueDescriptors).reduce((longest, current) =>
+    current.length > longest.length ? current : longest
+  );
 }
+
+function cleanUpNote(note: string): string {
+  return note
+    .trim()
+    .replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "")
+    .replace(/<ID>.*?<\/ID>/g, "")
+    .replace(/<styleCode>.*?<\/styleCode>/g, "")
+    .replace(/\s*\n\s*/g, "\n")
+    .replace(/\*{2,}/g, "*")
+    .replace(/_{2,}/g, " ");
+}
+
+/**
+ * This function applies filters to the resource based on its resourceType, and overwrites and/or creates new specific attributes,
+ * making them into strings most of the time.
+ *
+ * TODO: #2510 - Break this function up into smaller functions, specific to each resourceType.
+ *
+ * @returns updated resources as any
+ */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function applyResourceSpecificFilters(res: Resource): any | undefined {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -326,11 +473,11 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
     updRes.status = Array.from(
       new Set(res.clinicalStatus?.coding?.flatMap(coding => coding.code || []))
     ).join(", ");
-    if (updRes.status === "") delete updRes.status;
+    if (isUselessStatus(updRes.status)) delete updRes.status;
   }
 
   if (res.resourceType === "Immunization") {
-    delete res.lotNumber;
+    delete updRes.lotNumber;
 
     if (res.vaccineCode) {
       const resVaccineCodeString = JSON.stringify(res.vaccineCode).toLowerCase();
@@ -341,24 +488,28 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
         return undefined;
       }
 
-      updRes.vaccineCode = getUniqueDisplays(res.vaccineCode);
+      updRes.vaccineCode = getUniqueDisplaysString(res.vaccineCode);
     }
+    if (res.site?.text) {
+      updRes.site = res.site.text;
+    }
+    updRes.route = getUniqueDisplaysString(res.route);
 
-    delete res.doseQuantity;
+    delete updRes.doseQuantity;
   }
 
   if (res.resourceType === "Practitioner") {
     const name = getNameString(res.name);
     updRes.name = name;
 
-    const qualificationsText = getUniqueDisplays(res.qualification?.[0]?.code);
+    const qualificationsText = getLongestDisplay(res.qualification?.[0]?.code);
     if (qualificationsText) updRes.qualification = qualificationsText;
 
     updRes.address = getAddressString(res.address);
   }
 
   if (res.resourceType === "Procedure") {
-    const name = getUniqueDisplays(res.code);
+    const name = getUniqueDisplaysString(res.code);
     if (name) {
       updRes.name = name;
       if (name.includes("no data")) return undefined;
@@ -366,14 +517,28 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
 
     delete updRes.code;
 
-    if (updRes.status === "") delete updRes.status;
+    if (isUselessStatus(updRes.status)) delete updRes.status;
 
-    delete res.reasonCode; // TODO: Introduce term server lookup here
+    delete updRes.reasonCode; // TODO: #2510 - Introduce term server lookup here
+    delete updRes.report;
+    delete updRes.note;
   }
 
   if (res.resourceType === "DiagnosticReport") {
-    const code = res.code?.text;
-    if (code) updRes.code = code;
+    const mostDescriptiveType = getLongestDisplay(res.code);
+    if (mostDescriptiveType) updRes.type = mostDescriptiveType;
+    if (isUselessStatus(updRes.status)) delete updRes.status;
+
+    const allTypes = getUniqueDisplays(res.code);
+    if (allTypes) {
+      for (const type of allTypes) {
+        if (
+          REPORT_TYPES_BLACKLIST.includes(type) ||
+          REPORT_TYPES_BLACKLIST.some(blacklistedType => type.includes(blacklistedType))
+        )
+          return undefined;
+      }
+    }
 
     const category = res.category
       ?.map(cat => cat.coding?.flatMap(coding => coding.display || []))
@@ -381,27 +546,54 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
     if (category) updRes.category = category;
 
     if (res.presentedForm) {
-      updRes.presentedForm = res.presentedForm.map(form => {
-        delete form.contentType;
+      const uniqueData = new Set<string>();
+      res.presentedForm.forEach(form => {
         if (form.data) {
-          form.data = Buffer.from(form.data, "base64").toString("utf-8");
+          const rawData = Buffer.from(form.data, "base64").toString("utf-8");
+          const cleanedData = cleanUpNote(rawData);
+          uniqueData.add(cleanedData);
+          if (cleanedData.toLowerCase().includes("appointment scheduling letter")) {
+            updRes.type = SCHEDULING_CALL;
+          } else if (
+            cleanedData.toLowerCase().includes("unable to reach") ||
+            cleanedData.toLowerCase().includes("left a message")
+          ) {
+            updRes.type = UNANSWERED_CALL;
+          } else if (cleanedData.toLowerCase().includes("administrative note")) {
+            updRes.type = ADMIN_NOTE;
+          } else if (
+            cleanedData.toLowerCase().includes("nonva note") &&
+            cleanedData.toLowerCase().includes("refer to scanned")
+          ) {
+            updRes.type = SCAN_REF_NOTE;
+          } else if (cleanedData.toLowerCase().includes("discharge summary")) {
+            updRes.type = "discharge summary";
+          }
         }
-        return form;
       });
+      updRes.presentedForm = Array.from(uniqueData);
     }
+
+    if (updRes.type && REPORT_TYPES_BLACKLIST.includes(updRes.type)) {
+      return undefined;
+    }
+
+    delete updRes.code;
   }
 
   if (res.resourceType === "Observation") {
     if (res.category) {
-      const category = getUniqueDisplays(res.category);
+      const category = getUniqueDisplaysString(res.category);
       if (category) updRes.category = category;
     }
 
-    const code = getUniqueDisplays(res.code);
+    if (isUselessStatus(updRes.status)) delete updRes.status;
+
+    const code = getUniqueDisplaysString(res.code);
     if (code) updRes.reading = code;
 
     if (res.valueCodeableConcept) {
-      updRes.value = getUniqueDisplays(res.valueCodeableConcept);
+      updRes.value = getUniqueDisplaysString(res.valueCodeableConcept);
       delete updRes.valueCodeableConcept;
     }
 
@@ -411,7 +603,7 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
     }
 
     if (res.interpretation) {
-      updRes.interpretation = getUniqueDisplays(res.interpretation);
+      updRes.interpretation = getUniqueDisplaysString(res.interpretation);
     }
 
     if (res.referenceRange) {
@@ -430,12 +622,25 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
   }
 
   if (res.resourceType === "Medication") {
-    updRes.name = getUniqueDisplays(res.code);
-    delete res.code;
+    updRes.name = getUniqueDisplaysString(res.code);
+    delete updRes.code;
   }
 
   if (res.resourceType === "MedicationRequest") {
     delete updRes.requester;
+  }
+
+  if (res.resourceType === "MedicationStatement") {
+    if (res.dosage) {
+      const dosages = res.dosage.flatMap(dosage => {
+        const dose = getQuantityString(dosage.doseAndRate?.[0]?.doseQuantity);
+        const route = getUniqueDisplaysString(dosage.route);
+        if (!dose && !route) return [];
+        return { dose, route };
+      });
+      if (dosages.length > 0) updRes.dosages = dosages;
+      delete updRes.dosage;
+    }
   }
 
   if (res.resourceType === "MedicationAdministration") {
@@ -443,28 +648,28 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
       const dose = getQuantityString(res.dosage.dose);
       if (dose) updRes.dose = dose;
 
-      updRes.route = getUniqueDisplays(res.dosage.route);
+      updRes.route = getUniqueDisplaysString(res.dosage.route);
       delete updRes.dosage;
     }
   }
 
   if (res.resourceType === "Condition") {
-    updRes.name = getUniqueDisplays(res.code);
+    updRes.name = getUniqueDisplaysString(res.code);
     delete updRes.code;
 
-    updRes.category = getUniqueDisplays(res.category);
+    updRes.category = getUniqueDisplaysString(res.category);
 
-    updRes.clinicalStatus = getUniqueDisplays(res.clinicalStatus);
-    if (updRes.clinicalStatus === "") delete updRes.clinicalStatus;
+    updRes.clinicalStatus = getUniqueDisplaysString(res.clinicalStatus);
+    if (isUselessStatus(updRes.clinicalStatus)) delete updRes.clinicalStatus;
   }
 
   if (res.resourceType === "AllergyIntolerance") {
-    updRes.clinicalStatus = getUniqueDisplays(res.clinicalStatus);
+    updRes.clinicalStatus = getUniqueDisplaysString(res.clinicalStatus);
 
     if (res.reaction) {
       updRes.reaction = res.reaction.map(reaction => {
-        const manifestation = getUniqueDisplays(reaction.manifestation);
-        const substance = getUniqueDisplays(reaction.substance);
+        const manifestation = getUniqueDisplaysString(reaction.manifestation);
+        const substance = getUniqueDisplaysString(reaction.substance);
 
         return {
           manifestation,
@@ -473,7 +678,7 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
       });
     }
 
-    delete res.recorder;
+    delete updRes.recorder;
   }
 
   if (res.resourceType === "Organization") {
@@ -482,7 +687,7 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
 
   if (res.resourceType === "Location") {
     updRes.address = getAddressString(res.address);
-    updRes.type = getUniqueDisplays(res.type);
+    updRes.type = getUniqueDisplaysString(res.type);
   }
 
   return updRes;
@@ -501,6 +706,13 @@ function getAddressString(address: Address | Address[] | undefined): string | un
     .join("\n");
 }
 
+/**
+ * Takes a FHIR resource and replaces referenced resources with the actual contents of those resources.
+ * This allows the context for a resource to be contained entirely within itself.
+ * It also keeps track of the referenced resources, so those can later be removed from the bundle.
+ *
+ * @returns updated resource as any
+ */
 function replaceReferencesWithData(
   res: Resource,
   map: Map<string, Resource>
@@ -605,29 +817,38 @@ function replaceReferencesWithData(
   }
 
   if ("performer" in res) {
-    if (Array.isArray(res.performer)) {
+    if (res.performer) {
       if (
         res.resourceType === "DiagnosticReport" ||
         res.resourceType === "Observation" ||
         res.resourceType === "ServiceRequest"
       ) {
-        updRes.performer = res.performer
-          .flatMap(p => {
-            const ref = p.reference;
-            if (ref) {
-              referencedIds.add(ref);
-              const performer = map.get(ref);
-              if (
-                performer?.resourceType === "Organization" ||
-                performer?.resourceType === "Practitioner"
-              ) {
-                if (typeof performer.name === "string") return performer.name;
-                return getNameString(performer.name);
-              }
-            }
-            return [];
-          })
-          .join(", ");
+        const performers = toArray(res.performer);
+        const orgs: string[] = [];
+        const practitioners: string[] = [];
+
+        performers.forEach(p => {
+          const ref = p.reference;
+          if (!ref) return;
+
+          referencedIds.add(ref);
+          const performer = map.get(ref);
+
+          if (performer?.resourceType === "Organization") {
+            const name = typeof performer.name === "string" ? performer.name.trim() : "";
+            if (name.length > 0) orgs.push(name);
+          } else if (performer?.resourceType === "Practitioner") {
+            const name = getNameString(performer.name);
+            if (name && name.length > 0) practitioners.push(name);
+          }
+        });
+
+        if (orgs.length > 0) updRes.org = orgs.join(", ");
+        if (practitioners.length > 0) {
+          updRes.performer = practitioners.join(", ");
+        } else {
+          delete updRes.performer;
+        }
       } else if (
         res.resourceType === "Immunization" ||
         res.resourceType === "MedicationAdministration" ||
@@ -635,23 +856,22 @@ function replaceReferencesWithData(
         res.resourceType === "MedicationRequest" ||
         res.resourceType === "Procedure"
       ) {
-        if (Array.isArray(res.performer)) {
-          updRes.performer = res.performer
-            ?.flatMap(perf => {
-              const refString = perf.actor?.reference;
-              if (refString) {
-                const actor = map.get(refString);
-                referencedIds.add(refString);
-                if (actor && "name" in actor) {
-                  const name = actor.name;
-                  if (typeof name === "string") return name;
-                  return getNameString(name);
-                }
+        const performers = toArray(res.performer);
+        updRes.performer = performers
+          ?.flatMap(perf => {
+            const refString = perf.actor?.reference;
+            if (refString) {
+              const actor = map.get(refString);
+              referencedIds.add(refString);
+              if (actor && "name" in actor) {
+                const name = actor.name;
+                if (typeof name === "string") return name;
+                return getNameString(name);
               }
-              return [];
-            })
-            .join(", ");
-        }
+            }
+            return [];
+          })
+          .join(", ");
       }
     }
   }
@@ -709,7 +929,7 @@ function replaceReferencesWithData(
       const individual = map.get(refString);
       referencedIds.add(refString);
       if (individual && individual.resourceType === "Practitioner") {
-        updRes.practitioner = { ...individual, id: undefined };
+        updRes.practitioner = { ...individual, resourceType: undefined, id: undefined };
         delete updRes.recorder;
       }
     }
@@ -731,7 +951,139 @@ function replaceReferencesWithData(
     }
   }
 
-  return { updRes: res, ids: Array.from(referencedIds) };
+  return { updRes, ids: Array.from(referencedIds) };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function filterOutDiagnosticReports(entries: any[] | undefined): any[] | undefined {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const reports: any[] = [];
+  const otherEntries = entries?.filter(entry => {
+    if (entry.resourceType === "DiagnosticReport") {
+      reports.push(entry);
+      return false;
+    }
+    return true;
+  });
+  const withOnlyLatestLabs = filterOutOldLabs(reports);
+  const withLimitedReportsPerPerformer = filterReportsByPerformerAndCategory(withOnlyLatestLabs);
+  const withoutDuplicateReports = filterOutDuplicateReports(withLimitedReportsPerPerformer);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ret: any[] = [];
+  if (withoutDuplicateReports && withoutDuplicateReports.length > 0) {
+    ret.push(...withoutDuplicateReports);
+  }
+  if (otherEntries && otherEntries.length > 0) ret.push(...otherEntries);
+  return ret;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function filterOutOldLabs(reports: any[] | undefined): any[] | undefined {
+  const NUM_MOST_RECENT_LABS_TO_KEEP = 2;
+
+  if (!reports) return undefined;
+
+  const labReports = reports.filter(report =>
+    report.category?.toLowerCase().includes("relevant diagnostic tests and/or laboratory data")
+  );
+  const nonLabReports = reports.filter(report => !report.category?.includes("laboratory data"));
+
+  const sortedLabReports = labReports.sort((a, b) => {
+    const aDates = getDatesFromEffectiveDateTimeOrPeriod(a);
+    const bDates = getDatesFromEffectiveDateTimeOrPeriod(b);
+
+    const aDate = aDates.find(d => d !== undefined);
+    const bDate = bDates.find(d => d !== undefined);
+
+    if (!aDate) return 1;
+    if (!bDate) return -1;
+    return bDate.localeCompare(aDate);
+  });
+
+  const recentLabReports = sortedLabReports.slice(0, NUM_MOST_RECENT_LABS_TO_KEEP);
+
+  return [...recentLabReports, ...nonLabReports];
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function filterReportsByPerformerAndCategory(reports: any[] | undefined): any[] | undefined {
+  if (!reports) return undefined;
+  const MAX_REPORTS_PER_GROUP = 3;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const reportGroups = new Map<string, any[]>();
+
+  reports.forEach(report => {
+    const performer = report.performer ?? "unknown";
+    const type = report.type ?? "unknown";
+    const key = `${performer}|${type}`;
+
+    if (!reportGroups.has(key)) {
+      reportGroups.set(key, []);
+    }
+    reportGroups.get(key)?.push(report);
+  });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const filteredReports: any[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const garbageCollector: any[] = [];
+
+  reportGroups.forEach(group => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sortedGroup = group.sort((a: any, b: any) => {
+      const aDates = getDatesFromEffectiveDateTimeOrPeriod(a);
+      const bDates = getDatesFromEffectiveDateTimeOrPeriod(b);
+
+      const aDate = aDates.find(d => d !== undefined);
+      const bDate = bDates.find(d => d !== undefined);
+
+      if (!aDate) return 1;
+      if (!bDate) return -1;
+      return bDate.localeCompare(aDate);
+    });
+
+    filteredReports.push(...sortedGroup.slice(0, MAX_REPORTS_PER_GROUP));
+    garbageCollector.push(...sortedGroup.slice(MAX_REPORTS_PER_GROUP));
+  });
+
+  return filteredReports;
+}
+
+/**
+ * This function checks if the contents of the presentedForm.data is fully contained within other diagnostic reports.
+ * It does so by seeing if every single sentence in a report already exists in the collection of reports, in which case it filters this report out.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function filterOutDuplicateReports(reports: any[] | undefined): any[] | undefined {
+  const formDataSet = new Set<string>();
+  return reports?.filter(entry => {
+    if (entry.presentedForm) {
+      const paragraphFromUniqueSentences: string[] = [];
+      entry.presentedForm.forEach((text: string) => {
+        const sentences = text
+          .split(/[.\n]/)
+          .map(s => s.trim())
+          .filter(s => s.length > 0);
+
+        const filteredSentences = sentences.filter(sentence => {
+          if (formDataSet.has(sentence)) {
+            return false;
+          }
+          formDataSet.add(sentence);
+          return true;
+        });
+        paragraphFromUniqueSentences.push(filteredSentences.join(". "));
+      });
+
+      const combinedParagraphs = paragraphFromUniqueSentences.join("\n");
+      if (combinedParagraphs.length === 0) {
+        return false;
+      }
+    }
+    return true;
+  });
 }
 
 function getNameString(names: HumanName | HumanName[] | undefined): string | undefined {
@@ -743,4 +1095,20 @@ function getNameString(names: HumanName | HumanName[] | undefined): string | und
   });
 
   return Array.from(nameParts).join(" ");
+}
+
+function isUselessStatus(status: string): boolean {
+  return status === "" || status === "final";
+}
+
+function calculateCostsBasedOnTokens(totalTokens: { input: number; output: number }): {
+  input: number;
+  output: number;
+  total: number;
+} {
+  const input = totalTokens.input * SONNET_COST_PER_INPUT_TOKEN;
+  const output = totalTokens.output * SONNET_COST_PER_OUTPUT_TOKEN;
+  const total = input + output;
+
+  return { input, output, total };
 }
