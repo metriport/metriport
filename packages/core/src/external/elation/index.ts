@@ -334,7 +334,9 @@ class ElationApi {
           .catch(processAsyncError("Error saving to s3 @ Elation - getAppointments"));
       }
       const appointments = appointmentsGetResponseSchema.parse(response.data).results;
-      return appointments.filter(app => app.status.status === "Scheduled") as Appointment[];
+      return appointments.filter(
+        app => app.patient && app.status?.status === "Scheduled"
+      ) as Appointment[];
     } catch (error) {
       const msg = `Failure while getting appointments @ Elation`;
       log(`${msg}. Cause: ${errorToString(error)}`);
