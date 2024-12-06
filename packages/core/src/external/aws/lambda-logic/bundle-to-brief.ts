@@ -19,8 +19,7 @@ import {
   Resource,
 } from "@medplum/fhirtypes";
 import { toArray } from "@metriport/shared";
-import { elapsedTimeFromNow, ISO_DATE } from "@metriport/shared/common/date";
-import dayjs from "dayjs";
+import { buildDayjs, elapsedTimeFromNow, ISO_DATE } from "@metriport/shared/common/date";
 import { LLMChain, MapReduceDocumentsChain, StuffDocumentsChain } from "langchain/chains";
 import { cloneDeep } from "lodash";
 import { filterBundleByDate } from "../../../command/consolidated/consolidated-filter-by-date";
@@ -36,6 +35,11 @@ import { BedrockChat } from "../../langchain/bedrock/index";
 
 const CHUNK_SIZE = 100_000;
 const CHUNK_OVERLAP = 1000;
+
+const NUM_HISTORICAL_YEARS = 1;
+const SONNET_COST_PER_INPUT_TOKEN = 0.0015 / 1000;
+const SONNET_COST_PER_OUTPUT_TOKEN = 0.0075 / 1000;
+
 const relevantResources = [
   "AllergyIntolerance",
   "DiagnosticReport",
@@ -121,9 +125,8 @@ export async function summarizeFilteredBundleWithAI(
     })
     .filter((date): date is string => date !== undefined)
     .sort((a, b) => b.localeCompare(a))[0];
-  const numHistoricalYears = 1;
-  const initialDate = dayjs(latestReportDate) ?? dayjs();
-  const dateFrom = initialDate.subtract(numHistoricalYears, "year").format(ISO_DATE);
+  const initialDate = latestReportDate ? buildDayjs(latestReportDate) : buildDayjs(new Date());
+  const dateFrom = initialDate.subtract(NUM_HISTORICAL_YEARS, "year").format(ISO_DATE);
   const filteredBundle = filterBundleByDate(bundle, dateFrom);
   const slimPayloadBundle = buildSlimmerPayload(filteredBundle);
   const inputString = JSON.stringify(slimPayloadBundle);
@@ -526,15 +529,13 @@ function applyResourceSpecificFilters(res: Resource): any | undefined {
 
     const allTypes = getUniqueDisplays(res.code);
     if (allTypes) {
-      let removeResource = false;
-      allTypes.forEach(type => {
+      for (const type of allTypes) {
         if (
           REPORT_TYPES_BLACKLIST.includes(type) ||
           REPORT_TYPES_BLACKLIST.some(blacklistedType => type.includes(blacklistedType))
         )
-          removeResource = true;
-      });
-      if (removeResource) return undefined;
+          return undefined;
+      }
     }
 
     const category = res.category
@@ -832,12 +833,11 @@ function replaceReferencesWithData(
           const performer = map.get(ref);
 
           if (performer?.resourceType === "Organization") {
-            const name = typeof performer.name === "string" ? performer.name : "";
+            const name = typeof performer.name === "string" ? performer.name.trim() : "";
             if (name.length > 0) orgs.push(name);
           } else if (performer?.resourceType === "Practitioner") {
-            const name =
-              typeof performer.name === "string" ? performer.name : getNameString(performer.name);
-            if (name) practitioners.push(name);
+            const name = getNameString(performer.name);
+            if (name && name.length > 0) practitioners.push(name);
           }
         });
 
@@ -1049,12 +1049,16 @@ function filterReportsByPerformerAndCategory(reports: any[] | undefined): any[] 
   return filteredReports;
 }
 
+/**
+ * This function checks if the contents of the presentedForm.data is fully contained within other diagnostic reports.
+ * It does so by seeing if every single sentence in a report already exists in the collection of reports, in which case it filters this report out.
+ */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function filterOutDuplicateReports(reports: any[] | undefined): any[] | undefined {
   const formDataSet = new Set<string>();
   return reports?.filter(entry => {
     if (entry.presentedForm) {
-      const newPresentedForm: string[] = [];
+      const paragraphFromUniqueSentences: string[] = [];
       entry.presentedForm.forEach((text: string) => {
         const sentences = text
           .split(/[.\n]/)
@@ -1068,11 +1072,11 @@ function filterOutDuplicateReports(reports: any[] | undefined): any[] | undefine
           formDataSet.add(sentence);
           return true;
         });
-        newPresentedForm.push(filteredSentences.join(". "));
+        paragraphFromUniqueSentences.push(filteredSentences.join(". "));
       });
 
-      const filsss = newPresentedForm.join("\n");
-      if (filsss.length === 0) {
+      const combinedParagraphs = paragraphFromUniqueSentences.join("\n");
+      if (combinedParagraphs.length === 0) {
         return false;
       }
     }
@@ -1100,8 +1104,8 @@ function calculateCostsBasedOnTokens(totalTokens: { input: number; output: numbe
   output: number;
   total: number;
 } {
-  const input = (totalTokens.input / 1000) * 0.0015;
-  const output = (totalTokens.output / 1000) * 0.0075;
+  const input = totalTokens.input * SONNET_COST_PER_INPUT_TOKEN;
+  const output = totalTokens.output * SONNET_COST_PER_OUTPUT_TOKEN;
   const total = input + output;
 
   return { input, output, total };
