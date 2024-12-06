@@ -275,6 +275,8 @@ function buildSlimmerPayload(bundle: Bundle): any[] | undefined {
     resourceMap.set(mapKey, res);
   });
 
+  // TODO 2510 Review this, could try to do the logic that build containedResourceIds so we
+  // have a single loop through leanBundleEntries
   // Replace the references with actual data and collect references for embedded resources
   const containedResourceIdsSet = new Set<string>();
   const processedEntries = leanBundleEntries?.map(res => {
