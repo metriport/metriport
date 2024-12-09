@@ -29,7 +29,6 @@ async function main() {
   const brief = await summarizeFilteredBundleWithAI(bundle, CX_ID, SOURCE_PATIENT_ID);
   const briefId = uuidv7();
 
-  // Response from FHIR Converter
   const html = bundleToHtml(
     bundle,
     brief ? { content: brief, id: briefId, link: `${dashUrl}/feedback/${briefId}` } : undefined
