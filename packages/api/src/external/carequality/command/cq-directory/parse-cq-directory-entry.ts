@@ -7,7 +7,7 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString, isValidUrl, normalizeOid, normalizeZipCodeNew } from "@metriport/shared";
 import { CQDirectoryEntryData } from "../../cq-directory";
-import { CQOrgUrls } from "../../shared";
+import { CQOrgUrls, CQOrgDetailsWithUrls } from "../../shared";
 
 const { log } = out(`parseCQDirectoryEntries`);
 
@@ -65,6 +65,33 @@ export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryE
   });
 
   return parsedOrgs;
+}
+
+export function parseCQDirectoryEntryFromCqOrgDetails(
+  org: CQOrgDetailsWithUrls
+): CQDirectoryEntryData {
+  const { lat, lon } = org;
+  const numLat = Number(lat);
+  const numLon = Number(lon);
+  const point = numLat && numLon ? computeEarthPoint(numLat, numLon) : undefined;
+  return {
+    id: org.oid,
+    name: org.name,
+    urlXCPD: org.urlXCPD,
+    urlDQ: org.urlDQ,
+    urlDR: org.urlDR,
+    lat: numLat,
+    lon: numLon,
+    point,
+    addressLine: org.addressLine1,
+    city: org.city,
+    state: org.state,
+    zip: org.postalCode,
+    managingOrganization: org.parentOrgOid,
+    managingOrganizationId: org.parentOrgOid,
+    active: org.active,
+    lastUpdatedAtCQ: "TODO",
+  };
 }
 
 /**

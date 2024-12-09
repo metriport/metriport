@@ -2,6 +2,8 @@ import {
   APIMode as CQAPIMode,
   CarequalityManagementAPI,
   CarequalityManagementAPIImpl,
+  CarequalityManagementAPIFhir,
+  CarequalityManagementAPIImplFhir,
 } from "@metriport/carequality-sdk";
 import { Config } from "../../shared/config";
 
@@ -25,6 +27,23 @@ export function makeCarequalityManagementAPI(): CarequalityManagementAPI | undef
   const cqPrivateKeyPassword = Config.getCQOrgPrivateKeyPassword();
 
   return new CarequalityManagementAPIImpl({
+    apiKey: cqManagementApiKey,
+    apiMode: cqApiMode,
+    orgCert: cqOrgCert,
+    rsaPrivateKey: cqOrgPrivateKey,
+    rsaPrivateKeyPassword: cqPrivateKeyPassword,
+  });
+}
+
+export function makeCarequalityManagementAPIFhir(): CarequalityManagementAPIFhir | undefined {
+  if (Config.isSandbox()) return;
+
+  const cqManagementApiKey = Config.getCQManagementApiKey();
+  const cqOrgCert = Config.getCQOrgCertificate();
+  const cqOrgPrivateKey = Config.getCQOrgPrivateKey();
+  const cqPrivateKeyPassword = Config.getCQOrgPrivateKeyPassword();
+
+  return new CarequalityManagementAPIImplFhir({
     apiKey: cqManagementApiKey,
     apiMode: cqApiMode,
     orgCert: cqOrgCert,
