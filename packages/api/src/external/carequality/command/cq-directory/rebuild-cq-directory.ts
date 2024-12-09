@@ -1,4 +1,6 @@
+import { errorToString } from "@metriport/shared";
 import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
 import { initDbPool } from "@metriport/core/util/sequelize";
 import { sleep } from "@metriport/core/util/sleep";
 import dayjs from "dayjs";
@@ -7,13 +9,11 @@ import { QueryTypes } from "sequelize";
 import { executeOnDBTx } from "../../../../models/transaction-wrapper";
 import { addUpdatedAtTrigger } from "../../../../sequelize/migrations-shared";
 import { Config } from "../../../../shared/config";
-import { capture } from "../../../../shared/notifications";
 import { makeCarequalityManagementAPIFhir } from "../../api";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
+import { parseFhirOrganization } from "../../shared";
 import { bulkInsertCQDirectoryEntries } from "./create-cq-directory-entry";
 import { parseCQDirectoryEntryFromCqOrgDetailsWithUrls } from "./parse-cq-directory-entry";
-import { cqDirectoryEntry, cqDirectoryEntryBackup, cqDirectoryEntryTemp } from "./shared";
-import { parseFhirOrganization } from "../../shared";
 
 dayjs.extend(duration);
 const BATCH_SIZE = 1000;
@@ -27,23 +27,27 @@ const sequelize = initDbPool(dbCreds, {
   idle: 10000,
 });
 
+export const cqDirectoryEntryTemp = `cq_directory_entry_temp`;
+export const cqDirectoryEntry = `cq_directory_entry`;
+export const cqDirectoryEntryBackup = `cq_directory_entry_backup`;
+
 export async function rebuildCQDirectory(failGracefully = false): Promise<void> {
-  const { log } = out("rebuildCQDirectory");
-  let currentPosition = 0;
-  let isDone = false;
+  const { log } = out("rebuildCQDirectory - failGracefully: " + failGracefully);
   const cq = makeCarequalityManagementAPIFhir();
   if (!cq) throw new Error("Carequality API not initialized");
 
+  let currentPosition = 0;
+  let isDone = false;
   try {
     await createTempCQDirectoryTable();
     while (!isDone) {
       try {
         const orgs = await cq.listOrganizations({ start: currentPosition, count: BATCH_SIZE });
-        if (orgs.length < BATCH_SIZE) isDone = true; // if CQ directory returns less than BATCH_SIZE number of orgs, that means we've hit the end
+        if (orgs.length < BATCH_SIZE) isDone = true;
         currentPosition += BATCH_SIZE;
-        const parsedOrgs = orgs.map(org =>
-          parseCQDirectoryEntryFromCqOrgDetailsWithUrls(parseFhirOrganization(org))
-        );
+        const parsedOrgs = orgs
+          .map(parseFhirOrganization)
+          .map(parseCQDirectoryEntryFromCqOrgDetailsWithUrls);
         log(
           `Adding ${parsedOrgs.length} CQ directory entries... Total fetched: ${currentPosition}`
         );
@@ -59,10 +63,12 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
   } catch (error) {
     await deleteTempCQDirectoryTable();
     const msg = `Failed to rebuild the directory`;
-    log(`${msg}, error: ${error}`);
-    capture.message(msg, {
-      extra: { context: `rebuildCQDirectory`, error },
-      level: "error",
+    log(`${msg}, Cause: ${errorToString(error)}`);
+    capture.error(msg, {
+      extra: {
+        context: `rebuildCQDirectory`,
+        error,
+      },
     });
     throw error;
   }
@@ -72,10 +78,12 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
   } catch (error) {
     const msg = `Failed the last step of CQ directory rebuild`;
     await deleteTempCQDirectoryTable();
-    log(`${msg}. Cause: ${error}`);
-    capture.message(msg, {
-      extra: { context: `renameCQDirectoryTablesAndUpdateIndexes`, error },
-      level: "error",
+    log(`${msg}. Cause: ${errorToString(error)}`);
+    capture.error(msg, {
+      extra: {
+        context: `renameCQDirectoryTablesAndUpdateIndexes`,
+        error,
+      },
     });
     throw error;
   }

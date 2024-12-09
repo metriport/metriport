@@ -1,18 +1,19 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { out } from "@metriport/core/util/log";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import { MetriportError } from "@metriport/shared";
-import { CQDirectoryEntry } from "../cq-directory";
 import { Config } from "../../../shared/config";
 import { isE2eCx, isEpicEnabledForCx } from "../../aws/app-config";
 import { getCQDirectoryEntryOrFail } from "../command/cq-directory/get-cq-directory-entry";
-import { getOrganizationsForXCPD } from "../command/cq-directory/get-organizations-for-xcpd";
+import { getOrganizationsForXCPD } from "../command/cq-directory/get-cq-directory-organization";
 import {
+  CQOrgBasicDetails,
   filterCQOrgsToSearch,
   searchCQDirectoriesAroundPatientAddresses,
   toBasicOrgAttributes,
 } from "../command/cq-directory/search-cq-directory";
-import { buildXcpdGateway, cqOrgsToXCPDGateways } from "../organization-conversion";
+import { CQDirectoryEntry } from "../cq-directory";
 
 export const EPIC_ORG_NAME = "Epic";
 
@@ -73,4 +74,27 @@ async function getE2eGateways(): Promise<XCPDGateway[]> {
     id: e2eCqDirectoryEntry.id,
   });
   return [e2eXcpdGateway];
+}
+
+async function cqOrgsToXCPDGateways(cqOrgs: CQOrgBasicDetails[]): Promise<XCPDGateway[]> {
+  const v2Gateways: XCPDGateway[] = [];
+
+  for (const org of cqOrgs) {
+    if (org.urlXCPD) {
+      const gateway = buildXcpdGateway({
+        urlXCPD: org.urlXCPD,
+        id: org.id,
+      });
+      v2Gateways.push(gateway);
+    }
+  }
+  return v2Gateways;
+}
+
+function buildXcpdGateway(org: { id: string; urlXCPD: string }): XCPDGateway {
+  return {
+    url: org.urlXCPD,
+    oid: org.id,
+    id: uuidv7(),
+  };
 }
