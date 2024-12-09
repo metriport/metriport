@@ -56,7 +56,6 @@ async function main() {
   const briefFileName = createMRSummaryBriefFileName(cxId, patientId);
   const htmlFileName = createMRSummaryFileName(cxId, patientId, "html");
 
-  // Response from FHIR Converter
   const html = bundleToHtml(
     bundleParsed,
     brief ? { content: brief, id: briefId, link: `${dashUrl}/feedback/${briefId}` } : undefined
