@@ -20,7 +20,7 @@ import {
   Resource,
   Task,
 } from "@medplum/fhirtypes";
-import dayjs from "dayjs";
+import { buildDayjs, sortDate } from "@metriport/shared/common/date";
 import { uniqWith, cloneDeep, camelCase } from "lodash";
 import { Brief } from "./bundle-to-brief";
 import {
@@ -30,6 +30,7 @@ import {
   ISO_DATE,
   MISSING_DATE_KEY,
   MISSING_DATE_TEXT,
+  createSection,
 } from "./bundle-to-html-shared";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../../fhir-deduplication/shared";
 
@@ -85,7 +86,7 @@ export function bundleToHtmlDerm(fhirBundle: Bundle, brief?: Brief): string {
   const dermConditions = getDermConditions(conditions);
   const rheumatoidConditions = getRheumatoidConditions(conditions);
   const asthmaConditions = getAsthmaConditions(conditions);
-  const twoYearAgo = dayjs().subtract(2, "year").format(ISO_DATE);
+  const twoYearAgo = buildDayjs().subtract(2, "year").format(ISO_DATE);
 
   const {
     section: bpSection,
@@ -706,7 +707,7 @@ function createDiagnosticReportsSection(
       return acc;
     }, {} as EncounterSection);
 
-  const twoYearAgo = dayjs().subtract(2, "year").format(ISO_DATE);
+  const twoYearAgo = buildDayjs().subtract(2, "year").format(ISO_DATE);
 
   const nonAWEreports = buildReports(
     encountersWithoutAWEAndADHD,
@@ -774,7 +775,7 @@ function createFilteredReportSection(
             : condition.onsetPeriod?.start
           : conditionDateDict[conditionId]?.start;
 
-        const isoCondition = dayjs(conditionVisitDate).format(ISO_DATE);
+        const isoCondition = buildDayjs(conditionVisitDate).format(ISO_DATE);
 
         return isoCondition === encounterDate;
       });
@@ -831,7 +832,7 @@ function buildReports(
     .sort(([keyA], [keyB]) => {
       if (keyA === MISSING_DATE_KEY) return 1;
       if (keyB === MISSING_DATE_KEY) return -1;
-      return dayjs(keyA).isBefore(dayjs(keyB)) ? 1 : -1;
+      return buildDayjs(keyA).isBefore(buildDayjs(keyB)) ? 1 : -1;
     })
     .slice(0, latest ? 1 : undefined)
     .filter(([key]) => {
@@ -885,7 +886,7 @@ function buildReports(
           : conditionDateDict[conditionId]?.start;
 
         const encounterDate = key;
-        const conditionVisitDateFormatted = dayjs(conditionVisitDate).format(ISO_DATE);
+        const conditionVisitDateFormatted = buildDayjs(conditionVisitDate).format(ISO_DATE);
 
         return conditionVisitDateFormatted === encounterDate;
       });
@@ -982,9 +983,9 @@ function getLatestDrPerSpecialty(
       if (!specialtyExists || !curr.locationRefName) {
         acc.push(curr);
       } else {
-        const latestSpecialtyReportDate = dayjs(specialtyExists.date);
-        const isSameDate = dayjs(curr.date).isSame(latestSpecialtyReportDate);
-        const isAfterDate = dayjs(curr.date).isAfter(latestSpecialtyReportDate);
+        const latestSpecialtyReportDate = buildDayjs(specialtyExists.date);
+        const isSameDate = buildDayjs(curr.date).isSame(latestSpecialtyReportDate);
+        const isAfterDate = buildDayjs(curr.date).isAfter(latestSpecialtyReportDate);
 
         const planOfCareCode = "18776-5";
         const telephoneEncounterCode = "34748-4";
@@ -1184,21 +1185,20 @@ function createMedicationSection(
 
   const mappedMedications = mapResourceToId<Medication>(medications);
 
-  const medicationsSortedByDate = medicationStatements.sort((a, b) => {
-    return dayjs(a.effectivePeriod?.start).isBefore(dayjs(b.effectivePeriod?.start)) ? 1 : -1;
-  });
-
+  const medicationsSortedByDate = medicationStatements.sort((a, b) =>
+    sortDate(a.effectivePeriod?.start, b.effectivePeriod?.start)
+  );
   const removeDuplicate = uniqWith(medicationsSortedByDate, (a, b) => {
-    const aDate = dayjs(a.effectivePeriod?.start).format(ISO_DATE);
-    const bDate = dayjs(b.effectivePeriod?.start).format(ISO_DATE);
+    const aDate = buildDayjs(a.effectivePeriod?.start).format(ISO_DATE);
+    const bDate = buildDayjs(b.effectivePeriod?.start).format(ISO_DATE);
 
     return aDate === bDate && a.dosage?.[0]?.text === b.dosage?.[0]?.text;
   }).filter(medicationStatement => {
     const medicationDate = medicationStatement.effectivePeriod?.start ?? "";
-    const medicationDateFormatted = dayjs(medicationDate).format(ISO_DATE);
-    const twoYearAgo = dayjs().subtract(2, "year").format(ISO_DATE);
+    const medicationDateFormatted = buildDayjs(medicationDate);
+    const twoYearAgo = buildDayjs().subtract(2, "year");
 
-    return medicationDateFormatted > twoYearAgo;
+    return medicationDateFormatted.isAfter(twoYearAgo);
   });
 
   const medicationsSection = createSectionInMedications(
@@ -1233,7 +1233,7 @@ function createSectionInMedications(
     if (!aDate && !bDate) return 0;
     if (aDate && !bDate) return -1;
     if (!aDate && bDate) return 1;
-    return dayjs(aDate).isBefore(dayjs(bDate)) ? 1 : -1;
+    return buildDayjs(aDate).isBefore(buildDayjs(bDate)) ? 1 : -1;
   });
   const medicalTableContents = `
       <h4>${title}</h4>
@@ -1308,8 +1308,8 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
       return false;
     }
 
-    const aDate = dayjs(a.onsetDateTime).format(ISO_DATE);
-    const bDate = dayjs(b.onsetDateTime).format(ISO_DATE);
+    const aDate = buildDayjs(a.onsetDateTime).format(ISO_DATE);
+    const bDate = buildDayjs(b.onsetDateTime).format(ISO_DATE);
 
     return aDate === bDate && aText === bText;
   })
@@ -1352,9 +1352,11 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
       if (existingCondition) {
         // If the existing condition has a earlier first seen date, update the first seen date
         // if the existing condition has an later last seen date, update the last seen date
-        if (dayjs(existingCondition.firstSeen).isAfter(dayjs(newCondition.firstSeen))) {
+        if (buildDayjs(existingCondition.firstSeen).isAfter(buildDayjs(newCondition.firstSeen))) {
           existingCondition.firstSeen = newCondition.firstSeen;
-        } else if (dayjs(existingCondition.lastSeen).isBefore(dayjs(newCondition.lastSeen))) {
+        } else if (
+          buildDayjs(existingCondition.lastSeen).isBefore(buildDayjs(newCondition.lastSeen))
+        ) {
           existingCondition.lastSeen = newCondition.lastSeen;
         }
 
@@ -1403,19 +1405,9 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
         return -1;
       }
 
-      return dayjs(a.firstSeen).isBefore(dayjs(b.firstSeen)) ? 1 : -1;
+      return buildDayjs(a.firstSeen).isBefore(buildDayjs(b.firstSeen)) ? 1 : -1;
     })
-    .filter(condition => {
-      const twoYearsAgo = dayjs().subtract(2, "year").format(ISO_DATE);
-
-      if (!condition.firstSeen) {
-        return true;
-      } else if (condition.firstSeen > twoYearsAgo) {
-        return true;
-      }
-
-      return false;
-    });
+    .filter(condition => isDateAfter(condition.firstSeen));
 
   const conditionTableContents =
     removeDuplicate.length > 0
@@ -1470,8 +1462,8 @@ function createAllergySection(allergies: AllergyIntolerance[]) {
   }
 
   const removeDuplicate = uniqWith(allergies, (a, b) => {
-    const aDate = dayjs(a.onsetDateTime).format(ISO_DATE);
-    const bDate = dayjs(b.onsetDateTime).format(ISO_DATE);
+    const aDate = buildDayjs(a.onsetDateTime).format(ISO_DATE);
+    const bDate = buildDayjs(b.onsetDateTime).format(ISO_DATE);
     return aDate === bDate && a.reaction?.[0]?.substance?.text === b.reaction?.[0]?.substance?.text;
   })
     .reduce((acc, allergy) => {
@@ -1508,9 +1500,9 @@ function createAllergySection(allergies: AllergyIntolerance[]) {
       if (existingAllergy) {
         // If the existing allergy has a earlier first seen date, update the first seen date
         // if the existing allergy has an later last seen date, update the last seen date
-        if (dayjs(existingAllergy.firstSeen).isAfter(dayjs(newAllergy.firstSeen))) {
+        if (buildDayjs(existingAllergy.firstSeen).isAfter(buildDayjs(newAllergy.firstSeen))) {
           existingAllergy.firstSeen = newAllergy.firstSeen;
-        } else if (dayjs(existingAllergy.lastSeen).isBefore(dayjs(newAllergy.lastSeen))) {
+        } else if (buildDayjs(existingAllergy.lastSeen).isBefore(buildDayjs(newAllergy.lastSeen))) {
           existingAllergy.lastSeen = newAllergy.lastSeen;
         }
 
@@ -1521,20 +1513,8 @@ function createAllergySection(allergies: AllergyIntolerance[]) {
 
       return acc;
     }, [] as RenderAllergy[])
-    .sort((a, b) => {
-      return dayjs(a.firstSeen).isBefore(dayjs(b.firstSeen)) ? 1 : -1;
-    })
-    .filter(allergy => {
-      const twoYearsAgo = dayjs().subtract(2, "year").format(ISO_DATE);
-
-      if (!allergy.firstSeen) {
-        return true;
-      } else if (allergy.firstSeen > twoYearsAgo) {
-        return true;
-      }
-
-      return false;
-    });
+    .sort((a, b) => sortDate(a.firstSeen, b.firstSeen))
+    .filter(allergy => isDateAfter(allergy.firstSeen));
 
   const blacklistCodeText = ["no known allergies"];
   const blacklistManifestationText = ["info not available", "other"];
@@ -1601,13 +1581,13 @@ function createObservationSocialHistorySection(observations: Observation[]) {
     return "";
   }
 
-  const observationsSortedByDate = observations.sort((a, b) => {
-    return dayjs(a.effectiveDateTime).isBefore(dayjs(b.effectiveDateTime)) ? 1 : -1;
-  });
+  const observationsSortedByDate = observations.sort((a, b) =>
+    sortDate(a.effectiveDateTime, b.effectiveDateTime)
+  );
 
   const removeDuplicate = uniqWith(observationsSortedByDate, (a, b) => {
-    const aDate = dayjs(a.effectiveDateTime).format(ISO_DATE);
-    const bDate = dayjs(b.effectiveDateTime).format(ISO_DATE);
+    const aDate = buildDayjs(a.effectiveDateTime).format(ISO_DATE);
+    const bDate = buildDayjs(b.effectiveDateTime).format(ISO_DATE);
     const aText = a.code?.text ?? getValidCode(a.code?.coding)[0]?.display;
     const bText = b.code?.text ?? getValidCode(b.code?.coding)[0]?.display;
     const aValue = renderSocialHistoryValue(a) ?? "";
@@ -1646,17 +1626,7 @@ function createObservationSocialHistorySection(observations: Observation[]) {
 
       return acc;
     }, [] as RenderObservation[])
-    .filter(observation => {
-      const twoYearsAgo = dayjs().subtract(2, "year").format(ISO_DATE);
-
-      if (!observation.firstDate) {
-        return true;
-      } else if (observation.firstDate > twoYearsAgo) {
-        return true;
-      }
-
-      return false;
-    });
+    .filter(observation => isDateAfter(observation.firstDate));
 
   const observationTableContents =
     removeDuplicate.length > 0
@@ -1722,13 +1692,12 @@ function createObservationVitalsSection(observations: Observation[]) {
     return "";
   }
 
-  const observationsSortedByDate = observations.sort((a, b) => {
-    return dayjs(a.effectiveDateTime).isBefore(dayjs(b.effectiveDateTime)) ? 1 : -1;
-  });
-
+  const observationsSortedByDate = observations.sort((a, b) =>
+    sortDate(a.effectiveDateTime, b.effectiveDateTime)
+  );
   const removeDuplicate = uniqWith(observationsSortedByDate, (a, b) => {
-    const aDate = dayjs(a.effectiveDateTime).format(ISO_DATE);
-    const bDate = dayjs(b.effectiveDateTime).format(ISO_DATE);
+    const aDate = buildDayjs(a.effectiveDateTime).format(ISO_DATE);
+    const bDate = buildDayjs(b.effectiveDateTime).format(ISO_DATE);
     const aText = a.code?.text;
     const bText = b.code?.text;
     if (aText === undefined || bText === undefined) {
@@ -1737,10 +1706,10 @@ function createObservationVitalsSection(observations: Observation[]) {
     return aDate === bDate && aText === bText;
   }).filter(observation => {
     const observationDate = observation.effectiveDateTime ?? "";
-    const observationDateFormatted = dayjs(observationDate).format(ISO_DATE);
-    const twoYearAgo = dayjs().subtract(2, "year").format(ISO_DATE);
+    const observationDateFormatted = buildDayjs(observationDate);
+    const twoYearAgo = buildDayjs().subtract(2, "year");
 
-    return dayjs(observationDateFormatted).isAfter(dayjs(twoYearAgo));
+    return observationDateFormatted.isAfter(twoYearAgo);
   });
 
   const observationTableContents =
@@ -1814,13 +1783,13 @@ function createObservationLaboratorySection(observations: Observation[]) {
     return "";
   }
 
-  const observationsSortedByDate = observations.sort((a, b) => {
-    return dayjs(a.effectiveDateTime).isBefore(dayjs(b.effectiveDateTime)) ? 1 : -1;
-  });
+  const observationsSortedByDate = observations.sort((a, b) =>
+    sortDate(a.effectiveDateTime, b.effectiveDateTime)
+  );
 
   const removeDuplicate = uniqWith(observationsSortedByDate, (a, b) => {
-    const aDate = dayjs(a.effectiveDateTime).format(ISO_DATE);
-    const bDate = dayjs(b.effectiveDateTime).format(ISO_DATE);
+    const aDate = buildDayjs(a.effectiveDateTime).format(ISO_DATE);
+    const bDate = buildDayjs(b.effectiveDateTime).format(ISO_DATE);
     const aText = a.code?.text;
     const bText = b.code?.text;
     if (aText === undefined || bText === undefined) {
@@ -1829,10 +1798,10 @@ function createObservationLaboratorySection(observations: Observation[]) {
     return aDate === bDate && aText === bText;
   }).filter(observation => {
     const observationDate = observation.effectiveDateTime ?? "";
-    const observationDateFormatted = dayjs(observationDate).format(ISO_DATE);
-    const twoYearAgo = dayjs().subtract(2, "year").format(ISO_DATE);
+    const observationDateFormatted = buildDayjs(observationDate);
+    const twoYearAgo = buildDayjs().subtract(2, "year");
 
-    return dayjs(observationDateFormatted).isAfter(dayjs(twoYearAgo));
+    return observationDateFormatted.isAfter(twoYearAgo);
   });
 
   const observationTableContents =
@@ -1968,13 +1937,12 @@ function createImmunizationSection(immunizations: Immunization[]) {
     return "";
   }
 
-  const immunizationsSortedByDate = immunizations.sort((a, b) => {
-    return dayjs(a.occurrenceDateTime).isBefore(dayjs(b.occurrenceDateTime)) ? 1 : -1;
-  });
-
+  const immunizationsSortedByDate = immunizations.sort((a, b) =>
+    sortDate(a.occurrenceDateTime, b.occurrenceDateTime)
+  );
   const removeDuplicate = uniqWith(immunizationsSortedByDate, (a, b) => {
-    const aDate = dayjs(a.occurrenceDateTime).format(ISO_DATE);
-    const bDate = dayjs(b.occurrenceDateTime).format(ISO_DATE);
+    const aDate = buildDayjs(a.occurrenceDateTime).format(ISO_DATE);
+    const bDate = buildDayjs(b.occurrenceDateTime).format(ISO_DATE);
     return aDate === bDate && a.vaccineCode?.text === b.vaccineCode?.text;
   });
 
@@ -1993,17 +1961,7 @@ function createImmunizationSection(immunizations: Immunization[]) {
     </thead>
     <tbody>
       ${removeDuplicate
-        .filter(observation => {
-          const twoYearsAgo = dayjs().subtract(2, "year").format(ISO_DATE);
-
-          if (!observation.occurrenceDateTime) {
-            return true;
-          } else if (observation.occurrenceDateTime > twoYearsAgo) {
-            return true;
-          }
-
-          return false;
-        })
+        .filter(observation => isDateAfter(observation.occurrenceDateTime))
         .map(immunization => {
           const code = getSpecificCode(immunization.vaccineCode?.coding ?? [], [
             "cvx",
@@ -2157,20 +2115,6 @@ function getConditionDatesFromEncounters(
   return conditionDates;
 }
 
-function createSection(title: string, tableContents: string) {
-  return `
-    <div id="${title.toLowerCase().replace(/\s+/g, "-")}" class="section">
-      <div class="section-title">
-        <h3 id="${title}" title="${title}">&#x276F; ${title}</h3>
-        <a href="#mr-header">&#x25B2; Back to Top</a>
-      </div>
-      <div class="section-content">
-          ${tableContents}
-      </div>
-    </div>
-  `;
-}
-
 function mapResourceToId<ResourceType>(resources: Resource[]): Record<string, ResourceType> {
   return resources?.reduce((acc, resource) => {
     const id = resource?.id ?? "";
@@ -2182,12 +2126,11 @@ function mapResourceToId<ResourceType>(resources: Resource[]): Record<string, Re
   }, {});
 }
 
-// find condition with code Z00 in the past year
 function getDermConditions(conditions: Condition[]): Condition[] {
   const dermConditions = conditions.filter(condition => {
     const code = getSpecificCode(condition.code?.coding ?? [], [ICD_10_CODE]);
 
-    // Check if the code is in the L00-L99 range
+    // https://www.icd10data.com/ICD10CM/Codes/L00-L99
     const isDermCode = code ? /L\d{2}(?:\.\d+)?/i.test(code) : false;
 
     return isDermCode;
@@ -2200,7 +2143,7 @@ function getRheumatoidConditions(conditions: Condition[]) {
   const rheumatoidConditions = conditions.filter(condition => {
     const code = getSpecificCode(condition.code?.coding ?? [], [ICD_10_CODE]);
 
-    // Check if the code is in the M00-M99 range
+    // https://www.icd10data.com/ICD10CM/Codes/M00-M99
     const isRheumatoidCode = code ? /M\d{2}(?:\.\d+)?/i.test(code) : false;
 
     return isRheumatoidCode;
@@ -2213,7 +2156,7 @@ function getAsthmaConditions(conditions: Condition[]) {
   const rheumatoidConditions = conditions.filter(condition => {
     const code = getSpecificCode(condition.code?.coding ?? [], [ICD_10_CODE]);
 
-    // Check if the code is in the L00-L99 range
+    // https://www.icd10data.com/ICD10CM/Codes/J00-J99/J40-J4A/J45-/J45.909
     const isAsthmaCode = code ? code.includes("J45") : false;
 
     return isAsthmaCode;
@@ -2223,19 +2166,17 @@ function getAsthmaConditions(conditions: Condition[]) {
 }
 
 function hasClinicalRelevantData(fhirTypes: FhirTypes): boolean {
-  const hasValues: string[] = [];
-
-  Object.entries(fhirTypes).forEach(([key, value]) => {
+  for (const [key, value] of Object.entries(fhirTypes)) {
     const isNotRelatedPersons = key !== "relatedPersons";
     const isNotCoverages = key !== "coverages";
     const hasValue = value && Array.isArray(value) && value.length;
 
     if (isNotRelatedPersons && isNotCoverages && hasValue) {
-      hasValues.push(key);
+      return true;
     }
-  });
+  }
 
-  return hasValues.length > 0;
+  return false;
 }
 
 function getValidCode(coding: Coding[] | undefined): Coding[] {
@@ -2279,15 +2220,12 @@ function creteBPChartSection(observations: Observation[]) {
         return code === "8480-6";
       });
 
-      return !!observationDisplay;
+      return (
+        !!observationDisplay &&
+        buildDayjs(observation.effectiveDateTime).isAfter(buildDayjs().subtract(2, "year"))
+      );
     })
-    .filter(observation => {
-      return dayjs(observation.effectiveDateTime).isAfter(dayjs().subtract(2, "year"));
-    })
-    .sort((a, b) => {
-      return dayjs(a.effectiveDateTime).isBefore(dayjs(b.effectiveDateTime)) ? 1 : -1;
-    });
-
+    .sort((a, b) => sortDate(a.effectiveDateTime, b.effectiveDateTime));
   const diastolicObservations = observations
     .filter(observation => {
       const observationDisplay = observation.code?.coding?.find(coding => {
@@ -2295,18 +2233,16 @@ function creteBPChartSection(observations: Observation[]) {
         return code === "8462-4";
       });
 
-      return !!observationDisplay;
+      return (
+        !!observationDisplay &&
+        buildDayjs(observation.effectiveDateTime).isAfter(buildDayjs().subtract(2, "year"))
+      );
     })
-    .filter(observation => {
-      return dayjs(observation.effectiveDateTime).isAfter(dayjs().subtract(2, "year"));
-    })
-    .sort((a, b) => {
-      return dayjs(a.effectiveDateTime).isBefore(dayjs(b.effectiveDateTime)) ? 1 : -1;
-    });
+    .sort((a, b) => sortDate(a.effectiveDateTime, b.effectiveDateTime));
 
-  const removeSysDuplicate = uniqWith(systolicObservations, (a, b) => {
-    const aDate = dayjs(a.effectiveDateTime).format(ISO_DATE);
-    const bDate = dayjs(b.effectiveDateTime).format(ISO_DATE);
+  const uniqueSystolicObservations = uniqWith(systolicObservations, (a, b) => {
+    const aDate = buildDayjs(a.effectiveDateTime).format(ISO_DATE);
+    const bDate = buildDayjs(b.effectiveDateTime).format(ISO_DATE);
     const aText = a.code?.text;
     const bText = b.code?.text;
     if (aText === undefined || bText === undefined) {
@@ -2315,9 +2251,9 @@ function creteBPChartSection(observations: Observation[]) {
     return aDate === bDate && aText === bText;
   });
 
-  const removeDiaDuplicate = uniqWith(diastolicObservations, (a, b) => {
-    const aDate = dayjs(a.effectiveDateTime).format(ISO_DATE);
-    const bDate = dayjs(b.effectiveDateTime).format(ISO_DATE);
+  const uniqueDiastolicObservations = uniqWith(diastolicObservations, (a, b) => {
+    const aDate = buildDayjs(a.effectiveDateTime).format(ISO_DATE);
+    const bDate = buildDayjs(b.effectiveDateTime).format(ISO_DATE);
     const aText = a.code?.text;
     const bText = b.code?.text;
     if (aText === undefined || bText === undefined) {
@@ -2326,7 +2262,7 @@ function creteBPChartSection(observations: Observation[]) {
     return aDate === bDate && aText === bText;
   });
 
-  if (removeSysDuplicate.length === 0 && removeDiaDuplicate.length === 0) {
+  if (uniqueSystolicObservations.length === 0 && uniqueDiastolicObservations.length === 0) {
     return {
       section: createChartSection(
         "Blood Pressure History",
@@ -2339,8 +2275,8 @@ function creteBPChartSection(observations: Observation[]) {
   }
 
   const { tableContent, chartDiastolicData, chartSystolicData } = createBPChartByDate(
-    removeDiaDuplicate,
-    removeSysDuplicate
+    uniqueDiastolicObservations,
+    uniqueSystolicObservations
   );
 
   return {
@@ -2367,7 +2303,7 @@ function createBPChartByDate(
         const value = renderVitalsValue(observation);
         if (value) {
           return {
-            effectiveDate: dayjs(observation.effectiveDateTime).format(ISO_DATE),
+            effectiveDate: buildDayjs(observation.effectiveDateTime).format(ISO_DATE),
             vitalsValue: value,
           };
         }
@@ -2382,7 +2318,7 @@ function createBPChartByDate(
         const value = renderVitalsValue(observation);
         if (value) {
           return {
-            effectiveDate: dayjs(observation.effectiveDateTime).format(ISO_DATE),
+            effectiveDate: buildDayjs(observation.effectiveDateTime).format(ISO_DATE),
             vitalsValue: value,
           };
         }
@@ -2392,9 +2328,9 @@ function createBPChartByDate(
     .flat();
 
   const combinedObjects: ObsSummary[] = observationDiastolicObjects.map(diastolic => {
-    const date = dayjs(diastolic.effectiveDate).format(ISO_DATE);
+    const date = buildDayjs(diastolic.effectiveDate).format(ISO_DATE);
     const systolicValue = observationSystolicObjects.find(
-      observation => dayjs(observation.effectiveDate).format(ISO_DATE) === date
+      observation => buildDayjs(observation.effectiveDate).format(ISO_DATE) === date
     );
 
     return {
@@ -2403,13 +2339,12 @@ function createBPChartByDate(
     };
   });
 
-  const observationsDiastolicAscending = cloneDeep(observationDiastolicObjects).sort((a, b) => {
-    return dayjs(a.effectiveDate).isBefore(dayjs(b.effectiveDate)) ? -1 : 1;
-  });
-
-  const observationsSystolicAscending = cloneDeep(observationSystolicObjects).sort((a, b) => {
-    return dayjs(a.effectiveDate).isBefore(dayjs(b.effectiveDate)) ? -1 : 1;
-  });
+  const observationsDiastolicAscending = cloneDeep(observationDiastolicObjects).sort((a, b) =>
+    sortDate(a.effectiveDate, b.effectiveDate)
+  );
+  const observationsSystolicAscending = cloneDeep(observationSystolicObjects).sort((a, b) =>
+    sortDate(a.effectiveDate, b.effectiveDate)
+  );
 
   const chartDiastolicData = {
     labels: observationsDiastolicAscending.map(obs => obs.effectiveDate),
@@ -2483,16 +2418,15 @@ function createFromObservationVitalsSection(
   });
 
   const observationsLast2Years = filteredObservations.filter(observation => {
-    return dayjs(observation.effectiveDateTime).isAfter(dayjs().subtract(2, "year"));
+    return buildDayjs(observation.effectiveDateTime).isAfter(buildDayjs().subtract(2, "year"));
   });
 
-  const observationsSortedByDate = observationsLast2Years.sort((a, b) => {
-    return dayjs(a.effectiveDateTime).isBefore(dayjs(b.effectiveDateTime)) ? 1 : -1;
-  });
-
+  const observationsSortedByDate = observationsLast2Years.sort((a, b) =>
+    sortDate(a.effectiveDateTime, b.effectiveDateTime)
+  );
   const removeDuplicate = uniqWith(observationsSortedByDate, (a, b) => {
-    const aDate = dayjs(a.effectiveDateTime).format(ISO_DATE);
-    const bDate = dayjs(b.effectiveDateTime).format(ISO_DATE);
+    const aDate = buildDayjs(a.effectiveDateTime).format(ISO_DATE);
+    const bDate = buildDayjs(b.effectiveDateTime).format(ISO_DATE);
     const aText = a.code?.text;
     const bText = b.code?.text;
     if (aText === undefined || bText === undefined) {
@@ -2531,7 +2465,7 @@ function createVitalsChartByDate(observations: Observation[]): {
         const value = renderVitalsValue(observation);
         if (value) {
           return {
-            effectiveDate: dayjs(observation.effectiveDateTime).format(ISO_DATE),
+            effectiveDate: buildDayjs(observation.effectiveDateTime).format(ISO_DATE),
             vitalsValue: value,
           };
         }
@@ -2540,9 +2474,9 @@ function createVitalsChartByDate(observations: Observation[]): {
     })
     .flat();
 
-  const observationsAscending = cloneDeep(observationObjects).sort((a, b) => {
-    return dayjs(a.effectiveDate).isBefore(dayjs(b.effectiveDate)) ? -1 : 1;
-  });
+  const observationsAscending = cloneDeep(observationObjects).sort((a, b) =>
+    sortDate(a.effectiveDate, b.effectiveDate)
+  );
 
   const chartData = {
     labels: observationsAscending.map(obs => obs.effectiveDate),
@@ -2581,7 +2515,7 @@ function createVitalsChartByDate(observations: Observation[]): {
 
 function createChartSection(title: string, tableContents: string, contentPresent: boolean) {
   return `
-      <div id="${title.toLowerCase().replace(/\s+/g, "-")}" class="section">
+      <div class="section">
         <div class="section-title">
           <h3 id="${title}" title="${title}">&#x276F; ${title}</h3>
           <a href="#mr-header">&#x25B2; Back to Top</a>
@@ -2685,4 +2619,16 @@ function createChartInScript({
       });
     }
   `;
+}
+
+function isDateAfter(date: string | undefined): boolean {
+  const twoYearsAgo = buildDayjs().subtract(2, "year").format(ISO_DATE);
+
+  if (!date) {
+    return true;
+  } else if (date > twoYearsAgo) {
+    return true;
+  }
+
+  return false;
 }

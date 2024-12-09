@@ -259,61 +259,43 @@ const convertStoreAndReturnPdfUrl = async ({
 };
 
 async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {
-  try {
-    const featureFlag = await getFeatureFlagValueStringArray(
-      region,
-      appConfigAppID,
-      appConfigConfigID,
-      getEnvType(),
-      "cxsWithADHDMRFeatureFlag"
-    );
+  const featureFlag = await getFeatureFlagValueStringArray(
+    region,
+    appConfigAppID,
+    appConfigConfigID,
+    getEnvType(),
+    "cxsWithADHDMRFeatureFlag"
+  );
 
-    if (featureFlag?.enabled && featureFlag?.values) return featureFlag.values;
-  } catch (error) {
-    const msg = `Failed to get Feature Flag Value`;
-    const extra = { featureFlagName: "cxsWithADHDMRFeatureFlag" };
-    capture.error(msg, { extra: { ...extra, error } });
-  }
+  if (featureFlag?.enabled && featureFlag?.values) return featureFlag.values;
 
   return [];
 }
 
 async function getCxsWithBmiFeatureFlagValue(): Promise<string[]> {
-  try {
-    const featureFlag = await getFeatureFlagValueStringArray(
-      region,
-      appConfigAppID,
-      appConfigConfigID,
-      getEnvType(),
-      "cxsWithBmiMrFeatureFlag"
-    );
+  const featureFlag = await getFeatureFlagValueStringArray(
+    region,
+    appConfigAppID,
+    appConfigConfigID,
+    getEnvType(),
+    "cxsWithBmiMrFeatureFlag"
+  );
 
-    if (featureFlag?.enabled && featureFlag?.values) return featureFlag.values;
-  } catch (error) {
-    const msg = `Failed to get Feature Flag Value`;
-    const extra = { featureFlagName: "cxsWithBMIMRFeatureFlag" };
-    capture.error(msg, { extra: { ...extra, error } });
-  }
+  if (featureFlag?.enabled && featureFlag?.values) return featureFlag.values;
 
   return [];
 }
 
 async function getCxsWithDermFeatureFlagValue(): Promise<string[]> {
-  try {
-    const featureFlag = await getFeatureFlagValueStringArray(
-      region,
-      appConfigAppID,
-      appConfigConfigID,
-      getEnvType(),
-      "cxsWithDermMrFeatureFlag"
-    );
+  const featureFlag = await getFeatureFlagValueStringArray(
+    region,
+    appConfigAppID,
+    appConfigConfigID,
+    getEnvType(),
+    "cxsWithDermMrFeatureFlag"
+  );
 
-    if (featureFlag?.enabled && featureFlag?.values) return featureFlag.values;
-  } catch (error) {
-    const msg = `Failed to get Feature Flag Value`;
-    const extra = { featureFlagName: "cxsWithDermMrFeatureFlag" };
-    capture.error(msg, { extra: { ...extra, error } });
-  }
+  if (featureFlag?.enabled && featureFlag?.values) return featureFlag.values;
 
   return [];
 }
