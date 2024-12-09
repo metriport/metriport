@@ -1407,7 +1407,7 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
 
       return buildDayjs(a.firstSeen).isBefore(buildDayjs(b.firstSeen)) ? 1 : -1;
     })
-    .filter(condition => isDateAfter(condition.firstSeen));
+    .filter(condition => isWithinLastTwoYears(condition.firstSeen));
 
   const conditionTableContents =
     removeDuplicate.length > 0
@@ -1514,7 +1514,7 @@ function createAllergySection(allergies: AllergyIntolerance[]) {
       return acc;
     }, [] as RenderAllergy[])
     .sort((a, b) => sortDate(a.firstSeen, b.firstSeen))
-    .filter(allergy => isDateAfter(allergy.firstSeen));
+    .filter(allergy => isWithinLastTwoYears(allergy.firstSeen));
 
   const blacklistCodeText = ["no known allergies"];
   const blacklistManifestationText = ["info not available", "other"];
@@ -1626,7 +1626,7 @@ function createObservationSocialHistorySection(observations: Observation[]) {
 
       return acc;
     }, [] as RenderObservation[])
-    .filter(observation => isDateAfter(observation.firstDate));
+    .filter(observation => isWithinLastTwoYears(observation.firstDate));
 
   const observationTableContents =
     removeDuplicate.length > 0
@@ -1961,7 +1961,7 @@ function createImmunizationSection(immunizations: Immunization[]) {
     </thead>
     <tbody>
       ${removeDuplicate
-        .filter(observation => isDateAfter(observation.occurrenceDateTime))
+        .filter(observation => isWithinLastTwoYears(observation.occurrenceDateTime))
         .map(immunization => {
           const code = getSpecificCode(immunization.vaccineCode?.coding ?? [], [
             "cvx",
@@ -2621,7 +2621,7 @@ function createChartInScript({
   `;
 }
 
-function isDateAfter(date: string | undefined): boolean {
+function isWithinLastTwoYears(date: string | undefined): boolean {
   const twoYearsAgo = buildDayjs().subtract(2, "year").format(ISO_DATE);
 
   if (!date) {
