@@ -13,9 +13,7 @@ import { isCarequalityEnabled, isCQDirectEnabledForCx } from "../aws/app-config"
 import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
 import { getAddressWithCoordinates } from "../../domain/medical/address";
 import { CQDirectoryEntryData } from "./cq-directory";
-import { parseCQDirectoryEntryFromCqOrgDetailsWithUrls } from "./command/cq-directory/parse-cq-directory-entry";
-import { MetriportError } from "@metriport/shared";
-import { Organization } from "@medplum/fhirtypes";
+import { parseCQDirectoryEntryFromFhirOrganization } from "./command/cq-directory/parse-cq-directory-entry";
 // TODO: adjust when we support multiple POUs
 export function createPurposeOfUse() {
   return PurposeOfUse.TREATMENT;
@@ -61,6 +59,10 @@ export async function isCqEnabled(
   }
   return false;
 }
+
+export const cqOrgActiveSchema = z.object({
+  active: z.boolean(),
+});
 
 export const cqOrgUrlsSchema = z.object({
   urlXCPD: z.string().optional(),
@@ -158,87 +160,10 @@ export async function getCqAddress({
   return { coordinates, addressLine };
 }
 
-export const cqOrgActiveSchema = z.object({
-  active: z.boolean(),
-});
-
-export function parseFhirOrganization(org: Organization): CQOrgDetailsWithUrls {
-  const name = org.name;
-  if (!name) throw new MetriportError("CQ Organization missing name");
-  const oid = org.identifier?.[0]?.value;
-  if (!oid) throw new MetriportError("CQ Organization missing OID", undefined, { name });
-  const address = org.address?.[0];
-  if (!address) throw new MetriportError("CQ Organization missing address", undefined, { oid });
-  const addressLine1 = address.line?.[0];
-  const city = address.city;
-  const state = address.state;
-  const postalCode = address.postalCode;
-  const location = org.contained?.filter(c => c.resourceType === "Location");
-  const lat = location?.[0]?.position?.latitude;
-  const lon = location?.[0]?.position?.longitude;
-  if (!addressLine1 || !city || !state || !postalCode || !lat || !lon) {
-    throw new MetriportError("CQ Organization has partial address", undefined, {
-      oid,
-      addressLine1,
-      city,
-      state,
-      postalCode,
-      lat,
-      lon,
-    });
-  }
-  const contact = org.contact?.[0];
-  if (!contact) throw new MetriportError("CQ Organization missing contact", undefined, { oid });
-  const contactName = contact.name?.text;
-  if (!contactName)
-    throw new MetriportError("CQ Organization missing contactName", undefined, { oid });
-  const phone = contact.telecom?.filter(t => t.system === "phone")[0]?.value;
-  if (!phone) throw new MetriportError("CQ Organization missing phone", undefined, { oid });
-  const email = contact.telecom?.filter(t => t.system === "email")[0]?.value;
-  if (!email) throw new MetriportError("CQ Organization missing email", undefined, { oid });
-  const role = org.type?.[0]?.coding?.[0]?.code;
-  if (!role) throw new MetriportError("CQ Organization missing role", undefined, { oid });
-  if (role !== "Implementer" && role !== "Connection")
-    throw new MetriportError("CQ Organization invalid role", undefined, { oid });
-  const active = org.active;
-  if (active === undefined)
-    throw new MetriportError("CQ Organization missing active", undefined, { oid });
-  const parentOrg = org.partOf?.reference;
-  if (!parentOrg) throw new MetriportError("CQ Organization missing parentOrg", undefined, { oid });
-  const parentOrgOid = parentOrg.split("/")[1];
-  return {
-    name,
-    oid,
-    addressLine1,
-    city,
-    state,
-    postalCode,
-    lat: lat.toString(),
-    lon: lon.toString(),
-    contactName,
-    phone,
-    email,
-    role,
-    active,
-    urlXCPD: undefined,
-    urlDQ: undefined,
-    urlDR: undefined,
-    parentOrgOid,
-  };
-}
-
-export async function getParsedCqOrgOrFail(
-  cq: CarequalityManagementAPIFhir,
-  oid: string
-): Promise<CQDirectoryEntryData> {
-  const org = await getCqOrgOrFail(cq, oid);
-  return parseCQDirectoryEntryFromCqOrgDetailsWithUrls(org);
-}
-
 export async function getCqOrgOrFail(
   cq: CarequalityManagementAPIFhir,
   oid: string
-): Promise<CQOrgDetails> {
+): Promise<CQDirectoryEntryData> {
   const org = await getCqOrg(cq, oid);
   if (!org) throw new NotFoundError("Organization not found");
   return org;
@@ -247,13 +172,13 @@ export async function getCqOrgOrFail(
 export async function getCqOrg(
   cq: CarequalityManagementAPIFhir,
   oid: string
-): Promise<CQOrgDetails | undefined> {
+): Promise<CQDirectoryEntryData | undefined> {
   const { log } = out(`CQ getCqOrg - CQ Org OID ${oid}`);
 
   try {
     const orgs = await cq.listOrganizations({ oid });
     const org = orgs[0];
-    return org ? parseFhirOrganization(org) : undefined;
+    return org ? parseCQDirectoryEntryFromFhirOrganization(org) : undefined;
   } catch (error) {
     const msg = `Failure while getting Org @ CQ`;
     log(`${msg}. Org OID: ${oid}. Cause: ${errorToString(error)}`);
