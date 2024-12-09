@@ -20,12 +20,17 @@ import {
   Resource,
   Task,
 } from "@medplum/fhirtypes";
-import dayjs from "dayjs";
-import { fetchCodingCodeOrDisplayOrSystem } from "../../../fhir-deduplication/shared";
-import { cloneDeep, uniqWith } from "lodash";
-import { Brief } from "./bundle-to-brief";
-import { ISO_DATE, formatDateForDisplay } from "./bundle-to-html-shared";
 import { buildDayjs } from "@metriport/shared/common/date";
+import dayjs from "dayjs";
+import { cloneDeep, uniqWith } from "lodash";
+import { fetchCodingCodeOrDisplayOrSystem } from "../../../fhir-deduplication/shared";
+import { Brief } from "./bundle-to-brief";
+import {
+  createBrief,
+  createSection,
+  formatDateForDisplay,
+  ISO_DATE,
+} from "./bundle-to-html-shared";
 
 const RX_NORM_CODE = "rxnorm";
 const NDC_CODE = "ndc";
@@ -576,35 +581,6 @@ function createHeaderTableRow(label: string, value: string) {
       </td>
     </tr>
   `;
-}
-
-export function createBrief(brief?: Brief): string {
-  if (!brief || !brief.content) return ``;
-  const { link, content } = brief;
-  const briefContents = `
-  <div class="brief-section-content">
-    <div class="beta-flag">BETA</div>
-    <table><tbody><tr><td>${content.replace(/\n/g, "<br/>")}</td></tr></tbody></table>
-    <div style="border: 2px solid #FFCC00; background-color: #FFF8E1; padding: 10px; border-radius: 5px; margin-top: 20px;">
-      <div style="display: flex; align-items: center;">
-        <div style="margin-right: 10px;">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C11.448 2 11 2.448 11 3V11C11 11.552 11.448 12 12 12C12.552 12 13 11.552 13 11V3C13 2.448 12.552 2 12 2ZM11 15C11 14.448 11.448 14 12 14C12.552 14 13 14.448 13 15V17C13 17.552 12.552 18 12 18C11.448 18 11 17.552 11 17V15Z" fill="#FFCC00"/>
-            <path fill-rule="evenodd" clip-rule="evenodd" d="M22 20C22 21.1046 21.1046 22 20 22H4C2.89543 22 2 21.1046 2 20V4C2 2.89543 2.89543 2 4 2H20C21.1046 2 22 2.89543 22 4V20ZM20 4H4V20H20V4Z" fill="#FFCC00"/>
-          </svg>
-        </div>
-        <div>
-          <strong style="color: #FF6F00;">Warning:</strong>
-        </div>
-        <div style="margin-left: 10px;">
-          This Medical Record Brief was generated using AI technologies. The information contained within might contain errors. DO NOT use this as a single source of truth and verify this information with the data below.
-          Provide feedback about the AI-generated brief <a href="${link}" target="_blank">here</a>.
-        </div>
-      </div>
-    </div>
-  </div>
-  `;
-  return createSection("Brief (AI-generated)", briefContents);
 }
 
 function createBmiFromObservationVitalsSection(observations: Observation[]): {
@@ -1907,20 +1883,6 @@ function getConditionDatesFromEncounters(
   });
 
   return conditionDates;
-}
-
-function createSection(title: string, tableContents: string) {
-  return `
-    <div id="${title.toLowerCase().replace(/\s+/g, "-")}" class="section">
-      <div class="section-title">
-        <h3 id="${title}" title="${title}">&#x276F; ${title}</h3>
-        <a href="#mr-header">&#x25B2; Back to Top</a>
-      </div>
-      <div class="section-content">
-          ${tableContents}
-      </div>
-    </div>
-  `;
 }
 
 function mapResourceToId<ResourceType>(resources: Resource[]): Record<string, ResourceType> {
