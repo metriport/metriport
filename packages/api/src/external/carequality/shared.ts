@@ -21,10 +21,6 @@ export function createPurposeOfUse() {
   return PurposeOfUse.TREATMENT;
 }
 
-export function isGWValid(gateway: { homeCommunityId: string; url: string }): boolean {
-  return !!gateway.homeCommunityId && !!gateway.url;
-}
-
 export async function isCqEnabled(
   patient: Pick<Patient, "id" | "cxId">,
   facilityId: string,
@@ -90,10 +86,6 @@ export const cqOrgDetailsSchema = z.object({
   active: z.boolean(),
   organizationBizType: z.nativeEnum(OrganizationBizType).optional(),
   parentOrgOid: z.string().optional(),
-});
-
-export const cqOrgDetailsOrgBizRequiredSchema = cqOrgDetailsSchema.required({
-  organizationBizType: true,
 });
 
 export type CQOrgDetails = z.infer<typeof cqOrgDetailsSchema>;
