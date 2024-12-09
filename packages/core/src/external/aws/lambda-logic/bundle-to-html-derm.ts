@@ -23,8 +23,8 @@ import {
 import dayjs from "dayjs";
 import { uniqWith, cloneDeep, camelCase } from "lodash";
 import { Brief } from "./bundle-to-brief";
-import { createBrief } from "./bundle-to-html";
 import {
+  createBrief,
   buildEncounterSections,
   formatDateForDisplay,
   ISO_DATE,
