@@ -63,5 +63,8 @@
     "axios": "^1.6.0",
     "axios-retry": "^3.1.9",
     "zod": "^3.22.1"
+  },
+  "devDependencies": {
+    "@medplum/fhirtypes": "^2.2.10"
   }
 }

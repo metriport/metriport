@@ -1,7 +1,8 @@
 import { OrganizationBizType } from "@metriport/core/domain/organization";
 import { Config } from "../../shared/config";
-import { buildXmlStringFromTemplate } from "./organization-template";
+import { getOrganizationFhirTemplate } from "./organization-fhir-template";
 import { CQOrgDetails, CQOrgUrls, cqOrgUrlsSchema } from "./shared";
+import { Organization } from "@medplum/fhirtypes";
 
 const cqOrgUrlsString = Config.getCQOrgUrls();
 
@@ -10,7 +11,6 @@ const cqOrgUrlsString = Config.getCQOrgUrls();
  */
 export class CQOrganization {
   static urls = cqOrgUrlsString ? cqOrgUrlsSchema.parse(JSON.parse(cqOrgUrlsString)) : {};
-  xmlString: string | undefined;
 
   constructor(
     public name: string,
@@ -93,19 +93,7 @@ export class CQOrganization {
     };
   }
 
-  public buildXmlStringFromTemplate(): string {
-    return buildXmlStringFromTemplate(this.getDetailsAndUrls());
-  }
-
-  public setXmlString(xmlString: string) {
-    this.xmlString = xmlString;
-  }
-
-  public getXmlString(): string {
-    if (!this.xmlString) {
-      this.setXmlString(this.buildXmlStringFromTemplate());
-    }
-    if (this.xmlString) return this.xmlString;
-    throw new Error("XML string not set");
+  public createFhirOrganization(): Organization {
+    return getOrganizationFhirTemplate(this.getDetailsAndUrls());
   }
 }
