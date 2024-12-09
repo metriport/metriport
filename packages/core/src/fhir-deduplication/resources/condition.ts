@@ -4,7 +4,7 @@ import {
   DeduplicationResult,
   combineResources,
   createKeysFromObjectArray,
-  createKeysFromObjectArray3,
+  createKeysFromObjectArrayAndBits,
   createRef,
   extractDisplayFromConcept,
   fetchCodingCodeOrDisplayOrSystem,
@@ -79,21 +79,21 @@ export function groupSameConditions(conditions: Condition[]): {
       // flagging the condition with each unique identifier + date
       setterKeys.push(...createKeysFromObjectArray({ date }, identifiers));
       // flagging the condition with each unique identifier + 1 date bit
-      setterKeys.push(...createKeysFromObjectArray3(identifiers, [1]));
+      setterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [1]));
 
       // the condition will dedup using each unique identifier with the same date,
       getterKeys.push(...createKeysFromObjectArray({ date }, identifiers));
       // the condition will dedup using each unique identifier + 0 date bit
-      getterKeys.push(...createKeysFromObjectArray3(identifiers, [0]));
+      getterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
     }
 
     if (!date) {
       // flagging the condition with each unique identifier + 0 date bit
-      setterKeys.push(...createKeysFromObjectArray3(identifiers, [0]));
+      setterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
 
       // the condition will dedup using each unique identifier with 0 or 1 date bit
-      getterKeys.push(...createKeysFromObjectArray3(identifiers, [0]));
-      getterKeys.push(...createKeysFromObjectArray3(identifiers, [1]));
+      getterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
+      getterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [1]));
     }
 
     if (setterKeys.length > 0) {
