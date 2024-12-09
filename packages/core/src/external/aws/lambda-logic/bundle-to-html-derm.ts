@@ -87,16 +87,40 @@ export function bundleToHtmlDerm(fhirBundle: Bundle, brief?: Brief): string {
   const asthmaConditions = getAsthmaConditions(conditions);
   const twoYearAgo = dayjs().subtract(2, "year").format(ISO_DATE);
 
+  const {
+    section: bpSection,
+    chartSystolicData,
+    chartDiastolicData,
+  } = creteBPChartSection(observationVitals);
+
+  const { section: bmiSection, chartData: bmiChartData } = createFromObservationVitalsSection(
+    observationVitals,
+    "BMI",
+    "39156-5"
+  );
+
   const { section: a1cSection, chartData: a1cChartData } = createFromObservationVitalsSection(
     observationLaboratory,
     "HbA1c",
     "4548-4"
   );
 
-  const { section: bmiSection, chartData: bmiChartData } = createFromObservationVitalsSection(
-    observationVitals,
-    "BMI",
-    "39156-5"
+  const { section: cholSection, chartData: cholChartData } = createFromObservationVitalsSection(
+    observationLaboratory,
+    "Cholesterol",
+    "2093-3"
+  );
+
+  const { section: esrSection, chartData: esrChartData } = createFromObservationVitalsSection(
+    observationLaboratory,
+    "ESR",
+    "30341-2"
+  );
+
+  const { section: crpSection, chartData: crpChartData } = createFromObservationVitalsSection(
+    observationLaboratory,
+    "CRP",
+    "30522-7"
   );
 
   const htmlPage = `
@@ -285,6 +309,20 @@ export function bundleToHtmlDerm(fhirBundle: Bundle, brief?: Brief): string {
             position: relative;
           }
 
+          @media print {
+            #hba1cHistory {
+              width: 100% !important;
+              height: auto !important;
+              max-width: 95vw; /* Ensures it doesn't overflow the viewport */
+            }
+
+            #bmiHistory {
+              width: 100% !important;
+              height: auto !important;
+              max-width: 95vw; /* Ensures it doesn't overflow the viewport */
+            }
+          }
+
         </style>
       </head>
 
@@ -336,103 +374,48 @@ export function bundleToHtmlDerm(fhirBundle: Bundle, brief?: Brief): string {
           ${createMedicationSection(medications, medicationStatements)}
           ${createAllergySection(allergies)}
           ${createObservationVitalsSection(observationVitals)}
+          ${bpSection}
           ${bmiSection}
-          ${a1cSection}
           ${createObservationLaboratorySection(observationLaboratory)}
+          ${a1cSection}
+          ${cholSection}
+          ${esrSection}
+          ${crpSection}
           ${createImmunizationSection(immunizations)}
         </div>
          <script>
-         const ctx = document.getElementById('hba1cHistory').getContext('2d');
-         const hba1c = new Chart(ctx, {
-            type: 'line',
-            data: {
-              labels: ${JSON.stringify(a1cChartData.labels)},
-              datasets: [{
-                label: 'HbA1c over the last 5 years',
-                data: ${JSON.stringify(a1cChartData.data)},
-                borderColor: 'rgba(75, 192, 192, 1)',
-                borderWidth: 2,
-                fill: false
-              }]
-            },
-            options: {
-              scales: {
-                x: {
-                  type: 'time',
-                  time: {
-                    unit: 'month',
-                    tooltipFormat: 'yyyy-MM-dd'
-                  },
-                  title: {
-                    display: true,
-                    text: 'Date'
-                  }
-                },
-                y: {
-                  title: {
-                    display: true,
-                    text: 'HbA1c Value'
-                  },
-                  min: ${a1cChartData.min},
-                  max: ${a1cChartData.max},
-                }
-              },
-              layout: {
-                padding: {
-                  left: 10,
-                  right: 50,
-                  top: 10,
-                  bottom: 10
-                }
-              }
-            }
-          });
-
-         const ctx = document.getElementById('bmiHistory').getContext('2d');
-         const bmi = new Chart(ctx, {
-            type: 'line',
-            data: {
-              labels: ${JSON.stringify(bmiChartData.labels)},
-              datasets: [{
-                label: 'HbA1c over the last 5 years',
-                data: ${JSON.stringify(bmiChartData.data)},
-                borderColor: 'rgba(75, 192, 192, 1)',
-                borderWidth: 2,
-                fill: false
-              }]
-            },
-            options: {
-              scales: {
-                x: {
-                  type: 'time',
-                  time: {
-                    unit: 'month',
-                    tooltipFormat: 'yyyy-MM-dd'
-                  },
-                  title: {
-                    display: true,
-                    text: 'Date'
-                  }
-                },
-                y: {
-                  title: {
-                    display: true,
-                    text: 'BMI Value'
-                  },
-                  min: ${bmiChartData.min},
-                  max: ${bmiChartData.max},
-                }
-              },
-              layout: {
-                padding: {
-                  left: 10,
-                  right: 50,
-                  top: 10,
-                  bottom: 10
-                }
-              }
-            }
-          });
+          ${createChartInScript({
+            chartData: chartSystolicData,
+            chartTitle: "Systolic",
+            chartId: "bloodPressureHistory",
+            secondaryData: chartDiastolicData,
+            secondaryTitle: "Diastolic",
+          })}
+          ${createChartInScript({
+            chartData: bmiChartData,
+            chartTitle: "BMI",
+            chartId: "bmiHistory",
+          })}
+          ${createChartInScript({
+            chartData: a1cChartData,
+            chartTitle: "HbA1c",
+            chartId: "hbA1CHistory",
+          })}
+          ${createChartInScript({
+            chartData: cholChartData,
+            chartTitle: "Cholesterol",
+            chartId: "cholesterolHistory",
+          })}
+          ${createChartInScript({
+            chartData: esrChartData,
+            chartTitle: "ESR",
+            chartId: "esrHistory",
+          })}
+          ${createChartInScript({
+            chartData: crpChartData,
+            chartTitle: "CRP",
+            chartId: "crpHistory",
+          })}
         </script>
       </body>
     </html>
@@ -2280,6 +2263,204 @@ type ObsSummary = {
   vitalsValue: string;
 };
 
+function creteBPChartSection(observations: Observation[]) {
+  if (!observations) {
+    return {
+      section: "",
+      chartSystolicData: { labels: [], data: [] },
+      chartDiastolicData: { labels: [], data: [] },
+    };
+  }
+
+  const systolicObservations = observations
+    .filter(observation => {
+      const observationDisplay = observation.code?.coding?.find(coding => {
+        const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
+        return code === "8480-6";
+      });
+
+      return !!observationDisplay;
+    })
+    .filter(observation => {
+      return dayjs(observation.effectiveDateTime).isAfter(dayjs().subtract(2, "year"));
+    })
+    .sort((a, b) => {
+      return dayjs(a.effectiveDateTime).isBefore(dayjs(b.effectiveDateTime)) ? 1 : -1;
+    });
+
+  const diastolicObservations = observations
+    .filter(observation => {
+      const observationDisplay = observation.code?.coding?.find(coding => {
+        const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
+        return code === "8462-4";
+      });
+
+      return !!observationDisplay;
+    })
+    .filter(observation => {
+      return dayjs(observation.effectiveDateTime).isAfter(dayjs().subtract(2, "year"));
+    })
+    .sort((a, b) => {
+      return dayjs(a.effectiveDateTime).isBefore(dayjs(b.effectiveDateTime)) ? 1 : -1;
+    });
+
+  const removeSysDuplicate = uniqWith(systolicObservations, (a, b) => {
+    const aDate = dayjs(a.effectiveDateTime).format(ISO_DATE);
+    const bDate = dayjs(b.effectiveDateTime).format(ISO_DATE);
+    const aText = a.code?.text;
+    const bText = b.code?.text;
+    if (aText === undefined || bText === undefined) {
+      return false;
+    }
+    return aDate === bDate && aText === bText;
+  });
+
+  const removeDiaDuplicate = uniqWith(diastolicObservations, (a, b) => {
+    const aDate = dayjs(a.effectiveDateTime).format(ISO_DATE);
+    const bDate = dayjs(b.effectiveDateTime).format(ISO_DATE);
+    const aText = a.code?.text;
+    const bText = b.code?.text;
+    if (aText === undefined || bText === undefined) {
+      return false;
+    }
+    return aDate === bDate && aText === bText;
+  });
+
+  if (removeSysDuplicate.length === 0 && removeDiaDuplicate.length === 0) {
+    return {
+      section: createChartSection(
+        "Blood Pressure History",
+        `<table><tbody><tr><td>No Blood Pressure readings found</td></tr></tbody></table>`,
+        false
+      ),
+      chartSystolicData: { labels: [], data: [] },
+      chartDiastolicData: { labels: [], data: [] },
+    };
+  }
+
+  const { tableContent, chartDiastolicData, chartSystolicData } = createBPChartByDate(
+    removeDiaDuplicate,
+    removeSysDuplicate
+  );
+
+  return {
+    section: createChartSection("Blood Pressure History", tableContent, true),
+    chartSystolicData: chartSystolicData,
+    chartDiastolicData: chartDiastolicData,
+  };
+}
+
+function createBPChartByDate(
+  diastolic: Observation[],
+  systolic: Observation[]
+): {
+  tableContent: string;
+  chartSystolicData: ChartData;
+  chartDiastolicData: ChartData;
+} {
+  const filteredDiastolicObservations = filterObservationsByDate(diastolic);
+  const filteredSystolicObservations = filterObservationsByDate(systolic);
+
+  const observationDiastolicObjects: ObsSummary[] = filteredDiastolicObservations
+    .flatMap(tables => {
+      return tables.observations.map(observation => {
+        const value = renderVitalsValue(observation);
+        if (value) {
+          return {
+            effectiveDate: dayjs(observation.effectiveDateTime).format(ISO_DATE),
+            vitalsValue: value,
+          };
+        }
+        return [];
+      });
+    })
+    .flat();
+
+  const observationSystolicObjects: ObsSummary[] = filteredSystolicObservations
+    .flatMap(tables => {
+      return tables.observations.map(observation => {
+        const value = renderVitalsValue(observation);
+        if (value) {
+          return {
+            effectiveDate: dayjs(observation.effectiveDateTime).format(ISO_DATE),
+            vitalsValue: value,
+          };
+        }
+        return [];
+      });
+    })
+    .flat();
+
+  const combinedObjects: ObsSummary[] = observationDiastolicObjects.map(diastolic => {
+    const date = dayjs(diastolic.effectiveDate).format(ISO_DATE);
+    const systolicValue = observationSystolicObjects.find(
+      observation => dayjs(observation.effectiveDate).format(ISO_DATE) === date
+    );
+
+    return {
+      effectiveDate: diastolic.effectiveDate,
+      vitalsValue: `${systolicValue?.vitalsValue} - ${diastolic.vitalsValue}`,
+    };
+  });
+
+  const observationsDiastolicAscending = cloneDeep(observationDiastolicObjects).sort((a, b) => {
+    return dayjs(a.effectiveDate).isBefore(dayjs(b.effectiveDate)) ? -1 : 1;
+  });
+
+  const observationsSystolicAscending = cloneDeep(observationSystolicObjects).sort((a, b) => {
+    return dayjs(a.effectiveDate).isBefore(dayjs(b.effectiveDate)) ? -1 : 1;
+  });
+
+  const chartDiastolicData = {
+    labels: observationsDiastolicAscending.map(obs => obs.effectiveDate),
+    data: observationsDiastolicAscending.map(obs => parseFloat(obs.vitalsValue)),
+    min: Math.floor(
+      Math.min(...observationsDiastolicAscending.map(obs => parseFloat(obs.vitalsValue))) - 1
+    ),
+    max: Math.ceil(
+      Math.max(...observationsDiastolicAscending.map(obs => parseFloat(obs.vitalsValue))) + 1
+    ),
+  };
+
+  const chartSystolicData = {
+    labels: observationsSystolicAscending.map(obs => obs.effectiveDate),
+    data: observationsSystolicAscending.map(obs => parseFloat(obs.vitalsValue)),
+    min: Math.floor(
+      Math.min(...observationsSystolicAscending.map(obs => parseFloat(obs.vitalsValue))) - 1
+    ),
+    max: Math.ceil(
+      Math.max(...observationsSystolicAscending.map(obs => parseFloat(obs.vitalsValue))) + 1
+    ),
+  };
+
+  const observationRows = combinedObjects
+    .map(obs => {
+      return `
+      <tr>
+      <td>${obs.effectiveDate}</td>
+      <td>${obs.vitalsValue}</td>
+      </tr>
+      `;
+    })
+    .join(" ");
+
+  const observationTableContents = `
+    <table>
+    <thead>
+    <tr>
+    <th style="width: 50%">Date</th>
+    <th style="width: 50%">Value</th>
+    </tr>
+    </thead>
+    <tbody>
+    ${observationRows}
+    </tbody>
+    </table>
+    `;
+
+  return { tableContent: observationTableContents, chartDiastolicData, chartSystolicData };
+}
+
 function createFromObservationVitalsSection(
   observations: Observation[],
   vitalTitle: string,
@@ -2301,11 +2482,11 @@ function createFromObservationVitalsSection(
     return !!observationDisplay;
   });
 
-  const observationsLast5Years = filteredObservations.filter(observation => {
-    return dayjs(observation.effectiveDateTime).isAfter(dayjs().subtract(5, "year"));
+  const observationsLast2Years = filteredObservations.filter(observation => {
+    return dayjs(observation.effectiveDateTime).isAfter(dayjs().subtract(2, "year"));
   });
 
-  const observationsSortedByDate = observationsLast5Years.sort((a, b) => {
+  const observationsSortedByDate = observationsLast2Years.sort((a, b) => {
     return dayjs(a.effectiveDateTime).isBefore(dayjs(b.effectiveDateTime)) ? 1 : -1;
   });
 
@@ -2336,31 +2517,6 @@ function createFromObservationVitalsSection(
     section: createChartSection(`${vitalTitle} History`, tableContent, true),
     chartData: chartData,
   };
-}
-
-function createChartSection(title: string, tableContents: string, contentPresent: boolean) {
-  console.log("AJJJJJJJJJJJJJJJ", camelCase(title.replace(/\s+/g, "")));
-
-  return `
-    <div id="${title.toLowerCase().replace(/\s+/g, "-")}" class="section">
-      <div class="section-title">
-        <h3 id="${title}" title="${title}">&#x276F; ${title}</h3>
-        <a href="#mr-header">&#x25B2; Back to Top</a>
-      </div>
-
-      ${
-        contentPresent
-          ? `<div><canvas
-            id="${camelCase(title.replace(/\s+/g, ""))}"
-            style="width: 95%; height: 400px;">
-            </canvas></div>`
-          : ``
-      }
-      <div class="section-content">
-          ${tableContents}
-      </div>
-    </div>
-  `;
 }
 
 function createVitalsChartByDate(observations: Observation[]): {
@@ -2398,27 +2554,135 @@ function createVitalsChartByDate(observations: Observation[]): {
   const observationRows = observationObjects
     .map(obs => {
       return `
-            <tr>
-              <td>${obs.effectiveDate}</td>
-              <td>${obs.vitalsValue}</td>
-            </tr>
-          `;
+      <tr>
+      <td>${obs.effectiveDate}</td>
+      <td>${obs.vitalsValue}</td>
+      </tr>
+      `;
     })
     .join(" ");
 
   const observationTableContents = `
-  <table>
+    <table>
     <thead>
-      <tr>
-        <th style="width: 50%">Date</th>
-        <th style="width: 50%">Value</th>
-      </tr>
+    <tr>
+    <th style="width: 50%">Date</th>
+    <th style="width: 50%">Value</th>
+    </tr>
     </thead>
     <tbody>
-      ${observationRows}
+    ${observationRows}
     </tbody>
-  </table>
-`;
+    </table>
+    `;
 
   return { tableContent: observationTableContents, chartData };
+}
+
+function createChartSection(title: string, tableContents: string, contentPresent: boolean) {
+  return `
+      <div id="${title.toLowerCase().replace(/\s+/g, "-")}" class="section">
+        <div class="section-title">
+          <h3 id="${title}" title="${title}">&#x276F; ${title}</h3>
+          <a href="#mr-header">&#x25B2; Back to Top</a>
+        </div>
+
+        ${
+          contentPresent
+            ? `<div><canvas
+              id="${camelCase(title.replace(/\s+/g, ""))}"
+              style="width: 95%; height: 400px;">
+              </canvas></div>`
+            : ``
+        }
+        <div class="section-content">
+            ${tableContents}
+        </div>
+      </div>
+    `;
+}
+
+function createChartInScript({
+  chartData,
+  chartTitle,
+  chartId,
+  secondaryData,
+  secondaryTitle,
+}: {
+  chartData: ChartData;
+  chartTitle: string;
+  chartId: string;
+  secondaryData?: ChartData;
+  secondaryTitle?: string;
+}) {
+  const el = `${chartTitle + "el"}`;
+  const ctx = `${chartTitle + "elCtx"}`;
+  const chart = `${chartTitle + "chart"}`;
+
+  return `
+    const ${el} = document.getElementById('${chartId}');
+
+    if (${el}) {
+      const ${ctx} = ${el}.getContext('2d');
+
+      const ${chart} = new Chart(${ctx}, {
+        type: 'line',
+        data: {
+          labels: ${JSON.stringify(chartData.labels)},
+          datasets: [
+              {
+                label: '${chartTitle} over the last 2 years',
+                data: ${JSON.stringify(chartData.data)},
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 2,
+                fill: false
+              }
+              ${
+                secondaryData
+                  ? `,
+                  {
+                    label: '${secondaryTitle} over the last 2 years',
+                    data: ${JSON.stringify(secondaryData.data)},
+                    borderColor: 'rgba(192, 75, 75, 1)',
+                    borderWidth: 2,
+                    fill: false
+                  }`
+                  : ""
+              }
+            ]
+        },
+        options: {
+          scales: {
+            x: {
+              type: 'time',
+              time: {
+                unit: 'month',
+                tooltipFormat: 'yyyy-MM-dd'
+              },
+              title: {
+                display: true,
+                text: 'Date'
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: '${chartTitle} Value'
+              },
+              min: ${secondaryData?.min ?? chartData.min},
+              max: ${chartData.max},
+            }
+          },
+          layout: {
+            padding: {
+              left: 10,
+              right: 50,
+              top: 10,
+              bottom: 10
+            }
+          }
+        }
+      });
+    }
+  `;
 }

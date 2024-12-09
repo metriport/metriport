@@ -15,6 +15,7 @@ import {
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import { bundleToHtmlADHD } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-adhd";
 import { bundleToHtmlBmi } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-bmi";
+import { bundleToHtmlDerm } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-derm";
 import {
   getSignedUrl as coreGetSignedUrl,
   makeS3Client,
@@ -78,6 +79,8 @@ export async function handler({
     const isADHDFeatureFlagEnabled = cxsWithADHDFeatureFlagValue.includes(cxId);
     const cxsWithBmiFeatureFlagValue = await getCxsWithBmiFeatureFlagValue();
     const isBmiFeatureFlagEnabled = cxsWithBmiFeatureFlagValue.includes(cxId);
+    const cxsWithDermFeatureFlagValue = await getCxsWithDermFeatureFlagValue();
+    const isDermFeatureFlagEnabled = cxsWithDermFeatureFlagValue.includes(cxId);
 
     const bundle = await getBundleFromS3(fhirFileName);
     const isBriefFeatureFlagEnabled = await isAiBriefEnabled(generateAiBrief, cxId);
@@ -93,6 +96,8 @@ export async function handler({
       ? bundleToHtmlADHD(bundle, aiBrief)
       : isBmiFeatureFlagEnabled
       ? bundleToHtmlBmi(bundle, aiBrief)
+      : isDermFeatureFlagEnabled
+      ? bundleToHtmlDerm(bundle, aiBrief)
       : bundleToHtml(bundle, aiBrief);
     const hasContents = doesMrSummaryHaveContents(html);
     log(`MR Summary has contents: ${hasContents}`);
@@ -287,6 +292,26 @@ async function getCxsWithBmiFeatureFlagValue(): Promise<string[]> {
   } catch (error) {
     const msg = `Failed to get Feature Flag Value`;
     const extra = { featureFlagName: "cxsWithBMIMRFeatureFlag" };
+    capture.error(msg, { extra: { ...extra, error } });
+  }
+
+  return [];
+}
+
+async function getCxsWithDermFeatureFlagValue(): Promise<string[]> {
+  try {
+    const featureFlag = await getFeatureFlagValueStringArray(
+      region,
+      appConfigAppID,
+      appConfigConfigID,
+      getEnvType(),
+      "cxsWithDermMrFeatureFlag"
+    );
+
+    if (featureFlag?.enabled && featureFlag?.values) return featureFlag.values;
+  } catch (error) {
+    const msg = `Failed to get Feature Flag Value`;
+    const extra = { featureFlagName: "cxsWithDermMrFeatureFlag" };
     capture.error(msg, { extra: { ...extra, error } });
   }
 
