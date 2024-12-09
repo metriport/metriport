@@ -9,7 +9,7 @@ import {
   CarequalityManagementAPIFhir,
   ListOrganizationsParams,
   UpdateOrganizationParams,
-} from "./carequality-fhirDirectory-api";
+} from "./carequality-fhir-api";
 
 dayjs.extend(duration);
 
@@ -179,7 +179,7 @@ export class CarequalityManagementAPIImplFhir implements CarequalityManagementAP
     query.append("apikey", this.apiKey);
 
     const url = `${CarequalityManagementAPIImplFhir.ORG_ENDPOINT}?${query.toString()}`;
-    const resp = await this.sendPostRequest(url, org, { "Content-Type": "application/xml" });
+    const resp = await this.sendPostRequest(url, org, { "Content-Type": "application/json" });
     return resp.data;
   }
 
@@ -195,7 +195,7 @@ export class CarequalityManagementAPIImplFhir implements CarequalityManagementAP
     query.append("apikey", this.apiKey);
 
     const url = `${CarequalityManagementAPIImplFhir.ORG_ENDPOINT}/${oid}?${query.toString()}`;
-    const resp = await this.sendPutRequest(url, org, { "Content-Type": "application/xml" });
+    const resp = await this.sendPutRequest(url, org, { "Content-Type": "application/json" });
     return resp.data;
   }
 }

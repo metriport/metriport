@@ -10,6 +10,7 @@ import { metriportEmail as metriportEmailForCq } from "../../constants";
 import { CQOrganization } from "../../organization";
 import {
   CQOrgDetails,
+  CQOrgDetailsWithUrls,
   getCqAddress,
   getCqOrg,
   getCqOrgOrFail,
@@ -21,20 +22,18 @@ const cq = makeCarequalityManagementAPIFhir();
 
 export async function createOrUpdateCQOrganization(
   orgDetails: CQOrgDetails
-): Promise<CQOrgDetails | undefined> {
+): Promise<CQOrgDetailsWithUrls | undefined> {
   if (!cq) throw new Error("Carequality API not initialized");
-  const org = CQOrganization.fromDetails(orgDetails);
-  const orgFromDir = await getCqOrg(cq, org.oid);
-  if (orgFromDir) {
-    return await updateCQOrganization(cq, org);
-  }
-  return await registerOrganization(cq, org);
+  const cqOrg = CQOrganization.fromDetails(orgDetails);
+  const org = await getCqOrg(cq, cqOrg.oid);
+  if (org) return await updateCQOrganization(cq, cqOrg);
+  return await registerOrganization(cq, cqOrg);
 }
 
 export async function updateCQOrganization(
   cq: CarequalityManagementAPIFhir,
   cqOrg: CQOrganization
-): Promise<CQOrgDetails | undefined> {
+): Promise<CQOrgDetailsWithUrls | undefined> {
   const { log } = out(`CQ updateCQOrganization - CQ Org OID ${cqOrg.oid}`);
 
   try {
@@ -43,8 +42,7 @@ export async function updateCQOrganization(
       oid: cqOrg.oid,
     });
     return parseFhirOrganization(org);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
+  } catch (error) {
     const msg = `Failure while updating org @ CQ`;
     log(`${msg}. Org OID: ${cqOrg.oid}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
@@ -61,14 +59,13 @@ export async function updateCQOrganization(
 export async function registerOrganization(
   cq: CarequalityManagementAPIFhir,
   cqOrg: CQOrganization
-): Promise<CQOrgDetails | undefined> {
+): Promise<CQOrgDetailsWithUrls> {
   const { log } = out(`CQ registerOrganization - CQ Org OID ${cqOrg.oid}`);
 
   try {
     const org = await cq.registerOrganization(cqOrg.createFhirOrganization());
-    return org ? parseFhirOrganization(org) : undefined;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
+    return parseFhirOrganization(org);
+  } catch (error) {
     const msg = `Failure while registering org @ CQ`;
     log(`${msg}. Org OID: ${cqOrg.oid}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
