@@ -11,9 +11,8 @@ import { addUpdatedAtTrigger } from "../../../../sequelize/migrations-shared";
 import { Config } from "../../../../shared/config";
 import { makeCarequalityManagementAPIFhir } from "../../api";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
-import { parseFhirOrganization } from "../../shared";
 import { bulkInsertCQDirectoryEntries } from "./create-cq-directory-entry";
-import { parseCQDirectoryEntryFromCqOrgDetailsWithUrls } from "./parse-cq-directory-entry";
+import { parseCQDirectoryEntryFromFhirOrganization } from "./parse-cq-directory-entry";
 
 dayjs.extend(duration);
 const BATCH_SIZE = 1000;
@@ -27,9 +26,9 @@ const sequelize = initDbPool(dbCreds, {
   idle: 10000,
 });
 
-export const cqDirectoryEntryTemp = `cq_directory_entry_temp`;
 export const cqDirectoryEntry = `cq_directory_entry`;
-export const cqDirectoryEntryBackup = `cq_directory_entry_backup`;
+const cqDirectoryEntryTemp = `${cqDirectoryEntry}_temp`;
+const cqDirectoryEntryBackup = `${cqDirectoryEntry}_backup`;
 
 export async function rebuildCQDirectory(failGracefully = false): Promise<void> {
   const { log } = out("rebuildCQDirectory - failGracefully: " + failGracefully);
@@ -45,9 +44,7 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
         const orgs = await cq.listOrganizations({ start: currentPosition, count: BATCH_SIZE });
         if (orgs.length < BATCH_SIZE) isDone = true;
         currentPosition += BATCH_SIZE;
-        const parsedOrgs = orgs
-          .map(parseFhirOrganization)
-          .map(parseCQDirectoryEntryFromCqOrgDetailsWithUrls);
+        const parsedOrgs = orgs.map(parseCQDirectoryEntryFromFhirOrganization);
         log(
           `Adding ${parsedOrgs.length} CQ directory entries... Total fetched: ${currentPosition}`
         );
