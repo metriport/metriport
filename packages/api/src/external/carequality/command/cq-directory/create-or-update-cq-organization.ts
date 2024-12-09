@@ -33,7 +33,7 @@ export async function createOrUpdateCQOrganization(
 export async function updateCQOrganization(
   cq: CarequalityManagementAPIFhir,
   cqOrg: CQOrganization
-): Promise<CQOrgDetailsWithUrls | undefined> {
+): Promise<CQOrgDetailsWithUrls> {
   const { log } = out(`CQ updateCQOrganization - CQ Org OID ${cqOrg.oid}`);
 
   try {
