@@ -1,30 +1,31 @@
+import { Bundle, Organization } from "@medplum/fhirtypes";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 import axiosRetry from "axios-retry";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Agent } from "https";
-import { STU3Bundle, stu3BundleSchema } from "../models/bundle";
-import { Organization } from "../models/organization";
-import { CarequalityManagementAPI } from "./carequality-api";
 import { APIMode } from "../models/shared";
+import {
+  CarequalityManagementAPIFhir,
+  ListOrganizationsParams,
+  UpdateOrganizationParams,
+} from "./carequality-fhirDirectory-api";
+
 dayjs.extend(duration);
 
 const DEFAULT_AXIOS_TIMEOUT = dayjs.duration(120, "seconds");
 const DEFAULT_MAXIMUM_BACKOFF = dayjs.duration(30, "seconds");
 const BASE_DELAY = dayjs.duration(1, "seconds");
 const MAX_COUNT = 1000;
-const JSON_FORMAT = "json";
-const XML_FORMAT = "xml";
 const DEFAULT_MAX_RETRIES = 3;
 
 /**
- * This SDK operates on FHIR STU3 format.
+ * This SDK operates on FHIR R4 format.
  */
-export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
-  private static readonly devUrl = "https://directory.dev.carequality.org/fhir-pre-stu3/";
-  private static readonly stagingUrl = "https://stage-dir-ceq.sequoiaproject.org/fhir-stu3/1.0.1";
-  private static readonly productionUrl =
-    "https://prod-dir-ceq-01.sequoiaproject.org/fhir-stu3/1.0.1/";
+export class CarequalityManagementAPIImplFhir implements CarequalityManagementAPIFhir {
+  private static readonly devUrl = "https://directory.dev.carequality.org/fhir";
+  private static readonly stagingUrl = "https://directory.stage.carequality.org/fhir";
+  private static readonly productionUrl = "https://directory.prod.carequality.org/fhir";
 
   static ORG_ENDPOINT = "/Organization";
   readonly api: AxiosInstance;
@@ -70,13 +71,13 @@ export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
 
     switch (apiMode) {
       case APIMode.dev:
-        baseUrl = CarequalityManagementAPIImpl.devUrl;
+        baseUrl = CarequalityManagementAPIImplFhir.devUrl;
         break;
       case APIMode.staging:
-        baseUrl = CarequalityManagementAPIImpl.stagingUrl;
+        baseUrl = CarequalityManagementAPIImplFhir.stagingUrl;
         break;
       case APIMode.production:
-        baseUrl = CarequalityManagementAPIImpl.productionUrl;
+        baseUrl = CarequalityManagementAPIImplFhir.productionUrl;
         break;
       default:
         throw new Error("API mode not supported.");
@@ -148,30 +149,23 @@ export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
     count = MAX_COUNT,
     start = 0,
     oid,
-    active = true,
-  }: {
-    count?: number;
-    start?: number;
-    oid?: string;
-    active?: boolean;
-  }): Promise<Organization[]> {
-    if (count < 1 || count > MAX_COUNT)
+    active,
+  }: ListOrganizationsParams): Promise<Organization[]> {
+    if (count < 1 || count > MAX_COUNT) {
       throw new Error(`Count value must be between 1 and ${MAX_COUNT}`);
+    }
+
     const query = new URLSearchParams();
     query.append("apikey", this.apiKey);
-    query.append("_format", JSON_FORMAT);
     query.append("_count", count.toString());
-    query.append("_start", start.toString());
-    if (!active) query.append("_active", active.toString());
-    oid && query.append("_id", oid);
-    const queryString = query.toString();
+    start !== undefined && query.append("_start", start.toString());
+    oid !== undefined && query.append("_id", oid);
+    active !== undefined && query.append("active", active.toString());
 
-    const url = `${CarequalityManagementAPIImpl.ORG_ENDPOINT}?${queryString}`;
+    const url = `${CarequalityManagementAPIImplFhir.ORG_ENDPOINT}?${query.toString()}`;
     const resp = await this.sendGetRequest(url, { "Content-Type": "application/json" });
-    if (!resp.data.Bundle) return [];
-    const bundle: STU3Bundle = stu3BundleSchema.parse(resp.data.Bundle);
-    const orgs = bundle.entry.map(e => e.resource.Organization);
-    return orgs;
+    const bundle = resp.data as Bundle;
+    return (bundle.entry ?? []).map(e => e.resource as Organization);
   }
 
   /**
@@ -180,13 +174,12 @@ export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
    * @param org string containing the organization resource (in XML format)
    * @returns an XML string containing an OperationOutcome resource - see Carequality documentation for details - https://carequality.org/healthcare-directory/OperationOutcome-create-success-example2.xml.html
    */
-  async registerOrganization(org: string): Promise<string> {
+  async registerOrganization(org: Organization): Promise<Organization> {
     const query = new URLSearchParams();
     query.append("apikey", this.apiKey);
-    query.append("_format", XML_FORMAT);
 
-    const url = `${CarequalityManagementAPIImpl.ORG_ENDPOINT}?${query.toString()}`;
-    const resp = await this.sendPostRequest(url, org, { "Content-Type": "text/xml" });
+    const url = `${CarequalityManagementAPIImplFhir.ORG_ENDPOINT}?${query.toString()}`;
+    const resp = await this.sendPostRequest(url, org, { "Content-Type": "application/xml" });
     return resp.data;
   }
 
@@ -197,12 +190,11 @@ export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
    * @param oid string containing the organization OID
    * @returns an XML string containing an OperationOutcome resource - see Carequality documentation for details - https://carequality.org/healthcare-directory/OperationOutcome-create-success-example2.xml.html
    */
-  async updateOrganization(org: string, oid: string): Promise<string> {
+  async updateOrganization({ org, oid }: UpdateOrganizationParams): Promise<Organization> {
     const query = new URLSearchParams();
     query.append("apikey", this.apiKey);
-    query.append("_format", XML_FORMAT);
 
-    const url = `${CarequalityManagementAPIImpl.ORG_ENDPOINT}/${oid}?${query.toString()}`;
+    const url = `${CarequalityManagementAPIImplFhir.ORG_ENDPOINT}/${oid}?${query.toString()}`;
     const resp = await this.sendPutRequest(url, org, { "Content-Type": "application/xml" });
     return resp.data;
   }

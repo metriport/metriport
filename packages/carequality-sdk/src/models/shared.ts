@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+export enum APIMode {
+  dev = "dev",
+  staging = "stage",
+  production = "production",
+}
+
 export const objectValue = z.object({
   value: z.string(),
 });

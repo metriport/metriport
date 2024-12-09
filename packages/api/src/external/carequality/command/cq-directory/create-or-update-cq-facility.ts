@@ -1,10 +1,10 @@
 import { OrganizationBizType } from "@metriport/core/domain/organization";
-import { metriportEmail as metriportEmailForCq } from "../../constants";
 import { metriportCompanyDetails } from "@metriport/shared";
 import { Facility, isOboFacility } from "../../../../domain/medical/facility";
-import { createOrUpdateCQOrganization } from "./create-or-update-cq-organization";
-import { buildCqOrgNameForFacility, getCqAddress } from "../../shared";
 import { Config } from "../../../../shared/config";
+import { metriportEmail as metriportEmailForCq } from "../../constants";
+import { buildCqOrgNameForFacility, getCqAddress } from "../../shared";
+import { createOrUpdateCQOrganization } from "./create-or-update-cq-organization";
 
 export const metriportOid = Config.getSystemRootOID();
 export const metriportIntermediaryOid = `${metriportOid}.666`;
