@@ -19,6 +19,6 @@ export interface CarequalityManagementAPIFhir {
     oid,
     active,
   }: ListOrganizationsParams): Promise<Organization[]>;
-  registerOrganization(org: Organization): Promise<Organization | undefined>;
+  registerOrganization(org: Organization): Promise<Organization>;
   updateOrganization({ org, oid }: UpdateOrganizationParams): Promise<Organization>;
 }
