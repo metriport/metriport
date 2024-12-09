@@ -1,26 +1,20 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { PromptTemplate } from "@langchain/core/prompts";
-import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+// import { PromptTemplate } from "@langchain/core/prompts";
+// import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import {
-  Address,
   Bundle,
-  CodeableConcept,
-  Condition,
-  EncounterDiagnosis,
-  HumanName,
-  Location,
   Medication,
   Observation,
   Organization,
   Patient,
-  Quantity,
   Resource,
 } from "@medplum/fhirtypes";
 import { errorToString, toArray } from "@metriport/shared";
-import { ISO_DATE, buildDayjs, elapsedTimeFromNow } from "@metriport/shared/common/date";
-import { LLMChain, MapReduceDocumentsChain, StuffDocumentsChain } from "langchain/chains";
+import { ISO_DATE, buildDayjs } from "@metriport/shared/common/date";
+// import { ISO_DATE, buildDayjs, elapsedTimeFromNow } from "@metriport/shared/common/date";
+// import { LLMChain, MapReduceDocumentsChain, StuffDocumentsChain } from "langchain/chains";
 import { cloneDeep } from "lodash";
 import { filterBundleByDate } from "../../../command/consolidated/consolidated-filter-by-date";
 import { getDatesFromEffectiveDateTimeOrPeriod } from "../../../command/consolidated/consolidated-filter-shared";
@@ -30,15 +24,16 @@ import {
 } from "../../../external/fhir/shared/index";
 import { capture, out } from "../../../util";
 import { uuidv7 } from "../../../util/uuid-v7";
-import { EventTypes, analytics } from "../../analytics/posthog";
-import { BedrockChat } from "../../langchain/bedrock/index";
+// import { EventTypes, analytics } from "../../analytics/posthog";
+// import { BedrockChat } from "../../langchain/bedrock/index";
+import { SlimResource, applyResourceSpecificFilters, getNameString } from "./modify-resources";
 
-const CHUNK_SIZE = 100_000;
-const CHUNK_OVERLAP = 1000;
+// const CHUNK_SIZE = 100_000;
+// const CHUNK_OVERLAP = 1000;
 
 const NUM_HISTORICAL_YEARS = 1;
-const SONNET_COST_PER_INPUT_TOKEN = 0.0015 / 1000;
-const SONNET_COST_PER_OUTPUT_TOKEN = 0.0075 / 1000;
+// const SONNET_COST_PER_INPUT_TOKEN = 0.0015 / 1000;
+// const SONNET_COST_PER_OUTPUT_TOKEN = 0.0075 / 1000;
 
 const relevantResources = [
   "AllergyIntolerance",
@@ -63,49 +58,15 @@ const referenceResources = [
   "Location",
 ];
 
-const UNANSWERED_CALL = "unanswered call";
-const SCHEDULING_CALL = "scheduling call";
-const ADMIN_NOTE = "admin note";
-const SCAN_REF_NOTE = "scan reference";
-
-const REPORT_TYPES_BLACKLIST = [
-  "instructions",
-  "addendum",
-  "nursing note",
-  SCHEDULING_CALL,
-  UNANSWERED_CALL,
-  ADMIN_NOTE,
-  SCAN_REF_NOTE,
-];
-
-const REMOVE_FROM_NOTE = [
-  "xLabel",
-  "5/5",
-  "Â°F",
-  "Â",
-  "â¢",
-  "documented in this encounter",
-  "xnoIndent",
-  "Formatting of this note might be different from the original.",
-  "Formatting of this note is different from the original.",
-  "Portions of the history and exam were entered using voice recognition software",
-  "Images from the original note were not included.",
-  "Minor syntax, contextual, and spelling errors may be related to the use of this software and were not intentional. If corrections are necessary, please contact provider.",
-  "<content>",
-  "</content>",
-  "<root>",
-  "</root>",
-  "&lt;",
-  "&gt;",
-];
-
-const documentVariableName = "text";
+// const documentVariableName = "text";
 
 export type Brief = {
   id: string;
   content: string;
   link: string;
 };
+
+import fs from "fs";
 //--------------------------------
 // AI-based brief generation
 //--------------------------------
@@ -115,7 +76,7 @@ export async function summarizeFilteredBundleWithAI(
   patientId: string
 ): Promise<string | undefined> {
   const requestId = uuidv7();
-  const startedAt = new Date();
+  // const startedAt = new Date();
   const { log } = out(`summarizeFilteredBundleWithAI - cxId ${cxId}, patientId ${patientId}`);
   // filter out historical data
   log(`Starting with requestId ${requestId}, and bundle length ${bundle.entry?.length}`);
@@ -131,131 +92,133 @@ export async function summarizeFilteredBundleWithAI(
     const filteredBundle = filterBundleByDate(bundle, dateFrom);
     const slimPayloadBundle = buildSlimmerPayload(filteredBundle);
     const inputString = JSON.stringify(slimPayloadBundle);
+    fs.writeFileSync("inputBundle.json", inputString);
 
-    // TODO: #2510 - experiment with different splitters
-    const textSplitter = new RecursiveCharacterTextSplitter({
-      chunkSize: CHUNK_SIZE,
-      chunkOverlap: CHUNK_OVERLAP,
-    });
-    const docs = await textSplitter.createDocuments([inputString ?? ""]);
-    const totalTokensUsed = {
-      input: 0,
-      output: 0,
-    };
+    // // TODO: #2510 - experiment with different splitters
+    // const textSplitter = new RecursiveCharacterTextSplitter({
+    //   chunkSize: CHUNK_SIZE,
+    //   chunkOverlap: CHUNK_OVERLAP,
+    // });
+    // const docs = await textSplitter.createDocuments([inputString ?? ""]);
+    // const totalTokensUsed = {
+    //   input: 0,
+    //   output: 0,
+    // };
 
-    const llmSummary = new BedrockChat({
-      model: "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
-      temperature: 0,
-      region: "us-east-1",
-      callbacks: [
-        {
-          handleLLMEnd: output => {
-            const usage = output.llmOutput?.usage;
-            if (usage) {
-              totalTokensUsed.input += usage.input_tokens;
-              totalTokensUsed.output += usage.output_tokens;
-            }
-          },
-        },
-      ],
-    });
+    // const llmSummary = new BedrockChat({
+    //   model: "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+    //   temperature: 0,
+    //   region: "us-east-1",
+    //   callbacks: [
+    //     {
+    //       handleLLMEnd: output => {
+    //         const usage = output.llmOutput?.usage;
+    //         if (usage) {
+    //           totalTokensUsed.input += usage.input_tokens;
+    //           totalTokensUsed.output += usage.output_tokens;
+    //         }
+    //       },
+    //     },
+    //   ],
+    // });
 
-    const todaysDate = new Date().toISOString().split("T")[0];
-    const systemPrompt = "You are an expert primary care doctor.";
+    // const todaysDate = new Date().toISOString().split("T")[0];
+    // const systemPrompt = "You are an expert primary care doctor.";
 
-    const summaryTemplate = `
-    ${systemPrompt}
-  
-    Today's date is ${todaysDate}.
-    Your goal is to write a summary of the patient's most recent medical history, so that another doctor can understand the patient's medical history to be able to treat them effectively.
-    Here is a portion of the patient's medical history:
-    --------
-    {${documentVariableName}}
-    --------
-  
-    Write a summary of the patient's most recent medical history, considering the following goals:
-    1. Specify whether a DNR or POLST form has been completed.
-    2. Include a summary of the patient's most recent hospitalization, including the location of the hospitalization, the date of the hospitalization, the reason for the hospitalization, and the results of the hospitalization.
-    3. Include a summary of the patient's current chronic conditions, allergies, and any previous surgeries.
-    4. Include a summary of the patient's current medications, including dosages and frequency - do not include instructions on how to take the medications. Include any history of medication allergies or adverse reactions.
-    5. Include any other relevant information about the patient's health.
-  
-    If any of the above information is not present, do not include it in the summary.
-    Don't tell me that you are writing a summary, just write the summary. Also, don't tell me about any limitations of the information provided.
-  
-    SUMMARY:
-    `;
-    const SUMMARY_PROMPT = PromptTemplate.fromTemplate(summaryTemplate);
-    const summaryChain = new LLMChain({
-      llm: llmSummary as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-      prompt: SUMMARY_PROMPT as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-    });
+    // const summaryTemplate = `
+    // ${systemPrompt}
 
-    const summaryTemplateRefined = `
-    ${systemPrompt}
-  
-    Today's date is ${todaysDate}.
-    Your goal is to write a summary of the patient's most recent medical history, so that another doctor can understand the patient's medical history to be able to treat them effectively.
-    Here are the previous summaries written by you of sections of the patient's medical history:
-    --------
-    {${documentVariableName}}
-    --------
-  
-    Combine these summaries into a single, comprehensive summary of the patient's most recent medical history in a single paragraph.
-  
-    Don't tell me that you are writing a summary, just write the summary. Also, don't tell me about any limitations of the information provided.
-  
-    SUMMARY:
-    `;
-    const SUMMARY_PROMPT_REFINED = PromptTemplate.fromTemplate(summaryTemplateRefined);
-    const summaryChainRefined = new StuffDocumentsChain({
-      llmChain: new LLMChain({
-        llm: llmSummary as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-        prompt: SUMMARY_PROMPT_REFINED as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-      }),
-      documentVariableName,
-    });
+    // Today's date is ${todaysDate}.
+    // Your goal is to write a summary of the patient's most recent medical history, so that another doctor can understand the patient's medical history to be able to treat them effectively.
+    // Here is a portion of the patient's medical history:
+    // --------
+    // {${documentVariableName}}
+    // --------
 
-    const mapReduce = new MapReduceDocumentsChain({
-      llmChain: summaryChain,
-      combineDocumentChain: summaryChainRefined,
-      documentVariableName,
-      verbose: false,
-    });
+    // Write a summary of the patient's most recent medical history, considering the following goals:
+    // 1. Specify whether a DNR or POLST form has been completed.
+    // 2. Include a summary of the patient's most recent hospitalization, including the location of the hospitalization, the date of the hospitalization, the reason for the hospitalization, and the results of the hospitalization.
+    // 3. Include a summary of the patient's current chronic conditions, allergies, and any previous surgeries.
+    // 4. Include a summary of the patient's current medications, including dosages and frequency - do not include instructions on how to take the medications. Include any history of medication allergies or adverse reactions.
+    // 5. Include any other relevant information about the patient's health.
 
-    const summary = (await mapReduce.invoke({
-      input_documents: docs,
-    })) as { text: string };
+    // If any of the above information is not present, do not include it in the summary.
+    // Don't tell me that you are writing a summary, just write the summary. Also, don't tell me about any limitations of the information provided.
 
-    const costs = calculateCostsBasedOnTokens(totalTokensUsed);
+    // SUMMARY:
+    // `;
+    // const SUMMARY_PROMPT = PromptTemplate.fromTemplate(summaryTemplate);
+    // const summaryChain = new LLMChain({
+    //   llm: llmSummary as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+    //   prompt: SUMMARY_PROMPT as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+    // });
 
-    const duration = elapsedTimeFromNow(startedAt);
-    log(
-      `Done. Finished in ${duration} ms. Input cost: ${costs.input}, output cost: ${costs.output}. Total cost: ${costs.total}`
-    );
+    // const summaryTemplateRefined = `
+    // ${systemPrompt}
 
-    console.log({
-      requestId,
-      patientId,
-      startBundleSize: bundle.entry?.length,
-      endBundleSize: slimPayloadBundle?.length,
-      duration,
-      costs,
-    });
-    analytics({
-      distinctId: cxId,
-      event: EventTypes.aiBriefGeneration,
-      properties: {
-        requestId,
-        patientId,
-        startBundleSize: bundle.entry?.length,
-        endBundleSize: slimPayloadBundle?.length,
-        duration,
-        costs,
-      },
-    });
-    if (!summary.text) return undefined;
-    return summary.text;
+    // Today's date is ${todaysDate}.
+    // Your goal is to write a summary of the patient's most recent medical history, so that another doctor can understand the patient's medical history to be able to treat them effectively.
+    // Here are the previous summaries written by you of sections of the patient's medical history:
+    // --------
+    // {${documentVariableName}}
+    // --------
+
+    // Combine these summaries into a single, comprehensive summary of the patient's most recent medical history in a single paragraph.
+
+    // Don't tell me that you are writing a summary, just write the summary. Also, don't tell me about any limitations of the information provided.
+
+    // SUMMARY:
+    // `;
+    // const SUMMARY_PROMPT_REFINED = PromptTemplate.fromTemplate(summaryTemplateRefined);
+    // const summaryChainRefined = new StuffDocumentsChain({
+    //   llmChain: new LLMChain({
+    //     llm: llmSummary as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+    //     prompt: SUMMARY_PROMPT_REFINED as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+    //   }),
+    //   documentVariableName,
+    // });
+
+    // const mapReduce = new MapReduceDocumentsChain({
+    //   llmChain: summaryChain,
+    //   combineDocumentChain: summaryChainRefined,
+    //   documentVariableName,
+    //   verbose: false,
+    // });
+
+    // const summary = (await mapReduce.invoke({
+    //   input_documents: docs,
+    // })) as { text: string };
+
+    // const costs = calculateCostsBasedOnTokens(totalTokensUsed);
+
+    // const duration = elapsedTimeFromNow(startedAt);
+    // log(
+    //   `Done. Finished in ${duration} ms. Input cost: ${costs.input}, output cost: ${costs.output}. Total cost: ${costs.total}`
+    // );
+
+    // console.log({
+    //   requestId,
+    //   patientId,
+    //   startBundleSize: bundle.entry?.length,
+    //   endBundleSize: slimPayloadBundle?.length,
+    //   duration,
+    //   costs,
+    // });
+    // analytics({
+    //   distinctId: cxId,
+    //   event: EventTypes.aiBriefGeneration,
+    //   properties: {
+    //     requestId,
+    //     patientId,
+    //     startBundleSize: bundle.entry?.length,
+    //     endBundleSize: slimPayloadBundle?.length,
+    //     duration,
+    //     costs,
+    //   },
+    // });
+    // if (!summary.text) return undefined;
+    // return summary.text;
+    return "bro";
   } catch (err) {
     const msg = `AI brief generation failure`;
     log(`${msg} - ${errorToString(err)}`);
@@ -281,8 +244,8 @@ function buildSlimmerPayload(bundle: Bundle): any[] | undefined {
   // First pass to remove a ton of useless stuff and apply resource-specific modifications
   const leanBundleEntries = buildSlimmerBundle(bundle);
 
-  // Build a map of these lean resources for cross-referencing
-  const resourceMap = new Map<string, Resource>();
+  // Build a map of slim resources for cross-referencing
+  const resourceMap = new Map<string, SlimResource>();
   leanBundleEntries?.forEach(res => {
     if (!res || !res.id) return;
     const mapKey = `${res.resourceType}/${res.id}`;
@@ -294,7 +257,10 @@ function buildSlimmerPayload(bundle: Bundle): any[] | undefined {
   // Replace the references with actual data and collect references for embedded resources
   const containedResourceIdsSet = new Set<string>();
   const processedEntries = leanBundleEntries?.map(res => {
-    const { updRes, ids } = replaceReferencesWithData(res, resourceMap);
+    const { updRes, ids } = replaceReferencesWithData(
+      res as Resource, // TODO: Fix this
+      resourceMap as Map<string, Resource> // TODO: Fix this
+    );
     ids.forEach(id => containedResourceIdsSet.add(id));
 
     return updRes;
@@ -407,319 +373,6 @@ function removeUselessAttributes(res: Resource) {
   return res;
 }
 
-function getUniqueDisplays(
-  concept: CodeableConcept | CodeableConcept[] | undefined
-): string[] | undefined {
-  if (!concept) return undefined;
-
-  const uniqueDescriptors = new Set<string>();
-  const concepts = toArray(concept);
-  concepts.forEach(concept => {
-    const text = concept.text;
-    if (text) uniqueDescriptors.add(text.trim().toLowerCase());
-
-    concept.coding?.forEach(coding => {
-      if (coding.display) uniqueDescriptors.add(coding.display.trim().toLowerCase());
-    });
-  });
-
-  if (uniqueDescriptors.size === 0) return undefined;
-  return Array.from(uniqueDescriptors);
-}
-
-function getUniqueDisplaysString(
-  concept: CodeableConcept | CodeableConcept[] | undefined
-): string | undefined {
-  return getUniqueDisplays(concept)?.join(", ");
-}
-
-function getLongestDisplay(
-  concept: CodeableConcept | CodeableConcept[] | undefined
-): string | undefined {
-  if (!concept) return undefined;
-
-  const uniqueDescriptors = new Set<string>();
-  const concepts = toArray(concept);
-  concepts.forEach(concept => {
-    const text = concept.text;
-    if (text) uniqueDescriptors.add(text.trim().toLowerCase());
-
-    concept.coding?.forEach(coding => {
-      if (coding.display) uniqueDescriptors.add(coding.display.trim().toLowerCase());
-    });
-  });
-
-  if (uniqueDescriptors.size === 0) return undefined;
-  return Array.from(uniqueDescriptors).reduce((longest, current) =>
-    current.length > longest.length ? current : longest
-  );
-}
-
-function cleanUpNote(note: string): string {
-  return note
-    .trim()
-    .replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "")
-    .replace(/<ID>.*?<\/ID>/g, "")
-    .replace(/<styleCode>.*?<\/styleCode>/g, "")
-    .replace(/\s*\n\s*/g, "\n")
-    .replace(/\*{2,}/g, "*")
-    .replace(/_{2,}/g, " ");
-}
-
-/**
- * This function applies filters to the resource based on its resourceType, and overwrites and/or creates new specific attributes,
- * making them into strings most of the time.
- *
- * TODO: #2510 - Break this function up into smaller functions, specific to each resourceType.
- *
- * @returns updated resources as any
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function applyResourceSpecificFilters(res: Resource): any | undefined {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const updRes: any = cloneDeep(res);
-
-  if (res.resourceType === "Patient") {
-    updRes.name = getNameString(res.name);
-  }
-
-  if (res.resourceType === "AllergyIntolerance") {
-    updRes.status = Array.from(
-      new Set(res.clinicalStatus?.coding?.flatMap(coding => coding.code || []))
-    ).join(", ");
-    if (isUselessStatus(updRes.status)) delete updRes.status;
-  }
-
-  if (res.resourceType === "Immunization") {
-    delete updRes.lotNumber;
-
-    if (res.vaccineCode) {
-      const resVaccineCodeString = JSON.stringify(res.vaccineCode).toLowerCase();
-      if (
-        resVaccineCodeString.includes("no data") ||
-        resVaccineCodeString.includes("no immunization")
-      ) {
-        return undefined;
-      }
-
-      updRes.vaccineCode = getUniqueDisplaysString(res.vaccineCode);
-    }
-    if (res.site?.text) {
-      updRes.site = res.site.text;
-    }
-    updRes.route = getUniqueDisplaysString(res.route);
-
-    delete updRes.doseQuantity;
-  }
-
-  if (res.resourceType === "Practitioner") {
-    const name = getNameString(res.name);
-    updRes.name = name;
-
-    const qualificationsText = getLongestDisplay(res.qualification?.[0]?.code);
-    if (qualificationsText) updRes.qualification = qualificationsText;
-
-    updRes.address = getAddressString(res.address);
-  }
-
-  if (res.resourceType === "Procedure") {
-    const name = getUniqueDisplaysString(res.code);
-    if (name) {
-      updRes.name = name;
-      if (name.includes("no data")) return undefined;
-    }
-
-    delete updRes.code;
-
-    if (isUselessStatus(updRes.status)) delete updRes.status;
-
-    delete updRes.reasonCode; // TODO: #2510 - Introduce term server lookup here
-    delete updRes.report;
-    delete updRes.note;
-  }
-
-  if (res.resourceType === "DiagnosticReport") {
-    const mostDescriptiveType = getLongestDisplay(res.code);
-    if (mostDescriptiveType) updRes.type = mostDescriptiveType;
-    if (isUselessStatus(updRes.status)) delete updRes.status;
-
-    const allTypes = getUniqueDisplays(res.code);
-    if (allTypes) {
-      for (const type of allTypes) {
-        if (
-          REPORT_TYPES_BLACKLIST.includes(type) ||
-          REPORT_TYPES_BLACKLIST.some(blacklistedType => type.includes(blacklistedType))
-        )
-          return undefined;
-      }
-    }
-
-    const category = res.category
-      ?.map(cat => cat.coding?.flatMap(coding => coding.display || []))
-      .join(", ");
-    if (category) updRes.category = category;
-
-    if (res.presentedForm) {
-      const uniqueData = new Set<string>();
-      res.presentedForm.forEach(form => {
-        if (form.data) {
-          const rawData = Buffer.from(form.data, "base64").toString("utf-8");
-          const cleanedData = cleanUpNote(rawData);
-          uniqueData.add(cleanedData);
-          if (cleanedData.toLowerCase().includes("appointment scheduling letter")) {
-            updRes.type = SCHEDULING_CALL;
-          } else if (
-            cleanedData.toLowerCase().includes("unable to reach") ||
-            cleanedData.toLowerCase().includes("left a message")
-          ) {
-            updRes.type = UNANSWERED_CALL;
-          } else if (cleanedData.toLowerCase().includes("administrative note")) {
-            updRes.type = ADMIN_NOTE;
-          } else if (
-            cleanedData.toLowerCase().includes("nonva note") &&
-            cleanedData.toLowerCase().includes("refer to scanned")
-          ) {
-            updRes.type = SCAN_REF_NOTE;
-          } else if (cleanedData.toLowerCase().includes("discharge summary")) {
-            updRes.type = "discharge summary";
-          }
-        }
-      });
-      updRes.presentedForm = Array.from(uniqueData);
-    }
-
-    if (updRes.type && REPORT_TYPES_BLACKLIST.includes(updRes.type)) {
-      return undefined;
-    }
-
-    delete updRes.code;
-  }
-
-  if (res.resourceType === "Observation") {
-    if (res.category) {
-      const category = getUniqueDisplaysString(res.category);
-      if (category) updRes.category = category;
-    }
-
-    if (isUselessStatus(updRes.status)) delete updRes.status;
-
-    const code = getUniqueDisplaysString(res.code);
-    if (code) updRes.reading = code;
-
-    if (res.valueCodeableConcept) {
-      updRes.value = getUniqueDisplaysString(res.valueCodeableConcept);
-      delete updRes.valueCodeableConcept;
-    }
-
-    if (res.valueQuantity) {
-      updRes.value = getQuantityString(res.valueQuantity);
-      delete updRes.valueQuantity;
-    }
-
-    if (res.interpretation) {
-      updRes.interpretation = getUniqueDisplaysString(res.interpretation);
-    }
-
-    if (res.referenceRange) {
-      updRes.referenceRange = res.referenceRange.map(range => {
-        const low = getQuantityString(range.low);
-        const high = getQuantityString(range.high);
-        return {
-          low,
-          high,
-        };
-      });
-    }
-
-    delete updRes.code;
-    delete updRes.performer;
-  }
-
-  if (res.resourceType === "Medication") {
-    updRes.name = getUniqueDisplaysString(res.code);
-    delete updRes.code;
-  }
-
-  if (res.resourceType === "MedicationRequest") {
-    delete updRes.requester;
-  }
-
-  if (res.resourceType === "MedicationStatement") {
-    if (res.dosage) {
-      const dosages = res.dosage.flatMap(dosage => {
-        const dose = getQuantityString(dosage.doseAndRate?.[0]?.doseQuantity);
-        const route = getUniqueDisplaysString(dosage.route);
-        if (!dose && !route) return [];
-        return { dose, route };
-      });
-      if (dosages.length > 0) updRes.dosages = dosages;
-      delete updRes.dosage;
-    }
-  }
-
-  if (res.resourceType === "MedicationAdministration") {
-    if (res.dosage) {
-      const dose = getQuantityString(res.dosage.dose);
-      if (dose) updRes.dose = dose;
-
-      updRes.route = getUniqueDisplaysString(res.dosage.route);
-      delete updRes.dosage;
-    }
-  }
-
-  if (res.resourceType === "Condition") {
-    updRes.name = getUniqueDisplaysString(res.code);
-    delete updRes.code;
-
-    updRes.category = getUniqueDisplaysString(res.category);
-
-    updRes.clinicalStatus = getUniqueDisplaysString(res.clinicalStatus);
-    if (isUselessStatus(updRes.clinicalStatus)) delete updRes.clinicalStatus;
-  }
-
-  if (res.resourceType === "AllergyIntolerance") {
-    updRes.clinicalStatus = getUniqueDisplaysString(res.clinicalStatus);
-
-    if (res.reaction) {
-      updRes.reaction = res.reaction.map(reaction => {
-        const manifestation = getUniqueDisplaysString(reaction.manifestation);
-        const substance = getUniqueDisplaysString(reaction.substance);
-
-        return {
-          manifestation,
-          substance,
-        };
-      });
-    }
-
-    delete updRes.recorder;
-  }
-
-  if (res.resourceType === "Organization") {
-    updRes.address = getAddressString(res.address);
-  }
-
-  if (res.resourceType === "Location") {
-    updRes.address = getAddressString(res.address);
-    updRes.type = getUniqueDisplaysString(res.type);
-  }
-
-  return updRes;
-}
-
-function getQuantityString(quantity: Quantity | undefined): string | undefined {
-  if (!quantity) return undefined;
-  return `${quantity.value}${quantity.unit ? ` ${quantity.unit}` : ""}`;
-}
-
-function getAddressString(address: Address | Address[] | undefined): string | undefined {
-  if (!address) return undefined;
-
-  return toArray(address)
-    .map(addr => `${addr.line}, ${addr.city}, ${addr.state}`)
-    .join("\n");
-}
-
 /**
  * Takes a FHIR resource and replaces referenced resources with the actual contents of those resources.
  * This allows the context for a resource to be contained entirely within itself.
@@ -767,76 +420,9 @@ function replaceReferencesWithData(
     }
   }
 
-  if ("diagnosis" in res) {
-    if (res.resourceType === "Encounter") {
-      const diagnoses = res.diagnosis as EncounterDiagnosis[];
-      const diagnosesNames = diagnoses
-        .flatMap(diag => {
-          const refString = diag.condition?.reference;
-          if (refString) {
-            referencedIds.add(refString);
-            const condition = map.get(refString) as Condition | undefined;
-            if (condition) {
-              const condName =
-                `${condition.code?.text ?? ""}` +
-                condition.code?.coding?.map(coding => coding.display).join(", ");
-
-              return condName;
-            }
-          }
-          return [];
-        })
-        .join(" ");
-
-      updRes.diagnosis = diagnosesNames;
-    }
-  }
-
-  if ("location" in res) {
-    if (res.resourceType === "Encounter") {
-      const locationRefs = res.location;
-      updRes.location = locationRefs
-        ?.map(locRef => {
-          const refString = locRef.location?.reference;
-          if (refString) {
-            const loc = map.get(refString) as Location | undefined;
-            referencedIds.add(refString);
-            if (loc) {
-              return loc.name ?? [];
-            }
-          }
-          return [];
-        })
-        .join(", ");
-    }
-  }
-
-  if ("participant" in res) {
-    if (res.resourceType === "Encounter") {
-      updRes.participant = res.participant?.flatMap(part => {
-        const refString = part.individual?.reference;
-        if (refString) {
-          const individual = map.get(refString);
-          referencedIds.add(refString);
-          if (
-            individual?.resourceType === "Practitioner" ||
-            individual?.resourceType === "RelatedPerson"
-          ) {
-            return individual.name;
-          }
-        }
-        return [];
-      });
-    }
-  }
-
   if ("performer" in res) {
     if (res.performer) {
-      if (
-        res.resourceType === "DiagnosticReport" ||
-        res.resourceType === "Observation" ||
-        res.resourceType === "ServiceRequest"
-      ) {
+      if (res.resourceType === "DiagnosticReport" || res.resourceType === "Observation") {
         const performers = toArray(res.performer);
         const orgs: string[] = [];
         const practitioners: string[] = [];
@@ -866,14 +452,19 @@ function replaceReferencesWithData(
       } else if (
         res.resourceType === "Immunization" ||
         res.resourceType === "MedicationAdministration" ||
-        res.resourceType === "MedicationDispense" ||
         res.resourceType === "MedicationRequest" ||
         res.resourceType === "Procedure"
       ) {
-        const performers = toArray(res.performer);
+        const performers = Array.isArray(res.performer) ? res.performer : [res.performer];
         updRes.performer = performers
-          ?.flatMap(perf => {
-            const refString = perf.actor?.reference;
+          .flatMap(perf => {
+            const refString =
+              "actor" in perf
+                ? perf.actor.reference
+                : "reference" in perf
+                ? perf.reference
+                : undefined;
+
             if (refString) {
               const actor = map.get(refString);
               referencedIds.add(refString);
@@ -1104,29 +695,14 @@ function filterOutDuplicateReports(reports: any[] | undefined): any[] | undefine
   });
 }
 
-function getNameString(names: HumanName | HumanName[] | undefined): string | undefined {
-  const nameParts = new Set<string>();
-  toArray(names).forEach(name => {
-    delete name.use;
-    name.given?.forEach(given => nameParts.add(given.trim()));
-    name.family && nameParts.add(name.family?.trim());
-  });
+// function calculateCostsBasedOnTokens(totalTokens: { input: number; output: number }): {
+//   input: number;
+//   output: number;
+//   total: number;
+// } {
+//   const input = totalTokens.input * SONNET_COST_PER_INPUT_TOKEN;
+//   const output = totalTokens.output * SONNET_COST_PER_OUTPUT_TOKEN;
+//   const total = input + output;
 
-  return Array.from(nameParts).join(" ");
-}
-
-function isUselessStatus(status: string): boolean {
-  return status === "" || status === "final";
-}
-
-function calculateCostsBasedOnTokens(totalTokens: { input: number; output: number }): {
-  input: number;
-  output: number;
-  total: number;
-} {
-  const input = totalTokens.input * SONNET_COST_PER_INPUT_TOKEN;
-  const output = totalTokens.output * SONNET_COST_PER_OUTPUT_TOKEN;
-  const total = input + output;
-
-  return { input, output, total };
-}
+//   return { input, output, total };
+// }
