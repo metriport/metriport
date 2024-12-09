@@ -40,10 +40,10 @@ describe("combineTwoResources", () => {
       expect.objectContaining({
         coding: expect.arrayContaining([
           expect.objectContaining({
-            code: expect.stringContaining(snomedCodeMd.code),
+            code: expect.stringContaining(snomedCodeMd.code!),
           }),
           expect.objectContaining({
-            code: expect.stringContaining(icd10CodeMd.code),
+            code: expect.stringContaining(icd10CodeMd.code!),
           }),
         ]),
       })
