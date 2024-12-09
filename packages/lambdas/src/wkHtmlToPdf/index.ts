@@ -36,6 +36,7 @@ function wkHtmlToPdf(props: WkOptions, input: string | Stream) {
       "--image-quality 75",
       '--footer-right "Page [page] of [topage]"',
       "--footer-font-size 8",
+      "--enable-local-file-access",
     ];
 
     console.log(
