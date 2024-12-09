@@ -1,8 +1,8 @@
-import { errorToString } from "@metriport/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { initDbPool } from "@metriport/core/util/sequelize";
 import { sleep } from "@metriport/core/util/sleep";
+import { errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { QueryTypes } from "sequelize";
@@ -44,7 +44,11 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
         const orgs = await cq.listOrganizations({ start: currentPosition, count: BATCH_SIZE });
         if (orgs.length < BATCH_SIZE) isDone = true;
         currentPosition += BATCH_SIZE;
-        const parsedOrgs = orgs.map(parseCQDirectoryEntryFromFhirOrganization);
+        const parsedOrgs = orgs.flatMap(org => {
+          const parsed = parseCQDirectoryEntryFromFhirOrganization(org);
+          if (!parsed) return [];
+          return [parsed];
+        });
         log(
           `Adding ${parsedOrgs.length} CQ directory entries... Total fetched: ${currentPosition}`
         );

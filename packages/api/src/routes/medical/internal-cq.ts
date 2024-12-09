@@ -100,7 +100,11 @@ router.post(
     const orgs: Organization[] = (bundle.entry as Organization[]) ?? [];
     console.log(`Got ${orgs.length} orgs`);
 
-    const parsedOrgs = orgs.map(parseCQDirectoryEntryFromFhirOrganization);
+    const parsedOrgs = orgs.flatMap(org => {
+      const parsed = parseCQDirectoryEntryFromFhirOrganization(org);
+      if (!parsed) return [];
+      return [parsed];
+    });
     console.log(`Parsed ${parsedOrgs.length} orgs`);
 
     // TODO remove this with https://github.com/metriport/metriport-internal/issues/1638
