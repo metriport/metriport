@@ -13,7 +13,7 @@ import { isCarequalityEnabled, isCQDirectEnabledForCx } from "../aws/app-config"
 import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
 import { getAddressWithCoordinates } from "../../domain/medical/address";
 import { CQDirectoryEntryData } from "./cq-directory";
-import { parseCQDirectoryEntryFromCqOrgDetails } from "./command/cq-directory/parse-cq-directory-entry";
+import { parseCQDirectoryEntryFromCqOrgDetailsWithUrls } from "./command/cq-directory/parse-cq-directory-entry";
 import { MetriportError } from "@metriport/shared";
 import { Organization } from "@medplum/fhirtypes";
 // TODO: adjust when we support multiple POUs
@@ -240,7 +240,7 @@ export async function getParsedCqOrgOrFail(
   oid: string
 ): Promise<CQDirectoryEntryData> {
   const org = await getCqOrgOrFail(cq, oid);
-  return parseCQDirectoryEntryFromCqOrgDetails(org);
+  return parseCQDirectoryEntryFromCqOrgDetailsWithUrls(org);
 }
 
 export async function getCqOrgOrFail(
