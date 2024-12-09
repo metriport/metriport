@@ -67,7 +67,7 @@ export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryE
   return parsedOrgs;
 }
 
-export function parseCQDirectoryEntryFromCqOrgDetails(
+export function parseCQDirectoryEntryFromCqOrgDetailsWithUrls(
   org: CQOrgDetailsWithUrls
 ): CQDirectoryEntryData {
   const { lat, lon } = org;
