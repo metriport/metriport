@@ -984,8 +984,12 @@ function filterOutOldLabs(reports: any[] | undefined): any[] | undefined {
 
   if (!reports) return undefined;
 
-  const labReports = reports.filter(report =>
-    report.category?.toLowerCase().includes("relevant diagnostic tests and/or laboratory data")
+  const labReports = reports.filter(
+    report =>
+      report.category &&
+      !Array.isArray(report.category) &&
+      typeof report.category === "string" &&
+      report.category.toLowerCase().includes("relevant diagnostic tests and/or laboratory data")
   );
   const nonLabReports = reports.filter(report => !report.category?.includes("laboratory data"));
 
