@@ -5,7 +5,7 @@ import {
   XCPD_STRING,
 } from "@metriport/carequality-sdk/common/util";
 import { Config } from "../../shared/config";
-import { CQOrgDetailsWithUrls } from "./shared";
+import { CQOrgDetailsWithUrls, createPurposeOfUse } from "./shared";
 import { Organization, Endpoint } from "@medplum/fhirtypes";
 
 const metriportOid = Config.getSystemRootOID();
@@ -117,7 +117,7 @@ function getOrganization(
           coding: [
             {
               system: "http://healthit.gov/nhin/purposeofuse",
-              code: "TREATMENT",
+              code: createPurposeOfUse(),
             },
           ],
         },

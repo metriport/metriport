@@ -39,8 +39,8 @@ export async function searchCQDirectoriesAroundPatientAddresses({
   radiusInMiles?: number;
   mustHaveXcpdLink?: boolean;
   _searchCQDirectoriesByRadius?: typeof searchCQDirectoriesByRadius;
-}): Promise<CQDirectoryEntryModel[]> {
-  const { log } = out(`searchCQDirectoriesAroundPatientAddresses, patient ${patient.id}`);
+}): Promise<CQDirectoryEntry[]> {
+  const { log } = out(`searchCQDirectoriesAroundPatientAddresses - patient ${patient.id}`);
   const radiusInMeters = convert(radiusInMiles).from("mi").to("m");
 
   const coordinates = patient.data.address.flatMap(address => address.coordinates ?? []);
@@ -74,8 +74,8 @@ export async function searchCQDirectoriesByRadius({
   coordinates: Coordinates[];
   radiusInMeters: number;
   mustHaveXcpdLink?: boolean;
-}): Promise<CQDirectoryEntryModel[]> {
-  const orgs: CQDirectoryEntryModel[] = [];
+}): Promise<CQDirectoryEntry[]> {
+  const orgs: CQDirectoryEntry[] = [];
 
   for (const coord of coordinates) {
     const replacements = {
@@ -90,21 +90,23 @@ export async function searchCQDirectoriesByRadius({
       whereClause += ` AND url_xcpd IS NOT NULL`;
     }
 
-    const orgsForAddress = await CQDirectoryEntryModel.findAll({
-      replacements,
-      attributes: {
-        include: [
-          [
-            Sequelize.literal(
-              `ROUND(earth_distance(ll_to_earth(${coord.lat}, ${coord.lon}), point)::NUMERIC, 2)`
-            ),
-            "distance",
+    const orgsForAddress = (
+      await CQDirectoryEntryModel.findAll({
+        replacements,
+        attributes: {
+          include: [
+            [
+              Sequelize.literal(
+                `ROUND(earth_distance(ll_to_earth(${coord.lat}, ${coord.lon}), point)::NUMERIC, 2)`
+              ),
+              "distance",
+            ],
           ],
-        ],
-      },
-      where: Sequelize.literal(whereClause),
-      order: Sequelize.literal("distance"),
-    });
+        },
+        where: Sequelize.literal(whereClause),
+        order: Sequelize.literal("distance"),
+      })
+    ).map(org => org.dataValues);
 
     orgs.push(...orgsForAddress);
   }
