@@ -72,56 +72,36 @@ export function parseCQDirectoryEntries(orgsInput: OrganziationLegacy[]): CQDire
   return parsedOrgs;
 }
 
-export function parseCQDirectoryEntryFromFhirOrganization(org: Organization): CQDirectoryEntryData {
-  const oid = org.identifier?.[0]?.value;
-  if (!oid) throw new MetriportError("CQ Organization missing OID");
-  const name = org.name;
-  if (!name) throw new MetriportError("CQ Organization missing name", undefined, { oid });
+export function parseCQDirectoryEntryFromFhirOrganization(
+  org: Organization
+): CQDirectoryEntryData | undefined {
+  const id = org.identifier?.[0]?.value;
+  if (!id) return undefined;
+
   const address = org.address?.[0];
-  if (!address) throw new MetriportError("CQ Organization missing address", undefined, { oid });
-  const addressLine = address.line?.[0];
-  const city = address.city;
-  const state = address.state;
-  const postalCode = address.postalCode;
+  const addressLine = address?.line?.[0];
+  const city = address?.city;
+  const state = address?.state;
+  const postalCode = address?.postalCode;
+
   const location = org.contained?.filter(c => c.resourceType === "Location");
   const lat = location?.[0]?.position?.latitude;
   const lon = location?.[0]?.position?.longitude;
-  if (!addressLine || !city || !state || !postalCode || !lat || !lon) {
-    throw new MetriportError("CQ Organization has partial address", undefined, {
-      oid,
-      addressLine,
-      city,
-      state,
-      postalCode,
-      lat,
-      lon,
-    });
-  }
-  const contact = org.contact?.[0];
-  if (!contact) throw new MetriportError("CQ Organization missing contact", undefined, { oid });
-  const contactName = contact.name?.text;
-  if (!contactName)
-    throw new MetriportError("CQ Organization missing contactName", undefined, { oid });
-  const phone = contact.telecom?.filter(t => t.system === "phone")[0]?.value;
-  if (!phone) throw new MetriportError("CQ Organization missing phone", undefined, { oid });
-  const email = contact.telecom?.filter(t => t.system === "email")[0]?.value;
-  if (!email) throw new MetriportError("CQ Organization missing email", undefined, { oid });
-  const role = org.type?.[0]?.coding?.[0]?.code;
-  if (!role) throw new MetriportError("CQ Organization missing role", undefined, { oid });
-  if (role !== "Implementer" && role !== "Connection")
-    throw new MetriportError("CQ Organization invalid role", undefined, { oid });
+  const point = lat && lon ? computeEarthPoint(lat, lon) : undefined;
+
   const active = org.active;
-  if (active === undefined)
-    throw new MetriportError("CQ Organization missing active", undefined, { oid });
+  if (active === undefined) {
+    throw new MetriportError("CQ Organization missing active value", undefined, { id });
+  }
+
   const parentOrg = org.partOf?.reference;
-  if (!parentOrg) throw new MetriportError("CQ Organization missing parentOrg", undefined, { oid });
-  const parentOrgOid = parentOrg.split("/")[1];
+  const parentOrgOid = parentOrg?.split("/")[1];
+
   const endpoints = org.contained?.filter(c => c.resourceType === "Endpoint") ?? [];
 
-  const point = lat && lon ? computeEarthPoint(lat, lon) : undefined;
   return {
-    id: oid,
-    name,
+    id,
+    name: org.name,
     lat: lat,
     lon: lon,
     point,

@@ -1,8 +1,8 @@
-import { MetriportError } from "@metriport/shared";
+import { Organization } from "@medplum/fhirtypes";
 import { CarequalityManagementAPIFhir } from "@metriport/carequality-sdk";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { errorToString, metriportCompanyDetails } from "@metriport/shared";
+import { errorToString, metriportCompanyDetails, MetriportError } from "@metriport/shared";
 import { isOboFacility } from "../../../../domain/medical/facility";
 import { FacilityModel } from "../../../../models/medical/facility";
 import { OrganizationModel } from "../../../../models/medical/organization";
@@ -10,15 +10,13 @@ import { makeCarequalityManagementAPIFhir } from "../../api";
 import { metriportEmail as metriportEmailForCq } from "../../constants";
 import { CQOrganization } from "../../organization";
 import { CQOrgDetails, getCqAddress, getCqOrg, getCqOrgOrFail } from "../../shared";
-import { CQDirectoryEntryData } from "../../cq-directory";
 import { metriportIntermediaryOid, metriportOid } from "./create-or-update-cq-facility";
-import { parseCQDirectoryEntryFromFhirOrganization } from "./parse-cq-directory-entry";
 
 const cq = makeCarequalityManagementAPIFhir();
 
 export async function createOrUpdateCQOrganization(
   orgDetails: CQOrgDetails
-): Promise<CQDirectoryEntryData | undefined> {
+): Promise<Organization | undefined> {
   if (!cq) throw new Error("Carequality API not initialized");
   const cqOrg = CQOrganization.fromDetails(orgDetails);
   const org = await getCqOrg(cq, cqOrg.oid);
@@ -29,15 +27,14 @@ export async function createOrUpdateCQOrganization(
 export async function updateCQOrganization(
   cq: CarequalityManagementAPIFhir,
   cqOrg: CQOrganization
-): Promise<CQDirectoryEntryData> {
+): Promise<Organization> {
   const { log } = out(`CQ updateCQOrganization - CQ Org OID ${cqOrg.oid}`);
 
   try {
-    const org = await cq.updateOrganization({
+    return await cq.updateOrganization({
       org: cqOrg.createFhirOrganization(),
       oid: cqOrg.oid,
     });
-    return parseCQDirectoryEntryFromFhirOrganization(org);
   } catch (error) {
     const msg = `Failure while updating org @ CQ`;
     log(`${msg}. Org OID: ${cqOrg.oid}. Cause: ${errorToString(error)}`);
@@ -55,12 +52,11 @@ export async function updateCQOrganization(
 export async function registerOrganization(
   cq: CarequalityManagementAPIFhir,
   cqOrg: CQOrganization
-): Promise<CQDirectoryEntryData> {
+): Promise<Organization> {
   const { log } = out(`CQ registerOrganization - CQ Org OID ${cqOrg.oid}`);
 
   try {
-    const org = await cq.registerOrganization(cqOrg.createFhirOrganization());
-    return parseCQDirectoryEntryFromFhirOrganization(org);
+    return await cq.registerOrganization(cqOrg.createFhirOrganization());
   } catch (error) {
     const msg = `Failure while registering org @ CQ`;
     log(`${msg}. Org OID: ${cqOrg.oid}. Cause: ${errorToString(error)}`);
