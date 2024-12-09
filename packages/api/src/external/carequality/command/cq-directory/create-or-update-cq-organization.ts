@@ -1,3 +1,4 @@
+import { MetriportError } from "@metriport/shared";
 import { CarequalityManagementAPIFhir } from "@metriport/carequality-sdk";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -8,21 +9,16 @@ import { OrganizationModel } from "../../../../models/medical/organization";
 import { makeCarequalityManagementAPIFhir } from "../../api";
 import { metriportEmail as metriportEmailForCq } from "../../constants";
 import { CQOrganization } from "../../organization";
-import {
-  CQOrgDetails,
-  CQOrgDetailsWithUrls,
-  getCqAddress,
-  getCqOrg,
-  getCqOrgOrFail,
-  parseFhirOrganization,
-} from "../../shared";
+import { CQOrgDetails, getCqAddress, getCqOrg, getCqOrgOrFail } from "../../shared";
+import { CQDirectoryEntryData } from "../../cq-directory";
 import { metriportIntermediaryOid, metriportOid } from "./create-or-update-cq-facility";
+import { parseCQDirectoryEntryFromFhirOrganization } from "./parse-cq-directory-entry";
 
 const cq = makeCarequalityManagementAPIFhir();
 
 export async function createOrUpdateCQOrganization(
   orgDetails: CQOrgDetails
-): Promise<CQOrgDetailsWithUrls | undefined> {
+): Promise<CQDirectoryEntryData | undefined> {
   if (!cq) throw new Error("Carequality API not initialized");
   const cqOrg = CQOrganization.fromDetails(orgDetails);
   const org = await getCqOrg(cq, cqOrg.oid);
@@ -33,7 +29,7 @@ export async function createOrUpdateCQOrganization(
 export async function updateCQOrganization(
   cq: CarequalityManagementAPIFhir,
   cqOrg: CQOrganization
-): Promise<CQOrgDetailsWithUrls> {
+): Promise<CQDirectoryEntryData> {
   const { log } = out(`CQ updateCQOrganization - CQ Org OID ${cqOrg.oid}`);
 
   try {
@@ -41,7 +37,7 @@ export async function updateCQOrganization(
       org: cqOrg.createFhirOrganization(),
       oid: cqOrg.oid,
     });
-    return parseFhirOrganization(org);
+    return parseCQDirectoryEntryFromFhirOrganization(org);
   } catch (error) {
     const msg = `Failure while updating org @ CQ`;
     log(`${msg}. Org OID: ${cqOrg.oid}. Cause: ${errorToString(error)}`);
@@ -59,12 +55,12 @@ export async function updateCQOrganization(
 export async function registerOrganization(
   cq: CarequalityManagementAPIFhir,
   cqOrg: CQOrganization
-): Promise<CQOrgDetailsWithUrls> {
+): Promise<CQDirectoryEntryData> {
   const { log } = out(`CQ registerOrganization - CQ Org OID ${cqOrg.oid}`);
 
   try {
     const org = await cq.registerOrganization(cqOrg.createFhirOrganization());
-    return parseFhirOrganization(org);
+    return parseCQDirectoryEntryFromFhirOrganization(org);
   } catch (error) {
     const msg = `Failure while registering org @ CQ`;
     log(`${msg}. Org OID: ${cqOrg.oid}. Cause: ${errorToString(error)}`);
@@ -95,6 +91,7 @@ export async function getAndUpdateCQOrgAndMetriportOrg({
   facility?: FacilityModel;
 }): Promise<void> {
   const cqOrg = await getCqOrgOrFail(cq, oid);
+  if (!cqOrg.name) throw new MetriportError("CQ Organization missing name", undefined, { oid });
   if (facility) {
     await facility.update({
       cqActive: active,

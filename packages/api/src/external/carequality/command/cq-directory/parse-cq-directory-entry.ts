@@ -1,14 +1,19 @@
+import { MetriportError } from "@metriport/shared";
+import { Organization, Endpoint } from "@medplum/fhirtypes";
 import { ORG_POSITION, TRANSACTION_URL } from "@metriport/carequality-sdk/common/util";
 import { Address } from "@metriport/carequality-sdk/models/address";
 import { Contained } from "@metriport/carequality-sdk/models/contained";
-import { ManagingOrganization, Organization } from "@metriport/carequality-sdk/models/organization";
+import {
+  ManagingOrganization,
+  Organization as OrganziationLegacy,
+} from "@metriport/carequality-sdk/models/organization";
 import { Coordinates } from "@metriport/core/external/aws/location";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString, isValidUrl, normalizeOid, normalizeZipCodeNew } from "@metriport/shared";
 import { CQDirectoryEntryData } from "../../cq-directory";
-import { CQOrgUrls, CQOrgDetailsWithUrls } from "../../shared";
-
+import { CQOrgUrls } from "../../shared";
+import { transactionUrl } from "../../organization-fhir-template";
 const { log } = out(`parseCQDirectoryEntries`);
 
 export type LenientAddress = {
@@ -25,7 +30,7 @@ const XCA_DR_STRING = "ITI-39";
 const XDR_STRING = "ITI-41";
 type ChannelUrl = typeof XCPD_STRING | typeof XCA_DQ_STRING | typeof XCA_DR_STRING;
 
-export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryEntryData[] {
+export function parseCQDirectoryEntries(orgsInput: OrganziationLegacy[]): CQDirectoryEntryData[] {
   const parsedOrgs = orgsInput.flatMap(org => {
     if (!org) return [];
 
@@ -67,30 +72,68 @@ export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryE
   return parsedOrgs;
 }
 
-export function parseCQDirectoryEntryFromCqOrgDetailsWithUrls(
-  org: CQOrgDetailsWithUrls
-): CQDirectoryEntryData {
-  const { lat, lon } = org;
-  const numLat = Number(lat);
-  const numLon = Number(lon);
-  const point = numLat && numLon ? computeEarthPoint(numLat, numLon) : undefined;
+export function parseCQDirectoryEntryFromFhirOrganization(org: Organization): CQDirectoryEntryData {
+  const oid = org.identifier?.[0]?.value;
+  if (!oid) throw new MetriportError("CQ Organization missing OID");
+  const name = org.name;
+  if (!name) throw new MetriportError("CQ Organization missing name", undefined, { oid });
+  const address = org.address?.[0];
+  if (!address) throw new MetriportError("CQ Organization missing address", undefined, { oid });
+  const addressLine = address.line?.[0];
+  const city = address.city;
+  const state = address.state;
+  const postalCode = address.postalCode;
+  const location = org.contained?.filter(c => c.resourceType === "Location");
+  const lat = location?.[0]?.position?.latitude;
+  const lon = location?.[0]?.position?.longitude;
+  if (!addressLine || !city || !state || !postalCode || !lat || !lon) {
+    throw new MetriportError("CQ Organization has partial address", undefined, {
+      oid,
+      addressLine,
+      city,
+      state,
+      postalCode,
+      lat,
+      lon,
+    });
+  }
+  const contact = org.contact?.[0];
+  if (!contact) throw new MetriportError("CQ Organization missing contact", undefined, { oid });
+  const contactName = contact.name?.text;
+  if (!contactName)
+    throw new MetriportError("CQ Organization missing contactName", undefined, { oid });
+  const phone = contact.telecom?.filter(t => t.system === "phone")[0]?.value;
+  if (!phone) throw new MetriportError("CQ Organization missing phone", undefined, { oid });
+  const email = contact.telecom?.filter(t => t.system === "email")[0]?.value;
+  if (!email) throw new MetriportError("CQ Organization missing email", undefined, { oid });
+  const role = org.type?.[0]?.coding?.[0]?.code;
+  if (!role) throw new MetriportError("CQ Organization missing role", undefined, { oid });
+  if (role !== "Implementer" && role !== "Connection")
+    throw new MetriportError("CQ Organization invalid role", undefined, { oid });
+  const active = org.active;
+  if (active === undefined)
+    throw new MetriportError("CQ Organization missing active", undefined, { oid });
+  const parentOrg = org.partOf?.reference;
+  if (!parentOrg) throw new MetriportError("CQ Organization missing parentOrg", undefined, { oid });
+  const parentOrgOid = parentOrg.split("/")[1];
+  const endpoints = org.contained?.filter(c => c.resourceType === "Endpoint") ?? [];
+
+  const point = lat && lon ? computeEarthPoint(lat, lon) : undefined;
   return {
-    id: org.oid,
-    name: org.name,
-    urlXCPD: org.urlXCPD,
-    urlDQ: org.urlDQ,
-    urlDR: org.urlDR,
-    lat: numLat,
-    lon: numLon,
+    id: oid,
+    name,
+    lat: lat,
+    lon: lon,
     point,
-    addressLine: org.addressLine1,
-    city: org.city,
-    state: org.state,
-    zip: org.postalCode,
-    managingOrganization: org.parentOrgOid,
-    managingOrganizationId: org.parentOrgOid,
-    active: org.active,
+    addressLine,
+    city,
+    state,
+    zip: postalCode,
+    managingOrganization: parentOrgOid,
+    managingOrganizationId: parentOrgOid,
+    active,
     lastUpdatedAtCQ: "TODO",
+    ...getUrlsFhir(endpoints),
   };
 }
 
@@ -122,6 +165,35 @@ function getUrls(contained: Contained): CQOrgUrls {
     if (type && c?.Endpoint?.address?.value) {
       endpointMap[type] = c.Endpoint.address.value;
     }
+  });
+
+  const urls: CQOrgUrls = {};
+  const urlXCPD = endpointMap[XCPD_STRING];
+  const urlDQ = endpointMap[XCA_DQ_STRING];
+  const urlDR = endpointMap[XCA_DR_STRING];
+
+  if (isValidUrl(urlXCPD)) {
+    urls.urlXCPD = urlXCPD;
+  }
+  if (isValidUrl(urlDQ)) {
+    urls.urlDQ = urlDQ;
+  }
+  if (isValidUrl(urlDR)) {
+    urls.urlDR = urlDR;
+  }
+
+  return urls;
+}
+
+function getUrlsFhir(endpoints: Endpoint[]): CQOrgUrls {
+  const endpointMap: Record<string, string> = {};
+
+  endpoints.map(endpoint => {
+    const ext = endpoint.extension?.find(ext => ext.url === transactionUrl);
+    const type = getUrlType(ext?.valueCodeableConcept?.coding?.[0]?.code);
+    const address = endpoint.address;
+
+    if (type && address) endpointMap[type] = address;
   });
 
   const urls: CQOrgUrls = {};
@@ -200,12 +272,12 @@ function getManagingOrg(managingOrg: ManagingOrganization | undefined): string |
   return parts ? parts[parts.length - 1] : undefined;
 }
 
-function getOid(org: Organization): string | undefined {
+function getOid(org: OrganziationLegacy): string | undefined {
   if (!org?.identifier || !org.name) return;
   return getNormalizedOid(org, `Organization ${org?.name?.value ?? ""}`);
 }
 
-function getManagingOrgId(org: Organization): string | undefined {
+function getManagingOrgId(org: OrganziationLegacy): string | undefined {
   if (!org?.partOf) return;
   const name = org?.name?.value ?? undefined;
   return getNormalizedOid(org.partOf, `Managing Organization ${name ? "of " + name : ""}`);

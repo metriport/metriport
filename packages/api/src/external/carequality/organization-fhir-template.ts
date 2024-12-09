@@ -8,6 +8,9 @@ import { Config } from "../../shared/config";
 import { CQOrgDetailsWithUrls, createPurposeOfUse } from "./shared";
 import { Organization, Endpoint } from "@medplum/fhirtypes";
 
+export const transactionUrl =
+  "https://sequoiaproject.org/fhir/sphd/StructureDefinition/Transaction";
+
 const metriportOid = Config.getSystemRootOID();
 
 export function getOrganizationFhirTemplate(orgDetails: CQOrgDetailsWithUrls): Organization {
@@ -237,7 +240,7 @@ function getEndpoint(urnOid: string, urlType: ChannelUrl, url: string): Endpoint
     ],
     extension: [
       {
-        url: "https://sequoiaproject.org/fhir/sphd/StructureDefinition/Transaction",
+        url: transactionUrl,
         valueCodeableConcept: {
           coding: [
             {
