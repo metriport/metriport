@@ -1371,8 +1371,13 @@ export class APIStack extends Stack {
       layers: [
         lambdaLayers.shared,
         lambdaLayers.langchain,
-        lambdaLayers.chromium,
-        lambdaLayers.puppeteer,
+        // TODO 2510 When we remove this, lets also remove the layber, CICD, update package.json, readme, etc
+        // TODO 2510 When we remove this, lets also remove the layber, CICD, update package.json, readme, etc
+        // TODO 2510 When we remove this, lets also remove the layber, CICD, update package.json, readme, etc
+        // TODO 2510 When we remove this, lets also remove the layber, CICD, update package.json, readme, etc
+        // lambdaLayers.chromium,
+        // lambdaLayers.puppeteer,
+        lambdaLayers.wkHtmlToPdf,
       ],
       memory: 8192,
       timeout: lambdaTimeout,
