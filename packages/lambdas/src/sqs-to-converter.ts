@@ -255,19 +255,6 @@ export async function handler(event: SQSEvent) {
 
         const partitionedPayload = partitionPayload(payloadClean);
 
-        async function storePayloadsInS3() {
-          partitionedPayload.forEach((payload, index) => {
-            storePayloadInS3({
-              payload,
-              fileName: buildDocumentNameForPartialConversions(preConversionFilename, index),
-              message,
-              lambdaParams,
-              type: "pre-convert",
-              log,
-            });
-          });
-        }
-
         const [conversionResult] = await Promise.all([
           convertPayloadToFHIR({
             converterUrl,
@@ -275,7 +262,13 @@ export async function handler(event: SQSEvent) {
             converterParams,
             log,
           }),
-          storePayloadsInS3(),
+          storePartitionedPayloadsInS3({
+            partitionedPayload,
+            preConversionFilename,
+            message,
+            lambdaParams,
+            log,
+          }),
         ]);
 
         metrics.conversion = {
@@ -520,6 +513,31 @@ async function storePreProcessedConversionResult({
 function buildDocumentNameForPartialConversions(fileName: string, index: number): string {
   const paddedIndex = index.toString().padStart(2, "0");
   return `${fileName}_part_${paddedIndex}.xml`;
+}
+
+async function storePartitionedPayloadsInS3({
+  partitionedPayload,
+  preConversionFilename,
+  message,
+  lambdaParams,
+  log,
+}: {
+  partitionedPayload: string[];
+  preConversionFilename: string;
+  message: SQSRecord;
+  lambdaParams: Record<string, string | undefined>;
+  log: typeof console.log;
+}) {
+  partitionedPayload.forEach((payload, index) => {
+    storePayloadInS3({
+      payload,
+      fileName: buildDocumentNameForPartialConversions(preConversionFilename, index),
+      message,
+      lambdaParams,
+      type: "pre-convert",
+      log,
+    });
+  });
 }
 
 async function storePayloadInS3({
