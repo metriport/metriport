@@ -1,20 +1,28 @@
+import { processAsyncError } from "@metriport/core/util/error/shared";
+import { metriportCompanyDetails } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { requestLogger } from "../helpers/request-logger";
-import { Facility, FacilityCreate } from "../../domain/medical/facility";
-import { verifyCxItVendorAccess } from "../../command/medical/facility/verify-access";
-import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import { createFacility } from "../../command/medical/facility/create-facility";
+import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import { updateFacility } from "../../command/medical/facility/update-facility";
+import { verifyCxItVendorAccess } from "../../command/medical/facility/verify-access";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import { facilityInternalDetailsSchema } from "./schemas/facility";
-import { internalDtoFromModel } from "./dtos/facilityDTO";
+import { Facility, FacilityCreate, isOboFacility } from "../../domain/medical/facility";
+import {
+  createOrUpdateCQOrganization,
+  metriportIntermediaryOid,
+  metriportOid,
+} from "../../external/carequality/command/cq-organization/create-or-update-cq-organization";
+import { metriportEmail as metriportEmailForCq } from "../../external/carequality/constants";
+import { buildCqOrgNameForFacility, getCqAddress } from "../../external/carequality/shared";
+import { requestLogger } from "../helpers/request-logger";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFromQueryAsBoolean } from "../util";
-import { createOrUpdateFacilityInCq } from "../../external/carequality/command/cq-directory/create-or-update-cq-facility";
-import { createOrUpdateFacilityInCw } from "../../external/commonwell/command/create-or-update-cw-facility";
-import { processAsyncError } from "@metriport/core/util/error/shared";
+import { internalDtoFromModel } from "./dtos/facilityDTO";
+import { facilityInternalDetailsSchema } from "./schemas/facility";
+import { buildCwOrgNameForFacility } from "../../external/commonwell/shared";
+import { createOrUpdateCWOrganization } from "../../external/commonwell/command/cw-organization/create-or-update-cw-organization";
 
 const router = Router();
 
@@ -71,22 +79,55 @@ router.put(
     // TODO Move to external/hie https://github.com/metriport/metriport-internal/issues/1940
     // CAREQUALITY
     if (syncInHie && facility.cqApproved && !skipHie) {
-      createOrUpdateFacilityInCq({
+      const isObo = isOboFacility(facility.cqType);
+      const orgName = buildCqOrgNameForFacility({
+        vendorName: org.data.name,
+        orgName: facility.data.name,
+        oboOid: isObo ? facilityDetails.cqOboOid : undefined,
+      });
+      const parentOrgOid = isObo ? metriportIntermediaryOid : metriportOid;
+      const { coordinates, addressLine } = await getCqAddress({
         cxId,
-        facility,
-        cxOrgName: org.data.name,
-        cxOrgBizType: org.type,
-        cqOboOid: facilityDetails.cqOboOid,
+        address: facility.data.address,
+      });
+      createOrUpdateCQOrganization({
+        name: orgName,
+        addressLine1: addressLine,
+        lat: coordinates.lat.toString(),
+        lon: coordinates.lon.toString(),
+        city: facility.data.address.city,
+        state: facility.data.address.state,
+        postalCode: facility.data.address.zip,
+        oid: facility.oid,
+        contactName: metriportCompanyDetails.name,
+        phone: metriportCompanyDetails.phone,
+        email: metriportEmailForCq,
+        active: org.cqActive,
+        role: "Connection" as const,
+        parentOrgOid,
       }).catch(processAsyncError("cq.internal.facility"));
     }
     // COMMONWELL
     if (syncInHie && facility.cwApproved && !skipHie) {
-      createOrUpdateFacilityInCw({
+      const isObo = isOboFacility(facility.cwType);
+      const orgName = buildCwOrgNameForFacility({
+        vendorName: org.data.name,
+        orgName: facility.data.name,
+        oboOid: isObo ? facilityDetails.cwOboOid : undefined,
+      });
+      createOrUpdateCWOrganization({
         cxId,
-        facility,
-        cxOrgName: org.data.name,
-        cxOrgType: org.data.type,
-        cwOboOid: facilityDetails.cwOboOid,
+        orgDetails: {
+          oid: facility.oid,
+          name: orgName,
+          data: {
+            name: orgName,
+            type: org.data.type,
+            location: facility.data.address,
+          },
+          active: facility.cwActive,
+          isObo,
+        },
       }).catch(processAsyncError("cw.internal.facility"));
     }
     return res.status(httpStatus.OK).json(internalDtoFromModel(facility));
