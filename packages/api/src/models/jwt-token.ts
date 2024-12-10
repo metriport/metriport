@@ -1,12 +1,12 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { JwtToken, JwtTokenSources, JwtTokenData } from "../domain/jwt-token";
+import { JwtToken, JwtTokenSource, JwtTokenData } from "../domain/jwt-token";
 import { BaseModel, ModelSetup } from "./_default";
 
 export class JwtTokenModel extends BaseModel<JwtTokenModel> implements JwtToken {
   static NAME = "jwt_token";
   declare token: string;
   declare exp: Date;
-  declare source: JwtTokenSources;
+  declare source: JwtTokenSource;
   declare data: JwtTokenData;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {

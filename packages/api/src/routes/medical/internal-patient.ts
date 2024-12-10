@@ -869,6 +869,7 @@ router.post(
       dateTo,
       bundleLocation,
       bundleFilename,
+      fromDashboard,
     } = internalSendConsolidatedSchema.parse(req.body);
 
     const bundle = await getConsolidatedSnapshotFromS3({
@@ -885,6 +886,7 @@ router.post(
       resources,
       dateFrom,
       dateTo,
+      fromDashboard,
     }).catch(
       processAsyncError(
         "POST /internal/patient/:id/consolidated, calling getConsolidatedAndSendToCx"

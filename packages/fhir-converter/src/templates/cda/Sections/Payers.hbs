@@ -55,12 +55,6 @@
                           {{>References/Coverage/beneficiary.hbs ID=(generateUUID (toJsonString payerEntry.act)) canBeUnknown=true  }},
                     {{/if}}
                 {{/each}}
-                {{#each (toArray payerEntry.act.participant) as |participantEntry|}}
-                    {{#if participantEntry.participantRole.id.extension}}
-                        {{>References/Coverage/subscriberId.hbs subscriberId=participantEntry.participantRole.id.extension ID=(generateUUID (toJsonString payerEntry.act))}},
-                        {{>References/Coverage/identifier.hbs payerEntry=participantEntry.participantRole ID=(generateUUID (toJsonString payerEntry.act))}},
-                    {{/if}}
-                {{/each}}
             {{/each}}
         {{/each}}
     {{/with}}

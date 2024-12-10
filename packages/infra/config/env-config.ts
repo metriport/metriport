@@ -229,6 +229,16 @@ type EnvConfigBase = {
       env: string;
       athenaClientKeyArn: string;
       athenaClientSecretArn: string;
+      secrets: {
+        EHR_ATHENA_CLIENT_KEY: string;
+        EHR_ATHENA_CLIENT_SECRET: string;
+      };
+    };
+    elation: {
+      env: string;
+      secrets: {
+        EHR_ELATION_CLIENT_KEY_AND_SECRET_MAP: string;
+      };
     };
   };
 };
