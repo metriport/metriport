@@ -70,8 +70,6 @@
                             {{/if}}
 
                         {{/each}}
-                    {{else}}
-                        {{>References/MedicationStatement/medicationReference.hbs ID=(generateUUID (toJsonString medEntry.substanceAdministration)) REF=(concat 'Medication/' (generateUUID (toJsonString medEntry.substanceAdministration.consumable.manufacturedProduct.manufacturedMaterial)))}},
                     {{/if}}
 
                     {{#if medEntry.substanceAdministration.informant.assignedEntity.representedOrganization.name._}}
