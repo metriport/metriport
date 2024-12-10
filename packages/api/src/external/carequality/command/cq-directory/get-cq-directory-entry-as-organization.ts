@@ -25,7 +25,7 @@ export async function getOrganizationIdsNotManagedBy(
   return ids;
 }
 
-export async function getRecordLocatorServiceOrganizations(): Promise<CQDirectoryEntry[]> {
+async function getRecordLocatorServiceOrganizations(): Promise<CQDirectoryEntry[]> {
   const rls: CQDirectoryEntryModel[] = await CQDirectoryEntryModel.findAll({
     where: {
       urlXCPD: {
@@ -54,7 +54,7 @@ export async function getRecordLocatorServiceOrganizations(): Promise<CQDirector
   return [...rls, ...eHex].map(org => org.dataValues);
 }
 
-export async function getSublinkOrganizations(): Promise<CQDirectoryEntry[]> {
+async function getSublinkOrganizations(): Promise<CQDirectoryEntry[]> {
   return (
     await CQDirectoryEntryModel.findAll({
       where: {
@@ -85,7 +85,7 @@ export async function getSublinkOrganizations(): Promise<CQDirectoryEntry[]> {
   ).map(org => org.dataValues);
 }
 
-export async function getStandaloneOrganizations(): Promise<CQDirectoryEntry[]> {
+async function getStandaloneOrganizations(): Promise<CQDirectoryEntry[]> {
   return (
     await CQDirectoryEntryModel.findAll({
       where: {
