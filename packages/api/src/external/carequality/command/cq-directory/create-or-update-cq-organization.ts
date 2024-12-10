@@ -11,6 +11,7 @@ import { metriportEmail as metriportEmailForCq } from "../../constants";
 import { CQOrganization } from "../../organization";
 import { CQOrgDetails, getCqAddress, getCqOrg, getCqOrgOrFail } from "../../shared";
 import { metriportIntermediaryOid, metriportOid } from "./create-or-update-cq-facility";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 
 const cq = makeCarequalityManagementAPIFhir();
 
@@ -99,7 +100,7 @@ export async function getAndUpdateCQOrgAndMetriportOrg({
   }
   const address = facility ? facility.data.address : org.data.location;
   const { coordinates, addressLine } = await getCqAddress({ cxId, address });
-  await createOrUpdateCQOrganization({
+  createOrUpdateCQOrganization({
     name: cqOrg.name,
     addressLine1: addressLine,
     lat: coordinates.lat.toString(),
@@ -119,5 +120,5 @@ export async function getAndUpdateCQOrgAndMetriportOrg({
       : undefined,
     active,
     role: "Connection" as const,
-  });
+  }).catch(processAsyncError("cq.getAndUpdateCQOrgAndMetriportOrg"));
 }
