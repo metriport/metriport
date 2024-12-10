@@ -51,7 +51,7 @@ export function parseCQOrganization(org: Organization): CQDirectoryEntryData | u
     state: state ? normalizeState(state) : undefined,
     zip: postalCode ? normalizeZipCodeNew(postalCode) : undefined,
     managingOrganization: parentOrgOid,
-    managingOrganizationId: parentOrgOid, // TODO: #2468 - Check if this is correct
+    managingOrganizationId: parentOrgOid,
     active,
     lastUpdatedAtCQ,
     ...getUrls(endpoints),
@@ -79,7 +79,7 @@ function convertDegreesToRadians(degrees: number): number {
 function getUrls(endpoints: Endpoint[]): CQOrgUrls {
   const endpointMap: Record<string, string> = {};
 
-  endpoints.map(endpoint => {
+  endpoints.forEach(endpoint => {
     const ext = endpoint.extension?.find(ext => ext.url === transactionUrl);
     const type = getUrlType(ext?.valueCodeableConcept?.coding?.[0]?.code);
     const address = endpoint.address;
