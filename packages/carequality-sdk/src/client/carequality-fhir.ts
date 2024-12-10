@@ -158,9 +158,9 @@ export class CarequalityManagementAPIImplFhir implements CarequalityManagementAP
     const query = new URLSearchParams();
     query.append("apikey", this.apiKey);
     query.append("_count", count.toString());
-    start !== undefined && query.append("_start", start.toString());
-    oid !== undefined && query.append("_id", oid);
-    active !== undefined && query.append("active", active.toString());
+    start != undefined && query.append("_start", start.toString());
+    oid != undefined && query.append("_id", oid);
+    active != undefined && query.append("active", active.toString());
 
     const url = `${CarequalityManagementAPIImplFhir.ORG_ENDPOINT}?${query.toString()}`;
     const resp = await this.sendGetRequest(url, { "Content-Type": "application/json" });
