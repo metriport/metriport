@@ -29,12 +29,14 @@
         {{#each medEntries}}
             {{#each (multipleToArray 2_16_840_1_113883_10_20_22_2_1_1.entry 2_16_840_1_113883_10_20_22_2_1.entry 2_16_840_1_113883_10_20_22_2_38.entry) as |medEntry|}}
                 {{#if medEntry.substanceAdministration}}
-                    {{>Resources/MedicationStatement.hbs medicationStatement=medEntry.substanceAdministration ID=(generateUUID (toJsonString medEntry.substanceAdministration))}},
-                   	{{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
-                    	{{>References/MedicationStatement/subject.hbs ID=(generateUUID (toJsonString medEntry.substanceAdministration)) REF=(concat 'Patient/' patientId.Id)}},
-                    {{/with}}
                     {{#if medEntry.substanceAdministration.consumable.manufacturedProduct.manufacturedMaterial}}
                         {{>Resources/Medication.hbs medication=medEntry.substanceAdministration.consumable.manufacturedProduct.manufacturedMaterial ID=(generateUUID (toJsonString medEntry.substanceAdministration.consumable.manufacturedProduct.manufacturedMaterial))}},
+                        
+                        {{>Resources/MedicationStatement.hbs medicationStatement=medEntry.substanceAdministration ID=(generateUUID (toJsonString medEntry.substanceAdministration))}},
+                        {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                            {{>References/MedicationStatement/subject.hbs ID=(generateUUID (toJsonString medEntry.substanceAdministration)) REF=(concat 'Patient/' patientId.Id)}},
+                        {{/with}}
+                        
                         {{>References/MedicationStatement/medicationReference.hbs ID=(generateUUID (toJsonString medEntry.substanceAdministration)) REF=(concat 'Medication/' (generateUUID (toJsonString medEntry.substanceAdministration.consumable.manufacturedProduct.manufacturedMaterial)))}},
                         {{#each (toArray medEntry.substanceAdministration.entryRelationship) as |medReq|}}
                             {{#if medReq.supply}}
