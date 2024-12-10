@@ -1,11 +1,15 @@
-import { Organization, Endpoint } from "@medplum/fhirtypes";
-import { out } from "@metriport/core/util/log";
+import { Endpoint, Organization } from "@medplum/fhirtypes";
 import { capture } from "@metriport/core/util/notifications";
-import { isValidUrl, normalizeState, normalizeZipCodeNew } from "@metriport/shared";
+import { out } from "@metriport/core/util/log";
+import {
+  isValidUrl,
+  normalizeUSStateForAddressSafe,
+  normalizeZipCodeNewSafe,
+} from "@metriport/shared";
 import { CQDirectoryEntryData } from "../../cq-directory";
 import { CQOrgUrls } from "../../shared";
+import { getCqOrg } from "./get-cq-organization";
 import { transactionUrl } from "./organization-template";
-const { log } = out(`parseCQDirectoryEntries`);
 
 const EARTH_RADIUS = 6378168;
 const XCPD_STRING = "ITI-55";
@@ -14,7 +18,9 @@ const XCA_DR_STRING = "ITI-39";
 const XDR_STRING = "ITI-41";
 type ChannelUrl = typeof XCPD_STRING | typeof XCA_DQ_STRING | typeof XCA_DR_STRING;
 
-export function parseCQOrganization(org: Organization): CQDirectoryEntryData | undefined {
+export async function parseCQOrganization(
+  org: Organization
+): Promise<CQDirectoryEntryData | undefined> {
   const id = org.identifier?.[0]?.value;
   if (!id) return undefined;
 
@@ -37,8 +43,15 @@ export function parseCQOrganization(org: Organization): CQDirectoryEntryData | u
 
   const parentOrg = org.partOf?.reference ?? org.partOf?.identifier?.value;
   const parentOrgOid = parentOrg?.split("/")[1];
+  let parentOrgName: string | undefined;
+  if (parentOrgOid) {
+    const parentOrg = await getCqOrg(parentOrgOid);
+    if (parentOrg) parentOrgName = parentOrg.name;
+  }
 
   const endpoints = org.contained?.filter(c => c.resourceType === "Endpoint") ?? [];
+
+  console.log(org);
 
   return {
     id,
@@ -48,9 +61,9 @@ export function parseCQOrganization(org: Organization): CQDirectoryEntryData | u
     point,
     addressLine,
     city,
-    state: state ? normalizeState(state) : undefined,
-    zip: postalCode ? normalizeZipCodeNew(postalCode) : undefined,
-    managingOrganization: parentOrgOid,
+    state: state ? normalizeUSStateForAddressSafe(state) : undefined,
+    zip: postalCode ? normalizeZipCodeNewSafe(postalCode) : undefined,
+    managingOrganization: parentOrgName,
     managingOrganizationId: parentOrgOid,
     active,
     lastUpdatedAtCQ,
@@ -106,6 +119,7 @@ function getUrls(endpoints: Endpoint[]): CQOrgUrls {
 }
 
 function getUrlType(value: string | undefined): ChannelUrl | undefined {
+  const { log } = out(`getUrlType`);
   if (!value) return;
   if (value.includes(XCPD_STRING)) return XCPD_STRING;
   if (value.includes(XCA_DQ_STRING)) return XCA_DQ_STRING;

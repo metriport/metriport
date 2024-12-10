@@ -44,11 +44,14 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
         const orgs = await cq.listOrganizations({ start: currentPosition, count: BATCH_SIZE });
         if (orgs.length < BATCH_SIZE) isDone = true;
         currentPosition += BATCH_SIZE;
-        const parsedOrgs = orgs.flatMap(org => {
-          const parsed = parseCQOrganization(org);
-          if (!parsed) return [];
-          return [parsed];
-        });
+        const parsedOrgsNested = await Promise.all(
+          orgs.flatMap(async org => {
+            const parsed = await parseCQOrganization(org);
+            if (!parsed) return [];
+            return [parsed];
+          })
+        );
+        const parsedOrgs = parsedOrgsNested.flat();
         log(
           `Adding ${parsedOrgs.length} CQ directory entries... Total fetched: ${currentPosition}`
         );
