@@ -35,11 +35,6 @@ export function partitionPayload(payloadRaw: string): string[] {
     const currentSize = sizeInBytes(JSON.stringify(currentComponent));
 
     if (currentSize > MAX_CHUNK_SIZE_IN_BYTES) {
-      if (groupedComponents.length > 0) {
-        chunks.push(createChunk(json, groupedComponents));
-        groupedComponents = [];
-        groupedSize = 0;
-      }
       chunks.push(createChunk(json, [currentComponent]));
       continue;
     }

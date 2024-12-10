@@ -236,31 +236,37 @@ export async function handler(event: SQSEvent) {
           invalidAccess,
         };
 
-        const preConversionFilename = `${s3FileName}.pre-conversion.xml`;
+        const preConversionFilename = `${s3FileName}.pre_conversion.xml`;
+        const cleanFileName = `${s3FileName}.clean.xml`;
         const conversionResultFilename = `${s3FileName}.from_converter.json`;
 
         log(
           `Calling converter on url ${converterUrl} with params ${JSON.stringify(converterParams)}`
         );
 
+        await storePayloadInS3({
+          payload: payloadClean,
+          fileName: cleanFileName,
+          message,
+          lambdaParams,
+          type: "clean",
+          log,
+        });
+
         const partitionedPayload = partitionPayload(payloadClean);
 
-        // The actual payload we send to the Converter
-        const storePayloadInS3 = () => {
+        async function storePayloadsInS3() {
           partitionedPayload.forEach((payload, index) => {
-            storePreConversionPayloadInS3({
+            storePayloadInS3({
               payload,
-              preConversionFilename: buildDocumentNameForPartialConversions(
-                preConversionFilename,
-                partitionedPayload.length,
-                index
-              ),
+              fileName: buildDocumentNameForPartialConversions(preConversionFilename, index),
               message,
               lambdaParams,
+              type: "pre-convert",
               log,
             });
           });
-        };
+        }
 
         const [conversionResult] = await Promise.all([
           convertPayloadToFHIR({
@@ -269,7 +275,7 @@ export async function handler(event: SQSEvent) {
             converterParams,
             log,
           }),
-          storePayloadInS3(),
+          storePayloadsInS3(),
         ]);
 
         metrics.conversion = {
@@ -511,27 +517,24 @@ async function storePreProcessedConversionResult({
   }
 }
 
-function buildDocumentNameForPartialConversions(
-  fileName: string,
-  numChunksInPayload: number,
-  index: number
-): string {
-  if (numChunksInPayload <= 1) return fileName;
-
-  return `${fileName}_part_${index}.xml`;
+function buildDocumentNameForPartialConversions(fileName: string, index: number): string {
+  const paddedIndex = index.toString().padStart(2, "0");
+  return `${fileName}_part_${paddedIndex}.xml`;
 }
 
-async function storePreConversionPayloadInS3({
+async function storePayloadInS3({
   payload,
-  preConversionFilename: preProcessedFilename,
+  fileName,
   message,
   lambdaParams,
+  type,
   log,
 }: {
   payload: string;
-  preConversionFilename: string;
+  fileName: string;
   message: SQSRecord;
   lambdaParams: Record<string, string | undefined>;
+  type: "pre-convert" | "clean";
   log: typeof console.log;
 }) {
   try {
@@ -540,7 +543,7 @@ async function storePreConversionPayloadInS3({
         s3Utils.s3
           .upload({
             Bucket: conversionResultBucketName,
-            Key: preProcessedFilename,
+            Key: fileName,
             Body: payload,
             ContentType: XML_APP_MIME_TYPE,
           })
@@ -551,13 +554,14 @@ async function storePreConversionPayloadInS3({
       }
     );
   } catch (error) {
-    const msg = "Error uploading pre-convert file";
+    const msg = `Error uploading ${type} file`;
     log(`${msg}: ${error}`);
     capture.error(msg, {
       extra: {
         message,
         ...lambdaParams,
-        preProcessedFilename,
+        fileName,
+        type,
         context: lambdaName,
         error,
       },
