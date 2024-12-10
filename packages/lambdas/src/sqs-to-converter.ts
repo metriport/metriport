@@ -253,17 +253,17 @@ export async function handler(event: SQSEvent) {
           log,
         });
 
-        const partitionedPayload = partitionPayload(payloadClean);
+        const partitionedPayloads = partitionPayload(payloadClean);
 
         const [conversionResult] = await Promise.all([
           convertPayloadToFHIR({
             converterUrl,
-            partitionedPayload,
+            partitionedPayloads,
             converterParams,
             log,
           }),
           storePartitionedPayloadsInS3({
-            partitionedPayload,
+            partitionedPayloads,
             preConversionFilename,
             message,
             lambdaParams,
@@ -331,12 +331,12 @@ export async function handler(event: SQSEvent) {
 
 async function convertPayloadToFHIR({
   converterUrl,
-  partitionedPayload,
+  partitionedPayloads,
   converterParams,
   log,
 }: {
   converterUrl: string;
-  partitionedPayload: string[];
+  partitionedPayloads: string[];
   converterParams: FhirConverterParams;
   log: typeof console.log;
 }) {
@@ -346,12 +346,12 @@ async function convertPayloadToFHIR({
     entry: [],
   };
 
-  if (partitionedPayload.length > 1) {
-    log(`The file was partitioned into ${partitionedPayload.length} parts...`);
+  if (partitionedPayloads.length > 1) {
+    log(`The file was partitioned into ${partitionedPayloads.length} parts...`);
   }
 
-  for (let index = 0; index < partitionedPayload.length; index++) {
-    const payload = partitionedPayload[index];
+  for (let index = 0; index < partitionedPayloads.length; index++) {
+    const payload = partitionedPayloads[index];
 
     const res = await executeWithNetworkRetries(
       () =>
@@ -511,24 +511,24 @@ async function storePreProcessedConversionResult({
 }
 
 function buildDocumentNameForPartialConversions(fileName: string, index: number): string {
-  const paddedIndex = index.toString().padStart(2, "0");
+  const paddedIndex = index.toString().padStart(3, "0");
   return `${fileName}_part_${paddedIndex}.xml`;
 }
 
 async function storePartitionedPayloadsInS3({
-  partitionedPayload,
+  partitionedPayloads,
   preConversionFilename,
   message,
   lambdaParams,
   log,
 }: {
-  partitionedPayload: string[];
+  partitionedPayloads: string[];
   preConversionFilename: string;
   message: SQSRecord;
   lambdaParams: Record<string, string | undefined>;
   log: typeof console.log;
 }) {
-  partitionedPayload.forEach((payload, index) => {
+  partitionedPayloads.forEach((payload, index) => {
     storePayloadInS3({
       payload,
       fileName: buildDocumentNameForPartialConversions(preConversionFilename, index),

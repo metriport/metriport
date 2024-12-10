@@ -3,7 +3,7 @@ import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { sizeInBytes } from "../../util/string";
 import { XMLBuilder } from "fast-xml-parser";
 
-const MAX_CHUNK_SIZE_IN_BYTES = 10_000_000;
+export const MAX_CHUNK_SIZE_IN_BYTES = 10_000_000;
 const builder = new XMLBuilder({
   format: false,
   ignoreAttributes: false,
@@ -27,22 +27,24 @@ export function partitionPayload(payloadRaw: string): string[] {
   }
 
   const chunks: string[] = [];
+
   let groupedComponents: string[] = [];
   let groupedSize = 0;
-
   const components = toArray(json.ClinicalDocument?.component?.structuredBody?.component);
   for (const currentComponent of components) {
     const currentSize = sizeInBytes(JSON.stringify(currentComponent));
 
-    if (currentSize > MAX_CHUNK_SIZE_IN_BYTES) {
-      chunks.push(createChunk(json, [currentComponent]));
-      continue;
-    }
-
     if (groupedSize + currentSize > MAX_CHUNK_SIZE_IN_BYTES) {
-      chunks.push(createChunk(json, [groupedComponents, currentComponent]));
-      groupedComponents = [];
-      groupedSize = 0;
+      if (groupedComponents.length > 0) {
+        chunks.push(createChunk(json, groupedComponents));
+        groupedComponents = [currentComponent];
+        groupedSize = currentSize;
+      } else {
+        // currentComponent size is larger than max chunk size
+        chunks.push(createChunk(json, currentComponent));
+        groupedComponents = [];
+        groupedSize = 0;
+      }
       continue;
     }
 
