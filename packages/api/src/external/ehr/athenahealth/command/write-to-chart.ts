@@ -1,14 +1,5 @@
-import AthenaHealthApi, {
-  AthenaEnv,
-  MedicationWithRefs,
-} from "@metriport/core/external/athenahealth/index";
-import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
-import { Config } from "../../../../shared/config";
-
-const region = Config.getAWSRegion();
-const athenaEnvironment = Config.getAthenaHealthEnv();
-const athenaClientKeySecretArn = Config.getAthenaHealthClientKeyArn();
-const athenaClientSecretSecretArn = Config.getAthenaHealthClientSecretArn();
+import AthenaHealthApi, { MedicationWithRefs } from "@metriport/core/external/athenahealth/index";
+import { getAthenaEnv } from "../shared";
 
 export async function writeMedicationToChart({
   cxId,
@@ -25,17 +16,14 @@ export async function writeMedicationToChart({
   medication: MedicationWithRefs;
   accessToken?: string;
 }) {
-  if (!athenaEnvironment || !athenaClientKeySecretArn || !athenaClientSecretSecretArn) {
-    throw new Error("AthenaHealth not setup");
-  }
-  const athenaClientKey = await getSecretValueOrFail(athenaClientKeySecretArn, region);
-  const athenaClientSecret = await getSecretValueOrFail(athenaClientSecretSecretArn, region);
+  const { environment, clientKey, clientSecret } = await getAthenaEnv();
+
   const api = await AthenaHealthApi.create({
     threeLeggedAuthToken: accessToken,
     practiceId: athenaPracticeId,
-    environment: athenaEnvironment as AthenaEnv,
-    clientKey: athenaClientKey,
-    clientSecret: athenaClientSecret,
+    environment,
+    clientKey,
+    clientSecret,
   });
   await api.createMedication({
     cxId,

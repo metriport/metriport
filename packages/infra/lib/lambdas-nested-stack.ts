@@ -170,7 +170,12 @@ export class LambdasNestedStack extends NestedStack {
         CDA_TO_VIS_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: [lambdaLayers.shared, lambdaLayers.chromium],
+      layers: [
+        lambdaLayers.shared,
+        lambdaLayers.chromium,
+        lambdaLayers.puppeteer,
+        lambdaLayers.saxon,
+      ],
       memory: 1024,
       timeout: CDA_TO_VIS_TIMEOUT,
       vpc,

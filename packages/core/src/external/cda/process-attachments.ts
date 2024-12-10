@@ -8,7 +8,7 @@ import {
   Identifier,
   Resource,
 } from "@medplum/fhirtypes";
-import { executeWithNetworkRetries } from "@metriport/shared";
+import { executeWithNetworkRetries, toArray } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { MedicalDataSource, isMedicalDataSource } from "..";
 import { createAttachmentUploadFilePath } from "../../domain/document/upload";
@@ -16,8 +16,11 @@ import {
   CdaCodeCv,
   CdaInstanceIdentifier,
   CdaOriginalText,
+  CdaValueEd,
   ConcernActEntryAct,
   EffectiveTimeLowHigh,
+  ObservationMedia,
+  ObservationOrganizer,
 } from "../../fhir-to-cda/cda-types/shared-types";
 import { executeAsynchronously } from "../../util/concurrency";
 import { Config } from "../../util/config";
@@ -30,12 +33,20 @@ import { cwExtension } from "../commonwell/extension";
 import { makeFhirApi } from "../fhir/api/api-factory";
 import { convertCollectionBundleToTransactionBundle } from "../fhir/bundle/convert-to-transaction-bundle";
 import { buildDocIdFhirExtension } from "../fhir/shared/extensions/doc-id-extension";
+import { B64Attachments } from "./remove-b64";
+import { groupObservations } from "./shared";
 
 const region = Config.getAWSRegion();
 
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
+
+type FileDetails = {
+  fileB64Contents: string;
+  mimeType: string | undefined;
+};
+
 export async function processAttachments({
   b64Attachments,
   cxId,
@@ -45,8 +56,7 @@ export async function processAttachments({
   fhirUrl,
   medicalDataSource,
 }: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  b64Attachments: any[];
+  b64Attachments: B64Attachments;
   cxId: string;
   patientId: string;
   filePath: string;
@@ -64,13 +74,11 @@ export async function processAttachments({
   const docRefs: DocumentReference[] = [];
   const uploadDetails: UploadParams[] = [];
 
-  b64Attachments.map(async att => {
-    const act = att.act as ConcernActEntryAct;
+  b64Attachments.acts.map(act => {
+    const fileDetails = getDetailsForAct(act.text);
+    if (!fileDetails) return;
 
-    const fileDetails = getDetails(act.text);
-    if (!fileDetails.fileB64Contents) return;
-
-    const docRef = buildDocumentReference(patientId, extensions, act);
+    const docRef = buildDocumentReferenceFromAct(patientId, extensions, act);
     if (!docRef.id) throw new Error("Missing ID in DocRef");
 
     const fileKey = createAttachmentUploadFilePath({
@@ -79,24 +87,46 @@ export async function processAttachments({
       mimeType: fileDetails.mimeType,
     });
     const fileUrl = s3Utils.buildFileUrl(s3BucketName, fileKey);
-    const attachment: Attachment = {
-      ...(fileDetails.mimeType && { contentType: fileDetails.mimeType }),
-      url: fileUrl,
-      size: sizeInBytes(fileDetails.fileB64Contents),
-      title: fileKey,
-    };
+
+    const attachment = buildAttachment(fileDetails, fileUrl, fileKey);
 
     if (docRef.date) attachment.creation = docRef.date;
     docRef.content = [{ attachment }];
-    const uploadParams = {
-      bucket: s3BucketName,
-      key: fileKey,
-      file: Buffer.from(fileDetails.fileB64Contents, "base64"),
-      ...(fileDetails.mimeType && { contentType: fileDetails.mimeType }),
-    };
+    const uploadParams = buildUploadParams(fileDetails, s3BucketName, fileKey);
 
     uploadDetails.push(uploadParams);
     docRefs.push(docRef);
+  });
+
+  b64Attachments.organizers.map(organizerEntry => {
+    const { mediaObservations } = groupObservations(organizerEntry);
+
+    mediaObservations.map(mediaEntry => {
+      const obsMedia = mediaEntry.observationMedia;
+      const fileDetails = getDetailsForMediaObs(obsMedia.value);
+      if (!fileDetails) return;
+
+      const docRef = buildDocumentReferenceFromObsMedia(
+        patientId,
+        extensions,
+        organizerEntry,
+        obsMedia
+      );
+      if (!docRef.id) throw new Error("Missing ID in DocRef");
+      const fileKey = createAttachmentUploadFilePath({
+        filePath,
+        attachmentId: docRef.id,
+        mimeType: fileDetails.mimeType,
+      });
+
+      const fileUrl = s3Utils.buildFileUrl(s3BucketName, fileKey);
+
+      const attachment = buildAttachment(fileDetails, fileUrl, fileKey);
+      docRef.content = [{ attachment }];
+      const uploadParams = buildUploadParams(fileDetails, s3BucketName, fileKey);
+      uploadDetails.push(uploadParams);
+      docRefs.push(docRef);
+    });
   });
 
   log(`Extracted ${docRefs.length} attachments`);
@@ -160,20 +190,18 @@ function buildDocumentReferenceDraft(
   };
 }
 
-function getDetails(document: CdaOriginalText | undefined): {
-  fileB64Contents: string | undefined;
-  mimeType: string | undefined;
-} {
+function getDetailsForAct(document: CdaOriginalText | undefined): FileDetails | undefined {
   const fileB64Contents = document?.["#text"];
-  const mimeType = document?._mediaType;
+  if (!fileB64Contents) return undefined;
 
+  const mimeType = document?._mediaType;
   return {
     fileB64Contents,
     mimeType,
   };
 }
 
-function buildDocumentReference(
+function buildDocumentReferenceFromAct(
   patientId: string,
   extensions: Extension[],
   act: ConcernActEntryAct
@@ -183,25 +211,21 @@ function buildDocumentReference(
   const date = getDate(act.effectiveTime);
   const type = getType(act.code);
 
-  docRef.id = uuidv4();
-
-  if (identifiers.length) docRef.identifier = identifiers;
-  if (type) {
-    docRef.type = type;
-    if (type.text) docRef.description = type.text;
-  }
-  if (date) docRef.date = date;
-
-  return docRef;
+  return fillDocumentReference(docRef, {
+    identifiers,
+    type,
+    date,
+  });
 }
 
-function getIdentifiers(id: CdaInstanceIdentifier | undefined): Identifier[] {
-  return [
-    {
-      ...(id?._root && { system: id._root }),
-      ...(id?._extension && { value: id._extension }),
-    },
-  ];
+function getIdentifiers(
+  id: CdaInstanceIdentifier | CdaInstanceIdentifier[] | undefined
+): Identifier[] {
+  const ids = toArray(id);
+  return ids.map(id => ({
+    ...(id?._root && { system: id._root }),
+    ...(id?._extension && { value: id._extension }),
+  }));
 }
 
 function getSourceExtension(medicalSource: string | undefined): Extension | undefined {
@@ -250,4 +274,74 @@ function getType(code: CdaCodeCv | undefined): CodeableConcept | undefined {
 
   if (Object.keys(concept).length) return concept;
   return undefined;
+}
+
+function buildAttachment(fileDetails: FileDetails, fileUrl: string, fileKey: string): Attachment {
+  return {
+    ...(fileDetails.mimeType && { contentType: fileDetails.mimeType }),
+    url: fileUrl,
+    size: sizeInBytes(fileDetails.fileB64Contents),
+    title: fileKey,
+  };
+}
+
+function buildUploadParams(
+  fileDetails: FileDetails,
+  bucketName: string,
+  fileKey: string
+): UploadParams {
+  return {
+    bucket: bucketName,
+    key: fileKey,
+    file: Buffer.from(fileDetails.fileB64Contents, "base64"),
+    ...(fileDetails.mimeType && { contentType: fileDetails.mimeType }),
+  };
+}
+
+function getDetailsForMediaObs(value: CdaValueEd | undefined): FileDetails | undefined {
+  const fileB64Contents = value?.reference?._value;
+  if (!fileB64Contents) return undefined;
+
+  const mimeType = value?._mediaType;
+  return {
+    fileB64Contents,
+    mimeType,
+  };
+}
+
+function buildDocumentReferenceFromObsMedia(
+  patientId: string,
+  extensions: Extension[],
+  organizer: ObservationOrganizer,
+  obsMedia: ObservationMedia
+): DocumentReference {
+  const docRef = buildDocumentReferenceDraft(patientId, extensions);
+  const identifiers = getIdentifiers(obsMedia.id);
+  const date = getDate(organizer.effectiveTime);
+  const type = getType(organizer.code);
+  return fillDocumentReference(docRef, {
+    identifiers,
+    type,
+    date,
+  });
+}
+
+function fillDocumentReference(
+  docRef: DocumentReference,
+  params: {
+    identifiers: Identifier[];
+    type?: CodeableConcept | undefined;
+    date?: string | undefined;
+  }
+): DocumentReference {
+  const { identifiers, type, date } = params;
+  docRef.id = uuidv4();
+
+  if (identifiers.length > 0) docRef.identifier = identifiers;
+  if (type) {
+    docRef.type = type;
+    if (type.text) docRef.description = type.text;
+  }
+  if (date) docRef.date = date;
+  return docRef;
 }

@@ -23,9 +23,10 @@ import {
 import dayjs from "dayjs";
 import { uniqWith } from "lodash";
 import { Brief } from "./bundle-to-brief";
-import { createBrief } from "./bundle-to-html";
 import {
   buildEncounterSections,
+  createBrief,
+  createSection,
   formatDateForDisplay,
   ISO_DATE,
   MISSING_DATE_KEY,
@@ -2462,20 +2463,6 @@ function getConditionDatesFromEncounters(
   });
 
   return conditionDates;
-}
-
-function createSection(title: string, tableContents: string) {
-  return `
-    <div id="${title.toLowerCase().replace(/\s+/g, "-")}" class="section">
-      <div class="section-title">
-        <h3 id="${title}" title="${title}">&#x276F; ${title}</h3>
-        <a href="#mr-header">&#x25B2; Back to Top</a>
-      </div>
-      <div class="section-content">
-          ${tableContents}
-      </div>
-    </div>
-  `;
 }
 
 function mapResourceToId<ResourceType>(resources: Resource[]): Record<string, ResourceType> {

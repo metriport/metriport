@@ -193,8 +193,8 @@ export async function handler(event: SQSEvent) {
         const { documentContents: payloadNoB64, b64Attachments } =
           removeBase64PdfEntries(payloadRaw);
 
-        log(`Extracted ${b64Attachments.length} B64 attachments`);
-        if (b64Attachments.length) {
+        if (b64Attachments) {
+          log(`Extracted ${b64Attachments.total} B64 attachments`);
           await processAttachments({
             b64Attachments,
             cxId,

@@ -10,6 +10,7 @@ export const internalSendConsolidatedSchema = z.object({
   resources: z.array(z.enum(resourceTypeForConsolidation)).optional(),
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
+  fromDashboard: z.boolean().optional(),
 });
 
 export type InternalSendConsolidated = z.infer<typeof internalSendConsolidatedSchema>;

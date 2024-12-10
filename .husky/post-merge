@@ -8,7 +8,7 @@ changed() {
 echo "Checking updates on package.json files..."
 if changed 'package.json'; then
   echo " "
-  echo "⚠  One or more package.json changed. You should run 'npm install' on the root/respective folder"
+  echo "⚠  One or more package.json changed. You should run 'npm run install-deps' on the root/respective folder"
   echo " "
 else
   echo "No updates detected on package.json files."

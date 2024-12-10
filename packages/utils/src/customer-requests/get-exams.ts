@@ -68,7 +68,7 @@ async function main() {
   console.log(`########################## Running... - started at ${new Date().toISOString()}`);
   const startedAt = Date.now();
 
-  const listPatient = await metriportAPI.listPatients(facilityId);
+  const { patients: listPatient } = await metriportAPI.listPatients({ facilityId });
 
   const patients = listPatient.filter(patient => patientIds.includes(patient.id));
 
