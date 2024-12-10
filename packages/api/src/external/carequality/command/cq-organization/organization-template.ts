@@ -4,8 +4,8 @@ import {
   XCA_DR_STRING,
   XCPD_STRING,
 } from "@metriport/carequality-sdk/common/util";
-import { Config } from "../../shared/config";
-import { CQOrgDetailsWithUrls, createPurposeOfUse } from "./shared";
+import { Config } from "../../../../shared/config";
+import { CQOrgDetailsWithUrls, createPurposeOfUse } from "../../shared";
 import { Organization, Endpoint } from "@medplum/fhirtypes";
 
 export const transactionUrl =
@@ -19,17 +19,17 @@ export function getOrganizationFhirTemplate(orgDetails: CQOrgDetailsWithUrls): O
   const endpoints: Endpoint[] = [];
   if (role === "Implementer") {
     if (!urlXCPD) throw new Error("XCPD URL is required for Implementer role");
-    endpoints.push(getEndpoint(urnOid, XCPD_STRING, urlXCPD));
+    endpoints.push(getFhirEndpoint(urnOid, XCPD_STRING, urlXCPD));
     if (!urlDQ) throw new Error("DQ URL is required for Implementer role");
-    endpoints.push(getEndpoint(urnOid, XCA_DQ_STRING, urlDQ));
+    endpoints.push(getFhirEndpoint(urnOid, XCA_DQ_STRING, urlDQ));
     if (!urlDR) throw new Error("DR URL is required for Implementer role");
-    endpoints.push(getEndpoint(urnOid, XCA_DR_STRING, urlDR));
+    endpoints.push(getFhirEndpoint(urnOid, XCA_DR_STRING, urlDR));
   }
-  const org = getOrganization(urnOid, orgDetails, endpoints);
+  const org = getFhirOrganization(urnOid, orgDetails, endpoints);
   return org;
 }
 
-function getOrganization(
+function getFhirOrganization(
   urnOid: string,
   orgDetails: CQOrgDetailsWithUrls,
   endpoints: Endpoint[]
@@ -185,7 +185,7 @@ function getOrganization(
   return org;
 }
 
-function getEndpoint(urnOid: string, urlType: ChannelUrl, url: string): Endpoint {
+function getFhirEndpoint(urnOid: string, urlType: ChannelUrl, url: string): Endpoint {
   const channelType = urlType === XCPD_STRING ? "ihe-xcpd" : "ihe-xca";
   const channelName =
     urlType === XCPD_STRING

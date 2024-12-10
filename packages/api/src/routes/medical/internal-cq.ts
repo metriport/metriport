@@ -27,14 +27,13 @@ import {
   getOrganizationOrFail,
 } from "../../command/medical/organization/get-organization";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { makeCarequalityManagementAPIFhir } from "../../external/carequality/api";
 import { bulkInsertCQDirectoryEntries } from "../../external/carequality/command/cq-directory/create-cq-directory-entry";
-import { getAndUpdateCQOrgAndMetriportOrg } from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
-import { parseCQDirectoryEntryFromFhirOrganization } from "../../external/carequality/command/cq-directory/parse-cq-directory-entry";
+import { updateCQOrganizationAndMetriportEntity } from "../../external/carequality/command/cq-organization/update-cq-organizatoin-and-metriport-entity";
+import { parseCQOrganization } from "../../external/carequality/command/cq-organization/parse-cq-organization";
 import {
   cqDirectoryEntry,
   rebuildCQDirectory,
-} from "../../external/carequality/command/cq-directory/rebuild-cq-directory";
+} from "../../external/carequality/command/rebuild-cq-directory-from-cq-organizations";
 import {
   DEFAULT_RADIUS_IN_MILES,
   searchCQDirectoriesAroundPatientAddresses,
@@ -43,7 +42,6 @@ import {
 import { createOutboundDocumentQueryResp } from "../../external/carequality/command/outbound-resp/create-outbound-document-query-resp";
 import { createOutboundDocumentRetrievalResp } from "../../external/carequality/command/outbound-resp/create-outbound-document-retrieval-resp";
 import { createOutboundPatientDiscoveryResp } from "../../external/carequality/command/outbound-resp/create-outbound-patient-discovery-resp";
-import { CQDirectoryEntryData } from "../../external/carequality/cq-directory";
 import { processOutboundDocumentQueryResps } from "../../external/carequality/document/process-outbound-document-query-resps";
 import { processOutboundDocumentRetrievalResps } from "../../external/carequality/document/process-outbound-document-retrieval-resps";
 import {
@@ -53,7 +51,8 @@ import {
 } from "../../external/carequality/ihe-result";
 import { processOutboundPatientDiscoveryResps } from "../../external/carequality/process-outbound-patient-discovery-resps";
 import { processPostRespOutboundPatientDiscoveryResps } from "../../external/carequality/process-subsequent-outbound-patient-discovery-resps";
-import { cqOrgActiveSchema, getCqOrgOrFail } from "../../external/carequality/shared";
+import { getCqOrgOrFail } from "../../external/carequality/command/cq-organization/get-cq-organization";
+import { cqOrgActiveSchema } from "../../external/carequality/shared";
 import { Config } from "../../shared/config";
 import { handleParams } from "../helpers/handle-params";
 import { requestLogger } from "../helpers/request-logger";
@@ -101,7 +100,7 @@ router.post(
     console.log(`Got ${orgs.length} orgs`);
 
     const parsedOrgs = orgs.flatMap(org => {
-      const parsed = parseCQDirectoryEntryFromFhirOrganization(org);
+      const parsed = parseCQOrganization(org);
       if (!parsed) return [];
       return [parsed];
     });
@@ -130,13 +129,11 @@ router.get(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
-    const cq = makeCarequalityManagementAPIFhir();
-    if (!cq) throw new Error("Carequality API not initialized");
     const oid = getFrom("params").orFail("oid", req);
 
-    const org = await getCqOrgOrFail(cq, oid);
+    const cqOrg = await getCqOrgOrFail(oid);
 
-    return res.status(httpStatus.OK).json(org);
+    return res.status(httpStatus.OK).json(cqOrg);
   })
 );
 
@@ -153,22 +150,18 @@ router.get(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
-    const cq = makeCarequalityManagementAPIFhir();
-    if (!cq) throw new Error("Carequality API not initialized");
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getFrom("query").optional("facilityId", req);
     const oid = getFrom("params").orFail("oid", req);
 
-    let org: CQDirectoryEntryData;
     if (facilityId) {
       await getFaciltiyByOidOrFail({ cxId, id: facilityId, oid });
-      org = await getCqOrgOrFail(cq, oid);
     } else {
       await getOrganizationByOidOrFail({ cxId, oid });
-      org = await getCqOrgOrFail(cq, oid);
     }
+    const cqOrg = await getCqOrgOrFail(oid);
 
-    return res.status(httpStatus.OK).json(org);
+    return res.status(httpStatus.OK).json(cqOrg);
   })
 );
 
@@ -183,8 +176,6 @@ router.put(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
-    const cq = makeCarequalityManagementAPIFhir();
-    if (!cq) throw new Error("Carequality API not initialized");
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const oid = getFrom("params").orFail("oid", req);
     await verifyCxProviderAccess(cxId);
@@ -193,8 +184,7 @@ router.put(
     if (!org.cqApproved) throw new NotFoundError("CQ not approved");
 
     const orgActive = cqOrgActiveSchema.parse(req.body);
-    await getAndUpdateCQOrgAndMetriportOrg({
-      cq,
+    await updateCQOrganizationAndMetriportEntity({
       cxId,
       oid,
       active: orgActive.active,
@@ -216,8 +206,6 @@ router.put(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
-    const cq = makeCarequalityManagementAPIFhir();
-    if (!cq) throw new Error("Carequality API not initialized");
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getFrom("query").orFail("facilityId", req);
     const oid = getFrom("params").orFail("oid", req);
@@ -228,8 +216,7 @@ router.put(
     if (!facility.cqApproved) throw new NotFoundError("CQ not approved");
 
     const facilityActive = cqOrgActiveSchema.parse(req.body);
-    await getAndUpdateCQOrgAndMetriportOrg({
-      cq,
+    await updateCQOrganizationAndMetriportEntity({
       cxId,
       oid,
       active: facilityActive.active,
