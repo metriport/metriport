@@ -99,11 +99,14 @@ router.post(
     const orgs = (bundle.entry as Organization[]) ?? [];
     console.log(`Got ${orgs.length} orgs`);
 
-    const parsedOrgs = orgs.flatMap(org => {
-      const parsed = parseCQOrganization(org);
-      if (!parsed) return [];
-      return [parsed];
-    });
+    const parsedOrgsNested = await Promise.all(
+      orgs.flatMap(async org => {
+        const parsed = await parseCQOrganization(org);
+        if (!parsed) return [];
+        return [parsed];
+      })
+    );
+    const parsedOrgs = parsedOrgsNested.flat();
     console.log(`Parsed ${parsedOrgs.length} orgs`);
 
     // TODO remove this with https://github.com/metriport/metriport-internal/issues/1638

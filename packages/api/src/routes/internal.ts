@@ -27,7 +27,7 @@ import { getOrganizationOrFail } from "../command/medical/organization/get-organ
 import { isCxMappingSource, secondaryMappingsSchemaMap } from "../domain/cx-mapping";
 import { isFacilityMappingSource } from "../domain/facility-mapping";
 import { isEnhancedCoverageEnabledForCx } from "../external/aws/app-config";
-import { initCQOrgIncludeList } from "../external/commonwell/organization";
+import { initCQOrgIncludeList } from "../external/commonwell/command/cw-organization/init-cq-include-list";
 import { countResourcesOnFhir } from "../external/fhir/patient/count-resources-on-fhir";
 import { OrganizationModel } from "../models/medical/organization";
 import userRoutes from "./devices/internal-user";
