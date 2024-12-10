@@ -110,8 +110,17 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief): string {
           }
 
           .header-tables {
+            display: -webkit-box; /* wkhtmltopdf uses this one */
+            display: -webkit-flex;
             display: flex;
+            -webkit-box-flex: 1;
+            -webkit-flex: 1;
             flex: 1;
+            -webkit-align-self: flex-end;
+            align-self: flex-end;
+            -webkit-box-pack: center; /* wkhtmltopdf uses this one */
+            -webkit-justify-content: center;
+            justify-content: center;
           }
 
           .header-table {

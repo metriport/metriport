@@ -1,11 +1,10 @@
 import { S3Utils } from "@metriport/core/external/aws/s3";
+import { wkHtmlToPdf, WkOptions } from "@metriport/core/external/wk-html-to-pdf/index";
 import { getEnvVarOrFail } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import axios from "axios";
-import { capture } from "./shared/capture";
-import wkHtmlToPdf from "./wkHtmlToPdf";
-import { WkOptions } from "./wkHtmlToPdf/types";
 import { Readable } from "stream";
+import { capture } from "./shared/capture";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -38,14 +37,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(async () => {
 
   console.log(`Converting to PDF...`);
   const options: WkOptions = {
-    marginTop: 0,
-    marginRight: 0,
-    marginBottom: 0,
-    marginLeft: 0,
-    orientation: "Portrait",
+    orientation: "Landscape",
+    pageSize: "A3",
   };
   const stream = Readable.from(Buffer.from(fileContents));
-  const pdfData = await wkHtmlToPdf(options, stream);
+  const pdfData = await wkHtmlToPdf(options, stream, console.log);
 
   console.log(`Uploading to PDF to ${generalBucketName}/${outputFilePath}...`);
   await s3Utils.uploadFile({

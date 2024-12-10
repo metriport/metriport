@@ -1,12 +1,25 @@
 /**
  * From https://github.com/hkarask/html-to-pdf-lambda
  */
-import { Stream } from "node:stream";
-import { existsSync } from "fs";
 import { spawn } from "child_process";
+import { existsSync } from "fs";
+import { Stream } from "node:stream";
 import { WkOptions } from "./types";
 
-function wkHtmlToPdf(props: WkOptions, input: string | Stream) {
+/**
+ * Converts HTML to PDF using wkhtmltopdf installed in the system/OS.
+ * See https://github.com/hkarask/html-to-pdf-lambda for reference.
+ *
+ * @param props - Options for wkhtmltopdf (see https://wkhtmltopdf.org/usage/wkhtmltopdf.txt)
+ * @param input - HTML to convert to PDF, can be a string or a stream
+ * @param log - Optional logger
+ * @returns Promise resolving to the PDF buffer
+ */
+export function wkHtmlToPdf(
+  props: WkOptions,
+  input: string | Stream,
+  log?: typeof console.log | undefined
+): Promise<Buffer> {
   return new Promise<Buffer>((resolve, reject) => {
     let wkhtmltopdfPath = "/opt/bin/wkhtmltopdf";
 
@@ -15,34 +28,30 @@ function wkHtmlToPdf(props: WkOptions, input: string | Stream) {
     }
 
     if (!existsSync(wkhtmltopdfPath)) {
-      console.log(`Couldn't find ${wkhtmltopdfPath} - platform ${process?.platform}`);
+      log && log(`Couldn't find ${wkhtmltopdfPath} - platform ${process?.platform}`);
       reject(new Error(`Couldn't find ${wkhtmltopdfPath}`));
     }
 
     const stderrMessages: string[] = [];
     const buffer: Uint8Array[] = [];
 
+    // From https://wkhtmltopdf.org/usage/wkhtmltopdf.txt
     const params = [
       `--orientation ${props.orientation ?? "Portrait"}`,
-      `--margin-top ${props.marginTop ?? 0}`,
-      `--margin-right ${props.marginRight ?? 0}`,
-      `--margin-bottom ${props.marginBottom ?? 0}`,
-      `--margin-left ${props.marginLeft ?? 0}`,
-      "--disable-smart-shrinking",
+      ...(props.marginTop ? [`--margin-top ${props.marginTop ?? 0}`] : []),
+      ...(props.marginRight ? [`--margin-right ${props.marginRight ?? 0}`] : []),
+      ...(props.marginBottom ? [`--margin-bottom ${props.marginBottom ?? 0}`] : []),
+      ...(props.marginLeft ? [`--margin-left ${props.marginLeft ?? 0}`] : []),
       "--disable-javascript",
       "--custom-header-propagation",
       "--log-level warn",
-      "--image-dpi 200",
-      "--image-quality 75",
-      '--footer-right "Page [page] of [topage]"',
-      "--footer-font-size 8",
+      `--page-size ${props.pageSize ?? "A4"}`,
       "--enable-local-file-access",
     ];
 
-    console.log(
-      "Generating pdf from " + (input instanceof Stream ? "a stream" : `an URI: '${input}'`)
-    );
-    console.debug("Wkhtmltopdf options", params);
+    log &&
+      log("Generating pdf from " + (input instanceof Stream ? "a stream" : `an URI: '${input}'`));
+    log && log("Wkhtmltopdf options", params);
 
     const args = [
       wkhtmltopdfPath,
@@ -51,7 +60,7 @@ function wkHtmlToPdf(props: WkOptions, input: string | Stream) {
       "-", // output, '-' for stream
     ].join(" ");
 
-    console.debug("Executing", args);
+    log && log("Executing", args);
 
     const proc = spawn("/bin/bash", ["-c", `set -o pipefail ; ${args} | cat`]);
 
