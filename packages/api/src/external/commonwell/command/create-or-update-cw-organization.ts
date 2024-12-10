@@ -2,6 +2,7 @@ import { OrganizationModel } from "../../../models/medical/organization";
 import { FacilityModel } from "../../../models/medical/facility";
 import { isOboFacility } from "../../../domain/medical/facility";
 import { CWOrganization, get, update, create, getParsedOrgOrFail } from "../organization";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 
 export async function createOrUpdateCWOrganization({
   cxId,
@@ -47,7 +48,7 @@ export async function getAndUpdateCWOrgAndMetriportOrg({
       cwActive: active,
     });
   }
-  await createOrUpdateCWOrganization({
+  createOrUpdateCWOrganization({
     cxId,
     org: {
       oid,
@@ -59,5 +60,5 @@ export async function getAndUpdateCWOrgAndMetriportOrg({
       active,
     },
     isObo: facility ? isOboFacility(facility.cwType) : false,
-  });
+  }).catch(processAsyncError("cw.getAndUpdateCWOrgAndMetriportOrg"));
 }
