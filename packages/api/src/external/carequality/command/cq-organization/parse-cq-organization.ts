@@ -51,8 +51,6 @@ export async function parseCQOrganization(
 
   const endpoints = org.contained?.filter(c => c.resourceType === "Endpoint") ?? [];
 
-  console.log(org);
-
   return {
     id,
     name: org.name,

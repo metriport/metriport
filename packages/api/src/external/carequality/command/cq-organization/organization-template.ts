@@ -85,7 +85,7 @@ function getFhirOrganization(
           coding: [
             {
               system: "http://terminology.hl7.org/CodeSystem/contactentity-type",
-              code: "OPERATIONS",
+              code: "ADMIN",
             },
           ],
         },
@@ -104,6 +104,7 @@ function getFhirOrganization(
           },
         ],
         address: {
+          text: "Primary",
           use: "work",
           type: "both",
           line: [addressLine1],
@@ -132,9 +133,32 @@ function getFhirOrganization(
           code: "CQ",
         },
       },
+      {
+        url: "https://sequoiaproject.org/fhir/sphd/StructureDefinition/org-managing-org",
+        valueReference: {
+          reference: `Organization/${metriportOid}`,
+          type: "Organization",
+        },
+      },
+      ...(parentOrgOid
+        ? [
+            {
+              url: "https://sequoiaproject.org/fhir/sphd/StructureDefinition/InitiatorOnly",
+              valueCodeableConcept: {
+                coding: [
+                  {
+                    system: "https://sequoiaproject.org/fhir/sphd/CodeSystem/InitiatorOnlyCodes",
+                    code: "OBO",
+                  },
+                ],
+              },
+            },
+          ]
+        : []),
     ],
     address: [
       {
+        text: "Primary",
         use: "work",
         type: "both",
         line: [addressLine1],
