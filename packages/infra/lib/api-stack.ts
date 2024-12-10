@@ -1337,7 +1337,6 @@ export class APIStack extends Stack {
     };
   }): Lambda {
     const {
-      nodeRuntimeArn,
       lambdaLayers,
       vpc,
       sentryDsn,
@@ -1354,9 +1353,7 @@ export class APIStack extends Stack {
     const fhirToMedicalRecordLambda = createLambda({
       stack: this,
       name: "FhirToMedicalRecord",
-      runtime: lambda.Runtime.NODEJS_16_X,
-      // TODO https://github.com/metriport/metriport-internal/issues/1672
-      runtimeManagementMode: lambda.RuntimeManagementMode.manual(nodeRuntimeArn),
+      runtime: lambda.Runtime.NODEJS_18_X,
       entry: "fhir-to-medical-record",
       envType,
       envVars: {

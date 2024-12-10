@@ -249,6 +249,9 @@ type EnvConfigBase = {
 export type EnvConfigNonSandbox = EnvConfigBase & {
   environmentType: EnvType.staging | EnvType.production;
   dashUrl: string;
+  // TODO 2510 remove this
+  // TODO 2510 remove this
+  // TODO 2510 remove this
   fhirToMedicalLambda: {
     nodeRuntimeArn: string;
   };

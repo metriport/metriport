@@ -1,12 +1,3 @@
-import "web-streams-polyfill/polyfill";
-// TODO 2510 Try to remove this and use Node 18 on this lambda
-// TODO 2510 Try to remove this and use Node 18 on this lambda
-// TODO 2510 Try to remove this and use Node 18 on this lambda
-// TODO 2510 Try to remove this and use Node 18 on this lambda
-// TODO 2510 Try to remove this and use Node 18 on this lambda
-// TODO 2510 Try to remove this and use Node 18 on this lambda
-// Because we're running this lambda on Node16 and LangChain requires Node18
-import "./shared/fetch-polyfill";
 // Keep this ^ as early on the file as possible
 import { Brief } from "@metriport/core/command/ai-brief/create";
 import { getAiBriefContentFromBundle } from "@metriport/core/command/ai-brief/shared";
