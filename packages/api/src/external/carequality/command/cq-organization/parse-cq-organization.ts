@@ -35,7 +35,7 @@ export function parseCQOrganization(org: Organization): CQDirectoryEntryData | u
   const active = org.active;
   if (active === undefined) return undefined;
 
-  const parentOrg = org.partOf?.reference;
+  const parentOrg = org.partOf?.reference ?? org.partOf?.identifier?.value;
   const parentOrgOid = parentOrg?.split("/")[1];
 
   const endpoints = org.contained?.filter(c => c.resourceType === "Endpoint") ?? [];
