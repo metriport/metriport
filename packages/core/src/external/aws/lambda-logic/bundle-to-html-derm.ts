@@ -83,9 +83,9 @@ export function bundleToHtmlDerm(fhirBundle: Bundle, brief?: Brief): string {
     throw new Error("No patient found in bundle");
   }
 
-  const dermConditions = getDermConditions(conditions);
-  const rheumatoidConditions = getRheumatoidConditions(conditions);
-  const asthmaConditions = getAsthmaConditions(conditions);
+  const dermConditions = conditions.filter(condition => isDermCondition(condition));
+  const rheumatoidConditions = conditions.filter(condition => isRheumatoidCondition(condition));
+  const asthmaConditions = conditions.filter(condition => isAsthmaCondition(condition));
   const twoYearAgo = buildDayjs().subtract(2, "year").format(ISO_DATE);
 
   const {
@@ -2126,43 +2126,25 @@ function mapResourceToId<ResourceType>(resources: Resource[]): Record<string, Re
   }, {});
 }
 
-function getDermConditions(conditions: Condition[]): Condition[] {
-  const dermConditions = conditions.filter(condition => {
-    const code = getSpecificCode(condition.code?.coding ?? [], [ICD_10_CODE]);
-
-    // https://www.icd10data.com/ICD10CM/Codes/L00-L99
-    const isDermCode = code ? /L\d{2}(?:\.\d+)?/i.test(code) : false;
-
-    return isDermCode;
-  });
-
-  return dermConditions;
+function isDermCondition(condition: Condition): boolean {
+  const code = getSpecificCode(condition.code?.coding ?? [], [ICD_10_CODE]);
+  // Check if the code is in the L00-L99 range
+  const isDermCode = code ? /L\d{2}(?:\.\d+)?/i.test(code) : false;
+  return isDermCode;
 }
 
-function getRheumatoidConditions(conditions: Condition[]) {
-  const rheumatoidConditions = conditions.filter(condition => {
-    const code = getSpecificCode(condition.code?.coding ?? [], [ICD_10_CODE]);
-
-    // https://www.icd10data.com/ICD10CM/Codes/M00-M99
-    const isRheumatoidCode = code ? /M\d{2}(?:\.\d+)?/i.test(code) : false;
-
-    return isRheumatoidCode;
-  });
-
-  return rheumatoidConditions;
+function isRheumatoidCondition(condition: Condition): boolean {
+  const code = getSpecificCode(condition.code?.coding ?? [], [ICD_10_CODE]);
+  // Check if the code is in the M00-M99 range
+  const isRheumatoidCode = code ? /M\d{2}(?:\.\d+)?/i.test(code) : false;
+  return isRheumatoidCode;
 }
 
-function getAsthmaConditions(conditions: Condition[]) {
-  const rheumatoidConditions = conditions.filter(condition => {
-    const code = getSpecificCode(condition.code?.coding ?? [], [ICD_10_CODE]);
-
-    // https://www.icd10data.com/ICD10CM/Codes/J00-J99/J40-J4A/J45-/J45.909
-    const isAsthmaCode = code ? code.includes("J45") : false;
-
-    return isAsthmaCode;
-  });
-
-  return rheumatoidConditions;
+function isAsthmaCondition(condition: Condition): boolean {
+  const code = getSpecificCode(condition.code?.coding ?? [], [ICD_10_CODE]);
+  // https://www.icd10data.com/ICD10CM/Codes/J00-J99/J40-J4A/J45-/J45.909
+  const isAsthmaCode = code ? code.includes("J45") : false;
+  return isAsthmaCode;
 }
 
 function hasClinicalRelevantData(fhirTypes: FhirTypes): boolean {
