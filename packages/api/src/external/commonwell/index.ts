@@ -1,5 +1,5 @@
 import * as link from "./link";
-import * as organization from "./command/create-or-update-cw-organization";
+import * as organization from "./command/cw-organization/create-or-update-cw-organization";
 import * as patient from "./patient";
 
 const cwCommands = {

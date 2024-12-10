@@ -1,6 +1,6 @@
 import { Organization } from "@metriport/commonwell-sdk";
 import { OID_PREFIX } from "@metriport/core/domain/oid";
-import { normalizeState, normalizeZipCodeNew } from "@metriport/shared";
+import { normalizeUSStateForAddress, normalizeZipCodeNew } from "@metriport/shared";
 import { CwOrgDetails } from "../../shared";
 
 export function parseCWOrganization(org: Organization): CwOrgDetails {
@@ -15,7 +15,7 @@ export function parseCWOrganization(org: Organization): CwOrgDetails {
         addressLine1: location.address1,
         addressLine2: location.address2 ? location.address2 : undefined,
         city: location.city,
-        state: normalizeState(location.state),
+        state: normalizeUSStateForAddress(location.state),
         zip: normalizeZipCodeNew(location.postalCode),
         country: location.country,
       },
