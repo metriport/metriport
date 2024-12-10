@@ -15,7 +15,7 @@ import {
 } from "../command/cq-directory/create-or-update-cq-facility";
 import { makeAddressWithCoordinates } from "../../../domain/medical/__tests__/location-address";
 import { buildCqOrgNameForFacility } from "../shared";
-import * as createOrUpdateCqOrg from "../command/cq-directory/create-or-update-cq-organization";
+import * as createOrUpdateCqOrg from "../command/cq-organization/create-or-update-cq-organization";
 
 let getAddressWithCoordination: jest.SpyInstance;
 let createOrUpdateCqOrganizationMock: jest.SpyInstance;

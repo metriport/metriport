@@ -1,0 +1,124 @@
+import { Organization, Endpoint } from "@medplum/fhirtypes";
+import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
+import { isValidUrl, normalizeState, normalizeZipCodeNew } from "@metriport/shared";
+import { CQDirectoryEntryData } from "../../cq-directory";
+import { CQOrgUrls } from "../../shared";
+import { transactionUrl } from "./organization-template";
+const { log } = out(`parseCQDirectoryEntries`);
+
+const EARTH_RADIUS = 6378168;
+const XCPD_STRING = "ITI-55";
+const XCA_DQ_STRING = "ITI-38";
+const XCA_DR_STRING = "ITI-39";
+const XDR_STRING = "ITI-41";
+type ChannelUrl = typeof XCPD_STRING | typeof XCA_DQ_STRING | typeof XCA_DR_STRING;
+
+export function parseCQOrganization(org: Organization): CQDirectoryEntryData | undefined {
+  const id = org.identifier?.[0]?.value;
+  if (!id) return undefined;
+
+  const lastUpdatedAtCQ = org.meta?.lastUpdated;
+  if (!lastUpdatedAtCQ) return undefined;
+
+  const address = org.address?.[0];
+  const addressLine = address?.line?.[0];
+  const city = address?.city;
+  const state = address?.state;
+  const postalCode = address?.postalCode;
+
+  const location = org.contained?.filter(c => c.resourceType === "Location");
+  const lat = location?.[0]?.position?.latitude;
+  const lon = location?.[0]?.position?.longitude;
+  const point = lat && lon ? computeEarthPoint(lat, lon) : undefined;
+
+  const active = org.active;
+  if (active === undefined) return undefined;
+
+  const parentOrg = org.partOf?.reference;
+  const parentOrgOid = parentOrg?.split("/")[1];
+
+  const endpoints = org.contained?.filter(c => c.resourceType === "Endpoint") ?? [];
+
+  return {
+    id,
+    name: org.name,
+    lat: lat,
+    lon: lon,
+    point,
+    addressLine,
+    city,
+    state: state ? normalizeState(state) : undefined,
+    zip: postalCode ? normalizeZipCodeNew(postalCode) : undefined,
+    managingOrganization: parentOrgOid,
+    managingOrganizationId: parentOrgOid, // TODO: #2468 - Check if this is correct
+    active,
+    lastUpdatedAtCQ,
+    ...getUrls(endpoints),
+  };
+}
+
+/**
+ * Computes the Earth point for a coordinate pair. Built based on this logic: https://github.com/postgres/postgres/blob/4d0cf0b05defcee985d5af38cb0db2b9c2f8dbae/contrib/earthdistance/earthdistance--1.1.sql#L50-L55C15
+ * @returns Earth 3D point
+ */
+function computeEarthPoint(lat: number, lon: number): string {
+  const latRad = convertDegreesToRadians(lat);
+  const lonRad = convertDegreesToRadians(lon);
+
+  const x = EARTH_RADIUS * Math.cos(latRad) * Math.cos(lonRad);
+  const y = EARTH_RADIUS * Math.cos(latRad) * Math.sin(lonRad);
+  const z = EARTH_RADIUS * Math.sin(latRad);
+  return `(${x},${y},${z})`;
+}
+
+function convertDegreesToRadians(degrees: number): number {
+  return (degrees * Math.PI) / 180;
+}
+
+function getUrls(endpoints: Endpoint[]): CQOrgUrls {
+  const endpointMap: Record<string, string> = {};
+
+  endpoints.map(endpoint => {
+    const ext = endpoint.extension?.find(ext => ext.url === transactionUrl);
+    const type = getUrlType(ext?.valueCodeableConcept?.coding?.[0]?.code);
+    const address = endpoint.address;
+
+    if (type && address) endpointMap[type] = address;
+  });
+
+  const urls: CQOrgUrls = {};
+  const urlXCPD = endpointMap[XCPD_STRING];
+  const urlDQ = endpointMap[XCA_DQ_STRING];
+  const urlDR = endpointMap[XCA_DR_STRING];
+
+  if (isValidUrl(urlXCPD)) {
+    urls.urlXCPD = urlXCPD;
+  }
+  if (isValidUrl(urlDQ)) {
+    urls.urlDQ = urlDQ;
+  }
+  if (isValidUrl(urlDR)) {
+    urls.urlDR = urlDR;
+  }
+
+  return urls;
+}
+
+function getUrlType(value: string | undefined): ChannelUrl | undefined {
+  if (!value) return;
+  if (value.includes(XCPD_STRING)) return XCPD_STRING;
+  if (value.includes(XCA_DQ_STRING)) return XCA_DQ_STRING;
+  if (value.includes(XCA_DR_STRING)) return XCA_DR_STRING;
+
+  if (value.includes("Direct Messaging")) return;
+  if (value.includes(XDR_STRING)) return; // TODO: #2468 - Learn about the function of this endpoint and see whether we need to include it in our mapping
+
+  const msg = `Unknown CQ Endpoint type`;
+  log(msg);
+  capture.message(msg, {
+    extra: { value, context: "parseCQDirectoryEntries" },
+    level: "warning",
+  });
+  return;
+}

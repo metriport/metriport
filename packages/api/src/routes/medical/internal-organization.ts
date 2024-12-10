@@ -13,8 +13,8 @@ import { organiationInternalDetailsSchema } from "./schemas/organization";
 import { internalDtoFromModel } from "./dtos/organizationDTO";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFromQueryAsBoolean } from "../util";
-import { createOrUpdateCQOrganization } from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
-import { createOrUpdateCWOrganization } from "../../external/commonwell/command/create-or-update-cw-organization";
+import { createOrUpdateCQOrganization } from "../../external/carequality/command/cq-organization/create-or-update-cq-organization";
+import { createOrUpdateCWOrganization } from "../../external/commonwell/command/cw-organization/create-or-update-cw-organization";
 import { getCqAddress } from "../../external/carequality/shared";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 
@@ -77,7 +77,6 @@ router.put(
         state: org.data.location.state,
         postalCode: org.data.location.zip,
         oid: org.oid,
-        organizationBizType: org.type,
         contactName: metriportCompanyDetails.name,
         phone: metriportCompanyDetails.phone,
         email: metriportEmailForCq,
@@ -89,12 +88,13 @@ router.put(
     if (syncInHie && org.cwApproved && !skipHie) {
       createOrUpdateCWOrganization({
         cxId,
-        org: {
+        orgDetails: {
           oid: org.oid,
+          name: org.data.name,
           data: org.data,
           active: org.cwActive,
+          isObo: false,
         },
-        isObo: false,
       }).catch(processAsyncError("cw.internal.organization"));
     }
     return res.status(httpStatus.OK).json(internalDtoFromModel(org));

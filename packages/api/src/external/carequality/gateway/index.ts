@@ -6,7 +6,7 @@ import { MetriportError } from "@metriport/shared";
 import { Config } from "../../../shared/config";
 import { isE2eCx, isEpicEnabledForCx } from "../../aws/app-config";
 import { getCQDirectoryEntryOrFail } from "../command/cq-directory/get-cq-directory-entry";
-import { getOrganizationsForXCPD } from "../command/cq-directory/get-cq-directory-organization";
+import { getOrganizationsForXCPD } from "../command/cq-directory/get-cq-directory-entry-as-organization";
 import {
   CQOrgBasicDetails,
   filterCQOrgsToSearch,

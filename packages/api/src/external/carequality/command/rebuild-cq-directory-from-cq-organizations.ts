@@ -6,13 +6,13 @@ import { errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { QueryTypes } from "sequelize";
-import { executeOnDBTx } from "../../../../models/transaction-wrapper";
-import { addUpdatedAtTrigger } from "../../../../sequelize/migrations-shared";
-import { Config } from "../../../../shared/config";
-import { makeCarequalityManagementAPIFhir } from "../../api";
-import { CQDirectoryEntryModel } from "../../models/cq-directory";
-import { bulkInsertCQDirectoryEntries } from "./create-cq-directory-entry";
-import { parseCQDirectoryEntryFromFhirOrganization } from "./parse-cq-directory-entry";
+import { executeOnDBTx } from "../../../models/transaction-wrapper";
+import { addUpdatedAtTrigger } from "../../../sequelize/migrations-shared";
+import { Config } from "../../../shared/config";
+import { makeCarequalityManagementAPIFhir } from "../api";
+import { CQDirectoryEntryModel } from "../models/cq-directory";
+import { bulkInsertCQDirectoryEntries } from "./cq-directory/create-cq-directory-entry";
+import { parseCQOrganization } from "./cq-organization/parse-cq-organization";
 
 dayjs.extend(duration);
 const BATCH_SIZE = 1000;
@@ -45,7 +45,7 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
         if (orgs.length < BATCH_SIZE) isDone = true;
         currentPosition += BATCH_SIZE;
         const parsedOrgs = orgs.flatMap(org => {
-          const parsed = parseCQDirectoryEntryFromFhirOrganization(org);
+          const parsed = parseCQOrganization(org);
           if (!parsed) return [];
           return [parsed];
         });

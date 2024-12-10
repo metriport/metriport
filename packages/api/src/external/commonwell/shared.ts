@@ -7,39 +7,6 @@ import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-h
 import { isCommonwellEnabled, isCWEnabledForCx } from "../aws/app-config";
 import { Config } from "../../shared/config";
 
-export async function getCwInitiator(
-  patient: Pick<Patient, "id" | "cxId">,
-  facilityId?: string
-): Promise<HieInitiator> {
-  return getHieInitiator(patient, facilityId);
-}
-
-export async function isFacilityEnabledToQueryCW(
-  facilityId: string | undefined,
-  patient: Pick<Patient, "id" | "cxId">
-): Promise<boolean> {
-  return await isHieEnabledToQuery(facilityId, patient, MedicalDataSource.COMMONWELL);
-}
-
-export function buildCwOrgNameForFacility({
-  vendorName,
-  orgName,
-  oboOid,
-}: {
-  vendorName: string;
-  orgName: string;
-  oboOid: string | undefined;
-}): string {
-  if (oboOid) {
-    return `${vendorName} - ${orgName} -OBO- ${oboOid}`;
-  }
-  return `${vendorName} - ${orgName}`;
-}
-
-export const cwOrgActiveSchema = z.object({
-  active: z.boolean(),
-});
-
 /**
  * Check whether CW should be enabled. Currently used in PD / DQ.
  *
@@ -107,6 +74,60 @@ export async function validateCWEnabled({
     });
     return false;
   }
+}
+
+export const cwOrgActiveSchema = z.object({
+  active: z.boolean(),
+});
+
+export const cwOrgDetailsSchema = z.object({
+  oid: z.string(),
+  name: z.string(),
+  data: z.object({
+    name: z.string(),
+    type: z.string(),
+    location: z.object({
+      addressLine1: z.string(),
+      addressLine2: z.string().optional(),
+      city: z.string(),
+      state: z.string(),
+      zip: z.string(),
+      country: z.string(),
+    }),
+  }),
+  active: z.boolean(),
+  isObo: z.boolean(),
+});
+
+export type CwOrgDetails = z.infer<typeof cwOrgDetailsSchema>;
+
+export async function getCwInitiator(
+  patient: Pick<Patient, "id" | "cxId">,
+  facilityId?: string
+): Promise<HieInitiator> {
+  return getHieInitiator(patient, facilityId);
+}
+
+export async function isFacilityEnabledToQueryCW(
+  facilityId: string | undefined,
+  patient: Pick<Patient, "id" | "cxId">
+): Promise<boolean> {
+  return await isHieEnabledToQuery(facilityId, patient, MedicalDataSource.COMMONWELL);
+}
+
+export function buildCwOrgNameForFacility({
+  vendorName,
+  orgName,
+  oboOid,
+}: {
+  vendorName: string;
+  orgName: string;
+  oboOid: string | undefined;
+}): string {
+  if (oboOid) {
+    return `${vendorName} - ${orgName} -OBO- ${oboOid}`;
+  }
+  return `${vendorName} - ${orgName}`;
 }
 
 function isCommonwellEnabledForPatient(patient: Patient): boolean {

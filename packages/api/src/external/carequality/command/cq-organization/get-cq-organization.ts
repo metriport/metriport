@@ -1,0 +1,36 @@
+import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
+import { errorToString, NotFoundError } from "@metriport/shared";
+import { CQDirectoryEntryData } from "../../cq-directory";
+import { parseCQOrganization } from "./parse-cq-organization";
+import { makeCarequalityManagementAPIFhir } from "../../api";
+
+export async function getCqOrg(oid: string): Promise<CQDirectoryEntryData | undefined> {
+  const { log, debug } = out(`CQ getCqOrg - CQ Org OID ${oid}`);
+  const cq = makeCarequalityManagementAPIFhir();
+  if (!cq) throw new Error("Carequality API not setup");
+
+  try {
+    const orgs = await cq.listOrganizations({ oid });
+    debug(`resp listOrganizations: `, JSON.stringify(orgs));
+    const org = orgs[0];
+    return org ? parseCQOrganization(org) : undefined;
+  } catch (error) {
+    const msg = `Failure while getting Org @ CQ`;
+    log(`${msg}. Org OID: ${oid}. Cause: ${errorToString(error)}`);
+    capture.error(msg, {
+      extra: {
+        orgOid: oid,
+        context: `cq.org.get`,
+        error,
+      },
+    });
+    throw error;
+  }
+}
+
+export async function getCqOrgOrFail(oid: string): Promise<CQDirectoryEntryData> {
+  const org = await getCqOrg(oid);
+  if (!org) throw new NotFoundError("Organization not found");
+  return org;
+}

@@ -1,19 +1,13 @@
-import { NotFoundError, errorToString } from "@metriport/shared";
-import { CarequalityManagementAPIFhir } from "@metriport/carequality-sdk";
-import { Patient } from "@metriport/core/domain/patient";
-import { AddressStrict } from "@metriport/core/domain/location-address";
 import { Coordinates } from "@metriport/core/domain/address";
-import { capture } from "@metriport/core/util/notifications";
-import { out } from "@metriport/core/util/log";
-import { PurposeOfUse } from "@metriport/shared";
+import { AddressStrict } from "@metriport/core/domain/location-address";
+import { Patient } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { OrganizationBizType } from "@metriport/core/domain/organization";
+import { capture } from "@metriport/core/util/notifications";
+import { errorToString, PurposeOfUse } from "@metriport/shared";
 import z from "zod";
+import { getAddressWithCoordinates } from "../../domain/medical/address";
 import { isCarequalityEnabled, isCQDirectEnabledForCx } from "../aws/app-config";
 import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
-import { getAddressWithCoordinates } from "../../domain/medical/address";
-import { CQDirectoryEntryData } from "./cq-directory";
-import { parseCQDirectoryEntryFromFhirOrganization } from "./command/cq-directory/parse-cq-directory-entry";
 // TODO: adjust when we support multiple POUs
 export function createPurposeOfUse() {
   return PurposeOfUse.TREATMENT;
@@ -86,7 +80,6 @@ export const cqOrgDetailsSchema = z.object({
   email: z.string(),
   role: z.enum(["Implementer", "Connection"]),
   active: z.boolean(),
-  organizationBizType: z.nativeEnum(OrganizationBizType).optional(),
   parentOrgOid: z.string().optional(),
 });
 
@@ -158,37 +151,4 @@ export async function getCqAddress({
     ? `${address.addressLine1}, ${address.addressLine2}`
     : address.addressLine1;
   return { coordinates, addressLine };
-}
-
-export async function getCqOrgOrFail(
-  cq: CarequalityManagementAPIFhir,
-  oid: string
-): Promise<CQDirectoryEntryData> {
-  const org = await getCqOrg(cq, oid);
-  if (!org) throw new NotFoundError("Organization not found");
-  return org;
-}
-
-export async function getCqOrg(
-  cq: CarequalityManagementAPIFhir,
-  oid: string
-): Promise<CQDirectoryEntryData | undefined> {
-  const { log } = out(`CQ getCqOrg - CQ Org OID ${oid}`);
-
-  try {
-    const orgs = await cq.listOrganizations({ oid });
-    const org = orgs[0];
-    return org ? parseCQDirectoryEntryFromFhirOrganization(org) : undefined;
-  } catch (error) {
-    const msg = `Failure while getting Org @ CQ`;
-    log(`${msg}. Org OID: ${oid}. Cause: ${errorToString(error)}`);
-    capture.error(msg, {
-      extra: {
-        orgOid: oid,
-        context: `cq.org.get`,
-        error,
-      },
-    });
-    throw error;
-  }
 }
