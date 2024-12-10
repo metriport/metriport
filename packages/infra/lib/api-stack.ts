@@ -1048,7 +1048,6 @@ export class APIStack extends Stack {
         GENERAL_BUCKET_NAME: generalBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      // architecture: lambda.Architecture.ARM_64,
     });
     generalBucket.grantReadWrite(lambda);
     return lambda;
@@ -1337,6 +1336,7 @@ export class APIStack extends Stack {
     };
   }): Lambda {
     const {
+      nodeRuntimeArn,
       lambdaLayers,
       vpc,
       sentryDsn,
@@ -1350,11 +1350,14 @@ export class APIStack extends Stack {
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
     const axiosTimeout = lambdaTimeout.minus(Duration.seconds(5));
 
-    const fhirToMedicalRecordLambda = createLambda({
+    // TODO 2510 Remove this after the first release of the lambda based on wkhtmltopdf
+    const fhirToMedicalRecordLambdaOld = createLambda({
       stack: this,
       name: "FhirToMedicalRecord",
-      runtime: lambda.Runtime.NODEJS_18_X,
-      entry: "fhir-to-medical-record",
+      runtime: lambda.Runtime.NODEJS_16_X,
+      // TODO https://github.com/metriport/metriport-internal/issues/1672
+      runtimeManagementMode: lambda.RuntimeManagementMode.manual(nodeRuntimeArn),
+      entry: "fhir-to-medical-record-old",
       envType,
       envVars: {
         AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
@@ -1369,14 +1372,51 @@ export class APIStack extends Stack {
         lambdaLayers.shared,
         lambdaLayers.langchain,
         // TODO 2510 When we remove this, lets also remove the layber, CICD, update package.json, readme, etc
-        // TODO 2510 When we remove this, lets also remove the layber, CICD, update package.json, readme, etc
-        // TODO 2510 When we remove this, lets also remove the layber, CICD, update package.json, readme, etc
-        // TODO 2510 When we remove this, lets also remove the layber, CICD, update package.json, readme, etc
-        // lambdaLayers.chromium,
-        // lambdaLayers.puppeteer,
-        lambdaLayers.wkHtmlToPdf,
+        lambdaLayers.chromium,
+        lambdaLayers.puppeteer,
       ],
       memory: 8192,
+      timeout: lambdaTimeout,
+      isEnableInsights: true,
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+    AppConfigUtils.allowReadConfig({
+      scope: this,
+      resourceName: "FhirToMrLambda",
+      resourceRole: fhirToMedicalRecordLambdaOld.role,
+      appConfigResources: ["*"],
+    });
+    medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambdaOld);
+    const bedrockPolicyStatementOld = new iam.PolicyStatement({
+      actions: ["bedrock:InvokeModel"],
+      resources: ["*"],
+    });
+    fhirToMedicalRecordLambdaOld.addToRolePolicy(bedrockPolicyStatementOld);
+
+    const fhirToMedicalRecordLambda = createLambda({
+      stack: this,
+      name: "FhirToMedicalRecord2",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      entry: "fhir-to-medical-record",
+      envType,
+      envVars: {
+        AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
+        MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
+        PDF_CONVERT_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
+        APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
+        APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
+        ...(bedrock && {
+          // API_URL set on the api-stack after the OSS API is created
+          DASH_URL: dashUrl,
+          BEDROCK_REGION: bedrock?.region,
+          BEDROCK_VERSION: bedrock?.anthropicVersion,
+          AI_BRIEF_MODEL_ID: bedrock?.modelId,
+        }),
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared, lambdaLayers.langchain, lambdaLayers.wkHtmlToPdf],
+      memory: 4096,
       timeout: lambdaTimeout,
       isEnableInsights: true,
       vpc,
