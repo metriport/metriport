@@ -96,7 +96,7 @@ router.post(
     const bundle = JSON.parse(file.buffer.toString()) as Bundle;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const orgs: Organization[] = (bundle.entry as Organization[]) ?? [];
+    const orgs = (bundle.entry as Organization[]) ?? [];
     console.log(`Got ${orgs.length} orgs`);
 
     const parsedOrgs = orgs.flatMap(org => {
