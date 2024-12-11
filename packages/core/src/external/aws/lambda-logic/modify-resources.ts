@@ -142,8 +142,9 @@ export function applyResourceSpecificFilters(res: Resource): SlimResource | unde
   return undefined;
 }
 
-type SlimPatient = Omit<Patient, "name"> & {
+export type SlimPatient = Omit<Patient, "name"> & {
   name?: string | undefined;
+  reference?: Record<string, string>;
 };
 
 function slimPatient(res: Patient): SlimPatient {
@@ -159,9 +160,13 @@ type AllergyContext = {
   manifestations: string | undefined;
 };
 
-type SlimAllergyIntolerance = Omit<AllergyIntolerance, "status" | "clinicalStatus" | "reaction"> & {
+export type SlimAllergyIntolerance = Omit<
+  AllergyIntolerance,
+  "status" | "clinicalStatus" | "reaction"
+> & {
   status?: string | undefined;
   context?: AllergyContext[] | undefined;
+  reference?: Record<string, string>;
 };
 
 function slimAllergyIntolerance(res: AllergyIntolerance): SlimAllergyIntolerance {
@@ -187,10 +192,11 @@ function slimAllergyIntolerance(res: AllergyIntolerance): SlimAllergyIntolerance
   };
 }
 
-type SlimImmunization = Omit<Immunization, "vaccineCode" | "site" | "route"> & {
+export type SlimImmunization = Omit<Immunization, "vaccineCode" | "site" | "route"> & {
   vaccineCode?: string | undefined;
   site?: string | undefined;
   route?: string | undefined;
+  reference?: Record<string, Partial<SlimOrganization>>;
 };
 
 function slimImmunization(res: Immunization): SlimImmunization | undefined {
@@ -217,10 +223,11 @@ function slimImmunization(res: Immunization): SlimImmunization | undefined {
   };
 }
 
-type SlimPractitioner = Omit<Practitioner, "name" | "qualification" | "address"> & {
+export type SlimPractitioner = Omit<Practitioner, "name" | "qualification" | "address"> & {
   name?: string | undefined;
   qualification?: string | undefined;
   address?: string | undefined;
+  reference?: Record<string, string>;
 };
 
 function slimPractitioner(res: Practitioner): SlimPractitioner {
@@ -233,15 +240,18 @@ function slimPractitioner(res: Practitioner): SlimPractitioner {
   };
 }
 
-type SlimProcedure = Omit<Procedure, "name" | "status"> & {
+export type SlimProcedure = Omit<Procedure, "name" | "status" | "bodySite"> & {
   name?: string | undefined;
   status?: string | undefined;
+  reference?: Record<string, string>;
+  bodySite?: string | undefined;
 };
 
 function slimProcedure(res: Procedure): SlimProcedure | undefined {
   const name = getUniqueDisplaysString(res.code);
   if (name?.includes("no data")) return undefined;
 
+  const bodySite = getUniqueDisplaysString(res.bodySite);
   const updRes = cloneDeep(res);
   delete updRes.code;
   delete updRes.reasonCode; // TODO: #2510 - Introduce term server lookup here
@@ -251,10 +261,11 @@ function slimProcedure(res: Procedure): SlimProcedure | undefined {
     ...updRes,
     name,
     status: isUselessStatus(res.status) ? undefined : res.status,
+    bodySite: bodySite ?? undefined,
   };
 }
 
-type SlimDiagnosticReport = Omit<
+export type SlimDiagnosticReport = Omit<
   DiagnosticReport,
   "type" | "category" | "presentedForm" | "status"
 > & {
@@ -262,7 +273,8 @@ type SlimDiagnosticReport = Omit<
   category?: string | undefined;
   presentedForm?: string[] | undefined;
   status?: string | undefined;
-  reference?: object;
+  // reference?: Record<string, string>;
+  reference?: Record<string, string | object>;
 };
 
 function slimDiagnosticReport(res: DiagnosticReport): SlimDiagnosticReport | undefined {
@@ -335,7 +347,7 @@ type ReferenceRange = {
   high: string | undefined;
 };
 
-type SlimObservation = Omit<
+export type SlimObservation = Omit<
   Observation,
   "category" | "reading" | "value" | "interpretation" | "referenceRange" | "status" | "code"
 > & {
@@ -345,6 +357,7 @@ type SlimObservation = Omit<
   status?: string | undefined;
   interpretation?: string | undefined;
   referenceRange?: ReferenceRange[] | undefined;
+  reference?: Record<string, string>;
 };
 
 function slimObservation(res: Observation): SlimObservation {
@@ -372,8 +385,9 @@ function slimObservation(res: Observation): SlimObservation {
   };
 }
 
-type SlimMedication = Omit<Medication, "name"> & {
+export type SlimMedication = Omit<Medication, "name"> & {
   name?: string | undefined;
+  reference?: Record<string, string>;
 };
 
 function slimMedication(res: Medication): SlimMedication {
@@ -385,7 +399,9 @@ function slimMedication(res: Medication): SlimMedication {
   };
 }
 
-type SlimMedicationRequest = Omit<MedicationRequest, "requester">;
+export type SlimMedicationRequest = Omit<MedicationRequest, "requester"> & {
+  reference?: Record<string, Partial<SlimMedication>>;
+};
 
 function slimMedicationRequest(res: MedicationRequest): SlimMedicationRequest {
   const updRes = cloneDeep(res);
@@ -395,8 +411,9 @@ function slimMedicationRequest(res: MedicationRequest): SlimMedicationRequest {
   };
 }
 
-type SlimMedicationStatement = Omit<MedicationStatement, "dosage"> & {
+export type SlimMedicationStatement = Omit<MedicationStatement, "dosage"> & {
   dosages?: Dosage[] | undefined;
+  reference?: Record<string, Partial<SlimMedication>>;
 };
 
 type Dosage = {
@@ -421,9 +438,13 @@ function slimMedicationStatement(res: MedicationStatement): SlimMedicationStatem
   };
 }
 
-type SlimMedicationAdministration = Omit<MedicationAdministration, "dose" | "route" | "dosage"> & {
+export type SlimMedicationAdministration = Omit<
+  MedicationAdministration,
+  "dose" | "route" | "dosage"
+> & {
   dose?: string | undefined;
   route?: string | undefined;
+  reference?: Record<string, Partial<SlimMedication>>;
 };
 
 function slimMedicationAdministration(res: MedicationAdministration): SlimMedicationAdministration {
@@ -439,10 +460,11 @@ function slimMedicationAdministration(res: MedicationAdministration): SlimMedica
   };
 }
 
-type SlimCondition = Omit<Condition, "name" | "category" | "clinicalStatus" | "code"> & {
+export type SlimCondition = Omit<Condition, "name" | "category" | "clinicalStatus" | "code"> & {
   name?: string | undefined;
   category?: string | undefined;
   clinicalStatus?: string | undefined;
+  reference?: Record<string, string | Partial<SlimPractitioner>>;
 };
 
 function slimCondition(res: Condition): SlimCondition {
@@ -459,8 +481,10 @@ function slimCondition(res: Condition): SlimCondition {
   };
 }
 
-type SlimOrganization = Omit<Organization, "address"> & {
+export type SlimOrganization = Omit<Organization, "address" | "name"> & {
+  name?: string | undefined;
   address?: string | undefined;
+  reference?: Record<string, string>;
 };
 
 function slimOrganization(res: Organization): SlimOrganization {
@@ -471,9 +495,10 @@ function slimOrganization(res: Organization): SlimOrganization {
   };
 }
 
-type SlimLocation = Omit<Location, "address" | "type"> & {
+export type SlimLocation = Omit<Location, "address" | "type"> & {
   address?: string | undefined;
   type?: string | undefined;
+  reference?: Record<string, string>;
 };
 
 function slimLocation(res: Location): SlimLocation {
