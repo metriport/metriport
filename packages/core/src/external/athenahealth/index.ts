@@ -60,7 +60,7 @@ function getS3UtilsInstance(): S3Utils {
 }
 
 const problemStatusesAthena = ["CHRONIC", "ACUTE"];
-// TODO: move to shared
+// TODO import from shared?
 const vitalSignCodesMapAthena = new Map<string, string>();
 vitalSignCodesMapAthena.set("8310-5", "VITALS.TEMPERATURE");
 vitalSignCodesMapAthena.set("8867-4", "VITALS.HEARTRATE");
@@ -572,9 +572,29 @@ class AthenaHealthApi {
             },
           ];
         }
+        const code = this.getObservationCode(observation);
+        if (!code) {
+          throw new MetriportError("No code found for observation", undefined, {
+            cxId,
+            practiceId: this.practiceId,
+            patientId,
+            departmentId,
+            observationId: observation.id,
+          });
+        }
+        const clinicalElementId = vitalSignCodesMapAthena.get(code);
+        if (!clinicalElementId) {
+          throw new MetriportError("No clinical element id found for observation", undefined, {
+            cxId,
+            practiceId: this.practiceId,
+            patientId,
+            departmentId,
+            observationId: observation.id,
+          });
+        }
         return [
           {
-            clinicalelementid: this.getClinicalElementId(cxId, patientId, observation),
+            clinicalelementid: clinicalElementId,
             readingtaken: this.formatDate(v.date),
             value: v.value.toString(),
           },
@@ -966,25 +986,8 @@ class AthenaHealthApi {
       : condition.clinicalStatus?.coding?.[0]?.code;
   }
   // TODO import from shared?
-  private getClinicalElementId(cxId: string, patientId: string, observation: Observation): string {
-    const code = observation.code?.coding?.[0]?.code;
-    if (!code) {
-      throw new MetriportError("No code found for observation", undefined, {
-        cxId,
-        patientId,
-        observationId: observation.id,
-      });
-    }
-    const clinicalElementId = vitalSignCodesMapAthena.get(code);
-    if (!clinicalElementId) {
-      throw new MetriportError("Unknown clinical element id for code", undefined, {
-        cxId,
-        patientId,
-        observationId: observation.id,
-        code,
-      });
-    }
-    return clinicalElementId;
+  private getObservationCode(observation: Observation): string | undefined {
+    return observation.code?.coding?.[0]?.code;
   }
 }
 
