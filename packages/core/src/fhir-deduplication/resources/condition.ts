@@ -19,7 +19,7 @@ import {
  * 1. Group same Conditions based on:
  *      - Medical codes:
  *          - ICD-10
- *          - SNOMED // TODO: Introduce SNOMED cross-walk to match SNOMED with ICD-10
+ *          - SNOMED
  *          - ICD-9
  *      - Date
  *      - Condition name (from code->text or coding->display)
@@ -41,13 +41,9 @@ export function groupSameConditions(conditions: Condition[]): {
   refReplacementMap: Map<string, string>;
   danglingReferences: Set<string>;
 } {
-  // l1 points to l2
   const l1ConditionsMap = new Map<string, string>();
   const l2ConditionsMap = new Map<string, Condition>();
 
-  // const snomedMap = new Map<string, Condition>();
-  // const icd10Map = new Map<string, Condition>();
-  // const displayMap = new Map<string, Condition>();
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
 
