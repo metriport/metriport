@@ -1,4 +1,6 @@
 import {
+  Condition,
+  Observation,
   Medication,
   MedicationAdministration,
   MedicationDispense,
@@ -20,12 +22,18 @@ import {
   PatientResource,
   patientResourceSchema,
   patientSearchResourceSchema,
+  ProblemCreateResponse,
+  problemCreateResponseSchema,
+  VitalsCreateResponse,
+  vitalsCreateResponseSchema,
   subscriptionCreateResponseSchema,
 } from "@metriport/shared/interface/external/athenahealth/index";
 import axios, { AxiosInstance } from "axios";
 import { processAsyncError } from "../..//util/error/shared";
 import { createHivePartitionFilePath } from "../../domain/filename";
+import { fetchCodingCodeOrDisplayOrSystem } from "../../fhir-deduplication/shared";
 import { Config } from "../../util/config";
+import { SNOMED_CODE } from "../../util/constants";
 import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
 import { uuidv7 } from "../../util/uuid-v7";
@@ -51,16 +59,47 @@ function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
+const problemStatusesAthena = ["CHRONIC", "ACUTE"];
+// TODO: move to shared
+const vitalSignCodesMapAthena = new Map<string, string>();
+vitalSignCodesMapAthena.set("8310-5", "VITALS.TEMPERATURE");
+vitalSignCodesMapAthena.set("8867-4", "VITALS.HEARTRATE");
+vitalSignCodesMapAthena.set("9279-1", "VITALS.RESPIRATIONRATE");
+vitalSignCodesMapAthena.set("2708-6", "VITALS.INHALEDO2CONCENTRATION");
+vitalSignCodesMapAthena.set("8462-4", "VITALS.BLOODPRESSURE.DIASTOLIC");
+vitalSignCodesMapAthena.set("8480-6", "VITALS.BLOODPRESSURE.SYSTOLIC");
+vitalSignCodesMapAthena.set("29463-7", "VITALS.WEIGHT");
+vitalSignCodesMapAthena.set("8302-2", "VITALS.HEIGHT");
+vitalSignCodesMapAthena.set("39156-5", "VITALS.BMI");
+
 export type AthenaEnv = "api" | "api.preview";
 export function isAthenaEnv(env: string): env is AthenaEnv {
   return env === "api" || env === "api.preview";
 }
 
+// TYPES FROM DASHBOARD
 export type MedicationWithRefs = {
   medication: Medication;
   administration?: MedicationAdministration;
   dispense?: MedicationDispense;
   statement?: MedicationStatement;
+};
+
+type BloodPressure = {
+  systolic: number;
+  diastolic: number;
+};
+
+type DataPoint = {
+  value: number;
+  date: string;
+  unit?: string;
+  bp?: BloodPressure | undefined;
+};
+
+export type GroupedVitals = {
+  mostRecentObservation: Observation;
+  sortedPoints?: DataPoint[];
 };
 
 class AthenaHealthApi {
@@ -344,7 +383,7 @@ class AthenaHealthApi {
       providernote: "Added via Metriport App",
       unstructuredsig: "Metriport",
       medicationid: `${medicationOptions[0]?.medicationid}`,
-      hidden: "false",
+      hidden: false,
       startdate: this.formatDate(medication.statement?.effectivePeriod?.start),
       stopdate: this.formatDate(medication.statement?.effectivePeriod?.end),
       stopreason: undefined,
@@ -390,6 +429,198 @@ class AthenaHealthApi {
           patientId,
           departmentId,
           context: "athenahealth.create-medication",
+          error,
+        },
+      });
+      throw error;
+    }
+  }
+
+  async createProblem({
+    cxId,
+    patientId,
+    departmentId,
+    condition,
+  }: {
+    cxId: string;
+    patientId: string;
+    departmentId: string;
+    condition: Condition;
+  }): Promise<ProblemCreateResponse> {
+    const { log, debug } = out(
+      `AthenaHealth create problem - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} departmentId ${departmentId}`
+    );
+
+    const snomedCode = this.getSnomedConditionCode(condition);
+    if (!snomedCode) {
+      throw new MetriportError("No SNOMED code found for condition", undefined, {
+        cxId,
+        practiceId: this.practiceId,
+        patientId,
+        departmentId,
+        conditionId: condition.id,
+      });
+    }
+    const startDate = this.getConditionStartDate(condition);
+    if (!startDate) {
+      throw new MetriportError("No SNOMED code found for condition", undefined, {
+        cxId,
+        practiceId: this.practiceId,
+        patientId,
+        departmentId,
+        conditionId: condition.id,
+      });
+    }
+    const conditionStatus = this.getConditionStatus(condition);
+    const athenaStatus = conditionStatus
+      ? problemStatusesAthena.find(status => status.toLowerCase() === conditionStatus.toLowerCase())
+      : undefined;
+    const data = {
+      departmentid: this.stripDepartmentId(departmentId),
+      note: "Added via Metriport App",
+      snomedcode: snomedCode,
+      startdate: this.formatDate(startDate),
+      status: athenaStatus,
+      THIRDPARTYUSERNAME: undefined,
+      PATIENTFACINGCALL: undefined,
+    };
+    const chartProblemUrl = `/chart/${this.stripPatientId(patientId)}/problems`;
+    try {
+      const response = await this.axiosInstanceProprietary.post(
+        chartProblemUrl,
+        this.createDataParams(data)
+      );
+      if (!response.data) throw new MetriportError(`No body returned from ${chartProblemUrl}`);
+      debug(`${chartProblemUrl} resp: `, () => JSON.stringify(response.data));
+      if (responsesBucket) {
+        const filePath = createHivePartitionFilePath({
+          cxId,
+          patientId,
+          date: new Date(),
+        });
+        const key = `athenahealth/chart/problem/${filePath}/${uuidv7()}.json`;
+        this.s3Utils
+          .uploadFile({
+            bucket: responsesBucket,
+            key,
+            file: Buffer.from(JSON.stringify(response.data), "utf8"),
+            contentType: "application/json",
+          })
+          .catch(processAsyncError("Error saving to s3 @ AthenaHealth - createProblem"));
+      }
+      const outcome = problemCreateResponseSchema.parse(response.data);
+      if (!outcome.success) throw new MetriportError(`Problem create not successful`);
+      return outcome;
+    } catch (error) {
+      const msg = `Failure while creating problem @ AthenaHealth`;
+      log(`${msg}. Cause: ${errorToString(error)}`);
+      capture.error(msg, {
+        extra: {
+          url: chartProblemUrl,
+          cxId,
+          practiceId: this.practiceId,
+          patientId,
+          departmentId,
+          context: "athenahealth.create-problem",
+          error,
+        },
+      });
+      throw error;
+    }
+  }
+
+  async createVitals({
+    cxId,
+    patientId,
+    departmentId,
+    vitals,
+  }: {
+    cxId: string;
+    patientId: string;
+    departmentId: string;
+    vitals: GroupedVitals;
+  }): Promise<VitalsCreateResponse> {
+    const { log, debug } = out(
+      `AthenaHealth create vitals - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} departmentId ${departmentId}`
+    );
+    const observation = vitals.mostRecentObservation;
+    if (!vitals.sortedPoints) {
+      throw new MetriportError("No points found for vitals", undefined, {
+        cxId,
+        practiceId: this.practiceId,
+        patientId,
+        departmentId,
+        observationId: observation.id,
+      });
+    }
+    const data = {
+      departmentid: this.stripDepartmentId(departmentId),
+      returnvitalsid: true,
+      source: "DEVICEGENERATED",
+      vitals: vitals.sortedPoints.map(v => {
+        if (v.bp) {
+          return [
+            {
+              clinicalelementid: "VITALS.BLOODPRESSURE.DIASTOLIC",
+              readingtaken: this.formatDate(v.date),
+              value: v.bp.diastolic.toString(),
+            },
+            {
+              clinicalelementid: "VITALS.BLOODPRESSURE.SYSTOLIC",
+              readingtaken: this.formatDate(v.date),
+              value: v.bp.systolic.toString(),
+            },
+          ];
+        }
+        return [
+          {
+            clinicalelementid: this.getClinicalElementId(cxId, patientId, observation),
+            readingtaken: this.formatDate(v.date),
+            value: v.value.toString(),
+          },
+        ];
+      }),
+      THIRDPARTYUSERNAME: undefined,
+      PATIENTFACINGCALL: undefined,
+    };
+    const chartVitalsUrl = `/chart/${this.stripPatientId(patientId)}/vitals`;
+    try {
+      const response = await this.axiosInstanceProprietary.post(
+        chartVitalsUrl,
+        this.createDataParams(data)
+      );
+      if (!response.data) throw new MetriportError(`No body returned from ${chartVitalsUrl}`);
+      debug(`${chartVitalsUrl} resp: `, () => JSON.stringify(response.data));
+      if (responsesBucket) {
+        const filePath = createHivePartitionFilePath({
+          cxId,
+          patientId,
+          date: new Date(),
+        });
+        const key = `athenahealth/chart/vitals/${filePath}/${uuidv7()}.json`;
+        this.s3Utils
+          .uploadFile({
+            bucket: responsesBucket,
+            key,
+            file: Buffer.from(JSON.stringify(response.data), "utf8"),
+            contentType: "application/json",
+          })
+          .catch(processAsyncError("Error saving to s3 @ AthenaHealth - createVitals"));
+      }
+      const outcome = vitalsCreateResponseSchema.parse(response.data);
+      if (!outcome.success) throw new MetriportError(`Vitals create not successful`);
+      return outcome;
+    } catch (error) {
+      const msg = `Failure while creating vitals @ AthenaHealth`;
+      log(`${msg}. Cause: ${errorToString(error)}`);
+      capture.error(msg, {
+        extra: {
+          url: chartVitalsUrl,
+          cxId,
+          practiceId: this.practiceId,
+          patientId,
+          departmentId,
+          context: "athenahealth.create-vitals",
           error,
         },
       });
@@ -662,10 +893,15 @@ class AthenaHealthApi {
     }
   }
 
-  private createDataParams(data: { [key: string]: string | undefined }): string {
-    return Object.entries(data)
-      .flatMap(([k, v]) => (v ? [`${k}=${v}`] : []))
-      .join("&");
+  private createDataParams(data: {
+    [key: string]: string | boolean | object | object[] | undefined;
+  }): string {
+    const dataParams = new URLSearchParams();
+    Object.entries(data).forEach(([k, v]) => {
+      if (v === undefined) return;
+      dataParams.append(k, typeof v === "object" ? JSON.stringify(v) : v.toString());
+    });
+    return dataParams.toString();
   }
 
   stripPracticeId(id: string) {
@@ -706,6 +942,49 @@ class AthenaHealthApi {
     const parsedDate = buildDayjs(trimmedDate);
     if (!parsedDate.isValid()) return undefined;
     return parsedDate.format(athenaDateTimeFormat);
+  }
+  // TODO import from shared?
+  private getSnomedConditionCode(condition: Condition): string | undefined {
+    const code = condition.code;
+    const snomedCoding = code?.coding?.find(coding => {
+      const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+      return system?.includes(SNOMED_CODE);
+    });
+    if (!snomedCoding) return undefined;
+    return snomedCoding.code;
+  }
+  // TODO import from shared?
+  private getConditionStartDate(condition: Condition): string | undefined {
+    return condition.onsetDateTime ?? condition.onsetPeriod?.start;
+  }
+  // TODO import from shared?
+  private getConditionStatus(condition: Condition): string | undefined {
+    return condition.clinicalStatus?.text ??
+      condition.clinicalStatus?.coding?.[0]?.display ??
+      condition.clinicalStatus?.coding?.[0]?.code === "55561003"
+      ? "Active"
+      : condition.clinicalStatus?.coding?.[0]?.code;
+  }
+  // TODO import from shared?
+  private getClinicalElementId(cxId: string, patientId: string, observation: Observation): string {
+    const code = observation.code?.coding?.[0]?.code;
+    if (!code) {
+      throw new MetriportError("No code found for observation", undefined, {
+        cxId,
+        patientId,
+        observationId: observation.id,
+      });
+    }
+    const clinicalElementId = vitalSignCodesMapAthena.get(code);
+    if (!clinicalElementId) {
+      throw new MetriportError("Unknown clinical element id for code", undefined, {
+        cxId,
+        patientId,
+        observationId: observation.id,
+        code,
+      });
+    }
+    return clinicalElementId;
   }
 }
 

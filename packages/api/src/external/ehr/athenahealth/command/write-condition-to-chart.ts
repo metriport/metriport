@@ -1,34 +1,34 @@
-import AthenaHealthApi, { MedicationWithRefs } from "@metriport/core/external/athenahealth/index";
+import AthenaHealthApi from "@metriport/core/external/athenahealth/index";
+import { ProblemCreateResponse } from "@metriport/shared/interface/external/athenahealth/problem";
+import { Condition } from "@medplum/fhirtypes";
 import { getAthenaEnv } from "../shared";
 
-export async function writeMedicationToChart({
+export async function writeConditionToChart({
   cxId,
   athenaPatientId,
   athenaPracticeId,
   athenaDepartmentId,
-  medication,
-  accessToken,
+  condition,
 }: {
   cxId: string;
   athenaPatientId: string;
   athenaPracticeId: string;
   athenaDepartmentId: string;
-  medication: MedicationWithRefs;
-  accessToken?: string;
-}) {
+  condition: Condition;
+}): Promise<ProblemCreateResponse> {
   const { environment, clientKey, clientSecret } = await getAthenaEnv();
 
   const api = await AthenaHealthApi.create({
-    threeLeggedAuthToken: accessToken,
+    threeLeggedAuthToken: undefined,
     practiceId: athenaPracticeId,
     environment,
     clientKey,
     clientSecret,
   });
-  await api.createMedication({
+  return await api.createProblem({
     cxId,
     patientId: athenaPatientId,
     departmentId: athenaDepartmentId,
-    medication,
+    condition,
   });
 }
