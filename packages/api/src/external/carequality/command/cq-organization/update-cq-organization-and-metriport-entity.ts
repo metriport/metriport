@@ -1,4 +1,3 @@
-import { processAsyncError } from "@metriport/core/util/error/shared";
 import { metriportCompanyDetails, MetriportError } from "@metriport/shared";
 import { isOboFacility } from "../../../../domain/medical/facility";
 import { FacilityModel } from "../../../../models/medical/facility";
@@ -6,13 +5,13 @@ import { OrganizationModel } from "../../../../models/medical/organization";
 import { metriportEmail as metriportEmailForCq } from "../../constants";
 import { getCqAddress } from "../../shared";
 import {
-  createOrUpdateCQOrganization,
+  createOrUpdateCqOrganization,
   metriportIntermediaryOid,
   metriportOid,
 } from "./create-or-update-cq-organization";
 import { getCqOrgOrFail } from "./get-cq-organization";
 
-export async function updateCQOrganizationAndMetriportEntity({
+export async function updateCqOrganizationAndMetriportEntity({
   cxId,
   oid,
   active,
@@ -28,17 +27,13 @@ export async function updateCQOrganizationAndMetriportEntity({
   const cqOrg = await getCqOrgOrFail(oid);
   if (!cqOrg.name) throw new MetriportError("CQ Organization missing name", undefined, { oid });
   if (facility) {
-    await facility.update({
-      cqActive: active,
-    });
+    await facility.update({ cqActive: active });
   } else {
-    await org.update({
-      cqActive: active,
-    });
+    await org.update({ cqActive: active });
   }
   const address = facility ? facility.data.address : org.data.location;
   const { coordinates, addressLine } = await getCqAddress({ cxId, address });
-  createOrUpdateCQOrganization({
+  await createOrUpdateCqOrganization({
     name: cqOrg.name,
     addressLine1: addressLine,
     lat: coordinates.lat.toString(),
@@ -57,5 +52,5 @@ export async function updateCQOrganizationAndMetriportEntity({
       : undefined,
     active,
     role: "Connection" as const,
-  }).catch(processAsyncError("cq.getAndUpdateCQOrgAndMetriportOrg"));
+  });
 }

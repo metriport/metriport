@@ -2,19 +2,19 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared";
 import { Config } from "../../../../shared/config";
-import { getOrganizationFhirTemplate } from "./organization-template";
+import { makeCarequalityManagementAPIFhir } from "../../api";
+import { CQDirectoryEntryData } from "../../cq-directory";
 import { CQOrgDetails, CQOrgDetailsWithUrls, cqOrgUrlsSchema } from "../../shared";
 import { getCqOrg } from "./get-cq-organization";
-import { CQDirectoryEntryData } from "../../cq-directory";
+import { getOrganizationFhirTemplate } from "./organization-template";
 import { parseCQOrganization } from "./parse-cq-organization";
-import { makeCarequalityManagementAPIFhir } from "../../api";
 
 export const metriportOid = Config.getSystemRootOID();
 export const metriportIntermediaryOid = `${metriportOid}.666`;
 
-export async function createOrUpdateCQOrganization(
+export async function createOrUpdateCqOrganization(
   orgDetails: CQOrgDetails
-): Promise<CQDirectoryEntryData | undefined> {
+): Promise<CQDirectoryEntryData> {
   const orgDetailsWithUrls = getOrgDetailsWithUrls(orgDetails);
   const org = await getCqOrg(orgDetailsWithUrls.oid);
   if (org) return await updateCQOrganization(orgDetailsWithUrls);
@@ -23,7 +23,7 @@ export async function createOrUpdateCQOrganization(
 
 export async function updateCQOrganization(
   orgDetails: CQOrgDetailsWithUrls
-): Promise<CQDirectoryEntryData | undefined> {
+): Promise<CQDirectoryEntryData> {
   const { log, debug } = out(`CQ updateCQOrganization - CQ Org OID ${orgDetails.oid}`);
   const carequalityOrg = getOrganizationFhirTemplate(orgDetails);
   const cq = makeCarequalityManagementAPIFhir();
@@ -34,7 +34,7 @@ export async function updateCQOrganization(
       org: carequalityOrg,
       oid: orgDetails.oid,
     });
-    debug(`resp updateOrganization: `, JSON.stringify(resp));
+    debug(`resp updateOrganization: `, () => JSON.stringify(resp));
     return parseCQOrganization(resp);
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
@@ -46,7 +46,7 @@ export async function updateCQOrganization(
     };
     if (error.response?.status === 404) {
       capture.message("Got 404 while updating Org @ CQ, creating it", { extra });
-      await createCQOrganization(orgDetails);
+      return await createCQOrganization(orgDetails);
     }
     const msg = `Failure while updating org @ CQ`;
     log(`${msg}. Org OID: ${orgDetails.oid}. Cause: ${errorToString(error)}`);
@@ -57,7 +57,7 @@ export async function updateCQOrganization(
 
 export async function createCQOrganization(
   orgDetails: CQOrgDetailsWithUrls
-): Promise<CQDirectoryEntryData | undefined> {
+): Promise<CQDirectoryEntryData> {
   const { log, debug } = out(`CQ registerOrganization - CQ Org OID ${orgDetails.oid}`);
   const carequalityOrg = getOrganizationFhirTemplate(orgDetails);
   const cq = makeCarequalityManagementAPIFhir();
@@ -65,7 +65,7 @@ export async function createCQOrganization(
 
   try {
     const resp = await cq.registerOrganization(carequalityOrg);
-    debug(`resp registerOrganization: `, JSON.stringify(resp));
+    debug(`resp registerOrganization: `, () => JSON.stringify(resp));
     return parseCQOrganization(resp);
   } catch (error) {
     const msg = `Failure while registering org @ CQ`;

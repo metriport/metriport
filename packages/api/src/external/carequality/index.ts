@@ -1,9 +1,9 @@
-import * as patient from "./patient";
 import * as organization from "./command/cq-organization/create-or-update-cq-organization";
+import * as patient from "./patient";
 
 const cqCommands = {
   organization: {
-    createOrUpdate: organization.createOrUpdateCQOrganization,
+    createOrUpdate: organization.createOrUpdateCqOrganization,
   },
   patient: {
     discover: patient.discover,

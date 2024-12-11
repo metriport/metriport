@@ -7,6 +7,7 @@ import {
   DiagnosticReport,
   DocumentReference,
   Encounter,
+  Endpoint,
   Extension,
   FamilyMemberHistory,
   Immunization,
@@ -15,7 +16,6 @@ import {
   MedicationAdministration,
   MedicationRequest,
   MedicationStatement,
-  ResourceType as MedplumResourceType,
   Observation,
   OperationOutcomeIssue,
   Organization,
@@ -24,6 +24,7 @@ import {
   Procedure,
   Reference,
   Resource,
+  ResourceType as MedplumResourceType,
 } from "@medplum/fhirtypes";
 import { isCarequalityExtension } from "../../carequality/extension";
 import { isCommonwellExtension } from "../../commonwell/extension";
@@ -168,6 +169,10 @@ export function isComposition(resource: Resource | undefined): resource is Compo
 
 export function isEncounter(resource: Resource | undefined): resource is Encounter {
   return resource?.resourceType === "Encounter";
+}
+
+export function isEndpoint(resource: Resource | undefined): resource is Endpoint {
+  return resource?.resourceType === "Endpoint";
 }
 
 export function isFamilyMemberHistory(

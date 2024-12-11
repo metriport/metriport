@@ -13,11 +13,12 @@ import {
 import { getFaciltiyByOidOrFail } from "../../command/medical/facility/get-facility";
 import { cwOrgActiveSchema } from "../../external/commonwell/shared";
 import { getOrgOrFail } from "../../external/commonwell/command/cw-organization/get-cw-organization";
-import { updateCWOrganizationAndMetriportEntity } from "../../external/commonwell/command/cw-organization/update-cw-organization-and-metriport-entity";
+import { updateCwOrganizationAndMetriportEntity } from "../../external/commonwell/command/cw-organization/update-cw-organization-and-metriport-entity";
 import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler, getFrom } from "../util";
 import { getUUIDFrom } from "../schemas/uuid";
 import { handleParams } from "../helpers/handle-params";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 
 const router = Router();
 
@@ -65,12 +66,12 @@ router.put(
     if (!org.cwApproved) throw new NotFoundError("CW not approved");
 
     const orgActive = cwOrgActiveSchema.parse(req.body);
-    await updateCWOrganizationAndMetriportEntity({
+    updateCwOrganizationAndMetriportEntity({
       cxId,
       oid,
       active: orgActive.active,
       org,
-    });
+    }).catch(processAsyncError("cw.ops.org.update"));
     return res.sendStatus(httpStatus.OK);
   })
 );
@@ -96,13 +97,13 @@ router.put(
     if (!facility.cwApproved) throw new NotFoundError("CW not approved");
 
     const facilityActive = cwOrgActiveSchema.parse(req.body);
-    await updateCWOrganizationAndMetriportEntity({
+    updateCwOrganizationAndMetriportEntity({
       cxId,
       oid,
       active: facilityActive.active,
       org,
       facility,
-    });
+    }).catch(processAsyncError("cw.ops.facility.update"));
     return res.sendStatus(httpStatus.OK);
   })
 );

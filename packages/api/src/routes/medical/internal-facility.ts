@@ -10,7 +10,7 @@ import { verifyCxItVendorAccess } from "../../command/medical/facility/verify-ac
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { Facility, FacilityCreate, isOboFacility } from "../../domain/medical/facility";
 import {
-  createOrUpdateCQOrganization,
+  createOrUpdateCqOrganization,
   metriportIntermediaryOid,
   metriportOid,
 } from "../../external/carequality/command/cq-organization/create-or-update-cq-organization";
@@ -22,7 +22,7 @@ import { asyncHandler, getFromQueryAsBoolean } from "../util";
 import { internalDtoFromModel } from "./dtos/facilityDTO";
 import { facilityInternalDetailsSchema } from "./schemas/facility";
 import { buildCwOrgNameForFacility } from "../../external/commonwell/shared";
-import { createOrUpdateCWOrganization } from "../../external/commonwell/command/cw-organization/create-or-update-cw-organization";
+import { createOrUpdateCwOrganization } from "../../external/commonwell/command/cw-organization/create-or-update-cw-organization";
 
 const router = Router();
 
@@ -90,7 +90,7 @@ router.put(
         cxId,
         address: facility.data.address,
       });
-      createOrUpdateCQOrganization({
+      createOrUpdateCqOrganization({
         name: orgName,
         addressLine1: addressLine,
         lat: coordinates.lat.toString(),
@@ -115,7 +115,7 @@ router.put(
         orgName: facility.data.name,
         oboOid: isObo ? facilityDetails.cwOboOid : undefined,
       });
-      createOrUpdateCWOrganization({
+      createOrUpdateCwOrganization({
         cxId,
         orgDetails: {
           oid: facility.oid,

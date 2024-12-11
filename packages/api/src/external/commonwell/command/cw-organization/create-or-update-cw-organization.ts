@@ -10,7 +10,7 @@ import { initCQOrgIncludeList } from "./init-cq-include-list";
 import { getOrganzationCwTemplate } from "./organization-template";
 import { parseCWOrganization } from "./parse-cw-organization";
 
-export async function createOrUpdateCWOrganization({
+export async function createOrUpdateCwOrganization({
   cxId,
   orgDetails,
 }: {
@@ -36,7 +36,8 @@ export async function updateCWOrganization(
       commonwellOrg,
       commonwellOrg.organizationId
     );
-    debug(`resp updateOrg: `, JSON.stringify(resp));
+    log(`Update @ CW done`);
+    debug(`resp updateOrg: `, () => JSON.stringify(resp));
     return parseCWOrganization(resp);
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
@@ -50,7 +51,7 @@ export async function updateCWOrganization(
     };
     if (error.response?.status === 404) {
       capture.message("Got 404 while updating Org @ CW, creating it", { extra });
-      await createCWOrganization(cxId, orgDetails);
+      return await createCWOrganization(cxId, orgDetails);
     }
     const msg = `Failure while updating org @ CW`;
     log(
@@ -65,19 +66,21 @@ export async function createCWOrganization(
   cxId: string,
   orgDetails: CwOrgDetails
 ): Promise<CwOrgDetails> {
-  const { log, debug } = out(`CW ccreateCWOrganization - CW Org OID ${orgDetails.oid}`);
+  const { log, debug } = out(`CW createCWOrganization - CW Org OID ${orgDetails.oid}`);
   const commonwellOrg = await getOrganzationCwTemplate(orgDetails);
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
 
   try {
     const respCreate = await commonWell.createOrg(metriportQueryMeta, commonwellOrg);
-    debug(`resp createOrg: `, JSON.stringify(respCreate));
+    log(`Create @ CW done`);
+    debug(`resp createOrg: `, () => JSON.stringify(respCreate));
     const respAddCert = await commonWell.addCertificateToOrg(
       metriportQueryMeta,
       getCertificate(),
       orgDetails.oid
     );
-    debug(`resp addCertificateToOrg: `, JSON.stringify(respAddCert));
+    log(`Cert added to CW`);
+    debug(`resp addCertificateToOrg: `, () => JSON.stringify(respAddCert));
     if (await isEnhancedCoverageEnabledForCx(cxId)) {
       // update the CQ bridge include list
       await initCQOrgIncludeList(orgDetails.oid);
