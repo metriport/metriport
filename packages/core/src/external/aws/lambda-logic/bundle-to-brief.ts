@@ -194,14 +194,6 @@ export async function summarizeFilteredBundleWithAI(
       `Done. Finished in ${duration} ms. Input cost: ${costs.input}, output cost: ${costs.output}. Total cost: ${costs.total}`
     );
 
-    console.log({
-      requestId,
-      patientId,
-      startBundleSize: bundle.entry?.length,
-      endBundleSize: slimPayloadBundle?.length,
-      duration,
-      costs,
-    });
     analytics({
       distinctId: cxId,
       event: EventTypes.aiBriefGeneration,
