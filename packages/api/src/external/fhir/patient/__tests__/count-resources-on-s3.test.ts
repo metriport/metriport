@@ -7,7 +7,7 @@ import { makeBundle } from "@metriport/core/external/fhir/__tests__/bundle";
 import { makeMedicationRequest } from "@metriport/core/fhir-deduplication/__tests__/examples/medication-related";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import * as getPatient from "../../../../command/medical/patient/get-patient";
-import { makePatientModelSafe } from "../../../../models/medical/__tests__/patient";
+import { makePatientModel } from "../../../../models/medical/__tests__/patient";
 import { countResourcesOnS3 } from "../count-resources-on-s3";
 
 let getConsolidatedFromS3_mock: jest.SpyInstance;
@@ -22,7 +22,7 @@ beforeEach(() => {
     .spyOn(getPatient, "getPatientOrFail")
     .mockImplementation(async () => {
       console.log(`mocked `);
-      return makePatientModelSafe();
+      return makePatientModel();
     });
 });
 afterEach(() => {
@@ -138,7 +138,7 @@ describe("countResourcesOnS3", () => {
 
   it(`forwards params to getConsolidatedFromS3`, async () => {
     const bundle = makeBundle();
-    const patient = makePatientModelSafe();
+    const patient = makePatientModel();
     const dateFrom = faker.date.past().toISOString();
     const dateTo = faker.date.recent().toISOString();
     const resources: ResourceTypeForConsolidation[] = ["MedicationRequest", "Encounter"];

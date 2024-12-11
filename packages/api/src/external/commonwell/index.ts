@@ -4,7 +4,7 @@ import * as patient from "./patient";
 
 const cwCommands = {
   organization: {
-    createOrUpdate: organization.createOrUpdateCWOrganization,
+    createOrUpdate: organization.createOrUpdateCwOrganization,
   },
   patient: {
     create: patient.create,

@@ -13,8 +13,8 @@ import { organiationInternalDetailsSchema } from "./schemas/organization";
 import { internalDtoFromModel } from "./dtos/organizationDTO";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFromQueryAsBoolean } from "../util";
-import { createOrUpdateCQOrganization } from "../../external/carequality/command/cq-organization/create-or-update-cq-organization";
-import { createOrUpdateCWOrganization } from "../../external/commonwell/command/cw-organization/create-or-update-cw-organization";
+import { createOrUpdateCqOrganization } from "../../external/carequality/command/cq-organization/create-or-update-cq-organization";
+import { createOrUpdateCwOrganization } from "../../external/commonwell/command/cw-organization/create-or-update-cw-organization";
 import { getCqAddress } from "../../external/carequality/shared";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 
@@ -68,7 +68,7 @@ router.put(
     // CAREQUALITY
     if (syncInHie && org.cqApproved && !skipHie) {
       const { coordinates, addressLine } = await getCqAddress({ cxId, address: org.data.location });
-      createOrUpdateCQOrganization({
+      createOrUpdateCqOrganization({
         name: org.data.name,
         addressLine1: addressLine,
         lat: coordinates.lat.toString(),
@@ -86,7 +86,7 @@ router.put(
     }
     // COMMONWELL
     if (syncInHie && org.cwApproved && !skipHie) {
-      createOrUpdateCWOrganization({
+      createOrUpdateCwOrganization({
         cxId,
         orgDetails: {
           oid: org.oid,

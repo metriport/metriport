@@ -6,7 +6,7 @@ import { CQOrgHydrated } from "@metriport/core/external/commonwell/cq-bridge/get
 import { makeSimpleOrg } from "@metriport/core/external/commonwell/cq-bridge/__tests__/cq-orgs";
 import { CommonWellManagementAPIImpl } from "@metriport/core/external/commonwell/management/api-impl";
 import * as api from "../api";
-import { initCQOrgIncludeList } from "../organization";
+import { initCQOrgIncludeList } from "../command/cw-organization/init-cq-include-list";
 jest.mock("@metriport/core/external/commonwell/management/api");
 jest.mock("@metriport/core/domain/auth/cookie-management/cookie-manager-in-memory");
 

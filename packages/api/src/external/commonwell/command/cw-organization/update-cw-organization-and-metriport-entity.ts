@@ -1,11 +1,10 @@
-import { processAsyncError } from "@metriport/core/util/error/shared";
 import { isOboFacility } from "../../../../domain/medical/facility";
 import { FacilityModel } from "../../../../models/medical/facility";
 import { OrganizationModel } from "../../../../models/medical/organization";
+import { createOrUpdateCwOrganization } from "./create-or-update-cw-organization";
 import { getOrgOrFail } from "./get-cw-organization";
-import { createOrUpdateCWOrganization } from "./create-or-update-cw-organization";
 
-export async function updateCWOrganizationAndMetriportEntity({
+export async function updateCwOrganizationAndMetriportEntity({
   cxId,
   oid,
   active,
@@ -21,15 +20,11 @@ export async function updateCWOrganizationAndMetriportEntity({
   const cwOrg = await getOrgOrFail(oid);
   if (!cwOrg.name) throw new Error("CW Organization not found");
   if (facility) {
-    await facility.update({
-      cwActive: active,
-    });
+    await facility.update({ cwActive: active });
   } else {
-    await org.update({
-      cwActive: active,
-    });
+    await org.update({ cwActive: active });
   }
-  createOrUpdateCWOrganization({
+  await createOrUpdateCwOrganization({
     cxId,
     orgDetails: {
       oid,
@@ -42,5 +37,5 @@ export async function updateCWOrganizationAndMetriportEntity({
       active,
       isObo: facility ? isOboFacility(facility.cwType) : false,
     },
-  }).catch(processAsyncError("cw.getAndUpdateCWOrgAndMetriportOrg"));
+  });
 }
