@@ -147,10 +147,11 @@ export type SlimPatient = Omit<Patient, "name"> & {
   reference?: Record<string, string>;
 };
 
-function slimPatient(res: Patient): SlimPatient {
+export function slimPatient(res: Patient): SlimPatient {
   const updRes = cloneDeep(res);
+  const { address, telecom, text, id, ...otherFields } = updRes;
   return {
-    ...updRes,
+    ...otherFields,
     name: getNameString(res.name),
   };
 }

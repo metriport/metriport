@@ -1,13 +1,12 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-// import { PromptTemplate } from "@langchain/core/prompts";
-// import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+import { PromptTemplate } from "@langchain/core/prompts";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { Bundle, Medication, Observation, Resource } from "@medplum/fhirtypes";
 import { errorToString, toArray } from "@metriport/shared";
-import { ISO_DATE, buildDayjs } from "@metriport/shared/common/date";
-// import { ISO_DATE, buildDayjs, elapsedTimeFromNow } from "@metriport/shared/common/date";
-// import { LLMChain, MapReduceDocumentsChain, StuffDocumentsChain } from "langchain/chains";
+import { ISO_DATE, buildDayjs, elapsedTimeFromNow } from "@metriport/shared/common/date";
+import { LLMChain, MapReduceDocumentsChain, StuffDocumentsChain } from "langchain/chains";
 import { cloneDeep } from "lodash";
 import { filterBundleByDate } from "../../../command/consolidated/consolidated-filter-by-date";
 import { getDatesFromEffectiveDateTimeOrPeriod } from "../../../command/consolidated/consolidated-filter-shared";
@@ -17,21 +16,24 @@ import {
 } from "../../../external/fhir/shared/index";
 import { capture, out } from "../../../util";
 import { uuidv7 } from "../../../util/uuid-v7";
-// import { EventTypes, analytics } from "../../analytics/posthog";
-// import { BedrockChat } from "../../langchain/bedrock/index";
+import { EventTypes, analytics } from "../../analytics/posthog";
+import { BedrockChat } from "../../langchain/bedrock/index";
 import {
+  SlimDiagnosticReport,
   SlimOrganization,
   SlimResource,
   applyResourceSpecificFilters,
   getNameString,
+  slimPatient,
 } from "./modify-resources";
 
-// const CHUNK_SIZE = 100_000;
-// const CHUNK_OVERLAP = 1000;
+const CHUNK_SIZE = 100_000;
+const CHUNK_OVERLAP = 1000;
 
 const NUM_HISTORICAL_YEARS = 1;
-// const SONNET_COST_PER_INPUT_TOKEN = 0.0015 / 1000;
-// const SONNET_COST_PER_OUTPUT_TOKEN = 0.0075 / 1000;
+const MAX_REPORTS_PER_GROUP = 3;
+const SONNET_COST_PER_INPUT_TOKEN = 0.0015 / 1000;
+const SONNET_COST_PER_OUTPUT_TOKEN = 0.0075 / 1000;
 
 const relevantResources = [
   "AllergyIntolerance",
@@ -56,7 +58,7 @@ const referenceResources = [
   "Location",
 ];
 
-// const documentVariableName = "text";
+const documentVariableName = "text";
 
 export type Brief = {
   id: string;
@@ -64,7 +66,6 @@ export type Brief = {
   link: string;
 };
 
-import fs from "fs";
 //--------------------------------
 // AI-based brief generation
 //--------------------------------
@@ -74,7 +75,7 @@ export async function summarizeFilteredBundleWithAI(
   patientId: string
 ): Promise<string | undefined> {
   const requestId = uuidv7();
-  // const startedAt = new Date();
+  const startedAt = new Date();
   const { log } = out(`summarizeFilteredBundleWithAI - cxId ${cxId}, patientId ${patientId}`);
   // filter out historical data
   log(`Starting with requestId ${requestId}, and bundle length ${bundle.entry?.length}`);
@@ -90,133 +91,131 @@ export async function summarizeFilteredBundleWithAI(
     const filteredBundle = filterBundleByDate(bundle, dateFrom);
     const slimPayloadBundle = buildSlimmerPayload(filteredBundle);
     const inputString = JSON.stringify(slimPayloadBundle);
-    fs.writeFileSync("inputBundle.json", inputString);
 
     // // TODO: #2510 - experiment with different splitters
-    // const textSplitter = new RecursiveCharacterTextSplitter({
-    //   chunkSize: CHUNK_SIZE,
-    //   chunkOverlap: CHUNK_OVERLAP,
-    // });
-    // const docs = await textSplitter.createDocuments([inputString ?? ""]);
-    // const totalTokensUsed = {
-    //   input: 0,
-    //   output: 0,
-    // };
+    const textSplitter = new RecursiveCharacterTextSplitter({
+      chunkSize: CHUNK_SIZE,
+      chunkOverlap: CHUNK_OVERLAP,
+    });
+    const docs = await textSplitter.createDocuments([inputString ?? ""]);
+    const totalTokensUsed = {
+      input: 0,
+      output: 0,
+    };
 
-    // const llmSummary = new BedrockChat({
-    //   model: "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
-    //   temperature: 0,
-    //   region: "us-east-1",
-    //   callbacks: [
-    //     {
-    //       handleLLMEnd: output => {
-    //         const usage = output.llmOutput?.usage;
-    //         if (usage) {
-    //           totalTokensUsed.input += usage.input_tokens;
-    //           totalTokensUsed.output += usage.output_tokens;
-    //         }
-    //       },
-    //     },
-    //   ],
-    // });
+    const llmSummary = new BedrockChat({
+      model: "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+      temperature: 0,
+      region: "us-east-1",
+      callbacks: [
+        {
+          handleLLMEnd: output => {
+            const usage = output.llmOutput?.usage;
+            if (usage) {
+              totalTokensUsed.input += usage.input_tokens;
+              totalTokensUsed.output += usage.output_tokens;
+            }
+          },
+        },
+      ],
+    });
 
-    // const todaysDate = new Date().toISOString().split("T")[0];
-    // const systemPrompt = "You are an expert primary care doctor.";
+    const todaysDate = new Date().toISOString().split("T")[0];
+    const systemPrompt = "You are an expert primary care doctor.";
 
-    // const summaryTemplate = `
-    // ${systemPrompt}
+    const summaryTemplate = `
+    ${systemPrompt}
 
-    // Today's date is ${todaysDate}.
-    // Your goal is to write a summary of the patient's most recent medical history, so that another doctor can understand the patient's medical history to be able to treat them effectively.
-    // Here is a portion of the patient's medical history:
-    // --------
-    // {${documentVariableName}}
-    // --------
+    Today's date is ${todaysDate}.
+    Your goal is to write a summary of the patient's most recent medical history, so that another doctor can understand the patient's medical history to be able to treat them effectively.
+    Here is a portion of the patient's medical history:
+    --------
+    {${documentVariableName}}
+    --------
 
-    // Write a summary of the patient's most recent medical history, considering the following goals:
-    // 1. Specify whether a DNR or POLST form has been completed.
-    // 2. Include a summary of the patient's most recent hospitalization, including the location of the hospitalization, the date of the hospitalization, the reason for the hospitalization, and the results of the hospitalization.
-    // 3. Include a summary of the patient's current chronic conditions, allergies, and any previous surgeries.
-    // 4. Include a summary of the patient's current medications, including dosages and frequency - do not include instructions on how to take the medications. Include any history of medication allergies or adverse reactions.
-    // 5. Include any other relevant information about the patient's health.
+    Write a summary of the patient's most recent medical history, considering the following goals:
+    1. Specify whether a DNR or POLST form has been completed.
+    2. Include a summary of the patient's most recent hospitalization, including the location of the hospitalization, the date of the hospitalization, the reason for the hospitalization, and the results of the hospitalization.
+    3. Include a summary of the patient's current chronic conditions, allergies, and any previous surgeries.
+    4. Include a summary of the patient's current medications, including dosages and frequency - do not include instructions on how to take the medications. Include any history of medication allergies or adverse reactions.
+    5. Include any other relevant information about the patient's health.
 
-    // If any of the above information is not present, do not include it in the summary.
-    // Don't tell me that you are writing a summary, just write the summary. Also, don't tell me about any limitations of the information provided.
+    If any of the above information is not present, do not include it in the summary.
+    Don't tell me that you are writing a summary, just write the summary. Also, don't tell me about any limitations of the information provided.
 
-    // SUMMARY:
-    // `;
-    // const SUMMARY_PROMPT = PromptTemplate.fromTemplate(summaryTemplate);
-    // const summaryChain = new LLMChain({
-    //   llm: llmSummary as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-    //   prompt: SUMMARY_PROMPT as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-    // });
+    SUMMARY:
+    `;
+    const SUMMARY_PROMPT = PromptTemplate.fromTemplate(summaryTemplate);
+    const summaryChain = new LLMChain({
+      llm: llmSummary as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+      prompt: SUMMARY_PROMPT as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+    });
 
-    // const summaryTemplateRefined = `
-    // ${systemPrompt}
+    const summaryTemplateRefined = `
+    ${systemPrompt}
 
-    // Today's date is ${todaysDate}.
-    // Your goal is to write a summary of the patient's most recent medical history, so that another doctor can understand the patient's medical history to be able to treat them effectively.
-    // Here are the previous summaries written by you of sections of the patient's medical history:
-    // --------
-    // {${documentVariableName}}
-    // --------
+    Today's date is ${todaysDate}.
+    Your goal is to write a summary of the patient's most recent medical history, so that another doctor can understand the patient's medical history to be able to treat them effectively.
+    Here are the previous summaries written by you of sections of the patient's medical history:
+    --------
+    {${documentVariableName}}
+    --------
 
-    // Combine these summaries into a single, comprehensive summary of the patient's most recent medical history in a single paragraph.
+    Combine these summaries into a single, comprehensive summary of the patient's most recent medical history in a single paragraph.
 
-    // Don't tell me that you are writing a summary, just write the summary. Also, don't tell me about any limitations of the information provided.
+    Don't tell me that you are writing a summary, just write the summary. Also, don't tell me about any limitations of the information provided.
 
-    // SUMMARY:
-    // `;
-    // const SUMMARY_PROMPT_REFINED = PromptTemplate.fromTemplate(summaryTemplateRefined);
-    // const summaryChainRefined = new StuffDocumentsChain({
-    //   llmChain: new LLMChain({
-    //     llm: llmSummary as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-    //     prompt: SUMMARY_PROMPT_REFINED as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-    //   }),
-    //   documentVariableName,
-    // });
+    SUMMARY:
+    `;
+    const SUMMARY_PROMPT_REFINED = PromptTemplate.fromTemplate(summaryTemplateRefined);
+    const summaryChainRefined = new StuffDocumentsChain({
+      llmChain: new LLMChain({
+        llm: llmSummary as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+        prompt: SUMMARY_PROMPT_REFINED as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+      }),
+      documentVariableName,
+    });
 
-    // const mapReduce = new MapReduceDocumentsChain({
-    //   llmChain: summaryChain,
-    //   combineDocumentChain: summaryChainRefined,
-    //   documentVariableName,
-    //   verbose: false,
-    // });
+    const mapReduce = new MapReduceDocumentsChain({
+      llmChain: summaryChain,
+      combineDocumentChain: summaryChainRefined,
+      documentVariableName,
+      verbose: false,
+    });
 
-    // const summary = (await mapReduce.invoke({
-    //   input_documents: docs,
-    // })) as { text: string };
+    const summary = (await mapReduce.invoke({
+      input_documents: docs,
+    })) as { text: string };
 
-    // const costs = calculateCostsBasedOnTokens(totalTokensUsed);
+    const costs = calculateCostsBasedOnTokens(totalTokensUsed);
 
-    // const duration = elapsedTimeFromNow(startedAt);
-    // log(
-    //   `Done. Finished in ${duration} ms. Input cost: ${costs.input}, output cost: ${costs.output}. Total cost: ${costs.total}`
-    // );
+    const duration = elapsedTimeFromNow(startedAt);
+    log(
+      `Done. Finished in ${duration} ms. Input cost: ${costs.input}, output cost: ${costs.output}. Total cost: ${costs.total}`
+    );
 
-    // console.log({
-    //   requestId,
-    //   patientId,
-    //   startBundleSize: bundle.entry?.length,
-    //   endBundleSize: slimPayloadBundle?.length,
-    //   duration,
-    //   costs,
-    // });
-    // analytics({
-    //   distinctId: cxId,
-    //   event: EventTypes.aiBriefGeneration,
-    //   properties: {
-    //     requestId,
-    //     patientId,
-    //     startBundleSize: bundle.entry?.length,
-    //     endBundleSize: slimPayloadBundle?.length,
-    //     duration,
-    //     costs,
-    //   },
-    // });
-    // if (!summary.text) return undefined;
-    // return summary.text;
-    return "bro";
+    console.log({
+      requestId,
+      patientId,
+      startBundleSize: bundle.entry?.length,
+      endBundleSize: slimPayloadBundle?.length,
+      duration,
+      costs,
+    });
+    analytics({
+      distinctId: cxId,
+      event: EventTypes.aiBriefGeneration,
+      properties: {
+        requestId,
+        patientId,
+        startBundleSize: bundle.entry?.length,
+        endBundleSize: slimPayloadBundle?.length,
+        duration,
+        costs,
+      },
+    });
+    if (!summary.text) return undefined;
+    return summary.text;
   } catch (err) {
     const msg = `AI brief generation failure`;
     log(`${msg} - ${errorToString(err)}`);
@@ -232,8 +231,7 @@ export async function summarizeFilteredBundleWithAI(
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildSlimmerPayload(bundle: Bundle): any[] | undefined {
+function buildSlimmerPayload(bundle: Bundle): SlimResource[] | undefined {
   if (bundle.entry?.length === 0) return undefined;
 
   const patient = findPatientResource(bundle);
@@ -269,21 +267,18 @@ function buildSlimmerPayload(bundle: Bundle): any[] | undefined {
     return [];
   });
 
-  // Filter out embedded resources from the final bundle
-  const filteredEntries = withFilteredReports?.flatMap(entry => {
-    if (Object.keys(entry).length === 0) return []; // TODO: Check why {} not being removed
-    if (referenceResources.includes(entry.resourceType)) return [];
-    if (containedResourceIds.includes(entry.id)) return [];
-    return {
-      ...entry,
-      id: undefined,
-    };
+  const filteredEntries: SlimResource[] = [];
+  withFilteredReports?.forEach(entry => {
+    if (Object.keys(entry).length === 0) return;
+    if (referenceResources.includes(entry.resourceType)) return;
+    if (entry.id && containedResourceIds.includes(entry.id)) return;
+
+    const { id, ...otherFields } = entry;
+    filteredEntries.push({ ...otherFields });
   });
 
-  delete patient.telecom;
-  delete patient.address;
-  delete patient.text;
-  filteredEntries?.push(patient);
+  const slimmerPatient = slimPatient(patient);
+  filteredEntries?.push(slimmerPatient);
 
   return filteredEntries;
 }
@@ -372,8 +367,6 @@ function removeUselessAttributes(res: Resource) {
  * Takes a FHIR resource and replaces referenced resources with the actual contents of those resources.
  * This allows the context for a resource to be contained entirely within itself.
  * It also keeps track of the referenced resources, so those can later be removed from the bundle.
- *
- * @returns updated resource as any
  */
 function replaceReferencesWithData(
   res: SlimResource,
@@ -500,10 +493,12 @@ function replaceReferencesWithData(
 
   if ("manufacturer" in updRes && updRes.resourceType === "Immunization") {
     if (updRes.manufacturer) {
-      if (updRes.manufacturer.display) {
-        updRes.reference = { manufacturer: { name: updRes.manufacturer.display } };
-      } else if (updRes.manufacturer.reference) {
-        const refString = updRes.manufacturer.reference;
+      const manufacturer = updRes.manufacturer;
+      delete updRes.manufacturer;
+      if (manufacturer.display) {
+        updRes.reference = { manufacturer: { name: manufacturer.display } };
+      } else if (manufacturer.reference) {
+        const refString = manufacturer.reference;
         const org = map.get(refString) as SlimOrganization;
         referencedIds.add(refString);
 
@@ -519,10 +514,10 @@ function replaceReferencesWithData(
   return { updRes, ids: Array.from(referencedIds) };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function filterOutDiagnosticReports(entries: any[] | undefined): any[] | undefined {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const reports: any[] = [];
+function filterOutDiagnosticReports(
+  entries: SlimResource[] | undefined
+): SlimResource[] | undefined {
+  const reports: SlimDiagnosticReport[] = [];
   const otherEntries = entries?.filter(entry => {
     if (entry.resourceType === "DiagnosticReport") {
       reports.push(entry);
@@ -534,8 +529,7 @@ function filterOutDiagnosticReports(entries: any[] | undefined): any[] | undefin
   const withLimitedReportsPerPerformer = filterReportsByPerformerAndCategory(withOnlyLatestLabs);
   const withoutDuplicateReports = filterOutDuplicateReports(withLimitedReportsPerPerformer);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const ret: any[] = [];
+  const ret: SlimResource[] = [];
   if (withoutDuplicateReports && withoutDuplicateReports.length > 0) {
     ret.push(...withoutDuplicateReports);
   }
@@ -543,8 +537,9 @@ function filterOutDiagnosticReports(entries: any[] | undefined): any[] | undefin
   return ret;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function filterOutOldLabs(reports: any[] | undefined): any[] | undefined {
+function filterOutOldLabs(
+  reports: SlimDiagnosticReport[] | undefined
+): SlimDiagnosticReport[] | undefined {
   const NUM_MOST_RECENT_LABS_TO_KEEP = 2;
 
   if (!reports) return undefined;
@@ -575,13 +570,11 @@ function filterOutOldLabs(reports: any[] | undefined): any[] | undefined {
   return [...recentLabReports, ...nonLabReports];
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function filterReportsByPerformerAndCategory(reports: any[] | undefined): any[] | undefined {
+function filterReportsByPerformerAndCategory(
+  reports: SlimDiagnosticReport[] | undefined
+): SlimDiagnosticReport[] | undefined {
   if (!reports) return undefined;
-  const MAX_REPORTS_PER_GROUP = 3;
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const reportGroups = new Map<string, any[]>();
+  const reportGroups = new Map<string, SlimDiagnosticReport[]>();
 
   reports.forEach(report => {
     const performer = report.performer ?? "unknown";
@@ -594,14 +587,10 @@ function filterReportsByPerformerAndCategory(reports: any[] | undefined): any[] 
     reportGroups.get(key)?.push(report);
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const filteredReports: any[] = [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const garbageCollector: any[] = [];
+  const filteredReports: SlimDiagnosticReport[] = [];
 
   reportGroups.forEach(group => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sortedGroup = group.sort((a: any, b: any) => {
+    const sortedGroup = group.sort((a, b) => {
       const aDates = getDatesFromEffectiveDateTimeOrPeriod(a);
       const bDates = getDatesFromEffectiveDateTimeOrPeriod(b);
 
@@ -614,7 +603,6 @@ function filterReportsByPerformerAndCategory(reports: any[] | undefined): any[] 
     });
 
     filteredReports.push(...sortedGroup.slice(0, MAX_REPORTS_PER_GROUP));
-    garbageCollector.push(...sortedGroup.slice(MAX_REPORTS_PER_GROUP));
   });
 
   return filteredReports;
@@ -624,8 +612,9 @@ function filterReportsByPerformerAndCategory(reports: any[] | undefined): any[] 
  * This function checks if the contents of the presentedForm.data is fully contained within other diagnostic reports.
  * It does so by seeing if every single sentence in a report already exists in the collection of reports, in which case it filters this report out.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function filterOutDuplicateReports(reports: any[] | undefined): any[] | undefined {
+function filterOutDuplicateReports(
+  reports: SlimDiagnosticReport[] | undefined
+): SlimDiagnosticReport[] | undefined {
   const formDataSet = new Set<string>();
   return reports?.filter(entry => {
     if (entry.presentedForm) {
@@ -655,14 +644,14 @@ function filterOutDuplicateReports(reports: any[] | undefined): any[] | undefine
   });
 }
 
-// function calculateCostsBasedOnTokens(totalTokens: { input: number; output: number }): {
-//   input: number;
-//   output: number;
-//   total: number;
-// } {
-//   const input = totalTokens.input * SONNET_COST_PER_INPUT_TOKEN;
-//   const output = totalTokens.output * SONNET_COST_PER_OUTPUT_TOKEN;
-//   const total = input + output;
+function calculateCostsBasedOnTokens(totalTokens: { input: number; output: number }): {
+  input: number;
+  output: number;
+  total: number;
+} {
+  const input = totalTokens.input * SONNET_COST_PER_INPUT_TOKEN;
+  const output = totalTokens.output * SONNET_COST_PER_OUTPUT_TOKEN;
+  const total = input + output;
 
-//   return { input, output, total };
-// }
+  return { input, output, total };
+}
