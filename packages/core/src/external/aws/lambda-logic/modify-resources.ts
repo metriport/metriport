@@ -262,6 +262,7 @@ type SlimDiagnosticReport = Omit<
   category?: string | undefined;
   presentedForm?: string[] | undefined;
   status?: string | undefined;
+  reference?: object;
 };
 
 function slimDiagnosticReport(res: DiagnosticReport): SlimDiagnosticReport | undefined {

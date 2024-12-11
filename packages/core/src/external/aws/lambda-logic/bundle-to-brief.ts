@@ -257,10 +257,7 @@ function buildSlimmerPayload(bundle: Bundle): any[] | undefined {
   // Replace the references with actual data and collect references for embedded resources
   const containedResourceIdsSet = new Set<string>();
   const processedEntries = leanBundleEntries?.map(res => {
-    const { updRes, ids } = replaceReferencesWithData(
-      res as Resource, // TODO: Fix this
-      resourceMap as Map<string, Resource> // TODO: Fix this
-    );
+    const { updRes, ids } = replaceReferencesWithData(res, resourceMap);
     ids.forEach(id => containedResourceIdsSet.add(id));
 
     return updRes;
@@ -381,44 +378,11 @@ function removeUselessAttributes(res: Resource) {
  * @returns updated resource as any
  */
 function replaceReferencesWithData(
-  res: Resource,
-  map: Map<string, Resource>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): { updRes: any; ids: string[] } {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const updRes: any = cloneDeep(res);
+  res: SlimResource,
+  map: Map<string, SlimResource>
+): { updRes: SlimResource; ids: string[] } {
+  const updRes = cloneDeep(res);
   const referencedIds = new Set<string>();
-
-  if ("payor" in res) {
-    const ref = toArray(res.payor);
-    const orgRefs = ref.filter(r => r.reference?.includes("Organization"));
-    if (orgRefs.length > 0) {
-      updRes.payor = [];
-      orgRefs.map(org => {
-        const refString = org.reference;
-        if (refString) {
-          const org = map.get(refString);
-          referencedIds.add(refString);
-          if (org && org.resourceType === "Organization") {
-            updRes.payor.push(org.name);
-          }
-        }
-      });
-      updRes.payor = updRes.payor.join("; ");
-    }
-  }
-
-  if ("beneficiary" in res) {
-    const ref = res.beneficiary;
-    if (ref.reference) {
-      const refString = ref.reference;
-      const pat = map.get(refString) as Patient | undefined;
-      referencedIds.add(refString);
-      if (pat && pat.resourceType === "Patient") {
-        updRes.beneficiary = pat.name;
-      }
-    }
-  }
 
   if ("performer" in res) {
     if (res.performer) {
@@ -437,10 +401,10 @@ function replaceReferencesWithData(
           if (performer?.resourceType === "Organization") {
             const name = typeof performer.name === "string" ? performer.name.trim() : "";
             if (name.length > 0) orgs.push(name);
-          } else if (performer?.resourceType === "Practitioner") {
-            const name = getNameString(performer.name);
-            if (name && name.length > 0) practitioners.push(name);
           }
+          //  else if (performer?.resourceType === "Practitioner") {
+          //   const name = getNameString(performer.name);
+          // }
         });
 
         if (orgs.length > 0) updRes.org = orgs.join(", ");
@@ -477,21 +441,6 @@ function replaceReferencesWithData(
             return [];
           })
           .join(", ");
-      }
-    }
-  }
-
-  if ("serviceProvider" in res) {
-    const refString = res.serviceProvider?.reference;
-    if (refString) {
-      const org = map.get(refString) as Organization | undefined;
-      referencedIds.add(refString);
-      if (org) {
-        if (org.name) {
-          updRes.serviceProvider = org.name;
-        } else {
-          delete updRes.serviceProvider;
-        }
       }
     }
   }
