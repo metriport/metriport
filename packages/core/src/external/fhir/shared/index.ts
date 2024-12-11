@@ -8,6 +8,7 @@ import {
   DiagnosticReport,
   DocumentReference,
   Encounter,
+  Endpoint,
   Extension,
   FamilyMemberHistory,
   Immunization,
@@ -173,6 +174,10 @@ export function isEncounter(resource: Resource | undefined): resource is Encount
 
 export function isBinary(resource: Resource | undefined): resource is Binary {
   return resource?.resourceType === "Binary";
+}
+
+export function isEndpoint(resource: Resource | undefined): resource is Endpoint {
+  return resource?.resourceType === "Endpoint";
 }
 
 export function isFamilyMemberHistory(

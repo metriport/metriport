@@ -1,4 +1,5 @@
 import { Bundle, Organization } from "@medplum/fhirtypes";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
 import { initDbPool } from "@metriport/core/util/sequelize";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
@@ -28,20 +29,21 @@ import {
 } from "../../command/medical/organization/get-organization";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { bulkInsertCQDirectoryEntries } from "../../external/carequality/command/cq-directory/create-cq-directory-entry";
-import { updateCQOrganizationAndMetriportEntity } from "../../external/carequality/command/cq-organization/update-cq-organizatoin-and-metriport-entity";
-import { parseCQOrganization } from "../../external/carequality/command/cq-organization/parse-cq-organization";
-import {
-  cqDirectoryEntry,
-  rebuildCQDirectory,
-} from "../../external/carequality/command/rebuild-cq-directory-from-cq-organizations";
 import {
   DEFAULT_RADIUS_IN_MILES,
   searchCQDirectoriesAroundPatientAddresses,
   toBasicOrgAttributes,
 } from "../../external/carequality/command/cq-directory/search-cq-directory";
+import { getCqOrgOrFail } from "../../external/carequality/command/cq-organization/get-cq-organization";
+import { parseCQOrganization } from "../../external/carequality/command/cq-organization/parse-cq-organization";
+import { updateCqOrganizationAndMetriportEntity } from "../../external/carequality/command/cq-organization/update-cq-organization-and-metriport-entity";
 import { createOutboundDocumentQueryResp } from "../../external/carequality/command/outbound-resp/create-outbound-document-query-resp";
 import { createOutboundDocumentRetrievalResp } from "../../external/carequality/command/outbound-resp/create-outbound-document-retrieval-resp";
 import { createOutboundPatientDiscoveryResp } from "../../external/carequality/command/outbound-resp/create-outbound-patient-discovery-resp";
+import {
+  cqDirectoryEntry,
+  rebuildCQDirectory,
+} from "../../external/carequality/command/rebuild-cq-directory-from-cq-organizations";
 import { processOutboundDocumentQueryResps } from "../../external/carequality/document/process-outbound-document-query-resps";
 import { processOutboundDocumentRetrievalResps } from "../../external/carequality/document/process-outbound-document-retrieval-resps";
 import {
@@ -51,7 +53,6 @@ import {
 } from "../../external/carequality/ihe-result";
 import { processOutboundPatientDiscoveryResps } from "../../external/carequality/process-outbound-patient-discovery-resps";
 import { processPostRespOutboundPatientDiscoveryResps } from "../../external/carequality/process-subsequent-outbound-patient-discovery-resps";
-import { getCqOrgOrFail } from "../../external/carequality/command/cq-organization/get-cq-organization";
 import { cqOrgActiveSchema } from "../../external/carequality/shared";
 import { Config } from "../../shared/config";
 import { handleParams } from "../helpers/handle-params";
@@ -187,12 +188,12 @@ router.put(
     if (!org.cqApproved) throw new NotFoundError("CQ not approved");
 
     const orgActive = cqOrgActiveSchema.parse(req.body);
-    await updateCQOrganizationAndMetriportEntity({
+    updateCqOrganizationAndMetriportEntity({
       cxId,
       oid,
       active: orgActive.active,
       org,
-    });
+    }).catch(processAsyncError("cq.ops.dir.organization.update"));
     return res.sendStatus(httpStatus.OK);
   })
 );
@@ -219,13 +220,13 @@ router.put(
     if (!facility.cqApproved) throw new NotFoundError("CQ not approved");
 
     const facilityActive = cqOrgActiveSchema.parse(req.body);
-    await updateCQOrganizationAndMetriportEntity({
+    updateCqOrganizationAndMetriportEntity({
       cxId,
       oid,
       active: facilityActive.active,
       org,
       facility,
-    });
+    }).catch(processAsyncError("cq.ops.dir.facility.update"));
     return res.sendStatus(httpStatus.OK);
   })
 );

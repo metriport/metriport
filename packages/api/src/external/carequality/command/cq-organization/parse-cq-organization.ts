@@ -1,11 +1,15 @@
 import { Endpoint, Organization } from "@medplum/fhirtypes";
-import { capture } from "@metriport/core/util/notifications";
+import { isEndpoint, isLocation } from "@metriport/core/external/fhir/shared/index";
 import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
 import {
   isValidUrl,
+  MetriportError,
   normalizeUSStateForAddressSafe,
   normalizeZipCodeNewSafe,
 } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
+import stringify from "json-stringify-safe";
 import { CQDirectoryEntryData } from "../../cq-directory";
 import { CQOrgUrls } from "../../shared";
 import { getCqOrg } from "./get-cq-organization";
@@ -18,14 +22,19 @@ const XCA_DR_STRING = "ITI-39";
 const XDR_STRING = "ITI-41";
 type ChannelUrl = typeof XCPD_STRING | typeof XCA_DQ_STRING | typeof XCA_DR_STRING;
 
-export async function parseCQOrganization(
-  org: Organization
-): Promise<CQDirectoryEntryData | undefined> {
-  const id = org.identifier?.[0]?.value;
-  if (!id) return undefined;
+export async function parseCQOrganization(org: Organization): Promise<CQDirectoryEntryData> {
+  const { log } = out(`parseCQOrganization`);
 
-  const lastUpdatedAtCQ = org.meta?.lastUpdated;
-  if (!lastUpdatedAtCQ) return undefined;
+  const id = org.identifier?.[0]?.value;
+  if (!id) throw new MetriportError("Missing ID on CQ Org", undefined, { org: stringify(org) });
+
+  const active = org.active;
+  if (active == undefined) {
+    throw new MetriportError("Missing active on CQ Org", undefined, { org: stringify(org) });
+  }
+
+  if (!org.meta?.lastUpdated) log("Missing lastUpdated at CQ Org, using current timestamp");
+  const lastUpdatedAtCQ = org.meta?.lastUpdated ?? buildDayjs().toISOString();
 
   const address = org.address?.[0];
   const addressLine = address?.line?.[0];
@@ -33,13 +42,10 @@ export async function parseCQOrganization(
   const state = address?.state;
   const postalCode = address?.postalCode;
 
-  const location = org.contained?.filter(c => c.resourceType === "Location");
+  const location = org.contained?.filter(isLocation);
   const lat = location?.[0]?.position?.latitude;
   const lon = location?.[0]?.position?.longitude;
   const point = lat && lon ? computeEarthPoint(lat, lon) : undefined;
-
-  const active = org.active;
-  if (active === undefined) return undefined;
 
   const parentOrg = org.partOf?.reference ?? org.partOf?.identifier?.value;
   const parentOrgOid = parentOrg?.split("/")[1];
@@ -49,7 +55,7 @@ export async function parseCQOrganization(
     if (parentOrg) parentOrgName = parentOrg.name;
   }
 
-  const endpoints = org.contained?.filter(c => c.resourceType === "Endpoint") ?? [];
+  const endpoints = org.contained?.filter(isEndpoint) ?? [];
 
   return {
     id,

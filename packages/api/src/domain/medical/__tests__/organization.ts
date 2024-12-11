@@ -1,10 +1,11 @@
 import { faker } from "@faker-js/faker";
 import {
   Organization,
-  OrganizationData,
   OrganizationBizType,
+  OrganizationData,
   OrgType,
 } from "@metriport/core/domain/organization";
+import { OrganizationModel } from "../../../models/medical/organization";
 import { makeBaseDomain } from "../../__tests__/base-domain";
 import { makeAddressStrict } from "./location-address";
 
@@ -36,3 +37,12 @@ export const makeOrganization = ({
     cwApproved: false,
   };
 };
+
+export function makeOrganizationModel(params?: Partial<OrganizationModel>): OrganizationModel {
+  const organization = makeOrganization(params) as unknown as OrganizationModel;
+  organization.dataValues = organization;
+  organization.save = jest.fn();
+  organization.update = jest.fn();
+  organization.destroy = jest.fn();
+  return organization;
+}
