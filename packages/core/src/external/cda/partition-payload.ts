@@ -12,8 +12,11 @@ const builder = new XMLBuilder({
   suppressBooleanAttributes: false,
 });
 
-export function partitionPayload(payloadRaw: string): string[] {
-  if (sizeInBytes(payloadRaw) < MAX_CHUNK_SIZE_IN_BYTES) return [payloadRaw];
+export function partitionPayload(
+  payloadRaw: string,
+  maxChunkSize = MAX_CHUNK_SIZE_IN_BYTES
+): string[] {
+  if (sizeInBytes(payloadRaw) < maxChunkSize) return [payloadRaw];
 
   const parser = createXMLParser({
     ignoreAttributes: false,
@@ -34,7 +37,7 @@ export function partitionPayload(payloadRaw: string): string[] {
   for (const currentComponent of components) {
     const currentSize = sizeInBytes(JSON.stringify(currentComponent));
 
-    if (groupedSize + currentSize > MAX_CHUNK_SIZE_IN_BYTES) {
+    if (groupedSize + currentSize > maxChunkSize) {
       if (groupedComponents.length > 0) {
         chunks.push(createChunk(json, groupedComponents));
         groupedComponents = [currentComponent];

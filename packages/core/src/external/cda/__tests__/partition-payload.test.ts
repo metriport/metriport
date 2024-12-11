@@ -1,32 +1,13 @@
-const MOCK_MAX_CHUNK_SIZE = 100_000;
-
-// Mock the module before imports
-jest.mock("../partition-payload", () => {
-  const actual = jest.requireActual("../partition-payload");
-  const mockPartitionPayload = function (payloadRaw: string): string[] {
-    const originalMaxSize = actual.MAX_CHUNK_SIZE_IN_BYTES;
-    actual.MAX_CHUNK_SIZE_IN_BYTES = MOCK_MAX_CHUNK_SIZE;
-    const result = actual.partitionPayload(payloadRaw);
-    actual.MAX_CHUNK_SIZE_IN_BYTES = originalMaxSize;
-    return result;
-  };
-
-  return {
-    __esModule: true,
-    ...actual,
-    MAX_CHUNK_SIZE_IN_BYTES: MOCK_MAX_CHUNK_SIZE,
-    partitionPayload: mockPartitionPayload,
-  };
-});
-
 import { readFileSync } from "fs";
 import { join } from "path";
 import { toArray } from "@metriport/shared";
 import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { partitionPayload } from "../partition-payload";
 
+const MOCK_MAX_CHUNK_SIZE = 100_000;
+
 describe("partitionPayload", () => {
-  const exampleXmlPath = join(__dirname, "example-xml.xml");
+  const exampleXmlPath = join(__dirname, "example.xml");
   const exampleXml = readFileSync(exampleXmlPath, "utf-8");
   const parser = createXMLParser({
     ignoreAttributes: false,
@@ -35,10 +16,10 @@ describe("partitionPayload", () => {
   });
 
   it("should partition large XML document into multiple chunks and the number of sections is preserved", () => {
-    const chunks = partitionPayload(exampleXml);
+    const chunks = partitionPayload(exampleXml, MOCK_MAX_CHUNK_SIZE);
     expect(chunks).toBeDefined();
     expect(Array.isArray(chunks)).toBe(true);
-    expect(chunks.length).toBeGreaterThan(1);
+    expect(chunks.length).toEqual(6);
 
     chunks.forEach(chunk => {
       expect(typeof chunk).toBe("string");

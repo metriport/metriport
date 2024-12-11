@@ -249,7 +249,6 @@ export async function handler(event: SQSEvent) {
           fileName: cleanFileName,
           message,
           lambdaParams,
-          type: "clean",
           log,
         });
 
@@ -534,7 +533,6 @@ async function storePartitionedPayloadsInS3({
       fileName: buildDocumentNameForPartialConversions(preConversionFilename, index),
       message,
       lambdaParams,
-      type: "pre-convert",
       log,
     });
   });
@@ -545,14 +543,12 @@ async function storePayloadInS3({
   fileName,
   message,
   lambdaParams,
-  type,
   log,
 }: {
   payload: string;
   fileName: string;
   message: SQSRecord;
   lambdaParams: Record<string, string | undefined>;
-  type: "pre-convert" | "clean";
   log: typeof console.log;
 }) {
   try {
@@ -572,14 +568,13 @@ async function storePayloadInS3({
       }
     );
   } catch (error) {
-    const msg = `Error uploading ${type} file`;
+    const msg = `Error uploading conversion step file`;
     log(`${msg}: ${error}`);
     capture.error(msg, {
       extra: {
         message,
         ...lambdaParams,
         fileName,
-        type,
         context: lambdaName,
         error,
       },
