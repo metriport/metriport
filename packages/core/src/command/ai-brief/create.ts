@@ -3,14 +3,7 @@ dotenv.config();
 // keep that ^ on top
 // import { PromptTemplate } from "@langchain/core/prompts";
 // import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import {
-  Bundle,
-  Medication,
-  Observation,
-  Organization,
-  Patient,
-  Resource,
-} from "@medplum/fhirtypes";
+import { Bundle, Medication, Observation, Resource } from "@medplum/fhirtypes";
 import { errorToString, toArray } from "@metriport/shared";
 import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
 // import { ISO_DATE, buildDayjs, elapsedTimeFromNow } from "@metriport/shared/common/date";
@@ -69,6 +62,7 @@ import fs from "fs";
 import {
   applyResourceSpecificFilters,
   getNameString,
+  SlimOrganization,
   SlimResource,
 } from "../../external/aws/lambda-logic/modify-resources";
 //--------------------------------
@@ -430,13 +424,16 @@ function replaceReferencesWithData(
 ): { updRes: SlimResource; ids: string[] } {
   const updRes = cloneDeep(res);
   const referencedIds = new Set<string>();
+  if (!updRes.reference) updRes.reference = {};
 
-  if ("performer" in res) {
-    if (res.performer) {
-      if (res.resourceType === "DiagnosticReport" || res.resourceType === "Observation") {
-        const performers = toArray(res.performer);
+  if ("performer" in updRes) {
+    if (updRes.performer) {
+      if (updRes.resourceType === "DiagnosticReport" || updRes.resourceType === "Observation") {
+        // const typedResource = updRes as SlimDiagnosticReport;
+        const performers = toArray(updRes.performer);
+        delete updRes.performer;
         const orgs: string[] = [];
-        const practitioners: string[] = [];
+        const practs: string[] = [];
 
         performers.forEach(p => {
           const ref = p.reference;
@@ -449,25 +446,24 @@ function replaceReferencesWithData(
             const name = typeof performer.name === "string" ? performer.name.trim() : "";
             if (name.length > 0) orgs.push(name);
           }
-          //  else if (performer?.resourceType === "Practitioner") {
-          //   const name = getNameString(performer.name);
-          // }
         });
 
-        if (orgs.length > 0) updRes.org = orgs.join(", ");
-        if (practitioners.length > 0) {
-          updRes.performer = practitioners.join(", ");
-        } else {
-          delete updRes.performer;
+        if (orgs.length > 0) {
+          updRes.reference["organizations"] = orgs.join(", ");
+        }
+        if (practs.length > 0) {
+          updRes.reference["practitioners"] = practs.join(", ");
         }
       } else if (
-        res.resourceType === "Immunization" ||
-        res.resourceType === "MedicationAdministration" ||
-        res.resourceType === "MedicationRequest" ||
-        res.resourceType === "Procedure"
+        updRes.resourceType === "Immunization" ||
+        updRes.resourceType === "MedicationAdministration" ||
+        updRes.resourceType === "MedicationRequest" ||
+        updRes.resourceType === "Procedure"
       ) {
-        const performers = Array.isArray(res.performer) ? res.performer : [res.performer];
-        updRes.performer = performers
+        const performers = Array.isArray(updRes.performer) ? updRes.performer : [updRes.performer];
+        delete updRes.performer;
+
+        const practitioner = performers
           .flatMap(perf => {
             const refString =
               "actor" in perf
@@ -488,13 +484,15 @@ function replaceReferencesWithData(
             return [];
           })
           .join(", ");
+
+        updRes.reference = { practitioner };
       }
     }
   }
 
-  if ("result" in res) {
-    if (res.resourceType === "DiagnosticReport") {
-      updRes.results = res.result?.flatMap(resultRef => {
+  if ("result" in updRes) {
+    if (updRes.resourceType === "DiagnosticReport") {
+      const results = updRes.result?.flatMap(resultRef => {
         const refString = resultRef.reference;
         if (refString) {
           const observation = map.get(refString) as Observation | undefined;
@@ -509,49 +507,58 @@ function replaceReferencesWithData(
       });
 
       delete updRes.result;
+      updRes.reference = { results };
     }
   }
 
-  if ("medicationReference" in res) {
-    const refString = res.medicationReference?.reference;
+  if ("medicationReference" in updRes) {
+    const refString = updRes.medicationReference?.reference;
     if (refString) {
       const medication = map.get(refString) as Medication | undefined;
       referencedIds.add(refString);
       if (medication) {
-        updRes.medication = { ...medication, id: undefined, resourceType: undefined };
+        const { id, resourceType, ...otherFields } = medication;
+        updRes.reference = {
+          medication: { ...otherFields },
+        };
         delete updRes.medicationReference;
       }
     }
   }
 
-  if ("recorder" in res) {
-    const refString = res.recorder?.reference;
+  if ("recorder" in updRes) {
+    const refString = updRes.recorder?.reference;
     if (refString) {
       const individual = map.get(refString);
       referencedIds.add(refString);
       if (individual && individual.resourceType === "Practitioner") {
-        updRes.practitioner = { ...individual, resourceType: undefined, id: undefined };
+        const { id, resourceType, ...otherFields } = individual;
+        updRes.reference = {
+          practitioner: { ...otherFields },
+        };
         delete updRes.recorder;
       }
     }
   }
 
-  if ("manufacturer" in res && res.resourceType === "Immunization") {
-    if (res.manufacturer) {
-      if (res.manufacturer.display) {
-        updRes.manufacturer = res.manufacturer.display;
-      } else if (res.manufacturer.reference) {
-        const refString = res.manufacturer.reference;
-        const org = map.get(refString);
+  if ("manufacturer" in updRes && updRes.resourceType === "Immunization") {
+    if (updRes.manufacturer) {
+      if (updRes.manufacturer.display) {
+        updRes.reference = { manufacturer: { name: updRes.manufacturer.display } };
+      } else if (updRes.manufacturer.reference) {
+        const refString = updRes.manufacturer.reference;
+        const org = map.get(refString) as SlimOrganization;
         referencedIds.add(refString);
 
         if (org) {
-          updRes.manufacturer = { ...org, id: undefined };
+          const { id, resourceType, ...otherFields } = org;
+          updRes.reference = { manufacturer: { ...otherFields } };
         }
       }
     }
   }
 
+  if (Object.keys(updRes.reference).length === 0) delete updRes.reference;
   return { updRes, ids: Array.from(referencedIds) };
 }
 
