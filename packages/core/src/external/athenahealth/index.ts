@@ -1,10 +1,10 @@
 import {
   Condition,
-  Observation,
   Medication,
   MedicationAdministration,
   MedicationDispense,
   MedicationStatement,
+  Observation,
 } from "@medplum/fhirtypes";
 import { errorToString, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
@@ -24,9 +24,9 @@ import {
   patientSearchResourceSchema,
   ProblemCreateResponse,
   problemCreateResponseSchema,
+  subscriptionCreateResponseSchema,
   VitalsCreateResponse,
   vitalsCreateResponseSchema,
-  subscriptionCreateResponseSchema,
 } from "@metriport/shared/interface/external/athenahealth/index";
 import axios, { AxiosInstance } from "axios";
 import { processAsyncError } from "../..//util/error/shared";
@@ -372,27 +372,27 @@ class AthenaHealthApi {
     const { log, debug } = out(
       `AthenaHealth create medication - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} departmentId ${departmentId}`
     );
-    const medicationOptions = await this.searchForMedication({
-      cxId,
-      patientId,
-      medication: medication.medication,
-    });
-    if (medicationOptions.length === 0) throw new MetriportError("No medication options found");
-    const data = {
-      departmentid: this.stripDepartmentId(departmentId),
-      providernote: "Added via Metriport App",
-      unstructuredsig: "Metriport",
-      medicationid: `${medicationOptions[0]?.medicationid}`,
-      hidden: false,
-      startdate: this.formatDate(medication.statement?.effectivePeriod?.start),
-      stopdate: this.formatDate(medication.statement?.effectivePeriod?.end),
-      stopreason: undefined,
-      patientnote: undefined,
-      THIRDPARTYUSERNAME: undefined,
-      PATIENTFACINGCALL: undefined,
-    };
     const chartMedicationUrl = `/chart/${this.stripPatientId(patientId)}/medications`;
     try {
+      const medicationOptions = await this.searchForMedication({
+        cxId,
+        patientId,
+        medication: medication.medication,
+      });
+      if (medicationOptions.length === 0) throw new MetriportError("No medication options found");
+      const data = {
+        departmentid: this.stripDepartmentId(departmentId),
+        providernote: "Added via Metriport App",
+        unstructuredsig: "Metriport",
+        medicationid: `${medicationOptions[0]?.medicationid}`,
+        hidden: false,
+        startdate: this.formatDate(medication.statement?.effectivePeriod?.start),
+        stopdate: this.formatDate(medication.statement?.effectivePeriod?.end),
+        stopreason: undefined,
+        patientnote: undefined,
+        THIRDPARTYUSERNAME: undefined,
+        PATIENTFACINGCALL: undefined,
+      };
       const response = await this.axiosInstanceProprietary.post(
         chartMedicationUrl,
         this.createDataParams(data)
@@ -450,42 +450,43 @@ class AthenaHealthApi {
     const { log, debug } = out(
       `AthenaHealth create problem - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} departmentId ${departmentId}`
     );
-
-    const snomedCode = this.getSnomedConditionCode(condition);
-    if (!snomedCode) {
-      throw new MetriportError("No SNOMED code found for condition", undefined, {
-        cxId,
-        practiceId: this.practiceId,
-        patientId,
-        departmentId,
-        conditionId: condition.id,
-      });
-    }
-    const startDate = this.getConditionStartDate(condition);
-    if (!startDate) {
-      throw new MetriportError("No SNOMED code found for condition", undefined, {
-        cxId,
-        practiceId: this.practiceId,
-        patientId,
-        departmentId,
-        conditionId: condition.id,
-      });
-    }
-    const conditionStatus = this.getConditionStatus(condition);
-    const athenaStatus = conditionStatus
-      ? problemStatusesAthena.find(status => status.toLowerCase() === conditionStatus.toLowerCase())
-      : undefined;
-    const data = {
-      departmentid: this.stripDepartmentId(departmentId),
-      note: "Added via Metriport App",
-      snomedcode: snomedCode,
-      startdate: this.formatDate(startDate),
-      status: athenaStatus,
-      THIRDPARTYUSERNAME: undefined,
-      PATIENTFACINGCALL: undefined,
-    };
     const chartProblemUrl = `/chart/${this.stripPatientId(patientId)}/problems`;
     try {
+      const snomedCode = this.getSnomedConditionCode(condition);
+      if (!snomedCode) {
+        throw new MetriportError("No SNOMED code found for condition", undefined, {
+          cxId,
+          practiceId: this.practiceId,
+          patientId,
+          departmentId,
+          conditionId: condition.id,
+        });
+      }
+      const startDate = this.getConditionStartDate(condition);
+      if (!startDate) {
+        throw new MetriportError("No SNOMED code found for condition", undefined, {
+          cxId,
+          practiceId: this.practiceId,
+          patientId,
+          departmentId,
+          conditionId: condition.id,
+        });
+      }
+      const conditionStatus = this.getConditionStatus(condition);
+      const athenaStatus = conditionStatus
+        ? problemStatusesAthena.find(
+            status => status.toLowerCase() === conditionStatus.toLowerCase()
+          )
+        : undefined;
+      const data = {
+        departmentid: this.stripDepartmentId(departmentId),
+        note: "Added via Metriport App",
+        snomedcode: snomedCode,
+        startdate: this.formatDate(startDate),
+        status: athenaStatus,
+        THIRDPARTYUSERNAME: undefined,
+        PATIENTFACINGCALL: undefined,
+      };
       const response = await this.axiosInstanceProprietary.post(
         chartProblemUrl,
         this.createDataParams(data)
@@ -543,68 +544,68 @@ class AthenaHealthApi {
     const { log, debug } = out(
       `AthenaHealth create vitals - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} departmentId ${departmentId}`
     );
-    const observation = vitals.mostRecentObservation;
-    if (!vitals.sortedPoints) {
-      throw new MetriportError("No points found for vitals", undefined, {
-        cxId,
-        practiceId: this.practiceId,
-        patientId,
-        departmentId,
-        observationId: observation.id,
-      });
-    }
-    const data = {
-      departmentid: this.stripDepartmentId(departmentId),
-      returnvitalsid: true,
-      source: "DEVICEGENERATED",
-      vitals: vitals.sortedPoints.map(v => {
-        if (v.bp) {
-          return [
-            {
-              clinicalelementid: "VITALS.BLOODPRESSURE.DIASTOLIC",
-              readingtaken: this.formatDate(v.date),
-              value: v.bp.diastolic.toString(),
-            },
-            {
-              clinicalelementid: "VITALS.BLOODPRESSURE.SYSTOLIC",
-              readingtaken: this.formatDate(v.date),
-              value: v.bp.systolic.toString(),
-            },
-          ];
-        }
-        const code = this.getObservationCode(observation);
-        if (!code) {
-          throw new MetriportError("No code found for observation", undefined, {
-            cxId,
-            practiceId: this.practiceId,
-            patientId,
-            departmentId,
-            observationId: observation.id,
-          });
-        }
-        const clinicalElementId = vitalSignCodesMapAthena.get(code);
-        if (!clinicalElementId) {
-          throw new MetriportError("No clinical element id found for observation", undefined, {
-            cxId,
-            practiceId: this.practiceId,
-            patientId,
-            departmentId,
-            observationId: observation.id,
-          });
-        }
-        return [
-          {
-            clinicalelementid: clinicalElementId,
-            readingtaken: this.formatDate(v.date),
-            value: v.value.toString(),
-          },
-        ];
-      }),
-      THIRDPARTYUSERNAME: undefined,
-      PATIENTFACINGCALL: undefined,
-    };
     const chartVitalsUrl = `/chart/${this.stripPatientId(patientId)}/vitals`;
     try {
+      const observation = vitals.mostRecentObservation;
+      if (!vitals.sortedPoints) {
+        throw new MetriportError("No points found for vitals", undefined, {
+          cxId,
+          practiceId: this.practiceId,
+          patientId,
+          departmentId,
+          observationId: observation.id,
+        });
+      }
+      const data = {
+        departmentid: this.stripDepartmentId(departmentId),
+        returnvitalsid: true,
+        source: "DEVICEGENERATED",
+        vitals: vitals.sortedPoints.map(v => {
+          if (v.bp) {
+            return [
+              {
+                clinicalelementid: "VITALS.BLOODPRESSURE.DIASTOLIC",
+                readingtaken: this.formatDate(v.date),
+                value: v.bp.diastolic.toString(),
+              },
+              {
+                clinicalelementid: "VITALS.BLOODPRESSURE.SYSTOLIC",
+                readingtaken: this.formatDate(v.date),
+                value: v.bp.systolic.toString(),
+              },
+            ];
+          }
+          const code = this.getObservationCode(observation);
+          if (!code) {
+            throw new MetriportError("No code found for observation", undefined, {
+              cxId,
+              practiceId: this.practiceId,
+              patientId,
+              departmentId,
+              observationId: observation.id,
+            });
+          }
+          const clinicalElementId = vitalSignCodesMapAthena.get(code);
+          if (!clinicalElementId) {
+            throw new MetriportError("No clinical element id found for observation", undefined, {
+              cxId,
+              practiceId: this.practiceId,
+              patientId,
+              departmentId,
+              observationId: observation.id,
+            });
+          }
+          return [
+            {
+              clinicalelementid: clinicalElementId,
+              readingtaken: this.formatDate(v.date),
+              value: v.value.toString(),
+            },
+          ];
+        }),
+        THIRDPARTYUSERNAME: undefined,
+        PATIENTFACINGCALL: undefined,
+      };
       const response = await this.axiosInstanceProprietary.post(
         chartVitalsUrl,
         this.createDataParams(data)
@@ -913,9 +914,7 @@ class AthenaHealthApi {
     }
   }
 
-  private createDataParams(data: {
-    [key: string]: string | boolean | object | object[] | undefined;
-  }): string {
+  private createDataParams(data: { [key: string]: string | boolean | object | undefined }): string {
     const dataParams = new URLSearchParams();
     Object.entries(data).forEach(([k, v]) => {
       if (v === undefined) return;

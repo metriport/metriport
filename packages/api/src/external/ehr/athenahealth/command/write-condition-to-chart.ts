@@ -1,6 +1,6 @@
+import { Condition } from "@medplum/fhirtypes";
 import AthenaHealthApi from "@metriport/core/external/athenahealth/index";
 import { ProblemCreateResponse } from "@metriport/shared/interface/external/athenahealth/problem";
-import { Condition } from "@medplum/fhirtypes";
 import { getAthenaEnv } from "../shared";
 
 export async function writeConditionToChart({

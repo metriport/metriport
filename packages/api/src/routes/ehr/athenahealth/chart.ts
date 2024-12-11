@@ -13,10 +13,10 @@ const router = Router();
 /**
  * POST /ehr/athenahealth/chart/:id/medication
  *
- * Tries to write the medication to the chart
+ * Tries to write the medication to the patient's chart
  * @param req.params.id The ID of AthenaHealth Patient.
  * @param req.body The FHIR Resource payload
- * @returns Metriport Patient if found.
+ * @returns Athena API response
  */
 router.post(
   "/:id/medication",
@@ -42,10 +42,10 @@ router.post(
 /**
  * POST /ehr/athenahealth/chart/:id/condition
  *
- * Tries to write the condition to the chart
+ * Tries to write the condition to the patient's chart
  * @param req.params.id The ID of AthenaHealth Patient.
  * @param req.body The FHIR Resource payload
- * @returns Metriport Patient if found.
+ * @returns Athena API response
  */
 router.post(
   "/:id/condition",
@@ -71,10 +71,10 @@ router.post(
 /**
  * POST /ehr/athenahealth/chart/:id/vitals
  *
- * Tries to write the vitals to the chart
+ * Tries to write the vitals to the patient's chart
  * @param req.params.id The ID of AthenaHealth Patient.
  * @param req.body The FHIR Resource payload
- * @returns Metriport Patient if found.
+ * @returns Athena API response
  */
 router.post(
   "/:id/vitals",
