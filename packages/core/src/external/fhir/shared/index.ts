@@ -180,6 +180,10 @@ export function isBinary(resource: Resource | undefined): resource is Binary {
   return resource?.resourceType === "Binary";
 }
 
+export function isEndpoint(resource: Resource | undefined): resource is Endpoint {
+  return resource?.resourceType === "Endpoint";
+}
+
 export function isFamilyMemberHistory(
   resource: Resource | undefined
 ): resource is FamilyMemberHistory {
