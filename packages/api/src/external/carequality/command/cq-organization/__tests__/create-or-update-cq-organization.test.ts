@@ -1,26 +1,27 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { faker } from "@faker-js/faker";
+import { Organization } from "@medplum/fhirtypes";
+import { CarequalityManagementAPIFhir } from "@metriport/carequality-sdk";
 import { CarequalityManagementAPIImpl } from "@metriport/carequality-sdk/client/carequality";
+import { makeOrganization } from "@metriport/core/fhir-to-cda/cda-templates/components/__tests__/make-organization";
 import { metriportCompanyDetails } from "@metriport/shared";
 import * as getAddress from "../../../../../domain/medical/address";
-import { FacilityType } from "../../../../../domain/medical/facility";
+import { FacilityType, isOboFacility } from "../../../../../domain/medical/facility";
 import { makeFacilityModel } from "../../../../../domain/medical/__tests__/facility";
 import { makeAddressWithCoordinates } from "../../../../../domain/medical/__tests__/location-address";
-import { makeOrganizationModel } from "../../../../../domain/medical/__tests__/organization";
 import { FacilityModel } from "../../../../../models/medical/facility";
-import { OrganizationModel } from "../../../../../models/medical/organization";
+import * as apiFhirFile from "../../../api";
 import { metriportEmail as metriportEmailForCq } from "../../../constants";
 import { CQDirectoryEntryData } from "../../../cq-directory";
 import { buildCqOrgNameForFacility } from "../../../shared";
-import * as createOrUpdateCqOrganizationFile from "../create-or-update-cq-organization";
-import { metriportIntermediaryOid, metriportOid } from "../create-or-update-cq-organization";
-import * as getCqOrgOrFailFile from "../get-cq-organization";
-import { updateCqOrganizationAndMetriportEntity } from "../update-cq-organization-and-metriport-entity";
+import { metriportIntermediaryOid, metriportOid } from "../constants";
+import { createOrUpdateCqOrganization } from "../create-or-update-cq-organization";
+import * as getCqOrgFile from "../get-cq-organization";
+import { getOrganizationFhirTemplate } from "../organization-template";
 
 let getAddressWithCoordination: jest.SpyInstance;
-let createOrUpdateCqOrganizationMock: jest.SpyInstance;
-let getCqOrgOrFailMock: jest.SpyInstance;
-let organizationMock: OrganizationModel;
+let makeCarequalityManagementAPIFhirMock: jest.SpyInstance<CarequalityManagementAPIFhir>;
+let getCqOrgMock: jest.SpyInstance;
 let facilityMock: FacilityModel;
 let oboFacilityMock: FacilityModel;
 
@@ -32,7 +33,6 @@ jest
   .mockImplementation(() => Promise.resolve(""));
 
 beforeEach(() => {
-  organizationMock = makeOrganizationModel();
   facilityMock = makeFacilityModel({
     cqType: FacilityType.initiatorAndResponder,
     cqActive: true,
@@ -50,27 +50,41 @@ beforeEach(() => {
     cwOboOid: faker.string.uuid(),
   });
   getAddressWithCoordination = jest.spyOn(getAddress, "getAddressWithCoordinates");
-  getCqOrgOrFailMock = jest.spyOn(getCqOrgOrFailFile, "getCqOrgOrFail");
-  createOrUpdateCqOrganizationMock = jest
-    .spyOn(createOrUpdateCqOrganizationFile, "createOrUpdateCqOrganization")
-    .mockImplementation(() => Promise.resolve({} as CQDirectoryEntryData));
+  getCqOrgMock = jest.spyOn(getCqOrgFile, "getCqOrg");
+  makeCarequalityManagementAPIFhirMock = jest.spyOn(
+    apiFhirFile,
+    "makeCarequalityManagementAPIFhir"
+  );
 });
 
 afterEach(() => {
   jest.clearAllMocks();
 });
 
-describe("updateCqOrganizationAndMetriportEntity", () => {
+function makeApiImpl(params: {
+  single?: Organization;
+  list?: Organization[];
+}): CarequalityManagementAPIFhir {
+  return {
+    updateOrganization: jest.fn().mockResolvedValue(params.single),
+    listOrganizations: jest.fn().mockResolvedValue(params.list),
+    registerOrganization: jest.fn().mockResolvedValue(params.single),
+  };
+}
+
+describe("createOrUpdateCqOrganization", () => {
   it("calls hie creates with expected params when called - non-obo", async () => {
     const cxId = faker.string.uuid();
     const cxOrgName = faker.company.name();
 
+    const isObo = isOboFacility(facilityMock.cqType);
     const orgName = buildCqOrgNameForFacility({
       vendorName: cxOrgName,
       orgName: facilityMock.data.name,
-      oboOid: facilityMock.cqOboOid ?? undefined,
+      oboOid: isObo ? facilityMock.cqOboOid ?? undefined : undefined,
     });
-    getCqOrgOrFailMock.mockResolvedValueOnce({ name: orgName } as CQDirectoryEntryData);
+    const parentOrgOid = isObo ? metriportIntermediaryOid : metriportOid;
+    getCqOrgMock.mockResolvedValueOnce({ name: orgName } as CQDirectoryEntryData);
 
     const mockedAddress = makeAddressWithCoordinates();
     getAddressWithCoordination.mockImplementation(() => {
@@ -82,15 +96,7 @@ describe("updateCqOrganizationAndMetriportEntity", () => {
       ? `${address.addressLine1}, ${address.addressLine2}`
       : address.addressLine1;
 
-    await updateCqOrganizationAndMetriportEntity({
-      cxId,
-      facility: facilityMock,
-      oid: facilityMock.oid,
-      active: facilityMock.cqActive,
-      org: organizationMock,
-    });
-
-    expect(createOrUpdateCqOrganizationMock).toHaveBeenCalledWith({
+    const epectedOrgDetails = {
       name: orgName,
       addressLine1: addressLine,
       lat: mockedAddress.coordinates.lat.toString(),
@@ -103,21 +109,53 @@ describe("updateCqOrganizationAndMetriportEntity", () => {
       phone: metriportCompanyDetails.phone,
       email: metriportEmailForCq,
       active: facilityMock.cqActive,
-      parentOrgOid: metriportOid,
+      parentOrgOid,
+      role: "Connection" as const,
+    };
+    const expectedCqOrg = getOrganizationFhirTemplate(epectedOrgDetails);
+
+    const apiImpl = makeApiImpl({
+      single: makeOrganization({
+        id: expectedCqOrg.id,
+        identifier: [{ value: expectedCqOrg.id }],
+        active: expectedCqOrg.active,
+      }),
+    });
+    makeCarequalityManagementAPIFhirMock.mockReturnValueOnce(apiImpl);
+
+    await createOrUpdateCqOrganization({
+      cxId,
+      oid: facilityMock.oid,
+      name: orgName,
+      address,
+      contactName: metriportCompanyDetails.name,
+      phone: metriportCompanyDetails.phone,
+      email: metriportEmailForCq,
+      active: facilityMock.cqActive,
+      parentOrgOid,
       role: "Connection" as const,
     });
+
+    expect(apiImpl.updateOrganization).toHaveBeenCalledWith(
+      expect.objectContaining({
+        org: expectedCqOrg,
+        oid: epectedOrgDetails.oid,
+      })
+    );
   });
 
   it("calls hie creates with expected params when called - obo", async () => {
     const cxId = faker.string.uuid();
     const cxOrgName = faker.company.name();
 
+    const isObo = isOboFacility(oboFacilityMock.cqType);
     const orgName = buildCqOrgNameForFacility({
       vendorName: cxOrgName,
       orgName: oboFacilityMock.data.name,
-      oboOid: oboFacilityMock.cqOboOid ?? undefined,
+      oboOid: isObo ? oboFacilityMock.cqOboOid ?? undefined : undefined,
     });
-    getCqOrgOrFailMock.mockResolvedValueOnce({ name: orgName } as CQDirectoryEntryData);
+    const parentOrgOid = isObo ? metriportIntermediaryOid : metriportOid;
+    getCqOrgMock.mockResolvedValueOnce({ name: orgName } as CQDirectoryEntryData);
 
     const mockedAddress = makeAddressWithCoordinates();
     getAddressWithCoordination.mockImplementation(() => {
@@ -129,15 +167,7 @@ describe("updateCqOrganizationAndMetriportEntity", () => {
       ? `${address.addressLine1}, ${address.addressLine2}`
       : address.addressLine1;
 
-    await updateCqOrganizationAndMetriportEntity({
-      cxId,
-      facility: oboFacilityMock,
-      oid: oboFacilityMock.oid,
-      active: oboFacilityMock.cqActive,
-      org: organizationMock,
-    });
-
-    expect(createOrUpdateCqOrganizationMock).toHaveBeenCalledWith({
+    const epectedOrgDetails = {
       name: orgName,
       addressLine1: addressLine,
       lat: mockedAddress.coordinates.lat.toString(),
@@ -150,8 +180,40 @@ describe("updateCqOrganizationAndMetriportEntity", () => {
       phone: metriportCompanyDetails.phone,
       email: metriportEmailForCq,
       active: oboFacilityMock.cqActive,
-      parentOrgOid: metriportIntermediaryOid,
+      parentOrgOid,
+      oboOid: oboFacilityMock.cqOboOid ?? undefined,
+      role: "Connection" as const,
+    };
+    const expectedCqOrg = getOrganizationFhirTemplate(epectedOrgDetails);
+
+    const apiImpl = makeApiImpl({
+      single: makeOrganization({
+        id: expectedCqOrg.id,
+        identifier: [{ value: expectedCqOrg.id }],
+        active: expectedCqOrg.active,
+      }),
+    });
+    makeCarequalityManagementAPIFhirMock.mockReturnValueOnce(apiImpl);
+
+    await createOrUpdateCqOrganization({
+      cxId,
+      oid: oboFacilityMock.oid,
+      name: orgName,
+      address,
+      contactName: metriportCompanyDetails.name,
+      phone: metriportCompanyDetails.phone,
+      email: metriportEmailForCq,
+      active: oboFacilityMock.cqActive,
+      parentOrgOid,
+      oboOid: oboFacilityMock.cqOboOid ?? undefined,
       role: "Connection" as const,
     });
+
+    expect(apiImpl.updateOrganization).toHaveBeenCalledWith(
+      expect.objectContaining({
+        org: expectedCqOrg,
+        oid: epectedOrgDetails.oid,
+      })
+    );
   });
 });

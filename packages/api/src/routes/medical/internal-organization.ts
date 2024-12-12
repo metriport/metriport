@@ -1,22 +1,19 @@
+import { isProvider, Organization, OrganizationCreate } from "@metriport/core/domain/organization";
+import { Config } from "@metriport/core/util/config";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { Organization, OrganizationCreate } from "@metriport/core/domain/organization";
-import { metriportEmail as metriportEmailForCq } from "../../external/carequality/constants";
-import { metriportCompanyDetails } from "@metriport/shared";
-import { requestLogger } from "../helpers/request-logger";
-import { verifyCxProviderAccess } from "../../command/medical/facility/verify-access";
-import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { createOrganization } from "../../command/medical/organization/create-organization";
+import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { updateOrganization } from "../../command/medical/organization/update-organization";
-import { organiationInternalDetailsSchema } from "./schemas/organization";
-import { internalDtoFromModel } from "./dtos/organizationDTO";
+import { createOrUpdateOrganization as cqCreateOrUpdateOrganization } from "../../external/carequality/command/create-or-update-organization";
+import { createOrUpdateCwOrganization } from "../../external/commonwell/command/cw-organization/create-or-update-cw-organization";
+import { requestLogger } from "../helpers/request-logger";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFromQueryAsBoolean } from "../util";
-import { createOrUpdateCqOrganization } from "../../external/carequality/command/cq-organization/create-or-update-cq-organization";
-import { createOrUpdateCwOrganization } from "../../external/commonwell/command/cw-organization/create-or-update-cw-organization";
-import { getCqAddress } from "../../external/carequality/shared";
-import { processAsyncError } from "@metriport/core/util/error/shared";
+import { internalDtoFromModel } from "./dtos/organizationDTO";
+import { organiationInternalDetailsSchema } from "./schemas/organization";
 
 const router = Router();
 
@@ -32,6 +29,7 @@ router.put(
   "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
+    if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const skipHie = getFromQueryAsBoolean("skipHie", req);
 
@@ -63,29 +61,14 @@ router.put(
     } else {
       org = await createOrganization(organizationCreate);
     }
-    const syncInHie = await verifyCxProviderAccess(cxId, false);
+    const syncInHie = !skipHie && isProvider(org);
     // TODO Move to external/hie https://github.com/metriport/metriport-internal/issues/1940
     // CAREQUALITY
-    if (syncInHie && org.cqApproved && !skipHie) {
-      const { coordinates, addressLine } = await getCqAddress({ cxId, address: org.data.location });
-      createOrUpdateCqOrganization({
-        name: org.data.name,
-        addressLine1: addressLine,
-        lat: coordinates.lat.toString(),
-        lon: coordinates.lon.toString(),
-        city: org.data.location.city,
-        state: org.data.location.state,
-        postalCode: org.data.location.zip,
-        oid: org.oid,
-        contactName: metriportCompanyDetails.name,
-        phone: metriportCompanyDetails.phone,
-        email: metriportEmailForCq,
-        active: org.cqActive,
-        role: "Connection" as const,
-      }).catch(processAsyncError("cq.internal.organization"));
+    if (syncInHie && org.cqApproved) {
+      cqCreateOrUpdateOrganization({ org }).catch(processAsyncError("internal.organization.cq"));
     }
     // COMMONWELL
-    if (syncInHie && org.cwApproved && !skipHie) {
+    if (syncInHie && org.cwApproved) {
       createOrUpdateCwOrganization({
         cxId,
         orgDetails: {
@@ -95,7 +78,7 @@ router.put(
           active: org.cwActive,
           isObo: false,
         },
-      }).catch(processAsyncError("cw.internal.organization"));
+      }).catch(processAsyncError("internal.organization.cw"));
     }
     return res.status(httpStatus.OK).json(internalDtoFromModel(org));
   })

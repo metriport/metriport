@@ -1,8 +1,8 @@
 import {
   APIMode as CQAPIMode,
   CarequalityManagementAPI,
-  CarequalityManagementAPIImpl,
   CarequalityManagementAPIFhir,
+  CarequalityManagementAPIImpl,
   CarequalityManagementAPIImplFhir,
 } from "@metriport/carequality-sdk";
 import { Config } from "../../shared/config";
@@ -18,8 +18,8 @@ const cqApiMode = Config.isProdEnv()
  *
  * @returns Carequality API.
  */
-export function makeCarequalityManagementAPI(): CarequalityManagementAPI | undefined {
-  if (Config.isSandbox()) return;
+export function makeCarequalityManagementAPI(): CarequalityManagementAPI {
+  if (Config.isSandbox()) throw new Error("Carequality API not initialized");
 
   const cqManagementApiKey = Config.getCQManagementApiKey();
   const cqOrgCert = Config.getCQOrgCertificate();
@@ -35,8 +35,8 @@ export function makeCarequalityManagementAPI(): CarequalityManagementAPI | undef
   });
 }
 
-export function makeCarequalityManagementAPIFhir(): CarequalityManagementAPIFhir | undefined {
-  if (Config.isSandbox()) return;
+export function makeCarequalityManagementAPIFhir(): CarequalityManagementAPIFhir {
+  if (Config.isSandbox()) throw new Error("Carequality Management API not initialized");
 
   const cqManagementApiKey = Config.getCQManagementApiKey();
   const cqOrgCert = Config.getCQOrgCertificate();

@@ -6,6 +6,7 @@ import { capture } from "@metriport/core/util/notifications";
 import { errorToString, PurposeOfUse } from "@metriport/shared";
 import z from "zod";
 import { getAddressWithCoordinates } from "../../domain/medical/address";
+import { Config } from "../../shared/config";
 import { isCarequalityEnabled, isCQDirectEnabledForCx } from "../aws/app-config";
 import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
 // TODO: adjust when we support multiple POUs
@@ -63,27 +64,34 @@ export const cqOrgUrlsSchema = z.object({
   urlDQ: z.string().optional(),
   urlDR: z.string().optional(),
 });
-
 export type CQOrgUrls = z.infer<typeof cqOrgUrlsSchema>;
 
-export const cqOrgDetailsSchema = z.object({
-  name: z.string(),
-  oid: z.string(),
-  addressLine1: z.string(),
-  city: z.string(),
-  state: z.string(),
-  postalCode: z.string(),
-  lat: z.string(),
-  lon: z.string(),
-  contactName: z.string(),
-  phone: z.string(),
-  email: z.string(),
-  role: z.enum(["Implementer", "Connection"]),
-  active: z.boolean(),
-  parentOrgOid: z.string().optional(),
-});
+export function getCqOrgUrls(): CQOrgUrls {
+  const cqOrgUrlsString = Config.getCQOrgUrls();
+  const urls = cqOrgUrlsString ? cqOrgUrlsSchema.parse(JSON.parse(cqOrgUrlsString)) : {};
+  return urls;
+}
 
-export type CQOrgDetails = z.infer<typeof cqOrgDetailsSchema>;
+export type CQOrgDetails = {
+  name: string;
+  oid: string;
+  addressLine1: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  lat: string;
+  lon: string;
+  contactName: string;
+  phone: string;
+  email: string;
+  /** Implementer is Metriport, all other Orgs/Facilities we manage are Connection */
+  role: "Implementer" | "Connection";
+  active: boolean;
+  /** Translates into the `partOf` field in Carequality. Usually either `metriportOid` or `metriportIntermediaryOid` */
+  parentOrgOid?: string | undefined;
+  /** Gets translated into the DOA extension in Carequality. Only used for OBO facilities. @see https://sequoiaproject.org/SequoiaProjectHealthcareDirectoryImplementationGuide/output/StructureDefinition-DOA.html */
+  oboOid?: string | undefined;
+};
 export type CQOrgDetailsWithUrls = CQOrgDetails & CQOrgUrls;
 
 export function formatDate(dateString: string | undefined): string | undefined {
