@@ -3,11 +3,13 @@ import { LOINC_CODE, LOINC_OID } from "../../util/constants";
 import {
   DeduplicationResult,
   combineResources,
+  createKeysFromObjectAndFlagBits,
+  createKeysFromObjectArray,
   createRef,
-  fillMaps,
+  fetchCodingCodeOrDisplayOrSystem,
+  fillL1L2Maps,
   getDateFromResource,
   pickMostDescriptiveStatus,
-  fetchCodingCodeOrDisplayOrSystem,
 } from "../shared";
 
 const diagnosticReportStatus = [
@@ -23,6 +25,8 @@ const diagnosticReportStatus = [
   "cancelled",
 ] as const;
 export type DiagnosticReportStatus = (typeof diagnosticReportStatus)[number];
+
+// import fs from "fs";
 
 const statusRanking: Record<DiagnosticReportStatus, number> = {
   "entered-in-error": 0,
@@ -63,7 +67,8 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
   refReplacementMap: Map<string, string>;
   danglingReferences: Set<string>;
 } {
-  const diagReportsMap = new Map<string, DiagnosticReport>();
+  const l1ReportsMap = new Map<string, string>();
+  const l2ReportsMap = new Map<string, DiagnosticReport>();
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
 
@@ -92,23 +97,65 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
     const datetime = getDateFromResource(diagReport, "datetime");
     const isPresentedFormPresent = diagReport.presentedForm?.length;
     const isResultPresent = diagReport.result?.length;
-    if (datetime && (isPresentedFormPresent || isResultPresent)) {
-      const key = JSON.stringify({ datetime });
-      fillMaps(
-        diagReportsMap,
-        key,
-        diagReport,
+
+    // If a diagnostic report does not contain any results or doctor's notes, it is useless and can be removed
+    if (!isPresentedFormPresent && !isResultPresent) {
+      danglingReferences.add(createRef(diagReport));
+      continue;
+    }
+
+    const practitionerRefsSet = new Set<string>();
+
+    const getterKeys: string[] = [];
+    const setterKeys: string[] = [];
+
+    diagReport.performer?.forEach(perf => {
+      const ref = perf.reference;
+      if (ref) {
+        if (ref.includes("Practitioner")) {
+          practitionerRefsSet.add(ref);
+          return;
+        }
+      }
+    });
+
+    const practitionerRefs = Array.from(practitionerRefsSet).map(p => ({ practitioner: p }));
+    if (datetime && practitionerRefs.length > 0) {
+      setterKeys.push(...createKeysFromObjectArray({ datetime }, practitionerRefs));
+      setterKeys.push(...createKeysFromObjectAndFlagBits({ datetime }, [1]));
+
+      getterKeys.push(...createKeysFromObjectArray({ datetime }, practitionerRefs));
+      getterKeys.push(...createKeysFromObjectAndFlagBits({ datetime }, [0]));
+    }
+
+    if (datetime && practitionerRefs.length === 0) {
+      setterKeys.push(...createKeysFromObjectAndFlagBits({ datetime }, [0]));
+
+      getterKeys.push(...createKeysFromObjectAndFlagBits({ datetime }, [1]));
+    }
+
+    if (!datetime) {
+      setterKeys.push(JSON.stringify({ id: diagReport.id }));
+      getterKeys.push(JSON.stringify({ id: diagReport.id }));
+    }
+
+    if (setterKeys.length > 0) {
+      fillL1L2Maps({
+        map1: l1ReportsMap,
+        map2: l2ReportsMap,
+        getterKeys,
+        setterKeys,
+        targetResource: diagReport,
         refReplacementMap,
-        undefined,
-        removeCodesAndAssignStatus
-      );
+        applySpecialModifications: removeCodesAndAssignStatus,
+      });
     } else {
       danglingReferences.add(createRef(diagReport));
     }
   }
 
   return {
-    diagReportsMap,
+    diagReportsMap: l2ReportsMap,
     refReplacementMap,
     danglingReferences,
   };
