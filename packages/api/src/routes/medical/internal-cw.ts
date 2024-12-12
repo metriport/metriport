@@ -10,7 +10,7 @@ import {
   getOrganizationOrFail,
   getOrganizationByOidOrFail,
 } from "../../command/medical/organization/get-organization";
-import { getFaciltiyByOidOrFail } from "../../command/medical/facility/get-facility";
+import { getFacilityByOidOrFail } from "../../command/medical/facility/get-facility";
 import { cwOrgActiveSchema } from "../../external/commonwell/shared";
 import { getOrgOrFail } from "../../external/commonwell/command/cw-organization/get-cw-organization";
 import { updateCwOrganizationAndMetriportEntity } from "../../external/commonwell/command/cw-organization/update-cw-organization-and-metriport-entity";
@@ -39,7 +39,7 @@ router.get(
     const oid = getFrom("params").orFail("oid", req);
 
     if (facilityId) {
-      await getFaciltiyByOidOrFail({ cxId, id: facilityId, oid });
+      await getFacilityByOidOrFail({ cxId, id: facilityId, oid });
     } else {
       await getOrganizationByOidOrFail({ cxId, oid });
     }
@@ -60,10 +60,9 @@ router.put(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const oid = getFrom("params").orFail("oid", req);
-    await verifyCxProviderAccess(cxId);
-
     const org = await getOrganizationByOidOrFail({ cxId, oid });
     if (!org.cwApproved) throw new NotFoundError("CW not approved");
+    await verifyCxProviderAccess(org);
 
     const orgActive = cwOrgActiveSchema.parse(req.body);
     updateCwOrganizationAndMetriportEntity({
@@ -93,7 +92,7 @@ router.put(
     await verifyCxItVendorAccess(cxId);
 
     const org = await getOrganizationOrFail({ cxId });
-    const facility = await getFaciltiyByOidOrFail({ cxId, id: facilityId, oid });
+    const facility = await getFacilityByOidOrFail({ cxId, id: facilityId, oid });
     if (!facility.cwApproved) throw new NotFoundError("CW not approved");
 
     const facilityActive = cwOrgActiveSchema.parse(req.body);

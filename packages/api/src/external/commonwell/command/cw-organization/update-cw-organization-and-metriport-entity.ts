@@ -4,6 +4,9 @@ import { OrganizationModel } from "../../../../models/medical/organization";
 import { createOrUpdateCwOrganization } from "./create-or-update-cw-organization";
 import { getOrgOrFail } from "./get-cw-organization";
 
+// TODO Apply the same pattern as Carequality
+// TODO Apply the same pattern as Carequality
+// TODO Apply the same pattern as Carequality
 export async function updateCwOrganizationAndMetriportEntity({
   cxId,
   oid,

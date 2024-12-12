@@ -1,17 +1,15 @@
+import { Endpoint, Organization } from "@medplum/fhirtypes";
 import {
   ChannelUrl,
   XCA_DQ_STRING,
   XCA_DR_STRING,
   XCPD_STRING,
 } from "@metriport/carequality-sdk/common/util";
-import { Config } from "../../../../shared/config";
 import { CQOrgDetailsWithUrls, createPurposeOfUse } from "../../shared";
-import { Organization, Endpoint } from "@medplum/fhirtypes";
+import { metriportOid } from "./constants";
 
 export const transactionUrl =
   "https://sequoiaproject.org/fhir/sphd/StructureDefinition/Transaction";
-
-const metriportOid = Config.getSystemRootOID();
 
 export function getOrganizationFhirTemplate(orgDetails: CQOrgDetailsWithUrls): Organization {
   const { oid, role, urlXCPD, urlDQ, urlDR } = orgDetails;
@@ -49,6 +47,7 @@ function getFhirOrganization(
     lat,
     lon,
     parentOrgOid,
+    oboOid,
   } = orgDetails;
   const org: Organization = {
     resourceType: "Organization",
@@ -140,17 +139,12 @@ function getFhirOrganization(
           type: "Organization",
         },
       },
-      ...(parentOrgOid
+      ...(oboOid
         ? [
             {
-              url: "https://sequoiaproject.org/fhir/sphd/StructureDefinition/InitiatorOnly",
-              valueCodeableConcept: {
-                coding: [
-                  {
-                    system: "https://sequoiaproject.org/fhir/sphd/CodeSystem/InitiatorOnlyCodes",
-                    code: "OBO",
-                  },
-                ],
+              url: "https://sequoiaproject.org/fhir/sphd/StructureDefinition/DOA",
+              valueReference: {
+                reference: `Organization/${oboOid}`,
               },
             },
           ]
