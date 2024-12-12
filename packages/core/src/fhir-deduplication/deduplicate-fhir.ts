@@ -71,14 +71,11 @@ export function deduplicateFhir(
   resourceArrays.organizations = organizationsResult.combinedResources;
 
   /* WARNING we need to replace references in the following resource arrays before deduplicating them because their deduplication keys 
-  use practitioner and organization references.
+  use practitioner references.
   */
   resourceArrays = replaceResourceReferences(
     resourceArrays,
-    new Map<string, string>([
-      ...practitionersResult.refReplacementMap,
-      ...organizationsResult.refReplacementMap,
-    ]),
+    new Map<string, string>([...practitionersResult.refReplacementMap]),
     ["diagnosticReports"]
   );
 
