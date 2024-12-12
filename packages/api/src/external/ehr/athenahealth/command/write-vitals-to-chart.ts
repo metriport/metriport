@@ -1,5 +1,5 @@
 import AthenaHealthApi, { GroupedVitals } from "@metriport/core/external/athenahealth/index";
-import { ProblemCreateResponse } from "@metriport/shared/interface/external/athenahealth/problem";
+import { VitalsCreateResponse } from "@metriport/shared/interface/external/athenahealth/vitals";
 import { getAthenaEnv } from "../shared";
 
 export async function writeVitalsToChart({
@@ -14,7 +14,7 @@ export async function writeVitalsToChart({
   athenaPracticeId: string;
   athenaDepartmentId: string;
   vitals: GroupedVitals;
-}): Promise<ProblemCreateResponse> {
+}): Promise<VitalsCreateResponse[]> {
   const { environment, clientKey, clientSecret } = await getAthenaEnv();
 
   const api = await AthenaHealthApi.create({
