@@ -71,6 +71,21 @@ export function deduplicateFhir(
   const practitionersResult = deduplicatePractitioners(resourceArrays.practitioners);
   resourceArrays.practitioners = practitionersResult.combinedResources;
 
+  const organizationsResult = deduplicateOrganizations(resourceArrays.organizations);
+  resourceArrays.organizations = organizationsResult.combinedResources;
+
+  /* WARNING we need to replace references in the following resource arrays before deduplicating them because their deduplication keys 
+  use practitioner and organization references.
+  */
+  resourceArrays = replaceResourceReferences(
+    resourceArrays,
+    new Map<string, string>([
+      ...practitionersResult.refReplacementMap,
+      ...organizationsResult.refReplacementMap,
+    ]),
+    ["diagnosticReports"]
+  );
+
   const conditionsResult = deduplicateConditions(resourceArrays.conditions);
   resourceArrays.conditions = conditionsResult.combinedResources;
 
@@ -111,9 +126,6 @@ export function deduplicateFhir(
     resourceArrays.familyMemberHistories
   );
   resourceArrays.familyMemberHistories = famMemHistoriesResult.combinedResources;
-
-  const organizationsResult = deduplicateOrganizations(resourceArrays.organizations);
-  resourceArrays.organizations = organizationsResult.combinedResources;
 
   resourceArrays = replaceResourceReferences(resourceArrays, medicationsResult.refReplacementMap, [
     "coverages",

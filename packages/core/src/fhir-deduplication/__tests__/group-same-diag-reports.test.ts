@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { DiagnosticReport } from "@medplum/fhirtypes";
+import { DiagnosticReport, Practitioner, Reference } from "@medplum/fhirtypes";
 import {
   makeDiagnosticReport,
   presentedFormExample,
@@ -12,23 +12,60 @@ let diagReportId: string;
 let diagReportId2: string;
 let diagReport: DiagnosticReport;
 let diagReport2: DiagnosticReport;
+let practId: string;
+let practId2: string;
+let practRef: Reference<Practitioner>;
+let practRef2: Reference<Practitioner>;
 
 beforeEach(() => {
+  practId = faker.string.uuid();
+  practId2 = faker.string.uuid();
+
+  practRef = { reference: `Practitioner/${practId}` };
+  practRef2 = { reference: `Practitioner/${practId2}` };
+
   diagReportId = faker.string.uuid();
   diagReportId2 = faker.string.uuid();
-  diagReport = makeDiagnosticReport({ id: diagReportId });
-  diagReport2 = makeDiagnosticReport({ id: diagReportId2 });
+  diagReport = makeDiagnosticReport({ id: diagReportId, result: resultExample });
+  diagReport2 = makeDiagnosticReport({ id: diagReportId2, presentedForm: presentedFormExample });
 });
 
 describe("groupSameDiagnosticReports", () => {
-  it("correctly groups duplicate diagReports based on effectiveDateTime and data presence", () => {
+  it("groups diagReports with the same effectiveDateTime and performer ref", () => {
     diagReport.effectiveDateTime = dateTime.start;
     diagReport2.effectiveDateTime = dateTime.start;
-    diagReport.result = resultExample;
-    diagReport2.presentedForm = presentedFormExample;
+    diagReport.performer = [practRef];
+    diagReport2.performer = [practRef];
 
     const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
     expect(diagReportsMap.size).toBe(1);
+  });
+
+  it("groups diagReports with the same effectiveDateTime, if one of them has a performer", () => {
+    diagReport.effectiveDateTime = dateTime.start;
+    diagReport2.effectiveDateTime = dateTime.start;
+    diagReport.performer = [practRef];
+
+    const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
+    expect(diagReportsMap.size).toBe(1);
+  });
+
+  it("does not group diagReports with the same effectiveDateTime if none of them have a practitioner reference ", () => {
+    diagReport.effectiveDateTime = dateTime.start;
+    diagReport2.effectiveDateTime = dateTime.start;
+
+    const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
+    expect(diagReportsMap.size).toBe(2);
+  });
+
+  it("does not group diagReports with different performer refs", () => {
+    diagReport.effectiveDateTime = dateTime.start;
+    diagReport2.effectiveDateTime = dateTime.start;
+    diagReport.performer = [practRef];
+    diagReport2.performer = [practRef2];
+
+    const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
+    expect(diagReportsMap.size).toBe(2);
   });
 
   it("does not group duplicate diagReports if effectiveDateTime is not present", () => {
@@ -36,7 +73,7 @@ describe("groupSameDiagnosticReports", () => {
     diagReport2.presentedForm = presentedFormExample;
 
     const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
-    expect(diagReportsMap.size).toBe(0);
+    expect(diagReportsMap.size).toBe(2);
   });
 
   it("does not group duplicate diagReports if effectiveDateTime are different", () => {
@@ -49,11 +86,45 @@ describe("groupSameDiagnosticReports", () => {
     expect(diagReportsMap.size).toBe(2);
   });
 
+  it("discards diagReport if result is not present", () => {
+    diagReport.effectiveDateTime = dateTime.start;
+    diagReport.performer = [practRef];
+    delete diagReport.result;
+    delete diagReport.presentedForm;
+
+    const { diagReportsMap } = groupSameDiagnosticReports([diagReport]);
+    expect(diagReportsMap.size).toBe(0);
+  });
+
+  it("keeps diagReport if result is present", () => {
+    diagReport.effectiveDateTime = dateTime.start;
+    diagReport.performer = [practRef];
+
+    diagReport.result = resultExample;
+    delete diagReport.presentedForm;
+
+    const { diagReportsMap } = groupSameDiagnosticReports([diagReport]);
+    expect(diagReportsMap.size).toBe(1);
+  });
+
+  it("keeps diagReport if presentedForm is present", () => {
+    diagReport.effectiveDateTime = dateTime.start;
+    diagReport.performer = [practRef];
+
+    diagReport.presentedForm = presentedFormExample;
+    delete diagReport.result;
+
+    const { diagReportsMap } = groupSameDiagnosticReports([diagReport]);
+    expect(diagReportsMap.size).toBe(1);
+  });
+
   it("discards codes that don't come from loinc", () => {
     diagReport.effectiveDateTime = dateTime.start;
     diagReport2.effectiveDateTime = dateTime.start;
     diagReport.presentedForm = presentedFormExample;
     diagReport2.presentedForm = presentedFormExample;
+    diagReport.performer = [practRef];
+    diagReport2.performer = [practRef];
 
     diagReport.code = {
       coding: [
@@ -78,6 +149,7 @@ describe("groupSameDiagnosticReports", () => {
     const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
     expect(diagReportsMap.size).toBe(1);
     const masterReport = diagReportsMap.values().next().value as DiagnosticReport;
+    console.log("masterReport", JSON.stringify(masterReport));
 
     expect(masterReport.code?.coding?.length).toBe(2);
     expect(masterReport.code?.coding).toEqual(
