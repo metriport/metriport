@@ -33,7 +33,6 @@ const cqDirectoryEntryBackup = `${cqDirectoryEntry}_backup`;
 export async function rebuildCQDirectory(failGracefully = false): Promise<void> {
   const { log } = out("rebuildCQDirectory - failGracefully: " + failGracefully);
   const cq = makeCarequalityManagementAPIFhir();
-  if (!cq) throw new Error("Carequality API not initialized");
 
   let currentPosition = 0;
   let isDone = false;

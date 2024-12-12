@@ -1,4 +1,5 @@
-import { Bundle, Organization } from "@medplum/fhirtypes";
+import { Bundle, Organization as FhirOrganization } from "@medplum/fhirtypes";
+import { Organization } from "@metriport/core/domain/organization";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
 import { initDbPool } from "@metriport/core/util/sequelize";
@@ -18,7 +19,7 @@ import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { uniqBy } from "lodash";
 import multer from "multer";
-import { getFaciltiyByOidOrFail } from "../../command/medical/facility/get-facility";
+import { getFacilityByOidOrFail } from "../../command/medical/facility/get-facility";
 import {
   verifyCxItVendorAccess,
   verifyCxProviderAccess,
@@ -28,6 +29,7 @@ import {
   getOrganizationOrFail,
 } from "../../command/medical/organization/get-organization";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { Facility } from "../../domain/medical/facility";
 import { bulkInsertCQDirectoryEntries } from "../../external/carequality/command/cq-directory/create-cq-directory-entry";
 import {
   DEFAULT_RADIUS_IN_MILES,
@@ -36,7 +38,8 @@ import {
 } from "../../external/carequality/command/cq-directory/search-cq-directory";
 import { getCqOrgOrFail } from "../../external/carequality/command/cq-organization/get-cq-organization";
 import { parseCQOrganization } from "../../external/carequality/command/cq-organization/parse-cq-organization";
-import { updateCqOrganizationAndMetriportEntity } from "../../external/carequality/command/cq-organization/update-cq-organization-and-metriport-entity";
+import { createOrUpdateFacility as cqCreateOrUpdateFacility } from "../../external/carequality/command/create-or-update-facility";
+import { createOrUpdateOrganization as cqCreateOrUpdateOrganization } from "../../external/carequality/command/create-or-update-organization";
 import { createOutboundDocumentQueryResp } from "../../external/carequality/command/outbound-resp/create-outbound-document-query-resp";
 import { createOutboundDocumentRetrievalResp } from "../../external/carequality/command/outbound-resp/create-outbound-document-retrieval-resp";
 import { createOutboundPatientDiscoveryResp } from "../../external/carequality/command/outbound-resp/create-outbound-patient-discovery-resp";
@@ -97,7 +100,7 @@ router.post(
     const bundle = JSON.parse(file.buffer.toString()) as Bundle;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const orgs = (bundle.entry as Organization[]) ?? [];
+    const orgs = (bundle.entry as FhirOrganization[]) ?? [];
     console.log(`Got ${orgs.length} orgs`);
 
     const parsedOrgsNested = await Promise.all(
@@ -159,7 +162,7 @@ router.get(
     const oid = getFrom("params").orFail("oid", req);
 
     if (facilityId) {
-      await getFaciltiyByOidOrFail({ cxId, id: facilityId, oid });
+      await getFacilityByOidOrFail({ cxId, id: facilityId, oid });
     } else {
       await getOrganizationByOidOrFail({ cxId, oid });
     }
@@ -182,18 +185,18 @@ router.put(
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const oid = getFrom("params").orFail("oid", req);
-    await verifyCxProviderAccess(cxId);
-
     const org = await getOrganizationByOidOrFail({ cxId, oid });
     if (!org.cqApproved) throw new NotFoundError("CQ not approved");
+    await verifyCxProviderAccess(org);
 
     const orgActive = cqOrgActiveSchema.parse(req.body);
-    updateCqOrganizationAndMetriportEntity({
-      cxId,
-      oid,
-      active: orgActive.active,
-      org,
-    }).catch(processAsyncError("cq.ops.dir.organization.update"));
+    const organizationUpdate: Organization = {
+      ...org,
+      cqActive: orgActive.active,
+    };
+    cqCreateOrUpdateOrganization({ org: organizationUpdate }).catch(
+      processAsyncError("ops.dir.organization.update.cq")
+    );
     return res.sendStatus(httpStatus.OK);
   })
 );
@@ -213,20 +216,20 @@ router.put(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getFrom("query").orFail("facilityId", req);
     const oid = getFrom("params").orFail("oid", req);
-    await verifyCxItVendorAccess(cxId);
-
     const org = await getOrganizationOrFail({ cxId });
-    const facility = await getFaciltiyByOidOrFail({ cxId, id: facilityId, oid });
+    await verifyCxItVendorAccess(org);
+
+    const facility = await getFacilityByOidOrFail({ cxId, id: facilityId, oid });
     if (!facility.cqApproved) throw new NotFoundError("CQ not approved");
 
     const facilityActive = cqOrgActiveSchema.parse(req.body);
-    updateCqOrganizationAndMetriportEntity({
-      cxId,
-      oid,
-      active: facilityActive.active,
-      org,
-      facility,
-    }).catch(processAsyncError("cq.ops.dir.facility.update"));
+    const facilityUpdate: Facility = {
+      ...facility,
+      cqActive: facilityActive.active,
+    };
+    cqCreateOrUpdateFacility({ org, facility: facilityUpdate }).catch(
+      processAsyncError("ops.dir.facility.update.cq")
+    );
     return res.sendStatus(httpStatus.OK);
   })
 );
