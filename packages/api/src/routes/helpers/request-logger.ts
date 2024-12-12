@@ -14,6 +14,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
     const method = req.method;
     const url = req.baseUrl + req.path;
     const urlWithParams = replaceParamWithKey(url, req.aggregatedParams);
+    const { client, path } = splitUrlToClientAndPath(urlWithParams);
 
     const cxId = getCxId(req);
     const query = req.query && Object.keys(req.query).length ? req.query : undefined;
@@ -49,7 +50,8 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
       analyzeRoute({
         req,
         method,
-        url: urlWithParams,
+        client: client,
+        url: path,
         params,
         query,
         duration: elapsedTimeInMs,
@@ -59,6 +61,22 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
     next();
   });
 };
+
+function splitUrlToClientAndPath(url: string): { client?: string; path: string } {
+  const separator = "/medical/v1";
+  const separatorIndex = url.indexOf(separator);
+
+  if (separatorIndex === -1) {
+    return { path: url };
+  }
+
+  const clientSlice = url.slice(0, separatorIndex);
+  const pathSlice = url.slice(separatorIndex);
+
+  const client = clientSlice.length > 0 ? clientSlice.replace("/", " ").trim() : undefined;
+
+  return { client, path: pathSlice };
+}
 
 function replaceParamWithKey(url: string, params: Record<string, string> | undefined): string {
   if (!params) return url;

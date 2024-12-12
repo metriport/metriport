@@ -32,14 +32,6 @@ export function analytics(params: EventMessageV1, postApiKey?: string): PostHog 
     platform: "oss-api",
   };
   params.groups = { [groupType]: params.distinctId };
-  posthog.groupIdentify({
-    groupType,
-    groupKey: params.distinctId,
-    properties: {
-      cxId: params.distinctId,
-    },
-    distinctId: params.distinctId,
-  });
   posthog.capture(params);
 
   return posthog;
