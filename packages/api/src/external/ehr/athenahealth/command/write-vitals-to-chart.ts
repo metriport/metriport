@@ -18,7 +18,6 @@ export async function writeVitalsToChart({
   const { environment, clientKey, clientSecret } = await getAthenaEnv();
 
   const api = await AthenaHealthApi.create({
-    threeLeggedAuthToken: undefined,
     practiceId: athenaPracticeId,
     environment,
     clientKey,
