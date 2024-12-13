@@ -1,3 +1,7 @@
+import "web-streams-polyfill/polyfill";
+// Because we're running this lambda on Node16 and LangChain requires Node18
+import "./shared/fetch-polyfill";
+// Keep this ^ as early on the file as possible
 import {
   ConsolidatedSnapshotRequestAsync,
   ConsolidatedSnapshotRequestSync,
