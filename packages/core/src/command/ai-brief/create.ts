@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { PromptTemplate } from "@langchain/core/prompts";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import { Bundle, Medication, Observation, Resource } from "@medplum/fhirtypes";
+import { Bundle, Medication, Observation, Patient, Resource } from "@medplum/fhirtypes";
 import { errorToString, toArray } from "@metriport/shared";
 import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
 // import { ISO_DATE, buildDayjs, elapsedTimeFromNow } from "@metriport/shared/common/date";
@@ -11,6 +12,13 @@ import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { LLMChain, MapReduceDocumentsChain, StuffDocumentsChain } from "langchain/chains";
 import { cloneDeep } from "lodash";
+import {
+  applyResourceSpecificFilters,
+  getSlimPatient,
+  SlimDiagnosticReport,
+  SlimOrganization,
+  SlimResource,
+} from "../../domain/ai-brief/modify-resources";
 import {
   findDiagnosticReportResources,
   findPatientResource,
@@ -22,14 +30,6 @@ import { getDatesFromEffectiveDateTimeOrPeriod } from "../consolidated/consolida
 // import { EventTypes, analytics } from "../../analytics/posthog";
 // import { BedrockChat } from "../../langchain/bedrock/index";
 import { analytics, EventTypes } from "../../external/analytics/posthog";
-import {
-  applyResourceSpecificFilters,
-  getNameString,
-  SlimDiagnosticReport,
-  SlimOrganization,
-  slimPatient,
-  SlimResource,
-} from "../../external/aws/lambda-logic/modify-resources";
 import { BedrockChat } from "../../external/langchain/bedrock";
 
 const CHUNK_SIZE = 100_000;
@@ -97,7 +97,7 @@ export async function summarizeFilteredBundleWithAI(
     const slimPayloadBundle = buildSlimmerPayload(filteredBundle);
     const inputString = JSON.stringify(slimPayloadBundle);
 
-    // // TODO: #2510 - experiment with different splitters
+    // TODO: #2510 - experiment with different splitters
     const textSplitter = new RecursiveCharacterTextSplitter({
       chunkSize: CHUNK_SIZE,
       chunkOverlap: CHUNK_OVERLAP,
@@ -236,10 +236,11 @@ function buildSlimmerPayload(bundle: Bundle): SlimResource[] | undefined {
 
   // First pass to remove a ton of useless stuff and apply resource-specific modifications
   const leanBundleEntries = buildSlimmerBundle(bundle);
+  if (!leanBundleEntries) return undefined;
 
   // Build a map of slim resources for cross-referencing
   const resourceMap = new Map<string, SlimResource>();
-  leanBundleEntries?.forEach(res => {
+  leanBundleEntries.forEach(res => {
     if (!res || !res.id) return;
     const mapKey = `${res.resourceType}/${res.id}`;
     resourceMap.set(mapKey, res);
@@ -249,7 +250,7 @@ function buildSlimmerPayload(bundle: Bundle): SlimResource[] | undefined {
   // have a single loop through leanBundleEntries
   // Replace the references with actual data and collect references for embedded resources
   const containedResourceIdsSet = new Set<string>();
-  const processedEntries = leanBundleEntries?.map(res => {
+  const processedEntries = leanBundleEntries.map(res => {
     const { updRes, ids } = replaceReferencesWithData(res, resourceMap);
     ids.forEach(id => containedResourceIdsSet.add(id));
 
@@ -264,20 +265,7 @@ function buildSlimmerPayload(bundle: Bundle): SlimResource[] | undefined {
     return [];
   });
 
-  const filteredEntries: SlimResource[] = [];
-  withFilteredReports?.forEach(entry => {
-    if (Object.keys(entry).length === 0) return;
-    if (referenceResources.includes(entry.resourceType)) return;
-    if (entry.id && containedResourceIds.includes(entry.id)) return;
-
-    const { id, ...otherFields } = entry;
-    filteredEntries.push({ ...otherFields });
-  });
-
-  const slimmerPatient = slimPatient(patient);
-  filteredEntries?.push(slimmerPatient);
-
-  return filteredEntries;
+  return applyFinalFilters(withFilteredReports, containedResourceIds, patient);
 }
 
 function buildSlimmerBundle(originalBundle: Bundle<Resource>) {
@@ -374,66 +362,65 @@ function replaceReferencesWithData(
   if (!updRes.reference) updRes.reference = {};
 
   if ("performer" in updRes) {
-    if (updRes.performer) {
-      if (updRes.resourceType === "DiagnosticReport" || updRes.resourceType === "Observation") {
-        // const typedResource = updRes as SlimDiagnosticReport;
-        const performers = toArray(updRes.performer);
-        delete updRes.performer;
-        const orgs: string[] = [];
-        const practs: string[] = [];
+    if (updRes.resourceType === "DiagnosticReport" || updRes.resourceType === "Observation") {
+      const performers = toArray(updRes.performer);
+      delete updRes.performer;
+      const orgs: string[] = [];
+      const practitioners: string[] = [];
 
-        performers.forEach(p => {
-          const ref = p.reference;
-          if (!ref) return;
+      performers.forEach(p => {
+        const ref = p.reference;
+        if (!ref) return;
 
-          referencedIds.add(ref);
-          const performer = map.get(ref);
+        referencedIds.add(ref);
+        const performer = map.get(ref);
 
-          if (performer?.resourceType === "Organization") {
-            const name = typeof performer.name === "string" ? performer.name.trim() : "";
-            if (name.length > 0) orgs.push(name);
-          }
-        });
-
-        if (orgs.length > 0) {
-          updRes.reference["organizations"] = orgs.join(", ");
+        if (performer?.resourceType === "Organization") {
+          const name = typeof performer.name === "string" ? performer.name.trim() : "";
+          if (name.length > 0) orgs.push(name);
+        } else if (performer?.resourceType === "Practitioner") {
+          const name = performer.name;
+          if (name && name.length > 0) practitioners.push(name);
         }
-        if (practs.length > 0) {
-          updRes.reference["practitioners"] = practs.join(", ");
-        }
-      } else if (
-        updRes.resourceType === "Immunization" ||
-        updRes.resourceType === "MedicationAdministration" ||
-        updRes.resourceType === "MedicationRequest" ||
-        updRes.resourceType === "Procedure"
-      ) {
-        const performers = Array.isArray(updRes.performer) ? updRes.performer : [updRes.performer];
-        delete updRes.performer;
+      });
 
-        const practitioner = performers
-          .flatMap(perf => {
-            const refString =
-              "actor" in perf
-                ? perf.actor.reference
-                : "reference" in perf
-                ? perf.reference
-                : undefined;
-
-            if (refString) {
-              const actor = map.get(refString);
-              referencedIds.add(refString);
-              if (actor && "name" in actor) {
-                const name = actor.name;
-                if (typeof name === "string") return name;
-                return getNameString(name);
-              }
-            }
-            return [];
-          })
-          .join(", ");
-
-        updRes.reference = { practitioner };
+      if (orgs.length > 0) {
+        updRes.reference["organizations"] = orgs.join(", ");
       }
+      if (practitioners.length > 0) {
+        updRes.reference["practitioners"] = practitioners.join(", ");
+      }
+    } else if (
+      updRes.resourceType === "Immunization" ||
+      updRes.resourceType === "MedicationAdministration" ||
+      updRes.resourceType === "MedicationRequest" ||
+      updRes.resourceType === "Procedure"
+    ) {
+      const performers = Array.isArray(updRes.performer) ? updRes.performer : [updRes.performer];
+      delete updRes.performer;
+
+      const practitioner = performers
+        .flatMap(perf => {
+          const refString =
+            "actor" in perf
+              ? perf.actor.reference
+              : "reference" in perf
+              ? perf.reference
+              : undefined;
+
+          if (refString) {
+            const actor = map.get(refString);
+            referencedIds.add(refString);
+            if (actor && "name" in actor) {
+              const name = actor.name;
+              return name ?? [];
+            }
+          }
+          return [];
+        })
+        .join(", ");
+
+      updRes.reference = { practitioner };
     }
   }
 
@@ -511,11 +498,9 @@ function replaceReferencesWithData(
   return { updRes, ids: Array.from(referencedIds) };
 }
 
-function filterOutDiagnosticReports(
-  entries: SlimResource[] | undefined
-): SlimResource[] | undefined {
+function filterOutDiagnosticReports(entries: SlimResource[]): SlimResource[] {
   const reports: SlimDiagnosticReport[] = [];
-  const otherEntries = entries?.filter(entry => {
+  const otherEntries = entries.filter(entry => {
     if (entry.resourceType === "DiagnosticReport") {
       reports.push(entry);
       return false;
@@ -526,20 +511,11 @@ function filterOutDiagnosticReports(
   const withLimitedReportsPerPerformer = filterReportsByPerformerAndCategory(withOnlyLatestLabs);
   const withoutDuplicateReports = filterOutDuplicateReports(withLimitedReportsPerPerformer);
 
-  const ret: SlimResource[] = [];
-  if (withoutDuplicateReports && withoutDuplicateReports.length > 0) {
-    ret.push(...withoutDuplicateReports);
-  }
-  if (otherEntries && otherEntries.length > 0) ret.push(...otherEntries);
-  return ret;
+  return [...withoutDuplicateReports, ...otherEntries];
 }
 
-function filterOutOldLabs(
-  reports: SlimDiagnosticReport[] | undefined
-): SlimDiagnosticReport[] | undefined {
+function filterOutOldLabs(reports: SlimDiagnosticReport[]): SlimDiagnosticReport[] {
   const NUM_MOST_RECENT_LABS_TO_KEEP = 2;
-
-  if (!reports) return undefined;
 
   const labReports = reports.filter(
     report =>
@@ -568,9 +544,8 @@ function filterOutOldLabs(
 }
 
 function filterReportsByPerformerAndCategory(
-  reports: SlimDiagnosticReport[] | undefined
-): SlimDiagnosticReport[] | undefined {
-  if (!reports) return undefined;
+  reports: SlimDiagnosticReport[]
+): SlimDiagnosticReport[] {
   const reportGroups = new Map<string, SlimDiagnosticReport[]>();
 
   reports.forEach(report => {
@@ -609,11 +584,9 @@ function filterReportsByPerformerAndCategory(
  * This function checks if the contents of the presentedForm.data is fully contained within other diagnostic reports.
  * It does so by seeing if every single sentence in a report already exists in the collection of reports, in which case it filters this report out.
  */
-function filterOutDuplicateReports(
-  reports: SlimDiagnosticReport[] | undefined
-): SlimDiagnosticReport[] | undefined {
+function filterOutDuplicateReports(reports: SlimDiagnosticReport[]): SlimDiagnosticReport[] {
   const formDataSet = new Set<string>();
-  return reports?.filter(entry => {
+  return reports.filter(entry => {
     if (entry.presentedForm) {
       const paragraphFromUniqueSentences: string[] = [];
       entry.presentedForm.forEach((text: string) => {
@@ -639,6 +612,33 @@ function filterOutDuplicateReports(
     }
     return true;
   });
+}
+
+/**
+ * Removes the resources that are already references by other resources from the bundle.
+ * Removes resource IDs and empty objects.
+ * Removes resources that don't provide any useful information unless they are referenced by another resource.
+ * Adds the SlimPatient into the bundle.
+ */
+function applyFinalFilters(
+  resources: SlimResource[] | undefined,
+  containedResourceIds: string[],
+  patient: Patient
+): SlimResource[] {
+  const slimmerPatient = getSlimPatient(patient);
+  const cleanPayload: SlimResource[] = [];
+
+  resources?.forEach(entry => {
+    if (Object.keys(entry).length === 0) return;
+    if (referenceResources.includes(entry.resourceType)) return;
+    if (entry.id && containedResourceIds.includes(entry.id)) return;
+
+    const { id, ...otherFields } = entry;
+    cleanPayload.push({ ...otherFields });
+  });
+  cleanPayload.push(slimmerPatient);
+
+  return cleanPayload;
 }
 
 function calculateCostsBasedOnTokens(totalTokens: { input: number; output: number }): {
