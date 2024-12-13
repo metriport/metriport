@@ -33,6 +33,8 @@ interface LambdasNestedStackProps extends NestedStackProps {
     appId: string;
     configId: string;
   };
+  dashUrl: string;
+  bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
 }
 
 export class LambdasNestedStack extends NestedStack {
@@ -137,6 +139,8 @@ export class LambdasNestedStack extends NestedStack {
       alarmAction: props.alarmAction,
       appId: props.appConfigEnvVars.appId,
       configId: props.appConfigEnvVars.configId,
+      dashUrl: props.dashUrl,
+      bedrock: props.config.bedrock,
     });
   }
 
@@ -434,6 +438,8 @@ export class LambdasNestedStack extends NestedStack {
     alarmAction,
     appId,
     configId,
+    dashUrl,
+    bedrock,
   }: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
@@ -445,6 +451,8 @@ export class LambdasNestedStack extends NestedStack {
     alarmAction: SnsAction | undefined;
     appId: string;
     configId: string;
+    dashUrl: string;
+    bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
   }): Lambda {
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
 
@@ -462,9 +470,16 @@ export class LambdasNestedStack extends NestedStack {
         CONVERSION_RESULT_BUCKET_NAME: conversionsBucket.bucketName,
         APPCONFIG_APPLICATION_ID: appId,
         APPCONFIG_CONFIGURATION_ID: configId,
+        ...(bedrock && {
+          // API_URL set on the api-stack after the OSS API is created
+          DASH_URL: dashUrl,
+          BEDROCK_REGION: bedrock?.region,
+          BEDROCK_VERSION: bedrock?.anthropicVersion,
+          AI_BRIEF_MODEL_ID: bedrock?.modelId,
+        }),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: [lambdaLayers.shared],
+      layers: [lambdaLayers.shared, lambdaLayers.langchain],
       memory: 4096,
       timeout: lambdaTimeout,
       isEnableInsights: true,
