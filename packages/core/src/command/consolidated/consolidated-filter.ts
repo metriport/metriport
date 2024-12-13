@@ -32,12 +32,17 @@ export async function getConsolidatedFromS3({
   resources?: ResourceTypeForConsolidation[] | undefined;
   dateFrom?: string | undefined;
   dateTo?: string | undefined;
+  generateAiBrief?: boolean | undefined;
 }): Promise<SearchSetBundle> {
   const patientId = patient.id;
   const { log } = out(`getConsolidatedFromS3 - cx ${cxId}, pat ${patientId}`);
   log(`Running with params: ${JSON.stringify(params)}`);
 
-  const consolidated = await getOrCreateConsolidatedOnS3({ cxId, patient });
+  const consolidated = await getOrCreateConsolidatedOnS3({
+    cxId,
+    patient,
+    generateAiBrief: params.generateAiBrief,
+  });
   const consolidatedSearchset = toSearchSet(consolidated);
 
   log(`Consolidated found with ${consolidatedSearchset.entry?.length} entries`);
@@ -49,9 +54,11 @@ export async function getConsolidatedFromS3({
 async function getOrCreateConsolidatedOnS3({
   cxId,
   patient,
+  generateAiBrief,
 }: {
   cxId: string;
   patient: Patient;
+  generateAiBrief?: boolean | undefined;
 }): Promise<Bundle> {
   const patientId = patient.id;
   const { log } = out(`getOrCreateConsolidatedOnS3 - cx ${cxId}, pat ${patientId}`);
@@ -64,7 +71,11 @@ async function getOrCreateConsolidatedOnS3({
     return preGenerated.bundle;
   }
   log(`Did not found pre-generated consolidated, creating a new one...`);
-  const newConsolidated = await createConsolidatedFromConversions({ cxId, patient });
+  const newConsolidated = await createConsolidatedFromConversions({
+    cxId,
+    patient,
+    generateAiBrief,
+  });
   return newConsolidated;
 }
 

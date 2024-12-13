@@ -11,6 +11,9 @@ import { buildBundle, buildBundleEntry } from "../../external/fhir/shared/bundle
 import { executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
+import { isAiBriefFeatureFlagEnabledForCx } from "../../external/aws/app-config";
+import { summarizeFilteredBundleWithAI } from "../../command/ai-brief/ai-brief-create";
+import { generateAiBriefFhirResource } from "../../command/ai-brief/ai-brief-shared";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
 
@@ -26,6 +29,7 @@ export type ConsolidatePatientDataCommand = {
   patient: Patient;
   destinationBucketName?: string | undefined;
   sourceBucketName?: string | undefined;
+  generateAiBrief?: boolean | undefined;
 };
 
 type BundleLocation = { bucket: string; key: string };
@@ -38,6 +42,7 @@ export async function createConsolidatedFromConversions({
   patient,
   destinationBucketName = getConsolidatedLocation(),
   sourceBucketName = getConsolidatedSourceLocation(),
+  generateAiBrief,
 }: ConsolidatePatientDataCommand): Promise<Bundle> {
   const patientId = patient.id;
   const { log } = out(`createConsolidatedFromConversions - cx ${cxId}, pat ${patientId}`);
@@ -57,6 +62,16 @@ export async function createConsolidatedFromConversions({
   log(
     `Added ${docRefs.length} docRefs and the Patient, to a total of ${withDups.entry.length} entries`
   );
+
+  const isAiBriefFeatureFlagEnabled = await isAiBriefFeatureFlagEnabledForCx(cxId);
+
+  if (isAiBriefFeatureFlagEnabled && generateAiBrief) {
+    const aiBriefContent = await summarizeFilteredBundleWithAI(withDups, cxId, patientId);
+    const aiBriefFhirResource = await generateAiBriefFhirResource(aiBriefContent);
+    if (aiBriefFhirResource) {
+      withDups.entry.push(buildBundleEntry(aiBriefFhirResource));
+    }
+  }
 
   log(`Deduplicating consolidated bundle...`);
   const deduped = deduplicate({ cxId, patientId, bundle: withDups });

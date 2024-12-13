@@ -3,15 +3,10 @@ import "web-streams-polyfill/polyfill";
 import "./shared/fetch-polyfill";
 // Keep this ^ as early on the file as possible
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
-import {
-  createMRSummaryBriefFileName,
-  createMRSummaryFileName,
-} from "@metriport/core/domain/medical-record-summary";
+import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { getFeatureFlagValueStringArray } from "@metriport/core/external/aws/app-config";
-import {
-  Brief,
-  summarizeFilteredBundleWithAI,
-} from "@metriport/core/external/aws/lambda-logic/bundle-to-brief";
+import { Brief } from "@metriport/core/external/aws/lambda-logic/bundle-to-brief";
+import { getAiBriefContentFromBundle } from "@metriport/core/command/ai-brief/ai-brief-shared";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import { bundleToHtmlADHD } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-adhd";
 import { bundleToHtmlBmi } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-bmi";
@@ -24,7 +19,6 @@ import {
 import { getEnvType } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { isAiBriefFeatureFlagEnabledForCx } from "@metriport/core/external/aws/app-config";
 import { errorToString, MetriportError } from "@metriport/shared";
 import chromium from "@sparticuz/chromium";
 import dayjs from "dayjs";
@@ -83,13 +77,8 @@ export async function handler({
     const isDermFeatureFlagEnabled = cxsWithDermFeatureFlagValue.includes(cxId);
 
     const bundle = await getBundleFromS3(fhirFileName);
-    const isBriefFeatureFlagEnabled = await isAiBriefEnabled(generateAiBrief, cxId);
 
-    // TODO #2510 Condense this functionality under a single function and put it on `@metriport/core`, so this can be used both here, and on the Lambda.
-    const aiBriefContent = isBriefFeatureFlagEnabled
-      ? await summarizeFilteredBundleWithAI(bundle, cxId, patientId)
-      : undefined;
-    const briefFileName = createMRSummaryBriefFileName(cxId, patientId);
+    const aiBriefContent = getAiBriefContentFromBundle(bundle);
     const aiBrief = prepareBriefToBundle({ aiBrief: aiBriefContent });
 
     const html = isADHDFeatureFlagEnabled
@@ -106,9 +95,7 @@ export async function handler({
     const mrS3Info = await storeMrSummaryAndBriefInS3({
       bucketName,
       htmlFileName,
-      briefFileName,
       html,
-      aiBrief: aiBriefContent,
       log,
     });
 
@@ -154,17 +141,6 @@ export async function handler({
 
 async function getSignedUrl(fileName: string) {
   return coreGetSignedUrl({ fileName, bucketName, awsRegion: region });
-}
-
-// TODO merge this with API's checkAiBriefEnabled and move it to Core
-async function isAiBriefEnabled(
-  generateAiBrief: boolean | undefined,
-  cxId: string
-): Promise<boolean> {
-  if (!generateAiBrief) return false;
-  // TODO checking for the FF, keep that no the OSS API
-  const isAiBriefFeatureFlagEnabled = await isAiBriefFeatureFlagEnabledForCx(cxId);
-  return isAiBriefFeatureFlagEnabled;
 }
 
 async function getBundleFromS3(fileName: string) {
@@ -323,16 +299,12 @@ function doesMrSummaryHaveContents(html: string): boolean {
 async function storeMrSummaryAndBriefInS3({
   bucketName,
   htmlFileName,
-  briefFileName,
   html,
-  aiBrief,
   log,
 }: {
   bucketName: string;
   htmlFileName: string;
-  briefFileName: string;
   html: string;
-  aiBrief: string | undefined;
   log: typeof console.log;
 }): Promise<{ location: string; version?: string | undefined }> {
   log(`Storing MR Summary and Brief in S3`);
@@ -345,27 +317,16 @@ async function storeMrSummaryAndBriefInS3({
     });
   };
 
-  const promiseBriefSummary = async function () {
-    if (!aiBrief) return;
-    return newS3Client.uploadFile({
-      bucket: bucketName,
-      key: briefFileName,
-      file: Buffer.from(aiBrief),
-      contentType: "text/plain",
-    });
-  };
-
-  const [mrResp, briefResp] = await Promise.allSettled([promiseMrSummary(), promiseBriefSummary()]);
-  if (mrResp.status === "rejected" || briefResp?.status === "rejected") {
-    const failed = [mrResp, briefResp].map(p => (p.status === "rejected" ? p.reason : []));
-    const message = "Failed to store MR Summary and/or Brief in S3";
-    const additionalInfo = { reason: failed.join("; "), bucketName, htmlFileName, briefFileName };
+  const mrResp = await promiseMrSummary();
+  if (!mrResp) {
+    const message = "Failed to store MR Summary in S3";
+    const additionalInfo = { bucketName, htmlFileName };
     log(`${message}: ${JSON.stringify(additionalInfo)}`);
     throw new MetriportError(message, null, additionalInfo);
   }
 
-  const version = "VersionId" in mrResp.value ? (mrResp.value.VersionId as string) : undefined;
-  return { location: mrResp.value.Location, version };
+  const version = "VersionId" in mrResp ? (mrResp.VersionId as string) : undefined;
+  return { location: mrResp.Location, version };
 }
 
 function prepareBriefToBundle({ aiBrief }: { aiBrief: string | undefined }): Brief | undefined {
