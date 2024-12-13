@@ -592,7 +592,7 @@ class AthenaHealthApi {
           departmentid: this.stripDepartmentId(departmentId),
           returnvitalsid: true,
           source: "DEVICEGENERATED",
-          vitals: [],
+          vitals: [vitalsData],
           THIRDPARTYUSERNAME: undefined,
           PATIENTFACINGCALL: undefined,
         };
