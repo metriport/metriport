@@ -117,7 +117,7 @@ class ElationApi {
           patientId,
           date: new Date(),
         });
-        const key = `elation/patient/${filePath}/${uuidv7()}.json`;
+        const key = this.buildS3Path("patient", filePath);
         this.s3Utils
           .uploadFile({
             bucket: responsesBucket,
@@ -197,7 +197,7 @@ class ElationApi {
           patientId,
           date: new Date(),
         });
-        const key = `elation/patient-update-metadata/${filePath}/${uuidv7()}.json`;
+        const key = this.buildS3Path("patient-update-metadata", filePath);
         this.s3Utils
           .uploadFile({
             bucket: responsesBucket,
@@ -274,7 +274,7 @@ class ElationApi {
           patientId: "global",
           date: new Date(),
         });
-        const key = `elation/subscribe/${filePath}/${uuidv7()}.json`;
+        const key = this.buildS3Path("subscribe", filePath);
         this.s3Utils
           .uploadFile({
             bucket: responsesBucket,
@@ -330,7 +330,7 @@ class ElationApi {
           patientId: "global",
           date: new Date(),
         });
-        const key = `elation/appointments/${filePath}/${uuidv7()}.json`;
+        const key = this.buildS3Path("appointments", filePath);
         this.s3Utils
           .uploadFile({
             bucket: responsesBucket,
@@ -381,6 +381,10 @@ class ElationApi {
     const parsedDate = buildDayjs(trimmedDate);
     if (!parsedDate.isValid()) return undefined;
     return parsedDate.format(elationDateFormat);
+  }
+
+  private buildS3Path(method: string, key: string): string {
+    return `elation/${method}/${key}/${uuidv7()}.json`;
   }
 }
 
