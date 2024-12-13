@@ -6,7 +6,7 @@ import {
   createMRSummaryBriefFileName,
   createMRSummaryFileName,
 } from "@metriport/core/domain/medical-record-summary";
-import { summarizeFilteredBundleWithAI } from "@metriport/core/external/aws/lambda-logic/bundle-to-brief";
+import { summarizeFilteredBundleWithAI } from "@metriport/core/command/ai-brief/ai-brief-create";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { getEnvVarOrFail, MetriportError } from "@metriport/shared";

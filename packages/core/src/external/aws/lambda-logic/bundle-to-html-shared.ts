@@ -1,6 +1,6 @@
 import { DiagnosticReport } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
-import { Brief } from "./bundle-to-brief";
+import { Brief } from "../../../command/ai-brief/ai-brief-create";
 
 export const ISO_DATE = "YYYY-MM-DD";
 export const MISSING_DATE_KEY = "N/A";
