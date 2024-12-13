@@ -79,7 +79,6 @@ const clinicalElementsThatRequireUnits = ["VITALS.WEIGHT", "VITALS.HEIGHT", "VIT
 const lbsToG = 453.592;
 const kgToG = 1000;
 const inchesToCm = 2.54;
-const metersToCm = 100;
 
 export type AthenaEnv = "api" | "api.preview";
 export function isAthenaEnv(env: string): env is AthenaEnv {
@@ -156,8 +155,6 @@ class AthenaHealthApi {
         },
       });
 
-      console.log("response", response.data);
-
       this.twoLeggedAuthToken = response.data.access_token;
     } catch (error) {
       throw new MetriportError("Failed to fetch Two Legged Auth token");
@@ -210,8 +207,13 @@ class AthenaHealthApi {
           })
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - getDepartments"));
       }
-      const deparments = departmentsGetResponseSchema.parse(response.data);
-      return deparments.departments.map(d => d.departmentid);
+      const deparments = departmentsGetResponseSchema.safeParse(response.data);
+      if (!deparments.success) {
+        throw new MetriportError("Departments not parsed", undefined, {
+          error: errorToString(deparments.error),
+        });
+      }
+      return deparments.data.departments.map(d => d.departmentid);
     } catch (error) {
       const msg = `Failure while getting departments @ AthenaHealth`;
       log(`${msg}. Cause: ${errorToString(error)}`);
@@ -431,9 +433,18 @@ class AthenaHealthApi {
           })
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - createMedication"));
       }
-      const outcome = medicationCreateResponseSchema.parse(response.data);
-      if (!outcome.success) throw new MetriportError("Medication create not successful");
-      return outcome;
+      const outcome = medicationCreateResponseSchema.safeParse(response.data);
+      if (!outcome.success) {
+        throw new MetriportError("Medication not parsed", undefined, {
+          error: errorToString(outcome.error),
+        });
+      }
+      if (!outcome.data.success) {
+        throw new MetriportError("Medication creation not successful", undefined, {
+          error: outcome.data.errormessage,
+        });
+      }
+      return outcome.data;
     } catch (error) {
       const msg = `Failure while creating medication @ AthenaHealth`;
       log(`${msg}. Cause: ${errorToString(error)}`);
@@ -520,9 +531,18 @@ class AthenaHealthApi {
           })
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - createProblem"));
       }
-      const outcome = problemCreateResponseSchema.parse(response.data);
-      if (!outcome.success) throw new MetriportError("Problem create not successful");
-      return outcome;
+      const outcome = problemCreateResponseSchema.safeParse(response.data);
+      if (!outcome.success) {
+        throw new MetriportError("Problem not parsed", undefined, {
+          error: errorToString(outcome.error),
+        });
+      }
+      if (!outcome.data.success) {
+        throw new MetriportError("Problem creation not successful", undefined, {
+          error: outcome.data.errormessage,
+        });
+      }
+      return outcome.data;
     } catch (error) {
       const msg = `Failure while creating problem @ AthenaHealth`;
       log(`${msg}. Cause: ${errorToString(error)}`);
@@ -610,28 +630,15 @@ class AthenaHealthApi {
         )
       );
       const errors = settledResponses.flatMap(r => (r.status === "rejected" ? [r.reason] : []));
-      if (errors.length > 0) {
-        const msg = `Failure while creating some vitals @ AthenaHealth`;
-        log(`${msg}. Cause: ${errors.map(error => errorToString(error)).join(", ")}`);
-        capture.error(msg, {
-          extra: {
-            url: chartVitalsUrl,
-            cxId,
-            practiceId: this.practiceId,
-            patientId,
-            departmentId,
-            observationId: observation.id,
-            context: "athenahealth.create-vitals",
-            errors,
-          },
-        });
-      }
       const successes = settledResponses
         .flatMap(r => (r.status === "fulfilled" ? [r.value] : []))
-        .map(response => {
-          if (!response.data) throw new MetriportError(`No body returned from ${chartVitalsUrl}`);
+        .flatMap(response => {
+          if (!response.data) {
+            errors.push(new MetriportError(`No body returned from ${chartVitalsUrl}`));
+            return [];
+          }
           debug(`${chartVitalsUrl} resp: `, () => JSON.stringify(response.data));
-          return response;
+          return [response];
         });
       if (successes.length === 0) throw new MetriportError("No vitals created");
       if (responsesBucket) {
@@ -653,11 +660,45 @@ class AthenaHealthApi {
           })
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - createVitals"));
       }
-      const outcomes = successes.map(response => vitalsCreateResponseSchema.parse(response.data));
-      if (!outcomes.every(outcome => outcome.success)) {
-        throw new MetriportError("Vitals create not successful");
+      const outcomes = successes.map(response =>
+        vitalsCreateResponseSchema.safeParse(response.data)
+      );
+      const successFullOutcomes = outcomes.flatMap(outcome => {
+        if (!outcome.success) {
+          errors.push(
+            new MetriportError("Vitals not parsed", undefined, {
+              error: errorToString(outcome.error),
+            })
+          );
+          return [];
+        }
+        if (!outcome.data.success) {
+          errors.push(
+            new MetriportError("Vitals creation not successful", undefined, {
+              error: outcome.data.errormessage,
+            })
+          );
+          return [];
+        }
+        return [outcome.data];
+      });
+      if (errors.length > 0) {
+        const msg = `Failure while creating some vitals @ AthenaHealth`;
+        log(`${msg}. Cause: ${errors.map(error => errorToString(error)).join(", ")}`);
+        capture.error(msg, {
+          extra: {
+            url: chartVitalsUrl,
+            cxId,
+            practiceId: this.practiceId,
+            patientId,
+            departmentId,
+            observationId: observation.id,
+            context: "athenahealth.create-vitals",
+            errors,
+          },
+        });
       }
-      return outcomes;
+      return successFullOutcomes;
     } catch (error) {
       const msg = `Failure while creating some vitals @ AthenaHealth`;
       log(`${msg}. Cause: ${errorToString(error)}`);
@@ -702,25 +743,15 @@ class AthenaHealthApi {
           )
       );
       const errors = settledResponses.flatMap(r => (r.status === "rejected" ? [r.reason] : []));
-      if (errors.length > 0) {
-        const msg = `Failure while searching for medications @ AthenaHealth`;
-        log(`${msg}. Cause: ${errors.map(error => errorToString(error)).join(", ")}`);
-        capture.error(msg, {
-          extra: {
-            cxId,
-            practiceId: this.practiceId,
-            patientId,
-            context: "athenahealth.search-for-medication",
-            errors,
-          },
-        });
-      }
       const successes = settledResponses
         .flatMap(r => (r.status === "fulfilled" ? [r.value] : []))
-        .map(response => {
-          if (!response.data) throw new MetriportError(`No body returned from ${referenceUrl}`);
+        .flatMap(response => {
+          if (!response.data) {
+            errors.push(new MetriportError(`No body returned from ${referenceUrl}`));
+            return [];
+          }
           debug(`${referenceUrl} resp: `, () => JSON.stringify(response.data));
-          return response;
+          return [response];
         });
       if (successes.length === 0) throw new MetriportError("No medications found");
       if (responsesBucket) {
@@ -743,9 +774,33 @@ class AthenaHealthApi {
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - searchForMedication"));
       }
       const outcomes = successes.map(response =>
-        medicationReferencesGetResponseSchema.parse(response.data)
+        medicationReferencesGetResponseSchema.safeParse(response.data)
       );
-      return outcomes.flat();
+      const successFullOutcomes = outcomes.flatMap(outcome => {
+        if (!outcome.success) {
+          errors.push(
+            new MetriportError("Medication references not parsed", undefined, {
+              error: errorToString(outcome.error),
+            })
+          );
+          return [];
+        }
+        return [outcome.data];
+      });
+      if (errors.length > 0) {
+        const msg = `Failure while searching for medications @ AthenaHealth`;
+        log(`${msg}. Cause: ${errors.map(error => errorToString(error)).join(", ")}`);
+        capture.error(msg, {
+          extra: {
+            cxId,
+            practiceId: this.practiceId,
+            patientId,
+            context: "athenahealth.search-for-medication",
+            errors,
+          },
+        });
+      }
+      return successFullOutcomes.flat();
     } catch (error) {
       const msg = `Failure while searching for medications @ AthenaHealth`;
       log(`${msg}. Cause: ${errorToString(error)}`);
@@ -798,8 +853,15 @@ class AthenaHealthApi {
           })
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - subscribeToEvent"));
       }
-      const outcome = subscriptionCreateResponseSchema.parse(response.data);
-      if (!outcome.success) throw new MetriportError(`Subscription for ${feedtype} not successful`);
+      const outcome = subscriptionCreateResponseSchema.safeParse(response.data);
+      if (!outcome.success) {
+        throw new MetriportError("Subscription not parsed", undefined, {
+          error: errorToString(outcome.error),
+        });
+      }
+      if (!outcome.data.success) {
+        throw new MetriportError(`Subscription for ${feedtype} not successful`);
+      }
     } catch (error) {
       const msg = `Failure while subscribing to event @ AthenaHealth`;
       log(`${msg}. Cause: ${errorToString(error)}`);
@@ -865,7 +927,13 @@ class AthenaHealthApi {
           })
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - getAppointments"));
       }
-      return bookedAppointmentsGetResponseSchema.parse(response.data).appointments;
+      const outcome = bookedAppointmentsGetResponseSchema.safeParse(response.data);
+      if (!outcome.success) {
+        throw new MetriportError("Appointments not parsed", undefined, {
+          error: errorToString(outcome.error),
+        });
+      }
+      return outcome.data.appointments;
     } catch (error) {
       const msg = `Failure while getting appointments @ AthenaHealth`;
       log(`${msg}. Cause: ${errorToString(error)}`);
@@ -932,8 +1000,13 @@ class AthenaHealthApi {
             processAsyncError("Error saving to s3 @ AthenaHealth - getAppointmentsFromSubscription")
           );
       }
-      const appointments = appointmentEventGetResponseSchema.parse(response.data).appointments;
-      return appointments.filter(
+      const outcome = appointmentEventGetResponseSchema.safeParse(response.data);
+      if (!outcome.success) {
+        throw new MetriportError("Appointments from subscription not parsed", undefined, {
+          error: errorToString(outcome.error),
+        });
+      }
+      return outcome.data.appointments.filter(
         app => app.patientid !== undefined && app.appointmentstatus === "f"
       ) as BookedAppointment[];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1077,16 +1150,15 @@ class AthenaHealthApi {
 
   private convertValue(clinicalElementId: string, value: number, units: string): number {
     if (!clinicalElementsThatRequireUnits.includes(clinicalElementId)) return value;
-    if (units === "g" || units.startsWith("gram")) return value; // weight
-    if (units === "cm" || units.startsWith("centimeter")) return value; // height
-    if (units === "f" || units.startsWith("fahrenheit")) return value; // temperature
-    if (units === "lbs" || units.startsWith("pound")) return this.convertLbsWeightToGrams(value); // weight
-    if (units === "kg" || units.startsWith("kilogram")) {
-      return this.convertKiloGramsWeightToGrams(value); // weight
+    if (units === "g" || units.includes("gram")) return value; // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+    if (units === "cm" || units.includes("centimeter")) return value; // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+    if (units === "degf" || units === "f" || units.includes("fahrenheit")) return value; // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
+    if (units === "lb_av" || units.includes("pound")) return this.convertLbsToGrams(value); // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+    if (units === "kg" || units.includes("kilogram")) return this.convertKiloGramsToGrams(value); // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+    if (units === "in_i" || units.includes("inch")) return this.convertInchesToCm(value); // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
+    if (units === "cel" || units === "c" || units.includes("celsius")) {
+      return this.convertCelciusToFahrenheit(value); // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
     }
-    if (units === "in" || units.startsWith("inch")) return this.convertInchesToCm(value); // height
-    if (units === "m" || units.startsWith("meter")) return this.convertMetersToCm(value); // height
-    if (units === "c" || units.startsWith("celsius")) return this.convertCelciusToFahrenheit(value); // temperature
     throw new MetriportError("Unknown units", undefined, {
       units,
       clinicalElementId,
@@ -1094,20 +1166,16 @@ class AthenaHealthApi {
     });
   }
 
-  private convertLbsWeightToGrams(value: number): number {
+  private convertLbsToGrams(value: number): number {
     return value * lbsToG;
   }
 
-  private convertKiloGramsWeightToGrams(value: number): number {
+  private convertKiloGramsToGrams(value: number): number {
     return value * kgToG;
   }
 
   private convertInchesToCm(value: number): number {
     return value * inchesToCm;
-  }
-
-  private convertMetersToCm(value: number): number {
-    return value * metersToCm;
   }
 
   private convertCelciusToFahrenheit(value: number): number {
