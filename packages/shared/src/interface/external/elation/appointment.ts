@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 const appointmentSchema = z.object({
-  patient: z.string().nullable(),
+  patient: z.coerce.string().nullable(),
   status: z
     .object({
       status: z.string(),
