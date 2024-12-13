@@ -565,6 +565,7 @@ class AthenaHealthApi {
           practiceId: this.practiceId,
           patientId,
           departmentId,
+          code,
           observationId: observation.id,
         });
       }
@@ -577,17 +578,17 @@ class AthenaHealthApi {
           observationId: observation.id,
         });
       }
+      if (uniqBy(vitals.sortedPoints, "date").length !== vitals.sortedPoints.length) {
+        throw new MetriportError("Duplicate reading taken for vitals", undefined, {
+          cxId,
+          practiceId: this.practiceId,
+          patientId,
+          departmentId,
+          observationId: observation.id,
+        });
+      }
       const payloads = vitals.sortedPoints.map(v => {
         const vitalsData = this.createVitalsData(v, clinicalElementId);
-        if (uniqBy(vitalsData, "readingtaken").length !== vitalsData.length) {
-          throw new MetriportError("Duplicate reading taken for vitals", undefined, {
-            cxId,
-            practiceId: this.practiceId,
-            patientId,
-            departmentId,
-            observationId: observation.id,
-          });
-        }
         return {
           departmentid: this.stripDepartmentId(departmentId),
           returnvitalsid: true,
@@ -1054,9 +1055,23 @@ class AthenaHealthApi {
       {
         clinicalelementid: clinicalElementId,
         readingtaken: this.formatDate(dataPoint.date),
-        value: dataPoint.value.toString(),
+        value: this.createValue(dataPoint.value, clinicalElementId).toString(),
       },
     ];
+  }
+
+  private createValue(value: number, clinicalElementId: string): number {
+    if (clinicalElementId === "VITALS.WEIGHT") return this.convertKgWeightToG(value);
+    if (clinicalElementId === "VITALS.TEMPERATURE") return this.convertCelciusToFahrenheit(value);
+    return value;
+  }
+
+  private convertKgWeightToG(value: number): number {
+    return value * 1000;
+  }
+
+  private convertCelciusToFahrenheit(value: number): number {
+    return value * (9 / 5) + 32;
   }
 }
 
