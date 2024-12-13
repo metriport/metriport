@@ -43,12 +43,12 @@ type BookedAppointment = {
 class ElationApi {
   private axiosInstance: AxiosInstance;
   private baseUrl: string;
-  private twoLeggedAuthToken: string;
+  private twoLeggedAuthToken: string | undefined;
   private practiceId: string;
   private s3Utils: S3Utils;
 
   private constructor(private config: ApiConfig) {
-    this.twoLeggedAuthToken = "";
+    this.twoLeggedAuthToken = undefined;
     this.practiceId = config.practiceId;
     this.s3Utils = getS3UtilsInstance();
     this.axiosInstance = axios.create({});
@@ -59,6 +59,10 @@ class ElationApi {
     const instance = new ElationApi(config);
     await instance.initialize();
     return instance;
+  }
+
+  getTwoLeggedAuthToken(): string | undefined {
+    return this.twoLeggedAuthToken;
   }
 
   private async fetchTwoLeggedAuthToken(): Promise<void> {
@@ -81,7 +85,7 @@ class ElationApi {
   }
 
   async initialize(): Promise<void> {
-    await this.fetchTwoLeggedAuthToken();
+    if (!this.twoLeggedAuthToken) await this.fetchTwoLeggedAuthToken();
 
     this.axiosInstance = axios.create({
       baseURL: this.baseUrl,
@@ -336,8 +340,13 @@ class ElationApi {
           })
           .catch(processAsyncError("Error saving to s3 @ Elation - getAppointments"));
       }
-      const appointments = appointmentsGetResponseSchema.parse(response.data).results;
-      return appointments.filter(
+      const outcome = appointmentsGetResponseSchema.safeParse(response.data);
+      if (!outcome.success) {
+        throw new MetriportError("Appointments not parsed", undefined, {
+          error: errorToString(outcome.error),
+        });
+      }
+      return outcome.data.results.filter(
         app => app.patient !== null && app.status !== null && app.status.status === "Scheduled"
       ) as BookedAppointment[];
     } catch (error) {
