@@ -684,7 +684,7 @@ class AthenaHealthApi {
     const referenceUrl = "/reference/medications";
     try {
       const searchValues = medication.code?.coding?.flatMap(c => c.display?.split("/") ?? []);
-      if (!searchValues) {
+      if (!searchValues || searchValues.length === 0) {
         throw new MetriportError("No code displays values for searching medications.");
       }
       const settledResponses = await Promise.allSettled(
