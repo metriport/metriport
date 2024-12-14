@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { faker } from "@faker-js/faker";
 import { Organization } from "@medplum/fhirtypes";
 import { CarequalityManagementAPIFhir } from "@metriport/carequality-sdk";
@@ -13,7 +14,7 @@ import { FacilityModel } from "../../../../../models/medical/facility";
 import * as apiFhirFile from "../../../api";
 import { metriportEmail as metriportEmailForCq } from "../../../constants";
 import { CQDirectoryEntryData } from "../../../cq-directory";
-import { buildCqOrgNameForFacility } from "../../../shared";
+import { buildCqOrgNameForFacility, buildCqOrgNameForOboFacility } from "../../../shared";
 import { metriportIntermediaryOid, metriportOid } from "../constants";
 import { createOrUpdateCqOrganization } from "../create-or-update-cq-organization";
 import * as getCqOrgFile from "../get-cq-organization";
@@ -77,13 +78,11 @@ describe("createOrUpdateCqOrganization", () => {
     const cxId = faker.string.uuid();
     const cxOrgName = faker.company.name();
 
-    const isObo = isOboFacility(facilityMock.cqType);
     const orgName = buildCqOrgNameForFacility({
       vendorName: cxOrgName,
       orgName: facilityMock.data.name,
-      oboOid: isObo ? facilityMock.cqOboOid ?? undefined : undefined,
     });
-    const parentOrgOid = isObo ? metriportIntermediaryOid : metriportOid;
+    const parentOrgOid = metriportOid;
     getCqOrgMock.mockResolvedValueOnce({ name: orgName } as CQDirectoryEntryData);
 
     const mockedAddress = makeAddressWithCoordinates();
@@ -152,7 +151,11 @@ describe("createOrUpdateCqOrganization", () => {
     const orgName = buildCqOrgNameForFacility({
       vendorName: cxOrgName,
       orgName: oboFacilityMock.data.name,
-      oboOid: isObo ? oboFacilityMock.cqOboOid ?? undefined : undefined,
+    });
+    const oboName = buildCqOrgNameForOboFacility({
+      vendorName: cxOrgName,
+      orgName: oboFacilityMock.data.name,
+      oboOid: oboFacilityMock.cqOboOid!,
     });
     const parentOrgOid = isObo ? metriportIntermediaryOid : metriportOid;
     getCqOrgMock.mockResolvedValueOnce({ name: orgName } as CQDirectoryEntryData);
@@ -182,6 +185,7 @@ describe("createOrUpdateCqOrganization", () => {
       active: oboFacilityMock.cqActive,
       parentOrgOid,
       oboOid: oboFacilityMock.cqOboOid ?? undefined,
+      oboName,
       role: "Connection" as const,
     };
     const expectedCqOrg = getOrganizationFhirTemplate(epectedOrgDetails);
@@ -206,6 +210,7 @@ describe("createOrUpdateCqOrganization", () => {
       active: oboFacilityMock.cqActive,
       parentOrgOid,
       oboOid: oboFacilityMock.cqOboOid ?? undefined,
+      oboName,
       role: "Connection" as const,
     });
 

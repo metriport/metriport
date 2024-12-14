@@ -3,9 +3,12 @@ import { metriportCompanyDetails } from "@metriport/shared";
 import { Facility, isOboFacility } from "../../../domain/medical/facility";
 import { metriportEmail as metriportEmailForCq } from "../constants";
 import { CQDirectoryEntryData } from "../cq-directory";
-import { buildCqOrgNameForFacility } from "../shared";
+import { buildCqOrgNameForFacility, buildCqOrgNameForOboFacility } from "../shared";
 import { metriportIntermediaryOid, metriportOid } from "./cq-organization/constants";
-import { createOrUpdateCqOrganization } from "./cq-organization/create-or-update-cq-organization";
+import {
+  createOrUpdateCqOrganization,
+  CreateOrUpdateCqOrganizationCmd,
+} from "./cq-organization/create-or-update-cq-organization";
 
 export type CreateOrUpdateFacilityCmd = {
   facility: Facility;
@@ -18,6 +21,11 @@ export type CreateOrUpdateFacilityCmd = {
 export async function createOrUpdateFacility(
   cmd: CreateOrUpdateFacilityCmd
 ): Promise<CQDirectoryEntryData> {
+  const cqCmd = getCqCommand(cmd);
+  return await createOrUpdateCqOrganization(cqCmd);
+}
+
+export function getCqCommand(cmd: CreateOrUpdateFacilityCmd): CreateOrUpdateCqOrganizationCmd {
   const { facility, org } = cmd;
   const isObo = isOboFacility(facility.cqType);
   const oboOid = isObo ? facility.cqOboOid ?? undefined : undefined;
@@ -27,10 +35,16 @@ export async function createOrUpdateFacility(
   const cqOrgName = buildCqOrgNameForFacility({
     vendorName: org.data.name,
     orgName: facility.data.name,
-    oboOid,
   });
+  const oboName = isObo
+    ? buildCqOrgNameForOboFacility({
+        vendorName: org.data.name,
+        orgName: facility.data.name,
+        oboOid: oboOid!, // eslint-disable-line @typescript-eslint/no-non-null-assertion
+      })
+    : undefined;
   const parentOrgOid = isObo ? metriportIntermediaryOid : metriportOid;
-  return await createOrUpdateCqOrganization({
+  return {
     cxId: org.cxId,
     name: cqOrgName,
     oid: facility.oid,
@@ -38,9 +52,10 @@ export async function createOrUpdateFacility(
     contactName: metriportCompanyDetails.name,
     phone: metriportCompanyDetails.phone,
     email: metriportEmailForCq,
-    active: org.cqActive,
+    active: facility.cqActive, // Confirm, it was org.cqActive before
     role: "Connection" as const,
     parentOrgOid,
     oboOid,
-  });
+    oboName,
+  };
 }
