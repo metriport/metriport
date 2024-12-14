@@ -1,7 +1,5 @@
 export { PurposeOfUse } from "@metriport/shared";
-export { CarequalityManagementAPIImpl } from "./client/carequality";
 export { CarequalityManagementAPIImplFhir } from "./client/carequality-fhir";
-export { CarequalityManagementAPI } from "./client/carequality-api";
 export { CarequalityManagementAPIFhir } from "./client/carequality-fhir-api";
 export { Address } from "./models/address";
 export { Contact } from "./models/contact";
