@@ -336,8 +336,6 @@ export class APIStack extends Stack {
       medicalDocumentsBucket,
       sandboxSeedDataBucket,
       alarmAction: slackNotification?.alarmAction,
-      // TEMP LOGIC
-      dashUrl: isSandbox(props.config) ? "" : props.config.dashUrl,
       bedrock: props.config.bedrock,
       appConfigEnvVars: {
         appId: appConfigAppId,
@@ -1320,6 +1318,7 @@ export class APIStack extends Stack {
       vpc,
       sentryDsn,
       envType,
+      dashUrl,
       alarmAction,
       medicalDocumentsBucket,
       appConfigEnvVars,
@@ -1342,6 +1341,7 @@ export class APIStack extends Stack {
         PDF_CONVERT_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
         APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
         APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
+        DASH_URL: dashUrl,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [
