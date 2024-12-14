@@ -1,6 +1,6 @@
-import AthenaHealthApi, { GroupedVitals } from "@metriport/core/external/athenahealth/index";
+import { GroupedVitals } from "@metriport/core/external/athenahealth/index";
 import { VitalsCreateResponse } from "@metriport/shared/interface/external/athenahealth/vitals";
-import { getAthenaEnv } from "../shared";
+import { createAthenaClient } from "../shared";
 
 export async function writeVitalsToChart({
   cxId,
@@ -15,14 +15,7 @@ export async function writeVitalsToChart({
   athenaDepartmentId: string;
   vitals: GroupedVitals;
 }): Promise<VitalsCreateResponse[]> {
-  const { environment, clientKey, clientSecret } = await getAthenaEnv();
-
-  const api = await AthenaHealthApi.create({
-    practiceId: athenaPracticeId,
-    environment,
-    clientKey,
-    clientSecret,
-  });
+  const api = await createAthenaClient({ cxId, practiceId: athenaPracticeId });
   return await api.createVitals({
     cxId,
     patientId: athenaPatientId,

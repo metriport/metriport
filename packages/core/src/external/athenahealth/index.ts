@@ -25,10 +25,12 @@ import {
   ProblemCreateResponse,
   problemCreateResponseSchema,
   subscriptionCreateResponseSchema,
+  tokenResponseSchema,
   VitalsCreateResponse,
   vitalsCreateResponseSchema,
 } from "@metriport/shared/interface/external/athenahealth/index";
 import axios, { AxiosInstance } from "axios";
+import jwt from "jsonwebtoken";
 import { uniqBy } from "lodash";
 import { processAsyncError } from "../..//util/error/shared";
 import { createHivePartitionFilePath } from "../../domain/filename";
@@ -115,6 +117,7 @@ class AthenaHealthApi {
   private axiosInstanceProprietary: AxiosInstance;
   private baseUrl: string;
   private twoLeggedAuthToken: string | undefined;
+  private twoLeggedAuthTokenExp: number | undefined;
   private threeLeggedAuthToken: string | undefined;
   private practiceId: string;
   private s3Utils: S3Utils;
@@ -135,8 +138,17 @@ class AthenaHealthApi {
     return instance;
   }
 
-  getTwoLeggedAuthToken(): string | undefined {
-    return this.twoLeggedAuthToken;
+  getTwoLeggedAuthTokenInfo():
+    | {
+        token: string;
+        exp: number;
+      }
+    | undefined {
+    if (!this.twoLeggedAuthToken || !this.twoLeggedAuthTokenExp) return undefined;
+    return {
+      token: this.twoLeggedAuthToken,
+      exp: this.twoLeggedAuthTokenExp,
+    };
   }
 
   private async fetchTwoLeggedAuthToken(): Promise<void> {
@@ -154,8 +166,14 @@ class AthenaHealthApi {
           password: this.config.clientSecret,
         },
       });
-
-      this.twoLeggedAuthToken = response.data.access_token;
+      if (!response.data) throw new MetriportError("No body returned from token endpoint");
+      const tokenData = tokenResponseSchema.parse(response.data);
+      const idToken = jwt.decode(tokenData.id_token);
+      if (!idToken) throw new MetriportError("Could not decode id_token in tokenData");
+      if (typeof idToken === "string") throw new MetriportError("Decoded id_token to string");
+      if (!idToken.exp) throw new MetriportError("Decoded id_token has no expiration");
+      this.twoLeggedAuthToken = tokenData.access_token;
+      this.twoLeggedAuthTokenExp = idToken.exp * 1000;
     } catch (error) {
       throw new MetriportError("Failed to fetch Two Legged Auth token");
     }
@@ -607,13 +625,15 @@ class AthenaHealthApi {
       if (!vitals.sortedPoints || vitals.sortedPoints.length === 0) {
         throw new MetriportError("No points found for vitals", undefined, additionalInfo);
       }
+      /*
       if (uniqBy(vitals.sortedPoints, "date").length !== vitals.sortedPoints.length) {
         throw new MetriportError("Duplicate reading taken for vitals", undefined, {
           ...additionalInfo,
           dates: vitals.sortedPoints.map(v => v.date).join(", "),
         });
       }
-      const payloads = vitals.sortedPoints.map(v => {
+      */
+      const payloads = uniqBy(vitals.sortedPoints, "date").map(v => {
         const vitalsData = this.createVitalsData(v, clinicalElementId, units);
         return {
           departmentid: this.stripDepartmentId(departmentId),
@@ -733,14 +753,18 @@ class AthenaHealthApi {
     try {
       const searchValues = medication.code?.coding?.flatMap(c => c.display?.split("/") ?? []);
       if (!searchValues || searchValues.length === 0) {
-        throw new MetriportError("No code displays values for searching medications");
+        throw new MetriportError("No code display values for searching medications");
+      }
+      const searchValuesWithAtLeastTwoParts = searchValues.filter(
+        searchValue => searchValue.length >= 2
+      );
+      if (searchValuesWithAtLeastTwoParts.length === 0) {
+        throw new MetriportError("No search values with at least two parts");
       }
       const settledResponses = await Promise.allSettled(
-        searchValues
-          .filter(searchValue => searchValue.length >= 2)
-          .map(searchValue =>
-            this.axiosInstanceProprietary.get(`${referenceUrl}?searchvalue=${searchValue}`)
-          )
+        searchValuesWithAtLeastTwoParts.map(searchValue =>
+          this.axiosInstanceProprietary.get(`${referenceUrl}?searchvalue=${searchValue}`)
+        )
       );
       const errors = settledResponses.flatMap(r => (r.status === "rejected" ? [r.reason] : []));
       const successes = settledResponses

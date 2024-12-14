@@ -1,7 +1,7 @@
+import { NotFoundError } from "@metriport/shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import NotFoundError from "../errors/not-found";
 import { JwtTokenModel } from "../models/jwt-token";
-import { JwtToken, JwtTokenPerSource } from "../domain/jwt-token";
+import { JwtToken, JwtTokenData, JwtTokenPerSource, JwtTokenSource } from "../domain/jwt-token";
 
 export type JwtTokenParams = JwtTokenPerSource;
 
@@ -46,6 +46,25 @@ export async function getJwtTokenOrFail({
   });
   if (!jwtToken) throw new NotFoundError("JwtToken not found", undefined, { token, source });
   return jwtToken;
+}
+
+/**
+ * DOES NOT CHECK EXPIRATION
+ */
+export async function getLatestJwtTokenBySourceAndData({
+  source,
+  data,
+}: {
+  source: JwtTokenSource;
+  data: JwtTokenData;
+}): Promise<JwtToken | undefined> {
+  const existing = await JwtTokenModel.findAll({
+    where: { source, data },
+    order: [["exp", "DESC"]],
+  });
+  const latest = existing[0];
+  if (!latest) return undefined;
+  return latest.dataValues;
 }
 
 export async function deleteJwtToken({ token, source }: JwtTokenLookUpParams): Promise<void> {
