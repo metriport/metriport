@@ -25,11 +25,19 @@ export type CreateOrUpdateCqOrganizationCmd = Omit<
 export async function createOrUpdateCqOrganization(
   cmd: CreateOrUpdateCqOrganizationCmd
 ): Promise<CQDirectoryEntryData> {
-  const { cxId, oid, name, address } = cmd;
-  const [cqOrg, { coordinates, addressLine }] = await Promise.all([
-    getCqOrg(oid),
-    getCqAddress({ cxId, address }),
+  const [cqOrg, orgDetailsWithUrls] = await Promise.all([
+    getCqOrg(cmd.oid),
+    cmdToCqOrgDetails(cmd),
   ]);
+  if (cqOrg) return await updateCQOrganization(orgDetailsWithUrls);
+  return await createCQOrganization(orgDetailsWithUrls);
+}
+
+export async function cmdToCqOrgDetails(
+  cmd: CreateOrUpdateCqOrganizationCmd
+): Promise<CQOrgDetailsWithUrls> {
+  const { cxId, oid, name, address } = cmd;
+  const { coordinates, addressLine } = await getCqAddress({ cxId, address });
   const orgDetailsWithUrls: CQOrgDetailsWithUrls = {
     ...cmd,
     ...getCqOrgUrls(),
@@ -42,8 +50,7 @@ export async function createOrUpdateCqOrganization(
     lat: coordinates.lat.toString(),
     lon: coordinates.lon.toString(),
   };
-  if (cqOrg) return await updateCQOrganization(orgDetailsWithUrls);
-  return await createCQOrganization(orgDetailsWithUrls);
+  return orgDetailsWithUrls;
 }
 
 async function updateCQOrganization(

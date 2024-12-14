@@ -72,6 +72,9 @@ export function getCqOrgUrls(): CQOrgUrls {
   return urls;
 }
 
+/** Implementer is Metriport, all other Orgs/Facilities we manage are Connection */
+export type CqOrgType = "Connection" | "Implementer";
+
 export type CQOrgDetails = {
   name: string;
   oid: string;
@@ -85,12 +88,14 @@ export type CQOrgDetails = {
   phone: string;
   email: string;
   /** Implementer is Metriport, all other Orgs/Facilities we manage are Connection */
-  role: "Implementer" | "Connection";
+  role: CqOrgType;
   active: boolean;
   /** Translates into the `partOf` field in Carequality. Usually either `metriportOid` or `metriportIntermediaryOid` */
   parentOrgOid?: string | undefined;
   /** Gets translated into the DOA extension in Carequality. Only used for OBO facilities. @see https://sequoiaproject.org/SequoiaProjectHealthcareDirectoryImplementationGuide/output/StructureDefinition-DOA.html */
   oboOid?: string | undefined;
+  /** Gets translated into the generated text extension in Carequality. Only used for OBO facilities. */
+  oboName?: string | undefined;
 };
 export type CQOrgDetailsWithUrls = CQOrgDetails & CQOrgUrls;
 
@@ -134,17 +139,23 @@ export function getSystemUserName(orgName: string): string {
 export function buildCqOrgNameForFacility({
   vendorName,
   orgName,
+}: {
+  vendorName: string;
+  orgName: string;
+}): string {
+  return `${vendorName} - ${orgName}`;
+}
+
+export function buildCqOrgNameForOboFacility({
+  vendorName,
+  orgName,
   oboOid,
 }: {
   vendorName: string;
   orgName: string;
-  oboOid: string | undefined;
+  oboOid: string;
 }): string {
-  if (oboOid) {
-    return `${vendorName} - ${orgName} #OBO# ${oboOid}`;
-  }
-
-  return `${vendorName} - ${orgName}`;
+  return `${vendorName} - ${orgName} #OBO# ${oboOid}`;
 }
 
 export async function getCqAddress({
