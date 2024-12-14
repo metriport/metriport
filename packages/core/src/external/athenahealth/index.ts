@@ -625,15 +625,13 @@ class AthenaHealthApi {
       if (!vitals.sortedPoints || vitals.sortedPoints.length === 0) {
         throw new MetriportError("No points found for vitals", undefined, additionalInfo);
       }
-      /*
       if (uniqBy(vitals.sortedPoints, "date").length !== vitals.sortedPoints.length) {
         throw new MetriportError("Duplicate reading taken for vitals", undefined, {
           ...additionalInfo,
           dates: vitals.sortedPoints.map(v => v.date).join(", "),
         });
       }
-      */
-      const payloads = uniqBy(vitals.sortedPoints, "date").map(v => {
+      const payloads = vitals.sortedPoints.map(v => {
         const vitalsData = this.createVitalsData(v, clinicalElementId, units);
         return {
           departmentid: this.stripDepartmentId(departmentId),

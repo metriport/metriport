@@ -127,6 +127,7 @@
     "http-status": "^1.7.0",
     "jaro-winkler": "^0.2.8",
     "json-stringify-safe": "^5.0.1",
+    "jsonwebtoken": "^9.0.2",
     "langchain": "0.3.6",
     "lodash": "^4.17.21",
     "pg": "^8.11.3",

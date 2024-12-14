@@ -51,7 +51,7 @@ export async function getJwtTokenOrFail({
 /**
  * DOES NOT CHECK EXPIRATION
  */
-export async function getLatestJwtTokenBySourceAndData({
+export async function getLatestExpiringJwtTokenBySourceAndData({
   source,
   data,
 }: {

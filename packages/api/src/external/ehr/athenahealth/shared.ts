@@ -15,7 +15,10 @@ import {
 import { PatientResource } from "@metriport/shared/interface/external/athenahealth/patient";
 import { Config } from "../../../shared/config";
 import { EhrSources } from "../shared";
-import { findOrCreateJwtToken, getLatestJwtTokenBySourceAndData } from "../../../command/jwt-token";
+import {
+  findOrCreateJwtToken,
+  getLatestExpiringJwtTokenBySourceAndData,
+} from "../../../command/jwt-token";
 
 const region = Config.getAWSRegion();
 
@@ -86,11 +89,11 @@ export async function createAthenaClient({
     clientSecret,
   });
   if (!twoLeggedAuthToken) {
-    const tokenInfo = athenaApi.getTwoLeggedAuthTokenInfo();
-    if (!tokenInfo) throw new MetriportError("Client not created with two-legged auth token");
+    const newAuthInfo = athenaApi.getTwoLeggedAuthTokenInfo();
+    if (!newAuthInfo) throw new MetriportError("Client not created with two-legged auth token");
     await findOrCreateJwtToken({
-      token: tokenInfo.token,
-      exp: new Date(tokenInfo.exp),
+      token: newAuthInfo.token,
+      exp: new Date(newAuthInfo.exp),
       source: athenaClientJwtTokenSource,
       data: { cxId, practiceId, source: athenaClientJwtTokenSource },
     });
@@ -129,7 +132,7 @@ async function getLatestAthenaClientJwtToken({
   cxId: string;
   practiceId: string;
 }): Promise<string | undefined> {
-  const token = await getLatestJwtTokenBySourceAndData({
+  const token = await getLatestExpiringJwtTokenBySourceAndData({
     source: athenaClientJwtTokenSource,
     data: { cxId, practiceId, source: athenaClientJwtTokenSource },
   });
