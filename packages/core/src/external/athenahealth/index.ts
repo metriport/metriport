@@ -733,14 +733,18 @@ class AthenaHealthApi {
     try {
       const searchValues = medication.code?.coding?.flatMap(c => c.display?.split("/") ?? []);
       if (!searchValues || searchValues.length === 0) {
-        throw new MetriportError("No code displays values for searching medications");
+        throw new MetriportError("No code display values for searching medications");
+      }
+      const searchValuesWithAtLeastTwoParts = searchValues.filter(
+        searchValue => searchValue.length >= 2
+      );
+      if (searchValuesWithAtLeastTwoParts.length === 0) {
+        throw new MetriportError("No search values with at least two parts");
       }
       const settledResponses = await Promise.allSettled(
-        searchValues
-          .filter(searchValue => searchValue.length >= 2)
-          .map(searchValue =>
-            this.axiosInstanceProprietary.get(`${referenceUrl}?searchvalue=${searchValue}`)
-          )
+        searchValuesWithAtLeastTwoParts.map(searchValue =>
+          this.axiosInstanceProprietary.get(`${referenceUrl}?searchvalue=${searchValue}`)
+        )
       );
       const errors = settledResponses.flatMap(r => (r.status === "rejected" ? [r.reason] : []));
       const successes = settledResponses
