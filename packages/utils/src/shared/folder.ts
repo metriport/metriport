@@ -31,11 +31,15 @@ export function initRunsFolder() {
 export function buildGetDirPathInside(folder: string) {
   return function (orgName: string): string {
     const pathName = `./${runsFolderName}/${folder}`;
-    return `${pathName}/${getFileNameForOrg(orgName)}`;
+    return `${pathName}/${getFileNameForOrgWithDate(orgName)}`;
   };
 }
 
-function getFileNameForOrg(orgName: string, extension?: string): string {
+export function getFileNameForOrgWithDate(orgName: string, extension?: string): string {
   const ext = extension ? `.${extension}` : "";
-  return `${orgName?.replace(/[,.]/g, "").replaceAll(" ", "-")}_${new Date().toISOString()}${ext}`;
+  return `${getFileNameForOrg(orgName)}_${new Date().toISOString()}${ext}`;
+}
+
+export function getFileNameForOrg(orgName: string): string {
+  return `${orgName.replace(/[,.]/g, "").replaceAll(" ", "-")}`;
 }

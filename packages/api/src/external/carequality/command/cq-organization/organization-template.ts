@@ -5,7 +5,7 @@ import {
   XCA_DR_STRING,
   XCPD_STRING,
 } from "@metriport/carequality-sdk/common/util";
-import { CQOrgDetailsWithUrls, createPurposeOfUse } from "../../shared";
+import { CQOrgDetailsWithUrls } from "../../shared";
 import { metriportOid } from "./constants";
 
 export const transactionUrl =
@@ -48,7 +48,9 @@ function getFhirOrganization(
     lon,
     parentOrgOid,
     oboOid,
+    oboName,
   } = orgDetails;
+  const addressText = `${addressLine1} ${city} ${state} ${postalCode} US`;
   const org: Organization = {
     resourceType: "Organization",
     id: oid,
@@ -64,6 +66,7 @@ function getFhirOrganization(
         },
         system: "urn:ietf:rfc:3986",
         value: urnOid,
+        use: "official",
       },
     ],
     active,
@@ -81,12 +84,7 @@ function getFhirOrganization(
     contact: [
       {
         purpose: {
-          coding: [
-            {
-              system: "http://terminology.hl7.org/CodeSystem/contactentity-type",
-              code: "ADMIN",
-            },
-          ],
+          text: "Operations",
         },
         name: {
           use: "official",
@@ -94,49 +92,32 @@ function getFhirOrganization(
         },
         telecom: [
           {
-            system: "phone",
-            value: phone,
-          },
-          {
             system: "email",
             value: email,
+            use: "work",
+          },
+          {
+            system: "phone",
+            value: phone,
+            use: "work",
           },
         ],
         address: {
-          text: "Primary",
           use: "work",
           type: "both",
           line: [addressLine1],
           city,
           postalCode,
-          country: "USA",
+          country: "US",
         },
       },
     ],
     extension: [
       {
-        url: "https://sequoiaproject.org/fhir/sphd/StructureDefinition/PurposesOfUse",
-        valueCodeableConcept: {
-          coding: [
-            {
-              system: "http://healthit.gov/nhin/purposeofuse",
-              code: createPurposeOfUse(),
-            },
-          ],
-        },
-      },
-      {
         url: "https://sequoiaproject.org/fhir/sphd/StructureDefinition/Domains",
         valueCoding: {
           system: "https://sequoiaproject.org/fhir/sphd/CodeSystem/Domains",
           code: "CQ",
-        },
-      },
-      {
-        url: "https://sequoiaproject.org/fhir/sphd/StructureDefinition/org-managing-org",
-        valueReference: {
-          reference: `Organization/${metriportOid}`,
-          type: "Organization",
         },
       },
       ...(oboOid
@@ -149,22 +130,26 @@ function getFhirOrganization(
             },
           ]
         : []),
+      {
+        url: "https://sequoiaproject.org/fhir/sphd/StructureDefinition/org-managing-org",
+        valueReference: {
+          reference: `Organization/${metriportOid}`,
+        },
+      },
     ],
     address: [
       {
-        text: "Primary",
-        use: "work",
-        type: "both",
+        text: addressText,
         line: [addressLine1],
         city,
         state,
         postalCode,
-        country: "USA",
+        country: "US",
         extension: [
           {
             url: "https://sequoiaproject.org/fhir/sphd/StructureDefinition/OrgLocation",
             valueReference: {
-              reference: "#location-1",
+              reference: "#OrgLoc",
             },
           },
         ],
@@ -172,17 +157,20 @@ function getFhirOrganization(
     ],
     partOf: {
       reference: `Organization/${parentOrgOid ?? metriportOid}`,
-      type: "Organization",
     },
-    endpoint: endpoints.map((_, index) => {
-      return {
-        reference: `#endpoint-${index + 1}`,
-        type: "Endpoint",
-      };
-    }),
+    ...(endpoints.length > 0
+      ? {
+          endpoint: endpoints.map((_, index) => {
+            return {
+              reference: `#endpoint-${index + 1}`,
+              type: "Endpoint",
+            };
+          }),
+        }
+      : {}),
     contained: [
       {
-        id: "location-1",
+        id: "OrgLoc",
         resourceType: "Location",
         meta: {
           profile: ["https://sequoiaproject.org/fhir/sphd/StructureDefinition/SequoiaLocation"],
@@ -199,6 +187,10 @@ function getFhirOrganization(
         };
       }),
     ],
+    text: {
+      div: `<div xmlns="http://www.w3.org/1999/xhtml">${oboName ?? name}</div>`,
+      status: "generated",
+    },
   };
   return org;
 }
