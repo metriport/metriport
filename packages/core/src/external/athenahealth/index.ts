@@ -175,7 +175,9 @@ class AthenaHealthApi {
       this.twoLeggedAuthToken = tokenData.access_token;
       this.twoLeggedAuthTokenExp = idToken.exp * 1000;
     } catch (error) {
-      throw new MetriportError("Failed to fetch Two Legged Auth token");
+      throw new MetriportError("Failed to fetch Two Legged Auth token @ AthenaHealth", undefined, {
+        error: errorToString(error),
+      });
     }
   }
 
@@ -225,13 +227,13 @@ class AthenaHealthApi {
           })
           .catch(processAsyncError("Error saving to s3 @ AthenaHealth - getDepartments"));
       }
-      const deparments = departmentsGetResponseSchema.safeParse(response.data);
-      if (!deparments.success) {
+      const outcome = departmentsGetResponseSchema.safeParse(response.data);
+      if (!outcome.success) {
         throw new MetriportError("Departments not parsed", undefined, {
-          error: errorToString(deparments.error),
+          error: errorToString(outcome.error),
         });
       }
-      return deparments.data.departments.map(d => d.departmentid);
+      return outcome.data.departments.map(d => d.departmentid);
     } catch (error) {
       const msg = `Failure while getting departments @ AthenaHealth`;
       log(`${msg}. Cause: ${errorToString(error)}`);
