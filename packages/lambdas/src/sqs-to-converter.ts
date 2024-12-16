@@ -267,7 +267,6 @@ export async function handler(event: SQSEvent) {
           cxId,
           patientId,
           sourceFileName: s3FileName,
-          conversionResultBucketName,
           conversionPayload: updatedConversionResult,
           jobId,
           medicalDataSource,
@@ -376,7 +375,6 @@ export async function sendConversionResult({
   cxId,
   patientId,
   sourceFileName,
-  conversionResultBucketName,
   conversionPayload,
   jobId,
   medicalDataSource,
@@ -385,7 +383,6 @@ export async function sendConversionResult({
   cxId: string;
   patientId: string;
   sourceFileName: string;
-  conversionResultBucketName: string;
   conversionPayload: Bundle<Resource>;
   jobId: string | undefined;
   medicalDataSource: string | undefined;
