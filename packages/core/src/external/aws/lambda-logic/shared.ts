@@ -1,11 +1,5 @@
-/**
- * @deprecated Use @metriport/core instead
- */
 export type Log = ReturnType<typeof prefixedLog>;
 
-/**
- * @deprecated Use @metriport/core instead
- */
 export function prefixedLog(prefix: string) {
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (msg: string, ...optionalParams: any[]): void =>

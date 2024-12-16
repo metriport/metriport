@@ -3,10 +3,12 @@ import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64"
 import { DOC_ID_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { AxiosInstance } from "axios";
+import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import * as uuid from "uuid";
 import { getFileContents, makeDirIfNeeded, writeFileContents } from "../shared/fs";
 import { getPatientIdFromFileName } from "./shared";
 import path = require("node:path");
+import { Bundle, Resource } from "@medplum/fhirtypes";
 
 export async function convertCDAsToFHIR(
   baseFolderName: string,
@@ -71,7 +73,7 @@ export async function convert(
   const url = `/api/convert/cda/ccd.hbs`;
 
   // Process payloads sequentially and combine into single bundle
-  const combinedBundle: FHIRBundle = {
+  const combinedBundle: Bundle<Resource> = {
     resourceType: "Bundle",
     type: "batch",
     entry: [],
@@ -86,16 +88,23 @@ export async function convert(
       headers: { "Content-Type": "text/plain" },
     });
 
-    const conversionResult = res.data.fhirResource;
+    const conversionResult = res.data.fhirResource as Bundle<Resource>;
 
-    if (conversionResult?.entry?.length) {
-      combinedBundle.entry.push(...conversionResult.entry);
+    if (conversionResult?.entry && conversionResult.entry.length > 0) {
+      combinedBundle.entry?.push(...conversionResult.entry);
     }
   }
 
   addMissingRequests(combinedBundle);
 
-  const updatedConversionResult = replaceIDs(combinedBundle, patientId);
+  const normalizedBundle = normalize({
+    patientId,
+    bundle: combinedBundle,
+  }) as FHIRBundle;
+
+  // TODO: use the logic from @metriport/core
+  const updatedConversionResult = replaceIDs(normalizedBundle, patientId);
+
   addExtensionToConversion(updatedConversionResult, {
     url: "http://metriport.com/fhir/extension/patientId",
     valueString: fhirExtension,
