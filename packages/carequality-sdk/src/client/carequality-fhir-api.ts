@@ -13,12 +13,8 @@ export type UpdateOrganizationParams = {
 };
 
 export interface CarequalityManagementAPIFhir {
-  listOrganizations({
-    count,
-    start,
-    oid,
-    active,
-  }: ListOrganizationsParams): Promise<Organization[]>;
+  getOrganization(oid: string): Promise<Organization>;
+  listOrganizations(params?: ListOrganizationsParams | undefined): Promise<Organization[]>;
   registerOrganization(org: Organization): Promise<Organization>;
   updateOrganization({ org, oid }: UpdateOrganizationParams): Promise<Organization>;
 }

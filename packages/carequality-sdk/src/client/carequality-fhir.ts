@@ -113,6 +113,8 @@ export class CarequalityManagementAPIImplFhir implements CarequalityManagementAP
     return {
       ...headers,
       "Accept-Encoding": "gzip",
+      "Content-Type": "application/json",
+      Authorization: `api-key ${this.apiKey}`,
     };
   }
 
@@ -137,6 +139,18 @@ export class CarequalityManagementAPIImplFhir implements CarequalityManagementAP
   }
 
   /**
+   * Returns a single organization.
+   *
+   * @param oid Optional, the OID of the organization to fetch.
+   * @returns
+   */
+  async getOrganization(oid: string): Promise<Organization> {
+    const url = `${CarequalityManagementAPIImplFhir.ORG_ENDPOINT}/${oid}`;
+    const resp = await this.sendGetRequest(url);
+    return resp.data as Organization;
+  }
+
+  /**
    * Lists the indicated number of organizations.
    *
    * @param count Optional, number of organizations to fetch. Defaults to 1000.
@@ -150,20 +164,18 @@ export class CarequalityManagementAPIImplFhir implements CarequalityManagementAP
     start = 0,
     oid,
     active,
-  }: ListOrganizationsParams): Promise<Organization[]> {
+  }: ListOrganizationsParams = {}): Promise<Organization[]> {
     if (count < 1 || count > MAX_COUNT) {
       throw new Error(`Count value must be between 1 and ${MAX_COUNT}`);
     }
-
     const query = new URLSearchParams();
-    query.append("apikey", this.apiKey);
     query.append("_count", count.toString());
     start != undefined && query.append("_start", start.toString());
     oid != undefined && query.append("_id", oid);
     active != undefined && query.append("active", active.toString());
 
     const url = `${CarequalityManagementAPIImplFhir.ORG_ENDPOINT}?${query.toString()}`;
-    const resp = await this.sendGetRequest(url, { "Content-Type": "application/json" });
+    const resp = await this.sendGetRequest(url);
     const bundle = resp.data as Bundle;
     return (bundle.entry ?? []).map(e => e.resource as Organization);
   }
@@ -176,10 +188,9 @@ export class CarequalityManagementAPIImplFhir implements CarequalityManagementAP
    */
   async registerOrganization(org: Organization): Promise<Organization> {
     const query = new URLSearchParams();
-    query.append("apikey", this.apiKey);
 
     const url = `${CarequalityManagementAPIImplFhir.ORG_ENDPOINT}?${query.toString()}`;
-    const resp = await this.sendPostRequest(url, org, { "Content-Type": "application/json" });
+    const resp = await this.sendPostRequest(url, org);
     return resp.data;
   }
 
@@ -192,10 +203,9 @@ export class CarequalityManagementAPIImplFhir implements CarequalityManagementAP
    */
   async updateOrganization({ org, oid }: UpdateOrganizationParams): Promise<Organization> {
     const query = new URLSearchParams();
-    query.append("apikey", this.apiKey);
 
     const url = `${CarequalityManagementAPIImplFhir.ORG_ENDPOINT}/${oid}?${query.toString()}`;
-    const resp = await this.sendPutRequest(url, org, { "Content-Type": "application/json" });
+    const resp = await this.sendPutRequest(url, org);
     return resp.data;
   }
 }

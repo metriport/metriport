@@ -69,8 +69,9 @@ function makeApiImpl(params: {
   list?: Organization[];
 }): CarequalityManagementAPIFhir {
   return {
-    updateOrganization: jest.fn().mockResolvedValue(params.single),
+    getOrganization: jest.fn().mockResolvedValue(params.single),
     listOrganizations: jest.fn().mockResolvedValue(params.list),
+    updateOrganization: jest.fn().mockResolvedValue(params.single),
     registerOrganization: jest.fn().mockResolvedValue(params.single),
   };
 }

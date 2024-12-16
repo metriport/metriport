@@ -6,14 +6,13 @@ import { CQDirectoryEntryData } from "../../cq-directory";
 import { parseCQOrganization } from "./parse-cq-organization";
 
 export async function getCqOrg(oid: string): Promise<CQDirectoryEntryData | undefined> {
-  const { log, debug } = out(`CQ getCqOrg - CQ Org OID ${oid}`);
+  const { log, debug } = out(`CQ getCqOrg - OID ${oid}`);
   const cq = makeCarequalityManagementAPIFhir();
 
   try {
-    const orgs = await cq.listOrganizations({ oid });
-    debug(`resp listOrganizations: `, JSON.stringify(orgs));
-    const org = orgs[0];
-    return org ? parseCQOrganization(org) : undefined;
+    const org = await cq.getOrganization(oid);
+    debug(`resp getOrganization: `, () => JSON.stringify(org));
+    return parseCQOrganization(org);
   } catch (error) {
     const msg = `Failure while getting Org @ CQ`;
     log(`${msg}. Org OID: ${oid}. Cause: ${errorToString(error)}`);
