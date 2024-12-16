@@ -1,5 +1,6 @@
 import {
   AllergyIntolerance,
+  Binary,
   Bundle,
   BundleEntry,
   Communication,
@@ -171,6 +172,7 @@ export const buildFullUrl = <T extends Resource>(resource: T): string | undefine
 };
 
 export type ExtractedFhirTypes = {
+  binaries: Binary[];
   diagnosticReports: DiagnosticReport[];
   patient: Patient;
   practitioners: Practitioner[];
@@ -218,6 +220,7 @@ export function initExtractedFhirTypes(patient: Patient): ExtractedFhirTypes {
 export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
   let patient: Patient | undefined;
   const practitioners: Practitioner[] = [];
+  const binaries: Binary[] = [];
   const diagnosticReports: DiagnosticReport[] = [];
   const compositions: Composition[] = [];
   const medicationAdministrations: MedicationAdministration[] = [];
@@ -251,6 +254,8 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
       const resource = entry.resource;
       if (resource?.resourceType === "Patient") {
         patient = resource as Patient;
+      } else if (resource?.resourceType === "Binary") {
+        binaries.push(resource as Binary);
       } else if (resource?.resourceType === "DocumentReference") {
         documentReferences.push(resource as DocumentReference);
       } else if (resource?.resourceType === "Composition") {
@@ -332,6 +337,7 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
   return {
     patient,
     practitioners,
+    binaries,
     compositions,
     diagnosticReports,
     medications,
