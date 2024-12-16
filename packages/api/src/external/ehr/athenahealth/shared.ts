@@ -12,17 +12,17 @@ import {
   normalizeUSStateForAddress,
   normalizeZipCodeNew,
 } from "@metriport/shared";
+import { AthenaClientJwtTokenData } from "@metriport/shared/interface/external/athenahealth/jwt-token";
 import { PatientResource } from "@metriport/shared/interface/external/athenahealth/patient";
-import { Config } from "../../../shared/config";
-import { EhrSources } from "../shared";
 import {
   findOrCreateJwtToken,
   getLatestExpiringJwtTokenBySourceAndData,
 } from "../../../command/jwt-token";
+import { Config } from "../../../shared/config";
 
 const region = Config.getAWSRegion();
 
-export const athenaClientJwtTokenSource = `${EhrSources.athena}-client`;
+export const athenaClientJwtTokenSource = "athenahealth-client";
 
 export function createMetriportContacts(patient: PatientResource): Contact[] {
   return (patient.telecom ?? []).flatMap(telecom => {
@@ -91,11 +91,16 @@ export async function createAthenaClient({
   if (!twoLeggedAuthToken) {
     const newAuthInfo = athenaApi.getTwoLeggedAuthTokenInfo();
     if (!newAuthInfo) throw new MetriportError("Client not created with two-legged auth token");
+    const data: AthenaClientJwtTokenData = {
+      cxId,
+      practiceId,
+      source: athenaClientJwtTokenSource,
+    };
     await findOrCreateJwtToken({
       token: newAuthInfo.token,
       exp: new Date(newAuthInfo.exp),
       source: athenaClientJwtTokenSource,
-      data: { cxId, practiceId, source: athenaClientJwtTokenSource },
+      data,
     });
   }
   return athenaApi;
@@ -132,9 +137,14 @@ async function getLatestAthenaClientJwtToken({
   cxId: string;
   practiceId: string;
 }): Promise<string | undefined> {
+  const data: AthenaClientJwtTokenData = {
+    cxId,
+    practiceId,
+    source: athenaClientJwtTokenSource,
+  };
   const token = await getLatestExpiringJwtTokenBySourceAndData({
     source: athenaClientJwtTokenSource,
-    data: { cxId, practiceId, source: athenaClientJwtTokenSource },
+    data,
   });
   if (!token) return undefined;
   if (token.exp < new Date()) return undefined;
