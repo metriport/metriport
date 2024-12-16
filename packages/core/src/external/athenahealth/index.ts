@@ -25,12 +25,11 @@ import {
   ProblemCreateResponse,
   problemCreateResponseSchema,
   subscriptionCreateResponseSchema,
-  tokenResponseSchema,
+  athenaClientJwtTokenResponseSchema,
   VitalsCreateResponse,
   vitalsCreateResponseSchema,
 } from "@metriport/shared/interface/external/athenahealth/index";
 import axios, { AxiosInstance } from "axios";
-import jwt from "jsonwebtoken";
 import { uniqBy } from "lodash";
 import { processAsyncError } from "../..//util/error/shared";
 import { createHivePartitionFilePath } from "../../domain/filename";
@@ -167,13 +166,9 @@ class AthenaHealthApi {
         },
       });
       if (!response.data) throw new MetriportError("No body returned from token endpoint");
-      const tokenData = tokenResponseSchema.parse(response.data);
-      const idToken = jwt.decode(tokenData.id_token);
-      if (!idToken) throw new MetriportError("Could not decode id_token in tokenData");
-      if (typeof idToken === "string") throw new MetriportError("Decoded id_token to string");
-      if (!idToken.exp) throw new MetriportError("Decoded id_token has no expiration");
+      const tokenData = athenaClientJwtTokenResponseSchema.parse(response.data);
       this.twoLeggedAuthToken = tokenData.access_token;
-      this.twoLeggedAuthTokenExp = idToken.exp * 1000;
+      this.twoLeggedAuthTokenExp = new Date(Date.now() + +tokenData.expires_in * 1000).getTime();
     } catch (error) {
       throw new MetriportError("Failed to fetch Two Legged Auth token @ AthenaHealth", undefined, {
         error: errorToString(error),
