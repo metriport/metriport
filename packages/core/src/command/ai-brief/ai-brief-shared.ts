@@ -24,9 +24,12 @@ export async function generateAiBriefFhirResource(
 }
 
 export function getAiBriefContentFromBundle(bundle: Bundle): string | undefined {
+  console.log("binaryResource", bundle.entry);
   const binaryResource = bundle.entry?.find(entry => entry.resource?.resourceType === "Binary") as
     | Binary
     | undefined;
+
+  console.log("binaryResource", binaryResource);
 
   if (!binaryResource || !binaryResource.data) return undefined;
 
