@@ -65,10 +65,16 @@ export async function createConsolidatedFromConversions({
 
   const isAiBriefFeatureFlagEnabled = await isAiBriefFeatureFlagEnabledForCx(cxId);
 
+  log(`isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled}`);
+  log(`generateAiBrief: ${generateAiBrief}`);
+
   if (isAiBriefFeatureFlagEnabled && generateAiBrief) {
     const aiBriefContent = await summarizeFilteredBundleWithAI(withDups, cxId, patientId);
+    log(`aiBriefContent: ${aiBriefContent}`);
     const aiBriefFhirResource = await generateAiBriefFhirResource(aiBriefContent);
+    log(`aiBriefFhirResource: ${aiBriefFhirResource}`);
     if (aiBriefFhirResource) {
+      log(`Adding aiBriefFhirResource to the bundle`);
       withDups.entry.push(buildBundleEntry(aiBriefFhirResource));
     }
   }
