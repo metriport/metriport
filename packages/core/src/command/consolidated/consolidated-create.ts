@@ -63,6 +63,10 @@ export async function createConsolidatedFromConversions({
     `Added ${docRefs.length} docRefs and the Patient, to a total of ${withDups.entry.length} entries`
   );
 
+  log(`Deduplicating consolidated bundle...`);
+  const deduped = deduplicate({ cxId, patientId, bundle: withDups });
+  log(`...done, from ${withDups.entry?.length} to ${deduped.entry?.length} resources`);
+
   const isAiBriefFeatureFlagEnabled = await isAiBriefFeatureFlagEnabledForCx(cxId);
 
   log(`isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled}`);
@@ -75,13 +79,9 @@ export async function createConsolidatedFromConversions({
     log(`aiBriefFhirResource: ${aiBriefFhirResource}`);
     if (aiBriefFhirResource) {
       log(`Adding aiBriefFhirResource to the bundle`);
-      withDups.entry.push(buildBundleEntry(aiBriefFhirResource));
+      deduped.entry?.push(buildBundleEntry(aiBriefFhirResource));
     }
   }
-
-  log(`Deduplicating consolidated bundle...`);
-  const deduped = deduplicate({ cxId, patientId, bundle: withDups });
-  log(`...done, from ${withDups.entry?.length} to ${deduped.entry?.length} resources`);
 
   const dedupDestFileName = createConsolidatedDataFilePath(cxId, patientId, true);
   const withDupsDestFileName = createConsolidatedDataFilePath(cxId, patientId, false);
