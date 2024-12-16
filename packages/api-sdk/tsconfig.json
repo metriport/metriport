@@ -18,6 +18,5 @@
     // END - From @tsconfig/strictest
     "outDir": "./dist"
   },
-  "include": ["./src"],
-  "exclude": ["dist", "node_modules", "**/__tests__"]
+  "include": ["./src"]
 }
