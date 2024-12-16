@@ -1,7 +1,7 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { out } from "../../../util";
-import { normalizeFhir } from "../normalization/ normalize-fhir";
+import { normalizeFhir } from "../normalization/normalize-fhir";
 
 export function normalize({
   cxId,

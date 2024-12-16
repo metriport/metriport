@@ -6,25 +6,25 @@ import {
 } from "@metriport/core/domain/consolidated/bundle-modifications";
 import { cleanUpPayload } from "@metriport/core/domain/consolidated/cleanup";
 import {
-  sendConversionResult,
+  defaultS3RetriesConfig,
   storeNormalizedConversionResult,
   storePartitionedPayloadsInS3,
   storePayloadInS3,
   storePreProcessedConversionResult,
 } from "@metriport/core/domain/consolidated/upload-consolidation-steps";
-import { S3Utils } from "@metriport/core/external/aws/s3";
+import { S3Utils, executeWithRetriesS3 } from "@metriport/core/external/aws/s3";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
-import { TXT_MIME_TYPE } from "@metriport/core/util/mime";
+import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE } from "@metriport/core/util/mime";
 import { MetriportError, errorToString, executeWithNetworkRetries } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import axios from "axios";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnvOrFail } from "./shared/env";
-import { prefixedLog } from "./shared/log";
+import { Log, prefixedLog } from "./shared/log";
 import { apiClient } from "./shared/oss-api";
 
 // Keep this as early on the file as possible
@@ -264,8 +264,6 @@ export async function handler(event: SQSEvent) {
 
         // Store the conversion result in S3 and send it to the destination(s)
         await sendConversionResult({
-          ossApi,
-          s3Utils,
           cxId,
           patientId,
           sourceFileName: s3FileName,
@@ -371,4 +369,50 @@ function parseBody(body: unknown): EventBody {
   const documentExtension = documentExtensionRaw as FhirExtension;
 
   return { s3BucketName, s3FileName, documentExtension };
+}
+
+// TODO: Break this function up??
+export async function sendConversionResult({
+  cxId,
+  patientId,
+  sourceFileName,
+  conversionResultBucketName,
+  conversionPayload,
+  jobId,
+  medicalDataSource,
+  log,
+}: {
+  cxId: string;
+  patientId: string;
+  sourceFileName: string;
+  conversionResultBucketName: string;
+  conversionPayload: Bundle<Resource>;
+  jobId: string | undefined;
+  medicalDataSource: string | undefined;
+  log: Log;
+}) {
+  const fileName = `${sourceFileName}.json`;
+  log(`Uploading result to S3, bucket ${conversionResultBucketName}, key ${fileName}`);
+
+  await executeWithRetriesS3(
+    () =>
+      s3Utils.s3
+        .upload({
+          Bucket: conversionResultBucketName,
+          Key: fileName,
+          Body: JSON.stringify(conversionPayload),
+          ContentType: FHIR_APP_MIME_TYPE,
+        })
+        .promise(),
+    {
+      ...defaultS3RetriesConfig,
+      log,
+    }
+  );
+
+  log(`Sending result info to the API`);
+  await ossApi.internal.notifyApi(
+    { cxId, patientId, jobId, source: medicalDataSource, status: "success" },
+    log
+  );
 }

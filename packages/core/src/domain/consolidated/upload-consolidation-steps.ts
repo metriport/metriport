@@ -1,13 +1,12 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { errorToString } from "@metriport/shared";
 import { SQSRecord } from "aws-lambda";
-import { Log, OssApiClient } from "../../external/aws/lambda-logic/shared";
 import { S3Utils, executeWithRetriesS3 } from "../../external/aws/s3";
 import { capture } from "../../util";
 import { FHIR_APP_MIME_TYPE, XML_APP_MIME_TYPE } from "../../util/mime";
 import { buildDocumentNameForPartialConversions } from "./filename";
 
-const defaultS3RetriesConfig = {
+export const defaultS3RetriesConfig = {
   maxAttempts: 3,
   initialDelay: 500,
 };
@@ -194,54 +193,4 @@ export async function storeNormalizedConversionResult({
       },
     });
   }
-}
-
-export async function sendConversionResult({
-  ossApi,
-  s3Utils,
-  cxId,
-  patientId,
-  sourceFileName,
-  conversionResultBucketName,
-  conversionPayload,
-  jobId,
-  medicalDataSource,
-  log,
-}: {
-  ossApi: OssApiClient;
-  s3Utils: S3Utils;
-  cxId: string;
-  patientId: string;
-  sourceFileName: string;
-  conversionResultBucketName: string;
-  conversionPayload: Bundle<Resource>;
-  jobId: string | undefined;
-  medicalDataSource: string | undefined;
-  log: Log;
-}) {
-  const fileName = `${sourceFileName}.json`;
-  log(`Uploading result to S3, bucket ${conversionResultBucketName}, key ${fileName}`);
-
-  // TODO: Break this up ??
-  await executeWithRetriesS3(
-    () =>
-      s3Utils.s3
-        .upload({
-          Bucket: conversionResultBucketName,
-          Key: fileName,
-          Body: JSON.stringify(conversionPayload),
-          ContentType: FHIR_APP_MIME_TYPE,
-        })
-        .promise(),
-    {
-      ...defaultS3RetriesConfig,
-      log,
-    }
-  );
-
-  log(`Sending result info to the API`);
-  await ossApi.internal.notifyApi(
-    { cxId, patientId, jobId, source: medicalDataSource, status: "success" },
-    log
-  );
 }
