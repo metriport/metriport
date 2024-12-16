@@ -17,6 +17,7 @@ import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
 
 interface ApiConfig {
+  twoLeggedAuthToken?: string | undefined;
   practiceId: string;
   environment: ElationEnv;
   clientKey: string;
@@ -48,7 +49,7 @@ class ElationApi {
   private s3Utils: S3Utils;
 
   private constructor(private config: ApiConfig) {
-    this.twoLeggedAuthToken = undefined;
+    this.twoLeggedAuthToken = config.twoLeggedAuthToken;
     this.practiceId = config.practiceId;
     this.s3Utils = getS3UtilsInstance();
     this.axiosInstance = axios.create({});
@@ -80,7 +81,9 @@ class ElationApi {
 
       this.twoLeggedAuthToken = response.data.access_token;
     } catch (error) {
-      throw new MetriportError("Failed to fetch Two Legged Auth token");
+      throw new MetriportError("Failed to fetch Two Legged Auth token @ Elation", undefined, {
+        error: errorToString(error),
+      });
     }
   }
 
