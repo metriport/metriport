@@ -43,7 +43,7 @@ import { capture } from "../../util/notifications";
 import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
 
-const parallelVRequests = 5;
+const parallelRequests = 5;
 const delayBetweenVRequestBatches = dayjs.duration(30, "seconds");
 
 interface ApiConfig {
@@ -674,7 +674,7 @@ class AthenaHealthApi {
           }
         },
         {
-          numberOfParallelExecutions: parallelVRequests,
+          numberOfParallelExecutions: parallelRequests,
           delay: delayBetweenVRequestBatches.asMilliseconds(),
         }
       );
@@ -805,7 +805,7 @@ class AthenaHealthApi {
           }
         },
         {
-          numberOfParallelExecutions: parallelVRequests,
+          numberOfParallelExecutions: parallelRequests,
           delay: delayBetweenVRequestBatches.asMilliseconds(),
         }
       );
