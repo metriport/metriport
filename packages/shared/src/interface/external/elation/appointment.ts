@@ -1,10 +1,7 @@
 import { z } from "zod";
 
 const appointmentSchema = z.object({
-  patient: z
-    .number()
-    .transform(val => `${val}`)
-    .nullable(),
+  patient: z.coerce.string().nullable(),
   status: z
     .object({
       status: z.string(),

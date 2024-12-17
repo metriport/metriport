@@ -19,13 +19,9 @@ export async function checkJwtToken({
     token,
     source,
   });
-  if (authInfo) {
-    if (authInfo.exp >= new Date()) {
-      return { active: true };
-    }
-    return { active: false, expired: true };
-  }
-  return { active: false };
+  if (!authInfo) return { active: false };
+  if (authInfo.exp < new Date()) return { active: false, expired: true };
+  return { active: true };
 }
 
 export async function saveJwtToken({

@@ -183,7 +183,6 @@ async function getAppointments({
 }: GetAppointmentsParams): Promise<{ appointments?: Appointment[]; error?: unknown }> {
   const { log } = out(`AthenaHealth getAppointments - cxId ${cxId} practiceId ${practiceId}`);
   const api = await AthenaHealthApi.create({
-    threeLeggedAuthToken: undefined,
     practiceId,
     environment,
     clientKey,
@@ -216,7 +215,6 @@ async function syncPatients({
 }: SyncPatientsParams): Promise<{ errors: { error: unknown; patientId: string }[] }> {
   const { log } = out(`AthenaHealth syncPatients - practiceId ${practiceId}`);
   const api = await AthenaHealthApi.create({
-    threeLeggedAuthToken: undefined,
     practiceId,
     environment,
     clientKey,
