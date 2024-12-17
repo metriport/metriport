@@ -26,8 +26,6 @@ const diagnosticReportStatus = [
 ] as const;
 export type DiagnosticReportStatus = (typeof diagnosticReportStatus)[number];
 
-// import fs from "fs";
-
 const statusRanking: Record<DiagnosticReportStatus, number> = {
   "entered-in-error": 0,
   unknown: 0,
