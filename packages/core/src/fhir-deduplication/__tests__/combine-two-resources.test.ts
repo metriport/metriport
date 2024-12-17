@@ -32,6 +32,10 @@ describe("combineTwoResources", () => {
   });
 
   it("combines array properties", () => {
+    if (!snomedCodeMd.code || !icd10CodeMd.code) {
+      throw new Error("Test data is invalid - codes must be defined");
+    }
+
     condition.code = { coding: [snomedCodeMd] };
     condition2.code = { coding: [icd10CodeMd] };
 
@@ -40,10 +44,10 @@ describe("combineTwoResources", () => {
       expect.objectContaining({
         coding: expect.arrayContaining([
           expect.objectContaining({
-            code: expect.stringContaining(snomedCodeMd.code!),
+            code: expect.stringContaining(snomedCodeMd.code),
           }),
           expect.objectContaining({
-            code: expect.stringContaining(icd10CodeMd.code!),
+            code: expect.stringContaining(icd10CodeMd.code),
           }),
         ]),
       })
