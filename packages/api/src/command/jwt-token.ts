@@ -1,7 +1,7 @@
-import { NotFoundError } from "@metriport/shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { JwtTokenModel } from "../models/jwt-token";
+import { NotFoundError } from "@metriport/shared";
 import { JwtToken, JwtTokenData, JwtTokenPerSource, JwtTokenSource } from "../domain/jwt-token";
+import { JwtTokenModel } from "../models/jwt-token";
 
 export type JwtTokenParams = JwtTokenPerSource;
 
