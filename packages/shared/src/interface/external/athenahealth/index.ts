@@ -5,3 +5,5 @@ export * from "./appointment";
 export * from "./medication";
 export * from "./subscription";
 export * from "./department";
+export * from "./problem";
+export * from "./vitals";

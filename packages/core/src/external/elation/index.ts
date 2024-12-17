@@ -17,6 +17,7 @@ import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
 
 interface ApiConfig {
+  twoLeggedAuthToken?: string | undefined;
   practiceId: string;
   environment: ElationEnv;
   clientKey: string;
@@ -43,12 +44,12 @@ type BookedAppointment = {
 class ElationApi {
   private axiosInstance: AxiosInstance;
   private baseUrl: string;
-  private twoLeggedAuthToken: string;
+  private twoLeggedAuthToken: string | undefined;
   private practiceId: string;
   private s3Utils: S3Utils;
 
   private constructor(private config: ApiConfig) {
-    this.twoLeggedAuthToken = "";
+    this.twoLeggedAuthToken = config.twoLeggedAuthToken;
     this.practiceId = config.practiceId;
     this.s3Utils = getS3UtilsInstance();
     this.axiosInstance = axios.create({});
@@ -59,6 +60,10 @@ class ElationApi {
     const instance = new ElationApi(config);
     await instance.initialize();
     return instance;
+  }
+
+  getTwoLeggedAuthToken(): string | undefined {
+    return this.twoLeggedAuthToken;
   }
 
   private async fetchTwoLeggedAuthToken(): Promise<void> {
@@ -76,12 +81,14 @@ class ElationApi {
 
       this.twoLeggedAuthToken = response.data.access_token;
     } catch (error) {
-      throw new MetriportError("Failed to fetch Two Legged Auth token");
+      throw new MetriportError("Failed to fetch Two Legged Auth token @ Elation", undefined, {
+        error: errorToString(error),
+      });
     }
   }
 
   async initialize(): Promise<void> {
-    await this.fetchTwoLeggedAuthToken();
+    if (!this.twoLeggedAuthToken) await this.fetchTwoLeggedAuthToken();
 
     this.axiosInstance = axios.create({
       baseURL: this.baseUrl,
@@ -104,8 +111,11 @@ class ElationApi {
     );
     const patientUrl = `/patients/${patientId}/`;
     try {
+      const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
       const response = await this.axiosInstance.get(patientUrl);
-      if (!response.data) throw new MetriportError(`No body returned from ${patientUrl}`);
+      if (!response.data) {
+        throw new MetriportError(`No body returned from ${patientUrl}`, undefined, additionalInfo);
+      }
       debug(`${patientUrl} resp: `, () => JSON.stringify(response.data));
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
@@ -113,7 +123,7 @@ class ElationApi {
           patientId,
           date: new Date(),
         });
-        const key = `elation/patient/${filePath}/${uuidv7()}.json`;
+        const key = this.buildS3Path("patient", filePath);
         this.s3Utils
           .uploadFile({
             bucket: responsesBucket,
@@ -175,6 +185,7 @@ class ElationApi {
     );
     const patientUrl = `/patients/${patientId}/`;
     try {
+      const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
       const response = await this.axiosInstance.patch(
         patientUrl,
         { metadata },
@@ -185,7 +196,9 @@ class ElationApi {
           },
         }
       );
-      if (!response.data) throw new MetriportError(`No body returned from ${patientUrl}`);
+      if (!response.data) {
+        throw new MetriportError(`No body returned from ${patientUrl}`, undefined, additionalInfo);
+      }
       debug(`${patientUrl} resp: `, () => JSON.stringify(response.data));
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
@@ -193,7 +206,7 @@ class ElationApi {
           patientId,
           date: new Date(),
         });
-        const key = `elation/patient-update-metadata/${filePath}/${uuidv7()}.json`;
+        const key = this.buildS3Path("patient-update-metadata", filePath);
         this.s3Utils
           .uploadFile({
             bucket: responsesBucket,
@@ -255,6 +268,7 @@ class ElationApi {
     );
     const subscribeUrl = `/app/subscriptions`;
     try {
+      const additionalInfo = { cxId, practiceId: this.practiceId, resource, webhookBaseUrl };
       const response = await this.axiosInstance.post(
         subscribeUrl,
         this.createDataParams({
@@ -262,7 +276,13 @@ class ElationApi {
           target: this.createWebhookUrl(this.practiceId, webhookBaseUrl),
         })
       );
-      if (!response.data) throw new MetriportError(`No body returned from ${subscribeUrl}`);
+      if (!response.data) {
+        throw new MetriportError(
+          `No body returned from ${subscribeUrl}`,
+          undefined,
+          additionalInfo
+        );
+      }
       debug(`${subscribeUrl} resp: `, () => JSON.stringify(response.data));
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
@@ -270,7 +290,7 @@ class ElationApi {
           patientId: "global",
           date: new Date(),
         });
-        const key = `elation/subscribe/${filePath}/${uuidv7()}.json`;
+        const key = this.buildS3Path("subscribe", filePath);
         this.s3Utils
           .uploadFile({
             bucket: responsesBucket,
@@ -317,8 +337,20 @@ class ElationApi {
     const urlParams = new URLSearchParams(params);
     const appointmentUrl = `/appointments/?${urlParams.toString()}`;
     try {
+      const additionalInfo = {
+        cxId,
+        practiceId: this.practiceId,
+        fromDate: fromDate.toISOString(),
+        toDate: toDate.toISOString(),
+      };
       const response = await this.axiosInstance.get(appointmentUrl);
-      if (!response.data) throw new MetriportError(`No body returned from ${appointmentUrl}`);
+      if (!response.data) {
+        throw new MetriportError(
+          `No body returned from ${appointmentUrl}`,
+          undefined,
+          additionalInfo
+        );
+      }
       debug(`${appointmentUrl} resp: `, () => JSON.stringify(response.data));
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
@@ -326,7 +358,7 @@ class ElationApi {
           patientId: "global",
           date: new Date(),
         });
-        const key = `elation/appointments/${filePath}/${uuidv7()}.json`;
+        const key = this.buildS3Path("appointments", filePath);
         this.s3Utils
           .uploadFile({
             bucket: responsesBucket,
@@ -336,8 +368,14 @@ class ElationApi {
           })
           .catch(processAsyncError("Error saving to s3 @ Elation - getAppointments"));
       }
-      const appointments = appointmentsGetResponseSchema.parse(response.data).results;
-      return appointments.filter(
+      const outcome = appointmentsGetResponseSchema.safeParse(response.data);
+      if (!outcome.success) {
+        throw new MetriportError("Appointments not parsed", undefined, {
+          ...additionalInfo,
+          error: errorToString(outcome.error),
+        });
+      }
+      return outcome.data.results.filter(
         app => app.patient !== null && app.status !== null && app.status.status === "Scheduled"
       ) as BookedAppointment[];
     } catch (error) {
@@ -372,6 +410,10 @@ class ElationApi {
     const parsedDate = buildDayjs(trimmedDate);
     if (!parsedDate.isValid()) return undefined;
     return parsedDate.format(elationDateFormat);
+  }
+
+  private buildS3Path(method: string, key: string): string {
+    return `elation/${method}/${key}/${uuidv7()}.json`;
   }
 }
 

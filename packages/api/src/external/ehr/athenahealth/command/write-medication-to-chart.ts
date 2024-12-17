@@ -1,4 +1,5 @@
 import AthenaHealthApi, { MedicationWithRefs } from "@metriport/core/external/athenahealth/index";
+import { MedicationCreateResponse } from "@metriport/shared/interface/external/athenahealth/medication";
 import { getAthenaEnv } from "../shared";
 
 export async function writeMedicationToChart({
@@ -7,25 +8,22 @@ export async function writeMedicationToChart({
   athenaPracticeId,
   athenaDepartmentId,
   medication,
-  accessToken,
 }: {
   cxId: string;
   athenaPatientId: string;
   athenaPracticeId: string;
   athenaDepartmentId: string;
   medication: MedicationWithRefs;
-  accessToken?: string;
-}) {
+}): Promise<MedicationCreateResponse> {
   const { environment, clientKey, clientSecret } = await getAthenaEnv();
 
   const api = await AthenaHealthApi.create({
-    threeLeggedAuthToken: accessToken,
     practiceId: athenaPracticeId,
     environment,
     clientKey,
     clientSecret,
   });
-  await api.createMedication({
+  return await api.createMedication({
     cxId,
     patientId: athenaPatientId,
     departmentId: athenaDepartmentId,
