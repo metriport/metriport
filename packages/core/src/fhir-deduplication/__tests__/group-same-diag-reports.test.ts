@@ -86,7 +86,7 @@ describe("groupSameDiagnosticReports", () => {
     expect(diagReportsMap.size).toBe(2);
   });
 
-  it("discards diagReport if result is not present", () => {
+  it("discards diagReport if result and presented form are not present", () => {
     diagReport.effectiveDateTime = dateTime.start;
     diagReport.performer = [practRef];
     delete diagReport.result;
@@ -149,7 +149,6 @@ describe("groupSameDiagnosticReports", () => {
     const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
     expect(diagReportsMap.size).toBe(1);
     const masterReport = diagReportsMap.values().next().value as DiagnosticReport;
-    console.log("masterReport", JSON.stringify(masterReport));
 
     expect(masterReport.code?.coding?.length).toBe(2);
     expect(masterReport.code?.coding).toEqual(
