@@ -12,7 +12,10 @@ import {
   normalizeUSStateForAddress,
   normalizeZipCodeNew,
 } from "@metriport/shared";
-import { AthenaClientJwtTokenData } from "@metriport/shared/interface/external/athenahealth/jwt-token";
+import {
+  AthenaClientJwtTokenData,
+  AthenaClientJwtTokenInfo,
+} from "@metriport/shared/interface/external/athenahealth/jwt-token";
 import { PatientResource } from "@metriport/shared/interface/external/athenahealth/patient";
 import {
   findOrCreateJwtToken,
@@ -78,31 +81,33 @@ export async function createAthenaClient({
   practiceId: string;
   threeLeggedAuthToken?: string;
 }): Promise<AthenaHealthApi> {
-  const { environment, clientKey, clientSecret } = await getAthenaEnv();
-  const twoLeggedAuthToken = await getLatestAthenaClientJwtToken({ cxId, practiceId });
+  const [athenaEnv, twoLeggedAuthTokenInfo] = await Promise.all([
+    getAthenaEnv(),
+    getLatestAthenaClientJwtTokenInfo({ cxId, practiceId }),
+  ]);
+  if (!twoLeggedAuthTokenInfo)
+    throw new MetriportError("Client not created with two-legged auth token");
   const athenaApi = await AthenaHealthApi.create({
-    twoLeggedAuthToken,
+    twoLeggedAuthTokenInfo,
     threeLeggedAuthToken,
     practiceId,
-    environment,
-    clientKey,
-    clientSecret,
+    environment: athenaEnv.environment,
+    clientKey: athenaEnv.clientKey,
+    clientSecret: athenaEnv.clientSecret,
   });
-  if (!twoLeggedAuthToken) {
-    const newAuthInfo = athenaApi.getTwoLeggedAuthTokenInfo();
-    if (!newAuthInfo) throw new MetriportError("Client not created with two-legged auth token");
-    const data: AthenaClientJwtTokenData = {
-      cxId,
-      practiceId,
-      source: athenaClientJwtTokenSource,
-    };
-    await findOrCreateJwtToken({
-      token: newAuthInfo.token,
-      exp: new Date(newAuthInfo.exp),
-      source: athenaClientJwtTokenSource,
-      data,
-    });
-  }
+  const newAuthInfo = athenaApi.getTwoLeggedAuthTokenInfo();
+  if (!newAuthInfo) throw new MetriportError("Client not created with two-legged auth token");
+  const data: AthenaClientJwtTokenData = {
+    cxId,
+    practiceId,
+    source: athenaClientJwtTokenSource,
+  };
+  await findOrCreateJwtToken({
+    token: newAuthInfo.access_token,
+    exp: newAuthInfo.exp,
+    source: athenaClientJwtTokenSource,
+    data,
+  });
   return athenaApi;
 }
 
@@ -130,13 +135,13 @@ export async function getAthenaEnv(): Promise<{
   };
 }
 
-async function getLatestAthenaClientJwtToken({
+async function getLatestAthenaClientJwtTokenInfo({
   cxId,
   practiceId,
 }: {
   cxId: string;
   practiceId: string;
-}): Promise<string | undefined> {
+}): Promise<AthenaClientJwtTokenInfo | undefined> {
   const data: AthenaClientJwtTokenData = {
     cxId,
     practiceId,
@@ -147,6 +152,8 @@ async function getLatestAthenaClientJwtToken({
     data,
   });
   if (!token) return undefined;
-  if (token.exp < new Date()) return undefined;
-  return token.token;
+  return {
+    access_token: token.token,
+    exp: token.exp,
+  };
 }
