@@ -68,7 +68,9 @@ function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
-const problemStatusesAthena = ["CHRONIC", "ACUTE"];
+const problemStatusesMapAthena = new Map<string, string>();
+problemStatusesMapAthena.set("relapse", "CHRONIC");
+problemStatusesMapAthena.set("recurrence", "CHRONIC");
 const clinicalStatusActiveCode = "55561003";
 const vitalSignCodesMapAthena = new Map<string, string>();
 vitalSignCodesMapAthena.set("8310-5", "VITALS.TEMPERATURE");
@@ -562,9 +564,7 @@ class AthenaHealthApi {
       }
       const conditionStatus = this.getConditionStatus(condition);
       const athenaStatus = conditionStatus
-        ? problemStatusesAthena.find(
-            status => status.toLowerCase() === conditionStatus.toLowerCase()
-          )
+        ? problemStatusesMapAthena.get(conditionStatus.toLowerCase())
         : undefined;
       const data = {
         departmentid: this.stripDepartmentId(departmentId),
