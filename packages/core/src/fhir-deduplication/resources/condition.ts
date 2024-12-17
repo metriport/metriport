@@ -79,7 +79,7 @@ export function groupSameConditions(conditions: Condition[]): {
 
       // the condition will dedup using each unique identifier with the same date,
       getterKeys.push(...createKeysFromObjectArray({ date }, identifiers));
-      // the condition will dedup using each unique identifier + 0 date bit
+      // the condition will dedup against ones that don't have the date
       getterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
     }
 
@@ -87,7 +87,7 @@ export function groupSameConditions(conditions: Condition[]): {
       // flagging the condition with each unique identifier + 0 date bit
       setterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
 
-      // the condition will dedup using each unique identifier with 0 or 1 date bit
+      // the condition will dedup against ones that might or might not have the date
       getterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
       getterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [1]));
     }
