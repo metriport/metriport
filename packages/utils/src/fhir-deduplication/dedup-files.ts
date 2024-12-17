@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { Bundle, Resource } from "@medplum/fhirtypes";
+import { Bundle, Resource, Patient } from "@medplum/fhirtypes";
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 import {
   buildConsolidatedBundle,
@@ -27,17 +27,12 @@ import { validateReferences } from "./report/validate-references";
  * WARNING: this will overwrite the *_deduped.json files!!!
  */
 const samplesFolderPath = ``;
-
+const useDefaultPatient = true;
 const suffix = "_deduped";
 
 const createBundle = false;
 const existingPatientId = ``;
 // auth stuff
-const apiKey = getEnvVarOrFail("API_KEY");
-const apiUrl = getEnvVarOrFail("API_URL");
-const metriportAPI = new MetriportMedicalApi(apiKey, {
-  baseAddress: apiUrl,
-});
 
 /**
  * Read FHIR bundles from 'samplesFolderPath' and deduplicates the resources inside those bundles.
@@ -72,7 +67,7 @@ async function main() {
     const startedAt = new Date();
 
     const cxId = uuidv4();
-    const patientId = uuidv4();
+    const patientId = existingPatientId ?? uuidv4();
     const resultingBundle = deduplicateFhir(initialBundle, cxId, patientId);
 
     console.log(
@@ -109,17 +104,9 @@ async function createOrGetBundles(createBundle: boolean, patientId?: string) {
   if (!patientId || patientId === "") {
     throw new Error("Patient ID is required when creating a bundle");
   }
-  const patient = await metriportAPI.getPatient(patientId);
 
-  const fhirPatient = patientToFhir({
-    id: patient.id,
-    data: {
-      ...patient,
-      personalIdentifiers: [], // Typing fix -- not relevant for script
-      address: [], // Typing fix -- not relevant for script
-      contact: [], // Typing fix -- not relevant for script
-    },
-  });
+  const fhirPatient = await getFhirPatient(patientId);
+
   const patientEntry = buildBundleEntry(fhirPatient);
 
   const mergedBundle = buildConsolidatedBundle();
@@ -142,6 +129,40 @@ async function createOrGetBundles(createBundle: boolean, patientId?: string) {
   const bundleFileName = `${samplesFolderPath}/generatedBundle${patientId}`;
   fs.writeFileSync(bundleFileName, JSON.stringify(withDups));
   return [bundleFileName];
+}
+
+async function getFhirPatient(patientId: string): Promise<Patient> {
+  if (useDefaultPatient) {
+    return {
+      resourceType: "Patient",
+      id: patientId,
+      name: [
+        {
+          family: "Zoidberg",
+          given: ["John A."],
+        },
+      ],
+      gender: "male",
+    };
+  }
+
+  const apiKey = getEnvVarOrFail("API_KEY");
+  const apiUrl = getEnvVarOrFail("API_URL");
+  const metriportAPI = new MetriportMedicalApi(apiKey, {
+    baseAddress: apiUrl,
+  });
+  const patient = await metriportAPI.getPatient(patientId);
+
+  const fhirPatient = patientToFhir({
+    id: patient.id,
+    data: {
+      ...patient,
+      personalIdentifiers: [], // Typing fix -- not relevant for script
+      address: [], // Typing fix -- not relevant for script
+      contact: [], // Typing fix -- not relevant for script
+    },
+  });
+  return fhirPatient;
 }
 
 main();
