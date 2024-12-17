@@ -185,6 +185,8 @@ class AthenaHealthApi {
     } else if (this.twoLeggedAuthTokenInfo.exp < new Date()) {
       log(`Two Legged Auth token expired @ AthenaHealth - fetching new token`);
       this.twoLeggedAuthTokenInfo = await this.fetchTwoLeggedAuthToken();
+    } else {
+      log(`Two Legged Auth token found @ AthenaHealth - using existing token`);
     }
 
     this.axiosInstanceFhirApi = axios.create({

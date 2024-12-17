@@ -85,8 +85,6 @@ export async function createAthenaClient({
     getAthenaEnv(),
     getLatestAthenaClientJwtTokenInfo({ cxId, practiceId }),
   ]);
-  if (!twoLeggedAuthTokenInfo)
-    throw new MetriportError("Client not created with two-legged auth token");
   const athenaApi = await AthenaHealthApi.create({
     twoLeggedAuthTokenInfo,
     threeLeggedAuthToken,
