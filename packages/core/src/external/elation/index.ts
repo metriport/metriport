@@ -62,11 +62,7 @@ class ElationApi {
     return instance;
   }
 
-  getTwoLeggedAuthToken(): string | undefined {
-    return this.twoLeggedAuthToken;
-  }
-
-  private async fetchTwoLeggedAuthToken(): Promise<void> {
+  private async fetchTwoLeggedAuthToken(): Promise<string> {
     const url = `${this.baseUrl}/oauth2/token/`;
     const data = {
       grant_type: "client_credentials",
@@ -78,8 +74,7 @@ class ElationApi {
       const response = await axios.post(url, this.createDataParams(data), {
         headers: { "content-type": "application/x-www-form-urlencoded" },
       });
-
-      this.twoLeggedAuthToken = response.data.access_token;
+      return response.data.access_token;
     } catch (error) {
       throw new MetriportError("Failed to fetch Two Legged Auth token @ Elation", undefined, {
         error: errorToString(error),
@@ -88,7 +83,13 @@ class ElationApi {
   }
 
   async initialize(): Promise<void> {
-    if (!this.twoLeggedAuthToken) await this.fetchTwoLeggedAuthToken();
+    const { log } = out(`Elation initialize - practiceId ${this.practiceId}`);
+    if (!this.twoLeggedAuthToken) {
+      log(`Two Legged Auth token not found @ Elation - fetching new token`);
+      this.twoLeggedAuthToken = await this.fetchTwoLeggedAuthToken();
+    } else {
+      log(`Two Legged Auth token found @ Elation - using existing token`);
+    }
 
     this.axiosInstance = axios.create({
       baseURL: this.baseUrl,

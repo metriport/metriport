@@ -25,6 +25,8 @@ import {
   ProblemCreateResponse,
   problemCreateResponseSchema,
   subscriptionCreateResponseSchema,
+  athenaClientJwtTokenResponseSchema,
+  AthenaClientJwtTokenInfo,
   VitalsCreateParams,
   VitalsCreateResponse,
   vitalsCreateResponseSchema,
@@ -44,10 +46,10 @@ import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
 
 const parallelRequests = 5;
-const delayBetweenVRequestBatches = dayjs.duration(5, "seconds");
+const delayBetweenRequestBatches = dayjs.duration(2, "seconds");
 
 interface ApiConfig {
-  twoLeggedAuthToken?: string | undefined;
+  twoLeggedAuthTokenInfo?: AthenaClientJwtTokenInfo | undefined;
   threeLeggedAuthToken?: string | undefined;
   practiceId: string;
   environment: AthenaEnv;
@@ -67,7 +69,9 @@ function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
 
-const problemStatusesAthena = ["CHRONIC", "ACUTE"];
+const problemStatusesMapAthena = new Map<string, string>();
+problemStatusesMapAthena.set("relapse", "CHRONIC");
+problemStatusesMapAthena.set("recurrence", "CHRONIC");
 const clinicalStatusActiveCode = "55561003";
 const vitalSignCodesMapAthena = new Map<string, string>();
 vitalSignCodesMapAthena.set("8310-5", "VITALS.TEMPERATURE");
@@ -120,13 +124,13 @@ class AthenaHealthApi {
   private axiosInstanceFhirApi: AxiosInstance;
   private axiosInstanceProprietary: AxiosInstance;
   private baseUrl: string;
-  private twoLeggedAuthToken: string | undefined;
+  private twoLeggedAuthTokenInfo: AthenaClientJwtTokenInfo | undefined;
   private threeLeggedAuthToken: string | undefined;
   private practiceId: string;
   private s3Utils: S3Utils;
 
   private constructor(private config: ApiConfig) {
-    this.twoLeggedAuthToken = config.twoLeggedAuthToken;
+    this.twoLeggedAuthTokenInfo = config.twoLeggedAuthTokenInfo;
     this.threeLeggedAuthToken = config.threeLeggedAuthToken;
     this.practiceId = this.stripPracticeId(config.practiceId);
     this.s3Utils = getS3UtilsInstance();
@@ -141,11 +145,11 @@ class AthenaHealthApi {
     return instance;
   }
 
-  getTwoLeggedAuthToken(): string | undefined {
-    return this.twoLeggedAuthToken;
+  getTwoLeggedAuthTokenInfo(): AthenaClientJwtTokenInfo | undefined {
+    return this.twoLeggedAuthTokenInfo;
   }
 
-  private async fetchTwoLeggedAuthToken(): Promise<void> {
+  private async fetchTwoLeggedAuthToken(): Promise<AthenaClientJwtTokenInfo> {
     const url = `${this.baseUrl}/oauth2/v1/token`;
     const data = {
       grant_type: "client_credentials",
@@ -160,8 +164,12 @@ class AthenaHealthApi {
           password: this.config.clientSecret,
         },
       });
-
-      this.twoLeggedAuthToken = response.data.access_token;
+      if (!response.data) throw new MetriportError("No body returned from token endpoint");
+      const tokenData = athenaClientJwtTokenResponseSchema.parse(response.data);
+      return {
+        access_token: tokenData.access_token,
+        exp: new Date(Date.now() + +tokenData.expires_in * 1000),
+      };
     } catch (error) {
       throw new MetriportError("Failed to fetch Two Legged Auth token @ AthenaHealth", undefined, {
         error: errorToString(error),
@@ -170,13 +178,24 @@ class AthenaHealthApi {
   }
 
   async initialize(): Promise<void> {
-    if (!this.twoLeggedAuthToken) await this.fetchTwoLeggedAuthToken();
+    const { log } = out(`AthenaHealth initialize - practiceId ${this.practiceId}`);
+    if (!this.twoLeggedAuthTokenInfo) {
+      log(`Two Legged Auth token not found @ AthenaHealth - fetching new token`);
+      this.twoLeggedAuthTokenInfo = await this.fetchTwoLeggedAuthToken();
+    } else if (this.twoLeggedAuthTokenInfo.exp < new Date()) {
+      log(`Two Legged Auth token expired @ AthenaHealth - fetching new token`);
+      this.twoLeggedAuthTokenInfo = await this.fetchTwoLeggedAuthToken();
+    } else {
+      log(`Two Legged Auth token found @ AthenaHealth - using existing token`);
+    }
 
     this.axiosInstanceFhirApi = axios.create({
       baseURL: `${this.baseUrl}/fhir/r4`,
       headers: {
         accept: "application/json",
-        Authorization: `Bearer ${this.threeLeggedAuthToken ?? this.twoLeggedAuthToken}`,
+        Authorization: `Bearer ${
+          this.threeLeggedAuthToken ?? this.twoLeggedAuthTokenInfo.access_token
+        }`,
         "content-type": "application/x-www-form-urlencoded",
       },
     });
@@ -184,7 +203,7 @@ class AthenaHealthApi {
     this.axiosInstanceProprietary = axios.create({
       baseURL: `${this.baseUrl}/v1/${this.practiceId}`,
       headers: {
-        Authorization: `Bearer ${this.twoLeggedAuthToken}`,
+        Authorization: `Bearer ${this.twoLeggedAuthTokenInfo.access_token}`,
         "content-type": "application/x-www-form-urlencoded",
       },
     });
@@ -423,11 +442,6 @@ class AthenaHealthApi {
     );
     const chartMedicationUrl = `/chart/${this.stripPatientId(patientId)}/medications`;
     try {
-      const medicationOptions = await this.searchForMedication({
-        cxId,
-        patientId,
-        medication: medication.medication,
-      });
       const additionalInfo = {
         cxId,
         practiceId: this.practiceId,
@@ -435,6 +449,11 @@ class AthenaHealthApi {
         departmentId,
         medicationId: medication.medication.id,
       };
+      const medicationOptions = await this.searchForMedication({
+        cxId,
+        patientId,
+        medication: medication.medication,
+      });
       const firstOption = medicationOptions[0];
       if (!firstOption) {
         throw new MetriportError(
@@ -549,9 +568,7 @@ class AthenaHealthApi {
       }
       const conditionStatus = this.getConditionStatus(condition);
       const athenaStatus = conditionStatus
-        ? problemStatusesAthena.find(
-            status => status.toLowerCase() === conditionStatus.toLowerCase()
-          )
+        ? problemStatusesMapAthena.get(conditionStatus.toLowerCase())
         : undefined;
       const data = {
         departmentid: this.stripDepartmentId(departmentId),
@@ -734,7 +751,7 @@ class AthenaHealthApi {
         },
         {
           numberOfParallelExecutions: parallelRequests,
-          delay: delayBetweenVRequestBatches.asMilliseconds(),
+          delay: delayBetweenRequestBatches.asMilliseconds(),
         }
       );
       if (responsesBucket) {
@@ -874,7 +891,7 @@ class AthenaHealthApi {
         },
         {
           numberOfParallelExecutions: parallelRequests,
-          delay: delayBetweenVRequestBatches.asMilliseconds(),
+          delay: delayBetweenRequestBatches.asMilliseconds(),
         }
       );
       if (responsesBucket) {
