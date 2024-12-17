@@ -1,4 +1,4 @@
-import { cleanUpPayload } from "../sqs-to-converter/cleanup";
+import { cleanUpPayload } from "@metriport/core/domain/consolidated/cleanup";
 
 describe("sqs-to-converter", () => {
   describe("cleanUpPayload", () => {
