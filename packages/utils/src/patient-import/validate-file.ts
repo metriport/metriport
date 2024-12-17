@@ -14,7 +14,6 @@ import { elapsedTimeAsStr } from "../shared/duration";
 import { getFileContents, makeDir } from "../shared/fs";
 
 /**
-/**
  * Process a CSV file with patient data for bulk import.
  * Validates and normalizes it.
  * Outputs:
