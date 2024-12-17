@@ -31,23 +31,16 @@ export async function storePreProcessedConversionResult({
   log: typeof console.log;
 }) {
   try {
-    await executeWithRetriesS3(
-      () =>
-        s3Utils.s3
-          .upload({
-            Bucket: conversionResultBucketName,
-            Key: conversionResultFilename,
-            Body: JSON.stringify(conversionResult),
-            ContentType: FHIR_APP_MIME_TYPE,
-          })
-          .promise(),
-      {
-        ...defaultS3RetriesConfig,
-        log,
-      }
-    );
+    await storeInS3WithRetries({
+      s3Utils,
+      payload: JSON.stringify(conversionResult),
+      bucketName: conversionResultBucketName,
+      fileName: conversionResultFilename,
+      contentType: FHIR_APP_MIME_TYPE,
+      log,
+    });
   } catch (error) {
-    const msg = "Error uploading conversion result";
+    const msg = "Error uploading converted FHIR Bundle";
     log(`${msg}: ${error}`);
     capture.error(msg, {
       extra: {
@@ -80,24 +73,37 @@ export async function storePartitionedPayloadsInS3({
   lambdaParams: Record<string, string | undefined>;
   log: typeof console.log;
 }) {
-  partitionedPayloads.forEach((payload, index) => {
-    storePayloadInS3({
-      s3Utils,
-      payload,
-      conversionResultBucketName,
-      fileName: buildDocumentNameForPartialConversions(preConversionFilename, index),
-      message,
-      context,
-      lambdaParams,
-      log,
-    });
+  partitionedPayloads.forEach(async (payload, index) => {
+    const nameWithPartNumber = buildDocumentNameForPartialConversions(preConversionFilename, index);
+    try {
+      await storeInS3WithRetries({
+        s3Utils,
+        payload,
+        bucketName: conversionResultBucketName,
+        fileName: nameWithPartNumber,
+        contentType: XML_APP_MIME_TYPE,
+        log,
+      });
+    } catch (error) {
+      const msg = `Error uploading partitioned XML part`;
+      log(`${msg}: ${error}`);
+      capture.error(msg, {
+        extra: {
+          message,
+          ...lambdaParams,
+          fileName: nameWithPartNumber,
+          context,
+          error,
+        },
+      });
+    }
   });
 }
 
-export async function storePayloadInS3({
+export async function storePreprocessedPayloadInS3({
   s3Utils,
   payload,
-  conversionResultBucketName,
+  bucketName,
   fileName,
   message,
   context,
@@ -106,7 +112,7 @@ export async function storePayloadInS3({
 }: {
   s3Utils: S3Utils;
   payload: string;
-  conversionResultBucketName: string;
+  bucketName: string;
   fileName: string;
   message: SQSRecord;
   context: string;
@@ -114,23 +120,16 @@ export async function storePayloadInS3({
   log: typeof console.log;
 }) {
   try {
-    await executeWithRetriesS3(
-      () =>
-        s3Utils.s3
-          .upload({
-            Bucket: conversionResultBucketName,
-            Key: fileName,
-            Body: payload,
-            ContentType: XML_APP_MIME_TYPE,
-          })
-          .promise(),
-      {
-        ...defaultS3RetriesConfig,
-        log,
-      }
-    );
+    await storeInS3WithRetries({
+      s3Utils,
+      payload,
+      bucketName,
+      fileName,
+      contentType: XML_APP_MIME_TYPE,
+      log,
+    });
   } catch (error) {
-    const msg = `Error uploading conversion step file`;
+    const msg = `Error uploading preprocessed XML`;
     log(`${msg}: ${error}`);
     capture.error(msg, {
       extra: {
@@ -147,7 +146,7 @@ export async function storePayloadInS3({
 export async function storeNormalizedConversionResult({
   s3Utils,
   bundle,
-  conversionResultBucketName,
+  bucketName,
   fileName,
   message,
   context,
@@ -156,7 +155,7 @@ export async function storeNormalizedConversionResult({
 }: {
   s3Utils: S3Utils;
   bundle: Bundle<Resource>;
-  conversionResultBucketName: string;
+  bucketName: string;
   fileName: string;
   message: SQSRecord;
   context: string;
@@ -165,23 +164,16 @@ export async function storeNormalizedConversionResult({
 }) {
   const fileNamePreNormalization = `${fileName}_normalized.json`;
   try {
-    await executeWithRetriesS3(
-      () =>
-        s3Utils.s3
-          .upload({
-            Bucket: conversionResultBucketName,
-            Key: fileNamePreNormalization,
-            Body: JSON.stringify(bundle),
-            ContentType: FHIR_APP_MIME_TYPE,
-          })
-          .promise(),
-      {
-        ...defaultS3RetriesConfig,
-        log,
-      }
-    );
+    await storeInS3WithRetries({
+      s3Utils,
+      payload: JSON.stringify(bundle),
+      bucketName,
+      fileName: fileNamePreNormalization,
+      contentType: FHIR_APP_MIME_TYPE,
+      log,
+    });
   } catch (error) {
-    const msg = "Error uploading normalized conversion result";
+    const msg = "Error uploading normalized FHIR Bundle";
     log(`${msg}: ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
@@ -193,4 +185,36 @@ export async function storeNormalizedConversionResult({
       },
     });
   }
+}
+
+export async function storeInS3WithRetries({
+  s3Utils,
+  payload,
+  bucketName,
+  fileName,
+  contentType,
+  log,
+}: {
+  s3Utils: S3Utils;
+  payload: string;
+  bucketName: string;
+  fileName: string;
+  contentType: string;
+  log: typeof console.log;
+}) {
+  await executeWithRetriesS3(
+    () =>
+      s3Utils.s3
+        .upload({
+          Bucket: bucketName,
+          Key: fileName,
+          Body: payload,
+          ContentType: contentType,
+        })
+        .promise(),
+    {
+      ...defaultS3RetriesConfig,
+      log,
+    }
+  );
 }

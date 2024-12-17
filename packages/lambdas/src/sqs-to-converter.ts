@@ -9,8 +9,8 @@ import {
   defaultS3RetriesConfig,
   storeNormalizedConversionResult,
   storePartitionedPayloadsInS3,
-  storePayloadInS3,
   storePreProcessedConversionResult,
+  storePreprocessedPayloadInS3,
 } from "@metriport/core/domain/consolidated/upload-consolidation-steps";
 import { S3Utils, executeWithRetriesS3 } from "@metriport/core/external/aws/s3";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
@@ -183,10 +183,10 @@ export async function handler(event: SQSEvent) {
         const cleanFileName = `${s3FileName}.clean.xml`;
         const conversionResultFilename = `${s3FileName}.from_converter.json`;
 
-        await storePayloadInS3({
+        await storePreprocessedPayloadInS3({
           s3Utils,
           payload: payloadClean,
-          conversionResultBucketName,
+          bucketName: conversionResultBucketName,
           fileName: cleanFileName,
           message,
           context: lambdaName,
@@ -195,6 +195,8 @@ export async function handler(event: SQSEvent) {
         });
 
         const partitionedPayloads = partitionPayload(payloadClean);
+
+        await cloudWatchUtils.reportMemoryUsage();
 
         const [conversionResult] = await Promise.all([
           convertPayloadToFHIR({
@@ -220,7 +222,6 @@ export async function handler(event: SQSEvent) {
           timestamp: new Date(),
         };
 
-        // Result from Converter before we process it (e.g., replace IDs)
         await storePreProcessedConversionResult({
           s3Utils,
           conversionResult,
@@ -243,13 +244,15 @@ export async function handler(event: SQSEvent) {
         await storeNormalizedConversionResult({
           s3Utils,
           bundle: normalizedBundle,
-          conversionResultBucketName,
+          bucketName: conversionResultBucketName,
           fileName: s3FileName,
           message,
           context: lambdaName,
           lambdaParams,
           log,
         });
+
+        await cloudWatchUtils.reportMemoryUsage();
 
         const postProcessStart = Date.now();
         const updatedConversionResult = postProcessBundle(
@@ -370,8 +373,7 @@ function parseBody(body: unknown): EventBody {
   return { s3BucketName, s3FileName, documentExtension };
 }
 
-// TODO: Break this function up??
-export async function sendConversionResult({
+async function sendConversionResult({
   cxId,
   patientId,
   sourceFileName,
