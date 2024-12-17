@@ -3,7 +3,6 @@ import { LOINC_CODE, LOINC_OID } from "../../util/constants";
 import {
   DeduplicationResult,
   combineResources,
-  createKeysFromObjectAndFlagBits,
   createKeysFromObjectArray,
   createRef,
   fetchCodingCodeOrDisplayOrSystem,
@@ -57,8 +56,7 @@ export function deduplicateDiagReports(
  * Approach:
  * 1 map, where the key is made of:
  * - date
- * - code - not sure we want to be using codes as a part of the key.
- *          The thing with them is that they very often contain a bunch of different ones, almost always containing the one for "Note" - 34109-9.
+ * - practitioner reference
  */
 export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
   diagReportsMap: Map<string, DiagnosticReport>;
@@ -119,22 +117,13 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
 
     const practitionerRefs = Array.from(practitionerRefsSet).map(p => ({ practitioner: p }));
     if (datetime && practitionerRefs.length > 0) {
-      setterKeys.push(...createKeysFromObjectArray({ datetime }, practitionerRefs));
-      setterKeys.push(...createKeysFromObjectAndFlagBits({ datetime }, [1]));
-
-      getterKeys.push(...createKeysFromObjectArray({ datetime }, practitionerRefs));
-      getterKeys.push(...createKeysFromObjectAndFlagBits({ datetime }, [0]));
-    }
-
-    if (datetime && practitionerRefs.length === 0) {
-      setterKeys.push(...createKeysFromObjectAndFlagBits({ datetime }, [0]));
-
-      getterKeys.push(...createKeysFromObjectAndFlagBits({ datetime }, [1]));
-    }
-
-    if (!datetime) {
-      setterKeys.push(JSON.stringify({ id: diagReport.id }));
-      getterKeys.push(JSON.stringify({ id: diagReport.id }));
+      const practitionerAndDateKeys = createKeysFromObjectArray({ datetime }, practitionerRefs);
+      setterKeys.push(...practitionerAndDateKeys);
+      getterKeys.push(...practitionerAndDateKeys);
+    } else {
+      const idKey = JSON.stringify({ id: diagReport.id });
+      setterKeys.push(idKey);
+      getterKeys.push(idKey);
     }
 
     if (setterKeys.length > 0) {
