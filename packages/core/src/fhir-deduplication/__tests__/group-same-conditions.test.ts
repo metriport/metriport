@@ -99,16 +99,34 @@ describe("groupSameConditions", () => {
   });
 
   it("does not group conditions with different names", () => {
-    condition.code = { coding: [{ display: icd10CodeMd.display!, system: icd10CodeMd.system! }] };
-    condition2.code = { coding: [{ display: icd10CodeAo.display!, system: icd10CodeAo.system! }] };
+    if (
+      !icd10CodeMd.display ||
+      !icd10CodeMd.system ||
+      !icd10CodeAo.display ||
+      !icd10CodeAo.system
+    ) {
+      throw new Error("Test data is invalid - display and system must be defined");
+    }
+
+    condition.code = { coding: [{ display: icd10CodeMd.display, system: icd10CodeMd.system }] };
+    condition2.code = { coding: [{ display: icd10CodeAo.display, system: icd10CodeAo.system }] };
 
     const { conditionsMap } = groupSameConditions([condition, condition2]);
     expect(conditionsMap.size).toBe(2);
   });
 
   it("does not group conditions with different names", () => {
-    condition.code = { coding: [{ display: icd10CodeMd.display!, system: icd10CodeMd.system! }] };
-    condition2.code = { coding: [{ display: icd10CodeAo.display!, system: icd10CodeAo.system! }] };
+    if (
+      !icd10CodeMd.display ||
+      !icd10CodeMd.system ||
+      !icd10CodeAo.display ||
+      !icd10CodeAo.system
+    ) {
+      throw new Error("Test data is invalid - display must be defined");
+    }
+
+    condition.code = { coding: [{ display: icd10CodeMd.display, system: icd10CodeMd.system }] };
+    condition2.code = { coding: [{ display: icd10CodeAo.display, system: icd10CodeAo.system }] };
 
     const { conditionsMap } = groupSameConditions([condition, condition2]);
     expect(conditionsMap.size).toBe(2);
@@ -166,6 +184,10 @@ describe("groupSameConditions", () => {
   });
 
   it("strips away codes that aren't SNOMED or ICD-10", () => {
+    if (!snomedCodeMd.system || !icd10CodeMd.system || otherCodeSystemMd.system) {
+      throw new Error("Test data is invalid - system must be defined");
+    }
+
     condition.code = { coding: [icd10CodeMd] };
     condition2.code = { coding: [icd10CodeMd, snomedCodeMd, otherCodeSystemMd] };
     condition.onsetPeriod = dateTime;
@@ -179,10 +201,10 @@ describe("groupSameConditions", () => {
     expect(resultingCoding).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          system: expect.stringContaining(snomedCodeMd.system!),
+          system: expect.stringContaining(snomedCodeMd.system),
         }),
         expect.objectContaining({
-          system: expect.stringContaining(icd10CodeMd.system!),
+          system: expect.stringContaining(icd10CodeMd.system),
         }),
       ])
     );
@@ -190,7 +212,7 @@ describe("groupSameConditions", () => {
     expect(resultingCoding).toEqual(
       expect.not.arrayContaining([
         expect.objectContaining({
-          system: expect.stringContaining(otherCodeSystemMd.system!),
+          system: expect.stringContaining(otherCodeSystemMd.system),
         }),
       ])
     );
