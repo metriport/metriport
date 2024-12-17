@@ -100,6 +100,8 @@ export async function processRequest(
       meta,
       ...payload,
     };
+
+    console.log("FULLLLL PAYLOOOOOAD", JSON.stringify(fullPayload));
     try {
       const sendResponse = await sendPayload(fullPayload, webhookUrl, webhookKey);
 
