@@ -196,8 +196,15 @@ class AthenaHealthApi {
     );
     const departmentUrl = `/departments`;
     try {
+      const additionalInfo = { cxId, practiceId: this.practiceId };
       const response = await this.axiosInstanceProprietary.get(departmentUrl);
-      if (!response.data) throw new MetriportError(`No body returned from ${departmentUrl}`);
+      if (!response.data) {
+        throw new MetriportError(
+          `No body returned from ${departmentUrl}`,
+          undefined,
+          additionalInfo
+        );
+      }
       debug(`${departmentUrl} resp: `, () => JSON.stringify(response.data));
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
@@ -218,6 +225,7 @@ class AthenaHealthApi {
       const outcome = departmentsGetResponseSchema.safeParse(response.data);
       if (!outcome.success) {
         throw new MetriportError("Departments not parsed", undefined, {
+          ...additionalInfo,
           error: errorToString(outcome.error),
         });
       }
@@ -250,8 +258,11 @@ class AthenaHealthApi {
     );
     const patientUrl = `/Patient/${this.createPatientId(patientId)}`;
     try {
+      const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
       const response = await this.axiosInstanceFhirApi.get(patientUrl);
-      if (!response.data) throw new MetriportError(`No body returned from ${patientUrl}`);
+      if (!response.data) {
+        throw new MetriportError(`No body returned from ${patientUrl}`, undefined, additionalInfo);
+      }
       debug(`${patientUrl} resp: `, () => JSON.stringify(response.data));
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
@@ -323,11 +334,18 @@ class AthenaHealthApi {
         _id: this.createPatientId(patientId),
         "ah-practice": this.createPracticetId(this.practiceId),
       };
+      const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
       const response = await this.axiosInstanceFhirApi.post(
         patientSearchUrl,
         this.createDataParams(data)
       );
-      if (!response.data) throw new MetriportError(`No body returned from ${patientSearchUrl}`);
+      if (!response.data) {
+        throw new MetriportError(
+          `No body returned from ${patientSearchUrl}`,
+          undefined,
+          additionalInfo
+        );
+      }
       debug(`${patientSearchUrl} resp: `, () => JSON.stringify(response.data));
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
@@ -364,7 +382,13 @@ class AthenaHealthApi {
         return undefined;
       }
       const entry = searchSet.data.entry;
-      if (entry.length > 1) throw new MetriportError("More than one AthenaHealth patient found");
+      if (entry.length > 1) {
+        throw new MetriportError(
+          "More than one AthenaHealth patient found",
+          undefined,
+          additionalInfo
+        );
+      }
       return entry[0]?.resource;
     } catch (error) {
       const msg = `Failure while searching patient @ AthenaHealth`;
@@ -404,8 +428,21 @@ class AthenaHealthApi {
         patientId,
         medication: medication.medication,
       });
+      const additionalInfo = {
+        cxId,
+        practiceId: this.practiceId,
+        patientId,
+        departmentId,
+        medicationId: medication.medication.id,
+      };
       const firstOption = medicationOptions[0];
-      if (!firstOption) throw new MetriportError("No medication options found via search");
+      if (!firstOption) {
+        throw new MetriportError(
+          "No medication options found via search",
+          undefined,
+          additionalInfo
+        );
+      }
       const data = {
         departmentid: this.stripDepartmentId(departmentId),
         providernote: "Added via Metriport App",
@@ -423,7 +460,13 @@ class AthenaHealthApi {
         chartMedicationUrl,
         this.createDataParams(data)
       );
-      if (!response.data) throw new MetriportError(`No body returned from ${chartMedicationUrl}`);
+      if (!response.data) {
+        throw new MetriportError(
+          `No body returned from ${chartMedicationUrl}`,
+          undefined,
+          additionalInfo
+        );
+      }
       debug(`${chartMedicationUrl} resp: `, () => JSON.stringify(response.data));
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
@@ -444,11 +487,13 @@ class AthenaHealthApi {
       const outcome = medicationCreateResponseSchema.safeParse(response.data);
       if (!outcome.success) {
         throw new MetriportError("Medication not parsed", undefined, {
+          ...additionalInfo,
           error: errorToString(outcome.error),
         });
       }
       if (!outcome.data.success) {
         throw new MetriportError("Medication creation not successful", undefined, {
+          ...additionalInfo,
           error: outcome.data.errormessage,
         });
       }
@@ -521,7 +566,13 @@ class AthenaHealthApi {
         chartProblemUrl,
         this.createDataParams(data)
       );
-      if (!response.data) throw new MetriportError(`No body returned from ${chartProblemUrl}`);
+      if (!response.data) {
+        throw new MetriportError(
+          `No body returned from ${chartProblemUrl}`,
+          undefined,
+          additionalInfo
+        );
+      }
       debug(`${chartProblemUrl} resp: `, () => JSON.stringify(response.data));
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
@@ -542,11 +593,13 @@ class AthenaHealthApi {
       const outcome = problemCreateResponseSchema.safeParse(response.data);
       if (!outcome.success) {
         throw new MetriportError("Problem not parsed", undefined, {
+          ...additionalInfo,
           error: errorToString(outcome.error),
         });
       }
       if (!outcome.data.success) {
         throw new MetriportError("Problem creation not successful", undefined, {
+          ...additionalInfo,
           error: outcome.data.errormessage,
         });
       }
@@ -653,18 +706,24 @@ class AthenaHealthApi {
               this.createDataParams(params)
             );
             if (!response.data) {
-              throw new MetriportError(`No body returned from ${chartVitalsUrl}`);
+              throw new MetriportError(
+                `No body returned from ${chartVitalsUrl}`,
+                undefined,
+                additionalInfo
+              );
             }
             debug(`${chartVitalsUrl} resp: `, () => JSON.stringify(response.data));
             rawResponses.push(response.data);
             const outcome = vitalsCreateResponseSchema.safeParse(response.data);
             if (!outcome.success) {
               throw new MetriportError("Vitals not parsed", undefined, {
+                ...additionalInfo,
                 error: errorToString(outcome.error),
               });
             }
             if (!outcome.data.success) {
               throw new MetriportError("Vitals creation not successful", undefined, {
+                ...additionalInfo,
                 error: outcome.data.errormessage,
               });
             }
@@ -713,7 +772,9 @@ class AthenaHealthApi {
           },
         });
       }
-      if (responses.length === 0) throw new MetriportError("No vitals created");
+      if (responses.length === 0) {
+        throw new MetriportError("No vitals created", undefined, additionalInfo);
+      }
       return responses;
     } catch (error) {
       const msg = `Failure while creating some vitals @ AthenaHealth`;
@@ -790,12 +851,19 @@ class AthenaHealthApi {
             const response = await this.axiosInstanceProprietary.get(
               `${referenceUrl}?searchvalue=${searchValue}`
             );
-            if (!response.data) throw new MetriportError(`No body returned from ${referenceUrl}`);
+            if (!response.data) {
+              throw new MetriportError(
+                `No body returned from ${referenceUrl}`,
+                undefined,
+                additionalInfo
+              );
+            }
             debug(`${referenceUrl} resp: `, () => JSON.stringify(response.data));
             rawResponses.push(response.data);
             const outcome = medicationReferencesGetResponseSchema.safeParse(response.data);
             if (!outcome.success) {
               throw new MetriportError("Medication references not parsed", undefined, {
+                ...additionalInfo,
                 error: errorToString(outcome.error),
               });
             }
@@ -878,7 +946,19 @@ class AthenaHealthApi {
         subscribeUrl,
         eventType ? this.createDataParams({ eventname: eventType }) : {}
       );
-      if (!response.data) throw new MetriportError(`No body returned from ${subscribeUrl}`);
+      const additionalInfo = {
+        cxId,
+        practiceId: this.practiceId,
+        feedtype,
+        eventType,
+      };
+      if (!response.data) {
+        throw new MetriportError(
+          `No body returned from ${subscribeUrl}`,
+          undefined,
+          additionalInfo
+        );
+      }
       debug(`${subscribeUrl} resp: `, () => JSON.stringify(response.data));
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
@@ -899,11 +979,16 @@ class AthenaHealthApi {
       const outcome = subscriptionCreateResponseSchema.safeParse(response.data);
       if (!outcome.success) {
         throw new MetriportError("Subscription not parsed", undefined, {
+          ...additionalInfo,
           error: errorToString(outcome.error),
         });
       }
       if (!outcome.data.success) {
-        throw new MetriportError(`Subscription for ${feedtype} not successful`);
+        throw new MetriportError(
+          `Subscription for ${feedtype} not successful`,
+          undefined,
+          additionalInfo
+        );
       }
     } catch (error) {
       const msg = `Failure while subscribing to event @ AthenaHealth`;
@@ -951,8 +1036,21 @@ class AthenaHealthApi {
     }
     const appointmentUrl = `/appointments/booked/multipledepartment?${urlParams.toString()}`;
     try {
+      const additionalInfo = {
+        cxId,
+        practiceId: this.practiceId,
+        departmentIds: departmentIds?.join(","),
+        startAppointmentDate: startAppointmentDate.toISOString(),
+        endAppointmentDate: endAppointmentDate.toISOString(),
+      };
       const response = await this.axiosInstanceProprietary.get(appointmentUrl);
-      if (!response.data) throw new MetriportError(`No body returned from ${appointmentUrl}`);
+      if (!response.data) {
+        throw new MetriportError(
+          `No body returned from ${appointmentUrl}`,
+          undefined,
+          additionalInfo
+        );
+      }
       debug(`${appointmentUrl} resp: `, () => JSON.stringify(response.data));
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
@@ -973,6 +1071,7 @@ class AthenaHealthApi {
       const outcome = bookedAppointmentsGetResponseSchema.safeParse(response.data);
       if (!outcome.success) {
         throw new MetriportError("Appointments not parsed", undefined, {
+          ...additionalInfo,
           error: errorToString(outcome.error),
         });
       }
@@ -1022,8 +1121,21 @@ class AthenaHealthApi {
     }
     const appointmentUrl = `/appointments/changed?${urlParams.toString()}`;
     try {
+      const additionalInfo = {
+        cxId,
+        practiceId: this.practiceId,
+        departmentIds: departmentIds?.join(","),
+        startProcessedDate: startProcessedDate?.toISOString(),
+        endProcessedDate: endProcessedDate?.toISOString(),
+      };
       const response = await this.axiosInstanceProprietary.get(appointmentUrl);
-      if (!response.data) throw new MetriportError(`No body returned from ${appointmentUrl}`);
+      if (!response.data) {
+        throw new MetriportError(
+          `No body returned from ${appointmentUrl}`,
+          undefined,
+          additionalInfo
+        );
+      }
       debug(`${appointmentUrl} resp: `, () => JSON.stringify(response.data));
       if (responsesBucket) {
         const filePath = createHivePartitionFilePath({
@@ -1046,6 +1158,7 @@ class AthenaHealthApi {
       const outcome = appointmentEventGetResponseSchema.safeParse(response.data);
       if (!outcome.success) {
         throw new MetriportError("Appointments from subscription not parsed", undefined, {
+          ...additionalInfo,
           error: errorToString(outcome.error),
         });
       }
