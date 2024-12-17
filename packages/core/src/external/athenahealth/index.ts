@@ -436,11 +436,6 @@ class AthenaHealthApi {
     );
     const chartMedicationUrl = `/chart/${this.stripPatientId(patientId)}/medications`;
     try {
-      const medicationOptions = await this.searchForMedication({
-        cxId,
-        patientId,
-        medication: medication.medication,
-      });
       const additionalInfo = {
         cxId,
         practiceId: this.practiceId,
@@ -448,6 +443,11 @@ class AthenaHealthApi {
         departmentId,
         medicationId: medication.medication.id,
       };
+      const medicationOptions = await this.searchForMedication({
+        cxId,
+        patientId,
+        medication: medication.medication,
+      });
       const firstOption = medicationOptions[0];
       if (!firstOption) {
         throw new MetriportError(
