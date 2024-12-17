@@ -184,7 +184,7 @@ describe("groupSameConditions", () => {
   });
 
   it("strips away codes that aren't SNOMED or ICD-10", () => {
-    if (!snomedCodeMd.system || !icd10CodeMd.system || otherCodeSystemMd.system) {
+    if (!snomedCodeMd.system || !icd10CodeMd.system || !otherCodeSystemMd.system) {
       throw new Error("Test data is invalid - system must be defined");
     }
 
