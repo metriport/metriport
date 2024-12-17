@@ -50,12 +50,12 @@ describe("groupSameDiagnosticReports", () => {
     expect(diagReportsMap.size).toBe(2);
   });
 
-  it("does not group diagReports with the same effectiveDateTime if none of them have a practitioner reference ", () => {
+  it("groups diagReports with the same effectiveDateTime if neither has a practitioner reference", () => {
     diagReport.effectiveDateTime = dateTime.start;
     diagReport2.effectiveDateTime = dateTime.start;
 
     const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
-    expect(diagReportsMap.size).toBe(2);
+    expect(diagReportsMap.size).toBe(1);
   });
 
   it("does not group diagReports with different performer refs", () => {

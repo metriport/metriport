@@ -56,7 +56,8 @@ export function deduplicateDiagReports(
  * Approach:
  * 1 map, where the key is made of:
  * - date
- * - practitioner reference
+ * - code - not sure we want to be using codes as a part of the key.
+ *          The thing with them is that they very often contain a bunch of different ones, almost always containing the one for "Note" - 34109-9.
  */
 export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
   diagReportsMap: Map<string, DiagnosticReport>;
@@ -120,7 +121,15 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
       const practitionerAndDateKeys = createKeysFromObjectArray({ datetime }, practitionerRefs);
       setterKeys.push(...practitionerAndDateKeys);
       getterKeys.push(...practitionerAndDateKeys);
-    } else {
+    }
+
+    if (datetime && practitionerRefs.length === 0) {
+      const dateKey = JSON.stringify({ datetime });
+      setterKeys.push(dateKey);
+      getterKeys.push(dateKey);
+    }
+
+    if (!datetime) {
       const idKey = JSON.stringify({ id: diagReport.id });
       setterKeys.push(idKey);
       getterKeys.push(idKey);
