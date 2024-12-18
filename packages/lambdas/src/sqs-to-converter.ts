@@ -45,6 +45,7 @@ const fhirConverter = axios.create({
   },
 });
 const ossApi = apiClient(apiURL);
+const LARGE_CHUNK_SIZE_IN_BYTES = 50_000_000;
 
 function replaceIDs(fhirBundle: FHIRBundle, patientId: string): FHIRBundle {
   const stringsToReplace: { old: string; new: string }[] = [];
@@ -351,6 +352,20 @@ async function convertPayloadToFHIR({
 
   for (let index = 0; index < partitionedPayloads.length; index++) {
     const payload = partitionedPayloads[index];
+
+    const chunkSize = payload ? new Blob([payload]).size : 0;
+    if (chunkSize > LARGE_CHUNK_SIZE_IN_BYTES) {
+      const msg = `Chunk size is too large`;
+      log(`${msg} - chunkSize ${chunkSize} on ${index}`);
+      capture.message(msg, {
+        extra: {
+          chunkSize,
+          patientId: converterParams.patientId,
+          fileName: converterParams.fileName,
+        },
+        level: "warning",
+      });
+    }
 
     const res = await executeWithNetworkRetries(
       () =>
