@@ -78,16 +78,37 @@ export function groupSameObservations(observations: Observation[]): {
     }
 
     if (date) {
-      // keys that match a code + date together
-      setterKeys.push(...createKeysFromObjectArray({ date }, identifiers));
-      getterKeys.push(...createKeysFromObjectArray({ date }, identifiers));
+      // keys that match a code + date + value together
+      const completeKeysWithValue = createKeysFromObjectArray({ date }, identifiers).map(
+        k => `${k}, ${JSON.stringify({ value })}`
+      );
+
+      setterKeys.push(...completeKeysWithValue);
+      getterKeys.push(...completeKeysWithValue);
+
+      const keysWithDateBit = createKeysFromObjectArrayAndBits(identifiers, [1]).map(
+        k => `${k}, ${JSON.stringify({ value })}`
+      );
+      // flagging the observation to indicate having a date
+      setterKeys.push(...keysWithDateBit);
     }
 
     if (!date) {
+      const identifierKeysWithDateBit = createKeysFromObjectArrayAndBits(identifiers, [0]).map(
+        k => `${k}, ${JSON.stringify({ value })}`
+      );
+
       // flagging the observation to indicate not having a date
-      setterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
-      // can dedup with a observation that does or does not have a date
-      getterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
+      setterKeys.push(...identifierKeysWithDateBit);
+
+      // with the getter keys with bit 0, it can dedup with other observations that don't have a date
+      getterKeys.push(...identifierKeysWithDateBit);
+      // with the getter keys with bit 1, it can dedup with other observations that have a date
+      getterKeys.push(
+        ...createKeysFromObjectArrayAndBits(identifiers, [1]).map(
+          k => `${k}, ${JSON.stringify({ value })}`
+        )
+      );
     }
 
     if (setterKeys.length > 0) {

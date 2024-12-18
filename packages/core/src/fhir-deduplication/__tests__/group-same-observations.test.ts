@@ -9,6 +9,7 @@ import {
   loincCodeTobacco,
   snomedCodeTobacco,
   valueConceptTobacco,
+  valueHeight,
 } from "./examples/observation-examples";
 
 let observationId: string;
@@ -155,8 +156,8 @@ describe("groupSameObservations", () => {
     observation2.effectiveDateTime = dateTime.start;
     observation.code = loincCodeTobacco;
     observation2.code = loincCodeTobacco;
-    observation.valueCodeableConcept = valueConceptTobacco;
-    observation2.valueCodeableConcept = valueConceptTobacco;
+    observation.valueQuantity = valueHeight;
+    observation2.valueQuantity = valueHeight;
 
     const { observationsMap } = groupSameObservations([observation, observation2]);
     expect(observationsMap.size).toBe(1);
@@ -165,22 +166,11 @@ describe("groupSameObservations", () => {
   it("groups observations without dates", () => {
     observation.code = loincCodeTobacco;
     observation2.code = loincCodeTobacco;
-    observation.valueCodeableConcept = valueConceptTobacco;
-    observation2.valueCodeableConcept = valueConceptTobacco;
+    observation.valueQuantity = valueHeight;
+    observation2.valueQuantity = valueHeight;
 
     const { observationsMap } = groupSameObservations([observation, observation2]);
     expect(observationsMap.size).toBe(1);
-  });
-
-  it("does not group observations, if one has a date, and the other does not", () => {
-    observation.effectiveDateTime = dateTime.start;
-    observation.code = loincCodeTobacco;
-    observation2.code = loincCodeTobacco;
-    observation.valueCodeableConcept = valueConceptTobacco;
-    observation2.valueCodeableConcept = valueConceptTobacco;
-
-    const { observationsMap } = groupSameObservations([observation, observation2]);
-    expect(observationsMap.size).toBe(2);
   });
 
   it("removes observations without values", () => {
@@ -195,8 +185,8 @@ describe("groupSameObservations", () => {
   it("removes observations without codes", () => {
     observation.effectiveDateTime = dateTime.start;
     observation2.effectiveDateTime = dateTime.start;
-    observation.valueCodeableConcept = valueConceptTobacco;
-    observation2.valueCodeableConcept = valueConceptTobacco;
+    observation.valueQuantity = valueHeight;
+    observation2.valueQuantity = valueHeight;
 
     const { observationsMap } = groupSameObservations([observation, observation2]);
     expect(observationsMap.size).toBe(0);
@@ -207,8 +197,8 @@ describe("groupSameObservations", () => {
     observation2.effectiveDateTime = dateTime2.start;
     observation.code = loincCodeTobacco;
     observation2.code = loincCodeTobacco;
-    observation.valueCodeableConcept = valueConceptTobacco;
-    observation2.valueCodeableConcept = valueConceptTobacco;
+    observation.valueQuantity = valueHeight;
+    observation2.valueQuantity = valueHeight;
 
     const { observationsMap } = groupSameObservations([observation, observation2]);
     expect(observationsMap.size).toBe(2);
@@ -219,22 +209,65 @@ describe("groupSameObservations", () => {
     observation2.effectiveDateTime = dateTime2.start;
     observation.code = loincCodeTobacco;
     observation2.code = snomedCodeTobacco;
-    observation.valueCodeableConcept = valueConceptTobacco;
-    observation2.valueCodeableConcept = valueConceptTobacco;
+    observation.valueQuantity = valueHeight;
+    observation2.valueQuantity = valueHeight;
 
     const { observationsMap } = groupSameObservations([observation, observation2]);
     expect(observationsMap.size).toBe(2);
   });
 
+  it("correctly groups observations with the same values", () => {
+    observation.effectiveDateTime = dateTime.start;
+    observation2.effectiveDateTime = dateTime.start;
+    observation.code = loincCodeTobacco;
+    observation2.code = loincCodeTobacco;
+    observation.valueQuantity = valueHeight;
+    observation2.valueQuantity = valueHeight;
+
+    const { observationsMap } = groupSameObservations([observation, observation2]);
+    expect(observationsMap.size).toBe(1);
+  });
+
+  it("correctly groups observations with the same values even if one is missing the date", () => {
+    observation.effectiveDateTime = dateTime.start;
+    observation.code = loincCodeTobacco;
+    observation2.code = loincCodeTobacco;
+    observation.valueQuantity = valueHeight;
+    observation2.valueQuantity = valueHeight;
+
+    const { observationsMap } = groupSameObservations([observation, observation2]);
+    expect(observationsMap.size).toBe(1);
+  });
+
+  it("correctly groups observations with the same values even if date is missing", () => {
+    observation.code = loincCodeTobacco;
+    observation2.code = loincCodeTobacco;
+    observation.valueQuantity = valueHeight;
+    observation2.valueQuantity = valueHeight;
+
+    const { observationsMap } = groupSameObservations([observation, observation2]);
+    expect(observationsMap.size).toBe(1);
+  });
+
   it("does not group observations with different values", () => {
+    observation.effectiveDateTime = dateTime.start;
+    observation2.effectiveDateTime = dateTime.start;
+    observation.code = loincCodeTobacco;
+    observation2.code = loincCodeTobacco;
+    observation.valueQuantity = valueHeight;
+    observation2.valueQuantity = { ...valueHeight, value: 180 };
+
+    const { observationsMap } = groupSameObservations([observation, observation2]);
+    expect(observationsMap.size).toBe(2);
+  });
+
+  it("does not group observations with different times", () => {
     observation.effectiveDateTime = dateTime.start;
     observation2.effectiveDateTime = dateTime2.start;
     observation.code = loincCodeTobacco;
     observation2.code = loincCodeTobacco;
-    observation.valueCodeableConcept = valueConceptTobacco;
-    observation2.valueCodeableConcept = {
-      coding: [{ ...valueConceptTobacco.coding[0], code: "some-other-random-code, like 111" }],
-    };
+    observation.valueQuantity = valueHeight;
+    observation2.valueQuantity = valueHeight;
 
     const { observationsMap } = groupSameObservations([observation, observation2]);
     expect(observationsMap.size).toBe(2);
@@ -247,8 +280,8 @@ describe("groupSameObservations", () => {
 
     observation.code = { coding: originalCoding };
     observation2.code = { coding: originalCoding };
-    observation.valueCodeableConcept = valueConceptTobacco;
-    observation2.valueCodeableConcept = valueConceptTobacco;
+    observation.valueQuantity = valueHeight;
+    observation2.valueQuantity = valueHeight;
 
     const { observationsMap } = groupSameObservations([observation, observation2]);
     expect(observationsMap.size).toBe(1);
