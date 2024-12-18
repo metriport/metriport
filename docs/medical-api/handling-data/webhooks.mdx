@@ -1,5 +1,6 @@
 ---
-title: "Webhooks - Medical API"
+title: "Receiving Webhooks"
+icon: "paper-plane"
 description: "Receive status updates as soon as data becomes available."
 ---
 
@@ -19,7 +20,7 @@ This is the usual flow to obtain Patient data:
 You should expect to get more than one Webhook message per patient per request (document query and/or consolidated data).
 
 To enable this integration approach with Metriport, and for some prerequesite reading to understand
-how the Webhook flow works, see [our Webhooks guide](/home/api-info/webhooks).
+how the Webhook flow works, see [our Webhooks guide](/medical-api/getting-started/webhooks).
 
 <Warning>
   When you receive a webhook message, you should respond with a `200` status code within 4 seconds.
@@ -198,7 +199,7 @@ These are messages you can expect to receive in the following scenarios:
 The format follows:
 
 <ResponseField name="meta" required>
-  Metadata about the message. The full format is described [here](/home/api-info/webhooks#meta-data).
+  Metadata about the message. The full format is described [here](/medical-api/getting-started/webhooks#meta-data).
 
   <Expandable title="meta type property details">
 
@@ -332,7 +333,7 @@ Example payload:
 The format follows:
 
 <ResponseField name="meta" required>
-  Metadata about the message. The full format is described [here](/home/api-info/webhooks#meta-data).
+  Metadata about the message. The full format is described [here](/medical-api/getting-started/webhooks#meta-data).
 
   <Expandable title="meta type property details">
 
@@ -391,7 +392,7 @@ The format follows:
 When querying for a Patient's consolidated data, you can also request this information in PDF or HTML format.
 
 The following is the result of the [previous section](#patient-consolidated-data), but with the `Bundle`
-containing a document reference to a rendered [Medical Record Summary](/medical-api/more-info/medical-record-summary)
+containing a document reference to a rendered [Medical Record Summary](/medical-api/handling-data/medical-record-summary)
 that represents the resulting FHIR bundle.
 
 Inside the `Bundle` you'll find a `DocumentReference` resource with the first item in the `content` array containing
@@ -512,7 +513,7 @@ Here is an example payload:
 The format is as follows:
 
 <ResponseField name="meta" required>
-  Metadata about the message. The full format is described [here](/home/api-info/webhooks#meta-data).
+  Metadata about the message. The full format is described [here](/medical-api/getting-started/webhooks#meta-data).
 
   <Expandable title="Details of the 'meta' type property">
 

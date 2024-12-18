@@ -441,7 +441,7 @@ router.get(
  * Returns whether the patient is opted out of data pulling and sharing.
  *
  * @param req.cxId The customer ID.
- * @param req.param.patientId The ID of the patient whose data is to be returned.
+ * @param req.param.id The ID of the patient whose data is to be returned.
  * @param req.query.hieOptOut Boolean value to opt patient out or in.
  */
 router.put(
