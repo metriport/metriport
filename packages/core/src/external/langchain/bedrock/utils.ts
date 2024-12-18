@@ -1,6 +1,10 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { AwsCredentialIdentity, Provider } from "@aws-sdk/types";
-import { AIMessage, AIMessageChunk, BaseMessage } from "@langchain/core/messages";
+import {
+  AIMessage,
+  AIMessageChunk,
+  BaseMessage,
+} from "@langchain/core/messages";
 import { StructuredToolInterface } from "@langchain/core/tools";
 import { ChatGeneration, ChatGenerationChunk } from "@langchain/core/outputs";
 import {
@@ -10,9 +14,11 @@ import {
   extractToolUseContent,
   extractToolCalls,
   formatMessagesForAnthropic,
-} from "./anthropic";
+} from "./anthropic.js";
 
-export type CredentialType = AwsCredentialIdentity | Provider<AwsCredentialIdentity>;
+export type CredentialType =
+  | AwsCredentialIdentity
+  | Provider<AwsCredentialIdentity>;
 
 /**
  * format messages for Cohere Command-R and CommandR+ via AWS Bedrock.
@@ -40,14 +46,18 @@ function formatMessagesForCohere(messages: BaseMessage[]): {
   message: string;
   chatHistory: Record<string, unknown>[];
 } {
-  const systemMessages = messages.filter(system => system._getType() === "system");
+  const systemMessages = messages.filter(
+    (system) => system._getType() === "system"
+  );
 
   const system = systemMessages
-    .filter(m => typeof m.content === "string")
-    .map(m => m.content)
+    .filter((m) => typeof m.content === "string")
+    .map((m) => m.content)
     .join("\n\n");
 
-  const conversationMessages = messages.filter(message => message._getType() !== "system");
+  const conversationMessages = messages.filter(
+    (message) => message._getType() !== "system"
+  );
 
   const questionContent = conversationMessages.slice(-1);
 
@@ -61,29 +71,33 @@ function formatMessagesForCohere(messages: BaseMessage[]): {
 
   const formattedMessage = questionContent[0]!.content;
 
-  const formattedChatHistories = conversationMessages.slice(0, -1).map(message => {
-    let role;
-    switch (message._getType()) {
-      case "human":
-        role = "USER" as const;
-        break;
-      case "ai":
-        role = "CHATBOT" as const;
-        break;
-      case "system":
-        throw new Error("chat_history can not include system prompts.");
-      default:
-        throw new Error(`Message type "${message._getType()}" is not supported.`);
-    }
+  const formattedChatHistories = conversationMessages
+    .slice(0, -1)
+    .map((message) => {
+      let role;
+      switch (message._getType()) {
+        case "human":
+          role = "USER" as const;
+          break;
+        case "ai":
+          role = "CHATBOT" as const;
+          break;
+        case "system":
+          throw new Error("chat_history can not include system prompts.");
+        default:
+          throw new Error(
+            `Message type "${message._getType()}" is not supported.`
+          );
+      }
 
-    if (typeof message.content !== "string") {
-      throw new Error("message content must be a string.");
-    }
-    return {
-      role,
-      message: message.content,
-    };
-  });
+      if (typeof message.content !== "string") {
+        throw new Error("message content must be a string.");
+      }
+      return {
+        role,
+        message: message.content,
+      };
+    });
 
   return {
     chatHistory: formattedChatHistories,
@@ -151,12 +165,10 @@ export interface BaseBedrockInput {
   guardrailVersion?: string | undefined;
 
   /** Required when Guardrail is in use. */
-  guardrailConfig?:
-    | {
-        tagSuffix: string;
-        streamProcessingMode: "SYNCHRONOUS" | "ASYNCHRONOUS";
-      }
-    | undefined;
+  guardrailConfig?: {
+    tagSuffix: string;
+    streamProcessingMode: "SYNCHRONOUS" | "ASYNCHRONOUS";
+  } | undefined;
 
   awsAccessKeyId?: string | undefined;
 
@@ -230,7 +242,11 @@ export class BedrockLLMInputOutputAdapter {
       inputBody.stop = stopSequences;
     }
 
-    if (guardrailConfig && guardrailConfig.tagSuffix && guardrailConfig.streamProcessingMode) {
+    if (
+      guardrailConfig &&
+      guardrailConfig.tagSuffix &&
+      guardrailConfig.streamProcessingMode
+    ) {
       inputBody["amazon-bedrock-guardrailConfig"] = guardrailConfig;
     }
 
@@ -255,7 +271,8 @@ export class BedrockLLMInputOutputAdapter {
     const inputBody: Dict = {};
 
     if (provider === "anthropic") {
-      const { system, messages: formattedMessages } = formatMessagesForAnthropic(messages);
+      const { system, messages: formattedMessages } =
+        formatMessagesForAnthropic(messages);
       if (system !== undefined) {
         inputBody.system = system;
       }
@@ -285,10 +302,16 @@ export class BedrockLLMInputOutputAdapter {
       inputBody.temperature = temperature;
       inputBody.stop_sequences = stopSequences;
     } else {
-      throw new Error("The messages API is currently only supported by Anthropic or Cohere");
+      throw new Error(
+        "The messages API is currently only supported by Anthropic or Cohere"
+      );
     }
 
-    if (guardrailConfig && guardrailConfig.tagSuffix && guardrailConfig.streamProcessingMode) {
+    if (
+      guardrailConfig &&
+      guardrailConfig.tagSuffix &&
+      guardrailConfig.streamProcessingMode
+    ) {
       inputBody["amazon-bedrock-guardrailConfig"] = guardrailConfig;
     }
 
@@ -347,7 +370,7 @@ export class BedrockLLMInputOutputAdapter {
       }
       // Filter partial `tool_use` content, and only add `tool_use` chunks if complete JSON available.
       const chunkContent = Array.isArray(chunk.content)
-        ? chunk.content.filter(c => c.type !== "tool_use")
+        ? chunk.content.filter((c) => c.type !== "tool_use")
         : chunk.content;
       if (Array.isArray(chunkContent) && toolUseContent) {
         chunkContent.push(toolUseContent);
@@ -391,7 +414,8 @@ export class BedrockLLMInputOutputAdapter {
           text: "",
           generationInfo: {
             response: responseBody.response,
-            "amazon-bedrock-invocationMetrics": responseBody["amazon-bedrock-invocationMetrics"],
+            "amazon-bedrock-invocationMetrics":
+              responseBody["amazon-bedrock-invocationMetrics"],
           },
         });
       } else {
@@ -405,7 +429,9 @@ export class BedrockLLMInputOutputAdapter {
         }
       }
     } else {
-      throw new Error("The messages API is currently only supported by Anthropic or Cohere.");
+      throw new Error(
+        "The messages API is currently only supported by Anthropic or Cohere."
+      );
     }
   }
 }
@@ -414,7 +440,11 @@ export class BedrockLLMInputOutputAdapter {
 function parseMessage(responseBody: any, asChunk?: boolean): ChatGeneration {
   const { content, id, ...generationInfo } = responseBody;
   let parsedContent;
-  if (Array.isArray(content) && content.length === 1 && content[0].type === "text") {
+  if (
+    Array.isArray(content) &&
+    content.length === 1 &&
+    content[0].type === "text"
+  ) {
     parsedContent = content[0].text;
   } else if (Array.isArray(content) && content.length === 0) {
     parsedContent = "";
