@@ -411,7 +411,7 @@ export function fetchCodingCodeOrDisplayOrSystem(
 ): string | undefined {
   const { log } = out(`fetchCodingCodeOrDisplayOrSystem - coding ${JSON.stringify(coding)}`);
   try {
-    return coding[field]?.trim().toLowerCase();
+    return coding[field]?.toString().trim().toLowerCase();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     if (error instanceof TypeError) {
