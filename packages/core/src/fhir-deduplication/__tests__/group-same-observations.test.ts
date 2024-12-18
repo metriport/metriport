@@ -104,6 +104,158 @@ describe("groupSameObservationsSocial", () => {
     expect(observationsMap.size).toBe(2);
   });
 
+  it("removes observations with unknown codes", () => {
+    observation.code = loincCodeTobacco;
+    observation2.code = unknownCode;
+    observation.valueCodeableConcept = valueConceptTobacco;
+    observation2.valueCodeableConcept = valueConceptTobacco;
+
+    const { observationsMap } = groupSameObservationsSocial([observation, observation2]);
+    expect(observationsMap.size).toBe(1);
+    const masterObservation = observationsMap.values().next().value as Observation;
+    expect(masterObservation.code?.coding?.length).toEqual(1);
+    expect(masterObservation.code?.coding).toEqual(loincCodeTobacco.coding);
+  });
+
+  it("removes unknown codes, but keeps all other codes", () => {
+    observation.code = loincCodeTobacco;
+    const madeUpCoding = {
+      system: "some-other-custom-coding-system",
+      code: "no-one-knows-the-meaning",
+      display: "ancient words",
+    };
+    observation2.code = {
+      coding: [
+        unknownCoding,
+        ...loincCodeTobacco.coding,
+        ...snomedCodeTobacco.coding,
+        madeUpCoding,
+      ],
+    };
+    observation.valueCodeableConcept = valueConceptTobacco;
+    observation2.valueCodeableConcept = valueConceptTobacco;
+
+    const { observationsMap } = groupSameObservationsSocial([observation, observation2]);
+    expect(observationsMap.size).toBe(1);
+    const masterObservation = observationsMap.values().next().value as Observation;
+    expect(masterObservation.code?.coding?.length).toEqual(3);
+    expect(masterObservation.code?.coding).toEqual(
+      expect.arrayContaining([
+        ...loincCodeTobacco.coding,
+        ...snomedCodeTobacco.coding,
+        madeUpCoding,
+      ])
+    );
+  });
+});
+
+describe("groupSameObservations", () => {
+  it("correctly groups duplicate observations based on values, dates, and loinc codes", () => {
+    observation.effectiveDateTime = dateTime.start;
+    observation2.effectiveDateTime = dateTime.start;
+    observation.code = loincCodeTobacco;
+    observation2.code = loincCodeTobacco;
+    observation.valueCodeableConcept = valueConceptTobacco;
+    observation2.valueCodeableConcept = valueConceptTobacco;
+
+    const { observationsMap } = groupSameObservations([observation, observation2]);
+    expect(observationsMap.size).toBe(1);
+  });
+
+  it("groups observations without dates", () => {
+    observation.code = loincCodeTobacco;
+    observation2.code = loincCodeTobacco;
+    observation.valueCodeableConcept = valueConceptTobacco;
+    observation2.valueCodeableConcept = valueConceptTobacco;
+
+    const { observationsMap } = groupSameObservations([observation, observation2]);
+    expect(observationsMap.size).toBe(1);
+  });
+
+  it("does not group observations, if one has a date, and the other does not", () => {
+    observation.effectiveDateTime = dateTime.start;
+    observation.code = loincCodeTobacco;
+    observation2.code = loincCodeTobacco;
+    observation.valueCodeableConcept = valueConceptTobacco;
+    observation2.valueCodeableConcept = valueConceptTobacco;
+
+    const { observationsMap } = groupSameObservations([observation, observation2]);
+    expect(observationsMap.size).toBe(2);
+  });
+
+  it("removes observations without values", () => {
+    observation.effectiveDateTime = dateTime.start;
+    observation2.effectiveDateTime = dateTime.start;
+    observation.code = loincCodeTobacco;
+    observation2.code = loincCodeTobacco;
+
+    const { observationsMap } = groupSameObservations([observation, observation2]);
+    expect(observationsMap.size).toBe(0);
+  });
+  it("removes observations without codes", () => {
+    observation.effectiveDateTime = dateTime.start;
+    observation2.effectiveDateTime = dateTime.start;
+    observation.valueCodeableConcept = valueConceptTobacco;
+    observation2.valueCodeableConcept = valueConceptTobacco;
+
+    const { observationsMap } = groupSameObservations([observation, observation2]);
+    expect(observationsMap.size).toBe(0);
+  });
+
+  it("does not group observations with different dates", () => {
+    observation.effectiveDateTime = dateTime.start;
+    observation2.effectiveDateTime = dateTime2.start;
+    observation.code = loincCodeTobacco;
+    observation2.code = loincCodeTobacco;
+    observation.valueCodeableConcept = valueConceptTobacco;
+    observation2.valueCodeableConcept = valueConceptTobacco;
+
+    const { observationsMap } = groupSameObservations([observation, observation2]);
+    expect(observationsMap.size).toBe(2);
+  });
+
+  it("does not group observations with different codes", () => {
+    observation.effectiveDateTime = dateTime.start;
+    observation2.effectiveDateTime = dateTime2.start;
+    observation.code = loincCodeTobacco;
+    observation2.code = snomedCodeTobacco;
+    observation.valueCodeableConcept = valueConceptTobacco;
+    observation2.valueCodeableConcept = valueConceptTobacco;
+
+    const { observationsMap } = groupSameObservations([observation, observation2]);
+    expect(observationsMap.size).toBe(2);
+  });
+
+  it("does not group observations with different values", () => {
+    observation.effectiveDateTime = dateTime.start;
+    observation2.effectiveDateTime = dateTime2.start;
+    observation.code = loincCodeTobacco;
+    observation2.code = loincCodeTobacco;
+    observation.valueCodeableConcept = valueConceptTobacco;
+    observation2.valueCodeableConcept = {
+      coding: [{ ...valueConceptTobacco.coding[0], code: "some-other-random-code, like 111" }],
+    };
+
+    const { observationsMap } = groupSameObservations([observation, observation2]);
+    expect(observationsMap.size).toBe(2);
+  });
+
+  it("does not remove code and preserve original coding when there is only one code of unrecognized system", () => {
+    observation.effectiveDateTime = dateTime.start;
+    observation2.effectiveDateTime = dateTime.start;
+    const originalCoding = [{ system: "some other system", code: "123", display: "some display" }];
+
+    observation.code = { coding: originalCoding };
+    observation2.code = { coding: originalCoding };
+    observation.valueCodeableConcept = valueConceptTobacco;
+    observation2.valueCodeableConcept = valueConceptTobacco;
+
+    const { observationsMap } = groupSameObservations([observation, observation2]);
+    expect(observationsMap.size).toBe(1);
+    const groupedObservation = observationsMap.values().next().value;
+    expect(groupedObservation.code?.coding).toEqual(originalCoding);
+  });
+
   it("does not group observations with unknown codes and different displays", () => {
     observation = makeObservation({
       id: observationId,
@@ -180,146 +332,5 @@ describe("groupSameObservationsSocial", () => {
 
     const { observationsMap } = groupSameObservations([observation, observation2]);
     expect(observationsMap.size).toBe(2);
-  });
-
-  it("removes observations with unknown codes", () => {
-    observation.code = loincCodeTobacco;
-    observation2.code = unknownCode;
-    observation.valueCodeableConcept = valueConceptTobacco;
-    observation2.valueCodeableConcept = valueConceptTobacco;
-
-    const { observationsMap } = groupSameObservationsSocial([observation, observation2]);
-    expect(observationsMap.size).toBe(1);
-    const masterObservation = observationsMap.values().next().value as Observation;
-    expect(masterObservation.code?.coding?.length).toEqual(1);
-    expect(masterObservation.code?.coding).toEqual(loincCodeTobacco.coding);
-  });
-
-  it("removes unknown codes, but keeps all other codes", () => {
-    observation.code = loincCodeTobacco;
-    const madeUpCoding = {
-      system: "some-other-custom-coding-system",
-      code: "no-one-knows-the-meaning",
-      display: "ancient words",
-    };
-    observation2.code = {
-      coding: [
-        unknownCoding,
-        ...loincCodeTobacco.coding,
-        ...snomedCodeTobacco.coding,
-        madeUpCoding,
-      ],
-    };
-    observation.valueCodeableConcept = valueConceptTobacco;
-    observation2.valueCodeableConcept = valueConceptTobacco;
-
-    const { observationsMap } = groupSameObservationsSocial([observation, observation2]);
-    expect(observationsMap.size).toBe(1);
-    const masterObservation = observationsMap.values().next().value as Observation;
-    expect(masterObservation.code?.coding?.length).toEqual(3);
-    expect(masterObservation.code?.coding).toEqual(
-      expect.arrayContaining([
-        ...loincCodeTobacco.coding,
-        ...snomedCodeTobacco.coding,
-        madeUpCoding,
-      ])
-    );
-  });
-});
-
-describe("groupSameObservations", () => {
-  it("correctly groups duplicate observations based on values, dates, and loinc codes", () => {
-    observation.effectiveDateTime = dateTime.start;
-    observation2.effectiveDateTime = dateTime.start;
-    observation.code = loincCodeTobacco;
-    observation2.code = loincCodeTobacco;
-    observation.valueCodeableConcept = valueConceptTobacco;
-    observation2.valueCodeableConcept = valueConceptTobacco;
-
-    const { observationsMap } = groupSameObservations([observation, observation2]);
-    expect(observationsMap.size).toBe(1);
-  });
-
-  it("removes observations without dates", () => {
-    observation.code = loincCodeTobacco;
-    observation2.code = loincCodeTobacco;
-    observation.valueCodeableConcept = valueConceptTobacco;
-    observation2.valueCodeableConcept = valueConceptTobacco;
-
-    const { observationsMap } = groupSameObservations([observation, observation2]);
-    expect(observationsMap.size).toBe(0);
-  });
-
-  it("removes observations without values", () => {
-    observation.effectiveDateTime = dateTime.start;
-    observation2.effectiveDateTime = dateTime.start;
-    observation.code = loincCodeTobacco;
-    observation2.code = loincCodeTobacco;
-
-    const { observationsMap } = groupSameObservations([observation, observation2]);
-    expect(observationsMap.size).toBe(0);
-  });
-  it("removes observations without codes", () => {
-    observation.effectiveDateTime = dateTime.start;
-    observation2.effectiveDateTime = dateTime.start;
-    observation.valueCodeableConcept = valueConceptTobacco;
-    observation2.valueCodeableConcept = valueConceptTobacco;
-
-    const { observationsMap } = groupSameObservations([observation, observation2]);
-    expect(observationsMap.size).toBe(0);
-  });
-
-  it("does not group observations with different dates", () => {
-    observation.effectiveDateTime = dateTime.start;
-    observation2.effectiveDateTime = dateTime2.start;
-    observation.code = loincCodeTobacco;
-    observation2.code = loincCodeTobacco;
-    observation.valueCodeableConcept = valueConceptTobacco;
-    observation2.valueCodeableConcept = valueConceptTobacco;
-
-    const { observationsMap } = groupSameObservations([observation, observation2]);
-    expect(observationsMap.size).toBe(2);
-  });
-
-  it("does not group observations with different codes", () => {
-    observation.effectiveDateTime = dateTime.start;
-    observation2.effectiveDateTime = dateTime2.start;
-    observation.code = loincCodeTobacco;
-    observation2.code = snomedCodeTobacco;
-    observation.valueCodeableConcept = valueConceptTobacco;
-    observation2.valueCodeableConcept = valueConceptTobacco;
-
-    const { observationsMap } = groupSameObservations([observation, observation2]);
-    expect(observationsMap.size).toBe(2);
-  });
-
-  it("does not group observations with different values", () => {
-    observation.effectiveDateTime = dateTime.start;
-    observation2.effectiveDateTime = dateTime2.start;
-    observation.code = loincCodeTobacco;
-    observation2.code = loincCodeTobacco;
-    observation.valueCodeableConcept = valueConceptTobacco;
-    observation2.valueCodeableConcept = {
-      coding: [{ ...valueConceptTobacco.coding[0], code: "some-other-random-code, like 111" }],
-    };
-
-    const { observationsMap } = groupSameObservations([observation, observation2]);
-    expect(observationsMap.size).toBe(2);
-  });
-
-  it("does not remove code and preserve original coding when there is only one code of unrecognized system", () => {
-    observation.effectiveDateTime = dateTime.start;
-    observation2.effectiveDateTime = dateTime.start;
-    const originalCoding = [{ system: "some other system", code: "123", display: "some display" }];
-
-    observation.code = { coding: originalCoding };
-    observation2.code = { coding: originalCoding };
-    observation.valueCodeableConcept = valueConceptTobacco;
-    observation2.valueCodeableConcept = valueConceptTobacco;
-
-    const { observationsMap } = groupSameObservations([observation, observation2]);
-    expect(observationsMap.size).toBe(1);
-    const groupedObservation = observationsMap.values().next().value;
-    expect(groupedObservation.code?.coding).toEqual(originalCoding);
   });
 });

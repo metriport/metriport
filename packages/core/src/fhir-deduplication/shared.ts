@@ -178,6 +178,29 @@ export function createKeyFromObjects(...objects: object[]): string {
   return JSON.stringify(combinedObject);
 }
 
+export function generateCombinedJson<T extends object[]>(...objectArrays: T): string[] {
+  const combinedResults: string[] = [];
+
+  for (let outerIndex = 0; outerIndex < objectArrays.length - 1; outerIndex++) {
+    const currentArray = objectArrays[outerIndex];
+    if (!currentArray) continue;
+
+    for (const currentElement of Object.values(currentArray)) {
+      for (let innerIndex = outerIndex + 1; innerIndex < objectArrays.length; innerIndex++) {
+        const nextArray = objectArrays[innerIndex];
+        if (!nextArray) continue;
+
+        for (const nextElement of Object.values(nextArray)) {
+          const combinedObject = { ...currentElement, ...nextElement };
+          combinedResults.push(JSON.stringify(combinedObject));
+        }
+      }
+    }
+  }
+
+  return combinedResults;
+}
+
 export function fillL1L2Maps<T extends Resource>({
   map1,
   map2,

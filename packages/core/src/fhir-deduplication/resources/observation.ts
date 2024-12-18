@@ -1,24 +1,21 @@
-import { Observation, CodeableConcept } from "@medplum/fhirtypes";
+import { CodeableConcept, Observation } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
 import {
+  DeduplicationResult,
   combineResources,
+  createKeysFromObjectArray,
+  createKeysFromObjectArrayAndBits,
   createRef,
   extractDisplayFromConcept,
-  fillMaps,
+  fetchCodingCodeOrDisplayOrSystem,
+  fillL1L2Maps,
   getDateFromResource,
   hasBlacklistedText,
+  isUnknownCoding,
   pickMostDescriptiveStatus,
   unknownCoding,
-  isUnknownCoding,
-  DeduplicationResult,
-  fetchCodingCodeOrDisplayOrSystem,
 } from "../shared";
-import {
-  extractCodes,
-  extractValueFromObservation,
-  retrieveCode,
-  statusRanking,
-} from "./observation-shared";
+import { extractCodes, extractValueFromObservation, statusRanking } from "./observation-shared";
 
 export function deduplicateObservations(
   observations: Observation[]
@@ -46,30 +43,11 @@ export function groupSameObservations(observations: Observation[]): {
   refReplacementMap: Map<string, string>;
   danglingReferences: Set<string>;
 } {
-  const observationsMap = new Map<string, Observation>();
+  const l1ObservationsMap = new Map<string, string>();
+  const l2ObservationsMap = new Map<string, Observation>();
+
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
-
-  function postProcess(
-    master: Observation,
-    existing: Observation,
-    target: Observation
-  ): Observation {
-    const code = master.code;
-    const filtered = code?.coding?.filter(coding => {
-      const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
-      const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
-      return !system?.includes(unknownCoding.system) && !code?.includes(unknownCoding.code);
-    });
-    if (filtered) {
-      master.code = {
-        ...code,
-        coding: filtered,
-      };
-    }
-    master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
-    return master;
-  }
 
   for (const observation of observations) {
     if (hasBlacklistedText(observation.code)) {
@@ -77,34 +55,59 @@ export function groupSameObservations(observations: Observation[]): {
       continue;
     }
 
-    // pre process
+    const getterKeys: string[] = [];
+    const setterKeys: string[] = [];
+
     const { observation: newObservation, code } = filterOutUnknownCodings(observation);
 
-    const keyCodes = extractCodes(code);
-    const keyCode = retrieveCode(keyCodes);
+    const { loincCode, snomedCode, otherCode } = extractCodes(code);
+    const display = extractDisplayFromConcept(code);
+
+    const identifiers = [
+      ...(loincCode ? [{ loincCode }] : []),
+      ...(snomedCode ? [{ snomedCode }] : []),
+      ...(otherCode ? [{ otherCode }] : []),
+      ...(display ? [{ display }] : []),
+    ];
     const date = getDateFromResource(newObservation);
     const value = extractValueFromObservation(observation);
 
-    if (!date || !value) {
+    if (!value || !identifiers) {
       danglingReferences.add(createRef(observation));
+      continue;
+    }
+
+    if (date) {
+      // keys that match a code + date together
+      setterKeys.push(...createKeysFromObjectArray({ date }, identifiers));
+      getterKeys.push(...createKeysFromObjectArray({ date }, identifiers));
+    }
+
+    if (!date) {
+      // flagging the observation to indicate not having a date
+      setterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
+      // can dedup with a observation that does or does not have a date
+      getterKeys.push(...createKeysFromObjectArrayAndBits(identifiers, [0]));
+    }
+
+    if (setterKeys.length > 0) {
+      fillL1L2Maps({
+        map1: l1ObservationsMap,
+        map2: l2ObservationsMap,
+        getterKeys,
+        setterKeys,
+        targetResource: observation,
+        refReplacementMap,
+        applySpecialModifications: postProcess,
+      });
     } else {
-      if (keyCode) {
-        const key = JSON.stringify({ date, value, keyCode });
-        fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
-      } else {
-        const observationDisplay = extractDisplayFromConcept(observation.code);
-        if (observationDisplay) {
-          const key = JSON.stringify({ date, value, observationDisplay });
-          fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
-        } else {
-          danglingReferences.add(createRef(observation));
-        }
-      }
+      danglingReferences.add(createRef(observation));
+      continue;
     }
   }
 
   return {
-    observationsMap,
+    observationsMap: l2ObservationsMap,
     refReplacementMap,
     danglingReferences,
   };
@@ -124,4 +127,21 @@ function filterOutUnknownCodings(observation: Observation): {
   newObservation.code = code;
 
   return { observation: newObservation, code };
+}
+
+function postProcess(master: Observation, existing: Observation, target: Observation): Observation {
+  const code = master.code;
+  const filtered = code?.coding?.filter(coding => {
+    const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+    const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
+    return !system?.includes(unknownCoding.system) && !code?.includes(unknownCoding.code);
+  });
+  if (filtered) {
+    master.code = {
+      ...code,
+      coding: filtered,
+    };
+  }
+  master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
+  return master;
 }
