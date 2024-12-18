@@ -3,15 +3,15 @@ import {
   FhirConverterParams,
   FhirExtension,
   postProcessBundle,
-} from "@metriport/core/domain/consolidated/bundle-modifications";
-import { cleanUpPayload } from "@metriport/core/domain/consolidated/cleanup";
+} from "@metriport/core/domain/conversion/bundle-modifications";
+import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
 import {
   defaultS3RetriesConfig,
   storeNormalizedConversionResult,
   storePartitionedPayloadsInS3,
   storePreProcessedConversionResult,
   storePreprocessedPayloadInS3,
-} from "@metriport/core/domain/consolidated/upload-consolidation-steps";
+} from "@metriport/core/domain/conversion/upload-conversion-steps";
 import { S3Utils, executeWithRetriesS3 } from "@metriport/core/external/aws/s3";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
@@ -82,6 +82,7 @@ type EventBody = {
 };
 
 // Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
+// TODO: 2502 - Migrate most of the logic to the core to simplify the lambda handler as much as possible
 export async function handler(event: SQSEvent) {
   try {
     // Process messages from SQS
