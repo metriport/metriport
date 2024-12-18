@@ -26,12 +26,12 @@ import { validateReferences } from "./report/validate-references";
  *
  * WARNING: this will overwrite the *_deduped.json files!!!
  */
-const samplesFolderPath = ``;
+const samplesFolderPath = "";
 const useDefaultPatient = true;
 const suffix = "_deduped";
 
 const createBundle = false;
-const existingPatientId = ``;
+const existingPatientId = "";
 // auth stuff
 
 /**
