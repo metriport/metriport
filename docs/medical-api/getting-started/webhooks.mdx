@@ -1,5 +1,6 @@
 ---
-title: "Webhooks"
+title: "Implementing Webhooks"
+icon: "circle-nodes"
 description: "Receive data as soon as it becomes available."
 ---
 
@@ -18,9 +19,9 @@ To enable this integration approach with Metriport:
 
 1. Expose a public endpoint on your app;
 1. Set this endpoint URL on the [Developers page](https://dash.metriport.com/developers) in the developer dashboard,
-   or via the [Update Settings endpoint](/home/api-reference/settings/post-settings);
+   or via the [Update Settings endpoint](/medical-api/api-reference/settings/post-settings);
 1. This will generate a webhook key that should be used to authenticate requests on
-   your app's endpoint (webhook) - see [authentication](#authentication) and 
+   your app's endpoint (webhook) - see [authentication](#authentication) and
    [generating a new webhook key](#generating-a-new-webhook-key) below.
 
 General requirements for the endpoint:
@@ -40,7 +41,7 @@ Additionally, your endpoint will need to accept and process different messages w
 
 ## Authentication
 
-When Metriport sends a webhook message, it includes an `x-metriport-signature` header - this is an 
+When Metriport sends a webhook message, it includes an `x-metriport-signature` header - this is an
 [HMAC](https://en.wikipedia.org/wiki/HMAC) SHA-256 hash computed using your webhook key and the body of the webhook message.
 
 At a high level, an HMAC works by taking a secret key (webhook key from the Settings page) and a message,
@@ -48,12 +49,12 @@ and performing iterative hashes of the two to create a signature. That signature
 signature in the header for equality. If the signatures are equal, you can trust the webhook
 payload is authentic and has not been tampered with. If they aren't equal, you should throw it away.
 
-You can use this header to verify that the webhook messages sent to your endpoint are from Metriport. 
+You can use this header to verify that the webhook messages sent to your endpoint are from Metriport.
 
 Avoid parsing the request body before generating the signature - it could result in a slightly
 different signature that's enough to invalidate it.
 
-Here's an example of how you can do this in Node.js - see the full sample code 
+Here's an example of how you can do this in Node.js - see the full sample code
 [here](https://github.com/metriport/metriport/blob/develop/samples/typescript-express/mock-webhook.ts):
 
 <Snippet file="webhook-signature-validation.mdx" />
@@ -61,7 +62,7 @@ Here's an example of how you can do this in Node.js - see the full sample code
 The important thing is to make sure you use a trusted cryptography library in whatever language you
 choose to validate the webhook message in.
 
-You can also validate the HMAC in Python - see the full sample code 
+You can also validate the HMAC in Python - see the full sample code
 [here](https://github.com/metriport/metriport/blob/develop/samples/python-fast-api/mock-webhook.py):
 
 ```python
@@ -82,7 +83,7 @@ def verify_webhook_signature(key: str, body: str, signature: str) -> bool:
 
     key_bytes = key.encode('utf-8')
     body_bytes = body.encode('utf-8')
-    
+
     hmac_obj = hmac.new(key_bytes, body_bytes, hashlib.sha256)
     computed_signature = hmac_obj.hexdigest()
     if hmac.compare_digest(computed_signature, signature):
@@ -98,7 +99,7 @@ def verify_webhook_signature(key: str, body: str, signature: str) -> bool:
 If using the dashboard: simply delete your webhook URL on the [Developers page](https://dash.metriport.com/developers),
 save, and enter it again.
 
-If using the API: set the webhook URL to an empty string via the [Update Settings endpoint](/home/api-reference/settings/post-settings),
+If using the API: set the webhook URL to an empty string via the [Update Settings endpoint](/medical-api/api-reference/settings/post-settings),
 and then set it to your desired URL making another request to the same endpoint.
 
 ## Format
@@ -148,7 +149,7 @@ When using the Medical API, Metriport will send Webhook messages containing stat
 as the data becomes available.
 
 You can see Webhook details specific to the Medical API, including which operations trigger Webhook messages,
-on [this page](/medical-api/more-info/webhooks).
+on [this page](/medical-api/handling-data/webhooks).
 
 ### Meta data
 
@@ -183,8 +184,8 @@ The format follows:
     </ResponseField>
 
     <ResponseField name="type" type="string" required>
-      The type of the webhook message. This can either be `ping` or one of the 
-      [Medical API types](/medical-api/more-info/webhooks#types-of-messages).
+      The type of the webhook message. This can either be `ping` or one of the
+      [Medical API types](/medical-api/handling-data/webhooks#types-of-messages).
     </ResponseField>
 
   </Expandable>
@@ -212,8 +213,8 @@ To retry failed requests, simply click the `Retry` button, and those requests wi
 
 ### Retry Using the API
 
-1. Using the [Get Webhook Status endpoint](/home/api-reference/settings/get-webhook), check to see if there are any failed requests;
-1. Then, use the [Retry Webhook requests endpoint](/home/api-reference/settings/retry-webhook), to kick off the retry.
+1. Using the [Get Webhook Status endpoint](/medical-api/api-reference/settings/get-webhook), check to see if there are any failed requests;
+1. Then, use the [Retry Webhook requests endpoint](/medical-api/api-reference/settings/retry-webhook), to kick off the retry.
 
 <Warning>
   Currently, the Metriport API doesn't implement automatic retries - let us know if this is
