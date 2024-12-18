@@ -26,10 +26,10 @@ import {
 } from "../../../../command/medical/patient/get-patient";
 import { EhrSources } from "../../shared";
 import {
+  createAthenaClient,
   createMetriportAddresses,
   createMetriportContacts,
   createNames,
-  getAthenaEnv,
 } from "../shared";
 
 const parallelPatientMatches = 5;
@@ -72,17 +72,13 @@ export async function syncAthenaPatientIntoMetriport({
     return metriportPatient.id;
   }
 
-  let athenaApi = api;
-  if (!athenaApi) {
-    const { environment, clientKey, clientSecret } = await getAthenaEnv();
-    athenaApi = await AthenaHealthApi.create({
-      threeLeggedAuthToken: accessToken,
+  const athenaApi =
+    api ??
+    (await createAthenaClient({
+      cxId,
       practiceId: athenaPracticeId,
-      environment,
-      clientKey,
-      clientSecret,
-    });
-  }
+      threeLeggedAuthToken: accessToken,
+    }));
   const athenaPatient = await getPatientFromAthena({
     api: athenaApi,
     cxId,
@@ -161,7 +157,7 @@ export async function syncAthenaPatientIntoMetriport({
         cxId,
         facilityId: defaultFacility.facilityId,
         ...createMetriportPatientCreateCmd(athenaPatient),
-        externalId: athenaPatientId,
+        externalId: athenaApi.stripPatientId(athenaPatientId),
       },
     });
     if (triggerDq) {

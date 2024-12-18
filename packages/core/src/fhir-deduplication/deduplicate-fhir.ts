@@ -1,12 +1,14 @@
 import { Bundle, EncounterDiagnosis, Resource } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
 import {
-  buildBundleEntry,
   ExtractedFhirTypes,
+  buildBundleEntry,
   extractFhirTypesFromBundle,
   initExtractedFhirTypes,
 } from "../external/fhir/shared/bundle";
+import { capture } from "../util";
 import { deduplicateAllergyIntolerances } from "./resources/allergy-intolerance";
+import { deduplicateCompositions } from "./resources/composition";
 import { deduplicateConditions } from "./resources/condition";
 import { deduplicateCoverages } from "./resources/coverage";
 import { deduplicateDiagReports } from "./resources/diagnostic-report";
@@ -26,7 +28,6 @@ import { deduplicatePractitioners } from "./resources/practitioner";
 import { deduplicateProcedures } from "./resources/procedure";
 import { deduplicateRelatedPersons } from "./resources/related-person";
 import { createRef } from "./shared";
-import { capture } from "../util";
 
 const medicationRelatedTypes = [
   "MedicationStatement",
@@ -41,6 +42,9 @@ export function deduplicateFhir(
 ): Bundle<Resource> {
   const deduplicatedBundle: Bundle = cloneDeep(fhirBundle);
   let resourceArrays = extractFhirTypesFromBundle(deduplicatedBundle);
+
+  const compositionsResult = deduplicateCompositions(resourceArrays.compositions);
+  resourceArrays.compositions = compositionsResult.combinedResources;
 
   const medicationsResult = deduplicateMedications(resourceArrays.medications);
   /* WARNING we need to replace references in the following resource arrays before deduplicating them because their deduplication keys 
