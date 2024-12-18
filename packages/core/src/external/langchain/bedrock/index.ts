@@ -1,4 +1,7 @@
-import { defaultProvider, DefaultProviderInit } from "@aws-sdk/credential-provider-node";
+import {
+  defaultProvider,
+  DefaultProviderInit,
+} from "@aws-sdk/credential-provider-node";
 
 import type { BaseChatModelParams } from "@langchain/core/language_models/chat_models";
 
@@ -374,7 +377,10 @@ export class BedrockChat extends BaseBedrockChat {
   }
 }
 
-export { convertMessagesToPromptAnthropic, convertMessagesToPrompt } from "./web";
+export {
+  convertMessagesToPromptAnthropic,
+  convertMessagesToPrompt,
+} from "./web.js";
 
 /**
  * @deprecated Use `BedrockChat` instead.
