@@ -38,6 +38,7 @@ import {
   PatientCreate,
   PatientUpdate,
   StartConsolidatedQueryProgressResponse,
+  PatientHieOptOutResponse,
 } from "../models/patient";
 import { PatientDTO } from "../models/patientDTO";
 import { SettingsResponse } from "../models/settings-response";
@@ -368,6 +369,24 @@ export class MetriportMedicalApi {
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return resp.data as PatientDTO;
+  }
+
+  /**
+   * Updates a patient's HIE opt-out status.
+   *
+   * @param patientId The ID of the patient whose opt-out status should be updated
+   * @param hieOptOut Boolean indicating whether to opt the patient out (true) or in (false)
+   * @returns The updated opt-out status
+   */
+  async updatePatientHieOptOut(
+    patientId: string,
+    hieOptOut: boolean
+  ): Promise<PatientHieOptOutResponse> {
+    const resp = await this.api.put(`${PATIENT_URL}/${patientId}/hie-opt-out`, undefined, {
+      params: { hieOptOut },
+    });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data;
   }
 
   // TODO #870 remove this

@@ -4,7 +4,7 @@ description: "Lists all Patients receiving care."
 api: "GET /medical/v1/patient"
 ---
 
-This is a paginated endpoint. For more information see [pagination](/medical-api/more-info/pagination).
+This is a paginated endpoint. For more information see [pagination](/medical-api/handling-data/pagination).
 
 ## Query Params
 
@@ -14,20 +14,22 @@ This is a paginated endpoint. For more information see [pagination](/medical-api
 </ParamField>
 
 <ParamField query="filters" type="string" Optional>
-  How to filter patients. It uses Metriport's [filter/search criteria](/medical-api/more-info/filters)
+  How to filter patients. It uses Metriport's [filter/search criteria](/medical-api/handling-data/filters)
   based on the main properties of a Patient: first name, last name, date of birth, ID, and external ID.
 
-  One can combine fields as needed, for example:
-  - `john or doe` will return all patients with the first and/or last name equal to `john` or `doe`.
-  - `john -doe` will return all patients with the first and/or last name equal to `john` but without any
-     `doe` either on first or last names.
-  - `john 2000` will return all patients with the first and/or last name equal to `john` and born in the
-    year `2000`.
-  - `2000-02-03` will return all patients born on `2020-02-03`.
-  - `ABCD1234` will return all patients with that external ID.
+One can combine fields as needed, for example:
 
-  Date of birth should follow the format ISO 8601 (`YYYY-MM-DD`), but partial values are accepted (`YYYY`,
-  `YYYY-MM`)
+- `john or doe` will return all patients with the first and/or last name equal to `john` or `doe`.
+- `john -doe` will return all patients with the first and/or last name equal to `john` but without any
+  `doe` either on first or last names.
+- `john 2000` will return all patients with the first and/or last name equal to `john` and born in the
+  year `2000`.
+- `2000-02-03` will return all patients born on `2020-02-03`.
+- `ABCD1234` will return all patients with that external ID.
+
+Date of birth should follow the format ISO 8601 (`YYYY-MM-DD`), but partial values are accepted (`YYYY`,
+`YYYY-MM`)
+
 </ParamField>
 
 ## Response
@@ -50,10 +52,7 @@ const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
 const facilityId = "018a80c4-292a-7486-a1234-9uiu76yhe234";
 const filters = "john doe";
-const { patients } = await metriport.listPatients(
-  facilityId, 
-  filters
-);
+const { patients } = await metriport.listPatients(facilityId, filters);
 ```
 
 </ResponseExample>
