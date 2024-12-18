@@ -33,3 +33,9 @@ export type GetConsolidatedQueryProgressResponse = {
 };
 
 export type StartConsolidatedQueryProgressResponse = ConsolidatedQuery;
+
+export type PatientHieOptOutResponse = {
+  id: string;
+  hieOptOut: boolean;
+  message: string;
+};

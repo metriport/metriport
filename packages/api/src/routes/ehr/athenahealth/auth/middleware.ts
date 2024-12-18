@@ -1,14 +1,16 @@
 import { NextFunction, Request, Response } from "express";
-import { EhrSources } from "../../../../external/ehr/shared";
 import { JwtTokenData } from "../../../../domain/jwt-token";
+import ForbiddenError from "../../../../errors/forbidden";
+import { EhrSources } from "../../../../external/ehr/shared";
 import {
   ParseResponse,
   processCxIdAsync,
-  processPatientRouteAsync,
   processDocumentRouteAsync,
+  processPatientRouteAsync,
 } from "../../shared";
 
 function parseAthenaHealthPracticeId(tokenData: JwtTokenData): ParseResponse {
+  if (tokenData.source !== EhrSources.athena) throw new ForbiddenError();
   const practiceId = tokenData.ah_practice;
   const departmentId = tokenData.ah_department;
   return {

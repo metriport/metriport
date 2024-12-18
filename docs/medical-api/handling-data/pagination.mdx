@@ -1,5 +1,6 @@
 ---
 title: "Pagination"
+icon: "scroll"
 description: "Retrieving larger amounts of data."
 ---
 
@@ -42,7 +43,6 @@ per page. We can see the total amount of items included (`113`).
 To get the next page, we can just call the URL on `nextPage`. When there's no `nextPage`, it means we're
 on the last one. As simple as that.
 
-
 ## Pagination parameters
 
 Metriport's pagination is designed to simplify its usage, hiding away the complexity for most situations.
@@ -53,7 +53,7 @@ But, it can be customized using these parameters:
   The maximum number of items per page is 500.
 - `fromItem`: the ID of the first item to be included in the current page, optional. If not provided, the
   first page will be returned.
-- `toItem`: the last item to be included in the current page, optional. If not provided, it will 
+- `toItem`: the last item to be included in the current page, optional. If not provided, it will
   automatically be calculated based on `firstItem` and `count`.
 
 Only two of the parameters above can be specified for each request.
