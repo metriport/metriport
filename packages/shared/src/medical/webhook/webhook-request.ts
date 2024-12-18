@@ -63,6 +63,7 @@ export const filtersSchema = z.record(z.string(), z.string().or(z.boolean().null
 
 export const consolidatedWebhookPatientSchema = z.object({
   patientId: z.string(),
+  externalId: z.string().optional(),
   status: z.enum(["completed", "failed"]),
   bundle: z.custom<SearchSetBundle | undefined>(),
   filters: filtersSchema.nullish(),
