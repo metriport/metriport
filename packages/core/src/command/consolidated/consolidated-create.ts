@@ -29,7 +29,6 @@ export type ConsolidatePatientDataCommand = {
   patient: Patient;
   destinationBucketName?: string | undefined;
   sourceBucketName?: string | undefined;
-  generateAiBrief?: boolean | undefined;
 };
 
 type BundleLocation = { bucket: string; key: string };
@@ -42,7 +41,6 @@ export async function createConsolidatedFromConversions({
   patient,
   destinationBucketName = getConsolidatedLocation(),
   sourceBucketName = getConsolidatedSourceLocation(),
-  generateAiBrief,
 }: ConsolidatePatientDataCommand): Promise<Bundle> {
   const patientId = patient.id;
   const { log } = out(`createConsolidatedFromConversions - cx ${cxId}, pat ${patientId}`);
@@ -68,17 +66,12 @@ export async function createConsolidatedFromConversions({
   log(`...done, from ${withDups.entry?.length} to ${deduped.entry?.length} resources`);
 
   const isAiBriefFeatureFlagEnabled = await isAiBriefFeatureFlagEnabledForCx(cxId);
-
   log(`isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled}`);
-  log(`generateAiBrief: ${generateAiBrief}`);
 
-  if (isAiBriefFeatureFlagEnabled && generateAiBrief) {
+  if (isAiBriefFeatureFlagEnabled) {
     const aiBriefContent = await summarizeFilteredBundleWithAI(withDups, cxId, patientId);
-    log(`aiBriefContent: ${aiBriefContent}`);
     const aiBriefFhirResource = await generateAiBriefFhirResource(aiBriefContent);
-    log(`aiBriefFhirResource: ${aiBriefFhirResource}`);
     if (aiBriefFhirResource) {
-      log(`Adding aiBriefFhirResource to the bundle`);
       deduped.entry?.push(buildBundleEntry(aiBriefFhirResource));
     }
   }

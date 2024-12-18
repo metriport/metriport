@@ -30,7 +30,6 @@ import BadRequestError from "../../errors/bad-request";
 import NotFoundError from "../../errors/not-found";
 import { countResources } from "../../external/fhir/patient/count-resources";
 import { REQUEST_ID_HEADER_NAME } from "../../routes/header";
-import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
 import { getOutputFormatFromRequest } from "../helpers/output-format";
@@ -236,7 +235,6 @@ const medicalRecordFormatSchema = z.enum(mrFormat);
  *        the file, which is active for 3 minutes. If not provided, will send json payload in the webhook.
  * @param req.body Optional metadata to be sent through Webhook.
  * @param req.query.fromDashboard Optional parameter to indicate that the request is coming from the dashboard.
- * @param req.generateAiBrief Optional flag to include an AI-generated medical record brief into the medical record summary. Note, that you have to request access to this feature by contacting Metriport directly.
  * @return status for querying the Patient's consolidated data.
  */
 router.post(
@@ -250,9 +248,6 @@ router.post(
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
     const type = getFrom("query").optional("conversionType", req);
     const fromDashboard = getFromQueryAsBoolean("fromDashboard", req);
-    const generateAiBrief = Config.isSandbox()
-      ? false
-      : getFromQueryAsBoolean("generateAiBrief", req);
 
     const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
     const cxConsolidatedRequestMetadata = cxRequestMetadataSchema.parse(req.body);
@@ -265,7 +260,6 @@ router.post(
       dateTo,
       conversionType,
       cxConsolidatedRequestMetadata: cxConsolidatedRequestMetadata?.metadata,
-      generateAiBrief,
       fromDashboard,
     });
 

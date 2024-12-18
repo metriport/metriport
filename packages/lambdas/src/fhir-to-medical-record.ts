@@ -57,12 +57,11 @@ export async function handler({
   dateFrom,
   dateTo,
   conversionType,
-  generateAiBrief,
 }: Input): Promise<Output> {
   const { log } = out(`cx ${cxId}, patient ${patientId}`);
   log(
     `Running with conversionType: ${conversionType}, dateFrom: ${dateFrom}, ` +
-      `dateTo: ${dateTo}, generateAiBrief: ${generateAiBrief}, fileName: ${fhirFileName}, bucket: ${bucketName}}`
+      `dateTo: ${dateTo}, fileName: ${fhirFileName}, bucket: ${bucketName}}`
   );
   try {
     const cxsWithADHDFeatureFlagValue = await getCxsWithADHDFeatureFlagValue();

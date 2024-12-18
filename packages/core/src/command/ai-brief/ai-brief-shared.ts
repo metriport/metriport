@@ -27,9 +27,12 @@ export function getAiBriefContentFromBundle(bundle: Bundle): string | undefined 
   const binaryResourceEntry = bundle.entry?.find(
     entry => entry.resource?.resourceType === "Binary"
   );
-  const binaryResource = binaryResourceEntry?.resource as Binary | undefined;
 
-  if (!binaryResource || !binaryResource.data) return undefined;
+  if (!binaryResourceEntry) return undefined;
+
+  const binaryResource = binaryResourceEntry.resource as Binary;
+
+  if (!binaryResource.data) return undefined;
 
   return Buffer.from(binaryResource.data, "base64").toString("utf-8");
 }
