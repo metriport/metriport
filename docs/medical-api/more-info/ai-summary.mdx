@@ -1,0 +1,50 @@
+---
+title: "AI Summary"
+description: "How to use the AI Summary feature"
+---
+
+The AI Summary feature provides a concise, natural language overview of a patient's medical record history. It analyzes the available medical data and generates an easy-to-read narrative that highlights key medical events, conditions, and treatments. You can access AI summaries through either the API or the dashboard.
+
+## API
+
+When using the API, you can access the AI summary by triggering a [Consolidated Data Query Start](/medical-api/api-reference/fhir/consolidated-data-query-post) request. Depending on the `conversionType` you choose, the AI summary will be included in the response in a different format.
+
+### FHIR Bundle
+
+When triggering a consolidated query via the API with `conversionType: "json"`, the AI summary will be included in the response under a [Binary resource](/medical-api/fhir/resources/binary).
+
+The AI summary will be included in a Binary resource with the following format:
+
+```json
+{
+  "resourceType": "Binary",
+  "id": "1234",
+  "meta": {
+    "versionId": "1",
+    "lastUpdated": "2023-06-14T10:30:00Z",
+    "source": "ai-generated-brief"
+  },
+  "contentType": "text/plain",
+  "data": "dGVzdCBzdW1tYXJ5"
+}
+```
+
+### MR Summary PDF
+
+When triggering a consolidated query via the API with `conversionType: "pdf"`, the AI summary appears at the top of the Medical Record Summary PDF document.
+
+<Frame>
+  <img src="/images/ai-summary-pdf.png" alt="AI Summary in PDF" />
+</Frame>
+
+## Dashboard
+
+Once a patient's data is loaded in the Metriport dashboard, you can view their AI summary at the top of their medical record history.
+
+## Beta Status
+
+<Note>
+  The AI Summary feature is currently in Beta. While we strive for accuracy, these summaries should
+  not be used as the sole source of truth for medical decision-making. We welcome your feedback to
+  help us improve this feature.
+</Note>
