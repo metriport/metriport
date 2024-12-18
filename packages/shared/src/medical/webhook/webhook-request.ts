@@ -75,15 +75,54 @@ export const consolidatedWebhookRequestSchema = z.object({
 });
 export type ConsolidatedWebhookRequest = z.infer<typeof consolidatedWebhookRequestSchema>;
 
-// TODO Implement
+export const documentDownloadWebhookPatientSchema = z.object({
+  patientId: z.string(),
+  status: z.enum(["completed", "failed"]),
+  documents: z.array(
+    z.object({
+      id: z.string(),
+      fileName: z.string(),
+      description: z.string().optional(),
+      status: z.string().optional(),
+      indexed: z.string().optional(), // ISO-8601
+      mimeType: z.string().optional(),
+      size: z.number().optional(), // bytes
+      type: z
+        .object({
+          coding: z
+            .array(
+              z.object({
+                system: z.string().optional().nullable(),
+                code: z.string().optional().nullable(),
+                display: z.string().optional().nullable(),
+              })
+            )
+            .optional(),
+          text: z.string().optional(),
+        })
+        .optional(),
+    })
+  ),
+});
+export type DocumentDownloadWebhookPatient = z.infer<typeof documentDownloadWebhookPatientSchema>;
+
 export const documentDownloadWebhookRequestSchema = z.object({
   meta: createWebhookMetadataSchema(docDownloadWebhookTypeSchema),
+  patients: documentDownloadWebhookPatientSchema.array(),
 });
 export type DocumentDownloadWebhookRequest = z.infer<typeof documentDownloadWebhookRequestSchema>;
 
-// TODO Implement
+export const documentConversionWebhookPatientSchema = z.object({
+  patientId: z.string(),
+  status: z.enum(["completed", "failed"]),
+});
+export type DocumentConversionWebhookPatient = z.infer<
+  typeof documentConversionWebhookPatientSchema
+>;
+
 export const documentConversionWebhookRequestSchema = z.object({
   meta: createWebhookMetadataSchema(docConversionWebhookTypeSchema),
+  patients: documentConversionWebhookPatientSchema.array(),
 });
 export type DocumentConversionWebhookRequest = z.infer<
   typeof documentConversionWebhookRequestSchema
