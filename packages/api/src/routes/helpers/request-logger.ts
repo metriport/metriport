@@ -50,7 +50,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
       analyzeRoute({
         req,
         method,
-        client: client,
+        client,
         url: path,
         params,
         query,
@@ -62,7 +62,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
   });
 };
 
-function splitUrlToClientAndPath(url: string): { client?: string; path: string } {
+export function splitUrlToClientAndPath(url: string): { client?: string; path: string } {
   const separator = "/medical/v1";
   const separatorIndex = url.indexOf(separator);
 
@@ -73,7 +73,7 @@ function splitUrlToClientAndPath(url: string): { client?: string; path: string }
   const clientSlice = url.slice(0, separatorIndex);
   const pathSlice = url.slice(separatorIndex);
 
-  const client = clientSlice.length > 0 ? clientSlice.replace("/", " ").trim() : undefined;
+  const client = clientSlice.length > 0 ? clientSlice.replace(/\//g, " ").trim() : undefined;
 
   return { client, path: pathSlice };
 }
