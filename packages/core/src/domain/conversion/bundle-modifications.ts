@@ -15,7 +15,6 @@ export type FhirConverterParams = {
   invalidAccess: string | undefined;
 };
 
-// TODO: Add unit tests
 export function postProcessBundle(
   fhirBundle: Bundle<Resource>,
   patientId: string,
@@ -28,7 +27,7 @@ export function postProcessBundle(
   return withoutPatient;
 }
 
-function replaceIDs(fhirBundle: Bundle<Resource>, patientId: string): Bundle<Resource> {
+export function replaceIDs(fhirBundle: Bundle<Resource>, patientId: string): Bundle<Resource> {
   const updatedBundle = cloneDeep(fhirBundle);
   const stringsToReplace: { old: string; new: string }[] = [];
   if (!updatedBundle.entry) throw new Error(`Missing bundle entries`);
@@ -60,7 +59,7 @@ function replaceIDs(fhirBundle: Bundle<Resource>, patientId: string): Bundle<Res
   return JSON.parse(updatedBundleStr);
 }
 
-function addExtensionToConversion(
+export function addExtensionToConversion(
   fhirBundle: Bundle<Resource>,
   extension: FhirExtension
 ): Bundle<Resource> {
@@ -80,7 +79,7 @@ function addExtensionToConversion(
   return updatedBundle;
 }
 
-function addMissingRequests(fhirBundle: Bundle<Resource>): Bundle<Resource> {
+export function addMissingRequests(fhirBundle: Bundle<Resource>): Bundle<Resource> {
   const updatedBundle = cloneDeep(fhirBundle);
   if (!updatedBundle?.entry?.length) return updatedBundle;
   updatedBundle.entry.forEach(e => {
@@ -94,7 +93,7 @@ function addMissingRequests(fhirBundle: Bundle<Resource>): Bundle<Resource> {
   return updatedBundle;
 }
 
-function removePatientFromConversion(fhirBundle: Bundle<Resource>): Bundle<Resource> {
+export function removePatientFromConversion(fhirBundle: Bundle<Resource>): Bundle<Resource> {
   const updatedBundle = cloneDeep(fhirBundle);
   const entries = updatedBundle?.entry ?? [];
   const pos = entries.findIndex(e => e.resource?.resourceType === "Patient");

@@ -1,14 +1,14 @@
+import { Bundle, Resource } from "@medplum/fhirtypes";
+import { postProcessBundle } from "@metriport/core/domain/conversion/bundle-modifications";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
-import { DOC_ID_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
+import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
+import { buildDocIdFhirExtension } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { AxiosInstance } from "axios";
-import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
-import * as uuid from "uuid";
 import { getFileContents, makeDirIfNeeded, writeFileContents } from "../shared/fs";
 import { getPatientIdFromFileName } from "./shared";
 import path = require("node:path");
-import { Bundle, Resource } from "@medplum/fhirtypes";
 
 export async function convertCDAsToFHIR(
   baseFolderName: string,
@@ -26,7 +26,7 @@ export async function convertCDAsToFHIR(
     fileNames,
     async fileName => {
       try {
-        const conversionResult = await convert(baseFolderName, fileName, api, fhirExtension);
+        const conversionResult = await convert(baseFolderName, fileName, api);
         const destFileName = path.join(outputFolderName, fileName.replace(".xml", fhirExtension));
         makeDirIfNeeded(destFileName);
         writeFileContents(destFileName, JSON.stringify(conversionResult));
@@ -53,12 +53,7 @@ export async function convertCDAsToFHIR(
   return { errorCount, nonXMLBodyCount };
 }
 
-export async function convert(
-  baseFolderName: string,
-  fileName: string,
-  api: AxiosInstance,
-  fhirExtension: string
-) {
+export async function convert(baseFolderName: string, fileName: string, api: AxiosInstance) {
   const patientId = getPatientIdFromFileName(fileName);
   const fileContents = getFileContents(baseFolderName + fileName);
   if (fileContents.includes("nonXMLBody")) {
@@ -95,115 +90,13 @@ export async function convert(
     }
   }
 
-  addMissingRequests(combinedBundle);
-
   const normalizedBundle = normalize({
     patientId,
     bundle: combinedBundle,
-  }) as FHIRBundle;
-
-  // TODO: use the logic from @metriport/core
-  const updatedConversionResult = replaceIDs(normalizedBundle, patientId);
-
-  addExtensionToConversion(updatedConversionResult, {
-    url: "http://metriport.com/fhir/extension/patientId",
-    valueString: fhirExtension,
   });
-  removePatientFromConversion(updatedConversionResult);
+
+  const documentExtension = buildDocIdFhirExtension(fileName);
+  const updatedConversionResult = postProcessBundle(normalizedBundle, patientId, documentExtension);
 
   return updatedConversionResult;
-}
-
-interface Entry {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  request?: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  resource?: any;
-}
-
-// TODO: Move all the logic below to a shared file.
-// This is currently duplicated from the sqs to converter lambda
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function addMissingRequests(fhirBundle: any) {
-  if (!fhirBundle?.entry?.length) return;
-  fhirBundle.entry.forEach((e: Entry) => {
-    if (!e.request && e.resource) {
-      e.request = {
-        method: "PUT",
-        url: `${e.resource.resourceType}/${e.resource.id}`,
-      };
-    }
-  });
-}
-
-type FHIRExtension = {
-  url: string;
-  valueString: string;
-};
-
-export type FHIRBundle = {
-  resourceType: "Bundle";
-  type: "batch";
-  entry: {
-    fullUrl: string;
-    resource: {
-      resourceType: string;
-      id: string;
-      extension?: FHIRExtension[];
-      meta?: {
-        lastUpdated: string;
-        source: string;
-      };
-    };
-    request?: {
-      method: string;
-      url: string;
-    };
-  }[];
-};
-
-function replaceIDs(fhirBundle: FHIRBundle, patientId: string): FHIRBundle {
-  const stringsToReplace: { old: string; new: string }[] = [];
-  for (const bundleEntry of fhirBundle.entry) {
-    if (!bundleEntry.resource) throw new Error(`Missing resource`);
-    if (!bundleEntry.resource.id) throw new Error(`Missing resource id`);
-    if (bundleEntry.resource.id === patientId) continue;
-
-    const docIdExtension = bundleEntry.resource.extension?.find(
-      ext => ext.url === DOC_ID_EXTENSION_URL
-    );
-
-    const idToUse = bundleEntry.resource.id;
-    const newId = uuid.v4();
-    bundleEntry.resource.id = newId;
-    stringsToReplace.push({ old: idToUse, new: newId });
-    // replace meta's source and profile
-    bundleEntry.resource.meta = {
-      lastUpdated: bundleEntry.resource.meta?.lastUpdated ?? new Date().toISOString(),
-      source: docIdExtension?.valueString ?? "",
-    };
-  }
-  let fhirBundleStr = JSON.stringify(fhirBundle);
-  for (const stringToReplace of stringsToReplace) {
-    // doing this is apparently more efficient than just using replace
-    const regex = new RegExp(stringToReplace.old, "g");
-    fhirBundleStr = fhirBundleStr.replace(regex, stringToReplace.new);
-  }
-  return JSON.parse(fhirBundleStr);
-}
-
-function removePatientFromConversion(fhirBundle: FHIRBundle) {
-  const entries = fhirBundle?.entry ?? [];
-  const pos = entries.findIndex(e => e.resource?.resourceType === "Patient");
-  if (pos >= 0) fhirBundle.entry.splice(pos, 1);
-}
-
-function addExtensionToConversion(fhirBundle: FHIRBundle, extension: FHIRExtension) {
-  if (fhirBundle?.entry?.length) {
-    for (const bundleEntry of fhirBundle.entry) {
-      if (!bundleEntry.resource) continue;
-      if (!bundleEntry.resource.extension) bundleEntry.resource.extension = [];
-      bundleEntry.resource.extension.push(extension);
-    }
-  }
 }
