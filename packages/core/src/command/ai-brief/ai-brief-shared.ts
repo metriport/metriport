@@ -16,7 +16,7 @@ export async function generateAiBriefFhirResource(
     meta: {
       versionId: "1",
       lastUpdated: dayjs().toISOString(),
-      source: "ai-generated-brief",
+      source: "metriport:ai-generated-brief",
     },
     contentType: "text/plain",
     data: encodedContent,
