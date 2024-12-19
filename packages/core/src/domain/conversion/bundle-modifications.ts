@@ -30,7 +30,9 @@ export function postProcessBundle(
 export function replaceIDs(fhirBundle: Bundle<Resource>, patientId: string): Bundle<Resource> {
   const updatedBundle = cloneDeep(fhirBundle);
   const stringsToReplace: { old: string; new: string }[] = [];
-  if (!updatedBundle.entry) throw new Error(`Missing bundle entries`);
+  if (!updatedBundle.entry || updatedBundle.entry.length === 0) {
+    throw new Error(`Missing bundle entries`);
+  }
   for (const bundleEntry of updatedBundle.entry) {
     if (!bundleEntry.resource) throw new Error(`Missing resource`);
     if (!bundleEntry.resource.id) throw new Error(`Missing resource id`);
@@ -96,6 +98,12 @@ export function addMissingRequests(fhirBundle: Bundle<Resource>): Bundle<Resourc
 export function removePatientFromConversion(fhirBundle: Bundle<Resource>): Bundle<Resource> {
   const updatedBundle = cloneDeep(fhirBundle);
   const entries = updatedBundle?.entry ?? [];
+  const patientEntries = entries.filter(e => e.resource?.resourceType === "Patient");
+
+  if (patientEntries.length > 1) {
+    throw new Error("Multiple Patient resources found in Bundle");
+  }
+
   const pos = entries.findIndex(e => e.resource?.resourceType === "Patient");
   if (pos >= 0) updatedBundle.entry?.splice(pos, 1);
   return updatedBundle;
