@@ -10,33 +10,6 @@ import { getFileContents, makeDirIfNeeded, writeFileContents } from "../shared/f
 import { getPatientIdFromFileName } from "./shared";
 import path = require("node:path");
 
-// TODO: Follow up to remove these types
-type FhirExtension = {
-  url: string;
-  valueString: string;
-};
-
-export type FHIRBundle = {
-  resourceType: "Bundle";
-  type: "batch";
-  entry: {
-    fullUrl: string;
-    resource: {
-      resourceType: string;
-      id: string;
-      extension?: FhirExtension[];
-      meta?: {
-        lastUpdated: string;
-        source: string;
-      };
-    };
-    request?: {
-      method: string;
-      url: string;
-    };
-  }[];
-};
-
 export async function convertCDAsToFHIR(
   baseFolderName: string,
   fileNames: string[],
@@ -80,7 +53,11 @@ export async function convertCDAsToFHIR(
   return { errorCount, nonXMLBodyCount };
 }
 
-export async function convert(baseFolderName: string, fileName: string, api: AxiosInstance) {
+export async function convert(
+  baseFolderName: string,
+  fileName: string,
+  api: AxiosInstance
+): Promise<Bundle<Resource>> {
   const patientId = getPatientIdFromFileName(fileName);
   const fileContents = getFileContents(baseFolderName + fileName);
   if (fileContents.includes("nonXMLBody")) {
