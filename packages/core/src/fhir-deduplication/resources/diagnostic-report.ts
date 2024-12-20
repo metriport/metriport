@@ -117,6 +117,7 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
       }
     });
 
+    console.log("practitionerRefsSet", practitionerRefsSet);
     const practitionerRefs = Array.from(practitionerRefsSet).map(p => ({ practitioner: p }));
 
     if (isResultPresent) {
@@ -138,9 +139,7 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
         const practitionerAndDateKeys = createKeysFromObjectArray({ datetime }, practitionerRefs);
         setterKeys.push(...practitionerAndDateKeys);
         getterKeys.push(...practitionerAndDateKeys);
-      }
-
-      if (practitionerRefs.length === 0) {
+      } else {
         const dateKey = JSON.stringify({ datetime });
         setterKeys.push(dateKey);
         getterKeys.push(dateKey);
