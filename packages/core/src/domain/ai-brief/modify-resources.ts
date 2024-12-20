@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Address,
   AllergyIntolerance,
@@ -150,10 +149,15 @@ export type SlimPatient = Omit<Patient, "name"> & {
 
 export function getSlimPatient(res: Patient): SlimPatient {
   const updRes = cloneDeep(res);
-  const { address, telecom, text, id, ...otherFields } = updRes;
+  const name = getNameString(updRes.name);
+  delete updRes.address;
+  delete updRes.telecom;
+  delete updRes.text;
+  delete updRes.id;
+
   return {
-    ...otherFields,
-    name: getNameString(updRes.name),
+    ...updRes,
+    name,
   };
 }
 
@@ -173,9 +177,11 @@ export type SlimAllergyIntolerance = Omit<
 
 function getSlimAllergyIntolerance(res: AllergyIntolerance): SlimAllergyIntolerance {
   const updRes = cloneDeep(res);
-  const status = Array.from(
+
+  const rawStatus = Array.from(
     new Set(updRes.clinicalStatus?.coding?.flatMap(coding => coding.code || []))
   ).join(", ");
+  const status = isUselessStatus(rawStatus) ? undefined : rawStatus;
 
   const context = updRes.reaction?.flatMap(reaction => {
     const substance = getUniqueDisplaysString(reaction.substance);
@@ -189,7 +195,7 @@ function getSlimAllergyIntolerance(res: AllergyIntolerance): SlimAllergyIntolera
 
   return {
     ...updRes,
-    status: isUselessStatus(status) ? undefined : status,
+    status,
     context,
   };
 }
@@ -212,16 +218,21 @@ function getSlimImmunization(res: Immunization): SlimImmunization | undefined {
       return undefined;
     }
   }
+  const vaccineCode = getUniqueDisplaysString(updRes.vaccineCode);
+  const site = updRes.site?.text;
+  const route = getUniqueDisplaysString(updRes.route);
 
-  // Remove the unwanted properties directly
+  delete updRes.vaccineCode;
+  delete updRes.site;
+  delete updRes.route;
   delete updRes.lotNumber;
   delete updRes.doseQuantity;
 
   return {
     ...updRes,
-    vaccineCode: getUniqueDisplaysString(updRes.vaccineCode),
-    site: updRes.site?.text,
-    route: getUniqueDisplaysString(updRes.route),
+    vaccineCode,
+    site,
+    route,
   };
 }
 
@@ -234,11 +245,19 @@ export type SlimPractitioner = Omit<Practitioner, "name" | "qualification" | "ad
 
 function getSlimPractitioner(res: Practitioner): SlimPractitioner {
   const updRes = cloneDeep(res);
+  const name = getNameString(updRes.name);
+  const qualification = getLongestDisplay(updRes.qualification?.[0]?.code);
+  const address = getAddressString(updRes.address);
+
+  delete updRes.name;
+  delete updRes.qualification;
+  delete updRes.address;
+
   return {
     ...updRes,
-    name: getNameString(updRes.name),
-    qualification: getLongestDisplay(updRes.qualification?.[0]?.code),
-    address: getAddressString(updRes.address),
+    name,
+    qualification,
+    address,
   };
 }
 
@@ -253,17 +272,21 @@ function getSlimProcedure(res: Procedure): SlimProcedure | undefined {
   const updRes = cloneDeep(res);
   const name = getUniqueDisplaysString(updRes.code);
   if (name?.includes("no data")) return undefined;
+  const status = isUselessStatus(updRes.status) ? undefined : updRes.status;
 
-  const bodySite = getUniqueDisplaysString(updRes.bodySite);
+  const bodySite = getUniqueDisplaysString(updRes.bodySite) ?? undefined;
   delete updRes.code;
+  delete updRes.status;
+  delete updRes.bodySite;
   delete updRes.reasonCode; // TODO: #2510 - Introduce term server lookup here
   delete updRes.report;
   delete updRes.note;
+
   return {
     ...updRes,
     name,
-    status: isUselessStatus(updRes.status) ? undefined : updRes.status,
-    bodySite: bodySite ?? undefined,
+    status,
+    bodySite,
   };
 }
 
@@ -330,12 +353,13 @@ function getSlimDiagnosticReport(res: DiagnosticReport): SlimDiagnosticReport | 
     return undefined;
   }
 
-  delete updRes.code;
   const category = updRes.category
     ?.map(cat => cat.coding?.flatMap(coding => coding.display || []))
     .join(", ");
 
   const status = isUselessStatus(updRes.status) ? undefined : (updRes.status as string);
+  delete updRes.code;
+  delete updRes.status;
 
   return {
     ...updRes,
@@ -366,25 +390,31 @@ export type SlimObservation = Omit<
 
 function getSlimObservation(res: Observation): SlimObservation {
   const updRes = cloneDeep(res);
+  const category = getUniqueDisplaysString(updRes.category);
+  const status = isUselessStatus(updRes.status) ? undefined : (updRes.status as string);
+  const reading = getUniqueDisplaysString(updRes.code);
+  const value = updRes.valueCodeableConcept
+    ? getUniqueDisplaysString(updRes.valueCodeableConcept)
+    : getQuantityString(updRes.valueQuantity);
+  const interpretation = getUniqueDisplaysString(updRes.interpretation);
   const refRange = updRes.referenceRange?.map(range => ({
     low: getQuantityString(range.low),
     high: getQuantityString(range.high),
   }));
-  const status = isUselessStatus(updRes.status) ? undefined : (updRes.status as string);
+
   delete updRes.code;
+  delete updRes.category;
   delete updRes.performer;
   delete updRes.valueCodeableConcept;
   delete updRes.valueQuantity;
 
   return {
     ...updRes,
-    category: getUniqueDisplaysString(updRes.category),
+    category,
     status,
-    reading: getUniqueDisplaysString(updRes.code),
-    value: updRes.valueCodeableConcept
-      ? getUniqueDisplaysString(updRes.valueCodeableConcept)
-      : getQuantityString(updRes.valueQuantity),
-    interpretation: getUniqueDisplaysString(updRes.interpretation),
+    reading,
+    value,
+    interpretation,
     referenceRange: refRange,
   };
 }
@@ -396,10 +426,12 @@ export type SlimMedication = Omit<Medication, "name"> & {
 
 function getSlimMedication(res: Medication): SlimMedication {
   const updRes = cloneDeep(res);
+  const name = getUniqueDisplaysString(updRes.code);
+
   delete updRes.code;
   return {
     ...updRes,
-    name: getUniqueDisplaysString(updRes.code),
+    name,
   };
 }
 
@@ -409,6 +441,7 @@ export type SlimMedicationRequest = Omit<MedicationRequest, "requester"> & {
 
 function getSlimMedicationRequest(res: MedicationRequest): SlimMedicationRequest {
   const updRes = cloneDeep(res);
+
   delete updRes.requester;
   return {
     ...updRes,
@@ -458,8 +491,8 @@ function getSlimMedicationAdministration(
   const updRes = cloneDeep(res);
   const dose = getQuantityString(updRes.dosage?.dose);
   const route = getUniqueDisplaysString(updRes.dosage?.route);
-  delete updRes.dosage;
 
+  delete updRes.dosage;
   return {
     ...updRes,
     dose,
@@ -476,15 +509,21 @@ export type SlimCondition = Omit<Condition, "name" | "category" | "clinicalStatu
 
 function getSlimCondition(res: Condition): SlimCondition {
   const updRes = cloneDeep(res);
+  const name = getUniqueDisplaysString(updRes.code);
+  const category = getUniqueDisplaysString(updRes.category);
+  const clinicalStatus = isUselessStatus(getUniqueDisplaysString(updRes.clinicalStatus))
+    ? undefined
+    : getUniqueDisplaysString(updRes.clinicalStatus);
+
   delete updRes.code;
+  delete updRes.category;
+  delete updRes.clinicalStatus;
 
   return {
     ...updRes,
-    name: getUniqueDisplaysString(updRes.code),
-    category: getUniqueDisplaysString(updRes.category),
-    clinicalStatus: isUselessStatus(getUniqueDisplaysString(updRes.clinicalStatus))
-      ? undefined
-      : getUniqueDisplaysString(updRes.clinicalStatus),
+    name,
+    category,
+    clinicalStatus,
   };
 }
 
@@ -496,6 +535,7 @@ export type SlimOrganization = Omit<Organization, "address" | "name"> & {
 
 function getSlimOrganization(res: Organization): SlimOrganization {
   const updRes = cloneDeep(res);
+
   return {
     ...updRes,
     address: getAddressString(updRes.address),
@@ -569,15 +609,19 @@ function getUniqueDisplays(
   const concepts = toArray(concept);
   concepts.forEach(concept => {
     const text = concept.text;
-    if (text) uniqueDescriptors.add(text.trim().toLowerCase());
+    if (text) uniqueDescriptors.add(cleanupName(text));
 
     concept.coding?.forEach(coding => {
-      if (coding.display) uniqueDescriptors.add(coding.display.trim().toLowerCase());
+      if (coding.display) uniqueDescriptors.add(cleanupName(coding.display));
     });
   });
 
   if (uniqueDescriptors.size === 0) return undefined;
   return Array.from(uniqueDescriptors);
+}
+
+function cleanupName(str: string): string {
+  return str.trim().replace("(finding)", "").replace("(disorder)", "").toLowerCase();
 }
 
 function isUselessStatus(status: string | undefined): boolean {

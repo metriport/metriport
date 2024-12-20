@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
@@ -56,12 +55,7 @@ const relevantResources = [
   "Organization",
 ];
 
-const referenceResources = [
-  "Practitioner",
-  "Organization",
-  "Observation", // maybe worth keeping..
-  "Location",
-];
+const referenceResources = ["Practitioner", "Organization", "Observation", "Location"];
 
 const documentVariableName = "text";
 
@@ -196,7 +190,7 @@ export async function summarizeFilteredBundleWithAI(
 
     const duration = elapsedTimeFromNow(startedAt);
     log(
-      `Done. Finished in ${duration} ms. Input cost: ${costs.input}, output cost: ${costs.output}. Total cost: ${costs.total}`
+      `Done. Finished in ${duration} ms. Total tokens used: ${totalTokensUsed}. Input cost: ${costs.input}, output cost: ${costs.output}. Total cost: ${costs.total}`
     );
 
     analytics({
@@ -380,7 +374,15 @@ function replaceReferencesWithData(
           if (name.length > 0) orgs.push(name);
         } else if (performer?.resourceType === "Practitioner") {
           const name = performer.name;
-          if (name && name.length > 0) practitioners.push(name);
+          if (name && name.length > 0) {
+            const nameParts = name.split(" ");
+            // Taking only the first 2-3 practitioners, in case the whole care team is present in the list
+            if (nameParts.length > 6) {
+              practitioners.push(nameParts.slice(0, 6).join(" "));
+            } else {
+              practitioners.push(name);
+            }
+          }
         }
       });
 
@@ -420,7 +422,7 @@ function replaceReferencesWithData(
         })
         .join(", ");
 
-      updRes.reference = { practitioner };
+      updRes.reference = { ...updRes.reference, practitioner };
     }
   }
 
@@ -441,7 +443,7 @@ function replaceReferencesWithData(
       });
 
       delete updRes.result;
-      updRes.reference = { results };
+      updRes.reference = { ...updRes.reference, results };
     }
   }
 
@@ -449,12 +451,15 @@ function replaceReferencesWithData(
     const refString = updRes.medicationReference?.reference;
     if (refString) {
       const medication = map.get(refString) as Medication | undefined;
+      const medicationCopy = cloneDeep(medication);
+
       referencedIds.add(refString);
-      if (medication) {
-        const { id, resourceType, ...otherFields } = medication;
-        updRes.reference = {
-          medication: { ...otherFields },
-        };
+      if (medicationCopy) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { resourceType, ...otherFields } = medicationCopy;
+        delete medicationCopy.id;
+
+        updRes.reference = { ...updRes.reference, medication: { ...otherFields } };
         delete updRes.medicationReference;
       }
     }
@@ -464,12 +469,15 @@ function replaceReferencesWithData(
     const refString = updRes.recorder?.reference;
     if (refString) {
       const individual = map.get(refString);
+      const individualCopy = cloneDeep(individual);
+
       referencedIds.add(refString);
-      if (individual && individual.resourceType === "Practitioner") {
-        const { id, resourceType, ...otherFields } = individual;
-        updRes.reference = {
-          practitioner: { ...otherFields },
-        };
+      if (individualCopy && individualCopy.resourceType === "Practitioner") {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { resourceType, ...otherFields } = individualCopy;
+        delete individualCopy.id;
+
+        updRes.reference = { ...updRes.reference, practitioner: { ...otherFields } };
         delete updRes.recorder;
       }
     }
@@ -480,15 +488,20 @@ function replaceReferencesWithData(
       const manufacturer = updRes.manufacturer;
       delete updRes.manufacturer;
       if (manufacturer.display) {
-        updRes.reference = { manufacturer: { name: manufacturer.display } };
+        updRes.reference = { ...updRes.reference, manufacturer: { name: manufacturer.display } };
       } else if (manufacturer.reference) {
         const refString = manufacturer.reference;
         const org = map.get(refString) as SlimOrganization;
+        const orgCopy = cloneDeep(org);
+
         referencedIds.add(refString);
 
-        if (org) {
-          const { id, resourceType, ...otherFields } = org;
-          updRes.reference = { manufacturer: { ...otherFields } };
+        if (orgCopy) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { resourceType, ...otherFields } = orgCopy;
+          delete orgCopy.id;
+
+          updRes.reference = { ...updRes.reference, manufacturer: { ...otherFields } };
         }
       }
     }
@@ -621,7 +634,7 @@ function filterOutDuplicateReports(reports: SlimDiagnosticReport[]): SlimDiagnos
  * Adds the SlimPatient into the bundle.
  */
 function applyFinalFilters(
-  resources: SlimResource[] | undefined,
+  resources: SlimResource[],
   containedResourceIds: string[],
   patient: Patient
 ): SlimResource[] {
@@ -633,8 +646,8 @@ function applyFinalFilters(
     if (referenceResources.includes(entry.resourceType)) return;
     if (entry.id && containedResourceIds.includes(entry.id)) return;
 
-    const { id, ...otherFields } = entry;
-    cleanPayload.push({ ...otherFields });
+    delete entry.id;
+    cleanPayload.push({ ...entry });
   });
   cleanPayload.push(slimmerPatient);
 
