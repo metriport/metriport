@@ -94,14 +94,4 @@ describe("groupSameImmunizations", () => {
     const { immunizationsMap } = groupSameImmunizations([immunization]);
     expect(immunizationsMap.size).toBe(0);
   });
-
-  // it("removes immunizations with unknown date", () => {
-  //   immunization.occurrenceDateTime = dateTime.start;
-  //   immunization2.occurrenceString = "unknown";
-  //   immunization.vaccineCode = cvxCodeFlu;
-  //   immunization2.vaccineCode = cvxCodeFlu;
-
-  //   const { immunizationsMap } = groupSameImmunizations([immunization, immunization2]);
-  //   expect(immunizationsMap.size).toBe(1);
-  // });
 });
