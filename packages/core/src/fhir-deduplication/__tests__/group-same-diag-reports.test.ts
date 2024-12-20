@@ -28,6 +28,16 @@ beforeEach(() => {
   diagReportId2 = faker.string.uuid();
   diagReport = makeDiagnosticReport({ id: diagReportId });
   diagReport2 = makeDiagnosticReport({ id: diagReportId2 });
+
+  delete diagReport.effectiveDateTime;
+  delete diagReport.performer;
+  delete diagReport.presentedForm;
+  delete diagReport.result;
+
+  delete diagReport2.effectiveDateTime;
+  delete diagReport2.performer;
+  delete diagReport2.presentedForm;
+  delete diagReport2.result;
 });
 
 describe("groupSameDiagnosticReports", () => {
@@ -73,12 +83,16 @@ describe("groupSameDiagnosticReports", () => {
     diagReport.effectiveDateTime = dateTime.start;
     diagReport2.effectiveDateTime = dateTime.start;
     diagReport.performer = [practRef];
+    diagReport2.performer = [];
 
     diagReport.result = resultExample;
     diagReport2.presentedForm = presentedFormExample;
 
     const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
     expect(diagReportsMap.size).toBe(2);
+
+    const diagReportIds = Array.from(diagReportsMap.values()).map(d => d.id);
+    expect(diagReportIds).toEqual(expect.arrayContaining([diagReport.id, diagReport2.id]));
   });
 
   it("groups diagReports with the same effectiveDateTime if neither has a practitioner reference", () => {
@@ -103,6 +117,9 @@ describe("groupSameDiagnosticReports", () => {
 
     const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
     expect(diagReportsMap.size).toBe(2);
+
+    const diagReportIds = Array.from(diagReportsMap.values()).map(d => d.id);
+    expect(diagReportIds).toEqual(expect.arrayContaining([diagReport.id, diagReport2.id]));
   });
 
   it("does not group duplicate diagReports if effectiveDateTime is not present", () => {
@@ -121,6 +138,9 @@ describe("groupSameDiagnosticReports", () => {
 
     const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
     expect(diagReportsMap.size).toBe(2);
+
+    const diagReportIds = Array.from(diagReportsMap.values()).map(d => d.id);
+    expect(diagReportIds).toEqual(expect.arrayContaining([diagReport.id, diagReport2.id]));
   });
 
   it("discards diagReport if result and presented form are not present", () => {
