@@ -117,7 +117,6 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
       }
     });
 
-    console.log("practitionerRefsSet", practitionerRefsSet);
     const practitionerRefs = Array.from(practitionerRefsSet).map(p => ({ practitioner: p }));
 
     if (isResultPresent) {
