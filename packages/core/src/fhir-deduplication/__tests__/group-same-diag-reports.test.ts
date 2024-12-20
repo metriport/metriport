@@ -26,16 +26,44 @@ beforeEach(() => {
 
   diagReportId = faker.string.uuid();
   diagReportId2 = faker.string.uuid();
-  diagReport = makeDiagnosticReport({ id: diagReportId, result: resultExample });
-  diagReport2 = makeDiagnosticReport({ id: diagReportId2, presentedForm: presentedFormExample });
+  diagReport = makeDiagnosticReport({ id: diagReportId });
+  diagReport2 = makeDiagnosticReport({ id: diagReportId2 });
 });
 
 describe("groupSameDiagnosticReports", () => {
+  it("groups diagReports with the same result", () => {
+    diagReport.result = resultExample;
+    diagReport2.result = resultExample;
+
+    const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
+    expect(diagReportsMap.size).toBe(1);
+  });
+
+  it("groups diagReports with the same result even if one is missing date", () => {
+    diagReport.result = resultExample;
+    diagReport2.result = resultExample;
+    diagReport.effectiveDateTime = dateTime.start;
+
+    const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
+    expect(diagReportsMap.size).toBe(1);
+  });
+
+  it("groups diagReports with the same presentedForm", () => {
+    diagReport.result = resultExample;
+    diagReport2.result = resultExample;
+
+    const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
+    expect(diagReportsMap.size).toBe(1);
+  });
+
   it("groups diagReports with the same effectiveDateTime and performer ref", () => {
     diagReport.effectiveDateTime = dateTime.start;
     diagReport2.effectiveDateTime = dateTime.start;
     diagReport.performer = [practRef];
     diagReport2.performer = [practRef];
+
+    diagReport.result = resultExample;
+    diagReport2.presentedForm = presentedFormExample;
 
     const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
     expect(diagReportsMap.size).toBe(1);
@@ -46,6 +74,9 @@ describe("groupSameDiagnosticReports", () => {
     diagReport2.effectiveDateTime = dateTime.start;
     diagReport.performer = [practRef];
 
+    diagReport.result = resultExample;
+    diagReport2.presentedForm = presentedFormExample;
+
     const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
     expect(diagReportsMap.size).toBe(2);
   });
@@ -53,6 +84,9 @@ describe("groupSameDiagnosticReports", () => {
   it("groups diagReports with the same effectiveDateTime if neither has a practitioner reference", () => {
     diagReport.effectiveDateTime = dateTime.start;
     diagReport2.effectiveDateTime = dateTime.start;
+
+    diagReport.result = resultExample;
+    diagReport2.presentedForm = presentedFormExample;
 
     const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
     expect(diagReportsMap.size).toBe(1);
@@ -64,6 +98,9 @@ describe("groupSameDiagnosticReports", () => {
     diagReport.performer = [practRef];
     diagReport2.performer = [practRef2];
 
+    diagReport.result = resultExample;
+    diagReport2.presentedForm = presentedFormExample;
+
     const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
     expect(diagReportsMap.size).toBe(2);
   });
@@ -73,7 +110,7 @@ describe("groupSameDiagnosticReports", () => {
     diagReport2.presentedForm = presentedFormExample;
 
     const { diagReportsMap } = groupSameDiagnosticReports([diagReport, diagReport2]);
-    expect(diagReportsMap.size).toBe(2);
+    expect(diagReportsMap.size).toBe(1);
   });
 
   it("does not group duplicate diagReports if effectiveDateTime are different", () => {
@@ -89,33 +126,50 @@ describe("groupSameDiagnosticReports", () => {
   it("discards diagReport if result and presented form are not present", () => {
     diagReport.effectiveDateTime = dateTime.start;
     diagReport.performer = [practRef];
-    delete diagReport.result;
-    delete diagReport.presentedForm;
 
     const { diagReportsMap } = groupSameDiagnosticReports([diagReport]);
     expect(diagReportsMap.size).toBe(0);
   });
 
-  it("keeps diagReport if result is present", () => {
+  it("keeps diagReport if result is present and presentedForm is not - without a date", () => {
+    diagReport.performer = [practRef];
+
+    diagReport.result = resultExample;
+
+    const { diagReportsMap } = groupSameDiagnosticReports([diagReport]);
+    expect(diagReportsMap.size).toBe(1);
+
+    const dedupedDiagReport = diagReportsMap.values().next().value as DiagnosticReport;
+    expect(dedupedDiagReport.result).toBeTruthy();
+    expect(dedupedDiagReport.presentedForm).toBeFalsy();
+  });
+
+  it("keeps diagReport if result is present and presentedForm is not", () => {
     diagReport.effectiveDateTime = dateTime.start;
     diagReport.performer = [practRef];
 
     diagReport.result = resultExample;
-    delete diagReport.presentedForm;
 
     const { diagReportsMap } = groupSameDiagnosticReports([diagReport]);
     expect(diagReportsMap.size).toBe(1);
+
+    const dedupedDiagReport = diagReportsMap.values().next().value as DiagnosticReport;
+    expect(dedupedDiagReport.result).toBeTruthy();
+    expect(dedupedDiagReport.presentedForm).toBeFalsy();
   });
 
-  it("keeps diagReport if presentedForm is present", () => {
+  it("keeps diagReport if presentedForm is present and result is not", () => {
     diagReport.effectiveDateTime = dateTime.start;
     diagReport.performer = [practRef];
 
     diagReport.presentedForm = presentedFormExample;
-    delete diagReport.result;
 
     const { diagReportsMap } = groupSameDiagnosticReports([diagReport]);
     expect(diagReportsMap.size).toBe(1);
+
+    const dedupedDiagReport = diagReportsMap.values().next().value as DiagnosticReport;
+    expect(dedupedDiagReport.presentedForm).toBeTruthy();
+    expect(dedupedDiagReport.result).toBeFalsy();
   });
 
   it("discards codes that don't come from loinc", () => {
