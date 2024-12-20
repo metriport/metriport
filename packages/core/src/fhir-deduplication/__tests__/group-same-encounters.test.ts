@@ -16,14 +16,16 @@ import { dateTime, dateTime2 } from "./examples/condition-examples";
 
 let encounterId: string;
 let encounterId2: string;
+let practitionerId: string;
 let encounter: Encounter;
 let encounter2: Encounter;
 
 beforeEach(() => {
   encounterId = faker.string.uuid();
   encounterId2 = faker.string.uuid();
-  encounter = makeEncounter({ id: encounterId });
-  encounter2 = makeEncounter({ id: encounterId2 });
+  practitionerId = faker.string.uuid();
+  encounter = makeEncounter({ id: encounterId }, { pract: practitionerId });
+  encounter2 = makeEncounter({ id: encounterId2 }, { pract: practitionerId });
 });
 
 describe("groupSameEncounters", () => {
@@ -46,6 +48,16 @@ describe("groupSameEncounters", () => {
   it("does not group encounters with different dates", () => {
     encounter.period = { start: dateTime.start };
     encounter2.period = { start: dateTime2.start };
+
+    const { encountersMap } = groupSameEncounters([encounter, encounter2]);
+    expect(encountersMap.size).toBe(2);
+  });
+
+  it("does not group encounters with different practitioners", () => {
+    encounter2 = makeEncounter({ id: encounterId2 }, { pract: faker.string.uuid() });
+
+    encounter.period = { start: dateTime.start };
+    encounter2.period = { start: dateTime.start };
 
     const { encountersMap } = groupSameEncounters([encounter, encounter2]);
     expect(encountersMap.size).toBe(2);
