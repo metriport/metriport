@@ -16,7 +16,7 @@ import {
   SlimResource,
   applyResourceSpecificFilters,
   getSlimPatient,
-} from "../../../domain/ai-brief/modify-resources";
+} from "../../domain/ai-brief/modify-resources";
 import {
   findDiagnosticReportResources,
   findPatientResource,
