@@ -1,8 +1,8 @@
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { getFeatureFlagValueStringArray } from "@metriport/core/external/aws/app-config";
-import { Brief } from "@metriport/core/command/ai-brief/ai-brief-create";
-import { getAiBriefContentFromBundle } from "@metriport/core/command/ai-brief/ai-brief-shared";
+import { Brief } from "@metriport/core/command/ai-brief/create";
+import { getAiBriefContentFromBundle } from "@metriport/core/command/ai-brief/shared";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import { bundleToHtmlADHD } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-adhd";
 import { bundleToHtmlBmi } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-bmi";
@@ -303,16 +303,14 @@ async function storeMrSummaryAndBriefInS3({
   log: typeof console.log;
 }): Promise<{ location: string; version?: string | undefined }> {
   log(`Storing MR Summary and Brief in S3`);
-  const promiseMrSummary = async function () {
-    return newS3Client.uploadFile({
-      bucket: bucketName,
-      key: htmlFileName,
-      file: Buffer.from(html),
-      contentType: "application/html",
-    });
-  };
 
-  const mrResp = await promiseMrSummary();
+  const mrResp = await newS3Client.uploadFile({
+    bucket: bucketName,
+    key: htmlFileName,
+    file: Buffer.from(html),
+    contentType: "application/html",
+  });
+
   if (!mrResp) {
     const message = "Failed to store MR Summary in S3";
     const additionalInfo = { bucketName, htmlFileName };

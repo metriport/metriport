@@ -22,7 +22,7 @@ import {
 } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import { intersection, uniqWith } from "lodash";
-import { Brief } from "../../../command/ai-brief/ai-brief-create";
+import { Brief } from "../../../command/ai-brief/create";
 import {
   buildEncounterSections,
   createBrief,

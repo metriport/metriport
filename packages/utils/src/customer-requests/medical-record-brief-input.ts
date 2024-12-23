@@ -4,7 +4,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { summarizeFilteredBundleWithAI } from "@metriport/core/command/ai-brief/ai-brief-create";
+import { summarizeFilteredBundleWithAI } from "@metriport/core/command/ai-brief/create";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import fs from "fs";
 import { uuidv7 } from "../shared/uuid-v7";

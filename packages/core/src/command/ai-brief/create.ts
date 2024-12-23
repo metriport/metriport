@@ -22,8 +22,8 @@ import { errorToString, toArray } from "@metriport/shared";
 import { ISO_DATE, buildDayjs, elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { LLMChain, MapReduceDocumentsChain, StuffDocumentsChain } from "langchain/chains";
 import { cloneDeep } from "lodash";
-import { filterBundleByDate } from "../../command/consolidated/consolidated-filter-by-date";
-import { getDatesFromEffectiveDateTimeOrPeriod } from "../../command/consolidated/consolidated-filter-shared";
+import { filterBundleByDate } from "../consolidated/consolidated-filter-by-date";
+import { getDatesFromEffectiveDateTimeOrPeriod } from "../consolidated/consolidated-filter-shared";
 import {
   findDiagnosticReportResources,
   findPatientResource,
