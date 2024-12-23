@@ -12,6 +12,8 @@ import { Config } from "../../../shared/config";
 import { makeCarequalityManagementAPIFhir } from "../api";
 import { CQDirectoryEntryModel } from "../models/cq-directory";
 import { bulkInsertCQDirectoryEntries } from "./cq-directory/create-cq-directory-entry";
+import { CachedCqOrgLoader } from "./cq-organization/get-cq-organization-cached";
+import { getParentOid } from "./cq-organization/get-parent-org";
 import { parseCQOrganization } from "./cq-organization/parse-cq-organization";
 
 dayjs.extend(duration);
@@ -38,14 +40,18 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
   let isDone = false;
   try {
     await createTempCQDirectoryTable();
+    const cache = new CachedCqOrgLoader();
     while (!isDone) {
       try {
         const orgs = await cq.listOrganizations({ start: currentPosition, count: BATCH_SIZE });
         if (orgs.length < BATCH_SIZE) isDone = true;
         currentPosition += BATCH_SIZE;
+        cache.populate(orgs);
+        const parentIds = orgs.flatMap(org => getParentOid(org) ?? []);
+        await cache.getCqOrgs(parentIds); // populate the cache with the parent orgs
         const parsedOrgsNested = await Promise.all(
           orgs.flatMap(async org => {
-            const parsed = await parseCQOrganization(org);
+            const parsed = await parseCQOrganization(org, cache);
             if (!parsed) return [];
             return [parsed];
           })

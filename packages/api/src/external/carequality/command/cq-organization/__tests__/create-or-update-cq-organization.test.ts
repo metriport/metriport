@@ -19,7 +19,7 @@ import { CQDirectoryEntryData } from "../../../cq-directory";
 import { buildCqOrgNameForFacility, buildCqOrgNameForOboFacility } from "../../../shared";
 import { metriportIntermediaryOid, metriportOid } from "../constants";
 import { createOrUpdateCqOrganization } from "../create-or-update-cq-organization";
-import * as getCqOrgFile from "../get-cq-organization";
+import { CqOrgLoaderImpl } from "../get-cq-organization";
 import { getOrganizationFhirTemplate } from "../organization-template";
 
 let getAddressWithCoordination: jest.SpyInstance;
@@ -53,7 +53,7 @@ beforeEach(() => {
     cwOboOid: faker.string.uuid(),
   });
   getAddressWithCoordination = jest.spyOn(getAddress, "getAddressWithCoordinates");
-  getCqOrgMock = jest.spyOn(getCqOrgFile, "getCqOrg");
+  getCqOrgMock = jest.spyOn(CqOrgLoaderImpl.prototype, "getCqOrg");
   makeCarequalityManagementAPIFhirMock = jest.spyOn(
     apiFhirFile,
     "makeCarequalityManagementAPIFhir"
@@ -62,6 +62,9 @@ beforeEach(() => {
 
 afterEach(() => {
   jest.clearAllMocks();
+});
+afterAll(() => {
+  jest.restoreAllMocks();
 });
 
 function makeApiImpl(params: {
@@ -123,7 +126,7 @@ describe("createOrUpdateCqOrganization", () => {
         active: expectedCqOrg.active,
       }),
     });
-    makeCarequalityManagementAPIFhirMock.mockReturnValueOnce(apiImpl);
+    makeCarequalityManagementAPIFhirMock.mockReturnValue(apiImpl);
 
     await createOrUpdateCqOrganization({
       cxId,
@@ -200,7 +203,7 @@ describe("createOrUpdateCqOrganization", () => {
         active: expectedCqOrg.active,
       }),
     });
-    makeCarequalityManagementAPIFhirMock.mockReturnValueOnce(apiImpl);
+    makeCarequalityManagementAPIFhirMock.mockReturnValue(apiImpl);
 
     await createOrUpdateCqOrganization({
       cxId,
