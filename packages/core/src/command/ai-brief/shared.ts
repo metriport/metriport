@@ -1,7 +1,7 @@
 import { Binary, Bundle } from "@medplum/fhirtypes";
-import { stringToBase64, base64ToString } from "@metriport/core/util/base64";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { isBinary, findResourceInBundle } from "@metriport/core/external/fhir/shared";
+import { stringToBase64, base64ToString } from "../../util/base64";
+import { isBinary, findResourceInBundle } from "../../external/fhir/shared";
 import { uuidv7 } from "../../util/uuid-v7";
 
 export function generateAiBriefFhirResource(content: string | undefined): Binary | undefined {
