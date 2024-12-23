@@ -222,9 +222,6 @@ function getSlimImmunization(res: Immunization): SlimImmunization | undefined {
   const site = updRes.site?.text;
   const route = getUniqueDisplaysString(updRes.route);
 
-  delete updRes.vaccineCode;
-  delete updRes.site;
-  delete updRes.route;
   delete updRes.lotNumber;
   delete updRes.doseQuantity;
 
@@ -249,10 +246,6 @@ function getSlimPractitioner(res: Practitioner): SlimPractitioner {
   const qualification = getLongestDisplay(updRes.qualification?.[0]?.code);
   const address = getAddressString(updRes.address);
 
-  delete updRes.name;
-  delete updRes.qualification;
-  delete updRes.address;
-
   return {
     ...updRes,
     name,
@@ -276,8 +269,6 @@ function getSlimProcedure(res: Procedure): SlimProcedure | undefined {
 
   const bodySite = getUniqueDisplaysString(updRes.bodySite) ?? undefined;
   delete updRes.code;
-  delete updRes.status;
-  delete updRes.bodySite;
   delete updRes.reasonCode; // TODO: #2510 - Introduce term server lookup here
   delete updRes.report;
   delete updRes.note;
@@ -359,7 +350,6 @@ function getSlimDiagnosticReport(res: DiagnosticReport): SlimDiagnosticReport | 
 
   const status = isUselessStatus(updRes.status) ? undefined : (updRes.status as string);
   delete updRes.code;
-  delete updRes.status;
 
   return {
     ...updRes,
@@ -403,7 +393,6 @@ function getSlimObservation(res: Observation): SlimObservation {
   }));
 
   delete updRes.code;
-  delete updRes.category;
   delete updRes.performer;
   delete updRes.valueCodeableConcept;
   delete updRes.valueQuantity;
@@ -516,8 +505,6 @@ function getSlimCondition(res: Condition): SlimCondition {
     : getUniqueDisplaysString(updRes.clinicalStatus);
 
   delete updRes.code;
-  delete updRes.category;
-  delete updRes.clinicalStatus;
 
   return {
     ...updRes,
