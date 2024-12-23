@@ -15,10 +15,12 @@ afterAll(() => {
 
 describe("checkAiBriefEnabled", () => {
   const cxId = uuidv4();
+
   describe("isAiBriefEnabledForCx is false", () => {
     beforeEach(() => {
       isAiBriefEnabledForCx_mock.mockReturnValue(false);
     });
+
     it("returns false when generateAiBrief is false", async () => {
       const resp = await checkAiBriefEnabled({
         cxId,
@@ -26,6 +28,7 @@ describe("checkAiBriefEnabled", () => {
       });
       expect(resp).toEqual(false);
     });
+
     it("returns false when generateAiBrief is undefined", async () => {
       const resp = await checkAiBriefEnabled({
         cxId,
@@ -33,6 +36,7 @@ describe("checkAiBriefEnabled", () => {
       });
       expect(resp).toEqual(false);
     });
+
     it("throws when generateAiBrief is true", async () => {
       await expect(() =>
         checkAiBriefEnabled({
@@ -42,10 +46,12 @@ describe("checkAiBriefEnabled", () => {
       ).rejects.toThrow("Contact Metriport to enable the AI Brief feature.");
     });
   });
+
   describe("isAiBriefEnabledForCx is true", () => {
     beforeEach(() => {
       isAiBriefEnabledForCx_mock.mockReturnValue(true);
     });
+
     it("returns false when generateAiBrief is false", async () => {
       const resp = await checkAiBriefEnabled({
         cxId,
@@ -53,6 +59,7 @@ describe("checkAiBriefEnabled", () => {
       });
       expect(resp).toEqual(false);
     });
+
     it("returns true when generateAiBrief is undefined", async () => {
       const resp = await checkAiBriefEnabled({
         cxId,
@@ -60,6 +67,7 @@ describe("checkAiBriefEnabled", () => {
       });
       expect(resp).toEqual(true);
     });
+
     it("returns true when generateAiBrief is true", async () => {
       const resp = await checkAiBriefEnabled({
         cxId,
