@@ -1,5 +1,5 @@
-import { BaseDomain, BaseDomainCreate } from "@metriport/core/domain/base-domain";
 import { Organization } from "@metriport/carequality-sdk/models/organization";
+import { BaseDomain, BaseDomainCreate } from "@metriport/core/domain/base-domain";
 
 export type CQDirectoryEntryData = {
   id: string; // Organization's OID
