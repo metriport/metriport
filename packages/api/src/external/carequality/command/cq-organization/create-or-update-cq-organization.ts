@@ -5,7 +5,7 @@ import { errorToString } from "@metriport/shared";
 import { makeCarequalityManagementAPIFhir } from "../../api";
 import { CQDirectoryEntryData } from "../../cq-directory";
 import { CQOrgDetails, CQOrgDetailsWithUrls, getCqAddress, getCqOrgUrls } from "../../shared";
-import { getCqOrg } from "./get-cq-organization";
+import { CqOrgLoaderImpl } from "./get-cq-organization";
 import { getOrganizationFhirTemplate } from "./organization-template";
 import { parseCQOrganization } from "./parse-cq-organization";
 
@@ -25,8 +25,9 @@ export type CreateOrUpdateCqOrganizationCmd = Omit<
 export async function createOrUpdateCqOrganization(
   cmd: CreateOrUpdateCqOrganizationCmd
 ): Promise<CQDirectoryEntryData> {
+  const cqOrgLoader = new CqOrgLoaderImpl();
   const [cqOrg, orgDetailsWithUrls] = await Promise.all([
-    getCqOrg(cmd.oid),
+    cqOrgLoader.getCqOrg(cmd.oid),
     cmdToCqOrgDetails(cmd),
   ]);
   if (cqOrg) return await updateCQOrganization(orgDetailsWithUrls);
@@ -66,7 +67,7 @@ async function updateCQOrganization(
       oid: orgDetails.oid,
     });
     debug(`resp updateOrganization: `, () => JSON.stringify(resp));
-    return parseCQOrganization(resp);
+    return parseCQOrganization(resp, new CqOrgLoaderImpl());
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     const extra = {
@@ -96,7 +97,7 @@ async function createCQOrganization(
   try {
     const resp = await cq.registerOrganization(carequalityOrg);
     debug(`resp registerOrganization: `, () => JSON.stringify(resp));
-    return parseCQOrganization(resp);
+    return parseCQOrganization(resp, new CqOrgLoaderImpl());
   } catch (error) {
     const msg = `Failure while registering org @ CQ`;
     log(`${msg}. Org OID: ${orgDetails.oid}. Cause: ${errorToString(error)}`);

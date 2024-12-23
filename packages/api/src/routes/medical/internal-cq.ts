@@ -36,7 +36,8 @@ import {
   searchCQDirectoriesAroundPatientAddresses,
   toBasicOrgAttributes,
 } from "../../external/carequality/command/cq-directory/search-cq-directory";
-import { getCqOrgOrFail } from "../../external/carequality/command/cq-organization/get-cq-organization";
+import { CachedCqOrgLoader } from "../../external/carequality/command/cq-organization/get-cq-organization-cached";
+import { CqOrgLoaderImpl } from "../../external/carequality/command/cq-organization/get-cq-organization";
 import { parseCQOrganization } from "../../external/carequality/command/cq-organization/parse-cq-organization";
 import { createOrUpdateFacility as cqCreateOrUpdateFacility } from "../../external/carequality/command/create-or-update-facility";
 import { createOrUpdateOrganization as cqCreateOrUpdateOrganization } from "../../external/carequality/command/create-or-update-organization";
@@ -103,9 +104,10 @@ router.post(
     const orgs = (bundle.entry as FhirOrganization[]) ?? [];
     console.log(`Got ${orgs.length} orgs`);
 
+    const cache = new CachedCqOrgLoader();
     const parsedOrgsNested = await Promise.all(
       orgs.flatMap(async org => {
-        const parsed = await parseCQOrganization(org);
+        const parsed = await parseCQOrganization(org, cache);
         if (!parsed) return [];
         return [parsed];
       })
@@ -138,7 +140,7 @@ router.get(
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
     const oid = getFrom("params").orFail("oid", req);
 
-    const cqOrg = await getCqOrgOrFail(oid);
+    const cqOrg = await new CqOrgLoaderImpl().getCqOrgOrFail(oid);
 
     return res.status(httpStatus.OK).json(cqOrg);
   })
@@ -166,7 +168,7 @@ router.get(
     } else {
       await getOrganizationByOidOrFail({ cxId, oid });
     }
-    const cqOrg = await getCqOrgOrFail(oid);
+    const cqOrg = await new CqOrgLoaderImpl().getCqOrgOrFail(oid);
 
     return res.status(httpStatus.OK).json(cqOrg);
   })

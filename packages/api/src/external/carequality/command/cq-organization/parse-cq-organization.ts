@@ -12,7 +12,8 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import stringify from "json-stringify-safe";
 import { CQDirectoryEntryData } from "../../cq-directory";
 import { CQOrgUrls } from "../../shared";
-import { getCqOrg } from "./get-cq-organization";
+import { CqOrgLoader } from "./cq-org-loader";
+import { getParentOid } from "./get-parent-org";
 import { transactionUrl } from "./organization-template";
 
 const EARTH_RADIUS = 6378168;
@@ -22,7 +23,7 @@ const XCA_DR_STRING = "ITI-39";
 const XDR_STRING = "ITI-41";
 type ChannelUrl = typeof XCPD_STRING | typeof XCA_DQ_STRING | typeof XCA_DR_STRING;
 
-export async function parseCQOrganization(org: Organization): Promise<CQDirectoryEntryData> {
+export function parseCQOrganizationSimplified(org: Organization): CQDirectoryEntryData {
   const { log } = out(`parseCQOrganization`);
 
   const id = org.identifier?.[0]?.value;
@@ -47,13 +48,7 @@ export async function parseCQOrganization(org: Organization): Promise<CQDirector
   const lon = location?.[0]?.position?.longitude;
   const point = lat && lon ? computeEarthPoint(lat, lon) : undefined;
 
-  const parentOrg = org.partOf?.reference ?? org.partOf?.identifier?.value;
-  const parentOrgOid = parentOrg?.split("/")[1];
-  let parentOrgName: string | undefined;
-  if (parentOrgOid) {
-    const parentOrg = await getCqOrg(parentOrgOid);
-    if (parentOrg) parentOrgName = parentOrg.name;
-  }
+  const parentOrgOid = getParentOid(org);
 
   const endpoints = org.contained?.filter(isEndpoint) ?? [];
 
@@ -67,12 +62,28 @@ export async function parseCQOrganization(org: Organization): Promise<CQDirector
     city,
     state: state ? normalizeUSStateForAddressSafe(state) : undefined,
     zip: postalCode ? normalizeZipCodeNewSafe(postalCode) : undefined,
-    managingOrganization: parentOrgName,
     managingOrganizationId: parentOrgOid,
     active,
     lastUpdatedAtCQ,
     ...getUrls(endpoints),
   };
+}
+
+export async function parseCQOrganization(
+  org: Organization,
+  orgLoader: CqOrgLoader
+): Promise<CQDirectoryEntryData> {
+  const cqOrg = parseCQOrganizationSimplified(org);
+  const parentOrgOid = cqOrg.managingOrganizationId;
+  if (parentOrgOid) {
+    const parentOrg = await orgLoader.getCqOrg(parentOrgOid);
+    if (parentOrg)
+      return {
+        ...cqOrg,
+        managingOrganization: parentOrg.name,
+      };
+  }
+  return cqOrg;
 }
 
 /**
