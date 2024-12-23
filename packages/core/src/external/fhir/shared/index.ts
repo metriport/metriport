@@ -1,6 +1,7 @@
 import { OperationOutcomeError, Operator } from "@medplum/core";
 import {
   AllergyIntolerance,
+  Binary,
   Bundle,
   Composition,
   Condition,
@@ -173,6 +174,10 @@ export function isEncounter(resource: Resource | undefined): resource is Encount
 
 export function isEndpoint(resource: Resource | undefined): resource is Endpoint {
   return resource?.resourceType === "Endpoint";
+}
+
+export function isBinary(resource: Resource | undefined): resource is Binary {
+  return resource?.resourceType === "Binary";
 }
 
 export function isFamilyMemberHistory(

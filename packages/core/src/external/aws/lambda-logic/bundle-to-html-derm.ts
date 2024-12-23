@@ -22,7 +22,7 @@ import {
 } from "@medplum/fhirtypes";
 import { buildDayjs, sortDate } from "@metriport/shared/common/date";
 import { uniqWith, cloneDeep, camelCase } from "lodash";
-import { Brief } from "../../../command/ai-brief/ai-brief-create";
+import { Brief } from "../../../command/ai-brief/create";
 import {
   createBrief,
   buildEncounterSections,
