@@ -2,6 +2,7 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import * as uuid from "uuid";
 import { DOC_ID_EXTENSION_URL } from "../../external/fhir/shared/extensions/doc-id-extension";
 import { cloneDeep } from "lodash";
+import { isPatient } from "../../external/fhir/shared";
 
 export type FhirExtension = {
   url: string;
@@ -98,13 +99,13 @@ export function addMissingRequests(fhirBundle: Bundle<Resource>): Bundle<Resourc
 export function removePatientFromConversion(fhirBundle: Bundle<Resource>): Bundle<Resource> {
   const updatedBundle = cloneDeep(fhirBundle);
   const entries = updatedBundle?.entry ?? [];
-  const patientEntries = entries.filter(e => e.resource?.resourceType === "Patient");
+  const patientEntries = entries.filter(e => isPatient(e.resource));
 
   if (patientEntries.length > 1) {
     throw new Error("Multiple Patient resources found in Bundle");
   }
 
-  const pos = entries.findIndex(e => e.resource?.resourceType === "Patient");
+  const pos = entries.findIndex(e => isPatient(e.resource));
   if (pos >= 0) updatedBundle.entry?.splice(pos, 1);
   return updatedBundle;
 }

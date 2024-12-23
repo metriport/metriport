@@ -10,7 +10,7 @@ import { v4 as uuidv4 } from "uuid";
 import { getFileContents, getFileNames } from "../shared/fs";
 
 /**
- * Folder with consolidated files/bundles.
+ * Takes all the JSON files from the specified folder, and normalizes them, storing the result in the same folder, with the `_normalized` suffix.
  *
  * WARNING: this will overwrite the *_normalized.json files!!!
  */
