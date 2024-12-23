@@ -1,13 +1,15 @@
 import { DiagnosticReport } from "@medplum/fhirtypes";
+import crypto from "crypto";
 import { LOINC_CODE, LOINC_OID } from "../../util/constants";
 import {
   DeduplicationResult,
   combineResources,
+  createKeysFromObjectArray,
   createRef,
-  fillMaps,
+  fetchCodingCodeOrDisplayOrSystem,
+  fillL1L2Maps,
   getDateFromResource,
   pickMostDescriptiveStatus,
-  fetchCodingCodeOrDisplayOrSystem,
 } from "../shared";
 
 const diagnosticReportStatus = [
@@ -63,7 +65,8 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
   refReplacementMap: Map<string, string>;
   danglingReferences: Set<string>;
 } {
-  const diagReportsMap = new Map<string, DiagnosticReport>();
+  const l1ReportsMap = new Map<string, string>();
+  const l2ReportsMap = new Map<string, DiagnosticReport>();
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
 
@@ -90,26 +93,94 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
 
   for (const diagReport of diagReports) {
     const datetime = getDateFromResource(diagReport, "datetime");
-    const isPresentedFormPresent = diagReport.presentedForm?.length;
-    const isResultPresent = diagReport.result?.length;
-    if (datetime && (isPresentedFormPresent || isResultPresent)) {
-      const key = JSON.stringify({ datetime });
-      fillMaps(
-        diagReportsMap,
-        key,
-        diagReport,
+    const isPresentedFormPresent = diagReport.presentedForm
+      ? diagReport.presentedForm?.length > 0
+      : false;
+    const isResultPresent = diagReport.result ? diagReport.result?.length > 0 : false;
+
+    // If a diagnostic report does not contain any results or doctor's notes, it is useless and can be removed
+    if (!isPresentedFormPresent && !isResultPresent) {
+      danglingReferences.add(createRef(diagReport));
+      continue;
+    }
+
+    const practitionerRefsSet = new Set<string>();
+
+    const getterKeys: string[] = [];
+    const setterKeys: string[] = [];
+
+    diagReport.performer?.forEach(perf => {
+      const ref = perf.reference;
+      if (ref && ref.includes("Practitioner")) {
+        practitionerRefsSet.add(ref);
+        return;
+      }
+    });
+
+    const practitionerRefs = Array.from(practitionerRefsSet).map(p => ({ practitioner: p }));
+
+    if (isResultPresent) {
+      const resultUuid = createUuidFromText(JSON.stringify(diagReport.result));
+      const key = JSON.stringify({ resultUuid });
+      setterKeys.push(key);
+      getterKeys.push(key);
+    }
+
+    if (isPresentedFormPresent) {
+      const presentedFormUuid = createUuidFromText(JSON.stringify(diagReport.presentedForm));
+      const key = JSON.stringify({ presentedFormUuid });
+      setterKeys.push(key);
+      getterKeys.push(key);
+    }
+
+    if (datetime) {
+      if (practitionerRefs.length > 0) {
+        const practitionerAndDateKeys = createKeysFromObjectArray({ datetime }, practitionerRefs);
+        setterKeys.push(...practitionerAndDateKeys);
+        getterKeys.push(...practitionerAndDateKeys);
+      } else {
+        const dateKey = JSON.stringify({ datetime });
+        setterKeys.push(dateKey);
+        getterKeys.push(dateKey);
+      }
+    } else {
+      const idKey = JSON.stringify({ id: diagReport.id });
+      setterKeys.push(idKey);
+      getterKeys.push(idKey);
+    }
+
+    if (setterKeys.length > 0) {
+      fillL1L2Maps({
+        map1: l1ReportsMap,
+        map2: l2ReportsMap,
+        getterKeys,
+        setterKeys,
+        targetResource: diagReport,
         refReplacementMap,
-        undefined,
-        removeCodesAndAssignStatus
-      );
+        applySpecialModifications: removeCodesAndAssignStatus,
+      });
     } else {
       danglingReferences.add(createRef(diagReport));
     }
   }
 
   return {
-    diagReportsMap,
+    diagReportsMap: l2ReportsMap,
     refReplacementMap,
     danglingReferences,
   };
+}
+
+function createUuidFromText(input: string) {
+  const hash = crypto.createHash("sha256").update(input).digest("hex");
+
+  const uuid = [
+    hash.substring(0, 8),
+    hash.substring(8, 12),
+    hash.substring(12, 16),
+    hash.substring(16, 20),
+    hash.substring(20, 32),
+  ].join("-");
+
+  return uuid;
 }
