@@ -1,0 +1,52 @@
+---
+title: "AI Brief"
+description: "How to use the AI Brief feature"
+---
+
+<Warning>
+  The AI Brief feature is currently in Beta. While we strive for accuracy, these summaries should
+  not be used as the sole source of truth for medical decision-making. We welcome your feedback to
+  help us improve this feature.
+</Warning>
+
+The AI Brief feature summarizes your lengthiest patient records into one cohesive paragraph consisting of the most relevant medical history you need to know about your patient.
+
+## API
+
+When using the API, you can access the AI brief by triggering a [Consolidated Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post) request. Depending on the `conversionType` you choose, the AI brief will be included in the response in a different format.
+
+### FHIR Bundle
+
+When triggering a consolidated query via the API with the `conversionType` query param set to `json`, the AI brief will be included in the response under a [Binary resource](/medical-api/fhir/resources/binary) with the following format:
+
+<Info>The `data` field is a Base64 encoded string containing the AI brief text.</Info>
+
+```json
+{
+  "resourceType": "Binary",
+  "id": "1234",
+  "meta": {
+    "versionId": "1",
+    "lastUpdated": "2023-06-14T10:30:00Z",
+    "source": "metriport:ai-generated-brief"
+  },
+  "contentType": "text/plain",
+  "data": "VGhlIHBhdGllbnQgaXMgYSA0Mi15ZWFyLW9sZCBtYWxlIHdobyBpcyBjdXJyZW50bHkgb24gbXVsdGlwbGUgbWVkaWNhdGlvbnMgdG8gbWFuYWdlCnZhcmlvdXMgY29uZGl0aW9ucy4gSGlzIG1lZGljYXRpb24gcmVnaW1lbiBpbmNsdWRlcyB6b2xwaWRlbSAxMCBtZyBmb3Igc2xlZXAsIHNpbXZhc3RhdGluCjIwIG1nIGZvciBjaG9sZXN0ZXJvbCBtYW5hZ2VtZW50LCBsZXZvdGh5cm94aW5lIHNvZGl1bSAwLjA3NSBtZyAoU3ludGhyb2lkKSBmb3IgdGh5cm9pZApyZXBsYWNlbWVudCB0aGVyYXB5LCBhbmQgemFmaXJsdWthc3QgMjAgbWcgKEFjY29sYXRlKSBmb3IgYXN0aG1hIG1hbmFnZW1lbnQuIFRoZQpjb21iaW5hdGlvbiBvZiB0aGVzZSBtZWRpY2F0aW9ucyBzdWdnZXN0cyB0aGUgcGF0aWVudCBoYXMgY29uY3VycmVudCBjb25kaXRpb25zCmluY2x1ZGluZyBzbGVlcCBkaXN0dXJiYW5jZSwgaHlwZXJjaG9sZXN0ZXJvbGVtaWEsIGh5cG90aHlyb2lkaXNtLCBhbmQgYXN0aG1hIG9yIG90aGVyCnJlc3BpcmF0b3J5IGlzc3VlcyByZXF1aXJpbmcgYSBsZXVrb3RyaWVuZSBtb2RpZmllci4="
+}
+```
+
+### Medical Record Summary
+
+When triggering a consolidated query via the API with the `conversionType` query param set to `html` or `pdf`, the AI brief appears at the top of the Medical Record Summary document.
+
+<Frame>
+  <img src="/images/ai-brief-pdf.png" alt="AI Brief" />
+</Frame>
+
+## Dashboard
+
+Once a patient's data is loaded in the Metriport dashboard, you can view their AI brief at the top of their medical record history.
+
+<Frame>
+  <img src="/images/ai-brief-dash.png" alt="AI Brief in Dashboard" />
+</Frame>

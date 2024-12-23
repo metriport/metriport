@@ -1,7 +1,7 @@
-import { XMLParser, X2jOptionsOptional } from "fast-xml-parser";
+import { X2jOptions, XMLParser } from "fast-xml-parser";
 
-export function createXMLParser(options: X2jOptionsOptional = {}): XMLParser {
-  const defaultOptions: X2jOptionsOptional = {
+export function createXMLParser(options: X2jOptions = {}): XMLParser {
+  const defaultOptions: X2jOptions = {
     numberParseOptions: {
       hex: false,
       leadingZeros: false,

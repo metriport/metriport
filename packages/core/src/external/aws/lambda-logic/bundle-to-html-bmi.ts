@@ -24,7 +24,7 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import dayjs from "dayjs";
 import { cloneDeep, uniqWith } from "lodash";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../../fhir-deduplication/shared";
-import { Brief } from "./bundle-to-brief";
+import { Brief } from "../../../command/ai-brief/create";
 import {
   createBrief,
   createSection,
