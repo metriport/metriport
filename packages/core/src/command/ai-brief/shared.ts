@@ -1,7 +1,7 @@
 import { Binary, Bundle } from "@medplum/fhirtypes";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { stringToBase64, base64ToString } from "../../util/base64";
-import { isBinary, findResourceInBundle } from "../../external/fhir/shared";
+import { isBinary } from "../../external/fhir/shared";
 import { uuidv7 } from "../../util/uuid-v7";
 
 export function generateAiBriefFhirResource(content: string | undefined): Binary | undefined {
@@ -23,11 +23,15 @@ export function generateAiBriefFhirResource(content: string | undefined): Binary
 }
 
 export function getAiBriefContentFromBundle(bundle: Bundle): string | undefined {
-  const binaryResource = findResourceInBundle(bundle, "Binary");
+  const binaryResourceEntry = bundle.entry?.find(
+    entry => entry.resource?.resourceType === "Binary"
+  );
 
-  if (!isBinary(binaryResource)) return undefined;
+  const resource = binaryResourceEntry?.resource;
 
-  if (!binaryResource.data) return undefined;
+  if (!isBinary(resource)) return undefined;
 
-  return base64ToString(binaryResource.data);
+  if (!resource.data) return undefined;
+
+  return base64ToString(resource.data);
 }
