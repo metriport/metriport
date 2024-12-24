@@ -31,7 +31,7 @@ describe("getAiBriefContentFromBundle", () => {
           id: "123",
           contentType: "text/plain",
           meta: {
-            source: "some-other-source",
+            source: "metriport:ai-generated-brief",
           },
           // data field missing
         },
