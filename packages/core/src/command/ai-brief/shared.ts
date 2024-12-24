@@ -25,9 +25,15 @@ export function generateAiBriefFhirResource(content: string | undefined): Binary
 export function getAiBriefContentFromBundle(bundle: Bundle): string | undefined {
   const binaryResource = findResourceInBundle(bundle, "Binary");
 
+  console.log("TEST BINARY", binaryResource);
+
   if (!isBinary(binaryResource)) return undefined;
 
+  console.log("TEST BINARY DATA", binaryResource.data);
+
   if (!binaryResource.data) return undefined;
+
+  console.log("TEST BINARY DATA", binaryResource.data);
 
   return base64ToString(binaryResource.data);
 }
