@@ -30,6 +30,9 @@ describe("getAiBriefContentFromBundle", () => {
           resourceType: "Binary",
           id: "123",
           contentType: "text/plain",
+          meta: {
+            source: "some-other-source",
+          },
           // data field missing
         },
       ],
@@ -76,5 +79,69 @@ describe("getAiBriefContentFromBundle", () => {
 
     const result = getAiBriefContentFromBundle(bundle);
     expect(result).toBe(content);
+  });
+
+  it("returns content from correct Binary when multiple Binary resources exist", () => {
+    const content = "Test AI Brief Content";
+    const encodedContent = stringToBase64(content);
+
+    const bundle = makeBundle({
+      entries: [
+        {
+          resourceType: "Binary",
+          id: "123",
+          meta: {
+            source: "some-other-source",
+          },
+          contentType: "text/plain",
+          data: "wrong-data",
+        },
+        {
+          resourceType: "Binary",
+          id: "456",
+          meta: {
+            source: "metriport:ai-generated-brief",
+          },
+          contentType: "text/plain",
+          data: encodedContent,
+        },
+      ],
+    });
+
+    const result = getAiBriefContentFromBundle(bundle);
+    expect(result).toBe(content);
+  });
+
+  it("returns first matching Binary content when multiple matching sources exist", () => {
+    const firstContent = "First AI Brief Content";
+    const secondContent = "Second AI Brief Content";
+    const firstEncodedContent = stringToBase64(firstContent);
+    const secondEncodedContent = stringToBase64(secondContent);
+
+    const bundle = makeBundle({
+      entries: [
+        {
+          resourceType: "Binary",
+          id: "123",
+          meta: {
+            source: "metriport:ai-generated-brief",
+          },
+          contentType: "text/plain",
+          data: firstEncodedContent,
+        },
+        {
+          resourceType: "Binary",
+          id: "456",
+          meta: {
+            source: "metriport:ai-generated-brief",
+          },
+          contentType: "text/plain",
+          data: secondEncodedContent,
+        },
+      ],
+    });
+
+    const result = getAiBriefContentFromBundle(bundle);
+    expect(result).toBe(firstContent);
   });
 });
