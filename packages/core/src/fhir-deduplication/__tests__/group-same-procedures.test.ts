@@ -1,24 +1,14 @@
-import { faker } from "@faker-js/faker";
 import { Procedure } from "@medplum/fhirtypes";
 import { makeProcedure } from "../../fhir-to-cda/cda-templates/components/__tests__/make-procedure";
 import { groupSameProcedures } from "../resources/procedure";
 import { dateTime, dateTime2 } from "./examples/condition-examples";
 import { cptCodeAb, loincCodeAb, snomedCodeAb } from "./examples/procedure-examples";
 
-let procedureId: string;
-let procedureId2: string;
-let procedure: Procedure;
-let procedure2: Procedure;
-
-beforeEach(() => {
-  procedureId = faker.string.uuid();
-  procedureId2 = faker.string.uuid();
-  procedure = makeProcedure({ id: procedureId });
-  procedure2 = makeProcedure({ id: procedureId2 });
-});
-
 describe("groupSameProcedures", () => {
   it("correctly groups procedures based on cpt codes without dates", () => {
+    const procedure = makeProcedure();
+    const procedure2 = makeProcedure();
+
     procedure.code = cptCodeAb;
     procedure2.code = cptCodeAb;
 
@@ -27,6 +17,9 @@ describe("groupSameProcedures", () => {
   });
 
   it("correctly groups procedures based on loinc codes without dates", () => {
+    const procedure = makeProcedure();
+    const procedure2 = makeProcedure();
+
     procedure.code = loincCodeAb;
     procedure2.code = loincCodeAb;
 
@@ -35,6 +28,9 @@ describe("groupSameProcedures", () => {
   });
 
   it("correctly groups procedures based on snomed codes without dates", () => {
+    const procedure = makeProcedure();
+    const procedure2 = makeProcedure();
+
     procedure.code = snomedCodeAb;
     procedure2.code = snomedCodeAb;
 
@@ -43,6 +39,9 @@ describe("groupSameProcedures", () => {
   });
 
   it("correctly groups procedures based on cpt codes and dates", () => {
+    const procedure = makeProcedure();
+    const procedure2 = makeProcedure();
+
     procedure.performedDateTime = dateTime.start;
     procedure2.performedDateTime = dateTime.start;
     procedure.code = cptCodeAb;
@@ -53,6 +52,9 @@ describe("groupSameProcedures", () => {
   });
 
   it("correctly groups procedures based on cpt codes, where one has the date and the other does not", () => {
+    const procedure = makeProcedure();
+    const procedure2 = makeProcedure();
+
     procedure.performedDateTime = dateTime.start;
     procedure.code = cptCodeAb;
     procedure2.code = cptCodeAb;
@@ -62,6 +64,9 @@ describe("groupSameProcedures", () => {
   });
 
   it("does not group procedures with different dates", () => {
+    const procedure = makeProcedure();
+    const procedure2 = makeProcedure();
+
     procedure.performedDateTime = dateTime.start;
     procedure2.performedDateTime = dateTime2.start;
     procedure.code = cptCodeAb;
@@ -72,6 +77,9 @@ describe("groupSameProcedures", () => {
   });
 
   it("does not group procedures with different codes", () => {
+    const procedure = makeProcedure();
+    const procedure2 = makeProcedure();
+
     procedure.performedDateTime = dateTime.start;
     procedure2.performedDateTime = dateTime.start;
     procedure.code = cptCodeAb;
@@ -82,6 +90,9 @@ describe("groupSameProcedures", () => {
   });
 
   it("preserves cpt and loinc codes, but removes epic codes", () => {
+    const procedure = makeProcedure();
+    const procedure2 = makeProcedure();
+
     procedure.performedDateTime = dateTime.start;
     procedure2.performedDateTime = dateTime.start;
     procedure.code = {
@@ -107,6 +118,9 @@ describe("groupSameProcedures", () => {
   });
 
   it("doesnt remove code and preserves original coding when there is only one unknown code", () => {
+    const procedure = makeProcedure();
+    const procedure2 = makeProcedure();
+
     procedure.performedDateTime = dateTime.start;
     procedure2.performedDateTime = dateTime.start;
     const originalCoding = [

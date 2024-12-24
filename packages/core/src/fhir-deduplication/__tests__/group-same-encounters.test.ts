@@ -14,22 +14,26 @@ import {
 import { groupSameEncounters } from "../resources/encounter";
 import { dateTime, dateTime2 } from "./examples/condition-examples";
 
-let encounterId: string;
-let encounterId2: string;
-let practitionerId: string;
-let encounter: Encounter;
-let encounter2: Encounter;
+function initEncounter(practitionerId?: string, isIncludePractitioner = false) {
+  const encounterId = faker.string.uuid();
 
-beforeEach(() => {
-  encounterId = faker.string.uuid();
-  encounterId2 = faker.string.uuid();
-  practitionerId = faker.string.uuid();
-  encounter = makeEncounter({ id: encounterId }, { pract: practitionerId });
-  encounter2 = makeEncounter({ id: encounterId2 }, { pract: practitionerId });
-});
+  const encounter = isIncludePractitioner
+    ? makeEncounter({ id: encounterId }, { pract: practitionerId ?? faker.string.uuid() })
+    : makeEncounter({ id: encounterId });
+
+  return { encounter, encounterId };
+}
 
 describe("groupSameEncounters", () => {
   it("correctly groups duplicate encounters based on date", () => {
+    const practitionerId = faker.string.uuid();
+
+    const { encounter, encounterId } = initEncounter(practitionerId, true);
+    const { encounter: encounter2, encounterId: encounterId2 } = initEncounter(
+      practitionerId,
+      true
+    );
+
     encounter.period = { start: dateTime.start };
     encounter2.period = { start: dateTime.start };
 
@@ -46,6 +50,9 @@ describe("groupSameEncounters", () => {
   });
 
   it("does not group encounters with different dates", () => {
+    const encounter = makeEncounter();
+    const encounter2 = makeEncounter();
+
     encounter.period = { start: dateTime.start };
     encounter2.period = { start: dateTime2.start };
 
@@ -54,7 +61,11 @@ describe("groupSameEncounters", () => {
   });
 
   it("does not group encounters with different practitioners", () => {
-    encounter2 = makeEncounter({ id: encounterId2 }, { pract: faker.string.uuid() });
+    const practitionerId = faker.string.uuid();
+    const { encounter } = initEncounter(practitionerId, true);
+    const encounterId2 = faker.string.uuid();
+
+    const encounter2 = makeEncounter({ id: encounterId2 }, { pract: faker.string.uuid() });
 
     encounter.period = { start: dateTime.start };
     encounter2.period = { start: dateTime.start };
@@ -63,7 +74,12 @@ describe("groupSameEncounters", () => {
     expect(encountersMap.size).toBe(2);
   });
 
-  it("combines all fields as expected", () => {
+  it("combines all fields as expected, with different fields", () => {
+    const practitionerId = faker.string.uuid();
+
+    const { encounter } = initEncounter(practitionerId, true);
+    const { encounter: encounter2 } = initEncounter(practitionerId, true);
+
     encounter.period = { start: dateTime.start };
     encounter2.period = { start: dateTime.start };
 
@@ -81,7 +97,12 @@ describe("groupSameEncounters", () => {
     expect(masterEncounter.diagnosis).toEqual(exampleDiagnosis);
   });
 
-  it("combines all fields as expected", () => {
+  it("combines all fields as expected, with overlapping fields", () => {
+    const practitionerId = faker.string.uuid();
+
+    const { encounter } = initEncounter(practitionerId, true);
+    const { encounter: encounter2 } = initEncounter(practitionerId, true);
+
     encounter.period = { start: dateTime.start };
     encounter2.period = { start: dateTime.start };
 
@@ -118,6 +139,11 @@ describe("groupSameEncounters", () => {
   });
 
   it("keeps the more informative status", () => {
+    const practitionerId = faker.string.uuid();
+
+    const { encounter } = initEncounter(practitionerId, true);
+    const { encounter: encounter2 } = initEncounter(practitionerId, true);
+
     encounter.period = { start: dateTime.start };
     encounter2.period = { start: dateTime.start };
 
@@ -145,6 +171,9 @@ describe("groupSameEncounters", () => {
   });
 
   it("does not group encounters when dates are missing", () => {
+    const encounter = makeEncounter();
+    const encounter2 = makeEncounter();
+
     const { encountersMap } = groupSameEncounters([encounter, encounter2]);
     expect(encountersMap.size).toBe(0);
   });
