@@ -1,5 +1,3 @@
-import { faker } from "@faker-js/faker";
-import { Observation } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
 import {
   referenceRangeHemoglobin,
@@ -15,16 +13,10 @@ import {
 import { makeObservation } from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-observation";
 import { normalizeObservations } from "../observation";
 
-let observationId: string;
-let observation: Observation;
-
-beforeEach(() => {
-  observationId = faker.string.uuid();
-  observation = makeObservation({ id: observationId });
-});
-
 describe("normalizeObservations", () => {
   it("correctly handle temperature celsius", () => {
+    const observation = makeObservation();
+
     observation.valueQuantity = cloneDeep(valueQuantityTempCel);
 
     const normalized = normalizeObservations([observation]);
@@ -39,6 +31,8 @@ describe("normalizeObservations", () => {
   });
 
   it("correctly handle temperature farhrenheit", () => {
+    const observation = makeObservation();
+
     observation.valueQuantity = cloneDeep(valueQuantityTempF);
 
     const normalized = normalizeObservations([observation]);
@@ -53,6 +47,8 @@ describe("normalizeObservations", () => {
   });
 
   it("correctly handle weight kg", () => {
+    const observation = makeObservation();
+
     observation.valueQuantity = cloneDeep(valueQuantityWeightKg);
 
     const normalized = normalizeObservations([observation]);
@@ -65,6 +61,8 @@ describe("normalizeObservations", () => {
   });
 
   it("correctly handle weight lb", () => {
+    const observation = makeObservation();
+
     observation.valueQuantity = cloneDeep(valueQuantityWeightLb);
 
     const normalized = normalizeObservations([observation]);
@@ -77,6 +75,8 @@ describe("normalizeObservations", () => {
   });
 
   it("correctly handle height cm", () => {
+    const observation = makeObservation();
+
     observation.valueQuantity = cloneDeep(valueQuantityHeightCm);
 
     const normalized = normalizeObservations([observation]);
@@ -89,6 +89,8 @@ describe("normalizeObservations", () => {
   });
 
   it("correctly handle height in", () => {
+    const observation = makeObservation();
+
     observation.valueQuantity = cloneDeep(valueQuantityHeightIn);
 
     const normalized = normalizeObservations([observation]);
@@ -101,6 +103,8 @@ describe("normalizeObservations", () => {
   });
 
   it("correctly handle referenceRange units", () => {
+    const observation = makeObservation();
+
     observation.valueQuantity = cloneDeep(valueQuantityHemoglobin);
     observation.referenceRange = cloneDeep(referenceRangeHemoglobin);
 
@@ -123,6 +127,8 @@ describe("normalizeObservations", () => {
   });
 
   it("correctly fills in referenceRanges units from the valueQuantity", () => {
+    const observation = makeObservation();
+
     observation.valueQuantity = cloneDeep(valueQuantityHemoglobin);
     observation.referenceRange = cloneDeep(referenceRangeHemoglobinNoUnit);
 
