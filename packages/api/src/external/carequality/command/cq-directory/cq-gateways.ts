@@ -1,4 +1,5 @@
 import { Op, Sequelize } from "sequelize";
+import { CQDirectoryEntry } from "../../cq-directory";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
 
 /**
@@ -24,7 +25,7 @@ export async function getOrganizationIdsNotManagedBy(
   return ids;
 }
 
-export async function getRecordLocatorServiceOrganizations(): Promise<CQDirectoryEntryModel[]> {
+export async function getRecordLocatorServiceOrganizations(): Promise<CQDirectoryEntry[]> {
   const rls: CQDirectoryEntryModel[] = await CQDirectoryEntryModel.findAll({
     where: {
       urlXCPD: {
@@ -50,11 +51,11 @@ export async function getRecordLocatorServiceOrganizations(): Promise<CQDirector
     },
   });
 
-  return [...rls, ...eHex];
+  return [...rls, ...eHex].map(org => org.dataValues);
 }
 
-export async function getSublinkOrganizations(): Promise<CQDirectoryEntryModel[]> {
-  return CQDirectoryEntryModel.findAll({
+export async function getSublinkOrganizations(): Promise<CQDirectoryEntry[]> {
+  const records = await CQDirectoryEntryModel.findAll({
     where: {
       urlXCPD: {
         [Op.ne]: "",
@@ -80,10 +81,11 @@ export async function getSublinkOrganizations(): Promise<CQDirectoryEntryModel[]
       "managing_organization",
     ],
   });
+  return records.map(org => org.dataValues);
 }
 
-export async function getStandaloneOrganizations(): Promise<CQDirectoryEntryModel[]> {
-  return CQDirectoryEntryModel.findAll({
+export async function getStandaloneOrganizations(): Promise<CQDirectoryEntry[]> {
+  const records = await CQDirectoryEntryModel.findAll({
     where: {
       urlXCPD: {
         [Op.ne]: "",
@@ -112,4 +114,5 @@ export async function getStandaloneOrganizations(): Promise<CQDirectoryEntryMode
       },
     },
   });
+  return records.map(org => org.dataValues);
 }
