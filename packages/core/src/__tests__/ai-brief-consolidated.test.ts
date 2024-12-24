@@ -1,5 +1,6 @@
 import { getAiBriefContentFromBundle } from "../command/ai-brief/shared";
 import { makeBundle } from "../external/fhir/__tests__/bundle";
+import { stringToBase64 } from "../util/base64";
 
 describe("getAiBriefContentFromBundle", () => {
   it("returns undefined when bundle has no Binary resource", () => {
@@ -57,7 +58,7 @@ describe("getAiBriefContentFromBundle", () => {
 
   it("returns decoded content when Binary resource has correct meta source", () => {
     const content = "Test AI Brief Content";
-    const encodedContent = Buffer.from(content).toString("base64");
+    const encodedContent = stringToBase64(content);
 
     const bundle = makeBundle({
       entries: [
