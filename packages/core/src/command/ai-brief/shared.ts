@@ -1,8 +1,11 @@
-import { Binary, Bundle } from "@medplum/fhirtypes";
+import { Binary, Bundle, Resource } from "@medplum/fhirtypes";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { stringToBase64, base64ToString } from "../../util/base64";
 import { isBinary } from "../../external/fhir/shared";
+import { capture, out } from "../../util";
 import { uuidv7 } from "../../util/uuid-v7";
+import { getPatientFromBundle } from "../../external/fhir/patient/shared";
+const AI_BRIEF_SOURCE = "metriport:ai-generated-brief";
 
 export function generateAiBriefFhirResource(content: string | undefined): Binary | undefined {
   if (!content) return undefined;
@@ -15,7 +18,7 @@ export function generateAiBriefFhirResource(content: string | undefined): Binary
     meta: {
       versionId: "1",
       lastUpdated: buildDayjs().toISOString(),
-      source: "metriport:ai-generated-brief",
+      source: AI_BRIEF_SOURCE,
     },
     contentType: "text/plain",
     data: encodedContent,
@@ -23,15 +26,24 @@ export function generateAiBriefFhirResource(content: string | undefined): Binary
 }
 
 export function getAiBriefContentFromBundle(bundle: Bundle): string | undefined {
-  const binaryResourceEntry = bundle.entry?.find(
-    entry => entry.resource?.resourceType === "Binary"
-  );
+  const aiBriefResource = getAiBriefResource(bundle);
+  if (!aiBriefResource?.data) return undefined;
+  return base64ToString(aiBriefResource.data);
+}
 
-  const resource = binaryResourceEntry?.resource;
+function getAiBriefResource(bundle: Bundle): Binary | undefined {
+  const { log } = out("getAiBriefContentFromBundle");
+  const aiBriefResources =
+    bundle.entry?.flatMap(entry => (isAiBriefResource(entry.resource) ? entry.resource : [])) ?? [];
+  if (aiBriefResources.length > 1) {
+    const msg = `Found more than one AI brief resource in the consolidated bundle`;
+    const patient = getPatientFromBundle(bundle, false);
+    log(`${msg} - ${aiBriefResources.length} AI Briefs, patient: ${patient?.id}`);
+    capture.message(msg, { extra: { aiBriefResources, patient } });
+  }
+  return aiBriefResources[0];
+}
 
-  if (!isBinary(resource)) return undefined;
-
-  if (!resource.data) return undefined;
-
-  return base64ToString(resource.data);
+function isAiBriefResource(resource: Resource | undefined): resource is Binary {
+  return isBinary(resource) && resource.meta?.source === AI_BRIEF_SOURCE;
 }
