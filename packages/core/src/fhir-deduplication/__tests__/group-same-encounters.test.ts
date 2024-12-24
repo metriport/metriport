@@ -12,30 +12,25 @@ import {
   makeEncounter,
 } from "../../fhir-to-cda/cda-templates/components/__tests__/make-encounter";
 import { groupSameEncounters } from "../resources/encounter";
-import { dateTime, dateTime2 } from "./examples/condition-examples";
+import { makePeriod } from "./examples/condition-examples";
 
-function initEncounter(practitionerId?: string, isIncludePractitioner = false) {
+function initEncounter(practitionerId?: string, params?: Partial<Encounter>) {
   const encounterId = faker.string.uuid();
 
-  const encounter = isIncludePractitioner
-    ? makeEncounter({ id: encounterId }, { pract: practitionerId ?? faker.string.uuid() })
+  const encounter = practitionerId
+    ? makeEncounter({ id: encounterId, ...params }, { pract: practitionerId })
     : makeEncounter({ id: encounterId });
 
-  return { encounter, encounterId };
+  return encounter;
 }
 
 describe("groupSameEncounters", () => {
   it("correctly groups duplicate encounters based on date", () => {
+    const period = makePeriod();
     const practitionerId = faker.string.uuid();
 
-    const { encounter, encounterId } = initEncounter(practitionerId, true);
-    const { encounter: encounter2, encounterId: encounterId2 } = initEncounter(
-      practitionerId,
-      true
-    );
-
-    encounter.period = { start: dateTime.start };
-    encounter2.period = { start: dateTime.start };
+    const encounter = initEncounter(practitionerId, { period: { start: period.start } });
+    const encounter2 = initEncounter(practitionerId, { period: { start: period.start } });
 
     const { encountersMap, refReplacementMap } = groupSameEncounters([encounter, encounter2]);
     expect(encountersMap.size).toBe(1);
@@ -43,50 +38,54 @@ describe("groupSameEncounters", () => {
     // Making sure ref to encounter2.id is present in the array of refs being replaced
     expect(refReplacementMap.entries().next().value).toEqual(
       expect.arrayContaining([
-        expect.stringContaining(`Encounter/${encounterId}`),
-        expect.stringContaining(`Encounter/${encounterId2}`),
+        expect.stringContaining(`Encounter/${encounter.id}`),
+        expect.stringContaining(`Encounter/${encounter.id}`),
       ])
     );
   });
 
   it("does not group encounters with different dates", () => {
+    const period = makePeriod();
     const encounter = makeEncounter();
     const encounter2 = makeEncounter();
 
-    encounter.period = { start: dateTime.start };
-    encounter2.period = { start: dateTime2.start };
+    encounter.period = { start: period.start };
+    encounter2.period = { start: period.end };
 
     const { encountersMap } = groupSameEncounters([encounter, encounter2]);
     expect(encountersMap.size).toBe(2);
   });
 
   it("does not group encounters with different practitioners", () => {
-    const practitionerId = faker.string.uuid();
-    const { encounter } = initEncounter(practitionerId, true);
-    const encounterId2 = faker.string.uuid();
+    const period = makePeriod();
+    const params = {
+      period: { start: period.start },
+    };
 
-    const encounter2 = makeEncounter({ id: encounterId2 }, { pract: faker.string.uuid() });
-
-    encounter.period = { start: dateTime.start };
-    encounter2.period = { start: dateTime.start };
+    const encounter = initEncounter(faker.string.uuid(), params);
+    const encounter2 = initEncounter(faker.string.uuid(), params);
 
     const { encountersMap } = groupSameEncounters([encounter, encounter2]);
     expect(encountersMap.size).toBe(2);
   });
 
   it("combines all fields as expected, with different fields", () => {
+    const period = makePeriod();
     const practitionerId = faker.string.uuid();
 
-    const { encounter } = initEncounter(practitionerId, true);
-    const { encounter: encounter2 } = initEncounter(practitionerId, true);
+    const params = {
+      period: { start: period.start },
+    };
+    const params2 = {
+      ...params,
+      type: exampleType,
+      hospitalization: exampleHospitalization,
+      reasonCode: exampleReasonCode,
+      diagnosis: exampleDiagnosis,
+    };
 
-    encounter.period = { start: dateTime.start };
-    encounter2.period = { start: dateTime.start };
-
-    encounter.type = exampleType;
-    encounter.hospitalization = exampleHospitalization;
-    encounter.reasonCode = exampleReasonCode;
-    encounter.diagnosis = exampleDiagnosis;
+    const encounter = initEncounter(practitionerId, params);
+    const encounter2 = initEncounter(practitionerId, params2);
 
     const { encountersMap } = groupSameEncounters([encounter, encounter2]);
     expect(encountersMap.size).toBe(1);
@@ -98,23 +97,25 @@ describe("groupSameEncounters", () => {
   });
 
   it("combines all fields as expected, with overlapping fields", () => {
+    const period = makePeriod();
     const practitionerId = faker.string.uuid();
+    const params = {
+      period: { start: period.start },
+      type: exampleType,
+      hospitalization: exampleHospitalization,
+      reasonCode: exampleReasonCode,
+      diagnosis: exampleDiagnosis,
+    };
+    const params2 = {
+      period: { start: period.start },
+      type: exampleType2,
+      hospitalization: exampleHospitalization2,
+      reasonCode: exampleReasonCode2,
+      diagnosis: exampleDiagnosis2,
+    };
 
-    const { encounter } = initEncounter(practitionerId, true);
-    const { encounter: encounter2 } = initEncounter(practitionerId, true);
-
-    encounter.period = { start: dateTime.start };
-    encounter2.period = { start: dateTime.start };
-
-    encounter.type = exampleType;
-    encounter.hospitalization = exampleHospitalization;
-    encounter.reasonCode = exampleReasonCode;
-    encounter.diagnosis = exampleDiagnosis;
-
-    encounter2.type = exampleType2;
-    encounter2.hospitalization = exampleHospitalization2;
-    encounter2.reasonCode = exampleReasonCode2;
-    encounter2.diagnosis = exampleDiagnosis2;
+    const encounter = initEncounter(practitionerId, params);
+    const encounter2 = initEncounter(practitionerId, params2);
 
     const { encountersMap } = groupSameEncounters([encounter, encounter2]);
     expect(encountersMap.size).toBe(1);
@@ -139,13 +140,14 @@ describe("groupSameEncounters", () => {
   });
 
   it("keeps the more informative status", () => {
+    const period = makePeriod();
     const practitionerId = faker.string.uuid();
 
-    const { encounter } = initEncounter(practitionerId, true);
-    const { encounter: encounter2 } = initEncounter(practitionerId, true);
-
-    encounter.period = { start: dateTime.start };
-    encounter2.period = { start: dateTime.start };
+    const params = {
+      period: { start: period.start },
+    };
+    const encounter = initEncounter(practitionerId, params);
+    const encounter2 = initEncounter(practitionerId, params);
 
     encounter.status = "finished";
     encounter2.status = "arrived";

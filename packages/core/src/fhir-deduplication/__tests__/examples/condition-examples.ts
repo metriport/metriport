@@ -1,4 +1,5 @@
 import { Coding } from "@medplum/fhirtypes";
+import { buildDayjs } from "@metriport/shared/common/date";
 
 export const snomedCodeMd: Coding = { system: "http://snomed.info/sct", code: "422338006" };
 export const icd10CodeMd: Coding = {
@@ -26,3 +27,10 @@ export const dateTime = {
 export const dateTime2 = {
   start: "2014-02-01T10:00:00.000Z",
 };
+
+export function makePeriod(start?: string | undefined, end?: string | undefined) {
+  return {
+    start: start ? buildDayjs(start).toISOString() : dateTime.start,
+    end: end ? buildDayjs(end).toISOString() : dateTime2.start,
+  };
+}
