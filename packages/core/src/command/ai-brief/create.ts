@@ -8,23 +8,23 @@ import { errorToString, toArray } from "@metriport/shared";
 import { ISO_DATE, buildDayjs, elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { LLMChain, MapReduceDocumentsChain, StuffDocumentsChain } from "langchain/chains";
 import { cloneDeep } from "lodash";
-import { filterBundleByDate } from "../../../command/consolidated/consolidated-filter-by-date";
-import { getDatesFromEffectiveDateTimeOrPeriod } from "../../../command/consolidated/consolidated-filter-shared";
+import { filterBundleByDate } from "../consolidated/consolidated-filter-by-date";
+import { getDatesFromEffectiveDateTimeOrPeriod } from "../consolidated/consolidated-filter-shared";
 import {
   SlimDiagnosticReport,
   SlimOrganization,
   SlimResource,
   applyResourceSpecificFilters,
   getSlimPatient,
-} from "../../../domain/ai-brief/modify-resources";
+} from "../../domain/ai-brief/modify-resources";
 import {
   findDiagnosticReportResources,
   findPatientResource,
-} from "../../../external/fhir/shared/index";
-import { capture, out } from "../../../util";
-import { uuidv7 } from "../../../util/uuid-v7";
-import { EventTypes, analytics } from "../../analytics/posthog";
-import { BedrockChat } from "../../langchain/bedrock/index";
+} from "../../external/fhir/shared/index";
+import { capture, out } from "../../util";
+import { uuidv7 } from "../../util/uuid-v7";
+import { EventTypes, analytics } from "../../external/analytics/posthog";
+import { BedrockChat } from "../../external/langchain/bedrock";
 
 const CHUNK_SIZE = 100_000;
 const CHUNK_OVERLAP = 1000;
