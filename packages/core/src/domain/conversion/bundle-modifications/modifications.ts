@@ -1,8 +1,8 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import * as uuid from "uuid";
-import { DOC_ID_EXTENSION_URL } from "../../external/fhir/shared/extensions/doc-id-extension";
 import { cloneDeep } from "lodash";
-import { isPatient } from "../../external/fhir/shared";
+import * as uuid from "uuid";
+import { isPatient } from "../../../external/fhir/shared";
+import { DOC_ID_EXTENSION_URL } from "../../../external/fhir/shared/extensions/doc-id-extension";
 
 export type FhirExtension = {
   url: string;
@@ -16,19 +16,14 @@ export type FhirConverterParams = {
   invalidAccess: string | undefined;
 };
 
-export function postProcessBundle(
+/**
+ * Replaces the IDs (and all references to them) for all resources that have an extension for the source document.
+ * This is done so that identical resources originated from different sources would have different IDs.
+ */
+export function replaceIdsForResourcesWithDocExtension(
   fhirBundle: Bundle<Resource>,
-  patientId: string,
-  documentExtension: FhirExtension
-) {
-  const withNewIds = replaceIDs(fhirBundle, patientId);
-  const withExtensions = addExtensionToConversion(withNewIds, documentExtension);
-  const withRequests = addMissingRequests(withExtensions);
-  const withoutPatient = removePatientFromConversion(withRequests);
-  return withoutPatient;
-}
-
-export function replaceIDs(fhirBundle: Bundle<Resource>, patientId: string): Bundle<Resource> {
+  patientId: string
+): Bundle<Resource> {
   const updatedBundle = cloneDeep(fhirBundle);
   const stringsToReplace: { old: string; new: string }[] = [];
   if (!updatedBundle.entry || updatedBundle.entry.length === 0) {

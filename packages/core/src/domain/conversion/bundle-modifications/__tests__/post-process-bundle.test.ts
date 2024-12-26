@@ -1,15 +1,22 @@
 import { faker } from "@faker-js/faker";
 import { Condition, Patient } from "@medplum/fhirtypes";
-import { makeBundle } from "../../../external/fhir/__tests__/bundle";
-import { buildDocIdFhirExtension } from "../../../external/fhir/shared/extensions/doc-id-extension";
-import { snomedCodeMd } from "../../../fhir-deduplication/__tests__/examples/condition-examples";
-import { makeCondition } from "../../../fhir-to-cda/cda-templates/components/__tests__/make-condition";
-import * as bundleMods from "../bundle-modifications";
+import { makeBundle } from "../../../../external/fhir/__tests__/bundle";
+import { buildDocIdFhirExtension } from "../../../../external/fhir/shared/extensions/doc-id-extension";
+import { snomedCodeMd } from "../../../../fhir-deduplication/__tests__/examples/condition-examples";
+import { makeCondition } from "../../../../fhir-to-cda/cda-templates/components/__tests__/make-condition";
+import * as bundleMods from "../modifications";
+import { postProcessBundle } from "../post-process";
 
-let postProcessBundleMock: jest.SpyInstance;
+let replaceIdsMock: jest.SpyInstance;
+let addExtensionToConversionMock: jest.SpyInstance;
+let addMissingRequestsMock: jest.SpyInstance;
+let removePatientFromConversionMock: jest.SpyInstance;
 
 beforeAll(() => {
-  postProcessBundleMock = jest.spyOn(bundleMods, "postProcessBundle");
+  replaceIdsMock = jest.spyOn(bundleMods, "replaceIdsForResourcesWithDocExtension");
+  addExtensionToConversionMock = jest.spyOn(bundleMods, "addExtensionToConversion");
+  addMissingRequestsMock = jest.spyOn(bundleMods, "addMissingRequests");
+  removePatientFromConversionMock = jest.spyOn(bundleMods, "removePatientFromConversion");
 });
 afterEach(() => {
   jest.clearAllMocks();
@@ -43,7 +50,7 @@ describe("Checking postProcessBundle and its constituent functions", () => {
       const { patientId, condition } = initTest();
       const bundle = makeBundle({ entries: [condition], type: "collection" });
 
-      const updatedBundle = bundleMods.replaceIDs(bundle, patientId);
+      const updatedBundle = bundleMods.replaceIdsForResourcesWithDocExtension(bundle, patientId);
       const updCondition = updatedBundle.entry?.[0]?.resource;
       expect(updCondition).toBeDefined();
       expect(updCondition?.id).toBe(condition.id);
@@ -55,7 +62,7 @@ describe("Checking postProcessBundle and its constituent functions", () => {
       condition.extension = [documentExtension];
       const bundle = makeBundle({ entries: [condition], type: "collection" });
 
-      const updatedBundle = bundleMods.replaceIDs(bundle, patientId);
+      const updatedBundle = bundleMods.replaceIdsForResourcesWithDocExtension(bundle, patientId);
       const updCondition = updatedBundle.entry?.[0]?.resource;
       expect(updCondition).toBeDefined();
       expect(updCondition?.id).toBeDefined();
@@ -71,13 +78,17 @@ describe("Checking postProcessBundle and its constituent functions", () => {
     it("throws error when bundle entry is empty", () => {
       const { patientId } = initTest();
       const bundle = makeBundle({ entries: [], type: "collection" });
-      expect(() => bundleMods.replaceIDs(bundle, patientId)).toThrow("Missing bundle entries");
+      expect(() => bundleMods.replaceIdsForResourcesWithDocExtension(bundle, patientId)).toThrow(
+        "Missing bundle entries"
+      );
     });
 
     it("throws error when bundle has no entries", () => {
       const { patientId } = initTest();
       const bundle = makeBundle({ type: "collection" });
-      expect(() => bundleMods.replaceIDs(bundle, patientId)).toThrow("Missing bundle entries");
+      expect(() => bundleMods.replaceIdsForResourcesWithDocExtension(bundle, patientId)).toThrow(
+        "Missing bundle entries"
+      );
     });
   });
 
@@ -204,8 +215,11 @@ describe("Checking postProcessBundle and its constituent functions", () => {
       };
       const bundle = makeBundle({ entries: [condition, patient], type: "collection" });
 
-      bundleMods.postProcessBundle(bundle, patientId, documentExtension);
-      expect(postProcessBundleMock).toHaveBeenCalled();
+      postProcessBundle(bundle, patientId, documentExtension);
+      expect(replaceIdsMock).toHaveBeenCalled();
+      expect(addExtensionToConversionMock).toHaveBeenCalled();
+      expect(addMissingRequestsMock).toHaveBeenCalled();
+      expect(removePatientFromConversionMock).toHaveBeenCalled();
     });
   });
 });
