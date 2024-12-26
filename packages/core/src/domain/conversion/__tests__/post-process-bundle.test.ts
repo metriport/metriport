@@ -6,6 +6,18 @@ import { snomedCodeMd } from "../../../fhir-deduplication/__tests__/examples/con
 import { makeCondition } from "../../../fhir-to-cda/cda-templates/components/__tests__/make-condition";
 import * as bundleMods from "../bundle-modifications";
 
+let postProcessBundleMock: jest.SpyInstance;
+
+beforeAll(() => {
+  postProcessBundleMock = jest.spyOn(bundleMods, "postProcessBundle");
+});
+afterEach(() => {
+  jest.clearAllMocks();
+});
+afterAll(() => {
+  jest.restoreAllMocks();
+});
+
 function makeFilename(patientId: string = faker.string.uuid()): string {
   return `${faker.string.uuid()}_${patientId}_${faker.string.uuid()}.xml`;
 }
@@ -193,8 +205,7 @@ describe("Checking postProcessBundle and its constituent functions", () => {
       const bundle = makeBundle({ entries: [condition, patient], type: "collection" });
 
       bundleMods.postProcessBundle(bundle, patientId, documentExtension);
-      expect(jest.spyOn(bundleMods, "postProcessBundle")).toHaveBeenCalled();
-      jest.restoreAllMocks();
+      expect(postProcessBundleMock).toHaveBeenCalled();
     });
   });
 });
