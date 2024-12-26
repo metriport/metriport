@@ -185,7 +185,9 @@ export async function summarizeFilteredBundleWithAI(
 
     const duration = elapsedTimeFromNow(startedAt);
     log(
-      `Done. Finished in ${duration} ms. Total tokens used: ${totalTokensUsed}. Input cost: ${costs.input}, output cost: ${costs.output}. Total cost: ${costs.total}`
+      `Done. Finished in ${duration} ms. Total tokens used: ${JSON.stringify(
+        totalTokensUsed
+      )}. Input cost: ${costs.input}, output cost: ${costs.output}. Total cost: ${costs.total}`
     );
 
     analytics({
