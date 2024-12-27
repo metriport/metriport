@@ -242,25 +242,14 @@ export type SlimPractitioner = Omit<Practitioner, "name" | "qualification" | "ad
 
 function getSlimPractitioner(res: Practitioner): SlimPractitioner {
   const updRes = cloneDeep(res);
-  const name = getNameString(updRes.name);
-  const names: string[] = [];
-
-  if (name && name.length > 0) {
-    const nameParts = name.split(" ");
-    // Taking only the first few practitioners, in case the whole care team is present in the list
-    if (nameParts.length > 10) {
-      names.push(nameParts.slice(0, 10).join(" "));
-    } else {
-      names.push(name);
-    }
-  }
+  const name = getNameString(updRes.name?.slice(0, 3));
 
   const qualification = getLongestDisplay(updRes.qualification?.[0]?.code);
   const address = getAddressString(updRes.address);
 
   return {
     ...updRes,
-    name: names.length ? names.join(", ") : undefined,
+    name,
     qualification,
     address,
   };

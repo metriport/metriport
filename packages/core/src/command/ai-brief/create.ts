@@ -87,10 +87,6 @@ export async function summarizeFilteredBundleWithAI(
     const slimPayloadBundle = buildSlimmerPayload(filteredBundle);
     const inputString = JSON.stringify(slimPayloadBundle);
 
-    if (Math.random() > 0) {
-      return "";
-    }
-
     // TODO: #2510 - experiment with different splitters
     const textSplitter = new RecursiveCharacterTextSplitter({
       chunkSize: CHUNK_SIZE,
@@ -204,6 +200,7 @@ export async function summarizeFilteredBundleWithAI(
         startBundleSize: bundle.entry?.length,
         endBundleSize: slimPayloadBundle?.length,
         duration,
+        totalTokensUsed,
         costs,
       },
     });
