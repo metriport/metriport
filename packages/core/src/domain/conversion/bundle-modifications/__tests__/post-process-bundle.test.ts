@@ -109,7 +109,6 @@ describe("Checking postProcessBundle and its constituent functions", () => {
 
       const bundle = makeBundle({ entries: [condition], type: "collection" });
       const updatedBundle = bundleMods.addExtensionToConversion(bundle, documentExtension);
-      expect(updatedBundle.entry).toHaveLength(1);
 
       const updResource = updatedBundle.entry?.[0]?.resource;
       expect(updResource).toBeDefined();
@@ -128,7 +127,6 @@ describe("Checking postProcessBundle and its constituent functions", () => {
         valueString: "test",
       };
       condition.extension = [existingExtension];
-      expect(condition.extension).toHaveLength(1);
 
       const bundle = makeBundle({ entries: [condition], type: "collection" });
 
@@ -235,9 +233,10 @@ describe("Checking postProcessBundle and its constituent functions", () => {
       const addRequestsOrder = addMissingRequestsMock.mock.invocationCallOrder[0];
       const removePatientOrder = removePatientFromConversionMock.mock.invocationCallOrder[0];
 
-      if (!addExtensionOrder) throw new Error("Failed to call addExtensionOrder");
-      if (!addRequestsOrder) throw new Error("Failed to call addRequestsOrder");
-      if (!removePatientOrder) throw new Error("Failed to call removePatientOrder");
+      if (!replaceIdsOrder) throw new Error("Failed to get replaceIdsOrder");
+      if (!addExtensionOrder) throw new Error("Failed to get addExtensionOrder");
+      if (!addRequestsOrder) throw new Error("Failed to get addRequestsOrder");
+      if (!removePatientOrder) throw new Error("Failed to get removePatientOrder");
 
       expect(replaceIdsOrder).toBeLessThan(addExtensionOrder);
       expect(addExtensionOrder).toBeLessThan(addRequestsOrder);

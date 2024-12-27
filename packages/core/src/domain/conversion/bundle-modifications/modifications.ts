@@ -1,8 +1,8 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
-import * as uuid from "uuid";
 import { isPatient } from "../../../external/fhir/shared";
 import { DOC_ID_EXTENSION_URL } from "../../../external/fhir/shared/extensions/doc-id-extension";
+import { uuidv7 } from "../../../util/uuid-v7";
 
 export type FhirExtension = {
   url: string;
@@ -30,15 +30,15 @@ export function replaceIdsForResourcesWithDocExtension(
     throw new Error(`Missing bundle entries`);
   }
   for (const bundleEntry of updatedBundle.entry) {
-    if (!bundleEntry.resource) throw new Error(`Missing resource`);
-    if (!bundleEntry.resource.id) throw new Error(`Missing resource id`);
+    if (!bundleEntry.resource) continue;
+    if (!bundleEntry.resource.id) continue;
     if (bundleEntry.resource.id === patientId) continue;
 
     const resource = bundleEntry.resource;
     if ("extension" in resource) {
       const docIdExtension = resource.extension?.find(ext => ext.url === DOC_ID_EXTENSION_URL);
       const idToUse = bundleEntry.resource.id;
-      const newId = uuid.v4();
+      const newId = uuidv7();
       stringsToReplace.push({ old: idToUse, new: newId });
       // replace meta's source and profile
       bundleEntry.resource.meta = {
@@ -49,7 +49,6 @@ export function replaceIdsForResourcesWithDocExtension(
   }
   let updatedBundleStr = JSON.stringify(updatedBundle);
   for (const stringToReplace of stringsToReplace) {
-    // doing this is apparently more efficient than just using replace
     const regex = new RegExp(stringToReplace.old, "g");
     updatedBundleStr = updatedBundleStr.replace(regex, stringToReplace.new);
   }
