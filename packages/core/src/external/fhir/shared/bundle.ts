@@ -2,6 +2,7 @@ import {
   AllergyIntolerance,
   Bundle,
   BundleEntry,
+  BundleEntryRequest,
   Communication,
   Composition,
   Condition,
@@ -157,6 +158,9 @@ export function buildSearchSetBundle<T extends Resource = Resource>({
   return buildBundle({ type: "searchset", entries }) as SearchSetBundle<T>;
 }
 
+/**
+ * @deprecated - use createBundleEntry instead
+ */
 export const buildBundleEntry = <T extends Resource>(resource: T): BundleEntry<T> => {
   const fullUrl = buildFullUrl(resource);
   return {
@@ -164,11 +168,30 @@ export const buildBundleEntry = <T extends Resource>(resource: T): BundleEntry<T
     resource,
   };
 };
-export const buildFullUrl = <T extends Resource>(resource: T): string | undefined => {
+
+export function createBundleEntry(entry: BundleEntry): BundleEntry {
+  const fullUrl = buildFullUrl(entry.resource);
+  const request = buildFhirRequest(entry.resource);
+  return {
+    ...(fullUrl ? { fullUrl } : {}),
+    ...(request ? { request } : {}),
+    ...entry,
+  };
+}
+
+export const buildFullUrl = <T extends Resource>(resource: T | undefined): string | undefined => {
   if (!resource || !resource.id) return undefined;
   if (isValidUuid(resource.id)) return wrapIdInUrnUuid(resource.id);
   return wrapIdInUrnId(resource.id);
 };
+
+export function buildFhirRequest(resource: Resource | undefined): BundleEntryRequest | undefined {
+  if (!resource?.id) return undefined;
+  return {
+    method: "PUT",
+    url: `${resource.resourceType}/${resource.id}`,
+  };
+}
 
 export type ExtractedFhirTypes = {
   diagnosticReports: DiagnosticReport[];
