@@ -1,5 +1,5 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { postProcessBundle } from "@metriport/core/domain/conversion/bundle-modifications";
+import { postProcessBundle } from "@metriport/core/domain/conversion/bundle-modifications/post-process";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
