@@ -243,12 +243,24 @@ export type SlimPractitioner = Omit<Practitioner, "name" | "qualification" | "ad
 function getSlimPractitioner(res: Practitioner): SlimPractitioner {
   const updRes = cloneDeep(res);
   const name = getNameString(updRes.name);
+  const names: string[] = [];
+
+  if (name && name.length > 0) {
+    const nameParts = name.split(" ");
+    // Taking only the first few practitioners, in case the whole care team is present in the list
+    if (nameParts.length > 10) {
+      names.push(nameParts.slice(0, 10).join(" "));
+    } else {
+      names.push(name);
+    }
+  }
+
   const qualification = getLongestDisplay(updRes.qualification?.[0]?.code);
   const address = getAddressString(updRes.address);
 
   return {
     ...updRes,
-    name,
+    name: names.length ? names.join(", ") : undefined,
     qualification,
     address,
   };
@@ -424,22 +436,26 @@ function getSlimMedication(res: Medication): SlimMedication {
   };
 }
 
-export type SlimMedicationRequest = Omit<MedicationRequest, "requester"> & {
+export type SlimMedicationRequest = Omit<MedicationRequest, "requester" | "status"> & {
   reference?: Record<string, Partial<SlimMedication>>;
+  status?: string | undefined;
 };
 
 function getSlimMedicationRequest(res: MedicationRequest): SlimMedicationRequest {
   const updRes = cloneDeep(res);
+  const status = isUselessStatus(updRes.status) ? undefined : (updRes.status as string);
 
   delete updRes.requester;
   return {
     ...updRes,
+    status,
   };
 }
 
-export type SlimMedicationStatement = Omit<MedicationStatement, "dosage"> & {
+export type SlimMedicationStatement = Omit<MedicationStatement, "dosage" | "status"> & {
   dosages?: Dosage[] | undefined;
   reference?: Record<string, Partial<SlimMedication>>;
+  status?: string | undefined;
 };
 
 type Dosage = {
@@ -456,22 +472,25 @@ function getSlimMedicationStatement(res: MedicationStatement): SlimMedicationSta
     if (!dose && !route) return [];
     return { dose, route };
   });
+  const status = isUselessStatus(updRes.status) ? undefined : (updRes.status as string);
 
   delete updRes.dosage;
 
   return {
     ...updRes,
     dosages: dosages?.length ? dosages : undefined,
+    status,
   };
 }
 
 export type SlimMedicationAdministration = Omit<
   MedicationAdministration,
-  "dose" | "route" | "dosage"
+  "dose" | "route" | "dosage" | "status"
 > & {
   dose?: string | undefined;
   route?: string | undefined;
   reference?: Record<string, Partial<SlimMedication>>;
+  status?: string | undefined;
 };
 
 function getSlimMedicationAdministration(
@@ -480,12 +499,14 @@ function getSlimMedicationAdministration(
   const updRes = cloneDeep(res);
   const dose = getQuantityString(updRes.dosage?.dose);
   const route = getUniqueDisplaysString(updRes.dosage?.route);
+  const status = isUselessStatus(updRes.status) ? undefined : (updRes.status as string);
 
   delete updRes.dosage;
   return {
     ...updRes,
     dose,
     route,
+    status,
   };
 }
 
@@ -611,8 +632,9 @@ function cleanupName(str: string): string {
   return str.trim().replace("(finding)", "").replace("(disorder)", "").toLowerCase();
 }
 
+const uselessStatuses = ["", "final", "active", "completed"];
 function isUselessStatus(status: string | undefined): boolean {
-  return !status || status === "" || status === "final";
+  return !status || uselessStatuses.some(useless => status === useless);
 }
 
 export function getNameString(names: HumanName | HumanName[] | undefined): string | undefined {
