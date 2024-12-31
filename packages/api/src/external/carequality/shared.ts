@@ -1,27 +1,19 @@
-import NotFoundError from "@metriport/core/util/error/not-found";
-import { CarequalityManagementAPI } from "@metriport/carequality-sdk";
-import { Patient } from "@metriport/core/domain/patient";
-import { AddressStrict } from "@metriport/core/domain/location-address";
 import { Coordinates } from "@metriport/core/domain/address";
+import { AddressStrict } from "@metriport/core/domain/location-address";
+import { Patient } from "@metriport/core/domain/patient";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { capture } from "@metriport/core/util/notifications";
 import { PurposeOfUse } from "@metriport/shared";
-import { MedicalDataSource } from "@metriport/core/external/index";
-import { OrganizationBizType } from "@metriport/core/domain/organization";
 import { errorToString } from "@metriport/shared/common/error";
 import z from "zod";
+import { getAddressWithCoordinates } from "../../domain/medical/address";
+import { Config } from "../../shared/config";
 import { isCarequalityEnabled, isCQDirectEnabledForCx } from "../aws/app-config";
 import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
-import { getAddressWithCoordinates } from "../../domain/medical/address";
-import { CQDirectoryEntryData } from "./cq-directory";
-import { parseCQDirectoryEntries } from "./command/cq-directory/parse-cq-directory-entry";
 
 // TODO: adjust when we support multiple POUs
 export function createPurposeOfUse() {
   return PurposeOfUse.TREATMENT;
-}
-
-export function isGWValid(gateway: { homeCommunityId: string; url: string }): boolean {
-  return !!gateway.homeCommunityId && !!gateway.url;
 }
 
 export async function isCqEnabled(
@@ -70,32 +62,40 @@ export const cqOrgUrlsSchema = z.object({
   urlDQ: z.string().optional(),
   urlDR: z.string().optional(),
 });
-
 export type CQOrgUrls = z.infer<typeof cqOrgUrlsSchema>;
 
-export const cqOrgDetailsSchema = z.object({
-  name: z.string(),
-  oid: z.string(),
-  addressLine1: z.string(),
-  city: z.string(),
-  state: z.string(),
-  postalCode: z.string(),
-  lat: z.string(),
-  lon: z.string(),
-  contactName: z.string(),
-  phone: z.string(),
-  email: z.string(),
-  role: z.enum(["Implementer", "Connection"]),
-  active: z.boolean(),
-  organizationBizType: z.nativeEnum(OrganizationBizType).optional(),
-  parentOrgOid: z.string().optional(),
-});
+export function getCqOrgUrls(): CQOrgUrls {
+  const cqOrgUrlsString = Config.getCQOrgUrls();
+  const urls = cqOrgUrlsString ? cqOrgUrlsSchema.parse(JSON.parse(cqOrgUrlsString)) : {};
+  return urls;
+}
 
-export const cqOrgDetailsOrgBizRequiredSchema = cqOrgDetailsSchema.required({
-  organizationBizType: true,
-});
+/** Implementer is Metriport, all other Orgs/Facilities we manage are Connection */
+export type CqOrgType = "Connection" | "Implementer";
 
-export type CQOrgDetails = z.infer<typeof cqOrgDetailsSchema>;
+export type CQOrgDetails = {
+  name: string;
+  oid: string;
+  addressLine1: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  lat: string;
+  lon: string;
+  contactName: string;
+  phone: string;
+  email: string;
+  /** Implementer is Metriport, all other Orgs/Facilities we manage are Connection */
+  role: CqOrgType;
+  active: boolean;
+  /** Translates into the `partOf` field in Carequality. Usually either `metriportOid` or `metriportIntermediaryOid` */
+  parentOrgOid?: string | undefined;
+  /** Gets translated into the DOA extension in Carequality. Only used for OBO facilities. @see https://sequoiaproject.org/SequoiaProjectHealthcareDirectoryImplementationGuide/output/StructureDefinition-DOA.html */
+  oboOid?: string | undefined;
+  /** Gets translated into the generated text extension in Carequality. Only used for OBO facilities. */
+  oboName?: string | undefined;
+};
+
 export type CQOrgDetailsWithUrls = CQOrgDetails & CQOrgUrls;
 
 export function formatDate(dateString: string | undefined): string | undefined {
@@ -138,17 +138,23 @@ export function getSystemUserName(orgName: string): string {
 export function buildCqOrgNameForFacility({
   vendorName,
   orgName,
+}: {
+  vendorName: string;
+  orgName: string;
+}): string {
+  return `${vendorName} - ${orgName}`;
+}
+
+export function buildCqOrgNameForOboFacility({
+  vendorName,
+  orgName,
   oboOid,
 }: {
   vendorName: string;
   orgName: string;
-  oboOid: string | undefined;
+  oboOid: string;
 }): string {
-  if (oboOid) {
-    return `${vendorName} - ${orgName} #OBO# ${oboOid}`;
-  }
-
-  return `${vendorName} - ${orgName}`;
+  return `${vendorName} - ${orgName} #OBO# ${oboOid}`;
 }
 
 export async function getCqAddress({
@@ -168,23 +174,3 @@ export async function getCqAddress({
 export const cqOrgActiveSchema = z.object({
   active: z.boolean(),
 });
-
-export async function getParsedCqOrgOrFail(
-  cq: CarequalityManagementAPI,
-  oid: string,
-  active: boolean
-): Promise<CQDirectoryEntryData> {
-  const resp = await cq.listOrganizations({ count: 1, oid, active });
-  if (resp.length === 0) throw new NotFoundError("Organization not found");
-  const cqOrgs = parseCQDirectoryEntries(resp);
-  const cqOrg = cqOrgs[0] as CQDirectoryEntryData;
-  if (cqOrgs.length > 1) {
-    capture.message("More than one organization with the same OID found in the CQ directory", {
-      extra: {
-        orgOid: oid,
-        context: `cq.org.directory`,
-      },
-    });
-  }
-  return cqOrg;
-}

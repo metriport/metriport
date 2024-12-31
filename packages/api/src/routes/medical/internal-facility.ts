@@ -1,20 +1,21 @@
+import { isHealthcareItVendor } from "@metriport/core/domain/organization";
+import { Config } from "@metriport/core/util/config";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { requestLogger } from "../helpers/request-logger";
-import { Facility, FacilityCreate } from "../../domain/medical/facility";
-import { verifyCxItVendorAccess } from "../../command/medical/facility/verify-access";
-import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import { createFacility } from "../../command/medical/facility/create-facility";
+import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import { updateFacility } from "../../command/medical/facility/update-facility";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import { facilityInternalDetailsSchema } from "./schemas/facility";
-import { internalDtoFromModel } from "./dtos/facilityDTO";
+import { Facility, FacilityCreate } from "../../domain/medical/facility";
+import { createOrUpdateFacility as cqCreateOrUpdateFacility } from "../../external/carequality/command/create-or-update-facility";
+import { createOrUpdateFacilityInCw } from "../../external/commonwell/command/create-or-update-cw-facility";
+import { requestLogger } from "../helpers/request-logger";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler } from "../util";
-import { createOrUpdateFacilityInCq } from "../../external/carequality/command/cq-directory/create-or-update-cq-facility";
-import { createOrUpdateFacilityInCw } from "../../external/commonwell/command/create-or-update-cw-facility";
-import { processAsyncError } from "@metriport/core/util/error/shared";
+import { internalDtoFromModel } from "./dtos/facilityDTO";
+import { facilityInternalDetailsSchema } from "./schemas/facility";
 
 const router = Router();
 
@@ -32,7 +33,10 @@ router.put(
   "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
+    if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    // TODO Thomas, do we need this?
+    // const skipHie = getFromQueryAsBoolean("skipHie", req);
 
     const facilityDetails = facilityInternalDetailsSchema.parse(req.body);
     const facilityCreate: FacilityCreate = {
@@ -59,27 +63,20 @@ router.put(
       cwApproved: facilityDetails.cwApproved,
     };
     let facility: Facility;
-    let facilityCurrentActive = false;
     if (facilityDetails.id) {
-      const currentFacility = await getFacilityOrFail({ cxId, id: facilityDetails.id });
-      facilityCurrentActive = currentFacility.cqActive;
+      await getFacilityOrFail({ cxId, id: facilityDetails.id });
       facility = await updateFacility({ id: facilityDetails.id, ...facilityCreate });
     } else {
       facility = await createFacility(facilityCreate);
     }
     const org = await getOrganizationOrFail({ cxId });
-    const syncInHie = await verifyCxItVendorAccess(cxId, false);
+    // TODO Thomas, do we need this?
+    // const syncInHie = !skipHie && isHealthcareItVendor(org);
+    const syncInHie = isHealthcareItVendor(org);
     // TODO Move to external/hie https://github.com/metriport/metriport-internal/issues/1940
     // CAREQUALITY
     if (syncInHie && facility.cqApproved) {
-      createOrUpdateFacilityInCq({
-        cxId,
-        facility,
-        facilityCurrentActive,
-        cxOrgName: org.data.name,
-        cxOrgBizType: org.type,
-        cqOboOid: facilityDetails.cqOboOid,
-      }).catch(processAsyncError("cq.internal.facility"));
+      cqCreateOrUpdateFacility({ org, facility }).catch(processAsyncError("cq.internal.facility"));
     }
     // COMMONWELL
     if (syncInHie && facility.cwApproved) {

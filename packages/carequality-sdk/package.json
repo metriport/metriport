@@ -1,6 +1,6 @@
 {
   "name": "@metriport/carequality-sdk",
-  "version": "0.13.11",
+  "version": "1.0.0-alpha.0",
   "description": "SDK to interact with the Carequality directory - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -54,7 +54,8 @@
     "lint": "npx eslint . --ext .ts",
     "lint-fix": "npm run lint --fix",
     "prettier-fix": "npx prettier '**/*.ts' --write",
-    "test": "echo \"No test specified yet\""
+    "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
+    "test:e2e": "E2E=true jest --runInBand --detectOpenHandles"
   },
   "bugs": {
     "url": "https://github.com/metriport/metriport/issues"
@@ -63,5 +64,19 @@
     "axios": "^1.6.0",
     "axios-retry": "^3.1.9",
     "zod": "^3.22.1"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^8.0.2",
+    "@medplum/fhirtypes": "^2.2.10",
+    "@tsconfig/recommended": "^1.0.2",
+    "@types/jest": "29.5.3",
+    "@typescript-eslint/eslint-plugin": "^5.48.2",
+    "@typescript-eslint/parser": "^5.48.2",
+    "eslint": "^8.32.0",
+    "eslint-config-prettier": "^8.6.0",
+    "prettier": "^2.8.3",
+    "ts-essentials": "^9.3.1",
+    "ts-jest": "29.1.1",
+    "typescript": "^4.9.5"
   }
 }
