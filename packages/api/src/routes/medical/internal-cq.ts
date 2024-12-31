@@ -1,7 +1,8 @@
+import { Organization } from "@metriport/core/domain/organization";
 import BadRequestError from "@metriport/core/util/error/bad-request";
 import NotFoundError from "@metriport/core/util/error/not-found";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
-import { initDbPool } from "@metriport/core/util/sequelize";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
   isSuccessfulOutboundDocQueryResponse,
@@ -16,30 +17,27 @@ import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { uniqBy } from "lodash";
-import multer from "multer";
+import { getFacilityByOidOrFail } from "../../command/medical/facility/get-facility";
 import {
-  verifyCxProviderAccess,
   verifyCxItVendorAccess,
+  verifyCxProviderAccess,
 } from "../../command/medical/facility/verify-access";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import {
-  getOrganizationOrFail,
   getOrganizationByOidOrFail,
+  getOrganizationOrFail,
 } from "../../command/medical/organization/get-organization";
-import { getFaciltiyByOidOrFail } from "../../command/medical/facility/get-facility";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { Facility } from "../../domain/medical/facility";
 import { makeCarequalityManagementAPI } from "../../external/carequality/api";
-import { CQDirectoryEntryData } from "../../external/carequality/cq-directory";
-import { bulkInsertCQDirectoryEntries } from "../../external/carequality/command/cq-directory/create-cq-directory-entry";
-import { getAndUpdateCQOrgAndMetriportOrg } from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
-import { parseCQDirectoryEntries } from "../../external/carequality/command/cq-directory/parse-cq-directory-entry";
 import { rebuildCQDirectory } from "../../external/carequality/command/cq-directory/rebuild-cq-directory";
 import {
   DEFAULT_RADIUS_IN_MILES,
   searchCQDirectoriesAroundPatientAddresses,
   toBasicOrgAttributes,
 } from "../../external/carequality/command/cq-directory/search-cq-directory";
-import { cqDirectoryEntry } from "../../external/carequality/command/cq-directory/shared";
+import { getCqOrgOrFail } from "../../external/carequality/command/cq-organization/get-cq-organization";
+import { createOrUpdateFacility as cqCreateOrUpdateFacility } from "../../external/carequality/command/create-or-update-facility";
+import { createOrUpdateOrganization as cqCreateOrUpdateOrganization } from "../../external/carequality/command/create-or-update-organization";
 import { createOutboundDocumentQueryResp } from "../../external/carequality/command/outbound-resp/create-outbound-document-query-resp";
 import { createOutboundDocumentRetrievalResp } from "../../external/carequality/command/outbound-resp/create-outbound-document-retrieval-resp";
 import { createOutboundPatientDiscoveryResp } from "../../external/carequality/command/outbound-resp/create-outbound-patient-discovery-resp";
@@ -52,17 +50,15 @@ import {
 } from "../../external/carequality/ihe-result";
 import { processOutboundPatientDiscoveryResps } from "../../external/carequality/process-outbound-patient-discovery-resps";
 import { processPostRespOutboundPatientDiscoveryResps } from "../../external/carequality/process-subsequent-outbound-patient-discovery-resps";
-import { cqOrgActiveSchema, getParsedCqOrgOrFail } from "../../external/carequality/shared";
+import { cqOrgActiveSchema } from "../../external/carequality/shared";
 import { Config } from "../../shared/config";
-import { requestLogger } from "../helpers/request-logger";
-import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
-import { getUUIDFrom } from "../schemas/uuid";
 import { handleParams } from "../helpers/handle-params";
+import { requestLogger } from "../helpers/request-logger";
+import { getUUIDFrom } from "../schemas/uuid";
+import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 
 dayjs.extend(duration);
 const router = Router();
-const upload = multer();
-const sequelize = initDbPool(Config.getDBCreds());
 
 /**
  * POST /internal/carequality/directory/rebuild
@@ -74,51 +70,18 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
-    const failGracefully = getFromQueryAsBoolean("failGracefully", req) ?? false;
+    const failGracefully = getFromQueryAsBoolean("failGracefully", req);
     await rebuildCQDirectory(failGracefully);
-    return res.sendStatus(httpStatus.OK);
-  })
-);
-
-/**
- * POST /internal/carequality/directory/insert
- *
- * Inserts organizations from a Carequality Directory bundle into our database.
- * @param req.file The Carequality Directory to insert, in JSON format; it should include an array
- *    of Organization resources, property `Bundle.entry` from the original CQ directory payload.
- */
-router.post(
-  "/directory/insert",
-  upload.single("file"),
-  asyncHandler(async (req: Request, res: Response) => {
-    const file = req.file;
-    if (!file) {
-      throw new BadRequestError("File must be provided");
-    }
-    const bundle = JSON.parse(file.buffer.toString());
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const orgs = bundle.map((e: any) => e.resource.Organization);
-    console.log(`Got ${orgs.length} orgs`);
-
-    const parsedOrgs = parseCQDirectoryEntries(orgs);
-    console.log(`Parsed ${parsedOrgs.length} orgs`);
-
-    // TODO remove this with https://github.com/metriport/metriport-internal/issues/1638
-    const nonDup = uniqBy(parsedOrgs, "id");
-    console.log(`Adding ${nonDup.length} CQ directory entries...`);
-    await bulkInsertCQDirectoryEntries(sequelize, nonDup, cqDirectoryEntry);
-
     return res.sendStatus(httpStatus.OK);
   })
 );
 
 /***
  * GET /internal/carequality/directory/organization/:oid
+ * @deprecated ?
  *
  * Retrieves the organization with the specified OID from the Carequality Directory.
  * @param req.params.oid The OID of the organization to retrieve.
- * @param req.params.getInactive Optional, indicates whether to get the inactive organization(s). If not provided, will fetch active organizations.
  * @returns Returns the organization with the specified OID.
  */
 router.get(
@@ -127,25 +90,11 @@ router.get(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
-    const cq = makeCarequalityManagementAPI();
-    if (!cq) throw new Error("Carequality API not initialized");
     const oid = getFrom("params").orFail("oid", req);
-    const getInactive = getFromQueryAsBoolean("getInactive", req);
-    const resp = await cq.listOrganizations({ count: 1, oid, active: !getInactive });
-    const org = parseCQDirectoryEntries(resp);
 
-    if (org.length > 1) {
-      const msg = "More than one organization with the same OID found in the CQ directory";
-      console.log(msg, oid);
-      capture.message(msg, {
-        extra: { context: `carequality.directory`, oid, organizations: org, level: "info" },
-      });
-    }
+    const cqOrg = await getCqOrgOrFail(oid);
 
-    const matchingOrg = org[0];
-    if (!matchingOrg) throw new NotFoundError("Organization not found");
-
-    return res.status(httpStatus.OK).json(matchingOrg);
+    return res.status(httpStatus.OK).json(cqOrg);
   })
 );
 
@@ -162,20 +111,17 @@ router.get(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
-    const cq = makeCarequalityManagementAPI();
-    if (!cq) throw new Error("Carequality API not initialized");
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getFrom("query").optional("facilityId", req);
     const oid = getFrom("params").orFail("oid", req);
 
-    let cqOrg: CQDirectoryEntryData;
+    // Authorization
     if (facilityId) {
-      const facility = await getFaciltiyByOidOrFail({ cxId, id: facilityId, oid });
-      cqOrg = await getParsedCqOrgOrFail(cq, oid, facility.cqActive);
+      await getFacilityByOidOrFail({ cxId, id: facilityId, oid });
     } else {
-      const org = await getOrganizationByOidOrFail({ cxId, oid });
-      cqOrg = await getParsedCqOrgOrFail(cq, oid, org.cqActive);
+      await getOrganizationByOidOrFail({ cxId, oid });
     }
+    const cqOrg = await getCqOrgOrFail(oid);
 
     return res.status(httpStatus.OK).json(cqOrg);
   })
@@ -192,23 +138,21 @@ router.put(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
-    const cq = makeCarequalityManagementAPI();
-    if (!cq) throw new Error("Carequality API not initialized");
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const oid = getFrom("params").orFail("oid", req);
-    await verifyCxProviderAccess(cxId);
-
     const org = await getOrganizationByOidOrFail({ cxId, oid });
     if (!org.cqApproved) throw new NotFoundError("CQ not approved");
+    await verifyCxProviderAccess(org);
 
     const orgActive = cqOrgActiveSchema.parse(req.body);
-    await getAndUpdateCQOrgAndMetriportOrg({
-      cq,
-      cxId,
-      oid,
-      active: orgActive.active,
-      org,
-    });
+    const organizationUpdate: Organization = {
+      ...org,
+      cqActive: orgActive.active,
+    };
+    // TODO Since this is an internal endpoint, don't we want to wait for the response from CQ?
+    cqCreateOrUpdateOrganization({ org: organizationUpdate }).catch(
+      processAsyncError("ops.dir.organization.update.cq")
+    );
     return res.sendStatus(httpStatus.OK);
   })
 );
@@ -230,21 +174,21 @@ router.put(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getFrom("query").orFail("facilityId", req);
     const oid = getFrom("params").orFail("oid", req);
-    await verifyCxItVendorAccess(cxId);
-
     const org = await getOrganizationOrFail({ cxId });
-    const facility = await getFaciltiyByOidOrFail({ cxId, id: facilityId, oid });
+    await verifyCxItVendorAccess(org);
+
+    const facility = await getFacilityByOidOrFail({ cxId, id: facilityId, oid });
     if (!facility.cqApproved) throw new NotFoundError("CQ not approved");
 
     const facilityActive = cqOrgActiveSchema.parse(req.body);
-    await getAndUpdateCQOrgAndMetriportOrg({
-      cq,
-      cxId,
-      oid,
-      active: facilityActive.active,
-      org,
-      facility,
-    });
+    const facilityUpdate: Facility = {
+      ...facility,
+      cqActive: facilityActive.active,
+    };
+    // TODO Since this is an internal endpoint, don't we want to wait for the response from CQ?
+    cqCreateOrUpdateFacility({ org, facility: facilityUpdate }).catch(
+      processAsyncError("ops.dir.facility.update.cq")
+    );
     return res.sendStatus(httpStatus.OK);
   })
 );
