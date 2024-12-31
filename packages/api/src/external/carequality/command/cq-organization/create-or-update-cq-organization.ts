@@ -29,8 +29,8 @@ export async function createOrUpdateCqOrganization(
     getCqOrg(cmd.oid),
     cmdToCqOrgDetails(cmd),
   ]);
-  if (cqOrg) return await updateCQOrganization(orgDetailsWithUrls);
-  return await createCQOrganization(orgDetailsWithUrls);
+  if (cqOrg) return await updateCqOrganization(orgDetailsWithUrls);
+  return await createCqOrganization(orgDetailsWithUrls);
 }
 
 export async function cmdToCqOrgDetails(
@@ -53,7 +53,7 @@ export async function cmdToCqOrgDetails(
   return orgDetailsWithUrls;
 }
 
-async function updateCQOrganization(
+async function updateCqOrganization(
   orgDetails: CQOrgDetailsWithUrls
 ): Promise<CQDirectoryEntryData> {
   const { log, debug } = out(`CQ updateCQOrganization - CQ Org OID ${orgDetails.oid}`);
@@ -74,8 +74,10 @@ async function updateCQOrganization(
       error,
     };
     if (error.response?.status === 404) {
-      capture.message("Got 404 while updating Org @ CQ, creating it", { extra });
-      return await createCQOrganization(orgDetails);
+      const msg = "Got 404 while updating Org @ CQ, creating it";
+      log(`${msg}. Org OID: ${orgDetails.oid}`);
+      capture.message(msg, { extra });
+      return await createCqOrganization(orgDetails);
     }
     const msg = `Failure while updating org @ CQ`;
     log(`${msg}. Org OID: ${orgDetails.oid}. Cause: ${errorToString(error)}`);
@@ -84,7 +86,7 @@ async function updateCQOrganization(
   }
 }
 
-async function createCQOrganization(
+async function createCqOrganization(
   orgDetails: CQOrgDetailsWithUrls
 ): Promise<CQDirectoryEntryData> {
   const { log, debug } = out(`CQ registerOrganization - CQ Org OID ${orgDetails.oid}`);
