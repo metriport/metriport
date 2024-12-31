@@ -12,6 +12,8 @@ import { Config } from "../../../../shared/config";
 import { makeCarequalityManagementAPI } from "../../api";
 import { CQDirectoryEntryData2 } from "../../cq-directory";
 import { CQDirectoryEntryViewModel } from "../../models/cq-directory-view";
+import { CachedCqOrgLoader } from "../cq-organization/get-cq-organization-cached";
+import { getParentOid } from "../cq-organization/get-parent-org";
 import { parseCQOrganization } from "../cq-organization/parse-cq-organization";
 import { bulkInsertCQDirectoryEntries } from "./create-cq-directory-entry";
 
@@ -40,16 +42,20 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
 
   try {
     await createTempCQDirectoryTable();
+    const cache = new CachedCqOrgLoader();
     while (!isDone) {
       try {
         const orgs = await cq.listOrganizations({ start: currentPosition, count: BATCH_SIZE });
         if (orgs.length < BATCH_SIZE) isDone = true; // if CQ directory returns less than BATCH_SIZE number of orgs, that means we've hit the end
         currentPosition += BATCH_SIZE;
+        await cache.populate(orgs);
+        const parentIds = orgs.flatMap(org => getParentOid(org) ?? []);
+        await cache.populateByOids(parentIds);
         const parsedOrgs: CQDirectoryEntryData2[] = [];
         await executeAsynchronously(
           orgs,
           async (org: Organization) => {
-            const parsed = await parseCQOrganization(org);
+            const parsed = await parseCQOrganization(org, cache);
             if (parsed) parsedOrgs.push(parsed);
           },
           { numberOfParallelExecutions: parallelQueriesToGetManagingOrg }

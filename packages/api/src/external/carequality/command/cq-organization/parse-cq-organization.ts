@@ -12,7 +12,8 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import stringify from "json-stringify-safe";
 import { CQDirectoryEntryData2 } from "../../cq-directory";
 import { CQOrgUrls } from "../../shared";
-import { getCqOrg } from "./get-cq-organization";
+import { CqOrgLoader } from "./cq-org-loader";
+import { getParentOid } from "./get-parent-org";
 import { transactionUrl } from "./organization-template";
 
 const EARTH_RADIUS = 6378168;
@@ -22,7 +23,12 @@ const XCA_DR_STRING = "ITI-39";
 const XDR_STRING = "ITI-41";
 type ChannelUrl = typeof XCPD_STRING | typeof XCA_DQ_STRING | typeof XCA_DR_STRING;
 
-export async function parseCQOrganization(org: Organization): Promise<CQDirectoryEntryData2> {
+// TODO we should split this into two functions, one that parses and one that hydrates
+// the output with the name
+export async function parseCQOrganization(
+  org: Organization,
+  orgLoader: CqOrgLoader
+): Promise<CQDirectoryEntryData2> {
   const { log } = out(`parseCQOrganization`);
 
   const id = org.id ?? org.identifier?.[0]?.value;
@@ -47,11 +53,10 @@ export async function parseCQOrganization(org: Organization): Promise<CQDirector
   const lon = location?.[0]?.position?.longitude;
   const point = lat && lon ? computeEarthPoint(lat, lon) : undefined;
 
-  const parentOrg = org.partOf?.reference ?? org.partOf?.identifier?.value;
-  const parentOrgOid = parentOrg?.split("/")[1];
+  const parentOrgOid = getParentOid(org);
   let parentOrgName: string | undefined;
   if (parentOrgOid) {
-    const parentOrg = await getCqOrg(parentOrgOid);
+    const parentOrg = await orgLoader.getCqOrg(parentOrgOid);
     if (parentOrg) parentOrgName = parentOrg.name;
   }
 
