@@ -1,4 +1,4 @@
-import { Organization } from "@metriport/carequality-sdk/models/organization";
+import { Organization } from "@medplum/fhirtypes";
 import { DataTypes, Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "../../../models/_default";
 import { CQDirectoryEntry } from "../cq-directory";

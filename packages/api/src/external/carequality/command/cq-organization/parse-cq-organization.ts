@@ -71,6 +71,7 @@ export async function parseCQOrganization(org: Organization): Promise<CQDirector
     managingOrganizationId: parentOrgOid,
     active,
     lastUpdatedAtCQ,
+    data: org,
     ...getUrls(endpoints),
   };
 }
