@@ -8,23 +8,24 @@ import { errorToString, toArray } from "@metriport/shared";
 import { ISO_DATE, buildDayjs, elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { LLMChain, MapReduceDocumentsChain, StuffDocumentsChain } from "langchain/chains";
 import { cloneDeep } from "lodash";
-import { filterBundleByDate } from "../consolidated/consolidated-filter-by-date";
-import { getDatesFromEffectiveDateTimeOrPeriod } from "../consolidated/consolidated-filter-shared";
 import {
+  SlimCondition,
   SlimDiagnosticReport,
   SlimOrganization,
   SlimResource,
   applyResourceSpecificFilters,
   getSlimPatient,
 } from "../../domain/ai-brief/modify-resources";
+import { EventTypes, analytics } from "../../external/analytics/posthog";
 import {
   findDiagnosticReportResources,
   findPatientResource,
 } from "../../external/fhir/shared/index";
+import { BedrockChat } from "../../external/langchain/bedrock";
 import { capture, out } from "../../util";
 import { uuidv7 } from "../../util/uuid-v7";
-import { EventTypes, analytics } from "../../external/analytics/posthog";
-import { BedrockChat } from "../../external/langchain/bedrock";
+import { filterBundleByDate } from "../consolidated/consolidated-filter-by-date";
+import { getDatesFromEffectiveDateTimeOrPeriod } from "../consolidated/consolidated-filter-shared";
 
 const CHUNK_SIZE = 100_000;
 const CHUNK_OVERLAP = 1000;
@@ -185,7 +186,9 @@ export async function summarizeFilteredBundleWithAI(
 
     const duration = elapsedTimeFromNow(startedAt);
     log(
-      `Done. Finished in ${duration} ms. Total tokens used: ${totalTokensUsed}. Input cost: ${costs.input}, output cost: ${costs.output}. Total cost: ${costs.total}`
+      `Done. Finished in ${duration} ms. Total tokens used: ${JSON.stringify(
+        totalTokensUsed
+      )}. Input cost: ${costs.input}, output cost: ${costs.output}. Total cost: ${costs.total}`
     );
 
     analytics({
@@ -197,6 +200,7 @@ export async function summarizeFilteredBundleWithAI(
         startBundleSize: bundle.entry?.length,
         endBundleSize: slimPayloadBundle?.length,
         duration,
+        totalTokensUsed,
         costs,
       },
     });
@@ -369,15 +373,7 @@ function replaceReferencesWithData(
           if (name.length > 0) orgs.push(name);
         } else if (performer?.resourceType === "Practitioner") {
           const name = performer.name;
-          if (name && name.length > 0) {
-            const nameParts = name.split(" ");
-            // Taking only the first 2-3 practitioners, in case the whole care team is present in the list
-            if (nameParts.length > 6) {
-              practitioners.push(nameParts.slice(0, 6).join(" "));
-            } else {
-              practitioners.push(name);
-            }
-          }
+          if (name) practitioners.push(name);
         }
       });
 
@@ -450,14 +446,34 @@ function replaceReferencesWithData(
 
       referencedIds.add(refString);
       if (medicationCopy) {
+        delete medicationCopy.id;
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { resourceType, ...otherFields } = medicationCopy;
-        delete medicationCopy.id;
 
         updRes.reference = { ...updRes.reference, medication: { ...otherFields } };
         delete updRes.medicationReference;
       }
     }
+  }
+
+  if ("reasonReference" in updRes) {
+    const reasonsSet = new Set<string>();
+    updRes.reasonReference.forEach(r => {
+      const refString = r.reference;
+      if (refString) {
+        const condition = map.get(refString) as SlimCondition | undefined;
+        if (condition?.name) {
+          condition.name.split(", ").forEach(n => {
+            reasonsSet.add(n);
+          });
+        }
+      }
+    });
+    updRes.reference = {
+      ...updRes.reference,
+      reasons: Array.from(reasonsSet).join(", "),
+    };
+    delete updRes.reasonReference;
   }
 
   if ("recorder" in updRes) {
@@ -468,11 +484,13 @@ function replaceReferencesWithData(
 
       referencedIds.add(refString);
       if (individualCopy && individualCopy.resourceType === "Practitioner") {
+        delete individualCopy.id;
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { resourceType, ...otherFields } = individualCopy;
-        delete individualCopy.id;
 
-        updRes.reference = { ...updRes.reference, practitioner: { ...otherFields } };
+        if (Object.values(otherFields).length > 0) {
+          updRes.reference = { ...updRes.reference, practitioner: { ...otherFields } };
+        }
         delete updRes.recorder;
       }
     }
@@ -492,9 +510,9 @@ function replaceReferencesWithData(
         referencedIds.add(refString);
 
         if (orgCopy) {
+          delete orgCopy.id;
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { resourceType, ...otherFields } = orgCopy;
-          delete orgCopy.id;
 
           updRes.reference = { ...updRes.reference, manufacturer: { ...otherFields } };
         }
