@@ -1,7 +1,7 @@
 import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
+import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
-import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { DOC_ID_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE, XML_APP_MIME_TYPE } from "@metriport/core/util/mime";
 import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
@@ -182,12 +182,7 @@ export async function handler(event: SQSEvent) {
         const downloadStart = Date.now();
         const payloadRaw = await s3Utils.getFileContentsAsString(s3BucketName, s3FileName);
         if (payloadRaw.includes("nonXMLBody")) {
-          const msg = "XML document is unstructured CDA with nonXMLBody";
-          log(`${msg}, skipping...`);
-          capture.message(msg, {
-            extra: { message, ...lambdaParams, context: lambdaName, fileName: s3FileName },
-            level: "warning",
-          });
+          log(`XML document is unstructured CDA with nonXMLBody, skipping...`);
           await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
           continue;
         }
@@ -214,11 +209,7 @@ export async function handler(event: SQSEvent) {
         };
 
         if (!payloadClean.trim().length) {
-          console.log("XML document is empty, skipping...");
-          capture.message("XML document is empty", {
-            extra: { message, ...lambdaParams, context: lambdaName, fileName: s3FileName },
-            level: "warning",
-          });
+          log("XML document is empty, skipping...");
           await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
           continue;
         }
