@@ -1,22 +1,19 @@
+import { isProvider, Organization, OrganizationCreate } from "@metriport/core/domain/organization";
+import { Config } from "@metriport/core/util/config";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { Organization, OrganizationCreate } from "@metriport/core/domain/organization";
-import { metriportEmail as metriportEmailForCq } from "../../external/carequality/constants";
-import { metriportCompanyDetails } from "@metriport/shared";
-import { requestLogger } from "../helpers/request-logger";
-import { verifyCxProviderAccess } from "../../command/medical/facility/verify-access";
-import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { createOrganization } from "../../command/medical/organization/create-organization";
+import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { updateOrganization } from "../../command/medical/organization/update-organization";
-import { organiationInternalDetailsSchema } from "./schemas/organization";
-import { internalDtoFromModel } from "./dtos/organizationDTO";
+import { createOrUpdateOrganization as cqCreateOrUpdateOrganization } from "../../external/carequality/command/create-or-update-organization";
+import { createOrUpdateCWOrganization } from "../../external/commonwell/command/create-or-update-cw-organization";
+import { requestLogger } from "../helpers/request-logger";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler } from "../util";
-import { createOrUpdateCQOrganization } from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
-import { createOrUpdateCWOrganization } from "../../external/commonwell/command/create-or-update-cw-organization";
-import { getCqAddress } from "../../external/carequality/shared";
-import { processAsyncError } from "@metriport/core/util/error/shared";
+import { internalDtoFromModel } from "./dtos/organizationDTO";
+import { organiationInternalDetailsSchema } from "./schemas/organization";
 
 const router = Router();
 
@@ -32,7 +29,10 @@ router.put(
   "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
+    if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    // TODO Thomas, do we need this?
+    // const skipHie = getFromQueryAsBoolean("skipHie", req);
 
     const orgDetails = organiationInternalDetailsSchema.parse(req.body);
     const organizationCreate: OrganizationCreate = {
@@ -56,38 +56,19 @@ router.put(
       cwApproved: orgDetails.cwApproved,
     };
     let org: Organization;
-    let orgCurrentActive = false;
     if (orgDetails.id) {
-      const currentOrg = await getOrganizationOrFail({ cxId, id: orgDetails.id });
-      orgCurrentActive = currentOrg.cqActive;
+      await getOrganizationOrFail({ cxId, id: orgDetails.id });
       org = await updateOrganization({ id: orgDetails.id, ...organizationCreate });
     } else {
       org = await createOrganization(organizationCreate);
     }
-    const syncInHie = await verifyCxProviderAccess(cxId, false);
+    // TODO Thomas, do we need this?
+    // const syncInHie = !skipHie && isProvider(org);
+    const syncInHie = isProvider(org);
     // TODO Move to external/hie https://github.com/metriport/metriport-internal/issues/1940
     // CAREQUALITY
     if (syncInHie && org.cqApproved) {
-      const { coordinates, addressLine } = await getCqAddress({ cxId, address: org.data.location });
-      createOrUpdateCQOrganization(
-        {
-          name: org.data.name,
-          addressLine1: addressLine,
-          lat: coordinates.lat.toString(),
-          lon: coordinates.lon.toString(),
-          city: org.data.location.city,
-          state: org.data.location.state,
-          postalCode: org.data.location.zip,
-          oid: org.oid,
-          organizationBizType: org.type,
-          contactName: metriportCompanyDetails.name,
-          phone: metriportCompanyDetails.phone,
-          email: metriportEmailForCq,
-          active: org.cqActive,
-          role: "Connection" as const,
-        },
-        orgCurrentActive
-      ).catch(processAsyncError("cq.internal.organization"));
+      cqCreateOrUpdateOrganization({ org }).catch(processAsyncError("cq.internal.organization"));
     }
     // COMMONWELL
     if (syncInHie && org.cwApproved) {
