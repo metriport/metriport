@@ -1,7 +1,6 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
 import { isPatient } from "../../../external/fhir/shared";
-import { createBundleEntry } from "../../../external/fhir/shared/bundle";
 import { DOC_ID_EXTENSION_URL } from "../../../external/fhir/shared/extensions/doc-id-extension";
 import { uuidv7 } from "../../../util/uuid-v7";
 
@@ -75,16 +74,6 @@ export function addExtensionToConversion(
     }
   }
   return updatedBundle;
-}
-
-export function addMissingRequests(fhirBundle: Bundle<Resource>): Bundle<Resource> {
-  const updatedBundle = cloneDeep(fhirBundle);
-  if (!updatedBundle?.entry?.length) return updatedBundle;
-  const fullBundleEntries = updatedBundle.entry.map(e => createBundleEntry(e));
-  return {
-    ...updatedBundle,
-    entry: fullBundleEntries,
-  };
 }
 
 export function removePatientFromConversion(fhirBundle: Bundle<Resource>): Bundle<Resource> {

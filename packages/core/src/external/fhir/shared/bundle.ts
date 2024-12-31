@@ -36,7 +36,7 @@ import { filterTruthy } from "@metriport/shared/common/filter-map";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { uniq } from "lodash";
+import { cloneDeep, uniq } from "lodash";
 import { wrapIdInUrnId, wrapIdInUrnUuid } from "../../../util/urn";
 import { isValidUuid } from "../../../util/uuid-v7";
 
@@ -169,14 +169,28 @@ export const buildBundleEntry = <T extends Resource>(resource: T): BundleEntry<T
   };
 };
 
-export function createBundleEntry(entry: BundleEntry): BundleEntry {
+const qualifyingBundleTypesForRequest = ["batch", "transaction", "history", "collection"];
+
+function addRequestAndUrl(entry: BundleEntry): BundleEntry {
   const fullUrl = buildFullUrl(entry.resource);
   const request = buildFhirRequest(entry.resource);
   return {
+    ...entry,
     ...(fullUrl ? { fullUrl } : {}),
     ...(request ? { request } : {}),
-    ...entry,
   };
+}
+
+export function createFullBundleEntries(bundle: Bundle<Resource>): Bundle<Resource> {
+  const updBundle = cloneDeep(bundle);
+
+  if (bundle.type && qualifyingBundleTypesForRequest.includes(bundle.type)) {
+    const updEntries = bundle.entry?.map(addRequestAndUrl);
+    if (updEntries) {
+      updBundle.entry = updEntries;
+    }
+  }
+  return updBundle;
 }
 
 export const buildFullUrl = <T extends Resource>(resource: T | undefined): string | undefined => {

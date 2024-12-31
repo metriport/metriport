@@ -1,6 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { Condition } from "@medplum/fhirtypes";
 import { makeBundle } from "../../../../external/fhir/__tests__/bundle";
+import * as bundleShared from "../../../../external/fhir/shared/bundle";
 import { buildDocIdFhirExtension } from "../../../../external/fhir/shared/extensions/doc-id-extension";
 import { snomedCodeMd } from "../../../../fhir-deduplication/__tests__/examples/condition-examples";
 import { makeCondition } from "../../../../fhir-to-cda/cda-templates/components/__tests__/make-condition";
@@ -10,13 +11,13 @@ import { postProcessBundle } from "../post-process";
 
 let replaceIdsMock: jest.SpyInstance;
 let addExtensionToConversionMock: jest.SpyInstance;
-let addMissingRequestsMock: jest.SpyInstance;
+let createFullBundleEntriesMock: jest.SpyInstance;
 let removePatientFromConversionMock: jest.SpyInstance;
 
 beforeAll(() => {
   replaceIdsMock = jest.spyOn(bundleMods, "replaceIdsForResourcesWithDocExtension");
   addExtensionToConversionMock = jest.spyOn(bundleMods, "addExtensionToConversion");
-  addMissingRequestsMock = jest.spyOn(bundleMods, "addMissingRequests");
+  createFullBundleEntriesMock = jest.spyOn(bundleShared, "createFullBundleEntries");
   removePatientFromConversionMock = jest.spyOn(bundleMods, "removePatientFromConversion");
 });
 afterEach(() => {
@@ -151,13 +152,13 @@ describe("Checking postProcessBundle and its constituent functions", () => {
     });
   });
 
-  describe("addMissingRequests", () => {
+  describe("createFullBundleEntries", () => {
     it("appends a PUT request to each BundleEntry with correct resource references", () => {
       const { patientId, condition } = initTest();
       const condition2 = makeCondition({ id: faker.string.uuid() }, patientId);
       const bundle = makeBundle({ entries: [condition, condition2], type: "collection" });
 
-      const updatedBundle = bundleMods.addMissingRequests(bundle);
+      const updatedBundle = bundleShared.createFullBundleEntries(bundle);
       expect(updatedBundle.entry).toHaveLength(2);
 
       updatedBundle.entry?.forEach((entry, index) => {
@@ -171,7 +172,7 @@ describe("Checking postProcessBundle and its constituent functions", () => {
 
     it("returns bundle unchanged when no entries exist", () => {
       const bundle = makeBundle({ entries: [], type: "collection" });
-      const updatedBundle = bundleMods.addMissingRequests(bundle);
+      const updatedBundle = bundleShared.createFullBundleEntries(bundle);
       expect(updatedBundle).toEqual(bundle);
     });
   });
@@ -224,13 +225,13 @@ describe("Checking postProcessBundle and its constituent functions", () => {
 
       expect(replaceIdsMock).toHaveBeenCalled();
       expect(addExtensionToConversionMock).toHaveBeenCalled();
-      expect(addMissingRequestsMock).toHaveBeenCalled();
+      expect(createFullBundleEntriesMock).toHaveBeenCalled();
       expect(removePatientFromConversionMock).toHaveBeenCalled();
 
       // Check relative order of execution
       const replaceIdsOrder = replaceIdsMock.mock.invocationCallOrder[0];
       const addExtensionOrder = addExtensionToConversionMock.mock.invocationCallOrder[0];
-      const addRequestsOrder = addMissingRequestsMock.mock.invocationCallOrder[0];
+      const addRequestsOrder = createFullBundleEntriesMock.mock.invocationCallOrder[0];
       const removePatientOrder = removePatientFromConversionMock.mock.invocationCallOrder[0];
 
       if (!replaceIdsOrder) throw new Error("Failed to get replaceIdsOrder");

@@ -1,7 +1,7 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
+import { createFullBundleEntries } from "../../../external/fhir/shared/bundle";
 import {
   addExtensionToConversion,
-  addMissingRequests,
   removePatientFromConversion,
   replaceIdsForResourcesWithDocExtension,
 } from "./modifications";
@@ -25,7 +25,7 @@ export function postProcessBundle(
 ) {
   const withNewIds = replaceIdsForResourcesWithDocExtension(fhirBundle, patientId);
   const withExtensions = addExtensionToConversion(withNewIds, documentExtension);
-  const withRequests = addMissingRequests(withExtensions);
+  const withRequests = createFullBundleEntries(withExtensions);
   const withoutPatient = removePatientFromConversion(withRequests);
   return withoutPatient;
 }
