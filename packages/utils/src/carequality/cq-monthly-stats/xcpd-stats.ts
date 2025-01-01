@@ -6,7 +6,7 @@ import fs from "fs";
 import { merge } from "lodash";
 import duration from "dayjs/plugin/duration";
 import {
-  associateGWToImplementer,
+  associateGwToImplementer,
   GWWithStats,
   ImplementerWithGwStats,
   CountPerGW,
@@ -30,9 +30,9 @@ export async function xcpdStats({
   endOfPreviousMonth,
   dayIndex,
 }: RequestParams): Promise<ImplementerWithGwStats[]> {
-  const xcpdGWStats: GWWithStats[] = await aggregateXCPDGWStats(endOfPreviousMonth, dayIndex);
+  const xcpdGWStats: GWWithStats[] = await aggregateXcpdGwStats(endOfPreviousMonth, dayIndex);
 
-  const xcpdStats: ImplementerWithGwStats[] = await associateGWToImplementer(
+  const xcpdStats: ImplementerWithGwStats[] = await associateGwToImplementer(
     xcpdGWStats,
     cqDirectory
   );
@@ -45,7 +45,7 @@ export async function xcpdStats({
   return xcpdStats;
 }
 
-async function aggregateXCPDGWStats(
+async function aggregateXcpdGwStats(
   endOfPreviousMonth: string,
   dayIndex: number
 ): Promise<GWWithStats[]> {
@@ -90,7 +90,8 @@ function getNonErroredResponsesPerGW(results: TableResults[]): GWWithStats[] {
 }
 
 export function aggregateNonXcpdErrRespByMonth(
-  statsByDay: ImplementerStatsByDay
+  statsByDay: ImplementerStatsByDay,
+  fullMonthMultiplier = 1
 ): MonthlyImplementerStats[] {
   const monthlyStats: MonthlyImplementerStats[] = [];
 
@@ -116,7 +117,7 @@ export function aggregateNonXcpdErrRespByMonth(
           month,
           implementerId,
           implementerName,
-          nonErroredResponses: nonErroredResponses * 10,
+          nonErroredResponses: nonErroredResponses * fullMonthMultiplier,
         });
       }
     });

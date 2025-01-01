@@ -10,7 +10,7 @@ import {
   GWWithStats,
   queryResultsTable,
   getDurationsPerGW,
-  associateGWToImplementer,
+  associateGwToImplementer,
   RequestParams,
   CountPerGW,
   ImplementerStatsByDay,
@@ -28,7 +28,7 @@ export async function xcaDRStats({
 }: RequestParams): Promise<ImplementerWithGwStats[]> {
   const xcaDRGWStats: GWWithStats[] = await aggregateXcaDRGWStats(endOfPreviousMonth, dayIndex);
 
-  const xcaDRStats: ImplementerWithGwStats[] = await associateGWToImplementer(
+  const xcaDRStats: ImplementerWithGwStats[] = await associateGwToImplementer(
     xcaDRGWStats,
     cqDirectory
   );
@@ -80,7 +80,8 @@ function getTotalDocRetrievedPerGW(results: OutboundDocumentRetrievalResp[]): GW
 }
 
 export function aggregateDocRetrievedByMonth(
-  statsByDay: ImplementerStatsByDay
+  statsByDay: ImplementerStatsByDay,
+  fullMonthMultiplier = 1
 ): MonthlyImplementerStats[] {
   const monthlyStats: MonthlyImplementerStats[] = [];
 
@@ -106,7 +107,7 @@ export function aggregateDocRetrievedByMonth(
           month,
           implementerId,
           implementerName,
-          totalDocRetrieved: totalDocRetrieved * 10,
+          totalDocRetrieved: totalDocRetrieved * fullMonthMultiplier,
         });
       }
     });

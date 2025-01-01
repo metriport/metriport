@@ -7,7 +7,7 @@ import duration from "dayjs/plugin/duration";
 import {
   GWWithStats,
   ImplementerWithGwStats,
-  associateGWToImplementer,
+  associateGwToImplementer,
   queryResultsTable,
   getDurationsPerGW,
   RequestParams,
@@ -17,22 +17,22 @@ dayjs.extend(duration);
 
 const documentQueryResultTableName = "document_query_result";
 
-export async function xcaDQStats({
+export async function xcaDqStats({
   cqDirectory,
   endOfPreviousMonth,
   dayIndex,
 }: RequestParams): Promise<ImplementerWithGwStats[]> {
-  const xcaDQGWStats: GWWithStats[] = await aggregateXcaDQGWStats(endOfPreviousMonth, dayIndex);
+  const xcaDQGWStats: GWWithStats[] = await aggregateXcaDqGwStats(endOfPreviousMonth, dayIndex);
 
-  const xcaDQStats: ImplementerWithGwStats[] = await associateGWToImplementer(
+  const xcaDqStats: ImplementerWithGwStats[] = await associateGwToImplementer(
     xcaDQGWStats,
     cqDirectory
   );
 
-  return xcaDQStats;
+  return xcaDqStats;
 }
 
-async function aggregateXcaDQGWStats(
+async function aggregateXcaDqGwStats(
   endOfPreviousMonth: string,
   dayIndex: number
 ): Promise<GWWithStats[]> {

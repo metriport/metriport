@@ -3,6 +3,7 @@ dotenv.config();
 // keep that ^ on top
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { initReadonlyDbPool } from "@metriport/core/util/sequelize";
+import { Organization } from "@metriport/carequality-sdk/models/organization";
 import { QueryTypes } from "sequelize";
 import { mean } from "lodash";
 
@@ -11,9 +12,27 @@ const sqlReadReplicaEndpoint = getEnvVarOrFail("DB_READ_REPLICA_ENDPOINT");
 
 export const readOnlyDBPool = initReadonlyDbPool(sqlDBCreds, sqlReadReplicaEndpoint);
 
+export type CQDirectoryEntryData = {
+  id: string;
+  name?: string;
+  urlXCPD?: string;
+  urlDQ?: string;
+  urlDR?: string;
+  lat?: number;
+  lon?: number;
+  state?: string;
+  data?: Organization;
+  point?: string;
+  managingOrganization?: string;
+  managingOrganizationId?: string;
+  gateway: boolean;
+  active: boolean;
+  lastUpdatedAtCQ: string;
+};
+
 export type RequestParams = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  cqDirectory: any[];
+  cqDirectory: CQDirectoryEntryData[];
   endOfPreviousMonth: string;
   dayIndex: number;
 };
@@ -119,7 +138,7 @@ export function getDurationsPerGW(results: any[]): GWWithStats[] {
   return gwStats;
 }
 
-export function associateGWToImplementer(
+export function associateGwToImplementer(
   xcpdGWStats: GWWithStats[],
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   cqDirectory: any[]

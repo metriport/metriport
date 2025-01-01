@@ -7,21 +7,24 @@ import duration from "dayjs/plugin/duration";
 import fs from "fs";
 import { sleep } from "@metriport/shared";
 import { xcpdStats, aggregateNonXcpdErrRespByMonth } from "./xcpd-stats";
-import { xcaDQStats } from "./xca-dq-stats";
+import { xcaDqStats } from "./xca-dq-stats";
 import { xcaDRStats, aggregateDocRetrievedByMonth } from "./xca-dr-stats";
 import {
   readOnlyDBPool,
   ImplementerStatsByDay,
   MonthlyImplementerStats,
   aggregateDurationAvgByMonth,
+  CQDirectoryEntryData,
 } from "./shared";
 
 dayjs.extend(duration);
 
-// USE STORED RESULTS ON SUBSEQUENT RUNS TO AVOID REPEATEDLY RUNNING THE SAME EXPENSIVE QUERIES
+// If you want to run for a specific number of days, set this to the number of days you want to run.
+// If you want to run for the entire month, set this to 0.
+const howManyDaysToRun = 0;
 
 async function main() {
-  let cqDirectory: object[] = [];
+  let cqDirectory: CQDirectoryEntryData[] = [];
 
   if (fs.existsSync("./runs/cq-directory.json")) {
     console.log("Using stored CQ directory");
@@ -42,13 +45,15 @@ async function main() {
   const daysInPreviousMonth = previousMonth.daysInMonth();
   const endOfPreviousMonth = previousMonth.endOf("month").format("YYYY-MM-DD");
 
+  const daysToRun = howManyDaysToRun || daysInPreviousMonth;
+
   const xcpdByDate: ImplementerStatsByDay = {};
   const xcaDQByDate: ImplementerStatsByDay = {};
   const xcaDRByDate: ImplementerStatsByDay = {};
 
-  for (let i = 0; i < daysInPreviousMonth; i++) {
+  for (let i = 0; i < daysToRun; i++) {
     const day = previousMonth.endOf("month").subtract(i, "day").format("YYYY-MM-DD");
-    const baseDir = `./runs`;
+    const baseDir = `./runs/cq-monthly-stats`;
     const baseDirDay = `${baseDir}/${day}`;
     fs.mkdirSync(baseDirDay, { recursive: true });
 
@@ -73,7 +78,7 @@ async function main() {
       console.log("Using stored XCA-DQ results");
       xcaDQByDate[day] = JSON.parse(fs.readFileSync(`${baseDirDay}/xca-dq.json`, "utf8"));
     } else {
-      const xcaDQ = await xcaDQStats(params);
+      const xcaDQ = await xcaDqStats(params);
       xcaDQByDate[day] = xcaDQ;
       fs.writeFileSync(`${baseDirDay}/xca-dq.json`, JSON.stringify(xcaDQ, null, 2));
       await sleep(20000);
@@ -90,10 +95,12 @@ async function main() {
     }
   }
 
-  const xcpdMonthlyStats = aggregateNonXcpdErrRespByMonth(xcpdByDate);
+  const fullMonthMultiplier = howManyDaysToRun === 0 ? 1 : daysInPreviousMonth / daysToRun;
+
+  const xcpdMonthlyStats = aggregateNonXcpdErrRespByMonth(xcpdByDate, fullMonthMultiplier);
   createXcpdNonErrRespCsv(xcpdMonthlyStats);
 
-  const xcaDRMonthlyStats = aggregateDocRetrievedByMonth(xcaDRByDate);
+  const xcaDRMonthlyStats = aggregateDocRetrievedByMonth(xcaDRByDate, fullMonthMultiplier);
   createDocRetrievedCsv(xcaDRMonthlyStats);
 
   const xcpdAvgResponseTime = aggregateDurationAvgByMonth(
