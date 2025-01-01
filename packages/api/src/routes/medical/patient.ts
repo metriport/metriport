@@ -1,17 +1,16 @@
-import { patientCreateSchema } from "@metriport/api-sdk";
-import { QueryProgress as QueryProgressFromSDK } from "@metriport/api-sdk/medical/models/patient";
-import {
-  consolidationConversionType,
-  mrFormat,
-} from "@metriport/core/domain/conversion/fhir-to-medical-record";
-import { toFHIR } from "@metriport/core/external/fhir/patient/index";
-import { stringToBoolean } from "@metriport/shared";
+import { consolidationConversionType } from "@metriport/api-sdk";
+import { GetConsolidatedQueryProgressResponse } from "@metriport/api-sdk/medical/models/patient";
+import { mrFormat } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
+import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
+import { getRequestId } from "@metriport/core/util/request";
+import { isTrue, stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
+import { orderBy } from "lodash";
 import { z } from "zod";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
-import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/consolidated-create";
 import {
   getConsolidatedPatientData,
   startConsolidatedQuery,
@@ -20,86 +19,34 @@ import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
-import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
+import { setHieOptOut, getHieOptOut } from "../../command/medical/patient/update-hie-opt-out";
+import { handleDataContribution } from "../../command/medical/patient/data-contribution/handle-data-contributions";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
-import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
+import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
+import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
-import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import BadRequestError from "../../errors/bad-request";
 import NotFoundError from "../../errors/not-found";
 import { countResources } from "../../external/fhir/patient/count-resources";
-import { upsertPatientToFHIRServer } from "../../external/fhir/patient/upsert-patient";
-import { validateFhirEntries } from "../../external/fhir/shared/json-validator";
-import { PatientModel as Patient } from "../../models/medical/patient";
-import { Config } from "../../shared/config";
+import { REQUEST_ID_HEADER_NAME } from "../../routes/header";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
+import { getOutputFormatFromRequest } from "../helpers/output-format";
 import { requestLogger } from "../helpers/request-logger";
-import {
-  asyncHandler,
-  getCxIdOrFail,
-  getFrom,
-  getFromParamsOrFail,
-  getFromQueryOrFail,
-} from "../util";
+import { getPatientInfoOrFail } from "../middlewares/patient-authorization";
+import { checkRateLimit } from "../middlewares/rate-limiting";
+import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
 import {
   patientUpdateSchema,
-  schemaCreateToPatient,
-  schemaUpdateToPatient,
+  schemaUpdateToPatientData,
+  PatientHieOptOutResponse,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
 const router = Router();
-const MAX_RESOURCE_POST_COUNT = 50;
-const MAX_RESOURCE_STORED_LIMIT = 1000;
-const MAX_CONTENT_LENGTH_BYTES = 1_000_000;
-
-/** ---------------------------------------------------------------------------
- * POST /patient
- *
- * Creates the patient corresponding to the specified facility at the
- * customer's organization if it doesn't exist already.
- *
- * @param  req.query.facilityId The ID of the Facility the Patient should be associated with.
- * @return The newly created patient.
- */
-router.post(
-  "/",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const facilityId = getFromQueryOrFail("facilityId", req);
-    const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
-    const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
-    const payload = patientCreateSchema.parse(req.body);
-
-    if (Config.isSandbox()) {
-      // limit the amount of patients that can be created in sandbox mode
-      const numPatients = await Patient.count({ where: { cxId } });
-      const patientLimit = await getSandboxPatientLimitForCx(cxId);
-      if (numPatients >= patientLimit) {
-        return res.status(status.BAD_REQUEST).json({
-          message: `Cannot create more than ${Config.SANDBOX_PATIENT_LIMIT} patients in Sandbox mode!`,
-        });
-      }
-    }
-
-    const patientCreate: PatientCreateCmd = {
-      ...schemaCreateToPatient(payload, cxId),
-      facilityId,
-    };
-
-    const patient = await createPatient(patientCreate, forceCommonwell, forceCarequality);
-
-    // temp solution until we migrate to FHIR
-    const fhirPatient = toFHIR(patient);
-    await upsertPatientToFHIRServer(patient.cxId, fhirPatient);
-    return res.status(status.CREATED).json(dtoFromModel(patient));
-  })
-);
 
 /** ---------------------------------------------------------------------------
  * PUT /patient/:id
@@ -111,35 +58,38 @@ router.post(
  * @return The patient to be updated
  */
 router.put(
-  "/:id",
+  "/",
+  checkRateLimit("patientCreateOrUpdate"),
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const id = getFromParamsOrFail("id", req);
+    const { cxId, id, patient } = getPatientInfoOrFail(req);
     const facilityIdParam = getFrom("query").optional("facilityId", req);
+    const rerunPdOnNewDemographics = stringToBoolean(
+      getFrom("query").optional("rerunPdOnNewDemographics", req)
+    );
     const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
     const payload = patientUpdateSchema.parse(req.body);
 
-    const patient = await getPatientOrFail({ id, cxId });
     if (areDocumentsProcessing(patient)) {
       return res.status(status.LOCKED).json("Document querying currently in progress");
     }
 
     const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
     const patientUpdate: PatientUpdateCmd = {
-      ...schemaUpdateToPatient(payload, cxId),
+      ...schemaUpdateToPatientData(payload),
       ...getETag(req),
+      cxId,
       id,
       facilityId,
     };
 
-    const updatedPatient = await updatePatient(
+    const updatedPatient = await updatePatient({
       patientUpdate,
-      true,
+      rerunPdOnNewDemographics,
       forceCommonwell,
-      forceCarequality
-    );
+      forceCarequality,
+    });
 
     return res.status(status.OK).json(dtoFromModel(updatedPatient));
   })
@@ -150,19 +100,20 @@ router.put(
  *
  * Returns a patient corresponding to the specified facility at the customer's organization.
  *
+ * USED WITHIN EHR INTEGRATION.
+ *
  * @param   req.cxId      The customer ID.
  * @param   req.param.id  The ID of the patient to be returned.
  * @return  The customer's patients associated with the given facility.
  */
 router.get(
-  "/:id",
+  "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const patientId = getFromParamsOrFail("id", req);
+    const { patient } = getPatientInfoOrFail(req);
+    const output = getOutputFormatFromRequest(req);
 
-    const patient = await getPatientOrFail({ id: patientId, cxId });
-
+    if (output === "fhir") return res.status(status.OK).json(toFHIR(patient));
     return res.status(status.OK).json(dtoFromModel(patient));
   })
 );
@@ -176,11 +127,10 @@ router.get(
  * @return 204 No Content
  */
 router.delete(
-  "/:id",
+  "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const id = getFromParamsOrFail("id", req);
+    const { cxId, id } = getPatientInfoOrFail(req);
     const facilityId = getFrom("query").optional("facilityId", req);
 
     const patientDeleteCmd = {
@@ -192,29 +142,6 @@ router.delete(
     await deletePatient(patientDeleteCmd);
 
     return res.sendStatus(status.NO_CONTENT);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * GET /patient
- *
- * Gets all patients corresponding to the specified facility at the customer's organization.
- *
- * @param   req.cxId              The customer ID.
- * @param   req.query.facilityId  The ID of the facility the user patient is associated with (optional).
- * @return  The customer's patients associated with the given facility.
- */
-router.get(
-  "/",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const facilityId = getFrom("query").optional("facilityId", req);
-
-    const patients = await getPatients({ cxId, facilityId: facilityId });
-
-    const patientsData = patients.map(dtoFromModel);
-    return res.status(status.OK).json({ patients: patientsData });
   })
 );
 
@@ -230,24 +157,25 @@ router.get(
  * @param req.query.resources Optional comma-separated list of resources to be returned.
  * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
+ * @param req.query.fromDashboard Optional parameter to indicate that the request is coming from the dashboard.
  * @return Patient's consolidated data.
  */
 router.get(
-  "/:id/consolidated",
+  "/consolidated",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const patientId = getFrom("params").orFail("id", req);
+    const { patient } = getPatientInfoOrFail(req);
     const resources = getResourcesQueryParam(req);
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
-    const patient = await getPatientOrFail({ id: patientId, cxId });
+    const fromDashboard = getFromQueryAsBoolean("fromDashboard", req);
 
     const data = await getConsolidatedPatientData({
       patient,
       resources,
       dateFrom,
       dateTo,
+      fromDashboard,
     });
 
     return res.json(data);
@@ -260,22 +188,28 @@ router.get(
  * Returns a patient's consolidated data query status.
  * To trigger a new consolidated query, call POST /patient/:id/consolidated/query.
  *
+ * USED WITHIN EHR INTEGRATION.
+ *
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient whose data is to be returned.
- * @return status of querying for the Patient's consolidated data.
+ * @returns all consolidated queries for the patient that have been triggered.
  */
 router.get(
-  "/:id/consolidated/query",
+  "/consolidated/query",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const patientId = getFrom("params").orFail("id", req);
-    const patient = await getPatientOrFail({ cxId, id: patientId });
-    const respPayload: QueryProgressFromSDK = {
-      status: patient.data.consolidatedQuery?.status ?? null,
+    const { patient } = getPatientInfoOrFail(req);
+    const consolidatedQueries = patient.data.consolidatedQueries ?? null;
+    const mostRecentQuery = orderBy(consolidatedQueries, "startedAt", "desc")[0];
+
+    const respPayload: GetConsolidatedQueryProgressResponse = {
+      /** @deprecated status should no longer be used. Refer to queries in the consolidatedQueries array instead. */
+      status: mostRecentQuery?.status ?? null,
+      queries: consolidatedQueries ?? null,
       message:
         "Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook",
     };
+
     return res.json(respPayload);
   })
 );
@@ -289,31 +223,36 @@ const medicalRecordFormatSchema = z.enum(mrFormat);
  * Triggers a patient's consolidated data query. Results are sent through Webhook.
  * If the query is already in progress, just return the current status.
  *
+ * USED WITHIN EHR INTEGRATION.
+ *
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient whose data is to be returned.
  * @param req.query.resources Optional comma-separated list of resources to be returned.
  * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
- * @param req.query.docType Optional to indicate the file format you get the document back in.
+ * @param req.query.conversionType Optional to indicate the file format you get the document back in.
  *        Accepts "pdf", "html", and "json". If provided, the Webhook payload will contain a signed URL to download
  *        the file, which is active for 3 minutes. If not provided, will send json payload in the webhook.
  * @param req.body Optional metadata to be sent through Webhook.
- * @return status of querying for the Patient's consolidated data.
+ * @param req.query.fromDashboard Optional parameter to indicate that the request is coming from the dashboard.
+ * @return status for querying the Patient's consolidated data.
  */
 router.post(
-  "/:id/consolidated/query",
+  "/consolidated/query",
+  checkRateLimit("consolidatedDataQuery"),
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const patientId = getFrom("params").orFail("id", req);
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
     const resources = getResourcesQueryParam(req);
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
     const type = getFrom("query").optional("conversionType", req);
+    const fromDashboard = getFromQueryAsBoolean("fromDashboard", req);
+
     const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
     const cxConsolidatedRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
-    const queryResponse = await startConsolidatedQuery({
+    const respPayload = await startConsolidatedQuery({
       cxId,
       patientId,
       resources,
@@ -321,10 +260,9 @@ router.post(
       dateTo,
       conversionType,
       cxConsolidatedRequestMetadata: cxConsolidatedRequestMetadata?.metadata,
+      fromDashboard,
     });
-    const respPayload: QueryProgressFromSDK = {
-      status: queryResponse.status ?? null,
-    };
+
     return res.json(respPayload);
   })
 );
@@ -334,6 +272,8 @@ router.post(
  *
  * Returns the url to download a patient's medical record summary, if it exists.
  *
+ * USED WITHIN EHR INTEGRATION.
+ *
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient whose data is to be returned.
  * @param req.query.conversionType Indicates how the medical record summary should be rendered. Accepts "pdf" or "html".
@@ -341,11 +281,10 @@ router.post(
  * @throws NotFoundError if the medical record summary does not exist.
  */
 router.get(
-  "/:id/medical-record",
+  "/medical-record",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const patientId = getFrom("params").orFail("id", req);
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
     const type = getFrom("query").orFail("conversionType", req);
     const conversionType = medicalRecordFormatSchema.parse(type);
 
@@ -360,16 +299,17 @@ router.get(
  *
  * Checks if a patient's medical record summary exists in either PDF or HTML format and the date it was created.
  *
+ * USED WITHIN EHR INTEGRATION.
+ *
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient whose data is to be returned.
  * @return JSON containing the status of the patient's medical record summary.
  */
 router.get(
-  "/:id/medical-record-status",
+  "/medical-record-status",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const patientId = getFrom("params").orFail("id", req);
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
     const status = await getMedicalRecordSummaryStatus({ patientId, cxId });
     return res.json(status);
   })
@@ -379,7 +319,7 @@ router.get(
  * POST /patient/:id/consolidated
  * @deprecated use the PUT version of this endpoint
  */
-router.post("/:id/consolidated", requestLogger, asyncHandler(putConsolidated));
+router.post("/consolidated", requestLogger, asyncHandler(putConsolidated));
 /** ---------------------------------------------------------------------------
  * PUT /patient/:id/consolidated
  *
@@ -390,59 +330,28 @@ router.post("/:id/consolidated", requestLogger, asyncHandler(putConsolidated));
  * @param req.body The FHIR Bundle to create or update resources.
  * @return FHIR Bundle with operation outcome.
  */
-router.put("/:id/consolidated", requestLogger, asyncHandler(putConsolidated));
+router.put("/consolidated", requestLogger, asyncHandler(putConsolidated));
 async function putConsolidated(req: Request, res: Response) {
   // Limit the payload size that can be created
   const contentLength = req.headers["content-length"];
-  if (contentLength && parseInt(contentLength) >= MAX_CONTENT_LENGTH_BYTES) {
+  if (contentLength && parseInt(contentLength) >= MAXIMUM_UPLOAD_FILE_SIZE) {
     throw new BadRequestError(
-      `Cannot create bundle with size greater than ${MAX_CONTENT_LENGTH_BYTES} bytes.`
+      `Cannot create bundle with size greater than ${MAXIMUM_UPLOAD_FILE_SIZE} bytes.`
     );
   }
-
-  const cxId = getCxIdOrFail(req);
-  const patientId = getFrom("params").orFail("id", req);
-  const patient = await getPatientOrFail({ id: patientId, cxId });
-
-  const fhirBundle = bundleSchema.parse(req.body);
-  const validatedBundle = validateFhirEntries(fhirBundle);
-  const incomingAmount = validatedBundle.entry.length;
-
-  // Limit the amount of resources per patient
-  if (!Config.isCloudEnv() || Config.isSandbox()) {
-    const { total: currentAmount } = await countResources({
-      patient: { id: patientId, cxId },
-    });
-    if (currentAmount + incomingAmount > MAX_RESOURCE_STORED_LIMIT) {
-      throw new BadRequestError(
-        `Reached maximum number of resources per patient in Sandbox mode ` +
-          `(current: ${currentAmount}, incoming: ${incomingAmount}, max: ${MAX_RESOURCE_STORED_LIMIT})`
-      );
-    }
-    // Limit the amount of resources that can be created at once
-    if (incomingAmount > MAX_RESOURCE_POST_COUNT) {
-      throw new BadRequestError(
-        `Cannot create more than ${MAX_RESOURCE_POST_COUNT} resources at a time ` +
-          `(incoming: ${incomingAmount})`
-      );
-    }
-  }
-  console.log(
-    `[PUT /consolidated] cxId ${cxId}, patientId ${patientId}] ` +
-      `${incomingAmount} resources, ${contentLength} bytes`
-  );
-  const data = await createOrUpdateConsolidatedPatientData({
-    cxId,
-    patientId: patient.id,
-    fhirBundle: validatedBundle,
-  });
-  return res.json(data);
+  const requestId = getRequestId();
+  const { cxId, id: patientId } = getPatientInfoOrFail(req);
+  const bundle = bundleSchema.parse(req.body);
+  const results = await handleDataContribution({ requestId, patientId, cxId, bundle });
+  return res.setHeader(REQUEST_ID_HEADER_NAME, requestId).status(status.OK).json(results);
 }
 
 /** ---------------------------------------------------------------------------
  * GET /patient/:id/consolidated/count
  *
  * Returns the amount of resources a patient has on the FHIR server, total and per resource.
+ *
+ * USED WITHIN EHR INTEGRATION.
  *
  * @param req.cxId The customer ID.
  * @param req.query.patientId The ID of the patient whose data is to be returned.
@@ -451,17 +360,16 @@ async function putConsolidated(req: Request, res: Response) {
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
  */
 router.get(
-  "/:id/consolidated/count",
+  "/consolidated/count",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const patientId = getFrom("params").orFail("id", req);
+    const { patient } = getPatientInfoOrFail(req);
     const resources = getResourcesQueryParam(req);
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
 
     const resourceCount = await countResources({
-      patient: { id: patientId, cxId },
+      patient,
       resources,
       dateFrom,
       dateTo,
@@ -475,6 +383,105 @@ router.get(
         dateTo,
       },
     });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /patient/:id/facility-matches
+ *
+ * returns the all the facilities the patient is matched to.
+ *
+ * @param req.param.id The ID of the patient whose facility matches are to be returned.
+ * @return The patient's facility matches.
+ */
+router.get(
+  "/facility-matches",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { id: patientId } = getPatientInfoOrFail(req);
+
+    const facilityMatches = await getPatientFacilityMatches({ patientId });
+
+    return res.json(facilityMatches);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /patient/:id/consolidated/webhook
+ *
+ * Returns the webhook.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.patientId The ID of the patient whose data is to be returned.
+ * @param req.query.requestId The ID of the request.
+ */
+router.get(
+  "/consolidated/webhook",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, patient } = getPatientInfoOrFail(req);
+    const requestId = getFrom("query").orFail("requestId", req);
+    const consolidatedQueries = patient.data.consolidatedQueries ?? null;
+
+    const webhook = await getConsolidatedWebhook({ cxId, consolidatedQueries, requestId });
+
+    return res.json(webhook);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * PUT /patient/:id/hie-opt-out
+ *
+ * Returns whether the patient is opted out of data pulling and sharing.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.id The ID of the patient whose data is to be returned.
+ * @param req.query.hieOptOut Boolean value to opt patient out or in.
+ */
+router.put(
+  "/hie-opt-out",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, id } = getPatientInfoOrFail(req);
+    // TODO #2475 SEND THE hieOptOut ID IN THE BODY
+    const hieOptOut = isTrue(getFrom("query").orFail("hieOptOut", req));
+
+    const result = await setHieOptOut({ patientId: id, cxId, hieOptOut });
+
+    const respPayload: PatientHieOptOutResponse = {
+      id: result.id,
+      hieOptOut: result.hieOptOut ?? false,
+      message: `Patient has been opted ${result.hieOptOut ? "out from" : "in to"} the networks`,
+    };
+
+    return res.status(status.OK).json(respPayload);
+  })
+);
+
+// TODO #2475 expose this on the patient
+/** ---------------------------------------------------------------------------
+ * GET /patient/:id/hie-opt-out
+ *
+ * Returns whether the patient is opted out of data pulling and sharing.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.patientId The ID of the patient whose data is to be returned.
+ */
+router.get(
+  "/hie-opt-out",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, patient } = getPatientInfoOrFail(req);
+
+    const hieOptOut = await getHieOptOut({ cxId, patientId: patient.id });
+
+    const respPayload: PatientHieOptOutResponse = {
+      id: patient.id,
+      hieOptOut: hieOptOut,
+      message: `Patient has opted ${hieOptOut ? "out from" : "in to"} the networks`,
+    };
+
+    return res.status(status.OK).json(respPayload);
   })
 );
 

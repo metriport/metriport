@@ -1,33 +1,16 @@
 import { InboundDocumentQueryReq, InboundDocumentRetrievalReq } from "@metriport/ihe-gateway-sdk";
-import { XDSMissingHomeCommunityId, XDSRegistryError } from "./error";
-import { USState } from "../../domain/geographic-locations";
+import { USState } from "@metriport/shared";
 import { base64ToString, stringToBase64 } from "../../util/base64";
-
-/*
-CONFIDENTIALITY_CODE is always N, or normal, indicating its normal PHI
-FORMAT_CODE is always urn:ihe:iti:xds:2017:mimeTypeSufficient, which is sufficient for all document types.
-*/
-
-export const DEFAULT_CLASS_CODE_NODE = "34133-9";
-export const DEFAULT_CLASS_CODE_DISPLAY = "Continuity of Care Document";
-export const DEFAULT_CONFIDENTIALITY_CODE = "N";
-export const CONFIDENTIALITY_CODE_SYSTEM = "2.16.840.1.113883.5.25";
-export const LOINC_CODE = "2.16.840.1.113883.6.1";
-export const SNOMED_CODE = "2.16.840.1.113883.6.96";
-export const DEFAULT_FORMAT_CODE_SYSTEM = "1.3.6.1.4.1.19376.1.2.3";
-export const DEFAULT_FORMAT_CODE_NODE = "urn:ihe:pcc:xphr:2007";
-export const DEFAULT_PRACTICE_SETTING_CODE_NODE = "394802001";
-export const DEFAULT_PRACTICE_SETTING_CODE_DISPLAY = "General Medicine";
-export const DEFAULT_HEALTHCARE_FACILITY_TYPE_CODE_NODE = "394777002";
-export const DEFAULT_HEALTHCARE_FACILITY_TYPE_CODE_DISPLAY = "Health Encounter Site";
-export const CODE_SYSTEM_ERROR = "1.3.6.1.4.1.19376.1.2.27.1";
-export const NHIN_PURPOSE_CODE_SYSTEM = "2.16.840.1.113883.3.18.7.1";
+import { FhirGender } from "../fhir/patient/conversion";
+import { XDSMissingHomeCommunityId, XDSRegistryError } from "./error";
+import { IheGender } from "./ihe-gateway-v2/schema";
 
 export const ORGANIZATION_NAME_DEFAULT = "Metriport";
 export const METRIPORT_HOME_COMMUNITY_ID = "urn:oid:2.16.840.1.113883.3.9621";
 export const METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX = "2.16.840.1.113883.3.9621";
 export const METRIPORT_REPOSITORY_UNIQUE_ID = "urn:oid:2.16.840.1.113883.3.9621";
-
+export const CODE_SYSTEM_ERROR = "1.3.6.1.4.1.19376.1.2.27.1";
+export const DEFAULT_TITLE = "Clinical Document";
 export const replyTo = "http://www.w3.org/2005/08/addressing/anonymous";
 
 export const STATE_MAPPINGS: { [key: string]: USState } = {
@@ -113,4 +96,34 @@ export function validateBasePayload(
   if (!payload.samlAttributes.homeCommunityId) {
     throw new XDSMissingHomeCommunityId("Home Community ID is not defined");
   }
+}
+
+const fhirGenderToIheGender: Record<FhirGender, IheGender> = {
+  female: "F",
+  male: "M",
+  other: "UN",
+  unknown: "UNK",
+};
+
+const iheGenderToFhirGender: Record<IheGender, FhirGender> = {
+  F: "female",
+  M: "male",
+  UN: "other",
+  OTH: "other",
+  FTM: "other",
+  MTF: "other",
+  UNK: "unknown",
+  U: "unknown",
+};
+
+export function mapIheGenderToFhir(k: IheGender | undefined): FhirGender {
+  if (k === undefined) {
+    return "unknown";
+  }
+  const gender = iheGenderToFhirGender[k];
+  return gender ? gender : "unknown";
+}
+
+export function mapFhirToIheGender(gender: FhirGender | undefined): IheGender {
+  return gender ? fhirGenderToIheGender[gender] : "UNK";
 }

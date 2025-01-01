@@ -1,96 +1,50 @@
 import { z } from "zod";
+import { medical } from "@metriport/shared";
+import { queryStatusSchema } from "./patient";
 
-export const consolidatedFilterSchema = z.object({
-  resources: z.string(),
-  dateFrom: z.date().optional(),
-  dateTo: z.date().optional(),
+export const resourcesSearchableByPatient = medical.resourcesSearchableByPatient;
+export type ResourceSearchableByPatient = (typeof resourcesSearchableByPatient)[number];
+
+export const resourcesSearchableBySubject = medical.resourcesSearchableBySubject;
+export type ResourceSearchableBySubject = (typeof resourcesSearchableBySubject)[number];
+
+export const generalResources = medical.generalResources;
+export type GeneralResources = (typeof generalResources)[number];
+
+export const resourceTypeForConsolidation = medical.resourceTypeForConsolidation;
+
+export type ResourceTypeForConsolidation = medical.ResourceTypeForConsolidation;
+
+export const resourceSchema = z.array(z.enum(resourceTypeForConsolidation));
+
+export const consolidationConversionType = medical.consolidationConversionType;
+export type ConsolidationConversionType = (typeof consolidationConversionType)[number];
+
+export const getConsolidatedFiltersSchema = z.object({
+  resources: z.enum(resourceTypeForConsolidation).array().optional(),
+  dateFrom: z.string().optional(),
+  dateTo: z.string().optional(),
+  conversionType: z.enum(consolidationConversionType).default("json").optional(),
+  generateAiBrief: z.boolean().optional(),
+  fromDashboard: z.boolean().optional(),
 });
-export type ConsolidatedFilter = z.infer<typeof consolidatedFilterSchema>;
+
+export type GetConsolidatedFilters = z.infer<typeof getConsolidatedFiltersSchema>;
 
 export const consolidatedCountSchema = z.object({
   total: z.number(),
   resources: z.record(z.number()),
-  filter: consolidatedFilterSchema,
+  filter: getConsolidatedFiltersSchema.pick({ dateFrom: true, dateTo: true }).extend({
+    resources: z.string(),
+  }),
 });
 
 export type ConsolidatedCountResponse = z.infer<typeof consolidatedCountSchema>;
 
-export const resourcesSearchableByPatient = [
-  "Account",
-  "AllergyIntolerance",
-  "Appointment",
-  "AppointmentResponse",
-  "AuditEvent",
-  "Basic",
-  "BodyStructure",
-  "CarePlan",
-  "CareTeam",
-  "ChargeItem",
-  "Claim",
-  "ClaimResponse",
-  "ClinicalImpression",
-  "Communication",
-  "CommunicationRequest",
-  "Composition",
-  "Condition",
-  "Consent",
-  "Contract",
-  "Coverage",
-  "CoverageEligibilityRequest",
-  "CoverageEligibilityResponse",
-  "DetectedIssue",
-  "Device",
-  "DeviceRequest",
-  "DeviceUseStatement",
-  "DiagnosticReport",
-  "DocumentManifest",
-  "DocumentReference",
-  "Encounter",
-  "EnrollmentRequest",
-  "EpisodeOfCare",
-  "ExplanationOfBenefit",
-  "FamilyMemberHistory",
-  "Flag",
-  "Goal",
-  "GuidanceResponse",
-  "ImagingStudy",
-  "Immunization",
-  "ImmunizationEvaluation",
-  "ImmunizationRecommendation",
-  "Invoice",
-  "List",
-  "MeasureReport",
-  "Media",
-  "MedicationAdministration",
-  "MedicationDispense",
-  "MedicationRequest",
-  "MedicationStatement",
-  "MolecularSequence",
-  "NutritionOrder",
-  "Observation",
-  "Person",
-  "Procedure",
-  "Provenance",
-  "QuestionnaireResponse",
-  "RelatedPerson",
-  "RequestGroup",
-  "ResearchSubject",
-  "RiskAssessment",
-  "ServiceRequest",
-  "Specimen",
-] as const;
-export type ResourceSearchableByPatient = (typeof resourcesSearchableByPatient)[number];
+export const consolidatedQuerySchema = getConsolidatedFiltersSchema.extend({
+  requestId: z.string(),
+  startedAt: z.date(),
+  status: queryStatusSchema,
+});
 
-export const resourcesSearchableBySubject = ["AdverseEvent", "Task"] as const;
-export type ResourceSearchableBySubject = (typeof resourcesSearchableBySubject)[number];
-
-export const generalResources = ["Practitioner"] as const;
-export type GeneralResources = (typeof generalResources)[number];
-
-export const resourceTypeForConsolidation = [
-  ...resourcesSearchableByPatient,
-  ...resourcesSearchableBySubject,
-  ...generalResources,
-] as const;
-
-export type ResourceTypeForConsolidation = (typeof resourceTypeForConsolidation)[number];
+export type ConsolidatedQuery = z.infer<typeof consolidatedQuerySchema>;

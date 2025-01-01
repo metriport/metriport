@@ -1,55 +1,46 @@
-import { PatientCreate, patientCreateSchema } from "@metriport/api-sdk";
+import {
+  Contact as ContactSchema,
+  Demographics,
+  PatientCreate,
+  patientCreateSchema,
+} from "@metriport/api-sdk";
+import { Contact } from "@metriport/core/domain/contact";
+import { PatientData } from "@metriport/core/domain/patient";
 import { z } from "zod";
-import { driversLicenseType, generalTypes } from "@metriport/core/domain/patient";
-import { usStateSchema } from "@metriport/api-sdk/medical/models/common/us-data";
 
-export const basePersonalIdentifierSchema = z.object({
-  value: z.string(),
-  period: z
-    .object({
-      start: z.string(),
-      end: z.string().optional(),
-    })
-    .or(
-      z.object({
-        start: z.string().optional(),
-        end: z.string(),
-      })
-    )
-    .optional(),
-  assigner: z.string().optional(),
-});
-
-export const driverLicenseIdentifierSchema = z.object({
-  type: z.enum(driversLicenseType),
-  state: usStateSchema,
-});
-export const generalTypeIdentifierSchema = z.object({
-  type: z.enum(generalTypes),
-});
-export const personalIdentifierSchema = basePersonalIdentifierSchema.merge(
-  driverLicenseIdentifierSchema
-);
-// TODO #369 reenable this when we manage to work with diff systems @ CW
-// .or(basePersonalIdentifierSchema.merge(generalTypeIdentifierSchema));
-export type PersonalIdentifier = z.infer<typeof personalIdentifierSchema>;
 export const patientUpdateSchema = patientCreateSchema;
 export type PatientUpdate = z.infer<typeof patientUpdateSchema>;
 
-export function schemaCreateToPatient(input: PatientCreate, cxId: string) {
+export function schemaContactToContact(input: ContactSchema): Contact {
+  return {
+    email: input.email ?? undefined,
+    phone: input.phone ?? undefined,
+  };
+}
+
+export function schemaCreateToPatientData(input: PatientCreate): PatientData {
   return {
     ...input,
-    cxId,
     address: Array.isArray(input.address) ? input.address : [input.address],
     contact:
       input.contact && Array.isArray(input.contact)
-        ? input.contact
+        ? input.contact.map(schemaContactToContact)
         : input.contact
-        ? [input.contact]
+        ? [schemaContactToContact(input.contact)]
         : undefined,
   };
 }
 
-export function schemaUpdateToPatient(input: PatientUpdate, cxId: string) {
-  return schemaCreateToPatient(input, cxId);
+export function schemaUpdateToPatientData(input: PatientUpdate): PatientData {
+  return schemaCreateToPatientData(input);
 }
+
+export function schemaDemographicsToPatientData(input: Demographics): PatientData {
+  return schemaCreateToPatientData(input);
+}
+
+export type PatientHieOptOutResponse = {
+  id: string;
+  hieOptOut: boolean;
+  message: string;
+};

@@ -9,8 +9,8 @@ import axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
+import { buildGetDirPathInside, initRunsFolder } from "../shared/folder";
 import { getCxData } from "../shared/get-cx-data";
-import { getFileNameForOrg } from "../shared/folder";
 
 dayjs.extend(duration);
 
@@ -35,9 +35,10 @@ const cxId = getEnvVarOrFail("CX_ID");
 
 const endpointUrl = `${apiUrl}/internal/patient/consolidated`;
 
-const getDirName = (orgName: string) => `./runs/consolidated/${getFileNameForOrg(orgName)}`;
+const getDirName = buildGetDirPathInside(`consolidated`);
 
 async function main() {
+  initRunsFolder();
   console.log(
     `########################## Running for cx ${cxId}, ${
       patientIds.length

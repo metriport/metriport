@@ -134,3 +134,6 @@ scratch*
 bulk-insert-patient-ids.txt
 screenshot*
 runs
+!.env.test
+
+src/cda-converter/test-files

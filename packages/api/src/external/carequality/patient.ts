@@ -1,78 +1,118 @@
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
-import { toFHIR } from "@metriport/core/external/fhir/patient/index";
+import { toIheGatewayPatientResource } from "@metriport/core/external/carequality/ihe-gateway-v2/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { IHEGateway, OutboundPatientDiscoveryReq, XCPDGateways } from "@metriport/ihe-gateway-sdk";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { OutboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
+import { errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { makeIHEGatewayV2 } from "../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { makeOutboundResultPoller } from "../ihe-gateway/outbound-result-poller-factory";
-import { getOrganizationsForXCPD } from "./command/cq-directory/get-organizations-for-xcpd";
-import {
-  filterCQOrgsToSearch,
-  searchCQDirectoriesAroundPatientAddresses,
-  toBasicOrgAttributes,
-} from "./command/cq-directory/search-cq-directory";
 import { deleteCQPatientData } from "./command/cq-patient-data/delete-cq-data";
 import { createOutboundPatientDiscoveryReq } from "./create-outbound-patient-discovery-req";
-import { cqOrgsToXCPDGateways, generateIdsForGateways } from "./organization-conversion";
+import { gatherXCPDGateways } from "./gateway";
 import { PatientDataCarequality } from "./patient-shared";
-import { processPatientDiscoveryProgress } from "./process-patient-discovery-progress";
-import { getCqInitiator, validateCQEnabledAndInitGW } from "./shared";
+import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
+import { getCqInitiator, isCqEnabled } from "./shared";
+import { queryDocsIfScheduled } from "./process-outbound-patient-discovery-resps";
+import { createAugmentedPatient } from "../../domain/medical/patient-demographics";
+import { resetScheduledPatientDiscovery } from "../hie/reset-scheduled-patient-discovery-request";
+import { isDemoAugEnabledForCx } from "../aws/app-config";
 
 dayjs.extend(duration);
 
 const context = "cq.patient.discover";
 const resultPoller = makeOutboundResultPoller();
 
-export async function discover(
-  patient: Patient,
-  facilityId: string,
-  requestId: string,
-  forceEnabled = false
-): Promise<void> {
+export async function discover({
+  patient,
+  facilityId,
+  requestId: inputRequestId,
+  forceEnabled = false,
+  rerunPdOnNewDemographics = false,
+}: {
+  patient: Patient;
+  facilityId: string;
+  requestId?: string;
+  forceEnabled?: boolean;
+  rerunPdOnNewDemographics?: boolean;
+}): Promise<void> {
   const baseLogMessage = `CQ PD - patientId ${patient.id}`;
   const { log: outerLog } = out(baseLogMessage);
-  const { cxId } = patient;
 
-  const enabledIHEGW = await validateCQEnabledAndInitGW(cxId, forceEnabled, outerLog);
+  const enabledIHEGW = await isCqEnabled(patient, facilityId, forceEnabled, outerLog);
+
+  const demoAugEnabled = await isDemoAugEnabledForCx(patient.cxId);
+  const cxRerunPdOnNewDemographics = demoAugEnabled || rerunPdOnNewDemographics;
 
   if (enabledIHEGW) {
-    await processPatientDiscoveryProgress({ patient, status: "processing" });
+    const requestId = inputRequestId ?? uuidv7();
+    const startedAt = new Date();
+    const updatedPatient = await updatePatientDiscoveryStatus({
+      patient,
+      status: "processing",
+      params: {
+        requestId,
+        facilityId,
+        startedAt,
+        rerunPdOnNewDemographics: cxRerunPdOnNewDemographics,
+      },
+    });
 
-    // Intentionally asynchronous
-    prepareAndTriggerPD(patient, facilityId, enabledIHEGW, requestId, baseLogMessage).catch(
-      processAsyncError(context)
-    );
+    await prepareAndTriggerPD({
+      patient: createAugmentedPatient(updatedPatient),
+      facilityId,
+      requestId,
+      baseLogMessage,
+    });
   }
 }
 
-async function prepareAndTriggerPD(
-  patient: Patient,
-  facilityId: string,
-  enabledIHEGW: IHEGateway,
-  requestId: string,
-  baseLogMessage: string
-): Promise<void> {
+async function prepareAndTriggerPD({
+  patient,
+  facilityId,
+  requestId,
+  baseLogMessage,
+}: {
+  patient: Patient;
+  facilityId: string;
+  requestId: string;
+  baseLogMessage: string;
+}): Promise<void> {
   try {
-    const pdRequest = await prepareForPatientDiscovery(patient, facilityId, requestId);
-    const numGateways = pdRequest.gateways.length;
+    const pdRequestGatewayV2 = await prepareForPatientDiscovery(patient, facilityId, requestId);
+    const numGatewaysV2 = pdRequestGatewayV2.gateways.length;
 
-    const { log } = out(`${baseLogMessage}, requestId: ${requestId}`);
+    const { log } = out(`${baseLogMessage}, requestIdV2: ${pdRequestGatewayV2.id}`);
 
-    log(`Kicking off patient discovery`);
-    await enabledIHEGW.startPatientDiscovery(pdRequest);
+    if (numGatewaysV2 > 0) {
+      log(`Kicking off patient discovery Gateway V2 - ${numGatewaysV2} gateways`);
+      const iheGatewayV2 = makeIHEGatewayV2();
+      await iheGatewayV2.startPatientDiscovery({
+        pdRequestGatewayV2,
+        patientId: patient.id,
+        cxId: patient.cxId,
+      });
+    }
 
     await resultPoller.pollOutboundPatientDiscoveryResults({
-      requestId,
+      requestId: pdRequestGatewayV2.id,
       patientId: patient.id,
       cxId: patient.cxId,
-      numOfGateways: numGateways,
+      numOfGateways: numGatewaysV2,
     });
   } catch (error) {
+    // TODO 1646 Move to a single hit to the DB
+    await resetScheduledPatientDiscovery({
+      patient,
+      source: MedicalDataSource.CAREQUALITY,
+    });
+    await updatePatientDiscoveryStatus({ patient, status: "failed" });
+    await queryDocsIfScheduled({ patientIds: patient, isFailed: true });
     const msg = `Error on Patient Discovery`;
-    await processPatientDiscoveryProgress({ patient, status: "failed" });
+    out(baseLogMessage).log(`${msg} - ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         facilityId,
@@ -89,40 +129,23 @@ async function prepareForPatientDiscovery(
   facilityId: string,
   requestId: string
 ): Promise<OutboundPatientDiscoveryReq> {
-  const fhirPatient = toFHIR(patient);
-  const [xcpdGateways, initiator] = await Promise.all([
+  const patientResource = toIheGatewayPatientResource(patient);
+
+  const [v2Gateways, initiator] = await Promise.all([
     gatherXCPDGateways(patient),
     getCqInitiator(patient, facilityId),
   ]);
 
-  const pdRequest = createOutboundPatientDiscoveryReq({
-    patient: fhirPatient,
+  const pdRequestGatewayV2 = createOutboundPatientDiscoveryReq({
+    patientResource,
     cxId: patient.cxId,
-    xcpdGateways,
+    patientId: patient.id,
+    xcpdGateways: v2Gateways,
+    requestId: requestId,
     initiator,
-    requestId,
-  });
-  return pdRequest;
-}
-
-async function gatherXCPDGateways(patient: Patient): Promise<XCPDGateways> {
-  const nearbyOrgsWithUrls = await searchCQDirectoriesAroundPatientAddresses({
-    patient,
-    mustHaveXcpdLink: true,
-  });
-  const orgOrderMap = new Map<string, number>();
-
-  nearbyOrgsWithUrls.forEach((org, index) => {
-    orgOrderMap.set(org.id, index);
   });
 
-  const allOrgs = await getOrganizationsForXCPD(orgOrderMap);
-  const allOrgsWithBasics = allOrgs.map(toBasicOrgAttributes);
-  const orgsToSearch = filterCQOrgsToSearch(allOrgsWithBasics);
-  const xcpdGatewaysWithoutIds = cqOrgsToXCPDGateways(orgsToSearch);
-  const xcpdGateways = generateIdsForGateways(xcpdGatewaysWithoutIds);
-
-  return xcpdGateways;
+  return pdRequestGatewayV2;
 }
 
 export function getCQData(
@@ -133,6 +156,7 @@ export function getCQData(
 }
 
 export async function remove(patient: Patient): Promise<void> {
-  console.log(`Deleting CQ data - M patientId ${patient.id}`);
+  const { log } = out(`cq.patient.remove - M patientId ${patient.id}`);
+  log(`Deleting CQ data`);
   await deleteCQPatientData({ id: patient.id, cxId: patient.cxId });
 }

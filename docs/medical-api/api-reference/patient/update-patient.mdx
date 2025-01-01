@@ -31,9 +31,10 @@ import { MetriportMedicalApi, USState } from "@metriport/api-sdk";
 
 const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
+const facilityId = "018a80c4-292a-7486-a1234-9uiu76yhe234";
 const patient = await metriport.updatePatient(
   {
-    id: "2.16.840.1.113883.3.666.777",
+    id: "018a80c4-292a-7486-a1234-76yuhe23yu14",
     firstName: "Jose",
     lastName: "Juarez",
     dob: "1951-05-05",
@@ -62,10 +63,14 @@ const patient = await metriport.updatePatient(
     ],
     externalId: "123456789",
   },
-  "2.16.840.1.113883.3.666.5.2004.4.2005"
+  facilityId
 );
 ```
 
 </ResponseExample>
 
 <Snippet file="patient-response-json.mdx" />
+
+## Rate Limits
+
+See [limits and throttling](/medical-api/more-info/limits#rate-limits)

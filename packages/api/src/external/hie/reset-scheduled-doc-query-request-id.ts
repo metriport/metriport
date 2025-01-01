@@ -8,7 +8,7 @@ export async function resetPatientScheduledDocQueryRequestId({
   patient,
   source,
 }: {
-  patient: Patient;
+  patient: Pick<Patient, "id" | "cxId">;
   source: MedicalDataSource;
 }): Promise<Patient> {
   const patientFilter = {
@@ -30,6 +30,7 @@ export async function resetPatientScheduledDocQueryRequestId({
       [source]: {
         ...externalData[source],
         scheduledDocQueryRequestId: undefined,
+        scheduledDocQueryRequestTriggerConsolidated: undefined,
       },
     };
 

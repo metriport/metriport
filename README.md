@@ -31,13 +31,7 @@
    <a href="https://www.ycombinator.com/companies/metriport"><img src="https://img.shields.io/static/v1?label=Y Combinator&message=Metriport&color=orange" alt="YC"></a>
 </p>
 
-<div align="center">
-
-#### Support us on [Product Hunt](https://www.producthunt.com/products/metriport-api) and [Launch YC](https://www.ycombinator.com/launches/Ghx-metriport-universal-api-for-healthcare-data)
-
-<a href="https://www.producthunt.com/posts/metriport-health-devices-api?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-metriport&#0045;health&#0045;devices&#0045;api" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=371762&theme=light" alt="Metriport&#0032;&#0045;&#0032;Health&#0032;Devices&#0032;API - Open&#0045;source&#0032;Plaid&#0032;for&#0032;healthcare&#0032;data | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a> <a href='https://www.ycombinator.com/launches/Ghx-metriport-universal-api-for-healthcare-data' target="_blank"><img src='https://www.ycombinator.com/launches/Ghx-metriport-universal-api-for-healthcare-data/upvote_embed.svg' alt='Launch YC: Metriport - Universal API for Healthcare Data'></a>
-
-</div>
+### **[Join us on our Slack Community](https://join.slack.com/t/metriport-oss/shared_invite/zt-2jezazysw-~AuXop_rFmWQXKmjYRr~cA) 💬**
 
 ## **Overview**
 
@@ -52,13 +46,11 @@
 
 ## **Security and Privacy**
 
-Metriport is SOC 2 and HIPAA compliant. [Click here](https://metriport.com/security/) to learn more about our security practices.
+Metriport is SOC 2 and HIPAA compliant. [Click here](https://security.metriport.com/) to learn more about our security practices.
 
-<p float="left">
+<p style="text-align: center;">
   <img src="./assets/soc2.png" width="20%" />
   <img src="./assets/hipaa.png" width="30%" />
-  <img src="./assets/soc2-vanta.png" width="20%" />
-  <img src="./assets/hipaa-vanta.png" width="20%" />
 </p>
 
 ### **Medical API**
@@ -81,9 +73,21 @@ Our [Medical Dashboard](https://www.metriport.com/dashboard) enables providers t
 
 Tools like our FHIR explorer and PDF converter help you make sense of the data you need to make relevant care decisions and improve patient outcomes.
 
+### **Converter API**
+
+<div align="center">
+   <img width="90%" alt="convert c-cda to fhir" src="./assets/fhir-converter.png">
+</div>
+
+A key piece to achieving true interoperability is compatibility between different data formats. Using advanced processing techniques, Metriport's [FHIR Converter](https://www.metriport.com/fhir-converter) takes common healthcare data formats such as C-CDA, and converts them into FHIR R4 to streamline data exchange.
+
+Get started converting using our [Quickstart Guide](https://docs.metriport.com/converter-api/getting-started/quickstart).
+
 ## **Getting Started**
 
 Check out the links below to get started with Metriport in minutes!
+
+### **[Slack Community](https://join.slack.com/t/metriport-oss/shared_invite/zt-2jezazysw-~AuXop_rFmWQXKmjYRr~cA) 💬**
 
 ### **[Quickstart Guide](https://docs.metriport.com/medical-api/getting-started/quickstart) 🚀**
 
@@ -97,15 +101,21 @@ Check out the links below to get started with Metriport in minutes!
 
 Backend for the Metriport API.
 
-- Dir: [`/api`](/api)
+- Dir: [`/packages/api`](/packages/api)
 - URL: [https://api.metriport.com/](https://api.metriport.com/)
 - Sandbox URL: [https://api.sandbox.metriport.com/](https://api.sandbox.metriport.com/)
+
+### **FHIR Converter**
+
+Engine to convert various healthcara data formats to FHIR, and back.
+
+- Dir: [`/packages/fhir-converter`](/packages/fhir-converter)
 
 ### **Infrastructure as Code**
 
 We use AWS CDK as IaC.
 
-- Dir: [`/infra`](/infra)
+- Dir: [`/packages/infra`](/packages/infra)
 
 ### **Docs**
 
@@ -115,8 +125,6 @@ Our beautiful developer documentation, powered by [mintlify](https://mintlify.co
 - URL: [https://docs.metriport.com/](https://docs.metriport.com/getting-started/introduction)
 
 ### **Packages**
-
-Checkout our packages in [`/pkgs`](/pkgs) to help you turbocharge your development:
 
 #### **npm**
 
@@ -128,20 +136,17 @@ Our npm packages are available in [`/packages`](/packages):
 
 ---
 
-## **Prerequisites**
+## Contributing
 
-Before getting started with the deployment or any development, ensure you have done the following:
+Got ideas for how you can make Metriport better? We welcome community contributions!
 
-1. Install the prerequisite programs:
-   - [The latest LTS Node.js version](https://nodejs.org/en/download/).
-   - [Docker Desktop](https://www.docker.com/products/docker-desktop/).
-   - (Optional) [VS Code](https://code.visualstudio.com/) - recommended IDE.
-   - (Optional) [DBeaver](https://dbeaver.io/) - recommended universal DB tool.
-2. Create an AWS account.
-3. Create an [AWS IAM admin user](https://docs.aws.amazon.com/IAM/latest/UserGuide/getting-started_create-admin-group.html).
-4. Setup AWS `Route 53` to [handle the DNS for your domain, and create a hosted zone](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/migrate-dns-domain-inactive.html).
-5. Follow modules 1 & 2 of [this guide](https://aws.amazon.com/getting-started/guides/setup-cdk/) for `Typescript` to bootstrap the `AWS CDK` on your local machine.
-6. 🥳 🎉 🥳 🎉 🥳 🎉
+#### Contribution guidelines
+
+By making a contribution to this project, you are deemed to have accepted the [Developer Certificate of Origin](https://developercertificate.org/) (DCO), agree to GitHub's [Community Guidelines](https://help.github.com/en/github/site-policy/github-community-guidelines), and agree to the [Acceptable Use Policies](https://help.github.com/en/github/site-policy/github-acceptable-use-policies).
+
+#### Requesting a feature, or reporting a bug
+
+[Click here to open a new issue](https://github.com/metriport/metriport/issues/new/choose) - follow the chosen template and you're good to go.
 
 ## **Local Development**
 
@@ -304,7 +309,7 @@ The API server reports analytics to [PostHog](https://posthog.com/). This is opt
 If you want to set it up, add this to the `.env` file:
 
 ```shell
-$ echo "POST_HOG_API_KEY=<YOUR-API-KEY>" >> packages/api/.env
+$ echo "POST_HOG_API_KEY_SECRET=<YOUR-API-KEY>" >> packages/api/.env
 ```
 
 #### **Optional usage report**

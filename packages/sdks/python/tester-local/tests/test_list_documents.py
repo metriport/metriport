@@ -13,7 +13,7 @@ facility_id = os.environ.get("FACILITY_ID")
 base_url = os.environ.get("BASE_URL")
 
 
-def test_start_doc_query() -> None:
-    client = Metriport(api_key=api_key, base_url=base_url)
-    response = client.medical.document.list(patient_id=patient_id)
+def test_list_documents() -> None:
+    metriport = Metriport(api_key=api_key, base_url=base_url)
+    response = metriport.medical.document.list(patient_id=patient_id)
     print(f"Response: {response}")

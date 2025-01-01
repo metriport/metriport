@@ -1,7 +1,7 @@
 import {
   Organization,
   OrganizationData,
-  OrganizationType,
+  OrganizationBizType,
 } from "@metriport/core/domain/organization";
 import { DataTypes, Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "../../models/_default";
@@ -11,8 +11,12 @@ export class OrganizationModel extends BaseModel<OrganizationModel> implements O
   declare cxId: string;
   declare oid: string;
   declare organizationNumber: number;
-  declare type: OrganizationType;
+  declare type: OrganizationBizType;
   declare data: OrganizationData;
+  declare cqActive: boolean;
+  declare cwActive: boolean;
+  declare cqApproved: boolean;
+  declare cwApproved: boolean;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     OrganizationModel.init(
@@ -29,11 +33,31 @@ export class OrganizationModel extends BaseModel<OrganizationModel> implements O
           unique: true,
         },
         type: {
-          type: DataTypes.ENUM(...Object.values(OrganizationType)),
-          defaultValue: OrganizationType.healthcareProvider,
+          type: DataTypes.ENUM(...Object.values(OrganizationBizType)),
+          defaultValue: OrganizationBizType.healthcareProvider,
         },
         data: {
           type: DataTypes.JSONB,
+        },
+        cqActive: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: false,
+          allowNull: false,
+        },
+        cwActive: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: false,
+          allowNull: false,
+        },
+        cqApproved: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: false,
+          allowNull: false,
+        },
+        cwApproved: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: false,
+          allowNull: false,
         },
       },
       {

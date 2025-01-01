@@ -1,0 +1,30 @@
+# Runs E2E tests using the chosen branch's E2E test code, against the running instance on staging.
+name: Run E2E tests against Staging
+
+on:
+  workflow_dispatch: # manually executed by a user
+
+jobs:
+  e2e-tests:
+    uses: ./.github/workflows/_e2e-tests.yml
+    with:
+      deploy_env: "staging"
+      api_url: ${{ vars.API_URL_STAGING }}
+      fhir_url: ${{ vars.FHIR_SERVER_URL_STAGING }}
+      CONVERSION_RESULT_BUCKET_NAME: ${{ vars.CONVERSION_RESULT_BUCKET_NAME_STAGING }}
+      MEDICAL_DOCUMENTS_BUCKET_NAME: ${{ vars.MEDICAL_DOCUMENTS_BUCKET_NAME_STAGING }}
+      AWS_REGION: ${{ vars.API_REGION_STAGING }}
+      test_patient_id: ${{ vars.TEST_PATIENT_ID }}
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      TEST_API_KEY: ${{ secrets.TEST_API_KEY_STAGING }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
+      CW_CERTIFICATE: ${{ secrets.CW_CERTIFICATE_STAGING }}
+      CW_PRIVATE_KEY: ${{ secrets.CW_PRIVATE_KEY_STAGING }}
+      CW_MEMBER_CERTIFICATE: ${{ secrets.CW_MEMBER_CERTIFICATE_STAGING }}
+      CW_MEMBER_PRIVATE_KEY: ${{ secrets.CW_MEMBER_PRIVATE_KEY_STAGING }}
+      CW_MEMBER_NAME: ${{ secrets.CW_MEMBER_NAME_STAGING }}
+      CW_MEMBER_OID: ${{ secrets.CW_MEMBER_OID_STAGING }}

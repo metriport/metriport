@@ -1,16 +1,17 @@
 import * as z from "zod";
 import { baseRequestSchema, XCPDGatewaySchema } from "../shared";
+import { patientResourceSchema } from "./patient";
 
 const patientDiscoveryDefaultSchema = baseRequestSchema.extend({
-  patientResource: z
-    .any()
-    .refine(value => value !== undefined, { message: "patientResource is required" }),
+  patientResource: patientResourceSchema,
 });
 
 // TO EXTERNAL GATEWAY
 export const outboundPatientDiscoveryReqSchema = patientDiscoveryDefaultSchema.extend({
   gateways: z.array(XCPDGatewaySchema),
-  principalCareProviderIds: z.array(z.string()).optional(),
+  principalCareProviderIds: z.array(z.string()),
+  patientId: z.string(),
+  cxId: z.string(),
 });
 
 export type OutboundPatientDiscoveryReq = z.infer<typeof outboundPatientDiscoveryReqSchema>;

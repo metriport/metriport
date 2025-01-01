@@ -1,18 +1,39 @@
 import { InboundDocumentQueryReq, InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
-import { constructDQErrorResponse, IHEGatewayError, XDSRegistryError } from "../error";
-import { findDocumentReferences } from "./find-document-reference";
+import { ensureCcdExists } from "../../../shareback/ensure-ccd-exists";
+import { getMetadataDocumentContents } from "../../../shareback/metadata/get-metadata-xml";
+import { out } from "../../../util/log";
+import {
+  IHEGatewayError,
+  XDSRegistryError,
+  XDSUnknownPatientId,
+  constructDQErrorResponse,
+} from "../error";
+import { validateBasePayload } from "../shared";
+import { decodePatientId } from "./utils";
 
-export async function processInboundDocumentQuery(
+export async function processInboundDq(
   payload: InboundDocumentQueryReq
 ): Promise<InboundDocumentQueryResp> {
   try {
-    const documentContents = await findDocumentReferences(payload);
+    validateBasePayload(payload);
+    const id_pair = decodePatientId(payload.externalGatewayPatient.id);
 
+    if (!id_pair) {
+      throw new XDSUnknownPatientId("Patient ID is not valid");
+    }
+    const { cxId, id: patientId } = id_pair;
+    const { log } = out(`Inbound DQ: ${cxId}, patientId: ${patientId}`);
+
+    await ensureCcdExists({ cxId, patientId, log });
+
+    const metadataDocumentContents = await getMetadataDocumentContents(cxId, patientId);
     const response: InboundDocumentQueryResp = {
       id: payload.id,
+      patientId: payload.patientId,
       timestamp: payload.timestamp,
       responseTimestamp: new Date().toISOString(),
-      extrinsicObjectXmls: documentContents,
+      extrinsicObjectXmls: metadataDocumentContents,
+      signatureConfirmation: payload.signatureConfirmation,
     };
     return response;
   } catch (error) {

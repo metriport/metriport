@@ -1,60 +1,18 @@
+import { USState as USStateShared, USTerritory as USTerritoryShared } from "@metriport/shared";
 import { z } from "zod";
 
-export enum USState {
-  AL = "AL",
-  AK = "AK",
-  AZ = "AZ",
-  AR = "AR",
-  CA = "CA",
-  CO = "CO",
-  CT = "CT",
-  DE = "DE",
-  DC = "DC",
-  FL = "FL",
-  GA = "GA",
-  HI = "HI",
-  ID = "ID",
-  IL = "IL",
-  IN = "IN",
-  IA = "IA",
-  KS = "KS",
-  KY = "KY",
-  LA = "LA",
-  ME = "ME",
-  MD = "MD",
-  MA = "MA",
-  MI = "MI",
-  MN = "MN",
-  MS = "MS",
-  MO = "MO",
-  MT = "MT",
-  NE = "NE",
-  NV = "NV",
-  NH = "NH",
-  NJ = "NJ",
-  NM = "NM",
-  NY = "NY",
-  NC = "NC",
-  ND = "ND",
-  OH = "OH",
-  OK = "OK",
-  OR = "OR",
-  PA = "PA",
-  RI = "RI",
-  SC = "SC",
-  SD = "SD",
-  TN = "TN",
-  TX = "TX",
-  UT = "UT",
-  VT = "VT",
-  VA = "VA",
-  WA = "WA",
-  WV = "WV",
-  WI = "WI",
-  WY = "WY",
-}
+export const USState = {
+  ...USStateShared,
+};
 
 export const usStateSchema = z.preprocess(
-  val => (typeof val === "string" ? val.toUpperCase() : val),
+  val => (typeof val === "string" ? val.toUpperCase().trim() : val),
   z.nativeEnum(USState)
+);
+
+export const USTerritory = USTerritoryShared;
+
+export const usTerritorySchema = z.preprocess(
+  val => (typeof val === "string" ? val.toUpperCase().trim() : val),
+  z.nativeEnum(USTerritory)
 );

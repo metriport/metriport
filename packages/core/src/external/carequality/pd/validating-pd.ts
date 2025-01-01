@@ -1,10 +1,19 @@
-import { Address as FHIRAddress, ContactPoint, Identifier } from "@medplum/fhirtypes";
+import {
+  Telecom as IheTelecom,
+  Address as IheAddress,
+  PersonalIdentifier as IheIdentifier,
+} from "@metriport/ihe-gateway-sdk";
 import { InboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
 import { getStateEnum } from "../../../domain/geographic-locations";
 import { Address } from "../../../domain/address";
 import { Contact } from "../../../domain/contact";
-import { PatientData, PersonalIdentifier } from "../../../domain/patient";
-import { isContactType } from "../../fhir/patient/index";
+import {
+  PatientData,
+  PersonalIdentifier,
+  createDriversLicensePersonalIdentifier,
+} from "../../../domain/patient";
+import { mapFhirToMetriportGender } from "../../fhir/patient/conversion";
+import { isContactType } from "../../fhir/patient/shared";
 import {
   XDSRegistryError,
   LivingSubjectAdministrativeGenderRequestedError,
@@ -14,11 +23,12 @@ import { STATE_MAPPINGS } from "../shared";
 
 export function validateFHIRAndExtractPatient(payload: InboundPatientDiscoveryReq): PatientData {
   const patient = payload.patientResource;
-  const firstName = patient.name?.[0]?.given?.[0]; // TODO we are taking the first index here but there might be multiple given names
+  const firstName = patient.name?.flatMap(n => n.given ?? []).join(",");
+
   if (!firstName) {
     throw new XDSRegistryError("Given name is not defined");
   }
-  const lastName = patient.name?.[0]?.family;
+  const lastName = patient.name?.flatMap(n => n.family ?? []).join(",");
   if (!lastName) {
     throw new XDSRegistryError("Family name is not defined");
   }
@@ -27,13 +37,12 @@ export function validateFHIRAndExtractPatient(payload: InboundPatientDiscoveryRe
     throw new XDSRegistryError("Birth date is not defined");
   }
 
-  const genderAtBirth =
-    patient.gender === "male" ? "M" : patient.gender === "female" ? "F" : undefined;
+  const genderAtBirth = mapFhirToMetriportGender(patient.gender);
   if (!genderAtBirth) {
     throw new LivingSubjectAdministrativeGenderRequestedError("Gender at Birth is not defined");
   }
 
-  const addresses = (patient.address ?? []).map((addr: FHIRAddress) => {
+  const addresses = (patient.address ?? []).map((addr: IheAddress) => {
     const addressLine1 = addr.line ? addr.line.join(" ") : "";
     const city = addr.city || "";
     const state = addr.state ? getStateEnum(addr.state) : undefined;
@@ -63,7 +72,7 @@ export function validateFHIRAndExtractPatient(payload: InboundPatientDiscoveryRe
     return newAddress;
   });
 
-  const contacts = (patient.telecom ?? []).map((tel: ContactPoint) => {
+  const contacts = (patient.telecom ?? []).map((tel: IheTelecom) => {
     const contact: Contact = {};
     if (tel.system && isContactType(tel.system)) {
       contact[tel.system] = tel.value;
@@ -72,24 +81,19 @@ export function validateFHIRAndExtractPatient(payload: InboundPatientDiscoveryRe
   });
 
   const personalIdentifiers = (patient.identifier ?? [])
-    .map((identifier: Identifier) => {
+    .map((identifier: IheIdentifier) => {
       const system = identifier.system;
       const value = identifier.value;
       if (system && value && STATE_MAPPINGS[system]) {
         const state = STATE_MAPPINGS[system];
         if (state) {
-          const personalIdentifier: PersonalIdentifier = {
-            type: "driversLicense",
-            value: value,
-            state: state,
-          };
-          return personalIdentifier;
+          return createDriversLicensePersonalIdentifier(value, state);
         }
       }
       return undefined;
     })
     .filter(
-      (item: PersonalIdentifier | undefined): item is PersonalIdentifier => item !== undefined
+      (item: PersonalIdentifier | undefined): item is PersonalIdentifier => item != undefined
     );
 
   const convertedPatient: PatientData = {

@@ -27,17 +27,19 @@ export function buildXmlStringFromTemplate(orgDetails: CQOrgDetailsWithUrls) {
     phone,
     email,
     role,
+    active,
     parentOrgOid,
   } = orgDetails;
 
   const urnOid = "urn:oid:" + oid;
 
-  const endpoints =
-    role === "Implementer"
-      ? getEndpoint(urnOid, XCPD_STRING, urlXCPD) +
-        getEndpoint(urnOid, XCA_DQ_STRING, urlDQ) +
-        getEndpoint(urnOid, XCA_DR_STRING, urlDR)
-      : "";
+  const isImplementer = role === "Implementer";
+
+  const endpoints = isImplementer
+    ? getEndpoint(urnOid, XCPD_STRING, urlXCPD) +
+      getEndpoint(urnOid, XCA_DQ_STRING, urlDQ) +
+      getEndpoint(urnOid, XCA_DR_STRING, urlDR)
+    : "";
 
   return `<Organization>
     <identifier>
@@ -45,7 +47,7 @@ export function buildXmlStringFromTemplate(orgDetails: CQOrgDetailsWithUrls) {
         <system value="http://www.hl7.org/oid/"/>
         <value value="${urnOid}"/>
     </identifier>
-    <active value="true"/>
+    <active value="${active}"/>
     <name value="${name}"/>
     <type>
         <coding>

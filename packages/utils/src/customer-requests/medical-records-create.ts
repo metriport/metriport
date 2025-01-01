@@ -10,8 +10,8 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
 import https from "https";
+import { buildGetDirPathInside, initRunsFolder } from "../shared/folder";
 import { getCxData } from "../shared/get-cx-data";
-import { getFileNameForOrg } from "../shared/folder";
 
 dayjs.extend(duration);
 
@@ -31,6 +31,8 @@ dayjs.extend(duration);
  */
 const patientIds: string[] = [];
 
+const dateFrom: string | undefined = undefined;
+const dateTo: string | undefined = undefined;
 const conversionType = "pdf";
 
 const apiUrl = getEnvVarOrFail("API_URL");
@@ -38,9 +40,10 @@ const cxId = getEnvVarOrFail("CX_ID");
 
 const endpointUrl = `${apiUrl}/internal/patient/consolidated`;
 
-const getDirName = (orgName: string) => `./runs/MR-Summaries/${getFileNameForOrg(orgName)}`;
+const getDirName = buildGetDirPathInside(`MR-Summaries`);
 
 async function main() {
+  initRunsFolder();
   console.log(
     `########################## Running for cx ${cxId}, ${
       patientIds.length
@@ -82,6 +85,8 @@ async function getMedicalRecordURL(patientId: string): Promise<string | undefine
     patientId,
     cxId,
     conversionType,
+    ...(dateFrom ? { dateFrom } : undefined),
+    ...(dateTo ? { dateTo } : undefined),
   });
   const resp = await axios.get(`${endpointUrl}?${params}`);
   const bundle = resp.data.bundle as Bundle<DocumentReference>;

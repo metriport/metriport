@@ -1,43 +1,67 @@
+{{!-- 
+  // ------------------------------------------------------------------------------------------------- 
+  // Copyright (c) 2022-present Metriport Inc.   
+  //  
+  // Licensed under AGPLv3. See LICENSE in the repo root for license information.
+  //  
+  // This file incorporates work covered by the following copyright and  
+  // permission notice:  
+  //  
+  //     Copyright (c) Microsoft Corporation. All rights reserved. 
+  //  
+  //     Permission to use, copy, modify, and/or distribute this software  
+  //     for any purpose with or without fee is hereby granted, provided  
+  //     that the above copyright notice and this permission notice appear  
+  //     in all copies.  
+  //  
+  //     THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL  
+  //     WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED  
+  //     WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE  
+  //     AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR  
+  //     CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS  
+  //     OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,  
+  //     NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN  
+  //     CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  
+  // -------------------------------------------------------------------------------------------------
+--}}
 {{! https://build.fhir.org/ig/HL7/ccda-on-fhir/branches/master/ConceptMap-CF-MedicationStatus.html }}
 {{! http://hl7.org/fhir/R4/valueset-medication-statement-status.html }}
-{{#with (toLower code) as |normalizedCode|}}
-  {{#if normalizedCode}}
-    {{#if (or (eq normalizedCode "aborted") (eq normalizedCode "discontinued"))}}
-      "stopped"
-    {{else if (eq normalizedCode "stopped")}}
-      "stopped"
-    {{else if (eq normalizedCode "failed")}}
-      "stopped"
-    {{else if (eq normalizedCode "active")}}
-      "active"
-    {{else if (eq normalizedCode "new")}}
-      "active"
-    {{else if (eq normalizedCode "intended")}}
-      "intended"
-    {{else if (eq normalizedCode "planned")}}
-      "intended"
-    {{else if (eq normalizedCode "ordered")}}
-      "intended"
-    {{else if (eq normalizedCode "entered-in-error")}}
-      "entered-in-error"
-    {{else if (eq normalizedCode "nullified")}}
-      "entered-in-error"
-    {{else if (eq normalizedCode "error")}}
-      "entered-in-error"
-    {{else if (eq normalizedCode "on-hold")}}
-      "on-hold"
-    {{else if (eq normalizedCode "suspended")}}
-      "on-hold"
-    {{else if (eq normalizedCode "not-taken")}}
-      "not-taken"
-    {{else if (eq normalizedCode "not-done")}}
-      "not-taken"
-    {{else if (eq normalizedCode "complete")}}
-      "completed"
-    {{else if (eq normalizedCode "completed")}}
-      "completed"
+{{#if code}}
+  {{#with (toLower code) as |normalizedCode|}}
+    {{#if normalizedCode}}
+      {{#if (or (eq normalizedCode "aborted") (eq normalizedCode "discontinued"))}}
+        "stopped"
+      {{else if (eq normalizedCode "stopped")}}
+        "stopped"
+      {{else if (eq normalizedCode "failed")}}
+        "stopped"
+      {{else if (eq normalizedCode "in-progress")}}
+        "active"
+      {{else if (eq normalizedCode "active")}}
+        "active"
+      {{else if (eq normalizedCode "not-done")}}
+        "active"
+      {{else if (eq normalizedCode "entered-in-error")}}
+        "entered-in-error"
+      {{else if (eq normalizedCode "error")}}
+        "entered-in-error"
+      {{else if (eq normalizedCode "nullified")}}
+        "entered-in-error"
+      {{else if (eq normalizedCode "on-hold")}}
+        "on-hold"
+      {{else if (eq normalizedCode "suspended")}}
+        "on-hold"
+      {{else if (eq normalizedCode "complete")}}
+        "completed"
+      {{else if (eq normalizedCode "completed")}}
+        "completed"
+      {{else}}
+        "unknown"
+      {{/if}}
     {{else}}
-      "unknown"
+      "unknown" 
     {{/if}}
-  {{/if}}
-{{/with}}
+  {{/with}}
+{{else}}
+  "unknown"
+{{/if}}

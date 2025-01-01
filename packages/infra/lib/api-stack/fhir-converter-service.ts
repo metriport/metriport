@@ -6,11 +6,14 @@ import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import { FargateService } from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
+import { Bucket } from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
 import { getConfig } from "../shared/config";
 import { vCPU } from "../shared/fargate";
 import { MAXIMUM_LAMBDA_TIMEOUT } from "../shared/lambda";
+import { buildLbAccessLogPrefix } from "../shared/s3";
+import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd } from "../shared/util";
 
 export function settings() {
@@ -23,7 +26,7 @@ export function settings() {
     cpuAmount,
     cpu: cpuAmount * vCPU,
     memoryLimitMiB: prod ? 8192 : 4096,
-    taskCountMin: prod ? 2 : 1,
+    taskCountMin: prod ? 8 : 1,
     taskCountMax: prod ? 30 : 10,
     // How long this service can run for
     maxExecutionTimeout: MAXIMUM_LAMBDA_TIMEOUT,
@@ -33,6 +36,7 @@ export function settings() {
 interface FhirConverterServiceProps extends StackProps {
   config: EnvConfig;
   version: string | undefined;
+  generalBucket: Bucket;
 }
 
 export function createFHIRConverterService(
@@ -76,6 +80,11 @@ export function createFHIRConverterService(
     }
   );
   const serverAddress = fargateService.loadBalancer.loadBalancerDnsName;
+
+  fargateService.loadBalancer.logAccessLogs(
+    props.generalBucket,
+    buildLbAccessLogPrefix("fhir-converter")
+  );
 
   // CloudWatch Alarms and Notifications
   const fargateCPUAlarm = fargateService.service
@@ -126,7 +135,7 @@ export function createFHIRConverterService(
     maxCapacity: taskCountMax,
   });
   scaling.scaleOnCpuUtilization("autoscale_cpu", {
-    targetUtilizationPercent: 70,
+    targetUtilizationPercent: 60,
     scaleInCooldown: Duration.minutes(2),
     scaleOutCooldown: Duration.seconds(30),
   });
@@ -134,6 +143,14 @@ export function createFHIRConverterService(
     targetUtilizationPercent: 80,
     scaleInCooldown: Duration.minutes(2),
     scaleOutCooldown: Duration.seconds(30),
+  });
+
+  const targetGroup = fargateService.targetGroup;
+  addDefaultMetricsToTargetGroup({
+    targetGroup,
+    scope: stack,
+    id: "FhirConverter",
+    alarmAction,
   });
 
   return { service: fargateService.service, address: serverAddress };

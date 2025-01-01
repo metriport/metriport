@@ -2,27 +2,22 @@ import * as Sentry from "@sentry/node";
 import { Extras, ScopeContext } from "@sentry/types";
 import stringify from "json-stringify-safe";
 import {
-  sendAlert as coreSendAlert,
-  sendNotification as coreSendNotification,
-  SlackMessage as CoreSlackMessage,
+  sendAlert as sendAlertToSlack,
+  sendNotification as sendNotificationToSlack,
+  SlackMessage,
 } from "../external/slack/index";
 import { Capture } from "./capture";
 import { MetriportError } from "./error/metriport-error";
 
-/**
- * @deprecated Use core's instead
- */
-export type SlackMessage = CoreSlackMessage;
-/**
- * @deprecated Use core's instead
- */
-export const sendNotification = async (notif: SlackMessage | string): Promise<void> =>
-  coreSendNotification(notif);
-/**
- * @deprecated Use core's instead
- */
-export const sendAlert = async (notif: SlackMessage | string): Promise<void> =>
-  coreSendAlert(notif);
+export type NotificationMessage = SlackMessage;
+
+export async function sendNotification(notif: NotificationMessage | string): Promise<void> {
+  return sendNotificationToSlack(notif);
+}
+
+export async function sendAlert(notif: NotificationMessage | string): Promise<void> {
+  return sendAlertToSlack(notif);
+}
 
 export type UserData = Pick<Sentry.User, "id" | "email">;
 
@@ -45,8 +40,11 @@ export const capture: ApiCapture = {
   /**
    * Captures an exception event and sends it to Sentry.
    *
-   * @param error — An Error object.
+   * @param error — An Error object or a string message.
    * @param captureContext — Additional scope data to apply to exception event.
+   * @param captureContext.level — Available levels are "fatal", "error", "warning", "log", "info",
+   *        and "debug" (defaults to "error").
+   * @param captureContext.extra — Additional information to be sent with the alert.
    * @returns — The generated eventId.
    */
   error: (error: unknown, captureContext?: Partial<ScopeContext>): string => {
@@ -65,10 +63,13 @@ export const capture: ApiCapture = {
   },
 
   /**
-   * Captures an exception event and sends it to Sentry.
+   * Sends a message to Sentry.
    *
    * @param message The message to send to Sentry.
    * @param captureContext — Additional scope data to apply to exception event.
+   * @param captureContext.level — Available levels are "fatal", "error", "warning", "log", "info",
+   *        and "debug" (defaults to "info").
+   * @param captureContext.extra — Additional information to be sent with the alert.
    * @returns — The generated eventId.
    */
   message: (message: string, captureContext?: Partial<ScopeContext>): string => {

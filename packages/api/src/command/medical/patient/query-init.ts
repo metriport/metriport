@@ -1,12 +1,12 @@
+import { ConsolidatedQuery } from "@metriport/api-sdk";
 import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
 import { Patient } from "@metriport/core/domain/patient";
-import { QueryProgress } from "@metriport/core/domain/query-status";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getPatientOrFail } from "./get-patient";
 
 export type InitConsolidatedQueryCmd = {
-  consolidatedQuery: QueryProgress;
+  consolidatedQueries: ConsolidatedQuery[];
   cxConsolidatedRequestMetadata?: unknown;
   documentQueryProgress?: never;
   patientDiscovery?: never;
@@ -15,9 +15,10 @@ export type InitConsolidatedQueryCmd = {
 export type InitDocumentQueryCmd = {
   documentQueryProgress: Required<
     Pick<DocumentQueryProgress, "download" | "requestId" | "startedAt">
-  >;
+  > &
+    Pick<DocumentQueryProgress, "triggerConsolidated">;
   cxDocumentRequestMetadata?: unknown;
-  consolidatedQuery?: never;
+  consolidatedQueries?: never;
   patientDiscovery?: never;
 };
 export type QueryInitCmd = InitConsolidatedQueryCmd | InitDocumentQueryCmd;
@@ -37,14 +38,16 @@ export const storeQueryInit = async ({ id, cxId, cmd }: StoreQueryParams): Promi
       transaction,
     });
 
-    return patient.update(
-      {
-        data: {
-          ...patient.data,
-          ...cmd,
+    return (
+      await patient.update(
+        {
+          data: {
+            ...patient.data,
+            ...cmd,
+          },
         },
-      },
-      { transaction }
-    );
+        { transaction }
+      )
+    ).dataValues;
   });
 };

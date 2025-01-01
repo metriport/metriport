@@ -25,6 +25,8 @@ const documentQueryDefaultReqSchema = baseRequestSchema.extend({
 // TO EXTERNAL GATEWAY
 export const outboundDocumentQueryReqSchema = documentQueryDefaultReqSchema.extend({
   gateway: xcaGatewaySchema,
+  patientId: z.string(),
+  cxId: z.string(),
 });
 
 export type OutboundDocumentQueryReq = z.infer<typeof outboundDocumentQueryReqSchema>;

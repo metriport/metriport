@@ -1,30 +1,47 @@
 import { Bundle, DocumentReference as FHIRDocumentReference, Resource } from "@medplum/fhirtypes";
+import { PaginatedResponse } from "@metriport/shared";
+import {
+  WebhookRequest,
+  WebhookRequestParsingFailure,
+  webhookRequestSchema,
+  WebhookStatusResponse,
+} from "@metriport/shared/medical";
 import axios, { AxiosInstance, AxiosStatic, CreateAxiosDefaults } from "axios";
 import crypto from "crypto";
+import status from "http-status";
 import {
   API_KEY_HEADER,
   BASE_ADDRESS,
   BASE_ADDRESS_SANDBOX,
   DEFAULT_AXIOS_TIMEOUT_MILLIS,
+  JWT_HEADER,
   optionalDateToISOString,
 } from "../../shared";
 import { getETagHeader } from "../models/common/base-update";
+import { Demographics } from "../models/demographics";
 import {
   BulkGetDocumentUrlQuery,
+  bulkGetDocumentUrlQuerySchema,
+  documentListSchema,
   DocumentQuery,
+  documentQuerySchema,
   DocumentReference,
   ListDocumentFilters,
   ListDocumentResult,
   UploadDocumentResult,
-  bulkGetDocumentUrlQuerySchema,
-  documentListSchema,
-  documentQuerySchema,
 } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
 import { Organization, OrganizationCreate, organizationSchema } from "../models/organization";
-import { PatientCreate, PatientUpdate, QueryProgress } from "../models/patient";
+import {
+  GetConsolidatedQueryProgressResponse,
+  PatientCreate,
+  PatientUpdate,
+  StartConsolidatedQueryProgressResponse,
+  PatientHieOptOutResponse,
+} from "../models/patient";
 import { PatientDTO } from "../models/patientDTO";
+import { SettingsResponse } from "../models/settings-response";
 
 const NO_DATA_MESSAGE = "No data returned from API";
 const BASE_PATH = "/medical/v1";
@@ -32,11 +49,13 @@ const ORGANIZATION_URL = `/organization`;
 const FACILITY_URL = `/facility`;
 const PATIENT_URL = `/patient`;
 const DOCUMENT_URL = `/document`;
+const REQUEST_ID_HEADER_NAME = "x-metriport-request-id";
 
 export type Options = {
   axios?: AxiosStatic; // Set axios if it fails to load
   timeout?: number;
   additionalHeaders?: Record<string, string>;
+  mode?: "api-key" | "jwt";
 } & (
   | {
       sandbox?: boolean;
@@ -48,8 +67,26 @@ export type Options = {
     }
 );
 
+/**
+ * Pagination options. Either fromItem or toItem can be provided, but not both.
+ * - fromItem: The ID of the first item to be returned.
+ * - toItem: The ID of the last item to be returned.
+ * - count: The number of items to be returned - defaults to 50, max is 500.
+ */
+export type Pagination = {
+  fromItem?: string;
+  toItem?: string;
+  count?: number;
+};
+
 export class MetriportMedicalApi {
+  // TODO this should be private
   readonly api: AxiosInstance;
+  private _lastRequestId: string | undefined;
+
+  private optionsForSettingsEndpoints = {
+    baseURL: "/",
+  };
 
   static readonly headers = {
     clientApp: "x-metriport-client",
@@ -67,16 +104,24 @@ export class MetriportMedicalApi {
    * @param options.timeout - Connection timeout in milliseconds, default 20 seconds.
    */
   constructor(apiKey: string, options: Options = {}) {
-    const headers = { [API_KEY_HEADER]: apiKey, ...options.additionalHeaders };
     const { sandbox, timeout } = options;
 
-    const baseURL =
-      (options.baseAddress || (sandbox ? BASE_ADDRESS_SANDBOX : BASE_ADDRESS)) + BASE_PATH;
+    const mode = options.mode || "api-key";
+    const headers = {
+      ...(mode === "api-key" ? { [API_KEY_HEADER]: apiKey } : { [JWT_HEADER]: "Bearer " + apiKey }),
+      ...options.additionalHeaders,
+    };
+
+    const baseHostAndProtocol =
+      options.baseAddress ?? (sandbox ? BASE_ADDRESS_SANDBOX : BASE_ADDRESS);
+    const baseURL = baseHostAndProtocol + BASE_PATH;
+
     const axiosConfig: CreateAxiosDefaults = {
       timeout: timeout ?? DEFAULT_AXIOS_TIMEOUT_MILLIS,
       baseURL,
       headers,
     };
+    this.optionsForSettingsEndpoints.baseURL = baseHostAndProtocol;
 
     if (axios) {
       this.api = axios.create(axiosConfig);
@@ -88,9 +133,66 @@ export class MetriportMedicalApi {
   }
 
   /**
-   * Creates a new organization.
+   * The ID from the last request made to the API.
+   */
+  get lastRequestId(): string | undefined {
+    return this._lastRequestId;
+  }
+
+  /**
+   * Gets the settings for your account.
+   *
+   * @returns Your account settings.
+   */
+  async getSettings(): Promise<SettingsResponse> {
+    const resp = await this.api.get<SettingsResponse>("/settings", {
+      ...this.optionsForSettingsEndpoints,
+    });
+    return resp.data;
+  }
+
+  /**
+   * Update the settings for your account.
+   *
+   * @returns Your updated account settings.
+   */
+  async updateSettings(webhookUrl: string): Promise<SettingsResponse> {
+    const resp = await this.api.post<SettingsResponse>(
+      "/settings",
+      { webhookUrl },
+      { ...this.optionsForSettingsEndpoints }
+    );
+    return resp.data;
+  }
+
+  /**
+   * Gets the status of communication with your app's webhook.
+   *
+   * @returns The status of communication with your app's webhook.
+   */
+  async getWebhookStatus(): Promise<WebhookStatusResponse> {
+    const resp = await this.api.get<WebhookStatusResponse>("/settings/webhook", {
+      ...this.optionsForSettingsEndpoints,
+    });
+    return resp.data;
+  }
+
+  /**
+   * Retries failed webhook requests.
+   *
+   * @returns void
+   */
+  async retryWebhookRequests(): Promise<void> {
+    await this.api.post("/settings/webhook/retry", undefined, {
+      ...this.optionsForSettingsEndpoints,
+    });
+  }
+
+  /**
+   * Creates a new organization if one does not already exist.
    *
    * @param data The data to be used to create a new organization.
+   * @throws Error (400) if an organization already exists for the customer.
    * @returns The created organization.
    */
   async createOrganization(data: OrganizationCreate): Promise<Organization> {
@@ -184,15 +286,31 @@ export class MetriportMedicalApi {
   }
 
   /**
+   * Deletes a facility. It will fail if the facility has patients associated with it.
+   *
+   * @param facilityId The ID of facility to be deleted.
+   */
+  async deleteFacility(facilityId: string, eTag?: string): Promise<void> {
+    await this.api.delete(`${FACILITY_URL}/${facilityId}`, {
+      headers: { ...getETagHeader({ eTag }) },
+    });
+  }
+
+  /**
    * Creates a new patient at Metriport and HIEs.
    *
    * @param data The data to be used to create a new patient.
    * @param facilityId The facility providing the NPI to support this operation.
+   * @param additionalQueryParams Optional, additional query parameters to be sent with the request.
    * @return The newly created patient.
    */
-  async createPatient(data: PatientCreate, facilityId: string): Promise<PatientDTO> {
+  async createPatient(
+    data: PatientCreate,
+    facilityId: string,
+    additionalQueryParams: Record<string, string | number | boolean> = {}
+  ): Promise<PatientDTO> {
     const resp = await this.api.post(`${PATIENT_URL}`, data, {
-      params: { facilityId },
+      params: { facilityId, ...additionalQueryParams },
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return resp.data as PatientDTO;
@@ -211,24 +329,64 @@ export class MetriportMedicalApi {
   }
 
   /**
+   * Searches for a patient previously created at Metriport, based on demographics.
+   *
+   * @return The patient if found.
+   */
+  async matchPatient(data: Demographics): Promise<PatientDTO | undefined> {
+    try {
+      const resp = await this.api.post(`${PATIENT_URL}/match`, data);
+      if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+      return resp.data as PatientDTO;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      if (err.response?.status !== status.NOT_FOUND) throw err;
+      return undefined;
+    }
+  }
+
+  /**
    * Updates a patient at Metriport and at HIEs the patient is linked to.
    *
    * @param patient The patient data to be updated.
    * @param facilityId Optional. The facility providing the NPI to support this operation. If not provided and the patient has only one facility, that one will be used. If not provided and the patient has multiple facilities, an error will be thrown.
+   * @param additionalQueryParams Optional, additional query parameters to be sent with the request.
    * @return The updated patient.
    */
-  async updatePatient(patient: PatientUpdate, facilityId?: string): Promise<PatientDTO> {
+  async updatePatient(
+    patient: PatientUpdate,
+    facilityId?: string,
+    additionalQueryParams: Record<string, string | number | boolean> = {}
+  ): Promise<PatientDTO> {
     type FieldsToOmit = "id";
     const payload: Omit<PatientUpdate, FieldsToOmit> & Record<FieldsToOmit, undefined> = {
       ...patient,
       id: undefined,
     };
     const resp = await this.api.put(`${PATIENT_URL}/${patient.id}`, payload, {
-      params: { facilityId },
+      params: { facilityId, ...additionalQueryParams },
       headers: { ...getETagHeader(patient) },
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return resp.data as PatientDTO;
+  }
+
+  /**
+   * Updates a patient's HIE opt-out status.
+   *
+   * @param patientId The ID of the patient whose opt-out status should be updated
+   * @param hieOptOut Boolean indicating whether to opt the patient out (true) or in (false)
+   * @returns The updated opt-out status
+   */
+  async updatePatientHieOptOut(
+    patientId: string,
+    hieOptOut: boolean
+  ): Promise<PatientHieOptOutResponse> {
+    const resp = await this.api.put(`${PATIENT_URL}/${patientId}/hie-opt-out`, undefined, {
+      params: { hieOptOut },
+    });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data;
   }
 
   // TODO #870 remove this
@@ -243,16 +401,18 @@ export class MetriportMedicalApi {
    * @param resources Optional array of resources to be returned.
    * @param dateFrom Optional start date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
    * @param dateTo Optional end date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
+   * @param fromDashboard Optional parameter to indicate that the request is coming from the dashboard.
    * @return Patient's consolidated data.
    */
   async getPatientConsolidated(
     patientId: string,
     resources?: string[],
     dateFrom?: string,
-    dateTo?: string
+    dateTo?: string,
+    fromDashboard?: boolean
   ): Promise<Bundle<Resource>> {
     const resp = await this.api.get(`${PATIENT_URL}/${patientId}/consolidated`, {
-      params: { resources: resources && resources.join(","), dateFrom, dateTo },
+      params: { resources: resources && resources.join(","), dateFrom, dateTo, fromDashboard },
     });
     return resp.data;
   }
@@ -263,10 +423,14 @@ export class MetriportMedicalApi {
    * Only one query per given patient can be executed at a time.
    *
    * @param patientId The ID of the patient whose data is to be returned.
-   * @param resources Optional array of resources to be returned.
+   * @param resources Optional array of resources to be returned (defaults to all resource types).
    * @param dateFrom Optional start date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
    * @param dateTo Optional end date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
-   * @param conversionType Optional to indicate how the medical record should be rendered.
+   * @param conversionType Optional to indicate how the medical record should be rendered - one of:
+   *      "pdf", "html", or "json" (defaults to "json"). If "html" or "pdf", the Webhook payload
+   *      will contain a signed URL to download the file, which is active for 3 minutes.
+   *      If not provided, will send json payload in the webhook.
+   * @param fromDashboard Optional parameter to indicate that the request is coming from the dashboard.
    * @param metadata Optional metadata to be sent along the webhook request as response of this query.
    * @return The consolidated data query status.
    */
@@ -276,11 +440,18 @@ export class MetriportMedicalApi {
     dateFrom?: string,
     dateTo?: string,
     conversionType?: string,
+    fromDashboard?: boolean,
     metadata?: Record<string, string>
-  ): Promise<QueryProgress> {
+  ): Promise<StartConsolidatedQueryProgressResponse> {
     const whMetadata = { metadata: metadata };
     const resp = await this.api.post(`${PATIENT_URL}/${patientId}/consolidated/query`, whMetadata, {
-      params: { resources: resources && resources.join(","), dateFrom, dateTo, conversionType },
+      params: {
+        resources: resources && resources.join(","),
+        dateFrom,
+        dateTo,
+        fromDashboard,
+        conversionType,
+      },
     });
     return resp.data;
   }
@@ -293,7 +464,9 @@ export class MetriportMedicalApi {
    * @param patientId The ID of the patient whose data is to be returned.
    * @return The consolidated data query status.
    */
-  async getConsolidatedQueryStatus(patientId: string): Promise<QueryProgress> {
+  async getConsolidatedQueryStatus(
+    patientId: string
+  ): Promise<GetConsolidatedQueryProgressResponse> {
     const resp = await this.api.get(`${PATIENT_URL}/${patientId}/consolidated/query`);
     return resp.data;
   }
@@ -302,8 +475,8 @@ export class MetriportMedicalApi {
    * Add patient data as FHIR resources. Those can later be queried with startConsolidatedQuery(),
    * and will be made available to HIEs.
    *
-   * Note: each call to this function is limited to 50 resources and 1Mb of data. You can make multiple
-   * calls to this function to add more data.
+   * Note: each call to this function is limited to 1Mb of data (and 50 resources when in sandbox).
+   * You can make multiple calls to this function to add more data.
    *
    * @param patientId The ID of the patient to associate resources to.
    * @param payload The FHIR Bundle to create resources.
@@ -311,7 +484,7 @@ export class MetriportMedicalApi {
    */
   async createPatientConsolidated(patientId: string, payload: Bundle): Promise<Bundle<Resource>> {
     const resp = await this.api.put(`${PATIENT_URL}/${patientId}/consolidated`, payload);
-
+    this._lastRequestId = resp.headers[REQUEST_ID_HEADER_NAME];
     return resp.data;
   }
 
@@ -339,7 +512,7 @@ export class MetriportMedicalApi {
   /**
    * Removes a patient at Metriport and at HIEs the patient is linked to.
    *
-   * @param patientId The ID of the patient data to be deleted.
+   * @param patientId The ID of the patient to be deleted.
    * @param facilityId The facility providing the NPI to support this operation.
    */
   async deletePatient(patientId: string, facilityId: string, eTag?: string): Promise<void> {
@@ -352,15 +525,38 @@ export class MetriportMedicalApi {
   /**
    * Returns the patients associated with given facility.
    *
-   * @param facilityId The ID of the facility.
+   * @param facilityId The ID of the facility, optional. If not provided, patients from all facilities
+   *                   will be returned.
+   * @param filters Full text search filters, optional. If not provided, all patients will be returned
+   *                (according to pagination settings).
+   *                See https://docs.metriport.com/medical-api/more-info/filters
+   * @param pagination Pagination settings, optional. If not provided, the first page will be returned.
+   *                   See https://docs.metriport.com/medical-api/more-info/pagination
    * @return The list of patients.
    */
-  async listPatients(facilityId: string): Promise<PatientDTO[]> {
+  async listPatients({
+    facilityId,
+    filters,
+    pagination,
+  }: {
+    facilityId?: string | undefined;
+    filters?: string | undefined;
+    pagination?: Pagination | undefined;
+  } = {}): Promise<PaginatedResponse<PatientDTO, "patients">> {
     const resp = await this.api.get(`${PATIENT_URL}`, {
-      params: { facilityId },
+      params: {
+        facilityId,
+        filters,
+        ...getPaginationParams(pagination),
+      },
     });
-    if (!resp.data) return [];
-    return resp.data.patients as PatientDTO[];
+    if (!resp.data) return { meta: { itemsOnPage: 0 }, patients: [] };
+    return resp.data;
+  }
+
+  async listPatientsPage(url: string): Promise<PaginatedResponse<PatientDTO, "patients">> {
+    const resp = await this.api.get(url);
+    return resp.data;
   }
 
   /**
@@ -458,18 +654,19 @@ export class MetriportMedicalApi {
    * Start a bulk document download for a given patient, with the payload returned to the webhook.
    *
    * @param patientId Patient ID for which to retrieve document URLs.
+   * @param metadata Optional metadata to be sent along the webhook request as response of this query.
    * @return The document query request ID, progress, and status indicating whether it's being executed or not.
    */
-  async startBulkGetDocumentUrl(patientId: string): Promise<BulkGetDocumentUrlQuery> {
-    const resp = await this.api.post(
-      `${DOCUMENT_URL}/download-url/bulk`,
-      {},
-      {
-        params: {
-          patientId,
-        },
-      }
-    );
+  async startBulkGetDocumentUrl(
+    patientId: string,
+    metadata?: Record<string, string>
+  ): Promise<BulkGetDocumentUrlQuery> {
+    const whMetadata = { metadata: metadata };
+    const resp = await this.api.post(`${DOCUMENT_URL}/download-url/bulk`, whMetadata, {
+      params: {
+        patientId,
+      },
+    });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return bulkGetDocumentUrlQuerySchema.parse(resp.data);
   }
@@ -557,18 +754,78 @@ export class MetriportMedicalApi {
    * Verifies the signature of a webhook request.
    * Refer to Metriport's documentation for more details: https://docs.metriport.com/medical-api/more-info/webhooks.
    *
-   * @param wh_key - your webhook key.
-   * @param req.body - the body of the webhook request.
+   * @param key - your webhook key.
+   * @param body - the raw body of the webhook request, as string or Buffer.
    * @param signature - the signature obtained from the webhook request header.
-   *
    * @returns True if the signature is verified, false otherwise.
+   * @throws Error if the body is not a string.
    */
-  verifyWebhookSignature = (wh_key: string, reqBody: string, signature: string): boolean => {
-    const signatureAsString = String(signature);
-    const receivedHash = crypto
-      .createHmac("sha256", wh_key)
-      .update(JSON.stringify(reqBody))
-      .digest("hex");
-    return receivedHash === signatureAsString;
-  };
+  verifyWebhookSignature(key: string, body: string | Buffer, signature: string): boolean {
+    return MetriportMedicalApi.verifyWebhookSignature(key, body, signature);
+  }
+
+  /**
+   * Verifies the signature of a webhook request.
+   * Refer to Metriport's documentation for more details: https://docs.metriport.com/medical-api/more-info/webhooks.
+   *
+   * @param key - your webhook key.
+   * @param body - the raw body of the webhook request, as string or Buffer.
+   * @param signature - the signature obtained from the webhook request header.
+   * @returns True if the signature is verified, false otherwise.
+   * @throws Error if the body is not a string.
+   */
+  static verifyWebhookSignature(key: string, body: string | Buffer, signature: string): boolean {
+    if (typeof body !== "string" && !(body instanceof Buffer)) {
+      throw new Error("Body must be a string or Buffer");
+    }
+    const normalizedBody = typeof body === "string" ? body : body.toString();
+    const receivedSignature = signature;
+    const expectedSignature = crypto.createHmac("sha256", key).update(normalizedBody).digest("hex");
+    const a = Buffer.from(expectedSignature);
+    const b = Buffer.from(receivedSignature);
+    if (Buffer.byteLength(a) != Buffer.byteLength(b)) return false;
+    return crypto.timingSafeEqual(a, b);
+  }
+
+  /**
+   * Parses a webhook request received from the Metriport API and return an object of type
+   * 'WebhookRequest'.
+   * Note: currently, the type of the 'bundle' property is 'any', but it can be safely casted to
+   * FHIR's 'Bundle<Resource> | undefined'.
+   *
+   * @param requestBody The request body received from the Metriport API.
+   * @param throwOnError Whether to throw an Error if the request body is not a valid webhook request.
+   *        Optional, defaults to true.
+   * @returns The webhook request - instance of WebhookRequest, or an instance of
+   *          WebhookRequestParsingError if the payload is invalid and throwOnError is 'true'.
+   * @throws Error if the request body is not a valid webhook request and throwOnError is 'true'.
+   *         Details can be obtained from the error object under the 'cause' property (instance
+   *         of ZodError).
+   */
+  static parseWebhookResponse(
+    requestBody: unknown,
+    throwOnError: false
+  ): WebhookRequest | WebhookRequestParsingFailure;
+  static parseWebhookResponse(reqBody: unknown, throwOnError: true): WebhookRequest;
+  static parseWebhookResponse(reqBody: unknown): WebhookRequest;
+  static parseWebhookResponse(
+    reqBody: unknown,
+    throwOnError = true
+  ): WebhookRequest | WebhookRequestParsingFailure {
+    if (throwOnError) {
+      try {
+        return webhookRequestSchema.parse(reqBody);
+      } catch (error) {
+        throw new Error(`Failed to parse webhook request`, { cause: error });
+      }
+    }
+    const parse = webhookRequestSchema.safeParse(reqBody);
+    if (parse.success) return parse.data;
+    return new WebhookRequestParsingFailure(parse.error, parse.error.format());
+  }
+}
+
+function getPaginationParams(pagination?: Pagination) {
+  const { fromItem, toItem, count } = pagination ?? {};
+  return { fromItem, toItem, count };
 }

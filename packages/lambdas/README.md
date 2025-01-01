@@ -10,6 +10,23 @@ Install packages:
 $ npm i
 ```
 
+## Dependencies
+
+The lambda package is not part of the NPM workspaces. This means:
+
+- npm scripts from the root `package.json` won't automatically execute the respective command on this package;
+- it won't share the root `node_modules`.
+
+Also, the lambdas depend on the `packages/core`, `packages/shared`, and `packages/ihe-gateway-sdk` packages.
+To avoid having to publish those packages to NPM, we built a script `./scripts/build-shared-layer.sh` that
+builds the shared dependencies and packages them as a layer. This layer is then used by the lambdas.
+
+But this process only takes the actual dependencies built/dist folders, not their dependencies. This means that
+whenever we add a new dependency to one of those packages, we also need to add it manually to the lambda package.
+
+This is convoluted but was a decision to allow for speed of development, since we don't often add packages. For
+more details, check the development process below and follow the `prep-deploy` npm script.
+
 ## Deployment Process
 
 The lambdas are currently deployed automatically along the APIStack when we merge PRs on GitHub - using GH Actions.

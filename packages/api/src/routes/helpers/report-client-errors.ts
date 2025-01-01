@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 
-const reportClientErrorsProp = "reportClientErrors";
+const reportClientErrorsProp = "x-report-client-errors";
 
 export function setReportClientErrors(req: Request): void {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -12,7 +12,7 @@ export function isReportClientErrors(req: Request): boolean | undefined {
 }
 
 /**
- * Middleware to report client errors to Sentry.
+ * Middleware to report client errors.
  *
  * Under the hood it just sets a property on the request object, so it can be
  * checked later on by the default error handler - should an error occur.

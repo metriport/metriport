@@ -1,6 +1,7 @@
 import * as AWS from "aws-sdk";
 import { PromiseResult } from "aws-sdk/lib/request";
 import { base64ToString } from "../../util/base64";
+import BadRequestError from "../../util/error/bad-request";
 import { MetriportError } from "../../util/error/metriport-error";
 import NotFoundError from "../../util/error/not-found";
 
@@ -10,6 +11,15 @@ export function makeLambdaClient(region: string, timeoutInMillis?: number) {
     region,
     ...(timeoutInMillis ? { httpOptions: { timeout: timeoutInMillis } } : {}),
   });
+}
+
+export function defaultLambdaInvocationResponseHandler(params: {
+  lambdaName?: string;
+  failGracefully?: boolean | false;
+}) {
+  return function (result: PromiseResult<AWS.Lambda.InvocationResponse, AWS.AWSError>) {
+    getLambdaResultPayload({ result, failOnEmptyResponse: false, ...params });
+  };
 }
 
 export function logResultToString(logResult: string | undefined): string | undefined {
@@ -55,40 +65,50 @@ export function getLambdaError(
  *
  * @param result The result of the lambda invocation
  * @param lambdaName The name of the lambda that was invoked, used on error reporting (optional)
- * @param failGracefuly If true, the function will return `undefined` instead of throwing an
+ * @param failGracefully If true, the function will return `undefined` instead of throwing an
  *        error (optional, defaults to `false` - throw an error on failure)
+ * @param failOnEmptyResponse If false, the function will return `undefined` instead of throwing an
+ *        error in case the lambda doesn't return anything (optional, defaults to `true` - throw
+ *        missing a response)
  * @param log A function to log errors (optional, defaults to `console.log`)
  * @returns The payload of the lambda invocation
  */
 export function getLambdaResultPayload(params: {
   result: PromiseResult<AWS.Lambda.InvocationResponse, AWS.AWSError>;
   lambdaName?: string;
-  failGracefuly?: boolean | false;
+  failGracefully?: boolean | false;
+  failOnEmptyResponse?: boolean | false;
   log?: typeof console.log;
 }): string;
 export function getLambdaResultPayload(params: {
   result: PromiseResult<AWS.Lambda.InvocationResponse, AWS.AWSError>;
   lambdaName?: string;
-  failGracefuly: true;
+  failGracefully: true;
+  failOnEmptyResponse?: boolean | false;
   log?: typeof console.log;
 }): string | undefined;
 export function getLambdaResultPayload({
   result,
   lambdaName = "<unknown-name>",
   failGracefully = false,
+  failOnEmptyResponse = true,
   log = console.log,
 }: {
   result: PromiseResult<AWS.Lambda.InvocationResponse, AWS.AWSError>;
   lambdaName?: string;
   failGracefully?: boolean;
+  failOnEmptyResponse?: boolean;
   log?: typeof console.log;
 }): string | undefined {
-  if (result.StatusCode !== 200) {
+  if (!result.StatusCode || result.StatusCode < 200 || result.StatusCode > 299) {
     if (failGracefully) return undefined;
-    throw new MetriportError("Lambda invocation failed", undefined, { lambdaName });
+    throw new MetriportError("Lambda invocation failed", undefined, {
+      lambdaName,
+      statusCode: result.StatusCode,
+    });
   }
   if (!result.Payload) {
-    if (failGracefully) return undefined;
+    if (failGracefully || !failOnEmptyResponse) return undefined;
     throw new MetriportError("Lambda payload is undefined", undefined, { lambdaName });
   }
   if (isLambdaError(result)) {
@@ -97,6 +117,10 @@ export function getLambdaResultPayload({
     const errorDetails = JSON.stringify(lambdaError);
     log(`${msg} - ${errorDetails}`);
     if (failGracefully) return undefined;
+
+    if (lambdaError?.errorType === "BadRequestError" && lambdaError?.errorMessage) {
+      throw new BadRequestError(lambdaError.errorMessage);
+    }
     if (lambdaError?.errorType === "NotFoundError") {
       throw new NotFoundError(msg, undefined, { lambdaName, errorDetails });
     }

@@ -4,6 +4,7 @@ import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { aggregateAndSetHIEProgresses } from "./set-doc-query-progress";
+import { processDocQueryProgressWebhook } from "../../command/medical/document/process-doc-query-webhook";
 
 /**
  * Resets the doc query progress for the given HIE
@@ -13,16 +14,18 @@ import { aggregateAndSetHIEProgresses } from "./set-doc-query-progress";
 export async function resetDocQueryProgress({
   patient,
   source,
+  requestId,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
   source: MedicalDataSource;
+  requestId?: string;
 }): Promise<void> {
   const patientFilter = {
     id: patient.id,
     cxId: patient.cxId,
   };
 
-  await executeOnDBTx(PatientModel.prototype, async transaction => {
+  const result = await executeOnDBTx(PatientModel.prototype, async transaction => {
     const existingPatient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
@@ -73,24 +76,37 @@ export async function resetDocQueryProgress({
       where: patientFilter,
       transaction,
     });
+
+    return updatedPatient;
   });
+
+  if (requestId && result.data.documentQueryProgress) {
+    await processDocQueryProgressWebhook({
+      patient: result,
+      documentQueryProgress: result.data.documentQueryProgress,
+      requestId,
+    });
+  }
 }
 
 export function buildInterrupt({
   patientId,
   cxId,
   source,
+  requestId,
   log,
 }: {
   patientId: string;
   cxId: string;
   source: MedicalDataSource;
+  requestId: string;
   log: typeof console.log;
 }) {
   return async (reason: string): Promise<void> => {
     log(reason + ", skipping DQ");
     await resetDocQueryProgress({
       patient: { id: patientId, cxId },
+      requestId,
       source,
     });
   };

@@ -1,6 +1,26 @@
 // -------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License (MIT). See LICENSE in the repo root for license information.
+// Copyright (c) 2022-present Metriport Inc.
+//
+// Licensed under AGPLv3. See LICENSE in the repo root for license information.
+//
+// This file incorporates work covered by the following copyright and
+// permission notice:
+//
+//     Copyright (c) Microsoft Corporation. All rights reserved.
+//
+//     Permission to use, copy, modify, and/or distribute this software
+//     for any purpose with or without fee is hereby granted, provided
+//     that the above copyright notice and this permission notice appear
+//     in all copies.
+//
+//     THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+//     WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+//     WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+//     AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR
+//     CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+//     OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
+//     NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+//     CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 // -------------------------------------------------------------------------------------------------
 
 var uuidv3 = require("uuid/v3");
@@ -11,19 +31,16 @@ var crypto = require("crypto");
 var jsonProcessor = require("../outputProcessor/jsonProcessor");
 var specialCharProcessor = require("../inputProcessor/specialCharProcessor");
 var zlib = require("zlib");
-const he = require('he');
+const he = require("he");
 const convert = require("convert-units");
-const path = require('path');
-
 
 const PERSONAL_RELATIONSHIP_TYPE_CODE = "2.16.840.1.113883.1.11.19563";
 const decimal_regex = /-?(?:(?:0|[1-9][0-9]*)\.?[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?/;
 const DECIMAL_REGEX_STR = decimal_regex.toString().slice(1, -1);
 
-
 // Some helpers will be referenced in other helpers and declared outside the export below.
 
-var evaluateTemplate = function(templatePath, inObj, returnEmptyObject = false) {
+var evaluateTemplate = function (templatePath, inObj, returnEmptyObject = false) {
   try {
     var getNamespace = require("cls-hooked").getNamespace;
     var session = getNamespace(constants.CLS_NAMESPACE);
@@ -46,7 +63,11 @@ var evaluateTemplate = function(templatePath, inObj, returnEmptyObject = false) 
     var processedResult = JSON.parse(jsonProcessor.Process(result));
 
     // Check if the processedResult is undefined or an empty object
-    if (!returnEmptyObject && (processedResult === undefined || (Object.keys(processedResult).length === 0 && processedResult.constructor === Object))) {
+    if (
+      !returnEmptyObject &&
+      (processedResult === undefined ||
+        (Object.keys(processedResult).length === 0 && processedResult.constructor === Object))
+    ) {
       return undefined;
     }
 
@@ -54,7 +75,7 @@ var evaluateTemplate = function(templatePath, inObj, returnEmptyObject = false) 
   } catch (err) {
     throw `helper "evaluateTemplate" : ${err}`;
   }
-}
+};
 
 var getSegmentListsInternal = function (msg, ...segmentIds) {
   var ret = {};
@@ -87,40 +108,14 @@ var validDate = function (year, monthIndex, day) {
   return false;
 };
 
-// check the datetime is valid
-var validUTCDateTime = function (dateTimeComposition) {
-  for (var key in dateTimeComposition) dateTimeComposition[key] = Number(dateTimeComposition[key]);
-  var dateInstance = new Date(
-    Date.UTC(
-      dateTimeComposition.year,
-      dateTimeComposition.month - 1,
-      dateTimeComposition.day,
-      dateTimeComposition.hours,
-      dateTimeComposition.minutes,
-      dateTimeComposition.seconds,
-      dateTimeComposition.milliseconds
-    )
-  );
-  if (
-    dateInstance.getUTCFullYear() === dateTimeComposition.year &&
-    dateInstance.getUTCMonth() === dateTimeComposition.month - 1 &&
-    dateInstance.getUTCDate() === dateTimeComposition.day &&
-    dateInstance.getUTCHours() === dateTimeComposition.hours &&
-    dateInstance.getUTCMinutes() === dateTimeComposition.minutes &&
-    dateInstance.getSeconds() === dateTimeComposition.seconds &&
-    dateInstance.getMilliseconds() === dateTimeComposition.milliseconds
-  )
-    return true;
-  return false;
-};
-
 // check the string is valid
 var validDatetimeString = function (dateTimeString) {
   if (!dateTimeString || dateTimeString.toString() === "") return false;
   // datetime format in the spec: YYYY[MM[DD[HH[MM[SS[.S[S[S[S]]]]]]]]][+/-ZZZZ],
   var ds = dateTimeString.toString();
-  if (!/^(\d{4}(\d{2}(\d{2}(\d{2}(\d{2}(\d{2}(\.\d+)?)?)?)?)?)?((-|\+)\d{1,4})?)$/.test(ds))
-    throw `Bad input for Datetime type in ${ds}`;
+  if (!/^(\d{4}(\d{2}(\d{2}(\d{2}(\d{2}(\d{2}(\.\d+)?)?)?)?)?)?((-|\+)\d{1,4})?)$/.test(ds)) {
+    return false;
+  }
   return true;
 };
 
@@ -139,8 +134,78 @@ var convertDate = function (dateString) {
   throw `Bad input for Date type in ${dateString}`;
 };
 
+/**
+ * Checks if the given dateTimeString is already in the valid format YYYY-MM-DD.
+ * @param {string} dateTimeString - The date-time string to validate.
+ * @returns {boolean} - Returns true if the dateTimeString is in the valid format, otherwise false.
+ */
+var alreadyValidDateTime = function (dateTimeString) {
+  if (!dateTimeString || dateTimeString.toString() === "") return false;
+  var ds = dateTimeString.toString();
+  return /^(\d{4})-(\d{2})-(\d{2})(?:[T](\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,7}))?(Z|[-+]\d{2}:?\d{2})?)?$/.test(
+    ds
+  );
+};
+
+const incompeteIso8601Regex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+const iso8601RegexWithMissingT = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{3}Z)$/;
+
+function incompleteIso8601(dateTimeString) {
+  if (isEmptyString(dateTimeString)) return false;
+  if (incompeteIso8601Regex.test(dateTimeString) || iso8601RegexWithMissingT.test(dateTimeString)) {
+    return true;
+  }
+  return false;
+}
+
+function correctIsoFormat(dateTimeString) {
+  if (isEmptyString(dateTimeString)) return "";
+  if (iso8601RegexWithMissingT.test(dateTimeString)) {
+    const newDate = dateTimeString.trim().replace(" ", "T");
+    if (alreadyValidDateTime(newDate)) return newDate;
+    console.log(`Poorly reformatted the dateTime.000Z string: ${JSON.stringify(dateTimeString)}`);
+  }
+  if (incompeteIso8601Regex.test(dateTimeString)) {
+    const newDate = dateTimeString.trim().replace(" ", "T") + ".000Z";
+    if (alreadyValidDateTime(newDate)) return newDate;
+    console.log(`Poorly reformatted the dateTime string: ${JSON.stringify(dateTimeString)}`);
+  }
+  return dateTimeString;
+}
+
+function isEmptyString(str) {
+  return !str || str.trim().length < 1;
+}
+
 // handling the date format here
-var getDate = function (dateString) {
+var getDate = function (dateStringRaw) {
+  if (dateStringRaw === null || dateStringRaw === undefined) {
+    return "";
+  }
+  if (dateStringRaw instanceof Date) {
+    console.log(
+      `[getDateTime] Date was a Date (converted it to string): ${JSON.stringify(dateStringRaw)}`
+    );
+    dateStringRaw = dateStringRaw.toISOString();
+  }
+  if (typeof dateStringRaw === "object") {
+    if (dateStringRaw.value) {
+      dateStringRaw = dateStringRaw.value.toString();
+    } else {
+      console.log(
+        `[getDate] Date was an object (converted it to string): ${JSON.stringify(dateStringRaw)}`
+      );
+      dateStringRaw = dateStringRaw.toString();
+    }
+  }
+  if (typeof dateStringRaw !== "string") {
+    console.log(`[getDate] Invalid date value (returning empty): ${JSON.stringify(dateStringRaw)}`);
+    return "";
+  }
+  var dateString = dateStringRaw?.trim();
+  if (alreadyValidDateTime(dateString)) {
+    return dateString;
+  }
   if (!validDatetimeString(dateString)) return "";
   return convertDate(dateString.toString());
 };
@@ -167,9 +232,54 @@ var getDateTimeComposition = function (ds) {
   return dateTimeComposition;
 };
 
+var isValidYear = function (year) {
+  return parseInt(year) >= 1900;
+};
+
 // handling the datetime format here
-var getDateTime = function (dateTimeString) {
-  if (!validDatetimeString(dateTimeString)) return "";
+var getDateTime = function (dateTimeStringRaw) {
+  if (dateTimeStringRaw === null || dateTimeStringRaw === undefined) {
+    return "";
+  }
+  if (dateTimeStringRaw instanceof Date) {
+    console.log(
+      `[getDateTime] Datetime was a Date (converted it to string): ${JSON.stringify(
+        dateTimeStringRaw
+      )}`
+    );
+    dateTimeStringRaw = dateTimeStringRaw.toISOString();
+  }
+  if (typeof dateTimeStringRaw === "object") {
+    if (dateTimeStringRaw.value) {
+      dateTimeStringRaw = dateTimeStringRaw.value.toString();
+    } else {
+      console.log(
+        `[getDate] Date was an object (converted it to string): ${JSON.stringify(
+          dateTimeStringRaw
+        )}`
+      );
+      dateTimeStringRaw = dateTimeStringRaw.toString();
+    }
+  }
+  if (typeof dateTimeStringRaw !== "string") {
+    console.log(
+      `[getDateTime] Invalid datetime value (returning empty): ${JSON.stringify(dateTimeStringRaw)}`
+    );
+    return "";
+  }
+  var dateTimeString = dateTimeStringRaw?.trim();
+
+  if (incompleteIso8601(dateTimeString)) {
+    return correctIsoFormat(dateTimeString);
+  }
+
+  if (alreadyValidDateTime(dateTimeString)) {
+    return dateTimeString;
+  }
+
+  if (!validDatetimeString(dateTimeString)) {
+    return "";
+  }
 
   // handle the datetime format with time zone
   var ds = dateTimeString.toString();
@@ -179,6 +289,9 @@ var getDateTime = function (dateTimeString) {
   if (timeZoneChar !== "") {
     var dateSections = ds.split(timeZoneChar);
     var dateTimeComposition = getDateTimeComposition(dateSections[0]);
+
+    if (!isValidYear(dateTimeComposition.year)) return "";
+
     var date =
       dateTimeComposition.year + "-" + dateTimeComposition.month + "-" + dateTimeComposition.day;
     var time =
@@ -190,18 +303,47 @@ var getDateTime = function (dateTimeString) {
       ":" +
       dateTimeComposition.milliseconds;
     var timezone = timeZoneChar + dateSections[1];
-    if (!validUTCDateTime(dateTimeComposition)) 
-    {
-      console.log(`Invalid datetime: ${ds}`);
-    }
-    return new Date(date + " " + time + " " + timezone).toISOString();
-  }
 
-  if (ds.length <= 8) return convertDate(ds);
+    const newDate = new Date(date + " " + time + " " + timezone);
+
+    if (isNaN(newDate.getTime())) {
+      return new Date(date).toISOString();
+    }
+
+    return newDate.toISOString();
+  }
 
   // Padding 0s to 17 digits
   dateTimeComposition = getDateTimeComposition(ds);
-  if (!validUTCDateTime(dateTimeComposition)) throw `Invalid datetime: ${ds}`;
+
+  if (!isValidYear(dateTimeComposition.year)) return "";
+
+  if (dateTimeComposition.month === "00" && dateTimeComposition.day === "00") {
+    return new Date(
+      Date.UTC(
+        dateTimeComposition.year,
+        dateTimeComposition.month,
+        dateTimeComposition.day + 1,
+        dateTimeComposition.hours,
+        dateTimeComposition.minutes,
+        dateTimeComposition.seconds,
+        dateTimeComposition.milliseconds
+      )
+    ).toJSON();
+  } else if (dateTimeComposition.day === "00") {
+    return new Date(
+      Date.UTC(
+        dateTimeComposition.year,
+        dateTimeComposition.month - 1,
+        dateTimeComposition.day + 1,
+        dateTimeComposition.hours,
+        dateTimeComposition.minutes,
+        dateTimeComposition.seconds,
+        dateTimeComposition.milliseconds
+      )
+    ).toJSON();
+  }
+
   return new Date(
     Date.UTC(
       dateTimeComposition.year,
@@ -216,17 +358,17 @@ var getDateTime = function (dateTimeString) {
 };
 
 // Queue approach to check if all values in the json object are nullFlavor
-const allValuesInObjAreNullFlavor = (obj) => {
+const allValuesInObjAreNullFlavor = obj => {
   let queue = [obj];
   while (queue.length > 0) {
     let current = queue.shift();
-    if (current && typeof current === 'object') {
+    if (current && typeof current === "object") {
       if (Object.keys(current).length == 1 && current.nullFlavor) {
         continue;
       }
       for (let key in current) {
-        if (current.hasOwnProperty(key)) {
-          if (key === 'classCode'){
+        if (Object.prototype.hasOwnProperty.call(current, key)) {
+          if (key === "classCode") {
             continue;
           }
           queue.push(current[key]);
@@ -429,7 +571,8 @@ module.exports.external = [
   },
   {
     name: "contains",
-    description: "Returns true if a string includes any of the provided values: contains parentStr [childStr1, childStr2, ...]",
+    description:
+      "Returns true if a string includes any of the provided values: contains parentStr [childStr1, childStr2, ...]",
     func: function (parentStr, ...childStrs) {
       if (!parentStr) {
         return false;
@@ -455,7 +598,10 @@ module.exports.external = [
         if (typeof encoding !== "string") {
           encoding = "utf8";
         }
-        return Buffer.from(str.toString(), encoding).toString("base64");
+        if (typeof str === "string") {
+          return Buffer.from(str, encoding).toString("base64");
+        }
+        return Buffer.from(str?.toString(), encoding).toString("base64");
       } catch (err) {
         throw `helper "base64Encode" : ${err}`;
       }
@@ -516,7 +662,7 @@ module.exports.external = [
       try {
         return specialCharProcessor.Escape(str.toString());
       } catch (err) {
-        throw `helper "escapeSpecialChars" : ${err}`;
+        return undefined;
       }
     },
   },
@@ -551,7 +697,8 @@ module.exports.external = [
   },
   {
     name: "optionalEvaluate",
-    description: "Returns template result object: evaluate templatePath inObj. Will return an empty object if the result of the evaluation is undefined",
+    description:
+      "Returns template result object: evaluate templatePath inObj. Will return an empty object if the result of the evaluation is undefined",
     func: function (templatePath, inObj) {
       return evaluateTemplate(templatePath, inObj, true);
     },
@@ -574,31 +721,34 @@ module.exports.external = [
   {
     name: "multipleToArray",
     func: function (...vals) {
-        const uniqueSet = new Set();
-        const combinedArr = [];
+      const uniqueSet = new Set();
+      const combinedArr = [];
 
-        // Flatten the input arrays
-        const flatVals = vals.flat();
+      // Flatten the input arrays
+      const flatVals = vals.flat();
 
-        for (let i = 0; i < flatVals.length; i++) {
-            const val = flatVals[i];
-            let hash;
+      for (let i = 0; i < flatVals.length; i++) {
+        const val = flatVals[i];
+        let hash;
 
-            if (typeof val === 'object' && val !== null) {
-                // Attempt to create a unique hash for objects
-                hash = uuidv3("".concat(JSON.stringify(val)), uuidv3.URL);
-            } else {
-                // Use primitive value directly
-                hash = val;
-            }
-
-            if (!uniqueSet.has(hash)) {
-                uniqueSet.add(hash);
-                combinedArr.push(val);
-            }
+        if (typeof val === "object" && val !== null) {
+          // Attempt to create a unique hash for objects
+          hash = uuidv3("".concat(JSON.stringify(val)), uuidv3.URL);
+        } else {
+          // Use primitive value directly
+          hash = val;
         }
 
-        return combinedArr;
+        if (!uniqueSet.has(hash)) {
+          uniqueSet.add(hash);
+          combinedArr.push(val);
+        }
+      }
+
+      return combinedArr.filter(el => {
+        if (!el) return true;
+        return !("lookupProperty" in el);
+      });
     },
   },
   {
@@ -658,12 +808,22 @@ module.exports.external = [
     func: function getFirstCdaSectionsByTemplateId(msg, ...templateIds) {
       try {
         var ret = {};
-  
-        for (var t = 0; t < templateIds.length - 1; t++) { // -1 because templateIds includes the full message at the end
-          for (var i = 0; i < msg.ClinicalDocument.component.structuredBody.component.length; i++) {
-            let sectionObj = msg.ClinicalDocument.component.structuredBody.component[i].section;
-            let templateIdsArray = Array.isArray(sectionObj.templateId) ? sectionObj.templateId : [sectionObj.templateId];
-            const hasExactMatch = templateIdsArray.some(templateIdObj => templateIdObj && templateIdObj.root === templateIds[t]);
+
+        for (var t = 0; t < templateIds.length - 1; t++) {
+          // -1 because templateIds includes the full message at the end
+          if (!msg.ClinicalDocument.component?.structuredBody?.component) continue;
+
+          let components = Array.isArray(msg.ClinicalDocument.component.structuredBody.component)
+            ? msg.ClinicalDocument.component.structuredBody.component
+            : [msg.ClinicalDocument.component.structuredBody.component];
+          for (var i = 0; i < components.length; i++) {
+            let sectionObj = components[i].section;
+            let templateIdsArray = Array.isArray(sectionObj.templateId)
+              ? sectionObj.templateId
+              : [sectionObj.templateId];
+            const hasExactMatch = templateIdsArray.some(
+              templateIdObj => templateIdObj && templateIdObj.root === templateIds[t]
+            );
             if (hasExactMatch) {
               ret[normalizeSectionName(templateIds[t])] = sectionObj;
               break;
@@ -703,6 +863,33 @@ module.exports.external = [
         return ret;
       } catch (err) {
         throw `helper "getAllCdaSectionsByTemplateId" : ${err}`;
+      }
+    },
+  },
+  {
+    name: "getAllCdaSectionsWithoutTemplateId",
+    description: "Returns an array of section contents based on the provided section templateIds",
+    func: function getAllCdaSectionsByTemplateId(msg, ...templateIds) {
+      try {
+        var ret = [];
+        if (templateIds.length <= 0) return ret;
+        if (msg?.ClinicalDocument?.component?.structuredBody?.component === undefined) return ret;
+
+        // -1 because templateIds includes the full message at the end
+        for (var t = 0; t < templateIds.length - 1; t++) {
+          for (var i = 0; i < msg.ClinicalDocument.component.structuredBody.component.length; i++) {
+            const sectionObj = msg.ClinicalDocument.component.structuredBody.component[i].section;
+            if (
+              sectionObj?.templateId &&
+              JSON.stringify(sectionObj.templateId).includes(templateIds[t])
+            ) {
+              ret.push(sectionObj);
+            }
+          }
+        }
+        return ret;
+      } catch (err) {
+        throw `helper "getAllCdaSectionsWithoutTemplateId" : ${err}`;
       }
     },
   },
@@ -933,28 +1120,28 @@ module.exports.external = [
   {
     name: "toString",
     description: "Converts to string: toString object",
-    func: function(str) {
+    func: function (str) {
       return str.toString();
     },
   },
   {
     name: "toJsonString",
     description: "Converts to JSON string: toJsonString object",
-    func: function(str) {
+    func: function (str) {
       return JSON.stringify(str);
     },
   },
   {
     name: "toJsonStringPrettier",
     description: "Converts to JSON string with prettier logging: toJsonStringPrettier object",
-    func: function(str) {
+    func: function (str) {
       return JSON.stringify(str, null, 2);
     },
   },
   {
     name: "toLower",
     description: "Converts string to lower case: toLower string",
-    func: function(str) {
+    func: function (str) {
       try {
         return str.toString().toLowerCase();
       } catch (err) {
@@ -963,9 +1150,20 @@ module.exports.external = [
     },
   },
   {
+    name: "trim",
+    description: "Trims string: trim string",
+    func: function (str) {
+      try {
+        return str.toString().trim();
+      } catch (err) {
+        return "";
+      }
+    },
+  },
+  {
     name: "trimAndLower",
     description: "Trims and converts string to lower case: trimAndLower string",
-    func: function(str) {
+    func: function (str) {
       try {
         return str.toString().trim().toLowerCase();
       } catch (err) {
@@ -976,7 +1174,7 @@ module.exports.external = [
   {
     name: "trimAndUpper",
     description: "Trims and converts string to upper case: trimAndUpper string",
-    func: function(str) {
+    func: function (str) {
       try {
         return str.toString().trim().toUpperCase();
       } catch (err) {
@@ -987,7 +1185,7 @@ module.exports.external = [
   {
     name: "toUpper",
     description: "Converts string to upper case: toUpper string",
-    func: function(str) {
+    func: function (str) {
       try {
         return str.toString().toUpperCase();
       } catch (err) {
@@ -998,7 +1196,7 @@ module.exports.external = [
   {
     name: "isNaN",
     description: "Checks if the object is not a number using JavaScript isNaN: isNaN object",
-    func: function(o) {
+    func: function (o) {
       return isNaN(o);
     },
   },
@@ -1118,13 +1316,14 @@ module.exports.external = [
   },
   {
     name: "parseReferenceData",
-    description: "Escapes new line and other special chars when parsing ._ fields and then strips JSON of quotes at start and end",
+    description:
+      "Escapes new line and other special chars when parsing ._ fields and then strips JSON of quotes at start and end",
     func: function (referenceData) {
       if (referenceData == undefined) {
         return "";
       }
-      return JSON.stringify(referenceData).slice(1, -1);
-    }
+      return JSON.stringify(referenceData).slice(1, -1).replace(/ {2,}/g, " ").trim();
+    },
   },
   {
     name: "personalRelationshipRoleTypeCodeSystem",
@@ -1146,17 +1345,20 @@ module.exports.external = [
   },
   {
     name: "convertFeetAndInchesToCm",
-    description: "Checks if a string is in the format 'number ft number in' and if so, converts the feet and inches to centimeters",
+    description:
+      "Checks if a string is in the format 'number ft number in' and if so, converts the feet and inches to centimeters",
     func: function (str) {
       if (!str) {
         return { isValid: false };
       }
-      const match = str.match(new RegExp(`^(${DECIMAL_REGEX_STR}) ft (${DECIMAL_REGEX_STR})( in)?$`));
+      const match = str.match(
+        new RegExp(`^(${DECIMAL_REGEX_STR}) ft (${DECIMAL_REGEX_STR})( in)?$`)
+      );
       if (match) {
-        const inches = (12 * parseFloat(match[1])) + parseFloat(match[2]);
-        const cm = convert(inches).from('in').to('cm');
+        const inches = 12 * parseFloat(match[1]) + parseFloat(match[2]);
+        const cm = convert(inches).from("in").to("cm");
         const cmRounded = parseFloat(cm.toFixed(2));
-        return { isValid: true, value: cmRounded, unit: 'cm' };
+        return { isValid: true, value: cmRounded, unit: "cm" };
       } else {
         return { isValid: false };
       }
@@ -1164,12 +1366,13 @@ module.exports.external = [
   },
   {
     name: "extractNumberAndUnit",
-    description: "Checks if a string is in the format 'number unit' and if so, extracts the number and the unit",
+    description:
+      "Checks if a string is in the format 'number unit' and if so, extracts the number and the unit",
     func: function (str) {
       if (!str) {
         return { isValid: false };
       }
-      const match = str.match(/^(\d+(?:\.\d+)?)(\s*)([a-zA-Z\/\(\)\[\]]+)$/);
+      const match = str.match(/^(\d+(?:\.\d+)?)(\s*)([a-zA-Z/()[\]]+)$/);
       if (match) {
         return { isValid: true, value: parseFloat(match[1]), unit: match[3] };
       } else {
@@ -1179,7 +1382,8 @@ module.exports.external = [
   },
   {
     name: "extractComparator",
-    description: "Checks if a string starts with a comparator followed by a decimal number, and if so, extracts the comparator and the number",
+    description:
+      "Checks if a string starts with a comparator followed by a decimal number, and if so, extracts the comparator and the number",
     func: function (str) {
       if (!str) {
         return { isValid: false };
@@ -1194,25 +1398,28 @@ module.exports.external = [
   },
   {
     name: "extractRangeFromQuantity",
-    description: "Checks if a value field of a FHIR Quantity object is in the format 'alphanumeric-alphanumeric' and if so, extracts the two alphanumeric values",
+    description:
+      "Checks if a value field of a FHIR Quantity object is in the format 'alphanumeric-alphanumeric' and if so, extracts the two alphanumeric values",
     func: function (obj) {
       if (obj === undefined || obj === null || obj.value === undefined) {
         return { isValid: false };
       }
-      const match = obj.value.match(new RegExp(`^\\s*(${DECIMAL_REGEX_STR})\\s*-\\s*(${DECIMAL_REGEX_STR})\\s*$`));
+      const match = obj.value.match(
+        new RegExp(`^\\s*(${DECIMAL_REGEX_STR})\\s*-\\s*(${DECIMAL_REGEX_STR})\\s*$`)
+      );
       if (match) {
-        return { 
-          isValid: true, 
+        return {
+          isValid: true,
           range: {
             low: {
-              value: match[1], 
+              value: match[1],
               unit: obj.unit || "",
             },
             high: {
               value: match[2],
               unit: obj.unit || "",
-            }
-          }
+            },
+          },
         };
       } else {
         return { isValid: false };
@@ -1220,67 +1427,214 @@ module.exports.external = [
     },
   },
   {
+    name: "extractReferenceRange",
+    description: "Parses lab result reference value ranges",
+    func: function (obj) {
+      function cleanUpReturn(obj1, obj2, name1, name2) {
+        if (!obj1 && !obj2) return;
+        return {
+          ...(obj1 && { [name1]: obj1 }),
+          ...(obj2 && { [name2]: obj2 }),
+        };
+      }
+
+      function getRangeLimit(limit) {
+        if (!limit) return;
+        if (limit.value) {
+          return limit;
+        } else if (limit.nullFlavor === "OTH") {
+          const translation = limit.translation;
+          const value = translation?.value ?? undefined;
+          const unit = translation?.originalText?._ ?? undefined;
+          return cleanUpReturn(value, unit, "value", "unit");
+        }
+        return;
+      }
+
+      function buildRange(value) {
+        if (!value) return;
+        if (value.includes("-")) {
+          const [low, high] = value.split("-");
+          return {
+            low: {
+              value: low.trim(),
+            },
+            high: {
+              value: high.trim(),
+            },
+          };
+        }
+        if (typeof value === "string") {
+          return {
+            low: {
+              value: value.trim(),
+            },
+          };
+        }
+      }
+
+      function parseRange(range) {
+        const value = range.value;
+        if (value) {
+          if (value["x:type"] === "ST") {
+            if (value._) {
+              return buildRange(value._);
+            }
+          } else if (value["x:type"] === "IVL_PQ" || value["x:type"] === "IVL_REAL") {
+            const low = getRangeLimit(value.low);
+            const high = getRangeLimit(value.high);
+            const ret = cleanUpReturn(low, high, "low", "high");
+            if (ret) return ret;
+          }
+        } else if (range.low || range.high) {
+          const low = getRangeLimit(range.low);
+          const high = getRangeLimit(range.high);
+          const ret = cleanUpReturn(low, high, "low", "high");
+          if (ret) return ret;
+        }
+        if (range.text?._) {
+          return buildRange(range.text._);
+        }
+      }
+
+      return parseRange(obj);
+    },
+  },
+  {
+    name: "buildPresentedForm",
+    description: "Builds a presented form array",
+    func: function (b64String, component) {
+      const presentedForm = [];
+      if (b64String) {
+        presentedForm.push({
+          contentType: "text/html",
+          data: b64String,
+        });
+      }
+      if (component) {
+        const components = Array.isArray(component) ? component : [component];
+        components.forEach(comp => {
+          const obsValueB64 = comp.observation?.value?._b64;
+          if (obsValueB64) {
+            presentedForm.push({
+              contentType: "text/html",
+              data: obsValueB64,
+            });
+          }
+        });
+      }
+      if (presentedForm.length === 0) return undefined;
+      return JSON.stringify(presentedForm);
+    },
+  },
+  {
     name: "extractDecimal",
-    description: "Returns true if following the FHIR decimal specification: https://www.hl7.org/fhir/R4/datatypes.html#decimal ",
+    description:
+      "Returns true if following the FHIR decimal specification: https://www.hl7.org/fhir/R4/datatypes.html#decimal ",
     func: function (str) {
       if (!str) {
-        return "";
+        return undefined;
       }
       const match = str.match(new RegExp(`^(${DECIMAL_REGEX_STR})$`));
-      return match ? match[0] : '';
+
+      if (match) {
+        const decimal = match[0];
+        const leadsWithDecimal = decimal.startsWith(".");
+
+        if (leadsWithDecimal) {
+          return parseFloat(`0${decimal}`);
+        }
+
+        return parseFloat(decimal);
+      }
+
+      return undefined;
     },
   },
   {
     name: "extractAndMapTableData",
-    description: "Extracts and maps table data from a JSON structure to an array of objects based on table headers and rows.",
+    description:
+      "Extracts and maps table data from a JSON structure to an array of objects based on table headers and rows.",
     func: function (json) {
-        if (!json || !json.table || !json.table.thead || !json.table.tbody) {
-            return undefined;
+      if (!json || !json.table || !json.table.thead || !json.table.tbody) {
+        return undefined;
+      }
+
+      const getHeaders = thead => {
+        if (!thead.tr || !thead.tr.th) return [];
+        return Array.isArray(thead.tr.th) ? thead.tr.th.map(th => th._) : [thead.tr.th._];
+      };
+
+      // we are handling two scenarios rn. One where the values are stored in the pagraph tag and the other where the values are stored in the td tag
+      const getRowData = (tr, headers) => {
+        if (!tr || !tr.td || headers.length === 0) return undefined;
+        const tdArray = Array.isArray(tr.td) ? tr.td : [tr.td];
+        const rowData = {};
+        tdArray.forEach((td, index) => {
+          if (!td) return;
+          if (td.paragraph) {
+            const paragraphArray = Array.isArray(td.paragraph) ? td.paragraph : [td.paragraph];
+            const textValues = paragraphArray
+              .map(paragraph => {
+                if (!paragraph || !paragraph.content) return "";
+                const contentArray = Array.isArray(paragraph.content)
+                  ? paragraph.content
+                  : [paragraph.content];
+                return concatenateTextValues(contentArray);
+              })
+              .join("\n");
+            rowData[headers[index]] = textValues;
+          } else {
+            rowData[headers[index]] = td._ || "";
+          }
+        });
+        return rowData;
+      };
+
+      const concatenateTextValues = content => {
+        if (!content) return "";
+        const contentArray = Array.isArray(content) ? content : [content];
+        return contentArray
+          .filter(item => item && "_ in item")
+          .map(item => item._)
+          .join("\n");
+      };
+
+      const headers = getHeaders(json.table.thead);
+      if (headers.length === 0) return undefined;
+
+      const trArray = Array.isArray(json.table.tbody.tr)
+        ? json.table.tbody.tr
+        : [json.table.tbody.tr];
+      if (trArray.length === 0) return undefined;
+
+      const mappedData = trArray.map(tr => getRowData(tr, headers));
+      if (mappedData === "") return undefined;
+
+      return mappedData;
+    },
+  },
+  {
+    name: "extractTextFromNestedProperties",
+    description: "extracts text from various nested properties",
+    func: function (data) {
+      let texts = [];
+
+      function recursiveSearch(obj) {
+        if (typeof obj === "object" && obj !== null) {
+          if ("_" in obj) {
+            texts.push(obj["_"]);
+          }
+          for (let key in obj) {
+            recursiveSearch(obj[key]);
+          }
+        } else if (Array.isArray(obj)) {
+          obj.forEach(element => recursiveSearch(element));
         }
+      }
 
-        const getHeaders = (thead) => {
-            if (!thead.tr || !thead.tr.th) return [];
-            return Array.isArray(thead.tr.th) ? thead.tr.th.map(th => th._) : [thead.tr.th._];
-        };
-
-        // we are handling two scenarios rn. One where the values are stored in the pagraph tag and the other where the values are stored in the td tag
-        const getRowData = (tr, headers) => {
-            if (!tr || !tr.td || headers.length === 0) return undefined;
-            const tdArray = Array.isArray(tr.td) ? tr.td : [tr.td];
-            const rowData = {};
-            tdArray.forEach((td, index) => {
-                if (!td) return;
-                if (td.paragraph) {
-                    const paragraphArray = Array.isArray(td.paragraph) ? td.paragraph : [td.paragraph];
-                    const textValues = paragraphArray.map(paragraph => {
-                        if (!paragraph || !paragraph.content) return "";
-                        const contentArray = Array.isArray(paragraph.content) ? paragraph.content : [paragraph.content];
-                        return concatenateTextValues(contentArray);
-                    }).join('\n');
-                    rowData[headers[index]] = textValues;
-                } else {
-                    rowData[headers[index]] = td._ || "";
-                }
-            });
-            return rowData;
-        };
-
-        const concatenateTextValues = (content) => {
-            if (!content) return '';
-            const contentArray = Array.isArray(content) ? content : [content];
-            return contentArray.filter(item => item && '_ in item').map(item => item._).join('\n');
-        };
-
-        const headers = getHeaders(json.table.thead);
-        if (headers.length === 0) return undefined;
-
-        const trArray = Array.isArray(json.table.tbody.tr) ? json.table.tbody.tr : [json.table.tbody.tr];
-        if (trArray.length === 0) return undefined;
-
-        const mappedData = trArray.map(tr => getRowData(tr, headers));
-        if (mappedData === "") return undefined;
-
-        return mappedData;
+      recursiveSearch(data);
+      return texts.join("\n");
     },
   },
   {
@@ -1288,9 +1642,30 @@ module.exports.external = [
     description: "Converts mapped data to plain text format.",
     func: function (mappedData) {
       if (!mappedData || mappedData.length === 0) return "";
-      return mappedData.map(entry => {
-        return Object.entries(entry).map(([key, value]) => `${key}: ${value}`).join('\n');
-      }).join('\n\n');
+      return mappedData
+        .map(entry => {
+          return Object.entries(entry)
+            .map(([key, value]) => `${key}: ${value}`)
+            .join("\n");
+        })
+        .join("\n\n");
+    },
+  },
+  {
+    name: "buildDefaultDiagReportDetails",
+    description: "Returns default diagnostic reports details based on the CDA section",
+    func: function (section) {
+      const defaultCode = {
+        code: "34109-9",
+        codeSystem: "2.16.840.1.113883.6.1",
+        codeSystemName: "LOINC",
+        displayName: "Note",
+      };
+      return {
+        statusCode: { code: "completed" },
+        code: section.code ?? defaultCode,
+        templateId: { root: "2.16.840.1.113883.10.20.22.4.202", extension: "2016-11-01" },
+      };
     },
   },
   {
@@ -1304,21 +1679,23 @@ module.exports.external = [
           return value;
         }
       }
-      return undefined; 
+      return undefined;
     },
   },
   {
     name: "concatDefined",
     description: "Concatenates defined objects, checking for null, undefined, or UNK nullFlavor.",
     func: function (...args) {
-
       args.pop();
-      
-      const isDefined = (obj) => {
+
+      const isDefined = obj => {
         return obj !== null && obj !== undefined && !allValuesInObjAreNullFlavor(obj);
       };
-      return args.filter(arg => isDefined(arg)).map(arg => JSON.stringify(arg)).join('');
-    }
+      return args
+        .filter(arg => isDefined(arg))
+        .map(arg => JSON.stringify(arg))
+        .join("");
+    },
   },
   {
     name: "nullFlavorAwareOr",
@@ -1326,11 +1703,21 @@ module.exports.external = [
     func: function (...args) {
       const values = args.slice(0, -1);
       for (let arg of values) {
-        if (arg && typeof arg !== 'object' || (typeof arg === 'object' && !allValuesInObjAreNullFlavor(arg))) {
+        if (
+          (arg && typeof arg !== "object") ||
+          (typeof arg === "object" && !allValuesInObjAreNullFlavor(arg))
+        ) {
           return true;
         }
       }
       return false;
+    },
+  },
+  {
+    name: "startDateLteEndDate",
+    description: "Checks if the start date is less than or equal to the end date.",
+    func: function (v1, v2) {
+      return new Date(getDateTime(v1)).getTime() <= new Date(getDateTime(v2)).getTime();
     },
   },
 ];

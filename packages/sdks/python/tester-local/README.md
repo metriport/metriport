@@ -13,7 +13,6 @@ You will be proped to sign in. Do this.
 
 To run the tests, run the following commands
 ```bash
-# Run cd packages/sdks/python 
 poetry install 
 pip install -r requirements.txt
 poetry run pytest tests

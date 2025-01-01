@@ -6,7 +6,8 @@
     "preinstall": "npm i -g rimraf",
     "prepare": "husky install",
     "init": "npm i && SCRIPT='i' npm run lambdas:no-run",
-    "clean": "npm run clean --workspaces --if-present && SCRIPT='clean' npm run lambdas && echo 'rimraf node_modules' && rimraf node_modules",
+    "clean": "npm run clean --workspaces --if-present && SCRIPT='clean' npm run lambdas",
+    "deepclean": "npm run deepclean --workspaces --if-present && echo 'rimraf node_modules' && rimraf node_modules && SCRIPT='deepclean' npm run lambdas",
     "prep-lambdas": "cd packages/lambdas && npm run prep-deploy && cd ../..",
     "prep-deploy": "npm run install-deps && npm run build:cloud && npm run test && npm run prep-lambdas",
     "prep-deploy-staging": "npm run install-deps && npm run build:staging && npm run test && npm run prep-lambdas",
@@ -26,10 +27,10 @@
     "lambdas": "cd packages/lambdas && npm run $SCRIPT && cd ../..",
     "commit": "cz",
     "check-secrets": "docker run --rm -v $(pwd):/path zricethezav/gitleaks:v8.17.0 protect --source='/path' --staged --no-banner -v",
-    "publish:alpha": "npm run build && npx lerna publish --dist-tag next",
-    "publish:alpha:ignore": "npm run build && npx lerna publish --dist-tag next --ignore-changes '**'",
-    "publish:prod": "npm run build && npx lerna publish",
-    "publish:prod:ignore": "npm run build && npx lerna publish --ignore-changes '**'",
+    "publish:alpha": "npm run build && npx lerna publish --signoff-git-commit --dist-tag next",
+    "publish:alpha:ignore": "npm run build && npx lerna publish --signoff-git-commit --dist-tag next --ignore-changes '**'",
+    "publish:prod": "npm run build && npx lerna publish --signoff-git-commit",
+    "publish:prod:ignore": "npm run build && npx lerna publish --signoff-git-commit --ignore-changes '**'",
     "ddb-admin": "DYNAMO_ENDPOINT=http://localhost:8000 dynamodb-admin",
     "test-fern-local": "bash fern/run_tests.sh",
     "full-hbs-lint": "cd packages/fhir-converter && ./full-hbs-lint.sh"
@@ -44,7 +45,6 @@
     "packages/commonwell-cert-runner",
     "packages/commonwell-jwt-maker",
     "packages/carequality-cert-runner",
-    "packages/react-native-sdk",
     "packages/api",
     "packages/infra",
     "packages/utils",
@@ -67,7 +67,6 @@
     "@commitlint/cli": "^17.4.2",
     "@commitlint/config-conventional": "^17.4.2",
     "@commitlint/cz-commitlint": "^17.4.2",
-    "@semantic-release/git": "^10.0.1",
     "@tsconfig/recommended": "^1.0.2",
     "@typescript-eslint/eslint-plugin": "^5.48.2",
     "@typescript-eslint/parser": "^5.48.2",
@@ -77,7 +76,6 @@
     "husky": "^8.0.3",
     "lerna": "^7.4.2",
     "lint-staged": "^13.1.0",
-    "semantic-release": "^20.0.2",
     "typescript": "^4.9.5"
   }
 }

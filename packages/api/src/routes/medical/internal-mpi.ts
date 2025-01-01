@@ -4,7 +4,7 @@ import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import { PatientLoaderLocal } from "../../external/commonwell/patient-loader-local";
+import { PatientLoaderLocal } from "../../models/helpers/patient-loader-local";
 import { asyncHandler, getFrom } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { createPatientUniqueId } from "@metriport/core/external/carequality/shared";

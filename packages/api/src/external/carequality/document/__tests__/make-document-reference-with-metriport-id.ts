@@ -1,7 +1,8 @@
 import { faker } from "@faker-js/faker";
 import { DocumentReferenceWithMetriportId } from "../shared";
+import { DocumentReference } from "@metriport/ihe-gateway-sdk";
 
-export function makeDocumentReferenceWithMetriporId({
+export function makeDocumentReference({
   homeCommunityId,
   docUniqueId,
   repositoryUniqueId,
@@ -9,7 +10,6 @@ export function makeDocumentReferenceWithMetriporId({
   fileLocation,
   size,
   urn,
-  metriportId,
   newRepositoryUniqueId,
   newDocumentUniqueId,
   contentType,
@@ -19,7 +19,7 @@ export function makeDocumentReferenceWithMetriporId({
   isNew,
   creation,
   title,
-}: Partial<DocumentReferenceWithMetriportId> = {}): DocumentReferenceWithMetriportId {
+}: Partial<DocumentReferenceWithMetriportId> = {}): DocumentReference {
   const _homeCommunityId = homeCommunityId ?? faker.string.uuid();
   const _docUniqueId = docUniqueId ?? faker.string.uuid();
   const _repositoryUniqueId = repositoryUniqueId ?? faker.string.uuid();
@@ -27,7 +27,6 @@ export function makeDocumentReferenceWithMetriporId({
   const _fileLocation = fileLocation ?? faker.string.alpha();
   const _size = size ?? faker.number.int();
   const _urn = urn ?? faker.string.alpha();
-  const _metriportId = metriportId ?? faker.string.uuid();
   const _newRepositoryUniqueId = newRepositoryUniqueId ?? faker.string.uuid();
   const _newDocumentUniqueId = newDocumentUniqueId ?? faker.string.uuid();
   const _contentType = contentType ?? "application/xml";
@@ -37,7 +36,6 @@ export function makeDocumentReferenceWithMetriporId({
   const _isNew = isNew ?? faker.datatype.boolean();
   const _creation = creation ?? faker.date.past().toISOString();
   const _title = title ?? faker.lorem.text();
-
   return {
     homeCommunityId: _homeCommunityId,
     docUniqueId: _docUniqueId,
@@ -46,7 +44,6 @@ export function makeDocumentReferenceWithMetriporId({
     fileLocation: _fileLocation,
     size: _size,
     urn: _urn,
-    metriportId: _metriportId,
     newRepositoryUniqueId: _newRepositoryUniqueId,
     newDocumentUniqueId: _newDocumentUniqueId,
     contentType: _contentType,
@@ -56,5 +53,17 @@ export function makeDocumentReferenceWithMetriporId({
     isNew: _isNew,
     creation: _creation,
     title: _title,
+  };
+}
+
+export function makeDocumentReferenceWithMetriportId({
+  metriportId,
+  ...rest
+}: Partial<DocumentReferenceWithMetriportId> = {}): DocumentReferenceWithMetriportId {
+  const baseDocumentReference = makeDocumentReference(rest);
+  const _metriportId = metriportId ?? faker.string.uuid();
+  return {
+    ...baseDocumentReference,
+    metriportId: _metriportId,
   };
 }

@@ -1,4 +1,5 @@
 import { CommonWellAPI, CommonwellError, organizationQueryMeta } from "@metriport/commonwell-sdk";
+import { executeWithNetworkRetries, getNetworkErrorDetails } from "@metriport/shared";
 import AWS from "aws-sdk";
 import path from "path";
 import * as stream from "stream";
@@ -6,6 +7,7 @@ import { DOMParser } from "xmldom";
 import { MetriportError } from "../../../util/error/metriport-error";
 import NotFoundError from "../../../util/error/not-found";
 import { detectFileType, isContentTypeAccepted } from "../../../util/file-type";
+import { out } from "../../../util/log";
 import { isMimeTypeXML } from "../../../util/mime";
 import { makeS3Client, S3Utils } from "../../aws/s3";
 import {
@@ -44,15 +46,19 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     document: Document;
     fileInfo: FileInfo;
   }): Promise<DownloadResult> {
+    const { log } = out("S3.download");
     let downloadedDocument = "";
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
     const onData = (chunk: any) => {
       downloadedDocument += chunk;
     };
     const onEnd = () => {
-      console.log("Finished downloading document");
+      log("Finished downloading document");
     };
-    let downloadResult = await this.downloadFromCommonwellIntoS3(document, fileInfo, onData, onEnd);
+    let downloadResult = await executeWithNetworkRetries(
+      () => this.downloadFromCommonwellIntoS3(document, fileInfo, onData, onEnd),
+      { retryOnTimeout: true, initialDelay: 500, maxAttempts: 5 }
+    );
 
     // Check if the detected file type is in the accepted content types and update it if not
     downloadResult = await this.checkAndUpdateMimeType({
@@ -82,7 +88,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
 
   /**
    * Checks if the content type of a downloaded document is accepted. If not accepted, updates the content type
-   * and extension  in S3 and returns the updated download result.
+   * and extension in S3 and returns the updated download result.
    */
   async checkAndUpdateMimeType({
     document,
@@ -95,28 +101,29 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     downloadedDocument: string;
     downloadResult: DownloadResult;
   }): Promise<DownloadResult> {
+    const { log } = out("checkAndUpdateMimeType");
     if (isContentTypeAccepted(document.mimeType)) {
       return { ...downloadResult };
     }
 
     const old_extension = path.extname(fileInfo.name);
-    const { mimeType: detectedFileType, fileExtension: detectedExtension } =
-      detectFileType(downloadedDocument);
+    const documentBuffer = Buffer.from(downloadedDocument);
+    const { mimeType, fileExtension } = detectFileType(documentBuffer);
 
     // If the file type has not changed
-    if (detectedFileType === document.mimeType || old_extension === detectedExtension) {
+    if (mimeType === document.mimeType || old_extension === fileExtension) {
       return downloadResult;
     }
 
     // If the file type has changed
-    console.log(
-      `Updating content type in S3 ${fileInfo.name} from previous mimeType: ${document.mimeType} to detected mimeType ${detectedFileType} and ${detectedExtension}`
+    log(
+      `Updating content type in S3 ${fileInfo.name} from previous mimeType: ${document.mimeType} to detected mimeType ${mimeType} and ${fileExtension}`
     );
     const newKey = await this.s3Utils.updateContentTypeInS3(
       downloadResult.bucket,
       downloadResult.key,
-      detectedFileType,
-      detectedExtension
+      mimeType,
+      fileExtension
     );
     const newLocation = downloadResult.location.replace(`${downloadResult.key}`, `${newKey}`);
     const fileDetailsUpdated = await this.s3Utils.getFileInfoFromS3(newKey, downloadResult.bucket);
@@ -138,13 +145,14 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     requestedFileInfo,
     ...downloadedFile
   }: DownloadResult & { contents: string; requestedFileInfo: FileInfo }): Promise<DownloadResult> {
+    const { log } = out("parseXmlFile");
     const parser = new DOMParser();
     const document = parser.parseFromString(contents, "text/xml");
 
     const nonXMLBodies = document.getElementsByTagName("nonXMLBody");
     if (nonXMLBodies.length > 1) {
       const msg = `Multiple nonXmlBody inside CDA`;
-      console.log(msg);
+      log(msg);
       this.config.capture &&
         this.config.capture.message(msg, {
           extra: {
@@ -161,7 +169,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     const xmlBodyTexts = nonXMLBody.getElementsByTagName("text");
     if (xmlBodyTexts.length > 1) {
       const msg = `Multiple text inside CDA.nonXmlBody`;
-      console.log(msg);
+      log(msg);
       this.config.capture &&
         this.config.capture.message(msg, {
           extra: {
@@ -175,7 +183,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     const b64 = xmlBodyTexts[0]?.textContent;
     if (!b64) {
       const msg = `No b64 found in xml`;
-      console.log(msg);
+      log(msg);
       this.config.capture &&
         this.config.capture.message(msg, {
           extra: {
@@ -186,12 +194,12 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
         });
       return downloadedFile;
     }
+
     const b64Buff = Buffer.from(b64, "base64");
 
     // Alternativelly we can use the provided mediaType and calculate the extension from it
     // const providedContentType = xmlBodyTexts[0]?.attributes?.getNamedItem("mediaType")?.value;
     const { mimeType, fileExtension } = detectFileType(b64Buff);
-
     const newFileName = this.getNewFileName(requestedFileInfo.name, fileExtension);
 
     const b64Upload = await this.s3client
@@ -226,6 +234,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     size: number | undefined;
     contentType: string | undefined;
   }> {
+    const { log } = out("downloadFromCommonwellIntoS3");
     const { writeStream, promise } = this.getUploadStreamToS3(
       fileInfo.name,
       fileInfo.location,
@@ -242,7 +251,7 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
 
     const uploadResult = await promise;
 
-    console.log(`Uploaded ${document.id}, ${document.mimeType}, to ${uploadResult.Location}`);
+    log(`Uploaded ${document.id}, ${document.mimeType}, to ${uploadResult.Location}`);
 
     const { size, contentType } = await this.s3Utils.getFileInfoFromS3(
       uploadResult.Key,
@@ -288,21 +297,26 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     stream: stream.Writable;
   }): Promise<void> {
     try {
-      await this.cwApi.retrieveDocument(this.cwQueryMeta, location, stream);
+      await executeWithNetworkRetries(
+        () => this.cwApi.retrieveDocument(this.cwQueryMeta, location, stream),
+        { retryOnTimeout: true, maxAttempts: 5, initialDelay: 500 }
+      );
     } catch (error) {
+      const { details, code, status } = getNetworkErrorDetails(error);
       const additionalInfo = {
         cwReferenceHeader: this.cwApi.lastReferenceHeader,
         documentLocation: location,
+        details,
+        code,
+        status,
       };
       if (error instanceof CommonwellError && error.cause?.response?.status === 404) {
         const msg = "CW - Document not found";
-        console.log(`${msg} - ${JSON.stringify(additionalInfo)}`);
-        throw new NotFoundError(msg, undefined, additionalInfo);
+        const { log } = out("downloadDocumentFromCW");
+        log(`${msg} - ${JSON.stringify(additionalInfo)}`);
+        throw new NotFoundError(msg, error, additionalInfo);
       }
-      const msg = `CW - Error downloading document`;
-      this.config.capture &&
-        this.config.capture.message(msg, { extra: { ...additionalInfo, error }, level: "error" });
-      throw new MetriportError(msg, error, additionalInfo);
+      throw new MetriportError(`CW - Error downloading document`, error, additionalInfo);
     }
   }
 }

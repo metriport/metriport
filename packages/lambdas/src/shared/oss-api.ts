@@ -1,5 +1,5 @@
-import axios from "axios";
-import { capture } from "./capture";
+import { CreateFeedback, executeWithNetworkRetries } from "@metriport/shared";
+import axios, { AxiosResponse } from "axios";
 import { Log } from "./log";
 
 const MAX_API_NOTIFICATION_ATTEMPTS = 5;
@@ -10,36 +10,36 @@ export type NotificationParams = {
   cxId: string;
   patientId: string;
   status: "success" | "failed";
-  details?: string;
-  jobId?: string;
+  details?: string | undefined;
+  jobId: string | undefined;
+  /** The MedicalDataSource, or HIE name */
   source?: string;
 };
 
 export function apiClient(apiURL: string) {
   const docProgressURL = `${apiURL}/internal/docs/conversion-status`;
 
+  function getCreateFeedbackUrl(id: string): string {
+    return `${apiURL}/internal/feedback/${id}`;
+  }
+
+  async function notifyApi(params: NotificationParams, log: Log): Promise<void> {
+    log(`Notifying API on ${docProgressURL} w/ ${JSON.stringify(params)}`);
+    await executeWithNetworkRetries(() => ossApi.post(docProgressURL, null, { params }), {
+      retryOnTimeout: true,
+      maxAttempts: MAX_API_NOTIFICATION_ATTEMPTS,
+    });
+  }
+
+  async function createFeedback(params: CreateFeedback & { id: string }): Promise<AxiosResponse> {
+    const url = getCreateFeedbackUrl(params.id);
+    return await ossApi.put(url, params);
+  }
+
   return {
-    notifyApi: async function (params: NotificationParams, log: Log) {
-      let attempt = 0;
-      while (attempt++ < MAX_API_NOTIFICATION_ATTEMPTS) {
-        try {
-          log(`(${attempt}) Notifying API on ${docProgressURL} w/ ${JSON.stringify(params)}`);
-          await ossApi.post(docProgressURL, null, { params });
-          return;
-          //eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (error: any) {
-          const msg = "Error notifying API, trying again";
-          const extra = {
-            url: docProgressURL,
-            statusCode: error.response?.status,
-            attempt,
-            error,
-          };
-          log(msg, extra);
-          capture.message(msg, { extra, level: "info" });
-        }
-      }
-      throw new Error(`Too many errors from API`);
+    internal: {
+      notifyApi,
+      createFeedback,
     },
   };
 }

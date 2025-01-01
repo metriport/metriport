@@ -1,25 +1,47 @@
 // -------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License (MIT). See LICENSE in the repo root for license information.
+// Copyright (c) 2022-present Metriport Inc.
+//
+// Licensed under AGPLv3. See LICENSE in the repo root for license information.
+//
+// This file incorporates work covered by the following copyright and
+// permission notice:
+//
+//     Copyright (c) Microsoft Corporation. All rights reserved.
+//
+//     Permission to use, copy, modify, and/or distribute this software
+//     for any purpose with or without fee is hereby granted, provided
+//     that the above copyright notice and this permission notice appear
+//     in all copies.
+//
+//     THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+//     WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+//     WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+//     AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR
+//     CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+//     OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
+//     NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+//     CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 // -------------------------------------------------------------------------------------------------
 
 let parseString = require("xml2js").parseString;
 let Builder = require("xml2js").Builder;
 let dataHandler = require("../dataHandler/dataHandler");
-const fs = require("fs");
 let minifyXML = require("minify-xml");
-// const { XMLParser, XMLBuilder, XMLValidator } = require("fast-xml-parser");
+const { XMLParser } = require("fast-xml-parser");
+
 
 const elementTime00010101Regex = new RegExp('<time value="00010101000000+0000"s*/>', "g");
 const elementTime00010101Replacement = "";
 const valueTime00010101Regex = new RegExp('value="00010101000000*"s*/>', "g");
 const valueTime00010101Replacement = 'nullFlavor="NI" />';
 
+const ampersandRegex = new RegExp('&(?!(?:#\\d+|#x[\\da-fA-F]+|amp|lt|gt|quot|apos);)', 'g');
+
 module.exports = class cda extends dataHandler {
-  idToValueMap = {};
-  idToB64ValueMap = {};
   constructor() {
     super("cda");
+    this.idToValueMap = {};
+    this.idToB64ValueMap = {};
   }
 
   populateIDValueMap(obj) {
@@ -108,6 +130,8 @@ module.exports = class cda extends dataHandler {
     }
     res = res.replace(elementTime00010101Regex, elementTime00010101Replacement);
     res = res.replace(valueTime00010101Regex, valueTime00010101Replacement);
+    res = res.replace(ampersandRegex, "&amp;");
+
     return res;
   }
 
@@ -144,8 +168,29 @@ module.exports = class cda extends dataHandler {
           // if parsing throws an error on minified data, try on original
           parseString(data, parseOptions, (err, result) => {
             if (err) {
-              // if still throwing an error, give up
-              reject(err);
+              const parser = new XMLParser({
+                ignoreAttributes: false,
+                attributeNamePrefix: "",
+                textNodeName: "_",
+                alwaysCreateTextNode: true,
+                parseAttributeValue: false,
+                removeNSPrefix: false,
+                trimValues: true,
+                numberParseOptions: {
+                  hex: false,
+                  leadingZeros: false,
+                },
+              });
+
+              try {
+                result = parser.parse(data);
+                this.findAndReplaceAllReferencesWithTextValues(result);
+                result._originalData = data;
+                fulfill(result);
+              } catch (err) {
+                // if still throwing an error, give up
+                reject(err);
+              }
             }
             this.findAndReplaceAllReferencesWithTextValues(result);
             result._originalData = data;

@@ -2,7 +2,7 @@
 
 main() {
    # Clean so we don't have test files on the node_modules that will be copied to the layer
-   npm run clean
+   npm run deepclean
    npm ci --omit=dev --ignore-scripts --no-fund
    ./scripts/build-shared-layer.sh
    # Reinstall WITH dev dependencies so the compilation works - the regular code imports from layers,
@@ -12,6 +12,18 @@ main() {
    npm run build:cloud
 
    pushd layers/playwright
+   npm run prep-deploy
+   popd
+
+   pushd layers/puppeteer
+   npm run prep-deploy
+   popd
+
+   pushd layers/saxon
+   npm run prep-deploy
+   popd
+
+   pushd layers/langchain
    npm run prep-deploy
    popd
 }

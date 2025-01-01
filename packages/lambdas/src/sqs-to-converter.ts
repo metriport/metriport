@@ -1,15 +1,18 @@
-import * as Sentry from "@sentry/serverless";
-import { SQSEvent } from "aws-lambda";
+import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
+import { processAttachments } from "@metriport/core/external/cda/process-attachments";
+import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
+import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
+import { DOC_ID_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
+import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE, XML_APP_MIME_TYPE } from "@metriport/core/util/mime";
+import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
+import { SQSEvent, SQSRecord } from "aws-lambda";
 import axios from "axios";
 import * as uuid from "uuid";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnvOrFail } from "./shared/env";
-import { isAxiosBadGateway, isAxiosTimeout } from "./shared/http";
 import { Log, prefixedLog } from "./shared/log";
 import { apiClient } from "./shared/oss-api";
-import { S3Utils } from "./shared/s3";
-import { SQSUtils } from "./shared/sqs";
 import { cleanUpPayload } from "./sqs-to-converter/cleanup";
 
 // Keep this as early on the file as possible
@@ -21,17 +24,16 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const apiURL = getEnvOrFail("API_URL");
+const fhirUrl = getEnvOrFail("FHIR_SERVER_URL");
+const medicalDocumentsBucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
-const maxTimeoutRetries = Number(getEnvOrFail("MAX_TIMEOUT_RETRIES"));
-const delayWhenRetryingSeconds = Number(getEnvOrFail("DELAY_WHEN_RETRY_SECONDS"));
-const sourceQueueURL = getEnvOrFail("QUEUE_URL");
-const dlqURL = getEnvOrFail("DLQ_URL");
-const conversionResultQueueURL = getEnvOrFail("CONVERSION_RESULT_QUEUE_URL");
 const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME");
 
-const sourceUrl = "https://api.metriport.com/cda/to/fhir";
+const defaultS3RetriesConfig = {
+  maxAttempts: 3,
+  initialDelay: 500,
+};
 
-const sqsUtils = new SQSUtils(region, sourceQueueURL, dlqURL, delayWhenRetryingSeconds);
 const s3Utils = new S3Utils(region);
 const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace);
 const fhirConverter = axios.create({
@@ -43,6 +45,7 @@ const fhirConverter = axios.create({
   },
 });
 const ossApi = apiClient(apiURL);
+const LARGE_CHUNK_SIZE_IN_BYTES = 50_000_000;
 
 function replaceIDs(fhirBundle: FHIRBundle, patientId: string): FHIRBundle {
   const stringsToReplace: { old: string; new: string }[] = [];
@@ -50,6 +53,10 @@ function replaceIDs(fhirBundle: FHIRBundle, patientId: string): FHIRBundle {
     if (!bundleEntry.resource) throw new Error(`Missing resource`);
     if (!bundleEntry.resource.id) throw new Error(`Missing resource id`);
     if (bundleEntry.resource.id === patientId) continue;
+
+    const docIdExtension = bundleEntry.resource.extension?.find(
+      ext => ext.url === DOC_ID_EXTENSION_URL
+    );
     const idToUse = bundleEntry.resource.id;
     const newId = uuid.v4();
     bundleEntry.resource.id = newId;
@@ -57,7 +64,7 @@ function replaceIDs(fhirBundle: FHIRBundle, patientId: string): FHIRBundle {
     // replace meta's source and profile
     bundleEntry.resource.meta = {
       lastUpdated: bundleEntry.resource.meta?.lastUpdated ?? new Date().toISOString(),
-      source: sourceUrl,
+      source: docIdExtension?.valueString ?? "",
     };
   }
   let fhirBundleStr = JSON.stringify(fhirBundle);
@@ -103,6 +110,13 @@ type FHIRExtension = {
   valueString: string;
 };
 
+type FhirConverterParams = {
+  patientId: string;
+  fileName: string;
+  unusedSegments: string | undefined;
+  invalidAccess: string | undefined;
+};
+
 type FHIRBundle = {
   resourceType: "Bundle";
   type: "batch";
@@ -124,7 +138,8 @@ type FHIRBundle = {
   }[];
 };
 
-export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
+// Don't use Sentry's default error handler b/c we want to use our own and send more context-aware data
+export async function handler(event: SQSEvent) {
   try {
     // Process messages from SQS
     const records = event.Records;
@@ -142,6 +157,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
       });
     }
     console.log(`Processing ${records.length} records...`);
+
     for (const [i, message] of records.entries()) {
       // Process one record from the SQS message
       console.log(`Record ${i}, messageId: ${message.messageId}`);
@@ -151,12 +167,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
       const cxId = attrib.cxId?.stringValue;
       const patientId = attrib.patientId?.stringValue;
       const jobId = attrib.jobId?.stringValue;
-      const jobStartedAt = attrib.startedAt?.stringValue;
-      const source = attrib.source?.stringValue;
+      const medicalDataSource = attrib.source?.stringValue;
       if (!cxId) throw new Error(`Missing cxId`);
       if (!patientId) throw new Error(`Missing patientId`);
       const log = prefixedLog(`${i}, patient ${patientId}, job ${jobId}`);
-
+      const lambdaParams = { cxId, patientId, jobId, source: medicalDataSource };
       try {
         log(`Body: ${message.body}`);
         const { s3BucketName, s3FileName, documentExtension } = parseBody(message.body);
@@ -168,15 +183,31 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
         const payloadRaw = await s3Utils.getFileContentsAsString(s3BucketName, s3FileName);
         if (payloadRaw.includes("nonXMLBody")) {
           const msg = "XML document is unstructured CDA with nonXMLBody";
-          console.log(`${msg}, skipping...`);
+          log(`${msg}, skipping...`);
           capture.message(msg, {
-            extra: { context: lambdaName, fileName: s3FileName, patientId, cxId, jobId },
+            extra: { message, ...lambdaParams, context: lambdaName, fileName: s3FileName },
             level: "warning",
           });
-          await ossApi.notifyApi({ cxId, patientId, status: "failed", jobId, source }, log);
-          return;
+          await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
+          continue;
         }
-        const payloadClean = cleanUpPayload(payloadRaw);
+        const { documentContents: payloadNoB64, b64Attachments } =
+          removeBase64PdfEntries(payloadRaw);
+
+        if (b64Attachments) {
+          log(`Extracted ${b64Attachments.total} B64 attachments`);
+          await processAttachments({
+            b64Attachments,
+            cxId,
+            patientId,
+            filePath: s3FileName,
+            medicalDataSource,
+            s3BucketName: medicalDocumentsBucketName,
+            fhirUrl,
+          });
+        }
+
+        const payloadClean = cleanUpPayload(payloadNoB64);
         metrics.download = {
           duration: Date.now() - downloadStart,
           timestamp: new Date(),
@@ -185,11 +216,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
         if (!payloadClean.trim().length) {
           console.log("XML document is empty, skipping...");
           capture.message("XML document is empty", {
-            extra: { context: lambdaName, fileName: s3FileName, patientId, cxId, jobId },
+            extra: { message, ...lambdaParams, context: lambdaName, fileName: s3FileName },
             level: "warning",
           });
-          await ossApi.notifyApi({ cxId, patientId, status: "failed", jobId, source }, log);
-          return;
+          await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
+          continue;
         }
 
         await cloudWatchUtils.reportMemoryUsage();
@@ -199,35 +230,60 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
         if (!converterUrl) throw new Error(`Missing converterUrl`);
         const unusedSegments = attrib.unusedSegments?.stringValue;
         const invalidAccess = attrib.invalidAccess?.stringValue;
-        const params = { patientId, fileName: s3FileName, unusedSegments, invalidAccess };
-        log(`Calling converter on url ${converterUrl} with params ${JSON.stringify(params)}`);
-        const res = await fhirConverter.post(converterUrl, payloadClean, {
-          params,
-          headers: { "Content-Type": "text/plain" },
+        const converterParams: FhirConverterParams = {
+          patientId,
+          fileName: s3FileName,
+          unusedSegments,
+          invalidAccess,
+        };
+
+        const preConversionFilename = `${s3FileName}.pre_conversion.xml`;
+        const cleanFileName = `${s3FileName}.clean.xml`;
+        const conversionResultFilename = `${s3FileName}.from_converter.json`;
+
+        log(
+          `Calling converter on url ${converterUrl} with params ${JSON.stringify(converterParams)}`
+        );
+
+        await storePayloadInS3({
+          payload: payloadClean,
+          fileName: cleanFileName,
+          message,
+          lambdaParams,
+          log,
         });
-        const conversionResult = res.data.fhirResource as FHIRBundle;
+
+        const partitionedPayloads = partitionPayload(payloadClean);
+
+        const [conversionResult] = await Promise.all([
+          convertPayloadToFHIR({
+            converterUrl,
+            partitionedPayloads,
+            converterParams,
+            log,
+          }),
+          storePartitionedPayloadsInS3({
+            partitionedPayloads,
+            preConversionFilename,
+            message,
+            lambdaParams,
+            log,
+          }),
+        ]);
+
         metrics.conversion = {
           duration: Date.now() - conversionStart,
           timestamp: new Date(),
         };
 
-        const preProcessedFilename = `${s3FileName}.from_converter.json`;
-
-        try {
-          await s3Utils.s3
-            .upload({
-              Bucket: conversionResultBucketName,
-              Key: preProcessedFilename,
-              Body: JSON.stringify(conversionResult),
-              ContentType: "application/fhir+json",
-            })
-            .promise();
-        } catch (error) {
-          console.log(`Error uploading pre-processed file: ${error}`);
-          capture.error(error, {
-            extra: { context: lambdaName, preProcessedFilename, patientId, cxId, jobId },
-          });
-        }
+        // Result from Converter before we process it (e.g., replace IDs)
+        await storePreProcessedConversionResult({
+          conversionResult,
+          conversionResultFilename,
+          message,
+          lambdaParams,
+          log,
+        });
 
         await cloudWatchUtils.reportMemoryUsage();
 
@@ -243,63 +299,100 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
         };
 
         await cloudWatchUtils.reportMemoryUsage();
+
+        // Store the conversion result in S3 and send it to the destination(s)
         await sendConversionResult(
           cxId,
           patientId,
           s3FileName,
           updatedConversionResult,
-          jobStartedAt,
           jobId,
-          source,
+          medicalDataSource,
           log
         );
 
         await cloudWatchUtils.reportMemoryUsage();
         await cloudWatchUtils.reportMetrics(metrics);
-        //eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (err: any) {
-        // If it timed-out let's just reenqueue for future processing - NOTE: the destination MUST be idempotent!
-        const count = message.attributes?.ApproximateReceiveCount
-          ? Number(message.attributes?.ApproximateReceiveCount)
-          : undefined;
-        const isWithinRetryRange = count == null || count <= maxTimeoutRetries;
-        const isRetryError = isAxiosTimeout(err) || isAxiosBadGateway(err);
-        if (isRetryError && isWithinRetryRange) {
-          const details = `${err.code}/${err.response?.status}`;
-          console.log(
-            `Timed out (${details}), reenqueue (${count} of ${maxTimeoutRetries}): `,
-            message
-          );
-          capture.message("Conversion timed out", {
-            extra: { message, context: lambdaName, retryCount: count },
-          });
-          await sqsUtils.reEnqueue(message);
-        } else {
-          console.log(`Error processing message: ${JSON.stringify(message)}; \n${err}: ${err}`);
-          // Axios error response
-          if (err.response) {
-            const resp = err.response;
-            const responseData = resp.data ? JSON.stringify(resp.data) : "undefined";
-            console.log(`Response body: ${responseData}`);
-          }
-          capture.error(err, {
-            extra: { message, context: lambdaName, retryCount: count },
-          });
-          await sqsUtils.sendToDLQ(message);
-
-          await ossApi.notifyApi({ cxId, patientId, status: "failed", jobId, source }, log);
-        }
+      } catch (error) {
+        await ossApi.internal.notifyApi({ ...lambdaParams, status: "failed" }, log);
+        throw error;
       }
     }
     console.log(`Done`);
-  } catch (err) {
-    console.log(`Error processing event: ${JSON.stringify(event)}; ${err}`);
-    capture.error(err, {
-      extra: { event, context: lambdaName, additional: "outer catch" },
+  } catch (error) {
+    const msg = "Error processing event on " + lambdaName;
+    console.log(`${msg}: ${errorToString(error)}`);
+    capture.error(msg, {
+      extra: { event, context: lambdaName, error },
     });
-    throw err;
+    throw new MetriportError(msg, error);
   }
-});
+}
+
+async function convertPayloadToFHIR({
+  converterUrl,
+  partitionedPayloads,
+  converterParams,
+  log,
+}: {
+  converterUrl: string;
+  partitionedPayloads: string[];
+  converterParams: FhirConverterParams;
+  log: typeof console.log;
+}) {
+  const combinedBundle: FHIRBundle = {
+    resourceType: "Bundle",
+    type: "batch",
+    entry: [],
+  };
+
+  if (partitionedPayloads.length > 1) {
+    log(`The file was partitioned into ${partitionedPayloads.length} parts...`);
+  }
+
+  for (let index = 0; index < partitionedPayloads.length; index++) {
+    const payload = partitionedPayloads[index];
+
+    const chunkSize = payload ? new Blob([payload]).size : 0;
+    if (chunkSize > LARGE_CHUNK_SIZE_IN_BYTES) {
+      const msg = `Chunk size is too large`;
+      log(`${msg} - chunkSize ${chunkSize} on ${index}`);
+      capture.message(msg, {
+        extra: {
+          chunkSize,
+          patientId: converterParams.patientId,
+          fileName: converterParams.fileName,
+        },
+        level: "warning",
+      });
+    }
+
+    const res = await executeWithNetworkRetries(
+      () =>
+        fhirConverter.post(converterUrl, payload, {
+          params: converterParams,
+          headers: { "Content-Type": TXT_MIME_TYPE },
+        }),
+      {
+        // No retries on timeout b/c we want to re-enqueue instead of trying within the same lambda run,
+        // it could lead to timing out the lambda execution.
+        log,
+      }
+    );
+
+    const conversionResult = res.data.fhirResource;
+
+    if (conversionResult?.entry?.length > 0) {
+      log(
+        `Current partial bundle with index ${index} contains: ${conversionResult.entry.length} resources...`
+      );
+      combinedBundle.entry.push(...conversionResult.entry);
+    }
+  }
+
+  log(`Combined bundle contains: ${combinedBundle.entry.length} resources`);
+  return combinedBundle;
+}
 
 function parseBody(body: unknown): EventBody {
   const bodyString = typeof body === "string" ? (body as string) : undefined;
@@ -358,38 +451,148 @@ async function sendConversionResult(
   patientId: string,
   sourceFileName: string,
   conversionPayload: FHIRBundle,
-  jobStartedAt: string | undefined,
   jobId: string | undefined,
-  source: string | undefined,
+  medicalDataSource: string | undefined,
   log: Log
 ) {
   const fileName = `${sourceFileName}.json`;
   log(`Uploading result to S3, bucket ${conversionResultBucketName}, key ${fileName}`);
-  await s3Utils.s3
-    .upload({
-      Bucket: conversionResultBucketName,
-      Key: fileName,
-      Body: JSON.stringify(conversionPayload),
-      ContentType: "application/fhir+json",
-    })
-    .promise();
+  await executeWithRetriesS3(
+    () =>
+      s3Utils.s3
+        .upload({
+          Bucket: conversionResultBucketName,
+          Key: fileName,
+          Body: JSON.stringify(conversionPayload),
+          ContentType: FHIR_APP_MIME_TYPE,
+        })
+        .promise(),
+    {
+      ...defaultS3RetriesConfig,
+      log,
+    }
+  );
 
-  log(`Sending result info to queue`);
-  const queuePayload = JSON.stringify({
-    s3BucketName: conversionResultBucketName,
-    s3FileName: fileName,
+  log(`Sending result info to the API`);
+  await ossApi.internal.notifyApi(
+    { cxId, patientId, jobId, source: medicalDataSource, status: "success" },
+    log
+  );
+}
+
+async function storePreProcessedConversionResult({
+  conversionResult,
+  conversionResultFilename,
+  message,
+  lambdaParams,
+  log,
+}: {
+  conversionResult: FHIRBundle;
+  conversionResultFilename: string;
+  message: SQSRecord;
+  lambdaParams: Record<string, string | undefined>;
+  log: typeof console.log;
+}) {
+  try {
+    await executeWithRetriesS3(
+      () =>
+        s3Utils.s3
+          .upload({
+            Bucket: conversionResultBucketName,
+            Key: conversionResultFilename,
+            Body: JSON.stringify(conversionResult),
+            ContentType: FHIR_APP_MIME_TYPE,
+          })
+          .promise(),
+      {
+        ...defaultS3RetriesConfig,
+        log,
+      }
+    );
+  } catch (error) {
+    const msg = "Error uploading conversion result";
+    log(`${msg}: ${error}`);
+    capture.error(msg, {
+      extra: {
+        message,
+        ...lambdaParams,
+        conversionResultFilename,
+        context: lambdaName,
+        error,
+      },
+    });
+  }
+}
+
+function buildDocumentNameForPartialConversions(fileName: string, index: number): string {
+  const paddedIndex = index.toString().padStart(3, "0");
+  return `${fileName}_part_${paddedIndex}.xml`;
+}
+
+async function storePartitionedPayloadsInS3({
+  partitionedPayloads,
+  preConversionFilename,
+  message,
+  lambdaParams,
+  log,
+}: {
+  partitionedPayloads: string[];
+  preConversionFilename: string;
+  message: SQSRecord;
+  lambdaParams: Record<string, string | undefined>;
+  log: typeof console.log;
+}) {
+  partitionedPayloads.forEach((payload, index) => {
+    storePayloadInS3({
+      payload,
+      fileName: buildDocumentNameForPartialConversions(preConversionFilename, index),
+      message,
+      lambdaParams,
+      log,
+    });
   });
+}
 
-  const sendParams = {
-    MessageBody: queuePayload,
-    QueueUrl: conversionResultQueueURL,
-    MessageAttributes: {
-      ...sqsUtils.singleAttributeToSend("cxId", cxId),
-      ...sqsUtils.singleAttributeToSend("patientId", patientId),
-      ...(jobStartedAt ? sqsUtils.singleAttributeToSend("jobStartedAt", jobStartedAt) : {}),
-      ...(jobId ? sqsUtils.singleAttributeToSend("jobId", jobId) : {}),
-      ...(source ? sqsUtils.singleAttributeToSend("source", source) : {}),
-    },
-  };
-  await sqsUtils.sqs.sendMessage(sendParams).promise();
+async function storePayloadInS3({
+  payload,
+  fileName,
+  message,
+  lambdaParams,
+  log,
+}: {
+  payload: string;
+  fileName: string;
+  message: SQSRecord;
+  lambdaParams: Record<string, string | undefined>;
+  log: typeof console.log;
+}) {
+  try {
+    await executeWithRetriesS3(
+      () =>
+        s3Utils.s3
+          .upload({
+            Bucket: conversionResultBucketName,
+            Key: fileName,
+            Body: payload,
+            ContentType: XML_APP_MIME_TYPE,
+          })
+          .promise(),
+      {
+        ...defaultS3RetriesConfig,
+        log,
+      }
+    );
+  } catch (error) {
+    const msg = `Error uploading conversion step file`;
+    log(`${msg}: ${error}`);
+    capture.error(msg, {
+      extra: {
+        message,
+        ...lambdaParams,
+        fileName,
+        context: lambdaName,
+        error,
+      },
+    });
+  }
 }

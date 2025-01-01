@@ -6,24 +6,29 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
 import { sleep } from "@metriport/core/util/sleep";
-import { errorToString } from "@metriport/shared/common/error";
 import axios from "axios";
 import { Command } from "commander";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
-import path from "path";
-import { getFileNameForOrg } from "./shared/folder";
+import { getPatientIds } from "./patient/get-ids";
+import { initFile } from "./shared/file";
+import { buildGetDirPathInside, initRunsFolder } from "./shared/folder";
 import { getCxData } from "./shared/get-cx-data";
+import { logErrorToFile } from "./shared/log";
 
 dayjs.extend(duration);
 
 /**
  * This script retrieves coverage data for Patients from the DB.
+ * It doesn't trigger Document Queries - it assumes this has been already done.
+ * @see bulk-query-patients.ts for Document Query
  *
- * Update the `patientIds` with the list of Patient IDs you
- * want to get coverage data for, otherwise it will do it for all
- * Patients of the respective customer (expensive).
+ * Update the `patientIds` with the list of Patient IDs you want to get coverage data for,
+ * otherwise it will do it for all Patients of the respective customer (expensive!).
+ *
+ * Execute this with:
+ * $ npm run coverage-assessment
  */
 
 // add patient IDs here to kick off queries for specific patient IDs
@@ -43,12 +48,11 @@ const delayTime = dayjs.duration(3, "seconds");
 const numberOfParallelExecutions = 10;
 const confirmationTime = dayjs.duration(10, "seconds");
 
-// csv stuff
+// output stuff
 const csvHeader =
   "patientId,firstName,lastName,state,downloadStatus,docCount,convertStatus,fhirResourceCount,fhirResourceDetails\n";
-
-const csvName = (cxName: string): string =>
-  `./runs/coverage-assessment/${getFileNameForOrg(cxName, "csv")}`;
+const getOutputFileName = buildGetDirPathInside(`coverage-assessment`);
+const patientsWithErrors: string[] = [];
 
 const program = new Command();
 program
@@ -57,68 +61,71 @@ program
   .showHelpAfterError();
 
 async function main() {
+  initRunsFolder();
   program.parse();
   const { log } = out("");
 
   const startedAt = Date.now();
   log(`>>> Starting with ${patientIds.length} patient IDs...`);
+
   const { orgName } = await getCxData(cxId, undefined, false);
-  const fileName = csvName(orgName);
+  const { patientIds: patientIdsToQuery, isAllPatients } = await getPatientIds({
+    cxId,
+    patientIds,
+    axios,
+  });
 
-  initCsv(fileName);
+  await displayWarningAndConfirmation(patientIdsToQuery.length, isAllPatients, orgName, log);
 
-  const patientIdsToQuery = await getPatientIds(log);
+  const outputFileName = getOutputFileName(orgName) + ".csv";
+  const errorFileName = getOutputFileName(orgName) + ".error";
+  initFile(outputFileName, csvHeader);
+  initFile(errorFileName);
+
   log(`>>> Running it...`);
 
   await executeAsynchronously(
     patientIdsToQuery,
     async (patientId, itemIdx) => {
-      await getCoverageForPatient(patientId, fileName, log);
+      await getCoverageForPatient(patientId, outputFileName, errorFileName, log);
       log(`>>> Progress: ${itemIdx + 1}/${patientIdsToQuery.length} patients complete`);
       await sleep(delayTime.asMilliseconds());
     },
     { numberOfParallelExecutions }
   );
-
+  if (patientsWithErrors.length > 0) {
+    log(
+      `>>> Patients with errors (${patientsWithErrors.length}): ${patientsWithErrors.join(", ")}`
+    );
+    log(`>>> See file ${errorFileName} for more details.`);
+  } else {
+    log(`>>> No patient with errors!`);
+  }
   const ellapsed = Date.now() - startedAt;
   log(`>>> Done assessing coverage for all ${patientIdsToQuery.length} patients in ${ellapsed} ms`);
   process.exit(0);
 }
 
-function initCsv(fileName: string) {
-  const dirName = path.dirname(fileName);
-  if (!fs.existsSync(dirName)) {
-    fs.mkdirSync(dirName, { recursive: true });
-  }
-  fs.writeFileSync(fileName, csvHeader);
-}
-
-async function getPatientIds(log: typeof console.log): Promise<string[]> {
-  if (patientIds.length > 0) {
-    return patientIds;
-  }
-  return await getAllPatientIds(log);
-}
-
-async function getAllPatientIds(log: typeof console.log): Promise<string[]> {
-  displayNoDryRunWarning(log);
-  log(
-    "You are about to trigger a document query for all patients of the CX. This is very expensive!"
-  );
-  log("Cancel this script now if you're not sure.");
+async function displayWarningAndConfirmation(
+  patientCount: number | undefined,
+  isAllPatients: boolean,
+  orgName: string,
+  log: typeof console.log
+) {
+  const msgForAllPatients = `You are about to get the coverage info of ALL patients of the org/cx ${orgName} (${patientCount}). This can be expensive.`;
+  const msgForFewPatients = `You are about to get the coverage info of ${patientCount} patients of the org/cx ${orgName}.`;
+  const msg = isAllPatients ? msgForAllPatients : msgForFewPatients;
+  log(msg);
+  log("Cancel this now if you're not sure.");
   await sleep(confirmationTime.asMilliseconds());
-  const resp = await axios.get(`${apiUrl}/internal/patient/ids?cxId=${cxId}`);
-  const patientIds = resp.data.patientIds;
-  return (Array.isArray(patientIds) ? patientIds : []) as string[];
 }
 
-function displayNoDryRunWarning(log: typeof console.log) {
-  // The first chars there are to set color red on the terminal
-  // See: // https://stackoverflow.com/a/41407246/2099911
-  log("\n\x1b[31m%s\x1b[0m\n", "---- ATTENTION - THIS IS NOT A SIMULATED RUN ----");
-}
-
-async function getCoverageForPatient(patientId: string, fileName: string, log: typeof console.log) {
+async function getCoverageForPatient(
+  patientId: string,
+  outputFileName: string,
+  errorFileName: string,
+  log: typeof console.log
+) {
   try {
     const [patient, docQueryStatus, fhir] = await Promise.all([
       sdk.getPatient(patientId),
@@ -142,10 +149,14 @@ async function getCoverageForPatient(patientId: string, fileName: string, log: t
 
     // "patientId,firstName,lastName,state,downloadStatus,docCount,convertStatus,fhirResourceCount,fhirResourceDetails\n";
     const csvRow = `${id},${firstName},${lastName},${state},${downloadStatus},${docCount},${convertStatus},${fhirCount},${fhirDetails}\n`;
-    fs.appendFileSync(fileName, csvRow);
+    fs.appendFileSync(outputFileName, csvRow);
     log(`>>> Done doc query for patient ${patient.id}...`);
-  } catch (error) {
-    log(`ERROR processing patient ${patientId}: ${errorToString(error)}`);
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    const msg = `ERROR processing patient ${patientId}: `;
+    log(msg, error.message);
+    patientsWithErrors.push(patientId);
+    logErrorToFile(errorFileName, msg, error);
   }
 }
 

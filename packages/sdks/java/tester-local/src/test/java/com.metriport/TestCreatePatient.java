@@ -5,12 +5,14 @@ import com.metriport.generated.resources.medical.patient.requests.PatientCreate;
 import com.metriport.generated.resources.medical.patient.types.BasePatient;
 import com.metriport.generated.resources.medical.patient.types.PersonalIdentifier;
 import com.metriport.generated.resources.medical.patient.types.DriversLicense;
+import com.metriport.generated.resources.medical.patient.types.Ssn;
 import com.metriport.generated.resources.commons.types.Address;
 import com.metriport.generated.resources.commons.types.UsState;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
+import java.util.Arrays;
 
 public class TestCreatePatient {
     @Test
@@ -31,14 +33,20 @@ public class TestCreatePatient {
                 .value("12345678")
                 .build();
 
-        PersonalIdentifier personalIdentifier = PersonalIdentifier.driversLicense(driversLicense);
+        PersonalIdentifier personalIdentifierDL = PersonalIdentifier.driversLicense(driversLicense);
+
+        Ssn ssn = Ssn.builder()
+                .value("123456789")
+                .build();
+
+        PersonalIdentifier personalIdentifierSSN = PersonalIdentifier.ssn(ssn);
 
         BasePatient patientData = BasePatient.builder()
                 .firstName("John")
                 .lastName("Doe")
                 .dob("1980-01-01")
                 .genderAtBirth("M")
-                .personalIdentifiers(Collections.singletonList(personalIdentifier))
+                .personalIdentifiers(Arrays.asList(personalIdentifierDL, personalIdentifierSSN))
                 .address(Collections.singletonList(
                         Address.builder()
                                 .addressLine1("123 Main St")

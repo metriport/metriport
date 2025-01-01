@@ -1,18 +1,19 @@
+import { PatientData } from "@metriport/core/domain/patient";
+import { out } from "@metriport/core/util";
+import { WebhookMetadata } from "@metriport/shared/medical";
 import { Product } from "../../../domain/product";
 import { MAPIWebhookType } from "../../../domain/webhook";
-import { DocumentReferenceDTO } from "../../../routes/medical/dtos/documentDTO";
+import { patientEvents } from "../../../event/medical/patient-event";
 import { DocumentBulkUrlDTO } from "../../../routes/medical/dtos/document-bulk-downloadDTO";
+import { DocumentReferenceDTO } from "../../../routes/medical/dtos/documentDTO";
 import { capture } from "../../../shared/notifications";
-import { Util } from "../../../shared/util";
 import { getSettingsOrFail } from "../../settings/getSettings";
-import { getPatientOrFail } from "../patient/get-patient";
 import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
-import { processRequest, WebhookMetadataPayload, isWebhookDisabled } from "../../webhook/webhook";
+import { isWebhookDisabled, processRequest } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
-import { DOWNLOAD_WEBHOOK_TYPE, CONVERSION_WEBHOOK_TYPE } from "./process-doc-query-webhook";
 import { updateProgressWebhookSent } from "../patient/append-doc-query-progress";
-
-const log = Util.log(`Document Webhook`);
+import { getPatientOrFail } from "../patient/get-patient";
+import { CONVERSION_WEBHOOK_TYPE, DOWNLOAD_WEBHOOK_TYPE } from "./process-doc-query-webhook";
 
 export enum MAPIWebhookStatus {
   completed = "completed",
@@ -28,7 +29,7 @@ type WebhookPatientPayload = {
   externalId?: string;
 } & WebhookDocumentDataPayload;
 type WebhookPatientDataPayload = {
-  meta: WebhookMetadataPayload;
+  meta: WebhookMetadata;
   patients: WebhookPatientPayload[];
 };
 type WebhookPatientDataPayloadWithoutMessageId = Omit<WebhookPatientDataPayload, "meta">;
@@ -49,6 +50,7 @@ export const processPatientDocumentRequest = async (
   requestId: string | undefined,
   documents?: DocumentReferenceDTO[] | DocumentBulkUrlDTO[]
 ): Promise<void> => {
+  const { log } = out(`Document Webhook - cxId: ${cxId}, patientId: ${patientId}`);
   try {
     const [settings, patient] = await Promise.all([
       getSettingsOrFail({ id: cxId }),
@@ -66,9 +68,11 @@ export const processPatientDocumentRequest = async (
         },
       ],
     };
+    const metadata = getMetadata(whType, patient.data);
 
     // send it to the customer and update the request status
-    if (!isWebhookDisabled(patient.data.cxDocumentRequestMetadata)) {
+    if (!isWebhookDisabled(metadata)) {
+      log(`Sending WH... metadata: ${metadata}`);
       const webhookRequest = await createWebhookRequest({
         cxId,
         type: whType,
@@ -80,10 +84,10 @@ export const processPatientDocumentRequest = async (
         webhookRequest,
         settings,
         requestId ? { requestId } : undefined,
-        patient.data.cxDocumentRequestMetadata
+        metadata
       );
     } else {
-      // TODO 858 indicate this was not really sent to the customer
+      log(`WH disabled. Not sending it - metadata: ${metadata}`);
       await createWebhookRequest({
         cxId,
         type: whType,
@@ -105,6 +109,8 @@ export const processPatientDocumentRequest = async (
       );
     }
 
+    patientEvents().emitCanvasIntegration({ id: patientId, cxId, metadata, whType });
+
     const shouldReportUsage =
       status === MAPIWebhookStatus.completed &&
       documents &&
@@ -121,3 +127,15 @@ export const processPatientDocumentRequest = async (
     });
   }
 };
+
+function getMetadata(whType: MAPIWebhookType, patientData: PatientData) {
+  if (whType === "medical.document-download" || whType === "medical.document-conversion") {
+    return patientData.cxDocumentRequestMetadata;
+  } else if (whType === "medical.consolidated-data") {
+    return patientData.cxConsolidatedRequestMetadata;
+  } else if (whType === "medical.document-bulk-download-urls") {
+    return patientData.cxDownloadRequestMetadata;
+  } else {
+    return undefined;
+  }
+}

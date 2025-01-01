@@ -1,5 +1,5 @@
 import { AxiosResponse } from "axios";
-import { api } from "../../../../__tests__/shared";
+import { api } from "../../../../../__tests__/e2e/shared";
 import { makeOrganization } from "./organization";
 
 jest.setTimeout(15000);

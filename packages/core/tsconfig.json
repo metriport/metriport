@@ -13,7 +13,6 @@
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
     "noUnusedLocals": true,
-    "checkJs": true,
     "exactOptionalPropertyTypes": true,
     "noImplicitReturns": true,
     // END - From @tsconfig/strictest
@@ -21,6 +20,5 @@
     "outDir": "./dist",
     "resolveJsonModule": true
   },
-  "include": ["./src", "./src/**/*.json"],
-  "exclude": ["dist", "node_modules"]
+  "include": ["./src"]
 }

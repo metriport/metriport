@@ -2,7 +2,6 @@ import { MedicalDataSource } from "@metriport/core/external/index";
 
 export enum FHIRConverterSourceDataType {
   cda = "cda",
-  hl7v2 = "hl7v2",
 }
 
 export type FHIRConverterRequest = {

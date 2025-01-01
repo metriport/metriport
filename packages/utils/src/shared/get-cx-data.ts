@@ -31,7 +31,6 @@ export async function getCxData(
   const facilities: Facility[] | undefined = respCxData.data.facilities;
 
   if (!org) throw new Error("No organization found");
-  if (!facilities) throw new Error("No organization found");
 
   const getFacility = async (): Promise<Facility> => {
     if (!facilities || facilities.length < 1) throw new Error("No facility found");
@@ -40,7 +39,7 @@ export async function getCxData(
       if (!facility) throw new Error("No facility matching the provided ID was found");
       return facility;
     }
-    if (facilities.length > 1) throw new Error("Got more than one facility");
+    if (facilities.length > 1) throw new Error("Got more than one facility - choose one");
     return facilities[0];
   };
   const facility = includeFacility ? await getFacility() : undefined;

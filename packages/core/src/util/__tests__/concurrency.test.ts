@@ -2,6 +2,7 @@
 import { faker } from "@faker-js/faker";
 import { executeAsynchronously } from "../concurrency";
 import * as sleepFile from "../sleep";
+import { sleep } from "@metriport/shared";
 
 const anyNumber = expect.any(Number);
 
@@ -118,5 +119,41 @@ describe("executeAsynchronously", () => {
     expect(sleep_mock).toHaveBeenCalledTimes(2);
     expect(sleep_mock).toHaveBeenNthCalledWith(1, 0);
     expect(sleep_mock).toHaveBeenNthCalledWith(2, 0);
+  });
+});
+
+describe("threadsafe set operations", () => {
+  it("should add numbers to a set in a thread-safe manner", async () => {
+    const set = new Set<number>();
+    const list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+
+    const shuffleArray = (array: number[]) => {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        //eslint-disable-next-line
+        [array[i], array[j]] = [array[j]!, array[i]!];
+      }
+      return array;
+    };
+
+    const combinedList = [list, ...Array.from({ length: 9 }, () => shuffleArray([...list]))];
+
+    const addToSet = async (nums: number[]) => {
+      for (const num of nums) {
+        await sleep(10);
+        if (!set.has(num)) {
+          set.add(num);
+        }
+      }
+    };
+
+    await executeAsynchronously(combinedList, addToSet, {
+      numberOfParallelExecutions: 20,
+    });
+
+    expect(set.size).toBe(20);
+    for (let i = 1; i <= 20; i++) {
+      expect(set.has(i)).toBe(true);
+    }
   });
 });

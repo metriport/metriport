@@ -1,4 +1,5 @@
-import { DocumentReference, Organization } from "@medplum/fhirtypes";
+import { DocumentReference } from "@medplum/fhirtypes";
+import { errorToString, executeWithNetworkRetries, executeWithRetries } from "@metriport/shared";
 import axios from "axios";
 import { createDocumentFileName } from "../../../domain/document/filename";
 import {
@@ -6,14 +7,14 @@ import {
   createUploadMetadataFilePath,
 } from "../../../domain/document/upload";
 import { parseFilePath } from "../../../domain/filename";
+import { createAndUploadDocumentMetadataFile } from "../../../shareback/create-and-upload-extrinsic-object";
 import { MetriportError } from "../../../util/error/metriport-error";
-import { createExtrinsicObjectXml } from "../../carequality/dq/create-metadata-xml";
-import { createPatientUniqueId } from "../../carequality/shared";
+import { out } from "../../../util/log";
 import { S3Utils } from "../s3";
 
 const api = axios.create();
-
-const MAXIMUM_FILE_SIZE = 50_000_000; // 50 MB
+const { log } = out(`Core Document Uploader`);
+export const MAXIMUM_UPLOAD_FILE_SIZE = 50_000_000; // 50 MB
 
 export type FileData = {
   mimeType?: string | undefined;
@@ -35,11 +36,11 @@ export async function documentUploaderHandler(
   const s3FileNameParts = parseFilePath(sourceKey);
   if (!s3FileNameParts) {
     const message = "Failed to parse S3 file key";
-    console.log(`${message} - sourceKey: ${sourceKey}`);
+    log(`${message} - sourceKey: ${sourceKey}`);
     throw new MetriportError(message, null, { sourceBucket, sourceKey });
   }
   const { cxId, patientId, fileId: docId } = s3FileNameParts;
-  const { size, contentType, eTag } = await s3Utils.getFileInfoFromS3(sourceKey, sourceBucket);
+  const { size, contentType } = await s3Utils.getFileInfoFromS3(sourceKey, sourceBucket);
 
   const docName = createDocumentFileName(docId, contentType);
   const metadataFileName = createUploadMetadataFilePath(cxId, patientId, docId);
@@ -54,14 +55,22 @@ export async function documentUploaderHandler(
 
   // Make a copy of the file to the general medical documents bucket
   try {
-    await s3Utils.s3.copyObject(params).promise();
-    console.log(
-      `Successfully copied the uploaded file to ${destinationBucket} with key ${destinationKey}`
-    );
+    await executeWithRetries(() => s3Utils.s3.copyObject(params).promise(), {
+      maxAttempts: 3,
+      initialDelay: 500,
+      log,
+    });
+    log(`Successfully copied the uploaded file to ${destinationBucket} with key ${destinationKey}`);
   } catch (error) {
     const message = "Error copying the uploaded file to medical documents bucket";
-    console.log(`${message}: ${error}`);
-    throw new MetriportError(message, error, { copySource, destinationBucket, destinationKey });
+    log(`${message} - error ${errorToString(error)}`);
+    throw new MetriportError(message, error, {
+      copySource,
+      destinationBucket,
+      destinationKey,
+      cxId,
+      patientId,
+    });
   }
 
   const fileData: FileData = {
@@ -74,40 +83,37 @@ export async function documentUploaderHandler(
 
   try {
     const docRef = await forwardCallToServer(cxId, apiServerURL, fileData);
-    const stringSize = size ? size.toString() : "";
-    const hash = eTag ? eTag : "";
     if (!contentType) {
       const message = "Failed to get the mime type of the uploaded file";
-      console.log(`${message}: ${contentType}`);
-      throw new MetriportError(message, null, { sourceKey, destinationKey });
+      log(`${message}: ${contentType}`);
+      throw new MetriportError(message, null, { sourceKey, destinationKey, cxId, patientId });
     }
     if (!docRef) {
       const message = "Failed with the call to update the doc-ref of an uploaded file";
-      console.log(`${message}: ${docRef}`);
+      log(`${message}: ${docRef}`);
     } else {
-      await createAndUploadMetadataFile({
+      await createAndUploadDocumentMetadataFile({
         s3Utils,
         cxId,
         patientId,
         docId: destinationKey,
-        hash,
-        size: stringSize,
+        size,
         docRef,
         metadataFileName,
         destinationBucket,
         mimeType: contentType,
       });
     }
-    if (size && size > MAXIMUM_FILE_SIZE) {
+    if (size && size > MAXIMUM_UPLOAD_FILE_SIZE) {
       // #1207 TODO: Delete the file if it's too large and alert the customer.
       const message = `Uploaded file size exceeds the maximum allowed size`;
-      console.log(`${message}: ${size}`);
+      log(`${message}: ${size}`);
       return { message, size };
     }
   } catch (error) {
     const message = "Failed with the call to update the doc-ref of an uploaded file";
-    console.log(`${message}: ${error}`);
-    throw new MetriportError(message, error, { sourceKey, destinationKey });
+    log(`${message} - error ${errorToString(error)}`);
+    throw new MetriportError(message, error, { sourceKey, destinationKey, cxId, patientId });
   }
 }
 
@@ -119,57 +125,8 @@ async function forwardCallToServer(
   const url = `${apiServerURL}?cxId=${cxId}`;
   const encodedUrl = encodeURI(url);
 
-  const resp = await api.post(encodedUrl, fileData);
-  console.log(`Server response - status: ${resp.status}`);
-  console.log(`Server response - body: ${JSON.stringify(resp.data)}`);
+  const resp = await executeWithNetworkRetries(() => api.post(encodedUrl, fileData), { log });
+  log(`Server response - status: ${resp.status}`);
+  log(`Server response - body: ${JSON.stringify(resp.data)}`);
   return resp.data;
-}
-
-async function createAndUploadMetadataFile({
-  s3Utils,
-  cxId,
-  patientId,
-  docId,
-  size,
-  docRef,
-  metadataFileName,
-  destinationBucket,
-  mimeType,
-}: {
-  s3Utils: S3Utils;
-  cxId: string;
-  patientId: string;
-  docId: string;
-  hash: string;
-  size: string;
-  docRef: DocumentReference;
-  metadataFileName: string;
-  destinationBucket: string;
-  mimeType: string;
-}): Promise<void> {
-  const createdTime = new Date().toISOString();
-  const uniquePatientId = createPatientUniqueId(cxId, patientId);
-  const title = docRef.description;
-  const classCode = docRef.type;
-  const practiceSettingCode = docRef.context?.practiceSetting;
-  const healthcareFacilityTypeCode = docRef.context?.facilityType;
-  const organization: Organization | undefined = docRef.contained?.find(
-    (resource): resource is Organization => resource.resourceType === "Organization"
-  );
-  console.log(`Creating metadata file for docId: ${docId}`);
-  const extrinsicObjectXml = createExtrinsicObjectXml({
-    createdTime,
-    size,
-    patientId: uniquePatientId,
-    organization,
-    classCode,
-    practiceSettingCode,
-    healthcareFacilityTypeCode,
-    documentUniqueId: docId,
-    title,
-    mimeType,
-  });
-
-  console.log(`Uploading metadata to S3 with key: ${metadataFileName}`);
-  await s3Utils.uploadFile(destinationBucket, metadataFileName, Buffer.from(extrinsicObjectXml));
 }

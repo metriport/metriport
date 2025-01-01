@@ -2,7 +2,7 @@ import os
 
 from generated.client import Metriport
 from generated.resources import UsState, Address
-from generated.resources.medical import BasePatient, PersonalIdentifier_DriversLicense
+from generated.resources.medical import BasePatient, PersonalIdentifier_DriversLicense, PersonalIdentifier_Ssn
 
 import os
 from dotenv import load_dotenv
@@ -14,12 +14,8 @@ facility_id = os.environ.get("FACILITY_ID")
 base_url = os.environ.get("BASE_URL")
 
 
-def test_get_all_patients() -> None:
-    """
-    The function `get_all_patients` retrieves a list of all patients from a medical API and prints their
-    IDs.
-    """
-    client = Metriport(api_key=api_key, base_url=base_url)
+def test_create_patient() -> None:
+    metriport = Metriport(api_key=api_key, base_url=base_url)
     patient_data = BasePatient(
         first_name="John",
         last_name="Doe",
@@ -30,6 +26,10 @@ def test_get_all_patients() -> None:
                 type="driversLicense",
                 state=UsState.CA,
                 value="12345678",
+            ),
+            PersonalIdentifier_Ssn(
+                type="ssn",
+                value="123456789",
             )
         ],
         address=[Address(
@@ -40,5 +40,5 @@ def test_get_all_patients() -> None:
             country="USA"
         )]
     )
-    response = client.medical.patient.create(facility_id=facility_id, request=patient_data)
+    response = metriport.medical.patient.create(facility_id=facility_id, request=patient_data)
     print(f"Received patient with ID: {response.id}")

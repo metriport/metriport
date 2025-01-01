@@ -1,9 +1,6 @@
 import { Request } from "express";
 import { z } from "zod";
-import {
-  ResourceTypeForConsolidation,
-  resourceSchema,
-} from "../../../domain/medical/consolidation-resources";
+import { ResourceTypeForConsolidation, resourceSchema } from "@metriport/api-sdk";
 import BadRequestError from "../../../errors/bad-request";
 import { filterTruthy } from "../../../shared/filter-map-utils";
 import { getFrom } from "../../util";
@@ -18,7 +15,7 @@ const bundleEntrySchema = z.array(
 
 export const bundleSchema = z.object({
   resourceType: z.enum(["Bundle"]),
-  type: typeSchema.optional(),
+  type: typeSchema,
   entry: bundleEntrySchema,
 });
 

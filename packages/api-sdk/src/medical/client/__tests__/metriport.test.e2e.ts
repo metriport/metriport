@@ -8,6 +8,7 @@ jest.setTimeout(15000);
 
 const METRIPORT = "METRIPORT";
 const COMMONWELL = "COMMONWELL";
+const CAREQUALITY = "CAREQUALITY";
 
 const apiKey = getEnvVarOrFail("TEST_API_KEY");
 const baseAddress = getEnvVarOrFail("API_URL");
@@ -17,7 +18,7 @@ const metriport = new MetriportMedicalApi(apiKey, { baseAddress });
 
 describe("listDocuments", () => {
   if (!patientId) {
-    console.log(`Missing TEST_PATIENT_ID env var, SKIPPING E2E TESTS!!!`);
+    console.log(`Missing TEST_PATIENT_ID env var, SKIPPING the listDocuments related E2E TESTS!!!`);
     it.skip("skipping e2e tests", () => {});
     return;
   }
@@ -124,7 +125,6 @@ describe("listDocuments", () => {
     const filters = {
       dateFrom: dayjs().subtract(10, "years").format(ISO_DATE),
       dateTo: dayjs().add(1, "day").format(ISO_DATE),
-      content: "john",
     };
     const { documents } = await metriport.listDocuments(patientId, filters);
     expect(documents).toBeTruthy();
@@ -145,7 +145,7 @@ describe("listDocuments", () => {
   });
 
   it("only returns doc refs from Metriport and HIEs", async () => {
-    const expectedExtensionCodes = [METRIPORT, COMMONWELL];
+    const expectedExtensionCodes = [METRIPORT, COMMONWELL, CAREQUALITY];
     const { documents } = await metriport.listDocuments(patientId);
     expect(documents).toBeTruthy();
     expect(documents.length).toBeGreaterThanOrEqual(1);

@@ -1,11 +1,10 @@
 import { BulkGetDocUrlStatus } from "@metriport/core/domain/bulk-get-document-url";
-import {
-  DocumentBulkSignerLambdaResponse,
-  DocumentBulkSignerLambdaResponseArraySchema,
-} from "@metriport/core/domain/document-bulk-signer-response";
 import { convertResult } from "@metriport/core/domain/document-query";
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
+import { parseJobId } from "@metriport/core/domain/job";
+import { documentBulkSignerLambdaResponseArraySchema } from "@metriport/core/external/aws/document-signing/document-bulk-signer-response";
 import { S3Utils } from "@metriport/core/external/aws/s3";
+import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/conversion";
 import { isMedicalDataSource } from "@metriport/core/external/index";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";
@@ -18,29 +17,30 @@ import {
   updateDocumentReference,
 } from "../../command/medical/admin/upload-doc";
 import { checkDocumentQueries } from "../../command/medical/document/check-doc-queries";
+import { calculateDocumentConversionStatus } from "../../command/medical/document/document-conversion-status";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { reConvertDocuments } from "../../command/medical/document/document-reconvert";
 import {
   MAPIWebhookStatus,
   processPatientDocumentRequest,
 } from "../../command/medical/document/document-webhook";
+import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { appendDocQueryProgress } from "../../command/medical/patient/append-doc-query-progress";
-import { setDocQueryProgress } from "../../external/hie/set-doc-query-progress";
 import { appendBulkGetDocUrlProgress } from "../../command/medical/patient/bulk-get-doc-url-progress";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import BadRequestError from "../../errors/bad-request";
-import { parseJobId } from "../../external/fhir/connector/connector";
+import { processCcdRequest, processEmptyCcdRequest } from "../../external/cda/process-ccd-request";
+import { setDocQueryProgress } from "../../external/hie/set-doc-query-progress";
 import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
 import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
+import { requestLogger } from "../helpers/request-logger";
 import { documentQueryProgressSchema } from "../schemas/internal";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsArray, getFromQueryAsBoolean } from "../util";
 import { getFromQueryOrFail } from "./../util";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-import { requestLogger } from "../helpers/request-logger";
-import { calculateDocumentConversionStatus } from "../../command/medical/document/document-conversion-status";
 
 const router = Router();
 const upload = multer();
@@ -340,11 +340,15 @@ router.get(
 /**
  * POST /internal/docs/query
  *
- * Starts a new document query even if the current one is in 'processing' state.
+ * Starts a new document query. Optionally overrides even if the current one is in 'processing' state.
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.patientId - The customer/account's ID.
  * @param req.query.facilityId - Optional; The facility providing NPI for the document query.
  * @param req.body Optional metadata to be sent through webhook. {"disableWHFlag": "true"} can be sent here to disable webhook.
+ * @param req.query.forceQuery - Optional; Whether to force doc query to run. DEFAULTS TRUE.
+ * @param req.query.forcePatientDiscovery - Optional; Whether to force patient discovery before document query.
+ * @param req.query.cqManagingOrgName - Optional; The CQ managing organization name.
+ * @param req.query.triggerConsolidated - Optional; Whether to force get consolidated PDF on conversion finish.
  * @return updated document query progress
  */
 router.post(
@@ -354,21 +358,26 @@ router.post(
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
     const facilityId = getFrom("query").optional("facilityId", req);
+    const forceQuery = getFromQueryAsBoolean("forceQuery", req) ?? true;
+    const forcePatientDiscovery = getFromQueryAsBoolean("forcePatientDiscovery", req);
+    const cqManagingOrgName = getFrom("query").optional("cqManagingOrgName", req);
+    const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
     const cxDocumentRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
     const docQueryProgress = await queryDocumentsAcrossHIEs({
       cxId,
       patientId,
       facilityId,
-      forceQuery: true,
+      forceQuery,
+      forcePatientDiscovery,
+      cqManagingOrgName,
+      triggerConsolidated,
       cxDocumentRequestMetadata: cxDocumentRequestMetadata?.metadata,
     });
 
     return res.status(httpStatus.OK).json(docQueryProgress);
   })
 );
-
-export default router;
 
 /**
  * POST /internal/docs/triggerBulkDownloadWebhook
@@ -388,8 +397,7 @@ router.post(
     const patientId = getFrom("query").orFail("patientId", req);
     const requestId = getFrom("query").orFail("requestId", req);
     const status = getFrom("query").orFail("status", req);
-    const dtos: DocumentBulkSignerLambdaResponse[] =
-      DocumentBulkSignerLambdaResponseArraySchema.parse(req.body);
+    const docs = documentBulkSignerLambdaResponseArraySchema.parse(req.body);
 
     const updatedPatient = await appendBulkGetDocUrlProgress({
       patient: { id: patientId, cxId },
@@ -404,9 +412,56 @@ router.post(
       "medical.document-bulk-download-urls",
       status as MAPIWebhookStatus,
       requestId,
-      dtos
+      docs
     );
 
     return res.status(httpStatus.OK).json(updatedPatient.data.bulkGetDocumentsUrlProgress);
   })
 );
+
+/**
+ * POST /internal/docs/ccd
+ *
+ * Generates a CCD document and uploads it for the specified patient.
+ * @param req.query.cxId - The customer/account's ID.
+ * @param req.query.patientId - The patient's ID.
+ * @return The CCD document string in XML format.
+ */
+router.post(
+  "/ccd",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getFrom("query").orFail("cxId", req);
+    const patientId = getFrom("query").orFail("patientId", req);
+    const patient = await getPatientOrFail({ cxId, id: patientId });
+    const ccd = await processCcdRequest({ patient });
+    return res.type("application/xml").status(httpStatus.OK).send(ccd);
+  })
+);
+
+/**
+ * POST /internal/docs/empty-ccd
+ *
+ * Generates an empty CCD document and uploads it for the specified patient.
+ * @param req.query.cxId - The customer/account's ID.
+ * @param req.query.patientId - The patient's ID.
+ * @return The CCD document string in XML format.
+ */
+router.post(
+  "/empty-ccd",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getFrom("query").orFail("cxId", req);
+    const patientId = getFrom("query").orFail("patientId", req);
+    const [patient, organization] = await Promise.all([
+      getPatientOrFail({ cxId, id: patientId }),
+      getOrganizationOrFail({ cxId }),
+    ]);
+
+    const fhirOrganization = toFhirOrganization(organization);
+    const ccd = await processEmptyCcdRequest(patient, fhirOrganization);
+    return res.type("application/xml").status(httpStatus.OK).send(ccd);
+  })
+);
+
+export default router;

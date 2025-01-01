@@ -1,14 +1,17 @@
 ```typescript
 
-  const signature = req.headers["x-metriport-signature"];
-  const signatureAsString = // codeToValidateAndConvertToString(signature);
-  const metriportApi = new MetriportMedicalApi(apiKey, {
-    baseAddress: apiUrl,
-  });
-  if (metriportApi.verifyWebhookSignature(whKey, req.body, signatureAsString)) {
+const metriportApi = new MetriportMedicalApi(apiKey, { sandbox: true });
+
+function verifySignature(req: Request): boolean {
+  const signature = String(req.headers["x-metriport-signature"]);
+  const payload = req.body; // unparsed, raw body
+  if (metriportApi.verifyWebhookSignature(webhookKey, payload, signature)) {
     console.log(`Signature verified`);
+    return true;
   } else {
     console.log(`Signature verification failed`);
+    return false;
   }
+}
 
 ```

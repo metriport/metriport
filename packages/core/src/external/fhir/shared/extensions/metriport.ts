@@ -1,10 +1,11 @@
-import { Coding, DocumentReferenceContent, DocumentReference, Extension } from "@medplum/fhirtypes";
+import { Coding, DocumentReference, DocumentReferenceContent, Extension } from "@medplum/fhirtypes";
 import { DeepRequired } from "ts-essentials";
 import { METRIPORT } from "../../../../util/constants";
-import { isCommonwellContent } from "../../../commonwell/extension";
-import { isCarequalityContent } from "../../../carequality/extension";
-import { dataSourceExtensionDefaults } from "./extension";
+import { out } from "../../../../util/log";
 import { capture } from "../../../../util/notifications";
+import { isCarequalityContent } from "../../../carequality/extension";
+import { isCommonwellContent } from "../../../commonwell/extension";
+import { dataSourceExtensionDefaults } from "./extension";
 
 // URL is required: https://www.hl7.org/fhir/R4/extensibility.html#Extension.url
 export type MetriportDataSourceExtension = Omit<Extension, "url" | "valueCoding"> &
@@ -43,7 +44,8 @@ export function getMetriportContent(doc: DocumentReference): DocumentReferenceCo
       id: doc.id,
       metriport_contents: contents.length,
     };
-    console.log(`${msg}, returning the first one - ${JSON.stringify(extra)}`);
+    const { log } = out("getMetriportContent");
+    log(`${msg}, returning the first one - ${JSON.stringify(extra)}`);
     capture.message(msg, { extra, level: "warning" });
   }
   return contents[0];

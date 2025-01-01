@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { inboundPatientResourceSchema } from "@metriport/ihe-gateway-sdk";
+import { patientResourceSchema } from "@metriport/ihe-gateway-sdk";
 import { QueryTypes } from "sequelize";
 import z from "zod";
 import { MPIMetriportAPI } from "../../../mpi/patient-mpi-metriport-api";
@@ -15,7 +15,7 @@ export const rowWithDataSchema = z.object({
   status: z.string(),
   data: z
     .object({
-      patientResource: inboundPatientResourceSchema.optional(),
+      patientResource: patientResourceSchema.optional(),
       timestamp: z.string(),
     })
     .optional(),

@@ -31,10 +31,10 @@ app.post("/validate", async (req: Request, res: Response) => {
 
     fs.unlinkSync(tempXmlPath);
 
-    if (stderr) {
-      res.status(400).send({ valid: false, errors: stderr });
-    } else {
+    if (stderr.includes("validates")) {
       res.send({ valid: true });
+    } else {
+      res.status(400).send({ valid: false, errors: stderr });
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
@@ -60,6 +60,7 @@ function parseXmllintErrors(errorString: string) {
     /(.+):(\d+): element (.+): Schemas validity error : Element '(\{[^}]+\})(.+)': (.+)/;
   const unexpectedElementErrorRegex =
     /(.+):(\d+): element (.+): Schemas validity error : Element '(\{[^}]+\})(.+)': This element is not expected. (.+)/;
+  const commandFailedErrorRegex = /parser error :/;
 
   errorLines.forEach(line => {
     let match = line.match(errorRegex);
@@ -76,6 +77,12 @@ function parseXmllintErrors(errorString: string) {
         errors.push({
           element: match[3].trim(),
           error: match[6].trim(),
+        });
+      }
+      match = line.match(commandFailedErrorRegex);
+      if (match) {
+        errors.push({
+          error: match.input,
         });
       }
     }

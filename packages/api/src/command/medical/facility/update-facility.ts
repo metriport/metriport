@@ -1,29 +1,46 @@
-import { FacilityUpdate } from "../../../domain/medical/facility";
-import { validateVersionForUpdate } from "../../../models/_default";
+import { FacilityCreate } from "../../../domain/medical/facility";
 import { FacilityModel } from "../../../models/medical/facility";
+import { validateVersionForUpdate } from "../../../models/_default";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
+import { validateObo, validateNPI } from "./create-facility";
 import { getFacilityOrFail } from "./get-facility";
 
-export type FacilityUpdateCmd = BaseUpdateCmdWithCustomer & FacilityUpdate;
+export type FacilityUpdateCmd = BaseUpdateCmdWithCustomer & Partial<FacilityCreate>;
 
-export const updateFacility = async (facilityUpdate: FacilityUpdateCmd): Promise<FacilityModel> => {
-  const { id, cxId, eTag, data, cqOboActive, cwOboActive, cqOboOid, cwOboOid } = facilityUpdate;
-  const { name, npi, tin, active, address } = data;
-
+export async function updateFacility({
+  id,
+  eTag,
+  cxId,
+  data,
+  cqApproved,
+  cqActive,
+  cqType,
+  cqOboOid,
+  cwApproved,
+  cwActive,
+  cwType,
+  cwOboOid,
+}: FacilityUpdateCmd): Promise<FacilityModel> {
   const facility = await getFacilityOrFail({ id, cxId });
   validateVersionForUpdate(facility, eTag);
+  validateObo({
+    ...facility,
+    cqType: cqType !== undefined ? cqType : facility.cqType,
+    cwType: cwType !== undefined ? cwType : facility.cwType,
+    cqOboOid: cqOboOid !== undefined ? cqOboOid : facility.cqOboOid,
+    cwOboOid: cwOboOid !== undefined ? cwOboOid : facility.cwOboOid,
+  });
+  if (data) await validateNPI(cxId, data.npi, facility.data.npi);
 
-  return facility.update({
-    data: {
-      name,
-      npi,
-      tin,
-      active,
-      address,
-    },
-    cqOboActive: cqOboActive ?? false,
-    cwOboActive: cwOboActive ?? false,
+  return await facility.update({
+    data,
+    cqActive,
+    cwActive,
+    cqType,
+    cwType,
     cqOboOid,
     cwOboOid,
+    cqApproved,
+    cwApproved,
   });
-};
+}

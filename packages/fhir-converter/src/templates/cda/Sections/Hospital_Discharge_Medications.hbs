@@ -1,3 +1,29 @@
+{{!-- 
+  // ------------------------------------------------------------------------------------------------- 
+  // Copyright (c) 2022-present Metriport Inc.   
+  //  
+  // Licensed under AGPLv3. See LICENSE in the repo root for license information.
+  //  
+  // This file incorporates work covered by the following copyright and  
+  // permission notice:  
+  //  
+  //     Copyright (c) Microsoft Corporation. All rights reserved. 
+  //  
+  //     Permission to use, copy, modify, and/or distribute this software  
+  //     for any purpose with or without fee is hereby granted, provided  
+  //     that the above copyright notice and this permission notice appear  
+  //     in all copies.  
+  //  
+  //     THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL  
+  //     WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED  
+  //     WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE  
+  //     AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR  
+  //     CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS  
+  //     OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,  
+  //     NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN  
+  //     CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  
+  // -------------------------------------------------------------------------------------------------
+--}}
       	{{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.11.1' '2.16.840.1.113883.10.20.22.2.11')}}
             {{#each (multipleToArray 2_16_840_1_113883_10_20_22_2_11_1.entry 2_16_840_1_113883_10_20_22_2_11.entry)}}
                 {{#each (toArray this.act.entryRelationship) as |medAdm|}}
@@ -5,7 +31,7 @@
                     {{>Resources/Medication.hbs medication=medAdm.substanceAdministration.consumable.manufacturedProduct.manufacturedMaterial ID=(generateUUID (toJsonString medAdm.substanceAdministration.consumable.manufacturedProduct.manufacturedMaterial))}},
                     {{>References/MedicationAdministration/medicationReference.hbs ID=(generateUUID (toJsonString medAdm.substanceAdministration)) REF=(concat 'Medication/' (generateUUID (toJsonString medAdm.substanceAdministration.consumable.manufacturedProduct.manufacturedMaterial)))}},
 
-                    {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=edAdm.substanceAdministration.performer.assignedEntity.representedOrganization) as |orgId|}}
+                    {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=medAdm.substanceAdministration.performer.assignedEntity.representedOrganization) as |orgId|}}
                         {{>Resources/Organization.hbs org=medAdm.substanceAdministration.performer.assignedEntity.representedOrganization ID=orgId.Id}},
                         {{>References/MedicationAdministration/performer.actor.hbs ID=(generateUUID (toJsonString medAdm.substanceAdministration)) REF=(concat 'Organization/' orgId.Id)}},
                     {{/with}}
@@ -18,7 +44,9 @@
                     {{#each (toArray medAdm.substanceAdministration.entryRelationship) as |entryRelationship|}}
                         {{#if (contains (toJsonString entryRelationship.observation.templateId) '"2.16.840.1.113883.10.20.22.4.19"')}}
                             {{>Resources/Condition.hbs conditionEntry=entryRelationship.observation ID=(generateUUID (toJsonString entryRelationship.observation))}},
-
+                            {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                    	        {{>References/Condition/subject.hbs ID=(generateUUID (toJsonString entryRelationship.observation)) REF=(concat 'Patient/' patientId.Id)}},
+                            {{/with}}
                             {{#if medAdm.substanceAdministration.author.assignedAuthor}}
                                 {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=medAdm.substanceAdministration.author.assignedAuthor) as |practitionerId|}}
                                     {{>Resources/Practitioner.hbs practitioner=medAdm.substanceAdministration.author.assignedAuthor ID=practitionerId.Id}},
@@ -54,7 +82,7 @@
                             {{#if entryRelationship.supply.performer.assignedEntity}}
                                 {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=entryRelationship.supply.performer.assignedEntity) as |practitionerId|}}
                                     {{>Resources/Practitioner.hbs practitioner=entryRelationship.supply.performer.assignedEntity ID=practitionerId.Id}},
-                                    {{>References/MedicationDispense/performer.actor.hbs ID=(generateUUID (toJsonString entryRelationship.supply)) REF=(concat 'Practioner/' practitionerId.Id)}},
+                                    {{>References/MedicationDispense/performer.actor.hbs ID=(generateUUID (toJsonString entryRelationship.supply)) REF=(concat 'Practitioner/' practitionerId.Id)}},
                                 {{/with}}
                             {{/if}}
 

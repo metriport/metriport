@@ -75,8 +75,10 @@ function constructBaseErrorResponse(
 ) {
   const baseResponse: BaseErrorResponse = {
     id: payload.id,
+    patientId: payload.patientId,
     timestamp: payload.timestamp,
     responseTimestamp: new Date().toISOString(),
+    signatureConfirmation: payload.signatureConfirmation,
   };
   if (error) {
     baseResponse.operationOutcome = {
@@ -135,3 +137,6 @@ export function constructPDErrorResponse(
     gatewayHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
   };
 }
+
+export const httpErrorCode = "http-error";
+export const schemaErrorCode = "schema-error";

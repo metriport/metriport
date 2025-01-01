@@ -21,6 +21,13 @@ export function getSecrets(scope: Construct, config: EnvConfig): Secrets {
       ? buildSecrets(scope, config.carequality.secretNames)
       : undefined),
     ...(config.analyticsSecretNames ? buildSecrets(scope, config.analyticsSecretNames) : undefined),
+    ...(config.canvas?.secretNames ? buildSecrets(scope, config.canvas.secretNames) : undefined),
+    ...(config.ehrIntegration?.athenaHealth.secrets
+      ? buildSecrets(scope, config.ehrIntegration.athenaHealth.secrets)
+      : undefined),
+    ...(config.ehrIntegration?.elation.secrets
+      ? buildSecrets(scope, config.ehrIntegration.elation.secrets)
+      : undefined),
   };
   return secrets;
 }

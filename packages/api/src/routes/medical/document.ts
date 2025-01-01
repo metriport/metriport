@@ -1,6 +1,7 @@
 import { UploadDocumentResult } from "@metriport/api-sdk";
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
 import { S3Utils } from "@metriport/core/external/aws/s3";
+import { searchDocuments } from "@metriport/core/external/opensearch/search-documents";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
@@ -11,21 +12,22 @@ import { downloadDocument } from "../../command/medical/document/document-downlo
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { startBulkGetDocumentUrls } from "../../command/medical/document/start-bulk-get-doc-url";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import {} from "../../command/medical/patient/update-hie-opt-out";
 import ForbiddenError from "../../errors/forbidden";
 import {
   composeDocumentReference,
   docRefCheck,
 } from "../../external/fhir/document/draft-update-document-reference";
 import { upsertDocumentToFHIRServer } from "../../external/fhir/document/save-document-reference";
-import { searchDocuments } from "../../external/fhir/document/search-documents";
 import { Config } from "../../shared/config";
+import { requestLogger } from "../helpers/request-logger";
 import { sanitize } from "../helpers/string";
+import { getPatientInfoOrFail, patientAuthorization } from "../middlewares/patient-authorization";
+import { checkRateLimit } from "../middlewares/rate-limiting";
 import { optionalDateSchema } from "../schemas/date";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
 import { docConversionTypeSchema, docFileNameSchema } from "./schemas/documents";
-import { requestLogger } from "../helpers/request-logger";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
 const router = Router();
@@ -45,6 +47,8 @@ const getDocSchema = z.object({
  *
  * Lists all Documents that can be retrieved for a Patient.
  *
+ * USED WITHIN EHR INTEGRATION.
+ *
  * @param req.query.patientId Patient ID for which to list documents.
  * @param req.query.dateFrom Optional start date that docs will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that docs will be filtered by (inclusive).
@@ -59,13 +63,10 @@ const getDocSchema = z.object({
 router.get(
   "/",
   requestLogger,
+  patientAuthorization("query"),
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const patientId = getFromQueryOrFail("patientId", req);
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
     const { dateFrom, dateTo, content, output } = getDocSchema.parse(req.query);
-
-    // Confirm the CX can access this patient
-    await getPatientOrFail({ cxId, id: patientId });
 
     const documents = await searchDocuments({
       cxId,
@@ -83,16 +84,17 @@ router.get(
  *
  * Returns the document query status for the specified patient.
  *
+ * USED WITHIN EHR INTEGRATION.
+ *
  * @param req.query.patientId Patient ID for which to retrieve document query status.
  * @return The status of document querying across HIEs.
  */
 router.get(
   "/query",
   requestLogger,
+  patientAuthorization("query"),
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const patientId = getFromQueryOrFail("patientId", req);
-    const patient = await getPatientOrFail({ cxId, id: patientId });
+    const { patient } = getPatientInfoOrFail(req);
     return res.status(OK).json(patient.data.documentQueryProgress ?? {});
   })
 );
@@ -102,6 +104,8 @@ router.get(
  *
  * Triggers a document query for the specified patient across HIEs.
  *
+ * USED WITHIN EHR INTEGRATION.
+ *
  * @param req.query.patientId Patient ID for which to retrieve document metadata.
  * @param req.query.facilityId The facility providing NPI for the document query.
  * @param req.query.override Whether to override files already downloaded (optional, defaults to false).
@@ -110,10 +114,11 @@ router.get(
  */
 router.post(
   "/query",
+  checkRateLimit("documentQuery"),
   requestLogger,
+  patientAuthorization("query"),
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const patientId = getFromQueryOrFail("patientId", req);
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
     const facilityId = getFrom("query").optional("facilityId", req);
     const override = stringToBoolean(getFrom("query").optional("override", req));
     const cxDocumentRequestMetadata = cxRequestMetadataSchema.parse(req.body);
@@ -134,6 +139,7 @@ router.post(
   })
 );
 
+// TODO see https://github.com/metriport/metriport-internal/issues/2422
 /**
  * Handles the logic for download url endpoints.
  *
@@ -145,21 +151,20 @@ async function getDownloadUrl(req: Request): Promise<string> {
 
   const fileName = getFromQueryOrFail("fileName", req);
   const fileNameString = docFileNameSchema.parse(fileName);
-  const fileHasCxId = fileNameString.includes(cxId);
+  const fileHasCxId = fileNameString.includes(cxId); // Should probably check for startsWith
   const type = getFrom("query").optional("conversionType", req);
   const conversionType = type ? docConversionTypeSchema.parse(type) : undefined;
 
   if (!fileHasCxId && !Config.isSandbox()) {
-    const message = "File name is invalid or does not contain the CX ID";
+    const message = "File name is invalid or does not exist";
     console.log(`${message}: ${fileName}, ${cxId}`);
-    throw new ForbiddenError(message);
+    throw new ForbiddenError(message); // This should be 404
   }
 
-  const url = await downloadDocument({ fileName, conversionType });
+  const url = await downloadDocument({ fileName: fileNameString, conversionType });
   return url;
 }
 
-// TODO: Redirect this endpoint to the new one (download-url)
 /** ---------------------------------------------------------------------------
  * GET /document/downloadUrl
  * Fetches the document from S3 and sends a presigned URL
@@ -178,10 +183,13 @@ router.get(
   })
 );
 
+// TODO see https://github.com/metriport/metriport-internal/issues/2422
 /** ---------------------------------------------------------------------------
  * GET /document/download-url
  *
  * Fetches the document from S3 and sends a presigned URL
+ *
+ * USED WITHIN EHR INTEGRATION.
  *
  * @param req.query.fileName The file name of the document in s3.
  * @param req.query.conversionType The doc type to convert to.
@@ -209,17 +217,22 @@ router.get(
 router.post(
   "/download-url/bulk",
   requestLogger,
+  patientAuthorization("query"),
   asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const patientId = getFromQueryOrFail("patientId", req);
-    const BulkGetDocumentsUrlProgress = await startBulkGetDocumentUrls(cxId, patientId);
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
+    const cxDownloadRequestMetadata = cxRequestMetadataSchema.parse(req.body);
+    const BulkGetDocumentsUrlProgress = await startBulkGetDocumentUrls(
+      cxId,
+      patientId,
+      cxDownloadRequestMetadata?.metadata
+    );
+
     return res.status(OK).json(BulkGetDocumentsUrlProgress);
   })
 );
 
 async function getUploadUrlAndCreateDocRef(req: Request): Promise<UploadDocumentResult> {
-  const cxId = getCxIdOrFail(req);
-  const patientId = getFromQueryOrFail("patientId", req);
+  const { cxId, id: patientId } = getPatientInfoOrFail(req);
   const docRefId = uuidv7();
   const s3FileName = createDocumentFilePath(cxId, patientId, docRefId);
   const organization = await getOrganizationOrFail({ cxId });
@@ -271,6 +284,7 @@ async function getUploadUrlAndCreateDocRef(req: Request): Promise<UploadDocument
 router.post(
   "/upload-url",
   requestLogger,
+  patientAuthorization("query"),
   asyncHandler(async (req: Request, res: Response) => {
     const resp = await getUploadUrlAndCreateDocRef(req);
     const url = resp.uploadUrl;
@@ -293,6 +307,7 @@ router.post(
 router.post(
   "/upload",
   requestLogger,
+  patientAuthorization("query"),
   asyncHandler(async (req: Request, res: Response) => {
     const resp = await getUploadUrlAndCreateDocRef(req);
     return res.status(httpStatus.OK).json(resp);

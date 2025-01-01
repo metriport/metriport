@@ -21,15 +21,15 @@ import { capture } from "@metriport/core/util/notifications";
 import { uniqBy } from "lodash";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { filterTruthy } from "../../../shared/filter-map-utils";
-import { isCWEnabledForCx } from "../../aws/appConfig";
+import { isCWEnabledForCx } from "../../aws/app-config";
 import { makeCommonWellAPI } from "../api";
 import { getCWData } from "../patient";
-import { setCommonwellIdsAndStatus } from "../patient-external-data";
 import {
-  getPersonalIdentifiersFromPatient,
-  PatientDataCommonwell,
-  searchPersons,
-} from "../patient-shared";
+  updateCommonwellIdsAndStatus,
+  updatePatientDiscoveryStatus,
+} from "../patient-external-data";
+import { PatientDataCommonwell, searchPersons } from "../patient-shared";
+import { getCwStrongIdsFromPatient } from "../patient-conversion";
 import { getCwInitiator } from "../shared";
 import { commonwellPersonLinks } from "./shared";
 
@@ -130,28 +130,26 @@ export const findCurrentLink = async (
       log(msg);
       captureExtra.cwReference = commonWell.lastReferenceHeader;
       capture.message(msg, { extra: captureExtra });
-      await setCommonwellIdsAndStatus({
-        patientId: patient.id,
-        cxId: patient.cxId,
+      await updateCommonwellIdsAndStatus({
+        patient,
         commonwellPatientId: patientCWId,
         commonwellPersonId: undefined,
-        commonwellStatus: "failed",
         cqLinkStatus: undefined,
       });
+      await updatePatientDiscoveryStatus({ patient, status: "failed" });
       return;
     }
 
     if (!patientLinkToPerson._embedded?.patientLink?.length) {
       log(`No patient linked to person`, patientLinkToPerson);
 
-      await setCommonwellIdsAndStatus({
-        patientId: patient.id,
-        cxId: patient.cxId,
+      await updateCommonwellIdsAndStatus({
+        patient,
         commonwellPatientId: patientCWId,
         commonwellPersonId: undefined,
-        commonwellStatus: "failed",
         cqLinkStatus: undefined,
       });
+      await updatePatientDiscoveryStatus({ patient, status: "failed" });
 
       return;
     }
@@ -239,7 +237,7 @@ const findAllPersonsStrongId = async (
   queryMeta: RequestMetadata
 ): Promise<Person[]> => {
   const { log } = out("cw.findAllPersonsStrongId");
-  const strongIds = getPersonalIdentifiersFromPatient(patient);
+  const strongIds = getCwStrongIdsFromPatient(patient);
   if (!strongIds.length) {
     return [];
   }

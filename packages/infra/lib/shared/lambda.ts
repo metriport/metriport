@@ -10,6 +10,7 @@ import {
   Code,
   Function as Lambda,
   ILayerVersion,
+  LambdaInsightsVersion,
   Runtime,
   RuntimeManagementMode,
   SingletonFunction,
@@ -38,6 +39,7 @@ export const buildPolicy = (
 export interface LambdaProps extends StackProps {
   readonly stack: Construct;
   readonly name: string;
+  readonly nameSuffix?: string;
   /**
    * Name of the lambda file without the extension. The file must be a TS file and in the `lambdas/src` folder.
    */
@@ -49,7 +51,14 @@ export interface LambdaProps extends StackProps {
   readonly envType: EnvType;
   readonly timeout?: Duration;
   readonly memory?: number;
+  /**
+   * The maximum of concurrent executions you want to reserve for the function.
+   * Setting this to zero will throttle the lambda (disable its execution).
+   * Default: no specific limit - account limit.
+   * @see https://docs.aws.amazon.com/lambda/latest/dg/concurrent-executions.html
+   */
   readonly reservedConcurrentExecutions?: number;
+  /** The maximum number of times to retry when the function returns an error. */
   readonly retryAttempts?: number;
   readonly maxEventAge?: Duration;
   readonly alarmSnsAction?: SnsAction;
@@ -58,11 +67,24 @@ export interface LambdaProps extends StackProps {
   readonly architecture?: Architecture;
   readonly layers: ILayerVersion[];
   readonly version?: string | undefined;
+  /**
+   * Whether to enable Lambda insights.
+   * @see https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Lambda-Insights.html
+   */
+  readonly isEnableInsights?: boolean | undefined;
+  /**
+   * Which lambda insights version to use.
+   * Defaults to the latest version available in the CDK version.
+   * @see https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Lambda-Insights-extension-versions.html
+   */
+  readonly insightsVersion?: LambdaInsightsVersion | undefined;
 }
 
 export function createLambda(props: LambdaProps): Lambda {
+  const functionNameSuffix = props.nameSuffix ? `_${props.nameSuffix}` : "";
+  const functionName = props.name + "Lambda" + functionNameSuffix;
   const lambda = new Lambda(props.stack, props.name, {
-    functionName: props.name + "Lambda",
+    functionName,
     runtime: props.runtime ?? Runtime.NODEJS_18_X,
     runtimeManagementMode: props.runtimeManagementMode,
     // TODO move our lambdas to use layers, quicker to deploy and execute them
@@ -71,6 +93,9 @@ export function createLambda(props: LambdaProps): Lambda {
     ...(props.layers && props.layers.length > 0 ? { layers: props.layers } : {}),
     vpc: props.vpc,
     vpcSubnets: props.subnets ? { subnets: props.subnets } : undefined,
+    insightsVersion: props.isEnableInsights
+      ? props.insightsVersion ?? LambdaInsightsVersion.VERSION_1_0_229_0 // latest version on CDK 2.122.0
+      : undefined,
     /**
      * Watch out if this is more than 60s while using SQS we likely need to update the
      * queue's VisibilityTimeout so the message is not processed more than once.

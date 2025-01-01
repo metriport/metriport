@@ -1,22 +1,26 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { XCPDGateways } from "@metriport/ihe-gateway-sdk";
+import { XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import { CQOrgBasicDetails } from "./command/cq-directory/search-cq-directory";
 
-export function cqOrgsToXCPDGateways(cqOrgs: CQOrgBasicDetails[]): XCPDGateways {
-  return cqOrgs.flatMap(org => {
+export async function cqOrgsToXCPDGateways(cqOrgs: CQOrgBasicDetails[]): Promise<XCPDGateway[]> {
+  const v2Gateways: XCPDGateway[] = [];
+
+  for (const org of cqOrgs) {
     if (org.urlXCPD) {
-      return {
-        url: org.urlXCPD,
-        oid: org.id,
-      };
+      const gateway = buildXcpdGateway({
+        urlXCPD: org.urlXCPD,
+        id: org.id,
+      });
+      v2Gateways.push(gateway);
     }
-    return [];
-  });
+  }
+  return v2Gateways;
 }
 
-export function generateIdsForGateways(gateways: XCPDGateways): XCPDGateways {
-  return gateways.map(gateway => ({
-    ...gateway,
+export function buildXcpdGateway(org: { id: string; urlXCPD: string }): XCPDGateway {
+  return {
+    url: org.urlXCPD,
+    oid: org.id,
     id: uuidv7(),
-  }));
+  };
 }

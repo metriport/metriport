@@ -8,7 +8,7 @@ changed() {
 echo "Checking updates on package.json files..."
 if changed 'package.json'; then
   echo " "
-  echo "⚠  One or more package.json changed. You should run 'npm install' on the root/respective folder"
+  echo "⚠  One or more package.json changed. You should run 'npm run install-deps' on the root/respective folder"
   echo " "
 else
   echo "No updates detected on package.json files."
@@ -21,13 +21,4 @@ if changed 'packages/api/src/sequelize/migrations'; then
   echo " "
 else
   echo "No DB updates detected."
-fi
-
-echo "Checking updates on IHE GW config files..."
-if changed 'packages/ihe-gateway/server'; then
-  echo " "
-  echo "⚠  IHE GW config updates detected. You should run './scripts/push-to-server.sh' on ./packages/ihe-gateway"
-  echo " "
-else
-  echo "No IHE GW config updates detected."
 fi

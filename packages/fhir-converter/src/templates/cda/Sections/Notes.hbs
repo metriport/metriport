@@ -1,29 +1,76 @@
+{{!-- 
+  // ------------------------------------------------------------------------------------------------- 
+  // Copyright (c) 2022-present Metriport Inc.   
+  //  
+  // Licensed under AGPLv3. See LICENSE in the repo root for license information.
+  //  
+  // This file incorporates work covered by the following copyright and  
+  // permission notice:  
+  //  
+  //     Copyright (c) Microsoft Corporation. All rights reserved. 
+  //  
+  //     Permission to use, copy, modify, and/or distribute this software  
+  //     for any purpose with or without fee is hereby granted, provided  
+  //     that the above copyright notice and this permission notice appear  
+  //     in all copies.  
+  //  
+  //     THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL  
+  //     WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED  
+  //     WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE  
+  //     AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR  
+  //     CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS  
+  //     OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,  
+  //     NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN  
+  //     CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  
+  // -------------------------------------------------------------------------------------------------
+--}}
 {{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.65' '1.3.6.1.4.1.19376.1.5.3.1.3.5')}}
-    {{#with (getAllCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.65' '1.3.6.1.4.1.19376.1.5.3.1.3.5') as |sections|}}
-            {{!-- sections here is already an array so this is not a bug --}}
-            {{#each sections}}
-                {{#each (multipleToArray this.[2_16_840_1_113883_10_20_22_2_65].entry this.[1_3_6_1_4_1_19376_1_5_3_1_3_5].entry) as |note|}}
-                    {{#if note.act}}
-                        {{>Resources/DiagnosticReport.hbs diagReport=note.act ID=(generateUUID (toJsonString note.act))}},
+    {{#with (getAllCdaSectionsWithoutTemplateId msg '2.16.840.1.113883.10.20.22.2.65' '1.3.6.1.4.1.19376.1.5.3.1.3.5') as |notesSections|}}
+        {{#each notesSections as |notesSection|}} 
+            {{#if (and (not notesSection.entry) notesSection.text)}}
+                {{#each (toArray notesSection.text) as |noteText|}}
+                    {{!-- TODO: Check if we should not create a diag report if we get a "No data available for this section" --}}
+                    {{#with (extractTextFromNestedProperties noteText) as |extractedText|}}
+                        {{#with (buildDefaultDiagReportDetails notesSection) as |noteAct|}}
+                            {{>Resources/DiagnosticReport.hbs diagReport=noteAct categoryCode=notesSection.code ID=(generateUUID (toJsonString noteText))}}
+                            {{>References/DiagnosticReport/assessment.hbs text=extractedText ID=(generateUUID (toJsonString noteText))}}
+                            {{#if @encompassingEncounterIds}} 
+                                {{>References/DiagnosticReport/encounter.hbs diagReport=noteAct ID=(generateUUID (toJsonString noteText)) REF=(concat 'Encounter/' @encompassingEncounterIds.newId)}}
+                            {{/if}}
+                        {{/with}}
+                    {{/with}}
+                {{/each}}
+            {{else}}
+                {{#each (toArray notesSection.entry) as |noteEntry|}}    
+                    {{#if noteEntry.act}}
+                        {{>Resources/DiagnosticReport.hbs diagReport=noteEntry.act categoryCode=note.code ID=(generateUUID (toJsonString noteEntry.act))}},
                         {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
-                            {{>References/DiagnosticReport/subject.hbs ID=(generateUUID (toJsonString note.act)) REF=(concat 'Patient/' patientId.Id)}},
+                            {{>References/DiagnosticReport/subject.hbs diagReport=noteEntry.act ID=(generateUUID (toJsonString noteEntry.act)) REF=(concat 'Patient/' patientId.Id)}},
+                            {{#if @encompassingEncounterIds}} 
+                                {{>References/DiagnosticReport/encounter.hbs diagReport=noteEntry.act ID=(generateUUID (toJsonString noteEntry.act)) REF=(concat 'Encounter/' @encompassingEncounterIds.newId)}}
+                            {{/if}}
                         {{/with}}
                     {{/if}}
 
-                    {{!-- TODO need to add references, author, etc --}}
-                    {{#if note.act.author.assignedAuthor}}
-                        {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=note.act.author.assignedAuthor) as |practitionerId|}}
-                            {{>Resources/Practitioner.hbs practitioner=note.act.author.assignedAuthor ID=practitionerId.Id}},
-                            {{>References/DiagnosticReport/performer.hbs ID=(generateUUID (toJsonString note.act)) REF=(concat 'Practitioner/' practitionerId.Id)}},
+                    {{#if noteEntry.act.author.assignedAuthor}}
+                        {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=noteEntry.act.author.assignedAuthor) as |practitionerId|}}
+                            {{>Resources/Practitioner.hbs practitioner=noteEntry.act.author.assignedAuthor ID=practitionerId.Id}},
+                            {{>References/DiagnosticReport/performer.hbs diagReport=noteEntry.act ID=(generateUUID (toJsonString noteEntry.act)) REF=(concat 'Practitioner/' practitionerId.Id)}},
                         {{/with}}
                     {{/if}}
-                    {{#if note.act.author.assignedAuthor.representedOrganization}}
-                        {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=note.act.author.assignedAuthor.representedOrganization) as |orgId|}}
-                                {{>Resources/Organization.hbs org=note.act.author.assignedAuthor.representedOrganization ID=orgId.Id}},
-                                {{>References/DiagnosticReport/performer.hbs ID=(generateUUID (toJsonString  note.act)) REF=(concat 'Organization/' orgId.Id)}},
+                    {{#if noteEntry.act.author.assignedAuthor.representedOrganization}}
+                        {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=noteEntry.act.author.assignedAuthor.representedOrganization) as |orgId|}}
+                                {{>Resources/Organization.hbs org=noteEntry.act.author.assignedAuthor.representedOrganization ID=orgId.Id}},
+                                {{>References/DiagnosticReport/performer.hbs diagReport=noteEntry.act ID=(generateUUID (toJsonString  noteEntry.act)) REF=(concat 'Organization/' orgId.Id)}},
                         {{/with}}
                     {{/if}}   
+                    
+                    {{#if noteEntry.act.text}} 
+                        {{>References/DiagnosticReport/assessment.hbs text=(extractTextFromNestedProperties noteEntry.act.text) ID=(generateUUID (toJsonString noteEntry.act))}}
+                    {{/if}}
+
                 {{/each}}
-            {{/each}}
-        {{/with}}        
+            {{/if}}
+        {{/each}}
+    {{/with}}        
 {{/if}}

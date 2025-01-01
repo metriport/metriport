@@ -1,33 +1,47 @@
 import { limitStringLength } from "@metriport/shared";
 import { nanoid } from "nanoid";
+import { maxWebhookStatusLength } from "../../domain/settings";
 import { processAsyncError } from "../../errors";
 import WebhookError from "../../errors/webhook";
-import { Settings, WEBHOOK_STATUS_BAD_RESPONSE, WEBHOOK_STATUS_OK } from "../../models/settings";
-import { MAX_VARCHAR_LENGTH } from "../../models/_default";
+import {
+  Settings as SettingsModel,
+  WEBHOOK_STATUS_BAD_RESPONSE,
+  WEBHOOK_STATUS_OK,
+} from "../../models/settings";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { errorToWhStatusDetails, sendTestPayload } from "../webhook/webhook";
 import { getSettingsOrFail } from "./getSettings";
+import { MrFilters } from "../../domain/settings";
 
 const log = Util.log(`updateSettings`);
 
 export type UpdateSettingsCommand = {
   cxId: string;
   webhookUrl?: string;
+  filters?: MrFilters[];
 };
 
 export const updateSettings = async ({
   cxId,
   webhookUrl,
-}: UpdateSettingsCommand): Promise<Settings> => {
+  filters,
+}: UpdateSettingsCommand): Promise<SettingsModel> => {
   const originalSettings = await getSettingsOrFail({ id: cxId });
-  const updateWebhook = getWebhookDataForUpdate(originalSettings, cxId, webhookUrl);
-  await Settings.update(
+  const updateWebhook = getWebhookDataForUpdate(originalSettings, webhookUrl);
+  await SettingsModel.update(
     {
-      ...updateWebhook,
+      ...originalSettings.dataValues,
+      ...(webhookUrl ? updateWebhook : undefined),
+      ...(filters ? { mrFilters: filters } : undefined),
     },
     { where: { id: cxId } }
   );
+
+  // if there's a URL, fire a test towards it - intentionally asynchronous
+  updateWebhook.webhookUrl &&
+    testWebhook({ cxId, ...updateWebhook }).catch(processAsyncError(`testWebhook`));
+
   const updatedSettings = await getSettingsOrFail({ id: cxId });
   return updatedSettings;
 };
@@ -42,8 +56,8 @@ export const updateWebhookStatus = async ({
   webhookEnabled,
   webhookStatusDetail,
 }: UpdateWebhookStatusCommand): Promise<void> => {
-  const statusDetail = limitStringLength(webhookStatusDetail, MAX_VARCHAR_LENGTH);
-  await Settings.update(
+  const statusDetail = limitStringLength(webhookStatusDetail, maxWebhookStatusLength);
+  await SettingsModel.update(
     {
       webhookEnabled,
       ...(statusDetail ? { webhookStatusDetail: statusDetail } : undefined),
@@ -53,10 +67,9 @@ export const updateWebhookStatus = async ({
 };
 
 const getWebhookDataForUpdate = (
-  settings: Settings,
-  cxId: string,
+  settings: SettingsModel,
   newUrl?: string
-): Pick<Settings, "webhookUrl" | "webhookKey"> => {
+): Pick<SettingsModel, "webhookUrl" | "webhookKey"> => {
   const webhookData = {
     ...(newUrl
       ? {
@@ -69,13 +82,10 @@ const getWebhookDataForUpdate = (
         }),
     webhookStatus: null,
   };
-  // if there's a URL, fire a test towards it - intentionally asynchronous
-  webhookData.webhookUrl &&
-    testWebhook({ cxId, ...webhookData }).catch(processAsyncError(`testWebhook`));
   return webhookData;
 };
 
-type TestWebhookCommand = Pick<Settings, "webhookUrl" | "webhookKey"> & { cxId: string };
+type TestWebhookCommand = Pick<SettingsModel, "webhookUrl" | "webhookKey"> & { cxId: string };
 
 const testWebhook = async ({ cxId, webhookUrl, webhookKey }: TestWebhookCommand): Promise<void> => {
   if (!webhookUrl || !webhookKey) return;

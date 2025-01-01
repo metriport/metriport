@@ -1,12 +1,10 @@
 import { DocumentReferenceContent, Organization, Resource } from "@medplum/fhirtypes";
 import { cqExtension } from "@metriport/core/external/carequality/extension";
-import { toFHIRSubject } from "@metriport/core/external/fhir/patient/index";
+import { toFHIRSubject } from "@metriport/core/external/fhir/patient/conversion";
 import { MetriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import {
   DocumentReference,
   DocumentReference as IHEGWDocumentReference,
-  OutboundDocumentQueryResp,
-  OutboundDocumentRetrievalResp,
 } from "@metriport/ihe-gateway-sdk";
 import { DocumentReferenceWithId, createDocReferenceContent } from "../../fhir/document";
 import { formatDate } from "../shared";
@@ -17,25 +15,22 @@ export type DocumentReferenceWithMetriportId = DocumentReference & {
   metriportId: string;
 };
 
-type IHEResults = OutboundDocumentQueryResp | OutboundDocumentRetrievalResp;
-
 export function containsMetriportId(
   docRef: IHEGWDocumentReference
 ): docRef is DocumentReferenceWithMetriportId {
   return docRef.metriportId != undefined;
 }
 
-/**
- * Converts the IHE Gateway results to a IHE DocumentReference Schema
- */
-export function toDocumentReference(documentQueryResult: IHEResults): DocumentReference[] {
-  const documentReferences = documentQueryResult.documentReference ?? [];
-  return documentReferences.map(docRef => {
-    return {
-      ...docRef,
-      url: documentQueryResult.gateway.url,
-    };
-  });
+export function containsDuplicateMetriportId(
+  docRef: DocumentReferenceWithMetriportId,
+  seenMetriportIds: Set<string>
+): boolean {
+  if (seenMetriportIds.has(docRef.metriportId)) {
+    return true;
+  } else {
+    seenMetriportIds.add(docRef.metriportId);
+    return false;
+  }
 }
 
 export const cqToFHIR = (
@@ -70,6 +65,7 @@ export const cqToFHIR = (
       value: docId,
     },
     docStatus,
+    status: "current",
     subject: toFHIRSubject(patientId),
     content: generateCQFHIRContent(baseAttachment, contentExtension, docRef.url),
     extension: [cqExtension],
@@ -154,4 +150,8 @@ export function dedupeContainedResources(combined: Resource[]): Resource[] | und
   });
 
   return deduped;
+}
+
+export function getContentTypeOrUnknown(docRef: DocumentReference) {
+  return docRef.contentType ?? "unknown";
 }

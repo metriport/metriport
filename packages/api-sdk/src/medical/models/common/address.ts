@@ -1,6 +1,7 @@
+import { stripNonNumericChars } from "@metriport/shared";
 import { z } from "zod";
-import { usStateSchema } from "./us-data";
-import { defaultOptionalString, defaultString, stripNonNumericChars } from "../../../shared";
+import { defaultOptionalString, defaultString } from "../../../shared";
+import { usStateSchema, usTerritorySchema } from "./us-data";
 
 const zipLength = 5;
 
@@ -9,11 +10,13 @@ export const geoCoordinateSchema = z.object({
   lon: z.number(),
 });
 
+export const usStateForAddressSchema = usStateSchema.or(usTerritorySchema);
+
 export const addressSchema = z.object({
   addressLine1: defaultString.min(1, { message: "Address line must be specified." }),
   addressLine2: defaultOptionalString,
   city: defaultString.min(1, { message: "City must be specified." }),
-  state: usStateSchema,
+  state: usStateForAddressSchema,
   zip: z.coerce
     .string()
     .transform(zipStr => stripNonNumericChars(zipStr))

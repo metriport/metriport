@@ -7,13 +7,15 @@ import {
   operationOutcomeResourceType,
   organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import NotFoundError from "@metriport/core/util/error/not-found";
-import { errorToString } from "@metriport/core/util/error/shared";
+import { errorToString, processAsyncError } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import httpStatus from "http-status";
@@ -25,15 +27,14 @@ import {
   getUrl,
   S3Info,
 } from "../../../command/medical/document/document-query-storage-info";
-import { analytics, EventTypes } from "../../../shared/analytics";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { Util } from "../../../shared/util";
 import {
   isCQDirectEnabledForCx,
-  isCWEnabledForCx,
   isEnhancedCoverageEnabledForCx,
-} from "../../aws/appConfig";
+  isStalePatientUpdateEnabledForCx,
+} from "../../aws/app-config";
 import { reportMetric } from "../../aws/cloudwatch";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
@@ -43,14 +44,16 @@ import { processFhirResponse } from "../../fhir/document/process-fhir-search-res
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { reportFHIRError } from "../../fhir/shared/error-mapping";
 import { getAllPages } from "../../fhir/shared/paginated";
+import { getDocumentReferenceContentTypeCounts } from "../../hie/carequality-analytics";
 import { HieInitiator } from "../../hie/get-hie-initiator";
 import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
+import { setDocQueryStartAt } from "../../hie/set-doc-query-start";
 import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
-import { getCWData, linkPatientToCW } from "../patient";
+import { getCWData, update } from "../patient";
 import { getPatientWithCWData, PatientWithCWData } from "../patient-external-data";
 import { getCwInitiator } from "../shared";
 import { makeDocumentDownloader } from "./document-downloader-factory";
@@ -59,8 +62,12 @@ import {
   CWDocumentWithMetriportData,
   DocumentWithLocation,
   DocumentWithMetriportId,
+  getContentTypeOrUnknown,
   getFileName,
 } from "./shared";
+import { validateCWEnabled } from "../shared";
+
+const staleLookbackHours = 24;
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -89,65 +96,99 @@ export async function queryAndProcessDocuments({
   patient: patientParam,
   facilityId,
   forceQuery = false,
+  forcePatientDiscovery = false,
   forceDownload,
   ignoreDocRefOnFHIRServer,
   ignoreFhirConversionAndUpsert,
   requestId,
   getOrgIdExcludeList,
+  triggerConsolidated = false,
 }: {
   patient: Patient;
   facilityId?: string | undefined;
   forceQuery?: boolean;
+  forcePatientDiscovery?: boolean;
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
   getOrgIdExcludeList: () => Promise<string[]>;
+  triggerConsolidated?: boolean;
 }): Promise<void> {
   const { id: patientId, cxId } = patientParam;
   const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
 
   if (Config.isSandbox()) {
-    await sandboxGetDocRefsAndUpsert({
-      patient: patientParam,
-      requestId,
-    });
+    await sandboxGetDocRefsAndUpsert({ patient: patientParam, requestId });
     return;
   }
 
-  const interrupt = buildInterrupt({ patientId, cxId, source: MedicalDataSource.COMMONWELL, log });
-  if (!(await isCWEnabledForCx(cxId))) {
-    return interrupt(`CW disabled for cx ${cxId}`);
-  }
+  const interrupt = buildInterrupt({
+    patientId,
+    cxId,
+    requestId,
+    source: MedicalDataSource.COMMONWELL,
+    log,
+  });
+  const isCwEnabled = await validateCWEnabled({
+    patient: patientParam,
+    facilityId,
+    log,
+  });
+  if (!isCwEnabled) return interrupt(`CW disabled for cxId ${cxId} patientId ${patientId}`);
 
   try {
-    const initiator = await getCwInitiator(patientParam, facilityId);
-
-    await setDocQueryProgress({
-      patient: { id: patientId, cxId },
-      downloadProgress: { status: "processing" },
-      convertProgress: { status: "processing" },
-      requestId,
-      source: MedicalDataSource.COMMONWELL,
-    });
+    const [initiator] = await Promise.all([
+      getCwInitiator(patientParam, facilityId),
+      setDocQueryProgress({
+        patient: { id: patientId, cxId },
+        downloadProgress: { status: "processing" },
+        convertProgress: { status: "processing" },
+        requestId,
+        source: MedicalDataSource.COMMONWELL,
+        triggerConsolidated,
+      }),
+    ]);
 
     const patientCWData = getCWData(patientParam.data.externalData);
     const hasNoCWStatus = !patientCWData || !patientCWData.status;
     const isProcessing = patientCWData?.status === "processing";
+    const updateStalePatients = await isStalePatientUpdateEnabledForCx(cxId);
+    const now = buildDayjs(new Date());
+    const patientCreatedAt = buildDayjs(patientParam.createdAt);
+    const pdStartedAt = patientCWData?.discoveryParams?.startedAt
+      ? buildDayjs(patientCWData.discoveryParams.startedAt)
+      : undefined;
+    const isStale =
+      updateStalePatients &&
+      (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackHours, "hours");
 
-    if (hasNoCWStatus || isProcessing) {
+    if (hasNoCWStatus || isProcessing || forcePatientDiscovery || isStale) {
       await scheduleDocQuery({
         requestId,
         patient: { id: patientId, cxId },
         source: MedicalDataSource.COMMONWELL,
+        triggerConsolidated,
       });
 
-      if (hasNoCWStatus) {
-        await linkPatientToCW(patientParam, initiator.facilityId, getOrgIdExcludeList);
+      if ((forcePatientDiscovery || isStale) && !isProcessing) {
+        update({
+          patient: patientParam,
+          facilityId: initiator.facilityId,
+          getOrgIdExcludeList,
+          requestId,
+        }).catch(processAsyncError("CW update"));
       }
 
       return;
     }
+
+    const startedAt = new Date();
+    await setDocQueryStartAt({
+      patient: { id: patientId, cxId },
+      source: MedicalDataSource.COMMONWELL,
+      startedAt,
+    });
 
     const [patient, isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all([
       getPatientWithCWData(patientParam),
@@ -181,8 +222,9 @@ export async function queryAndProcessDocuments({
     });
     log(`Got ${cwDocuments.length} documents from CW`);
 
-    const docQueryStartedAt = patient.data.documentQueryProgress?.startedAt;
-    const duration = elapsedTimeFromNow(docQueryStartedAt);
+    const duration = elapsedTimeFromNow(startedAt);
+    const contentTypes = cwDocuments.map(getContentTypeOrUnknown);
+    const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
 
     analytics({
       distinctId: cxId,
@@ -193,6 +235,7 @@ export async function queryAndProcessDocuments({
         hie: MedicalDataSource.COMMONWELL,
         duration,
         documentCount: cwDocuments.length,
+        ...contentTypeCounts,
       },
     });
 
@@ -553,7 +596,7 @@ async function downloadDocsAndUpsertFHIR({
             } else {
               // Get info from existing S3 file
               uploadToS3 = async () => {
-                const signedUrl = getUrl(fileInfo.fileName, fileInfo.fileLocation);
+                const signedUrl = await getUrl(fileInfo.fileName, fileInfo.fileLocation);
                 const url = new URL(signedUrl);
                 const s3Location = url.origin + url.pathname;
                 return {
@@ -587,7 +630,7 @@ async function downloadDocsAndUpsertFHIR({
             log(`${msg}: (docId ${doc.id}): ${errorToString(error)}`);
             capture.error(msg, {
               extra: {
-                context: `s3.documentUpload`,
+                context: `cw.downloadDocsAndUpsertFHIR.downloadFromCWAndUploadToS3`,
                 patientId: patient.id,
                 documentReference: doc,
                 requestId,

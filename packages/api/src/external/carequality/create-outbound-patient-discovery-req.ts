@@ -1,18 +1,23 @@
-import { Patient as FHIRPatient } from "@medplum/fhirtypes";
-import { OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway-sdk";
+import {
+  OutboundPatientDiscoveryReq,
+  XCPDGateway,
+  PatientResource,
+} from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import { HieInitiator } from "../hie/get-hie-initiator";
 import { createPurposeOfUse, getSystemUserName } from "./shared";
 
 export function createOutboundPatientDiscoveryReq({
-  patient,
+  patientResource,
   cxId,
+  patientId,
   xcpdGateways,
   initiator,
   requestId,
 }: {
-  patient: FHIRPatient;
+  patientResource: PatientResource;
   cxId: string;
+  patientId: string;
   xcpdGateways: XCPDGateway[];
   initiator: HieInitiator;
   requestId: string;
@@ -23,6 +28,7 @@ export function createOutboundPatientDiscoveryReq({
   return {
     id,
     cxId: cxId,
+    patientId,
     timestamp: dayjs().toISOString(),
     gateways: xcpdGateways,
     principalCareProviderIds: [initiator.npi],
@@ -38,6 +44,6 @@ export function createOutboundPatientDiscoveryReq({
       homeCommunityId: initiator.oid,
       purposeOfUse: createPurposeOfUse(),
     },
-    patientResource: patient,
+    patientResource,
   };
 }

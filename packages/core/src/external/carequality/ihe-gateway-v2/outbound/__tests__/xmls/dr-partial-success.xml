@@ -1,0 +1,58 @@
+<S:Envelope xmlns:S="http://www.w3.org/2003/05/soap-envelope"
+    xmlns:wsa="http://www.w3.org/2005/08/addressing">
+    <S:Header>
+        <wsa:Action
+            S:mustUnderstand="1">urn:ihe:iti:2019:CrossGatewayRetrieveDeferredResults
+        </wsa:Action>
+        <wsa:MessageID>urn:uuid:1795bb7a-8dc2-403a-9914-
+            fbeab9e2a77e</wsa:MessageID>
+    </S:Header>
+    <S:Body>
+        <RetrieveDocumentSetResponse xmlns="urn:ihe:iti:xds-b:2007"
+            xmlns:rim="urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0"
+            xmlns:rs="urn:oasis:names:tc:ebxml-regrep:xsd:rs:3.0">
+            <rs:RegistryResponse
+                requestId="urn:uuid:df9b89ed-395e-40a7-8510-0b4a390434c4"
+                status="urn:ihe:iti:2007:ResponseStatusType:PartialSuccess">
+
+                <!-- Results not available now -->
+                <rs:ResponseSlotList>
+                    <rim:Slot name="DeferredProcessingRequired">
+                        <rim:ValueList>
+                            <rim:Value>'This request requires more time. The
+                                full results will be returned on the Deferred Response endpoint.'</rim:Value>
+                        </rim:ValueList>
+                    </rim:Slot>
+                    <rim:Slot name="DeferredProcessingEstimatedCompletion">
+                        <rim:ValueList>
+                            <rim:Value>201906020304</rim:Value>
+                        </rim:ValueList>
+                    </rim:Slot>
+                </rs:ResponseSlotList>
+
+                <!-- Errors available now -->
+                <rim:RegistryErrorList>
+                </rim:RegistryErrorList>
+
+            </rs:RegistryResponse>
+
+            <!-- Documents available now -->
+            <DocumentResponse>
+                <homeCommunityId>urn:oid:1.2.3.4</homeCommunityId>
+                <RepositoryUniqueId>1.3.6.1.4...1000</RepositoryUniqueId>
+                <DocumentUniqueId>1.3.6.1.4...2300</DocumentUniqueId>
+                <mimeType>text/xml</mimeType>
+
+                <Document>UjBsR09EbGhjZ0dTQUxNQUFBUUNBRU1tQ1p0dU1GUXhEUzhi</Document>
+            </DocumentResponse>
+            <DocumentResponse>
+                <homeCommunityId>urn:oid:1.2.3.4</homeCommunityId>
+                <RepositoryUniqueId>1.3.6.1.4...1000</RepositoryUniqueId>
+                <DocumentUniqueId>1.3.6.1.4...2300</DocumentUniqueId>
+                <mimeType>text/xml</mimeType>
+
+                <Document>UjBsR09EbGhjZ0dTQUxNQUFBUUNBRU1tQ1p0dU1GUXhEUzhi</Document>
+            </DocumentResponse>
+        </RetrieveDocumentSetResponse>
+    </S:Body>
+</S:Envelope>

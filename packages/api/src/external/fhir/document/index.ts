@@ -24,17 +24,18 @@ import {
   HumanName as CWHumanName,
 } from "@metriport/commonwell-sdk";
 import { Gender } from "@metriport/commonwell-sdk/src/models/demographics";
-import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
+import { joinName, Patient, splitName } from "@metriport/core/domain/patient";
 import { cwExtension } from "@metriport/core/external/commonwell/extension";
+import { toFHIRSubject } from "@metriport/core/external/fhir/patient/conversion";
+import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
 import { sortBy, uniqBy } from "lodash";
-import { joinName, Patient, splitName } from "@metriport/core/domain/patient";
 import MetriportError from "../../../errors/metriport-error";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { CWDocumentWithMetriportData } from "../../commonwell/document/shared";
-import { toFHIRSubject } from "@metriport/core/external/fhir/patient/index";
+
 dayjs.extend(isToday);
 
 export const MAX_FHIR_DOC_ID_LENGTH = 64;
@@ -57,22 +58,6 @@ const authorTypesMap: Record<AuthorTypes["resourceType"], AuthorTypes["resourceT
   RelatedPerson: "RelatedPerson",
 };
 const authorTypes = Object.values(authorTypesMap);
-
-export function isDocStatusReady(doc: DocumentReference): boolean {
-  return !isDocStatusPreliminary(doc) && !isDocStatusEnteredInError(doc);
-}
-export function isDocStatusFinal(doc: DocumentReference): boolean {
-  return doc.docStatus === "final";
-}
-export function isDocStatusAmended(doc: DocumentReference): boolean {
-  return doc.docStatus === "amended";
-}
-export function isDocStatusPreliminary(doc: DocumentReference): boolean {
-  return doc.docStatus === "preliminary";
-}
-export function isDocStatusEnteredInError(doc: DocumentReference): boolean {
-  return doc.docStatus === "entered-in-error";
-}
 
 // HIEs probably don't have records before the year 1800 :)
 const earliestPossibleYear = 1800;
@@ -626,8 +611,6 @@ function convertCWGenderToFHIR(genders: Gender[] | null | undefined): PatientFHI
         return "female";
       case GenderCodes.UN:
         return "other";
-      case GenderCodes.UNK:
-        return "unknown";
     }
   }
   return undefined;

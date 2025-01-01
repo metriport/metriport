@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
-import { makePatient } from "../../../domain/medical/__tests__/patient";
-import { api } from "../../__tests__/shared";
+import { makePatient } from "@metriport/core/domain/__tests__/patient";
+import { api } from "../../../__tests__/e2e/shared";
 
 jest.setTimeout(15000);
 

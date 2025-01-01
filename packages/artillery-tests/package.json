@@ -1,0 +1,17 @@
+{
+  "name": "artillery-tests",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prettier-fix": "npx prettier '**/*' --write"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@faker-js/faker": "^8.0.2",
+    "dayjs": "^1.11.13"
+  }
+}

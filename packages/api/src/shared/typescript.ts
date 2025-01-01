@@ -30,3 +30,10 @@ export type ExpandRecursively<T> = T extends object
     ? { [K in keyof O]: ExpandRecursively<O[K]> }
     : never
   : T;
+
+/**
+ * Make all properties on T non-optional - they can't be null or undefined.
+ */
+export type NonNullableFields<T> = {
+  [P in keyof T]: NonNullable<T[P]>;
+};

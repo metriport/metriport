@@ -1,3 +1,5 @@
+import { BaseDomain, BaseDomainNoId } from "@metriport/core/domain/base-domain";
+import { limitStringLength } from "@metriport/shared";
 import {
   CreationOptional,
   DataTypes,
@@ -7,7 +9,6 @@ import {
   Model,
   Sequelize,
 } from "sequelize";
-import { BaseDomain, BaseDomainNoId } from "@metriport/core/domain/base-domain";
 import VersionMismatchError from "../errors/version-mismatch";
 import { Util } from "../shared/util";
 
@@ -39,8 +40,6 @@ export abstract class BaseModelNoId<T extends Model<any, any>>
       freezeTableName: true,
       underscored: true,
       timestamps: true,
-      createdAt: "created_at",
-      updatedAt: "updated_at",
     };
   }
 }
@@ -91,4 +90,11 @@ export function validateVersionForUpdate(
   if (eTag != null && eTag !== entity.eTag) {
     throw new VersionMismatchError(`eTag mismatch - reload the data and try again`);
   }
+}
+
+export function normalizeString<T extends string | null | undefined>(
+  value: T,
+  maxLength = MAX_VARCHAR_LENGTH
+): T {
+  return value != null ? limitStringLength(value, maxLength) : value;
 }

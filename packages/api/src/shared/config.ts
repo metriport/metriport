@@ -49,6 +49,12 @@ export class Config {
     return getEnvVarOrFail("AWS_REGION");
   }
 
+  static getLbTimeoutInMillis(): number | undefined {
+    const timeoutAsString = getEnvVar("LB_TIMEOUT_IN_MILLIS");
+    if (timeoutAsString) return parseInt(timeoutAsString);
+    return undefined;
+  }
+
   /**
    * @deprecated Use core's Config instead
    */
@@ -78,8 +84,13 @@ export class Config {
     return `${Config.getApiUrl()}/connect`;
   }
 
+  /** @deprecated Use core's version of Config instead */
   static getApiUrl(): string {
-    return getEnvVarOrFail("API_URL");
+    return CoreConfig.getApiUrl();
+  }
+
+  static getDashUrl(): string | undefined {
+    return getEnvVar("DASH_URL");
   }
 
   static getApiGatewayUsagePlanId(): string | undefined {
@@ -120,6 +131,10 @@ export class Config {
 
   static getDBCreds(): string {
     return getEnvVarOrFail("DB_CREDS");
+  }
+
+  static getDbPoolSettings(): string | undefined {
+    return getEnvVar("DB_POOL_SETTINGS");
   }
 
   static getDbReadReplicaEndpoint(): string {
@@ -190,10 +205,6 @@ export class Config {
     return getEnvVarOrFail("FHIR_SERVER_URL");
   }
 
-  static getFHIRServerQueueURL(): string {
-    return getEnvVarOrFail("FHIR_SERVER_QUEUE_URL");
-  }
-
   static getSystemRootOID(): string {
     return getEnvVarOrFail("SYSTEM_ROOT_OID");
   }
@@ -239,10 +250,9 @@ export class Config {
     return getEnvVarOrFail("CW_MEMBER_OID");
   }
 
-  static getPostHogApiKey(): string | undefined {
-    return getEnvVar("POST_HOG_API_KEY");
+  static getCdaToFhirConversionBucketName(): string {
+    return getEnvVarOrFail("CONVERSION_RESULT_BUCKET_NAME");
   }
-
   static getMedicalDocumentsBucketName(): string {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
   }
@@ -264,25 +274,16 @@ export class Config {
     return getEnvVar("CONVERT_DOC_LAMBDA_NAME");
   }
 
+  static getFhirToCdaConverterLambdaName(): string | undefined {
+    return getEnvVar("FHIR_TO_CDA_CONVERTER_LAMBDA_NAME");
+  }
+
   static getDocumentDownloaderLambdaName(): string {
     return getEnvVarOrFail("DOCUMENT_DOWNLOADER_LAMBDA_NAME");
   }
 
   static getFHIRToMedicalRecordLambdaName(): string | undefined {
     return getEnvVar("FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME");
-  }
-
-  static getIheGatewayUrl(): string | undefined {
-    return getEnvVar("IHE_GW_URL");
-  }
-  static getIheGatewayPortPD(): string | undefined {
-    return getEnvVar("IHE_GW_PORT_PD");
-  }
-  static getIheGatewayPortDQ(): string | undefined {
-    return getEnvVar("IHE_GW_PORT_DQ");
-  }
-  static getIheGatewayPortDR(): string | undefined {
-    return getEnvVar("IHE_GW_PORT_DR");
   }
 
   static getOutboundPatientDiscoveryLambdaName(): string | undefined {
@@ -293,6 +294,10 @@ export class Config {
   }
   static getOutboundDocumentRetrievalLambdaName(): string | undefined {
     return getEnvVar("OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME");
+  }
+
+  static getPatientImportLambdaName(): string {
+    return getEnvVarOrFail("PATIENT_IMPORT_LAMBDA_NAME");
   }
 
   static getSearchIngestionQueueUrl(): string {
@@ -331,5 +336,45 @@ export class Config {
   }
   static getAppConfigConfigId(): string {
     return getEnvVarOrFail("APPCONFIG_CONFIGURATION_ID");
+  }
+  static getAppConfigEnvironmentId(): string {
+    return getEnvVarOrFail("APPCONFIG_ENVIRONMENT_ID");
+  }
+  static getAppConfigDeploymentStrategyId(): string {
+    return getEnvVarOrFail("APPCONFIG_DEPLOYMENT_STRATEGY_ID");
+  }
+  static getCQOrgCertificateIntermediate(): string {
+    return getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE");
+  }
+  static getOrgOidsWithIHEGatewayV2Enabled(): string {
+    return getEnvVarOrFail("OIDS_WITH_IHE_GATEWAY_V2_ENABLED");
+  }
+
+  static getAthenaHealthEnv(): string | undefined {
+    return getEnvVar("EHR_ATHENA_ENVIRONMENT");
+  }
+  static getAthenaHealthClientKeyArn(): string | undefined {
+    return getEnvVar("EHR_ATHENA_CLIENT_KEY_ARN");
+  }
+  static getAthenaHealthClientSecretArn(): string | undefined {
+    return getEnvVar("EHR_ATHENA_CLIENT_SECRET_ARN");
+  }
+  static getAthenaHealthClientKey(): string | undefined {
+    return getEnvVar("EHR_ATHENA_CLIENT_KEY");
+  }
+  static getAthenaHealthClientSecret(): string | undefined {
+    return getEnvVar("EHR_ATHENA_CLIENT_SECRET");
+  }
+
+  static getElationEnv(): string | undefined {
+    return getEnvVar("EHR_ELATION_ENVIRONMENT");
+  }
+
+  static getElationClientKeyAndSecretMap(): string | undefined {
+    return getEnvVar("EHR_ELATION_CLIENT_KEY_AND_SECRET_MAP");
+  }
+
+  static getRateLimitTableName(): string | undefined {
+    return getEnvVar("RATE_LIMIT_TABLE_NAME");
   }
 }

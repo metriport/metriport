@@ -1,10 +1,9 @@
+import { out } from "@metriport/core/util/log";
+import { errorToString, stringToBoolean } from "@metriport/shared";
 import { NextFunction, Request, Response } from "express";
 import BadRequestError from "../errors/bad-request";
 import { Config } from "../shared/config";
-import { errorToString } from "../shared/log";
 import { capture } from "../shared/notifications";
-import { stringToBoolean } from "@metriport/shared";
-import { out } from "@metriport/core/util/log";
 
 const { log } = out("asyncHandler");
 
@@ -14,17 +13,22 @@ export function asyncHandler(
     res: Response,
     next: NextFunction
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ) => Promise<Response<any, Record<string, any>> | void>
+  ) => Promise<Response<any, Record<string, any>> | void>,
+  logErrorDetails = !Config.isCloudEnv()
 ) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       await f(req, res, next);
     } catch (err) {
-      if (Config.isCloudEnv()) log(errorToString(err));
-      else log("", err);
+      if (logErrorDetails) log("", err);
+      else log(removeNewLines(errorToString(err)));
       next(err);
     }
   };
+}
+
+function removeNewLines(s: string): string {
+  return (s ?? "").replace(/\n/g, " ");
 }
 
 // https://www.rfc-editor.org/rfc/rfc7807 w/ Metriport extension, { name?: string }
@@ -139,6 +143,15 @@ export const getCxIdOrFail = (req: Request): string => {
   return cxId;
 };
 
+export const getId = (req: Request): string | undefined => {
+  return req.id;
+};
+export const getIdOrFail = (req: Request): string => {
+  const id = getId(req);
+  if (!id) throw new BadRequestError("Missing id on the request");
+  return id;
+};
+
 export const getCxIdFromQuery = (req: Request): string | undefined => {
   const cxId = req.query.cxId as string | undefined;
   cxId && capture.setUser({ id: cxId });
@@ -164,3 +177,11 @@ export const getDateOrFail = (req: Request): string => {
   if (!date) throw new BadRequestError("Missing date query param");
   return date as string;
 };
+
+export function getAuthorizationToken(req: Request): string {
+  const header = req.header("Authorization");
+  if (!header) throw new Error("Missing Authorization Header");
+  const token = header.replace("Bearer ", "");
+  if (token === "") throw new Error("Empty Authorization Header");
+  return token;
+}

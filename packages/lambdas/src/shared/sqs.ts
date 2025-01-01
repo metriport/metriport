@@ -1,3 +1,4 @@
+import { MetriportError } from "@metriport/shared";
 import { SQSMessageAttributes, SQSRecord } from "aws-lambda";
 import * as AWS from "aws-sdk";
 import { SQS } from "aws-sdk";
@@ -19,70 +20,18 @@ export class SQSUtils {
     return this._sqs;
   }
 
-  async sendToDLQ(message: SQSRecord) {
-    if (!this.dlqURL) throw new Error(`Missing dlqURL`);
-    await this.dequeue(message);
-    const sendParams: AWS.SQS.SendMessageRequest = {
-      MessageBody: message.body,
-      QueueUrl: this.dlqURL,
-      MessageAttributes: this.attributesToSend(message.messageAttributes),
-    };
-    try {
-      console.log(`Sending message to DLQ: ${JSON.stringify(sendParams)}`);
-      await this.sqs.sendMessage(sendParams).promise();
-    } catch (err) {
-      console.log(`Failed to send message to queue: `, message, err);
-      capture.error(err, {
-        extra: { message, sendParams, context: "sendToDLQ" },
-      });
-    }
-  }
-
-  async reEnqueue(message: SQSRecord) {
-    await this.dequeue(message);
-    const sendParams = {
-      MessageBody: message.body,
-      QueueUrl: this.sourceQueueURL,
-      MessageAttributes: this.attributesToSend(message.messageAttributes),
-      DelaySeconds: this.delayWhenRetryingSeconds, // wait at least that long before retrying
-    };
-    try {
-      await this.sqs.sendMessage(sendParams).promise();
-    } catch (err) {
-      console.log(`Failed to re-enqueue message: `, message, err);
-      capture.error(err, {
-        extra: { message, sendParams, context: "reEnqueue" },
-      });
-    }
-  }
-
-  async dequeue(message: SQSRecord) {
-    const deleteParams = {
-      QueueUrl: this.sourceQueueURL,
-      ReceiptHandle: message.receiptHandle,
-    };
-    try {
-      await this.sqs.deleteMessage(deleteParams).promise();
-    } catch (err) {
-      console.log(`Failed to remove message from queue: `, message, err);
-      capture.error(err, {
-        extra: { message, deleteParams, context: "dequeue" },
-      });
-    }
-  }
-
-  attributesToSend(inboundMessageAttribs: SQSMessageAttributes): MessageBodyAttributeMap {
+  static attributesToSend(inboundMessageAttribs: SQSMessageAttributes): MessageBodyAttributeMap {
     let res = {};
     for (const [key, value] of Object.entries(inboundMessageAttribs)) {
       res = {
         ...res,
-        ...this.singleAttributeToSend(key, value.stringValue),
+        ...SQSUtils.singleAttributeToSend(key, value.stringValue),
       };
     }
     return res;
   }
 
-  singleAttributeToSend(key: string, value: string | undefined): MessageBodyAttributeMap {
+  static singleAttributeToSend(key: string, value: string | undefined): MessageBodyAttributeMap {
     return {
       [key]: {
         DataType: "String",
@@ -90,4 +39,46 @@ export class SQSUtils {
       },
     };
   }
+}
+
+/**
+ * Normalizes a string to be used as a message group ID in SQS.
+ *
+ * From AWS:
+ * MessageDeduplicationId can only include alphanumeric and punctuation characters. 1 to 128 in length.
+ */
+export function toMessageGroupId(
+  value: string,
+  order: "left-to-right" | "right-to-left" = "left-to-right",
+  maxChars = 128
+): string {
+  const replaced = value.replace(/[^a-zA-Z0-9.]/g, "");
+  if (order === "left-to-right") {
+    return replaced.slice(0, maxChars);
+  }
+  return replaced.slice(-maxChars);
+}
+
+export function getSingleMessageOrFail(
+  records: SQSRecord[],
+  lambdaName: string
+): SQSRecord | undefined {
+  if (!records || records.length < 1) {
+    console.log(`No records, discarding this event: ${JSON.stringify(records)}`);
+    return undefined;
+  }
+  if (records.length > 1) {
+    const msg = "Got more than one message from SQS";
+    capture.error(msg, {
+      extra: {
+        event,
+        context: lambdaName,
+        additional: `This lambda is supposed to run w/ only 1 message per batch, got ${records.length}`,
+      },
+    });
+    throw new MetriportError(msg, undefined, { amountOfRecords: records.length });
+  }
+  // Safe as we just checked the length
+  const message = records[0]!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+  return message;
 }

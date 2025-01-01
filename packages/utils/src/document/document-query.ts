@@ -32,6 +32,7 @@ async function main() {
       "2023-03-01",
       "2023-04-01",
       undefined,
+      undefined,
       metadata
     );
     console.log("startConsolidatedQuery response:", consolidatedQueryResponse);

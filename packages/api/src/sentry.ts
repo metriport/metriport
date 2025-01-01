@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/node";
 import * as Tracing from "@sentry/tracing";
+import { TransactionContext } from "@sentry/types";
 import { Application } from "express";
 import { Config } from "./shared/config";
 
@@ -17,19 +18,14 @@ export function initSentry(app: Application): void {
       // enable Express.js middleware tracing
       new Tracing.Integrations.Express({ app }),
     ],
-    // TODO #499 Review this based on the load on our app and Sentry's quotas
+    // Review this based on the load on our app and Sentry's quotas
     // https://docs.sentry.io/platforms/node/guides/express/configuration/sampling
     // Error sample rate - 0.0 to 1.0
     sampleRate: 1.0,
     // Traces sample rate
     tracesSampler: samplingContext => {
-      // Do not send health checks to Sentry
-      if (samplingContext.transactionContext.name === "GET /") {
+      if (isTracingDisabledForTx(samplingContext.transactionContext)) {
         return 0;
-      }
-      // Sample 1% of OPTIONS to have some visibility
-      if (samplingContext.transactionContext.name.match(/^OPTIONS.*$/)) {
-        return 0.01;
       }
       // TODO #499 Review this based on the load on our app and Sentry's quotas
       return 0.5;
@@ -39,4 +35,19 @@ export function initSentry(app: Application): void {
     app.use(Sentry.Handlers.requestHandler());
     app.use(Sentry.Handlers.tracingHandler());
   }
+}
+
+function isTracingDisabledForTx(tx: TransactionContext): boolean {
+  const txName = tx.name;
+
+  // Do not send health checks to Sentry
+  if (txName === "GET /") return true;
+
+  // Do not trace responses from IHE GW endpoints
+  if (txName.startsWith("POST /internal/carequality") && txName.includes("response")) return true;
+
+  // Sample 1% of OPTIONS to have some visibility
+  if (txName.match(/^OPTIONS.*$/)) return true;
+
+  return false;
 }

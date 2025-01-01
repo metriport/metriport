@@ -1,4 +1,5 @@
-import { PatientDTO, USState } from "@metriport/api-sdk";
+import { PatientDTO } from "@metriport/api-sdk";
+import { executeWithNetworkRetries, USState } from "@metriport/shared";
 import axios from "axios";
 import { Patient } from "../domain/patient";
 import { errorToString } from "../util/error/shared";
@@ -12,18 +13,25 @@ export class PatientLoaderMetriportAPI implements PatientLoader {
   constructor(private readonly apiUrl: string) {}
 
   public async getStatesFromPatientIds(cxId: string, patientIds: string[]): Promise<string[]> {
-    const resp = await axios.get(`${this.apiUrl}/internal/patient/states`, {
-      params: {
-        cxId,
-        patientIds: patientIds.join(","),
-      },
-    });
+    const resp = await executeWithNetworkRetries(
+      () =>
+        axios.get(`${this.apiUrl}/internal/patient/states`, {
+          params: {
+            cxId,
+            patientIds: patientIds.join(","),
+          },
+        }),
+      { retryOnTimeout: true }
+    );
     return resp.data.states;
   }
 
   // TODO: Response is DTO not domain object
   async getOneOrFail({ id, cxId }: GetOne): Promise<Patient> {
-    const response = await axios.get(`${this.apiUrl}/internal/patient/${id}?cxId=${cxId}`);
+    const response = await executeWithNetworkRetries(
+      () => axios.get(`${this.apiUrl}/internal/patient/${id}?cxId=${cxId}`),
+      { retryOnTimeout: true }
+    );
     const patient = getDomainFromDTO(response.data);
     validatePatient(patient);
     return patient;
@@ -31,15 +39,19 @@ export class PatientLoaderMetriportAPI implements PatientLoader {
 
   // TODO: Response is DTO not domain object
   async findBySimilarity({ cxId, data }: FindBySimilarity): Promise<Patient[]> {
-    const response = await axios.get(`${this.apiUrl}/internal/patient`, {
-      params: {
-        cxId: cxId,
-        dob: data?.dob,
-        genderAtBirth: data?.genderAtBirth,
-        firstNameInitial: data?.firstNameInitial,
-        lastNameInitial: data?.lastNameInitial,
-      },
-    });
+    const response = await executeWithNetworkRetries(
+      () =>
+        axios.get(`${this.apiUrl}/internal/patient`, {
+          params: {
+            cxId: cxId,
+            dob: data?.dob,
+            genderAtBirth: data?.genderAtBirth,
+            firstNameInitial: data?.firstNameInitial,
+            lastNameInitial: data?.lastNameInitial,
+          },
+        }),
+      { retryOnTimeout: true }
+    );
     const patients: Patient[] = response.data.map((patient: PatientDTO) =>
       getDomainFromDTO(patient)
     );
@@ -49,14 +61,18 @@ export class PatientLoaderMetriportAPI implements PatientLoader {
 
   async findBySimilarityAcrossAllCxs({ data }: Omit<FindBySimilarity, "cxId">): Promise<Patient[]> {
     try {
-      const response = await axios.get(`${this.apiUrl}/internal/mpi/patient`, {
-        params: {
-          dob: data?.dob,
-          genderAtBirth: data?.genderAtBirth,
-          firstNameInitial: data?.firstNameInitial,
-          lastNameInitial: data?.lastNameInitial,
-        },
-      });
+      const response = await executeWithNetworkRetries(
+        () =>
+          axios.get(`${this.apiUrl}/internal/mpi/patient`, {
+            params: {
+              dob: data?.dob,
+              genderAtBirth: data?.genderAtBirth,
+              firstNameInitial: data?.firstNameInitial,
+              lastNameInitial: data?.lastNameInitial,
+            },
+          }),
+        { retryOnTimeout: true }
+      );
       // call convertToDomainObject(response) here
       const patients: Patient[] = response.data.map((patient: PatientDTO) =>
         getDomainFromDTO(patient)
@@ -93,7 +109,7 @@ function validatePatient(patient: Patient): boolean {
 }
 
 //
-function getDomainFromDTO(dto: PatientDTO): Patient {
+export function getDomainFromDTO(dto: PatientDTO): Patient {
   return {
     id: dto.id,
     eTag: dto.eTag ?? "",
