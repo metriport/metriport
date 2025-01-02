@@ -11,13 +11,12 @@ import {
   queryResultsTable,
   getDurationsPerGW,
   RequestParams,
+  QUERY_RESULTS_TABLE_NAMES,
 } from "./shared";
 
 dayjs.extend(duration);
 
-const documentQueryResultTableName = "document_query_result";
-
-export async function xcaDqStats({
+export async function getXcaDqStatsForDay({
   cqDirectory,
   endOfPreviousMonth,
   dayIndex,
@@ -37,7 +36,7 @@ async function aggregateXcaDqGwStats(
   dayIndex: number
 ): Promise<GWWithStats[]> {
   const tableResults = await queryResultsTable<OutboundDocumentQueryResp>(
-    documentQueryResultTableName,
+    QUERY_RESULTS_TABLE_NAMES.documentQuery,
     endOfPreviousMonth,
     dayIndex
   );

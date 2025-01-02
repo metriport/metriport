@@ -13,6 +13,7 @@ import {
   RequestParams,
   ImplementerStatsByDay,
   MonthlyImplementerStats,
+  findExistingStatByImplementer,
 } from "./shared";
 import {
   queryResultsTableAthena,
@@ -22,10 +23,7 @@ import {
 
 dayjs.extend(duration);
 
-const patientDiscoveryResultTableName = "patient_discovery_result";
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function xcpdStats({
+export async function getXcpdStatsForDay({
   cqDirectory,
   endOfPreviousMonth,
   dayIndex,
@@ -38,7 +36,7 @@ export async function xcpdStats({
   );
 
   fs.writeFileSync(
-    `./non-errored-responses-per-gw-${dayjs().format("YYYY-MM-DD")}-impplementer.json`,
+    `./non-errored-responses-per-gw-${dayjs().format("YYYY-MM-DD")}-implementer.json`,
     JSON.stringify(xcpdStats, null, 2)
   );
 
@@ -49,11 +47,7 @@ async function aggregateXcpdGwStats(
   endOfPreviousMonth: string,
   dayIndex: number
 ): Promise<GWWithStats[]> {
-  const tableResults = await queryResultsTableAthena(
-    patientDiscoveryResultTableName,
-    endOfPreviousMonth,
-    dayIndex
-  );
+  const tableResults = await queryResultsTableAthena(endOfPreviousMonth, dayIndex);
 
   const durationsPerGW: GWWithStats[] = getAthenaDurationsPerGw(tableResults);
   const nonErroredResponsesPerGW: GWWithStats[] = getNonErroredResponsesPerGW(tableResults);
@@ -97,15 +91,12 @@ export function aggregateNonXcpdErrRespByMonth(
 
   Object.entries(statsByDay).forEach(([day, stats]) => {
     stats.forEach(stat => {
-      const { implementerId, implementerName } = stat;
-      const { gwStats } = stat;
+      const { implementerId, implementerName, gwStats } = stat;
 
       const year = dayjs(day).year();
       const month = dayjs(day).month() + 1;
 
-      const existingStat = monthlyStats.find(
-        s => s.year === year && s.month === month && s.implementerId === implementerId
-      );
+      const existingStat = findExistingStatByImplementer(implementerId, monthlyStats);
 
       const nonErroredResponses = aggregateGwNonErroredResponses(gwStats);
 

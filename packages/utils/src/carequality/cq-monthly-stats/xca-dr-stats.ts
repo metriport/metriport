@@ -15,13 +15,13 @@ import {
   CountPerGW,
   ImplementerStatsByDay,
   MonthlyImplementerStats,
+  findExistingStatByImplementer,
+  QUERY_RESULTS_TABLE_NAMES,
 } from "./shared";
 
 dayjs.extend(duration);
 
-const documentRetrievalResultTableName = "document_retrieval_result";
-
-export async function xcaDRStats({
+export async function getXcaDrStatsForDay({
   cqDirectory,
   endOfPreviousMonth,
   dayIndex,
@@ -41,7 +41,7 @@ async function aggregateXcaDRGWStats(
   dayIndex: number
 ): Promise<GWWithStats[]> {
   const tableResults = await queryResultsTable<OutboundDocumentRetrievalResp>(
-    documentRetrievalResultTableName,
+    QUERY_RESULTS_TABLE_NAMES.documentRetrieval,
     endOfPreviousMonth,
     dayIndex
   );
@@ -87,15 +87,12 @@ export function aggregateDocRetrievedByMonth(
 
   Object.entries(statsByDay).forEach(([day, stats]) => {
     stats.forEach(stat => {
-      const { implementerId, implementerName } = stat;
-      const { gwStats } = stat;
+      const { implementerId, implementerName, gwStats } = stat;
 
       const year = dayjs(day).year();
       const month = dayjs(day).month() + 1;
 
-      const existingStat = monthlyStats.find(
-        s => s.year === year && s.month === month && s.implementerId === implementerId
-      );
+      const existingStat = findExistingStatByImplementer(implementerId, monthlyStats);
 
       const totalDocRetrieved = aggregateGwTotalDocReceived(gwStats);
 

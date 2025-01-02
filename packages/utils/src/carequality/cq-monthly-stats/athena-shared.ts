@@ -23,22 +23,21 @@ export type TableResults = {
 };
 
 export async function queryResultsTableAthena(
-  tableName: string,
   endOfPreviousMonth: string,
   dayIndex: number
 ): Promise<TableResults[]> {
   const updateDay = dayjs(endOfPreviousMonth).subtract(dayIndex, "day").format("YYYY-MM-DD");
 
-  const QueryExecutionId = await createQueryExecutionId(updateDay);
+  const queryExecutionId = await createQueryExecutionId(updateDay);
 
   let isQueryRunning = true;
 
   while (isQueryRunning) {
-    isQueryRunning = await checkQueryCreateStatus(QueryExecutionId);
+    isQueryRunning = await checkQueryCreateStatus(queryExecutionId);
     await sleep(10000);
   }
 
-  const queryResults = await getQueryResultByExecutionId(QueryExecutionId);
+  const queryResults = await getQueryResultByExecutionId(queryExecutionId);
 
   if (queryResults) {
     const tableResults = buildTable(queryResults);
@@ -92,7 +91,7 @@ async function checkQueryCreateStatus(queryExecutionId: string): Promise<boolean
       return true;
     }
 
-    console.log("Atehna Query status is Active");
+    console.log("Athena Query status is Succeeded");
 
     return false;
   } catch (error) {
@@ -200,10 +199,10 @@ export function getDurationsPerGW(results: TableResults[]): GWWithStats[] {
 
   results.forEach(result => {
     const oidMatch = result.gateway.match(/oid=([^,]+)/);
-    const gwId = oidMatch ? oidMatch[1].trim() : "";
+    const gwId = oidMatch && oidMatch[1] ? oidMatch[1].trim() : undefined;
     const duration = result.duration;
 
-    if (duration) {
+    if (duration && gwId) {
       if (!durationsPerGW[gwId]) {
         durationsPerGW[gwId] = [duration];
       }
