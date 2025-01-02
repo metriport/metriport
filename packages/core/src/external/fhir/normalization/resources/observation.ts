@@ -11,18 +11,18 @@ type UnitComplex = {
 const unitNormalizationMap = new Map<string, string>([
   ["cel", "C"],
   ["degf", "F"],
+  ["in_i", "in"],
 ]);
 
 /**
- * This map is used to convert standard units to preferred units. i.e C -> F, g -> kg, etc.
+ * This map is used to convert standariozed units to preferred units. i.e C -> F, lb -> g, in -> cm, etc.
  */
 const unitConversionMap = new Map<string, UnitComplex>([
-  ["C", { unit: "F", code: "degF" }],
-  ["F", { unit: "F", code: "degF" }],
-  ["g", { unit: "lb" }],
-  ["kg", { unit: "lb" }],
-  ["m", { unit: "in" }],
-  ["cm", { unit: "in" }],
+  ["C", { unit: "F", code: "degF" }], // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
+  ["F", { unit: "F", code: "degF" }], // https://hl7.org/fhir/R4/valueset-ucum-bodytemp.html
+  ["kg", { unit: "g" }], // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+  ["lb", { unit: "g" }], // https://hl7.org/fhir/R4/valueset-ucum-bodyweight.html
+  ["in", { unit: "cm" }], // https://hl7.org/fhir/R4/valueset-ucum-bodylength.html
 ]);
 
 export function normalizeObservations(observations: Observation[]): Observation[] {

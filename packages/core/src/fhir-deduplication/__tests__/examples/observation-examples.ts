@@ -58,6 +58,12 @@ export const valueQuantityWeightKg = {
   system: "http://unitsofmeasure.org",
 };
 
+export const valueQuantityWeightG = {
+  value: 12_500,
+  unit: "g",
+  system: "http://unitsofmeasure.org",
+};
+
 export const valueQuantityWeightLb = {
   value: 160,
   unit: "lb",

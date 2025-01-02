@@ -1,4 +1,3 @@
-import { cloneDeep } from "lodash";
 import {
   referenceRangeHemoglobin,
   referenceRangeHemoglobinNoUnit,
@@ -7,6 +6,7 @@ import {
   valueQuantityHemoglobin,
   valueQuantityTempCel,
   valueQuantityTempF,
+  valueQuantityWeightG,
   valueQuantityWeightKg,
   valueQuantityWeightLb,
 } from "../../../../../fhir-deduplication/__tests__/examples/observation-examples";
@@ -15,9 +15,7 @@ import { normalizeObservations } from "../observation";
 
 describe("normalizeObservations", () => {
   it("correctly handle temperature celsius", () => {
-    const observation = makeObservation();
-
-    observation.valueQuantity = cloneDeep(valueQuantityTempCel);
+    const observation = makeObservation({ valueQuantity: valueQuantityTempCel });
 
     const normalized = normalizeObservations([observation]);
     expect(normalized.length).toBe(1);
@@ -31,9 +29,7 @@ describe("normalizeObservations", () => {
   });
 
   it("correctly handle temperature farhrenheit", () => {
-    const observation = makeObservation();
-
-    observation.valueQuantity = cloneDeep(valueQuantityTempF);
+    const observation = makeObservation({ valueQuantity: valueQuantityTempF });
 
     const normalized = normalizeObservations([observation]);
     expect(normalized.length).toBe(1);
@@ -47,66 +43,70 @@ describe("normalizeObservations", () => {
   });
 
   it("correctly handle weight kg", () => {
-    const observation = makeObservation();
-
-    observation.valueQuantity = cloneDeep(valueQuantityWeightKg);
+    const observation = makeObservation({ valueQuantity: valueQuantityWeightKg });
 
     const normalized = normalizeObservations([observation]);
     expect(normalized.length).toBe(1);
     const result = normalized[0];
     expect(result).toBeTruthy();
     if (!result) throw new Error("Expected result undefined");
-    expect(result.valueQuantity?.unit).toBe("lb");
-    expect(result.valueQuantity?.value).toBe(149.91);
+    expect(result.valueQuantity?.unit).toBe("g");
+    expect(result.valueQuantity?.value).toBe(68_000);
   });
 
   it("correctly handle weight lb", () => {
-    const observation = makeObservation();
-
-    observation.valueQuantity = cloneDeep(valueQuantityWeightLb);
+    const observation = makeObservation({ valueQuantity: valueQuantityWeightLb });
 
     const normalized = normalizeObservations([observation]);
     expect(normalized.length).toBe(1);
     const result = normalized[0];
     expect(result).toBeTruthy();
     if (!result) throw new Error("Expected result undefined");
-    expect(result.valueQuantity?.unit).toBe("lb");
-    expect(result.valueQuantity?.value).toBe(valueQuantityWeightLb.value);
+    expect(result.valueQuantity?.unit).toBe("g");
+    expect(result.valueQuantity?.value).toBe(72574.72);
+  });
+
+  it("correctly handle weight g", () => {
+    const observation = makeObservation({ valueQuantity: valueQuantityWeightG });
+
+    const normalized = normalizeObservations([observation]);
+    expect(normalized.length).toBe(1);
+    const result = normalized[0];
+    expect(result).toBeTruthy();
+    if (!result) throw new Error("Expected result undefined");
+    expect(result.valueQuantity?.unit).toBe("g");
+    expect(result.valueQuantity?.value).toBe(12_500);
   });
 
   it("correctly handle height cm", () => {
-    const observation = makeObservation();
-
-    observation.valueQuantity = cloneDeep(valueQuantityHeightCm);
+    const observation = makeObservation({ valueQuantity: valueQuantityHeightCm });
 
     const normalized = normalizeObservations([observation]);
     expect(normalized.length).toBe(1);
     const result = normalized[0];
     expect(result).toBeTruthy();
     if (!result) throw new Error("Expected result undefined");
-    expect(result.valueQuantity?.unit).toBe("in");
-    expect(result.valueQuantity?.value).toBe(62.99);
+    expect(result.valueQuantity?.unit).toBe("cm");
+    expect(result.valueQuantity?.value).toBe(160);
   });
 
   it("correctly handle height in", () => {
-    const observation = makeObservation();
-
-    observation.valueQuantity = cloneDeep(valueQuantityHeightIn);
+    const observation = makeObservation({ valueQuantity: valueQuantityHeightIn });
 
     const normalized = normalizeObservations([observation]);
     expect(normalized.length).toBe(1);
     const result = normalized[0];
     expect(result).toBeTruthy();
     if (!result) throw new Error("Expected result undefined");
-    expect(result.valueQuantity?.unit).toBe("in");
-    expect(result.valueQuantity?.value).toBe(valueQuantityHeightIn.value);
+    expect(result.valueQuantity?.unit).toBe("cm");
+    expect(result.valueQuantity?.value).toBe(152.4);
   });
 
   it("correctly handle referenceRange units", () => {
-    const observation = makeObservation();
-
-    observation.valueQuantity = cloneDeep(valueQuantityHemoglobin);
-    observation.referenceRange = cloneDeep(referenceRangeHemoglobin);
+    const observation = makeObservation({
+      valueQuantity: valueQuantityHemoglobin,
+      referenceRange: referenceRangeHemoglobin,
+    });
 
     const normalized = normalizeObservations([observation]);
     expect(normalized.length).toBe(1);
@@ -127,10 +127,10 @@ describe("normalizeObservations", () => {
   });
 
   it("correctly fills in referenceRanges units from the valueQuantity", () => {
-    const observation = makeObservation();
-
-    observation.valueQuantity = cloneDeep(valueQuantityHemoglobin);
-    observation.referenceRange = cloneDeep(referenceRangeHemoglobinNoUnit);
+    const observation = makeObservation({
+      valueQuantity: valueQuantityHemoglobin,
+      referenceRange: referenceRangeHemoglobinNoUnit,
+    });
 
     const normalized = normalizeObservations([observation]);
     const result = normalized[0];
