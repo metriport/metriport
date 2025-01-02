@@ -36,10 +36,10 @@ import {
  * - If you want to run for the entire month, set this to undefined or 0.
  */
 
-const howManyDaysToRun = 1;
+const howManyDaysToRun = undefined;
 
 const baseResultsDir = `./runs/cq-monthly-stats`;
-const cqDirectoryPath = "./runs/cq-directory.json";
+const cqDirectoryPath = `${baseResultsDir}/cq-directory.json`;
 
 async function main() {
   let cqDirectory: CQDirectoryEntryData[] = [];
@@ -69,13 +69,13 @@ async function main() {
   const xcaDQByDate: ImplementerStatsByDay = {};
   const xcaDRByDate: ImplementerStatsByDay = {};
 
+  const baseResultsDirDayNow = `${baseResultsDir}/individual-runs/${new Date().toISOString()}`;
+
   for (let i = 0; i < daysToRun; i++) {
     const day = previousMonth.endOf("month").subtract(i, "day").format(ISO_DATE);
     const baseResultsDirDay = `${baseResultsDir}/${day}`;
     fs.mkdirSync(baseResultsDirDay, { recursive: true });
-
-    const baseResultsDirDayNow = `${baseResultsDir}/${new Date().toISOString()}/${day}`;
-    fs.mkdirSync(baseResultsDirDayNow, { recursive: true });
+    fs.mkdirSync(`${baseResultsDirDayNow}/${day}`, { recursive: true });
 
     console.log("day:", day);
 
@@ -91,7 +91,7 @@ async function main() {
       const xcpd = await getXcpdStatsForDay(params);
       xcpdByDate[day] = xcpd;
       fs.writeFileSync(`${baseResultsDirDay}/xcpd.json`, JSON.stringify(xcpd, null, 2));
-      fs.writeFileSync(`${baseResultsDirDayNow}/xcpd.json`, JSON.stringify(xcpd, null, 2));
+      fs.writeFileSync(`${baseResultsDirDayNow}/${day}/xcpd.json`, JSON.stringify(xcpd, null, 2));
     }
 
     if (fs.existsSync(`${baseResultsDirDay}/xca-dq.json`)) {
@@ -101,7 +101,10 @@ async function main() {
       const xcaDQ = await getXcaDqStatsForDay(params);
       xcaDQByDate[day] = xcaDQ;
       fs.writeFileSync(`${baseResultsDirDay}/xca-dq.json`, JSON.stringify(xcaDQ, null, 2));
-      fs.writeFileSync(`${baseResultsDirDayNow}/xca-dq.json`, JSON.stringify(xcaDQ, null, 2));
+      fs.writeFileSync(
+        `${baseResultsDirDayNow}/${day}/xca-dq.json`,
+        JSON.stringify(xcaDQ, null, 2)
+      );
     }
     if (fs.existsSync(`${baseResultsDirDay}/xca-dr.json`)) {
       console.log("Using stored XCA-DR results");
@@ -110,7 +113,10 @@ async function main() {
       const xcaDR = await getXcaDrStatsForDay(params);
       xcaDRByDate[day] = xcaDR;
       fs.writeFileSync(`${baseResultsDirDay}/xca-dr.json`, JSON.stringify(xcaDR, null, 2));
-      fs.writeFileSync(`${baseResultsDirDayNow}/xca-dr.json`, JSON.stringify(xcaDR, null, 2));
+      fs.writeFileSync(
+        `${baseResultsDirDayNow}/${day}/xca-dr.json`,
+        JSON.stringify(xcaDR, null, 2)
+      );
     }
   }
 
@@ -137,7 +143,7 @@ function createXcpdSuccessfulRespCsv(monthlyStats: MonthlyImplementerStats[]) {
     csv += `${year},${month},${implementerId},${implementerName},${nonErroredResponses}\n`;
   });
 
-  fs.writeFileSync("./runs/xcpd-successful-resp.csv", csv);
+  fs.writeFileSync(`${baseResultsDir}/xcpd-successful-resp.csv`, csv);
 }
 
 function createDocRetrievedCsv(monthlyStats: MonthlyImplementerStats[]) {
@@ -148,7 +154,7 @@ function createDocRetrievedCsv(monthlyStats: MonthlyImplementerStats[]) {
     csv += `${year},${month},${implementerId},${implementerName},${totalDocRetrieved}\n`;
   });
 
-  fs.writeFileSync("./runs/xca-doc-retrieved.csv", csv);
+  fs.writeFileSync(`${baseResultsDir}/xca-doc-retrieved.csv`, csv);
 }
 
 function createAvgCsv(year: number, month: number, monthlyStats: MonthlyAvgByImplementer) {
@@ -165,7 +171,7 @@ function createAvgCsv(year: number, month: number, monthlyStats: MonthlyAvgByImp
     csv += `${year},${month},${implementerId},${implementerName},${xcpdAvgResponseTimeMs},${xcaDQAvgResponseTimeMs},${xcaDRAvgResponseTimeMs}\n`;
   });
 
-  fs.writeFileSync("./runs/durations.csv", csv);
+  fs.writeFileSync(`${baseResultsDir}/durations.csv`, csv);
 }
 
 main();

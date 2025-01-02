@@ -1,7 +1,6 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import fs from "fs";
 import { merge } from "lodash";
 import {
   associateGwToImplementer,
@@ -15,7 +14,7 @@ import {
   getDurationsPerGW as getAthenaDurationsPerGw,
 } from "./shared";
 import { queryResultsTableAthena, TableResults } from "./athena-shared";
-import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
+import { buildDayjs } from "@metriport/shared/common/date";
 
 export async function getXcpdStatsForDay({
   cqDirectory,
@@ -27,11 +26,6 @@ export async function getXcpdStatsForDay({
   const xcpdStats: ImplementerWithGwStats[] = await associateGwToImplementer(
     xcpdGWStats,
     cqDirectory
-  );
-
-  fs.writeFileSync(
-    `./non-errored-responses-per-gw-${buildDayjs().format(ISO_DATE)}-implementer.json`,
-    JSON.stringify(xcpdStats, null, 2)
   );
 
   return xcpdStats;
