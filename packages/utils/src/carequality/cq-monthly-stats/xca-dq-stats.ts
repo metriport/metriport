@@ -2,8 +2,6 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { OutboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
-import dayjs from "dayjs";
-import duration from "dayjs/plugin/duration";
 import {
   GWWithStats,
   ImplementerWithGwStats,
@@ -14,8 +12,6 @@ import {
   QUERY_RESULTS_TABLE_NAMES,
 } from "./shared";
 
-dayjs.extend(duration);
-
 export async function getXcaDqStatsForDay({
   cqDirectory,
   endOfPreviousMonth,
@@ -23,10 +19,7 @@ export async function getXcaDqStatsForDay({
 }: RequestParams): Promise<ImplementerWithGwStats[]> {
   const xcaDQGWStats: GWWithStats[] = await aggregateXcaDqGwStats(endOfPreviousMonth, dayIndex);
 
-  const xcaDqStats: ImplementerWithGwStats[] = await associateGwToImplementer(
-    xcaDQGWStats,
-    cqDirectory
-  );
+  const xcaDqStats: ImplementerWithGwStats[] = associateGwToImplementer(xcaDQGWStats, cqDirectory);
 
   return xcaDqStats;
 }

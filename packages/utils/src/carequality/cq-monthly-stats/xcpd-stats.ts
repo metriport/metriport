@@ -1,10 +1,8 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import dayjs from "dayjs";
 import fs from "fs";
 import { merge } from "lodash";
-import duration from "dayjs/plugin/duration";
 import {
   associateGwToImplementer,
   GWWithStats,
@@ -14,14 +12,10 @@ import {
   ImplementerStatsByDay,
   MonthlyImplementerStats,
   findExistingStatByImplementer,
-} from "./shared";
-import {
-  queryResultsTableAthena,
   getDurationsPerGW as getAthenaDurationsPerGw,
-  TableResults,
-} from "./athena-shared";
-
-dayjs.extend(duration);
+} from "./shared";
+import { queryResultsTableAthena, TableResults } from "./athena-shared";
+import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
 
 export async function getXcpdStatsForDay({
   cqDirectory,
@@ -36,7 +30,7 @@ export async function getXcpdStatsForDay({
   );
 
   fs.writeFileSync(
-    `./non-errored-responses-per-gw-${dayjs().format("YYYY-MM-DD")}-implementer.json`,
+    `./non-errored-responses-per-gw-${buildDayjs().format(ISO_DATE)}-implementer.json`,
     JSON.stringify(xcpdStats, null, 2)
   );
 
@@ -61,14 +55,16 @@ function getNonErroredResponsesPerGW(results: TableResults[]): GWWithStats[] {
 
   results.forEach(result => {
     const oidMatch = result.gateway.match(/oid=([^,]+)/);
-    const gwId = oidMatch ? oidMatch[1].trim() : "";
+    const gwId = oidMatch && oidMatch[1] ? oidMatch[1].trim() : undefined;
     const nonErroredResponses = result.patientmatch ? 1 : 0;
 
-    if (!nonErroredResponsesPerGW[gwId]) {
-      nonErroredResponsesPerGW[gwId] = [nonErroredResponses];
-    }
+    if (gwId) {
+      if (!nonErroredResponsesPerGW[gwId]) {
+        nonErroredResponsesPerGW[gwId] = [nonErroredResponses];
+      }
 
-    nonErroredResponsesPerGW[gwId].push(nonErroredResponses);
+      nonErroredResponsesPerGW[gwId].push(nonErroredResponses);
+    }
   });
 
   for (const [gwId, nonErroredResponses] of Object.entries(nonErroredResponsesPerGW)) {
@@ -93,8 +89,8 @@ export function aggregateNonXcpdErrRespByMonth(
     stats.forEach(stat => {
       const { implementerId, implementerName, gwStats } = stat;
 
-      const year = dayjs(day).year();
-      const month = dayjs(day).month() + 1;
+      const year = buildDayjs(day).year();
+      const month = buildDayjs(day).month() + 1;
 
       const existingStat = findExistingStatByImplementer(implementerId, monthlyStats);
 

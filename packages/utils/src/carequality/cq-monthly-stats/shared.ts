@@ -4,6 +4,11 @@ dotenv.config();
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { initReadonlyDbPool } from "@metriport/core/util/sequelize";
 import { Organization } from "@metriport/carequality-sdk/models/organization";
+import {
+  OutboundDocumentQueryResp,
+  OutboundDocumentRetrievalResp,
+} from "@metriport/ihe-gateway-sdk";
+import { TableResults } from "./athena-shared";
 import { QueryTypes } from "sequelize";
 import { mean } from "lodash";
 
@@ -135,15 +140,17 @@ export async function queryResultsTable<TableResults>(
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function getDurationsPerGW(results: any[]): GWWithStats[] {
+export function getDurationsPerGW(
+  results: OutboundDocumentQueryResp[] | OutboundDocumentRetrievalResp[] | TableResults[]
+): GWWithStats[] {
   const durationsPerGW: CountPerGW = {};
   const gwStats: GWWithStats[] = [];
 
   results.forEach(result => {
-    const gwId = result.gateway.oid || result.gateway.homeCommunityId;
+    const gwId = getGwId(result);
     const duration = result.duration;
 
-    if (duration) {
+    if (duration && gwId) {
       if (!durationsPerGW[gwId]) {
         durationsPerGW[gwId] = [duration];
       }
@@ -163,6 +170,22 @@ export function getDurationsPerGW(results: any[]): GWWithStats[] {
   }
 
   return gwStats;
+}
+
+export function getGwId(
+  result: OutboundDocumentQueryResp | OutboundDocumentRetrievalResp | TableResults
+): string | undefined {
+  if (typeof result.gateway === "string") {
+    const oidMatch = result.gateway.match(/oid=([^,]+)/);
+    const gwId = oidMatch && oidMatch[1] ? oidMatch[1].trim() : undefined;
+    return gwId;
+  }
+
+  if (result.gateway.homeCommunityId) {
+    return result.gateway.homeCommunityId;
+  }
+
+  return undefined;
 }
 
 export function associateGwToImplementer(

@@ -2,9 +2,8 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { OutboundDocumentRetrievalResp } from "@metriport/ihe-gateway-sdk";
-import dayjs from "dayjs";
 import { merge } from "lodash";
-import duration from "dayjs/plugin/duration";
+import { buildDayjs } from "@metriport/shared/common/date";
 import {
   ImplementerWithGwStats,
   GWWithStats,
@@ -18,8 +17,6 @@ import {
   findExistingStatByImplementer,
   QUERY_RESULTS_TABLE_NAMES,
 } from "./shared";
-
-dayjs.extend(duration);
 
 export async function getXcaDrStatsForDay({
   cqDirectory,
@@ -89,8 +86,8 @@ export function aggregateDocRetrievedByMonth(
     stats.forEach(stat => {
       const { implementerId, implementerName, gwStats } = stat;
 
-      const year = dayjs(day).year();
-      const month = dayjs(day).month() + 1;
+      const year = buildDayjs(day).year();
+      const month = buildDayjs(day).month() + 1;
 
       const existingStat = findExistingStatByImplementer(implementerId, monthlyStats);
 

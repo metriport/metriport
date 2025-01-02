@@ -4,7 +4,6 @@ dotenv.config();
 import { QueryTypes } from "sequelize";
 import { buildDayjs } from "@metriport/shared/common/date";
 import fs from "fs";
-import { sleep } from "@metriport/shared";
 import { ISO_DATE } from "@metriport/shared/common/date";
 import { getXcpdStatsForDay, aggregateNonXcpdErrRespByMonth } from "./xcpd-stats";
 import { getXcaDqStatsForDay } from "./xca-dq-stats";
@@ -34,7 +33,7 @@ import {
  *
  * - Set the `howManyDaysToRun` const.
  * - If you want to run for a specific number of days, set this to the number of days you want to run.
- * - If you want to run for the entire month, set this to 0.
+ * - If you want to run for the entire month, set this to undefined or 0.
  */
 
 const howManyDaysToRun = 1;
@@ -57,7 +56,7 @@ async function main() {
     fs.writeFileSync(cqDirectoryPath, JSON.stringify(cqDirectory, null, 2));
   }
 
-  console.log("cqDirectory:", cqDirectory.length);
+  console.log("cqDirectory length:", cqDirectory.length);
 
   const previousMonth = buildDayjs().subtract(1, "month");
   const previousMonthYear = previousMonth.year();
@@ -75,6 +74,9 @@ async function main() {
     const baseResultsDirDay = `${baseResultsDir}/${day}`;
     fs.mkdirSync(baseResultsDirDay, { recursive: true });
 
+    const baseResultsDirDayNow = `${baseResultsDir}/${new Date().toISOString()}/${day}`;
+    fs.mkdirSync(baseResultsDirDayNow, { recursive: true });
+
     console.log("day:", day);
 
     const params = { cqDirectory, endOfPreviousMonth, dayIndex: i };
@@ -89,7 +91,7 @@ async function main() {
       const xcpd = await getXcpdStatsForDay(params);
       xcpdByDate[day] = xcpd;
       fs.writeFileSync(`${baseResultsDirDay}/xcpd.json`, JSON.stringify(xcpd, null, 2));
-      await sleep(20000);
+      fs.writeFileSync(`${baseResultsDirDayNow}/xcpd.json`, JSON.stringify(xcpd, null, 2));
     }
 
     if (fs.existsSync(`${baseResultsDirDay}/xca-dq.json`)) {
@@ -99,9 +101,8 @@ async function main() {
       const xcaDQ = await getXcaDqStatsForDay(params);
       xcaDQByDate[day] = xcaDQ;
       fs.writeFileSync(`${baseResultsDirDay}/xca-dq.json`, JSON.stringify(xcaDQ, null, 2));
-      await sleep(20000);
+      fs.writeFileSync(`${baseResultsDirDayNow}/xca-dq.json`, JSON.stringify(xcaDQ, null, 2));
     }
-
     if (fs.existsSync(`${baseResultsDirDay}/xca-dr.json`)) {
       console.log("Using stored XCA-DR results");
       xcaDRByDate[day] = JSON.parse(fs.readFileSync(`${baseResultsDirDay}/xca-dr.json`, "utf8"));
@@ -109,11 +110,11 @@ async function main() {
       const xcaDR = await getXcaDrStatsForDay(params);
       xcaDRByDate[day] = xcaDR;
       fs.writeFileSync(`${baseResultsDirDay}/xca-dr.json`, JSON.stringify(xcaDR, null, 2));
-      await sleep(20000);
+      fs.writeFileSync(`${baseResultsDirDayNow}/xca-dr.json`, JSON.stringify(xcaDR, null, 2));
     }
   }
 
-  const fullMonthMultiplier = howManyDaysToRun > 0 ? daysInPreviousMonth / daysToRun : 1;
+  const fullMonthMultiplier = howManyDaysToRun ? daysInPreviousMonth / daysToRun : 1;
 
   const xcpdMonthlyStats = aggregateNonXcpdErrRespByMonth(xcpdByDate, fullMonthMultiplier);
   createXcpdSuccessfulRespCsv(xcpdMonthlyStats);
@@ -136,7 +137,7 @@ function createXcpdSuccessfulRespCsv(monthlyStats: MonthlyImplementerStats[]) {
     csv += `${year},${month},${implementerId},${implementerName},${nonErroredResponses}\n`;
   });
 
-  fs.writeFileSync("./runs/xcpd-non-err-resp.csv", csv);
+  fs.writeFileSync("./runs/xcpd-successful-resp.csv", csv);
 }
 
 function createDocRetrievedCsv(monthlyStats: MonthlyImplementerStats[]) {

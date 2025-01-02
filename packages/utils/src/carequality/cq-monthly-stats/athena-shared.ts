@@ -9,8 +9,7 @@ import {
   ColumnInfo,
 } from "@aws-sdk/client-athena";
 import { sleep } from "@metriport/shared";
-import dayjs from "dayjs";
-import { CountPerGW, GWWithStats } from "./shared";
+import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
 
 const client = new AthenaClient({ region: "us-west-1" });
 
@@ -26,7 +25,7 @@ export async function queryResultsTableAthena(
   endOfPreviousMonth: string,
   dayIndex: number
 ): Promise<TableResults[]> {
-  const updateDay = dayjs(endOfPreviousMonth).subtract(dayIndex, "day").format("YYYY-MM-DD");
+  const updateDay = buildDayjs(endOfPreviousMonth).subtract(dayIndex, "day").format(ISO_DATE);
 
   const queryExecutionId = await createQueryExecutionId(updateDay);
 
@@ -183,43 +182,12 @@ function buildTable(output: {
 
 function addDurationsToTable(tableResults: Array<{ [key: string]: string }>): TableResults[] {
   return tableResults.map(result => {
-    const requesttimestamp = dayjs(result.requesttimestamp);
-    const responsetimestamp = dayjs(result.responsetimestamp);
+    const requesttimestamp = buildDayjs(result.requesttimestamp);
+    const responsetimestamp = buildDayjs(result.responsetimestamp);
 
     return {
       ...result,
       duration: responsetimestamp.diff(requesttimestamp, "milliseconds"),
     };
   }) as TableResults[];
-}
-
-export function getDurationsPerGW(results: TableResults[]): GWWithStats[] {
-  const durationsPerGW: CountPerGW = {};
-  const gwStats: GWWithStats[] = [];
-
-  results.forEach(result => {
-    const oidMatch = result.gateway.match(/oid=([^,]+)/);
-    const gwId = oidMatch && oidMatch[1] ? oidMatch[1].trim() : undefined;
-    const duration = result.duration;
-
-    if (duration && gwId) {
-      if (!durationsPerGW[gwId]) {
-        durationsPerGW[gwId] = [duration];
-      }
-
-      durationsPerGW[gwId].push(duration);
-    }
-  });
-
-  for (const [gwId, durations] of Object.entries(durationsPerGW)) {
-    const totalDuration = durations.reduce((acc, curr) => acc + curr, 0);
-    const avgDuration = totalDuration / durations.length;
-
-    gwStats.push({
-      gwId,
-      avgResponseTimeMs: avgDuration,
-    });
-  }
-
-  return gwStats;
 }
