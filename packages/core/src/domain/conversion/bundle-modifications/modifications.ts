@@ -77,15 +77,10 @@ export function addExtensionToConversion(
 }
 
 export function removePatientFromConversion(fhirBundle: Bundle<Resource>): Bundle<Resource> {
+  if (!fhirBundle.entry) return fhirBundle;
   const updatedBundle = cloneDeep(fhirBundle);
-  const entries = updatedBundle?.entry ?? [];
-  const patientEntries = entries.filter(e => isPatient(e.resource));
+  if (!updatedBundle.entry) return fhirBundle;
 
-  if (patientEntries.length > 1) {
-    throw new Error("Multiple Patient resources found in Bundle");
-  }
-
-  const pos = entries.findIndex(e => isPatient(e.resource));
-  if (pos >= 0) updatedBundle.entry?.splice(pos, 1);
+  updatedBundle.entry = updatedBundle.entry?.filter(entry => !isPatient(entry.resource));
   return updatedBundle;
 }

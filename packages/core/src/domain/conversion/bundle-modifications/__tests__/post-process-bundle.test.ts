@@ -45,7 +45,7 @@ function initTest() {
 }
 
 describe("Checking postProcessBundle and its constituent functions", () => {
-  describe("replaceIDs", () => {
+  describe("replaceIdsForResourcesWithDocExtension", () => {
     it("does not update the IDs if the extension is missing", () => {
       const { patientId, condition } = initTest();
       const bundle = makeBundle({ entries: [condition], type: "collection" });
@@ -153,7 +153,19 @@ describe("Checking postProcessBundle and its constituent functions", () => {
   });
 
   describe("removePatientFromConversion", () => {
-    it("throws error when multiple Patient resources exist", () => {
+    it("removes single Patient resource from the Bundle", () => {
+      const { condition } = initTest();
+      const patient = makePatient({
+        name: [{ given: ["John"], family: "Doe" }],
+      });
+      const bundle = makeBundle({ entries: [condition, patient], type: "collection" });
+
+      const updatedBundle = bundleMods.removePatientFromConversion(bundle);
+      expect(updatedBundle.entry).toHaveLength(1);
+      expect(updatedBundle.entry?.[0]?.resource).toEqual(condition);
+    });
+
+    it("removes all Patient resources from the Bundle", () => {
       const { condition } = initTest();
       const patient1 = makePatient({
         name: [{ given: ["John"], family: "Doe" }],
@@ -161,19 +173,10 @@ describe("Checking postProcessBundle and its constituent functions", () => {
       const patient2 = makePatient({
         name: [{ given: ["Jane"], family: "Doe" }],
       });
-      const bundle = makeBundle({ entries: [condition, patient1, patient2], type: "collection" });
-
-      expect(() => bundleMods.removePatientFromConversion(bundle)).toThrow(
-        "Multiple Patient resources found in Bundle"
-      );
-    });
-
-    it("removes single Patient resource from the Bundle", () => {
-      const { condition } = initTest();
-      const patient = makePatient({
-        name: [{ given: ["John"], family: "Doe" }],
+      const bundle = makeBundle({
+        entries: [condition, patient1, patient2],
+        type: "collection",
       });
-      const bundle = makeBundle({ entries: [condition, patient], type: "collection" });
 
       const updatedBundle = bundleMods.removePatientFromConversion(bundle);
       expect(updatedBundle.entry).toHaveLength(1);
