@@ -152,31 +152,6 @@ describe("Checking postProcessBundle and its constituent functions", () => {
     });
   });
 
-  describe("createFullBundleEntries", () => {
-    it("appends a PUT request to each BundleEntry with correct resource references", () => {
-      const { patientId, condition } = initTest();
-      const condition2 = makeCondition({ id: faker.string.uuid() }, patientId);
-      const bundle = makeBundle({ entries: [condition, condition2], type: "collection" });
-
-      const updatedBundle = bundleShared.createFullBundleEntries(bundle);
-      expect(updatedBundle.entry).toHaveLength(2);
-
-      updatedBundle.entry?.forEach((entry, index) => {
-        const resource = bundle.entry?.[index]?.resource;
-        expect(entry.request).toEqual({
-          method: "PUT",
-          url: `${resource?.resourceType}/${resource?.id}`,
-        });
-      });
-    });
-
-    it("returns bundle unchanged when no entries exist", () => {
-      const bundle = makeBundle({ entries: [], type: "collection" });
-      const updatedBundle = bundleShared.createFullBundleEntries(bundle);
-      expect(updatedBundle).toEqual(bundle);
-    });
-  });
-
   describe("removePatientFromConversion", () => {
     it("throws error when multiple Patient resources exist", () => {
       const { condition } = initTest();

@@ -169,27 +169,37 @@ export const buildBundleEntry = <T extends Resource>(resource: T): BundleEntry<T
   };
 };
 
-const qualifyingBundleTypesForRequest = ["batch", "transaction", "history", "collection"];
+const qualifyingBundleTypesForRequest = ["batch", "transaction", "history"];
 
-function addRequestAndUrl(entry: BundleEntry): BundleEntry {
-  const fullUrl = buildFullUrl(entry.resource);
+function addRequestToEntry(entry: BundleEntry): BundleEntry {
   const request = buildFhirRequest(entry.resource);
   return {
     ...entry,
-    ...(fullUrl ? { fullUrl } : {}),
     ...(request ? { request } : {}),
+  };
+}
+
+function addFullUrlToEntry(entry: BundleEntry): BundleEntry {
+  const fullUrl = entry.fullUrl ?? buildFullUrl(entry.resource);
+  return {
+    ...entry,
+    ...(fullUrl ? { fullUrl } : {}),
   };
 }
 
 export function createFullBundleEntries(bundle: Bundle<Resource>): Bundle<Resource> {
   const updBundle = cloneDeep(bundle);
+  const entries = bundle.entry;
+  if (!entries) return updBundle;
 
-  if (bundle.type && qualifyingBundleTypesForRequest.includes(bundle.type)) {
-    const updEntries = bundle.entry?.map(addRequestAndUrl);
-    if (updEntries) {
-      updBundle.entry = updEntries;
-    }
-  }
+  const entriesWithFullUrl = entries.map(addFullUrlToEntry);
+
+  const finalEntries =
+    bundle.type && qualifyingBundleTypesForRequest.includes(bundle.type)
+      ? entriesWithFullUrl.map(addRequestToEntry)
+      : entriesWithFullUrl;
+
+  updBundle.entry = finalEntries;
   return updBundle;
 }
 
