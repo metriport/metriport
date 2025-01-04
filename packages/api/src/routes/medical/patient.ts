@@ -1,4 +1,4 @@
-import { consolidationConversionType } from "@metriport/api-sdk";
+import { ConsolidatedQuery, consolidationConversionType } from "@metriport/api-sdk";
 import { GetConsolidatedQueryProgressResponse } from "@metriport/api-sdk/medical/models/patient";
 import { mrFormat } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
@@ -209,6 +209,30 @@ router.get(
       message:
         "Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook",
     };
+
+    return res.json(respPayload);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /patient/:id/consolidated/query/:requestId
+ *
+ * Returns the status and information on a specific data query for a given patient.
+ *
+ * @param req.param.id The ID of the patient whose data is to be returned.
+ * @param req.param.requestId The ID of the query to be returned.
+ * @returns the status and information on a specific data query for a given patient.
+ */
+router.get(
+  "/consolidated/query/:requestId",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { patient } = getPatientInfoOrFail(req);
+    const requestId = getFrom("params").orFail("requestId", req);
+    const query = patient.data.consolidatedQueries?.find((q: ConsolidatedQuery) => q.requestId === requestId);
+    if (!query) throw new NotFoundError("Document query not found");
+
+    const respPayload: ConsolidatedQuery = {...query };
 
     return res.json(respPayload);
   })
