@@ -89,6 +89,29 @@ service:
           response:
             body: $GetConsolidatedQueryStatusResponse.Example0
 
+    getSingleConsolidatedQueryStatus:
+      display-name: Get Single Consolidated Data Query status
+      docs: Get the status of a single query for patient's consolidated data.
+      method: GET
+      path: /patient/{id}/consolidated/query/{requestId}
+      path-parameters:
+        id:
+          type: string
+          docs: The ID of the Patient
+        requestId:
+          type: string
+          docs: The ID of the request to get the status of.
+      response:
+        type: GetSingleConsolidatedQueryStatusResponse
+      examples:
+        - name: Example1
+          path-parameters:
+            id: "12345678"
+            requestId: "00000000-0000-0000-0000-000000000000"
+          response:
+            body: $GetSingleConsolidatedQueryStatusResponse.Example0
+
+
     createPatientConsolidated:
       display-name: Create Patient's Consolidated Data
       docs: Create Patient's Consolidated Data with a FHIR Bundle.
@@ -219,6 +242,9 @@ types:
             - $PatientConsolidatedDataStatus.Example0
             - $PatientConsolidatedDataStatus.Example0
           message: Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook
+
+  # Using an alias to avoid duplicating `PatientConsolidatedDataStatus`
+  GetSingleConsolidatedQueryStatusResponse: PatientConsolidatedDataStatus
 
   ConsolidatedCountResponse:
     properties:
