@@ -228,7 +228,7 @@ router.get(
     const { patient } = getPatientInfoOrFail(req);
     const requestId = getFrom("params").orFail("requestId", req);
     const query = patient.data.consolidatedQueries?.find((q: ConsolidatedQuery) => q.requestId === requestId);
-    if (!query) throw new NotFoundError("Document query not found");
+    if (!query) throw new NotFoundError("Consolidated query not found");
 
     const respPayload: ConsolidatedQuery = {...query };
 
