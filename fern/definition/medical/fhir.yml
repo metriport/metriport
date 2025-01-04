@@ -102,14 +102,14 @@ service:
           type: string
           docs: The ID of the request to get the status of.
       response:
-        type: GetSingleConsolidatedQueryStatusResponse
+        type: PatientConsolidatedDataStatus
       examples:
         - name: Example1
           path-parameters:
             id: "12345678"
             requestId: "00000000-0000-0000-0000-000000000000"
           response:
-            body: $GetSingleConsolidatedQueryStatusResponse.Example0
+            body: $PatientConsolidatedDataStatus.Example0
 
 
     createPatientConsolidated:
@@ -242,9 +242,6 @@ types:
             - $PatientConsolidatedDataStatus.Example0
             - $PatientConsolidatedDataStatus.Example0
           message: Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook
-
-  # Using an alias to avoid duplicating `PatientConsolidatedDataStatus`
-  GetSingleConsolidatedQueryStatusResponse: PatientConsolidatedDataStatus
 
   ConsolidatedCountResponse:
     properties:
