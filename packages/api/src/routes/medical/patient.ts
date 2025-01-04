@@ -215,11 +215,11 @@ router.get(
 /** ---------------------------------------------------------------------------
  * GET /patient/:id/consolidated/query/:requestId
  *
- * Returns the status and information on a specific data query for a given patient.
+ * Returns the status and information on a specific consolidated query for a given patient.
  *
- * @param req.param.id The ID of the patient whose data is to be returned.
- * @param req.param.requestId The ID of the query to be returned.
- * @returns the status and information on a specific data query for a given patient.
+ * @param req.param.id The ID of the patient whose consolidated query status is to be returned.
+ * @param req.param.requestId The ID of the query status to be returned.
+ * @returns the status and information on a specific consolidated query for a given patient.
  */
 router.get(
   "/consolidated/query/:requestId",
@@ -230,9 +230,7 @@ router.get(
     const query = patient.data.consolidatedQueries?.find((q: ConsolidatedQuery) => q.requestId === requestId);
     if (!query) throw new NotFoundError("Consolidated query not found");
 
-    const respPayload: ConsolidatedQuery = {...query };
-
-    return res.json(respPayload);
+    return res.status(status.OK).json(query);
   })
 );
 
