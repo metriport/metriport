@@ -35,6 +35,7 @@ import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../mode
 import { Organization, OrganizationCreate, organizationSchema } from "../models/organization";
 import {
   GetConsolidatedQueryProgressResponse,
+  GetSingleConsolidatedQueryProgressResponse,
   PatientCreate,
   PatientUpdate,
   StartConsolidatedQueryProgressResponse,
@@ -468,6 +469,23 @@ export class MetriportMedicalApi {
     patientId: string
   ): Promise<GetConsolidatedQueryProgressResponse> {
     const resp = await this.api.get(`${PATIENT_URL}/${patientId}/consolidated/query`);
+    return resp.data;
+  }
+
+  /** ---------------------------------------------------------------------------
+   * Get the consolidated data query status for a given patient and requestId.
+   * The results to the query are sent through Webhook (see
+   * startConsolidatedQuery() and https://docs.metriport.com/medical-api/more-info/webhooks).
+   *
+   * @param patientId The ID of the patient whose data is to be returned.
+   * @param requestId The ID of the request to get the status of.
+   * @return The single consolidated data query status.
+   */
+  async getSingleConsolidatedQueryStatus(
+    patientId: string,
+    requestId: string
+  ): Promise<GetSingleConsolidatedQueryProgressResponse> {
+    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/consolidated/query/${requestId}`);
     return resp.data;
   }
 
