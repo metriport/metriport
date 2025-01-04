@@ -4,7 +4,7 @@ import { mrFormat } from "@metriport/core/domain/conversion/fhir-to-medical-reco
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
 import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { getRequestId } from "@metriport/core/util/request";
-import { isTrue, stringToBoolean } from "@metriport/shared";
+import { isTrue, stringToBoolean, NotFoundError } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -26,8 +26,6 @@ import { getConsolidatedWebhook } from "../../command/medical/patient/get-consol
 import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
-import BadRequestError from "../../errors/bad-request";
-import NotFoundError from "../../errors/not-found";
 import { countResources } from "../../external/fhir/patient/count-resources";
 import { REQUEST_ID_HEADER_NAME } from "../../routes/header";
 import { parseISODate } from "../../shared/date";
