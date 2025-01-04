@@ -4,7 +4,7 @@ import { mrFormat } from "@metriport/core/domain/conversion/fhir-to-medical-reco
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
 import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { getRequestId } from "@metriport/core/util/request";
-import { isTrue, stringToBoolean, NotFoundError } from "@metriport/shared";
+import { isTrue, stringToBoolean, NotFoundError, BadRequestError } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
