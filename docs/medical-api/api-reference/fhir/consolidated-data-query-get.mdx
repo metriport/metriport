@@ -4,10 +4,10 @@ description: "Get the status of querying for patient's consolidated data."
 api: "GET /medical/v1/patient/{id}/consolidated/query"
 ---
 
-This endpoint returns all the queries that are currently in progress. To trigger a new query you can
-[start a consolidated query](/medical-api/api-reference/fhir/consolidated-data-query-post).
+This endpoint returns all the queries that are currently in progress. 
 
-The result of the query will be sent through a [Webhook request](/medical-api/handling-data/webhooks#patient-consolidated-data)
+To trigger a new query you can
+[start a consolidated query](/medical-api/api-reference/fhir/consolidated-data-query-post). The result of the query will be sent through a [Webhook request](/medical-api/handling-data/webhooks#patient-consolidated-data)
 in FHIR-compliant format.
 
 ## Path Params
