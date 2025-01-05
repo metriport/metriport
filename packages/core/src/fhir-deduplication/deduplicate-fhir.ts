@@ -2,7 +2,7 @@ import { Bundle, EncounterDiagnosis, Resource } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
 import {
   ExtractedFhirTypes,
-  buildBundleEntry,
+  buildCompleteBundleEntry,
   extractFhirTypesFromBundle,
   initExtractedFhirTypes,
 } from "../external/fhir/shared/bundle";
@@ -213,7 +213,7 @@ export function deduplicateFhir(
       return entriesArray
         .flatMap(v => v || [])
         .map(removeDuplicateReferences)
-        .map(entry => buildBundleEntry(entry as Resource));
+        .map(entry => buildCompleteBundleEntry(entry, deduplicatedBundle.type));
     });
   deduplicatedBundle.total = deduplicatedBundle.entry.length;
 

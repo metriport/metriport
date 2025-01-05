@@ -43,6 +43,7 @@ import { isValidUuid } from "../../../util/uuid-v7";
 dayjs.extend(duration);
 
 const referenceRegex = new RegExp(/"reference":\s*"(.+?)"/g);
+const qualifyingBundleTypesForRequest = ["batch", "transaction", "history"];
 
 export type ReferenceWithIdAndType<T extends Resource = Resource> = Reference<T> &
   Required<Pick<Reference<T>, "id" | "type">>;
@@ -158,9 +159,6 @@ export function buildSearchSetBundle<T extends Resource = Resource>({
   return buildBundle({ type: "searchset", entries }) as SearchSetBundle<T>;
 }
 
-/**
- * @deprecated - use createBundleEntry instead
- */
 export const buildBundleEntry = <T extends Resource>(resource: T): BundleEntry<T> => {
   const fullUrl = buildFullUrl(resource);
   return {
@@ -169,37 +167,30 @@ export const buildBundleEntry = <T extends Resource>(resource: T): BundleEntry<T
   };
 };
 
-const qualifyingBundleTypesForRequest = ["batch", "transaction", "history"];
+export function buildCompleteBundleEntry<T extends Resource>(
+  resource: T,
+  bundleType: string | undefined
+): BundleEntry<T> {
+  const fullUrl = buildFullUrl(resource);
+  const shouldAddRequest = !!bundleType && qualifyingBundleTypesForRequest.includes(bundleType);
+  const request = shouldAddRequest ? buildFhirRequest(resource) : undefined;
 
-function addRequestToEntry(entry: BundleEntry): BundleEntry {
-  const request = buildFhirRequest(entry.resource);
   return {
-    ...entry,
+    ...(fullUrl ? { fullUrl } : {}),
+    resource,
     ...(request ? { request } : {}),
   };
 }
 
-function addFullUrlToEntry(entry: BundleEntry): BundleEntry {
-  const fullUrl = entry.fullUrl ?? buildFullUrl(entry.resource);
-  return {
-    ...entry,
-    ...(fullUrl ? { fullUrl } : {}),
-  };
-}
-
 export function createFullBundleEntries(bundle: Bundle<Resource>): Bundle<Resource> {
+  if (!bundle.entry) return bundle;
   const updBundle = cloneDeep(bundle);
-  const entries = bundle.entry;
-  if (!entries) return updBundle;
+  const entries = updBundle.entry;
+  if (!entries) return bundle;
 
-  const entriesWithFullUrl = entries.map(addFullUrlToEntry);
-
-  const finalEntries =
-    bundle.type && qualifyingBundleTypesForRequest.includes(bundle.type)
-      ? entriesWithFullUrl.map(addRequestToEntry)
-      : entriesWithFullUrl;
-
-  updBundle.entry = finalEntries;
+  updBundle.entry = entries?.flatMap(entry =>
+    entry.resource ? buildCompleteBundleEntry(entry.resource, bundle.type) : []
+  );
   return updBundle;
 }
 
