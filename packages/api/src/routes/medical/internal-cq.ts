@@ -98,6 +98,9 @@ router.get(
       await getOrganizationByOidOrFail({ cxId, oid });
     }
     const cqOrg = await getCqOrgOrFail(oid);
+    // that's not used currently, so this makes the response smaller/faster and less dependent on
+    // how we store data internally
+    delete cqOrg.data;
 
     return res.status(httpStatus.OK).json(cqOrg);
   })
@@ -126,6 +129,9 @@ router.put(
       cqActive: orgActive.active,
     };
     const orgAtCq = await cqCreateOrUpdateOrganization({ org: organizationUpdate });
+    // that's not used currently, so this makes the response smaller/faster and less dependent on
+    // how we store data internally
+    delete orgAtCq.data;
 
     return res.status(httpStatus.OK).json(orgAtCq);
   })
