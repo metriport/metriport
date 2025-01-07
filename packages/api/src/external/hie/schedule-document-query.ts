@@ -43,7 +43,7 @@ export async function scheduleDocQuery({
       [source]: {
         ...externalData[source],
         scheduledDocQueryRequestId: requestId,
-        ...(triggerConsolidated && {
+        ...(triggerConsolidated !== undefined && {
           scheduledDocQueryRequestTriggerConsolidated: triggerConsolidated,
         }),
       },

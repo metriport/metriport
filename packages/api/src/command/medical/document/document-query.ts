@@ -9,7 +9,7 @@ import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { emptyFunction, BadRequestError } from "@metriport/shared";
+import { BadRequestError } from "@metriport/shared";
 import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
 import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
 import { processAsyncError } from "../../../errors";
@@ -129,7 +129,7 @@ export async function queryDocumentsAcrossHIEs({
         forcePatientDiscovery,
         requestId,
         getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
-      }).catch(emptyFunction);
+      }).catch(processAsyncError("Failed to get documents from Commonwell"));
       triggeredDocumentQuery = true;
     }
   }
@@ -142,7 +142,7 @@ export async function queryDocumentsAcrossHIEs({
       requestId,
       cqManagingOrgName,
       forcePatientDiscovery,
-    }).catch(emptyFunction);
+    }).catch(processAsyncError("Failed to get documents from Carequality"));
     triggeredDocumentQuery = true;
   }
 

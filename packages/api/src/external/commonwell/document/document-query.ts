@@ -20,7 +20,9 @@ import { capture } from "@metriport/core/util/notifications";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import httpStatus from "http-status";
 import { chunk, partition } from "lodash";
+import { out } from "@metriport/core/util/log";
 import { removeDocRefMapping } from "../../../command/medical/docref-mapping/remove-docref-mapping";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import {
   getDocToFileFunction,
   getS3Info,
@@ -94,29 +96,29 @@ type File = DownloadResult & { isNew: boolean };
  */
 export async function queryAndProcessDocuments({
   patient: patientParam,
+  requestId,
   facilityId,
   forceQuery = false,
-  forcePatientDiscovery = false,
   forceDownload,
   ignoreDocRefOnFHIRServer,
   ignoreFhirConversionAndUpsert,
-  requestId,
   getOrgIdExcludeList,
+  forcePatientDiscovery = false,
   triggerConsolidated = false,
 }: {
   patient: Patient;
+  requestId: string;
   facilityId?: string | undefined;
   forceQuery?: boolean;
-  forcePatientDiscovery?: boolean;
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
-  requestId: string;
   getOrgIdExcludeList: () => Promise<string[]>;
+  forcePatientDiscovery?: boolean;
   triggerConsolidated?: boolean;
 }): Promise<void> {
   const { id: patientId, cxId } = patientParam;
-  const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
+  const { log } = out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
 
   if (Config.isSandbox()) {
     await sandboxGetDocRefsAndUpsert({ patient: patientParam, requestId });
@@ -138,7 +140,8 @@ export async function queryAndProcessDocuments({
   if (!isCwEnabled) return interrupt(`CW disabled for cxId ${cxId} patientId ${patientId}`);
 
   try {
-    const [initiator] = await Promise.all([
+    const [updatedPatientParam, initiator] = await Promise.all([
+      getPatientOrFail(patientParam),
       getCwInitiator(patientParam, facilityId),
       setDocQueryProgress({
         patient: { id: patientId, cxId },
@@ -150,12 +153,12 @@ export async function queryAndProcessDocuments({
       }),
     ]);
 
-    const patientCWData = getCWData(patientParam.data.externalData);
+    const patientCWData = getCWData(updatedPatientParam.data.externalData);
     const hasNoCWStatus = !patientCWData || !patientCWData.status;
     const isProcessing = patientCWData?.status === "processing";
     const updateStalePatients = await isStalePatientUpdateEnabledForCx(cxId);
     const now = buildDayjs(new Date());
-    const patientCreatedAt = buildDayjs(patientParam.createdAt);
+    const patientCreatedAt = buildDayjs(updatedPatientParam.createdAt);
     const pdStartedAt = patientCWData?.discoveryParams?.startedAt
       ? buildDayjs(patientCWData.discoveryParams.startedAt)
       : undefined;
@@ -173,7 +176,7 @@ export async function queryAndProcessDocuments({
 
       if ((forcePatientDiscovery || isStale) && !isProcessing) {
         update({
-          patient: patientParam,
+          patient: updatedPatientParam,
           facilityId: initiator.facilityId,
           getOrgIdExcludeList,
           requestId,
@@ -191,7 +194,7 @@ export async function queryAndProcessDocuments({
     });
 
     const [patient, isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all([
-      getPatientWithCWData(patientParam),
+      getPatientWithCWData(updatedPatientParam),
       isEnhancedCoverageEnabledForCx(cxId),
       isCQDirectEnabledForCx(cxId),
     ]);
@@ -255,7 +258,7 @@ export async function queryAndProcessDocuments({
     log(`${msg}. Error: ${errorToString(error)}`);
 
     await setDocQueryProgress({
-      patient: { id: patientParam.id, cxId: patientParam.cxId },
+      patient: { id: patientId, cxId },
       downloadProgress: { status: "failed" },
       requestId,
       source: MedicalDataSource.COMMONWELL,
@@ -267,7 +270,7 @@ export async function queryAndProcessDocuments({
       extra: {
         context: `cw.queryAndProcessDocuments`,
         error,
-        patientId: patientParam.id,
+        patientId,
         facilityId,
         forceDownload,
         requestId,
