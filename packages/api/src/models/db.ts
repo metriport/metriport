@@ -1,6 +1,7 @@
 import * as AWS from "aws-sdk";
 import { Sequelize } from "sequelize";
 import { CQDirectoryEntryModel } from "../external/carequality/models/cq-directory";
+import { CQDirectoryEntryViewModel } from "../external/carequality/models/cq-directory-view";
 import { CQPatientDataModel } from "../external/carequality/models/cq-patient-data";
 import { OutboundDocumentQueryRespModel } from "../external/carequality/models/outbound-document-query-resp";
 import { OutboundDocumentRetrievalRespModel } from "../external/carequality/models/outbound-document-retrieval-resp";
@@ -11,19 +12,19 @@ import { OrganizationModel } from "../models/medical/organization";
 import updateDB from "../sequelize";
 import { Config } from "../shared/config";
 import { ConnectedUser } from "./connected-user";
+import { CxMappingModel } from "./cx-mapping";
 import { initDDBDev, initLocalCxAccount } from "./db-dev";
+import { FacilityMappingModel } from "./facility-mapping";
+import { FeedbackModel } from "./feedback";
 import { FeedbackEntryModel } from "./feedback-entry";
+import { JwtTokenModel } from "./jwt-token";
 import { CoverageEnhancementModel } from "./medical/coverage-enhancement";
 import { DocRefMappingModel } from "./medical/docref-mapping";
 import { MAPIAccess } from "./medical/mapi-access";
-import { FeedbackModel } from "./feedback";
 import { PatientModel } from "./medical/patient";
+import { PatientMappingModel } from "./patient-mapping";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
-import { CxMappingModel } from "./cx-mapping";
-import { PatientMappingModel } from "./patient-mapping";
-import { FacilityMappingModel } from "./facility-mapping";
-import { JwtTokenModel } from "./jwt-token";
 import { ModelSetup } from "./_default";
 
 // models to setup with sequelize
@@ -33,6 +34,7 @@ const models: ModelSetup[] = [
   WebhookRequest.setup,
   OrganizationModel.setup,
   CQDirectoryEntryModel.setup,
+  CQDirectoryEntryViewModel.setup,
   CQPatientDataModel.setup,
   CwPatientDataModel.setup,
   FacilityModel.setup,

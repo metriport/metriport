@@ -1,31 +1,32 @@
 import { QueryTypes, Sequelize } from "sequelize";
-import { CQDirectoryEntryData } from "../../cq-directory";
-import { CQDirectoryEntryModel } from "../../models/cq-directory";
+import { CQDirectoryEntryData2 } from "../../cq-directory";
+import { CQDirectoryEntryViewModel } from "../../models/cq-directory-view";
 
 const keys = createKeys();
 const number_of_keys = keys.split(",").length;
 
 function createKeys(): string {
-  const id: keyof Pick<CQDirectoryEntryModel, "id"> = "id";
-  const name: keyof Pick<CQDirectoryEntryModel, "name"> = "name";
-  const urlXCPD: keyof Pick<CQDirectoryEntryModel, "urlXCPD"> = "urlXCPD";
-  const urlDQ: keyof Pick<CQDirectoryEntryModel, "urlDQ"> = "urlDQ";
-  const urlDR: keyof Pick<CQDirectoryEntryModel, "urlDR"> = "urlDR";
-  const lat: keyof Pick<CQDirectoryEntryModel, "lat"> = "lat";
-  const lon: keyof Pick<CQDirectoryEntryModel, "lon"> = "lon";
-  const point: keyof Pick<CQDirectoryEntryModel, "point"> = "point";
-  const addressLine: keyof Pick<CQDirectoryEntryModel, "addressLine"> = "addressLine";
-  const city: keyof Pick<CQDirectoryEntryModel, "city"> = "city";
-  const state: keyof Pick<CQDirectoryEntryModel, "state"> = "state";
-  const zip: keyof Pick<CQDirectoryEntryModel, "zip"> = "zip";
-  const data: keyof Pick<CQDirectoryEntryModel, "data"> = "data";
-  const createdAt: keyof Pick<CQDirectoryEntryModel, "createdAt"> = "createdAt";
-  const managingOrganization: keyof Pick<CQDirectoryEntryModel, "managingOrganization"> =
+  const id: keyof Pick<CQDirectoryEntryViewModel, "id"> = "id";
+  const name: keyof Pick<CQDirectoryEntryViewModel, "name"> = "name";
+  const urlXCPD: keyof Pick<CQDirectoryEntryViewModel, "urlXCPD"> = "urlXCPD";
+  const urlDQ: keyof Pick<CQDirectoryEntryViewModel, "urlDQ"> = "urlDQ";
+  const urlDR: keyof Pick<CQDirectoryEntryViewModel, "urlDR"> = "urlDR";
+  const lat: keyof Pick<CQDirectoryEntryViewModel, "lat"> = "lat";
+  const lon: keyof Pick<CQDirectoryEntryViewModel, "lon"> = "lon";
+  const point: keyof Pick<CQDirectoryEntryViewModel, "point"> = "point";
+  const addressLine: keyof Pick<CQDirectoryEntryViewModel, "addressLine"> = "addressLine";
+  const city: keyof Pick<CQDirectoryEntryViewModel, "city"> = "city";
+  const state: keyof Pick<CQDirectoryEntryViewModel, "state"> = "state";
+  const zip: keyof Pick<CQDirectoryEntryViewModel, "zip"> = "zip";
+  const data: keyof Pick<CQDirectoryEntryViewModel, "data"> = "data";
+  const createdAt: keyof Pick<CQDirectoryEntryViewModel, "createdAt"> = "createdAt";
+  const managingOrganization: keyof Pick<CQDirectoryEntryViewModel, "managingOrganization"> =
     "managingOrganization";
-  const managingOrganizationId: keyof Pick<CQDirectoryEntryModel, "managingOrganizationId"> =
+  const managingOrganizationId: keyof Pick<CQDirectoryEntryViewModel, "managingOrganizationId"> =
     "managingOrganizationId";
-  const active: keyof Pick<CQDirectoryEntryModel, "active"> = "active";
-  const lastUpdatedAtCQ: keyof Pick<CQDirectoryEntryModel, "lastUpdatedAtCQ"> = "lastUpdatedAtCQ";
+  const active: keyof Pick<CQDirectoryEntryViewModel, "active"> = "active";
+  const lastUpdatedAtCQ: keyof Pick<CQDirectoryEntryViewModel, "lastUpdatedAtCQ"> =
+    "lastUpdatedAtCQ";
 
   const allKeys = [
     id,
@@ -53,7 +54,7 @@ function createKeys(): string {
 
 export async function bulkInsertCQDirectoryEntries(
   sequelize: Sequelize,
-  orgDataArray: CQDirectoryEntryData[],
+  orgDataArray: CQDirectoryEntryData2[],
   tableName: string
 ): Promise<void> {
   if (orgDataArray.length === 0) return;
