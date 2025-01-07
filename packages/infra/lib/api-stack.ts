@@ -302,6 +302,12 @@ export class APIStack extends Stack {
           bucketName: sandboxConfig.sandboxSeedDataBucketName,
           publicReadAccess: false,
           encryption: s3.BucketEncryption.S3_MANAGED,
+          cors: [
+            {
+              allowedOrigins: ["*"],
+              allowedMethods: [s3.HttpMethods.GET],
+            },
+          ],
         });
       }
     };
