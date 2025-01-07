@@ -74,28 +74,6 @@ router.post(
   })
 );
 
-/***
- * GET /internal/carequality/directory/organization/:oid
- * @deprecated ?
- *
- * Retrieves the organization with the specified OID from the Carequality Directory.
- * @param req.params.oid The OID of the organization to retrieve.
- * @returns Returns the organization with the specified OID.
- */
-router.get(
-  "/directory/organization/:oid",
-  handleParams,
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
-    const oid = getFrom("params").orFail("oid", req);
-
-    const cqOrg = await getCqOrgOrFail(oid);
-
-    return res.status(httpStatus.OK).json(cqOrg);
-  })
-);
-
 /**
  * GET /internal/carequality/ops/directory/organization/:oid
  *
@@ -148,6 +126,7 @@ router.put(
       cqActive: orgActive.active,
     };
     const orgAtCq = await cqCreateOrUpdateOrganization({ org: organizationUpdate });
+
     return res.status(httpStatus.OK).json(orgAtCq);
   })
 );
