@@ -72,41 +72,45 @@ service:
             body: $StartConsolidatedQueryResponse.Example0
 
     getConsolidatedQueryStatus:
-      display-name: Get Consolidated Data Query status
+      display-name: Get Consolidated Data Query Status
       docs: Get the status of querying for patient's consolidated data.
       method: GET
-      path: /patient/{id}/consolidated/query
+      path: /patient/{patientId}/consolidated/query
       path-parameters:
-        id:
+        patientId:
           type: string
           docs: The ID of the Patient
       response:
+        # TODO(lucas|2025-01-07): This response type is a subset of the fields _actually_ being returned by our implementation.
+        # See issue here: https://github.com/metriport/metriport-internal/issues/2565
         type: GetConsolidatedQueryStatusResponse
       examples:
         - name: Example1
           path-parameters:
-            id: "12345678"
+            patientId: "12345678"
           response:
             body: $GetConsolidatedQueryStatusResponse.Example0
 
     getSingleConsolidatedQueryStatus:
-      display-name: Get Single Consolidated Data Query status
+      display-name: Get Single Consolidated Data Query Status
       docs: Get the status of a single query for patient's consolidated data.
       method: GET
-      path: /patient/{id}/consolidated/query/{requestId}
+      path: /patient/{patientId}/consolidated/query/{requestId}
       path-parameters:
-        id:
+        patientId:
           type: string
           docs: The ID of the Patient
         requestId:
           type: string
           docs: The ID of the request to get the status of.
+      # TODO(lucas|2025-01-07): This response type is a subset of the fields _actually_ being returned by our implementation.
+      # See issue here: https://github.com/metriport/metriport-internal/issues/2565
       response:
         type: PatientConsolidatedDataStatus
       examples:
         - name: Example1
           path-parameters:
-            id: "12345678"
+            patientId: "12345678"
             requestId: "00000000-0000-0000-0000-000000000000"
           response:
             body: $PatientConsolidatedDataStatus.Example0
