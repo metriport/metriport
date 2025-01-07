@@ -1,15 +1,16 @@
+import { TypedValue, append, badRequest, normalizeOperationOutcome, notFound } from "@medplum/core";
 import { FhirRequest, FhirResponse } from "@medplum/fhir-router";
-import { OperationDefinition, Coding, CodeSystem } from "@medplum/fhirtypes";
-import { normalizeOperationOutcome, badRequest, TypedValue, notFound, append } from "@medplum/core";
-import { codeLookupOperationDefinition } from "./definitions/codeLookupOperation";
-import { parseInputParameters } from "./utils/parameters";
-import { findCodeSystemResource } from "./utils/codeSystemLookup";
+import { CodeSystem, Coding, OperationDefinition } from "@medplum/fhirtypes";
 import { getTermServerClient } from "../init-term-server";
+import { codeLookupOperationDefinition } from "./definitions/codeLookupOperation";
+import { findCodeSystemResource } from "./utils/codeSystemLookup";
+import { parseBulkInputParameters, parseInputParameters } from "./utils/parameters";
 
 const operation: OperationDefinition = codeLookupOperationDefinition;
 
 type CodeSystemLookupParameters = {
   code?: string;
+  id?: string;
   system?: string;
   version?: string;
   coding?: Coding;
@@ -47,6 +48,48 @@ export const codeSystemLookupHandler = async (
     return await lookupCoding(codeSystem, coding);
   }
 };
+
+export async function bulkCodeSystemLookupHandler(request: FhirRequest) {
+  const params = parseBulkInputParameters<CodeSystemLookupParameters>(operation, request);
+
+  const startedAt = Date.now();
+  const results = await Promise.allSettled(
+    params.map(async param => {
+      if (!param.system) {
+        return [normalizeOperationOutcome(new Error("System is Required"))];
+      }
+      if (!param.id) {
+        return [normalizeOperationOutcome(new Error("ID is required for bulk requests"))];
+      }
+      const codeSystem = await findCodeSystemResource(param.system);
+
+      let coding: Coding;
+      if (param.coding) {
+        coding = param.coding;
+      } else if (param.code) {
+        coding = { system: param.system ?? codeSystem.url, code: param.code };
+      } else {
+        return [badRequest("No coding specified")];
+      }
+
+      const res = await lookupCoding(codeSystem, coding);
+      return {
+        ...res[0], // TODO: Make sure [0] is not harmful and we're not missing things..
+        id: param.id,
+      };
+    })
+  );
+
+  const duration = Date.now() - startedAt;
+  console.log(`Done code lookup. Duration: ${duration} ms`);
+
+  const successful = results
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .filter((r): r is PromiseFulfilledResult<any> => r.status === "fulfilled")
+    .map(r => r.value);
+
+  return successful;
+}
 
 export async function lookupPartialCoding(
   codeSystem: CodeSystem,

@@ -22,7 +22,7 @@ async function main() {
 
   app.use("/terminology/", fhirRouter);
 
-  const PORT = 8080;
+  const PORT = 8666;
   const server = app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
   });

@@ -67,6 +67,29 @@ export function parseInputParameters<T>(
   }
 }
 
+export function parseBulkInputParameters<T>(
+  operation: OperationDefinition,
+  req: Request | FhirRequest
+): T[] {
+  if (!operation.parameter) {
+    return {} as any;
+  }
+  const inputParameters = operation.parameter.filter(p => p.use === "in");
+
+  // If the request is a GET request, use the query parameters
+  // Otherwise, use the body
+  const input = req.body;
+
+  const params: any[] = []; // TODO: Fix type
+  input.forEach((inp: any) => {
+    if (inp.resourceType === "Parameters") {
+      if (!inp.parameter) return;
+      params.push(parseParams(inputParameters, inp.parameter, inp.id));
+    }
+  });
+  return params;
+}
+
 function parseQueryString(
   query: Record<string, any>,
   inputParams: OperationDefinitionParameter[]
@@ -155,7 +178,8 @@ function validateInputParam(param: OperationDefinitionParameter, value: any): an
 
 function parseParams(
   params: OperationDefinitionParameter[],
-  inputParameters: ParametersParameter[]
+  inputParameters: ParametersParameter[],
+  id?: string
 ): Record<string, any> {
   const parsed: Record<string, any> = Object.create(null);
   for (const param of params) {
@@ -172,6 +196,7 @@ function parseParams(
     }
 
     parsed[param.name as string] = validateInputParam(param, value);
+    if (id) parsed.id = id;
   }
 
   return parsed;

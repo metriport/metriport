@@ -1,9 +1,9 @@
-import { Router, Request, Response } from "express";
+import { FhirRequest, HttpMethod } from "@medplum/fhir-router";
+import { Request, Response, Router } from "express";
 import { codeSystemImportHandler } from "./operations/codeImport";
-import { codeSystemLookupHandler } from "./operations/codeLookup";
+import { bulkCodeSystemLookupHandler, codeSystemLookupHandler } from "./operations/codeLookup";
 import { conceptMapImportHandler } from "./operations/conceptMapImport";
 import { conceptMapTranslateHandler } from "./operations/conceptMapTranslate";
-import { FhirRequest, HttpMethod } from "@medplum/fhir-router";
 import { asyncHandler } from "./util";
 
 const fhirRouter = Router();
@@ -36,6 +36,16 @@ fhirRouter.post(
     const response = await codeSystemLookupHandler(fhirRequest, false);
     res.status(200).json({ response });
     return;
+  })
+);
+
+fhirRouter.post(
+  "/code-system/lookup/bulk",
+  asyncHandler(async (req: Request, res: Response) => {
+    const fhirRequest = parseIntoFhirRequest(req);
+    console.log("fhirRequest", JSON.stringify(fhirRequest, null, 2));
+    const response = await bulkCodeSystemLookupHandler(fhirRequest);
+    res.status(200).json(response);
   })
 );
 
