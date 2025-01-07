@@ -183,7 +183,7 @@ export async function getDocumentsFromCQ({
     log(`${msg}. Error: ${errorToString(error)}`);
 
     await setDocQueryProgress({
-      patient: patientParam,
+      patient: { id: patientId, cxId },
       downloadProgress: { status: "failed" },
       convertProgress: { status: "failed" },
       requestId,
