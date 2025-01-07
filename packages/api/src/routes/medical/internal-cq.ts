@@ -144,7 +144,7 @@ router.put(
 
     const orgActive = cqOrgActiveSchema.parse(req.body);
     const organizationUpdate: Organization = {
-      ...org,
+      ...org.dataValues,
       cqActive: orgActive.active,
     };
     const orgAtCq = await cqCreateOrUpdateOrganization({ org: organizationUpdate });
@@ -175,7 +175,7 @@ router.put(
 
     const facilityActive = cqOrgActiveSchema.parse(req.body);
     const facilityUpdate: Facility = {
-      ...facility,
+      ...facility.dataValues,
       cqActive: facilityActive.active,
     };
     const facilityAtCq = await cqCreateOrUpdateFacility({ org, facility: facilityUpdate });

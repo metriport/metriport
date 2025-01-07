@@ -10,7 +10,7 @@ import {
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import stringify from "json-stringify-safe";
-import { CQDirectoryEntryData } from "../../cq-directory";
+import { CQDirectoryEntryData2 } from "../../cq-directory";
 import { CQOrgUrls } from "../../shared";
 import { getCqOrg } from "./get-cq-organization";
 import { transactionUrl } from "./organization-template";
@@ -22,10 +22,10 @@ const XCA_DR_STRING = "ITI-39";
 const XDR_STRING = "ITI-41";
 type ChannelUrl = typeof XCPD_STRING | typeof XCA_DQ_STRING | typeof XCA_DR_STRING;
 
-export async function parseCQOrganization(org: Organization): Promise<CQDirectoryEntryData> {
+export async function parseCQOrganization(org: Organization): Promise<CQDirectoryEntryData2> {
   const { log } = out(`parseCQOrganization`);
 
-  const id = org.identifier?.[0]?.value;
+  const id = org.id ?? org.identifier?.[0]?.value;
   if (!id) throw new MetriportError("Missing ID on CQ Org", undefined, { org: stringify(org) });
 
   const active = org.active;
