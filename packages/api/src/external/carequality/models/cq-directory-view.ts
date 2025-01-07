@@ -1,15 +1,19 @@
-import { Organization } from "@metriport/carequality-sdk/models/organization";
+import { Organization } from "@medplum/fhirtypes";
 import { DataTypes, Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "../../../models/_default";
-import { CQDirectoryEntry } from "../cq-directory";
+import { CQDirectoryEntry2 } from "../cq-directory";
 
-export class CQDirectoryEntryModel
-  extends BaseModel<CQDirectoryEntryModel>
-  implements CQDirectoryEntry
+export class CQDirectoryEntryViewModel
+  extends BaseModel<CQDirectoryEntryViewModel>
+  implements CQDirectoryEntry2
 {
-  static NAME = "cq_directory_entry";
+  static NAME = "cq_directory_entry_view";
   declare id: string; // Organization's OID
   declare name?: string;
+  declare active: boolean;
+  declare managingOrganization?: string;
+  declare managingOrganizationId?: string;
+  declare data?: Organization;
   declare urlXCPD?: string;
   declare urlDQ?: string;
   declare urlDR?: string;
@@ -20,18 +24,28 @@ export class CQDirectoryEntryModel
   declare city?: string;
   declare state?: string;
   declare zip?: string;
-  declare data?: Organization;
-  declare managingOrganization?: string;
-  declare managingOrganizationId?: string;
-  declare active: boolean;
   declare lastUpdatedAtCQ: string;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
-    CQDirectoryEntryModel.init(
+    CQDirectoryEntryViewModel.init(
       {
         ...BaseModel.attributes(),
         name: {
           type: DataTypes.STRING,
+        },
+        active: {
+          type: DataTypes.BOOLEAN,
+        },
+        managingOrganization: {
+          type: DataTypes.STRING,
+          field: "managing_organization",
+        },
+        managingOrganizationId: {
+          type: DataTypes.STRING,
+          field: "managing_organization_id",
+        },
+        data: {
+          type: DataTypes.JSONB,
         },
         urlXCPD: {
           type: DataTypes.STRING,
@@ -46,12 +60,6 @@ export class CQDirectoryEntryModel
           type: DataTypes.STRING,
           field: "url_dr",
         },
-        lat: {
-          type: DataTypes.FLOAT,
-        },
-        lon: {
-          type: DataTypes.FLOAT,
-        },
         addressLine: {
           type: DataTypes.STRING,
           field: "address_line",
@@ -65,22 +73,14 @@ export class CQDirectoryEntryModel
         zip: {
           type: DataTypes.STRING,
         },
-        data: {
-          type: DataTypes.JSONB,
+        lat: {
+          type: DataTypes.FLOAT,
+        },
+        lon: {
+          type: DataTypes.FLOAT,
         },
         point: {
           type: "CUBE",
-        },
-        managingOrganization: {
-          type: DataTypes.STRING,
-          field: "managing_organization",
-        },
-        managingOrganizationId: {
-          type: DataTypes.STRING,
-          field: "managing_organization_id",
-        },
-        active: {
-          type: DataTypes.BOOLEAN,
         },
         lastUpdatedAtCQ: {
           type: DataTypes.STRING,
@@ -89,7 +89,7 @@ export class CQDirectoryEntryModel
       },
       {
         ...BaseModel.modelOptions(sequelize),
-        tableName: CQDirectoryEntryModel.NAME,
+        tableName: CQDirectoryEntryViewModel.NAME,
       }
     );
   };

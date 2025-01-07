@@ -3,7 +3,7 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared";
 import { makeCarequalityManagementAPI } from "../../api";
-import { CQDirectoryEntryData } from "../../cq-directory";
+import { CQDirectoryEntryData2 } from "../../cq-directory";
 import { CQOrgDetails, CQOrgDetailsWithUrls, getCqAddress, getCqOrgUrls } from "../../shared";
 import { getCqOrg } from "./get-cq-organization";
 import { getOrganizationFhirTemplate } from "./organization-template";
@@ -24,7 +24,7 @@ export type CreateOrUpdateCqOrganizationCmd = Omit<
  */
 export async function createOrUpdateCqOrganization(
   cmd: CreateOrUpdateCqOrganizationCmd
-): Promise<CQDirectoryEntryData> {
+): Promise<CQDirectoryEntryData2> {
   const [cqOrg, orgDetailsWithUrls] = await Promise.all([
     getCqOrg(cmd.oid),
     cmdToCqOrgDetails(cmd),
@@ -55,7 +55,7 @@ export async function cmdToCqOrgDetails(
 
 async function updateCqOrganization(
   orgDetails: CQOrgDetailsWithUrls
-): Promise<CQDirectoryEntryData> {
+): Promise<CQDirectoryEntryData2> {
   const { log, debug } = out(`CQ updateCQOrganization - CQ Org OID ${orgDetails.oid}`);
   const carequalityOrg = getOrganizationFhirTemplate(orgDetails);
   const cq = makeCarequalityManagementAPI();
@@ -88,7 +88,7 @@ async function updateCqOrganization(
 
 async function createCqOrganization(
   orgDetails: CQOrgDetailsWithUrls
-): Promise<CQDirectoryEntryData> {
+): Promise<CQDirectoryEntryData2> {
   const { log, debug } = out(`CQ registerOrganization - CQ Org OID ${orgDetails.oid}`);
   const carequalityOrg = getOrganizationFhirTemplate(orgDetails);
   const cq = makeCarequalityManagementAPI();

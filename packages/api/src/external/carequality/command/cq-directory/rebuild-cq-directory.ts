@@ -10,8 +10,8 @@ import { executeOnDBTx } from "../../../../models/transaction-wrapper";
 import { addUpdatedAtTrigger } from "../../../../sequelize/migrations-shared";
 import { Config } from "../../../../shared/config";
 import { makeCarequalityManagementAPI } from "../../api";
-import { CQDirectoryEntryData } from "../../cq-directory";
-import { CQDirectoryEntryModel } from "../../models/cq-directory";
+import { CQDirectoryEntryData2 } from "../../cq-directory";
+import { CQDirectoryEntryViewModel } from "../../models/cq-directory-view";
 import { parseCQOrganization } from "../cq-organization/parse-cq-organization";
 import { bulkInsertCQDirectoryEntries } from "./create-cq-directory-entry";
 
@@ -20,7 +20,7 @@ const BATCH_SIZE = 1000;
 const parallelQueriesToGetManagingOrg = 20;
 const SLEEP_TIME = dayjs.duration({ milliseconds: 750 });
 const cqDirectoryEntryTemp = `cq_directory_entry_temp`;
-const cqDirectoryEntry = `cq_directory_entry`;
+const cqDirectoryEntry = `cq_directory_entry_new`;
 const cqDirectoryEntryBackup = `cq_directory_entry_backup`;
 
 const dbCreds = Config.getDBCreds();
@@ -45,7 +45,7 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
         const orgs = await cq.listOrganizations({ start: currentPosition, count: BATCH_SIZE });
         if (orgs.length < BATCH_SIZE) isDone = true; // if CQ directory returns less than BATCH_SIZE number of orgs, that means we've hit the end
         currentPosition += BATCH_SIZE;
-        const parsedOrgs: CQDirectoryEntryData[] = [];
+        const parsedOrgs: CQDirectoryEntryData2[] = [];
         await executeAsynchronously(
           orgs,
           async (org: Organization) => {
@@ -105,7 +105,7 @@ async function deleteTempCQDirectoryTable(): Promise<void> {
 }
 
 async function renameCQDirectoryTablesAndUpdateIndexes(): Promise<void> {
-  await executeOnDBTx(CQDirectoryEntryModel.prototype, async transaction => {
+  await executeOnDBTx(CQDirectoryEntryViewModel.prototype, async transaction => {
     const dropBackupQuery = `DROP TABLE IF EXISTS ${cqDirectoryEntryBackup};`;
     await sequelize.query(dropBackupQuery, {
       type: QueryTypes.DELETE,
