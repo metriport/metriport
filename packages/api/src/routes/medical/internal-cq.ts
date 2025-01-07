@@ -1,7 +1,6 @@
 import { Organization } from "@metriport/core/domain/organization";
 import BadRequestError from "@metriport/core/util/error/bad-request";
 import NotFoundError from "@metriport/core/util/error/not-found";
-import { processAsyncError } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
@@ -28,7 +27,6 @@ import {
 } from "../../command/medical/organization/get-organization";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { Facility } from "../../domain/medical/facility";
-import { makeCarequalityManagementAPI } from "../../external/carequality/api";
 import { rebuildCQDirectory } from "../../external/carequality/command/cq-directory/rebuild-cq-directory";
 import {
   DEFAULT_RADIUS_IN_MILES,
@@ -149,11 +147,8 @@ router.put(
       ...org,
       cqActive: orgActive.active,
     };
-    // TODO Since this is an internal endpoint, don't we want to wait for the response from CQ?
-    cqCreateOrUpdateOrganization({ org: organizationUpdate }).catch(
-      processAsyncError("ops.dir.organization.update.cq")
-    );
-    return res.sendStatus(httpStatus.OK);
+    const orgAtCq = await cqCreateOrUpdateOrganization({ org: organizationUpdate });
+    return res.status(httpStatus.OK).json(orgAtCq);
   })
 );
 
@@ -169,8 +164,6 @@ router.put(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
-    const cq = makeCarequalityManagementAPI();
-    if (!cq) throw new Error("Carequality API not initialized");
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getFrom("query").orFail("facilityId", req);
     const oid = getFrom("params").orFail("oid", req);
@@ -185,11 +178,8 @@ router.put(
       ...facility,
       cqActive: facilityActive.active,
     };
-    // TODO Since this is an internal endpoint, don't we want to wait for the response from CQ?
-    cqCreateOrUpdateFacility({ org, facility: facilityUpdate }).catch(
-      processAsyncError("ops.dir.facility.update.cq")
-    );
-    return res.sendStatus(httpStatus.OK);
+    const facilityAtCq = await cqCreateOrUpdateFacility({ org, facility: facilityUpdate });
+    return res.status(httpStatus.OK).json(facilityAtCq);
   })
 );
 
