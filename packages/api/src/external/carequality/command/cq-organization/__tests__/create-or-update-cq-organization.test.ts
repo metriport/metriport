@@ -2,13 +2,14 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { faker } from "@faker-js/faker";
 import { Organization } from "@medplum/fhirtypes";
-import { CarequalityManagementAPI, CarequalityManagementAPIImpl } from "@metriport/carequality-sdk";
+import { CarequalityManagementAPI, CarequalityManagementApiFhir } from "@metriport/carequality-sdk";
+import { OrganizationWithId } from "@metriport/carequality-sdk/client/carequality";
 import { makeOrganization } from "@metriport/core/fhir-to-cda/cda-templates/components/__tests__/make-organization";
 import { metriportCompanyDetails } from "@metriport/shared";
-import { makeFacilityModel } from "../../../../../domain/medical/__tests__/facility";
-import { makeAddressWithCoordinates } from "../../../../../domain/medical/__tests__/location-address";
 import * as getAddress from "../../../../../domain/medical/address";
 import { FacilityType, isOboFacility } from "../../../../../domain/medical/facility";
+import { makeFacilityModel } from "../../../../../domain/medical/__tests__/facility";
+import { makeAddressWithCoordinates } from "../../../../../domain/medical/__tests__/location-address";
 import { FacilityModel } from "../../../../../models/medical/facility";
 import * as apiFhirFile from "../../../api";
 import { metriportEmail as metriportEmailForCq } from "../../../constants";
@@ -26,11 +27,11 @@ let facilityMock: FacilityModel;
 let oboFacilityMock: FacilityModel;
 
 jest
-  .spyOn(CarequalityManagementAPIImpl.prototype, "listOrganizations")
+  .spyOn(CarequalityManagementApiFhir.prototype, "listOrganizations")
   .mockImplementation(() => Promise.resolve([]));
 jest
-  .spyOn(CarequalityManagementAPIImpl.prototype, "registerOrganization")
-  .mockImplementation(() => Promise.resolve({} as Organization));
+  .spyOn(CarequalityManagementApiFhir.prototype, "registerOrganization")
+  .mockImplementation(() => Promise.resolve({} as OrganizationWithId));
 
 beforeEach(() => {
   facilityMock = makeFacilityModel({

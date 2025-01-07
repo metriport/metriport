@@ -1,21 +1,19 @@
 # `carequality-sdk`
 
-SDK to interact with the [Carequality STU3 directory](https://carequality.org/healthcare-directory/index.html) - by Metriport Inc.
+SDK to interact with the
+[Carequality FHIR R4 directory](https://sequoiaproject.org/SequoiaProjectHealthcareDirectoryImplementationGuide/output/index.html) - by Metriport Inc.
 
 ## Usage
 
 ```
 import {
   APIMode,
-  Carequality
+  CarequalityManagementApiFhir
 } from "@metriport/carequality-sdk";
 
-const Carequality = new Carequality({
+const api = new CarequalityManagementApiFhir({
     apiKey: "API_KEY",
     apiMode: APIMode.dev,
-    orgCert: "ORG_CERTIFICATE",
-    rsaPrivateKey: "ORG_PRIVATE_KEY",
-    rsaPrivateKeyPassword: "ORG_PRIVATE_KEY_PASSWORD"
 });
 ```
 
@@ -23,15 +21,13 @@ const Carequality = new Carequality({
 
 ### Testing
 
-In order to run the tests, you need to have the following environment variables set, usually in a `.env` file:
+In order to run the E2E tests, you need to have the following environment variables set, usually in a `.env` file:
 
 ```
-ORG_OID=... # The OID of the organization to be used in the tests.
-API_MODE=... # dev, staging, production
-MANAGEMENT_API_KEY=... # API key for the Carequality Management API
-ORG_CERTIFICATE=... # The certificate (public key) for the organization.
-ORG_PRIVATE_KEY=... # An RSA key corresponding to the specified orgCert.
-ORG_PRIVATE_KEY_PASSWORD=... # The password to decrypt the private key.
+CQ_API_MODE=... # dev, staging, production
+CQ_TEST_ORG_OID=... # The OID of the organization to be used in E2E tests in prodution
+CQ_MANAGEMENT_ORG_OID=... # The OID of the managing organization
+CQ_MANAGEMENT_API_KEY=... # API key for the Carequality Management API
 ```
 
 ```

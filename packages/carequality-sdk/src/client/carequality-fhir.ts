@@ -1,14 +1,13 @@
-import { Bundle, Organization } from "@medplum/fhirtypes";
+import { Bundle } from "@medplum/fhirtypes";
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import axiosRetry from "axios-retry";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { Agent } from "https";
 import {
   APIMode,
   CarequalityManagementApi,
   ListOrganizationsParams,
-  UpdateOrganization,
+  OrganizationWithId,
 } from "./carequality";
 
 dayjs.extend(duration);
@@ -32,15 +31,11 @@ export class CarequalityManagementApiFhir implements CarequalityManagementApi {
   readonly api: AxiosInstance;
   readonly apiKey: string;
   readonly maxBackoff: number;
-  private httpsAgent: Agent;
 
   /**
    * Creates a new instance of the Carequality Management API client pertaining to an
    * organization to make requests on behalf of.
    *
-   * @param orgCert                 The certificate (public key) for the organization.
-   * @param rsaPrivateKey           An RSA key corresponding to the specified orgCert.
-   * @param rsaPrivateKeyPassword   The password to decrypt the private key.
    * @param apiKey                  The API key to use for authentication.
    * @param apiMode                 Optional, the mode the client will be running. Defaults to staging.
    * @param options                 Optional parameters
@@ -49,27 +44,15 @@ export class CarequalityManagementApiFhir implements CarequalityManagementApi {
    * @param options.maxBackoff      Number of seconds for the maximum backoff during retry requests, defaults to 30 seconds.
    */
   constructor({
-    orgCert,
-    rsaPrivateKey,
-    rsaPrivateKeyPassword,
     apiKey,
     apiMode = APIMode.production,
     options = {},
   }: {
-    orgCert: string;
-    rsaPrivateKey: string;
-    rsaPrivateKeyPassword: string;
     apiKey: string;
     apiMode: APIMode;
     options?: { timeout?: number; retries?: number; maxBackoff?: number };
   }) {
-    this.httpsAgent = new Agent({
-      cert: orgCert,
-      key: rsaPrivateKey,
-      passphrase: rsaPrivateKeyPassword,
-    });
     let baseUrl;
-
     switch (apiMode) {
       case APIMode.dev:
         baseUrl = CarequalityManagementApiFhir.devUrl;
@@ -90,7 +73,6 @@ export class CarequalityManagementApiFhir implements CarequalityManagementApi {
     this.api = axios.create({
       timeout: options?.timeout ?? DEFAULT_AXIOS_TIMEOUT.asMilliseconds(),
       baseURL: baseUrl,
-      httpsAgent: this.httpsAgent,
     });
 
     // TODO: #1536 - improved retry logic. Issue: https://github.com/metriport/metriport-internal/issues/1536
@@ -110,7 +92,7 @@ export class CarequalityManagementApiFhir implements CarequalityManagementApi {
     this.apiKey = apiKey;
   }
 
-  buildHeaders(headers?: Record<string, string>): Record<string, string> {
+  private buildHeaders(headers?: Record<string, string>): Record<string, string> {
     return {
       ...headers,
       "Accept-Encoding": "gzip",
@@ -119,19 +101,14 @@ export class CarequalityManagementApiFhir implements CarequalityManagementApi {
     };
   }
 
-  async sendGetRequest(url: string, headers?: Record<string, string>): Promise<AxiosResponse> {
+  private async sendGetRequest(
+    url: string,
+    headers?: Record<string, string>
+  ): Promise<AxiosResponse> {
     return this.api.get(url, { headers: this.buildHeaders(headers) });
   }
 
-  async sendPostRequest(
-    url: string,
-    data: unknown,
-    headers?: Record<string, string>
-  ): Promise<AxiosResponse> {
-    return this.api.post(url, data, { headers: this.buildHeaders(headers) });
-  }
-
-  async sendPutRequest(
+  private async sendPutRequest(
     url: string,
     data: unknown,
     headers?: Record<string, string>
@@ -139,19 +116,28 @@ export class CarequalityManagementApiFhir implements CarequalityManagementApi {
     return this.api.put(url, data, { headers: this.buildHeaders(headers) });
   }
 
-  async sendDeleteRequest(url: string, headers?: Record<string, string>): Promise<AxiosResponse> {
+  private async sendDeleteRequest(
+    url: string,
+    headers?: Record<string, string>
+  ): Promise<AxiosResponse> {
     return this.api.delete(url, { headers: this.buildHeaders(headers) });
   }
 
-  async getOrganization(oid: string): Promise<Organization | undefined> {
+  private isNotFoundError(error: AxiosError): boolean {
+    if (error.response && [404, 410].includes(error.response?.status)) return true;
+    return false;
+  }
+
+  async getOrganization(oid: string): Promise<OrganizationWithId | undefined> {
     const query = new URLSearchParams();
     query.append("_format", JSON_FORMAT);
     const url = `${CarequalityManagementApiFhir.ORG_ENDPOINT}/${oid}?${query.toString()}`;
     try {
       const resp = await this.sendGetRequest(url);
-      return resp.data as Organization;
+      if (!resp.data || !resp.data.id) return undefined;
+      return resp.data as OrganizationWithId;
     } catch (error) {
-      if (error instanceof AxiosError && error.response?.status === 404) return undefined;
+      if (error instanceof AxiosError && this.isNotFoundError(error)) return undefined;
       throw error;
     }
   }
@@ -161,7 +147,7 @@ export class CarequalityManagementApiFhir implements CarequalityManagementApi {
     start = 0,
     oid,
     active,
-  }: ListOrganizationsParams = {}): Promise<Organization[]> {
+  }: ListOrganizationsParams = {}): Promise<OrganizationWithId[]> {
     if (count < 1 || count > MAX_COUNT) {
       throw new Error(`Count value must be between 1 and ${MAX_COUNT}`);
     }
@@ -175,18 +161,22 @@ export class CarequalityManagementApiFhir implements CarequalityManagementApi {
     const url = `${CarequalityManagementApiFhir.ORG_ENDPOINT}?${query.toString()}`;
     const resp = await this.sendGetRequest(url);
     const bundle = resp.data as Bundle;
-    return (bundle.entry ?? []).map(e => e.resource as Organization);
+    return (bundle.entry ?? []).flatMap(e => {
+      const resource = e.resource;
+      if (!resource || !resource.id || resource.resourceType !== "Organization") return [];
+      return resource as OrganizationWithId;
+    });
   }
 
-  async registerOrganization(org: Organization): Promise<Organization> {
+  async registerOrganization(org: OrganizationWithId): Promise<OrganizationWithId> {
     const query = new URLSearchParams();
     query.append("_format", JSON_FORMAT);
-    const url = `${CarequalityManagementApiFhir.ORG_ENDPOINT}?${query.toString()}`;
-    const resp = await this.sendPostRequest(url, org);
+    const url = `${CarequalityManagementApiFhir.ORG_ENDPOINT}/${org.id}?${query.toString()}`;
+    const resp = await this.sendPutRequest(url, org);
     return resp.data;
   }
 
-  async updateOrganization(org: UpdateOrganization): Promise<Organization> {
+  async updateOrganization(org: OrganizationWithId): Promise<OrganizationWithId> {
     const query = new URLSearchParams();
     query.append("_format", JSON_FORMAT);
     const url = `${CarequalityManagementApiFhir.ORG_ENDPOINT}/${org.id}?${query.toString()}`;
