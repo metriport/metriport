@@ -7,6 +7,7 @@ import { postProcessBundle } from "@metriport/core/domain/conversion/bundle-modi
 import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
 import {
   defaultS3RetriesConfig,
+  storeHydratedConversionResult,
   storeNormalizedConversionResult,
   storePartitionedPayloadsInS3,
   storePreProcessedConversionResult,
@@ -16,6 +17,7 @@ import { S3Utils, executeWithRetriesS3 } from "@metriport/core/external/aws/s3";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
+import { hydrate } from "@metriport/core/external/fhir/consolidated/hydrate";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE } from "@metriport/core/util/mime";
 import { MetriportError, errorToString, executeWithNetworkRetries } from "@metriport/shared";
@@ -237,10 +239,28 @@ export async function handler(event: SQSEvent) {
 
         await cloudWatchUtils.reportMemoryUsage();
 
-        const normalizedBundle = normalize({
+        const hydratedBundle = await hydrate({
           cxId,
           patientId,
           bundle: conversionResult,
+        });
+
+        await storeHydratedConversionResult({
+          s3Utils,
+          bundle: hydratedBundle,
+          bucketName: conversionResultBucketName,
+          fileName: s3FileName,
+          message,
+          context: lambdaName,
+          lambdaParams,
+          log,
+        });
+        await cloudWatchUtils.reportMemoryUsage();
+
+        const normalizedBundle = normalize({
+          cxId,
+          patientId,
+          bundle: hydratedBundle,
         });
 
         await storeNormalizedConversionResult({

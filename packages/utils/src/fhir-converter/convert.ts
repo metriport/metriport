@@ -2,6 +2,7 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import { postProcessBundle } from "@metriport/core/domain/conversion/bundle-modifications/post-process";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
+import { hydrate } from "@metriport/core/external/fhir/consolidated/hydrate";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { buildDocIdFhirExtension } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
@@ -94,9 +95,14 @@ export async function convert(
     }
   }
 
-  const normalizedBundle = normalize({
+  const hydratedBundle = await hydrate({
     patientId,
     bundle: combinedBundle,
+  });
+
+  const normalizedBundle = normalize({
+    patientId,
+    bundle: hydratedBundle,
   });
 
   const documentExtension = buildDocIdFhirExtension(fileName);
