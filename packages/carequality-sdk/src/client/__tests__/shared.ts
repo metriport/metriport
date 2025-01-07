@@ -1,3 +1,5 @@
+import { APIMode } from "../carequality";
+
 export type CQOrgUrls = {
   urlXCPD?: string | undefined;
   urlDQ?: string | undefined;
@@ -30,3 +32,24 @@ export type CQOrgDetails = {
 };
 
 export type CQOrgDetailsWithUrls = CQOrgDetails & CQOrgUrls;
+
+export function getApiMode(): APIMode {
+  const apiModeVarName = "CQ_API_MODE";
+  const apiMode = getEnvVar(apiModeVarName);
+  if (apiMode === "stage") return APIMode.staging;
+  if (apiMode === "dev") return APIMode.dev;
+  if (apiMode === "production") return APIMode.production;
+  throw new Error(`Invalid ${apiModeVarName}: ${apiMode}`);
+}
+
+export function getEnvVar(varName: string): string | undefined {
+  return process.env[varName];
+}
+
+export function getEnvVarOrFail(varName: string): string {
+  const value = getEnvVar(varName);
+  if (!value || value.trim().length < 1) {
+    throw new Error(`Missing ${varName} env var`);
+  }
+  return value;
+}
