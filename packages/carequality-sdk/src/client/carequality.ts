@@ -13,7 +13,7 @@ export type ListOrganizationsParams = {
   active?: boolean;
 };
 
-export type UpdateOrganization = Organization & Required<Pick<Organization, "id">>;
+export type OrganizationWithId = Organization & Required<Pick<Organization, "id">>;
 
 export interface CarequalityManagementApi {
   /**
@@ -22,7 +22,7 @@ export interface CarequalityManagementApi {
    * @param oid Optional, the OID of the organization to fetch.
    * @returns
    */
-  getOrganization(oid: string): Promise<Organization | undefined>;
+  getOrganization(oid: string): Promise<OrganizationWithId | undefined>;
 
   /**
    * Lists the indicated number of organizations.
@@ -33,7 +33,7 @@ export interface CarequalityManagementApi {
    * @param active Optional, indicates whether to list active or inactive organizations. Defaults to true.
    * @returns
    */
-  listOrganizations(params?: ListOrganizationsParams | undefined): Promise<Organization[]>;
+  listOrganizations(params?: ListOrganizationsParams | undefined): Promise<OrganizationWithId[]>;
 
   /**
    * Registers an organization with the Carequality directory.
@@ -41,7 +41,7 @@ export interface CarequalityManagementApi {
    * @param org string containing the organization resource (in XML format)
    * @returns an XML string containing an OperationOutcome resource - see Carequality documentation for details - https://carequality.org/healthcare-directory/OperationOutcome-create-success-example2.xml.html
    */
-  registerOrganization(org: Organization): Promise<Organization>;
+  registerOrganization(org: OrganizationWithId): Promise<OrganizationWithId>;
 
   /**
    * Updates an organization with the Carequality directory.
@@ -50,7 +50,7 @@ export interface CarequalityManagementApi {
    *            have an id
    * @returns an XML string containing an OperationOutcome resource - see Carequality documentation for details - https://carequality.org/healthcare-directory/OperationOutcome-create-success-example2.xml.html
    */
-  updateOrganization(org: UpdateOrganization): Promise<Organization>;
+  updateOrganization(org: OrganizationWithId): Promise<OrganizationWithId>;
 
   /**
    * Removes an organization from the Carequality directory.
