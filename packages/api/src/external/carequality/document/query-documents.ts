@@ -1,29 +1,25 @@
-import { buildDayjs } from "@metriport/shared/common/date";
 import { Patient } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { isCQDirectEnabledForCx, isStalePatientUpdateEnabledForCx } from "../../aws/app-config";
+import { isCQDirectEnabledForCx } from "../../aws/app-config";
 import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { setDocQueryStartAt } from "../../hie/set-doc-query-start";
 import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poller-factory";
 import { getCQDirectoryEntry } from "../command/cq-directory/get-cq-directory-entry";
-import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
 import { CQLink } from "../cq-patient-data";
-import { getCQData, discover } from "../patient";
+import { discover } from "../patient";
 import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { getCqInitiator } from "../shared";
 import { isFacilityEnabledToQueryCQ } from "../../carequality/shared";
 import { filterCqLinksByManagingOrg } from "./filter-oids-by-managing-org";
 import { processAsyncError } from "@metriport/core/util/error/shared";
-
-const staleLookbackHours = 24;
 
 const resultPoller = makeOutboundResultPoller();
 
@@ -60,8 +56,7 @@ export async function getDocumentsFromCQ({
   if (!isCqQueryEnabled) return interrupt(`CQ disabled for facility ${facilityId}`);
 
   try {
-    const [updatedPatientParam, cqPatientData, initiator] = await Promise.all([
-      getPatientOrFail(patientParam),
+    const [cqPatientData, initiator] = await Promise.all([
       getCQPatientData(patientParam),
       getCqInitiator(patientParam, facilityId),
       setDocQueryProgress({
@@ -74,30 +69,19 @@ export async function getDocumentsFromCQ({
       }),
     ]);
 
-    const patientCQData = getCQData(updatedPatientParam.data.externalData);
-    const hasNoCQStatus = !patientCQData || !patientCQData.discoveryStatus;
-    const isProcessing = patientCQData?.discoveryStatus === "processing";
-    const updateStalePatients = await isStalePatientUpdateEnabledForCx(cxId);
-    const now = buildDayjs(new Date());
-    const patientCreatedAt = buildDayjs(updatedPatientParam.createdAt);
-    const pdStartedAt = patientCQData?.discoveryParams?.startedAt
-      ? buildDayjs(patientCQData.discoveryParams.startedAt)
-      : undefined;
-    const isStale =
-      updateStalePatients &&
-      (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackHours, "hours");
+    const { isScheduled, runPatientDiscovery } = await scheduleDocQuery({
+      cxId,
+      requestId,
+      patient: { id: patientId, cxId },
+      source: MedicalDataSource.CAREQUALITY,
+      triggerConsolidated,
+      forcePatientDiscovery,
+    });
 
-    if (hasNoCQStatus || isProcessing || forcePatientDiscovery || isStale) {
-      await scheduleDocQuery({
-        requestId,
-        patient: { id: patientId, cxId },
-        source: MedicalDataSource.CAREQUALITY,
-        triggerConsolidated,
-      });
-
-      if ((forcePatientDiscovery || isStale) && !isProcessing) {
+    if (isScheduled) {
+      if (runPatientDiscovery) {
         discover({
-          patient: updatedPatientParam,
+          patient: patientParam,
           facilityId: initiator.facilityId,
           requestId,
         }).catch(processAsyncError("CQ discover"));
@@ -152,7 +136,7 @@ export async function getDocumentsFromCQ({
 
     const documentQueryRequestsV2 = createOutboundDocumentQueryRequests({
       requestId,
-      patient: updatedPatientParam,
+      patient: patientParam,
       initiator,
       cxId,
       cqLinks,
