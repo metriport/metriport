@@ -1,33 +1,31 @@
 import { Patient } from "@metriport/core/domain/patient";
-import { out } from "@metriport/core/util/log";
-import { MedicalDataSource } from "@metriport/core/external/index";
-import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { OutboundPatientDiscoveryRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
+import { MedicalDataSource } from "@metriport/core/external/index";
+import { processAsyncError } from "@metriport/core/util/error/shared";
+import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { OutboundPatientDiscoveryResp } from "@metriport/ihe-gateway-sdk";
-import { errorToString } from "@metriport/shared/common/error";
+import { errorToString } from "@metriport/shared";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { getNewDemographics } from "../../domain/medical/patient-demographics";
+import { getOutboundPatientDiscoverySuccessFailureCount } from "../hie/carequality-analytics";
+import { checkLinkDemographicsAcrossHies } from "../hie/check-patient-link-demographics";
+import { resetScheduledPatientDiscovery } from "../hie/reset-scheduled-patient-discovery-request";
+import { updatePatientDiscoveryStatusOrExit } from "../hie/update-patient-discovery-status-or-exit";
+import { updatePatientLinkDemographics } from "../hie/update-patient-link-demographics";
 import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq-data";
 import { updateCQPatientData } from "./command/cq-patient-data/update-cq-data";
 import { CQLink } from "./cq-patient-data";
-import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { getNewDemographics } from "../../domain/medical/patient-demographics";
 import { getDocumentsFromCQ } from "./document/query-documents";
-import { setDocQueryProgress } from "../hie/set-doc-query-progress";
-import { resetScheduledPatientDiscovery } from "../hie/reset-scheduled-patient-discovery-request";
-import { updatePatientLinkDemographics } from "../hie/update-patient-link-demographics";
-import { checkLinkDemographicsAcrossHies } from "../hie/check-patient-link-demographics";
-import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
-import { getCQData, discover } from "./patient";
+import { discover, getCQData } from "./patient";
 import {
   getPatientResources,
   patientResourceToNormalizedLinkDemographics,
 } from "./patient-demographics";
-import { getOutboundPatientDiscoverySuccessFailureCount } from "../hie/carequality-analytics";
-import { processAsyncError } from "@metriport/core/util/error/shared";
 
 dayjs.extend(duration);
 
@@ -56,8 +54,15 @@ export async function processOutboundPatientDiscoveryResps({
         requestId,
       });
       if (startedNewPd) return;
-      await updatePatientDiscoveryStatus({ patient: patientIds, status: "completed" });
-      await queryDocsIfScheduled({ patientIds });
+      await updatePatientDiscoveryStatusOrExit({
+        patient: patientIds,
+        status: "completed",
+        source: MedicalDataSource.CAREQUALITY,
+        exitActions: {
+          dq: getDocumentsFromCQ,
+          extraDqArgs: {},
+        },
+      });
     }
 
     log(`Starting to handle patient discovery results`);
@@ -104,17 +109,22 @@ export async function processOutboundPatientDiscoveryResps({
       requestId,
     });
     if (startedNewPd) return;
-    await updatePatientDiscoveryStatus({ patient, status: "completed" });
-    await queryDocsIfScheduled({ patientIds: patient });
+    await updatePatientDiscoveryStatusOrExit({
+      patient: patientIds,
+      status: "completed",
+      source: MedicalDataSource.CAREQUALITY,
+      exitActions: {
+        dq: getDocumentsFromCQ,
+        extraDqArgs: {},
+      },
+    });
     log("Completed.");
   } catch (error) {
-    // TODO 1646 Move to a single hit to the DB
-    await resetScheduledPatientDiscovery({
+    await updatePatientDiscoveryStatusOrExit({
       patient: patientIds,
+      status: "failed",
       source: MedicalDataSource.CAREQUALITY,
     });
-    await updatePatientDiscoveryStatus({ patient: patientIds, status: "failed" });
-    await queryDocsIfScheduled({ patientIds, isFailed: true });
     const msg = `Error on Processing Outbound Patient Discovery Responses`;
     outerLog(`${msg} - ${errorToString(error)}`);
     capture.error(msg, {
@@ -256,42 +266,4 @@ export async function runNexPdIfScheduled({
     },
   });
   return true;
-}
-
-export async function queryDocsIfScheduled({
-  patientIds,
-  isFailed = false,
-}: {
-  patientIds: Pick<Patient, "id" | "cxId">;
-  isFailed?: boolean;
-}): Promise<void> {
-  const patient = await getPatientOrFail(patientIds);
-
-  const cqData = getCQData(patient.data.externalData);
-  const scheduledDocQueryRequestId = cqData?.scheduledDocQueryRequestId;
-  const scheduledDocQueryRequestTriggerConsolidated =
-    cqData?.scheduledDocQueryRequestTriggerConsolidated;
-  if (!scheduledDocQueryRequestId) {
-    return;
-  }
-
-  await resetPatientScheduledDocQueryRequestId({
-    patient,
-    source: MedicalDataSource.CAREQUALITY,
-  });
-  if (isFailed) {
-    await setDocQueryProgress({
-      patient,
-      requestId: scheduledDocQueryRequestId,
-      source: MedicalDataSource.CAREQUALITY,
-      downloadProgress: { status: "failed", total: 0 },
-      convertProgress: { status: "failed", total: 0 },
-    });
-  } else {
-    getDocumentsFromCQ({
-      patient,
-      requestId: scheduledDocQueryRequestId,
-      triggerConsolidated: scheduledDocQueryRequestTriggerConsolidated,
-    }).catch(processAsyncError("CQ getDocumentsFromCQ"));
-  }
 }

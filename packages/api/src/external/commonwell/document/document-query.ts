@@ -12,14 +12,13 @@ import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import NotFoundError from "@metriport/core/util/error/not-found";
-import { errorToString, processAsyncError } from "@metriport/core/util/error/shared";
+import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
+import { errorToString, MetriportError } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import httpStatus from "http-status";
 import { chunk, partition } from "lodash";
-import { out } from "@metriport/core/util/log";
 import { removeDocRefMapping } from "../../../command/medical/docref-mapping/remove-docref-mapping";
 import {
   getDocToFileFunction,
@@ -51,7 +50,7 @@ import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
 import { update } from "../patient";
 import { getPatientWithCWData, PatientWithCWData } from "../patient-external-data";
-import { getCwInitiator } from "../shared";
+import { getCwInitiator, validateCWEnabled } from "../shared";
 import { makeDocumentDownloader } from "./document-downloader-factory";
 import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
 import {
@@ -61,7 +60,6 @@ import {
   getContentTypeOrUnknown,
   getFileName,
 } from "./shared";
-import { validateCWEnabled } from "../shared";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -144,27 +142,25 @@ export async function queryAndProcessDocuments({
       }),
     ]);
 
-    const { isScheduled, runPatientDiscovery } = await scheduleDocQuery({
-      cxId,
+    const updatedPatient = await scheduleDocQuery<{
+      facilityId: string;
+      getOrgIdExcludeList: () => Promise<string[]>;
+    }>({
       requestId,
       patient: { id: patientId, cxId },
       source: MedicalDataSource.COMMONWELL,
       triggerConsolidated,
+      scheduleActions: {
+        pd: update,
+        extraPdArgs: {
+          facilityId: initiator.facilityId,
+          getOrgIdExcludeList,
+        },
+      },
       forcePatientDiscovery,
     });
 
-    if (isScheduled) {
-      if (runPatientDiscovery) {
-        update({
-          patient: patientParam,
-          facilityId: initiator.facilityId,
-          getOrgIdExcludeList,
-          requestId,
-        }).catch(processAsyncError("CW update"));
-      }
-
-      return;
-    }
+    if (updatedPatient.data.externalData?.COMMONWELL?.scheduledDocQueryRequestId) return;
 
     const startedAt = new Date();
     await setDocQueryStartAt({

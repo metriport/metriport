@@ -19,7 +19,6 @@ import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { getCqInitiator } from "../shared";
 import { isFacilityEnabledToQueryCQ } from "../../carequality/shared";
 import { filterCqLinksByManagingOrg } from "./filter-oids-by-managing-org";
-import { processAsyncError } from "@metriport/core/util/error/shared";
 
 const resultPoller = makeOutboundResultPoller();
 
@@ -69,26 +68,22 @@ export async function getDocumentsFromCQ({
       }),
     ]);
 
-    const { isScheduled, runPatientDiscovery } = await scheduleDocQuery({
-      cxId,
+    const updatedPatient = await scheduleDocQuery<{ facilityId: string }>({
       requestId,
       patient: { id: patientId, cxId },
       source: MedicalDataSource.CAREQUALITY,
       triggerConsolidated,
       forcePatientDiscovery,
+      scheduleActions: {
+        pd: discover,
+        extraPdArgs: {
+          facilityId: initiator.facilityId,
+        },
+      },
     });
 
-    if (isScheduled) {
-      if (runPatientDiscovery) {
-        discover({
-          patient: patientParam,
-          facilityId: initiator.facilityId,
-          requestId,
-        }).catch(processAsyncError("CQ discover"));
-      }
+    if (updatedPatient.data.externalData?.CAREQUALITY?.scheduledDocQueryRequestId) return;
 
-      return;
-    }
     if (!cqPatientData || cqPatientData.data.links.length <= 0) {
       return interrupt(`Patient has no CQ links, skipping DQ`);
     }
