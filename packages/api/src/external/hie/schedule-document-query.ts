@@ -30,7 +30,6 @@ export async function scheduleDocQuery<T>({
       sharedPdArgs: {
         patient: Patient;
         requestId: string;
-        facilityId: string;
       } & T
     ) => Promise<void>;
     extraPdArgs: T;

@@ -47,6 +47,8 @@ export type GenderAtBirth = (typeof genderAtBirthTypes)[number];
 export abstract class PatientExternalDataEntry {
   documentQueryProgress?: DocumentQueryProgress;
   scheduledPdRequest?: ScheduledPatientDiscovery;
+  scheduledDocQueryRequestId?: string;
+  scheduledDocQueryRequestTriggerConsolidated?: boolean;
   discoveryParams?: DiscoveryParams;
 }
 
