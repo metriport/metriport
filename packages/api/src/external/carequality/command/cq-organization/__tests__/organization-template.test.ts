@@ -1,6 +1,4 @@
-// TODO Add tests
-// TODO Add tests
-// TODO Add tests
-describe("getOrganizationFhirTemplate", () => {
-  it.todo("tests it");
+// TODO 2553 Add tests
+describe("CQ Organization Template", () => {
+  it.todo("getOrganizationFhirTemplate");
 });
