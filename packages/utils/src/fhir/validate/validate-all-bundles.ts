@@ -119,7 +119,6 @@ async function uploadToS3(filePath: string) {
 }
 
 async function startImportJob(): Promise<string> {
-  const clientToken = nanoid().replace(/[^a-zA-Z]/g, "");
   const startFhirImportCmd = new StartFHIRImportJobCommand({
     InputDataConfig: {
       S3Uri: `s3://${sourceBucketName}/${sourcePrefix}`,
@@ -132,7 +131,7 @@ async function startImportJob(): Promise<string> {
     },
     DatastoreId: datastoreId,
     DataAccessRoleArn: accesRoleArn,
-    ClientToken: clientToken,
+    ClientToken: nanoid(),
   });
   console.log(`Starting import job...`);
   const response = await healthlake.send(startFhirImportCmd);

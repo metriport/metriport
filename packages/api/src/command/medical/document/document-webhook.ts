@@ -87,7 +87,7 @@ export const processPatientDocumentRequest = async (
         metadata
       );
     } else {
-      log(`WH disabled. Not sending it - metadata: ${JSON.stringify(metadata)}`);
+      log(`WH disabled. Not sending it - metadata: ${metadata}`);
       await createWebhookRequest({
         cxId,
         type: whType,
