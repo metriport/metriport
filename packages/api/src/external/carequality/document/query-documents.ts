@@ -57,7 +57,7 @@ export async function getDocumentsFromCQ({
 
   try {
     const [cqPatientData, initiator] = await Promise.all([
-      getCQPatientData(patientParam),
+      getCQPatientData({ id: patientId, cxId }),
       getCqInitiator(patientParam, facilityId),
       setDocQueryProgress({
         patient: { id: patientId, cxId },
