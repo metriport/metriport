@@ -69,6 +69,9 @@ function verifyPatientReferences(resource: Resource, patientId: string) {
 function comparePatientIds(reference: Reference | undefined, patientId: string) {
   const refString = reference?.reference;
   const refId = refString?.split("Patient/")[1];
+  if (refId?.trim().length === 0) {
+    throw new BadRequestError("Missing ID in the Patient reference!");
+  }
   if (refId != patientId) {
     throw new BadRequestError("Patient reference is pointing to another patient!");
   }

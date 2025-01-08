@@ -24,7 +24,7 @@ export async function getDocuments({
   try {
     const api = makeFhirApi(cxId, Config.getFHIRServerUrl());
     const docs: DocumentReferenceWithId[] = [];
-    const chunksDocIds = documentIds && documentIds.length > 0 ? chunk(documentIds, 150) : [[]];
+    const chunksDocIds = documentIds && documentIds.length > 0 ? chunk(documentIds, 150) : [];
 
     for (const docIds of chunksDocIds) {
       const filtersAsStr = getFilters({ patientId, documentIds: docIds, from, to });
