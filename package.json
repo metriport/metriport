@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "bin": {},
   "scripts": {
-    "preinstall": "npm i -g rimraf",
-    "prepare": "husky install",
+    "prepare-dev": "is-ci || husky install",
+    "preinstall": "npm i -g rimraf@5.0.10 --no-fund && npm run prepare-dev",
+    "preci": "npm run preinstall",
+    "preinstall-deps": "npm run preci",
     "init": "npm i && SCRIPT='i' npm run lambdas:no-run",
     "clean": "npm run clean --workspaces --if-present && SCRIPT='clean' npm run lambdas",
     "deepclean": "npm run deepclean --workspaces --if-present && echo 'rimraf node_modules' && rimraf node_modules && SCRIPT='deepclean' npm run lambdas",
@@ -62,6 +64,9 @@
     "commitizen": {
       "path": "@commitlint/cz-commitlint"
     }
+  },
+  "dependencies": {
+    "is-ci": "^3.0.1"
   },
   "devDependencies": {
     "@commitlint/cli": "^17.4.2",
