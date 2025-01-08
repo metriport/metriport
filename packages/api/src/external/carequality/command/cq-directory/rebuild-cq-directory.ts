@@ -7,7 +7,6 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { QueryTypes } from "sequelize";
 import { executeOnDBTx } from "../../../../models/transaction-wrapper";
-import { addUpdatedAtTrigger } from "../../../../sequelize/migrations-shared";
 import { Config } from "../../../../shared/config";
 import { makeCarequalityManagementAPI } from "../../api";
 import { CQDirectoryEntryData2 } from "../../cq-directory";
@@ -18,12 +17,17 @@ import { parseCQOrganization } from "../cq-organization/parse-cq-organization";
 import { bulkInsertCQDirectoryEntries } from "./create-cq-directory-entry";
 
 dayjs.extend(duration);
-const BATCH_SIZE = 1000;
+const BATCH_SIZE = 5_000;
 const parallelQueriesToGetManagingOrg = 20;
 const SLEEP_TIME = dayjs.duration({ milliseconds: 750 });
-const cqDirectoryEntryTemp = `cq_directory_entry_temp`;
+
+// TODO 2553 To be updated to `cq_directory_entry` on a follow-up PR
 const cqDirectoryEntry = `cq_directory_entry_new`;
-const cqDirectoryEntryBackup = `cq_directory_entry_backup`;
+const cqDirectoryEntryTemp = `cq_directory_entry_temp`;
+const cqDirectoryEntryBackup1 = `cq_directory_entry_backup1`;
+const cqDirectoryEntryBackup2 = `cq_directory_entry_backup2`;
+const cqDirectoryEntryBackup3 = `cq_directory_entry_backup3`;
+const cqDirectoryEntryView = `cq_directory_entry_view`;
 
 const dbCreds = Config.getDBCreds();
 const sequelize = initDbPool(dbCreds, {
@@ -40,14 +44,22 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
   const cq = makeCarequalityManagementAPI();
   if (!cq) throw new Error("Carequality API not initialized");
 
+  const startedAt = Date.now();
   try {
     await createTempCQDirectoryTable();
     const cache = new CachedCqOrgLoader();
     while (!isDone) {
       try {
-        const orgs = await cq.listOrganizations({ start: currentPosition, count: BATCH_SIZE });
-        if (orgs.length < BATCH_SIZE) isDone = true; // if CQ directory returns less than BATCH_SIZE number of orgs, that means we've hit the end
-        currentPosition += BATCH_SIZE;
+        const maxPosition = currentPosition + BATCH_SIZE;
+        log(`Loading active CQ directory entries, from ${currentPosition} up to ${maxPosition}`);
+        const orgs = await cq.listOrganizations({
+          start: currentPosition,
+          count: BATCH_SIZE,
+          active: true,
+        });
+        // If CQ directory returns less than BATCH_SIZE number of orgs, that means we've hit the end
+        if (orgs.length < BATCH_SIZE) isDone = true;
+        currentPosition = maxPosition;
         await cache.populate(orgs);
         const parentIds = orgs.flatMap(org => getParentOid(org) ?? []);
         await cache.populateByOids(parentIds);
@@ -60,9 +72,7 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
           },
           { numberOfParallelExecutions: parallelQueriesToGetManagingOrg }
         );
-        log(
-          `Adding ${parsedOrgs.length} CQ directory entries... Total fetched: ${currentPosition}`
-        );
+        log(`Adding ${parsedOrgs.length} CQ directory entries...`);
         await bulkInsertCQDirectoryEntries(sequelize, parsedOrgs, cqDirectoryEntryTemp);
         await sleep(SLEEP_TIME.asMilliseconds());
       } catch (error) {
@@ -82,11 +92,10 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
     throw error;
   }
   try {
-    await renameCQDirectoryTablesAndUpdateIndexes();
-    log("CQ directory successfully rebuilt! :)");
+    await updateViewDefinition();
+    log(`CQ directory successfully rebuilt! :) Took ${Date.now() - startedAt}ms`);
   } catch (error) {
     const msg = `Failed the last step of CQ directory rebuild`;
-    await deleteTempCQDirectoryTable();
     log(`${msg}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
       extra: { context: `renameCQDirectoryTablesAndUpdateIndexes`, error },
@@ -98,41 +107,30 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
 async function createTempCQDirectoryTable(): Promise<void> {
   await deleteTempCQDirectoryTable();
   const query = `CREATE TABLE IF NOT EXISTS ${cqDirectoryEntryTemp} (LIKE ${cqDirectoryEntry} INCLUDING ALL)`;
-  await sequelize.query(query, {
-    type: QueryTypes.INSERT,
-  });
+  await sequelize.query(query, { type: QueryTypes.RAW });
 }
 
 async function deleteTempCQDirectoryTable(): Promise<void> {
   const query = `DROP TABLE IF EXISTS ${cqDirectoryEntryTemp}`;
-  await sequelize.query(query, {
-    type: QueryTypes.DELETE,
-  });
+  await sequelize.query(query, { type: QueryTypes.RAW });
 }
 
-async function renameCQDirectoryTablesAndUpdateIndexes(): Promise<void> {
+async function updateViewDefinition(): Promise<void> {
   await executeOnDBTx(CQDirectoryEntryViewModel.prototype, async transaction => {
-    const dropBackupQuery = `DROP TABLE IF EXISTS ${cqDirectoryEntryBackup};`;
-    await sequelize.query(dropBackupQuery, {
-      type: QueryTypes.DELETE,
-      transaction,
-    });
+    const dropView = `DROP VIEW IF EXISTS ${cqDirectoryEntryView};`;
+    const createView = `CREATE VIEW ${cqDirectoryEntryView} AS SELECT * FROM ${cqDirectoryEntryTemp};`;
+    const dropBackup3 = `DROP TABLE IF EXISTS ${cqDirectoryEntryBackup3};`;
+    const renameBackup2To3 = `ALTER TABLE IF EXISTS ${cqDirectoryEntryBackup2} RENAME TO ${cqDirectoryEntryBackup3};`;
+    const renameBackup1To2 = `ALTER TABLE IF EXISTS ${cqDirectoryEntryBackup1} RENAME TO ${cqDirectoryEntryBackup2};`;
+    const renameNewToBackup = `ALTER TABLE ${cqDirectoryEntry} RENAME TO ${cqDirectoryEntryBackup1};`;
+    const renameTempToNew = `ALTER TABLE ${cqDirectoryEntryTemp} RENAME TO ${cqDirectoryEntry};`;
 
-    const lockTablesQuery = `LOCK TABLE ${cqDirectoryEntry} IN ACCESS EXCLUSIVE MODE;`;
-    await sequelize.query(lockTablesQuery, {
-      type: QueryTypes.RAW,
-      transaction,
-    });
-
-    const renameTablesQuery = `
-      ALTER TABLE ${cqDirectoryEntry} RENAME TO ${cqDirectoryEntryBackup};
-      ALTER TABLE ${cqDirectoryEntryTemp} RENAME TO ${cqDirectoryEntry};
-    `;
-    await sequelize.query(renameTablesQuery, {
-      type: QueryTypes.UPDATE,
-      transaction,
-    });
-
-    await addUpdatedAtTrigger(sequelize.getQueryInterface(), transaction, cqDirectoryEntry);
+    await sequelize.query(dropView, { type: QueryTypes.RAW, transaction });
+    await sequelize.query(createView, { type: QueryTypes.RAW, transaction });
+    await sequelize.query(dropBackup3, { type: QueryTypes.RAW, transaction });
+    await sequelize.query(renameBackup2To3, { type: QueryTypes.RAW, transaction });
+    await sequelize.query(renameBackup1To2, { type: QueryTypes.RAW, transaction });
+    await sequelize.query(renameNewToBackup, { type: QueryTypes.RAW, transaction });
+    await sequelize.query(renameTempToNew, { type: QueryTypes.RAW, transaction });
   });
 }
