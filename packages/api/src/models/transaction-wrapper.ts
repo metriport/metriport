@@ -17,10 +17,9 @@ import { BaseModelNoId } from "./_default";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function executeOnDBTx<T extends Model<any, any>, X>(
   model: BaseModelNoId<T>,
-  callback: (tx: Transaction) => Promise<X>,
-  isolationLevel?: Transaction.ISOLATION_LEVELS | undefined
+  callback: (tx: Transaction) => Promise<X>
 ): Promise<X> {
-  let transaction: Transaction | undefined = await startTransaction(model, isolationLevel);
+  let transaction: Transaction | undefined = await startTransaction(model);
   try {
     return await callback(transaction);
   } catch (error) {

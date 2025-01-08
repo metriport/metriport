@@ -10,7 +10,6 @@ import { getCQData } from "../carequality/patient";
 import { isStalePatientUpdateEnabledForCx } from "../aws/app-config";
 import { PatientDataCommonwell } from "../commonwell/patient-shared";
 import { PatientDataCarequality } from "../carequality/patient-shared";
-import { Transaction } from "sequelize";
 
 const staleLookbackHours = 24;
 
@@ -42,65 +41,61 @@ export async function scheduleDocQuery({
     cxId: patient.cxId,
   };
 
-  return await executeOnDBTx(
-    PatientModel.prototype,
-    async transaction => {
-      const existingPatient = await getPatientOrFail({
-        ...patientFilter,
-        lock: true,
-        transaction,
-      });
+  return await executeOnDBTx(PatientModel.prototype, async transaction => {
+    const existingPatient = await getPatientOrFail({
+      ...patientFilter,
+      lock: true,
+      transaction,
+    });
 
-      const externalData = existingPatient.data.externalData ?? {};
+    const externalData = existingPatient.data.externalData ?? {};
 
-      const { hasNoHieStatus, hieStatusProcessing } = isPatientPdDataMissingOrProcessing({
+    const { hasNoHieStatus, hieStatusProcessing } = isPatientPdDataMissingOrProcessing({
+      patient: existingPatient,
+      source,
+    });
+    const isStalePatientUpdateEnabled = await isStalePatientUpdateEnabledForCx(cxId);
+    const isStale =
+      isStalePatientUpdateEnabled &&
+      isPatientStale({
         patient: existingPatient,
         source,
       });
-      const isStalePatientUpdateEnabled = await isStalePatientUpdateEnabledForCx(cxId);
-      const isStale =
-        isStalePatientUpdateEnabled &&
-        isPatientStale({
-          patient: existingPatient,
-          source,
-        });
 
-      if (hasNoHieStatus || hieStatusProcessing || isStale || forceScheduling) {
-        log(`Scheduling document query to be executed`);
+    if (hasNoHieStatus || hieStatusProcessing || isStale || forceScheduling) {
+      log(`Scheduling document query to be executed`);
 
-        const updatedExternalData = {
-          ...externalData,
-          [source]: {
-            ...externalData[source],
-            scheduledDocQueryRequestId: requestId,
-            ...(triggerConsolidated !== undefined && {
-              scheduledDocQueryRequestTriggerConsolidated: triggerConsolidated,
-            }),
-          },
-        };
-        const updatedPatient = {
-          ...existingPatient.dataValues,
-          data: {
-            ...existingPatient.data,
-            externalData: updatedExternalData,
-          },
-        };
-        await PatientModel.update(updatedPatient, {
-          where: patientFilter,
-          transaction,
-        });
+      const updatedExternalData = {
+        ...externalData,
+        [source]: {
+          ...externalData[source],
+          scheduledDocQueryRequestId: requestId,
+          ...(triggerConsolidated !== undefined && {
+            scheduledDocQueryRequestTriggerConsolidated: triggerConsolidated,
+          }),
+        },
+      };
+      const updatedPatient = {
+        ...existingPatient.dataValues,
+        data: {
+          ...existingPatient.data,
+          externalData: updatedExternalData,
+        },
+      };
+      await PatientModel.update(updatedPatient, {
+        where: patientFilter,
+        transaction,
+      });
 
-        const runPatientDiscovery = (forcePatientDiscovery || isStale) && !hieStatusProcessing;
+      const runPatientDiscovery = (forcePatientDiscovery || isStale) && !hieStatusProcessing;
 
-        return { isScheduled: true, runPatientDiscovery };
-      }
+      return { isScheduled: true, runPatientDiscovery };
+    }
 
-      log(`Scheduling skipped`);
+    log(`Scheduling skipped`);
 
-      return { isScheduled: false, runPatientDiscovery: false };
-    },
-    Transaction.ISOLATION_LEVELS.SERIALIZABLE
-  );
+    return { isScheduled: false, runPatientDiscovery: false };
+  });
 }
 
 function getHieData(
