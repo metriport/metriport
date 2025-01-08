@@ -25,7 +25,7 @@ import {
  * @param params.rerunPdOnNewDemographics The flag for determining whether to re-run pattient discovery again if new demographic data is found.
  * @returns
  */
-export async function updatePatientDiscoveryStatusOrExit<T>({
+export async function updatePatientDiscoveryStatus<T>({
   patient,
   status,
   source,

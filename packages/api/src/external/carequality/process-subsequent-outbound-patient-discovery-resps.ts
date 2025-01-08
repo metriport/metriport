@@ -4,7 +4,7 @@ import { errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { makeOutboundResultPoller } from "../ihe-gateway/outbound-result-poller-factory";
-import { updatePatientDiscoveryStatusOrExit } from "../hie/update-patient-discovery-status-or-exit";
+import { updatePatientDiscoveryStatus } from "../hie/update-patient-discovery-status";
 import { getCQData } from "./patient";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
@@ -35,7 +35,7 @@ export async function processPostRespOutboundPatientDiscoveryResps({
     if (discoveryStatus !== "processing") {
       log(`Kicking off post resp patient discovery`);
       // TODO Internal #1832 (rework)
-      await updatePatientDiscoveryStatusOrExit({
+      await updatePatientDiscoveryStatus({
         patient: patientIds,
         status: "processing",
         source: MedicalDataSource.CAREQUALITY,
@@ -50,7 +50,7 @@ export async function processPostRespOutboundPatientDiscoveryResps({
     }
   } catch (error) {
     // TODO Internal #1832 (rework)
-    await updatePatientDiscoveryStatusOrExit({
+    await updatePatientDiscoveryStatus({
       patient: patientIds,
       status: "failed",
       source: MedicalDataSource.CAREQUALITY,

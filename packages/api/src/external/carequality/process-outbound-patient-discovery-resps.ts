@@ -15,7 +15,7 @@ import { getNewDemographics } from "../../domain/medical/patient-demographics";
 import { getOutboundPatientDiscoverySuccessFailureCount } from "../hie/carequality-analytics";
 import { checkLinkDemographicsAcrossHies } from "../hie/check-patient-link-demographics";
 import { resetScheduledPatientDiscovery } from "../hie/reset-scheduled-patient-discovery-request";
-import { updatePatientDiscoveryStatusOrExit } from "../hie/update-patient-discovery-status-or-exit";
+import { updatePatientDiscoveryStatus } from "../hie/update-patient-discovery-status";
 import { updatePatientLinkDemographics } from "../hie/update-patient-link-demographics";
 import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq-data";
 import { updateCQPatientData } from "./command/cq-patient-data/update-cq-data";
@@ -54,7 +54,7 @@ export async function processOutboundPatientDiscoveryResps({
         requestId,
       });
       if (startedNewPd) return;
-      await updatePatientDiscoveryStatusOrExit({
+      await updatePatientDiscoveryStatus({
         patient: patientIds,
         status: "completed",
         source: MedicalDataSource.CAREQUALITY,
@@ -109,7 +109,7 @@ export async function processOutboundPatientDiscoveryResps({
       requestId,
     });
     if (startedNewPd) return;
-    await updatePatientDiscoveryStatusOrExit({
+    await updatePatientDiscoveryStatus({
       patient: patientIds,
       status: "completed",
       source: MedicalDataSource.CAREQUALITY,
@@ -120,7 +120,7 @@ export async function processOutboundPatientDiscoveryResps({
     });
     log("Completed.");
   } catch (error) {
-    await updatePatientDiscoveryStatusOrExit({
+    await updatePatientDiscoveryStatus({
       patient: patientIds,
       status: "failed",
       source: MedicalDataSource.CAREQUALITY,

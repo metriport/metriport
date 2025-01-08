@@ -10,7 +10,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { createAugmentedPatient } from "../../domain/medical/patient-demographics";
 import { isDemoAugEnabledForCx } from "../aws/app-config";
-import { updatePatientDiscoveryStatusOrExit } from "../hie/update-patient-discovery-status-or-exit";
+import { updatePatientDiscoveryStatus } from "../hie/update-patient-discovery-status";
 import { makeIHEGatewayV2 } from "../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { makeOutboundResultPoller } from "../ihe-gateway/outbound-result-poller-factory";
 import { deleteCQPatientData } from "./command/cq-patient-data/delete-cq-data";
@@ -48,7 +48,7 @@ export async function discover({
   if (enabledIHEGW) {
     const requestId = inputRequestId ?? uuidv7();
     const startedAt = new Date();
-    const updatedPatient = await updatePatientDiscoveryStatusOrExit({
+    const updatedPatient = await updatePatientDiscoveryStatus({
       patient: { id: patient.id, cxId: patient.cxId },
       status: "processing",
       source: MedicalDataSource.CAREQUALITY,
@@ -103,7 +103,7 @@ async function prepareAndTriggerPD({
       numOfGateways: numGatewaysV2,
     });
   } catch (error) {
-    await updatePatientDiscoveryStatusOrExit({
+    await updatePatientDiscoveryStatus({
       patient: { id: patient.id, cxId: patient.cxId },
       status: "failed",
       source: MedicalDataSource.CAREQUALITY,

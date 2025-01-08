@@ -27,7 +27,7 @@ import { isDemoAugEnabledForCx, isEnhancedCoverageEnabledForCx } from "../aws/ap
 import { checkLinkDemographicsAcrossHies } from "../hie/check-patient-link-demographics";
 import { HieInitiator } from "../hie/get-hie-initiator";
 import { resetScheduledPatientDiscovery } from "../hie/reset-scheduled-patient-discovery-request";
-import { updatePatientDiscoveryStatusOrExit } from "../hie/update-patient-discovery-status-or-exit";
+import { updatePatientDiscoveryStatus } from "../hie/update-patient-discovery-status";
 import { updatePatientLinkDemographics } from "../hie/update-patient-link-demographics";
 import { LinkStatus } from "../patient-link";
 import { makeCommonWellAPI } from "./api";
@@ -115,7 +115,7 @@ export async function create({
   if (isCwEnabled) {
     const requestId = inputRequestId ?? uuidv7();
     const startedAt = new Date();
-    const updatedPatient = await updatePatientDiscoveryStatusOrExit({
+    const updatedPatient = await updatePatientDiscoveryStatus({
       patient: { id: patient.id, cxId: patient.cxId },
       status: "processing",
       source: MedicalDataSource.COMMONWELL,
@@ -228,7 +228,7 @@ async function registerAndLinkPatientInCW({
       requestId,
     });
     if (startedNewPd) return;
-    await updatePatientDiscoveryStatusOrExit<{
+    await updatePatientDiscoveryStatus<{
       getOrgIdExcludeList: () => Promise<string[]>;
     }>({
       patient: patientIds,
@@ -242,7 +242,7 @@ async function registerAndLinkPatientInCW({
     log("Completed.");
     return { commonwellPatientId, personId };
   } catch (error) {
-    await updatePatientDiscoveryStatusOrExit({
+    await updatePatientDiscoveryStatus({
       patient: patientIds,
       status: "failed",
       source: MedicalDataSource.COMMONWELL,
@@ -295,7 +295,7 @@ export async function update({
   if (isCwEnabled) {
     const requestId = inputRequestId ?? uuidv7();
     const startedAt = new Date();
-    const updatedPatient = await updatePatientDiscoveryStatusOrExit({
+    const updatedPatient = await updatePatientDiscoveryStatus({
       patient: { id: patient.id, cxId: patient.cxId },
       status: "processing",
       source: MedicalDataSource.COMMONWELL,
@@ -415,7 +415,7 @@ async function updatePatientAndLinksInCw({
       requestId,
     });
     if (startedNewPd) return;
-    await updatePatientDiscoveryStatusOrExit<{
+    await updatePatientDiscoveryStatus<{
       getOrgIdExcludeList: () => Promise<string[]>;
     }>({
       patient: patientIds,
@@ -428,7 +428,7 @@ async function updatePatientAndLinksInCw({
     });
     log("Completed.");
   } catch (error) {
-    await updatePatientDiscoveryStatusOrExit({
+    await updatePatientDiscoveryStatus({
       patient: patientIds,
       status: "failed",
       source: MedicalDataSource.COMMONWELL,
