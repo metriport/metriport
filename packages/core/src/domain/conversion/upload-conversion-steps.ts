@@ -249,9 +249,11 @@ export async function storeInS3WithRetries({
       capture.error(msg, {
         extra: {
           fileName,
-          context: errorConfig?.context,
+          context: errorConfig.context,
           error,
-          ...errorConfig?.captureParams,
+          errorMessage: errorConfig.errorMessage,
+          sqsMessage: errorConfig.sqsMessage,
+          ...errorConfig.captureParams,
         },
       });
     }
