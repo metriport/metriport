@@ -3,7 +3,7 @@ import { getStatesFromAddresses, Patient, PatientDemoData } from "@metriport/cor
 import { getPatientByDemo as getPatientByDemoMPI } from "@metriport/core/mpi/get-patient-by-demo";
 import { USStateForAddress } from "@metriport/shared";
 import { uniq } from "lodash";
-import { Op, QueryTypes, Transaction } from "sequelize";
+import { Op, QueryTypes, Transaction, LOCK } from "sequelize";
 import { Facility } from "../../../domain/medical/facility";
 import NotFoundError from "../../../errors/not-found";
 import { PatientLoaderLocal } from "../../../models/helpers/patient-loader-local";
@@ -214,7 +214,7 @@ export type GetPatient = {
       /**
        * @see executeOnDBTx() for details about the 'lock' parameter.
        */
-      lock?: boolean;
+      lock?: boolean | LOCK;
     }
 );
 

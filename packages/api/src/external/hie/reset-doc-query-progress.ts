@@ -5,6 +5,7 @@ import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { aggregateAndSetHIEProgresses } from "./set-doc-query-progress";
 import { processDocQueryProgressWebhook } from "../../command/medical/document/process-doc-query-webhook";
+import { LOCK } from "sequelize";
 
 /**
  * Resets the doc query progress for the given HIE
@@ -28,7 +29,7 @@ export async function resetDocQueryProgress({
   const result = await executeOnDBTx(PatientModel.prototype, async transaction => {
     const existingPatient = await getPatientOrFail({
       ...patientFilter,
-      lock: true,
+      lock: LOCK.UPDATE,
       transaction,
     });
 
