@@ -1,7 +1,6 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { createFullBundleEntries } from "../../../external/fhir/shared/bundle";
 import {
-  addExtensionToConversion,
   removePatientFromConversion,
   replaceIdsForResourcesWithDocExtension,
 } from "./modifications";
@@ -18,14 +17,9 @@ export type FhirConverterParams = {
   invalidAccess: string | undefined;
 };
 
-export function postProcessBundle(
-  fhirBundle: Bundle<Resource>,
-  patientId: string,
-  documentExtension: FhirExtension
-) {
+export function postProcessBundle(fhirBundle: Bundle<Resource>, patientId: string) {
   const withNewIds = replaceIdsForResourcesWithDocExtension(fhirBundle, patientId);
-  const withExtensions = addExtensionToConversion(withNewIds, documentExtension);
-  const withRequests = createFullBundleEntries(withExtensions);
+  const withRequests = createFullBundleEntries(withNewIds);
   const withoutPatient = removePatientFromConversion(withRequests);
   return withoutPatient;
 }
