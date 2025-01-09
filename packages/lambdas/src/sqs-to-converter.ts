@@ -263,11 +263,7 @@ export async function handler(event: SQSEvent) {
         await cloudWatchUtils.reportMemoryUsage();
 
         const postProcessStart = Date.now();
-        const updatedConversionResult = postProcessBundle(
-          normalizedBundle,
-          patientId,
-          documentExtension
-        );
+        const updatedConversionResult = postProcessBundle(normalizedBundle, patientId);
         metrics.postProcess = {
           duration: Date.now() - postProcessStart,
           timestamp: new Date(),
