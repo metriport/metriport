@@ -116,6 +116,9 @@ export const composeDocRefPayload = async (
 ): Promise<DocumentReferenceDTO[]> => {
   const docRefs = await getAllDocRefMapping({ requestId });
   const docRefsIds = docRefs.map(docRef => docRef.id);
+
+  // We only want to call getDocuments if docRefsIds is a non-empty array.
+  // Otherwise, it would return all DocumentReferences, and not just the ones we're interested in
   const documents =
     docRefsIds.length > 0 ? await getDocuments({ patientId, cxId, documentIds: docRefsIds }) : [];
 
