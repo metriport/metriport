@@ -2,8 +2,8 @@ import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
 import {
   FhirConverterParams,
   FhirExtension,
-  postProcessBundle,
-} from "@metriport/core/domain/conversion/bundle-modifications";
+} from "@metriport/core/domain/conversion/bundle-modifications/modifications";
+import { postProcessBundle } from "@metriport/core/domain/conversion/bundle-modifications/post-process";
 import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
 import {
   defaultS3RetriesConfig,

@@ -1,6 +1,6 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
-import { buildBundleEntry, extractFhirTypesFromBundle } from "../shared/bundle";
+import { buildCompleteBundleEntry, extractFhirTypesFromBundle } from "../shared/bundle";
 import { normalizeCoverages } from "./resources/coverage";
 import { normalizeObservations } from "./resources/observation";
 
@@ -15,7 +15,7 @@ export function normalizeFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> {
 
   normalizedBundle.entry = Object.entries(resourceArrays).flatMap(([, resources]) => {
     const entriesArray = Array.isArray(resources) ? resources : [resources];
-    return entriesArray.flatMap(v => buildBundleEntry(v) || []);
+    return entriesArray.flatMap(v => buildCompleteBundleEntry(v, normalizedBundle.type) || []);
   });
 
   return normalizedBundle;
