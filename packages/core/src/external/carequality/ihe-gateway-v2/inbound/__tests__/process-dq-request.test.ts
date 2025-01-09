@@ -100,10 +100,14 @@ describe("Process Inbound Dq Response", () => {
         issue: [
           {
             severity: "error",
-            code: "XDSRegistryError",
+            code: "registry-error",
             details: {
-              coding: [{ system: "1.3.6.1.4.1.19376.1.2.27.1", code: "XDSRegistryError" }],
-              text: "Internal Server Error",
+              coding: [
+                {
+                  system: "1.3.6.1.4.1.19376.1.2.27.1",
+                  code: "XDSRegistryError",
+                },
+              ],
             },
           },
         ],

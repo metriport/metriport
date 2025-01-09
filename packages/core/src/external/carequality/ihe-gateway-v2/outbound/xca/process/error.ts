@@ -5,6 +5,8 @@ import {
   OutboundDocumentRetrievalReq,
   OutboundDocumentRetrievalResp,
   XCAGateway,
+  Details,
+  Code,
 } from "@metriport/ihe-gateway-sdk";
 import { toArray } from "@metriport/shared";
 import dayjs from "dayjs";
@@ -20,32 +22,19 @@ const knownNonRetryableErrors = ["No active consent for patient id"];
 export function processRegistryErrorList(
   registryErrorList: RegistryErrorList,
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq
-): OperationOutcome | undefined {
-  const operationOutcome: OperationOutcome = {
-    resourceType: "OperationOutcome",
-    id: outboundRequest.id,
-    issue: [],
-  };
+): Details | undefined {
+  const coding: Code[] = [];
 
   try {
     if (typeof registryErrorList !== "object") return undefined;
     const registryErrors = toArray(registryErrorList?.RegistryError);
     registryErrors.forEach((entry: RegistryError) => {
-      const issue = {
-        severity: "error",
-        code: entry?._errorCode?.toString() ?? "unknown-error",
-        details: {
-          text: entry?._codeContext?.toString() ?? "No details",
-          coding: [
-            {
-              code: entry?._errorCode?.toString() ?? "",
-              system: CODE_SYSTEM_ERROR,
-            },
-          ],
-        },
+      const code = {
+        code: entry?._errorCode?.toString() ?? "",
+        system: CODE_SYSTEM_ERROR,
+        text: entry?._codeContext?.toString(),
       };
-
-      operationOutcome.issue.push(issue);
+      coding.push(code);
     });
   } catch (error) {
     const msg = "Error processing RegistryErrorList";
@@ -58,20 +47,72 @@ export function processRegistryErrorList(
       },
     });
   }
-
-  return operationOutcome.issue.length > 0 ? operationOutcome : undefined;
+  const details: Details = { coding };
+  return coding.length > 0 ? details : undefined;
 }
 
-export function handleRegistryErrorResponse({
+export function handleRegistryErrorResponseDq({
   registryErrorList,
   outboundRequest,
   gateway,
 }: {
   registryErrorList: RegistryErrorList;
-  outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
+  outboundRequest: OutboundDocumentQueryReq;
   gateway: XCAGateway;
-}): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
-  const operationOutcome = processRegistryErrorList(registryErrorList, outboundRequest);
+}): OutboundDocumentQueryResp {
+  const details = processRegistryErrorList(registryErrorList, outboundRequest);
+  const operationOutcome: OperationOutcome = {
+    id: outboundRequest.id,
+    resourceType: "OperationOutcome",
+    issue: [
+      {
+        severity: "error",
+        code: "registry-error",
+        details: details ?? {},
+      },
+    ],
+  };
+  return {
+    id: outboundRequest.id,
+    requestChunkId: outboundRequest.requestChunkId,
+    patientId: outboundRequest.patientId,
+    timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
+    responseTimestamp: dayjs().toISOString(),
+    gateway,
+    operationOutcome,
+    iheGatewayV2: true,
+    externalGatewayPatient: outboundRequest.externalGatewayPatient,
+    serviceDate: outboundRequest.serviceDate,
+  };
+}
+
+export function handleRegistryErrorResponseDr({
+  registryErrorList,
+  outboundRequest,
+  gateway,
+}: {
+  registryErrorList: RegistryErrorList;
+  outboundRequest: OutboundDocumentRetrievalReq;
+  gateway: XCAGateway;
+}): OutboundDocumentRetrievalResp {
+  const details = processRegistryErrorList(registryErrorList, outboundRequest);
+  const operationOutcome: OperationOutcome = {
+    id: outboundRequest.id,
+    resourceType: "OperationOutcome",
+    issue: [
+      ...outboundRequest.documentReference.map(doc => ({
+        id: doc.metriportId,
+        severity: "error",
+        code: "registry-error",
+        details: {
+          id: doc.docUniqueId,
+          text: `Registry error for document with metriportId ${doc.metriportId} and docUniqueId ${doc.docUniqueId}`,
+          ...details,
+        },
+      })),
+    ],
+  };
   return {
     id: outboundRequest.id,
     requestChunkId: outboundRequest.requestChunkId,
@@ -85,17 +126,17 @@ export function handleRegistryErrorResponse({
   };
 }
 
-export function handleHttpErrorResponse({
+export function handleHttpErrorResponseDq({
   httpError,
   outboundRequest,
   gateway,
   attempt,
 }: {
   httpError: string;
-  outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
+  outboundRequest: OutboundDocumentQueryReq;
   gateway: XCAGateway;
   attempt?: number | undefined;
-}): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
+}): OutboundDocumentQueryResp {
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
     id: outboundRequest.id,
@@ -115,23 +156,65 @@ export function handleHttpErrorResponse({
     timestamp: outboundRequest.timestamp,
     requestTimestamp: outboundRequest.timestamp,
     responseTimestamp: dayjs().toISOString(),
-    gateway: gateway,
+    gateway,
     patientId: outboundRequest.patientId,
-    operationOutcome: operationOutcome,
+    operationOutcome,
+    retried: attempt,
+    iheGatewayV2: true,
+    externalGatewayPatient: outboundRequest.externalGatewayPatient,
+    serviceDate: outboundRequest.serviceDate,
+  };
+}
+
+export function handleHttpErrorResponseDr({
+  httpError,
+  outboundRequest,
+  gateway,
+  attempt,
+}: {
+  httpError: string;
+  outboundRequest: OutboundDocumentRetrievalReq;
+  gateway: XCAGateway;
+  attempt?: number | undefined;
+}): OutboundDocumentRetrievalResp {
+  const operationOutcome: OperationOutcome = {
+    resourceType: "OperationOutcome",
+    id: outboundRequest.id,
+    issue: [
+      ...outboundRequest.documentReference.map(doc => ({
+        id: doc.metriportId,
+        severity: "error",
+        code: httpErrorCode,
+        details: {
+          id: doc.docUniqueId,
+          text: `${httpError} for document with metriportId ${doc.metriportId} and docUniqueId ${doc.docUniqueId}`,
+        },
+      })),
+    ],
+  };
+  return {
+    id: outboundRequest.id,
+    requestChunkId: outboundRequest.requestChunkId,
+    timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
+    responseTimestamp: dayjs().toISOString(),
+    gateway,
+    patientId: outboundRequest.patientId,
+    operationOutcome,
     retried: attempt,
     iheGatewayV2: true,
   };
 }
 
-export function handleEmptyResponse({
+export function handleEmptyResponseDq({
   outboundRequest,
   gateway,
   text = "No documents found",
 }: {
-  outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
+  outboundRequest: OutboundDocumentQueryReq;
   gateway: XCAGateway;
   text?: string;
-}): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
+}): OutboundDocumentQueryResp {
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
     id: outboundRequest.id,
@@ -155,18 +238,57 @@ export function handleEmptyResponse({
     gateway,
     operationOutcome,
     iheGatewayV2: true,
+    externalGatewayPatient: outboundRequest.externalGatewayPatient,
+    serviceDate: outboundRequest.serviceDate,
   };
 }
 
-export function handleSchemaErrorResponse({
+export function handleEmptyResponseDr({
+  outboundRequest,
+  gateway,
+}: {
+  outboundRequest: OutboundDocumentRetrievalReq;
+  gateway: XCAGateway;
+  text?: string;
+}): OutboundDocumentRetrievalResp {
+  const operationOutcome: OperationOutcome = {
+    resourceType: "OperationOutcome",
+    id: outboundRequest.id,
+    issue: [
+      ...outboundRequest.documentReference.map(doc => ({
+        id: doc.metriportId,
+        severity: "information",
+        code: "document-not-found",
+        details: {
+          id: doc.docUniqueId,
+          text: `Document with metriportId ${doc.metriportId} and docUniqueId ${doc.docUniqueId} not found`,
+        },
+      })),
+    ],
+  };
+
+  return {
+    id: outboundRequest.id,
+    requestChunkId: outboundRequest.requestChunkId,
+    patientId: outboundRequest.patientId,
+    timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
+    responseTimestamp: dayjs().toISOString(),
+    gateway,
+    operationOutcome,
+    iheGatewayV2: true,
+  };
+}
+
+export function handleSchemaErrorResponseDq({
   outboundRequest,
   gateway,
   text = "Schema Error",
 }: {
-  outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
+  outboundRequest: OutboundDocumentQueryReq;
   gateway: XCAGateway;
   text?: string;
-}): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
+}): OutboundDocumentQueryResp {
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
     id: outboundRequest.id,
@@ -190,7 +312,69 @@ export function handleSchemaErrorResponse({
     gateway,
     operationOutcome,
     iheGatewayV2: true,
+    externalGatewayPatient: outboundRequest.externalGatewayPatient,
+    serviceDate: outboundRequest.serviceDate,
   };
+}
+
+export function handleSchemaErrorResponseDr({
+  outboundRequest,
+  gateway,
+  text = "Schema Error",
+}: {
+  outboundRequest: OutboundDocumentRetrievalReq;
+  gateway: XCAGateway;
+  text?: string;
+}): OutboundDocumentRetrievalResp {
+  const operationOutcome: OperationOutcome = {
+    resourceType: "OperationOutcome",
+    id: outboundRequest.id,
+    issue: [
+      ...outboundRequest.documentReference.map(doc => ({
+        id: doc.metriportId,
+        severity: "error",
+        code: schemaErrorCode,
+        details: {
+          id: doc.docUniqueId,
+          text,
+        },
+      })),
+    ],
+  };
+  return {
+    id: outboundRequest.id,
+    requestChunkId: outboundRequest.requestChunkId,
+    patientId: outboundRequest.patientId,
+    timestamp: outboundRequest.timestamp,
+    requestTimestamp: outboundRequest.timestamp,
+    responseTimestamp: dayjs().toISOString(),
+    gateway,
+    operationOutcome,
+    iheGatewayV2: true,
+  };
+}
+
+export function generateOperationOutcomesForMissingDocuments(
+  idMapping: Record<string, string>,
+  processedIds: Set<string>,
+  requestId: string
+): OperationOutcome {
+  const operationOutcome: OperationOutcome = {
+    resourceType: "OperationOutcome",
+    id: requestId,
+    issue: Object.entries(idMapping)
+      .filter(([, metriportId]) => !processedIds.has(metriportId))
+      .map(([docUniqueId, metriportId]) => ({
+        id: metriportId,
+        severity: "information",
+        code: "document-not-found",
+        details: {
+          id: docUniqueId,
+          text: `Document with metriportId ${metriportId} and id ${docUniqueId} not found`,
+        },
+      })),
+  };
+  return operationOutcome;
 }
 
 /**

@@ -6,10 +6,11 @@ import {
   DocumentReference,
 } from "@metriport/ihe-gateway-sdk";
 import {
-  handleRegistryErrorResponse,
-  handleHttpErrorResponse,
-  handleEmptyResponse,
-  handleSchemaErrorResponse,
+  handleRegistryErrorResponseDr,
+  handleHttpErrorResponseDr,
+  handleEmptyResponseDr,
+  handleSchemaErrorResponseDr,
+  generateOperationOutcomesForMissingDocuments,
 } from "./error";
 import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { parseFileFromString, parseFileFromBuffer } from "./parse-file-from-string";
@@ -23,7 +24,7 @@ import { createDocumentFilePath } from "../../../../../../domain/document/filena
 import { MetriportError } from "../../../../../../util/error/metriport-error";
 import { getCidReference } from "../mtom/cid";
 import { out } from "../../../../../../util/log";
-import { errorToString, toArray } from "@metriport/shared";
+import { toArray } from "@metriport/shared";
 import { iti39Schema, DocumentResponse } from "./schema";
 import { capture } from "../../../../../../util/notifications";
 
@@ -116,7 +117,7 @@ async function processDocumentReference({
     }
 
     log(
-      `Downloaded a document with mime type: ${mimeType} for patient: ${outboundRequest.patientId} and request: ${outboundRequest.id}`
+      `Downloaded a document with mime type: ${mimeType} and docUniqueId: ${documentResponse.DocumentUniqueId} for patient: ${outboundRequest.patientId} and request: ${outboundRequest.id}`
     );
 
     return {
@@ -189,6 +190,15 @@ async function handleSuccessResponse({
       )
       .map(result => result.value);
 
+    const processedIds = new Set(
+      documentReferences.map(doc => doc.metriportId).filter((id): id is string => id != null)
+    );
+    const operationOutcome = generateOperationOutcomesForMissingDocuments(
+      idMapping,
+      processedIds,
+      outboundRequest.id
+    );
+
     const response: OutboundDocumentRetrievalResp = {
       id: outboundRequest.id,
       requestChunkId: outboundRequest.requestChunkId,
@@ -198,6 +208,7 @@ async function handleSuccessResponse({
       responseTimestamp: dayjs().toISOString(),
       gateway,
       documentReference: documentReferences,
+      operationOutcome: operationOutcome.issue.length > 0 ? operationOutcome : undefined,
       iheGatewayV2: true,
     };
     return response;
@@ -213,7 +224,7 @@ export async function processDrResponse({
 }): Promise<OutboundDocumentRetrievalResp> {
   if (!gateway || !outboundRequest) throw new Error("Missing gateway or outboundRequest");
   if (errorResponse) {
-    return handleHttpErrorResponse({
+    return handleHttpErrorResponseDr({
       httpError: errorResponse,
       outboundRequest,
       gateway,
@@ -251,23 +262,22 @@ export async function processDrResponse({
         mtomResponse,
       });
     } else if (registryErrorList) {
-      return handleRegistryErrorResponse({
+      return handleRegistryErrorResponseDr({
         registryErrorList,
         outboundRequest,
         gateway,
       });
     } else {
-      return handleEmptyResponse({
+      return handleEmptyResponseDr({
         outboundRequest,
         gateway,
       });
     }
   } catch (error) {
     log(`Error processing DR response ${JSON.stringify(error)}`);
-    return handleSchemaErrorResponse({
+    return handleSchemaErrorResponseDr({
       outboundRequest,
       gateway,
-      text: errorToString(error),
     });
   }
 }
