@@ -3,6 +3,8 @@ import { DataTypes, Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "../../../models/_default";
 import { CQDirectoryEntry2 } from "../cq-directory";
 
+export const rootOrgColumnName = "root_organization";
+
 export class CQDirectoryEntryViewModel
   extends BaseModel<CQDirectoryEntryViewModel>
   implements CQDirectoryEntry2
@@ -11,7 +13,7 @@ export class CQDirectoryEntryViewModel
   declare id: string; // Organization's OID
   declare name?: string;
   declare active: boolean;
-  declare managingOrganization?: string;
+  declare rootOrganization?: string;
   declare managingOrganizationId?: string;
   declare data?: Organization;
   declare urlXCPD?: string;
@@ -36,9 +38,9 @@ export class CQDirectoryEntryViewModel
         active: {
           type: DataTypes.BOOLEAN,
         },
-        managingOrganization: {
+        rootOrganization: {
           type: DataTypes.STRING,
-          field: "managing_organization",
+          field: rootOrgColumnName,
         },
         managingOrganizationId: {
           type: DataTypes.STRING,

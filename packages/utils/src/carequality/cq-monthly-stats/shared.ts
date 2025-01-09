@@ -28,7 +28,7 @@ export type CQDirectoryEntryData = {
   state?: string;
   data?: Organization;
   point?: string;
-  managingOrganization?: string;
+  rootOrganization?: string;
   managingOrganizationId?: string;
   gateway: boolean;
   active: boolean;

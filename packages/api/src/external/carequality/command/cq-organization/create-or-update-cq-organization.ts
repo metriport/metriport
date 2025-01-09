@@ -2,10 +2,9 @@ import { AddressStrict } from "@metriport/core/domain/location-address";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared";
-import { makeCarequalityManagementAPI } from "../../api";
+import { makeCarequalityManagementAPIOrFail } from "../../api";
 import { CQDirectoryEntryData2 } from "../../cq-directory";
 import { CQOrgDetails, CQOrgDetailsWithUrls, getCqAddress, getCqOrgUrls } from "../../shared";
-import { CqOrgLoaderImpl } from "./get-cq-organization";
 import { getOrganizationFhirTemplate } from "./organization-template";
 import { parseCQOrganization } from "./parse-cq-organization";
 
@@ -29,9 +28,9 @@ export type CreateOrUpdateCqOrganizationCmd = CqOrgDetailsLean & BasicCqOrgDetai
 export async function createOrUpdateCqOrganization(
   cmd: CreateOrUpdateCqOrganizationCmd
 ): Promise<CQDirectoryEntryData2> {
-  const cqOrgLoader = new CqOrgLoaderImpl();
+  const cqApi = makeCarequalityManagementAPIOrFail();
   const [cqOrg, orgDetailsWithUrls] = await Promise.all([
-    cqOrgLoader.getCqOrg(cmd.oid),
+    cqApi.getOrganization(cmd.oid),
     cmdToCqOrgDetails(cmd),
   ]);
   if (cqOrg) return await updateCqOrganization(orgDetailsWithUrls);
@@ -63,13 +62,11 @@ async function updateCqOrganization(
 ): Promise<CQDirectoryEntryData2> {
   const { log, debug } = out(`CQ updateCQOrganization - CQ Org OID ${orgDetails.oid}`);
   const carequalityOrg = getOrganizationFhirTemplate(orgDetails);
-  const cq = makeCarequalityManagementAPI();
-  if (!cq) throw new Error("Carequality API not initialized");
-
+  const cq = makeCarequalityManagementAPIOrFail();
   try {
     const resp = await cq.updateOrganization(carequalityOrg);
     debug(`resp updateOrganization: `, () => JSON.stringify(resp));
-    return parseCQOrganization(resp, new CqOrgLoaderImpl());
+    return parseCQOrganization(resp);
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     const extra = {
@@ -96,13 +93,11 @@ async function createCqOrganization(
 ): Promise<CQDirectoryEntryData2> {
   const { log, debug } = out(`CQ registerOrganization - CQ Org OID ${orgDetails.oid}`);
   const carequalityOrg = getOrganizationFhirTemplate(orgDetails);
-  const cq = makeCarequalityManagementAPI();
-  if (!cq) throw new Error("Carequality API not initialized");
-
+  const cq = makeCarequalityManagementAPIOrFail();
   try {
     const resp = await cq.registerOrganization(carequalityOrg);
     debug(`resp registerOrganization: `, () => JSON.stringify(resp));
-    return parseCQOrganization(resp, new CqOrgLoaderImpl());
+    return parseCQOrganization(resp);
   } catch (error) {
     const msg = `Failure while registering org @ CQ`;
     log(`${msg}. Org OID: ${orgDetails.oid}. Cause: ${errorToString(error)}`);
