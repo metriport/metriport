@@ -25,8 +25,8 @@ export const up: Migration = async ({ context: queryInterface }) => {
           type: DataTypes.BOOLEAN,
           allowNull: false,
         },
-        managingOrganization: {
-          field: "managing_organization",
+        rootOrganization: {
+          field: "root_organization",
           type: DataTypes.STRING,
           allowNull: true,
         },

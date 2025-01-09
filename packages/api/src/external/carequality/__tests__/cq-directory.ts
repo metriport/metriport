@@ -25,7 +25,7 @@ export function makeCQDirectoryEntry(params: Partial<CQDirectoryEntry> = {}): CQ
     zip: params.zip ?? faker.location.zipCode(),
     data: org,
     point: params.point ?? undefined,
-    managingOrganization: params.managingOrganization ?? undefined,
+    rootOrganization: params.rootOrganization ?? undefined,
     managingOrganizationId: params.managingOrganizationId ?? undefined,
     active: params.active ?? true,
     lastUpdatedAtCQ: params.lastUpdatedAtCQ ?? faker.date.recent().toISOString(),

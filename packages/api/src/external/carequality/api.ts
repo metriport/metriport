@@ -26,3 +26,9 @@ export function makeCarequalityManagementAPI(): CarequalityManagementAPI | undef
     apiMode: cqApiMode,
   });
 }
+
+export function makeCarequalityManagementAPIOrFail(): CarequalityManagementAPI {
+  const api = makeCarequalityManagementAPI();
+  if (!api) throw new Error("Carequality API not initialized");
+  return api;
+}

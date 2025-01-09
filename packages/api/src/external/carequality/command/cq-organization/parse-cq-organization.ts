@@ -12,7 +12,7 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import stringify from "json-stringify-safe";
 import { CQDirectoryEntryData2 } from "../../cq-directory";
 import { CQOrgUrls } from "../../shared";
-import { CqOrgLoader } from "./cq-org-loader";
+import { CachedCqOrgLoader } from "./get-cq-organization-cached";
 import { getParentOid } from "./get-parent-org";
 import { transactionUrl } from "./organization-template";
 
@@ -23,11 +23,9 @@ const XCA_DR_STRING = "ITI-39";
 const XDR_STRING = "ITI-41";
 type ChannelUrl = typeof XCPD_STRING | typeof XCA_DQ_STRING | typeof XCA_DR_STRING;
 
-// TODO we should split this into two functions, one that parses and one that hydrates
-// the output with the name
 export async function parseCQOrganization(
   org: Organization,
-  orgLoader: CqOrgLoader
+  cache = new CachedCqOrgLoader()
 ): Promise<CQDirectoryEntryData2> {
   const { log } = out(`parseCQOrganization`);
 
@@ -54,11 +52,7 @@ export async function parseCQOrganization(
   const point = lat && lon ? computeEarthPoint(lat, lon) : undefined;
 
   const parentOrgOid = getParentOid(org);
-  let parentOrgName: string | undefined;
-  if (parentOrgOid) {
-    const parentOrg = await orgLoader.getCqOrg(parentOrgOid);
-    if (parentOrg) parentOrgName = parentOrg.name;
-  }
+  const rootOrgName = await getRootForOrg(org, cache, log);
 
   const endpoints: Endpoint[] = org.contained?.filter(isEndpoint) ?? [];
 
@@ -72,13 +66,30 @@ export async function parseCQOrganization(
     city,
     state: state ? normalizeUSStateForAddressSafe(state) : undefined,
     zip: postalCode ? normalizeZipCodeNewSafe(postalCode) : undefined,
-    managingOrganization: parentOrgName,
+    rootOrganization: rootOrgName,
     managingOrganizationId: parentOrgOid,
     active,
     lastUpdatedAtCQ,
     data: org,
     ...getUrls(endpoints),
   };
+}
+
+async function getRootForOrg(
+  org: Organization,
+  cache: CachedCqOrgLoader,
+  log: typeof console.log
+): Promise<string | undefined> {
+  const parentOrgOid = getParentOid(org);
+  if (!parentOrgOid) return org.name;
+  if (parentOrgOid === org.id) return org.name;
+
+  const parentOrg = await cache.getCqOrg(parentOrgOid);
+  if (!parentOrg) {
+    log(`No Org found for parent OID ${parentOrgOid}, returning its own name`);
+    return org.name;
+  }
+  return getRootForOrg(parentOrg, cache, log);
 }
 
 /**
