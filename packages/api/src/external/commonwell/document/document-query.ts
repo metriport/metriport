@@ -108,7 +108,7 @@ export async function queryAndProcessDocuments({
   triggerConsolidated?: boolean;
 }): Promise<void> {
   const { id: patientId, cxId } = patientParam;
-  const { log } = out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
+  const { log } = out(`CW queryDocuments - requestId ${requestId} - M patient ${patientId}`);
 
   if (Config.isSandbox()) {
     await sandboxGetDocRefsAndUpsert({ patient: patientParam, requestId });
@@ -142,7 +142,7 @@ export async function queryAndProcessDocuments({
       }),
     ]);
 
-    const updatedPatient = await scheduleDocQuery<{
+    const patientWithScheduledDocQuery = await scheduleDocQuery<{
       facilityId: string;
       getOrgIdExcludeList: () => Promise<string[]>;
     }>({
@@ -150,6 +150,7 @@ export async function queryAndProcessDocuments({
       patient: { id: patientId, cxId },
       source: MedicalDataSource.COMMONWELL,
       triggerConsolidated,
+      forcePatientDiscovery,
       scheduleActions: {
         pd: update,
         extraPdArgs: {
@@ -157,25 +158,20 @@ export async function queryAndProcessDocuments({
           getOrgIdExcludeList,
         },
       },
-      forcePatientDiscovery,
     });
 
-    if (updatedPatient.data.externalData?.COMMONWELL?.scheduledDocQueryRequestId) return;
+    if (patientWithScheduledDocQuery.data.externalData?.COMMONWELL?.scheduledDocQueryRequestId)
+      return;
 
-    const startedAt = new Date();
-    await setDocQueryStartAt({
-      patient: { id: patientId, cxId },
-      source: MedicalDataSource.COMMONWELL,
-      startedAt,
-    });
+    const [patientWithCWData, isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all(
+      [
+        getPatientWithCWData(patientParam),
+        isEnhancedCoverageEnabledForCx(cxId),
+        isCQDirectEnabledForCx(cxId),
+      ]
+    );
 
-    const [patient, isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all([
-      getPatientWithCWData(patientParam),
-      isEnhancedCoverageEnabledForCx(cxId),
-      isCQDirectEnabledForCx(cxId),
-    ]);
-
-    if (!patient) {
+    if (!patientWithCWData) {
       const msg = `Couldn't get CW Data for Patient`;
       throw new MetriportError(msg, undefined, {
         cxId,
@@ -183,7 +179,7 @@ export async function queryAndProcessDocuments({
       });
     }
 
-    const cwData = patient.data.externalData.COMMONWELL;
+    const cwData = patientWithCWData.data.externalData.COMMONWELL;
 
     const isWaitingForEnhancedCoverage =
       isECEnabledForThisCx &&
@@ -194,9 +190,16 @@ export async function queryAndProcessDocuments({
 
     if (!isTriggerDQ) return;
 
-    log(`Querying for documents of patient ${patient.id}...`);
+    const startedAt = new Date();
+    await setDocQueryStartAt({
+      patient: { id: patientId, cxId },
+      source: MedicalDataSource.COMMONWELL,
+      startedAt,
+    });
+
+    log(`Querying for documents of patient ${patientId}...`);
     const cwDocuments = await internalGetDocuments({
-      patient,
+      patient: patientWithCWData,
       initiator,
     });
     log(`Got ${cwDocuments.length} documents from CW`);
@@ -219,7 +222,7 @@ export async function queryAndProcessDocuments({
     });
 
     const fhirDocRefs = await downloadDocsAndUpsertFHIR({
-      patient,
+      patient: patientParam,
       facilityId,
       documents: cwDocuments,
       forceDownload,
@@ -242,18 +245,17 @@ export async function queryAndProcessDocuments({
 
     const cwReference = error instanceof CommonwellError ? error.cwReference : undefined;
 
-    capture.message(msg, {
+    capture.error(msg, {
       extra: {
         context: `cw.queryAndProcessDocuments`,
         error,
         patientId,
         facilityId,
-        forceDownload,
         requestId,
+        forceDownload,
         ignoreDocRefOnFHIRServer,
         cwReference,
       },
-      level: "error",
     });
     throw error;
   }

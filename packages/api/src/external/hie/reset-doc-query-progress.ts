@@ -3,9 +3,8 @@ import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { aggregateAndSetHIEProgresses } from "./set-doc-query-progress";
+import { flattenHieDocProgresses, getPatientDocProgressFromHies } from "./set-doc-query-progress";
 import { processDocQueryProgressWebhook } from "../../command/medical/document/process-doc-query-webhook";
-import { LOCK } from "sequelize";
 
 /**
  * Resets the doc query progress for the given HIE
@@ -29,21 +28,13 @@ export async function resetDocQueryProgress({
   const result = await executeOnDBTx(PatientModel.prototype, async transaction => {
     const existingPatient = await getPatientOrFail({
       ...patientFilter,
-      lock: LOCK.UPDATE,
+      lock: true,
       transaction,
     });
 
     const externalData = existingPatient.data.externalData ?? {};
 
     const resetExternalData = { ...externalData };
-
-    const updatedPatient = {
-      ...existingPatient.dataValues,
-      data: {
-        ...existingPatient.data,
-        externalData: resetExternalData,
-      },
-    };
 
     if (source === MedicalDataSource.ALL) {
       resetExternalData.COMMONWELL = {
@@ -56,7 +47,7 @@ export async function resetDocQueryProgress({
         documentQueryProgress: {},
       };
 
-      updatedPatient.data.documentQueryProgress = {};
+      existingPatient.data.documentQueryProgress = {};
     } else {
       resetExternalData[source] = {
         ...externalData[source],
@@ -64,14 +55,23 @@ export async function resetDocQueryProgress({
       };
 
       const existingPatientDocProgress = existingPatient.data.documentQueryProgress ?? {};
+      const hieDocProgresses = flattenHieDocProgresses(resetExternalData);
 
-      const aggregatedDocProgresses = aggregateAndSetHIEProgresses(
+      const patientDocProgress = getPatientDocProgressFromHies(
         existingPatientDocProgress,
-        resetExternalData
+        hieDocProgresses
       );
 
-      updatedPatient.data.documentQueryProgress = aggregatedDocProgresses;
+      existingPatient.data.documentQueryProgress = patientDocProgress;
     }
+
+    const updatedPatient = {
+      ...existingPatient.dataValues,
+      data: {
+        ...existingPatient.data,
+        externalData: resetExternalData,
+      },
+    };
 
     await PatientModel.update(updatedPatient, {
       where: patientFilter,

@@ -1,18 +1,19 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { DiscoveryParams } from "@metriport/core/domain/patient-discovery";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { MetriportError } from "@metriport/shared";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { LinkStatus } from "../patient-link";
-import { getScheduledDqRequestId } from "./shared";
 import {
+  flattenHieDocProgresses,
   getHieDocProgress,
   getPatientDocProgressFromHies,
-  flattenHieDocProgresses,
 } from "./set-doc-query-progress";
+import { getScheduledDqRequestId } from "./shared";
 
 /**
  * Sets the CareQuality (CQ) integration status on the patient.
@@ -92,12 +93,14 @@ export async function updatePatientDiscoveryStatus<T>({
           }
 
           log(`${source} PD completed - kicking off scheduled DQ ${scheduledDqRequestId}`);
-          exitActions.dq({
-            patient: existingPatient,
-            requestId: scheduledDqRequestId,
-            triggerConsolidated: scheduledDocQueryRequestTriggerConsolidated,
-            ...exitActions.extraDqArgs,
-          });
+          exitActions
+            .dq({
+              patient: existingPatient,
+              requestId: scheduledDqRequestId,
+              triggerConsolidated: scheduledDocQueryRequestTriggerConsolidated,
+              ...exitActions.extraDqArgs,
+            })
+            .catch(processAsyncError(`${source} ${scheduledDqRequestId} - Document Query failed`));
         } else {
           log(`PD failed - failing scheduled DQ ${scheduledDqRequestId}`);
           const existingHieDocProgress = externalData[source]?.documentQueryProgress ?? {};

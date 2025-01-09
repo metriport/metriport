@@ -7,6 +7,7 @@ import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { isStalePatientUpdateEnabledForCx } from "../aws/app-config";
 import { isPatientDiscoveryDataMissingOrProcessing, isPatientDiscoveryDataStale } from "./shared";
 import { MetriportError } from "@metriport/shared";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 
 /**
  * Stores the requestId as the scheduled document query to be executed when the patient discovery
@@ -44,7 +45,7 @@ export async function scheduleDocQuery<T>({
     cxId: patient.cxId,
   };
 
-  const isStaleUpdatedEnabled = await isStalePatientUpdateEnabledForCx(patient.cxId);
+  const isStaleUpdateEnabled = await isStalePatientUpdateEnabledForCx(patient.cxId);
 
   return await executeOnDBTx(PatientModel.prototype, async transaction => {
     const existingPatient = await getPatientOrFail({
@@ -60,7 +61,7 @@ export async function scheduleDocQuery<T>({
       source,
     });
     const isStale =
-      isStaleUpdatedEnabled &&
+      isStaleUpdateEnabled &&
       isPatientDiscoveryDataStale({
         patient: existingPatient,
         source,
@@ -75,21 +76,22 @@ export async function scheduleDocQuery<T>({
 
       if ((forcePatientDiscovery || isStale) && !hieStatusProcessing) {
         if (!scheduleActions?.pd) {
-          throw new MetriportError(
-            `Cannot trigger patient discovery w/ no pdFunction @ ${source}`,
-            {
-              patientId: patient.id,
-              source,
-            }
-          );
+          throw new MetriportError("Cannot trigger patient discovery w/ no pdFunction", undefined, {
+            patientId: patient.id,
+            requestId,
+            source,
+          });
         }
+
         log("Kicking off PD");
-        await scheduleActions.pd({
-          patient: existingPatient,
-          requestId,
-          facilityId: existingPatient.facilityIds[0] as string,
-          ...scheduleActions.extraPdArgs,
-        });
+        scheduleActions
+          .pd({
+            patient: existingPatient,
+            requestId,
+            facilityId: existingPatient.facilityIds[0] as string,
+            ...scheduleActions.extraPdArgs,
+          })
+          .catch(processAsyncError(`${source} ${requestId} - Patient Discovery failed`));
       }
 
       const updatedPatient = {
