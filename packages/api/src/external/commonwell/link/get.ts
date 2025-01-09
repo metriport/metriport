@@ -15,6 +15,7 @@ import {
 import { AdditionalInfo } from "@metriport/commonwell-sdk/common/commonwell-error";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -22,14 +23,12 @@ import { uniqBy } from "lodash";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { filterTruthy } from "../../../shared/filter-map-utils";
 import { isCWEnabledForCx } from "../../aws/app-config";
+import { updatePatientDiscoveryStatus } from "../../hie/update-patient-discovery-status";
 import { makeCommonWellAPI } from "../api";
 import { getCWData } from "../patient";
-import {
-  updateCommonwellIdsAndStatus,
-  updatePatientDiscoveryStatus,
-} from "../patient-external-data";
-import { PatientDataCommonwell, searchPersons } from "../patient-shared";
 import { getCwStrongIdsFromPatient } from "../patient-conversion";
+import { updateCommonwellIdsAndStatus } from "../patient-external-data";
+import { PatientDataCommonwell, searchPersons } from "../patient-shared";
 import { getCwInitiator } from "../shared";
 import { commonwellPersonLinks } from "./shared";
 
@@ -136,7 +135,11 @@ export const findCurrentLink = async (
         commonwellPersonId: undefined,
         cqLinkStatus: undefined,
       });
-      await updatePatientDiscoveryStatus({ patient, status: "failed" });
+      await updatePatientDiscoveryStatus({
+        patient,
+        status: "failed",
+        source: MedicalDataSource.COMMONWELL,
+      });
       return;
     }
 
@@ -149,7 +152,11 @@ export const findCurrentLink = async (
         commonwellPersonId: undefined,
         cqLinkStatus: undefined,
       });
-      await updatePatientDiscoveryStatus({ patient, status: "failed" });
+      await updatePatientDiscoveryStatus({
+        patient,
+        status: "failed",
+        source: MedicalDataSource.COMMONWELL,
+      });
 
       return;
     }

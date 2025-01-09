@@ -1,17 +1,16 @@
 import { CommonWellAPI, organizationQueryMeta } from "@metriport/commonwell-sdk";
 import { addOidPrefix } from "@metriport/core/domain/oid";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
 import { reset } from ".";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { capture } from "../../../shared/notifications";
 import { isCWEnabledForCx } from "../../aws/app-config";
 import { makeCommonWellAPI } from "../api";
-import {
-  updateCommonwellIdsAndStatus,
-  updatePatientDiscoveryStatus,
-} from "../patient-external-data";
+import { updateCommonwellIdsAndStatus } from "../patient-external-data";
 import { getCwInitiator } from "../shared";
 import { autoUpgradeNetworkLinks, patientWithCWData } from "./shared";
+import { updatePatientDiscoveryStatus } from "../../hie/update-patient-discovery-status";
 
 const context = "cw.link.create";
 
@@ -69,7 +68,11 @@ export async function create(
       commonwellPersonId: personId,
       cqLinkStatus: undefined,
     });
-    await updatePatientDiscoveryStatus({ patient, status: "completed" });
+    await updatePatientDiscoveryStatus({
+      patient,
+      status: "completed",
+      source: MedicalDataSource.COMMONWELL,
+    });
 
     if (!link._links?.self?.href) {
       throw new Error("Link has no href");

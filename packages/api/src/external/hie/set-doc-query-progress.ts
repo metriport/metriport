@@ -200,7 +200,7 @@ function getPatientDocProgressFromHiesList(
   };
 }
 
-function aggregateStatus(docQueryProgress: DocumentQueryStatus[]): DocumentQueryStatus {
+export function aggregateStatus(docQueryProgress: DocumentQueryStatus[]): DocumentQueryStatus {
   const hasProcessing = docQueryProgress.some(status => status === "processing");
   const hasFailed = docQueryProgress.some(status => status === "failed");
   const hasCompleted = docQueryProgress.some(status => status === "completed");
