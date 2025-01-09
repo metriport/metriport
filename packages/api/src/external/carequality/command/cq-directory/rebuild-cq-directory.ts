@@ -8,15 +8,15 @@ import duration from "dayjs/plugin/duration";
 import { QueryTypes } from "sequelize";
 import { executeOnDBTx } from "../../../../models/transaction-wrapper";
 import { Config } from "../../../../shared/config";
-import { makeCarequalityManagementAPI } from "../../api";
+import { makeCarequalityManagementAPIOrFail } from "../../api";
 import { CQDirectoryEntryData2 } from "../../cq-directory";
 import { CQDirectoryEntryViewModel } from "../../models/cq-directory-view";
 import { CachedCqOrgLoader } from "../cq-organization/get-cq-organization-cached";
-import { getParentOid } from "../cq-organization/get-parent-org";
 import { parseCQOrganization } from "../cq-organization/parse-cq-organization";
 import { bulkInsertCQDirectoryEntries } from "./create-cq-directory-entry";
 
 dayjs.extend(duration);
+
 const BATCH_SIZE = 5_000;
 const parallelQueriesToGetManagingOrg = 20;
 const SLEEP_TIME = dayjs.duration({ milliseconds: 750 });
@@ -41,13 +41,12 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
   const { log } = out("rebuildCQDirectory");
   let currentPosition = 0;
   let isDone = false;
-  const cq = makeCarequalityManagementAPI();
-  if (!cq) throw new Error("Carequality API not initialized");
-
   const startedAt = Date.now();
+  const cq = makeCarequalityManagementAPIOrFail();
+
   try {
     await createTempCQDirectoryTable();
-    const cache = new CachedCqOrgLoader();
+    const cache = new CachedCqOrgLoader(cq);
     while (!isDone) {
       try {
         const maxPosition = currentPosition + BATCH_SIZE;
@@ -61,8 +60,6 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
         if (orgs.length < BATCH_SIZE) isDone = true;
         currentPosition = maxPosition;
         await cache.populate(orgs);
-        const parentIds = orgs.flatMap(org => getParentOid(org) ?? []);
-        await cache.populateByOids(parentIds);
         const parsedOrgs: CQDirectoryEntryData2[] = [];
         await executeAsynchronously(
           orgs,

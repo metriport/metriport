@@ -13,16 +13,13 @@ import { makeAddressWithCoordinates } from "../../../../../domain/medical/__test
 import { FacilityModel } from "../../../../../models/medical/facility";
 import * as apiFhirFile from "../../../api";
 import { metriportEmail as metriportEmailForCq } from "../../../constants";
-import { CQDirectoryEntryData } from "../../../cq-directory";
 import { buildCqOrgNameForFacility, buildCqOrgNameForOboFacility } from "../../../shared";
 import { metriportIntermediaryOid, metriportOid } from "../constants";
 import { createOrUpdateCqOrganization } from "../create-or-update-cq-organization";
-import { CqOrgLoaderImpl } from "../get-cq-organization";
 import { getOrganizationFhirTemplate } from "../organization-template";
 
 let getAddressWithCoordination: jest.SpyInstance;
 let makeCarequalityManagementAPIMock: jest.SpyInstance<CarequalityManagementAPI | undefined>;
-let getCqOrgMock: jest.SpyInstance;
 let facilityMock: FacilityModel;
 let oboFacilityMock: FacilityModel;
 
@@ -51,8 +48,7 @@ beforeEach(() => {
     cwOboOid: faker.string.uuid(),
   });
   getAddressWithCoordination = jest.spyOn(getAddress, "getAddressWithCoordinates");
-  getCqOrgMock = jest.spyOn(CqOrgLoaderImpl.prototype, "getCqOrg");
-  makeCarequalityManagementAPIMock = jest.spyOn(apiFhirFile, "makeCarequalityManagementAPI");
+  makeCarequalityManagementAPIMock = jest.spyOn(apiFhirFile, "makeCarequalityManagementAPIOrFail");
 });
 
 afterEach(() => {
@@ -82,7 +78,6 @@ describe("createOrUpdateCqOrganization", () => {
       orgName: facilityMock.data.name,
     });
     const parentOrgOid = metriportOid;
-    getCqOrgMock.mockResolvedValueOnce({ name: orgName } as CQDirectoryEntryData);
 
     const mockedAddress = makeAddressWithCoordinates();
     getAddressWithCoordination.mockImplementation(() => {
@@ -152,7 +147,6 @@ describe("createOrUpdateCqOrganization", () => {
       oboOid: oboFacilityMock.cqOboOid!,
     });
     const parentOrgOid = isObo ? metriportIntermediaryOid : metriportOid;
-    getCqOrgMock.mockResolvedValueOnce({ name: orgName } as CQDirectoryEntryData);
 
     const mockedAddress = makeAddressWithCoordinates();
     getAddressWithCoordination.mockImplementation(() => {

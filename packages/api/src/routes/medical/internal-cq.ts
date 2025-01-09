@@ -33,7 +33,7 @@ import {
   searchCQDirectoriesAroundPatientAddresses,
   toBasicOrgAttributes,
 } from "../../external/carequality/command/cq-directory/search-cq-directory";
-import { CqOrgLoaderImpl } from "../../external/carequality/command/cq-organization/get-cq-organization";
+import { getCqOrgOrFail } from "../../external/carequality/command/cq-organization/get-cq-organization";
 import { createOrUpdateFacility as cqCreateOrUpdateFacility } from "../../external/carequality/command/create-or-update-facility";
 import { createOrUpdateOrganization as cqCreateOrUpdateOrganization } from "../../external/carequality/command/create-or-update-organization";
 import { createOutboundDocumentQueryResp } from "../../external/carequality/command/outbound-resp/create-outbound-document-query-resp";
@@ -97,7 +97,7 @@ router.get(
     } else {
       await getOrganizationByOidOrFail({ cxId, oid });
     }
-    const cqOrg = await new CqOrgLoaderImpl().getCqOrgOrFail(oid);
+    const cqOrg = await getCqOrgOrFail(oid);
     // that's not used currently, so this makes the response smaller/faster and less dependent on
     // how we store data internally
     delete cqOrg.data;
