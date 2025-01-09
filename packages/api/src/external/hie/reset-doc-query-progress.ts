@@ -3,7 +3,7 @@ import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { flattenHieDocProgresses, getPatientDocProgressFromHies } from "./set-doc-query-progress";
+import { getPatientDocProgressFromHies } from "./set-doc-query-progress";
 import { processDocQueryProgressWebhook } from "../../command/medical/document/process-doc-query-webhook";
 
 /**
@@ -54,14 +54,7 @@ export async function resetDocQueryProgress({
         documentQueryProgress: {},
       };
 
-      const existingPatientDocProgress = existingPatient.data.documentQueryProgress ?? {};
-      const hieDocProgresses = flattenHieDocProgresses(resetExternalData);
-
-      const patientDocProgress = getPatientDocProgressFromHies(
-        existingPatientDocProgress,
-        hieDocProgresses
-      );
-
+      const patientDocProgress = getPatientDocProgressFromHies(existingPatient, resetExternalData);
       existingPatient.data.documentQueryProgress = patientDocProgress;
     }
 

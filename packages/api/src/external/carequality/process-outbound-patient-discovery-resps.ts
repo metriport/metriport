@@ -54,13 +54,13 @@ export async function processOutboundPatientDiscoveryResps({
         requestId,
       });
       if (startedNewPd) return;
-      await updatePatientDiscoveryStatus({
+      await updatePatientDiscoveryStatus<undefined>({
         patient: patientIds,
         status: "completed",
         source: MedicalDataSource.CAREQUALITY,
-        exitActions: {
+        onCompletedActions: {
           dq: getDocumentsFromCQ,
-          extraDqArgs: {},
+          extraDqArgs: undefined,
         },
       });
     }
@@ -109,13 +109,13 @@ export async function processOutboundPatientDiscoveryResps({
       requestId,
     });
     if (startedNewPd) return;
-    await updatePatientDiscoveryStatus({
+    await updatePatientDiscoveryStatus<undefined>({
       patient: patientIds,
       status: "completed",
       source: MedicalDataSource.CAREQUALITY,
-      exitActions: {
+      onCompletedActions: {
         dq: getDocumentsFromCQ,
-        extraDqArgs: {},
+        extraDqArgs: undefined,
       },
     });
     log("Completed.");

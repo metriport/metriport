@@ -234,7 +234,7 @@ async function registerAndLinkPatientInCW({
       patient: patientIds,
       status: "completed",
       source: MedicalDataSource.COMMONWELL,
-      exitActions: {
+      onCompletedActions: {
         dq: queryAndProcessDocuments,
         extraDqArgs: { getOrgIdExcludeList },
       },
@@ -421,7 +421,7 @@ async function updatePatientAndLinksInCw({
       patient: patientIds,
       status: "completed",
       source: MedicalDataSource.COMMONWELL,
-      exitActions: {
+      onCompletedActions: {
         dq: queryAndProcessDocuments,
         extraDqArgs: { getOrgIdExcludeList },
       },

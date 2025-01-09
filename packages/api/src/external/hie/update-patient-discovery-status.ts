@@ -8,11 +8,7 @@ import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { LinkStatus } from "../patient-link";
-import {
-  flattenHieDocProgresses,
-  getHieDocProgress,
-  getPatientDocProgressFromHies,
-} from "./set-doc-query-progress";
+import { getHieDocProgress, getPatientDocProgressFromHies } from "./set-doc-query-progress";
 import { getScheduledDqRequestId } from "./shared";
 
 /**
@@ -31,13 +27,13 @@ export async function updatePatientDiscoveryStatus<T>({
   status,
   source,
   params,
-  exitActions,
+  onCompletedActions,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
   status: LinkStatus;
   source: MedicalDataSource;
   params?: DiscoveryParams;
-  exitActions?: {
+  onCompletedActions?: {
     dq: (
       sharedDqArgs: {
         patient: Patient;
@@ -48,7 +44,9 @@ export async function updatePatientDiscoveryStatus<T>({
     extraDqArgs: T;
   };
 }): Promise<Patient> {
-  const { log } = out(`${source} updatePatientDiscoveryStatusOrExit - patient ${patient.id}`);
+  const { log } = out(
+    `${source} updatePatientDiscoveryStatus - patient ${patient.id} requestId ${params?.requestId}`
+  );
 
   const patientFilter = {
     id: patient.id,
@@ -65,8 +63,13 @@ export async function updatePatientDiscoveryStatus<T>({
     const externalData = existingPatient.data.externalData ?? {};
 
     if (!params && !externalData[source]?.discoveryParams) {
-      throw new Error(
-        `Cannot update discovery status before assigning discovery params @ ${source}`
+      throw new MetriportError(
+        "Cannot update discovery status before assigning discovery params",
+        undefined,
+        {
+          patientId: existingPatient.id,
+          source,
+        }
       );
     }
 
@@ -77,30 +80,36 @@ export async function updatePatientDiscoveryStatus<T>({
     };
 
     if (status === "failed" || status === "completed") {
-      const { scheduledDqRequestId, scheduledDocQueryRequestTriggerConsolidated } =
-        getScheduledDqRequestId({
-          patient: existingPatient,
-          source,
-        });
+      const { scheduledDqRequestId, scheduledDqTriggerConsolidated } = getScheduledDqRequestId({
+        patient: existingPatient,
+        source,
+      });
       if (scheduledDqRequestId) {
         if (status == "completed") {
-          if (!exitActions?.dq) {
-            throw new MetriportError(`Cannot trigger document query w/ no dqFunction @ ${source}`, {
-              patientId: patient.id,
-              source,
-              status,
-            });
+          if (!onCompletedActions) {
+            throw new MetriportError(
+              `Cannot trigger document query w/ no onCompleteActions`,
+              undefined,
+              {
+                patientId: existingPatient.id,
+                source,
+              }
+            );
           }
 
           log(`${source} PD completed - kicking off scheduled DQ ${scheduledDqRequestId}`);
-          exitActions
+          onCompletedActions
             .dq({
               patient: existingPatient,
               requestId: scheduledDqRequestId,
-              triggerConsolidated: scheduledDocQueryRequestTriggerConsolidated,
-              ...exitActions.extraDqArgs,
+              triggerConsolidated: scheduledDqTriggerConsolidated,
+              ...onCompletedActions.extraDqArgs,
             })
-            .catch(processAsyncError(`${source} ${scheduledDqRequestId} - Document Query failed`));
+            .catch(
+              processAsyncError(
+                `${source} onCompletedActions.dq failed - patient ${existingPatient.id} requestId ${scheduledDqRequestId}`
+              )
+            );
         } else {
           log(`PD failed - failing scheduled DQ ${scheduledDqRequestId}`);
           const existingHieDocProgress = externalData[source]?.documentQueryProgress ?? {};
@@ -123,13 +132,7 @@ export async function updatePatientDiscoveryStatus<T>({
       }
     }
 
-    const existingPatientDocProgress = existingPatient.data.documentQueryProgress ?? {};
-    const hieDocProgresses = flattenHieDocProgresses(externalData);
-
-    const patientDocProgress = getPatientDocProgressFromHies(
-      existingPatientDocProgress,
-      hieDocProgresses
-    );
+    const patientDocProgress = getPatientDocProgressFromHies(existingPatient, externalData);
 
     const updatedPatient = {
       ...existingPatient.dataValues,

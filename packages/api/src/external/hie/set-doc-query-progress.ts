@@ -74,13 +74,7 @@ export async function setDocQueryProgress({
       documentQueryProgress: hieDocProgress,
     };
 
-    const existingPatientDocProgress = existingPatient.data.documentQueryProgress ?? {};
-    const hieDocProgresses = flattenHieDocProgresses(externalData);
-
-    const patientDocProgress = getPatientDocProgressFromHies(
-      existingPatientDocProgress,
-      hieDocProgresses
-    );
+    const patientDocProgress = getPatientDocProgressFromHies(existingPatient, externalData);
 
     const updatedPatient = {
       ...existingPatient.dataValues,
@@ -108,6 +102,15 @@ export async function setDocQueryProgress({
   return result;
 }
 
+export function getPatientDocProgressFromHies(
+  patient: Patient,
+  updatedExternalData: PatientExternalData
+) {
+  const existingPatientDocProgress = patient.data.documentQueryProgress ?? {};
+  const hieDocProgresses = flattenHieDocProgresses(updatedExternalData);
+  return getPatientDocProgressFromHiesList(existingPatientDocProgress, hieDocProgresses);
+}
+
 export function getHieDocProgress(
   existingHieDocProgress: DocumentQueryProgress,
   downloadProgress: Progress | undefined,
@@ -132,7 +135,7 @@ export function getHieDocProgress(
   };
 }
 
-export function getPatientDocProgressFromHies(
+function getPatientDocProgressFromHiesList(
   existingPatientDocProgress: DocumentQueryProgress,
   hieDocProgresses: DocumentQueryProgress[]
 ): DocumentQueryProgress {
@@ -208,9 +211,7 @@ function aggregateStatus(docQueryProgress: DocumentQueryStatus[]): DocumentQuery
   return "completed";
 }
 
-export function flattenHieDocProgresses(
-  externalData: PatientExternalData
-): DocumentQueryProgress[] {
+function flattenHieDocProgresses(externalData: PatientExternalData): DocumentQueryProgress[] {
   const cwExternalData = getCWData(externalData);
   const cqExternalData = getCQData(externalData);
 

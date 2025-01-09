@@ -26,18 +26,18 @@ export function getScheduledDqRequestId({
   source: MedicalDataSource;
 }): {
   scheduledDqRequestId: string | undefined;
-  scheduledDocQueryRequestTriggerConsolidated: boolean | undefined;
+  scheduledDqTriggerConsolidated: boolean | undefined;
 } {
   const hieData = getHieData(patient, source);
-  if (!hieData)
+  if (!hieData) {
     return {
       scheduledDqRequestId: undefined,
-      scheduledDocQueryRequestTriggerConsolidated: undefined,
+      scheduledDqTriggerConsolidated: undefined,
     };
+  }
   const scheduledDqRequestId = hieData.scheduledDocQueryRequestId;
-  const scheduledDocQueryRequestTriggerConsolidated =
-    hieData.scheduledDocQueryRequestTriggerConsolidated;
-  return { scheduledDqRequestId, scheduledDocQueryRequestTriggerConsolidated };
+  const scheduledDqTriggerConsolidated = hieData.scheduledDocQueryRequestTriggerConsolidated;
+  return { scheduledDqRequestId, scheduledDqTriggerConsolidated };
 }
 
 export function isPatientDiscoveryDataMissingOrProcessing({
