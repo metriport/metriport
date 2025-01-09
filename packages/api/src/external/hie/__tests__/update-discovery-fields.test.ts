@@ -1,9 +1,10 @@
-import { DiscoveryParams } from "@metriport/core/domain/patient-discovery";
 import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/patient";
-import { PatientModel } from "../../../models/medical/patient";
+import { DiscoveryParams } from "@metriport/core/domain/patient-discovery";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
+import { PatientModel } from "../../../models/medical/patient";
 import { LinkStatus } from "../../patient-link";
-import { updatePatientDiscoveryStatus } from "../command/update-patient-discovery-status";
+import { updatePatientDiscoveryStatus } from "../update-patient-discovery-status";
 
 let patientModel_findOne: jest.SpyInstance;
 let patientModel_update: jest.SpyInstance;
@@ -18,8 +19,8 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-type cqParams = {
-  discoveryStatus?: LinkStatus;
+type cwParams = {
+  status?: LinkStatus;
   params?: {
     requestId: string;
     facilityId: string;
@@ -28,14 +29,14 @@ type cqParams = {
   };
 };
 
-const checkPatientUpdateWith = (newValues: cqParams) => {
+const checkPatientUpdateWith = (newParams: cwParams) => {
   expect(patientModel_update).toHaveBeenCalledWith(
     expect.objectContaining({
       data: expect.objectContaining({
         externalData: expect.objectContaining({
-          CAREQUALITY: expect.objectContaining({
-            discoveryStatus: newValues.discoveryStatus,
-            ...(newValues.params && { discoveryParams: newValues.params }),
+          COMMONWELL: expect.objectContaining({
+            status: newParams.status,
+            ...(newParams.params && { discoveryParams: newParams.params }),
           }),
         }),
       }),
@@ -48,7 +49,7 @@ describe("updatePatientDiscoveryStatus", () => {
   it("setting all possible values", async () => {
     const patient = makePatient();
     patientModel_findOne.mockResolvedValue(patient);
-    const discoveryStatus = "processing";
+    const status = "processing";
     const newParams: DiscoveryParams = {
       requestId: "test",
       facilityId: "test",
@@ -57,12 +58,13 @@ describe("updatePatientDiscoveryStatus", () => {
     };
     const results = await updatePatientDiscoveryStatus({
       patient,
-      status: discoveryStatus,
+      status: status,
       params: newParams,
+      source: MedicalDataSource.COMMONWELL,
     });
     expect(results).toBeTruthy();
     checkPatientUpdateWith({
-      discoveryStatus,
+      status,
       params: newParams,
     });
   });
@@ -75,9 +77,9 @@ describe("updatePatientDiscoveryStatus", () => {
     };
     const patientData = makePatientData({
       externalData: {
-        CAREQUALITY: {
+        COMMONWELL: {
           ...{
-            discoveryStatus: "processing",
+            status: "processing",
           },
           discoveryParams: baseParams,
         },
@@ -85,30 +87,32 @@ describe("updatePatientDiscoveryStatus", () => {
     });
     const patient = makePatient({ data: patientData });
     patientModel_findOne.mockResolvedValue(patient);
-    const discoveryStatus = "completed";
+    const status = "completed";
     const results = await updatePatientDiscoveryStatus({
       patient,
-      status: discoveryStatus,
+      status,
+      source: MedicalDataSource.COMMONWELL,
     });
     expect(results).toBeTruthy();
     checkPatientUpdateWith({
-      discoveryStatus,
+      status,
       params: baseParams,
     });
   });
   it("setting only status w/ no previous values", async () => {
     const patient = makePatient();
     patientModel_findOne.mockResolvedValue(patient);
-    const discoveryStatus = "completed";
+    const status = "completed";
     try {
       await updatePatientDiscoveryStatus({
         patient,
-        status: discoveryStatus,
+        status,
+        source: MedicalDataSource.COMMONWELL,
       });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       expect(error.message).toBe(
-        `Cannot update discovery status before assigning discovery params @ CQ`
+        `Cannot update discovery status before assigning discovery params`
       );
     }
   });
