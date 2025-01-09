@@ -40,16 +40,20 @@ async function main() {
 
   console.log(`Now, calling getConsolidatedQueryStatus`);
   queryStatus = await metriport.getConsolidatedQueryStatus(patientId);
+  let singleQueryStatus = await metriport.getSingleConsolidatedQueryStatus(patientId, res.requestId);
   console.log(`queryStatus: ${JSON.stringify(queryStatus, null, 2)}`);
+  console.log(`singleQueryStatus: ${JSON.stringify(singleQueryStatus, null, 2)}`);
 
   console.log(`sleeping...`);
   await sleep(5_000);
 
   console.log(`Calling getConsolidatedQueryStatus again`);
   queryStatus = await metriport.getConsolidatedQueryStatus(patientId);
+  singleQueryStatus = await metriport.getSingleConsolidatedQueryStatus(patientId, res.requestId);
   console.log(`queryStatus: ${JSON.stringify(queryStatus, null, 2)}`);
+  console.log(`singleQueryStatus: ${JSON.stringify(singleQueryStatus, null, 2)}`);
 
-  console.log(`Calling getConsolidatedQueryStatus again`);
+  console.log(`Calling countPatientConsolidated`);
   const resources = ["Appointment", "Encounter"] as const;
   const dateFrom = "2023-01-01";
   const dateTo = "2023-01-31";

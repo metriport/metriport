@@ -1,8 +1,9 @@
-import { Validator, ValidationError } from "jsonschema";
-import fs from "fs";
+import { Bundle, Resource } from "@medplum/fhirtypes";
 import Axios from "axios";
+import fs from "fs";
+import { ValidationError, Validator } from "jsonschema";
 import { getFileNames } from "../../shared/fs";
-import { convert, FHIRBundle } from "../convert";
+import { convert } from "../convert";
 
 const schema = JSON.parse(fs.readFileSync("fhir.schema.json", "utf8"));
 const validator = new Validator();
@@ -38,7 +39,7 @@ export async function main() {
     console.log(`Processing ${index + 1}/${ccdaFileNames.length}. Filename: ${fileName}`);
 
     try {
-      const bundle = await convert("", fileName, converterApi, ".json");
+      const bundle = await convert("", fileName, converterApi);
 
       if (!bundle) {
         console.log("Skipping file");
@@ -78,7 +79,7 @@ export async function main() {
   }
 }
 
-function validateXml(bundle: FHIRBundle): ValidationErrorWithResourceType[] | undefined {
+function validateXml(bundle: Bundle<Resource>): ValidationErrorWithResourceType[] | undefined {
   if (!bundle.entry) {
     return;
   }

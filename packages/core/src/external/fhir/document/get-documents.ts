@@ -6,6 +6,14 @@ import { makeFhirApi } from "../api/api-factory";
 import { isoDateToFHIRDateQueryFrom, isoDateToFHIRDateQueryTo } from "../shared";
 import { DocumentReferenceWithId, hasId } from "./document-reference";
 
+/**
+ * Returns DocumentReferences based on the provided filter parameters.
+ *
+ * WARNING: If documentIds is undefined or has 0 elements, it will return all DocumentReferences that fit the other filter criteria.
+ * If the documentIds includes one or more elements, it will only return the DocumentReferences for those IDs specified.
+ *
+ * @returns An array of DocumentReferences with required IDs
+ */
 export async function getDocuments({
   cxId,
   patientId,

@@ -1,17 +1,16 @@
 import { Bundle, BundleEntry, DocumentReference, Resource } from "@medplum/fhirtypes";
+import { EventTypes, analytics } from "@metriport/core/external/analytics/posthog";
 import { OutboundDocRetrievalRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
-import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { capture } from "@metriport/core/util/notifications";
-import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { DocumentReferenceWithId } from "../../fhir/document";
-import { getDocumentsFromFHIR } from "../../fhir/document/get-documents";
 import { upsertDocumentsToFHIRServer } from "../../fhir/document/save-document-reference";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
@@ -19,15 +18,16 @@ import { getCQDirectoryEntryOrFail } from "../command/cq-directory/get-cq-direct
 import { formatDate } from "../shared";
 import {
   DocumentReferenceWithMetriportId,
-  containsMetriportId,
   containsDuplicateMetriportId,
+  containsMetriportId,
   cqToFHIR,
   dedupeContainedResources,
 } from "./shared";
 
+import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
-import { getCQData } from "../patient";
 import { getOutboundDocRetrievalSuccessFailureCount } from "../../hie/carequality-analytics";
+import { getCQData } from "../patient";
 
 export async function processOutboundDocumentRetrievalResps({
   requestId,
@@ -216,7 +216,7 @@ async function handleDocReferences(
 
   const { log } = out(`CQ handleDocReferences - requestId ${requestId}, M patient ${patientId}`);
 
-  const existingFHIRDocRefs = await getDocumentsFromFHIR({
+  const existingFHIRDocRefs = await getDocuments({
     cxId,
     patientId,
     documentIds: docRefs.map(doc => doc.metriportId ?? ""),
