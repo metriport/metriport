@@ -1,6 +1,6 @@
 import { DocumentQueryProgress, ProgressType } from "@metriport/core/domain/document-query";
 import { Patient } from "@metriport/core/domain/patient";
-import { getDocumentsByIds } from "@metriport/core/external/fhir/document/get-documents";
+import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -116,7 +116,8 @@ export const composeDocRefPayload = async (
 ): Promise<DocumentReferenceDTO[]> => {
   const docRefs = await getAllDocRefMapping({ requestId });
   const docRefsIds = docRefs.map(docRef => docRef.id);
-  const documents = await getDocumentsByIds({ patientId, cxId, documentIds: docRefsIds });
+  const documents =
+    docRefsIds.length > 0 ? await getDocuments({ patientId, cxId, documentIds: docRefsIds }) : [];
 
   return toDTO(documents);
 };

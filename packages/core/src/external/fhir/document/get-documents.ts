@@ -6,6 +6,14 @@ import { makeFhirApi } from "../api/api-factory";
 import { isoDateToFHIRDateQueryFrom, isoDateToFHIRDateQueryTo } from "../shared";
 import { DocumentReferenceWithId, hasId } from "./document-reference";
 
+/**
+ * Returns DocumentReferences based on the provided filter parameters.
+ *
+ * WARNING: If documentIds is undefined or has 0 elements, it will return all DocumentReferences that fit the other filter criteria.
+ * If the documentIds includes one or more elements, it will only return the DocumentReferences for those IDs specified.
+ *
+ * @returns An array of DocumentReferences with required IDs
+ */
 export async function getDocuments({
   cxId,
   patientId,
@@ -24,7 +32,6 @@ export async function getDocuments({
   try {
     const api = makeFhirApi(cxId, Config.getFHIRServerUrl());
     const docs: DocumentReferenceWithId[] = [];
-    // TODO: 2573 - Replace the [[]] with [], but make sure all the places that call this and getDocumentsFromFHIR do not break as a result
     const chunksDocIds = documentIds && documentIds.length > 0 ? chunk(documentIds, 150) : [[]];
 
     for (const docIds of chunksDocIds) {
@@ -38,39 +45,6 @@ export async function getDocuments({
     return docs;
   } catch (error) {
     const msg = `Error getting documents from FHIR server`;
-    log(`${msg} - patientId: ${patientId}, error: ${error}`);
-    capture.error(msg, { extra: { patientId, error } });
-    throw error;
-  }
-}
-
-export async function getDocumentsByIds({
-  cxId,
-  patientId,
-  documentIds,
-}: {
-  cxId: string;
-  patientId?: string | string[];
-  documentIds: string[];
-}): Promise<DocumentReferenceWithId[]> {
-  const { log } = out(`getDocumentsByIds - cx ${cxId}, pat ${patientId}`);
-  const startedAt = new Date().getTime();
-  try {
-    const api = makeFhirApi(cxId, Config.getFHIRServerUrl());
-    const docs: DocumentReferenceWithId[] = [];
-    const chunksDocIds = documentIds && documentIds.length > 0 ? chunk(documentIds, 150) : [];
-
-    for (const docIds of chunksDocIds) {
-      const filtersAsStr = getFilters({ patientId, documentIds: docIds });
-      for await (const page of api.searchResourcePages("DocumentReference", filtersAsStr)) {
-        docs.push(...page.filter(hasId));
-      }
-    }
-    const duration = new Date().getTime() - startedAt;
-    log(`Got ${docs.length} doc refs by IDs from the FHIR server in ${duration}ms`);
-    return docs;
-  } catch (error) {
-    const msg = `Error getting documents by IDs from FHIR server`;
     log(`${msg} - patientId: ${patientId}, error: ${error}`);
     capture.error(msg, { extra: { patientId, error } });
     throw error;
