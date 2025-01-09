@@ -9,11 +9,13 @@ import { makePatient } from "../../../../fhir-to-cda/cda-templates/components/__
 import * as bundleMods from "../modifications";
 import { postProcessBundle } from "../post-process";
 
+let addExtensionToConversionMock: jest.SpyInstance;
 let replaceIdsMock: jest.SpyInstance;
 let createFullBundleEntriesMock: jest.SpyInstance;
 let removePatientFromConversionMock: jest.SpyInstance;
 
 beforeAll(() => {
+  addExtensionToConversionMock = jest.spyOn(bundleMods, "addExtensionToConversion");
   replaceIdsMock = jest.spyOn(bundleMods, "replaceIdsForResourcesWithDocExtension");
   createFullBundleEntriesMock = jest.spyOn(bundleShared, "createFullBundleEntries");
   removePatientFromConversionMock = jest.spyOn(bundleMods, "removePatientFromConversion");
@@ -101,6 +103,55 @@ describe("Checking postProcessBundle and its constituent functions", () => {
     });
   });
 
+  describe("addExtensionToConversion", () => {
+    it("adds a document extension to a resource that did not have it", () => {
+      const { condition, documentExtension } = initTest();
+      expect(condition.extension).toBeUndefined();
+
+      const bundle = makeBundle({ entries: [condition], type: "collection" });
+      const updatedBundle = bundleMods.addExtensionToConversion(bundle, documentExtension);
+
+      const updResource = updatedBundle.entry?.[0]?.resource;
+      expect(updResource).toBeDefined();
+      expect(updResource?.resourceType).toEqual("Condition");
+
+      const updCondition = updResource as Condition;
+      expect(updCondition.extension).toHaveLength(1);
+      expect(updCondition.extension?.[0]).toEqual(documentExtension);
+    });
+
+    it("appends the document extension to a resource with existing extensions", () => {
+      const { condition, documentExtension } = initTest();
+
+      const existingExtension = {
+        url: "http://example.com/existing",
+        valueString: "test",
+      };
+      condition.extension = [existingExtension];
+
+      const bundle = makeBundle({ entries: [condition], type: "collection" });
+
+      const updatedBundle = bundleMods.addExtensionToConversion(bundle, documentExtension);
+      expect(updatedBundle.entry).toHaveLength(1);
+      const updResource = updatedBundle.entry?.[0]?.resource;
+      expect(updResource).toBeDefined();
+      expect(updResource?.resourceType).toEqual("Condition");
+
+      const updCondition = updResource as Condition;
+      expect(updCondition.extension).toHaveLength(2);
+      expect(updCondition.extension).toEqual(
+        expect.arrayContaining([existingExtension, documentExtension])
+      );
+    });
+
+    it("returns bundle unchanged when no entries exist", () => {
+      const { documentExtension } = initTest();
+      const bundle = makeBundle({ entries: [], type: "collection" });
+      const updatedBundle = bundleMods.addExtensionToConversion(bundle, documentExtension);
+      expect(updatedBundle).toEqual(bundle);
+    });
+  });
+
   describe("removePatientFromConversion", () => {
     it("removes single Patient resource from the Bundle", () => {
       const { condition } = initTest();
@@ -141,79 +192,34 @@ describe("Checking postProcessBundle and its constituent functions", () => {
 
   describe("postProcessBundle", () => {
     it("calls all required processing functions in correct order", () => {
-      const { patientId, condition } = initTest();
+      const { patientId, condition, documentExtension } = initTest();
       const patient = makePatient({
         id: patientId,
         name: [{ given: ["Jane"], family: "Doe" }],
       });
       const bundle = makeBundle({ entries: [condition, patient], type: "collection" });
 
-      postProcessBundle(bundle, patientId);
+      postProcessBundle(bundle, patientId, documentExtension);
 
+      expect(addExtensionToConversionMock).toHaveBeenCalled();
       expect(replaceIdsMock).toHaveBeenCalled();
       expect(createFullBundleEntriesMock).toHaveBeenCalled();
       expect(removePatientFromConversionMock).toHaveBeenCalled();
 
       // Check relative order of execution
+      const addExtensionOrder = addExtensionToConversionMock.mock.invocationCallOrder[0];
       const replaceIdsOrder = replaceIdsMock.mock.invocationCallOrder[0];
       const addRequestsOrder = createFullBundleEntriesMock.mock.invocationCallOrder[0];
       const removePatientOrder = removePatientFromConversionMock.mock.invocationCallOrder[0];
 
+      if (!addExtensionOrder) throw new Error("Failed to get addExtensionOrder");
       if (!replaceIdsOrder) throw new Error("Failed to get replaceIdsOrder");
       if (!addRequestsOrder) throw new Error("Failed to get addRequestsOrder");
       if (!removePatientOrder) throw new Error("Failed to get removePatientOrder");
 
-      expect(replaceIdsOrder).toBeLessThan(addRequestsOrder);
+      expect(addExtensionOrder).toBeLessThan(replaceIdsOrder);
+      expect(addExtensionOrder).toBeLessThan(addRequestsOrder);
       expect(addRequestsOrder).toBeLessThan(removePatientOrder);
     });
-  });
-});
-
-describe("addExtensionToConversion", () => {
-  it("adds a document extension to a resource that did not have it", () => {
-    const { condition, documentExtension } = initTest();
-    expect(condition.extension).toBeUndefined();
-
-    const bundle = makeBundle({ entries: [condition], type: "collection" });
-    const updatedBundle = bundleMods.addExtensionToConversion(bundle, documentExtension);
-
-    const updResource = updatedBundle.entry?.[0]?.resource;
-    expect(updResource).toBeDefined();
-    expect(updResource?.resourceType).toEqual("Condition");
-
-    const updCondition = updResource as Condition;
-    expect(updCondition.extension).toHaveLength(1);
-    expect(updCondition.extension?.[0]).toEqual(documentExtension);
-  });
-
-  it("appends the document extension to a resource with existing extensions", () => {
-    const { condition, documentExtension } = initTest();
-
-    const existingExtension = {
-      url: "http://example.com/existing",
-      valueString: "test",
-    };
-    condition.extension = [existingExtension];
-
-    const bundle = makeBundle({ entries: [condition], type: "collection" });
-
-    const updatedBundle = bundleMods.addExtensionToConversion(bundle, documentExtension);
-    expect(updatedBundle.entry).toHaveLength(1);
-    const updResource = updatedBundle.entry?.[0]?.resource;
-    expect(updResource).toBeDefined();
-    expect(updResource?.resourceType).toEqual("Condition");
-
-    const updCondition = updResource as Condition;
-    expect(updCondition.extension).toHaveLength(2);
-    expect(updCondition.extension).toEqual(
-      expect.arrayContaining([existingExtension, documentExtension])
-    );
-  });
-
-  it("returns bundle unchanged when no entries exist", () => {
-    const { documentExtension } = initTest();
-    const bundle = makeBundle({ entries: [], type: "collection" });
-    const updatedBundle = bundleMods.addExtensionToConversion(bundle, documentExtension);
-    expect(updatedBundle).toEqual(bundle);
   });
 });

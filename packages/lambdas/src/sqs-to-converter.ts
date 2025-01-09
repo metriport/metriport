@@ -2,7 +2,6 @@ import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
 import {
   FhirConverterParams,
   FhirExtension,
-  addExtensionToConversion,
 } from "@metriport/core/domain/conversion/bundle-modifications/modifications";
 import { postProcessBundle } from "@metriport/core/domain/conversion/bundle-modifications/post-process";
 import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
@@ -225,14 +224,9 @@ export async function handler(event: SQSEvent) {
           timestamp: new Date(),
         };
 
-        const conversionResultWithDocumentExtension = addExtensionToConversion(
-          conversionResult,
-          documentExtension
-        );
-
         await storePreProcessedConversionResult({
           s3Utils,
-          conversionResult: conversionResultWithDocumentExtension,
+          conversionResult,
           conversionResultBucketName,
           conversionResultFilename,
           message,
@@ -246,7 +240,7 @@ export async function handler(event: SQSEvent) {
         const normalizedBundle = normalize({
           cxId,
           patientId,
-          bundle: conversionResultWithDocumentExtension,
+          bundle: conversionResult,
         });
 
         await storeNormalizedConversionResult({
@@ -263,7 +257,11 @@ export async function handler(event: SQSEvent) {
         await cloudWatchUtils.reportMemoryUsage();
 
         const postProcessStart = Date.now();
-        const updatedConversionResult = postProcessBundle(normalizedBundle, patientId);
+        const updatedConversionResult = postProcessBundle(
+          normalizedBundle,
+          patientId,
+          documentExtension
+        );
         metrics.postProcess = {
           duration: Date.now() - postProcessStart,
           timestamp: new Date(),
