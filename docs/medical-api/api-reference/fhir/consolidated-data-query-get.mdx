@@ -1,18 +1,20 @@
 ---
-title: "Get Consolidated Data Query status"
+title: "Get Consolidated Data Query Status"
 description: "Get the status of querying for patient's consolidated data."
-api: "GET /medical/v1/patient/{id}/consolidated/query"
+api: "GET /medical/v1/patient/{patientId}/consolidated/query"
 ---
 
-This endpoint returns all the queries that are currently in progress. To trigger a new query you can
-[start a consolidated query](/medical-api/api-reference/fhir/consolidated-data-query-post).
+This endpoint returns all the queries that are currently in progress. 
 
-The result of the query will be sent through a [Webhook request](/medical-api/handling-data/webhooks#patient-consolidated-data)
-in FHIR-compliant format.
+To return the status of a single query, see
+[Get Single Consolidated Data Query Status](/medical-api/api-reference/fhir/consolidated-data-query-get-single). 
+
+To trigger a new query you can
+[start a consolidated query](/medical-api/api-reference/fhir/consolidated-data-query-post).
 
 ## Path Params
 
-<ParamField path="id" type="string" required>
+<ParamField path="patientId" type="string" required>
   The ID of the Patient.
 </ParamField>
 
