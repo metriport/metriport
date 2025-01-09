@@ -35,7 +35,7 @@ export function runDocumentQueryTests(e2e: E2eContext) {
         break;
       }
       console.log(
-        `Document query still processing, retrying in ${dqCheckStatusWaitTime.asSeconds} seconds...`
+        `Document query still processing, retrying in ${dqCheckStatusWaitTime.asSeconds()} seconds...`
       );
       await sleep(dqCheckStatusWaitTime.asMilliseconds());
       status = await medicalApi.getDocumentQueryStatus(e2e.patient.id);

@@ -1,5 +1,5 @@
 import { DiagnosticReport } from "@medplum/fhirtypes";
-import crypto from "crypto";
+import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { LOINC_CODE, LOINC_OID } from "../../util/constants";
 import {
   DeduplicationResult,
@@ -169,18 +169,4 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
     refReplacementMap,
     danglingReferences,
   };
-}
-
-function createUuidFromText(input: string) {
-  const hash = crypto.createHash("sha256").update(input).digest("hex");
-
-  const uuid = [
-    hash.substring(0, 8),
-    hash.substring(8, 12),
-    hash.substring(12, 16),
-    hash.substring(16, 20),
-    hash.substring(20, 32),
-  ].join("-");
-
-  return uuid;
 }

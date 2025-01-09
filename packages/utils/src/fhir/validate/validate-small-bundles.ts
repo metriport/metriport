@@ -1,9 +1,9 @@
 import { Sha256 } from "@aws-crypto/sha256-js";
+import { Bundle, Resource } from "@medplum/fhirtypes";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { SignatureV4 } from "@smithy/signature-v4";
 import Axios from "axios";
 import fs from "fs";
-import { FHIRBundle } from "../../fhir-converter/convert";
 import { getFileContents, getFileNames } from "../../shared/fs";
 
 const samplesFolderPath = "";
@@ -56,7 +56,7 @@ export async function main() {
       console.log(`Processing ${index + 1}/${filteredBundleNames.length}. Filename: ${fileName}`);
       try {
         const stringBundle = getFileContents(fileName);
-        const bundle = JSON.parse(stringBundle) as FHIRBundle;
+        const bundle = JSON.parse(stringBundle);
 
         const start = Date.now();
 
@@ -117,7 +117,7 @@ export async function main() {
 }
 
 async function validateFhirBundle(
-  bundle: FHIRBundle,
+  bundle: Bundle<Resource>,
   start: number,
   fileName: string
 ): Promise<ValidationErrorWithResourceType[]> {
