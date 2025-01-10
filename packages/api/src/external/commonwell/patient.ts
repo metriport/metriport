@@ -242,10 +242,16 @@ async function registerAndLinkPatientInCW({
     log("Completed.");
     return { commonwellPatientId, personId };
   } catch (error) {
-    await updatePatientDiscoveryStatus({
+    await updatePatientDiscoveryStatus<{
+      getOrgIdExcludeList: () => Promise<string[]>;
+    }>({
       patient: patientIds,
       status: "failed",
       source: MedicalDataSource.COMMONWELL,
+      scheduledDqActions: {
+        dq: queryAndProcessDocuments,
+        extraDqArgs: { getOrgIdExcludeList },
+      },
     });
     const msg = `Failure while creating patient @ CW`;
     const cwRef = commonWell?.lastReferenceHeader;
@@ -428,10 +434,16 @@ async function updatePatientAndLinksInCw({
     });
     log("Completed.");
   } catch (error) {
-    await updatePatientDiscoveryStatus({
+    await updatePatientDiscoveryStatus<{
+      getOrgIdExcludeList: () => Promise<string[]>;
+    }>({
       patient: patientIds,
       status: "failed",
       source: MedicalDataSource.COMMONWELL,
+      scheduledDqActions: {
+        dq: queryAndProcessDocuments,
+        extraDqArgs: { getOrgIdExcludeList },
+      },
     });
     const msg = `Failed to update patient @ CW`;
     const cwRef = commonWell?.lastReferenceHeader;

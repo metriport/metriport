@@ -6,11 +6,12 @@ import { reset } from ".";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { capture } from "../../../shared/notifications";
 import { isCWEnabledForCx } from "../../aws/app-config";
+import { updatePatientDiscoveryStatus } from "../../hie/update-patient-discovery-status";
 import { makeCommonWellAPI } from "../api";
 import { updateCommonwellIdsAndStatus } from "../patient-external-data";
 import { getCwInitiator } from "../shared";
 import { autoUpgradeNetworkLinks, patientWithCWData } from "./shared";
-import { updatePatientDiscoveryStatus } from "../../hie/update-patient-discovery-status";
+import { queryAndProcessDocuments } from "../document/document-query";
 
 const context = "cw.link.create";
 
@@ -68,10 +69,16 @@ export async function create(
       commonwellPersonId: personId,
       cqLinkStatus: undefined,
     });
-    await updatePatientDiscoveryStatus({
+    await updatePatientDiscoveryStatus<{
+      getOrgIdExcludeList: () => Promise<string[]>;
+    }>({
       patient,
       status: "completed",
       source: MedicalDataSource.COMMONWELL,
+      scheduledDqActions: {
+        dq: queryAndProcessDocuments,
+        extraDqArgs: { getOrgIdExcludeList },
+      },
     });
 
     if (!link._links?.self?.href) {

@@ -24,7 +24,7 @@ export async function scheduleDocQuery<T>({
   triggerConsolidated,
   patientDiscoveryActions,
   forceScheduling = false,
-  forcePatientDiscovery = false,
+  forcePatientDiscoveryOnScheduling = false,
 }: {
   requestId: string;
   patient: Pick<Patient, "id" | "cxId">;
@@ -35,7 +35,7 @@ export async function scheduleDocQuery<T>({
     extraPdArgs: T;
   };
   forceScheduling?: boolean;
-  forcePatientDiscovery?: boolean;
+  forcePatientDiscoveryOnScheduling?: boolean;
 }): Promise<Patient> {
   const { log } = out(`${source} scheduleDocQuery - requestId ${requestId}, patient ${patient.id}`);
 
@@ -67,13 +67,14 @@ export async function scheduleDocQuery<T>({
       });
 
     if (hasNoHieStatus || hieStatusProcessing || isStale || forceScheduling) {
+      log("Scheduling document query");
       externalData[source] = {
         ...externalData[source],
         scheduledDocQueryRequestId: requestId,
         scheduledDocQueryRequestTriggerConsolidated: triggerConsolidated,
       };
 
-      if ((forcePatientDiscovery || isStale) && !hieStatusProcessing) {
+      if ((forcePatientDiscoveryOnScheduling || isStale) && !hieStatusProcessing) {
         log(`Patient Discovery forced or patient is stale - kicking off PD ${requestId}`);
         patientDiscoveryActions
           .pd({
@@ -81,7 +82,11 @@ export async function scheduleDocQuery<T>({
             requestId,
             ...patientDiscoveryActions.extraPdArgs,
           })
-          .catch(processAsyncError(`${source} ${requestId} - Patient Discovery failed`));
+          .catch(
+            processAsyncError(
+              `${source} patientDiscoveryActions.pd failed - patient ${existingPatient.id}, requestId ${requestId}`
+            )
+          );
       }
 
       const updatedPatient = {
@@ -100,8 +105,7 @@ export async function scheduleDocQuery<T>({
       return updatedPatient;
     }
 
-    log(`Scheduling document query ${requestId} skipped`);
-
+    log("Scheduling document query skipped");
     return existingPatient;
   });
 }

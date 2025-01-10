@@ -25,6 +25,7 @@ import { filterTruthy } from "../../../shared/filter-map-utils";
 import { isCWEnabledForCx } from "../../aws/app-config";
 import { updatePatientDiscoveryStatus } from "../../hie/update-patient-discovery-status";
 import { makeCommonWellAPI } from "../api";
+import { queryAndProcessDocuments } from "../document/document-query";
 import { getCWData } from "../patient";
 import { getCwStrongIdsFromPatient } from "../patient-conversion";
 import { updateCommonwellIdsAndStatus } from "../patient-external-data";
@@ -135,10 +136,16 @@ export const findCurrentLink = async (
         commonwellPersonId: undefined,
         cqLinkStatus: undefined,
       });
-      await updatePatientDiscoveryStatus({
+      await updatePatientDiscoveryStatus<{
+        getOrgIdExcludeList: () => Promise<string[]>;
+      }>({
         patient,
         status: "failed",
         source: MedicalDataSource.COMMONWELL,
+        scheduledDqActions: {
+          dq: queryAndProcessDocuments,
+          extraDqArgs: { getOrgIdExcludeList: () => Promise.resolve([]) },
+        },
       });
       return;
     }
@@ -152,10 +159,16 @@ export const findCurrentLink = async (
         commonwellPersonId: undefined,
         cqLinkStatus: undefined,
       });
-      await updatePatientDiscoveryStatus({
+      await updatePatientDiscoveryStatus<{
+        getOrgIdExcludeList: () => Promise<string[]>;
+      }>({
         patient,
         status: "failed",
         source: MedicalDataSource.COMMONWELL,
+        scheduledDqActions: {
+          dq: queryAndProcessDocuments,
+          extraDqArgs: { getOrgIdExcludeList: () => Promise.resolve([]) },
+        },
       });
 
       return;

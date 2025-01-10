@@ -5,6 +5,7 @@ import { capture } from "@metriport/core/util/notifications";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import MetriportError from "../../../errors/metriport-error";
 import { updatePatientDiscoveryStatus } from "../../hie/update-patient-discovery-status";
+import { queryAndProcessDocuments } from "../document/document-query";
 import { autoUpgradeNetworkLinks } from "../link/shared";
 import { updateCommonwellIdsAndStatus } from "../patient-external-data";
 import { isEnrolledBy } from "../person-shared";
@@ -78,10 +79,16 @@ export async function patchDuplicatedPersonsForPatient(
       commonwellPersonId: chosenPersonId,
       cqLinkStatus: undefined,
     });
-    await updatePatientDiscoveryStatus({
+    await updatePatientDiscoveryStatus<{
+      getOrgIdExcludeList: () => Promise<string[]>;
+    }>({
       patient,
       status: "completed",
       source: MedicalDataSource.COMMONWELL,
+      scheduledDqActions: {
+        dq: queryAndProcessDocuments,
+        extraDqArgs: { getOrgIdExcludeList: orgIdExcludeList },
+      },
     });
 
     if (unenrollByDemographics) {

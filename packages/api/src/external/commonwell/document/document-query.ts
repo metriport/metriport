@@ -93,7 +93,7 @@ export async function queryAndProcessDocuments({
   ignoreDocRefOnFHIRServer,
   ignoreFhirConversionAndUpsert,
   getOrgIdExcludeList,
-  forcePatientDiscovery = false,
+  forcePatientDiscoveryOnScheduling = false,
   triggerConsolidated = false,
 }: {
   patient: Patient;
@@ -104,7 +104,7 @@ export async function queryAndProcessDocuments({
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
   getOrgIdExcludeList: () => Promise<string[]>;
-  forcePatientDiscovery?: boolean;
+  forcePatientDiscoveryOnScheduling?: boolean;
   triggerConsolidated?: boolean;
 }): Promise<void> {
   const { id: patientId, cxId } = patientParam;
@@ -150,7 +150,6 @@ export async function queryAndProcessDocuments({
       patient: { id: patientId, cxId },
       source: MedicalDataSource.COMMONWELL,
       triggerConsolidated,
-      forcePatientDiscovery,
       patientDiscoveryActions: {
         pd: update,
         extraPdArgs: {
@@ -158,6 +157,7 @@ export async function queryAndProcessDocuments({
           getOrgIdExcludeList,
         },
       },
+      forcePatientDiscoveryOnScheduling,
     });
 
     if (patientWithScheduledDocQuery.data.externalData?.COMMONWELL?.scheduledDocQueryRequestId)

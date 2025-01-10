@@ -27,15 +27,15 @@ export async function getDocumentsFromCQ({
   requestId,
   facilityId,
   cqManagingOrgName,
-  forcePatientDiscovery = false,
   triggerConsolidated = false,
+  forcePatientDiscoveryOnScheduling = false,
 }: {
   patient: Patient;
   requestId: string;
   facilityId?: string;
   cqManagingOrgName?: string;
-  forcePatientDiscovery?: boolean;
   triggerConsolidated?: boolean;
+  forcePatientDiscoveryOnScheduling?: boolean;
 }) {
   const { id: patientId, cxId } = patientParam;
   const { log } = out(`CQ DQ - requestId ${requestId}, patient ${patientId}`);
@@ -73,13 +73,13 @@ export async function getDocumentsFromCQ({
       patient: { id: patientId, cxId },
       source: MedicalDataSource.CAREQUALITY,
       triggerConsolidated,
-      forcePatientDiscovery,
       patientDiscoveryActions: {
         pd: discover,
         extraPdArgs: {
           facilityId: initiator.facilityId,
         },
       },
+      forcePatientDiscoveryOnScheduling,
     });
 
     if (patientWithScheduledDocQuery.data.externalData?.CAREQUALITY?.scheduledDocQueryRequestId)

@@ -44,9 +44,7 @@ export async function updatePatientDiscoveryStatus<T>({
   params?: DiscoveryParams;
   scheduledDqActions?: { dq: (arg: sharedDqArgs & T) => Promise<void>; extraDqArgs: T };
 }): Promise<Patient> {
-  const { log } = out(
-    `${source} updatePatientDiscoveryStatus - patient ${patient.id} requestId ${params?.requestId}`
-  );
+  const { log } = out(`${source} updatePatientDiscoveryStatus - patient ${patient.id}`);
 
   const patientFilter = {
     id: patient.id,
@@ -79,6 +77,13 @@ export async function updatePatientDiscoveryStatus<T>({
       ...(params !== undefined && { discoveryParams: params }),
     };
 
+    if (status === "failed") {
+      externalData[source] = {
+        ...externalData[source],
+        scheduledPdRequest: undefined,
+      };
+    }
+
     const { scheduledDqRequestId, scheduledDqTriggerConsolidated } = getScheduledDqRequestId({
       patient: existingPatient,
       source,
@@ -89,7 +94,7 @@ export async function updatePatientDiscoveryStatus<T>({
       scheduledDqActions
     ) {
       if (status == "completed") {
-        log(`${source} PD completed - kicking off scheduled DQ ${scheduledDqRequestId}`);
+        log(`PD completed - kicking off scheduled DQ ${scheduledDqRequestId}`);
         scheduledDqActions
           .dq({
             patient: existingPatient,
@@ -99,11 +104,11 @@ export async function updatePatientDiscoveryStatus<T>({
           })
           .catch(
             processAsyncError(
-              `${source} scheduledDqActions.dq failed - patient ${existingPatient.id} requestId ${scheduledDqRequestId}`
+              `${source} scheduledDqActions.dq failed - patient ${existingPatient.id}, requestId ${scheduledDqRequestId}`
             )
           );
       } else {
-        log(`${source} PD failed - failing scheduled DQ ${scheduledDqRequestId}`);
+        log(`PD failed - failing scheduled DQ ${scheduledDqRequestId}`);
         const hieDocProgress = getHieDocProgress({
           externalHieData: externalData[source],
           downloadProgress: { status: "failed", total: 0 },
