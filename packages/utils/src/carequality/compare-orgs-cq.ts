@@ -6,20 +6,14 @@ import {
   CarequalityManagementAPI,
   CarequalityManagementApiFhir,
 } from "@metriport/carequality-sdk";
-import { Organization, OrgType } from "@metriport/core/domain/organization";
+import { Organization, OrganizationBizType, OrgType } from "@metriport/core/domain/organization";
 import { out } from "@metriport/core/util/log";
-import { getEnvVarOrFail, sleep } from "@metriport/shared";
+import { getEnvVarOrFail, sleep, USStateForAddress } from "@metriport/shared";
 import axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import stringify from "fast-json-stable-stringify";
 import fs from "fs";
-import { Facility as FacilityInternal, facilitySchema } from "../internal/schemas/facility";
-import {
-  Organization as OrganizationInternal,
-  OrganizationBizType,
-  organizationSchema,
-} from "../internal/schemas/organization";
 import { elapsedTimeAsStr } from "../shared/duration";
 import { buildGetDirPathInside, getFileNameForOrg, initRunsFolder } from "../shared/folder";
 // Not happy with importing from a diff package, but it's a quick fix for now
@@ -28,6 +22,8 @@ import { cmdToCqOrgDetails } from "../../../api/src/external/carequality/command
 import { getOrganizationFhirTemplate } from "../../../api/src/external/carequality/command/cq-organization/organization-template";
 import { getCqCommand as getCqCommandForFacility } from "../../../api/src/external/carequality/command/create-or-update-facility";
 import { getCqCommand as getCqCommandForOrganization } from "../../../api/src/external/carequality/command/create-or-update-organization";
+import { InternalFacilityDTO as FacilityInternal } from "../../../api/src/routes/medical/dtos/facilityDTO";
+import { InternalOrganizationDTO as OrganizationInternal } from "../../../api/src/routes/medical/dtos/organizationDTO";
 
 dayjs.extend(duration);
 
@@ -44,6 +40,7 @@ dayjs.extend(duration);
  *
  * To use it:
  * - Set the required env vars in .env
+ * - Update the `cqApiMode` constant accordingly
  * - Run with `ts-node src/carequality/compare-orgs-cq.ts`
  */
 
@@ -52,7 +49,7 @@ const cxIds: string[] = [];
 const cqApiKey = getEnvVarOrFail("CQ_MANAGEMENT_API_KEY");
 const cqApiMode = APIMode.dev;
 const metriportApiUrl = getEnvVarOrFail("API_URL");
-export const apiOssProxyInternal = axios.create({ baseURL: `${metriportApiUrl}/internal` });
+const apiOssProxyInternal = axios.create({ baseURL: `${metriportApiUrl}/internal` });
 
 const getFolderName = buildGetDirPathInside(`compare-orgs-cq`);
 
@@ -78,7 +75,10 @@ export async function main() {
       type: org.businessType,
       data: {
         name: org.name,
-        location: org.location,
+        location: {
+          ...org.location,
+          state: org.location.state as USStateForAddress,
+        },
         type: org.type as unknown as OrgType,
       },
       oid: org.oid,
@@ -108,7 +108,10 @@ export async function main() {
           facilityNumber: Number(facility.oid.split(":")[-1]),
           data: {
             name: facility.name,
-            address: facility.address,
+            address: {
+              ...facility.address,
+              state: facility.address.state as USStateForAddress,
+            },
             npi: facility.npi,
             active: facility.active == undefined ? undefined : facility.active,
           },
@@ -164,8 +167,9 @@ async function getCxData(
   const resp = await apiOssProxyInternal.get(`/cx-data?cxId=${cxId}`);
   if (!resp.data) throw new Error(`Cx data not returned`);
   return {
-    org: organizationSchema.parse(resp.data["org"]),
-    facilities: resp.data["facilities"].map(facilitySchema.parse),
+    org: resp.data["org"] as OrganizationInternal,
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    facilities: resp.data["facilities"].map((f: any) => f as FacilityInternal),
   };
 }
 
