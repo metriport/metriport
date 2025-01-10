@@ -48,7 +48,7 @@ export async function queryDocumentsAcrossHIEs({
   override,
   cxDocumentRequestMetadata,
   forceQuery = false,
-  forcePatientDiscovery = false,
+  forcePatientDiscoveryOnScheduling = false,
   forceCommonwell = false,
   forceCarequality = false,
   cqManagingOrgName,
@@ -60,7 +60,7 @@ export async function queryDocumentsAcrossHIEs({
   override?: boolean;
   cxDocumentRequestMetadata?: unknown;
   forceQuery?: boolean;
-  forcePatientDiscovery?: boolean;
+  forcePatientDiscoveryOnScheduling?: boolean;
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
   cqManagingOrgName?: string;
@@ -126,7 +126,7 @@ export async function queryDocumentsAcrossHIEs({
         facilityId,
         forceDownload: override,
         forceQuery,
-        forcePatientDiscovery,
+        forcePatientDiscoveryOnScheduling,
         requestId,
         getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
       }).catch(processAsyncError("Failed to get documents from Commonwell"));
@@ -141,7 +141,7 @@ export async function queryDocumentsAcrossHIEs({
       facilityId,
       requestId,
       cqManagingOrgName,
-      forcePatientDiscovery,
+      forcePatientDiscoveryOnScheduling,
     }).catch(processAsyncError("Failed to get documents from Carequality"));
     triggeredDocumentQuery = true;
   }
