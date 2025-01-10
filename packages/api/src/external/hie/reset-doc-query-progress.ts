@@ -54,7 +54,10 @@ export async function resetDocQueryProgress({
         documentQueryProgress: {},
       };
 
-      const patientDocProgress = getPatientDocProgressFromHies(existingPatient, resetExternalData);
+      const patientDocProgress = getPatientDocProgressFromHies({
+        patient: existingPatient,
+        updatedExternalData: resetExternalData,
+      });
       existingPatient.data.documentQueryProgress = patientDocProgress;
     }
 

@@ -151,7 +151,7 @@ export async function queryAndProcessDocuments({
       source: MedicalDataSource.COMMONWELL,
       triggerConsolidated,
       forcePatientDiscovery,
-      scheduleActions: {
+      patientDiscoveryActions: {
         pd: update,
         extraPdArgs: {
           facilityId: initiator.facilityId,

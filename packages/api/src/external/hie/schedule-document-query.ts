@@ -1,13 +1,17 @@
-import { MedicalDataSource } from "@metriport/core/external/index";
 import { Patient } from "@metriport/core/domain/patient";
+import { MedicalDataSource } from "@metriport/core/external/index";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { isStalePatientUpdateEnabledForCx } from "../aws/app-config";
 import { isPatientDiscoveryDataMissingOrProcessing, isPatientDiscoveryDataStale } from "./shared";
-import { MetriportError } from "@metriport/shared";
-import { processAsyncError } from "@metriport/core/util/error/shared";
+
+type sharedPdArgs = {
+  patient: Patient;
+  requestId: string;
+};
 
 /**
  * Stores the requestId as the scheduled document query to be executed when the patient discovery
@@ -18,7 +22,7 @@ export async function scheduleDocQuery<T>({
   patient,
   source,
   triggerConsolidated,
-  scheduleActions,
+  patientDiscoveryActions,
   forceScheduling = false,
   forcePatientDiscovery = false,
 }: {
@@ -26,13 +30,8 @@ export async function scheduleDocQuery<T>({
   patient: Pick<Patient, "id" | "cxId">;
   source: MedicalDataSource;
   triggerConsolidated: boolean;
-  scheduleActions: {
-    pd: (
-      sharedPdArgs: {
-        patient: Patient;
-        requestId: string;
-      } & T
-    ) => Promise<void>;
+  patientDiscoveryActions: {
+    pd: (sharedPdArgs: sharedPdArgs & T) => Promise<void>;
     extraPdArgs: T;
   };
   forceScheduling?: boolean;
@@ -75,21 +74,12 @@ export async function scheduleDocQuery<T>({
       };
 
       if ((forcePatientDiscovery || isStale) && !hieStatusProcessing) {
-        if (!scheduleActions?.pd) {
-          throw new MetriportError("Cannot trigger patient discovery w/ no pdFunction", undefined, {
-            patientId: patient.id,
-            requestId,
-            source,
-          });
-        }
-
-        log("Kicking off PD");
-        scheduleActions
+        log(`Patient Discovery forced or patient is stale - kicking off PD ${requestId}`);
+        patientDiscoveryActions
           .pd({
             patient: existingPatient,
             requestId,
-            facilityId: existingPatient.facilityIds[0] as string,
-            ...scheduleActions.extraPdArgs,
+            ...patientDiscoveryActions.extraPdArgs,
           })
           .catch(processAsyncError(`${source} ${requestId} - Patient Discovery failed`));
       }

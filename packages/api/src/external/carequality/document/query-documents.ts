@@ -68,13 +68,13 @@ export async function getDocumentsFromCQ({
       }),
     ]);
 
-    const updatedPatient = await scheduleDocQuery<{ facilityId: string }>({
+    const patientWithScheduledDocQuery = await scheduleDocQuery<{ facilityId: string }>({
       requestId,
       patient: { id: patientId, cxId },
       source: MedicalDataSource.CAREQUALITY,
       triggerConsolidated,
       forcePatientDiscovery,
-      scheduleActions: {
+      patientDiscoveryActions: {
         pd: discover,
         extraPdArgs: {
           facilityId: initiator.facilityId,
@@ -82,7 +82,8 @@ export async function getDocumentsFromCQ({
       },
     });
 
-    if (updatedPatient.data.externalData?.CAREQUALITY?.scheduledDocQueryRequestId) return;
+    if (patientWithScheduledDocQuery.data.externalData?.CAREQUALITY?.scheduledDocQueryRequestId)
+      return;
 
     if (!cqPatientData || cqPatientData.data.links.length <= 0) {
       return interrupt(`Patient has no CQ links, skipping DQ`);
@@ -174,6 +175,7 @@ export async function getDocumentsFromCQ({
         context: `cq.getDocumentsFromCQ`,
         error,
         patientId,
+        facilityId,
         requestId,
       },
     });

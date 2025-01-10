@@ -41,7 +41,10 @@ describe("getPatientDocProgressFromHies", () => {
       }),
     });
 
-    const patientDocProgress = getPatientDocProgressFromHies(patient, externalData);
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient,
+      updatedExternalData: externalData,
+    });
 
     expect(patientDocProgress).toEqual({
       convert: processingSourceProgress,
@@ -68,7 +71,10 @@ describe("getPatientDocProgressFromHies", () => {
       }),
     });
 
-    const patientDocProgress = getPatientDocProgressFromHies(patient, externalData);
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient,
+      updatedExternalData: externalData,
+    });
 
     expect(patientDocProgress).toEqual({
       convert: processingSourceProgress,
@@ -101,7 +107,10 @@ describe("getPatientDocProgressFromHies", () => {
       }),
     });
 
-    const patientDocProgress = getPatientDocProgressFromHies(patient, externalData);
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient,
+      updatedExternalData: externalData,
+    });
 
     expect(patientDocProgress).toEqual({
       convert: addProgresses(processingSourceProgress, processingSourceProgress, "processing"),
@@ -134,7 +143,10 @@ describe("getPatientDocProgressFromHies", () => {
       }),
     });
 
-    const patientDocProgress = getPatientDocProgressFromHies(patient, externalData);
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient,
+      updatedExternalData: externalData,
+    });
 
     expect(patientDocProgress).toEqual({
       convert: addProgresses(processingSourceProgress, processingSourceProgress, "processing"),
@@ -167,7 +179,10 @@ describe("getPatientDocProgressFromHies", () => {
       }),
     });
 
-    const patientDocProgress = getPatientDocProgressFromHies(patient, externalData);
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient,
+      updatedExternalData: externalData,
+    });
 
     expect(patientDocProgress).toEqual({
       convert: addProgresses(completedSourceProgress, processingSourceProgress, "processing"),
@@ -200,7 +215,10 @@ describe("getPatientDocProgressFromHies", () => {
       }),
     });
 
-    const patientDocProgress = getPatientDocProgressFromHies(patient, externalData);
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient,
+      updatedExternalData: externalData,
+    });
 
     expect(patientDocProgress).toEqual({
       convert: addProgresses(completedSourceProgress, processingSourceProgress, "processing"),
@@ -233,7 +251,10 @@ describe("getPatientDocProgressFromHies", () => {
       }),
     });
 
-    const patientDocProgress = getPatientDocProgressFromHies(patient, externalData);
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient,
+      updatedExternalData: externalData,
+    });
 
     expect(patientDocProgress).toEqual({
       convert: addProgresses(completedSourceProgress, completedSourceProgress, "completed"),
@@ -270,7 +291,10 @@ describe("getPatientDocProgressFromHies", () => {
       }),
     });
 
-    const patientDocProgress = getPatientDocProgressFromHies(patient, externalData);
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient,
+      updatedExternalData: externalData,
+    });
 
     expect(patientDocProgress).toEqual({
       download: progress,
@@ -312,7 +336,10 @@ describe("getPatientDocProgressFromHies", () => {
       }),
     });
 
-    const patientDocProgress = getPatientDocProgressFromHies(patient, externalData);
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient,
+      updatedExternalData: externalData,
+    });
 
     expect(patientDocProgress).toEqual({
       download: addProgresses(progress, processingSourceProgress, "processing"),
@@ -354,7 +381,10 @@ describe("getPatientDocProgressFromHies", () => {
       }),
     });
 
-    const patientDocProgress = getPatientDocProgressFromHies(patient, externalData);
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient,
+      updatedExternalData: externalData,
+    });
 
     expect(patientDocProgress).toEqual({
       download: progress,
@@ -381,7 +411,10 @@ describe("getPatientDocProgressFromHies", () => {
       }),
     });
 
-    const patientDocProgress = getPatientDocProgressFromHies(patient, externalData);
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient,
+      updatedExternalData: externalData,
+    });
 
     expect(patientDocProgress).toEqual({
       convert: { total: 0, errors: 0, status: "completed", successful: 0 },
@@ -413,7 +446,10 @@ describe("getPatientDocProgressFromHies", () => {
       }),
     });
 
-    const patientDocProgress = getPatientDocProgressFromHies(patient, externalData);
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient,
+      updatedExternalData: externalData,
+    });
 
     expect(patientDocProgress).toEqual({
       download: { total: 0, errors: 0, status: "completed", successful: 0 },
@@ -435,7 +471,10 @@ describe("getPatientDocProgressFromHies", () => {
       }),
     });
 
-    const patientDocProgress = getPatientDocProgressFromHies(patient, externalData);
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient,
+      updatedExternalData: externalData,
+    });
 
     expect(patientDocProgress).toEqual(
       expect.objectContaining({
@@ -449,7 +488,11 @@ describe("getHieDocProgress", () => {
   it("has external data with downloadProgress when passing empty external data, download progress and source", async () => {
     const downloadProgress = createProgress({ status: "processing" });
 
-    const hieDocProgress = getHieDocProgress({}, downloadProgress, undefined);
+    const hieDocProgress = getHieDocProgress({
+      externalHieData: {},
+      downloadProgress,
+      convertProgress: undefined,
+    });
 
     expect(hieDocProgress).toEqual({
       download: downloadProgress,
@@ -458,17 +501,19 @@ describe("getHieDocProgress", () => {
 
   it("has external data with newDownloadProgress when passing external data with download processing, newDownloadProgress processing and source", async () => {
     const existingHieDocProgress = {
-      download: processingSourceProgress,
-      ...hieDocProgressBase,
+      documentQueryProgress: {
+        download: processingSourceProgress,
+        ...hieDocProgressBase,
+      },
     };
 
     const newDownloadProgress = createProgress({ status: "processing" });
 
-    const hieDocProgress = getHieDocProgress(
-      existingHieDocProgress,
-      newDownloadProgress,
-      undefined
-    );
+    const hieDocProgress = getHieDocProgress({
+      externalHieData: existingHieDocProgress,
+      downloadProgress: newDownloadProgress,
+      convertProgress: undefined,
+    });
 
     expect(hieDocProgress).toEqual({
       download: newDownloadProgress,
@@ -478,17 +523,19 @@ describe("getHieDocProgress", () => {
 
   it("has external data with newDownloadProgress processing when passing external data with download complete, newDownloadProgress processing and source", async () => {
     const existingHieDocProgress = {
-      download: completedSourceProgress,
-      ...hieDocProgressBase,
+      documentQueryProgress: {
+        download: completedSourceProgress,
+        ...hieDocProgressBase,
+      },
     };
 
     const newDownloadProgress = createProgress({ status: "processing" });
 
-    const hieDocProgress = getHieDocProgress(
-      existingHieDocProgress,
-      newDownloadProgress,
-      undefined
-    );
+    const hieDocProgress = getHieDocProgress({
+      externalHieData: existingHieDocProgress,
+      downloadProgress: newDownloadProgress,
+      convertProgress: undefined,
+    });
 
     expect(hieDocProgress).toEqual({
       download: newDownloadProgress,
@@ -498,17 +545,19 @@ describe("getHieDocProgress", () => {
 
   it("has external data with newDownloadProgress completed when passing external data with download complete, newDownloadProgress completed and source", async () => {
     const existingHieDocProgress = {
-      download: completedSourceProgress,
-      ...hieDocProgressBase,
+      documentQueryProgress: {
+        download: completedSourceProgress,
+        ...hieDocProgressBase,
+      },
     };
 
     const newDownloadProgress = createProgress({ status: "completed" });
 
-    const hieDocProgress = getHieDocProgress(
-      existingHieDocProgress,
-      newDownloadProgress,
-      undefined
-    );
+    const hieDocProgress = getHieDocProgress({
+      externalHieData: existingHieDocProgress,
+      downloadProgress: newDownloadProgress,
+      convertProgress: undefined,
+    });
 
     expect(hieDocProgress).toEqual({
       download: newDownloadProgress,
@@ -518,17 +567,19 @@ describe("getHieDocProgress", () => {
 
   it("has external data with newDownloadProgress failed when passing external data with download complete, newDownloadProgress failed and source", async () => {
     const existingHieDocProgress = {
-      ...hieDocProgressBase,
-      download: completedSourceProgress,
+      documentQueryProgress: {
+        download: completedSourceProgress,
+        ...hieDocProgressBase,
+      },
     };
 
     const newDownloadProgress = createProgress({ status: "failed" });
 
-    const hieDocProgress = getHieDocProgress(
-      existingHieDocProgress,
-      newDownloadProgress,
-      undefined
-    );
+    const hieDocProgress = getHieDocProgress({
+      externalHieData: existingHieDocProgress,
+      downloadProgress: newDownloadProgress,
+      convertProgress: undefined,
+    });
 
     expect(hieDocProgress).toEqual({
       download: newDownloadProgress,
@@ -538,17 +589,19 @@ describe("getHieDocProgress", () => {
 
   it("has external data with completedSourceProgress when passing external data with download complete, newDownloadProgress undefined and source", async () => {
     const existingHieDocProgress = {
-      ...hieDocProgressBase,
-      download: completedSourceProgress,
+      documentQueryProgress: {
+        download: completedSourceProgress,
+        ...hieDocProgressBase,
+      },
     };
 
     const newDownloadProgress = undefined;
 
-    const hieDocProgress = getHieDocProgress(
-      existingHieDocProgress,
-      newDownloadProgress,
-      undefined
-    );
+    const hieDocProgress = getHieDocProgress({
+      externalHieData: existingHieDocProgress,
+      downloadProgress: newDownloadProgress,
+      convertProgress: undefined,
+    });
 
     expect(hieDocProgress).toEqual({
       download: completedSourceProgress,
@@ -558,13 +611,19 @@ describe("getHieDocProgress", () => {
 
   it("has external data with processingSourceProgress when passing external data with convert processing, newConvertProgress processing and source", async () => {
     const existingHieDocProgress = {
-      convert: processingSourceProgress,
-      ...hieDocProgressBase,
+      documentQueryProgress: {
+        convert: processingSourceProgress,
+        ...hieDocProgressBase,
+      },
     };
 
     const newConvertProgress = createProgress({ status: "processing" });
 
-    const hieDocProgress = getHieDocProgress(existingHieDocProgress, undefined, newConvertProgress);
+    const hieDocProgress = getHieDocProgress({
+      externalHieData: existingHieDocProgress,
+      downloadProgress: undefined,
+      convertProgress: newConvertProgress,
+    });
 
     expect(hieDocProgress).toEqual({
       convert: newConvertProgress,
@@ -574,13 +633,19 @@ describe("getHieDocProgress", () => {
 
   it("has external data with processingSourceProgress when passing external data with convert complete, newConvertProgress processing and source", async () => {
     const existingHieDocProgress = {
-      convert: completedSourceProgress,
-      ...hieDocProgressBase,
+      documentQueryProgress: {
+        convert: completedSourceProgress,
+        ...hieDocProgressBase,
+      },
     };
 
     const newConvertProgress = createProgress({ status: "processing" });
 
-    const hieDocProgress = getHieDocProgress(existingHieDocProgress, undefined, newConvertProgress);
+    const hieDocProgress = getHieDocProgress({
+      externalHieData: existingHieDocProgress,
+      downloadProgress: undefined,
+      convertProgress: newConvertProgress,
+    });
 
     expect(hieDocProgress).toEqual({
       convert: newConvertProgress,
@@ -590,13 +655,19 @@ describe("getHieDocProgress", () => {
 
   it("has external data with completedSourceProgress when passing external data with convert complete, newConvertProgress completed and source", async () => {
     const existingHieDocProgress = {
-      ...hieDocProgressBase,
-      convert: completedSourceProgress,
+      documentQueryProgress: {
+        convert: completedSourceProgress,
+        ...hieDocProgressBase,
+      },
     };
 
     const newConvertProgress = createProgress({ status: "completed" });
 
-    const hieDocProgress = getHieDocProgress(existingHieDocProgress, undefined, newConvertProgress);
+    const hieDocProgress = getHieDocProgress({
+      externalHieData: existingHieDocProgress,
+      downloadProgress: undefined,
+      convertProgress: newConvertProgress,
+    });
 
     expect(hieDocProgress).toEqual({
       convert: newConvertProgress,
@@ -606,13 +677,19 @@ describe("getHieDocProgress", () => {
 
   it("has external data with failed when passing external data with convert complete, newConvertProgress failed and source", async () => {
     const existingHieDocProgress = {
-      ...hieDocProgressBase,
-      convert: completedSourceProgress,
+      documentQueryProgress: {
+        convert: completedSourceProgress,
+        ...hieDocProgressBase,
+      },
     };
 
     const newConvertProgress = createProgress({ status: "failed" });
 
-    const hieDocProgress = getHieDocProgress(existingHieDocProgress, undefined, newConvertProgress);
+    const hieDocProgress = getHieDocProgress({
+      externalHieData: existingHieDocProgress,
+      downloadProgress: undefined,
+      convertProgress: newConvertProgress,
+    });
 
     expect(hieDocProgress).toEqual({
       convert: newConvertProgress,
@@ -622,13 +699,19 @@ describe("getHieDocProgress", () => {
 
   it("has external data with completedSourceProgress when passing external data with convert complete, newConvertProgress undefined and source", async () => {
     const existingHieDocProgress = {
-      convert: completedSourceProgress,
-      ...hieDocProgressBase,
+      documentQueryProgress: {
+        convert: completedSourceProgress,
+        ...hieDocProgressBase,
+      },
     };
 
     const newConvertProgress = undefined;
 
-    const hieDocProgress = getHieDocProgress(existingHieDocProgress, undefined, newConvertProgress);
+    const hieDocProgress = getHieDocProgress({
+      externalHieData: existingHieDocProgress,
+      downloadProgress: undefined,
+      convertProgress: newConvertProgress,
+    });
 
     expect(hieDocProgress).toEqual({
       convert: completedSourceProgress,

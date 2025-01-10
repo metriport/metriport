@@ -47,7 +47,10 @@ export async function tallyDocQueryProgress({
     });
 
     const externalData = setHIETallyCount(existingPatient, progress, type, source);
-    const patientDocProgress = getPatientDocProgressFromHies(existingPatient, externalData);
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient: existingPatient,
+      updatedExternalData: externalData,
+    });
 
     const updatedPatient = {
       ...existingPatient.dataValues,

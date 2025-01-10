@@ -1,6 +1,6 @@
 import { Progress, DocumentQueryProgress } from "@metriport/core/domain/document-query";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { PatientExternalData } from "@metriport/core/domain//patient";
+import { PatientExternalData, PatientExternalDataEntry } from "@metriport/core/domain//patient";
 import { progressTypes, ProgressType } from "@metriport/core/domain/document-query";
 import { DocumentQueryStatus } from "@metriport/core/domain/document-query";
 import { Patient } from "@metriport/core/domain/patient";
@@ -57,24 +57,26 @@ export async function setDocQueryProgress({
     });
 
     const externalData = existingPatient.data.externalData ?? {};
-    const existingHieDocProgress = externalData[source]?.documentQueryProgress ?? {};
 
-    const hieDocProgress = getHieDocProgress(
-      existingHieDocProgress,
+    const hieDocProgress = getHieDocProgress({
+      externalHieData: externalData[source],
       downloadProgress,
       convertProgress,
       convertibleDownloadErrors,
       increaseCountConvertible,
       startedAt,
-      triggerConsolidated
-    );
+      triggerConsolidated,
+    });
 
     externalData[source] = {
       ...externalData[source],
       documentQueryProgress: hieDocProgress,
     };
 
-    const patientDocProgress = getPatientDocProgressFromHies(existingPatient, externalData);
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient: existingPatient,
+      updatedExternalData: externalData,
+    });
 
     const updatedPatient = {
       ...existingPatient.dataValues,
@@ -102,43 +104,17 @@ export async function setDocQueryProgress({
   return result;
 }
 
-export function getPatientDocProgressFromHies(
-  patient: Patient,
-  updatedExternalData: PatientExternalData
-) {
-  const existingPatientDocProgress = patient.data.documentQueryProgress ?? {};
-  const hieDocProgresses = flattenHieDocProgresses(updatedExternalData);
-  return getPatientDocProgressFromHiesList(existingPatientDocProgress, hieDocProgresses);
-}
+export function getPatientDocProgressFromHies({
+  patient,
+  updatedExternalData,
+}: {
+  patient: Patient;
+  updatedExternalData?: PatientExternalData;
+}): DocumentQueryProgress {
+  const patientDocProgress = patient.data.documentQueryProgress ?? {};
+  const patientExternalData = patient.data.externalData ?? {};
+  const hieDocProgresses = flattenHieDocProgresses(updatedExternalData ?? patientExternalData);
 
-export function getHieDocProgress(
-  existingHieDocProgress: DocumentQueryProgress,
-  downloadProgress: Progress | undefined,
-  convertProgress: Progress | undefined,
-  convertibleDownloadErrors?: number,
-  increaseCountConvertible?: number,
-  startedAt?: Date,
-  triggerConsolidated?: boolean
-): DocumentQueryProgress {
-  const docQueryProgress = aggregateDocQueryProgress(
-    existingHieDocProgress,
-    downloadProgress,
-    convertProgress,
-    convertibleDownloadErrors,
-    increaseCountConvertible
-  );
-
-  return {
-    ...docQueryProgress,
-    ...(startedAt !== undefined && { startedAt }),
-    ...(triggerConsolidated !== undefined && { triggerConsolidated }),
-  };
-}
-
-function getPatientDocProgressFromHiesList(
-  existingPatientDocProgress: DocumentQueryProgress,
-  hieDocProgresses: DocumentQueryProgress[]
-): DocumentQueryProgress {
   const statuses: { [key in ProgressType]: DocumentQueryStatus[] } = {
     download: [],
     convert: [],
@@ -148,7 +124,7 @@ function getPatientDocProgressFromHiesList(
     (acc: { download?: RequiredProgress; convert?: RequiredProgress }, progress) => {
       for (const type of progressTypes) {
         const progressType = progress[type];
-        const existingProgressType = existingPatientDocProgress[type];
+        const existingProgressType = patientDocProgress[type];
 
         if (!progressType && !existingProgressType) continue;
 
@@ -180,11 +156,11 @@ function getPatientDocProgressFromHiesList(
   );
 
   return {
-    ...existingPatientDocProgress,
+    ...patientDocProgress,
     ...(aggregatedDocProgress.convert
       ? {
           convert: {
-            ...existingPatientDocProgress.convert,
+            ...patientDocProgress.convert,
             ...aggregatedDocProgress.convert,
           },
         }
@@ -192,11 +168,44 @@ function getPatientDocProgressFromHiesList(
     ...(aggregatedDocProgress.download
       ? {
           download: {
-            ...existingPatientDocProgress.download,
+            ...patientDocProgress.download,
             ...aggregatedDocProgress.download,
           },
         }
       : {}),
+  };
+}
+
+export function getHieDocProgress({
+  externalHieData,
+  downloadProgress,
+  convertProgress,
+  convertibleDownloadErrors,
+  increaseCountConvertible,
+  startedAt,
+  triggerConsolidated,
+}: {
+  externalHieData: PatientExternalDataEntry | undefined;
+  downloadProgress: Progress | undefined;
+  convertProgress: Progress | undefined;
+  convertibleDownloadErrors?: number;
+  increaseCountConvertible?: number;
+  startedAt?: Date;
+  triggerConsolidated?: boolean;
+}): DocumentQueryProgress {
+  const hieDocProgress = externalHieData?.documentQueryProgress ?? {};
+  const updatedHieDocProgress = aggregateDocQueryProgress(
+    hieDocProgress,
+    downloadProgress,
+    convertProgress,
+    convertibleDownloadErrors,
+    increaseCountConvertible
+  );
+
+  return {
+    ...updatedHieDocProgress,
+    ...(startedAt !== undefined && { startedAt }),
+    ...(triggerConsolidated !== undefined && { triggerConsolidated }),
   };
 }
 
