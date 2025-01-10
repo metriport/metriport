@@ -1,7 +1,11 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { CarequalityManagementAPI } from "@metriport/carequality-sdk";
+import {
+  APIMode,
+  CarequalityManagementAPI,
+  CarequalityManagementApiFhir,
+} from "@metriport/carequality-sdk";
 import { Organization, OrgType } from "@metriport/core/domain/organization";
 import { out } from "@metriport/core/util/log";
 import { getEnvVarOrFail, sleep } from "@metriport/shared";
@@ -12,15 +16,14 @@ import stringify from "fast-json-stable-stringify";
 import fs from "fs";
 import { Facility as FacilityInternal, facilitySchema } from "../internal/schemas/facility";
 import {
-  OrganizationBizType,
   Organization as OrganizationInternal,
+  OrganizationBizType,
   organizationSchema,
 } from "../internal/schemas/organization";
 import { elapsedTimeAsStr } from "../shared/duration";
 import { buildGetDirPathInside, getFileNameForOrg, initRunsFolder } from "../shared/folder";
 // Not happy with importing from a diff package, but it's a quick fix for now
 import { Facility } from "../../../api/src/domain/medical/facility";
-import { makeCarequalityManagementAPI } from "../../../api/src/external/carequality/api";
 import { cmdToCqOrgDetails } from "../../../api/src/external/carequality/command/cq-organization/create-or-update-cq-organization";
 import { getOrganizationFhirTemplate } from "../../../api/src/external/carequality/command/cq-organization/organization-template";
 import { getCqCommand as getCqCommandForFacility } from "../../../api/src/external/carequality/command/create-or-update-facility";
@@ -41,14 +44,15 @@ dayjs.extend(duration);
  *
  * To use it:
  * - Set the required env vars in .env
- *   - Also, see makeCarequalityManagementAPIFhir for required env vars.
- * - Run with `ts-node compare-orgs-cq.ts`
+ * - Run with `ts-node src/carequality/compare-orgs-cq.ts`
  */
 
 const cxIds: string[] = [];
 
-const apiUrl = getEnvVarOrFail("API_URL");
-export const apiOssProxyInternal = axios.create({ baseURL: `${apiUrl}/internal` });
+const cqApiKey = getEnvVarOrFail("CQ_MANAGEMENT_API_KEY");
+const cqApiMode = APIMode.dev;
+const metriportApiUrl = getEnvVarOrFail("API_URL");
+export const apiOssProxyInternal = axios.create({ baseURL: `${metriportApiUrl}/internal` });
 
 const getFolderName = buildGetDirPathInside(`compare-orgs-cq`);
 
@@ -57,8 +61,7 @@ export async function main() {
   const startedAt = Date.now();
   console.log(`########################## Started at ${new Date(startedAt).toISOString()}`);
 
-  const cqApi = makeCarequalityManagementAPI();
-  if (!cqApi) throw new Error("CQ API not initialized");
+  const cqApi = new CarequalityManagementApiFhir({ apiKey: cqApiKey, apiMode: cqApiMode });
 
   initRunsFolder();
   const outputFolderName = getFolderName("run");
@@ -90,10 +93,6 @@ export async function main() {
 
     if (org.businessType === OrganizationBizType.healthcareProvider) {
       log(`Provider - Processing org...`);
-      if (!org.cqActive || !org.cqApproved) {
-        log(`Skipping ${org.name} because it is not active or approved in CQ`);
-        continue;
-      }
       const cqCmd = getCqCommandForOrganization({ org: inputMetriportOrg });
       const cqOrgDetails = await cmdToCqOrgDetails(cqCmd);
       const metriportOrg = getOrganizationFhirTemplate(cqOrgDetails);
@@ -102,10 +101,6 @@ export async function main() {
     } else if (org.businessType === OrganizationBizType.healthcareITVendor) {
       log(`IT Vendor - Processing ${facilities.length} facilities...`);
       for (const facility of facilities) {
-        if (!facility.cqActive || !facility.cqApproved) {
-          log(`... facility ${facility.id} is not approved/active in CQ, skipping`);
-          continue;
-        }
         const inputFacility: Facility = {
           cxId,
           id: facility.id,
@@ -150,14 +145,7 @@ async function process(
   outputFolderName: string,
   cqApi: CarequalityManagementAPI
 ): Promise<void> {
-  const cqOrgs = await cqApi.listOrganizations({ oid: org.oid });
-  if (cqOrgs.length < 1) console.log(`No CQ organizations found for ${org.oid} / ${org.name}`);
-
-  if (cqOrgs.length > 1) {
-    console.log(`cqOrgs`, cqOrgs);
-    throw new Error(`Found more than one CQ organization for ${org.oid}`);
-  }
-  const cqOrg = cqOrgs[0] ?? "NOT_FOUND";
+  const cqOrg = (await cqApi.getOrganization(org.oid)) ?? "NOT_FOUND";
 
   const pathAndPrefix = outputFolderName + "/" + type + "_";
   const outputFileNameMetriport = getFileNameForOrg(org.name + "_metriport");
