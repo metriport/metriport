@@ -8,7 +8,7 @@ import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { processDocQueryProgressWebhook } from "../../command/medical/document/process-doc-query-webhook";
-import { aggregateAndSetHIEProgresses } from "./set-doc-query-progress";
+import { getPatientDocProgressFromHies } from "./set-doc-query-progress";
 
 type DynamicProgress = Pick<Progress, "successful" | "errors">;
 
@@ -46,15 +46,11 @@ export async function tallyDocQueryProgress({
       transaction,
     });
 
-    // Set the doc query progress for the chosen hie
     const externalData = setHIETallyCount(existingPatient, progress, type, source);
-
-    const existingPatientDocProgress = existingPatient.data.documentQueryProgress ?? {};
-
-    const aggregatedDocProgresses = aggregateAndSetHIEProgresses(
-      existingPatientDocProgress,
-      externalData
-    );
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient: existingPatient,
+      updatedExternalData: externalData,
+    });
 
     const updatedPatient = {
       ...existingPatient.dataValues,
@@ -62,7 +58,7 @@ export async function tallyDocQueryProgress({
         ...existingPatient.data,
         requestId,
         externalData,
-        documentQueryProgress: aggregatedDocProgresses,
+        documentQueryProgress: patientDocProgress,
       },
     };
 

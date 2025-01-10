@@ -1,13 +1,13 @@
 import { getPersonId, getPersonIdFromUrl } from "@metriport/commonwell-sdk";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import MetriportError from "../../../errors/metriport-error";
+import { updatePatientDiscoveryStatus } from "../../hie/update-patient-discovery-status";
+import { queryAndProcessDocuments } from "../document/document-query";
 import { autoUpgradeNetworkLinks } from "../link/shared";
-import {
-  updateCommonwellIdsAndStatus,
-  updatePatientDiscoveryStatus,
-} from "../patient-external-data";
+import { updateCommonwellIdsAndStatus } from "../patient-external-data";
 import { isEnrolledBy } from "../person-shared";
 import { getCWAccessForPatient } from "./shared";
 
@@ -79,7 +79,17 @@ export async function patchDuplicatedPersonsForPatient(
       commonwellPersonId: chosenPersonId,
       cqLinkStatus: undefined,
     });
-    await updatePatientDiscoveryStatus({ patient, status: "completed" });
+    await updatePatientDiscoveryStatus<{
+      getOrgIdExcludeList: () => Promise<string[]>;
+    }>({
+      patient,
+      status: "completed",
+      source: MedicalDataSource.COMMONWELL,
+      scheduledDqActions: {
+        dq: queryAndProcessDocuments,
+        extraDqArgs: { getOrgIdExcludeList: orgIdExcludeList },
+      },
+    });
 
     if (unenrollByDemographics) {
       log(`unenrolling by demographics...`);

@@ -28,9 +28,7 @@ export class PatientDataCommonwell extends PatientExternalDataEntry {
     public patientId: string,
     public personId?: string | undefined,
     public status?: LinkStatus | undefined,
-    public cqLinkStatus?: CQLinkStatus,
-    public scheduledDocQueryRequestId?: string | undefined,
-    public scheduledDocQueryRequestTriggerConsolidated?: boolean | undefined
+    public cqLinkStatus?: CQLinkStatus
   ) {
     super();
   }

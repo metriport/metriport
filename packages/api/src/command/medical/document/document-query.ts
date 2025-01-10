@@ -8,8 +8,9 @@ import {
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { emptyFunction, BadRequestError } from "@metriport/shared";
+import { BadRequestError } from "@metriport/shared";
 import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
 import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
 import { processAsyncError } from "../../../errors";
@@ -20,7 +21,6 @@ import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { resetDocQueryProgress } from "../../../external/hie/reset-doc-query-progress";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { Util } from "../../../shared/util";
 import { getPatientOrFail } from "../patient/get-patient";
 import { storeQueryInit } from "../patient/query-init";
 import { areDocumentsProcessing } from "./document-status";
@@ -48,7 +48,6 @@ export async function queryDocumentsAcrossHIEs({
   override,
   cxDocumentRequestMetadata,
   forceQuery = false,
-  forcePatientDiscovery = false,
   forceCommonwell = false,
   forceCarequality = false,
   cqManagingOrgName,
@@ -60,13 +59,12 @@ export async function queryDocumentsAcrossHIEs({
   override?: boolean;
   cxDocumentRequestMetadata?: unknown;
   forceQuery?: boolean;
-  forcePatientDiscovery?: boolean;
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
   cqManagingOrgName?: string;
   triggerConsolidated?: boolean;
 }): Promise<DocumentQueryProgress> {
-  const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
+  const { log } = out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
 
@@ -126,10 +124,9 @@ export async function queryDocumentsAcrossHIEs({
         facilityId,
         forceDownload: override,
         forceQuery,
-        forcePatientDiscovery,
         requestId,
         getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
-      }).catch(emptyFunction);
+      }).catch(processAsyncError("Failed to get documents from Commonwell"));
       triggeredDocumentQuery = true;
     }
   }
@@ -141,8 +138,7 @@ export async function queryDocumentsAcrossHIEs({
       facilityId,
       requestId,
       cqManagingOrgName,
-      forcePatientDiscovery,
-    }).catch(emptyFunction);
+    }).catch(processAsyncError("Failed to get documents from Carequality"));
     triggeredDocumentQuery = true;
   }
 

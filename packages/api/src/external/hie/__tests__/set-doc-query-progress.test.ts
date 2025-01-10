@@ -1,24 +1,28 @@
+import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/patient";
 import { DocumentQueryProgress, Progress } from "@metriport/core/domain/document-query";
-import { MedicalDataSource } from "@metriport/core/external/index";
 import { PatientExternalData } from "@metriport/core/domain//patient";
 import {
-  aggregateAndSetHIEProgresses,
+  getPatientDocProgressFromHies,
   aggregateStatus,
-  setHIEDocProgress,
+  getHieDocProgress,
 } from "../set-doc-query-progress";
 import { createProgress, addProgresses, createProgressFromStatus } from "./doc-progress-tests";
 
-const requestId = "abc123";
+const hieDocProgressBase = {
+  requestId: "1234",
+  startedAt: new Date(),
+  triggerConsolidated: false,
+};
 const emptySourceProgress = { documentQueryProgress: {} };
 const processingSourceProgress: Progress = createProgressFromStatus({ status: "processing" });
 const completedSourceProgress: Progress = createProgressFromStatus({ status: "completed" });
 const docQueryProgressProcessing: DocumentQueryProgress = {
   convert: processingSourceProgress,
   download: processingSourceProgress,
-  requestId,
+  ...hieDocProgressBase,
 };
 
-describe("aggregateAndSetHIEProgresses", () => {
+describe("getPatientDocProgressFromHies", () => {
   it("has download and convert processing when docQueryProgress is processing, CW is empty & CQ has download and convert processing", async () => {
     const externalData: PatientExternalData = {
       COMMONWELL: emptySourceProgress,
@@ -26,19 +30,26 @@ describe("aggregateAndSetHIEProgresses", () => {
         documentQueryProgress: {
           convert: processingSourceProgress,
           download: processingSourceProgress,
+          ...hieDocProgressBase,
         },
       },
     };
 
-    const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
-      docQueryProgressProcessing,
-      externalData
-    );
+    const patient = makePatient({
+      data: makePatientData({
+        documentQueryProgress: docQueryProgressProcessing,
+      }),
+    });
 
-    expect(aggregateAndSetHIEProgressesResult).toEqual({
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient,
+      updatedExternalData: externalData,
+    });
+
+    expect(patientDocProgress).toEqual({
       convert: processingSourceProgress,
       download: processingSourceProgress,
-      requestId,
+      ...hieDocProgressBase,
     });
   });
 
@@ -48,20 +59,27 @@ describe("aggregateAndSetHIEProgresses", () => {
         documentQueryProgress: {
           convert: processingSourceProgress,
           download: processingSourceProgress,
+          ...hieDocProgressBase,
         },
       },
       CAREQUALITY: emptySourceProgress,
     };
 
-    const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
-      docQueryProgressProcessing,
-      externalData
-    );
+    const patient = makePatient({
+      data: makePatientData({
+        documentQueryProgress: docQueryProgressProcessing,
+      }),
+    });
 
-    expect(aggregateAndSetHIEProgressesResult).toEqual({
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient,
+      updatedExternalData: externalData,
+    });
+
+    expect(patientDocProgress).toEqual({
       convert: processingSourceProgress,
       download: processingSourceProgress,
-      requestId,
+      ...hieDocProgressBase,
     });
   });
 
@@ -71,25 +89,33 @@ describe("aggregateAndSetHIEProgresses", () => {
         documentQueryProgress: {
           convert: processingSourceProgress,
           download: processingSourceProgress,
+          ...hieDocProgressBase,
         },
       },
       CAREQUALITY: {
         documentQueryProgress: {
           convert: processingSourceProgress,
           download: processingSourceProgress,
+          ...hieDocProgressBase,
         },
       },
     };
 
-    const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
-      docQueryProgressProcessing,
-      externalData
-    );
+    const patient = makePatient({
+      data: makePatientData({
+        documentQueryProgress: docQueryProgressProcessing,
+      }),
+    });
 
-    expect(aggregateAndSetHIEProgressesResult).toEqual({
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient,
+      updatedExternalData: externalData,
+    });
+
+    expect(patientDocProgress).toEqual({
       convert: addProgresses(processingSourceProgress, processingSourceProgress, "processing"),
       download: addProgresses(processingSourceProgress, processingSourceProgress, "processing"),
-      requestId,
+      ...hieDocProgressBase,
     });
   });
 
@@ -99,25 +125,33 @@ describe("aggregateAndSetHIEProgresses", () => {
         documentQueryProgress: {
           convert: processingSourceProgress,
           download: completedSourceProgress,
+          ...hieDocProgressBase,
         },
       },
       CAREQUALITY: {
         documentQueryProgress: {
           convert: processingSourceProgress,
           download: processingSourceProgress,
+          ...hieDocProgressBase,
         },
       },
     };
 
-    const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
-      docQueryProgressProcessing,
-      externalData
-    );
+    const patient = makePatient({
+      data: makePatientData({
+        documentQueryProgress: docQueryProgressProcessing,
+      }),
+    });
 
-    expect(aggregateAndSetHIEProgressesResult).toEqual({
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient,
+      updatedExternalData: externalData,
+    });
+
+    expect(patientDocProgress).toEqual({
       convert: addProgresses(processingSourceProgress, processingSourceProgress, "processing"),
       download: addProgresses(completedSourceProgress, processingSourceProgress, "processing"),
-      requestId,
+      ...hieDocProgressBase,
     });
   });
 
@@ -127,25 +161,33 @@ describe("aggregateAndSetHIEProgresses", () => {
         documentQueryProgress: {
           convert: completedSourceProgress,
           download: completedSourceProgress,
+          ...hieDocProgressBase,
         },
       },
       CAREQUALITY: {
         documentQueryProgress: {
           convert: processingSourceProgress,
           download: processingSourceProgress,
+          ...hieDocProgressBase,
         },
       },
     };
 
-    const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
-      docQueryProgressProcessing,
-      externalData
-    );
+    const patient = makePatient({
+      data: makePatientData({
+        documentQueryProgress: docQueryProgressProcessing,
+      }),
+    });
 
-    expect(aggregateAndSetHIEProgressesResult).toEqual({
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient,
+      updatedExternalData: externalData,
+    });
+
+    expect(patientDocProgress).toEqual({
       convert: addProgresses(completedSourceProgress, processingSourceProgress, "processing"),
       download: addProgresses(completedSourceProgress, processingSourceProgress, "processing"),
-      requestId,
+      ...hieDocProgressBase,
     });
   });
 
@@ -155,25 +197,33 @@ describe("aggregateAndSetHIEProgresses", () => {
         documentQueryProgress: {
           convert: completedSourceProgress,
           download: completedSourceProgress,
+          ...hieDocProgressBase,
         },
       },
       CAREQUALITY: {
         documentQueryProgress: {
           convert: processingSourceProgress,
           download: completedSourceProgress,
+          ...hieDocProgressBase,
         },
       },
     };
 
-    const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
-      docQueryProgressProcessing,
-      externalData
-    );
+    const patient = makePatient({
+      data: makePatientData({
+        documentQueryProgress: docQueryProgressProcessing,
+      }),
+    });
 
-    expect(aggregateAndSetHIEProgressesResult).toEqual({
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient,
+      updatedExternalData: externalData,
+    });
+
+    expect(patientDocProgress).toEqual({
       convert: addProgresses(completedSourceProgress, processingSourceProgress, "processing"),
       download: addProgresses(completedSourceProgress, completedSourceProgress, "completed"),
-      requestId,
+      ...hieDocProgressBase,
     });
   });
 
@@ -183,25 +233,33 @@ describe("aggregateAndSetHIEProgresses", () => {
         documentQueryProgress: {
           convert: completedSourceProgress,
           download: completedSourceProgress,
+          ...hieDocProgressBase,
         },
       },
       CAREQUALITY: {
         documentQueryProgress: {
           convert: completedSourceProgress,
           download: completedSourceProgress,
+          ...hieDocProgressBase,
         },
       },
     };
 
-    const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
-      docQueryProgressProcessing,
-      externalData
-    );
+    const patient = makePatient({
+      data: makePatientData({
+        documentQueryProgress: docQueryProgressProcessing,
+      }),
+    });
 
-    expect(aggregateAndSetHIEProgressesResult).toEqual({
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient,
+      updatedExternalData: externalData,
+    });
+
+    expect(patientDocProgress).toEqual({
       convert: addProgresses(completedSourceProgress, completedSourceProgress, "completed"),
       download: addProgresses(completedSourceProgress, completedSourceProgress, "completed"),
-      requestId,
+      ...hieDocProgressBase,
     });
   });
 
@@ -217,6 +275,7 @@ describe("aggregateAndSetHIEProgresses", () => {
       COMMONWELL: {
         documentQueryProgress: {
           download: progress,
+          ...hieDocProgressBase,
         },
       },
     };
@@ -226,14 +285,20 @@ describe("aggregateAndSetHIEProgresses", () => {
       convert: undefined,
     };
 
-    const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
-      overallDocQueryProgress,
-      externalData
-    );
+    const patient = makePatient({
+      data: makePatientData({
+        documentQueryProgress: overallDocQueryProgress,
+      }),
+    });
 
-    expect(aggregateAndSetHIEProgressesResult).toEqual({
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient,
+      updatedExternalData: externalData,
+    });
+
+    expect(patientDocProgress).toEqual({
       download: progress,
-      requestId,
+      ...hieDocProgressBase,
     });
   });
 
@@ -249,11 +314,13 @@ describe("aggregateAndSetHIEProgresses", () => {
       COMMONWELL: {
         documentQueryProgress: {
           download: progress,
+          ...hieDocProgressBase,
         },
       },
       CAREQUALITY: {
         documentQueryProgress: {
           download: processingSourceProgress,
+          ...hieDocProgressBase,
         },
       },
     };
@@ -263,14 +330,20 @@ describe("aggregateAndSetHIEProgresses", () => {
       convert: undefined,
     };
 
-    const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
-      overallDocQueryProgress,
-      externalData
-    );
+    const patient = makePatient({
+      data: makePatientData({
+        documentQueryProgress: overallDocQueryProgress,
+      }),
+    });
 
-    expect(aggregateAndSetHIEProgressesResult).toEqual({
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient,
+      updatedExternalData: externalData,
+    });
+
+    expect(patientDocProgress).toEqual({
       download: addProgresses(progress, processingSourceProgress, "processing"),
-      requestId,
+      ...hieDocProgressBase,
     });
   });
 
@@ -287,50 +360,79 @@ describe("aggregateAndSetHIEProgresses", () => {
         documentQueryProgress: {
           download: progress,
           convert: progress,
+          ...hieDocProgressBase,
         },
       },
-      CAREQUALITY: emptySourceProgress,
+      CAREQUALITY: {
+        ...emptySourceProgress,
+        ...hieDocProgressBase,
+      },
     };
 
     const overallDocQueryProgress: DocumentQueryProgress = {
       ...docQueryProgressProcessing,
+      ...hieDocProgressBase,
       convert: undefined,
     };
 
-    const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
-      overallDocQueryProgress,
-      externalData
-    );
+    const patient = makePatient({
+      data: makePatientData({
+        documentQueryProgress: overallDocQueryProgress,
+      }),
+    });
 
-    expect(aggregateAndSetHIEProgressesResult).toEqual({
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient,
+      updatedExternalData: externalData,
+    });
+
+    expect(patientDocProgress).toEqual({
       download: progress,
       convert: progress,
-      requestId,
+      ...hieDocProgressBase,
     });
   });
 
   it("has download & convert completed when docQueryProgress has download processing, CW & CQ are empty", async () => {
     const externalData: PatientExternalData = {
-      COMMONWELL: emptySourceProgress,
-      CAREQUALITY: emptySourceProgress,
+      COMMONWELL: {
+        ...emptySourceProgress,
+        ...hieDocProgressBase,
+      },
+      CAREQUALITY: {
+        ...emptySourceProgress,
+        ...hieDocProgressBase,
+      },
     };
 
-    const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
-      docQueryProgressProcessing,
-      externalData
-    );
+    const patient = makePatient({
+      data: makePatientData({
+        documentQueryProgress: docQueryProgressProcessing,
+      }),
+    });
 
-    expect(aggregateAndSetHIEProgressesResult).toEqual({
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient,
+      updatedExternalData: externalData,
+    });
+
+    expect(patientDocProgress).toEqual({
       convert: { total: 0, errors: 0, status: "completed", successful: 0 },
       download: { total: 0, errors: 0, status: "completed", successful: 0 },
-      requestId,
+      ...hieDocProgressBase,
     });
   });
 
   it("has download completed when overallDocQueryProgress has download processing, CW & CQ are empty", async () => {
     const externalData: PatientExternalData = {
-      COMMONWELL: emptySourceProgress,
-      CAREQUALITY: emptySourceProgress,
+      COMMONWELL: {
+        ...emptySourceProgress,
+        ...hieDocProgressBase,
+      },
+      CAREQUALITY: {
+        ...emptySourceProgress,
+        ...hieDocProgressBase,
+      },
     };
 
     const overallDocQueryProgress: DocumentQueryProgress = {
@@ -338,14 +440,20 @@ describe("aggregateAndSetHIEProgresses", () => {
       convert: undefined,
     };
 
-    const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
-      overallDocQueryProgress,
-      externalData
-    );
+    const patient = makePatient({
+      data: makePatientData({
+        documentQueryProgress: overallDocQueryProgress,
+      }),
+    });
 
-    expect(aggregateAndSetHIEProgressesResult).toEqual({
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient,
+      updatedExternalData: externalData,
+    });
+
+    expect(patientDocProgress).toEqual({
       download: { total: 0, errors: 0, status: "completed", successful: 0 },
-      requestId,
+      ...hieDocProgressBase,
     });
   });
 
@@ -357,308 +465,257 @@ describe("aggregateAndSetHIEProgresses", () => {
       convert: undefined,
     };
 
-    const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
-      overallDocQueryProgress,
-      externalData
-    );
+    const patient = makePatient({
+      data: makePatientData({
+        documentQueryProgress: overallDocQueryProgress,
+      }),
+    });
 
-    expect(aggregateAndSetHIEProgressesResult).toEqual(
+    const patientDocProgress = getPatientDocProgressFromHies({
+      patient,
+      updatedExternalData: externalData,
+    });
+
+    expect(patientDocProgress).toEqual(
       expect.objectContaining({
         download: expect.objectContaining({ status: "completed" }),
-        requestId,
       })
     );
   });
 });
 
-describe("setHIEDocProgress", () => {
+describe("getHieDocProgress", () => {
   it("has external data with downloadProgress when passing empty external data, download progress and source", async () => {
-    const externalData = {};
     const downloadProgress = createProgress({ status: "processing" });
 
-    const hieDocProgress = setHIEDocProgress(
-      externalData,
+    const hieDocProgress = getHieDocProgress({
+      externalHieData: {},
       downloadProgress,
-      undefined,
-      MedicalDataSource.COMMONWELL
-    );
+      convertProgress: undefined,
+    });
 
     expect(hieDocProgress).toEqual({
-      COMMONWELL: {
-        documentQueryProgress: {
-          download: downloadProgress,
-        },
-      },
+      download: downloadProgress,
     });
   });
 
   it("has external data with newDownloadProgress when passing external data with download processing, newDownloadProgress processing and source", async () => {
-    const externalData = {
-      COMMONWELL: {
-        documentQueryProgress: {
-          download: processingSourceProgress,
-        },
+    const existingHieDocProgress = {
+      documentQueryProgress: {
+        download: processingSourceProgress,
+        ...hieDocProgressBase,
       },
     };
 
     const newDownloadProgress = createProgress({ status: "processing" });
 
-    const hieDocProgress = setHIEDocProgress(
-      externalData,
-      newDownloadProgress,
-      undefined,
-      MedicalDataSource.COMMONWELL
-    );
+    const hieDocProgress = getHieDocProgress({
+      externalHieData: existingHieDocProgress,
+      downloadProgress: newDownloadProgress,
+      convertProgress: undefined,
+    });
 
     expect(hieDocProgress).toEqual({
-      COMMONWELL: {
-        documentQueryProgress: {
-          download: newDownloadProgress,
-        },
-      },
+      download: newDownloadProgress,
+      ...hieDocProgressBase,
     });
   });
 
   it("has external data with newDownloadProgress processing when passing external data with download complete, newDownloadProgress processing and source", async () => {
-    const externalData = {
-      COMMONWELL: {
-        documentQueryProgress: {
-          download: completedSourceProgress,
-        },
+    const existingHieDocProgress = {
+      documentQueryProgress: {
+        download: completedSourceProgress,
+        ...hieDocProgressBase,
       },
     };
 
     const newDownloadProgress = createProgress({ status: "processing" });
 
-    const hieDocProgress = setHIEDocProgress(
-      externalData,
-      newDownloadProgress,
-      undefined,
-      MedicalDataSource.COMMONWELL
-    );
+    const hieDocProgress = getHieDocProgress({
+      externalHieData: existingHieDocProgress,
+      downloadProgress: newDownloadProgress,
+      convertProgress: undefined,
+    });
 
     expect(hieDocProgress).toEqual({
-      COMMONWELL: {
-        documentQueryProgress: {
-          download: newDownloadProgress,
-        },
-      },
+      download: newDownloadProgress,
+      ...hieDocProgressBase,
     });
   });
 
   it("has external data with newDownloadProgress completed when passing external data with download complete, newDownloadProgress completed and source", async () => {
-    const externalData = {
-      COMMONWELL: {
-        documentQueryProgress: {
-          download: completedSourceProgress,
-        },
+    const existingHieDocProgress = {
+      documentQueryProgress: {
+        download: completedSourceProgress,
+        ...hieDocProgressBase,
       },
     };
 
     const newDownloadProgress = createProgress({ status: "completed" });
 
-    const hieDocProgress = setHIEDocProgress(
-      externalData,
-      newDownloadProgress,
-      undefined,
-      MedicalDataSource.COMMONWELL
-    );
+    const hieDocProgress = getHieDocProgress({
+      externalHieData: existingHieDocProgress,
+      downloadProgress: newDownloadProgress,
+      convertProgress: undefined,
+    });
 
     expect(hieDocProgress).toEqual({
-      COMMONWELL: {
-        documentQueryProgress: {
-          download: newDownloadProgress,
-        },
-      },
+      download: newDownloadProgress,
+      ...hieDocProgressBase,
     });
   });
 
   it("has external data with newDownloadProgress failed when passing external data with download complete, newDownloadProgress failed and source", async () => {
-    const externalData = {
-      COMMONWELL: {
-        documentQueryProgress: {
-          download: completedSourceProgress,
-        },
+    const existingHieDocProgress = {
+      documentQueryProgress: {
+        download: completedSourceProgress,
+        ...hieDocProgressBase,
       },
     };
 
     const newDownloadProgress = createProgress({ status: "failed" });
 
-    const hieDocProgress = setHIEDocProgress(
-      externalData,
-      newDownloadProgress,
-      undefined,
-      MedicalDataSource.COMMONWELL
-    );
+    const hieDocProgress = getHieDocProgress({
+      externalHieData: existingHieDocProgress,
+      downloadProgress: newDownloadProgress,
+      convertProgress: undefined,
+    });
 
     expect(hieDocProgress).toEqual({
-      COMMONWELL: {
-        documentQueryProgress: {
-          download: newDownloadProgress,
-        },
-      },
+      download: newDownloadProgress,
+      ...hieDocProgressBase,
     });
   });
 
   it("has external data with completedSourceProgress when passing external data with download complete, newDownloadProgress undefined and source", async () => {
-    const externalData = {
-      COMMONWELL: {
-        documentQueryProgress: {
-          download: completedSourceProgress,
-        },
+    const existingHieDocProgress = {
+      documentQueryProgress: {
+        download: completedSourceProgress,
+        ...hieDocProgressBase,
       },
     };
 
     const newDownloadProgress = undefined;
 
-    const hieDocProgress = setHIEDocProgress(
-      externalData,
-      newDownloadProgress,
-      undefined,
-      MedicalDataSource.COMMONWELL
-    );
+    const hieDocProgress = getHieDocProgress({
+      externalHieData: existingHieDocProgress,
+      downloadProgress: newDownloadProgress,
+      convertProgress: undefined,
+    });
 
     expect(hieDocProgress).toEqual({
-      COMMONWELL: {
-        documentQueryProgress: {
-          download: completedSourceProgress,
-        },
-      },
+      download: completedSourceProgress,
+      ...hieDocProgressBase,
     });
   });
 
   it("has external data with processingSourceProgress when passing external data with convert processing, newConvertProgress processing and source", async () => {
-    const externalData = {
-      COMMONWELL: {
-        documentQueryProgress: {
-          convert: processingSourceProgress,
-        },
+    const existingHieDocProgress = {
+      documentQueryProgress: {
+        convert: processingSourceProgress,
+        ...hieDocProgressBase,
       },
     };
 
     const newConvertProgress = createProgress({ status: "processing" });
 
-    const hieDocProgress = setHIEDocProgress(
-      externalData,
-      undefined,
-      newConvertProgress,
-      MedicalDataSource.COMMONWELL
-    );
+    const hieDocProgress = getHieDocProgress({
+      externalHieData: existingHieDocProgress,
+      downloadProgress: undefined,
+      convertProgress: newConvertProgress,
+    });
 
     expect(hieDocProgress).toEqual({
-      COMMONWELL: {
-        documentQueryProgress: {
-          convert: newConvertProgress,
-        },
-      },
+      convert: newConvertProgress,
+      ...hieDocProgressBase,
     });
   });
 
   it("has external data with processingSourceProgress when passing external data with convert complete, newConvertProgress processing and source", async () => {
-    const externalData = {
-      COMMONWELL: {
-        documentQueryProgress: {
-          convert: completedSourceProgress,
-        },
+    const existingHieDocProgress = {
+      documentQueryProgress: {
+        convert: completedSourceProgress,
+        ...hieDocProgressBase,
       },
     };
 
     const newConvertProgress = createProgress({ status: "processing" });
 
-    const hieDocProgress = setHIEDocProgress(
-      externalData,
-      undefined,
-      newConvertProgress,
-      MedicalDataSource.COMMONWELL
-    );
+    const hieDocProgress = getHieDocProgress({
+      externalHieData: existingHieDocProgress,
+      downloadProgress: undefined,
+      convertProgress: newConvertProgress,
+    });
 
     expect(hieDocProgress).toEqual({
-      COMMONWELL: {
-        documentQueryProgress: {
-          convert: newConvertProgress,
-        },
-      },
+      convert: newConvertProgress,
+      ...hieDocProgressBase,
     });
   });
 
   it("has external data with completedSourceProgress when passing external data with convert complete, newConvertProgress completed and source", async () => {
-    const externalData = {
-      COMMONWELL: {
-        documentQueryProgress: {
-          convert: completedSourceProgress,
-        },
+    const existingHieDocProgress = {
+      documentQueryProgress: {
+        convert: completedSourceProgress,
+        ...hieDocProgressBase,
       },
     };
 
     const newConvertProgress = createProgress({ status: "completed" });
 
-    const hieDocProgress = setHIEDocProgress(
-      externalData,
-      undefined,
-      newConvertProgress,
-      MedicalDataSource.COMMONWELL
-    );
+    const hieDocProgress = getHieDocProgress({
+      externalHieData: existingHieDocProgress,
+      downloadProgress: undefined,
+      convertProgress: newConvertProgress,
+    });
 
     expect(hieDocProgress).toEqual({
-      COMMONWELL: {
-        documentQueryProgress: {
-          convert: newConvertProgress,
-        },
-      },
+      convert: newConvertProgress,
+      ...hieDocProgressBase,
     });
   });
 
   it("has external data with failed when passing external data with convert complete, newConvertProgress failed and source", async () => {
-    const externalData = {
-      COMMONWELL: {
-        documentQueryProgress: {
-          convert: completedSourceProgress,
-        },
+    const existingHieDocProgress = {
+      documentQueryProgress: {
+        convert: completedSourceProgress,
+        ...hieDocProgressBase,
       },
     };
 
     const newConvertProgress = createProgress({ status: "failed" });
 
-    const hieDocProgress = setHIEDocProgress(
-      externalData,
-      undefined,
-      newConvertProgress,
-      MedicalDataSource.COMMONWELL
-    );
+    const hieDocProgress = getHieDocProgress({
+      externalHieData: existingHieDocProgress,
+      downloadProgress: undefined,
+      convertProgress: newConvertProgress,
+    });
 
     expect(hieDocProgress).toEqual({
-      COMMONWELL: {
-        documentQueryProgress: {
-          convert: newConvertProgress,
-        },
-      },
+      convert: newConvertProgress,
+      ...hieDocProgressBase,
     });
   });
 
   it("has external data with completedSourceProgress when passing external data with convert complete, newConvertProgress undefined and source", async () => {
-    const externalData = {
-      COMMONWELL: {
-        documentQueryProgress: {
-          convert: completedSourceProgress,
-        },
+    const existingHieDocProgress = {
+      documentQueryProgress: {
+        convert: completedSourceProgress,
+        ...hieDocProgressBase,
       },
     };
 
     const newConvertProgress = undefined;
 
-    const hieDocProgress = setHIEDocProgress(
-      externalData,
-      undefined,
-      newConvertProgress,
-      MedicalDataSource.COMMONWELL
-    );
+    const hieDocProgress = getHieDocProgress({
+      externalHieData: existingHieDocProgress,
+      downloadProgress: undefined,
+      convertProgress: newConvertProgress,
+    });
 
     expect(hieDocProgress).toEqual({
-      COMMONWELL: {
-        documentQueryProgress: {
-          convert: completedSourceProgress,
-        },
-      },
+      convert: completedSourceProgress,
+      ...hieDocProgressBase,
     });
   });
 });

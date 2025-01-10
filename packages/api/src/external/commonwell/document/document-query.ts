@@ -7,16 +7,15 @@ import {
   operationOutcomeResourceType,
   organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
-import { buildDayjs } from "@metriport/shared/common/date";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import NotFoundError from "@metriport/core/util/error/not-found";
-import { errorToString, processAsyncError } from "@metriport/core/util/error/shared";
+import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
+import { errorToString, MetriportError } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import httpStatus from "http-status";
 import { chunk, partition } from "lodash";
@@ -30,11 +29,7 @@ import {
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { Util } from "../../../shared/util";
-import {
-  isCQDirectEnabledForCx,
-  isEnhancedCoverageEnabledForCx,
-  isStalePatientUpdateEnabledForCx,
-} from "../../aws/app-config";
+import { isCQDirectEnabledForCx, isEnhancedCoverageEnabledForCx } from "../../aws/app-config";
 import { reportMetric } from "../../aws/cloudwatch";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
@@ -53,9 +48,9 @@ import { setDocQueryStartAt } from "../../hie/set-doc-query-start";
 import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
-import { getCWData, update } from "../patient";
+import { update } from "../patient";
 import { getPatientWithCWData, PatientWithCWData } from "../patient-external-data";
-import { getCwInitiator } from "../shared";
+import { getCwInitiator, validateCWEnabled } from "../shared";
 import { makeDocumentDownloader } from "./document-downloader-factory";
 import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
 import {
@@ -65,9 +60,6 @@ import {
   getContentTypeOrUnknown,
   getFileName,
 } from "./shared";
-import { validateCWEnabled } from "../shared";
-
-const staleLookbackHours = 24;
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -94,29 +86,27 @@ type File = DownloadResult & { isNew: boolean };
  */
 export async function queryAndProcessDocuments({
   patient: patientParam,
+  requestId,
   facilityId,
   forceQuery = false,
-  forcePatientDiscovery = false,
   forceDownload,
   ignoreDocRefOnFHIRServer,
   ignoreFhirConversionAndUpsert,
-  requestId,
   getOrgIdExcludeList,
   triggerConsolidated = false,
 }: {
   patient: Patient;
+  requestId: string;
   facilityId?: string | undefined;
   forceQuery?: boolean;
-  forcePatientDiscovery?: boolean;
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
-  requestId: string;
   getOrgIdExcludeList: () => Promise<string[]>;
   triggerConsolidated?: boolean;
 }): Promise<void> {
   const { id: patientId, cxId } = patientParam;
-  const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
+  const { log } = out(`CW queryDocuments - requestId ${requestId} - M patient ${patientId}`);
 
   if (Config.isSandbox()) {
     await sandboxGetDocRefsAndUpsert({ patient: patientParam, requestId });
@@ -139,7 +129,7 @@ export async function queryAndProcessDocuments({
 
   try {
     const [initiator] = await Promise.all([
-      getCwInitiator(patientParam, facilityId),
+      getCwInitiator({ id: patientId, cxId }, facilityId),
       setDocQueryProgress({
         patient: { id: patientId, cxId },
         downloadProgress: { status: "processing" },
@@ -150,53 +140,36 @@ export async function queryAndProcessDocuments({
       }),
     ]);
 
-    const patientCWData = getCWData(patientParam.data.externalData);
-    const hasNoCWStatus = !patientCWData || !patientCWData.status;
-    const isProcessing = patientCWData?.status === "processing";
-    const updateStalePatients = await isStalePatientUpdateEnabledForCx(cxId);
-    const now = buildDayjs(new Date());
-    const patientCreatedAt = buildDayjs(patientParam.createdAt);
-    const pdStartedAt = patientCWData?.discoveryParams?.startedAt
-      ? buildDayjs(patientCWData.discoveryParams.startedAt)
-      : undefined;
-    const isStale =
-      updateStalePatients &&
-      (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackHours, "hours");
-
-    if (hasNoCWStatus || isProcessing || forcePatientDiscovery || isStale) {
-      await scheduleDocQuery({
-        requestId,
-        patient: { id: patientId, cxId },
-        source: MedicalDataSource.COMMONWELL,
-        triggerConsolidated,
-      });
-
-      if ((forcePatientDiscovery || isStale) && !isProcessing) {
-        update({
-          patient: patientParam,
-          facilityId: initiator.facilityId,
-          getOrgIdExcludeList,
-          requestId,
-        }).catch(processAsyncError("CW update"));
-      }
-
-      return;
-    }
-
-    const startedAt = new Date();
-    await setDocQueryStartAt({
+    const patientWithScheduledDocQuery = await scheduleDocQuery<{
+      facilityId: string;
+      getOrgIdExcludeList: () => Promise<string[]>;
+    }>({
+      requestId,
       patient: { id: patientId, cxId },
       source: MedicalDataSource.COMMONWELL,
-      startedAt,
+      triggerConsolidated,
+      patientDiscoveryActions: {
+        pd: update,
+        extraPdArgs: {
+          facilityId: initiator.facilityId,
+          getOrgIdExcludeList,
+        },
+      },
     });
 
-    const [patient, isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all([
-      getPatientWithCWData(patientParam),
-      isEnhancedCoverageEnabledForCx(cxId),
-      isCQDirectEnabledForCx(cxId),
-    ]);
+    const dqScheduled =
+      patientWithScheduledDocQuery.data.externalData?.COMMONWELL?.scheduledDocQueryRequestId;
+    if (!dqScheduled) return;
 
-    if (!patient) {
+    const [patientWithCWData, isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all(
+      [
+        getPatientWithCWData(patientParam),
+        isEnhancedCoverageEnabledForCx(cxId),
+        isCQDirectEnabledForCx(cxId),
+      ]
+    );
+
+    if (!patientWithCWData) {
       const msg = `Couldn't get CW Data for Patient`;
       throw new MetriportError(msg, undefined, {
         cxId,
@@ -204,7 +177,7 @@ export async function queryAndProcessDocuments({
       });
     }
 
-    const cwData = patient.data.externalData.COMMONWELL;
+    const cwData = patientWithCWData.data.externalData.COMMONWELL;
 
     const isWaitingForEnhancedCoverage =
       isECEnabledForThisCx &&
@@ -215,9 +188,16 @@ export async function queryAndProcessDocuments({
 
     if (!isTriggerDQ) return;
 
-    log(`Querying for documents of patient ${patient.id}...`);
+    const startedAt = new Date();
+    await setDocQueryStartAt({
+      patient: { id: patientId, cxId },
+      source: MedicalDataSource.COMMONWELL,
+      startedAt,
+    });
+
+    log(`Querying for documents of patient ${patientId}...`);
     const cwDocuments = await internalGetDocuments({
-      patient,
+      patient: patientWithCWData,
       initiator,
     });
     log(`Got ${cwDocuments.length} documents from CW`);
@@ -240,7 +220,7 @@ export async function queryAndProcessDocuments({
     });
 
     const fhirDocRefs = await downloadDocsAndUpsertFHIR({
-      patient,
+      patient: patientParam,
       facilityId,
       documents: cwDocuments,
       forceDownload,
@@ -255,7 +235,7 @@ export async function queryAndProcessDocuments({
     log(`${msg}. Error: ${errorToString(error)}`);
 
     await setDocQueryProgress({
-      patient: { id: patientParam.id, cxId: patientParam.cxId },
+      patient: { id: patientId, cxId },
       downloadProgress: { status: "failed" },
       requestId,
       source: MedicalDataSource.COMMONWELL,
@@ -263,18 +243,17 @@ export async function queryAndProcessDocuments({
 
     const cwReference = error instanceof CommonwellError ? error.cwReference : undefined;
 
-    capture.message(msg, {
+    capture.error(msg, {
       extra: {
         context: `cw.queryAndProcessDocuments`,
         error,
-        patientId: patientParam.id,
+        patientId,
         facilityId,
-        forceDownload,
         requestId,
+        forceDownload,
         ignoreDocRefOnFHIRServer,
         cwReference,
       },
-      level: "error",
     });
     throw error;
   }

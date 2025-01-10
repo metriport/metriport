@@ -8,18 +8,16 @@ import { OutboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
 import { errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { createAugmentedPatient } from "../../domain/medical/patient-demographics";
+import { isDemoAugEnabledForCx } from "../aws/app-config";
+import { updatePatientDiscoveryStatus } from "../hie/update-patient-discovery-status";
 import { makeIHEGatewayV2 } from "../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { makeOutboundResultPoller } from "../ihe-gateway/outbound-result-poller-factory";
 import { deleteCQPatientData } from "./command/cq-patient-data/delete-cq-data";
 import { createOutboundPatientDiscoveryReq } from "./create-outbound-patient-discovery-req";
 import { gatherXCPDGateways } from "./gateway";
 import { PatientDataCarequality } from "./patient-shared";
-import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 import { getCqInitiator, isCqEnabled } from "./shared";
-import { queryDocsIfScheduled } from "./process-outbound-patient-discovery-resps";
-import { createAugmentedPatient } from "../../domain/medical/patient-demographics";
-import { resetScheduledPatientDiscovery } from "../hie/reset-scheduled-patient-discovery-request";
-import { isDemoAugEnabledForCx } from "../aws/app-config";
 
 dayjs.extend(duration);
 
@@ -51,8 +49,9 @@ export async function discover({
     const requestId = inputRequestId ?? uuidv7();
     const startedAt = new Date();
     const updatedPatient = await updatePatientDiscoveryStatus({
-      patient,
+      patient: { id: patient.id, cxId: patient.cxId },
       status: "processing",
+      source: MedicalDataSource.CAREQUALITY,
       params: {
         requestId,
         facilityId,
@@ -104,13 +103,11 @@ async function prepareAndTriggerPD({
       numOfGateways: numGatewaysV2,
     });
   } catch (error) {
-    // TODO 1646 Move to a single hit to the DB
-    await resetScheduledPatientDiscovery({
-      patient,
+    await updatePatientDiscoveryStatus({
+      patient: { id: patient.id, cxId: patient.cxId },
+      status: "failed",
       source: MedicalDataSource.CAREQUALITY,
     });
-    await updatePatientDiscoveryStatus({ patient, status: "failed" });
-    await queryDocsIfScheduled({ patientIds: patient, isFailed: true });
     const msg = `Error on Patient Discovery`;
     out(baseLogMessage).log(`${msg} - ${errorToString(error)}`);
     capture.error(msg, {

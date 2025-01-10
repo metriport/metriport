@@ -1,17 +1,17 @@
 import { CommonWellAPI, organizationQueryMeta } from "@metriport/commonwell-sdk";
 import { addOidPrefix } from "@metriport/core/domain/oid";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
 import { reset } from ".";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { capture } from "../../../shared/notifications";
 import { isCWEnabledForCx } from "../../aws/app-config";
+import { updatePatientDiscoveryStatus } from "../../hie/update-patient-discovery-status";
 import { makeCommonWellAPI } from "../api";
-import {
-  updateCommonwellIdsAndStatus,
-  updatePatientDiscoveryStatus,
-} from "../patient-external-data";
+import { updateCommonwellIdsAndStatus } from "../patient-external-data";
 import { getCwInitiator } from "../shared";
 import { autoUpgradeNetworkLinks, patientWithCWData } from "./shared";
+import { queryAndProcessDocuments } from "../document/document-query";
 
 const context = "cw.link.create";
 
@@ -69,7 +69,17 @@ export async function create(
       commonwellPersonId: personId,
       cqLinkStatus: undefined,
     });
-    await updatePatientDiscoveryStatus({ patient, status: "completed" });
+    await updatePatientDiscoveryStatus<{
+      getOrgIdExcludeList: () => Promise<string[]>;
+    }>({
+      patient,
+      status: "completed",
+      source: MedicalDataSource.COMMONWELL,
+      scheduledDqActions: {
+        dq: queryAndProcessDocuments,
+        extraDqArgs: { getOrgIdExcludeList },
+      },
+    });
 
     if (!link._links?.self?.href) {
       throw new Error("Link has no href");
