@@ -23,9 +23,9 @@ export function postProcessBundle(
   patientId: string,
   documentExtension: FhirExtension
 ) {
-  const withNewIds = replaceIdsForResourcesWithDocExtension(fhirBundle, patientId);
-  const withExtensions = addExtensionToConversion(withNewIds, documentExtension);
-  const withRequests = createFullBundleEntries(withExtensions);
+  const withExtensions = addExtensionToConversion(fhirBundle, documentExtension);
+  const withNewIds = replaceIdsForResourcesWithDocExtension(withExtensions, patientId);
+  const withRequests = createFullBundleEntries(withNewIds);
   const withoutPatient = removePatientFromConversion(withRequests);
   return withoutPatient;
 }
