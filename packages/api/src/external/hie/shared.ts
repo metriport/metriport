@@ -46,16 +46,16 @@ export function isPatientDiscoveryDataMissingOrProcessing({
 }: {
   patient: Patient;
   source: MedicalDataSource;
-}): { hasNoHieStatus: boolean; hieStatusProcessing: boolean } {
+}): { hasNoHieStatus: boolean; isHieStatusProcessing: boolean } {
   const hieData = getHieData(patient, source);
-  if (!hieData) return { hasNoHieStatus: true, hieStatusProcessing: false };
+  if (!hieData) return { hasNoHieStatus: true, isHieStatusProcessing: false };
   const hieStatus =
     source === MedicalDataSource.COMMONWELL
       ? (hieData as PatientDataCommonwell).status
       : (hieData as PatientDataCarequality).discoveryStatus;
-  if (!hieStatus) return { hasNoHieStatus: true, hieStatusProcessing: false };
-  const hieStatusProcessing = hieStatus === "processing";
-  return { hasNoHieStatus: false, hieStatusProcessing };
+  if (!hieStatus) return { hasNoHieStatus: true, isHieStatusProcessing: false };
+  const isHieStatusProcessing = hieStatus === "processing";
+  return { hasNoHieStatus: false, isHieStatusProcessing };
 }
 
 export function isPatientDiscoveryDataStale({

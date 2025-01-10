@@ -71,6 +71,59 @@ export async function updatePatientDiscoveryStatus<T>({
       );
     }
 
+    const { scheduledDqRequestId, scheduledDqTriggerConsolidated } = getScheduledDqRequestId({
+      patient: existingPatient,
+      source,
+    });
+
+    const shouldRunScheduledDq =
+      status === "completed" && scheduledDqRequestId && scheduledDqActions;
+    const shouldFailScheduledDq = status === "failed" && scheduledDqRequestId;
+    if (shouldRunScheduledDq) {
+      log(`Running scheduled document query ${scheduledDqRequestId}`);
+      scheduledDqActions
+        .dq({
+          patient: existingPatient,
+          requestId: scheduledDqRequestId,
+          triggerConsolidated: scheduledDqTriggerConsolidated,
+          ...scheduledDqActions.extraDqArgs,
+        })
+        .catch(
+          processAsyncError(
+            `${source} scheduledDqActions.dq failed - patient ${existingPatient.id}, requestId ${scheduledDqRequestId}`
+          )
+        );
+    } else if (shouldFailScheduledDq) {
+      log(`Failing scheduled document query ${scheduledDqRequestId}`);
+      const hieDocProgress = getHieDocProgress({
+        externalHieData: externalData[source],
+        downloadProgress: { status: "failed", total: 0 },
+        convertProgress: { status: "failed", total: 0 },
+      });
+
+      externalData[source] = {
+        ...externalData[source],
+        documentQueryProgress: hieDocProgress,
+      };
+
+      const patientDocProgress = getPatientDocProgressFromHies({
+        patient: existingPatient,
+        updatedExternalData: externalData,
+      });
+      existingPatient.data.documentQueryProgress = patientDocProgress;
+    }
+
+    const clearScheduledDq = shouldRunScheduledDq || shouldFailScheduledDq;
+    if (clearScheduledDq) {
+      log("Clearing scheduled document query");
+      externalData[source] = {
+        ...externalData[source],
+        scheduledDocQueryRequestId: undefined,
+        scheduledDocQueryRequestTriggerConsolidated: undefined,
+      };
+    }
+
+    log("Updating patient discovery status");
     externalData[source] = {
       ...externalData[source],
       [source === MedicalDataSource.CAREQUALITY ? "discoveryStatus" : "status"]: status,
@@ -78,58 +131,10 @@ export async function updatePatientDiscoveryStatus<T>({
     };
 
     if (status === "failed") {
+      log("Clearing any scheduled patient discovery");
       externalData[source] = {
         ...externalData[source],
         scheduledPdRequest: undefined,
-      };
-    }
-
-    const { scheduledDqRequestId, scheduledDqTriggerConsolidated } = getScheduledDqRequestId({
-      patient: existingPatient,
-      source,
-    });
-    if (
-      (status === "failed" || status === "completed") &&
-      scheduledDqRequestId &&
-      scheduledDqActions
-    ) {
-      if (status == "completed") {
-        log(`PD completed - kicking off scheduled DQ ${scheduledDqRequestId}`);
-        scheduledDqActions
-          .dq({
-            patient: existingPatient,
-            requestId: scheduledDqRequestId,
-            triggerConsolidated: scheduledDqTriggerConsolidated,
-            ...scheduledDqActions.extraDqArgs,
-          })
-          .catch(
-            processAsyncError(
-              `${source} scheduledDqActions.dq failed - patient ${existingPatient.id}, requestId ${scheduledDqRequestId}`
-            )
-          );
-      } else {
-        log(`PD failed - failing scheduled DQ ${scheduledDqRequestId}`);
-        const hieDocProgress = getHieDocProgress({
-          externalHieData: externalData[source],
-          downloadProgress: { status: "failed", total: 0 },
-          convertProgress: { status: "failed", total: 0 },
-        });
-
-        externalData[source] = {
-          ...externalData[source],
-          documentQueryProgress: hieDocProgress,
-        };
-
-        const patientDocProgress = getPatientDocProgressFromHies({
-          patient: existingPatient,
-          updatedExternalData: externalData,
-        });
-        existingPatient.data.documentQueryProgress = patientDocProgress;
-      }
-      externalData[source] = {
-        ...externalData[source],
-        scheduledDocQueryRequestId: undefined,
-        scheduledDocQueryRequestTriggerConsolidated: undefined,
       };
     }
 

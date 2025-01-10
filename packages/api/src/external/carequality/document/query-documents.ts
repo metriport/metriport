@@ -28,14 +28,12 @@ export async function getDocumentsFromCQ({
   facilityId,
   cqManagingOrgName,
   triggerConsolidated = false,
-  forcePatientDiscoveryOnScheduling = false,
 }: {
   patient: Patient;
   requestId: string;
   facilityId?: string;
   cqManagingOrgName?: string;
   triggerConsolidated?: boolean;
-  forcePatientDiscoveryOnScheduling?: boolean;
 }) {
   const { id: patientId, cxId } = patientParam;
   const { log } = out(`CQ DQ - requestId ${requestId}, patient ${patientId}`);
@@ -57,7 +55,7 @@ export async function getDocumentsFromCQ({
   try {
     const [cqPatientData, initiator] = await Promise.all([
       getCQPatientData({ id: patientId, cxId }),
-      getCqInitiator(patientParam, facilityId),
+      getCqInitiator({ id: patientId, cxId }, facilityId),
       setDocQueryProgress({
         patient: { id: patientId, cxId },
         downloadProgress: { status: "processing" },
@@ -79,11 +77,11 @@ export async function getDocumentsFromCQ({
           facilityId: initiator.facilityId,
         },
       },
-      forcePatientDiscoveryOnScheduling,
     });
 
-    if (patientWithScheduledDocQuery.data.externalData?.CAREQUALITY?.scheduledDocQueryRequestId)
-      return;
+    const dqScheduled =
+      patientWithScheduledDocQuery.data.externalData?.CAREQUALITY?.scheduledDocQueryRequestId;
+    if (!dqScheduled) return;
 
     if (!cqPatientData || cqPatientData.data.links.length <= 0) {
       return interrupt(`Patient has no CQ links, skipping DQ`);

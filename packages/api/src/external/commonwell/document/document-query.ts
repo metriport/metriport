@@ -93,7 +93,6 @@ export async function queryAndProcessDocuments({
   ignoreDocRefOnFHIRServer,
   ignoreFhirConversionAndUpsert,
   getOrgIdExcludeList,
-  forcePatientDiscoveryOnScheduling = false,
   triggerConsolidated = false,
 }: {
   patient: Patient;
@@ -104,7 +103,6 @@ export async function queryAndProcessDocuments({
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
   getOrgIdExcludeList: () => Promise<string[]>;
-  forcePatientDiscoveryOnScheduling?: boolean;
   triggerConsolidated?: boolean;
 }): Promise<void> {
   const { id: patientId, cxId } = patientParam;
@@ -131,7 +129,7 @@ export async function queryAndProcessDocuments({
 
   try {
     const [initiator] = await Promise.all([
-      getCwInitiator(patientParam, facilityId),
+      getCwInitiator({ id: patientId, cxId }, facilityId),
       setDocQueryProgress({
         patient: { id: patientId, cxId },
         downloadProgress: { status: "processing" },
@@ -157,11 +155,11 @@ export async function queryAndProcessDocuments({
           getOrgIdExcludeList,
         },
       },
-      forcePatientDiscoveryOnScheduling,
     });
 
-    if (patientWithScheduledDocQuery.data.externalData?.COMMONWELL?.scheduledDocQueryRequestId)
-      return;
+    const dqScheduled =
+      patientWithScheduledDocQuery.data.externalData?.COMMONWELL?.scheduledDocQueryRequestId;
+    if (!dqScheduled) return;
 
     const [patientWithCWData, isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all(
       [

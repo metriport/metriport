@@ -14,8 +14,8 @@ type sharedPdArgs = {
 };
 
 /**
- * Stores the requestId as the scheduled document query to be executed when the patient discovery
- * is completed.
+ * Checks whether to schedule document query and if so, schedules it.
+ * If the document query is already scheduled, it will not be scheduled again.
  */
 export async function scheduleDocQuery<T>({
   requestId,
@@ -24,7 +24,6 @@ export async function scheduleDocQuery<T>({
   triggerConsolidated,
   patientDiscoveryActions,
   forceScheduling = false,
-  forcePatientDiscoveryOnScheduling = false,
 }: {
   requestId: string;
   patient: Pick<Patient, "id" | "cxId">;
@@ -35,7 +34,6 @@ export async function scheduleDocQuery<T>({
     extraPdArgs: T;
   };
   forceScheduling?: boolean;
-  forcePatientDiscoveryOnScheduling?: boolean;
 }): Promise<Patient> {
   const { log } = out(`${source} scheduleDocQuery - requestId ${requestId}, patient ${patient.id}`);
 
@@ -55,57 +53,64 @@ export async function scheduleDocQuery<T>({
 
     const externalData = existingPatient.data.externalData ?? {};
 
-    const { hasNoHieStatus, hieStatusProcessing } = isPatientDiscoveryDataMissingOrProcessing({
+    const { hasNoHieStatus, isHieStatusProcessing } = isPatientDiscoveryDataMissingOrProcessing({
       patient: existingPatient,
       source,
     });
-    const isStale =
-      isStaleUpdateEnabled &&
-      isPatientDiscoveryDataStale({
-        patient: existingPatient,
-        source,
-      });
+    const isStale = isPatientDiscoveryDataStale({ patient: existingPatient, source });
+    const isStaleAndUpdateEnabled = isStale && isStaleUpdateEnabled;
 
-    if (hasNoHieStatus || hieStatusProcessing || isStale || forceScheduling) {
-      log("Scheduling document query");
-      externalData[source] = {
-        ...externalData[source],
-        scheduledDocQueryRequestId: requestId,
-        scheduledDocQueryRequestTriggerConsolidated: triggerConsolidated,
-      };
-
-      if ((forcePatientDiscoveryOnScheduling || isStale) && !hieStatusProcessing) {
-        log(`Patient Discovery forced or patient is stale - kicking off PD ${requestId}`);
-        patientDiscoveryActions
-          .pd({
-            patient: existingPatient,
-            requestId,
-            ...patientDiscoveryActions.extraPdArgs,
-          })
-          .catch(
-            processAsyncError(
-              `${source} patientDiscoveryActions.pd failed - patient ${existingPatient.id}, requestId ${requestId}`
-            )
-          );
-      }
-
-      const updatedPatient = {
-        ...existingPatient.dataValues,
-        data: {
-          ...existingPatient.data,
-          externalData,
-        },
-      };
-
-      await PatientModel.update(updatedPatient, {
-        where: patientFilter,
-        transaction,
-      });
-
-      return updatedPatient;
+    const shouldSchedule =
+      hasNoHieStatus || isHieStatusProcessing || isStaleAndUpdateEnabled || forceScheduling;
+    if (!shouldSchedule) {
+      log("Scheduling document query skipped");
+      return existingPatient;
     }
 
-    log("Scheduling document query skipped");
-    return existingPatient;
+    const shouldRunPd = isStaleAndUpdateEnabled && !isHieStatusProcessing;
+    if (shouldRunPd) {
+      log(`Patient is stale or patient discovery forced - kicking off PD ${requestId}`);
+      patientDiscoveryActions
+        .pd({
+          patient: existingPatient,
+          requestId,
+          ...patientDiscoveryActions.extraPdArgs,
+        })
+        .catch(
+          processAsyncError(
+            `${source} patientDiscoveryActions.pd failed - patient ${existingPatient.id}, requestId ${requestId}`
+          )
+        );
+    }
+
+    const existingScheduledDqRequestId = externalData[source]?.scheduledDocQueryRequestId;
+    if (existingScheduledDqRequestId) {
+      log(
+        `Scheduled document query exists w/ requestId ${existingScheduledDqRequestId} - skipping scheduling`
+      );
+      return existingPatient;
+    }
+
+    log("Scheduling document query");
+    externalData[source] = {
+      ...externalData[source],
+      scheduledDocQueryRequestId: requestId,
+      scheduledDocQueryRequestTriggerConsolidated: triggerConsolidated,
+    };
+
+    const updatedPatient = {
+      ...existingPatient.dataValues,
+      data: {
+        ...existingPatient.data,
+        externalData,
+      },
+    };
+
+    await PatientModel.update(updatedPatient, {
+      where: patientFilter,
+      transaction,
+    });
+
+    return updatedPatient;
   });
 }
