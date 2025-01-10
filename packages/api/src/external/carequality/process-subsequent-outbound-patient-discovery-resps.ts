@@ -7,7 +7,6 @@ import duration from "dayjs/plugin/duration";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { updatePatientDiscoveryStatus } from "../hie/update-patient-discovery-status";
 import { makeOutboundResultPoller } from "../ihe-gateway/outbound-result-poller-factory";
-import { getDocumentsFromCQ } from "./document/query-documents";
 import { getCQData } from "./patient";
 
 dayjs.extend(duration);
@@ -69,10 +68,6 @@ export async function processPostRespOutboundPatientDiscoveryResps({
       patient: patientIds,
       status: "failed",
       source: MedicalDataSource.CAREQUALITY,
-      scheduledDqActions: {
-        dq: getDocumentsFromCQ,
-        extraDqArgs: undefined,
-      },
     });
     const msg = `Error on Post Resp Outbound PD Responses`;
     log(`${msg} - ${errorToString(error)}`);

@@ -15,7 +15,6 @@ import { makeIHEGatewayV2 } from "../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { makeOutboundResultPoller } from "../ihe-gateway/outbound-result-poller-factory";
 import { deleteCQPatientData } from "./command/cq-patient-data/delete-cq-data";
 import { createOutboundPatientDiscoveryReq } from "./create-outbound-patient-discovery-req";
-import { getDocumentsFromCQ } from "./document/query-documents";
 import { gatherXCPDGateways } from "./gateway";
 import { PatientDataCarequality } from "./patient-shared";
 import { getCqInitiator, isCqEnabled } from "./shared";
@@ -108,10 +107,6 @@ async function prepareAndTriggerPD({
       patient: { id: patient.id, cxId: patient.cxId },
       status: "failed",
       source: MedicalDataSource.CAREQUALITY,
-      scheduledDqActions: {
-        dq: getDocumentsFromCQ,
-        extraDqArgs: undefined,
-      },
     });
     const msg = `Error on Patient Discovery`;
     out(baseLogMessage).log(`${msg} - ${errorToString(error)}`);

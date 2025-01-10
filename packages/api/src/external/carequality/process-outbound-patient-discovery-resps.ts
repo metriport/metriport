@@ -54,7 +54,7 @@ export async function processOutboundPatientDiscoveryResps({
         requestId,
       });
       if (startedNewPd) return;
-      await updatePatientDiscoveryStatus<undefined>({
+      await updatePatientDiscoveryStatus({
         patient: patientIds,
         status: "completed",
         source: MedicalDataSource.CAREQUALITY,
@@ -124,10 +124,6 @@ export async function processOutboundPatientDiscoveryResps({
       patient: patientIds,
       status: "failed",
       source: MedicalDataSource.CAREQUALITY,
-      scheduledDqActions: {
-        dq: getDocumentsFromCQ,
-        extraDqArgs: undefined,
-      },
     });
     const msg = `Error on Processing Outbound Patient Discovery Responses`;
     outerLog(`${msg} - ${errorToString(error)}`);

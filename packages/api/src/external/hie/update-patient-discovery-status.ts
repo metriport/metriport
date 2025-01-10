@@ -76,10 +76,9 @@ export async function updatePatientDiscoveryStatus<T>({
       source,
     });
 
-    const shouldRunScheduledDq =
-      status === "completed" && scheduledDqRequestId && scheduledDqActions;
-    const shouldFailScheduledDq = status === "failed" && scheduledDqRequestId;
-    if (shouldRunScheduledDq) {
+    const shouldRunDq = status === "completed" && scheduledDqRequestId && scheduledDqActions;
+    const shouldFailDq = status === "failed" && scheduledDqRequestId;
+    if (shouldRunDq) {
       log(`Running scheduled document query ${scheduledDqRequestId}`);
       scheduledDqActions
         .dq({
@@ -93,7 +92,7 @@ export async function updatePatientDiscoveryStatus<T>({
             `${source} scheduledDqActions.dq failed - patient ${existingPatient.id}, requestId ${scheduledDqRequestId}`
           )
         );
-    } else if (shouldFailScheduledDq) {
+    } else if (shouldFailDq) {
       log(`Failing scheduled document query ${scheduledDqRequestId}`);
       const hieDocProgress = getHieDocProgress({
         externalHieData: externalData[source],
@@ -113,7 +112,7 @@ export async function updatePatientDiscoveryStatus<T>({
       existingPatient.data.documentQueryProgress = patientDocProgress;
     }
 
-    const clearScheduledDq = shouldRunScheduledDq || shouldFailScheduledDq;
+    const clearScheduledDq = shouldRunDq || shouldFailDq;
     if (clearScheduledDq) {
       log("Clearing scheduled document query");
       externalData[source] = {
