@@ -47,8 +47,8 @@
       "url": "dashboard"
     },
     {
-      "name": "EHR Integrations",
-      "url": "ehr-integrations"
+      "name": "EHR Apps",
+      "url": "ehr-apps"
     },
     {
       "name": "Converter API",
@@ -112,7 +112,9 @@
             "medical-api/api-reference/fhir/consolidated-data-query-get-single",
             "medical-api/api-reference/fhir/consolidated-data-query-get",
             "medical-api/api-reference/fhir/consolidated-data-count",
-            "medical-api/api-reference/fhir/create-patient-consolidated"
+            "medical-api/api-reference/fhir/create-patient-consolidated",
+            "medical-api/api-reference/fhir/get-medical-record-summary-status",
+            "medical-api/api-reference/fhir/get-medical-record-summary"
           ]
         },
         {
@@ -270,12 +272,12 @@
       ]
     },
     {
-      "group": "EHR Integrations",
+      "group": "EHR Apps",
       "pages": [
-        "ehr-integrations/overview",
-        "ehr-integrations/athena",
-        "ehr-integrations/canvas",
-        "ehr-integrations/elation"
+        "ehr-apps/overview",
+        "ehr-apps/athena",
+        "ehr-apps/canvas",
+        "ehr-apps/elation"
       ]
     }
   ],
