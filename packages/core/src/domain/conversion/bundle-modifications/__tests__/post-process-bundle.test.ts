@@ -9,14 +9,14 @@ import { makePatient } from "../../../../fhir-to-cda/cda-templates/components/__
 import * as bundleMods from "../modifications";
 import { postProcessBundle } from "../post-process";
 
-let replaceIdsMock: jest.SpyInstance;
 let addExtensionToConversionMock: jest.SpyInstance;
+let replaceIdsMock: jest.SpyInstance;
 let createFullBundleEntriesMock: jest.SpyInstance;
 let removePatientFromConversionMock: jest.SpyInstance;
 
 beforeAll(() => {
-  replaceIdsMock = jest.spyOn(bundleMods, "replaceIdsForResourcesWithDocExtension");
   addExtensionToConversionMock = jest.spyOn(bundleMods, "addExtensionToConversion");
+  replaceIdsMock = jest.spyOn(bundleMods, "replaceIdsForResourcesWithDocExtension");
   createFullBundleEntriesMock = jest.spyOn(bundleShared, "createFullBundleEntries");
   removePatientFromConversionMock = jest.spyOn(bundleMods, "removePatientFromConversion");
 });
@@ -201,23 +201,23 @@ describe("Checking postProcessBundle and its constituent functions", () => {
 
       postProcessBundle(bundle, patientId, documentExtension);
 
-      expect(replaceIdsMock).toHaveBeenCalled();
       expect(addExtensionToConversionMock).toHaveBeenCalled();
+      expect(replaceIdsMock).toHaveBeenCalled();
       expect(createFullBundleEntriesMock).toHaveBeenCalled();
       expect(removePatientFromConversionMock).toHaveBeenCalled();
 
       // Check relative order of execution
-      const replaceIdsOrder = replaceIdsMock.mock.invocationCallOrder[0];
       const addExtensionOrder = addExtensionToConversionMock.mock.invocationCallOrder[0];
+      const replaceIdsOrder = replaceIdsMock.mock.invocationCallOrder[0];
       const addRequestsOrder = createFullBundleEntriesMock.mock.invocationCallOrder[0];
       const removePatientOrder = removePatientFromConversionMock.mock.invocationCallOrder[0];
 
-      if (!replaceIdsOrder) throw new Error("Failed to get replaceIdsOrder");
       if (!addExtensionOrder) throw new Error("Failed to get addExtensionOrder");
+      if (!replaceIdsOrder) throw new Error("Failed to get replaceIdsOrder");
       if (!addRequestsOrder) throw new Error("Failed to get addRequestsOrder");
       if (!removePatientOrder) throw new Error("Failed to get removePatientOrder");
 
-      expect(replaceIdsOrder).toBeLessThan(addExtensionOrder);
+      expect(addExtensionOrder).toBeLessThan(replaceIdsOrder);
       expect(addExtensionOrder).toBeLessThan(addRequestsOrder);
       expect(addRequestsOrder).toBeLessThan(removePatientOrder);
     });

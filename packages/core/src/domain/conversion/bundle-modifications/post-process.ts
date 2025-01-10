@@ -23,9 +23,11 @@ export function postProcessBundle(
   patientId: string,
   documentExtension: FhirExtension
 ) {
-  const withNewIds = replaceIdsForResourcesWithDocExtension(fhirBundle, patientId);
-  const withExtensions = addExtensionToConversion(withNewIds, documentExtension);
-  const withRequests = createFullBundleEntries(withExtensions);
+  // It'ss important to add extensions before replacing IDs b/c currently replaceIdsForResourcesWithDocExtension only replaces IDs of resources with extensions (#2574 to fix that).
+  // This current order guarantees that all resources have at least one extension
+  const withExtensions = addExtensionToConversion(fhirBundle, documentExtension);
+  const withNewIds = replaceIdsForResourcesWithDocExtension(withExtensions, patientId);
+  const withRequests = createFullBundleEntries(withNewIds);
   const withoutPatient = removePatientFromConversion(withRequests);
   return withoutPatient;
 }
