@@ -28,7 +28,7 @@ export async function processPostRespOutboundPatientDiscoveryResps({
   const { log } = out(`${baseLogMessage}, requestId: ${requestId}`);
   const patientIds = { id: patientId, cxId };
 
-  const patient = await getPatientOrFail({ id: patientId, cxId });
+  const patient = await getPatientOrFail(patientIds);
   const cqData = getCQData(patient.data.externalData);
   const discoveryStatus = cqData?.discoveryStatus;
   const discoveryRequestId = cqData?.discoveryParams?.requestId;
