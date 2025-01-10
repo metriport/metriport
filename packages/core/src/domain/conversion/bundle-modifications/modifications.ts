@@ -35,6 +35,7 @@ export function replaceIdsForResourcesWithDocExtension(
     if (bundleEntry.resource.id === patientId) continue;
 
     const resource = bundleEntry.resource;
+    // TODO: 2574 - Make sure IDs are replaced for all relevant resources - not just the ones with extensions
     if ("extension" in resource) {
       const docIdExtension = resource.extension?.find(ext => ext.url === DOC_ID_EXTENSION_URL);
       const idToUse = bundleEntry.resource.id;
