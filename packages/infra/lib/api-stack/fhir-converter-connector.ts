@@ -143,7 +143,7 @@ export function createLambda({
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       API_URL: `http://${apiServiceDnsAddress}`,
       FHIR_SERVER_URL: fhirServerUrl,
-      TERM_SERVER_URL: termServerUrl,
+      ...(termServerUrl && { TERM_SERVER_URL: termServerUrl }),
       MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
       QUEUE_URL: sourceQueue.queueUrl,
       DLQ_URL: dlq.queueUrl,
