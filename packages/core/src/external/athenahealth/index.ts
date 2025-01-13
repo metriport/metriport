@@ -19,8 +19,9 @@ import {
   medicationCreateResponseSchema,
   MedicationReference,
   medicationReferencesGetResponseSchema,
-  PatientResource,
+  PatientResourceWithHomeAddress,
   patientResourceSchema,
+  patientResourceSchemaWithHomeAddress,
   patientSearchResourceSchema,
   ProblemCreateResponse,
   problemCreateResponseSchema,
@@ -271,7 +272,7 @@ class AthenaHealthApi {
   }: {
     cxId: string;
     patientId: string;
-  }): Promise<PatientResource | undefined> {
+  }): Promise<PatientResourceWithHomeAddress | undefined> {
     const { log, debug } = out(
       `AthenaHealth get patient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -335,7 +336,7 @@ class AthenaHealthApi {
         });
         return undefined;
       }
-      return patientData;
+      return patientResourceSchemaWithHomeAddress.parse(patientData);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       if (error.response?.status === 404) return undefined;
@@ -361,7 +362,7 @@ class AthenaHealthApi {
   }: {
     cxId: string;
     patientId: string;
-  }): Promise<PatientResource | undefined> {
+  }): Promise<PatientResourceWithHomeAddress | undefined> {
     const { log, debug } = out(
       `AthenaHealth search patient - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -445,7 +446,7 @@ class AthenaHealthApi {
         });
         return undefined;
       }
-      return patientData;
+      return patientResourceSchemaWithHomeAddress.parse(patientData);
     } catch (error) {
       const msg = `Failure while searching patient @ AthenaHealth`;
       log(`${msg}. Cause: ${errorToString(error)}`);
