@@ -12,7 +12,7 @@ const address = z.object({
   state: z.string(),
   line: z.string().array(),
   city: z.string(),
-  postalCode: z.string(),
+  postalCode: z.string().optional(),
 });
 
 const telecome = z.object({

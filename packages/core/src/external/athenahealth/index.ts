@@ -317,7 +317,25 @@ class AthenaHealthApi {
         });
         return undefined;
       }
-      return patient.data;
+      const patientData = patient.data;
+      patientData.address = patientData.address.filter(
+        a => a.postalCode !== undefined && a.use === "home"
+      );
+      if (patientData.address.length === 0) {
+        const msg = "No home address with valid zip found for patient";
+        capture.message(msg, {
+          extra: {
+            url: patientUrl,
+            cxId,
+            practiceId: this.practiceId,
+            patientId,
+            context: "athenahealth.get-patient",
+          },
+          level: "info",
+        });
+        return undefined;
+      }
+      return patientData;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       if (error.response?.status === 404) return undefined;
@@ -408,7 +426,26 @@ class AthenaHealthApi {
           additionalInfo
         );
       }
-      return entry[0]?.resource;
+      const patientData = entry[0]?.resource;
+      if (!patientData) return undefined;
+      patientData.address = patientData.address.filter(
+        a => a.postalCode !== undefined && a.use === "home"
+      );
+      if (patientData.address.length === 0) {
+        const msg = "No home address with valid zip found for patient from search set";
+        capture.message(msg, {
+          extra: {
+            url: patientSearchUrl,
+            cxId,
+            practiceId: this.practiceId,
+            patientId,
+            context: "athenahealth.get-patient",
+          },
+          level: "info",
+        });
+        return undefined;
+      }
+      return patientData;
     } catch (error) {
       const msg = `Failure while searching patient @ AthenaHealth`;
       log(`${msg}. Cause: ${errorToString(error)}`);
