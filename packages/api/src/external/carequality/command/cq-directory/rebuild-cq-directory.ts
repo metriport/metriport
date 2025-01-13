@@ -13,6 +13,7 @@ import { CQDirectoryEntryData2 } from "../../cq-directory";
 import { CQDirectoryEntryViewModel } from "../../models/cq-directory-view";
 import { CachedCqOrgLoader } from "../cq-organization/get-cq-organization-cached";
 import { parseCQOrganization } from "../cq-organization/parse-cq-organization";
+import { getAdditionalOrgs } from "./additional-orgs";
 import { bulkInsertCQDirectoryEntries } from "./create-cq-directory-entry";
 
 dayjs.extend(duration);
@@ -69,9 +70,10 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
           },
           { numberOfParallelExecutions: parallelQueriesToGetManagingOrg }
         );
-        log(`Adding ${parsedOrgs.length} CQ directory entries...`);
-        await bulkInsertCQDirectoryEntries(sequelize, parsedOrgs, cqDirectoryEntryTemp);
-        await sleep(SLEEP_TIME.asMilliseconds());
+        const orgsToInsert = filterAndNormalizeExternalOrgs(parsedOrgs);
+        log(`Adding ${orgsToInsert.length} CQ directory entries...`);
+        await bulkInsertCQDirectoryEntries(sequelize, orgsToInsert, cqDirectoryEntryTemp);
+        if (!isDone) await sleep(SLEEP_TIME.asMilliseconds());
       } catch (error) {
         isDone = true;
         if (!failGracefully) {
@@ -79,6 +81,9 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
         }
       }
     }
+    const additionalOrgs = getAdditionalOrgs();
+    log(`Inserting ${additionalOrgs.length} additional Orgs...`);
+    await bulkInsertCQDirectoryEntries(sequelize, additionalOrgs, cqDirectoryEntryTemp);
   } catch (error) {
     await deleteTempCQDirectoryTable();
     const msg = `Failed to rebuild the directory`;
@@ -130,4 +135,21 @@ async function updateViewDefinition(): Promise<void> {
     await sequelize.query(renameNewToBackup, { type: QueryTypes.RAW, transaction });
     await sequelize.query(renameTempToNew, { type: QueryTypes.RAW, transaction });
   });
+}
+
+/**
+ * CQ directory entries on stage/dev are built for test purposes by other companies/implemetors,
+ * and very likely won't have any patient that matches our test's demographics, so we might
+ * as well keep them inactive to minimize cost/scale issues on pre-prod envs.
+ */
+function filterAndNormalizeExternalOrgs(
+  parsedOrgs: CQDirectoryEntryData2[]
+): CQDirectoryEntryData2[] {
+  if (Config.isStaging() || Config.isDev()) {
+    return parsedOrgs.map(org => ({
+      ...org,
+      active: false,
+    }));
+  }
+  return parsedOrgs;
 }
