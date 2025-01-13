@@ -8,6 +8,7 @@ import { buildDocIdFhirExtension } from "@metriport/core/external/fhir/shared/ex
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { AxiosInstance } from "axios";
 import { getFileContents, makeDirIfNeeded, writeFileContents } from "../shared/fs";
+import { uuidv7 } from "../shared/uuid-v7";
 import { getPatientIdFromFileName } from "./shared";
 import path = require("node:path");
 
@@ -59,7 +60,9 @@ export async function convert(
   fileName: string,
   api: AxiosInstance
 ): Promise<Bundle<Resource>> {
+  const cxId = uuidv7();
   const patientId = getPatientIdFromFileName(fileName);
+
   const fileContents = getFileContents(baseFolderName + fileName);
   if (fileContents.includes("nonXMLBody")) {
     throw new Error(`File has nonXMLBody`);
@@ -96,11 +99,13 @@ export async function convert(
   }
 
   const hydratedBundle = await hydrate({
+    cxId,
     patientId,
     bundle: combinedBundle,
   });
 
   const normalizedBundle = normalize({
+    cxId,
     patientId,
     bundle: hydratedBundle,
   });

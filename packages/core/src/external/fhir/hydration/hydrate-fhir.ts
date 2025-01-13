@@ -1,5 +1,6 @@
 import { Bundle, CodeableConcept, Parameters, Resource } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
+import { EventMessageV1 } from "../../analytics/posthog";
 import {
   buildTermServerParameter,
   buildTermServerParametersFromCodings,
@@ -8,7 +9,7 @@ import {
 
 export async function hydrateFhir(
   fhirBundle: Bundle<Resource>,
-  termServerUrl?: string
+  metrics: EventMessageV1
 ): Promise<Bundle<Resource>> {
   const hydratedBundle: Bundle = cloneDeep(fhirBundle);
 
@@ -26,13 +27,12 @@ export async function hydrateFhir(
     });
   });
 
-  const data = await lookupMultipleCodes(Array.from(lookupParametersMap.values()), termServerUrl);
+  const data = await lookupMultipleCodes(Array.from(lookupParametersMap.values()), metrics);
   if (!data) return hydratedBundle;
 
   const codesMap = new Map<string, object>();
   data.forEach(d => codesMap.set(d.id, d));
 
-  let numCodes = 0;
   hydratedBundle.entry?.forEach(entry => {
     const res = entry.resource;
     if (!res) return;
@@ -41,7 +41,6 @@ export async function hydrateFhir(
 
     code.coding?.forEach(coding => {
       if (coding.code && coding.system) {
-        numCodes++;
         const param = buildTermServerParameter({ system: coding.system, code: coding.code });
         if (param && param.id) {
           const newMapping = codesMap.get(param.id);
@@ -52,7 +51,6 @@ export async function hydrateFhir(
       }
     });
   });
-  console.log("numCodes", numCodes);
   return hydratedBundle;
 }
 
@@ -73,32 +71,11 @@ function getCodeFromResource(res: Resource): CodeableConcept | undefined {
   } else if (res.resourceType === "Immunization") {
     return res.vaccineCode;
   } else if (res.resourceType === "Practitioner") {
-    return res.qualification?.[0]; // TODO: See if this ever shows a code we can lookup
+    return res.qualification?.[0];
   } else if (res.resourceType === "Encounter" || res.resourceType === "Location") {
-    return res.type?.[0]; // TODO: iterate thru all
+    return res.type?.[0];
   } else if (res.resourceType === "Composition") {
     return res.type;
   }
   return undefined;
-
-  // TODO: Check the rest of the resources for a specific code attribute
 }
-
-// These resources don't have a `.code` attribute:
-// "Composition"
-
-// "RelatedPerson"
-// "FamilyMemberHistory"
-
-// "Goal" - seems like it always has the same code,
-// "Consent" - also the same 2 codes
-
-// "Coverage"
-// "Organization"
-// "Communication"
-// "DocumentReference
-// "Device"
-// "MedicationAdministration"
-// "MedicationRequest"
-// "MedicationDispense"
-// "MedicationStatement"

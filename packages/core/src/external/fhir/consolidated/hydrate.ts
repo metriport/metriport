@@ -8,31 +8,28 @@ export async function hydrate({
   cxId,
   patientId,
   bundle,
-  termServerUrl,
 }: {
-  cxId?: string;
+  cxId: string;
   patientId: string;
   bundle: Bundle<Resource>;
-  termServerUrl?: string;
 }): Promise<Bundle<Resource>> {
   const { log } = out(`Hydrating FHIR for cxId ${cxId}, patientId ${patientId}`);
   const startedAt = new Date();
 
-  const hydratedBundle = await hydrateFhir(bundle, termServerUrl);
+  const metrics: EventMessageV1 = {
+    distinctId: cxId,
+    event: EventTypes.fhirNormalization,
+    properties: {
+      patientId: patientId,
+      bundleLength: bundle.entry?.length,
+    },
+  };
 
-  if (cxId) {
-    const hydrationAnalyticsProps: EventMessageV1 = {
-      distinctId: cxId,
-      event: EventTypes.fhirNormalization,
-      properties: {
-        patientId: patientId,
-        bundleLength: hydratedBundle.entry?.length,
-        duration: elapsedTimeFromNow(startedAt),
-      },
-    };
-    analytics(hydrationAnalyticsProps);
-  }
+  const hydratedBundle = await hydrateFhir(bundle, metrics);
+  const duration = elapsedTimeFromNow(startedAt);
+  if (metrics.properties) metrics.properties.duration = duration;
 
-  log(`Finished hydration in ${elapsedTimeFromNow(startedAt)} ms...`);
+  log(`Finished hydration in ${duration} ms... Metrics: ${JSON.stringify(metrics)}`);
+  analytics(metrics);
   return hydratedBundle;
 }

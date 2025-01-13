@@ -36,7 +36,7 @@ async function main() {
 
     const cxId = uuidv4();
     const patientId = uuidv4();
-    const resultingBundle = await hydrate({ bundle, cxId, patientId });
+    const resultingBundle = await hydrate({ cxId, patientId, bundle });
 
     console.log(`Hydrated bundle in ${elapsedTimeFromNow(startedAt)} ms.`);
 

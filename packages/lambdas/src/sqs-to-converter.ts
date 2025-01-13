@@ -39,7 +39,6 @@ const region = getEnvOrFail("AWS_REGION");
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const apiURL = getEnvOrFail("API_URL");
 const fhirUrl = getEnvOrFail("FHIR_SERVER_URL");
-const termServerUrl = getEnvOrFail("TERM_SERVER_URL");
 const medicalDocumentsBucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
 const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME");
@@ -56,6 +55,8 @@ const fhirConverter = axios.create({
 });
 const ossApi = apiClient(apiURL);
 const LARGE_CHUNK_SIZE_IN_BYTES = 50_000_000;
+
+const HYDRATION_TIMEOUT_MS = 5_000;
 
 /* Example of a single message/record in event's `Records` array:
 {
@@ -240,24 +241,40 @@ export async function handler(event: SQSEvent) {
 
         await cloudWatchUtils.reportMemoryUsage();
 
-        // TODO: make this optional and wrap it with a circuit breaker -> time-based constraint for failure
-        const hydratedBundle = await hydrate({
-          cxId,
-          patientId,
-          bundle: conversionResult,
-          termServerUrl,
-        });
+        let hydratedBundle = conversionResult;
+        try {
+          const hydratedResult = await Promise.race<Bundle<Resource>>([
+            hydrate({
+              cxId,
+              patientId,
+              bundle: conversionResult,
+            }),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error("Hydration timeout")), HYDRATION_TIMEOUT_MS)
+            ),
+          ]);
 
-        await storeHydratedConversionResult({
-          s3Utils,
-          bundle: hydratedBundle,
-          bucketName: conversionResultBucketName,
-          fileName: s3FileName,
-          message,
-          context: lambdaName,
-          lambdaParams,
-          log,
-        });
+          hydratedBundle = hydratedResult;
+
+          await storeHydratedConversionResult({
+            s3Utils,
+            bundle: hydratedBundle,
+            bucketName: conversionResultBucketName,
+            fileName: s3FileName,
+            message,
+            context: lambdaName,
+            lambdaParams,
+            log,
+          });
+        } catch (error) {
+          const msg = "Failed to hydrate the converted bundle";
+          log(`${msg}: ${errorToString(error)}`);
+          capture.message(msg, {
+            extra: { error, cxId, patientId, context: lambdaName },
+            level: "warning",
+          });
+        }
+
         await cloudWatchUtils.reportMemoryUsage();
 
         const normalizedBundle = normalize({

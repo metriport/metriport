@@ -1,15 +1,15 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { out } from "../../../util";
-import { normalizeFhir } from "../normalization/normalize-fhir";
 import { EventMessageV1, EventTypes, analytics } from "../../analytics/posthog";
+import { normalizeFhir } from "../normalization/normalize-fhir";
 
 export function normalize({
   cxId,
   patientId,
   bundle,
 }: {
-  cxId?: string;
+  cxId: string;
   patientId: string;
   bundle: Bundle<Resource>;
 }): Bundle<Resource> {
@@ -18,19 +18,18 @@ export function normalize({
 
   const normalizedBundle = normalizeFhir(bundle);
 
-  if (cxId) {
-    const normalizationAnalyticsProps: EventMessageV1 = {
-      distinctId: cxId,
-      event: EventTypes.fhirNormalization,
-      properties: {
-        patientId: patientId,
-        bundleLength: normalizedBundle.entry?.length,
-        duration: elapsedTimeFromNow(startedAt),
-      },
-    };
-    analytics(normalizationAnalyticsProps);
-  }
+  const duration = elapsedTimeFromNow(startedAt);
+  const metrics: EventMessageV1 = {
+    distinctId: cxId,
+    event: EventTypes.fhirNormalization,
+    properties: {
+      patientId: patientId,
+      bundleLength: normalizedBundle.entry?.length,
+      duration,
+    },
+  };
+  log(`Finished normalization in ${duration} ms... Metrics: ${JSON.stringify(metrics)}`);
 
-  log(`Finished normalization in ${elapsedTimeFromNow(startedAt)} ms...`);
+  analytics(metrics);
   return normalizedBundle;
 }
