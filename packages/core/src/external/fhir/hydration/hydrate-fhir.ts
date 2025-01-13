@@ -6,7 +6,10 @@ import {
   lookupMultipleCodes,
 } from "../../term-server";
 
-export async function hydrateFhir(fhirBundle: Bundle<Resource>): Promise<Bundle<Resource>> {
+export async function hydrateFhir(
+  fhirBundle: Bundle<Resource>,
+  termServerUrl?: string
+): Promise<Bundle<Resource>> {
   const hydratedBundle: Bundle = cloneDeep(fhirBundle);
 
   const lookupParametersMap = new Map<string, Parameters>();
@@ -23,7 +26,8 @@ export async function hydrateFhir(fhirBundle: Bundle<Resource>): Promise<Bundle<
     });
   });
 
-  const data = await lookupMultipleCodes(Array.from(lookupParametersMap.values()));
+  const data = await lookupMultipleCodes(Array.from(lookupParametersMap.values()), termServerUrl);
+  if (!data) return hydratedBundle;
 
   const codesMap = new Map<string, object>();
   data.forEach(d => codesMap.set(d.id, d));

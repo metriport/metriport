@@ -15,7 +15,6 @@ import {
   ParametersParameter,
 } from "@medplum/fhirtypes";
 import { Request } from "express";
-/* eslint-disable */
 
 export function parseParameters<T>(input: T | Parameters): T {
   if (
@@ -24,7 +23,6 @@ export function parseParameters<T>(input: T | Parameters): T {
     "resourceType" in input &&
     input.resourceType === "Parameters"
   ) {
-    // Convert the parameters to input
     const parameters = (input as Parameters).parameter ?? [];
     return Object.fromEntries(parameters.map(p => [p.name, p.valueString])) as T;
   } else {
@@ -44,7 +42,7 @@ export function parseInputParameters<T>(
   req: Request | FhirRequest
 ): T {
   if (!operation.parameter) {
-    return {} as any;
+    return {} as T;
   }
   const inputParameters = operation.parameter.filter(p => p.use === "in");
 
@@ -54,16 +52,16 @@ export function parseInputParameters<T>(
 
   if (input.resourceType === "Parameters") {
     if (!input.parameter) {
-      return {} as any;
+      return {} as T;
     }
-    return parseParams(inputParameters, input.parameter) as any;
+    return parseParams(inputParameters, input.parameter) as T;
   } else {
     return Object.fromEntries(
       inputParameters.map(param => [
         param.name,
         validateInputParam(param, input[param.name as string]),
       ])
-    ) as any;
+    ) as T;
   }
 }
 

@@ -8,15 +8,17 @@ export async function hydrate({
   cxId,
   patientId,
   bundle,
+  termServerUrl,
 }: {
   cxId?: string;
   patientId: string;
   bundle: Bundle<Resource>;
+  termServerUrl?: string;
 }): Promise<Bundle<Resource>> {
   const { log } = out(`Hydrating FHIR for cxId ${cxId}, patientId ${patientId}`);
   const startedAt = new Date();
 
-  const hydratedBundle = await hydrateFhir(bundle);
+  const hydratedBundle = await hydrateFhir(bundle, termServerUrl);
 
   if (cxId) {
     const hydrationAnalyticsProps: EventMessageV1 = {

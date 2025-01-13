@@ -3,7 +3,8 @@ import { Coding, Parameters, ParametersParameter } from "@medplum/fhirtypes";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import axios, { AxiosInstance } from "axios";
 // import { Config } from "../../util/config";
-import fs from "fs";
+// import fs from "fs";
+import { Config } from "../../util/config";
 import {
   CPT_URL,
   CVX_URL,
@@ -21,9 +22,8 @@ export type CodeSystemLookupOutput = {
   property?: { code: string; description: string; value: TypedValue }[];
 };
 
-// export const termServerUrl = Config.getTermServerUrl();
-export const termServerUrl = "http://localhost:8666";
-const url = "terminology/code-system/lookup/bulk";
+export const termServerUrl = Config.getTermServerUrl();
+const bulkLookupUrl = "terminology/code-system/lookup/bulk";
 
 export const supportedSystems = [ICD_10_URL, SNOMED_URL, LOINC_URL, RXNORM_URL, CPT_URL, CVX_URL];
 
@@ -39,8 +39,15 @@ export function isSystemValid(system: string) {
   return false;
 }
 
-export function buildTermServerApi(): AxiosInstance {
+export function buildTermServerApi(url?: string): AxiosInstance | undefined {
+  console.log("TRYNNA GET URL", termServerUrl, "vs", url);
+
+  const apiUrl = termServerUrl ?? url ?? undefined;
+  if (!apiUrl) return undefined;
+
+  console.log("Defaulting to", apiUrl);
   return axios.create({
+    baseURL: apiUrl,
     timeout: 30_000,
     transitional: {
       clarifyTimeoutError: true,
@@ -48,11 +55,16 @@ export function buildTermServerApi(): AxiosInstance {
   });
 }
 
-export async function lookupMultipleCodes(params: Parameters[]) {
-  const termServer = buildTermServerApi();
+export async function lookupMultipleCodes(
+  params: Parameters[],
+  termServerUrl?: string
+): Promise<CodeSystemLookupOutput[] | undefined> {
+  const termServer = buildTermServerApi(termServerUrl);
+  if (!termServer) return;
+
   const startedAt = Date.now();
 
-  const result = await termServer.post(`${termServerUrl}/${url}`, params);
+  const result = await termServer.post(bulkLookupUrl, params);
   const data = result.data.filter(
     (d: { resourceType: string }) => d.resourceType !== "OperationOutcome"
   ) as CodeSystemLookupOutput[];
@@ -70,38 +82,38 @@ export function buildTermServerParametersFromCodings(
   codings: Coding[] | undefined
 ): Parameters[] | undefined {
   // TODO: Remove when done testing
-  const filePath = "codesystems.json";
-  let existingSystems = new Set<string>();
-  if (fs.existsSync(filePath)) {
-    try {
-      const data = fs.readFileSync(filePath, "utf-8");
-      existingSystems = new Set(JSON.parse(data));
-    } catch (error) {
-      console.error("Failed to read or parse the file:", error);
-    }
-  }
+  // const filePath = "codesystems.json";
+  // let existingSystems = new Set<string>();
+  // if (fs.existsSync(filePath)) {
+  //   try {
+  //     const data = fs.readFileSync(filePath, "utf-8");
+  //     existingSystems = new Set(JSON.parse(data));
+  //   } catch (error) {
+  //     console.error("Failed to read or parse the file:", error);
+  //   }
+  // }
 
-  const newSystems = new Set<string>(); // TODO: Remove when done testing
+  // const newSystems = new Set<string>(); // TODO: Remove when done testing
 
   const params = codings?.flatMap(coding => {
     const code = coding.code?.trim();
     const system = coding.system?.trim();
     if (!code || !system) return [];
 
-    if (!system.includes("114350") && !system.includes("113883")) newSystems.add(system.trim()); // TODO: Remove when done testing
+    // if (!system.includes("114350") && !system.includes("113883")) newSystems.add(system.trim()); // TODO: Remove when done testing
     const param = buildTermServerParameter({ system, code });
     return param ?? [];
   });
 
   // TODO: Remove when done testing
-  if (newSystems.size > 0) {
-    const updatedSystems = new Set([...existingSystems, ...newSystems]);
-    try {
-      fs.writeFileSync(filePath, JSON.stringify([...updatedSystems], null, 2));
-    } catch (error) {
-      console.error("Failed to write to the file:", error);
-    }
-  }
+  // if (newSystems.size > 0) {
+  //   const updatedSystems = new Set([...existingSystems, ...newSystems]);
+  //   try {
+  //     fs.writeFileSync(filePath, JSON.stringify([...updatedSystems], null, 2));
+  //   } catch (error) {
+  //     console.error("Failed to write to the file:", error);
+  //   }
+  // }
   return params;
 }
 

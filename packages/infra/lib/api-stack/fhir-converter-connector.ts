@@ -102,6 +102,7 @@ export function createLambda({
   fhirConverterBucket,
   medicalDocumentsBucket,
   fhirServerUrl,
+  termServerUrl,
   apiServiceDnsAddress,
   alarmSnsAction,
 }: {
@@ -114,6 +115,7 @@ export function createLambda({
   fhirConverterBucket: s3.IBucket;
   medicalDocumentsBucket: s3.IBucket;
   fhirServerUrl: string;
+  termServerUrl?: string;
   apiServiceDnsAddress: string;
   alarmSnsAction?: SnsAction;
 }): Lambda {
@@ -141,6 +143,7 @@ export function createLambda({
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       API_URL: `http://${apiServiceDnsAddress}`,
       FHIR_SERVER_URL: fhirServerUrl,
+      TERM_SERVER_URL: termServerUrl,
       MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
       QUEUE_URL: sourceQueue.queueUrl,
       DLQ_URL: dlq.queueUrl,

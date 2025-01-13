@@ -39,6 +39,7 @@ const region = getEnvOrFail("AWS_REGION");
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const apiURL = getEnvOrFail("API_URL");
 const fhirUrl = getEnvOrFail("FHIR_SERVER_URL");
+const termServerUrl = getEnvOrFail("TERM_SERVER_URL");
 const medicalDocumentsBucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
 const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME");
@@ -239,10 +240,12 @@ export async function handler(event: SQSEvent) {
 
         await cloudWatchUtils.reportMemoryUsage();
 
+        // TODO: make this optional and wrap it with a circuit breaker -> time-based constraint for failure
         const hydratedBundle = await hydrate({
           cxId,
           patientId,
           bundle: conversionResult,
+          termServerUrl,
         });
 
         await storeHydratedConversionResult({
