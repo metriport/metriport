@@ -31,6 +31,7 @@ import {
   formatDateForDisplay,
   ISO_DATE,
 } from "./bundle-to-html-shared";
+import { sortObservationsForDisplay } from "@metriport/shared/src/medical/fhir/observation-ordering";
 
 const RX_NORM_CODE = "rxnorm";
 const NDC_CODE = "ndc";
@@ -669,7 +670,8 @@ function createVitalsByDate(observations: Observation[]): {
   tableContent: string;
   chartData: ChartData;
 } {
-  const filteredObservations = filterObservationsByDate(observations);
+  const orderedObservations = sortObservationsForDisplay(observations);
+  const filteredObservations = filterObservationsByDate(orderedObservations);
 
   const observationObjects: ObsSummary[] = filteredObservations
     .flatMap(tables => {
