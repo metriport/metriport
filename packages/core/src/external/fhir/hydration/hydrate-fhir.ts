@@ -33,6 +33,7 @@ export async function hydrateFhir(
   const codesMap = new Map<string, object>();
   data.forEach(d => codesMap.set(d.id, d));
 
+  let numCodes = 0;
   hydratedBundle.entry?.forEach(entry => {
     const res = entry.resource;
     if (!res) return;
@@ -41,6 +42,7 @@ export async function hydrateFhir(
 
     code.coding?.forEach(coding => {
       if (coding.code && coding.system) {
+        numCodes++;
         const param = buildTermServerParameter({ system: coding.system, code: coding.code });
         if (param && param.id) {
           const newMapping = codesMap.get(param.id);
@@ -51,6 +53,7 @@ export async function hydrateFhir(
       }
     });
   });
+  if (metrics.properties) metrics.properties.totalBundleCodes = numCodes;
   return hydratedBundle;
 }
 
