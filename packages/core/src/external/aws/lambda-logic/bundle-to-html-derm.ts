@@ -33,6 +33,7 @@ import {
   createSection,
 } from "./bundle-to-html-shared";
 import { fetchCodingCodeOrDisplayOrSystem } from "../../../fhir-deduplication/shared";
+import { sortObservationsForDisplay } from "@metriport/shared/src/medical/fhir/observation-ordering";
 
 const RX_NORM_CODE = "rxnorm";
 const NDC_CODE = "ndc";
@@ -1723,7 +1724,8 @@ function createObservationVitalsSection(observations: Observation[]) {
 }
 
 function createVitalsByDate(observations: Observation[]): string {
-  const filteredObservations = filterObservationsByDate(observations);
+  const orderedObservations = sortObservationsForDisplay(observations);
+  const filteredObservations = filterObservationsByDate(orderedObservations);
 
   return filteredObservations
     .map(tables => {

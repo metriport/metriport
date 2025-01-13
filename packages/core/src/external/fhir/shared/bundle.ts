@@ -41,6 +41,7 @@ import duration from "dayjs/plugin/duration";
 import { cloneDeep, uniq } from "lodash";
 import { wrapIdInUrnId, wrapIdInUrnUuid } from "../../../util/urn";
 import { isValidUuid } from "../../../util/uuid-v7";
+import { sortObservationsForDisplay } from "@metriport/shared/src/medical/fhir/observation-ordering";
 
 dayjs.extend(duration);
 
@@ -388,7 +389,7 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
     locations,
     procedures,
     observationSocialHistory,
-    observationVitals,
+    observationVitals: sortObservationsForDisplay(observationVitals),
     observationLaboratory,
     observationOther,
     encounters,
