@@ -105,7 +105,7 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
   );
 
   if (getAppointmentsErrors.length > 0) {
-    capture.error("Failed to get appointments from subscription", {
+    capture.error("Failed to get appointments from subscription @ AthenaHealth", {
       extra: {
         getAppointmentsArgsCount: getAppointmentsArgs.length,
         errorCount: getAppointmentsErrors.length,
@@ -153,7 +153,7 @@ export async function processPatientsFromAppointmentsSub({ catchUp }: { catchUp:
   );
 
   if (syncPatientsErrors.length > 0) {
-    capture.error("Failed to sync patients", {
+    capture.error("Failed to sync patients @ AthenaHealth", {
       extra: {
         syncPatientsArgsCount: uniqueAppointments.length,
         errorCount: syncPatientsErrors.length,

@@ -87,7 +87,7 @@ export async function syncElationPatientIntoMetriport({
   try {
     metriportPatient = await getPatientByDemo({ cxId, demo });
   } catch (error) {
-    const msg = "Failed to get patient by demo";
+    const msg = "Failed to get patient by demo @ Elation";
     log(`${msg}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
       extra: {

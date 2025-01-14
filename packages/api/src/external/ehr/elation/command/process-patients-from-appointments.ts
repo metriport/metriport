@@ -76,7 +76,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
   );
 
   if (getAppointmentsErrors.length > 0) {
-    capture.error("Failed to get appointments", {
+    capture.error("Failed to get appointments @ Elation", {
       extra: {
         getAppointmentsArgsCount: getAppointmentsArgs.length,
         errorCount: getAppointmentsErrors.length,
@@ -122,7 +122,7 @@ export async function processPatientsFromAppointments(): Promise<void> {
   );
 
   if (syncPatientsErrors.length > 0) {
-    capture.error("Failed to sync patients", {
+    capture.error("Failed to sync patients @ Elation", {
       extra: {
         syncPatientsArgsCount: uniqueAppointments.length,
         errorCount: syncPatientsErrors.length,

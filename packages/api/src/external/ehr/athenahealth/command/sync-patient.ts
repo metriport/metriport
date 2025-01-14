@@ -110,7 +110,7 @@ export async function syncAthenaPatientIntoMetriport({
   );
 
   if (getPatientByDemoErrors.length > 0) {
-    capture.error("Failed to get patient by demos", {
+    capture.error("Failed to get patient by demos @ AthenaHealth", {
       extra: {
         cxId,
         athenaPracticeId,
