@@ -34,7 +34,7 @@ const vitalsDisplayOrder: Record<VitalsLoinc, number> = Object.values(vitalsLoin
 /**
  * Gets the display priority for an observation code. Useful for sorting.
  */
-function _getDisplayOrder(code: string | undefined): number {
+function getDisplayOrder(code: string | undefined): number {
   if (!code) return Number.MAX_SAFE_INTEGER;
   return vitalsDisplayOrder[code as VitalsLoinc] ?? Number.MAX_SAFE_INTEGER;
 }
@@ -43,8 +43,8 @@ function _getDisplayOrder(code: string | undefined): number {
  * Stable sort that puts VITALS_LOINC codes first, then defaults to the input order.
  */
 export function compareObservationsForDisplay(a: Observation, b: Observation): number {
-  const orderA = _getDisplayOrder(getObservationCode(a));
-  const orderB = _getDisplayOrder(getObservationCode(b));
+  const orderA = getDisplayOrder(getObservationCode(a));
+  const orderB = getDisplayOrder(getObservationCode(b));
   return orderA - orderB;
 }
 
