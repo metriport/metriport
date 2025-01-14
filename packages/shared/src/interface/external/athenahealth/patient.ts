@@ -15,6 +15,16 @@ const address = z.object({
   postalCode: z.string().optional(),
 });
 
+const homeAddress = z.object({
+  use: z.literal("home"),
+  country: z.string(),
+  period,
+  state: z.string(),
+  line: z.string().array(),
+  city: z.string(),
+  postalCode: z.string(),
+});
+
 const telecome = z.object({
   value: z.string(),
   system: z.enum(["phone", "email"]),
@@ -35,8 +45,16 @@ export const patientResourceSchema = z.object({
   telecom: telecome.array().optional(),
 });
 
-export type PatientResource = z.infer<typeof patientResourceSchema>;
+export const patientResourceSchemaWithHomeAddress = patientResourceSchema
+  .omit({
+    address: true,
+  })
+  .extend({
+    address: homeAddress.array(),
+  });
 
+export type PatientResource = z.infer<typeof patientResourceSchema>;
+export type PatientResourceWithHomeAddress = z.infer<typeof patientResourceSchemaWithHomeAddress>;
 export const patientSearchResourceSchema = z.object({
   entry: z
     .object({

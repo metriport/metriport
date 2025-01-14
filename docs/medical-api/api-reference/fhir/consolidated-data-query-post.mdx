@@ -8,10 +8,10 @@ When executed, this endpoint triggers an asynchronous query to retrieve a Patien
 data from the FHIR repository.
 
 Once the data is consolidated and ready for consumption, webhook requests will be sent to
-[your configured URL](/home/api-reference/settings/post-settings) containing the Patient's
+[your configured URL](/medical-api/api-reference/settings/post-settings) containing the Patient's
 data in FHIR-compliant format, based on the [parameters](#query-params) used to trigger the query.
 
-Webhook message type - see [the respective section on the webhooks page](/medical-api/more-info/webhooks#patient-consolidated-data)
+Webhook message type - see [the respective section on the webhooks page](/medical-api/handling-data/webhooks#patient-consolidated-data)
 for more details:
 
 - `medical.consolidated-data`: contains the patient's data in FHIR format.
@@ -22,8 +22,8 @@ the new query will be ignored and you'll get the status and request ID of the pr
 
 You can check the status of the data query by calling [get consolidated data query](/medical-api/api-reference/fhir/consolidated-data-query-get).
 
-This endpoint also provides the ability to render a [Medical Record Summary](/medical-api/more-info/medical-record-summary)
-from the FHIR bundle as a PDF or HTML document. This will be returned [via a webhook](/medical-api/more-info/webhooks#medical-record)
+This endpoint also provides the ability to render a [Medical Record Summary](/medical-api/handling-data/medical-record-summary)
+from the FHIR bundle as a PDF or HTML document. This will be returned [via a webhook](/medical-api/handling-data/webhooks#medical-record)
 as a FHIR bundle with a [DocumentReference](/medical-api/fhir/resources/documentreference) resource
 that will contain a URL to retrieve the data from.
 
@@ -44,8 +44,8 @@ that will contain a URL to retrieve the data from.
 
 <ParamField query="resources" type="string" optional>
   A comma separated, case sensitive list of resources to be returned. If none are provided all
-  resources will be included. Metriport will automatically hydrate the initially filtered 
-  resources with referenced ones to create bundle consistency.
+  resources will be included. Metriport will automatically hydrate the initially filtered resources
+  with referenced ones to create bundle consistency.
 </ParamField>
 
 <ParamField query="dateFrom" type="string" optional>
@@ -66,7 +66,7 @@ If provided, the Webhook will contain a URL to the file of chosen type. The URL 
 Otherwise, the data will be returned in JSON format in the Webhook payload (default).
 
   <Info>Providing `pdf` or `html` results in a
-  [Medical Record Summary](/medical-api/more-info/webhooks#medical-record) being sent.</Info>
+  [Medical Record Summary](/medical-api/handling-data/webhooks#medical-record) being sent.</Info>
 </ParamField>
 
 <Info>
@@ -108,73 +108,35 @@ Returns the filters used for this query, in addition to the identifier used by t
 
 See [limits and throttling](/medical-api/more-info/limits#rate-limits)
 
-
 ## Available FHIR resources
 
 This is the list of all available [FHIR resources](/medical-api/fhir/resources) you can query for:
 
-- [Account](/medical-api/fhir/resources/account)
-- [AdverseEvent](/medical-api/fhir/resources/adverseevent)
 - [AllergyIntolerance](/medical-api/fhir/resources/allergyintolerance)
-- [Appointment](/medical-api/fhir/resources/appointment)
-- [AppointmentResponse](/medical-api/fhir/resources/appointmentresponse)
-- [AuditEvent](/medical-api/fhir/resources/auditevent)
-- [Basic](/medical-api/fhir/resources/basic)
-- [BodyStructure](/medical-api/fhir/resources/bodystructure)
-- [CarePlan](/medical-api/fhir/resources/careplan)
-- [CareTeam](/medical-api/fhir/resources/careteam)
-- [ChargeItem](/medical-api/fhir/resources/chargeitem)
-- [Claim](/medical-api/fhir/resources/claim)
-- [ClaimResponse](/medical-api/fhir/resources/claimresponse)
-- [ClinicalImpression](/medical-api/fhir/resources/clinicalimpression)
 - [Communication](/medical-api/fhir/resources/communication)
-- [CommunicationRequest](/medical-api/fhir/resources/communicationrequest)
 - [Composition](/medical-api/fhir/resources/composition)
 - [Condition](/medical-api/fhir/resources/condition)
 - [Consent](/medical-api/fhir/resources/consent)
-- [Contract](/medical-api/fhir/resources/contract)
 - [Coverage](/medical-api/fhir/resources/coverage)
-- [CoverageEligibilityRequest](/medical-api/fhir/resources/coverageeligibilityrequest)
-- [CoverageEligibilityResponse](/medical-api/fhir/resources/coverageeligibilityresponse)
-- [DetectedIssue](/medical-api/fhir/resources/detectedissue)
 - [Device](/medical-api/fhir/resources/device)
-- [DeviceRequest](/medical-api/fhir/resources/devicerequest)
-- [DeviceUseStatement](/medical-api/fhir/resources/deviceusestatement)
 - [DiagnosticReport](/medical-api/fhir/resources/diagnosticreport)
-- [DocumentManifest](/medical-api/fhir/resources/documentmanifest)
 - [DocumentReference](/medical-api/fhir/resources/documentreference)
 - [Encounter](/medical-api/fhir/resources/encounter)
-- [EnrollmentRequest](/medical-api/fhir/resources/enrollmentrequest)
-- [EpisodeOfCare](/medical-api/fhir/resources/episodeofcare)
-- [ExplanationOfBenefit](/medical-api/fhir/resources/explanationofbenefit)
 - [FamilyMemberHistory](/medical-api/fhir/resources/familymemberhistory)
-- [Flag](/medical-api/fhir/resources/flag)
 - [Goal](/medical-api/fhir/resources/goal)
-- [GuidanceResponse](/medical-api/fhir/resources/guidanceresponse)
-- [ImagingStudy](/medical-api/fhir/resources/imagingstudy)
 - [Immunization](/medical-api/fhir/resources/immunization)
-- [ImmunizationEvaluation](/medical-api/fhir/resources/immunizationevaluation)
-- [ImmunizationRecommendation](/medical-api/fhir/resources/immunizationrecommendation)
-- [Invoice](/medical-api/fhir/resources/invoice)
-- [List](/medical-api/fhir/resources/list)
-- [MeasureReport](/medical-api/fhir/resources/measurereport)
-- [Media](/medical-api/fhir/resources/media)
 - [MedicationAdministration](/medical-api/fhir/resources/medicationadministration)
 - [MedicationDispense](/medical-api/fhir/resources/medicationdispense)
 - [MedicationRequest](/medical-api/fhir/resources/medicationrequest)
 - [MedicationStatement](/medical-api/fhir/resources/medicationstatement)
-- [MolecularSequence](/medical-api/fhir/resources/molecularsequence)
-- [NutritionOrder](/medical-api/fhir/resources/nutritionorder)
 - [Observation](/medical-api/fhir/resources/observation)
-- [Person](/medical-api/fhir/resources/person)
 - [Practitioner](/medical-api/fhir/resources/practitioner)
 - [Procedure](/medical-api/fhir/resources/procedure)
 - [Provenance](/medical-api/fhir/resources/provenance)
-- [QuestionnaireResponse](/medical-api/fhir/resources/questionnaireresponse)
 - [RelatedPerson](/medical-api/fhir/resources/relatedperson)
-- [RequestGroup](/medical-api/fhir/resources/requestgroup)
-- [ResearchSubject](/medical-api/fhir/resources/researchsubject)
-- [RiskAssessment](/medical-api/fhir/resources/riskassessment)
 - [ServiceRequest](/medical-api/fhir/resources/servicerequest)
-- [Specimen](/medical-api/fhir/resources/specimen)
-- [Task](/medical-api/fhir/resources/task)
+
+<Tip>
+  Other resources referenced in the bundle will be automatically added to the bundle.
+  This could include resources like [Location](/medical-api/fhir/resources/location), [Organization](/medical-api/fhir/resources/organization), [Practitioner](/medical-api/fhir/resources/practitioner), [Medication](/medical-api/fhir/resources/medication), and others.
+</Tip>

@@ -32,85 +32,37 @@
     {
       "name": "Contact Us",
       "url": "mailto:contact@metriport.com"
+    },
+    {
+      "name": "Github",
+      "url": "https://github.com/mintlify/docs"
     }
   ],
-  "anchors": [
+  "primaryTab": {
+    "name": "Medical API"
+  },
+  "tabs": [
     {
-      "name": "Medical API",
-      "icon": "file-medical",
-      "url": "medical-api"
+      "name": "Dashboard",
+      "url": "dashboard"
+    },
+    {
+      "name": "EHR Apps",
+      "url": "ehr-apps"
     },
     {
       "name": "Converter API",
-      "icon": "arrow-right-arrow-left",
       "url": "converter-api"
-    },
-    {
-      "name": "Website",
-      "icon": "globe",
-      "url": "https://metriport.com"
-    },
-    {
-      "name": "GitHub",
-      "icon": "github",
-      "url": "https://github.com/metriport/metriport"
     }
   ],
   "navigation": [
     {
-      "group": "Home",
-      "pages": [
-        "home/welcome"
-      ]
-    },
-    {
-      "group": "API Info",
-      "pages": [
-        "home/api-info/api-keys",
-        "home/api-info/webhooks",
-        "home/api-info/error-responses"
-      ]
-    },
-    {
       "group": "Getting Started",
       "pages": [
-        "medical-api/getting-started/quickstart"
-      ]
-    },
-    {
-      "group": "Getting Started",
-      "pages": [
-        "converter-api/getting-started/quickstart"
-      ]
-    },
-    {
-      "group": "API Reference",
-      "pages": [
-        {
-          "group": "C-CDA",
-          "pages": [
-            "converter-api/api-reference/ccda/ccda-to-fhir"
-          ]
-        }
-      ]
-    },
-    {
-      "group": "API Reference",
-      "pages": [
-        {
-          "group": "General API",
-          "pages": [
-            {
-              "group": "Settings",
-              "pages": [
-                "home/api-reference/settings/get-settings",
-                "home/api-reference/settings/post-settings",
-                "home/api-reference/settings/get-webhook",
-                "home/api-reference/settings/retry-webhook"
-              ]
-            }
-          ]
-        }
+        "medical-api/getting-started/quickstart",
+        "medical-api/getting-started/api-keys",
+        "medical-api/getting-started/webhooks",
+        "medical-api/getting-started/sandbox"
       ]
     },
     {
@@ -118,6 +70,7 @@
       "pages": [
         {
           "group": "Facility",
+          "icon": "house-medical",
           "pages": [
             "medical-api/api-reference/facility/create-facility",
             "medical-api/api-reference/facility/get-facility",
@@ -128,17 +81,20 @@
         },
         {
           "group": "Patient",
+          "icon": "person",
           "pages": [
             "medical-api/api-reference/patient/create-patient",
             "medical-api/api-reference/patient/get-patient",
             "medical-api/api-reference/patient/update-patient",
             "medical-api/api-reference/patient/match-patient",
             "medical-api/api-reference/patient/list-patients",
-            "medical-api/api-reference/patient/delete-patient"
+            "medical-api/api-reference/patient/delete-patient",
+            "medical-api/api-reference/patient/hie-opt-out"
           ]
         },
         {
           "group": "Document",
+          "icon": "file-medical",
           "pages": [
             "medical-api/api-reference/document/start-document-query",
             "medical-api/api-reference/document/get-document-query",
@@ -150,13 +106,37 @@
         },
         {
           "group": "FHIR",
+          "icon": "fire",
           "pages": [
             "medical-api/api-reference/fhir/consolidated-data-query-post",
+            "medical-api/api-reference/fhir/consolidated-data-query-get-single",
             "medical-api/api-reference/fhir/consolidated-data-query-get",
             "medical-api/api-reference/fhir/consolidated-data-count",
-            "medical-api/api-reference/fhir/create-patient-consolidated"
+            "medical-api/api-reference/fhir/create-patient-consolidated",
+            "medical-api/api-reference/fhir/get-medical-record-summary-status",
+            "medical-api/api-reference/fhir/get-medical-record-summary"
+          ]
+        },
+        {
+          "group": "Settings",
+          "icon": "gear",
+          "pages": [
+            "medical-api/api-reference/settings/get-settings",
+            "medical-api/api-reference/settings/post-settings",
+            "medical-api/api-reference/settings/get-webhook",
+            "medical-api/api-reference/settings/retry-webhook"
           ]
         }
+      ]
+    },
+    {
+      "group": "Handling Data",
+      "pages": [
+        "medical-api/handling-data/medical-record-summary",
+        "medical-api/handling-data/webhooks",
+        "medical-api/handling-data/filters",
+        "medical-api/handling-data/pagination",
+        "medical-api/handling-data/contribution"
       ]
     },
     {
@@ -165,6 +145,7 @@
         "medical-api/fhir/overview",
         {
           "group": "Data Types",
+          "icon": "database",
           "pages": [
             "medical-api/fhir/data-types/address",
             "medical-api/fhir/data-types/age",
@@ -210,157 +191,45 @@
         },
         {
           "group": "Resources",
+          "icon": "rectangle-list",
           "pages": [
-            "medical-api/fhir/resources/account",
-            "medical-api/fhir/resources/activitydefinition",
-            "medical-api/fhir/resources/adverseevent",
             "medical-api/fhir/resources/allergyintolerance",
-            "medical-api/fhir/resources/appointment",
-            "medical-api/fhir/resources/appointmentresponse",
-            "medical-api/fhir/resources/auditevent",
-            "medical-api/fhir/resources/basic",
             "medical-api/fhir/resources/binary",
-            "medical-api/fhir/resources/biologicallyderivedproduct",
-            "medical-api/fhir/resources/bodystructure",
             "medical-api/fhir/resources/bundle",
             "medical-api/fhir/resources/capabilitystatement",
-            "medical-api/fhir/resources/careplan",
-            "medical-api/fhir/resources/careteam",
-            "medical-api/fhir/resources/catalogentry",
-            "medical-api/fhir/resources/chargeitem",
-            "medical-api/fhir/resources/chargeitemdefinition",
-            "medical-api/fhir/resources/claim",
-            "medical-api/fhir/resources/claimresponse",
-            "medical-api/fhir/resources/clinicalimpression",
-            "medical-api/fhir/resources/codesystem",
             "medical-api/fhir/resources/communication",
-            "medical-api/fhir/resources/communicationrequest",
-            "medical-api/fhir/resources/compartmentdefinition",
             "medical-api/fhir/resources/composition",
-            "medical-api/fhir/resources/conceptmap",
             "medical-api/fhir/resources/condition",
             "medical-api/fhir/resources/consent",
-            "medical-api/fhir/resources/contract",
             "medical-api/fhir/resources/coverage",
-            "medical-api/fhir/resources/coverageeligibilityrequest",
-            "medical-api/fhir/resources/coverageeligibilityresponse",
-            "medical-api/fhir/resources/detectedissue",
             "medical-api/fhir/resources/device",
-            "medical-api/fhir/resources/devicedefinition",
-            "medical-api/fhir/resources/devicemetric",
-            "medical-api/fhir/resources/devicerequest",
-            "medical-api/fhir/resources/deviceusestatement",
             "medical-api/fhir/resources/diagnosticreport",
-            "medical-api/fhir/resources/documentmanifest",
             "medical-api/fhir/resources/documentreference",
-            "medical-api/fhir/resources/effectevidencesynthesis",
             "medical-api/fhir/resources/encounter",
-            "medical-api/fhir/resources/endpoint",
-            "medical-api/fhir/resources/enrollmentrequest",
-            "medical-api/fhir/resources/enrollmentresponse",
-            "medical-api/fhir/resources/episodeofcare",
-            "medical-api/fhir/resources/eventdefinition",
-            "medical-api/fhir/resources/evidence",
-            "medical-api/fhir/resources/evidencevariable",
-            "medical-api/fhir/resources/examplescenario",
-            "medical-api/fhir/resources/explanationofbenefit",
             "medical-api/fhir/resources/familymemberhistory",
-            "medical-api/fhir/resources/flag",
             "medical-api/fhir/resources/goal",
-            "medical-api/fhir/resources/graphdefinition",
-            "medical-api/fhir/resources/group",
-            "medical-api/fhir/resources/guidanceresponse",
-            "medical-api/fhir/resources/healthcareservice",
-            "medical-api/fhir/resources/imagingstudy",
             "medical-api/fhir/resources/immunization",
-            "medical-api/fhir/resources/immunizationevaluation",
-            "medical-api/fhir/resources/immunizationrecommendation",
-            "medical-api/fhir/resources/implementationguide",
-            "medical-api/fhir/resources/insuranceplan",
-            "medical-api/fhir/resources/invoice",
-            "medical-api/fhir/resources/library",
-            "medical-api/fhir/resources/linkage",
-            "medical-api/fhir/resources/list",
             "medical-api/fhir/resources/location",
-            "medical-api/fhir/resources/measure",
-            "medical-api/fhir/resources/measurereport",
-            "medical-api/fhir/resources/media",
             "medical-api/fhir/resources/medication",
             "medical-api/fhir/resources/medicationadministration",
             "medical-api/fhir/resources/medicationdispense",
-            "medical-api/fhir/resources/medicationknowledge",
             "medical-api/fhir/resources/medicationrequest",
             "medical-api/fhir/resources/medicationstatement",
-            "medical-api/fhir/resources/medicinalproduct",
-            "medical-api/fhir/resources/medicinalproductauthorization",
-            "medical-api/fhir/resources/medicinalproductcontraindication",
-            "medical-api/fhir/resources/medicinalproductindication",
-            "medical-api/fhir/resources/medicinalproductingredient",
-            "medical-api/fhir/resources/medicinalproductinteraction",
-            "medical-api/fhir/resources/medicinalproductmanufactured",
-            "medical-api/fhir/resources/medicinalproductpackaged",
-            "medical-api/fhir/resources/medicinalproductpharmaceutical",
-            "medical-api/fhir/resources/medicinalproductundesirableeffect",
-            "medical-api/fhir/resources/messagedefinition",
-            "medical-api/fhir/resources/messageheader",
-            "medical-api/fhir/resources/molecularsequence",
-            "medical-api/fhir/resources/namingsystem",
-            "medical-api/fhir/resources/nutritionorder",
             "medical-api/fhir/resources/observation",
-            "medical-api/fhir/resources/observationdefinition",
-            "medical-api/fhir/resources/operationdefinition",
             "medical-api/fhir/resources/operationoutcome",
             "medical-api/fhir/resources/organization",
-            "medical-api/fhir/resources/organizationaffiliation",
-            "medical-api/fhir/resources/parameters",
             "medical-api/fhir/resources/patient",
-            "medical-api/fhir/resources/paymentnotice",
-            "medical-api/fhir/resources/paymentreconciliation",
-            "medical-api/fhir/resources/person",
-            "medical-api/fhir/resources/plandefinition",
             "medical-api/fhir/resources/practitioner",
             "medical-api/fhir/resources/practitionerrole",
             "medical-api/fhir/resources/procedure",
             "medical-api/fhir/resources/provenance",
-            "medical-api/fhir/resources/questionnaire",
-            "medical-api/fhir/resources/questionnaireresponse",
             "medical-api/fhir/resources/relatedperson",
-            "medical-api/fhir/resources/requestgroup",
-            "medical-api/fhir/resources/researchdefinition",
-            "medical-api/fhir/resources/researchelementdefinition",
-            "medical-api/fhir/resources/researchstudy",
-            "medical-api/fhir/resources/researchsubject",
-            "medical-api/fhir/resources/riskassessment",
-            "medical-api/fhir/resources/riskevidencesynthesis",
-            "medical-api/fhir/resources/schedule",
-            "medical-api/fhir/resources/searchparameter",
-            "medical-api/fhir/resources/servicerequest",
-            "medical-api/fhir/resources/slot",
-            "medical-api/fhir/resources/specimen",
-            "medical-api/fhir/resources/specimendefinition",
-            "medical-api/fhir/resources/structuredefinition",
-            "medical-api/fhir/resources/structuremap",
-            "medical-api/fhir/resources/subscription",
-            "medical-api/fhir/resources/substance",
-            "medical-api/fhir/resources/substancenucleicacid",
-            "medical-api/fhir/resources/substancepolymer",
-            "medical-api/fhir/resources/substanceprotein",
-            "medical-api/fhir/resources/substancereferenceinformation",
-            "medical-api/fhir/resources/substancesourcematerial",
-            "medical-api/fhir/resources/substancespecification",
-            "medical-api/fhir/resources/supplydelivery",
-            "medical-api/fhir/resources/supplyrequest",
-            "medical-api/fhir/resources/task",
-            "medical-api/fhir/resources/terminologycapabilities",
-            "medical-api/fhir/resources/testreport",
-            "medical-api/fhir/resources/testscript",
-            "medical-api/fhir/resources/valueset",
-            "medical-api/fhir/resources/verificationresult",
-            "medical-api/fhir/resources/visionprescription"
+            "medical-api/fhir/resources/servicerequest"
           ]
         },
         {
           "group": "Extensions",
+          "icon": "asterisk",
           "pages": [
             "medical-api/fhir/extensions/doc-id"
           ]
@@ -368,21 +237,47 @@
       ]
     },
     {
+      "group": "API Tools",
+      "pages": [
+        "medical-api/api-tools/open-api",
+        "medical-api/api-tools/postman",
+        "medical-api/api-tools/sdk"
+      ]
+    },
+    {
       "group": "More Info",
       "pages": [
         "medical-api/more-info/general-info",
-        "medical-api/more-info/contribution",
-        "medical-api/more-info/filters",
-        "medical-api/more-info/pagination",
-        "medical-api/more-info/webhooks",
-        "medical-api/more-info/medical-record-summary",
+        "medical-api/more-info/error-responses",
         "medical-api/more-info/user-roles",
-        "medical-api/more-info/open-api",
-        "medical-api/more-info/postman",
-        "medical-api/more-info/sdk",
-        "medical-api/more-info/sandbox",
         "medical-api/more-info/etag",
         "medical-api/more-info/limits"
+      ]
+    },
+    {
+      "group": "Getting Started",
+      "pages": [
+        "converter-api/getting-started/quickstart"
+      ]
+    },
+    {
+      "group": "API Reference",
+      "pages": [
+        {
+          "group": "C-CDA",
+          "pages": [
+            "converter-api/api-reference/ccda/ccda-to-fhir"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "EHR Apps",
+      "pages": [
+        "ehr-apps/overview",
+        "ehr-apps/athena",
+        "ehr-apps/canvas",
+        "ehr-apps/elation"
       ]
     }
   ],

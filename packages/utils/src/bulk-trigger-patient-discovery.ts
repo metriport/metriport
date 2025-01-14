@@ -59,7 +59,7 @@ async function main() {
         log(`Request ID - ${JSON.stringify(resp.data.requestId)}`);
       }
       if (i < patientChunks.length - 1) {
-        const sleepTime = CHUNK_DELAY_MAX_MS * patients.length;
+        const sleepTime = CHUNK_DELAY_MAX_MS;
         console.log(`Chunk ${i + 1} finished. Sleeping for ${sleepTime} ms...`);
         await sleep(sleepTime);
       }

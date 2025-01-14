@@ -135,7 +135,7 @@ export async function syncElationPatientIntoMetriport({
         patientId: elationPatientId,
         metadata: {
           object_id: metriportPatient.id,
-          object_web_link: `${dashUrl}/patients/${metriportPatient.id}`,
+          object_web_link: `${dashUrl}/patient/${metriportPatient.id}`,
         },
       }),
   ]);

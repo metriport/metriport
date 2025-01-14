@@ -161,6 +161,14 @@ export function createKeysFromObjectArrayAndFlagBits(
   return contactsOrAddresses.map(item => JSON.stringify({ baseObject, ...item, flagBits }));
 }
 
+export function createKeysFromObjectArray(baseObject: object, keyObjects: object[]): string[] {
+  return keyObjects.map(item => JSON.stringify({ baseObject, ...item }));
+}
+
+export function createKeysFromObjectArrayAndBits(keyObjects: object[], bits: number[]): string[] {
+  return keyObjects.map(item => JSON.stringify({ item, bits }));
+}
+
 export function createKeysFromObjectAndFlagBits(object: object, bits: number[]): string[] {
   return [JSON.stringify({ ...object, bits })];
 }
@@ -411,7 +419,7 @@ export function fetchCodingCodeOrDisplayOrSystem(
 ): string | undefined {
   const { log } = out(`fetchCodingCodeOrDisplayOrSystem - coding ${JSON.stringify(coding)}`);
   try {
-    return coding[field]?.trim().toLowerCase();
+    return coding[field]?.toString().trim().toLowerCase();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     if (error instanceof TypeError) {

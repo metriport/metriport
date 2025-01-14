@@ -33,6 +33,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const token = getAuthorizationToken(req);
     const data = createJwtSchema.parse(req.body);
+    data.data.source = EhrSources.athena;
     await saveJwtToken({
       token,
       source: EhrSources.athena,

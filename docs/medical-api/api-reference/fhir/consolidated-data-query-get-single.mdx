@@ -1,0 +1,57 @@
+---
+title: "Get Single Consolidated Data Query Status"
+description: "Get the status of a single query for patient's consolidated data."
+api: "GET /medical/v1/patient/{patientId}/consolidated/query/{requestId}"
+---
+
+This endpoint returns the status of a single query.
+
+To list all queries currently in progress, see
+[Get Consolidated Data Query Status](/medical-api/api-reference/fhir/consolidated-data-query-get).
+
+To trigger a new query you can
+[start a consolidated query](/medical-api/api-reference/fhir/consolidated-data-query-post).
+
+## Path Params
+
+<ParamField path="patientId" type="string" required>
+  The ID of the Patient.
+</ParamField>
+
+<ParamField path="requestId" type="string" required>
+  The ID of consolidated query request.
+</ParamField>
+
+## Response
+
+Returns the status of the specified query.
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi(apiToken);
+
+const status =
+  await metriport.getSingleConsolidatedQueryStatus(
+    patientId,
+    requestId
+  );
+```
+
+</ResponseExample>
+
+<Snippet file="consolidated-query.mdx" />
+
+```json
+{
+  "requestId": "5f4b3b4b-4b3b-4b3b-4b3b-4b3b4b3b4b3b",
+  "status": "processing",
+  "startedAt": "2021-01-01T00:00:00Z",
+  "dateFrom": "2021-01-01",
+  "dateTo": "2021-01-31",
+  "resources": ["Observation", "MedicationRequest"],
+  "conversionType": "pdf"
+}
+```

@@ -11,7 +11,7 @@ import {
   NotFoundError,
   toTitleCase,
 } from "@metriport/shared";
-import { PatientResource } from "@metriport/shared/interface/external/athenahealth/patient";
+import { PatientResourceWithHomeAddress } from "@metriport/shared/interface/external/athenahealth/patient";
 import { getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
@@ -25,10 +25,10 @@ import {
 } from "../../../../command/medical/patient/get-patient";
 import { EhrSources } from "../../shared";
 import {
+  createAthenaClient,
   createMetriportAddresses,
   createMetriportContacts,
   createNames,
-  getAthenaEnv,
 } from "../shared";
 
 const parallelPatientMatches = 5;
@@ -71,17 +71,13 @@ export async function syncAthenaPatientIntoMetriport({
     return metriportPatient.id;
   }
 
-  let athenaApi = api;
-  if (!athenaApi) {
-    const { environment, clientKey, clientSecret } = await getAthenaEnv();
-    athenaApi = await AthenaHealthApi.create({
-      threeLeggedAuthToken: accessToken,
+  const athenaApi =
+    api ??
+    (await createAthenaClient({
+      cxId,
       practiceId: athenaPracticeId,
-      environment,
-      clientKey,
-      clientSecret,
-    });
-  }
+      threeLeggedAuthToken: accessToken,
+    }));
   const athenaPatient = await getPatientFromAthena({
     api: athenaApi,
     cxId,
@@ -151,7 +147,7 @@ export async function syncAthenaPatientIntoMetriport({
         cxId,
         facilityId: defaultFacility.facilityId,
         ...createMetriportPatientCreateCmd(athenaPatient),
-        externalId: athenaPatientId,
+        externalId: athenaApi.stripPatientId(athenaPatientId),
       },
     });
     if (triggerDq) {
@@ -170,7 +166,7 @@ export async function syncAthenaPatientIntoMetriport({
   return metriportPatient.id;
 }
 
-function createMetriportPatientDemos(patient: PatientResource): PatientDemoData[] {
+function createMetriportPatientDemos(patient: PatientResourceWithHomeAddress): PatientDemoData[] {
   const addressArray = createMetriportAddresses(patient);
   const contactArray = createMetriportContacts(patient);
   const names = createNames(patient);
@@ -187,7 +183,7 @@ function createMetriportPatientDemos(patient: PatientResource): PatientDemoData[
 }
 
 function createMetriportPatientCreateCmd(
-  patient: PatientResource
+  patient: PatientResourceWithHomeAddress
 ): Omit<PatientCreateCmd, "cxId" | "facilityId"> {
   const addressArray = createMetriportAddresses(patient);
   const contactArray = createMetriportContacts(patient);

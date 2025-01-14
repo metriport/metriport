@@ -1,7 +1,9 @@
 import {
   AllergyIntolerance,
+  Binary,
   Bundle,
   BundleEntry,
+  BundleEntryRequest,
   Communication,
   Composition,
   Condition,
@@ -32,16 +34,18 @@ import {
   ServiceRequest,
 } from "@medplum/fhirtypes";
 import { filterTruthy } from "@metriport/shared/common/filter-map";
+import { isBinary } from ".";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { uniq } from "lodash";
+import { cloneDeep, uniq } from "lodash";
 import { wrapIdInUrnId, wrapIdInUrnUuid } from "../../../util/urn";
 import { isValidUuid } from "../../../util/uuid-v7";
 
 dayjs.extend(duration);
 
 const referenceRegex = new RegExp(/"reference":\s*"(.+?)"/g);
+const qualifyingBundleTypesForRequest = ["batch", "transaction", "history"];
 
 export type ReferenceWithIdAndType<T extends Resource = Resource> = Reference<T> &
   Required<Pick<Reference<T>, "id" | "type">>;
@@ -164,13 +168,50 @@ export const buildBundleEntry = <T extends Resource>(resource: T): BundleEntry<T
     resource,
   };
 };
-export const buildFullUrl = <T extends Resource>(resource: T): string | undefined => {
+
+export function buildCompleteBundleEntry<T extends Resource>(
+  resource: T,
+  bundleType: string | undefined
+): BundleEntry<T> {
+  const fullUrl = buildFullUrl(resource);
+  const shouldAddRequest = !!bundleType && qualifyingBundleTypesForRequest.includes(bundleType);
+  const request = shouldAddRequest ? buildFhirRequest(resource) : undefined;
+
+  return {
+    ...(fullUrl ? { fullUrl } : {}),
+    resource,
+    ...(request ? { request } : {}),
+  };
+}
+
+export function createFullBundleEntries(bundle: Bundle<Resource>): Bundle<Resource> {
+  if (!bundle.entry) return bundle;
+  const updBundle = cloneDeep(bundle);
+  const entries = updBundle.entry;
+  if (!entries) return bundle;
+
+  updBundle.entry = entries?.flatMap(entry =>
+    entry.resource ? buildCompleteBundleEntry(entry.resource, bundle.type) : []
+  );
+  return updBundle;
+}
+
+export const buildFullUrl = <T extends Resource>(resource: T | undefined): string | undefined => {
   if (!resource || !resource.id) return undefined;
   if (isValidUuid(resource.id)) return wrapIdInUrnUuid(resource.id);
   return wrapIdInUrnId(resource.id);
 };
 
+export function buildFhirRequest(resource: Resource | undefined): BundleEntryRequest | undefined {
+  if (!resource?.id) return undefined;
+  return {
+    method: "PUT",
+    url: `${resource.resourceType}/${resource.id}`,
+  };
+}
+
 export type ExtractedFhirTypes = {
+  binaries: Binary[];
   diagnosticReports: DiagnosticReport[];
   patient: Patient;
   practitioners: Practitioner[];
@@ -218,6 +259,7 @@ export function initExtractedFhirTypes(patient: Patient): ExtractedFhirTypes {
 export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
   let patient: Patient | undefined;
   const practitioners: Practitioner[] = [];
+  const binaries: Binary[] = [];
   const diagnosticReports: DiagnosticReport[] = [];
   const compositions: Composition[] = [];
   const medicationAdministrations: MedicationAdministration[] = [];
@@ -251,6 +293,8 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
       const resource = entry.resource;
       if (resource?.resourceType === "Patient") {
         patient = resource as Patient;
+      } else if (isBinary(resource)) {
+        binaries.push(resource as Binary);
       } else if (resource?.resourceType === "DocumentReference") {
         documentReferences.push(resource as DocumentReference);
       } else if (resource?.resourceType === "Composition") {
@@ -332,6 +376,7 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
   return {
     patient,
     practitioners,
+    binaries,
     compositions,
     diagnosticReports,
     medications,

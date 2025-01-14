@@ -35,9 +35,11 @@ import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../mode
 import { Organization, OrganizationCreate, organizationSchema } from "../models/organization";
 import {
   GetConsolidatedQueryProgressResponse,
+  GetSingleConsolidatedQueryProgressResponse,
   PatientCreate,
   PatientUpdate,
   StartConsolidatedQueryProgressResponse,
+  PatientHieOptOutResponse,
 } from "../models/patient";
 import { PatientDTO } from "../models/patientDTO";
 import { SettingsResponse } from "../models/settings-response";
@@ -370,6 +372,24 @@ export class MetriportMedicalApi {
     return resp.data as PatientDTO;
   }
 
+  /**
+   * Updates a patient's HIE opt-out status.
+   *
+   * @param patientId The ID of the patient whose opt-out status should be updated
+   * @param hieOptOut Boolean indicating whether to opt the patient out (true) or in (false)
+   * @returns The updated opt-out status
+   */
+  async updatePatientHieOptOut(
+    patientId: string,
+    hieOptOut: boolean
+  ): Promise<PatientHieOptOutResponse> {
+    const resp = await this.api.put(`${PATIENT_URL}/${patientId}/hie-opt-out`, undefined, {
+      params: { hieOptOut },
+    });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data;
+  }
+
   // TODO #870 remove this
   /** ---------------------------------------------------------------------------
    * Returns a patient's consolidated data.
@@ -449,6 +469,23 @@ export class MetriportMedicalApi {
     patientId: string
   ): Promise<GetConsolidatedQueryProgressResponse> {
     const resp = await this.api.get(`${PATIENT_URL}/${patientId}/consolidated/query`);
+    return resp.data;
+  }
+
+  /** ---------------------------------------------------------------------------
+   * Get the consolidated data query status for a given patient and requestId.
+   * The results to the query are sent through Webhook (see
+   * startConsolidatedQuery() and https://docs.metriport.com/medical-api/more-info/webhooks).
+   *
+   * @param patientId The ID of the patient whose data is to be returned.
+   * @param requestId The ID of the request to get the status of.
+   * @return The single consolidated data query status.
+   */
+  async getSingleConsolidatedQueryStatus(
+    patientId: string,
+    requestId: string
+  ): Promise<GetSingleConsolidatedQueryProgressResponse> {
+    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/consolidated/query/${requestId}`);
     return resp.data;
   }
 

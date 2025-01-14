@@ -16,7 +16,14 @@ export type NotificationParams = {
   source?: string;
 };
 
-export function apiClient(apiURL: string) {
+type OssApiClient = {
+  internal: {
+    notifyApi(params: NotificationParams, log: Log): Promise<void>;
+    createFeedback(params: CreateFeedback & { id: string }): Promise<AxiosResponse>;
+  };
+};
+
+export function apiClient(apiURL: string): OssApiClient {
   const docProgressURL = `${apiURL}/internal/docs/conversion-status`;
 
   function getCreateFeedbackUrl(id: string): string {

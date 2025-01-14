@@ -39,6 +39,7 @@ export const cxBasedFFsSchema = z.object({
   cxsWithCWFeatureFlag: ffStringValuesSchema,
   cxsWithADHDMRFeatureFlag: ffStringValuesSchema,
   cxsWithBmiMrFeatureFlag: ffStringValuesSchema,
+  cxsWithDermMrFeatureFlag: ffStringValuesSchema,
   cxsWithAiBriefFeatureFlag: ffStringValuesSchema,
   getCxsWithCdaCustodianFeatureFlag: ffStringValuesSchema,
   cxsWithNoWebhookPongFeatureFlag: ffStringValuesSchema,
@@ -128,8 +129,16 @@ export async function getFeatureFlagValueStringArray<T extends keyof StringValue
   envName: string,
   featureFlagName: T
 ): Promise<StringValueFeatureFlags[T]> {
-  const configContentValue = await getFeatureFlags(region, appId, configId, envName);
-  return configContentValue[featureFlagName];
+  try {
+    const configContentValue = await getFeatureFlags(region, appId, configId, envName);
+    return configContentValue[featureFlagName];
+  } catch (error) {
+    const msg = `Failed to get Feature Flag Value`;
+    const extra = { featureFlagName };
+    log(`${msg} - ${JSON.stringify(extra)} - ${errorToString(error)}`);
+    capture.error(msg, { extra: { ...extra, error } });
+    return { enabled: false, values: [] };
+  }
 }
 
 export async function getFeatureFlagValueBoolean<T extends keyof BooleanFeatureFlags>(

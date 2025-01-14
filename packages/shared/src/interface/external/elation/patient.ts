@@ -3,7 +3,7 @@ import { z } from "zod";
 const address = z.object({
   state: z.string(),
   address_line1: z.string(),
-  address_line2: z.string(),
+  address_line2: z.string().nullable(),
   city: z.string(),
   zip: z.string(),
 });

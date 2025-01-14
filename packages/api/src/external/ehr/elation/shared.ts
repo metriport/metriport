@@ -39,7 +39,9 @@ export function createMetriportAddresses(patient: PatientResource): Address[] {
     {
       addressLine1: patient.address.address_line1,
       addressLine2:
-        patient.address.address_line2.trim() !== "" ? patient.address.address_line2 : undefined,
+        patient.address.address_line2 === null || patient.address.address_line2.trim() === ""
+          ? undefined
+          : patient.address.address_line2,
       city: patient.address.city,
       state: normalizeUSStateForAddress(patient.address.state),
       zip: normalizeZipCodeNew(patient.address.zip),
