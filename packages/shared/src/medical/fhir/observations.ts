@@ -1,7 +1,5 @@
 import { Observation } from "@medplum/fhirtypes";
 
-// Not sure the names of the codes are correct,
-// but they're related and should be grouped together regardless
 const oxygenSaturationLoinc = {
   SpO2: "2708-6",
   Sp02ByPulseOximetry: "59408-5",
@@ -23,31 +21,36 @@ const vitalsLoinc = {
   BMI: "39156-5",
 } as const;
 
-// Create a type from the values
-type VitalsLOINC = (typeof vitalsLoinc)[keyof typeof vitalsLoinc];
+type VitalsLoinc = (typeof vitalsLoinc)[keyof typeof vitalsLoinc];
 
-// Create display order based on the order of values in VITALS_LOINC
-const VITALS_DISPLAY_ORDER: Record<VitalsLOINC, number> = Object.values(vitalsLoinc).reduce(
+const vitalsDisplayOrder: Record<VitalsLoinc, number> = Object.values(vitalsLoinc).reduce(
   (acc, code, index) => ({
     ...acc,
     [code]: index,
   }),
-  {} as Record<VitalsLOINC, number>
+  {} as Record<VitalsLoinc, number>
 );
 
-// Stable sort that puts VITALS_LOINC codes first, then defaults to the upstream order.
-export const observationDisplayComparator = (a: Observation, b: Observation): number => {
-  const aCode = getObservationCode(a) as VitalsLOINC | undefined;
-  const bCode = getObservationCode(b) as VitalsLOINC | undefined;
-  const orderA = aCode ? VITALS_DISPLAY_ORDER[aCode] : Number.MAX_SAFE_INTEGER;
-  const orderB = bCode ? VITALS_DISPLAY_ORDER[bCode] : Number.MAX_SAFE_INTEGER;
+/**
+ * Gets the display priority for an observation code. Useful for sorting.
+ */
+function _getDisplayOrder(code: string | undefined): number {
+  if (!code) return Number.MAX_SAFE_INTEGER;
+  return vitalsDisplayOrder[code as VitalsLoinc] ?? Number.MAX_SAFE_INTEGER;
+}
 
+/**
+ * Stable sort that puts VITALS_LOINC codes first, then defaults to the input order.
+ */
+export function compareObservationsForDisplay(a: Observation, b: Observation): number {
+  const orderA = _getDisplayOrder(getObservationCode(a));
+  const orderB = _getDisplayOrder(getObservationCode(b));
   return orderA - orderB;
-};
+}
 
-export const sortObservationsForDisplay = (observations: Observation[]): Observation[] => {
-  return [...observations].sort(observationDisplayComparator);
-};
+export function sortObservationsForDisplay(observations: Observation[]): Observation[] {
+  return [...observations].sort(compareObservationsForDisplay);
+}
 
 export function getObservationCode(observation: Observation): string | undefined {
   return observation.code?.coding?.find(coding => coding?.code)?.code;
