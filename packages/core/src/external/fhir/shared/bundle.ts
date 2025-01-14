@@ -41,7 +41,7 @@ import duration from "dayjs/plugin/duration";
 import { cloneDeep, uniq } from "lodash";
 import { wrapIdInUrnId, wrapIdInUrnUuid } from "../../../util/urn";
 import { isValidUuid } from "../../../util/uuid-v7";
-import { sortObservationsForDisplay } from "@metriport/shared/src/medical/fhir/observation-ordering";
+import { sortObservationsForDisplay } from "@metriport/shared/medical";
 
 dayjs.extend(duration);
 

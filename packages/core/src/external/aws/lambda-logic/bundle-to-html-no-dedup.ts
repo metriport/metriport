@@ -24,7 +24,7 @@ import dayjs from "dayjs";
 import { uniqWith } from "lodash";
 import { Brief } from "../../../command/ai-brief/create";
 import { createBrief, createSection } from "./bundle-to-html-shared";
-import { sortObservationsForDisplay } from "@metriport/shared/src/medical/fhir/observation-ordering";
+import { sortObservationsForDisplay } from "@metriport/shared/medical";
 
 const ISO_DATE = "YYYY-MM-DD";
 
