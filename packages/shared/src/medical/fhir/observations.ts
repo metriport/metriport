@@ -37,8 +37,8 @@ const VITALS_DISPLAY_ORDER: Record<VitalsLOINC, number> = Object.values(vitalsLo
 
 // Stable sort that puts VITALS_LOINC codes first, then defaults to the upstream order.
 export const observationDisplayComparator = (a: Observation, b: Observation): number => {
-  const aCode = a.code?.coding?.[0]?.code as VitalsLOINC | undefined;
-  const bCode = b.code?.coding?.[0]?.code as VitalsLOINC | undefined;
+  const aCode = getObservationCode(a) as VitalsLOINC | undefined;
+  const bCode = getObservationCode(b) as VitalsLOINC | undefined;
   const orderA = aCode ? VITALS_DISPLAY_ORDER[aCode] : Number.MAX_SAFE_INTEGER;
   const orderB = bCode ? VITALS_DISPLAY_ORDER[bCode] : Number.MAX_SAFE_INTEGER;
 
