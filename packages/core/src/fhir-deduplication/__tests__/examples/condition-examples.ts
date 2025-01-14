@@ -1,17 +1,19 @@
-export const snomedCodeMd = { system: "http://snomed.info/sct", code: "422338006" };
-export const icd10CodeMd = {
+import { Coding } from "@medplum/fhirtypes";
+
+export const snomedCodeMd: Coding = { system: "http://snomed.info/sct", code: "422338006" };
+export const icd10CodeMd: Coding = {
   system: "http://hl7.org/fhir/sid/icd-10-cm",
   code: "H35.30",
   display: "Macular degeneration",
 };
-export const otherCodeSystemMd = {
+export const otherCodeSystemMd: Coding = {
   system: "http://terminology.hl7.org/CodeSystem-IMO.html",
   code: "86946",
   display: "Macular degeneration",
 };
 
-export const snomedCodeAo = { system: "http://snomed.info/sct", code: "87224000" };
-export const icd10CodeAo = {
+export const snomedCodeAo: Coding = { system: "http://snomed.info/sct", code: "87224000" };
+export const icd10CodeAo: Coding = {
   system: "http://hl7.org/fhir/sid/icd-10-cm",
   code: "H34.00",
   display: "Transient arterial occlusion of retina",

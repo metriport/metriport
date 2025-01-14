@@ -11,6 +11,7 @@ import {
   unknownCoding,
   isUnknownCoding,
   DeduplicationResult,
+  fetchCodingCodeOrDisplayOrSystem,
 } from "../shared";
 import {
   extractCodes,
@@ -42,12 +43,12 @@ export function deduplicateObservations(
  */
 export function groupSameObservations(observations: Observation[]): {
   observationsMap: Map<string, Observation>;
-  refReplacementMap: Map<string, string[]>;
-  danglingReferences: string[];
+  refReplacementMap: Map<string, string>;
+  danglingReferences: Set<string>;
 } {
   const observationsMap = new Map<string, Observation>();
-  const refReplacementMap = new Map<string, string[]>();
-  const danglingReferencesSet = new Set<string>();
+  const refReplacementMap = new Map<string, string>();
+  const danglingReferences = new Set<string>();
 
   function postProcess(
     master: Observation,
@@ -56,8 +57,8 @@ export function groupSameObservations(observations: Observation[]): {
   ): Observation {
     const code = master.code;
     const filtered = code?.coding?.filter(coding => {
-      const system = coding.system?.toLowerCase();
-      const code = coding.code?.toLowerCase();
+      const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+      const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
       return !system?.includes(unknownCoding.system) && !code?.includes(unknownCoding.code);
     });
     if (filtered) {
@@ -72,7 +73,7 @@ export function groupSameObservations(observations: Observation[]): {
 
   for (const observation of observations) {
     if (hasBlacklistedText(observation.code)) {
-      danglingReferencesSet.add(createRef(observation));
+      danglingReferences.add(createRef(observation));
       continue;
     }
 
@@ -85,7 +86,7 @@ export function groupSameObservations(observations: Observation[]): {
     const value = extractValueFromObservation(observation);
 
     if (!date || !value) {
-      danglingReferencesSet.add(createRef(observation));
+      danglingReferences.add(createRef(observation));
     } else {
       if (keyCode) {
         const key = JSON.stringify({ date, value, keyCode });
@@ -96,7 +97,7 @@ export function groupSameObservations(observations: Observation[]): {
           const key = JSON.stringify({ date, value, observationDisplay });
           fillMaps(observationsMap, key, observation, refReplacementMap, undefined, postProcess);
         } else {
-          danglingReferencesSet.add(createRef(observation));
+          danglingReferences.add(createRef(observation));
         }
       }
     }
@@ -105,7 +106,7 @@ export function groupSameObservations(observations: Observation[]): {
   return {
     observationsMap,
     refReplacementMap,
-    danglingReferences: [...danglingReferencesSet],
+    danglingReferences,
   };
 }
 

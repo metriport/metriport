@@ -16,6 +16,7 @@ export const nodeNetworkErrorCodes = [
 export type NodeNetworkError = (typeof nodeNetworkErrorCodes)[number];
 
 // Axios error codes that are timeout errors
+// https://github.com/axios/axios?tab=readme-ov-file#error-types
 
 export const axiosTimeoutErrorCodes = [AxiosError.ECONNABORTED, AxiosError.ETIMEDOUT] as const;
 export type AxiosTimeoutError = (typeof axiosTimeoutErrorCodes)[number];

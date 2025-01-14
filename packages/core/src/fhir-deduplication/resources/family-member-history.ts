@@ -1,5 +1,11 @@
 import { CodeableConcept, FamilyMemberHistory } from "@medplum/fhirtypes";
-import { DeduplicationResult, combineResources, createRef, fillMaps } from "../shared";
+import {
+  DeduplicationResult,
+  combineResources,
+  createRef,
+  fillMaps,
+  fetchCodingCodeOrDisplayOrSystem,
+} from "../shared";
 
 export function deduplicateFamilyMemberHistories(
   famMemberHists: FamilyMemberHistory[]
@@ -23,12 +29,12 @@ export function deduplicateFamilyMemberHistories(
  */
 export function groupSameFamilyMemberHistories(famMemberHists: FamilyMemberHistory[]): {
   famMemberHistsMap: Map<string, FamilyMemberHistory>;
-  refReplacementMap: Map<string, string[]>;
-  danglingReferences: string[];
+  refReplacementMap: Map<string, string>;
+  danglingReferences: Set<string>;
 } {
   const famMemberHistsMap = new Map<string, FamilyMemberHistory>();
-  const refReplacementMap = new Map<string, string[]>();
-  const danglingReferencesSet = new Set<string>();
+  const refReplacementMap = new Map<string, string>();
+  const danglingReferences = new Set<string>();
 
   function ensureFhirValidFamilyMemberHistory(
     famMemberHist: FamilyMemberHistory
@@ -56,14 +62,14 @@ export function groupSameFamilyMemberHistories(famMemberHists: FamilyMemberHisto
       const key = JSON.stringify({ relationship, dob });
       fillMaps(famMemberHistsMap, key, famMemberHist, refReplacementMap, undefined);
     } else {
-      danglingReferencesSet.add(createRef(famMemberHist));
+      danglingReferences.add(createRef(famMemberHist));
     }
   }
 
   return {
     famMemberHistsMap,
     refReplacementMap,
-    danglingReferences: [...danglingReferencesSet],
+    danglingReferences,
   };
 }
 
@@ -72,9 +78,9 @@ export function extractCode(concept: CodeableConcept | undefined): string | unde
 
   if (concept && concept.coding) {
     for (const coding of concept.coding) {
-      const system = coding.system?.toLowerCase();
-      const code = coding.code?.trim().toLowerCase();
-      const display = coding.display?.trim().toLowerCase();
+      const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+      const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
+      const display = fetchCodingCodeOrDisplayOrSystem(coding, "display");
       if (system && display) {
         if (display !== "unknown") return display;
         if (code !== "unk") return code;

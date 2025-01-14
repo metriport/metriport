@@ -7,7 +7,7 @@ export type PatientDTO = {
   firstName: string;
   lastName: string;
   dob: string;
-  genderAtBirth: "M" | "F";
+  genderAtBirth: "M" | "F" | "O" | "U";
   personalIdentifiers?: PersonalIdentifier[];
   facilityIds: string[];
   externalId?: string;

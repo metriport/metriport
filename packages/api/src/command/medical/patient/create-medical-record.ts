@@ -1,9 +1,11 @@
-import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
+import {
+  createMRSummaryFileName,
+  createSandboxMRSummaryFileName,
+} from "@metriport/core/domain/medical-record-summary";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { Config } from "../../../shared/config";
 import { getSignedURL } from "../document/document-download";
 import { getPatient } from "./get-patient";
-import { createSandboxMRSummaryFileName } from "./shared";
 
 const awsRegion = Config.getAWSRegion();
 const s3Utils = new S3Utils(awsRegion);

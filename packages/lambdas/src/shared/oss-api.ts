@@ -10,12 +10,20 @@ export type NotificationParams = {
   cxId: string;
   patientId: string;
   status: "success" | "failed";
-  details?: string;
-  jobId?: string;
+  details?: string | undefined;
+  jobId: string | undefined;
+  /** The MedicalDataSource, or HIE name */
   source?: string;
 };
 
-export function apiClient(apiURL: string) {
+type OssApiClient = {
+  internal: {
+    notifyApi(params: NotificationParams, log: Log): Promise<void>;
+    createFeedback(params: CreateFeedback & { id: string }): Promise<AxiosResponse>;
+  };
+};
+
+export function apiClient(apiURL: string): OssApiClient {
   const docProgressURL = `${apiURL}/internal/docs/conversion-status`;
 
   function getCreateFeedbackUrl(id: string): string {
@@ -36,8 +44,6 @@ export function apiClient(apiURL: string) {
   }
 
   return {
-    /** @deprecated: use internal.notifyApi() instead */
-    notifyApi,
     internal: {
       notifyApi,
       createFeedback,

@@ -1,5 +1,6 @@
 ---
-title: "Medical API"
+title: "Quickstart"
+icon: "rocket"
 description: "Follow this guide to start exchanging comprehensive patient medical data."
 ---
 
@@ -12,13 +13,12 @@ Getting started with our Medical API is pretty easy, you'll just need take the f
 1. [Create a developer account](#1-create-a-developer-account).
 1. [Generate an API key](#2-generate-an-api-key).
 1. [Integrate your app with Metriport](#3-integrate-your-app-with-metriport).
-1. [Register your Organization](#4-register-your-organization).
-1. [Create Facilities and Patients](#5-create-facilities-and-patients).
-1. [Get Patient Medical Documents](#6-get-patient-medical-documents).
-1. [Get Patient FHIR Resources](#7-get-patient-fhir-resources). 🔥
-1. [Generate Patient Medical Record Summary](#8-generate-patient-medical-record-summary). 📄
-1. [Share Medical Data with the Networks](#9-share-medical-data-with-the-networks). 🏥
-1. [Request API access](#10-request-api-access).
+1. [Create Facilities and Patients](#4-create-facilities-and-patients).
+1. [Get Patient Medical Documents](#5-get-patient-medical-documents).
+1. [Get Patient FHIR Resources](#6-get-patient-fhir-resources). 🔥
+1. [Generate Patient Medical Record Summary](#7-generate-patient-medical-record-summary). 📄
+1. [Share Medical Data with the Networks](#8-share-medical-data-with-the-networks). 🏥
+1. [Request API access](#9-request-api-access).
 
 Feel free to check this demo video out before getting started to get a high level overview of the platform:
 
@@ -34,15 +34,14 @@ Let's get into it! 🤘
 
 <Snippet file="create-dev-account.mdx" />
 
-
 ---
 
 ## 2. Generate an API key
 
 After we approve your access request, take the following steps to get your API key:
 
-- Toggle the `Sandbox` switch in the Dashboard navbar to enter `Sandbox` mode (learn more about this 
-[here](/medical-api/more-info/sandbox)).
+- Toggle the `Sandbox` switch in the Dashboard navbar to enter `Sandbox` mode (learn more about this
+  [here](/medical-api/getting-started/sandbox)).
 - In the left hand menu, click `Developers`.
 - On the Developers page, you'll be able to click the "Generate Secret Key" button.
 
@@ -53,7 +52,7 @@ After we approve your access request, take the following steps to get your API k
 
 This Secret Key will allow you to start making requests to the entire Metriport API on your
 behalf. Treat this like a password, and keep it somewhere safe! You can read the [API
-Keys](/home/api-info/api-keys) page to learn more about API key security best practices.
+Keys](/medical-api/getting-started/api-keys) page to learn more about API key security best practices.
 
 <Tip>
   If you believe your key has been compromised, you can always revoke it and then generate a new one
@@ -68,7 +67,7 @@ Note that there are two ways to receive data from Metriport:
 
 - Webhook: Metriport sends patient data to your app when it becomes available:
   - your application exposes a webhook (endpoint), which Metriport calls when there's Patient data available after initiating a query;
-  - to learn more about how the Webhook flow works, see [our Webhooks guide](/home/api-info/webhooks).
+  - to learn more about how the Webhook flow works, see [our Webhooks guide](/medical-api/getting-started/webhooks).
 - API: Your app requests data from Metriport:
   - your application polls Metriport for Patients' medical data after initiating a query to fetch a Patient's documents;
 
@@ -79,7 +78,7 @@ Note that there are two ways to receive data from Metriport:
 
 ---
 
-## 4. Register your Organization
+## 4. Create Facilities and Patients
 
 <Info>
   For the remainder of the steps, you are able to either use the Dashboard UI, or the API - whatever
@@ -87,37 +86,13 @@ Note that there are two ways to receive data from Metriport:
 </Info>
 
 <Info>
-  Pro-tip: you can use our handy [SDK](/medical-api/more-info/sdk) on your server
+  Pro-tip: you can use our handy [SDK](/medical-api/api-tools/sdk) on your server
   if you're using Node:
 
   <Snippet file="medical-api-init.mdx" />
 </Info>
 
-First, you'll need to register an `Organization` in Metriport.
-
-<Info>
-  An `Organization` represents your company's legal corporate entity - this is needed for HIPAA
-  auditing purposes so the Health Information Exchanges (HIEs) can validate who is making requests
-  to the networks.
-</Info>
-
-You only need to register your `Organization` once, and you can do so by either:
-
-### Using the API
-
-See the [Create Organization endpoint](/medical-api/api-reference/organization/create-organization) in our API reference.
-
-### Using the Dashboard
-
-- In the left hand menu, click `Medical API`.
-- In the Organization section, click `Create`.
-- Fill in the details and submit the form to register your Organization.
-
----
-
-## 5. Create Facilities and Patients
-
-Once your Organization is registered, you can now create `Facilities` and `Patients`. First,
+Now you can now create `Facilities` and `Patients`. First,
 you'll need to create your `Facilities`.
 
 <Info>
@@ -126,9 +101,7 @@ you'll need to create your `Facilities`.
   practices, these can be virtual locations.
 </Info>
 
-<Tip>
-  In Sandbox mode, you can use the test NPI `1234567893` when creating Facilities.
-</Tip>
+<Tip>In Sandbox mode, you can use the test NPI `1234567893` when creating Facilities.</Tip>
 
 You can create a `Facility` by either:
 
@@ -161,12 +134,14 @@ See the [Create Patient endpoint](/medical-api/api-reference/patient/create-pati
 </Info>
 
 <Tip>
-  In Sandbox mode, you can create Patients with pre-defined patient demographics to simulate a match and pull example clinical data - see our [Sandbox guide](/medical-api/more-info/sandbox#example-clinical-data) for more details.
+  In Sandbox mode, you can create Patients with pre-defined patient demographics to simulate a match
+  and pull example clinical data - see our [Sandbox
+  guide](/medical-api/getting-started/sandbox#example-clinical-data) for more details.
 </Tip>
 
 ---
 
-## 6. Get Patient Medical Documents
+## 5. Get Patient Medical Documents
 
 Now, you're able to access your Patients' medical `Documents`. This involves 2 main steps:
 
@@ -178,7 +153,7 @@ To query for a Patient's available `Documents`, you can either:
 ### Query for Documents using the API
 
 1. Start an asynchronous [Document Query](/medical-api/api-reference/document/start-document-query) across HIEs;
-1. Then, either process the inbound [Webhook message](/medical-api/more-info/webhooks) which will be sent if you
+1. Then, either process the inbound [Webhook message](/medical-api/handling-data/webhooks) which will be sent if you
    have Webhooks configured, or poll the API to [List Documents](/medical-api/api-reference/document/list-documents) to get
    the available document references returned from HIEs.
 
@@ -201,7 +176,7 @@ See the [Get Document endpoint](/medical-api/api-reference/document/get-document
 
 - In the side panel that comes up after clicking `Documents`, simply click `Download` on the desired Document.
 
-## 7. Get Patient FHIR Resources 🔥
+## 6. Get Patient FHIR Resources 🔥
 
 As we query for Documents we will automatically convert XML C-CDA docs into FHIR resources.
 
@@ -218,11 +193,11 @@ Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post) endpoi
 We also provide the ability to add any FHIR resources to a Patient with our [Create Patient's Consolidated
 Data](/medical-api/api-reference/fhir/create-patient-consolidated) endpoint.
 
-## 8. Generate Patient Medical Record Summary 📄
+## 7. Generate Patient Medical Record Summary 📄
 
-The aforementioned FHIR resources are generated from all available C-CDAs for a patient, resulting in a set of unique medical records. To condense all of these records into a single document, refer to the [Medical Record Summary](/medical-api/more-info/medical-record-summary) guide.
+The aforementioned FHIR resources are generated from all available C-CDAs for a patient, resulting in a set of unique medical records. To condense all of these records into a single document, refer to the [Medical Record Summary](/medical-api/handling-data/medical-record-summary) guide.
 
-## 9. Share Medical Data with the Networks 🏥
+## 8. Contribute Medical Data with the Networks 🏥
 
 To uphold data quality in the networks, and improve patient health outcomes, it's required that your organization reciprocates medical data exchange by making net-new patient clinical data available to the networks. Some examples of this include:
 
@@ -230,14 +205,16 @@ To uphold data quality in the networks, and improve patient health outcomes, it'
 - Clinical progress notes from patient encounters;
 - Lab results
 
-Metriport makes it easy to share this data back with the networks - you can:
+Metriport makes it easy to contribute this data back with the networks - you can:
 
 - Upload FHIR data using our [Create Patient's Consolidated Data](/medical-api/api-reference/fhir/create-patient-consolidated) endpoint.
 - Upload binary documents using the [Upload Document](/medical-api/api-reference/document/post-upload-url) endpoint.
 
+For more details on how to contribute data back, see the [Data Contribution](/medical-api/handling-data/contribution) guide.
+
 ---
 
-## 10. Request API access
+## 9. Request API access
 
 <Warning>
   Access to our Medical API will require you to make requests on behalf of a covered entity with an

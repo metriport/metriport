@@ -24,14 +24,14 @@ export function deduplicateRelatedPersons(
 
 export function groupSameRelatedPersons(relatedPersons: RelatedPerson[]): {
   relatedPersonsMap: Map<string, RelatedPerson>;
-  refReplacementMap: Map<string, string[]>;
-  danglingReferences: string[];
+  refReplacementMap: Map<string, string>;
+  danglingReferences: Set<string>;
 } {
   const l1RelatedPersonsMap = new Map<string, string>();
   const l2RelatedPersonsMap = new Map<string, RelatedPerson>();
 
-  const refReplacementMap = new Map<string, string[]>();
-  const danglingReferencesSet = new Set<string>();
+  const refReplacementMap = new Map<string, string>();
+  const danglingReferences = new Set<string>();
 
   for (const relatedPerson of relatedPersons) {
     const name = extractName(relatedPerson.name);
@@ -114,21 +114,21 @@ export function groupSameRelatedPersons(relatedPersons: RelatedPerson[]): {
       });
     } else {
       // No relationship or no other identifying information
-      danglingReferencesSet.add(createRef(relatedPerson));
+      danglingReferences.add(createRef(relatedPerson));
     }
   }
 
   return {
     relatedPersonsMap: l2RelatedPersonsMap,
     refReplacementMap,
-    danglingReferences: [...danglingReferencesSet],
+    danglingReferences,
   };
 }
 
 function extractName(names: HumanName[] | undefined): string | undefined {
   if (!names) return undefined;
   for (const name of names) {
-    const first = name.given?.join(" ").trim();
+    const first = name.given?.map(name => name.trim()).join(" ");
     const last = name.family?.trim();
     const text = name.text?.trim();
 

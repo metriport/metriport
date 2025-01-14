@@ -1,13 +1,12 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { Patient } from "@metriport/core/domain/patient";
 import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
-import { PatientExternalData } from "@metriport/core/domain/patient";
+import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
+import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { makePatient, makePatientData } from "../../../domain/medical/__tests__/patient";
+import { makeProgress } from "../../../domain/medical/__tests__/document-query";
 import { PatientModel } from "../../../models/medical/patient";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { setDocQueryStartAt } from "../set-doc-query-start";
-import { makeProgress } from "../../../domain/medical/__tests__/document-query";
 
 const source = MedicalDataSource.CAREQUALITY;
 const startedAt = new Date();

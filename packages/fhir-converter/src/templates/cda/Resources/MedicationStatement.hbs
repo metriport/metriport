@@ -45,13 +45,17 @@
                 "route":{{>DataType/CodeableConcept.hbs code=medicationStatement.routeCode}},
                 "doseAndRate": [
                     {
-                        {{#with (extractRangeFromQuantity medicationStatement.doseQuantity) as |rangeObj|}}
-                            {{#if rangeObj.isValid}}
-                                "doseRange": {{>DataType/Range.hbs range=rangeObj.range}},
-                            {{else}}
-                                "doseQuantity": {{>DataType/Quantity.hbs quantity=../medicationStatement.doseQuantity}},
-                            {{/if}}
-                        {{/with}}
+                        {{#if medicationStatement.doseQuantity.low}}
+                            "doseRange": {{>DataType/Range.hbs range=medicationStatement.doseQuantity}},
+                        {{else}}
+                            {{#with (extractRangeFromQuantity medicationStatement.doseQuantity) as |rangeObj|}}
+                                {{#if rangeObj.isValid}}
+                                    "doseRange": {{>DataType/Range.hbs range=rangeObj.range}},
+                                {{else}}
+                                    "doseQuantity": {{>DataType/Quantity.hbs quantity=../medicationStatement.doseQuantity}},
+                                {{/if}}
+                            {{/with}}
+                        {{/if}}
                     },
                 ],
             },

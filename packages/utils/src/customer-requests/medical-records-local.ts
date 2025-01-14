@@ -12,4 +12,4 @@ const html = bundleToHtml(bundleParsed);
 // Response from FHIR Converter
 // const html = bundleToHtml(bundleParsed.fhirResource);
 
-fs.writeFileSync("output.html", html);
+fs.writeFileSync("./runs/local-summary.html", html);

@@ -1,23 +1,20 @@
-import { ConvertResult } from "@metriport/core/domain/document-query";
-import { isMedicalDataSource } from "@metriport/core/external/index";
-import { elapsedTimeFromNow } from "@metriport/shared/common/date";
-import { MedicalDataSource } from "@metriport/core/external/index";
 import {
-  ProgressType,
-  DocumentQueryStatus,
+  ConvertResult,
   DocumentQueryProgress,
+  DocumentQueryStatus,
+  ProgressType,
 } from "@metriport/core/domain/document-query";
-import { out } from "@metriport/core/util/log";
-import { getPatientOrFail } from "../patient/get-patient";
-import { tallyDocQueryProgress } from "../../../external/hie/tally-doc-query-progress";
-import { getCWData } from "../../../external/commonwell/patient";
-import { getCQData } from "../../../external/carequality/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { isMedicalDataSource, MedicalDataSource } from "@metriport/core/external/index";
+import { out } from "@metriport/core/util/log";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
+import { getCQData } from "../../../external/carequality/patient";
+import { getCWData } from "../../../external/commonwell/patient";
+import { tallyDocQueryProgress } from "../../../external/hie/tally-doc-query-progress";
+import { recreateConsolidated } from "../patient/consolidated-recreate";
+import { getPatientOrFail } from "../patient/get-patient";
 import { updateConversionProgress } from "./document-query";
-import { processPatientDocumentRequest } from "./document-webhook";
-import { MAPIWebhookStatus } from "./document-webhook";
-import { getConsolidated } from "../patient/consolidated-get";
-import { processAsyncError } from "@metriport/core/util/error/shared";
+import { MAPIWebhookStatus, processPatientDocumentRequest } from "./document-webhook";
 
 export async function calculateDocumentConversionStatus({
   patientId,
@@ -69,7 +66,7 @@ export async function calculateDocumentConversionStatus({
       updatedPatient.data.documentQueryProgress?.triggerConsolidated;
     const hieTriggerConsolidated = externalData?.documentQueryProgress?.triggerConsolidated;
 
-    const isGloablConversionCompleted = isProgressStatusValid({
+    const isGlobalConversionCompleted = isProgressStatusValid({
       documentQueryProgress: updatedPatient.data.documentQueryProgress,
       progressType: "convert",
       status: "completed",
@@ -104,14 +101,23 @@ export async function calculateDocumentConversionStatus({
 
     if (
       (hieTriggerConsolidated && isHieConversionCompleted) ||
-      (globalTriggerConsolidated && isGloablConversionCompleted)
+      (globalTriggerConsolidated && isGlobalConversionCompleted)
     ) {
       log(
         `Kicking off getConsolidated for patient ${updatedPatient.id} - hie: ${hieTriggerConsolidated} global: ${globalTriggerConsolidated}`
       );
-      getConsolidated({ patient: updatedPatient, conversionType: "pdf" }).catch(
-        processAsyncError(`Post-DQ getConsolidated ${source}`)
-      );
+      // intentionally async
+      recreateConsolidated({
+        patient: updatedPatient,
+        conversionType: "pdf",
+        context: `Post-DQ getConsolidated ${source}`,
+      });
+    } else if (isGlobalConversionCompleted) {
+      // intentionally async
+      recreateConsolidated({
+        patient: updatedPatient,
+        context: "Post-DQ getConsolidated GLOBAL",
+      });
     }
   } else {
     const expectedPatient = await updateConversionProgress({
@@ -126,6 +132,9 @@ export async function calculateDocumentConversionStatus({
     });
 
     if (isConversionCompleted) {
+      // we want to await here to ensure the consolidated bundle is created before we send the webhook
+      await recreateConsolidated({ patient, context: "calculate-no-source" });
+
       processPatientDocumentRequest(
         cxId,
         patientId,

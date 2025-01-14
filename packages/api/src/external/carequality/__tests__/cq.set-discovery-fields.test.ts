@@ -1,9 +1,9 @@
 import { DiscoveryParams } from "@metriport/core/domain/patient-discovery";
-import { updatePatientDiscoveryStatus } from "../command/update-patient-discovery-status";
+import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/patient";
 import { PatientModel } from "../../../models/medical/patient";
-import { makePatient, makePatientData } from "../../../domain/medical/__tests__/patient";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { LinkStatus } from "../../patient-link";
+import { updatePatientDiscoveryStatus } from "../command/update-patient-discovery-status";
 
 let patientModel_findOne: jest.SpyInstance;
 let patientModel_update: jest.SpyInstance;

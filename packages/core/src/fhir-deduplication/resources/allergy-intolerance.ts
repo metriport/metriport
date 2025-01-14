@@ -10,10 +10,12 @@ import {
   combineResources,
   createRef,
   fillMaps,
-  hasBlacklistedText,
   isUnknownCoding,
   unknownCode,
+  fetchCodingCodeOrDisplayOrSystem,
 } from "../shared";
+
+const blacklistedSubstanceDisplays = ["no known allergies", "nka", "unknown"];
 
 export function deduplicateAllergyIntolerances(
   allergies: AllergyIntolerance[]
@@ -37,32 +39,62 @@ export function deduplicateAllergyIntolerances(
  */
 export function groupSameAllergies(allergies: AllergyIntolerance[]): {
   allergiesMap: Map<string, AllergyIntolerance>;
-  refReplacementMap: Map<string, string[]>;
-  danglingReferences: string[];
+  refReplacementMap: Map<string, string>;
+  danglingReferences: Set<string>;
 } {
   const allergiesMap = new Map<string, AllergyIntolerance>();
-  const refReplacementMap = new Map<string, string[]>();
-  const danglingReferencesSet = new Set<string>();
+  const refReplacementMap = new Map<string, string>();
+  const danglingReferences = new Set<string>();
+
+  const blacklistedAllergies: AllergyIntolerance[] = [];
+  const validAllergies: AllergyIntolerance[] = [];
 
   for (const allergy of allergies) {
-    if (allergy.reaction?.some(reaction => hasBlacklistedText(reaction.substance))) {
-      danglingReferencesSet.add(createRef(allergy));
-      continue;
-    }
-
-    const { allergy: newAllergy, substance } = preProcess(allergy);
-    if (substance) {
-      const key = JSON.stringify({ substance });
-      fillMaps(allergiesMap, key, newAllergy, refReplacementMap, undefined, postProcess);
+    if (allergy.reaction?.every(reaction => isUnknownAllergy(reaction.substance))) {
+      blacklistedAllergies.push(allergy);
     } else {
-      danglingReferencesSet.add(createRef(allergy));
+      validAllergies.push(allergy);
+    }
+  }
+
+  const hasValidAllergies = validAllergies.length > 0;
+
+  if (hasValidAllergies) {
+    for (const allergy of validAllergies) {
+      const { allergy: newAllergy, substance } = preProcess(allergy);
+      if (substance) {
+        const key = JSON.stringify({ substance });
+        fillMaps(allergiesMap, key, newAllergy, refReplacementMap, undefined, postProcess);
+      } else {
+        danglingReferences.add(createRef(allergy));
+      }
+    }
+    for (const allergy of blacklistedAllergies) {
+      danglingReferences.add(createRef(allergy));
+    }
+  } else if (blacklistedAllergies.length > 0) {
+    const allergy = findAllergyWithLongestSubstanceText(blacklistedAllergies);
+
+    if (allergy) {
+      const key = JSON.stringify({ allergy });
+      // no post processing so we dont remove the unknown allergy
+      fillMaps(allergiesMap, key, allergy, refReplacementMap, undefined);
+
+      const index = blacklistedAllergies.indexOf(allergy);
+      if (index !== -1) {
+        blacklistedAllergies.splice(index, 1);
+      }
+
+      for (const remainingAllergy of blacklistedAllergies) {
+        danglingReferences.add(createRef(remainingAllergy));
+      }
     }
   }
 
   return {
     allergiesMap,
     refReplacementMap,
-    danglingReferences: [...danglingReferencesSet],
+    danglingReferences,
   };
 }
 
@@ -132,12 +164,11 @@ export function extractFromReactions(reactions: AllergyIntoleranceReaction[] | u
   };
 }
 
-const blacklistedSubstanceDisplays = ["no known allergies", "nka", "unknown"];
-function isKnownAllergy(coding: Coding, text?: string | undefined) {
+function isKnownAllergy(coding: Coding, text?: string | undefined): boolean {
   if (isUnknownCoding(coding)) return false;
 
-  const code = coding.code?.trim().toLowerCase();
-  const display = coding.display?.trim().toLowerCase();
+  const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
+  const display = fetchCodingCodeOrDisplayOrSystem(coding, "display");
 
   let isValid = false;
   if (code) isValid = true;
@@ -146,8 +177,29 @@ function isKnownAllergy(coding: Coding, text?: string | undefined) {
   return isValid;
 }
 
+function isUnknownAllergy(substance: CodeableConcept | undefined): boolean {
+  if (!substance) return false;
+
+  const { text, coding } = substance;
+
+  if (text && isUnknownAllergyText(text)) {
+    return true;
+  }
+
+  if (
+    coding?.some(coding => {
+      const display = fetchCodingCodeOrDisplayOrSystem(coding, "display");
+      return isUnknownAllergyText(display);
+    })
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
 function isUnknownAllergyText(text: string | undefined) {
-  return text && blacklistedSubstanceDisplays.includes(text.toLowerCase().trim());
+  return text && blacklistedSubstanceDisplays.includes(text.trim().toLowerCase());
 }
 
 function isKnownManifestation(concept: CodeableConcept) {
@@ -156,4 +208,14 @@ function isKnownManifestation(concept: CodeableConcept) {
   const knownCoding = concept.coding?.filter(e => !isUnknownCoding(e));
   if (knownCoding?.length) return true;
   return false;
+}
+
+function findAllergyWithLongestSubstanceText(
+  allergies: AllergyIntolerance[]
+): AllergyIntolerance | undefined {
+  return allergies.reduce((longest, current) => {
+    const longestText = longest.reaction?.[0]?.substance?.text;
+    const currentText = current.reaction?.[0]?.substance?.text;
+    return (currentText?.length || 0) > (longestText?.length || 0) ? current : longest;
+  });
 }

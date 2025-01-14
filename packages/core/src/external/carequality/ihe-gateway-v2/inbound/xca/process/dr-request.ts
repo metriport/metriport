@@ -1,6 +1,6 @@
 import { DocumentReference, InboundDocumentRetrievalReq } from "@metriport/ihe-gateway-sdk";
 import { errorToString, toArray } from "@metriport/shared";
-import { XMLParser } from "fast-xml-parser";
+import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import { out } from "../../../../../../util/log";
 import { stripUrnPrefix } from "../../../../../../util/urn";
 import { extractText } from "../../../utils";
@@ -22,7 +22,7 @@ export async function processInboundDrRequest(
   const log = out("Inbound DR Request").log;
   log(request);
   try {
-    const parser = new XMLParser({
+    const parser = createXMLParser({
       ignoreAttributes: false,
       attributeNamePrefix: "_",
       textNodeName: "_text",

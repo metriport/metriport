@@ -13,6 +13,8 @@
  * to update actual domain types sent to remote branches.
  *
  * Based on: https://stackoverflow.com/a/57683652/2099911
+ *
+ * See: https://github.com/ts-essentials/ts-essentials/tree/master/lib/prettify
  */
 
 /**

@@ -27,10 +27,11 @@ export type DeleteConsolidatedFilters = {
 };
 
 export type DeleteConsolidatedParams = {
-  patient: Pick<Patient, "id" | "cxId" | "data">;
+  patient: Patient;
   dryRun?: boolean;
 } & DeleteConsolidatedFilters;
 
+// TODO 2215 - Remove/merge this with `deleteConsolidated` from core.
 /**
  * HEADS UP! This is very destructive, it will delete all resources from the FHIR server that match
  * the filters provided. It will not delete DocumentReference resources.
@@ -47,7 +48,7 @@ export async function deleteConsolidated(params: DeleteConsolidatedParams): Prom
 }
 
 async function getResourcesToDelete(
-  patient: Pick<Patient, "id" | "cxId">,
+  patient: Patient,
   documentIds: string[],
   resources: ResourceTypeForConsolidation[] | undefined,
   log: typeof console.log

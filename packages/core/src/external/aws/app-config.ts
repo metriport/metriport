@@ -29,6 +29,7 @@ export type BooleanFF = z.infer<typeof ffBooleanSchema>;
 export const booleanFFsSchema = z.object({
   commonwellFeatureFlag: ffBooleanSchema,
   carequalityFeatureFlag: ffBooleanSchema,
+  cxsWithConsolidatedFromS3: ffBooleanSchema.optional(),
 });
 export type BooleanFeatureFlags = z.infer<typeof booleanFFsSchema>;
 
@@ -37,13 +38,15 @@ export const cxBasedFFsSchema = z.object({
   cxsWithCQDirectFeatureFlag: ffStringValuesSchema,
   cxsWithCWFeatureFlag: ffStringValuesSchema,
   cxsWithADHDMRFeatureFlag: ffStringValuesSchema,
+  cxsWithBmiMrFeatureFlag: ffStringValuesSchema,
+  cxsWithDermMrFeatureFlag: ffStringValuesSchema,
   cxsWithAiBriefFeatureFlag: ffStringValuesSchema,
   getCxsWithCdaCustodianFeatureFlag: ffStringValuesSchema,
   cxsWithNoWebhookPongFeatureFlag: ffStringValuesSchema,
   cxsWithIncreasedSandboxLimitFeatureFlag: ffStringValuesSchema,
   cxsWithEpicEnabled: ffStringValuesSchema,
   cxsWithDemoAugEnabled: ffStringValuesSchema,
-  cxsWithConsolidatedFromS3: ffStringValuesSchema.optional(),
+  cxsWithStalePatientUpdateEnabled: ffStringValuesSchema,
 });
 export type CxBasedFFsSchema = z.infer<typeof cxBasedFFsSchema>;
 
@@ -126,8 +129,16 @@ export async function getFeatureFlagValueStringArray<T extends keyof StringValue
   envName: string,
   featureFlagName: T
 ): Promise<StringValueFeatureFlags[T]> {
-  const configContentValue = await getFeatureFlags(region, appId, configId, envName);
-  return configContentValue[featureFlagName];
+  try {
+    const configContentValue = await getFeatureFlags(region, appId, configId, envName);
+    return configContentValue[featureFlagName];
+  } catch (error) {
+    const msg = `Failed to get Feature Flag Value`;
+    const extra = { featureFlagName };
+    log(`${msg} - ${JSON.stringify(extra)} - ${errorToString(error)}`);
+    capture.error(msg, { extra: { ...extra, error } });
+    return { enabled: false, values: [] };
+  }
 }
 
 export async function getFeatureFlagValueBoolean<T extends keyof BooleanFeatureFlags>(
@@ -250,7 +261,6 @@ export async function isAiBriefFeatureFlagEnabledForCx(cxId: string): Promise<bo
   return cxsWithADHDFeatureFlagValue.includes(cxId);
 }
 
-export async function isConsolidatedFromS3Enabled(cxId: string): Promise<boolean> {
-  const customerIds = await getCxsWithFeatureFlagEnabled("cxsWithConsolidatedFromS3");
-  return customerIds.includes(cxId);
+export async function isConsolidatedFromS3Enabled(): Promise<boolean> {
+  return await isFeatureFlagEnabled("cxsWithConsolidatedFromS3");
 }

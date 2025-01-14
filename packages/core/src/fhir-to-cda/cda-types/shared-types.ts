@@ -120,9 +120,12 @@ export type CdaName = {
 };
 
 export type CdaOriginalText = {
+  _mediaType?: string;
+  _representation?: string;
   reference: {
     _value: string;
   };
+  "#text"?: string;
 };
 
 // Ce (CE) stands for Coded with Equivalents
@@ -145,6 +148,8 @@ export type CdaValueSt = {
 export type CdaValueEd = {
   [_xsiTypeAttribute]?: "ED";
   [_xmlnsXsiAttribute]?: string;
+  _representation?: string;
+  _mediaType?: string;
   reference?: {
     _value: string;
   };
@@ -268,6 +273,18 @@ export type ObservationEntry = {
   };
 };
 
+export type ObservationMedia = {
+  _classCode: string;
+  _moodCode: string;
+  templateId?: CdaInstanceIdentifier[];
+  id?: CdaInstanceIdentifier[];
+  value?: CdaValueEd | undefined;
+};
+
+export type ObservationMediaEntry = {
+  observationMedia: ObservationMedia;
+};
+
 export type ObservationEntryRelationship = ObservationEntry & {
   _typeCode?: string;
   _contextConductionInd?: boolean;
@@ -344,21 +361,23 @@ export type SubstanceAdministationEntry = {
 export type ConcernActEntry = {
   _typeCode?: string;
   _contextConductionInd?: boolean;
-  act: {
-    _classCode: string;
-    _moodCode: string;
-    templateId: CdaInstanceIdentifier[];
-    id?: CdaInstanceIdentifier;
-    code?: CdaCodeCe;
-    text?: CdaOriginalText | undefined;
-    statusCode?: {
-      _code: string;
-    };
-    effectiveTime?: EffectiveTimeLowHigh;
-    author?: CdaAuthor | undefined;
-    informant?: ResponsibleParty | undefined;
-    entryRelationship?: ObservationEntryRelationship;
+  act: ConcernActEntryAct;
+};
+
+export type ConcernActEntryAct = {
+  _classCode: string;
+  _moodCode: string;
+  templateId: CdaInstanceIdentifier[];
+  id?: CdaInstanceIdentifier;
+  code?: CdaCodeCe;
+  text?: CdaOriginalText | undefined;
+  statusCode?: {
+    _code: string;
   };
+  effectiveTime?: EffectiveTimeLowHigh;
+  author?: CdaAuthor | undefined;
+  informant?: ResponsibleParty | undefined;
+  entryRelationship?: ObservationEntryRelationship;
 };
 
 export type ProcedureActivityEntry = {
@@ -422,26 +441,28 @@ export type AssignedEntity = {
 };
 
 export type ObservationOrganizer = {
-  _typeCode?: string;
-  organizer: {
-    _classCode: Entry | string;
-    _moodCode: string;
-    templateId: CdaInstanceIdentifier[];
-    id?: CdaInstanceIdentifier;
-    code?: CdaCodeCe | CdaCodeCv | undefined;
-    statusCode: {
-      _code?: string | undefined;
-    };
-    effectiveTime?: EffectiveTimeLowHigh;
-    subject?: {
-      relatedSubject?: {
-        _classCode: string;
-        code: CdaCodeCv | undefined;
-        subject: Subject;
-      };
-    };
-    component?: ObservationEntry[] | undefined;
+  _classCode: Entry | string;
+  _moodCode: string;
+  templateId: CdaInstanceIdentifier[];
+  id?: CdaInstanceIdentifier;
+  code?: CdaCodeCe | CdaCodeCv | undefined;
+  statusCode: {
+    _code?: string | undefined;
   };
+  effectiveTime?: EffectiveTimeLowHigh;
+  subject?: {
+    relatedSubject?: {
+      _classCode: string;
+      code: CdaCodeCv | undefined;
+      subject: Subject;
+    };
+  };
+  component?: (ObservationEntry | ObservationMediaEntry)[] | undefined;
+};
+
+export type ObservationOrganizerEntry = {
+  _typeCode?: string;
+  organizer: ObservationOrganizer;
 };
 
 export type ResponsibleParty = {

@@ -15,6 +15,7 @@ on:
       - "packages/carequality-sdk/**"
       - "packages/infra/**"
       - "packages/lambdas/**"
+      - "packages/terminology/**"
   workflow_dispatch: # manually executed by a user
 
 jobs:
@@ -26,6 +27,7 @@ jobs:
     outputs:
       api: ${{ steps.changes.outputs.api }}
       fhir-converter: ${{ steps.changes.outputs.fhir-converter }}
+      terminology: ${{ steps.changes.outputs.terminology }}
       infra-lambdas: ${{ steps.changes.outputs.infra-lambdas }}
     steps:
       - name: Login to Docker Hub
@@ -59,6 +61,11 @@ jobs:
               - "packages/fhir-converter/src/**"
               - "packages/fhir-converter/test/**"
               - "packages/fhir-converter/deploy/**"
+              - "packages/infra/**"
+            terminology:
+              - "packages/terminology/Dockerfile"
+              - "packages/terminology/package*.json"
+              - "packages/terminology/src/**"
               - "packages/infra/**"
             infra-lambdas:
               - "packages/core/**"
@@ -104,7 +111,7 @@ jobs:
 
   infra-api-lambdas:
     uses: ./.github/workflows/_deploy-cdk.yml
-    if: ${{ needs.files-changed.outputs.infra-lambdas == 'true' || needs.files-changed.outputs.fhir-converter == 'true' }}
+    if: ${{ needs.files-changed.outputs.infra-lambdas == 'true' || needs.files-changed.outputs.fhir-converter == 'true' || needs.files-changed.outputs.terminology == 'true' }}
     needs: files-changed
     with:
       deploy_env: "production"
@@ -175,6 +182,9 @@ jobs:
       deploy_env: "production"
       api_url: ${{ vars.API_URL_PRODUCTION }}
       fhir_url: ${{ vars.FHIR_SERVER_URL_PRODUCTION }}
+      CONVERSION_RESULT_BUCKET_NAME: ${{ vars.CONVERSION_RESULT_BUCKET_NAME_PRODUCTION }}
+      MEDICAL_DOCUMENTS_BUCKET_NAME: ${{ vars.MEDICAL_DOCUMENTS_BUCKET_NAME_PRODUCTION }}
+      AWS_REGION: ${{ vars.API_REGION_PRODUCTION }}
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

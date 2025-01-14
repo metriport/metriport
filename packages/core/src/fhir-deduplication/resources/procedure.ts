@@ -16,6 +16,7 @@ import {
   getPerformedDateFromResource,
   hasBlacklistedText,
   pickMostDescriptiveStatus,
+  fetchCodingCodeOrDisplayOrSystem,
 } from "../shared";
 
 const procedureStatus = [
@@ -61,12 +62,12 @@ export function deduplicateProcedures(procedures: Procedure[]): DeduplicationRes
  */
 export function groupSameProcedures(procedures: Procedure[]): {
   proceduresMap: Map<string, Procedure>;
-  refReplacementMap: Map<string, string[]>;
-  danglingReferences: string[];
+  refReplacementMap: Map<string, string>;
+  danglingReferences: Set<string>;
 } {
   const proceduresMap = new Map<string, Procedure>();
-  const refReplacementMap = new Map<string, string[]>();
-  const danglingReferencesSet = new Set<string>();
+  const refReplacementMap = new Map<string, string>();
+  const danglingReferences = new Set<string>();
 
   function removeCodesAndAssignStatus(
     master: Procedure,
@@ -75,7 +76,7 @@ export function groupSameProcedures(procedures: Procedure[]): {
   ): Procedure {
     const code = master.code;
     const filtered = code?.coding?.filter(coding => {
-      const system = coding.system?.toLowerCase();
+      const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
       return (
         system?.includes(CPT_CODE) ||
         system?.includes(CPT_OID) ||
@@ -110,13 +111,13 @@ export function groupSameProcedures(procedures: Procedure[]): {
 
   for (const procedure of procedures) {
     if (hasBlacklistedText(procedure.code)) {
-      danglingReferencesSet.add(createRef(procedure));
+      danglingReferences.add(createRef(procedure));
       continue;
     }
 
     const datetime = getPerformedDateFromResource(procedure, "datetime");
     if (!datetime) {
-      danglingReferencesSet.add(createRef(procedure));
+      danglingReferences.add(createRef(procedure));
       continue;
     }
 
@@ -149,7 +150,7 @@ export function groupSameProcedures(procedures: Procedure[]): {
           postProcessOnlyStatus
         );
       } else {
-        danglingReferencesSet.add(createRef(procedure));
+        danglingReferences.add(createRef(procedure));
       }
     }
   }
@@ -157,7 +158,7 @@ export function groupSameProcedures(procedures: Procedure[]): {
   return {
     proceduresMap,
     refReplacementMap,
-    danglingReferences: [...danglingReferencesSet],
+    danglingReferences,
   };
 }
 
@@ -173,8 +174,8 @@ export function extractCodes(concept: CodeableConcept | undefined): {
 
   if (concept && concept.coding) {
     for (const coding of concept.coding) {
-      const system = coding.system?.toLowerCase();
-      const code = coding.code?.trim().toLowerCase();
+      const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+      const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
       if (system && code) {
         if (system.includes(CPT_CODE) || system.includes(CPT_OID)) {
           cptCode = code;

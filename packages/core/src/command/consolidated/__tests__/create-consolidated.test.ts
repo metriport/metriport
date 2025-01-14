@@ -1,21 +1,8 @@
 import { Bundle } from "@medplum/fhirtypes";
-import { PatientDataConsolidator } from "../consolidated-create";
+import { merge } from "../consolidated-create";
 
-class PatientDataConsolidatorLocalImpl extends PatientDataConsolidator {
-  override merge(newBundle: Bundle) {
-    const superMerge = super.merge(newBundle);
-    return {
-      into: function (destination: Bundle): Bundle {
-        return superMerge.into(destination);
-      },
-    };
-  }
-}
-
-describe("NewConsolidatedDataConnectorLocal", () => {
+describe("create-consolidated", () => {
   describe("mergeBundles", () => {
-    const consolidator = new PatientDataConsolidatorLocalImpl("some-bucket", "us-east-2");
-
     it(`merges two empty bundles into an empty bundle`, async () => {
       const bundle1: Bundle = {
         resourceType: "Bundle",
@@ -27,7 +14,7 @@ describe("NewConsolidatedDataConnectorLocal", () => {
         type: "batch",
         entry: [],
       };
-      const res = consolidator.merge(bundle2).into(bundle1);
+      const res = merge(bundle2).into(bundle1);
       expect(res).toEqual(
         expect.objectContaining({ resourceType: "Bundle", type: "batch", entry: [] })
       );
@@ -44,7 +31,7 @@ describe("NewConsolidatedDataConnectorLocal", () => {
         type: "batch",
         entry: [],
       };
-      const res = consolidator.merge(bundle2).into(bundle1);
+      const res = merge(bundle2).into(bundle1);
       expect(res).toEqual(bundle1);
     });
 
@@ -60,7 +47,7 @@ describe("NewConsolidatedDataConnectorLocal", () => {
         type: "batch",
         entry: [res2],
       };
-      const res = consolidator.merge(bundle2).into(bundle1);
+      const res = merge(bundle2).into(bundle1);
       expect(res).toBe(bundle1);
       expect(res).toEqual(expect.objectContaining({ entry: [res2] }));
     });
@@ -78,7 +65,7 @@ describe("NewConsolidatedDataConnectorLocal", () => {
         type: "batch",
         entry: [res2],
       };
-      const res = consolidator.merge(bundle2).into(bundle1);
+      const res = merge(bundle2).into(bundle1);
       expect(res).toEqual(expect.objectContaining({ entry: [res1, res2] }));
     });
 
@@ -95,7 +82,7 @@ describe("NewConsolidatedDataConnectorLocal", () => {
         type: "batch",
         entry: [res1, res2],
       };
-      const res = consolidator.merge(bundle2).into(bundle1);
+      const res = merge(bundle2).into(bundle1);
       expect(res).toEqual(expect.objectContaining({ entry: [res1, res1, res2] }));
     });
 
@@ -112,7 +99,7 @@ describe("NewConsolidatedDataConnectorLocal", () => {
         type: "batch",
         entry: [res2],
       };
-      const res = consolidator.merge(bundle2).into(bundle1);
+      const res = merge(bundle2).into(bundle1);
       expect(res).toEqual(expect.objectContaining({ entry: [res1, res2] }));
     });
   });

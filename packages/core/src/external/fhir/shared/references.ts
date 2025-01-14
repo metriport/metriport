@@ -47,3 +47,45 @@ function getFilters({ ids }: { ids: string[] }) {
   const filtersAsStr = filters.toString();
   return filtersAsStr;
 }
+
+export function toReference<T extends Resource>(resource: T): Reference<T> | undefined {
+  const id = resource.id;
+  const type = resource.resourceType;
+  if (!id || !type) return undefined;
+  return { id, type, reference: `${type}/${id}` };
+}
+
+/**
+ * @see https://www.hl7.org/fhir/r4/references.html
+ */
+export function getIdFromReference(ref: Reference): string | undefined {
+  if (ref.id) return ref.id;
+  if (ref.reference) {
+    const refIdFromTyped = ref.reference.split("/")[1];
+    const refIdFromUrn = ref.reference.split("urn:uuid:")[1];
+    const refIdFromUrl = ref.type
+      ? ref.reference.split(`/${ref.type}/`)[1]?.split("/")[0]
+      : undefined;
+    const refIdFromRelative = ref.reference.startsWith("#")
+      ? ref.reference.split("#")[1]
+      : undefined;
+    // The order matters
+    const refId = refIdFromUrl ?? refIdFromTyped ?? refIdFromUrn ?? refIdFromRelative;
+    if (refId) return refId;
+  }
+  return ref.identifier?.value;
+}
+
+/**
+ * @see https://www.hl7.org/fhir/r4/references.html
+ */
+export function isReferenceOfType(ref: Reference, resourceType: ResourceType): ref is Reference {
+  if (ref.type) return ref.type === resourceType;
+  if (ref.reference) {
+    // Relative reference - https://www.hl7.org/fhir/r4/references.html#literal
+    if (ref.reference.startsWith(`${resourceType}/`)) return true;
+    // Canonical URLs - https://www.hl7.org/fhir/r4/references.html#canonical
+    if (ref.reference.includes(`/${resourceType}/`)) return true;
+  }
+  return false;
+}

@@ -1,7 +1,12 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
+import { parseFhirBundle } from "@metriport/shared/medical";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { executeWithRetriesS3, returnUndefinedOn404, S3Utils } from "../../external/aws/s3";
+import { out } from "../../util";
 import { Config } from "../../util/config";
+import { getConsolidatedLocation } from "./consolidated-shared";
+
+const s3Utils = new S3Utils(Config.getAWSRegion());
 
 const defaultS3RetriesConfig = {
   maxAttempts: 3,
@@ -17,18 +22,15 @@ export type Consolidated = {
 export async function getConsolidated({
   cxId,
   patientId,
-  fileLocation = Config.getMedicalDocumentsBucketName(),
-  region = Config.getAWSRegion(),
-  log = console.log,
+  fileLocation = getConsolidatedLocation(),
 }: {
   cxId: string;
   patientId: string;
   fileLocation?: string;
-  region?: string;
-  log?: typeof console.log;
 }): Promise<Consolidated> {
-  const s3Utils = new S3Utils(region);
+  const { log } = out(`getConsolidated - cx ${cxId}, pat ${patientId}`);
   const fileName = createConsolidatedDataFilePath(cxId, patientId);
+
   const consolidatedDataRaw = await executeWithRetriesS3<string | undefined>(
     async () => returnUndefinedOn404(() => s3Utils.getFileContentsAsString(fileLocation, fileName)),
     { ...defaultS3RetriesConfig, log }
@@ -43,5 +45,5 @@ function parseConsolidatedRaw(
 ): Bundle | undefined {
   if (!contents) return undefined;
   log(`Converting payload to JSON, length ${contents.length}`);
-  return JSON.parse(contents) as Bundle;
+  return parseFhirBundle(contents);
 }

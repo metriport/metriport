@@ -52,7 +52,7 @@
               }
             {{else}}
               {{#with (extractDecimal decodedValue) as |decimal|}}
-                {{#if decimal}}
+                {{#if (not (eq decimal undefined))}}
                   {
                     "value": {{decimal}},
                     "unit": "{{../../../../../quantity.unit}}",

@@ -18,11 +18,18 @@ _[Release PRs:]_
 
 ### Testing
 
+_[Patch PRs:]_
+
+- :warning: [ ] Run E2E tests locally
+
 _[Regular PRs:]_
 
+_[Plan ahead how you're validating your changes work and don't break other features. Add tests to validate the happy
+path and the alternative ones. Be specific.]_
+
 - Local
-  - [x] _[Indicate how you tested this, on local or staging]_
-  - [x] ...
+  - [ ] _[Indicate how you tested this, on local or staging]_
+  - [ ] ...
 - Staging
   - [ ] _testing step 1_
   - [ ] _testing step 2_

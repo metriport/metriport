@@ -12,7 +12,8 @@ import {
   PersonalIdentifier,
   createDriversLicensePersonalIdentifier,
 } from "../../../domain/patient";
-import { isContactType, mapFhirToMetriportGender } from "../../fhir/patient/index";
+import { mapFhirToMetriportGender } from "../../fhir/patient/conversion";
+import { isContactType } from "../../fhir/patient/shared";
 import {
   XDSRegistryError,
   LivingSubjectAdministrativeGenderRequestedError,
@@ -22,11 +23,12 @@ import { STATE_MAPPINGS } from "../shared";
 
 export function validateFHIRAndExtractPatient(payload: InboundPatientDiscoveryReq): PatientData {
   const patient = payload.patientResource;
-  const firstName = patient.name?.[0]?.given?.[0]; // TODO we are taking the first index here but there might be multiple given names
+  const firstName = patient.name?.flatMap(n => n.given ?? []).join(",");
+
   if (!firstName) {
     throw new XDSRegistryError("Given name is not defined");
   }
-  const lastName = patient.name?.[0]?.family;
+  const lastName = patient.name?.flatMap(n => n.family ?? []).join(",");
   if (!lastName) {
     throw new XDSRegistryError("Family name is not defined");
   }

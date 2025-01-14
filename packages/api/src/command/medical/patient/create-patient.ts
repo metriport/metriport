@@ -4,7 +4,7 @@ import {
   PatientData,
   PatientDemoData,
 } from "@metriport/core/domain/patient";
-import { toFHIR } from "@metriport/core/external/fhir/patient/index";
+import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { upsertPatientToFHIRServer } from "../../../external/fhir/patient/upsert-patient";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -21,11 +21,13 @@ export type PatientCreateCmd = PatientNoExternalData & Identifier;
 
 export async function createPatient({
   patient,
+  runPd = true,
   rerunPdOnNewDemographics,
   forceCommonwell,
   forceCarequality,
 }: {
   patient: PatientCreateCmd;
+  runPd?: boolean;
   rerunPdOnNewDemographics?: boolean;
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
@@ -79,13 +81,14 @@ export async function createPatient({
   const fhirPatient = toFHIR(newPatient);
   await upsertPatientToFHIRServer(newPatient.cxId, fhirPatient);
 
-  runInitialPatientDiscoveryAcrossHies({
-    patient: newPatient.dataValues,
-    facilityId,
-    rerunPdOnNewDemographics,
-    forceCarequality,
-    forceCommonwell,
-  }).catch(processAsyncError("runInitialPatientDiscoveryAcrossHies"));
-
+  if (runPd) {
+    runInitialPatientDiscoveryAcrossHies({
+      patient: newPatient.dataValues,
+      facilityId,
+      rerunPdOnNewDemographics,
+      forceCarequality,
+      forceCommonwell,
+    }).catch(processAsyncError("runInitialPatientDiscoveryAcrossHies"));
+  }
   return newPatient;
 }

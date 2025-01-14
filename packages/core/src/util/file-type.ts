@@ -42,6 +42,7 @@ const XML_MAGIC_NUMBER_3 = 0x78;
 const XML_MAGIC_NUMBER_4 = 0x6d;
 const XML_MAGIC_NUMBER_5 = 0x6c;
 const XML_MAGIC_NUMBER_6 = 0x20;
+const XML_MAGIC_NUMBER_6a = 0x2d;
 const XML_MAGIC_NUMBER_7 = 0x3c;
 const XML_MAGIC_NUMBER_8 = 0x43;
 const XML_MAGIC_NUMBER_9 = 0x6c;
@@ -214,6 +215,12 @@ export function isXMLContentType(bytesBuffer: Buffer): boolean {
       bytesBuffer[3] === XML_MAGIC_NUMBER_4 &&
       bytesBuffer[4] === XML_MAGIC_NUMBER_5 &&
       bytesBuffer[5] === XML_MAGIC_NUMBER_6) ||
+    (bytesBuffer[0] === XML_MAGIC_NUMBER_1 &&
+      bytesBuffer[1] === XML_MAGIC_NUMBER_2 &&
+      bytesBuffer[2] === XML_MAGIC_NUMBER_3 &&
+      bytesBuffer[3] === XML_MAGIC_NUMBER_4 &&
+      bytesBuffer[4] === XML_MAGIC_NUMBER_5 &&
+      bytesBuffer[5] === XML_MAGIC_NUMBER_6a) ||
     (bytesBuffer[0] === XML_MAGIC_NUMBER_7 &&
       bytesBuffer[1] === XML_MAGIC_NUMBER_8 &&
       bytesBuffer[2] === XML_MAGIC_NUMBER_9 &&

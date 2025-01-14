@@ -1,12 +1,13 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { CxMapping, CxSources } from "../domain/cx-mapping";
+import { CxMapping, CxMappingSource, CxMappingSecondaryMappings } from "../domain/cx-mapping";
 import { BaseModel, ModelSetup } from "./_default";
 
 export class CxMappingModel extends BaseModel<CxMappingModel> implements CxMapping {
   static NAME = "cx_mapping";
   declare externalId: string;
+  declare secondaryMappings: CxMappingSecondaryMappings;
   declare cxId: string;
-  declare source: CxSources;
+  declare source: CxMappingSource;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     CxMappingModel.init(
@@ -20,6 +21,9 @@ export class CxMappingModel extends BaseModel<CxMappingModel> implements CxMappi
         },
         externalId: {
           type: DataTypes.STRING,
+        },
+        secondaryMappings: {
+          type: DataTypes.JSONB,
         },
       },
       {

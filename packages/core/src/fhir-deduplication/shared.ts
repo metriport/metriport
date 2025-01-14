@@ -1,8 +1,10 @@
-import { CodeableConcept, Coding, Identifier, Resource, Period } from "@medplum/fhirtypes";
+import { CodeableConcept, Coding, Identifier, Period, Resource } from "@medplum/fhirtypes";
+import { errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import _, { cloneDeep } from "lodash";
 import { v4 as uuidv4 } from "uuid";
+import { capture, out } from "../util";
 
 dayjs.extend(utc);
 
@@ -128,11 +130,12 @@ export function fillMaps<T extends Resource>(
   map: Map<string, T>,
   key: string,
   targetResource: T,
-  refReplacementMap: Map<string, string[]>,
+  refReplacementMap: Map<string, string>,
   isExtensionIncluded = true,
   applySpecialModifications?: ApplySpecialModificationsCallback<T>
 ): void {
   const existingResource = map.get(key);
+  // if its a duplicate, combine the resources
   if (existingResource?.id) {
     const masterRef = `${existingResource.resourceType}/${existingResource.id}`;
     let merged = combineTwoResources(existingResource, targetResource, isExtensionIncluded);
@@ -141,14 +144,9 @@ export function fillMaps<T extends Resource>(
     }
     map.set(key, merged);
 
-    const existingReplacementIds = refReplacementMap.get(masterRef);
     if (targetResource.id) {
       const consumedRef = `${targetResource.resourceType}/${targetResource.id}`;
-      if (existingReplacementIds) {
-        refReplacementMap.set(masterRef, [...existingReplacementIds, consumedRef]);
-      } else {
-        refReplacementMap.set(masterRef, [consumedRef]);
-      }
+      refReplacementMap.set(consumedRef, masterRef);
     }
   } else {
     map.set(key, targetResource);
@@ -161,6 +159,14 @@ export function createKeysFromObjectArrayAndFlagBits(
   flagBits: number[]
 ): string[] {
   return contactsOrAddresses.map(item => JSON.stringify({ baseObject, ...item, flagBits }));
+}
+
+export function createKeysFromObjectArray(baseObject: object, keyObjects: object[]): string[] {
+  return keyObjects.map(item => JSON.stringify({ baseObject, ...item }));
+}
+
+export function createKeysFromObjectArrayAndBits(keyObjects: object[], bits: number[]): string[] {
+  return keyObjects.map(item => JSON.stringify({ item, bits }));
 }
 
 export function createKeysFromObjectAndFlagBits(object: object, bits: number[]): string[] {
@@ -187,7 +193,7 @@ export function fillL1L2Maps<T extends Resource>({
   getterKeys: string[];
   setterKeys: string[];
   targetResource: T;
-  refReplacementMap: Map<string, string[]>;
+  refReplacementMap: Map<string, string>;
   isExtensionIncluded?: boolean;
   applySpecialModifications?: ApplySpecialModificationsCallback<T>;
 }): void {
@@ -334,8 +340,10 @@ export function extractDisplayFromConcept(
   concept: CodeableConcept | undefined
 ): string | undefined {
   const displayCoding = concept?.coding?.find(coding => {
-    if (coding.code !== UNK_CODE && coding.display !== UNKNOWN_DISPLAY) {
-      return coding.display;
+    const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
+    const display = fetchCodingCodeOrDisplayOrSystem(coding, "display");
+    if (code !== UNK_CODE && display !== UNKNOWN_DISPLAY) {
+      return display;
     }
     return;
   });
@@ -365,8 +373,8 @@ export const unknownCode = {
 
 export function isUnknownCoding(coding: Coding, text?: string | undefined): boolean {
   if (_.isEqual(coding, unknownCoding)) return true;
-  const code = coding.code?.trim().toLowerCase();
-  const display = coding.display?.trim().toLowerCase();
+  const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
+  const display = fetchCodingCodeOrDisplayOrSystem(coding, "display");
 
   if (code) {
     return (
@@ -386,8 +394,8 @@ export function isUnknownCoding(coding: Coding, text?: string | undefined): bool
 
 export type DeduplicationResult<T extends Resource> = {
   combinedResources: T[];
-  refReplacementMap: Map<string, string[]>;
-  danglingReferences: string[];
+  refReplacementMap: Map<string, string>;
+  danglingReferences: Set<string>;
 };
 
 export function ensureValidPeriod(period: Period | undefined): Period | undefined {
@@ -403,4 +411,51 @@ export function ensureValidPeriod(period: Period | undefined): Period | undefine
     }
   }
   return period;
+}
+
+export function fetchCodingCodeOrDisplayOrSystem(
+  coding: Coding,
+  field: "code" | "display" | "system"
+): string | undefined {
+  const { log } = out(`fetchCodingCodeOrDisplayOrSystem - coding ${JSON.stringify(coding)}`);
+  try {
+    return coding[field]?.toString().trim().toLowerCase();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    if (error instanceof TypeError) {
+      const msg = "Error fetching field from coding";
+      log(`${msg}. Cause: ${errorToString(error)}`);
+      capture.message(msg, {
+        extra: {
+          coding,
+          error,
+        },
+        level: "info",
+      });
+      return undefined;
+    }
+    throw error;
+  }
+}
+
+export function fetchCodeableConceptText(concept: CodeableConcept): string | undefined {
+  const { log } = out(`fetchCodeableConceptText - coding ${JSON.stringify(concept)}`);
+  try {
+    return concept.text?.trim().toLowerCase();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    if (error instanceof TypeError) {
+      const msg = "Error fetching field from concept";
+      log(`${msg}. Cause: ${errorToString(error)}`);
+      capture.message(msg, {
+        extra: {
+          concept,
+          error,
+        },
+        level: "info",
+      });
+      return undefined;
+    }
+    throw error;
+  }
 }

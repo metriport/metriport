@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { Observation } from "@medplum/fhirtypes";
 import { v4 as uuidv4 } from "uuid";
+import { makePatient } from "../../../../domain/__tests__/patient";
 import { Config } from "../../../../util/config";
 import { HapiFhirClient } from "../../api/api-hapi";
 import * as fhirBundle from "../../shared/bundle";
@@ -51,7 +52,7 @@ describe("getConsolidatedFhirBundle", () => {
     fhir_searchResourcePages.mockReturnValue(generator);
 
     const resp = await getConsolidatedFhirBundle({
-      patient: { cxId, id: patientId },
+      patient: makePatient({ cxId, id: patientId }),
       resources: ["Observation"],
     });
 
@@ -120,7 +121,7 @@ describe("getConsolidatedFhirBundle", () => {
       .mockReturnValueOnce([missingL4]);
 
     const resp = await getConsolidatedFhirBundle({
-      patient: { cxId, id: patientId },
+      patient: makePatient({ cxId, id: patientId }),
       resources: ["Observation"],
     });
 
@@ -191,7 +192,7 @@ describe("getConsolidatedFhirBundle", () => {
       .mockReturnValueOnce([missingL3]);
 
     const resp = await getConsolidatedFhirBundle({
-      patient: { cxId, id: patientId },
+      patient: makePatient({ cxId, id: patientId }),
       resources: ["Observation"],
     });
 

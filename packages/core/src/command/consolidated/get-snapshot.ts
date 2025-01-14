@@ -1,7 +1,13 @@
 import { ConsolidationConversionType } from "@metriport/api-sdk";
-import { ConsolidatedFhirToBundlePayload } from "../../external/fhir/consolidated/consolidated";
+import { ResourceTypeForConsolidation } from "@metriport/shared/medical";
+import { Patient } from "../../domain/patient";
 
-export type ConsolidatedSnapshotRequest = ConsolidatedFhirToBundlePayload & {
+export type ConsolidatedSnapshotRequest = {
+  patient: Patient;
+  requestId?: string;
+  resources?: ResourceTypeForConsolidation[] | undefined;
+  dateFrom?: string | undefined;
+  dateTo?: string | undefined;
   generateAiBrief?: boolean;
 };
 
@@ -16,6 +22,8 @@ export type ConsolidatedSnapshotRequestSync = ConsolidatedSnapshotRequest & {
   isAsync: false;
   requestId?: string | undefined;
   fromDashboard?: boolean | undefined;
+  // TODO 2215 Remove this when we have contributed data as part of get consolidated (from S3)
+  forceDataFromFhir?: boolean | undefined;
 };
 
 export type ConsolidatedSnapshotResponse = {

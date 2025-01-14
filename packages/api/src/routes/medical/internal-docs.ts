@@ -1,8 +1,10 @@
 import { BulkGetDocUrlStatus } from "@metriport/core/domain/bulk-get-document-url";
 import { convertResult } from "@metriport/core/domain/document-query";
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
+import { parseJobId } from "@metriport/core/domain/job";
 import { documentBulkSignerLambdaResponseArraySchema } from "@metriport/core/external/aws/document-signing/document-bulk-signer-response";
 import { S3Utils } from "@metriport/core/external/aws/s3";
+import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/conversion";
 import { isMedicalDataSource } from "@metriport/core/external/index";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";
@@ -28,8 +30,6 @@ import { appendBulkGetDocUrlProgress } from "../../command/medical/patient/bulk-
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import BadRequestError from "../../errors/bad-request";
 import { processCcdRequest, processEmptyCcdRequest } from "../../external/cda/process-ccd-request";
-import { parseJobId } from "../../external/fhir/connector/connector";
-import { toFHIR as toFhirOrganization } from "../../external/fhir/organization";
 import { setDocQueryProgress } from "../../external/hie/set-doc-query-progress";
 import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
@@ -340,13 +340,15 @@ router.get(
 /**
  * POST /internal/docs/query
  *
- * Starts a new document query even if the current one is in 'processing' state.
+ * Starts a new document query. Optionally overrides even if the current one is in 'processing' state.
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.patientId - The customer/account's ID.
  * @param req.query.facilityId - Optional; The facility providing NPI for the document query.
  * @param req.body Optional metadata to be sent through webhook. {"disableWHFlag": "true"} can be sent here to disable webhook.
- * @param req.query.cqManagingOrgName - Optional; The CQ managing organization name.
+ * @param req.query.forceQuery - Optional; Whether to force doc query to run. DEFAULTS TRUE.
  * @param req.query.forcePatientDiscovery - Optional; Whether to force patient discovery before document query.
+ * @param req.query.cqManagingOrgName - Optional; The CQ managing organization name.
+ * @param req.query.triggerConsolidated - Optional; Whether to force get consolidated PDF on conversion finish.
  * @return updated document query progress
  */
 router.post(
@@ -356,17 +358,20 @@ router.post(
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
     const facilityId = getFrom("query").optional("facilityId", req);
+    const forceQuery = getFromQueryAsBoolean("forceQuery", req) ?? true;
     const forcePatientDiscovery = getFromQueryAsBoolean("forcePatientDiscovery", req);
     const cqManagingOrgName = getFrom("query").optional("cqManagingOrgName", req);
+    const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
     const cxDocumentRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
     const docQueryProgress = await queryDocumentsAcrossHIEs({
       cxId,
       patientId,
       facilityId,
-      forceQuery: true,
+      forceQuery,
       forcePatientDiscovery,
       cqManagingOrgName,
+      triggerConsolidated,
       cxDocumentRequestMetadata: cxDocumentRequestMetadata?.metadata,
     });
 
@@ -428,13 +433,8 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
-    const [patient, organization] = await Promise.all([
-      getPatientOrFail({ cxId, id: patientId }),
-      getOrganizationOrFail({ cxId }),
-    ]);
-
-    const fhirOrganization = toFhirOrganization(organization);
-    const ccd = await processCcdRequest(patient, fhirOrganization);
+    const patient = await getPatientOrFail({ cxId, id: patientId });
+    const ccd = await processCcdRequest({ patient });
     return res.type("application/xml").status(httpStatus.OK).send(ccd);
   })
 );

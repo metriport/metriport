@@ -1,8 +1,12 @@
 import { Document } from "@metriport/commonwell-sdk";
 import { Patient } from "@metriport/core/domain/patient";
 import { getFileExtension } from "@metriport/core/util/mime";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 
-export const sandboxSleepTime = 5000;
+dayjs.extend(duration);
+
+export const sandboxSleepTime = dayjs.duration({ seconds: 5 });
 
 export type DocumentWithMetriportId = Document & {
   originalId: string;

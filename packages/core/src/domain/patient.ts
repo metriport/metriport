@@ -1,13 +1,13 @@
 import { ConsolidatedQuery } from "@metriport/api-sdk";
-import { USState } from "@metriport/shared";
-import { BaseDomain, BaseDomainCreate } from "./base-domain";
-import { DocumentQueryProgress } from "./document-query";
-import { DiscoveryParams, ScheduledPatientDiscovery } from "./patient-discovery";
-import { BulkGetDocumentsUrlProgress } from "./bulk-get-document-url";
+import { USState, USStateForAddress } from "@metriport/shared";
 import { MedicalDataSource } from "../external";
 import { Address, getState } from "./address";
+import { BaseDomain, BaseDomainCreate } from "./base-domain";
+import { BulkGetDocumentsUrlProgress } from "./bulk-get-document-url";
 import { Contact } from "./contact";
+import { DocumentQueryProgress } from "./document-query";
 import { LinkDemographics } from "./patient-demographics";
+import { DiscoveryParams, ScheduledPatientDiscovery } from "./patient-discovery";
 
 export const generalPersonalIdentifiers = ["ssn"] as const;
 export const driversLicensePersonalIdentifier = ["driversLicense"] as const;
@@ -63,11 +63,11 @@ export type PatientData = {
   address: Address[];
   contact?: Contact[];
   requestId?: string;
-  consolidatedLinkDemographics?: ConsolidatedLinkDemographics;
-  documentQueryProgress?: DocumentQueryProgress;
-  consolidatedQueries?: ConsolidatedQuery[];
+  consolidatedLinkDemographics?: ConsolidatedLinkDemographics | undefined;
+  documentQueryProgress?: DocumentQueryProgress | undefined;
+  consolidatedQueries?: ConsolidatedQuery[] | undefined;
   bulkGetDocumentsUrlProgress?: BulkGetDocumentsUrlProgress;
-  externalData?: PatientExternalData;
+  externalData?: PatientExternalData | undefined;
   cxDocumentRequestMetadata?: unknown;
   cxConsolidatedRequestMetadata?: unknown;
   cxDownloadRequestMetadata?: unknown;
@@ -82,6 +82,7 @@ export interface PatientCreate extends BaseDomainCreate {
   cxId: string;
   facilityIds: string[];
   externalId?: string;
+  hieOptOut?: boolean;
   data: PatientData;
 }
 
@@ -101,7 +102,7 @@ export function joinName(name: string[]): string {
 
 export interface Patient extends BaseDomain, PatientCreate {}
 
-export function getStatesFromAddresses(patient: Patient): USState[] {
+export function getStatesFromAddresses(patient: Patient): USStateForAddress[] {
   return patient.data.address.map(getState);
 }
 

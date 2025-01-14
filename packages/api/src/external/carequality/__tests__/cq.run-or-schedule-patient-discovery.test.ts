@@ -1,15 +1,15 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { MedicalDataSource } from "@metriport/core/external/index";
 import {
   DiscoveryParams,
   ScheduledPatientDiscovery,
 } from "@metriport/core/domain/patient-discovery";
-import { makePatient, makePatientData } from "../../../domain/medical/__tests__/patient";
+import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/patient";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { PatientModel } from "../../../models/medical/patient";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
-import * as cqPatient from "../patient";
 import * as schedulePatientDiscovery from "../../hie/schedule-patient-discovery";
 import { runOrScheduleCqPatientDiscovery } from "../command/run-or-schedule-patient-discovery";
+import * as cqPatient from "../patient";
 
 let patientModel_findOne: jest.SpyInstance;
 let cqDiscover_mock: jest.SpyInstance;

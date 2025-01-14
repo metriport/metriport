@@ -14,14 +14,15 @@ import {
   extractDisplayFromConcept,
   fillMaps,
   hasBlacklistedText,
+  fetchCodingCodeOrDisplayOrSystem,
 } from "../shared";
 
 export function deduplicateMedications(medications: Medication[]): DeduplicationResult<Medication> {
-  const { rxnormMap, ndcMap, snomedMap, refReplacementMap, danglingReferences } =
+  const { rxnormMap, ndcMap, snomedMap, displayMap, refReplacementMap, danglingReferences } =
     groupSameMedications(medications);
   return {
     combinedResources: combineResources({
-      combinedMaps: [rxnormMap, ndcMap, snomedMap],
+      combinedMaps: [rxnormMap, ndcMap, snomedMap, displayMap],
     }),
     refReplacementMap,
     danglingReferences,
@@ -33,20 +34,20 @@ export function groupSameMedications(medications: Medication[]): {
   ndcMap: Map<string, Medication>;
   snomedMap: Map<string, Medication>;
   displayMap: Map<string, Medication>;
-  refReplacementMap: Map<string, string[]>;
-  danglingReferences: string[];
+  refReplacementMap: Map<string, string>;
+  danglingReferences: Set<string>;
 } {
   const rxnormMap = new Map<string, Medication>();
   const ndcMap = new Map<string, Medication>();
   const snomedMap = new Map<string, Medication>();
   const displayMap = new Map<string, Medication>();
-  const refReplacementMap = new Map<string, string[]>();
+  const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
 
   function removeOtherCodes(master: Medication): Medication {
     const code = master.code;
     const filtered = code?.coding?.filter(coding => {
-      const system = coding.system?.toLowerCase();
+      const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
       return (
         system?.includes(SNOMED_CODE) ||
         system?.includes(SNOMED_OID) ||
@@ -97,7 +98,7 @@ export function groupSameMedications(medications: Medication[]): {
     snomedMap,
     displayMap,
     refReplacementMap,
-    danglingReferences: [...danglingReferences],
+    danglingReferences,
   };
 }
 
@@ -113,8 +114,8 @@ function extractCodes(concept: CodeableConcept | undefined): {
 
   if (concept && concept.coding) {
     for (const coding of concept.coding) {
-      const system = coding.system?.toLowerCase();
-      const code = coding.code?.trim().toLowerCase();
+      const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
+      const code = fetchCodingCodeOrDisplayOrSystem(coding, "code");
       if (system && code) {
         if (system.includes(RXNORM_CODE) || system.includes(RXNORM_OID)) {
           rxnormCode = code;

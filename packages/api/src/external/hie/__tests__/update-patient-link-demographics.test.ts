@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { ConsolidatedLinkDemographics } from "@metriport/core/domain/patient";
-import { PatientModel } from "../../../models/medical/patient";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
+import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { makePatient, makePatientData } from "../../../domain/medical/__tests__/patient";
 import { linkDemographics } from "../../../domain/medical/__tests__/demographics.const";
+import { PatientModel } from "../../../models/medical/patient";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { updatePatientLinkDemographics } from "../update-patient-link-demographics";
 
