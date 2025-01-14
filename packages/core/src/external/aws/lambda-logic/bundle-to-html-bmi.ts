@@ -31,7 +31,7 @@ import {
   formatDateForDisplay,
   ISO_DATE,
 } from "./bundle-to-html-shared";
-import { sortObservationsForDisplay } from "@metriport/shared/src/medical/fhir/observation-ordering";
+import { sortObservationsForDisplay } from "@metriport/shared/medical";
 
 const RX_NORM_CODE = "rxnorm";
 const NDC_CODE = "ndc";
