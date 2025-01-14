@@ -319,7 +319,7 @@ class AthenaHealthApi {
         return undefined;
       }
       const patientData = patient.data;
-      patientData.address = patientData.address.filter(
+      patientData.address = (patientData.address ?? []).filter(
         a => a.postalCode !== undefined && a.use === "home"
       );
       if (patientData.address.length === 0) {
@@ -429,7 +429,7 @@ class AthenaHealthApi {
       }
       const patientData = entry[0]?.resource;
       if (!patientData) return undefined;
-      patientData.address = patientData.address.filter(
+      patientData.address = (patientData.address ?? []).filter(
         a => a.postalCode !== undefined && a.use === "home"
       );
       if (patientData.address.length === 0) {
