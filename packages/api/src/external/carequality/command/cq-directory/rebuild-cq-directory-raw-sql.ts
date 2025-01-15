@@ -8,7 +8,7 @@ import {
   urlDrColumnName,
   urlXcpdColumnName,
 } from "../../models/cq-directory";
-import { rootOrgColumnName } from "../../models/cq-directory-view";
+import { CQDirectoryEntryViewModel, rootOrgColumnName } from "../../models/cq-directory-view";
 
 const keys = createKeys();
 const number_of_keys = keys.split(",").length;
@@ -40,7 +40,7 @@ function createKeys(): string {
   return Object.values(allKeys).join(", ");
 }
 
-export async function bulkInsertCQDirectoryEntries(
+export async function bulkInsertCqDirectoryEntries(
   sequelize: Sequelize,
   orgDataArray: CQDirectoryEntryData2[],
   tableName: string
@@ -76,4 +76,36 @@ export async function bulkInsertCQDirectoryEntries(
     type: QueryTypes.INSERT,
     logging: false,
   });
+}
+
+export async function getCqDirectoryEntries(
+  sequelize: Sequelize,
+  ids: string[],
+  tableName: string
+): Promise<CQDirectoryEntryViewModel[]> {
+  const query = `SELECT * FROM ${tableName} WHERE id in ('${ids.join(`','`)}');`;
+  const result = await sequelize.query<CQDirectoryEntryViewModel>(query, {
+    type: QueryTypes.SELECT,
+  });
+  return result;
+}
+
+export async function setCqDirectoryEntryActive(
+  sequelize: Sequelize,
+  id: string,
+  tableName: string,
+  active = true
+): Promise<void> {
+  const query = `UPDATE ${tableName} SET active = ${active} WHERE id = '${id}';`;
+  await sequelize.query(query, { type: QueryTypes.UPDATE });
+}
+
+export async function deleteCqDirectoryEntries(
+  sequelize: Sequelize,
+  ids: string[],
+  tableName: string
+): Promise<void> {
+  if (ids.length === 0) return;
+  const query = `DELETE FROM ${tableName} WHERE id in ('${ids.join(`','`)}');`;
+  await sequelize.query(query, { type: QueryTypes.DELETE });
 }
