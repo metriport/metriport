@@ -1,10 +1,13 @@
 import { Organization } from "@medplum/fhirtypes";
+import { getEndpoints } from "@metriport/core/external/fhir/organization/endpoint";
 import { capture, executeAsynchronously } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
 import { initDbPool } from "@metriport/core/util/sequelize";
 import { errorToString, sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import stringify from "json-stringify-safe";
+import { partition } from "lodash";
 import { QueryTypes } from "sequelize";
 import { executeOnDBTx } from "../../../../models/transaction-wrapper";
 import { Config } from "../../../../shared/config";
@@ -14,7 +17,12 @@ import { CQDirectoryEntryViewModel } from "../../models/cq-directory-view";
 import { CachedCqOrgLoader } from "../cq-organization/get-cq-organization-cached";
 import { parseCQOrganization } from "../cq-organization/parse-cq-organization";
 import { getAdditionalOrgs } from "./additional-orgs";
-import { bulkInsertCQDirectoryEntries } from "./create-cq-directory-entry";
+import {
+  bulkInsertCqDirectoryEntries,
+  deleteCqDirectoryEntries,
+  getCqDirectoryEntries,
+  setCqDirectoryEntryActive,
+} from "./rebuild-cq-directory-raw-sql";
 
 dayjs.extend(duration);
 
@@ -44,7 +52,7 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
   let isDone = false;
   const startedAt = Date.now();
   const cq = makeCarequalityManagementAPIOrFail();
-
+  const parsingErrors: Error[] = [];
   try {
     await createTempCQDirectoryTable();
     const cache = new CachedCqOrgLoader(cq);
@@ -65,14 +73,18 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
         await executeAsynchronously(
           orgs,
           async (org: Organization) => {
-            const parsed = await parseCQOrganization(org, cache);
-            if (parsed) parsedOrgs.push(parsed);
+            try {
+              const parsed = await parseCQOrganization(org, cache);
+              parsedOrgs.push(parsed);
+            } catch (error) {
+              parsingErrors.push(error as Error);
+            }
           },
           { numberOfParallelExecutions: parallelQueriesToGetManagingOrg }
         );
         const orgsToInsert = filterAndNormalizeExternalOrgs(parsedOrgs);
         log(`Adding ${orgsToInsert.length} CQ directory entries...`);
-        await bulkInsertCQDirectoryEntries(sequelize, orgsToInsert, cqDirectoryEntryTemp);
+        await bulkInsertCqDirectoryEntries(sequelize, orgsToInsert, cqDirectoryEntryTemp);
         if (!isDone) await sleep(SLEEP_TIME.asMilliseconds());
       } catch (error) {
         isDone = true;
@@ -81,9 +93,20 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
         }
       }
     }
-    const additionalOrgs = getAdditionalOrgs();
-    log(`Inserting ${additionalOrgs.length} additional Orgs...`);
-    await bulkInsertCQDirectoryEntries(sequelize, additionalOrgs, cqDirectoryEntryTemp);
+    await processAdditionalOrgs();
+
+    if (parsingErrors.length > 0) {
+      const msg = `Parsing errors while rebuilding the CQ directory`;
+      const errors = parsingErrors.map(error => errorToString(error)).join("; ");
+      log(msg, errors);
+      capture.message(msg, {
+        extra: {
+          context: `rebuildCQDirectory`,
+          amountOfErrors: parsingErrors.length,
+          errors,
+        },
+      });
+    }
   } catch (error) {
     await deleteTempCQDirectoryTable();
     const msg = `Failed to rebuild the directory`;
@@ -152,4 +175,77 @@ function filterAndNormalizeExternalOrgs(
     }));
   }
   return parsedOrgs;
+}
+
+/**
+ * Process/include additional orgs that are not in the CQ directory.
+ * Used for staging/dev envs.
+ */
+async function processAdditionalOrgs(): Promise<void> {
+  const { log } = out("processAdditionalOrgs");
+  try {
+    const additionalOrgs = getAdditionalOrgs();
+    if (additionalOrgs.length < 1) return;
+
+    const additionalOrgIds = additionalOrgs.map(o => o.id);
+    const existingEntries = await getCqDirectoryEntries(
+      sequelize,
+      additionalOrgIds,
+      cqDirectoryEntry
+    );
+
+    const [orgsToUpdate, orgsToCreate] = partition(additionalOrgs, a =>
+      existingEntries.some(e => e.id === a.id)
+    );
+
+    log(`Inserting/updating ${additionalOrgs.length} additional Orgs...`);
+    await Promise.all([
+      bulkInsertCqDirectoryEntries(sequelize, orgsToCreate, cqDirectoryEntryTemp),
+      ...orgsToUpdate.map(org => updateCQDirectoryEntry(org, cqDirectoryEntryTemp)),
+    ]);
+  } catch (error) {
+    const msg = `Failed to process additional orgs`;
+    log(`${msg}. Cause: ${errorToString(error)}`);
+    capture.error(msg, {
+      extra: { context: `processAdditionalOrgs`, error },
+    });
+  }
+}
+
+async function updateCQDirectoryEntry(
+  additionalOrg: CQDirectoryEntryData2,
+  tableName: string
+): Promise<void> {
+  const { log } = out("updateCQDirectoryEntry");
+
+  const entries = await getCqDirectoryEntries(sequelize, [additionalOrg.id], tableName);
+  if (!entries || entries.length < 1) return;
+  if (entries.length > 1) {
+    const msg = `Found multiple entries for additional org`;
+    log(`${msg} ID ${additionalOrg.id}`);
+    capture.error(msg, {
+      extra: {
+        context: `updateCQDirectoryEntry`,
+        additionalOrgId: additionalOrg.id,
+        entries: stringify(entries),
+      },
+    });
+  }
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const entry = entries[0]!;
+  const endpoints = entry.data ? getEndpoints(entry.data) : [];
+
+  if (endpoints.length > 0) {
+    log(
+      `${additionalOrg.id} already has endpoints, setting active to true and skipping from config`
+    );
+    await setCqDirectoryEntryActive(sequelize, additionalOrg.id, tableName, true);
+    return;
+  }
+
+  log(
+    `${additionalOrg.id} does not have endpoints, removing existing and adding new one from config`
+  );
+  await deleteCqDirectoryEntries(sequelize, [additionalOrg.id], tableName);
+  await bulkInsertCqDirectoryEntries(sequelize, [additionalOrg], tableName);
 }

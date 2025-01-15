@@ -183,8 +183,8 @@ function getFhirOrganization(
       },
       ...endpoints.map((endpoint, index) => {
         return {
-          id: `endpoint-${index + 1}`,
           ...endpoint,
+          id: `endpoint-${index + 1}`,
         };
       }),
     ],
