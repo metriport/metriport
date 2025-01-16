@@ -4,7 +4,10 @@ import { OrganizationBizType } from "@metriport/core/domain/organization";
 import NotFoundError from "@metriport/core/util/error/not-found";
 import { makeOrganization } from "../../../../domain/medical/__tests__/organization";
 import * as getOrganizationOrFail from "../../organization/get-organization";
-import { verifyCxItVendorAccess, verifyCxProviderAccess } from "../verify-access";
+import {
+  verifyCxAccessToSendFacilityToHies,
+  verifyCxAccessToSendOrgToHies,
+} from "../verify-access";
 
 let getOrganizationOrFailMock: jest.SpyInstance;
 
@@ -17,19 +20,19 @@ describe("verifyCxAccess", () => {
     jest.clearAllMocks();
   });
 
-  describe("verifyCxProviderAccess", () => {
+  describe("verifyCxAccessToSendOrgToHies", () => {
     it("returns true when org is provider", async () => {
       const org = makeOrganization({ type: OrganizationBizType.healthcareProvider });
       getOrganizationOrFailMock.mockImplementation(async () => org);
-      const res = await verifyCxProviderAccess(faker.string.uuid());
+      const res = await verifyCxAccessToSendOrgToHies(faker.string.uuid());
       expect(res).toBeTruthy();
     });
 
-    it("throws when org is it vendor", async () => {
+    it("throws when org is IT vendor", async () => {
       const org = makeOrganization({ type: OrganizationBizType.healthcareITVendor });
       getOrganizationOrFailMock.mockImplementation(async () => org);
-      expect(async () => await verifyCxProviderAccess(faker.string.uuid())).rejects.toThrow(
-        "Facilities cannot be created or updated, contact support."
+      expect(async () => await verifyCxAccessToSendOrgToHies(faker.string.uuid())).rejects.toThrow(
+        "Only Providers can send organizations to HIEs"
       );
     });
 
@@ -37,31 +40,35 @@ describe("verifyCxAccess", () => {
       getOrganizationOrFailMock.mockImplementation(async () => {
         throw new NotFoundError("Organization not found");
       });
-      expect(async () => await verifyCxProviderAccess(faker.string.uuid())).rejects.toThrow();
+      expect(
+        async () => await verifyCxAccessToSendOrgToHies(faker.string.uuid())
+      ).rejects.toThrow();
     });
   });
 
-  describe("verifyCxItVendorAccess", () => {
-    it("returns true when org is it vendor", async () => {
+  describe("verifyCxAccessToSendFacilityToHies", () => {
+    it("returns true when org is IT vendor", async () => {
       const org = makeOrganization({ type: OrganizationBizType.healthcareITVendor });
       getOrganizationOrFailMock.mockImplementation(async () => org);
-      const res = await verifyCxItVendorAccess(faker.string.uuid());
+      const res = await verifyCxAccessToSendFacilityToHies(faker.string.uuid());
       expect(res).toBeTruthy();
     });
 
     it("throws when org is provider", async () => {
       const org = makeOrganization({ type: OrganizationBizType.healthcareProvider });
       getOrganizationOrFailMock.mockImplementation(async () => org);
-      expect(async () => await verifyCxItVendorAccess(faker.string.uuid())).rejects.toThrow(
-        "Facilities cannot be created or updated, contact support."
-      );
+      expect(
+        async () => await verifyCxAccessToSendFacilityToHies(faker.string.uuid())
+      ).rejects.toThrow("Only IT Vendors can send facilities to HIEs");
     });
 
     it("throws when org is not found", async () => {
       getOrganizationOrFailMock.mockImplementation(async () => {
         throw new NotFoundError("Organization not found");
       });
-      expect(async () => await verifyCxItVendorAccess(faker.string.uuid())).rejects.toThrow();
+      expect(
+        async () => await verifyCxAccessToSendFacilityToHies(faker.string.uuid())
+      ).rejects.toThrow();
     });
   });
 });

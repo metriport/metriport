@@ -5,7 +5,6 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { createOrganization } from "../../command/medical/organization/create-organization";
-import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { updateOrganization } from "../../command/medical/organization/update-organization";
 import { createOrUpdateOrganization as cqCreateOrUpdateOrganization } from "../../external/carequality/command/create-or-update-organization";
 import { createOrUpdateCWOrganization } from "../../external/commonwell/command/create-or-update-cw-organization";
@@ -31,8 +30,6 @@ router.put(
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    // TODO Thomas, do we need this?
-    // const skipHie = getFromQueryAsBoolean("skipHie", req);
 
     const orgDetails = organiationInternalDetailsSchema.parse(req.body);
     const organizationCreate: OrganizationCreate = {
@@ -55,15 +52,10 @@ router.put(
       cqApproved: orgDetails.cqApproved,
       cwApproved: orgDetails.cwApproved,
     };
-    let org: Organization;
-    if (orgDetails.id) {
-      await getOrganizationOrFail({ cxId, id: orgDetails.id });
-      org = await updateOrganization({ id: orgDetails.id, ...organizationCreate });
-    } else {
-      org = await createOrganization(organizationCreate);
-    }
-    // TODO Thomas, do we need this?
-    // const syncInHie = !skipHie && isProvider(org);
+    const org: Organization = orgDetails.id
+      ? await updateOrganization({ id: orgDetails.id, ...organizationCreate })
+      : await createOrganization(organizationCreate);
+
     const syncInHie = isProvider(org);
     // TODO Move to external/hie https://github.com/metriport/metriport-internal/issues/1940
     // CAREQUALITY

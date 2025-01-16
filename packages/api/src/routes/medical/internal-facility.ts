@@ -5,7 +5,6 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { createFacility } from "../../command/medical/facility/create-facility";
-import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import { updateFacility } from "../../command/medical/facility/update-facility";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { Facility, FacilityCreate } from "../../domain/medical/facility";
@@ -35,8 +34,6 @@ router.put(
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    // TODO Thomas, do we need this?
-    // const skipHie = getFromQueryAsBoolean("skipHie", req);
 
     const facilityDetails = facilityInternalDetailsSchema.parse(req.body);
     const facilityCreate: FacilityCreate = {
@@ -62,16 +59,11 @@ router.put(
       cqApproved: facilityDetails.cqApproved,
       cwApproved: facilityDetails.cwApproved,
     };
-    let facility: Facility;
-    if (facilityDetails.id) {
-      await getFacilityOrFail({ cxId, id: facilityDetails.id });
-      facility = await updateFacility({ id: facilityDetails.id, ...facilityCreate });
-    } else {
-      facility = await createFacility(facilityCreate);
-    }
+    const facility: Facility = facilityDetails.id
+      ? await updateFacility({ id: facilityDetails.id, ...facilityCreate })
+      : await createFacility(facilityCreate);
+
     const org = await getOrganizationOrFail({ cxId });
-    // TODO Thomas, do we need this?
-    // const syncInHie = !skipHie && isHealthcareItVendor(org);
     const syncInHie = isHealthcareItVendor(org);
     // TODO Move to external/hie https://github.com/metriport/metriport-internal/issues/1940
     // CAREQUALITY

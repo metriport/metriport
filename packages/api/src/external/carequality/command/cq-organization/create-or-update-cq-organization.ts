@@ -9,15 +9,19 @@ import { getCqOrg } from "./get-cq-organization";
 import { getOrganizationFhirTemplate } from "./organization-template";
 import { parseCQOrganization } from "./parse-cq-organization";
 
-export type CreateOrUpdateCqOrganizationCmd = Omit<
+type CqOrgDetailsLean = Omit<
   CQOrgDetails,
   "addressLine1" | "city" | "state" | "postalCode" | "lat" | "lon"
-> & {
+>;
+
+type BasicCqOrgDetails = {
   cxId: string;
   oid: string;
   name: string;
   address: AddressStrict;
 };
+
+export type CreateOrUpdateCqOrganizationCmd = CqOrgDetailsLean & BasicCqOrgDetails;
 
 /**
  * Creates or updates a Carequality organization (it can be a Metriport Organization or Facility).
