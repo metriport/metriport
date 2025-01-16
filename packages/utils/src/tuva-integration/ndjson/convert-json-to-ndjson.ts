@@ -4,15 +4,20 @@ dotenv.config();
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import fs from "fs";
 
-const filePath =
-  "/Users/ramilgaripov/Documents/phi/z_chris_smith/10cce4ac-3628-4f79-bda1-61c73da58759_0192da90-6f7d-71bd-b40c-7ea4bafc2a43_CONSOLIDATED_DATA.json";
+/**
+ * Converts JSON to NDJSON.
+ *
+ * Use this on a Metriport's FHIR Payload, aka Consolidated Bundle.
+ */
+
+const filePath = "";
 
 async function main() {
   const rawContents = fs.readFileSync(filePath, "utf-8");
   const bundle = JSON.parse(rawContents) as Bundle<Resource>;
   if (bundle.entry) {
     const ndjsonResources = jsonToNdjson(bundle.entry);
-    fs.writeFileSync("output.ndjson", ndjsonResources);
+    fs.writeFileSync(`${filePath}/output.ndjson`, ndjsonResources);
   }
 }
 
