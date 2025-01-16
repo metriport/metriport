@@ -8,20 +8,21 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import stringify from "json-stringify-safe";
 import { partition } from "lodash";
-import { QueryTypes } from "sequelize";
-import { executeOnDBTx } from "../../../../models/transaction-wrapper";
 import { Config } from "../../../../shared/config";
 import { makeCarequalityManagementApiOrFail } from "../../api";
 import { CQDirectoryEntryData2 } from "../../cq-directory";
-import { CQDirectoryEntryViewModel } from "../../models/cq-directory-view";
 import { CachedCqOrgLoader } from "../cq-organization/get-cq-organization-cached";
 import { parseCQOrganization } from "../cq-organization/parse-cq-organization";
 import { getAdditionalOrgs } from "./additional-orgs";
 import {
-  bulkInsertCqDirectoryEntries,
+  cqDirectoryEntryTemp,
+  createTempCqDirectoryTable,
   deleteCqDirectoryEntries,
+  deleteTempCqDirectoryTable,
   getCqDirectoryEntries,
+  insertCqDirectoryEntries,
   setCqDirectoryEntryActive,
+  updateCqDirectoryViewDefinition,
 } from "./rebuild-cq-directory-raw-sql";
 
 dayjs.extend(duration);
@@ -29,14 +30,6 @@ dayjs.extend(duration);
 const BATCH_SIZE = 5_000;
 const parallelQueriesToGetManagingOrg = 20;
 const SLEEP_TIME = dayjs.duration({ milliseconds: 750 });
-
-// TODO 2553 To be updated to `cq_directory_entry` on a follow-up PR
-const cqDirectoryEntry = `cq_directory_entry_new`;
-const cqDirectoryEntryTemp = `cq_directory_entry_temp`;
-const cqDirectoryEntryBackup1 = `cq_directory_entry_backup1`;
-const cqDirectoryEntryBackup2 = `cq_directory_entry_backup2`;
-const cqDirectoryEntryBackup3 = `cq_directory_entry_backup3`;
-const cqDirectoryEntryView = `cq_directory_entry_view`;
 
 const dbCreds = Config.getDBCreds();
 const sequelize = initDbPool(dbCreds, {
@@ -47,7 +40,8 @@ const sequelize = initDbPool(dbCreds, {
 });
 
 export async function rebuildCQDirectory(failGracefully = false): Promise<void> {
-  const { log } = out("rebuildCQDirectory");
+  const context = "rebuildCQDirectory";
+  const { log } = out(context);
   let currentPosition = 0;
   let isDone = false;
   const startedAt = Date.now();
@@ -55,7 +49,7 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
   let parsedOrgsCount = 0;
   const parsingErrors: Error[] = [];
   try {
-    await createTempCQDirectoryTable();
+    await createTempCqDirectoryTable(sequelize);
     const cache = new CachedCqOrgLoader(cq);
     while (!isDone) {
       try {
@@ -85,7 +79,7 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
         parsedOrgsCount += parsedOrgs.length;
         const orgsToInsert = normalizeExternalOrgs(parsedOrgs);
         log(`Adding ${orgsToInsert.length} CQ directory entries...`);
-        await bulkInsertCqDirectoryEntries(sequelize, orgsToInsert, cqDirectoryEntryTemp);
+        await insertCqDirectoryEntries(sequelize, orgsToInsert, cqDirectoryEntryTemp);
         if (!isDone) await sleep(SLEEP_TIME.asMilliseconds());
       } catch (error) {
         isDone = true;
@@ -102,7 +96,7 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
       log(msg, errors);
       capture.message(msg, {
         extra: {
-          context: `rebuildCQDirectory`,
+          context,
           amountParsed: parsedOrgsCount,
           amountError: parsingErrors.length,
           errors,
@@ -110,60 +104,29 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
       });
     }
   } catch (error) {
-    await deleteTempCQDirectoryTable();
+    await deleteTempCqDirectoryTable(sequelize);
     const msg = `Failed to rebuild the directory`;
     log(`${msg}, Cause: ${errorToString(error)}`);
     capture.error(msg, {
-      extra: { context: `rebuildCQDirectory`, error },
+      extra: { context, error },
     });
     throw error;
   }
   try {
-    await updateViewDefinition();
+    await updateCqDirectoryViewDefinition(sequelize);
     log(`CQ directory successfully rebuilt! :) Took ${Date.now() - startedAt}ms`);
   } catch (error) {
     const msg = `Failed the last step of CQ directory rebuild`;
     log(`${msg}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
-      extra: { context: `renameCQDirectoryTablesAndUpdateIndexes`, error },
+      extra: { context: `updateCqDirectoryViewDefinition`, error },
     });
     throw error;
   }
 }
 
-async function createTempCQDirectoryTable(): Promise<void> {
-  await deleteTempCQDirectoryTable();
-  const query = `CREATE TABLE IF NOT EXISTS ${cqDirectoryEntryTemp} (LIKE ${cqDirectoryEntry} INCLUDING ALL)`;
-  await sequelize.query(query, { type: QueryTypes.RAW });
-}
-
-async function deleteTempCQDirectoryTable(): Promise<void> {
-  const query = `DROP TABLE IF EXISTS ${cqDirectoryEntryTemp}`;
-  await sequelize.query(query, { type: QueryTypes.RAW });
-}
-
-async function updateViewDefinition(): Promise<void> {
-  await executeOnDBTx(CQDirectoryEntryViewModel.prototype, async transaction => {
-    const dropView = `DROP VIEW IF EXISTS ${cqDirectoryEntryView};`;
-    const createView = `CREATE VIEW ${cqDirectoryEntryView} AS SELECT * FROM ${cqDirectoryEntryTemp};`;
-    const dropBackup3 = `DROP TABLE IF EXISTS ${cqDirectoryEntryBackup3};`;
-    const renameBackup2To3 = `ALTER TABLE IF EXISTS ${cqDirectoryEntryBackup2} RENAME TO ${cqDirectoryEntryBackup3};`;
-    const renameBackup1To2 = `ALTER TABLE IF EXISTS ${cqDirectoryEntryBackup1} RENAME TO ${cqDirectoryEntryBackup2};`;
-    const renameNewToBackup = `ALTER TABLE ${cqDirectoryEntry} RENAME TO ${cqDirectoryEntryBackup1};`;
-    const renameTempToNew = `ALTER TABLE ${cqDirectoryEntryTemp} RENAME TO ${cqDirectoryEntry};`;
-
-    await sequelize.query(dropView, { type: QueryTypes.RAW, transaction });
-    await sequelize.query(createView, { type: QueryTypes.RAW, transaction });
-    await sequelize.query(dropBackup3, { type: QueryTypes.RAW, transaction });
-    await sequelize.query(renameBackup2To3, { type: QueryTypes.RAW, transaction });
-    await sequelize.query(renameBackup1To2, { type: QueryTypes.RAW, transaction });
-    await sequelize.query(renameNewToBackup, { type: QueryTypes.RAW, transaction });
-    await sequelize.query(renameTempToNew, { type: QueryTypes.RAW, transaction });
-  });
-}
-
 /**
- * CQ directory entries on stage/dev are built for test purposes by other companies/implemetors,
+ * CQ directory entries on stage/dev are built for test purposes by other companies/implementors,
  * and very likely won't have any patient that matches our test's demographics, so we might
  * as well keep them inactive to minimize cost/scale issues on pre-prod envs.
  */
@@ -182,7 +145,8 @@ function normalizeExternalOrgs(parsedOrgs: CQDirectoryEntryData2[]): CQDirectory
  * Used for staging/dev envs.
  */
 async function processAdditionalOrgs(): Promise<void> {
-  const { log } = out("processAdditionalOrgs");
+  const context = "processAdditionalOrgs";
+  const { log } = out(context);
   try {
     const additionalOrgs = getAdditionalOrgs();
     if (additionalOrgs.length < 1) return;
@@ -200,23 +164,24 @@ async function processAdditionalOrgs(): Promise<void> {
 
     log(`Inserting/updating ${additionalOrgs.length} additional Orgs...`);
     await Promise.all([
-      bulkInsertCqDirectoryEntries(sequelize, orgsToCreate, cqDirectoryEntryTemp),
-      ...orgsToUpdate.map(org => updateCQDirectoryEntry(org, cqDirectoryEntryTemp)),
+      insertCqDirectoryEntries(sequelize, orgsToCreate, cqDirectoryEntryTemp),
+      ...orgsToUpdate.map(org => updateAdditionalEntry(org, cqDirectoryEntryTemp)),
     ]);
   } catch (error) {
     const msg = `Failed to process additional orgs`;
     log(`${msg}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
-      extra: { context: `processAdditionalOrgs`, error },
+      extra: { context, error },
     });
   }
 }
 
-async function updateCQDirectoryEntry(
+async function updateAdditionalEntry(
   additionalOrg: CQDirectoryEntryData2,
   tableName: string
 ): Promise<void> {
-  const { log } = out("updateCQDirectoryEntry");
+  const context = "updateAdditionalEntry";
+  const { log } = out(context);
 
   const entries = await getCqDirectoryEntries(sequelize, [additionalOrg.id], tableName);
   if (!entries || entries.length < 1) return;
@@ -225,7 +190,7 @@ async function updateCQDirectoryEntry(
     log(`${msg} ID ${additionalOrg.id}`);
     capture.error(msg, {
       extra: {
-        context: `updateCQDirectoryEntry`,
+        context,
         additionalOrgId: additionalOrg.id,
         entries: stringify(entries),
       },
@@ -247,5 +212,5 @@ async function updateCQDirectoryEntry(
     `${additionalOrg.id} does not have endpoints, removing existing and adding new one from config`
   );
   await deleteCqDirectoryEntries(sequelize, [additionalOrg.id], tableName);
-  await bulkInsertCqDirectoryEntries(sequelize, [additionalOrg], tableName);
+  await insertCqDirectoryEntries(sequelize, [additionalOrg], tableName);
 }
