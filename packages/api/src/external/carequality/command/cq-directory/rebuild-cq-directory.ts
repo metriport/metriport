@@ -17,7 +17,7 @@ import {
   deleteTempCqDirectoryTable,
   getCqDirectoryIds,
   insertCqDirectoryEntries,
-  updateCqDirectoryViewDefinition
+  updateCqDirectoryViewDefinition,
 } from "./rebuild-cq-directory-raw-sql";
 
 dayjs.extend(duration);
