@@ -1,7 +1,8 @@
-import { ListOrganizationsParams, OrganizationWithId } from "../carequality";
-
-import { APIMode } from "../carequality";
-import { CarequalityManagementApiFhir } from "../carequality-fhir";
+import { APIMode, CarequalityManagementApiFhir } from "@metriport/carequality-sdk";
+import {
+  ListOrganizationsParams,
+  OrganizationWithId,
+} from "@metriport/carequality-sdk/client/carequality";
 import { getApiMode } from "./shared";
 
 export class CarequalityManagementApiFhirMock extends CarequalityManagementApiFhir {
