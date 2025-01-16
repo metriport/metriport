@@ -4,8 +4,8 @@ import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { getFacilityByOidOrFail } from "../../command/medical/facility/get-facility";
 import {
-  verifyCxItVendorAccess,
-  verifyCxProviderAccess,
+  verifyCxAccessToSendFacilityToHies,
+  verifyCxAccessToSendOrgToHies,
 } from "../../command/medical/facility/verify-access";
 import {
   getOrganizationByOidOrFail,
@@ -59,7 +59,7 @@ router.put(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const oid = getFrom("params").orFail("oid", req);
-    await verifyCxProviderAccess(cxId);
+    await verifyCxAccessToSendOrgToHies(cxId);
 
     const org = await getOrganizationByOidOrFail({ cxId, oid });
     if (!org.cwApproved) throw new NotFoundError("CW not approved");
@@ -89,7 +89,7 @@ router.put(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getFrom("query").orFail("facilityId", req);
     const oid = getFrom("params").orFail("oid", req);
-    await verifyCxItVendorAccess(cxId);
+    await verifyCxAccessToSendFacilityToHies(cxId);
 
     const org = await getOrganizationOrFail({ cxId });
     const facility = await getFacilityByOidOrFail({ cxId, id: facilityId, oid });

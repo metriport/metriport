@@ -1,6 +1,4 @@
 import { Organization } from "@metriport/core/domain/organization";
-import BadRequestError from "@metriport/core/util/error/bad-request";
-import NotFoundError from "@metriport/core/util/error/not-found";
 import { capture } from "@metriport/core/util/notifications";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
@@ -10,7 +8,7 @@ import {
   outboundDocumentRetrievalRespSchema,
   outboundPatientDiscoveryRespSchema,
 } from "@metriport/ihe-gateway-sdk";
-import { emptyFunction } from "@metriport/shared";
+import { BadRequestError, emptyFunction } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -18,8 +16,8 @@ import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { getFacilityByOidOrFail } from "../../command/medical/facility/get-facility";
 import {
-  verifyCxItVendorAccess,
-  verifyCxProviderAccess,
+  verifyCxAccessToSendFacilityToHies,
+  verifyCxAccessToSendOrgToHies,
 } from "../../command/medical/facility/verify-access";
 import {
   getOrganizationByOidOrFail,
@@ -107,6 +105,8 @@ router.get(
 );
 
 /**
+ * @deprecated To be removed on #2586
+ *
  * PUT /internal/carequality/ops/directory/organization/:oid
  *
  * Updates the organization in the Carequality Directory.
@@ -120,8 +120,8 @@ router.put(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const oid = getFrom("params").orFail("oid", req);
     const org = await getOrganizationByOidOrFail({ cxId, oid });
-    if (!org.cqApproved) throw new NotFoundError("CQ not approved");
-    await verifyCxProviderAccess(org);
+    if (!org.cqApproved) throw new BadRequestError("CQ not approved");
+    await verifyCxAccessToSendOrgToHies(org);
 
     const orgActive = cqOrgActiveSchema.parse(req.body);
     const organizationUpdate: Organization = {
@@ -129,15 +129,18 @@ router.put(
       cqActive: orgActive.active,
     };
     const orgAtCq = await cqCreateOrUpdateOrganization({ org: organizationUpdate });
-    // that's not used currently, so this makes the response smaller/faster and less dependent on
-    // how we store data internally
-    delete orgAtCq.data;
+    // Separated from cqCreateOrUpdateOrganization() because that function is used in other
+    // scenarios, and this endpoints is about to be removed on #2586.
+    // Executed after the CQ update so we only mark as active if the CQ update is successful.
+    await org.update({ cqActive: orgActive.active });
 
     return res.status(httpStatus.OK).json(orgAtCq);
   })
 );
 
 /**
+ * @deprecated To be removed on #2586
+ *
  * PUT /internal/carequality/ops/directory/facility/:oid
  *
  * Updates the facility in the Carequality Directory.
@@ -153,10 +156,10 @@ router.put(
     const facilityId = getFrom("query").orFail("facilityId", req);
     const oid = getFrom("params").orFail("oid", req);
     const org = await getOrganizationOrFail({ cxId });
-    await verifyCxItVendorAccess(org);
+    await verifyCxAccessToSendFacilityToHies(org);
 
     const facility = await getFacilityByOidOrFail({ cxId, id: facilityId, oid });
-    if (!facility.cqApproved) throw new NotFoundError("CQ not approved");
+    if (!facility.cqApproved) throw new BadRequestError("CQ not approved");
 
     const facilityActive = cqOrgActiveSchema.parse(req.body);
     const facilityUpdate: Facility = {
@@ -164,6 +167,11 @@ router.put(
       cqActive: facilityActive.active,
     };
     const facilityAtCq = await cqCreateOrUpdateFacility({ org, facility: facilityUpdate });
+    // Separated from cqCreateOrUpdateFacility() because that function is used in other
+    // scenarios, and this endpoints is about to be removed on #2586.
+    // Executed after the CQ update so we only mark as active if the CQ update is successful.
+    await facility.update({ cqActive: facilityActive.active });
+
     return res.status(httpStatus.OK).json(facilityAtCq);
   })
 );
